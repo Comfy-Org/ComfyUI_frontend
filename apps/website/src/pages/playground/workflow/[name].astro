@@ -4,9 +4,9 @@ import CatalogueBackLink from '../../../components/workshop/CatalogueBackLink.vu
 import ModelRun from '../../../components/hub/ModelRun.vue'
 import WorkflowActions from '../../../components/hub/WorkflowActions.vue'
 import WorkflowAside from '../../../components/hub/WorkflowAside.vue'
+import WorkflowDetails from '../../../components/hub/WorkflowDetails.vue'
 import WorkflowGraph from '../../../components/hub/WorkflowGraph.vue'
-import WorkflowPorts from '../../../components/hub/WorkflowPorts.vue'
-import WorkflowRunsOn from '../../../components/hub/WorkflowRunsOn.vue'
+import WorkflowHowItWorks from '../../../components/hub/WorkflowHowItWorks.vue'
 import { useCaseFor } from '../../../config/models-catalogue'
 import { workshopModels } from '../../../config/workshop-browse-content'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../../config/workshop-env'
@@ -22,7 +22,8 @@ import { tagDisplayName } from '../../../lib/hub/tag-aliases'
 import {
   formatWeights,
   getHubWorkflowPage,
-  listHubWorkflows
+  listHubWorkflows,
+  summarisePorts
 } from '../../../lib/hub/workflow-detail'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
@@ -46,12 +47,6 @@ const mediaLabels: Record<string, string> = {
   audio: t('workshop.hub.io.audio'),
   '3d': t('workshop.hub.io.3d')
 }
-// An app is a graph someone wrapped in a form, so its inputs are the thing it
-// is; a node graph's inputs are what its loader nodes read off disk.
-const inputsHeading = template.isApp
-  ? t('workshop.v2.workflow.form')
-  : t('workshop.v2.workflow.loads')
-
 // A workflow that is one call to a model we carry is that model with a graph
 // around it, so the page hands the reader the playground rather than a file to
 // take elsewhere. Everything the graph adds stays below it.
@@ -173,19 +168,11 @@ const tagClass =
           </div>
         </section>
 
-        <WorkflowRunsOn models={runsOn} />
-
-        <section class="grid gap-6 sm:grid-cols-2">
-          {page.inputs.length > 0 && <div data-testid="workflow-inputs">
-            <WorkflowPorts heading={inputsHeading} rows={page.inputs} />
-          </div>}
-          <div data-testid="workflow-outputs">
-            <WorkflowPorts
-              heading={t('workshop.v2.workflow.produces')}
-              rows={page.outputs}
-            />
-          </div>
-        </section>
+        <WorkflowHowItWorks
+          brings={summarisePorts(page.inputs)}
+          models={runsOn}
+          produces={summarisePorts(page.outputs)}
+        />
 
         <section>
           <h2 class={sectionTitle}>{t('workshop.v2.workflow.tags')}</h2>
@@ -215,8 +202,17 @@ const tagClass =
             />
           )}
 
+          <WorkflowDetails
+            author={author}
+            usage={template.usage}
+            produces={summarisePorts(page.outputs)}
+            runsHere={operations.length > 0}
+            added={template.date}
+          />
+
           <WorkflowAside
             weights={formatWeights(page.weightsBytes)}
+            models={runsOn.map((ref) => ref.name)}
             customNodes={page.customNodes}
             callsPartnerModel={page.callsPartnerModel}
           />

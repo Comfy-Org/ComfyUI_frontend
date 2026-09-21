@@ -110,6 +110,20 @@ function relatedTo(template: HubTemplate): readonly HubTemplate[] {
 }
 
 /** Weights to download before it runs, rounded to what a reader decides on. */
+/** What a reader brings or takes away, counted by medium rather than by node. */
+export interface HubPortSummary {
+  readonly media: string
+  readonly count: number
+}
+
+export function summarisePorts(
+  rows: readonly HubIoRow[]
+): readonly HubPortSummary[] {
+  const counts = new Map<string, number>()
+  for (const row of rows) counts.set(row.type, (counts.get(row.type) ?? 0) + 1)
+  return [...counts].map(([media, count]) => ({ media, count }))
+}
+
 export function formatWeights(bytes: number): string | undefined {
   if (bytes <= 0) return undefined
   const gigabytes = bytes / 1_000_000_000

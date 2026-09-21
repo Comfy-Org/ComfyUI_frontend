@@ -4,7 +4,8 @@ import { hubWorkflowPath } from './catalogue-entries'
 import {
   formatWeights,
   getHubWorkflowPage,
-  listHubWorkflows
+  listHubWorkflows,
+  summarisePorts
 } from './workflow-detail'
 
 describe('getHubWorkflowPage', () => {
@@ -87,5 +88,25 @@ describe('formatWeights', () => {
     [6_500_000_000, '7 GB']
   ] as const)('reads %s bytes as %s', ([bytes, size]) => {
     expect(formatWeights(bytes)).toBe(size)
+  })
+})
+
+describe('summarisePorts', () => {
+  // Three LoadImage nodes are one thing to bring, three times over.
+  it('counts the ports by medium rather than by node', () => {
+    expect(
+      summarisePorts([
+        { name: 'LoadImage', type: 'image' },
+        { name: 'LoadImage 2', type: 'image' },
+        { name: 'LoadAudio', type: 'audio' }
+      ])
+    ).toEqual([
+      { media: 'image', count: 2 },
+      { media: 'audio', count: 1 }
+    ])
+  })
+
+  it('has nothing to say about a graph that loads nothing', () => {
+    expect(summarisePorts([])).toEqual([])
   })
 })

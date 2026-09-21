@@ -10486,32 +10486,54 @@ Enterprise`
     en: 'not in the catalogue',
     'zh-CN': '目录中暂无'
   },
-  'workshop.v2.workflow.needs': { en: 'What you need', 'zh-CN': '所需条件' },
+  'workshop.v2.workflow.needs': { en: "What you'll need", 'zh-CN': '所需条件' },
   'workshop.v2.workflow.needsComfy': {
     en: 'ComfyUI, on your own machine',
     'zh-CN': '你自己机器上的 ComfyUI'
   },
   'workshop.v2.workflow.needsWeights': {
-    en: 'About {size} of model weights',
-    'zh-CN': '约 {size} 的模型权重'
+    en: 'Model weights',
+    'zh-CN': '模型权重'
   },
   'workshop.v2.workflow.needsCustom': {
-    en: 'These custom nodes installed',
-    'zh-CN': '需安装以下自定义节点'
+    en: 'Custom nodes',
+    'zh-CN': '自定义节点'
+  },
+  'workshop.v2.workflow.howItWorks': {
+    en: 'How it works',
+    'zh-CN': '工作方式'
+  },
+  'workshop.v2.workflow.youBring': { en: 'You bring', 'zh-CN': '你提供' },
+  'workshop.v2.workflow.youGet': { en: 'You get', 'zh-CN': '你得到' },
+  'workshop.v2.workflow.bringsPrompt': {
+    en: 'Just a prompt',
+    'zh-CN': '只需一段提示词'
+  },
+  'workshop.v2.workflow.perRun': {
+    en: '{count} per run',
+    'zh-CN': '每次运行 {count} 个'
+  },
+  'workshop.v2.workflow.details': { en: 'Details', 'zh-CN': '详情' },
+  'workshop.v2.workflow.runCount': {
+    en: '{count} run | {count} runs',
+    'zh-CN': '{count} 次运行'
+  },
+  'workshop.v2.workflow.added': {
+    en: 'Added {date}',
+    'zh-CN': '添加于 {date}'
+  },
+  'workshop.v2.workflow.runsCloud': {
+    en: 'Runs on Comfy Cloud',
+    'zh-CN': '在 Comfy Cloud 上运行'
+  },
+  'workshop.v2.workflow.runsLocal': {
+    en: 'Runs in ComfyUI, on your machine',
+    'zh-CN': '在你机器上的 ComfyUI 中运行'
   },
   'workshop.v2.workflow.needsNothing': {
     en: 'Nothing to download. This one calls a partner model.',
     'zh-CN': '无需下载。此工作流调用合作方模型。'
   },
-  'workshop.v2.workflow.form': {
-    en: 'What the app asks for',
-    'zh-CN': '应用需要的输入'
-  },
-  'workshop.v2.workflow.loads': {
-    en: 'What the graph loads',
-    'zh-CN': '节点图加载的内容'
-  },
-  'workshop.v2.workflow.produces': { en: 'What it produces', 'zh-CN': '产出' },
   'workshop.v2.workflow.download': {
     en: 'Download the JSON',
     'zh-CN': '下载 JSON'
