@@ -80,6 +80,7 @@ const liveSchema = z
   .object({
     status: z.enum(['passed', 'failed', 'blocked', 'cancelled', 'not-run']),
     at: dateSchema,
+    elapsedMs: z.number().int().nonnegative().optional(),
     requestId: z.string().uuid().optional(),
     source: sourceSchema.optional(),
     completion: z.literal('collected-after-timeout').optional(),
@@ -217,6 +218,8 @@ function markdown(rows: readonly ReportRow[]): string {
         'Live verification is not supported for this output type',
       live?.failure && failureLabels[live.failure],
       live?.httpStatus && `HTTP ${live.httpStatus}`,
+      live?.elapsedMs !== undefined &&
+        `Elapsed: ${(live.elapsedMs / 1000).toFixed(1)}s`,
       live?.completion === 'collected-after-timeout' &&
         'Collected after initial timeout',
       preflight?.status === 'failed' && 'Initial inputs failed validation',
@@ -250,6 +253,8 @@ function markdown(rows: readonly ReportRow[]): string {
     'Each row identifies a model page, environment, and input mode. A live pass requires downloaded, decoded media of the expected type for the customer that owns the test credential; it does not validate credits, entitlements or concurrency for other customers. Ready defaults are only a local validation result. Results describe the recorded revision and date, not a guarantee about a newer revision.',
     '',
     'These are Node request-path results, not browser E2E certification. Live upload CORS, browser session authentication and browser result display require separate checks. Run `test:workshop-upload` for the real browser storage path before reopening uploads.',
+    '',
+    'Elapsed time covers input preparation, the Router call, output download and media decoding. Successful production page-default timings supply the site’s generation estimates; media duration is the length of the output clip, not the time spent generating it.',
     '',
     'Blocked checks reflect account capacity or rate limits and do not establish that a model is broken. Custom-input checks do not verify the initial page defaults. A page is published unless [`src/data/workshop-model-availability.json`](src/data/workshop-model-availability.json) disables it; this report never changes availability itself.',
     '',

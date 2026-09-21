@@ -28,6 +28,21 @@ import {
 import { initialWorkshopPageState } from './workshop-page-state'
 
 describe('Router catalog form projection', () => {
+  it('provides measured estimates for every published model', () => {
+    expect(workshopModels.length).toBeGreaterThan(0)
+    expect(
+      workshopModels
+        .filter(
+          (model) => !getRouterWorkshopModelDetail(model.slug)?.estimatedSeconds
+        )
+        .map((model) => model.slug)
+    ).toEqual([])
+    expect(
+      getRouterWorkshopModelDetail('openai--gpt-image-2--generate-images')
+        ?.estimatedSeconds
+    ).toBe(180)
+  })
+
   it.for([
     'byteplus/seed-2-0-lite-260228',
     'byteplus/seed-2-0-mini-260215',

@@ -4,7 +4,6 @@ import {
   ExternalLink,
   File as FileIcon,
   Image as ImageIcon,
-  Loader2,
   Maximize2,
   X
 } from '@lucide/vue'
@@ -16,6 +15,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import OutputTransport from './OutputTransport.vue'
+import GenerationProgress from './GenerationProgress.vue'
 import type { Modality } from '../../config/models-catalogue'
 import type {
   RunFailure,
@@ -23,7 +23,7 @@ import type {
   RunRecord,
   RunState
 } from '../../config/workshop-run'
-import { formatElapsed, isExpired } from '../../config/workshop-run'
+import { isExpired } from '../../config/workshop-run'
 import { downloadOutput } from '../../config/workshop-output-download'
 import { outputLabels } from '../../lib/workshop/output-labels'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -34,6 +34,7 @@ const {
   now,
   modelName,
   modality,
+  estimatedSeconds,
   earlier = [],
   attachments = [],
   memberWorkspace,
@@ -43,6 +44,7 @@ const {
   now: number
   modelName: string
   modality?: Modality
+  estimatedSeconds?: number
   earlier?: readonly RunRecord[]
   attachments?: readonly RunOutput[]
   memberWorkspace?: string
@@ -58,10 +60,6 @@ const emit = defineEmits<{
   buyCredits: []
   download: [kind: RunOutput['kind']]
 }>()
-
-const elapsed = computed(() =>
-  state.status === 'running' ? formatElapsed(now - state.startedAt) : '0:00'
-)
 
 const expanded = ref(false)
 const expandTrigger = useTemplateRef<HTMLButtonElement>('expandTrigger')
@@ -287,30 +285,13 @@ const earlierClass = (active: boolean) =>
     </div>
 
     <!-- Running -->
-    <div
+    <GenerationProgress
       v-else-if="state.status === 'running'"
-      class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
-    >
-      <Loader2
-        class="size-8 text-primary-comfy-yellow motion-safe:animate-spin"
-        aria-hidden="true"
-      />
-      <p class="flex items-baseline gap-2 text-sm text-primary-warm-white">
-        {{ t('workshop.run.running', locale) }}
-        <span
-          class="text-primary-warm-gray tabular-nums"
-          data-testid="run-elapsed"
-        >
-          {{ elapsed }}
-        </span>
-      </p>
-      <p
-        v-if="modality === 'video'"
-        class="max-w-xs text-xs text-primary-warm-gray"
-      >
-        {{ t('workshop.run.videoHint', locale) }}
-      </p>
-    </div>
+      :elapsed-ms="now - state.startedAt"
+      :estimated-seconds
+      :modality
+      :locale
+    />
 
     <!-- Expired -->
     <div

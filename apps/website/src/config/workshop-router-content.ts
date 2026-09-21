@@ -1,4 +1,6 @@
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
+import modelTestResults from '../../testing/models-test-results.json'
+import { generationTimeEstimates } from './workshop-generation-progress'
 import type {
   GeneratedExample,
   WorkshopModel,
@@ -17,6 +19,8 @@ import {
   routerModelSlugAliases,
   workshopModels
 } from './workshop-browse-content'
+
+const generationTimes = generationTimeEstimates(modelTestResults.models)
 
 function examplesFor(
   model: WorkshopModelDetail,
@@ -98,6 +102,7 @@ function detailFor(
     throw new Error(`Stale Router identity audit: ${model.routerId}`)
   const detail: WorkshopModelDetail = {
     ...model,
+    estimatedSeconds: generationTimes.get(model.slug),
     ...(execution ? { execution, form: formForContract(execution) } : {}),
     fields: [],
     defaults: execution

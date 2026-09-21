@@ -64,6 +64,32 @@ const passed: RouterModelReportUpdate['live'] = {
 }
 
 describe('persistent model results', () => {
+  it('preserves successful run time after a later failed attempt', () => {
+    const report = openReport()
+    report.update({ ...model, live: { ...passed, elapsedMs: 74_140 } })
+    report.update({
+      ...model,
+      live: {
+        status: 'failed',
+        at: nextDate,
+        failure: 'provider-error',
+        elapsedMs: 250
+      }
+    })
+    report.close()
+    openReport().flush()
+
+    expect(JSON.parse(readFileSync(paths.jsonPath, 'utf8'))).toMatchObject({
+      models: [
+        {
+          live: { status: 'failed', elapsedMs: 250 },
+          lastSuccess: { status: 'passed', elapsedMs: 74_140 }
+        }
+      ]
+    })
+    expect(readFileSync(paths.markdownPath, 'utf8')).toContain('Elapsed: 0.3s')
+  })
+
   it('shows which failing pages are disabled on the site', () => {
     const report = openReport()
     const failed: RouterModelReportUpdate['live'] = {
