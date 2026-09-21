@@ -36,13 +36,13 @@ test.describe(
       await expect(source).toBeVisible()
       await expect(target).toBeVisible()
       await expect(
-        source.getByRole('spinbutton', { name: 'width', exact: true })
+        source.getByLabel('width', { exact: true }).getByRole('spinbutton')
       ).toHaveValue('832')
       await expect(
-        source.getByRole('spinbutton', { name: 'height', exact: true })
+        source.getByLabel('height', { exact: true }).getByRole('spinbutton')
       ).toHaveValue('448')
       await expect(
-        source.getByRole('spinbutton', { name: 'length', exact: true })
+        source.getByLabel('length', { exact: true }).getByRole('spinbutton')
       ).toHaveValue('37')
       await expect(
         source.getByRole('textbox', { name: 'prompt', exact: true })
