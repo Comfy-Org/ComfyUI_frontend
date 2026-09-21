@@ -6,8 +6,7 @@ import type {
   INodeOutputSlot,
   INodeSlot
 } from '@/lib/litegraph/src/interfaces'
-import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
-import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import { NodeInputSlot, NodeOutputSlot } from '@/lib/litegraph/src/litegraph'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type {
   GraphScope,
