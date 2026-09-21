@@ -60,6 +60,48 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
   test.describe('with Vue nodes', { tag: '@vue-nodes' }, () => {
     test.use({ objectInfo: 'server' })
 
+    test('keeps the selected node while zooming during node selection mode', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+      const node = comfyPage.vueNodes
+        .getNodeByTitle('CLIP Text Encode (Prompt)')
+        .first()
+      const selectedNodeReference = agentPanel.root.getByRole('button', {
+        name: /Remove CLIP Text Encode \(Prompt\) #\d+ reference/
+      })
+
+      await test.step('create and select a node while picking', async () => {
+        await comfyPage.nodeOps.clearGraph()
+        await comfyPage.nodeOps.addNode('CLIPTextEncode', undefined, {
+          x: 200,
+          y: 200
+        })
+        await expect(node).toBeVisible()
+        await agentPanel.enterNodeSelectionMode()
+        await node.getByTestId('node-title').click()
+        await expect(node).toHaveClass(/outline-node-component-outline/)
+        await expect(selectedNodeReference).toBeVisible()
+      })
+
+      const initialScale = await page.evaluate(
+        () => window.app!.canvas.ds.scale
+      )
+
+      await test.step('zoom through the canvas interaction path', async () => {
+        await comfyPage.canvasOps.zoom(120)
+        await expect
+          .poll(() => page.evaluate(() => window.app!.canvas.ds.scale))
+          .not.toBe(initialScale)
+      })
+
+      await test.step('the selected node remains selected', async () => {
+        await expect(node).toHaveClass(/outline-node-component-outline/)
+        await expect(selectedNodeReference).toBeVisible()
+      })
+    })
+
     test('keeps Vue node widgets read-only while picking and still selects the clicked node', async ({
       agentPanel,
       comfyPage
