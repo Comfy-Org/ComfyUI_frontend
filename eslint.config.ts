@@ -374,6 +374,12 @@ export default defineConfig([
             "CallExpression[callee.type='MemberExpression'][callee.property.name=/^(toReversed|toSorted|toSpliced)$/]",
           message:
             'ES2023 array method is not polyfilled for build target es2022; use an ES2022-safe non-mutating equivalent such as [...array].reverse().'
+        },
+        {
+          selector:
+            "CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='Literal'][callee.property.value=/^(toReversed|toSorted|toSpliced)$/]",
+          message:
+            'ES2023 array method is not polyfilled for build target es2022; use an ES2022-safe non-mutating equivalent such as [...array].reverse().'
         }
       ]
     }
