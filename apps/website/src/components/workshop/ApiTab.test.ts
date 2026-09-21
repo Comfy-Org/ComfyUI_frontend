@@ -184,10 +184,22 @@ describe('ApiTab', () => {
     }
   )
 
-  it('sends the get-key link as a Router onboarding arrival', async () => {
-    render(ApiTab, { props: { contract, values } })
-    expect(
-      (await screen.findByTestId('api-get-key')).getAttribute('href')
-    ).toBe('https://platform.comfy.org/profile/api-keys?onboarding=router')
-  })
+  it.for([
+    {
+      modelSlug: 'bfl--flux-2-pro',
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=router&model=bfl--flux-2-pro'
+    },
+    {
+      modelSlug: undefined,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=router'
+    }
+  ])(
+    'sends the get-key link as a Router onboarding arrival, naming the model page when given one: $modelSlug',
+    async ({ modelSlug, href }) => {
+      render(ApiTab, { props: { contract, values, modelSlug } })
+      expect(
+        (await screen.findByTestId('api-get-key')).getAttribute('href')
+      ).toBe(href)
+    }
+  )
 })

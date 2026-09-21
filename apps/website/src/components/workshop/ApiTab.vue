@@ -30,11 +30,13 @@ import HighlightedCode from './HighlightedCode.vue'
 const {
   contract,
   values,
-  locale = 'en'
+  locale = 'en',
+  modelSlug
 } = defineProps<{
   contract?: WorkshopContract
   values: FormValues
   locale?: Locale
+  modelSlug?: string
 }>()
 
 const language = ref<SnippetLanguage>('python')
@@ -279,7 +281,7 @@ const highlightLanguage = {
     <div class="flex flex-wrap gap-3">
       <Button
         as="a"
-        :href="apiKeysLink({ onboarding: 'router' })"
+        :href="apiKeysLink({ onboarding: 'router', model: modelSlug })"
         target="_blank"
         rel="noopener noreferrer"
         data-testid="api-get-key"

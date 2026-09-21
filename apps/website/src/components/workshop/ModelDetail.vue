@@ -982,7 +982,12 @@ function useInCode() {
       role="tabpanel"
       aria-labelledby="tab-api"
     >
-      <ApiTab :contract="model.execution" :values :locale />
+      <ApiTab
+        :contract="model.execution"
+        :values
+        :locale
+        :model-slug="model.slug"
+      />
     </section>
 
     <RunLeaveDialog

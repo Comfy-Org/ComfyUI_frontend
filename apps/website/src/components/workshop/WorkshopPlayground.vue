@@ -206,7 +206,7 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
         </TabsContent>
       </TabsRoot>
       <a
-        :href="apiKeysLink({ onboarding: 'router' })"
+        :href="apiKeysLink({ onboarding: 'router', model: model.slug })"
         target="_blank"
         rel="noopener noreferrer"
         class="mt-4 inline-flex text-sm font-medium text-primary-comfy-yellow hover:underline"
