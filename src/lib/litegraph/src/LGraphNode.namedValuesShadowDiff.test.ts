@@ -97,7 +97,7 @@ describe('LGraphNode configure named values shadow diff', () => {
   it('does not treat a name-keyed record without a length as a positional shadow', () => {
     LiteGraph.namedValuesRestore = true
     const info = agreeingInfo()
-    Reflect.set(info, 'widgets_values', { steps: 30, seed: 12345 })
+    Reflect.set(info, 'widgets_values', { steps: 999, seed: 888 })
     let configuredValues: unknown
     node.onConfigure = (configured) => {
       configuredValues = Reflect.get(configured, 'widgets_values')
@@ -106,7 +106,7 @@ describe('LGraphNode configure named values shadow diff', () => {
     node.configure(info)
 
     expect(node.widgets!.map((w) => w.value)).toStrictEqual([30, 12345])
-    expect(configuredValues).toEqual({ steps: 30, seed: 12345 })
+    expect(configuredValues).toEqual({ steps: 999, seed: 888 })
     expect(trackNamedValuesShadowDiffMismatch).not.toHaveBeenCalled()
   })
 

@@ -24,12 +24,7 @@ export function computeLegacyWidgetShadow(
   widgetsValues: ArrayLike<unknown> | undefined
 ): LegacyWidgetShadowEntry[] {
   const shadow: LegacyWidgetShadowEntry[] = []
-  if (
-    !widgetsValues ||
-    !Number.isSafeInteger(widgetsValues.length) ||
-    widgetsValues.length < 0
-  )
-    return shadow
+  if (!widgetsValues) return shadow
 
   const positional = Array.from(widgetsValues)
   let i = 0

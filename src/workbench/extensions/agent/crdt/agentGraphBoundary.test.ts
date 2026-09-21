@@ -14,6 +14,9 @@ import { describe, expect, it } from 'vitest'
  * today. A count may only go down; delete an entry when it reaches zero. A
  * new use anywhere under `crdt/` fails this test.
  *
+ * FE-2504 is backlog context for eventually deleting the remaining entries,
+ * not the architectural contract enforced here.
+ *
  * This is a lexical scan, not an AST lint rule: it matches the member-access
  * forms TypeScript offers (`a.b`, `a?.b`, `a['b']`, `a?.['b']`) so a
  * rewrite cannot dodge the ratchet by changing call syntax. Aliasing the
@@ -132,6 +135,10 @@ describe('agent follower stays on the public graph API', () => {
       for (const token of FORBIDDEN_TOKENS) {
         const allowed = tokens[token]
         if (allowed === undefined) continue
+        expect(
+          allowed,
+          `${file}: remove the zero allowance for "${token}"`
+        ).toBeGreaterThan(0)
         const observed = countOccurrences(source, token)
         expect(
           observed,
