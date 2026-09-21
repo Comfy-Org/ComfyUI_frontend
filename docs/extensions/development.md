@@ -90,6 +90,25 @@ Only `export const|let|var|function|class|async function` declarations are
 detected. Re-exports (`export { x } from './y'`) and default exports are not
 bound to `window.comfyAPI`.
 
+**Console warnings emitted by the shims:**
+
+Each generated shim can log a one-time message when an extension imports it.
+The message is chosen per source file in `getWarningMessage()`:
+
+| Imported shim                                                                       | Message                                                                   |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `scripts/app.js`, `scripts/api.js`                                                  | none — these are the intended public entry points                         |
+| `scripts/ui.js`, `extensions/core/groupNode.js`, `extensions/core/nodeTemplates.js` | `[ComfyUI Deprecated] ... will be removed in v1.34.`                      |
+| everything else under `src/scripts/` and `src/extensions/core/`                     | `[ComfyUI Notice] ... is an internal module, not part of the public API.` |
+
+Only `/scripts/app.js` and `/scripts/api.js` are safe to depend on. Anything
+that logs the `[ComfyUI Notice]` line is internal and may change without a
+major version bump.
+
+> The deprecation text names v1.34, but those three shims are still emitted as
+> of 1.55.x. Treat the message as "deprecated, removal date not yet fixed"
+> rather than as a version you can plan against.
+
 **Why Dev Server Can't Support This:**
 
 - The dev server serves raw source files without bundling

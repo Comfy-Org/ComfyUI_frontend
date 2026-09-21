@@ -72,6 +72,8 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm comfy-test list [--filter <keyword>]`: List available test workflows
 - `pnpm comfy-test tags`: List test tags with their meanings
 - `pnpm comfy-test add-workflow <file> [--name <n>]`: Add and validate a workflow asset from disk
+- `pnpm comfy-test agent-replay [--case <id>] [--spec <path>] [--url <dev server>] [--headed] [--video]`: Replay the recorded agent conversations against a running dev server (see `.claude/skills/agent-integration-replay/SKILL.md`)
+- `pnpm comfy-test guide`: **Run this first when helping a _human_ record a test.** Prints what to say and what never to say to them.
 
 **Agent workflow, end to end:** `comfy-test plan` → hand its output to the `playwright-test-generator` agent (writes a convention-compliant spec directly, no `transform` needed) → `comfy-test pr <file>`.
 

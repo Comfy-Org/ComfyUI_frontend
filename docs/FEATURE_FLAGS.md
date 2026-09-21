@@ -303,8 +303,10 @@ Two variants exist alongside `resolveFlag()`:
   behaviour. Always `false` off the Cloud build, and while authenticated config
   is still loading it falls back to the cached session value so anonymous
   bootstrap config cannot route the user to the wrong backend.
-- `resolveFailClosedBooleanFlag()` — returns `true` only for a literal `true`,
-  and `false` if the read throws.
+- `resolveStrictBooleanFlag()` — for flags that enable a payment flow. Resolves
+  through the same channels as `resolveFlag()`, but returns `true` only for a
+  literal `true`, and `false` if the read throws, so a malformed wire value
+  (`'true'`, `1`) cannot switch a charge onto a new transport.
 
 #### Dev overrides (local, `import.meta.env.DEV` only)
 
