@@ -17,25 +17,31 @@ agentTest.describe(
       agentTest(
         'shows the retry delay the header names',
         async ({ agentPanel }) => {
-          await agentTest.step('open the agent and select the workflow', async () => {
-            await agentPanel.open()
-            await agentPanel.selectWorkflow()
-          })
+          await agentTest.step(
+            'open the agent and select the workflow',
+            async () => {
+              await agentPanel.open()
+              await agentPanel.selectWorkflow()
+            }
+          )
 
           await agentTest.step('submit a prompt', async () => {
             await agentPanel.sendMessage('Make a red fox in the snow')
           })
 
-          await agentTest.step('show the admission error and retry delay', async () => {
-            await expect(
-              agentPanel.root.getByText(FUNDS_UNAVAILABLE_MESSAGE)
-            ).toBeVisible()
-            await expect(
-              agentPanel.root.getByText(
-                enMessages.agent.retryAfterSeconds.replace('{seconds}', '30')
-              )
-            ).toBeVisible()
-          })
+          await agentTest.step(
+            'show the admission error and retry delay',
+            async () => {
+              await expect(
+                agentPanel.root.getByText(FUNDS_UNAVAILABLE_MESSAGE)
+              ).toBeVisible()
+              await expect(
+                agentPanel.root.getByText(
+                  enMessages.agent.retryAfterSeconds.replace('{seconds}', '30')
+                )
+              ).toBeVisible()
+            }
+          )
         }
       )
     })
