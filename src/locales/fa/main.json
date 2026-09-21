@@ -65,6 +65,7 @@
     "dismiss": "بستن",
     "downloadAssets": "دانلود دارایی‌ها",
     "dragAndDropAssets": "دارایی‌ها را اینجا بکشید و رها کنید",
+    "editWhileWorking": "می‌توانید هنگام کار کردن عامل، به ویرایش ادامه دهید",
     "entryButton": "عامل",
     "feedbackCaption": "بازخورد خود را به اشتراک بگذارید",
     "focusNode": "نمایش روی بوم",
@@ -99,6 +100,7 @@
       "selectNode": "انتخاب گره"
     },
     "nodes": "نودها",
+    "nodesAdded": "عامل ۱ node به گراف افزود | عامل {count} node به گراف افزود",
     "notHelpful": "غیرمفید",
     "openWorkflowTab": "باز کردن {name}",
     "otherOpenWorkflows": "workflowهای باز دیگر",
@@ -183,7 +185,9 @@
     "unavailableWorkflowReference": "{name} (دردسترس نیست)",
     "unsavedWorkflow": "ذخیره‌نشده",
     "untitledChat": "بدون عنوان",
+    "updatingGraph": "عامل در حال به‌روزرسانی گراف است",
     "uploading": "در حال بارگذاری",
+    "viewAddedNodes": "مشاهدهٔ node | مشاهدهٔ nodeها",
     "worked": "انجام شد",
     "workedForMinutes": "به‌مدت {minutes}m {seconds}s انجام شد",
     "workedForSeconds": "به‌مدت {seconds} ثانیه انجام شد",
@@ -2461,7 +2465,9 @@
     "cancelThisRun": "لغو این اجرا",
     "deleteAllAssets": "حذف همه دارایی‌ها از این اجرا",
     "downloadAll": "دانلود {count} دارایی از این اجرا",
+    "dragAndDropAudio": "برای مرور کلیک کنید یا یک فایل صوتی را بکشید",
     "dragAndDropImage": "تصویر را بکشید و رها کنید",
+    "dragAndDropVideo": "برای مرور کلیک کنید یا یک ویدئو را بکشید",
     "emptyWorkflowExplanation": "جریان کاری شما خالی است. ابتدا باید چند node اضافه کنید تا بتوانید یک برنامه بسازید.",
     "enterNodeGraph": "ورود به گراف node",
     "error": {
@@ -3103,6 +3109,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "nodeهای برجسته‌شده: {count}",
+    "label": "نقشهٔ کوچک",
     "nodeColors": "رنگ‌های نود",
     "renderBypassState": "نمایش وضعیت عبور",
     "renderErrorState": "نمایش وضعیت خطا",
@@ -4827,6 +4835,7 @@
   "toastMessages": {
     "a1111CoreNodesUnavailable": "امکان بارگذاری workflow وجود ندارد زیرا این نصب ComfyUI فاقد nodeهای اصلی است. بررسی کنید که backend به درستی راه‌اندازی شده باشد.",
     "a1111EmbeddingsUnavailable": "امبدینگ‌ها از سرور بارگیری نشدند. workflow وارد شد، اما نام‌های امبدینگ به‌صورت متن ساده باقی ماندند.",
+    "assetDropFailed": "بارگذاری دارایی رهاشده ممکن نیست",
     "cannotCreateSubgraph": "امکان ایجاد subgraph وجود ندارد",
     "couldNotDetermineFileType": "نوع فایل قابل شناسایی نیست",
     "dropFileError": "امکان پردازش آیتم انداخته‌شده وجود ندارد: {error}",

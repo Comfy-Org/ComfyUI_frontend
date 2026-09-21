@@ -65,6 +65,7 @@
     "dismiss": "Verwerfen",
     "downloadAssets": "Assets herunterladen",
     "dragAndDropAssets": "Assets hierher ziehen und ablegen",
+    "editWhileWorking": "Sie können weiter bearbeiten, während er arbeitet",
     "entryButton": "Agent",
     "feedbackCaption": "Feedback teilen",
     "focusNode": "Auf Canvas anzeigen",
@@ -99,6 +100,7 @@
       "selectNode": "Node auswählen"
     },
     "nodes": "Nodes",
+    "nodesAdded": "Der Agent hat 1 Node zum Graphen hinzugefügt | Der Agent hat {count} Nodes zum Graphen hinzugefügt",
     "notHelpful": "Nicht hilfreich",
     "openWorkflowTab": "{name} öffnen",
     "otherOpenWorkflows": "Andere offene Workflows",
@@ -183,7 +185,9 @@
     "unavailableWorkflowReference": "{name} (nicht verfügbar)",
     "unsavedWorkflow": "Ungespeichert",
     "untitledChat": "Ohne Titel",
+    "updatingGraph": "Der Agent aktualisiert den Graphen",
     "uploading": "Wird hochgeladen",
+    "viewAddedNodes": "Node anzeigen | Nodes anzeigen",
     "worked": "Abgeschlossen",
     "workedForMinutes": "Bearbeitungszeit: {minutes}m {seconds}s",
     "workedForSeconds": "Bearbeitungszeit: {seconds} Sekunden",
@@ -2461,7 +2465,9 @@
     "cancelThisRun": "Diese Ausführung abbrechen",
     "deleteAllAssets": "Alle Assets aus dieser Ausführung löschen",
     "downloadAll": "Laden Sie {count} Assets aus dieser Ausführung herunter",
+    "dragAndDropAudio": "Klicken Sie zum Durchsuchen oder ziehen Sie eine Audiodatei hinein",
     "dragAndDropImage": "Klicken Sie, um ein Bild auszuwählen, oder ziehen Sie es hinein",
+    "dragAndDropVideo": "Klicken Sie zum Durchsuchen oder ziehen Sie ein Video hinein",
     "emptyWorkflowExplanation": "Ihr Workflow ist leer. Sie benötigen zuerst einige Nodes, um mit dem Erstellen einer App zu beginnen.",
     "enterNodeGraph": "Node-Graph öffnen",
     "error": {
@@ -3103,6 +3109,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "Hervorgehobene Nodes: {count}",
+    "label": "Minikarte",
     "nodeColors": "Node-Farben",
     "renderBypassState": "Bypass-Status rendern",
     "renderErrorState": "Fehlerstatus rendern",
@@ -4827,6 +4835,7 @@
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Der Workflow konnte nicht geladen werden, da in dieser ComfyUI-Installation Core-Nodes fehlen. Überprüfen Sie, ob das Backend korrekt gestartet wurde.",
     "a1111EmbeddingsUnavailable": "Embeddings konnten nicht vom Server geladen werden. Der Workflow wurde importiert, aber die Embedding-Namen wurden als Klartext belassen.",
+    "assetDropFailed": "Das abgelegte Asset konnte nicht geladen werden",
     "cannotCreateSubgraph": "Subgraph kann nicht erstellt werden",
     "couldNotDetermineFileType": "Dateityp konnte nicht bestimmt werden",
     "dropFileError": "Abgelegtes Element konnte nicht verarbeitet werden: {error}",
