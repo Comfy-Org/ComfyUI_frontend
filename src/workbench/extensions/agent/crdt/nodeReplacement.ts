@@ -37,6 +37,11 @@
  *   mapping, so a driver cannot pick a different event or skip one. A
  *   transition into a terminal state has no step.
  *
+ * A `report` command carries what only the table knows: the `errorType` and
+ * the `outcome` tag (`recovered` when the rollback put the graph back,
+ * `degraded` otherwise). The driver owns the reporting `context`
+ * (`graphId`, `nodeId`), which it has in scope and the table does not.
+ *
  * Because reports run before the step, a failed step never suppresses the
  * reports that describe already-known facts. This is a deliberate change
  * from the inline `materialize()`, where a throwing `restore()` escapes
@@ -93,10 +98,21 @@ type ReplacementErrorType =
   | 'agent_node_materialize_restore_failed'
   | 'agent_node_materialize_configure_failed'
 
+/**
+ * `recovered`: the failure was contained and the graph matches the records.
+ * `degraded`: the graph or stores may disagree with what the user sees.
+ */
+type ReplacementOutcome = 'recovered' | 'degraded'
+
 /** Infallible bookkeeping; the driver runs these in order, before the step. */
 export type ReplacementCommand =
-  | { kind: 'release-records' }
-  | { kind: 'report'; errorType: ReplacementErrorType; cause: unknown }
+  | { readonly kind: 'release-records' }
+  | {
+      readonly kind: 'report'
+      readonly errorType: ReplacementErrorType
+      readonly outcome: ReplacementOutcome
+      readonly cause: unknown
+    }
 
 /** The single fallible effect a non-terminal state waits on. */
 export type ReplacementStep =
@@ -108,9 +124,9 @@ export type ReplacementStep =
 export type StepResult = { ok: true } | { ok: false; cause: unknown }
 
 export interface ReplacementTransition {
-  state: ReplacementState
-  commands: ReplacementCommand[]
-  step: ReplacementStep | null
+  readonly state: ReplacementState
+  readonly commands: readonly ReplacementCommand[]
+  readonly step: ReplacementStep | null
 }
 
 const STEP_EVENTS = {
@@ -152,9 +168,10 @@ export function isTerminal(state: ReplacementState): boolean {
 
 function report(
   errorType: ReplacementErrorType,
+  outcome: ReplacementOutcome,
   cause: unknown
 ): ReplacementCommand {
-  return { kind: 'report', errorType, cause }
+  return { kind: 'report', errorType, outcome, cause }
 }
 
 function fromPending(event: ReplacementEvent): ReplacementTransition | null {
@@ -193,7 +210,11 @@ function fromCommitted(event: ReplacementEvent): ReplacementTransition | null {
       return {
         state: { phase: 'settled' },
         commands: [
-          report('agent_node_materialize_configure_failed', event.cause)
+          report(
+            'agent_node_materialize_configure_failed',
+            'degraded',
+            event.cause
+          )
         ],
         step: null
       }
@@ -210,15 +231,21 @@ function fromRemoving(
     case 'cleanup-succeeded':
       return {
         state: { phase: 'restoring' },
-        commands: [report('agent_node_materialize_add_failed', addCause)],
+        commands: [
+          report('agent_node_materialize_add_failed', 'recovered', addCause)
+        ],
         step: 'restore-records'
       }
     case 'cleanup-failed':
       return {
         state: { phase: 'restoring' },
         commands: [
-          report('agent_node_materialize_add_failed', addCause),
-          report('agent_node_materialize_rollback_failed', event.cause)
+          report('agent_node_materialize_add_failed', 'degraded', addCause),
+          report(
+            'agent_node_materialize_rollback_failed',
+            'degraded',
+            event.cause
+          )
         ],
         step: 'restore-records'
       }
@@ -235,7 +262,11 @@ function fromRestoring(event: ReplacementEvent): ReplacementTransition | null {
       return {
         state: { phase: 'stranded' },
         commands: [
-          report('agent_node_materialize_restore_failed', event.cause)
+          report(
+            'agent_node_materialize_restore_failed',
+            'degraded',
+            event.cause
+          )
         ],
         step: null
       }

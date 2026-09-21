@@ -48,7 +48,7 @@ const legal: ReadonlyArray<{
   from: ReplacementState['phase']
   on: ReplacementEvent['type']
   to: ReplacementState['phase']
-  commands: ReplacementCommand[]
+  commands: readonly ReplacementCommand[]
   step: ReplacementStep | null
 }> = [
   {
@@ -87,6 +87,7 @@ const legal: ReadonlyArray<{
       {
         kind: 'report',
         errorType: 'agent_node_materialize_configure_failed',
+        outcome: 'degraded',
         cause: configureCause
       }
     ],
@@ -100,6 +101,7 @@ const legal: ReadonlyArray<{
       {
         kind: 'report',
         errorType: 'agent_node_materialize_add_failed',
+        outcome: 'recovered',
         cause: addCause
       }
     ],
@@ -113,11 +115,13 @@ const legal: ReadonlyArray<{
       {
         kind: 'report',
         errorType: 'agent_node_materialize_add_failed',
+        outcome: 'degraded',
         cause: addCause
       },
       {
         kind: 'report',
         errorType: 'agent_node_materialize_rollback_failed',
+        outcome: 'degraded',
         cause: cleanupCause
       }
     ],
@@ -138,6 +142,7 @@ const legal: ReadonlyArray<{
       {
         kind: 'report',
         errorType: 'agent_node_materialize_restore_failed',
+        outcome: 'degraded',
         cause: restoreCause
       }
     ],
@@ -152,7 +157,7 @@ function isLegal(
   return legal.some((row) => row.from === from && row.on === on)
 }
 
-function reportCauses(commands: ReplacementCommand[]): unknown[] {
+function reportCauses(commands: readonly ReplacementCommand[]): unknown[] {
   return commands.flatMap((command) =>
     command.kind === 'report' ? [command.cause] : []
   )
@@ -275,6 +280,30 @@ describe('nodeReplacement failure causes', () => {
     expect(causes[1]).toBe(cleanupCause)
   })
 
+  it('tags the add failure recovered or degraded by cleanup arm, not by lookahead', () => {
+    const removing = transition(states.released, events['add-failed']).state
+    const [afterCleanup] = transition(
+      removing,
+      events['cleanup-succeeded']
+    ).commands
+    const [afterFailedCleanup] = transition(
+      removing,
+      events['cleanup-failed']
+    ).commands
+    expect(afterCleanup).toEqual({
+      kind: 'report',
+      errorType: 'agent_node_materialize_add_failed',
+      outcome: 'recovered',
+      cause: addCause
+    })
+    expect(afterFailedCleanup).toEqual({
+      kind: 'report',
+      errorType: 'agent_node_materialize_add_failed',
+      outcome: 'degraded',
+      cause: addCause
+    })
+  })
+
   it('reports the configure cause by identity and still settles', () => {
     const result = transition(states.committed, events['configure-failed'])
     expect(result.state.phase).toBe('settled')
@@ -302,7 +331,7 @@ describe('nodeReplacement scripted paths', () => {
       for (const command of result.commands) {
         trace.push(
           command.kind === 'report'
-            ? `report:${command.errorType}`
+            ? `report:${command.errorType}:${command.outcome}`
             : command.kind
         )
       }
@@ -334,7 +363,7 @@ describe('nodeReplacement scripted paths', () => {
       'release-records',
       'add-successor',
       'configure-successor',
-      'report:agent_node_materialize_configure_failed'
+      'report:agent_node_materialize_configure_failed:degraded'
     ])
   })
 
@@ -345,7 +374,7 @@ describe('nodeReplacement scripted paths', () => {
       'release-records',
       'add-successor',
       'remove-successor',
-      'report:agent_node_materialize_add_failed',
+      'report:agent_node_materialize_add_failed:recovered',
       'restore-records'
     ])
   })
@@ -360,8 +389,8 @@ describe('nodeReplacement scripted paths', () => {
       'release-records',
       'add-successor',
       'remove-successor',
-      'report:agent_node_materialize_add_failed',
-      'report:agent_node_materialize_rollback_failed',
+      'report:agent_node_materialize_add_failed:degraded',
+      'report:agent_node_materialize_rollback_failed:degraded',
       'restore-records'
     ])
   })
@@ -377,10 +406,10 @@ describe('nodeReplacement scripted paths', () => {
       'release-records',
       'add-successor',
       'remove-successor',
-      'report:agent_node_materialize_add_failed',
-      'report:agent_node_materialize_rollback_failed',
+      'report:agent_node_materialize_add_failed:degraded',
+      'report:agent_node_materialize_rollback_failed:degraded',
       'restore-records',
-      'report:agent_node_materialize_restore_failed'
+      'report:agent_node_materialize_restore_failed:degraded'
     ])
   })
 
