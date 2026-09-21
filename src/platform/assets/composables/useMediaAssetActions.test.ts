@@ -1509,7 +1509,6 @@ describe('useMediaAssetActions', () => {
     })
 
     it('cleans every shared reference only for successful assets after a partial deletion', async () => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       mockDeleteAsset.mockImplementation(async (id: string) => {
         if (id === 'asset-failed') throw new Error('503 Service Unavailable')
       })
