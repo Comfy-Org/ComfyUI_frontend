@@ -627,12 +627,12 @@ const {
 // workflow's `activeState` before the shared renderer graph is rewritten, so
 // this stays the bound workflow's own root id through a tab switch instead of
 // tracking whichever graph the switch is loading.
-const boundRootGraphId = computed<RootGraphId | null>(() => {
+function boundRootGraphId(): RootGraphId | null {
   const bound = boundWorkflowId.value
   if (bound === null) return null
   const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
   return id === undefined ? null : toRootGraphId(id)
-})
+}
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
@@ -640,7 +640,7 @@ const mintPortWiring = attachMintPortWiring({
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
-  boundRootGraphId: () => boundRootGraphId.value
+  boundRootGraphId
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,

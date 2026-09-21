@@ -6658,4 +6658,25 @@ describe('AgentPanelRoot workflow binding', () => {
       toRootGraphId('wf-b')
     )
   })
+
+  it("reflects the bound workflow's own root graph id rotating without a rebind (regression)", async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add an upscaler')
+
+    await vi.waitFor(() =>
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+        toRootGraphId('wf-42')
+      )
+    )
+
+    // The same bound workflow's own graph id rotates in place (LGraph.clear
+    // mints a fresh uuid) without boundWorkflowId itself ever changing.
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42-rotated' })
+
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      toRootGraphId('wf-42-rotated')
+    )
+  })
 })
