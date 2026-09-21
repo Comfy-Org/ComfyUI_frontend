@@ -1415,7 +1415,7 @@ describe('useAgentCrdtFollower', () => {
       async (enqueue: HumanEnqueue) => {
         enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
         await Promise.resolve()
-        const opId = clientState.sendOps.mock.calls.at(-1)![2][0].op_id
+        const opId = requireSentOpId()
         dispatchFrame('doc_ops_result', {
           workflowId: 'wf-1',
           ok: true,
@@ -1487,7 +1487,7 @@ describe('useAgentCrdtFollower', () => {
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
-    const opId = clientState.sendOps.mock.calls.at(-1)![2][0].op_id
+    const opId = requireSentOpId()
     dispatchFrame('doc_ops_result', {
       workflowId: 'wf-1',
       ok: true,
@@ -1500,6 +1500,108 @@ describe('useAgentCrdtFollower', () => {
     expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
 
     docHasNode = false
+    expect([...intent.pendingDeletes('wf-1')]).toEqual([])
+    unmount()
+  })
+
+  it('does not let a confirmed-applied delete suppress a node atomically recreated under the same id', async () => {
+    // Presence alone can't tell "the deleted node is still there" from "a
+    // new node reused its id" - both leave `docNodeIds.has('1')` true. The
+    // fix ties retention to the deleted item's own Yjs identity instead.
+    const { enqueue, unmount } = mountWithHumanOps()
+    const intent = requireIntent()
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('1', { type: 'KSampler' })
+    bridge().follower.doc = doc
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const opId = requireSentOpId()
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [opId],
+      skipped: []
+    })
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+    // A lagging reconcile frame removes and recreates node '1' as a
+    // brand-new node within one Yjs transaction (one document update) - the
+    // old incarnation's retained delete must not suppress the new one just
+    // because the id was reused.
+    doc.transact(() => {
+      const nodes = doc.getMap('nodes')
+      nodes.delete('1')
+      nodes.set('1', { type: 'SaveImage' })
+    })
+
+    expect([...intent.pendingDeletes('wf-1')]).toEqual([])
+    unmount()
+  })
+
+  it('preserves a confirmed-applied retention when a later settle for the same node is only unknown', async () => {
+    vi.useFakeTimers()
+    const { enqueue, unmount } = mountWithHumanOps()
+    const intent = requireIntent()
+    bridge().follower.doc.getMap = () => ({ toJSON: () => ({ '1': {} }) })
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const opId = requireSentOpId()
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [opId],
+      skipped: []
+    })
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+    // A second delete for the same node settles unknown (e.g. a stray
+    // resend) - it must not downgrade the confirmed-applied record already
+    // held for this node.
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    bridge().subscribedWorkflowId = null
+    vi.advanceTimersByTime(10_000)
+
+    // Long past any 'unknown' expiry, the node is still retained because
+    // the stronger confirmed-applied record survived the merge.
+    vi.advanceTimersByTime(STALE_AFTER_MS * 2)
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+    unmount()
+  })
+
+  it('keeps the later expiry when two unknown settles land for the same node (max wins)', async () => {
+    vi.useFakeTimers()
+    const { enqueue, unmount } = mountWithHumanOps()
+    const intent = requireIntent()
+    bridge().follower.doc.getMap = () => ({ toJSON: () => ({ '1': {} }) })
+
+    const laterDeadlineBase = 10_000_000
+    vi.setSystemTime(laterDeadlineBase)
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    bridge().subscribedWorkflowId = null
+    vi.advanceTimersByTime(10_000)
+    const laterExpiresAt = laterDeadlineBase + 10_000 + STALE_AFTER_MS
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+    // A second, earlier-deadline unknown settle for the same node must not
+    // shorten the retention the first one already established.
+    const earlierDeadlineBase = laterDeadlineBase - STALE_AFTER_MS
+    vi.setSystemTime(earlierDeadlineBase)
+    bridge().subscribedWorkflowId = 'wf-1'
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    bridge().subscribedWorkflowId = null
+    vi.advanceTimersByTime(10_000)
+    const earlierExpiresAt = earlierDeadlineBase + 10_000 + STALE_AFTER_MS
+    expect(earlierExpiresAt).toBeLessThan(laterExpiresAt)
+
+    vi.setSystemTime(earlierExpiresAt + 1)
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+    vi.setSystemTime(laterExpiresAt + 1)
     expect([...intent.pendingDeletes('wf-1')]).toEqual([])
     unmount()
   })
@@ -1650,6 +1752,20 @@ describe('useAgentCrdtFollower', () => {
       )
     }
     return intent
+  }
+
+  /**
+   * The op_id `sendOps` was last called with, after asserting a call
+   * actually happened - so a regression where the required send never
+   * occurs fails here with a clear message instead of deep inside an
+   * `undefined` index.
+   */
+  function requireSentOpId(): string {
+    const call = clientState.sendOps.mock.calls.at(-1)
+    if (!call) {
+      throw new Error('expected enqueueHumanOperations to have called sendOps')
+    }
+    return call[2][0].op_id
   }
 
   function mountWithHumanOps(): {

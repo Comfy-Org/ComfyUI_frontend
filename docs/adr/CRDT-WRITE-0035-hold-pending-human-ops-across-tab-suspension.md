@@ -119,8 +119,9 @@ Alternatives considered:
   still (correctly, if slowly) held the node, resurrecting it on the next
   reconcile - the failure this ADR exists to prevent. `undeliverable`
   deletes are excluded from retention entirely: the transport never carried
-  them, so the host is certain to still hold the node and no later frame
-  will ever say otherwise on its own; keeping one would hide its node
+  them, so there is no evidence this specific delete was applied - that says
+  nothing about whether some other actor or operation deleted the node by
+  other means, so retaining one on that basis alone would hide its node
   forever, not for a bounded window. Immediate catch-up and lost-write
   feedback for a genuinely lost `undeliverable` delete remain follow-up
   work; unknown outcomes are not hidden indefinitely.
