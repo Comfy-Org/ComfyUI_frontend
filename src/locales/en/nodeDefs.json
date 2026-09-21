@@ -9138,6 +9138,7 @@
   },
   "JsonExtractString": {
     "display_name": "Extract Text from JSON",
+    "description": "Extract a key's value from the first valid JSON object in the text, including Markdown code blocks.",
     "inputs": {
       "json_string": {
         "name": "json_string"
@@ -13217,6 +13218,10 @@
         "name": "ultra_mode",
         "tooltip": "Run an extra refinement pass for higher-fidelity geometry with finer surface detail."
       },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Resolution of the ultra pass: 2k runs it at 2048³, 4k at 4096³ for the finest surface detail. 4k requires meshy-7.1 or latest. Used only when ultra_mode is enabled."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -13282,6 +13287,10 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Run an extra refinement pass at 2048³ for higher-fidelity geometry with finer surface detail."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -13432,6 +13441,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Run an extra refinement pass for higher-fidelity geometry with finer surface detail."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Resolution of the ultra pass: 2k runs it at 2048³, 4k at 4096³ for the finest surface detail. 4k requires meshy-7.1 or latest. Used only when ultra_mode is enabled."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -18399,6 +18412,28 @@
       },
       "model_top_p": {
         "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "display_name": "Qwen Image 2.1 Cache",
+    "description": "Allows setting the KV cache device and quantization, by default the model uses the auto -option. Quantization potentially speeds up edit workflows when memory starved ",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "device": {
+        "name": "device",
+        "tooltip": "auto uses spare VRAM, then RAM. cpu (RAM) is prefetched behind compute and costs little speed. off recomputes the prefix every step, which is slower but is the one way to rule the cache out."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Storage precision. default is lossless. int8 halves the cache at about bf16 accuracy, int4 quarters it but roughly doubles the per-step error."
       }
     },
     "outputs": {
@@ -23761,6 +23796,45 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "TextEncodeQwenImage21": {
+    "display_name": "Text Encode Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Reference images are resized to about resolution x resolution pixels, at multiples of 32, preserving aspect ratio. 0 keeps each reference at its own size, rounded to a multiple of 32. "
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Reference images, seen by the text encoder and spliced into the sequence as VAE latents."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Empty latent on the first reference image's size, to match with sampling as any other size shifts the edit."
       }
     }
   },

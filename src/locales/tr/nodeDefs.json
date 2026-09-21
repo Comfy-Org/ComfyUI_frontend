@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Metindeki ilk geçerli JSON nesnesinden, Markdown kod blokları da dahil olmak üzere, bir anahtarın değerini çıkarır.",
     "display_name": "JSON'dan Dize Çıkar",
     "inputs": {
       "json_string": {
@@ -13234,6 +13235,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Daha ince yüzey ayrıntılarına sahip, daha yüksek doğruluklu geometri için ek bir iyileştirme geçişi çalıştırın."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Ultra geçişin çözünürlüğü: En ince yüzey ayrıntısı için 2k, 2048³'te; 4k ise 4096³'te çalışır. 4k, meshy-7.1 veya daha yenisini gerektirir. Yalnızca ultra_mode etkinleştirildiğinde kullanılır."
       }
     },
     "outputs": {
@@ -13300,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Daha ince yüzey ayrıntısıyla daha yüksek doğruluklu geometri için 2048³'te ek bir iyileştirme geçişi çalıştırın."
       }
     },
     "outputs": {
@@ -13441,6 +13450,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Daha ince yüzey ayrıntılarına sahip, daha yüksek doğruluklu geometri için ek bir iyileştirme geçişi çalıştırın."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Ultra geçişin çözünürlüğü: En ince yüzey ayrıntısı için 2k, 2048³'te; 4k ise 4096³'te çalışır. 4k, meshy-7.1 veya daha yenisini gerektirir. Yalnızca ultra_mode etkinleştirildiğinde kullanılır."
       }
     },
     "outputs": {
@@ -18399,6 +18412,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "KV önbellek cihazının ve nicelemenin ayarlanmasını sağlar; model varsayılan olarak auto seçeneğini kullanır. Bellek yetersiz olduğunda niceleme, düzenleme iş akışlarını potansiyel olarak hızlandırır.",
+    "display_name": "Qwen Image 2.1 Önbelleği",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto, boş VRAM'i, ardından RAM'i kullanır. cpu (RAM), hesaplama sırasında önceden getirilir ve hızdan çok az kaybettirir. off, öneki her adımda yeniden hesaplar; bu daha yavaştır ancak önbelleği devre dışı bırakmanın tek yoludur."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Depolama hassasiyeti. default kayıpsızdır. int8, yaklaşık bf16 doğruluğunda önbelleği yarıya indirir; int4 dörtte birine düşürür ancak adım başına hatayı kabaca iki katına çıkarır."
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -23761,6 +23796,45 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "TextEncodeQwenImage21": {
+    "display_name": "Metni Kodla Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Metin kodlayıcının gördüğü ve VAE latentleri olarak diziye eklenen başvuru görüntüleri."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Başvuru görüntüleri, en-boy oranı korunarak 32'nin katlarına yuvarlanmış yaklaşık resolution x resolution piksele yeniden boyutlandırılır. 0, her başvuruyu kendi boyutunda, 32'nin katına yuvarlanmış olarak korur."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Düzenleme, başka herhangi bir boyut değişiminde kaydığı için örneklemeyle eşleşmesi amacıyla ilk başvuru görüntüsünün boyutunda boş latent."
       }
     }
   },
