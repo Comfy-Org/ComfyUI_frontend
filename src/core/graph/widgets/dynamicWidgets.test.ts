@@ -295,6 +295,59 @@ describe('Autogrow', () => {
     await nextTick()
     expect(node.inputs.length).toBe(5)
   })
+  test(
+    'Disconnecting a just-connected slot before a render frame elapses ' +
+      'leaves the spare-slot compaction stuck (PM-1496)',
+    async () => {
+      // Mirrors OpenAI GPT Image 2.5 (`OpenAIGPTImageNodeV2`)'s real
+      // `model.images` group: a *named* autogrow list (not the ordinal
+      // `prefix` form other cases in this file use), `min: 0`.
+      const graph = new LGraph()
+      const node = testNode()
+      graph.add(node)
+      addAutogrow(node, {
+        min: 0,
+        input: inputsSpec,
+        names: ['image_1', 'image_2', 'image_3', 'image_4']
+      })
+
+      // image_1 connects, growing the group to [image_1, image_2].
+      connectInput(node, 0, graph)
+      await nextTick()
+      // image_2 - the report's "extra image input slot" - connects too,
+      // growing the group to [image_1, image_2, image_3]. This growth's
+      // `onConnectInput` sets the module-private `pendingConnection = 1`
+      // (dynamicWidgets.ts's `withComfyAutogrow`), reset only on the next
+      // animation frame. No frame is awaited here - matching how the
+      // in-app agent applies consecutive CRDT-driven connect/disconnect
+      // ops synchronously in one materialization pass, with no render
+      // yield between them (the same no-settle-wait trigger already
+      // documented for the autogrow growth race in PR #18101).
+      connectInput(node, 1, graph)
+
+      // The user (or the agent, mid "let me fix that wiring" turn)
+      // immediately disconnects that same slot, image_2, without letting
+      // a frame elapse first.
+      node.disconnectInput(1)
+      await nextTick()
+      await nextTick()
+
+      // Autogrow's own invariant (asserted for the real node in
+      // browser_tests/tests/links/autogrowInputPersistence.spec.ts:
+      // "autogrow keeps exactly one empty slot after the connected ones")
+      // says this should settle at [image_1, image_2]: one real
+      // connection plus one spare. Instead, `withComfyAutogrow`'s swap
+      // guard misreads this disconnect as the tail end of image_2's own
+      // still-in-flight connect (`pendingConnection === slot` is still 1
+      // from that connect's `onConnectInput`, which hasn't been reset by
+      // an animation frame yet) and treats it as an atomic replace rather
+      // than a real disconnect - so the scheduled compaction
+      // (`autogrowInputDisconnected`) never runs at all, and the group
+      // is stuck at 3 slots with a disconnected, un-reclaimed image_2
+      // sitting in the middle of it until the page is reloaded.
+      expect(node.inputs.map((i) => i.name)).toEqual(['0.image_1', '0.image_2'])
+    }
+  )
   test('Autogrow compaction never emits a negative input slot', async () => {
     const graph = new LGraph()
     const node = testNode()
