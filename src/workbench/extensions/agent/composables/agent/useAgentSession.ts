@@ -401,7 +401,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       originContext === undefined ? null : { tabPath: originContext.tabPath }
     try {
       await prepareWorkflow()
-      if (sendWasSuperseded(generation)) return false
+      if (generation !== loadGeneration) return false
       const wfContext = workflow?.current(origin)
       if (workflowTargetChanged(originContext, wfContext)) {
         recordUnavailableTarget(text)
@@ -416,18 +416,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags,
         workflowReferences
       )
-      if (sendWasSuperseded(generation)) return false
+      if (generation !== loadGeneration) return false
       acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
       return true
     } catch (error) {
-      if (sendWasSuperseded(generation)) return false
+      if (generation !== loadGeneration) return false
       recordSendError(error, text)
       return false
     }
-  }
-
-  function sendWasSuperseded(generation: number): boolean {
-    return generation !== loadGeneration
   }
 
   function workflowTargetChanged(
