@@ -310,5 +310,44 @@ test.describe(
         ])
       })
     })
+
+    test('a text copy leaves a node copied without the keyboard in place', async ({
+      agentConversation,
+      page
+    }) => {
+      const before = await agentConversation.graphNodes()
+      const source = await agentConversation.nodeOfType(
+        COPY_PASTE_SCENARIO.agentAddedType
+      )
+      const reply = agentConversation.transcript.first()
+
+      await test.step('select the agent-added node and copy it with the Copy command', async () => {
+        await agentConversation.selectNode(source.id)
+        await page.evaluate(() =>
+          window.app!.extensionManager.command.execute(
+            'Comfy.Canvas.CopySelected'
+          )
+        )
+      })
+
+      await test.step('select and copy transcript text', async () => {
+        await reply.selectText()
+        await agentConversation.clipboard.copy()
+      })
+
+      await test.step('click the transcript, then paste on the canvas', async () => {
+        await reply.click()
+        await agentConversation.clipboard.paste(page.locator('#graph-canvas'))
+      })
+
+      await test.step('the command-copied node is the one pasted', async () => {
+        await expect
+          .poll(() => agentConversation.graphNodes())
+          .toHaveLength(before.length + 1)
+        expect(await agentConversation.nodesAddedSince(before)).toEqual([
+          expect.objectContaining({ type: COPY_PASTE_SCENARIO.agentAddedType })
+        ])
+      })
+    })
   }
 )

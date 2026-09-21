@@ -23,11 +23,13 @@ const copyMocks = {
 const multiChunkPayloadLength = 0x8000 * 6 + 123
 const canvasClipboardKey = 'litegrapheditor_clipboard'
 
-function dispatchCopy(target: EventTarget = document): DataTransfer {
+function mountCopy(): void {
   const scope = effectScope()
   scope.run(useCopy)
   onTestFinished(() => scope.stop())
+}
 
+function dispatchCopy(target: EventTarget = document): DataTransfer {
   const dataTransfer = new DataTransfer()
   target.dispatchEvent(
     new ClipboardEvent('copy', { clipboardData: dataTransfer, bubbles: true })
@@ -73,6 +75,7 @@ function readSerializedClipboardMetadata(dataTransfer: DataTransfer): string {
 describe('useCopy', () => {
   beforeEach(() => {
     useCanvasStore().canvas = fromPartial<LGraphCanvas>(copyMocks.canvas)
+    mountCopy()
   })
 
   it('should write large serialized node data to clipboard metadata', () => {
@@ -98,27 +101,59 @@ describe('useCopy', () => {
   })
 
   describe('copy on a target the canvas ignores', () => {
-    const staleNode = '{"nodes":[{"type":"SaveImage"}]}'
+    const keyboardNode = '{"nodes":[{"type":"LoadImage"}]}'
+    const contextMenuNode = '{"nodes":[{"type":"SaveImage"}]}'
+
+    function copyNodeWithKeyboard(): void {
+      copyMocks.canvas.copyToClipboard.mockImplementation(() => {
+        localStorage.setItem(canvasClipboardKey, keyboardNode)
+        return keyboardNode
+      })
+      dispatchCopy()
+    }
+
+    function copyNodeFromContextMenu(): void {
+      localStorage.setItem(canvasClipboardKey, contextMenuNode)
+    }
 
     beforeEach(() => {
-      localStorage.setItem(canvasClipboardKey, staleNode)
       onTestFinished(() => localStorage.removeItem(canvasClipboardKey))
     })
 
     it.for([
       {
+        slot: 'a keyboard node copy',
+        writeSlot: [copyNodeWithKeyboard],
         selection: 'selected document text',
         selectedCharacters: 'Transcript'.length,
         slotAfter: null
       },
       {
+        slot: 'a keyboard node copy',
+        writeSlot: [copyNodeWithKeyboard],
         selection: 'a collapsed caret',
         selectedCharacters: 0,
-        slotAfter: staleNode
+        slotAfter: keyboardNode
+      },
+      {
+        slot: 'a context-menu copy',
+        writeSlot: [copyNodeFromContextMenu],
+        selection: 'selected document text',
+        selectedCharacters: 'Transcript'.length,
+        slotAfter: contextMenuNode
+      },
+      {
+        slot: 'a context-menu copy after a keyboard node copy',
+        writeSlot: [copyNodeWithKeyboard, copyNodeFromContextMenu],
+        selection: 'selected document text',
+        selectedCharacters: 'Transcript'.length,
+        slotAfter: contextMenuNode
       }
     ])(
-      'with $selection leaves the canvas clipboard slot as $slotAfter',
-      ({ selectedCharacters, slotAfter }) => {
+      'with $selection after $slot leaves the canvas clipboard slot as $slotAfter',
+      ({ writeSlot, selectedCharacters, slotAfter }) => {
+        for (const write of writeSlot) write()
+        copyMocks.canvas.copyToClipboard.mockClear()
         selectDocumentText(selectedCharacters)
         const textarea = document.createElement('textarea')
         document.body.append(textarea)

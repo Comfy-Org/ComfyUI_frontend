@@ -4,7 +4,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
  * Utility functions for handling workbench events
  */
 
-export function selectedText(): Selection | null {
+export function activeTextSelection(): Selection | null {
   const selection = window.getSelection()
   return selection !== null &&
     !selection.isCollapsed &&
@@ -26,7 +26,7 @@ function rangesOf(selection: Selection): Range[] {
  * then reaches the graph instead of the stale selection.
  */
 export function collapseTextSelectionOutside(container: Element): void {
-  const selection = selectedText()
+  const selection = activeTextSelection()
   if (
     selection &&
     rangesOf(selection).some(
@@ -73,5 +73,7 @@ export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
         'reset',
         'submit'
       ].includes(target.type))
-  return isTextInput || useCanvasStore().linearMode || selectedText() !== null
+  return (
+    isTextInput || useCanvasStore().linearMode || activeTextSelection() !== null
+  )
 }
