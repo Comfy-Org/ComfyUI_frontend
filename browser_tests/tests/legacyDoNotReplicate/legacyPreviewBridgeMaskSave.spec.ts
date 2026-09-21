@@ -25,6 +25,7 @@ test.describe(
 
       await test.step('Draw and save a mask', async () => {
         await maskEditor.drawStrokeAndExpectPixels(dialog)
+        await comfyPage.nextFrame()
         await dialog.getByRole('button', { name: 'Save' }).click()
         await expect(dialog).toBeHidden()
       })
