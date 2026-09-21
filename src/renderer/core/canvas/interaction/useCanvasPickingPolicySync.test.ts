@@ -3,11 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 import { useCanvasPickingPolicySync } from './useCanvasPickingPolicySync'
 
@@ -166,29 +166,70 @@ describe('useCanvasPickingPolicySync', () => {
     expect(canvasStore.canvas.selectOnly).toBe(false)
   })
 
-  it('leaves selectOnly alone on exit once another writer cleared it mid-pick', () => {
+  it('keeps the pin while another live instance still owns it', () => {
     const canvasStore = useCanvasStore()
-    canvasStore.canvas = createCanvas(vi.fn(), true)
+    canvasStore.canvas = createCanvas(vi.fn(), false)
+    const secondScope = effectScope()
     scope.run(useCanvasPickingPolicySync)
+    secondScope.run(useCanvasPickingPolicySync)
     useAgentNodeSelectionStore().isActive = true
 
-    canvasStore.canvas.selectOnly = false
-    useAgentNodeSelectionStore().isActive = false
+    scope.stop()
+
+    expect(canvasStore.canvas.selectOnly).toBe(true)
+
+    secondScope.stop()
 
     expect(canvasStore.canvas.selectOnly).toBe(false)
   })
 
-  it('reasserts the pin when the projection re-runs mid-pick', () => {
+  it.for([
+    { initial: true, written: false },
+    { initial: false, written: true }
+  ])(
+    'reads true after an outside write of $written mid-pick and restores that write on exit',
+    ({ initial, written }) => {
+      const canvasStore = useCanvasStore()
+      canvasStore.canvas = createCanvas(vi.fn(), initial)
+      scope.run(useCanvasPickingPolicySync)
+      useAgentNodeSelectionStore().isActive = true
+
+      canvasStore.canvas.selectOnly = written
+
+      expect(canvasStore.canvas.selectOnly).toBe(true)
+
+      useAgentNodeSelectionStore().isActive = false
+
+      expect(canvasStore.canvas.selectOnly).toBe(written)
+    }
+  )
+
+  it('hands selectOnly back to the canvas state once picking ends', () => {
+    const canvasElement = document.createElement('canvas')
+    canvasElement.getContext = vi
+      .fn()
+      .mockReturnValue(createMockCanvasRenderingContext2D())
+    const canvas = new LGraphCanvas(canvasElement, new LGraph(), {
+      skip_render: true
+    })
+    vi.spyOn(canvas, 'draw').mockImplementation(() => {})
     const canvasStore = useCanvasStore()
-    const settingStore = useSettingStore()
-    canvasStore.canvas = createCanvas()
+    canvasStore.canvas = canvas
     scope.run(useCanvasPickingPolicySync)
     useAgentNodeSelectionStore().isActive = true
 
-    canvasStore.canvas.selectOnly = false
-    settingStore.settingValues['Comfy.Graph.CanvasInfo'] = true
+    canvas.selectOnly = false
 
-    expect(canvasStore.canvas.selectOnly).toBe(true)
+    expect(canvas.selectOnly).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(canvas, 'selectOnly')).toBeDefined()
+
+    useAgentNodeSelectionStore().isActive = false
+    canvas.selectOnly = true
+
+    expect(
+      Object.getOwnPropertyDescriptor(canvas, 'selectOnly')
+    ).toBeUndefined()
+    expect(canvas.state.selectOnly).toBe(true)
   })
 
   it('restores selectOnly when the scope stops mid-pick', () => {

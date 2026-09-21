@@ -5,32 +5,27 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
-interface PinnedCanvas {
-  canvas: LGraphCanvas
-  selectOnlyBeforePick: boolean
-}
+import { acquireSelectOnlyPin, releaseSelectOnlyPin } from './selectOnlyPin'
 
 export function useCanvasPickingPolicySync() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
   const agentNodeSelectionStore = useAgentNodeSelectionStore()
+  const owner = Symbol('useCanvasPickingPolicySync')
 
-  let pinned: PinnedCanvas | undefined
+  let pinnedCanvas: LGraphCanvas | undefined
 
   function releasePin() {
-    if (!pinned) return
-    if (pinned.canvas.selectOnly) {
-      pinned.canvas.selectOnly = pinned.selectOnlyBeforePick
-    }
-    pinned = undefined
+    if (!pinnedCanvas) return
+    releaseSelectOnlyPin(pinnedCanvas, owner)
+    pinnedCanvas = undefined
   }
 
   function pinSelectOnly(canvas: LGraphCanvas) {
-    if (pinned?.canvas !== canvas) {
-      releasePin()
-      pinned = { canvas, selectOnlyBeforePick: canvas.selectOnly }
-    }
-    canvas.selectOnly = true
+    if (pinnedCanvas === canvas) return
+    releasePin()
+    acquireSelectOnlyPin(canvas, owner)
+    pinnedCanvas = canvas
   }
 
   watch(
