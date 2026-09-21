@@ -182,6 +182,19 @@ export class VueNodeHelpers {
   }
 
   /**
+   * Rename a node via its canvas title editor: double-click the title to
+   * start editing, fill in the new text, then press Enter to commit it
+   * (blurring the input, which is what `EditableText` treats as confirm).
+   */
+  async renameNode(nodeId: string, newTitle: string): Promise<void> {
+    const title = this.getNodeLocator(nodeId).getByTestId('node-title')
+    await title.dblclick()
+    const input = title.getByTestId('node-title-input')
+    await input.fill(newTitle)
+    await input.press('Enter')
+  }
+
+  /**
    * Delete selected Vue nodes using Backspace key
    */
   async deleteSelectedWithBackspace(): Promise<void> {
