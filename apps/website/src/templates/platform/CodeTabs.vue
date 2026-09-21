@@ -1,13 +1,24 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { Check, Copy } from '@lucide/vue'
+import { Check, ChevronDown, Copy } from '@lucide/vue'
 import {
   useClipboard,
   useDocumentVisibility,
   useElementVisibility,
   useIntervalFn
 } from '@vueuse/core'
-import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
+import {
+  DropdownMenuContent,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
+  TabsContent,
+  TabsList,
+  TabsRoot,
+  TabsTrigger
+} from 'reka-ui'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
@@ -29,7 +40,8 @@ const {
   label,
   contentClass = 'bg-primary-comfy-ink',
   selectedIndex,
-  fill = false
+  fill = false,
+  picker = 'tabs'
 } = defineProps<{
   tabs: Record<string, CodeTab>
   label: string
@@ -42,6 +54,8 @@ const {
   selectedIndex?: number
   /** Fill the parent's height instead of sizing the panel to its longest sample. */
   fill?: boolean
+  /** Offer the samples as a row of tabs or behind one dropdown. */
+  picker?: 'tabs' | 'dropdown'
 }>()
 
 const activeTab = ref(Object.keys(tabs)[0])
@@ -108,6 +122,16 @@ function crossfadeKey(value: string): string | undefined {
 }
 
 const { copy, copied } = useClipboard({ copiedDuring: 2000 })
+const copiedTab = ref<string>()
+
+function copyTab(tabId: string, tab: CodeTab): void {
+  copiedTab.value = tabId
+  void copy(codeText(tab))
+}
+
+function isCopied(tabId: string): boolean {
+  return copied.value && copiedTab.value === tabId
+}
 
 function codeText(tab: CodeTab): string {
   return tab.segments
@@ -135,7 +159,38 @@ const groupsByTab = computed(() =>
     :class="fill ? 'flex h-full flex-col' : 'block'"
   >
     <div class="flex flex-wrap items-center justify-between gap-4">
+      <DropdownMenuRoot v-if="picker === 'dropdown'">
+        <DropdownMenuTrigger
+          class="group inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-white/15 bg-primary-comfy-ink px-5 py-3 text-xs font-bold tracking-wider text-primary-warm-white uppercase transition-colors outline-none hover:border-white/30 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50"
+        >
+          <span class="ppformula-text-center">{{ tabs[activeTab]?.name }}</span>
+          <ChevronDown
+            class="size-4 transition-transform duration-300 ease-out group-data-[state=open]:rotate-180"
+            aria-hidden="true"
+          />
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuContent
+            :aria-label="label"
+            align="start"
+            :side-offset="8"
+            class="z-50 min-w-(--reka-dropdown-menu-trigger-width) rounded-2xl border border-white/10 bg-site-dropdown p-1 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+          >
+            <DropdownMenuRadioGroup v-model="activeTab">
+              <DropdownMenuRadioItem
+                v-for="(tab, tabId) in tabs"
+                :key="tabId"
+                :value="tabId"
+                class="flex cursor-pointer items-center rounded-xl px-4 py-2 text-xs font-bold tracking-wider text-smoke-700 uppercase outline-none select-none data-highlighted:text-primary-comfy-canvas data-[state=checked]:bg-secondary-mauve data-[state=checked]:text-primary-warm-white"
+              >
+                <span class="ppformula-text-center">{{ tab.name }}</span>
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
       <TabsList
+        v-else
         :aria-label="label"
         :class="
           cn(
@@ -170,11 +225,11 @@ const groupsByTab = computed(() =>
       <button
         v-if="copyLabel && copiedLabel"
         type="button"
-        :aria-label="copied ? copiedLabel : copyLabel"
+        :aria-label="isCopied(tabId) ? copiedLabel : copyLabel"
         class="absolute top-4 right-4 z-10 cursor-pointer text-primary-warm-gray transition-colors hover:text-primary-comfy-canvas lg:top-5 lg:right-5"
-        @click="void copy(codeText(tab))"
+        @click="copyTab(tabId, tab)"
       >
-        <component :is="copied ? Check : Copy" class="size-4" />
+        <component :is="isCopied(tabId) ? Check : Copy" class="size-4" />
       </button>
       <pre
         :class="
