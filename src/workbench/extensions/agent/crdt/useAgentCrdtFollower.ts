@@ -102,70 +102,106 @@ function updateNodeIds(update: Uint8Array): NodeId[] {
   }
 }
 
-/** See ADR CRDT-WRITE-0035 for why only a `'unknown'`-reason retention expires. */
+/** Only a `'unknown'`-reason retention expires; see ADR CRDT-WRITE-0035. */
 const PENDING_DELETE_EXPIRY_MS = STALE_AFTER_MS
 
-/**
- * Two different reasons a delete_node op keeps its node out of the
- * reconcile, each with its own release rule in `pruneConfirmedDeletes`:
- * `'confirmed-applied'` (the host named it applied) is definitive and
- * un-timed - it releases only once the doc itself agrees; `'unknown'`
- * (transmitted at least once with no confirming result) is genuinely
- * unresolved and also carries `PENDING_DELETE_EXPIRY_MS`. See ADR
- * CRDT-WRITE-0035.
- */
+/** Retention policy per reason: see ADR CRDT-WRITE-0035. */
 type RetainedDelete =
-  | { reason: 'confirmed-applied' }
-  | { reason: 'unknown'; expiresAt: number }
+  | { reason: 'confirmed-applied'; deletedItemId: string | null }
+  | { reason: 'unknown'; expiresAt: number; deletedItemId: string | null }
 
-/** The retention reason for a settled delete_node op (by its wire `opId`), or null if the outcome carries none. */
-function deleteRetentionReason(
-  outcome: BatchOutcome,
-  opId: string
-): RetainedDelete['reason'] | null {
-  if (outcome.state === 'acknowledged')
-    return outcome.result.applied.includes(opId) ? 'confirmed-applied' : null
-  if (outcome.state === 'unconfirmed' || outcome.state === 'unacknowledged')
-    return 'unknown'
-  return null
+/**
+ * The Yjs item identity (`client:clock`) currently occupying `nodeId` in the
+ * doc's `nodes` map - present or already tombstoned - or null when
+ * unavailable. A later mismatch against a stored `RetainedDelete.deletedItemId`
+ * means the key now names a different incarnation than the one that was
+ * deleted: same-id recreation after a delete is supported elsewhere
+ * (`layoutMintPort`), and presence alone cannot tell the two apart.
+ */
+function currentNodeItemId(doc: unknown, nodeId: string): string | null {
+  try {
+    const map = (
+      doc as {
+        getMap: (key: string) => {
+          _map?: Map<string, { id: { client: number; clock: number } }>
+        }
+      }
+    ).getMap('nodes')
+    const item = map._map?.get(nodeId)
+    return item ? `${item.id.client}:${item.id.clock}` : null
+  } catch {
+    return null
+  }
 }
 
 /** Every delete_node op in a settled batch that must keep suppressing its node, paired with the `RetainedDelete` record to store for it. */
 function retainedDeletesFromBatch(
-  outcome: BatchOutcome
+  outcome: BatchOutcome,
+  currentItemId: (nodeId: string) => string | null
 ): Array<[nodeId: string, record: RetainedDelete]> {
   const retained: Array<[string, RetainedDelete]> = []
   for (const op of outcome.ops) {
     if (op.op !== 'delete_node') continue
-    const reason = deleteRetentionReason(outcome, op.op_id)
+    let reason: RetainedDelete['reason'] | null = null
+    if (outcome.state === 'acknowledged') {
+      if (outcome.result.applied.includes(op.op_id))
+        reason = 'confirmed-applied'
+    } else if (
+      outcome.state === 'unconfirmed' ||
+      outcome.state === 'unacknowledged'
+    ) {
+      reason = 'unknown'
+    }
     if (!reason) continue
+    const nodeId = String(op.node_id)
+    const deletedItemId = currentItemId(nodeId)
     retained.push([
-      String(op.node_id),
+      nodeId,
       reason === 'unknown'
-        ? { reason, expiresAt: Date.now() + PENDING_DELETE_EXPIRY_MS }
-        : { reason }
+        ? {
+            reason,
+            expiresAt: Date.now() + PENDING_DELETE_EXPIRY_MS,
+            deletedItemId
+          }
+        : { reason, deletedItemId }
     ])
   }
   return retained
 }
 
 /**
- * Drops a workflow's retained deletes that the doc now agrees are gone, or
- * whose `'unknown'` reason has expired, then drops the workflow's own entry
- * once nothing is left - so an idle workflow does not keep an empty `Map`
- * around forever. Returns the (possibly now-absent) remaining entry.
+ * Merges a newly settled retention into any existing record for the same
+ * node. `'confirmed-applied'` always wins over `'unknown'` - settling twice
+ * must never downgrade a definitive result to an expiring one - and between
+ * two `'unknown'` records the later expiry wins, since retaining longer is
+ * safe while releasing early is the bug this merge exists to prevent.
  */
+function mergeRetainedDelete(
+  existing: RetainedDelete | undefined,
+  incoming: RetainedDelete
+): RetainedDelete {
+  if (!existing) return incoming
+  if (existing.reason === 'confirmed-applied') return existing
+  if (incoming.reason === 'confirmed-applied') return incoming
+  return incoming.expiresAt >= existing.expiresAt ? incoming : existing
+}
+
+/** Prunes released retained deletes (ADR CRDT-WRITE-0035); drops an emptied workflow entry too. */
 function pruneConfirmedDeletes(
   confirmedDeletes: Map<string, Map<string, RetainedDelete>>,
   workflowId: string,
-  docNodeIds: ReadonlySet<string>
+  docNodeIds: ReadonlySet<string>,
+  currentItemId: (nodeId: string) => string | null
 ): Map<string, RetainedDelete> | undefined {
   const deletes = confirmedDeletes.get(workflowId)
   if (!deletes) return undefined
   const now = Date.now()
   for (const [id, retained] of deletes) {
     const expired = retained.reason === 'unknown' && now >= retained.expiresAt
-    if (!docNodeIds.has(id) || expired) deletes.delete(id)
+    const superseded =
+      retained.deletedItemId !== null &&
+      currentItemId(id) !== retained.deletedItemId
+    if (!docNodeIds.has(id) || superseded || expired) deletes.delete(id)
   }
   if (deletes.size === 0) {
     confirmedDeletes.delete(workflowId)
@@ -364,11 +400,7 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
-  // Per-workflow doc node ids whose human delete is pending (see
-  // `RetainedDelete`). Scoped per workflow because node ids are graph-local,
-  // not global - a set shared across workflows would let workflow A's delete
-  // of node `1` suppress workflow B's own unrelated node `1` the moment the
-  // follower retargets.
+  // Per-workflow retained deletes; scoping and policy: ADR CRDT-WRITE-0035.
   const confirmedDeletes = new Map<string, Map<string, RetainedDelete>>()
   const confirmedDeletesFor = (
     workflowId: string
@@ -407,10 +439,16 @@ function startAgentCrdtFollower(
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: (outcome) => {
       if (outcome.workflowId !== null) {
-        const retained = retainedDeletesFromBatch(outcome)
+        const retained = retainedDeletesFromBatch(outcome, (nodeId) =>
+          currentNodeItemId(bridge.follower.doc, nodeId)
+        )
         if (retained.length > 0) {
           const deletes = confirmedDeletesFor(outcome.workflowId)
-          for (const [nodeId, record] of retained) deletes.set(nodeId, record)
+          for (const [nodeId, record] of retained)
+            deletes.set(
+              nodeId,
+              mergeRetainedDelete(deletes.get(nodeId), record)
+            )
         }
       }
       recordDevEvent('human_ops_settled', outcome)
@@ -420,7 +458,8 @@ function startAgentCrdtFollower(
     const deletes = pruneConfirmedDeletes(
       confirmedDeletes,
       workflowId,
-      currentDocNodeIds()
+      currentDocNodeIds(),
+      (nodeId) => currentNodeItemId(bridge.follower.doc, nodeId)
     )
     const pending = new Set(deletes?.keys())
     for (const batch of sender.pendingOps()) {
