@@ -22,6 +22,7 @@ import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
+import type { BatchOutcome } from './opSender'
 import type { DocFrameTransport } from './docFrameClient'
 
 const bridgeState = vi.hoisted(() => {
@@ -1363,7 +1364,7 @@ describe('useAgentCrdtFollower', () => {
     const settledStates = vi
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
-      .map(([, detail]) => (detail as { state: string }).state)
+      .map(([, detail]) => (detail as BatchOutcome).state)
     expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
@@ -1402,7 +1403,7 @@ describe('useAgentCrdtFollower', () => {
     const settledStates = vi
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
-      .map(([, detail]) => (detail as { state: string }).state)
+      .map(([, detail]) => (detail as BatchOutcome).state)
     expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
@@ -1443,7 +1444,7 @@ describe('useAgentCrdtFollower', () => {
     const settledStates = vi
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
-      .map(([, detail]) => (detail as { state: string }).state)
+      .map(([, detail]) => (detail as BatchOutcome).state)
     expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
@@ -1495,7 +1496,7 @@ describe('useAgentCrdtFollower', () => {
     return vi
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
-      .map(([, detail]) => (detail as { state: string }).state)
+      .map(([, detail]) => (detail as BatchOutcome).state)
   }
 
   it('sends eight same-tick human deletes as one doc_ops batch in node order', async () => {
@@ -1618,7 +1619,7 @@ describe('useAgentCrdtFollower', () => {
       return vi
         .mocked(recordDevEvent)
         .mock.calls.filter(([event]) => event === 'human_ops_settled')
-        .map(([, detail]) => (detail as { state: string }).state)
+        .map(([, detail]) => (detail as BatchOutcome).state)
     }
 
     function ackSent(index: number): void {
