@@ -61,7 +61,7 @@ export function reconcilePersistedDocId(): string | null {
   try {
     const raw = safeSessionStorage()?.getItem(DOC_ID_SESSION_KEY)
     if (!raw) return null
-    const record = JSON.parse(raw) as Partial<PersistedDocIdRecord>
+    const parsed: unknown = JSON.parse(raw)
     // Every rejection below also drops the key. Leaving a rejected record in
     // place would break the invariant the dock-mount reconcile relies on: a
     // duplicated tab that inherits a lapsed or pre-FEC-5 record would keep
@@ -74,14 +74,24 @@ export function reconcilePersistedDocId(): string | null {
     // The empty string is a string and would subscribe to a doc id of `''`,
     // so length is part of the shape check, not a separate caller concern.
     if (
-      typeof record.docId !== 'string' ||
-      record.docId.length === 0 ||
-      typeof record.nonce !== 'string' ||
-      typeof record.expiresAt !== 'number' ||
-      !Number.isFinite(record.expiresAt)
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      !('docId' in parsed) ||
+      typeof parsed.docId !== 'string' ||
+      parsed.docId.length === 0 ||
+      !('nonce' in parsed) ||
+      typeof parsed.nonce !== 'string' ||
+      !('expiresAt' in parsed) ||
+      typeof parsed.expiresAt !== 'number' ||
+      !Number.isFinite(parsed.expiresAt)
     ) {
       clearPersistedDocId()
       return null
+    }
+    const record: PersistedDocIdRecord = {
+      docId: parsed.docId,
+      nonce: parsed.nonce,
+      expiresAt: parsed.expiresAt
     }
     if (Date.now() >= record.expiresAt) {
       clearPersistedDocId()
