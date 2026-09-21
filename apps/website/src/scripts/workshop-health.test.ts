@@ -46,6 +46,11 @@ describe('Workshop health', () => {
 
   it.for([
     {
+      name: 'local credential refusal without a Router request',
+      failure: { reason: 'unavailable', failure_stage: 'credential' },
+      expected: 'excluded'
+    },
+    {
       name: 'Router HTTP 401',
       failure: { reason: 'unavailable', http_status: 401 },
       expected: 'excluded'

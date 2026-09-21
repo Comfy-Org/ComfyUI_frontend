@@ -58,6 +58,7 @@ const emit = defineEmits<{
   buyCredits: []
   download: [kind: RunOutput['kind']]
   delivery: [url: string, status: 'succeeded' | 'failed' | 'cancelled']
+  playbackStarted: [url: string]
 }>()
 
 const elapsed = computed(() =>
@@ -479,6 +480,8 @@ const earlierClass = (active: boolean) =>
           class="absolute inset-x-0 bottom-0"
           @loaded="emit('delivery', $event, 'succeeded')"
           @failed="emit('delivery', $event, 'failed')"
+          @playback-started="emit('playbackStarted', $event)"
+          @cancelled="emit('delivery', $event, 'cancelled')"
         />
         <button
           v-if="blurred"

@@ -1,4 +1,5 @@
 import { onScopeDispose } from 'vue'
+import { useEventListener } from '@vueuse/core'
 
 import type { RunOutput } from '../config/workshop-run'
 import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
@@ -17,7 +18,7 @@ export function useWorkshopDelivery() {
         requestId: string | null
         startedAt: number
         output: RunOutput
-        timer: ReturnType<typeof setTimeout>
+        timer: ReturnType<typeof setTimeout> | undefined
       }
     | undefined
 
@@ -43,7 +44,33 @@ export function useWorkshopDelivery() {
   }
 
   function cancel() {
-    finish('cancelled')
+    finish(
+      pending?.output.kind === 'audio' && pending.timer === undefined
+        ? 'unverified'
+        : 'cancelled'
+    )
+  }
+
+  function armDeadline() {
+    if (!pending || pending.timer !== undefined) return
+    pending = {
+      ...pending,
+      startedAt: Date.now(),
+      timer: setTimeout(() => {
+        if (document.visibilityState === 'hidden') cancel()
+        else finish('failed', 'media_timeout')
+      }, 120_000)
+    }
+  }
+
+  function beginPlayback(url: string) {
+    if (
+      pending?.output.kind !== 'audio' ||
+      url !== (pending.output.urls?.[0] ?? pending.output.url)
+    )
+      return
+    if (document.visibilityState === 'hidden') cancel()
+    else armDeadline()
   }
 
   function start(
@@ -57,22 +84,29 @@ export function useWorkshopDelivery() {
       requestId,
       output,
       startedAt: Date.now(),
-      timer: setTimeout(() => {
-        if (document.visibilityState === 'hidden') finish('cancelled')
-        else finish('failed', 'media_timeout')
-      }, 120_000)
+      timer: undefined
     }
     if (output.nsfw || !['image', 'video', 'audio'].includes(output.kind))
       finish('unverified')
+    else if (document.visibilityState === 'hidden') cancel()
+    else if (output.kind !== 'audio') armDeadline()
   }
 
   // `cancelled` is the media element for that URL being torn down before it
   // reported: the visitor moved to another output, not a delivery failure.
   function settle(url: string, status: 'succeeded' | 'failed' | 'cancelled') {
     if (url !== (pending?.output.urls?.[0] ?? pending?.output.url)) return
+    if (status === 'cancelled') return cancel()
     finish(status, status === 'failed' ? 'media_error' : undefined)
   }
 
+  useEventListener(
+    () => globalThis.document,
+    'visibilitychange',
+    () => {
+      if (document.visibilityState === 'hidden') cancel()
+    }
+  )
   onScopeDispose(cancel)
-  return { start, settle, cancel }
+  return { start, beginPlayback, settle, cancel }
 }

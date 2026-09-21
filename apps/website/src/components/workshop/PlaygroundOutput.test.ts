@@ -32,6 +32,31 @@ const succeeded = (out: RunOutput, nsfw = false): RunState => ({
 })
 
 describe('PlaygroundOutput', () => {
+  it.for([
+    { event: 'playing', status: 'succeeded' },
+    { event: 'pause', status: 'cancelled' }
+  ])(
+    'observes audio playback $event without loadeddata',
+    async ({ event, status }) => {
+      const media: RunOutput = {
+        kind: 'audio',
+        url: 'https://assets.example/audio',
+        fileName: 'audio.wav'
+      }
+      const view = render(PlaygroundOutput, {
+        props: { modelName: 'Demo', state: succeeded(media), now: 2000 }
+      })
+      const element = screen.getByLabelText('Output', { selector: 'audio' })
+      await fireEvent(element, new Event('loadstart'))
+      await fireEvent(element, new Event('loadedmetadata'))
+      expect(view.emitted().playbackStarted).toBeUndefined()
+      await fireEvent.play(element)
+      expect(view.emitted().playbackStarted).toEqual([[media.url]])
+      await fireEvent(element, new Event(event))
+      expect(view.emitted().delivery).toEqual([[media.url, status]])
+    }
+  )
+
   it.for(['video', 'audio'] as const)(
     'reports decoded %s data instead of metadata alone',
     async (kind) => {

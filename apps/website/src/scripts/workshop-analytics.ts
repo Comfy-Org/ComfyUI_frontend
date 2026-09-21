@@ -104,7 +104,7 @@ export type WorkshopAnalyticsEvent =
               reason: RunFailure
               http_status?: number
               router_error_type?: WorkshopRouterErrorType
-              failure_stage?: WorkshopFailureStage
+              failure_stage?: WorkshopFailureStage | 'credential'
               field_error_codes?: FieldErrorCode[]
             } & WorkshopExceptionAnalytics)
           | { status: 'cancelled' }

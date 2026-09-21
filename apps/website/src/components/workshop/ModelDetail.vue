@@ -370,6 +370,7 @@ interface ActiveRun {
 }
 
 let activeRun: ActiveRun | undefined
+const credentialFailures = new WeakSet<ActiveRun>()
 const delivery = useWorkshopDelivery()
 watch(activeSection, (section) => {
   if (section !== 'playground') delivery.cancel()
@@ -464,8 +465,10 @@ async function freshCredentialFor(
     credential?.status !== 'ok' ||
     credential.session.uid !== startedFor.uid ||
     credential.session.workspace.id !== startedFor.workspace.id
-  )
+  ) {
+    credentialFailures.add(attempt)
     throw new WorkshopRouterError('unavailable')
+  }
   return credential.session
 }
 
@@ -579,7 +582,10 @@ function failRun(error: unknown, attempt: ActiveRun): void {
       ...attempt.analytics,
       status: 'failed',
       duration_ms: Date.now() - attempt.startedAt,
-      ...workshopFailureAnalytics(failure)
+      ...workshopFailureAnalytics(failure),
+      ...(credentialFailures.has(attempt)
+        ? { failure_stage: 'credential' }
+        : {})
     }
   })
 }
@@ -932,6 +938,7 @@ function useInCode() {
           @use-in-code="useInCode"
           @download="captureOutputDownload"
           @delivery="delivery.settle"
+          @playback-started="delivery.beginPlayback"
         />
         <div
           v-if="runState.status === 'succeeded' || requestId"

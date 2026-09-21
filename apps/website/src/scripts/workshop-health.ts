@@ -10,6 +10,7 @@ type FailedRun = Extract<
 function isAccountRefusal(failure: FailedRun): boolean {
   if (failure.reason !== 'unavailable') return false
   return (
+    failure.failure_stage === 'credential' ||
     [401, 403].includes(failure.http_status ?? 0) ||
     ['forbidden', 'not_enabled'].includes(failure.router_error_type ?? '')
   )

@@ -13,7 +13,10 @@ import {
 } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 
-import type { AccountCredential } from '@comfyorg/account-core/session'
+import type {
+  AccountCredential,
+  SessionResult
+} from '@comfyorg/account-core/session'
 
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
@@ -40,6 +43,7 @@ import {
 } from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'
+import { workshopHealthLog } from '../../scripts/workshop-health'
 
 vi.mock(import('../../config/workshop-session-state'))
 vi.mock(import('../../scripts/posthog'))
@@ -1718,32 +1722,56 @@ describe('ModelDetail', () => {
     )
   })
 
-  it('refuses a refreshed credential for a different workspace', async () => {
-    auth.session.value = credential
-    vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue({
-      status: 'ok',
-      session: {
-        ...credential,
-        workspace: { ...credential.workspace, id: 'workspace-other' }
+  it.for([
+    { name: 'superseded refresh', result: undefined },
+    {
+      name: 'failed token exchange',
+      result: { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+    },
+    {
+      name: 'different user',
+      result: { status: 'ok', session: { ...credential, uid: 'user-other' } }
+    },
+    {
+      name: 'different workspace',
+      result: {
+        status: 'ok',
+        session: {
+          ...credential,
+          workspace: { ...credential.workspace, id: 'workspace-other' }
+        }
       }
-    })
-    mountDetail({ model: runnable })
-    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
-    await user().click(screen.getByTestId('run-button'))
-    await vi.waitFor(() =>
-      expect(
-        screen.getByTestId('playground-output').getAttribute('data-state')
-      ).toBe('failed')
-    )
-    expect(runWorkshopRouter).not.toHaveBeenCalled()
-    expect(captureWorkshopEvent).toHaveBeenCalledWith({
-      name: 'run_finished',
-      properties: expect.objectContaining({
-        status: 'failed',
-        reason: 'unavailable'
+    }
+  ] satisfies { name: string; result: SessionResult | undefined }[])(
+    'excludes a $name from model outages without sending a generation',
+    async ({ result }) => {
+      auth.session.value = credential
+      vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue(result)
+      mountDetail({ model: runnable })
+      await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+      await user().click(screen.getByTestId('run-button'))
+      await vi.waitFor(() =>
+        expect(
+          screen.getByTestId('playground-output').getAttribute('data-state')
+        ).toBe('failed')
+      )
+      expect(runWorkshopRouter).not.toHaveBeenCalled()
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'failed',
+          reason: 'unavailable',
+          failure_stage: 'credential'
+        })
       })
-    })
-  })
+      const event = vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.map(([event]) => event)
+        .find((event) => event.name === 'run_finished')
+      assert(event)
+      expect(workshopHealthLog(event)?.service_health).toBe('excluded')
+    }
+  )
 
   it('keeps execution disabled when the run opt-in is absent', () => {
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)

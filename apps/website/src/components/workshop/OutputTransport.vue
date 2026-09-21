@@ -9,8 +9,10 @@ import { t } from '../../i18n/translations'
 
 const { src, locale = 'en' } = defineProps<{ src: string; locale?: Locale }>()
 const emit = defineEmits<{
+  playbackStarted: [src: string]
   loaded: [src: string]
   failed: [src: string]
+  cancelled: [src: string]
 }>()
 const audio = useTemplateRef<HTMLAudioElement>('audio')
 const { playing, currentTime, duration, muted } = useMediaControls(audio)
@@ -33,10 +35,13 @@ const buttonClass =
     <audio
       ref="audio"
       :src
-      preload="auto"
+      preload="metadata"
       :aria-label="t('workshop.output.title', locale)"
       data-testid="output-audio"
       @loadeddata="emit('loaded', src)"
+      @play="emit('playbackStarted', src)"
+      @playing="emit('loaded', src)"
+      @pause="emit('cancelled', src)"
       @error="emit('failed', src)"
     />
     <button
