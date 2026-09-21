@@ -277,16 +277,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflowReferences?: WorkflowReference[]
   ): PostMessageInput {
     const draft = workflow?.draft?.(origin)
-    // wfContext with no id is a temporary/unsaved tab (a saved tab whose
-    // cloud id failed to resolve makes wfContext undefined entirely - see
-    // targetWorkflowTurnContext). Only flag it while boundWorkflowId is
-    // still null: once any turn has bound a workflow, that binding (or the
-    // thread's own remembered workflow) is a safer target than minting
-    // again, and re-minting on every turn a still-unbound tab is asked
-    // about would each time hand it a fresh, contentless workflow. Telling
-    // the server this is a selected-but-unbound tab, not "nothing
-    // selected", is what keeps the seed from telling the model no workflow
-    // is selected - see PM-1429/PM-1430.
+    // current_tab_unbound's own contract (see its generated doc comment) is
+    // a tab-level fact: this tab has no cloud id yet. wfContext with no id
+    // is exactly that (a saved tab whose cloud id failed to resolve makes
+    // wfContext undefined entirely instead - see targetWorkflowTurnContext).
+    //
+    // boundWorkflowId === null narrows WHEN we assert that fact, and is a
+    // client-side policy choice, not part of the field's own meaning: the
+    // server has no way yet to tell "this thread's remembered workflow is
+    // itself my own prior unbound mint for this same tab" apart from "an
+    // unrelated workflow from a different tab" (see
+    // TestPostMessageUnboundCurrentTabMintsInsteadOfReusingTheThreadWorkflow
+    // in the agent service), so asserting the flag on every turn a still-
+    // unbound tab is asked about would mint a fresh, contentless workflow
+    // each time. Once any turn this session has bound a workflow, that
+    // binding (or the thread's own remembered workflow) is a safer target
+    // than minting again. Telling the server this is a selected-but-unbound
+    // tab, not "nothing selected", is what keeps the seed from telling the
+    // model no workflow is selected - see PM-1429/PM-1430.
     const unboundTarget =
       wfContext !== undefined &&
       wfContext.id === undefined &&

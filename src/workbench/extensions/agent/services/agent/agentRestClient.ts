@@ -152,7 +152,7 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body: Record<string, unknown> = { content: req.content }
+    const body: AgentPostMessageRequest = { content: req.content }
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
     if (req.tabs !== undefined) {
       body.open_tabs = req.tabs.open_tabs
