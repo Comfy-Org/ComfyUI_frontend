@@ -55,7 +55,10 @@ async function mockAgentBoot(
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
-      ...settings
+      ...settings,
+      ...(cloudAppFixture.info().tags.includes('@vue-nodes') && {
+        'Comfy.VueNodes.Enabled': true
+      })
     },
     objectInfo
   })

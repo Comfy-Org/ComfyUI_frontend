@@ -205,10 +205,7 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
 
   await bootAgentApp(page, true, {
     objectInfo: 'server',
-    // Only the Vue node renderer projects follower edits onto the
-    // canvas as DOM nodes this test can query.
     settings: {
-      'Comfy.VueNodes.Enabled': true,
       'Comfy.Graph.CanvasInfo': false
     }
   })

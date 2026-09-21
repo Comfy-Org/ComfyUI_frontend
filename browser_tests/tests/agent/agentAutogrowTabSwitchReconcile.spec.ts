@@ -17,7 +17,7 @@ const API_NODE_COLOR = { color: '#432', bgcolor: '#653' }
 
 test.describe(
   'Agent CRDT autogrow node survives a tab switch',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.describe.configure({ timeout: 60_000 })
 
