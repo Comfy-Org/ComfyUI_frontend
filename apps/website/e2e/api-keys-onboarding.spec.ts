@@ -22,7 +22,7 @@ test.describe('API-keys onboarding links @smoke', () => {
     })
   }
 
-  test('model page API tab names the model in the Router onboarding link', async ({
+  test('model page API tab names the model in the models onboarding link', async ({
     page
   }) => {
     await page.goto(MODEL_PATH)
@@ -31,7 +31,7 @@ test.describe('API-keys onboarding links @smoke', () => {
     await apiTab.click()
     await expect(page.getByTestId('api-get-key')).toHaveAttribute(
       'href',
-      `${API_KEYS}?onboarding=router&model=${MODEL_SLUG}`
+      `${API_KEYS}?onboarding=models&model=${MODEL_SLUG}`
     )
   })
 })

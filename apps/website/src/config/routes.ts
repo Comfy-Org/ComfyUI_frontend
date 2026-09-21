@@ -221,8 +221,8 @@ export const externalLinks = {
  * `model` is the website's model page id (`/models/<slug>`), not the Router id.
  */
 type ApiKeysOnboarding =
-  | { onboarding: 'router'; model?: string }
-  | { onboarding: 'comfy_api' }
+  | { onboarding: 'router' | 'comfy_api' }
+  | { onboarding: 'models'; model?: string }
 
 export function apiKeysLink(from: ApiKeysOnboarding): string {
   const url = new URL(externalLinks.apiKeys)

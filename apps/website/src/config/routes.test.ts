@@ -79,14 +79,14 @@ describe('apiKeysLink', () => {
     },
     {
       from: {
-        onboarding: 'router',
+        onboarding: 'models',
         model: 'byteplus--seedream-5-pro--generate-images'
       } as const,
-      href: 'https://platform.comfy.org/profile/api-keys?onboarding=router&model=byteplus--seedream-5-pro--generate-images'
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=models&model=byteplus--seedream-5-pro--generate-images'
     },
     {
-      from: { onboarding: 'router', model: undefined } as const,
-      href: 'https://platform.comfy.org/profile/api-keys?onboarding=router'
+      from: { onboarding: 'models', model: undefined } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=models'
     },
     {
       from: { onboarding: 'comfy_api' } as const,

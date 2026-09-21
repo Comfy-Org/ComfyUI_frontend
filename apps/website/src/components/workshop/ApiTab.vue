@@ -281,7 +281,7 @@ const highlightLanguage = {
     <div class="flex flex-wrap gap-3">
       <Button
         as="a"
-        :href="apiKeysLink({ onboarding: 'router', model: modelSlug })"
+        :href="apiKeysLink({ onboarding: 'models', model: modelSlug })"
         target="_blank"
         rel="noopener noreferrer"
         data-testid="api-get-key"
