@@ -179,8 +179,6 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    // Same deferral for onboarding overlays outside the tour store, e.g. the
-    // agent onboarding coach.
     if (onboardingOverlayStore.active) {
       return false
     }

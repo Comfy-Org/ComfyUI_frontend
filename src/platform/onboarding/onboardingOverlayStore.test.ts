@@ -42,4 +42,13 @@ describe('useOnboardingOverlayStore', () => {
     stop()
     expect(store.active).toBe(false)
   })
+
+  it('deregisters only the given source, leaving others active', () => {
+    const store = useOnboardingOverlayStore()
+    const stopA = store.registerSource(() => true)
+    store.registerSource(() => true)
+
+    stopA()
+    expect(store.active).toBe(true)
+  })
 })

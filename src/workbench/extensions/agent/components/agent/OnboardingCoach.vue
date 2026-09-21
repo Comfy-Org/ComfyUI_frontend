@@ -28,9 +28,8 @@ const { active, index, step, isLast, next, finish } = useOnboarding(
 )
 
 // Let surfaces like the What's New popup defer while these coach marks run.
-const stopOverlaySignal = useOnboardingOverlayStore().registerSource(
-  () => active.value
-)
+// The store drops the source with this component's scope on unmount.
+useOnboardingOverlayStore().registerSource(() => active.value)
 const titleId = useId()
 const bodyId = useId()
 const target = ref<HTMLElement | null>(null)
@@ -73,7 +72,6 @@ targetObserver.observe(document.body, {
 onBeforeUnmount(() => {
   targetObserver.disconnect()
   clearTimeout(targetRetryTimer)
-  stopOverlaySignal()
 })
 
 watch(
