@@ -454,10 +454,12 @@ watch(
 )
 
 const newChatDetached = ref(false)
+const restorableDocId = ref<string | null>(reconcilePersistedDocId())
 const workflowDetached = computed(
   () =>
     newChatDetached.value ||
-    (selectedTarget.value === null && !agentPanelStore.canRestoreWorkflow)
+    (selectedTarget.value === null &&
+      (!agentPanelStore.canRestoreWorkflow || restorableDocId.value === null))
 )
 watch(selectedTarget, (target) => {
   if (target !== null) newChatDetached.value = false
@@ -611,9 +613,8 @@ const isSending = computed(
 // follower was about to read, and the cached value never invalidated when the
 // record lapsed. Resolve it at the explicit lifecycle points that used to drive
 // re-evaluation and let the getter read only reactive state.
-const restorableDocId = ref<string | null>(null)
 watch(
-  [workflowDetached, () => workflowStore.activeWorkflow, boundWorkflowId],
+  [() => workflowStore.activeWorkflow, boundWorkflowId],
   () => {
     restorableDocId.value = reconcilePersistedDocId()
   },
@@ -625,18 +626,22 @@ function restorableWorkflowIdFor(tabPath: string): string | null {
   if (persisted === undefined) return null
   return persisted === restorableDocId.value ? persisted : null
 }
-const activeBoundWorkflowId = computed(() => {
+const followerWorkflowId = computed(() => {
   if (workflowDetached.value) return null
+  if (boundWorkflowId.value !== null) return boundWorkflowId.value
   const active = workflowStore.activeWorkflow
   if (active === null) return null
-  const bound = boundWorkflowId.value ?? restorableWorkflowIdFor(active.path)
-  return bound !== null && boundOrOpenWorkflowFor(bound)?.path === active.path
-    ? bound
-    : null
+  return restorableWorkflowIdFor(active.path)
 })
-const isBoundWorkflowActive = computed(
-  () => activeBoundWorkflowId.value !== null
-)
+const isBoundWorkflowActive = computed(() => {
+  const bound = followerWorkflowId.value
+  const active = workflowStore.activeWorkflow
+  return (
+    bound !== null &&
+    active !== null &&
+    boundOrOpenWorkflowFor(bound)?.path === active.path
+  )
+})
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background
@@ -648,7 +653,7 @@ const {
   enqueueHumanOperations,
   retrySubscription
 } = useAgentCrdtFollower(
-  activeBoundWorkflowId,
+  followerWorkflowId,
   graphMutations,
   () => resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive,
@@ -673,7 +678,7 @@ const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () =>
     crdtStatus.value.connected &&
-    crdtStatus.value.workflowId === activeBoundWorkflowId.value,
+    crdtStatus.value.workflowId === followerWorkflowId.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
@@ -1035,6 +1040,7 @@ function onNewChat(): void {
   composerStore.resetPromptHistory()
   // Ending the session also ends the document's claim on the graph.
   clearPersistedDocId()
+  restorableDocId.value = null
   newChatDetached.value = true
   // A new chat targets whatever tab is on screen right now, not the previous
   // chat's target - unlike onSelectHistory(), which resets to 'uninitialized'
