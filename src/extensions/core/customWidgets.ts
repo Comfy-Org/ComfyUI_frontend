@@ -225,7 +225,7 @@ function onCustomFloatCreated(this: LGraphNode) {
     return typeof configured === 'number' ? configured : defaultPrecision
   }
   const lastDecimalPlace = () => {
-    const places = clamp(precision(), 0, 100)
+    const places = clamp(Math.trunc(precision()), 0, 100)
     return Number((10 ** -places).toFixed(places))
   }
   const declaredStep = valueWidget.options.step2 ?? lastDecimalPlace()
