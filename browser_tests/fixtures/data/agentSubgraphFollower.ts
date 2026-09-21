@@ -10,7 +10,8 @@ export const AGENT_SUBGRAPH_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 export const AGENT_SUBGRAPH_HOST_ID = 11
 export const AGENT_SUBGRAPH_LINK_ID = 21
 export const AGENT_SUBGRAPH_INITIAL_TEXT = ''
-export const AGENT_SUBGRAPH_EDITED_TEXT = 'edited prompt'
+export const AGENT_SUBGRAPH_INITIAL_SEED = 0
+export const AGENT_SUBGRAPH_EDITED_SEED = 42
 export const AGENT_NESTED_SUBGRAPH_ID = '52e51d98-aaac-44d3-bab1-61eae17b9869'
 
 export const agentSubgraphNodeDefs: Record<string, ComfyNodeDef> = {
@@ -133,13 +134,16 @@ const followUpOp = {
   stamp: [4, 'agent:e2e'],
   op: 'set_widget',
   node_id: AGENT_SUBGRAPH_HOST_ID,
-  widget: 'text',
-  value: AGENT_SUBGRAPH_EDITED_TEXT,
-  old: AGENT_SUBGRAPH_INITIAL_TEXT,
+  widget: 'seed',
+  value: AGENT_SUBGRAPH_EDITED_SEED,
+  old: AGENT_SUBGRAPH_INITIAL_SEED,
   promoted: {
     instance_path: [AGENT_SUBGRAPH_HOST_ID],
-    value_index: 0,
-    host_widgets_values: [AGENT_SUBGRAPH_INITIAL_TEXT]
+    value_index: 1,
+    host_widgets_values: [
+      AGENT_SUBGRAPH_INITIAL_TEXT,
+      AGENT_SUBGRAPH_INITIAL_SEED
+    ]
   }
 } satisfies Op
 

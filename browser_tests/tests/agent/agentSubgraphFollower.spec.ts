@@ -12,8 +12,9 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   AGENT_NESTED_SUBGRAPH_ID,
-  AGENT_SUBGRAPH_EDITED_TEXT,
+  AGENT_SUBGRAPH_EDITED_SEED,
   AGENT_SUBGRAPH_HOST_ID,
+  AGENT_SUBGRAPH_INITIAL_SEED,
   AGENT_SUBGRAPH_INITIAL_TEXT,
   AGENT_SUBGRAPH_LINK_ID,
   AGENT_SUBGRAPH_WORKFLOW_ID,
@@ -125,9 +126,13 @@ test.describe(
             { name: 'model', link: null },
             { name: 'positive', link: null },
             { name: 'negative', link: null },
-            { name: 'latent_image', link: null }
+            { name: 'latent_image', link: null },
+            { name: 'seed', link: null }
           ],
-          widgets: [{ name: 'text', value: AGENT_SUBGRAPH_INITIAL_TEXT }],
+          widgets: [
+            { name: 'text', value: AGENT_SUBGRAPH_INITIAL_TEXT },
+            { name: 'seed', value: AGENT_SUBGRAPH_INITIAL_SEED }
+          ],
           link: {
             originId: '20',
             targetId: String(AGENT_SUBGRAPH_HOST_ID)
@@ -139,23 +144,29 @@ test.describe(
 
       await expect
         .poll(() =>
-          page.evaluate(
-            (hostId) =>
-              window.app!.graph.nodes.find(
-                ({ id }) => String(id) === String(hostId)
-              )?.widgets?.[0]?.value,
-            AGENT_SUBGRAPH_HOST_ID
-          )
+          page.evaluate((hostId) => {
+            const widgets = window.app!.graph.nodes.find(
+              ({ id }) => String(id) === String(hostId)
+            )?.widgets
+            return widgets?.map(({ name, value }) => ({ name, value }))
+          }, AGENT_SUBGRAPH_HOST_ID)
         )
-        .toBe(AGENT_SUBGRAPH_EDITED_TEXT)
+        .toEqual([
+          { name: 'text', value: AGENT_SUBGRAPH_INITIAL_TEXT },
+          { name: 'seed', value: AGENT_SUBGRAPH_EDITED_SEED }
+        ])
       await page
         .getByRole('button', { name: 'Fit View (.)', exact: true })
         .click()
-      const widget = new VueNodeHelpers(page)
-        .getNodeLocator(String(AGENT_SUBGRAPH_HOST_ID))
-        .getByRole('textbox')
-      await expect(widget).toBeVisible()
-      await expect(widget).toHaveValue(AGENT_SUBGRAPH_EDITED_TEXT)
+      const node = new VueNodeHelpers(page).getNodeLocator(
+        String(AGENT_SUBGRAPH_HOST_ID)
+      )
+      await expect(node.getByRole('textbox')).toHaveValue(
+        AGENT_SUBGRAPH_INITIAL_TEXT
+      )
+      await expect(node.getByLabel('seed', { exact: true })).toHaveValue(
+        String(AGENT_SUBGRAPH_EDITED_SEED)
+      )
       await page.screenshot({
         path: test.info().outputPath('subgraph-edited.png')
       })

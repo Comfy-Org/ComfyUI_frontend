@@ -41,7 +41,7 @@
       ],
       "outputs": [],
       "properties": {},
-      "widgets_values": [""]
+      "widgets_values": ["", 0]
     }
   ],
   "links": [],
@@ -54,7 +54,7 @@
         "state": {
           "lastGroupId": 0,
           "lastNodeId": 11,
-          "lastLinkId": 15,
+          "lastLinkId": 16,
           "lastRerouteId": 0
         },
         "revision": 0,
@@ -128,6 +128,16 @@
               "0": 581.59912109375,
               "1": 499.13336181640625
             }
+          },
+          {
+            "id": "a1af92b8-a772-4f1e-976a-b72b85f59367",
+            "name": "seed",
+            "type": "INT",
+            "linkIds": [16],
+            "pos": {
+              "0": 581.59912109375,
+              "1": 519.13336181640625
+            }
           }
         ],
         "outputs": [],
@@ -180,6 +190,15 @@
             "order": 0,
             "mode": 0,
             "inputs": [
+              {
+                "localized_name": "seed",
+                "name": "seed",
+                "type": "INT",
+                "widget": {
+                  "name": "seed"
+                },
+                "link": 16
+              },
               {
                 "localized_name": "model",
                 "name": "model",
@@ -268,6 +287,14 @@
             "target_id": 11,
             "target_slot": 3,
             "type": "LATENT"
+          },
+          {
+            "id": 16,
+            "origin_id": -10,
+            "origin_slot": 6,
+            "target_id": 11,
+            "target_slot": 4,
+            "type": "INT"
           }
         ],
         "extra": {}
