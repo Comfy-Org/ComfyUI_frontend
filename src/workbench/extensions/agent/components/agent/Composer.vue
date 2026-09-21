@@ -10,14 +10,23 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { useEventListener } from '@vueuse/core'
-import { computed, inject, nextTick, ref, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  inject,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSend } from '../../utils/composerPrompt'
@@ -257,54 +266,50 @@ const composerContainerRef = useTemplateRef<HTMLDivElement>(
 // click can leave the next Escape with nothing inside the composer in its
 // bubble path.
 //
-// This listener is attached to `document` instead, so it always sees the
-// keydown regardless of where focus landed, and decides whether to act by
-// checking focus directly rather than relying on the event's bubble path:
-// it fires while focus is inside this composer, or nowhere in particular
-// (the Safari/Firefox click case), but stays out of the way once focus has
-// genuinely moved elsewhere on the page (see the "once focus has left the
-// composer entirely" test).
+// For that case this registers into `keybindingService`'s Escape override
+// hook instead of adding another DOM listener: `platform/` can't import from
+// `workbench/`, so it can't see this component's `running` state directly,
+// but `keybindHandler` consults whatever is registered here before it would
+// dispatch the default Escape keybinding (`Comfy.Graph.ExitSubgraph`). This
+// handler decides whether to act by checking focus directly rather than
+// relying on the event's bubble path: it fires while focus is inside this
+// composer, or nowhere in particular (the Safari/Firefox click case), but
+// stays out of the way once focus has genuinely moved elsewhere on the page
+// (see the "once focus has left the composer entirely" test).
 //
-// There's no central registry that arbitrates which Escape handler "wins" -
-// this app establishes Escape ownership the same way everywhere: listener
-// phase (capture runs before bubble) plus an explicit stopPropagation() /
-// stopImmediatePropagation() from whichever handler is more specific. See
-// useKeybindingService's own bailouts for `[role="menu"]` targets and open
-// dialogs (src/platform/keybindings/keybindingService.ts), the mention
-// picker's Escape-to-close (useAgentMentionPicker.ts's onComposerKeydown),
-// select's stopEscapeToDocument (src/components/ui/select/select.variants.ts),
-// and the capture-phase document listeners in OnboardingCoach.vue and
-// TourSpotlight.vue that let a full-screen overlay pre-empt everything else.
-// This listener follows the same convention: it's registered on the bubble
-// phase, not capture, because it only needs to run ahead of GraphView's
-// window-level listener (src/views/GraphView.vue, `useKeybindingService().
-// keybindHandler` on `window`) - not ahead of the composer's own more
-// specific handlers. Those still get first refusal and call
-// stopPropagation() themselves: the mention list closing itself, and the
-// editor-scoped handler above for a still-focused editor. This one only
-// ever sees the event when none of those more specific handlers claimed it
-// first.
-useEventListener(document, 'keydown', (event: KeyboardEvent) => {
-  if (
-    event.key !== 'Escape' ||
-    !running.value ||
-    event.isComposing ||
-    event.defaultPrevented
-  )
-    return
+// This is one of several places that establish Escape ownership in this
+// app: `useKeybindingService`'s own bailouts for `[role="menu"]` targets and
+// open dialogs run before this override is even consulted
+// (src/platform/keybindings/keybindingService.ts), the mention picker closes
+// itself first via stopPropagation (useAgentMentionPicker.ts's
+// onComposerKeydown), select has its own stopEscapeToDocument
+// (src/components/ui/select/select.variants.ts), and the capture-phase
+// document listeners in OnboardingCoach.vue and TourSpotlight.vue let a
+// full-screen overlay pre-empt everything else. This handler only ever runs
+// when none of those more specific handlers claimed the event first.
+function handleEscapeOverride(event: KeyboardEvent): boolean {
+  if (event.key !== 'Escape' || !running.value || event.isComposing)
+    return false
+  if (event.defaultPrevented) return false
 
   const active = document.activeElement
   const focusedElsewhere =
     active !== null &&
     active !== document.body &&
     !composerContainerRef.value?.contains(active)
-  if (focusedElsewhere) return
+  if (focusedElsewhere) return false
 
   event.preventDefault()
-  // Stop the event here so it can't also reach GraphView's window-level
-  // keydown listener, which runs Comfy.Graph.ExitSubgraph on Escape.
-  event.stopPropagation()
   if (!event.repeat) emit('stop')
+  return true
+}
+
+let unregisterEscapeOverride: (() => void) | undefined
+onMounted(() => {
+  unregisterEscapeOverride = registerEscapeOverride(handleEscapeOverride)
+})
+onUnmounted(() => {
+  unregisterEscapeOverride?.()
 })
 
 function insert(text: string): void {
