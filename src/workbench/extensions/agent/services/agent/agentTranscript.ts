@@ -2,7 +2,11 @@ import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage } from './agentMessageParts'
-import { createAssistantMessage, toAskPart } from './agentMessageParts'
+import {
+  createAssistantMessage,
+  isAskPart,
+  toAskOrNoticePart
+} from './agentMessageParts'
 
 /**
  * A file attached to a user turn. `ref` is the uploaded input-namespace
@@ -137,10 +141,10 @@ export function normalizeAgentTranscript(
       message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
     const pendingAskPart =
       row.status === 'streaming' && row.pending_ask
-        ? toAskPart(row.pending_ask)
+        ? toAskOrNoticePart(row.pending_ask)
         : undefined
-    if (pendingAskPart) {
-      message.parts.push(pendingAskPart)
+    if (pendingAskPart) message.parts.push(pendingAskPart)
+    if (pendingAskPart && isAskPart(pendingAskPart)) {
       message.streaming = true
       pending = { messageId: row.id as TurnId, message }
     }

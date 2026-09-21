@@ -785,6 +785,26 @@ describe('AgentMessage ask_user question', () => {
     ])
   })
 
+  it('keeps an in-progress answer when an earlier ask in the message resolves', async () => {
+    const message = askMessage()
+    const withApproval: AssistantMessage = {
+      ...message,
+      parts: [
+        { type: 'runApproval', askId: 'turn-1:call-0', workflowName: 'Draft' },
+        ...message.parts
+      ]
+    }
+    const { rerender } = render(AgentMessage, {
+      props: { message: withApproval },
+      global: { plugins: [i18n] }
+    })
+    await userEvent.click(screen.getByRole('radio', { name: 'Flux Dev' }))
+
+    await rerender({ message })
+
+    expect(screen.getByRole('radio', { name: 'Flux Dev' })).toBeChecked()
+  })
+
   it('disables the card while its answer is in flight', () => {
     render(AgentMessage, {
       props: {

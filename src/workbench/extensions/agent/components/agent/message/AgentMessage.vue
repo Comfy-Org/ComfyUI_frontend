@@ -68,6 +68,12 @@ const groups = computed<Group[]>(() => {
   return out
 })
 
+// An ask card holds the user's in-progress answer, so it keeps its identity
+// when an earlier group in the message goes away.
+function groupKey(group: Group, index: number): string {
+  return group.kind === 'ask' ? `ask:${group.part.askId}` : `group:${index}`
+}
+
 const markdown = computed(() =>
   message.parts
     .filter((part): part is TextPart => part.type === 'text')
@@ -118,7 +124,7 @@ const status = computed(() => {
 
 <template>
   <div class="space-y-2 pb-4">
-    <template v-for="(group, index) in groups" :key="index">
+    <template v-for="(group, index) in groups" :key="groupKey(group, index)">
       <AgentMessageGroup
         :group
         :streaming="message.streaming"

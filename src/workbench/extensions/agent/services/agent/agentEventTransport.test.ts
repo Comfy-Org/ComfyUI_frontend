@@ -490,12 +490,20 @@ describe('agentEventTransport permission ask', () => {
     expect(message.streaming).toBe(true)
   })
 
-  it('ignores a permission ask without a target', () => {
+  it('shows a notice instead of a permission ask without a target', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const message = drive([
       permissionAsk('ask-1', { request_id: 'abc', target_kind: 'host' })
     ])
 
-    expect(message.parts).toEqual([])
+    expect(message.parts).toEqual([
+      {
+        type: 'notice',
+        level: 'warning',
+        text: 'The agent asked a question this panel cannot show. Stop the turn to continue.'
+      }
+    ])
+    expect(warn).toHaveBeenCalledOnce()
   })
 })
 

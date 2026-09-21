@@ -179,6 +179,45 @@ describe('AskUserCard', () => {
     ])
   })
 
+  it('does not submit on the Enter that commits an IME candidate', async () => {
+    const { user, emitted } = renderCard({ allowOther: true })
+    const other = screen.getByRole('textbox', { name: 'Other' })
+    await user.type(other, '日本')
+
+    // user-event cannot drive an IME, so raise the composing keydown directly.
+    other.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        isComposing: true,
+        bubbles: true
+      })
+    )
+    expect(emitted().answer).toBeUndefined()
+
+    await user.keyboard('{Enter}')
+    expect(emitted().answer).toEqual([
+      ['ask-1', { selected: [], otherText: '日本' }]
+    ])
+  })
+
+  it('lets an optional single choice be cleared again', async () => {
+    const { user, submit, emitted } = renderCard({
+      minSelections: 0,
+      maxSelections: 1
+    })
+
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('checkbox', { name: 'SDXL' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Flux Dev' }))
+    expect(screen.getByRole('checkbox', { name: 'SDXL' })).not.toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Flux Dev' })).toBeChecked()
+
+    await user.click(screen.getByRole('checkbox', { name: 'Flux Dev' }))
+    expect(screen.getByRole('checkbox', { name: 'Flux Dev' })).not.toBeChecked()
+    await user.click(submit())
+    expect(emitted().answer).toEqual([['ask-1', { selected: [] }]])
+  })
+
   it('disables every control while the answer is in flight', () => {
     const { submit } = renderCard({ maxSelections: 2, allowOther: true }, true)
 

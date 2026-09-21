@@ -45,7 +45,7 @@ const zAgentAskOption = z
   .object({
     id: z.string(),
     label: z.string(),
-    description: z.string().optional()
+    description: z.string().nullish()
   })
   .passthrough()
 
@@ -53,15 +53,15 @@ const zAgentPendingAsk = z
   .object({
     message_id: z.string(),
     ask_id: z.string(),
-    kind: z.string().optional(),
+    kind: z.string().nullish(),
     context: z
       .object({
-        workflow_id: z.string().optional(),
-        workflow_name: z.string().optional(),
-        request_id: z.string().optional(),
-        target_kind: z.enum(['path', 'host']).optional(),
-        target: z.string().optional(),
-        reason: z.string().optional()
+        workflow_id: z.string().nullish(),
+        workflow_name: z.string().nullish(),
+        request_id: z.string().nullish(),
+        target_kind: z.enum(['path', 'host']).nullish(),
+        target: z.string().nullish(),
+        reason: z.string().nullish()
       })
       .passthrough()
       .nullish(),
@@ -100,7 +100,7 @@ export type AgentRunModeValue = AgentRunModePreference['mode']
 
 export const zAgentMessage = zGeneratedAgentMessage
   .extend({
-    pending_ask: zAgentPendingAsk.optional()
+    pending_ask: zAgentPendingAsk.nullish()
   })
   .passthrough()
 

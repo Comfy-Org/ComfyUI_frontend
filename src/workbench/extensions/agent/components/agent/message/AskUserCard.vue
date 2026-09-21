@@ -10,8 +10,10 @@ import Input from '@/components/ui/input/Input.vue'
 
 import type {
   AgentAskAnswer,
+  AskUserOption,
   AskUserPart
 } from '../../../services/agent/agentMessageParts'
+import AskUserOptionLabel from './AskUserOptionLabel.vue'
 
 const { part, answering = false } = defineProps<{
   part: AskUserPart
@@ -35,7 +37,11 @@ watch(
   }
 )
 
-const single = computed(() => part.maxSelections === 1)
+// One choice at a time: picking an option replaces the last one. A required
+// single choice renders as radios; an optional one as checkboxes, so it can be
+// cleared again.
+const exclusive = computed(() => part.maxSelections === 1)
+const single = computed(() => exclusive.value && part.minSelections > 0)
 const trimmedOther = computed(() =>
   part.allowOther ? otherText.value.trim() : ''
 )
@@ -65,6 +71,8 @@ const hint = computed(() => {
 })
 
 const optionId = (index: number) => `${baseId}-option-${index}`
+const describedBy = (option: AskUserOption, index: number) =>
+  option.description ? `${optionId(index)}-description` : undefined
 const promptId = `${baseId}-prompt`
 const hintId = `${baseId}-hint`
 const otherId = `${baseId}-other`
@@ -78,34 +86,48 @@ function chooseSingle(value: unknown): void {
 }
 
 function toggle(id: string, checked: boolean): void {
-  selected.value = checked
-    ? [...selected.value.filter((value) => value !== id), id]
-    : selected.value.filter((value) => value !== id)
+  const others = selected.value.filter((value) => value !== id)
+  if (!checked) {
+    selected.value = others
+    return
+  }
+  selected.value = exclusive.value ? [id] : [...others, id]
+  if (exclusive.value) otherText.value = ''
 }
 
 const otherModel = computed({
   get: () => otherText.value,
   set: (value: string | number | undefined) => {
     otherText.value = String(value ?? '')
-    if (single.value && otherText.value.trim()) selected.value = []
+    if (exclusive.value && otherText.value.trim()) selected.value = []
   }
 })
 
 function optionDisabled(id: string): boolean {
   return (
-    answering || (!single.value && atMax.value && !selected.value.includes(id))
+    answering ||
+    (!exclusive.value && atMax.value && !selected.value.includes(id))
   )
 }
 
 const otherDisabled = computed(
-  () => answering || (!single.value && atMax.value && !trimmedOther.value)
+  () => answering || (!exclusive.value && atMax.value && !trimmedOther.value)
 )
+
+function onOtherEnter(event: KeyboardEvent): void {
+  // Enter commits an IME candidate while composing; it must not submit.
+  if (event.isComposing) return
+  event.preventDefault()
+  submit()
+}
 
 function submit(): void {
   if (!canSubmit.value) return
-  const chosen = part.options
-    .filter((option) => selected.value.includes(option.id))
-    .map((option) => option.id)
+  // Built from the unique selection state the counts checked, in option order.
+  const order = new Map(part.options.map(({ id }, index) => [id, index]))
+  const chosen = selected.value.toSorted(
+    (a, b) => (order.get(a) ?? 0) - (order.get(b) ?? 0)
+  )
   emit(
     'answer',
     part.askId,
@@ -152,9 +174,7 @@ const rowClass =
           :id="optionId(index)"
           :value="option.id"
           :aria-labelledby="`${optionId(index)}-label`"
-          :aria-describedby="
-            option.description ? `${optionId(index)}-description` : undefined
-          "
+          :aria-describedby="describedBy(option, index)"
           :class="
             cn(
               'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border border-node-component-header-icon bg-transparent p-0 transition-colors',
@@ -168,24 +188,7 @@ const rowClass =
             <span class="size-2 rounded-full bg-primary-background" />
           </RadioGroupIndicator>
         </RadioGroupItem>
-        <label
-          :for="optionId(index)"
-          class="flex min-w-0 flex-1 cursor-pointer flex-col"
-        >
-          <span
-            :id="`${optionId(index)}-label`"
-            class="wrap-break-word text-base-foreground"
-          >
-            {{ option.label }}
-          </span>
-          <span
-            v-if="option.description"
-            :id="`${optionId(index)}-description`"
-            class="text-xs/5 wrap-break-word text-muted-foreground"
-          >
-            {{ option.description }}
-          </span>
-        </label>
+        <AskUserOptionLabel :option-id="optionId(index)" :option />
       </div>
     </RadioGroupRoot>
 
@@ -206,35 +209,15 @@ const rowClass =
           :model-value="selected.includes(option.id)"
           :disabled="optionDisabled(option.id)"
           :aria-labelledby="`${optionId(index)}-label`"
-          :aria-describedby="
-            option.description ? `${optionId(index)}-description` : undefined
-          "
+          :aria-describedby="describedBy(option, index)"
           class="mt-0.5 size-4"
           @update:model-value="(checked) => toggle(option.id, checked === true)"
         />
-        <label
-          :for="optionId(index)"
-          :class="
-            cn(
-              'flex min-w-0 flex-1 cursor-pointer flex-col',
-              optionDisabled(option.id) && 'cursor-not-allowed opacity-50'
-            )
-          "
-        >
-          <span
-            :id="`${optionId(index)}-label`"
-            class="wrap-break-word text-base-foreground"
-          >
-            {{ option.label }}
-          </span>
-          <span
-            v-if="option.description"
-            :id="`${optionId(index)}-description`"
-            class="text-xs/5 wrap-break-word text-muted-foreground"
-          >
-            {{ option.description }}
-          </span>
-        </label>
+        <AskUserOptionLabel
+          :option-id="optionId(index)"
+          :option
+          :disabled="optionDisabled(option.id)"
+        />
       </div>
     </div>
 
@@ -249,7 +232,7 @@ const rowClass =
         :placeholder="t('agent.askUser.otherPlaceholder')"
         :disabled="otherDisabled"
         class="h-8 bg-component-node-background px-3"
-        @keydown.enter.prevent="submit"
+        @keydown.enter="onOtherEnter"
       />
     </div>
 

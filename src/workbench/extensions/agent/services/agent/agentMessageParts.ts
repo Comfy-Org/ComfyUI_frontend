@@ -1,3 +1,5 @@
+import { i18n } from '@/i18n'
+
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 
 export type PartState = 'streaming' | 'done'
@@ -61,7 +63,7 @@ export interface PermissionAskPart {
   reason?: string
 }
 
-interface AskUserOption {
+export interface AskUserOption {
   id: string
   label: string
   description?: string
@@ -99,16 +101,7 @@ export interface AgentAskAnswer {
   otherText?: string
 }
 
-export function toAskPart({
-  kind,
-  ask_id: askId,
-  context,
-  prompt,
-  options,
-  min_selections: minSelections,
-  max_selections: maxSelections,
-  allow_other: allowOther
-}: Pick<
+type AskInput = Pick<
   PendingAsk,
   | 'kind'
   | 'ask_id'
@@ -118,42 +111,113 @@ export function toAskPart({
   | 'min_selections'
   | 'max_selections'
   | 'allow_other'
->): AskPart | undefined {
-  if (kind === 'run_approval')
-    return {
-      type: 'runApproval',
-      askId,
-      workflowId: context?.workflow_id || undefined,
-      workflowName: context?.workflow_name || undefined
-    }
-  if (kind === 'permission' && context?.target_kind && context.target)
-    return {
-      type: 'permissionAsk',
-      askId,
-      requestId: context.request_id || undefined,
-      targetKind: context.target_kind,
-      target: context.target,
-      reason: context.reason?.trim() || undefined
-    }
-  if (kind === 'ask_user' || kind === undefined) {
-    const choices = options.map(({ id, label, description }) => ({
+>
+
+/**
+ * Bounds on what an `ask_user` frame may render. The frame is untrusted input,
+ * so a runaway option list or text cannot freeze the panel.
+ */
+export const ASK_USER_LIMITS = {
+  options: 50,
+  prompt: 2000,
+  label: 200,
+  description: 500
+} as const
+
+function clip(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max - 1)}\u2026` : text
+}
+
+/** Unique options (first occurrence wins, as on the server), capped and clipped. */
+function toAskUserOptions(options: AskInput['options']): AskUserOption[] {
+  const seen = new Set<string>()
+  const choices: AskUserOption[] = []
+  for (const { id, label, description } of options) {
+    if (seen.has(id)) continue
+    seen.add(id)
+    choices.push({
       id,
-      label,
-      description: description?.trim() || undefined
-    }))
-    if (choices.length === 0 && !allowOther) return undefined
-    const max = Math.max(1, maxSelections)
-    return {
-      type: 'askUser',
-      askId,
-      prompt,
-      options: choices,
-      minSelections: Math.min(Math.max(0, minSelections), max),
-      maxSelections: max,
-      allowOther
-    }
+      label: clip(label, ASK_USER_LIMITS.label),
+      description:
+        clip(description?.trim() ?? '', ASK_USER_LIMITS.description) ||
+        undefined
+    })
+    if (choices.length === ASK_USER_LIMITS.options) break
   }
-  return undefined
+  return choices
+}
+
+function toAskUserPart(ask: AskInput): AskUserPart | undefined {
+  const options = toAskUserOptions(ask.options)
+  // Free text counts as one more selection, so it is one more thing to choose.
+  const choosable = options.length + (ask.allow_other ? 1 : 0)
+  if (choosable === 0) return undefined
+  const maxSelections = Math.min(Math.max(1, ask.max_selections), choosable)
+  return {
+    type: 'askUser',
+    askId: ask.ask_id,
+    prompt: clip(ask.prompt, ASK_USER_LIMITS.prompt),
+    options,
+    minSelections: Math.min(Math.max(0, ask.min_selections), maxSelections),
+    maxSelections,
+    allowOther: ask.allow_other
+  }
+}
+
+function toPermissionAskPart({
+  ask_id: askId,
+  context
+}: AskInput): PermissionAskPart | undefined {
+  if (!context?.target_kind || !context.target) return undefined
+  return {
+    type: 'permissionAsk',
+    askId,
+    requestId: context.request_id || undefined,
+    targetKind: context.target_kind,
+    target: context.target,
+    reason: context.reason?.trim() || undefined
+  }
+}
+
+/**
+ * The card for an ask, by its explicit kind. An unknown or missing kind maps to
+ * nothing: a privileged ask that lost its discriminator must not render as a
+ * generic chooser.
+ */
+export function toAskPart(ask: AskInput): AskPart | undefined {
+  switch (ask.kind) {
+    case 'run_approval':
+      return {
+        type: 'runApproval',
+        askId: ask.ask_id,
+        workflowId: ask.context?.workflow_id || undefined,
+        workflowName: ask.context?.workflow_name || undefined
+      }
+    case 'permission':
+      return toPermissionAskPart(ask)
+    case 'ask_user':
+      return toAskUserPart(ask)
+    default:
+      return undefined
+  }
+}
+
+/**
+ * The ask's card, or a notice when it cannot be rendered, so the user sees why
+ * the turn is waiting instead of an invisible prompt.
+ */
+export function toAskOrNoticePart(ask: AskInput): AskPart | NoticePart {
+  const part = toAskPart(ask)
+  if (part) return part
+  console.warn('[agent] cannot render agent ask', {
+    kind: ask.kind,
+    askId: ask.ask_id
+  })
+  return {
+    type: 'notice',
+    level: 'warning',
+    text: i18n.global.t('agent.askUnavailable')
+  }
 }
 
 export interface PaywallPart {

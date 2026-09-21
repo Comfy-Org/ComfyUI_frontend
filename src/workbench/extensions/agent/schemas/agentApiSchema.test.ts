@@ -371,6 +371,59 @@ describe('agentApiSchema contract subtleties', () => {
     expect(row.pending_ask).toMatchObject({ kind: 'ask_user' })
   })
 
+  it('tolerates null in the optional ask fields a backend may serialize as null', () => {
+    const ask = {
+      message_id: 'message-1',
+      ask_id: 'turn-1:call-1',
+      kind: null,
+      context: {
+        workflow_id: null,
+        workflow_name: null,
+        request_id: null,
+        target_kind: null,
+        target: null,
+        reason: null
+      },
+      prompt: 'Which model should I use?',
+      options: [{ id: 'sdxl', label: 'SDXL', description: null }],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+
+    expect(
+      zAgentWsEvent.safeParse({
+        type: 'agent_ask',
+        data: { ...ask, thread_id: 'th-1' }
+      }).success
+    ).toBe(true)
+    expect(
+      zAgentMessage.safeParse({
+        id: 'message-1',
+        thread_id: 'th-1',
+        seq: 2,
+        role: 'assistant',
+        status: 'streaming',
+        turn_id: 'turn-1',
+        pending_ask: ask
+      }).success
+    ).toBe(true)
+  })
+
+  it('reads a hydrated message whose pending_ask is null', () => {
+    const row = zAgentMessage.parse({
+      id: 'message-1',
+      thread_id: 'th-1',
+      seq: 2,
+      role: 'assistant',
+      status: 'complete',
+      turn_id: 'turn-1',
+      pending_ask: null
+    })
+
+    expect(row.pending_ask).toBeNull()
+  })
+
   it('parses agent_active_tab with an optional stable locator and rejects a missing workflow_id', () => {
     const parsed = zAgentWsEvent.safeParse({
       type: 'agent_active_tab',

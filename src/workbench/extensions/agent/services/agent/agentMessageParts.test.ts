@@ -1,8 +1,13 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import type { MessagePart } from './agentMessageParts'
-import { isAskPart, toAskPart } from './agentMessageParts'
+import {
+  ASK_USER_LIMITS,
+  isAskPart,
+  toAskOrNoticePart,
+  toAskPart
+} from './agentMessageParts'
 
 type AskInput = Parameters<typeof toAskPart>[0]
 
@@ -63,9 +68,12 @@ describe('toAskPart ask_user', () => {
     })
   })
 
-  it('reads a kind-less ask as the generic ask_user question', () => {
-    expect(toAskPart(askUser({ kind: undefined }))?.type).toBe('askUser')
-  })
+  it.for([undefined, null, 'mystery'])(
+    'renders nothing for an ask whose kind is %s',
+    (kind) => {
+      expect(toAskPart(askUser({ kind }))).toBeUndefined()
+    }
+  )
 
   it('keeps a lone option when free text is allowed and drops an empty ask', () => {
     expect(
@@ -88,8 +96,58 @@ describe('toAskPart ask_user', () => {
     ).toMatchObject({ minSelections: 0, maxSelections: 2 })
   })
 
-  it('leaves unknown kinds unrendered', () => {
-    expect(toAskPart(askUser({ kind: 'paused' }))).toBeUndefined()
+  it('caps the bounds at what can actually be chosen', () => {
+    expect(
+      toAskPart(askUser({ min_selections: 3, max_selections: 5 }))
+    ).toMatchObject({ minSelections: 2, maxSelections: 2 })
+    expect(
+      toAskPart(
+        askUser({ min_selections: 4, max_selections: 4, allow_other: true })
+      )
+    ).toMatchObject({ minSelections: 3, maxSelections: 3 })
+  })
+
+  it('keeps the first of options that share an id, as the server does', () => {
+    const part = toAskPart(
+      askUser({
+        options: [
+          { id: 'a', label: 'First' },
+          { id: 'b', label: 'B' },
+          { id: 'a', label: 'Second' }
+        ],
+        max_selections: 3
+      })
+    )
+    expect(part).toMatchObject({
+      options: [
+        { id: 'a', label: 'First' },
+        { id: 'b', label: 'B' }
+      ],
+      maxSelections: 2
+    })
+  })
+
+  it('bounds the option count and text lengths of an untrusted ask', () => {
+    const part = toAskPart(
+      askUser({
+        prompt: 'p'.repeat(ASK_USER_LIMITS.prompt + 10),
+        options: Array.from(
+          { length: ASK_USER_LIMITS.options + 25 },
+          (_, index) => ({
+            id: `o${index}`,
+            label: 'l'.repeat(ASK_USER_LIMITS.label + 10),
+            description: 'd'.repeat(ASK_USER_LIMITS.description + 10)
+          })
+        )
+      })
+    )
+    assert(part?.type === 'askUser')
+    expect(part.options).toHaveLength(ASK_USER_LIMITS.options)
+    expect(part.prompt).toHaveLength(ASK_USER_LIMITS.prompt)
+    expect(part.options[0].label).toHaveLength(ASK_USER_LIMITS.label)
+    expect(part.options[0].description).toHaveLength(
+      ASK_USER_LIMITS.description
+    )
   })
 
   it('still maps run approvals and permission asks', () => {
@@ -131,5 +189,22 @@ describe('isAskPart', () => {
         ] as const
       ).map((type) => isAskPart(fromPartial<MessagePart>({ type })))
     ).toEqual([true, true, true, false, false, false])
+  })
+})
+
+describe('toAskOrNoticePart', () => {
+  it('returns the card for a renderable ask', () => {
+    expect(toAskOrNoticePart(askUser()).type).toBe('askUser')
+  })
+
+  it('surfaces a warning notice, and logs, for an ask it cannot render', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    expect(toAskOrNoticePart(askUser({ kind: undefined }))).toEqual({
+      type: 'notice',
+      level: 'warning',
+      text: 'The agent asked a question this panel cannot show. Stop the turn to continue.'
+    })
+    expect(warn).toHaveBeenCalledOnce()
   })
 })

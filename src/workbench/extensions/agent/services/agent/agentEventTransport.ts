@@ -6,7 +6,11 @@ import type {
   ThinkingPart,
   ToolPart
 } from './agentMessageParts'
-import { isAskPart, snapshotMessage, toAskPart } from './agentMessageParts'
+import {
+  isAskPart,
+  snapshotMessage,
+  toAskOrNoticePart
+} from './agentMessageParts'
 
 export type AgentChatEvent = Extract<
   AgentWsEvent,
@@ -134,10 +138,8 @@ export function createAgentEventTransport(
   }
 
   function applyAsk(data: EventData<'agent_ask'>): boolean {
-    const part = toAskPart(data)
-    if (!part) return false
     closeStreamingParts()
-    message.parts.push(part)
+    message.parts.push(toAskOrNoticePart(data))
     return true
   }
 
