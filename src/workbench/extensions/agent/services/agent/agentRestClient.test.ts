@@ -580,7 +580,15 @@ describe('Retry-After contract', () => {
       label: 'an out-of-range RFC 850 day',
       header: 'Wednesday, 29-Feb-23 07:28:00 GMT'
     },
-    { label: 'an out-of-range asctime day', header: 'Sun Nov 31 07:28:00 2026' }
+    { label: 'an out-of-range asctime day', header: 'Sun Nov 31 07:28:00 2026' },
+    {
+      label: 'an IMF-fixdate year before 1900',
+      header: 'Mon, 06 Nov 1899 08:49:37 GMT'
+    },
+    {
+      label: 'an asctime year before 1900',
+      header: 'Mon Nov  6 08:49:37 1899'
+    }
   ])('returns undefined for $label', async ({ header }) => {
     vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
 

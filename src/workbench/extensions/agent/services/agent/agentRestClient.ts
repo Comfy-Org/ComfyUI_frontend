@@ -256,7 +256,8 @@ function parseHttpDate(value: string): number | undefined {
   const fields = httpDateFields(value)
   if (fields === undefined) return undefined
   const { year, month, day, hour, minute, second } = fields
-  if (hour > 23 || minute > 59 || second > 60) return undefined
+  if (year < 1900 || hour > 23 || minute > 59 || second > 60)
+    return undefined
   // JavaScript Date cannot represent the leap second admitted by the grammar,
   // so this parser maps `:60` to `:59`.
   const instant = Date.UTC(
