@@ -1287,6 +1287,44 @@ describe('graphMutations', () => {
     expect(target?.inputs.map(({ name }) => name)).toEqual(['in'])
   })
 
+  it('drops the excess linked occurrence when a document shrinks a duplicate-named input', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [{ name: 'dup', type: 'IMAGE', link: null }]
+      })
+      batch.connect({
+        id: 9,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 1,
+        type: 'IMAGE',
+        targetInputs: [
+          { name: 'dup', type: 'IMAGE', link: null },
+          { name: 'dup', type: 'IMAGE', link: toLinkId(9) }
+        ]
+      })
+    })
+
+    expect(
+      graph.batch({ ...context, opId: 'shrink-dup' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [{ name: 'dup', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ name }) => name)).toEqual(['dup'])
+    expect(target?.inputs[0]?.link).toBeNull()
+  })
+
   it('keeps an unlinked grown input the document has not caught up to yet', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
