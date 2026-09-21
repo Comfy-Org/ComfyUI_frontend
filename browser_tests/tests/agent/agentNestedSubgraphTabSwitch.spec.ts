@@ -47,8 +47,10 @@ test.describe(
         agentConversation.runTurns())
 
       await test.step('the host seeds the nested definition', () => {
-        const outerId = agentConversation.pushNestedDefinition()
-        expect(outerId).toEqual(NESTED_OUTER_ID)
+        agentConversation.pushNestedDefinition()
+        expect(
+          agentConversation.hostNestedDefinitionIds(NESTED_OUTER_ID)
+        ).toEqual([NESTED_INNER_ID])
       })
 
       await test.step('the follower registers both definitions off the document', async () => {

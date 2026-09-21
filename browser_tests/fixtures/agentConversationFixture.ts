@@ -759,6 +759,10 @@ export class AgentConversationHarness {
     return outerId
   }
 
+  hostNestedDefinitionIds(outerId: string): string[] {
+    return this.host.nestedDefinitionIds(outerId)
+  }
+
   /** Definition ids registered on the root graph right now. */
   registeredSubgraphIds(): Promise<string[]> {
     return this.page.evaluate(() => [

@@ -207,6 +207,15 @@ export class HostDoc {
     }
   }
 
+  nestedDefinitionIds(outerId: string): string[] {
+    const outer = this.doc.getMap<unknown>('definitions').get(outerId)
+    if (!(outer instanceof Y.Map)) return []
+    const nested = outer.get('definitions')
+    if (!(nested instanceof Y.Map)) return []
+    const subgraphs = nested.get('subgraphs')
+    return subgraphs instanceof Y.Map ? [...subgraphs.keys()] : []
+  }
+
   replaceLink(link: HostLinkTuple): HostFrame {
     const before = Y.encodeStateVector(this.doc)
     const replacement = new Y.Array<unknown>()
