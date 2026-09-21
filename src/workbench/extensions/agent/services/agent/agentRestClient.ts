@@ -165,6 +165,26 @@ function httpDateInstant(
   return ordinaryInstant + (second === 60 ? 1000 : 0)
 }
 
+function hasValidHttpDateFields(fields: HttpDateFields): boolean {
+  const { year, hour, minute, second } = fields
+  return year >= 1900 && hour <= 23 && minute <= 59 && second <= 60
+}
+
+function namesRealCalendarDate(
+  fields: HttpDateFields,
+  instant: number
+): boolean {
+  const { year, month, day, second } = fields
+  // Subtract the represented leap second before validating the source date so
+  // `23:59:60` rolling into the next day remains valid.
+  const utc = new Date(instant - (second === 60 ? 1000 : 0))
+  return (
+    utc.getUTCFullYear() === year &&
+    utc.getUTCMonth() === month - 1 &&
+    utc.getUTCDate() === day
+  )
+}
+
 /**
  * The four-digit year an RFC 850 two-digit year stands for. RFC 9110 requires a
  * timestamp that would read as more than 50 years in the future to be taken as
@@ -274,19 +294,12 @@ function httpDateFields(value: string): HttpDateFields | undefined {
 function parseHttpDate(value: string): number | undefined {
   const fields = httpDateFields(value)
   if (fields === undefined) return undefined
+  if (!hasValidHttpDateFields(fields)) return undefined
   const { year, month, day, hour, minute, second } = fields
-  if (year < 1900 || hour > 23 || minute > 59 || second > 60) return undefined
   const instant = httpDateInstant(year, month, day, hour, minute, second)
   // `Date.UTC` rolls an impossible day into the next month (`31 Nov`, `29 Feb`
   // outside a leap year), so the round-trip is what proves the date exists.
-  // Subtract the represented leap second before validating the source date so
-  // `23:59:60` rolling into the next day remains valid.
-  const utc = new Date(instant - (second === 60 ? 1000 : 0))
-  const exists =
-    utc.getUTCFullYear() === year &&
-    utc.getUTCMonth() === month - 1 &&
-    utc.getUTCDate() === day
-  return exists ? instant : undefined
+  return namesRealCalendarDate(fields, instant) ? instant : undefined
 }
 
 /**
