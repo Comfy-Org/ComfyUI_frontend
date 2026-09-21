@@ -1,4 +1,5 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { api } from '@/scripts/api'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -241,56 +242,28 @@ describe('agentNodeSelectionStore', () => {
     expect(store.restoredNodeIds).toBeNull()
   })
 
-  it('moves saved node selections when a workflow is renamed', () => {
+  it('moves saved node selections when a workflow path changes', async () => {
+    const workflow = useWorkflowStore().createTemporary('original.json')
     const store = useAgentNodeSelectionStore()
+    store.saveNodeIds(workflow.path, ['9', '12'])
 
-    store.saveNodeIds('workflows/original.json', ['9', '12'])
-    store.moveNodeIds('workflows/original.json', 'workflows/renamed.json')
+    workflow.path = 'workflows/renamed.json'
+    await nextTick()
 
     expect(store.nodeIds('workflows/original.json')).toEqual([])
     expect(store.nodeIds('workflows/renamed.json')).toEqual(['9', '12'])
   })
 
-  describe('moveNodeIds rejects a move it cannot make', () => {
-    const BYSTANDER = 'workflows/untouched.json'
+  it('preserves the destination when a renamed workflow has no selection', async () => {
+    const workflow = useWorkflowStore().createTemporary('never-saved.json')
+    const store = useAgentNodeSelectionStore()
+    store.saveNodeIds('workflows/untouched.json', ['3'])
+    store.saveNodeIds('workflows/renamed.json', ['20'])
 
-    it.for([
-      {
-        label: 'the source path is undefined',
-        from: undefined,
-        to: 'workflows/renamed.json'
-      },
-      {
-        label: 'the destination path is undefined',
-        from: 'workflows/original.json',
-        to: undefined
-      },
-      { label: 'both paths are undefined', from: undefined, to: undefined },
-      {
-        label: 'the paths are identical',
-        from: 'workflows/original.json',
-        to: 'workflows/original.json'
-      }
-    ])('keeps every saved selection when $label', ({ from, to }) => {
-      const store = useAgentNodeSelectionStore()
-      store.saveNodeIds('workflows/original.json', ['9', '12'])
-      store.saveNodeIds(BYSTANDER, ['3'])
+    workflow.path = 'workflows/renamed.json'
+    await nextTick()
 
-      store.moveNodeIds(from, to)
-
-      expect(store.nodeIds('workflows/original.json')).toEqual(['9', '12'])
-      expect(store.nodeIds(BYSTANDER)).toEqual(['3'])
-    })
-
-    it('preserves the destination when the source has no saved selection', () => {
-      const store = useAgentNodeSelectionStore()
-      store.saveNodeIds(BYSTANDER, ['3'])
-      store.saveNodeIds('workflows/renamed.json', ['20'])
-
-      store.moveNodeIds('workflows/never-saved.json', 'workflows/renamed.json')
-
-      expect(store.nodeIds('workflows/renamed.json')).toEqual(['20'])
-      expect(store.nodeIds(BYSTANDER)).toEqual(['3'])
-    })
+    expect(store.nodeIds('workflows/renamed.json')).toEqual(['20'])
+    expect(store.nodeIds('workflows/untouched.json')).toEqual(['3'])
   })
 })

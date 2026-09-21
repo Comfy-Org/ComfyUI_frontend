@@ -215,7 +215,6 @@ export const useAgentNodeSelectionStore = defineStore(
       exit,
       saveNodeIds,
       nodeIds,
-      moveNodeIds,
       beginWorkflowLoad,
       restoreNodeIds,
       finishWorkflowLoad
