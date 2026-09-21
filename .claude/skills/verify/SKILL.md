@@ -100,6 +100,8 @@ flags.billingSdkTopupRailEnabled
 localStorage.setItem('ff:billing_sdk_topup_enabled', 'true')
 ```
 
+Never set `ff:unified_cloud_auth`. It already resolves `true` for a signed-in user, and forcing it put the app into a reload loop.
+
 Precedence (`useFeatureFlags.ts:64-74`): session override → dev override → `/api/features` remote config → websocket server feature.
 
 **`?ff=` is captured per tab and keyed on the query string. Open a fresh tab when changing scenario**, or the previous override is still live.

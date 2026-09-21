@@ -22,14 +22,14 @@ The current focus is the **billing SDK rail migration** (Milestone 1): every bil
 
 ## The scenario matrix
 
-Both rails are ANDed with `unified_cloud_auth`. The anonymous `/api/features` reports it `false` in every environment, but it resolves `true` for a signed-in user. Resolve `flags.unifiedCloudAuthEnabled` in the page before trusting a scenario. The query strings below override it anyway, which is harmless when it is already `true`.
+Both rails are ANDed with `unified_cloud_auth`. The anonymous `/api/features` reports it `false` in every environment, but it resolves `true` for a signed-in user. Resolve `flags.unifiedCloudAuthEnabled` in the page before trusting a scenario, and do not override it. Forcing it on with the dev `ff:unified_cloud_auth` key put the local app into a reload loop on 2026-09-21 (`workflows` 403, subscription status `NOT_AUTHENTICATED`). Override only the billing flags.
 
-| #   | Query string                                                                              | What it is                                               |
-| --- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| S0  | _(none)_                                                                                  | Legacy baseline. Record the numbers here.                |
-| S1  | `?ff=unified_cloud_auth&ff=billing_sdk_topup_enabled`                                     | Top-up + all reads on the SDK                            |
-| S2  | `?ff=unified_cloud_auth&ff=billing_sdk_subscription_enabled`                              | Subscription + all reads on the SDK; top-up still legacy |
-| S3  | `?ff=unified_cloud_auth&ff=billing_sdk_topup_enabled&ff=billing_sdk_subscription_enabled` | End state                                                |
+| #   | Query string                                                        | What it is                                               |
+| --- | ------------------------------------------------------------------- | -------------------------------------------------------- |
+| S0  | _(none)_                                                            | Legacy baseline. Record the numbers here.                |
+| S1  | `?ff=billing_sdk_topup_enabled`                                     | Top-up + all reads on the SDK                            |
+| S2  | `?ff=billing_sdk_subscription_enabled`                              | Subscription + all reads on the SDK; top-up still legacy |
+| S3  | `?ff=billing_sdk_topup_enabled&ff=billing_sdk_subscription_enabled` | End state                                                |
 
 Turning on _either_ write flag moves all six reads onto the SDK readers. Leave `embedded_checked_enabled` and `hosted_billing_destination` alone. They are separate rollouts with their own gates.
 

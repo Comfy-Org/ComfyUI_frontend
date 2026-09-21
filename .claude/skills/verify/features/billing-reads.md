@@ -30,7 +30,7 @@ Preconditions:
 - A fresh tab per scenario.
 
 - **Baseline capture (S0).** Load with no query string. Open `Settings` → `Plan & Credits`. Record credits total, plan name, renewal date. Open `Activity` and record the first three rows. Save to `temp/verify-evidence/S0/reads.md`. This is the control for every comparison below.
-- **Rail chosen before first read.** Open DevTools Network _before_ loading with a rail on, then load `?ff=unified_cloud_auth&ff=billing_sdk_topup_enabled`. The very first `/api/billing/status` and `/api/billing/balance` must already be resourceType `fetch` with an `Idempotency-Key`. An `xhr` first read means the flags arrived after boot and the rail was not actually under test.
+- **Rail chosen before first read.** Open DevTools Network _before_ loading with a rail on, then load `?ff=billing_sdk_topup_enabled`. The very first `/api/billing/status` and `/api/billing/balance` must already be resourceType `fetch` with an `Idempotency-Key`. An `xhr` first read means the flags arrived after boot and the rail was not actually under test.
 - **Six reads on the SDK.** With a rail on, walk every entry point above and confirm each of the six requests is `fetch`. `Settings` → `Plan & Credits` covers status, balance, plans, capabilities and payment methods; `Activity` covers events.
 - **Value parity.** Repeat the baseline capture under S1, S2 and S3. Credits total, plan name, renewal date and the first three usage-log rows must be identical to S0, with the same events, the same amounts, and the same order.
 - **Credits breakdown.** With a rail on, check the monthly vs prepaid split where shown adds up to the same total as S0.
