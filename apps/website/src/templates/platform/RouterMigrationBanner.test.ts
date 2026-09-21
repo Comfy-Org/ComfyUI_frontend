@@ -12,9 +12,7 @@ describe('RouterMigrationBanner', () => {
 
     expect(screen.queryByRole('link')).toBeNull()
 
-    await user.click(
-      screen.getByRole('button', { name: 'COPY MIGRATION PROMPT' })
-    )
+    await user.click(screen.getByRole('button', { name: 'COPY PROMPT' }))
 
     expect(await navigator.clipboard.readText()).toBe(ROUTER_MIGRATION_PROMPT)
     expect(screen.getByRole('button', { name: 'COPIED' })).toBeTruthy()

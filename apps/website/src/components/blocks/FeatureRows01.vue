@@ -81,7 +81,7 @@ const {
           >
             {{ row.title }}
           </h3>
-          <p class="text-sm text-smoke-700 lg:text-base">
+          <p class="text-sm text-pretty text-smoke-700 lg:text-base">
             <template
               v-for="(part, partIndex) in splitInlineCode(row.description)"
               :key="partIndex"

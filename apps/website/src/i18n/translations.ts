@@ -9004,17 +9004,13 @@ Enterprise`
     'zh-CN': '帮我把这个项目现有的模型集成迁移到 Comfy Router。'
   },
   'platform.router.migrate.copyPrompt': {
-    en: 'COPY MIGRATION PROMPT',
-    'zh-CN': '复制迁移提示词'
+    en: 'COPY PROMPT',
+    'zh-CN': '复制提示词'
   },
   'platform.router.migrate.copied': { en: 'COPIED', 'zh-CN': '已复制' },
   'platform.router.proof.caption': {
     en: 'The same models 3M+ ComfyUI users already use, now behind one API.',
     'zh-CN': '300 万+ ComfyUI 用户正在使用的同一批模型，现在都在一个 API 之后。'
-  },
-  'platform.router.proof.modelMakers': {
-    en: 'Vertex/Gemini · ByteDance · Kling · OpenAI · BFL · Minimax',
-    'zh-CN': 'Vertex/Gemini · 字节跳动 · 可灵 · OpenAI · BFL · Minimax'
   },
   'platform.router.proof.comingSoon': {
     en: 'More models coming soon.',
@@ -9123,14 +9119,6 @@ Enterprise`
     'zh-CN':
       '描述任务而不是模型。Comfy 会匹配一个能完成该任务的模型或工作流，并在可用的供应商上运行，新模型上线时你无需改动任何代码。'
   },
-  'platform.router.roadmap.readMore': {
-    en: 'Read more',
-    'zh-CN': '展开'
-  },
-  'platform.router.roadmap.readLess': {
-    en: 'Show less',
-    'zh-CN': '收起'
-  },
   'platform.router.roadmap.learnMore': {
     en: 'LEARN MORE',
     'zh-CN': '了解更多'
@@ -9226,7 +9214,7 @@ Enterprise`
   'platform.router.faq.10.a': {
     en: 'BYOK is available for select models on Enterprise. Access is enabled by request.\n\n<a href="/enterprise">Contact Enterprise Sales</a>',
     'zh-CN':
-      '在企业版中，部分模型支持自带密钥（BYOK），需申请开通。\n\n<a href="/contact">联系企业销售</a>'
+      '在企业版中，部分模型支持自带密钥（BYOK），需申请开通。\n\n<a href="/zh-CN/enterprise">联系企业销售</a>'
   },
   'platform.router.faq.11.q': {
     en: 'How is Comfy Router priced?',

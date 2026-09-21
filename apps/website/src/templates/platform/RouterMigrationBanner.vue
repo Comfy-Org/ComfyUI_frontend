@@ -22,7 +22,7 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000 })
         <p class="text-lg font-bold text-primary-comfy-canvas">
           {{ t('platform.router.migrate.title', locale) }}
         </p>
-        <p class="mt-1 text-sm text-primary-comfy-canvas">
+        <p class="mt-1 text-sm text-pretty text-primary-comfy-canvas">
           {{ t('platform.router.migrate.subtitle', locale) }}
         </p>
       </div>
