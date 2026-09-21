@@ -1473,7 +1473,9 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  function mountWithHumanOps(): {
+  function mountWithHumanOps(
+    getGraph: () => MaterializableGraph | null = () => null
+  ): {
     enqueue: ReturnType<typeof useAgentCrdtFollower>['enqueueHumanOperations']
     workflowId: Ref<string | null>
     unmount: () => void
@@ -1486,7 +1488,10 @@ describe('useAgentCrdtFollower', () => {
       setup() {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
-          graphMutations
+          graphMutations,
+          () => null,
+          ref(true),
+          getGraph
         )
         enqueue = enqueueHumanOperations
         return () => null
@@ -1551,13 +1556,18 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('a doc_reset whose reconcile throws still settles the sent human batch and finishes the reset', async () => {
+  it('a doc_reset whose orphan sweep throws still settles the sent human batch and finishes the reset', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
-    const { enqueue, unmount } = mountWithHumanOps()
+    const graph = {
+      rootGraph: { subgraphs: new Map() },
+      setDirtyCanvas: vi.fn()
+    } as unknown as MaterializableGraph
+    const { enqueue, unmount } = mountWithHumanOps(() => graph)
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
     expect(clientState.sendOps).toHaveBeenCalledTimes(1)
-    adapterState.clearForReset.mockImplementationOnce(() => {
+    // A rejecting onRemoved() hook re-runs on every sweep: not one-shot.
+    materializerState.reconcileAgentAdapters.mockImplementation(() => {
       throw new Error('onRemoved threw')
     })
 
