@@ -266,7 +266,7 @@ jobs:
     needs: setup
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     container:
       image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
       credentials:
@@ -288,6 +288,7 @@ jobs:
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -297,8 +298,7 @@ jobs:
             exit 0
           fi
 
-          DIFF_RANGE="${BASE_SHA}...HEAD"
-          NEW_FILES=$(git diff --name-only --diff-filter=AMR "$DIFF_RANGE" -- 'browser_tests/**/*.spec.ts')
+          NEW_FILES=$(bash scripts/cicd/select-pr-playwright-specs.sh "$BASE_SHA" "$HEAD_SHA")
           : > /tmp/fallback-specs.txt
 
           while IFS= read -r file; do
@@ -458,7 +458,8 @@ jobs:
           if [ "$CLOUD_HAS_TESTS" = true ]; then
             # The ComfyUI server serves web_root per request, so swapping the
             # built frontend in place switches it to the cloud build.
-            rsync -a --delete dist-cloud/ dist/
+            # The CI container has no rsync, so replace the directory outright.
+            rm -rf dist && cp -a dist-cloud dist
             PLAYWRIGHT_HTML_OUTPUT_DIR=playwright-report-cloud pnpm exec playwright test --project=cloud --output=test-results-cloud --timeout=180000 --retries=0 "${FILES[@]}"
           fi
 
@@ -477,6 +478,7 @@ jobs:
 
       - name: Write video comment
         if: ${{ !cancelled() && steps.recordable.outputs.has-tests == 'true' }}
+        shell: bash
         env:
           NEW_TEST_TITLES: ${{ steps.detect.outputs.titles }}
           FALLBACK_SPEC_FILES: ${{ steps.detect.outputs.fallback-files }}

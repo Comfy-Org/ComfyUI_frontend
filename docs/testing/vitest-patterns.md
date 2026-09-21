@@ -65,29 +65,31 @@ without running registration services. Create one capture per test file and
 keep the mock factory in that file:
 
 ```typescript
-const extensions = await vi.hoisted(async () => {
-  const { createExtensionCapture } =
-    await import('@/utils/__tests__/extensionTestUtils')
-  return createExtensionCapture()
+const extensions = vi.hoisted<{
+  registered: ComfyExtension[]
+  registerExtension: (extension: ComfyExtension) => void
+}>(() => {
+  const registered: ComfyExtension[] = []
+  return {
+    registered,
+    registerExtension: vi.fn((extension) => registered.push(extension))
+  }
 })
 
-vi.mock(import('@/scripts/app'), async (importOriginal) => {
-  const original = await importOriginal()
-  original.app.registerExtension = extensions.registerExtension
-  return original
-})
+vi.mock(import('@/scripts/app'), () => ({
+  app: { registerExtension: extensions.registerExtension }
+}))
 
 await import('@/extensions/core/customWidgets')
-const extension = extensions.getExtension('Comfy.CustomWidgets')
+const extension = extensions.registered.find(
+  ({ name }) => name === 'Comfy.CustomWidgets'
+)
 ```
 
-For an existing partial app or extension-service mock, replace only its
-`registerExtension` member. The capture retains registrations across Vitest's
-mock resets; named lookup throws if the module did not register that extension.
-Use the authoritative `ComfyExtension` hook signatures rather than casting the
-captured object to a custom hook interface. Reset scenario state per test, not
-the module cache. Each capture owns its registrations; there is no shared
-registry or Pinia setup in the helper.
+Mock only `registerExtension` and the other app members exercised by the module
+under test. Keep one registration array per test file and use the authoritative
+`ComfyExtension` hook signatures. Reset scenario state per test, not the module
+cache.
 
 ## Don't Mock `vue-i18n` — Use a Real Plugin
 

@@ -1,44 +1,23 @@
 vi.mock(import('firebase/auth'))
-vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from './agentConsentStore'
 
 const accountApi = vi.hoisted(() => ({
   get: vi.fn(),
   set: vi.fn()
 }))
-vi.mock<unknown>(import('@/platform/settings/globalSettingsApi'), () => ({
+vi.mock(import('@/platform/settings/globalSettingsApi'), () => ({
   getGlobalSetting: accountApi.get,
   setGlobalSetting: accountApi.set
 }))
 
-const authState = await vi.hoisted(async () => {
-  const { reactive } = await import('vue')
-  return reactive<{
-    identity: string | null
-    workspaceId: string | null
-    isSwitching: boolean
-    generation: number
-  }>({
-    identity: 'account-a',
-    workspaceId: 'workspace-a',
-    isSwitching: false,
-    generation: 0
-  })
-})
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    resolvedUserInfo: {
-      get value() {
-        return authState.identity ? { id: authState.identity } : null
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 const stored: GlobalSetting = {
   key: 'Comfy.AgentPanel.ConsentAccepted',
   value: true,
@@ -57,7 +36,7 @@ function deferred<T>() {
 
 describe('agentConsentStore', () => {
   beforeEach(() => {
-    authState.identity = 'account-a'
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     useTeamWorkspaceStore().isSwitching = false
     Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
@@ -133,6 +112,8 @@ describe('agentConsentStore', () => {
   })
 
   it('discards a load that resolves after the account changes', async () => {
+    const identity = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
     let finishLoad = (_value: GlobalSetting | undefined): void => {}
     accountApi.get.mockImplementationOnce(
       () =>
@@ -144,7 +125,7 @@ describe('agentConsentStore', () => {
 
     const request = store.load()
     await vi.waitFor(() => expect(accountApi.get).toHaveBeenCalledOnce())
-    authState.identity = 'account-b'
+    identity.value = 'account-b'
     finishLoad(stored)
 
     await expect(request).resolves.toBe(false)
@@ -152,6 +133,8 @@ describe('agentConsentStore', () => {
   })
 
   it('discards a confirmed write result after the account changes', async () => {
+    const identity = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
     let finishSave = (_value: GlobalSetting): void => {}
     accountApi.set.mockImplementationOnce(
       () =>
@@ -163,7 +146,7 @@ describe('agentConsentStore', () => {
 
     const request = store.accept()
     await vi.waitFor(() => expect(accountApi.set).toHaveBeenCalledOnce())
-    authState.identity = 'account-b'
+    identity.value = 'account-b'
     finishSave(stored)
 
     await expect(request).resolves.toBe(false)
@@ -221,7 +204,7 @@ describe('agentConsentStore', () => {
   })
 
   it('fails closed without an authenticated account', async () => {
-    authState.identity = null
+    useCurrentUser().resolvedUserInfo = computed(() => null)
     const store = useAgentConsentStore()
 
     await expect(store.load()).rejects.toThrow(

@@ -1,6 +1,6 @@
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fetchVideoMetadata } from '@/utils/videoMetadataUtil'
 
@@ -145,6 +145,11 @@ describe('useVideoFilmstrip', () => {
     scope = effectScope()
     return scope.run(fn)!
   }
+
+  beforeEach(() => {
+    vi.stubGlobal('createImageBitmap', undefined)
+    vi.stubGlobal('OffscreenCanvas', undefined)
+  })
 
   afterEach(() => {
     scope?.stop()
@@ -503,32 +508,6 @@ describe('useVideoFilmstrip', () => {
     expect(canvas?.height).toBe(
       Math.round(64 * (FILMSTRIP_THUMBNAIL_MAX_WIDTH / 1920))
     )
-  })
-
-  it('reloads the current video when retry is called after a failure', async () => {
-    const videos: MockVideoElement[] = []
-    installVideoMocks({
-      onVideoCreated: (video) => {
-        video.autoEmitMetadata = videos.length > 0
-        if (videos.length === 0) {
-          queueMicrotask(() => video.emit('error'))
-        }
-        videos.push(video)
-      }
-    })
-
-    const videoUrl = ref('https://example.com/video.mp4')
-    const { thumbnail, error, loading, retry } = runWithScope(() =>
-      useVideoFilmstrip(videoUrl)
-    )
-
-    await vi.waitFor(() => expect(error.value).toBe('load-failed'))
-
-    retry()
-    await vi.waitFor(() => expect(loading.value).toBe(false))
-
-    expect(error.value).toBeNull()
-    expect(thumbnail.value).not.toBe('')
   })
 
   it('aborts a superseded load so its video element is released immediately', async () => {

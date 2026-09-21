@@ -22,9 +22,10 @@
         >
           {{ count }}
         </span>
-        <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
+        <span class="min-w-0 truncate text-sm text-base-foreground">
           {{ title }}
         </span>
+        <slot name="title-badge" />
       </button>
       <slot name="actions" />
       <button

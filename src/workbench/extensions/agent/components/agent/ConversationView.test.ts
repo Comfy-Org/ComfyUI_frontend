@@ -1,34 +1,24 @@
-// @vitest-environment jsdom
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-// jsdom lacks ResizeObserver, which the asset-preview import chain references.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe(): void {}
-    unobserve(): void {}
-    disconnect(): void {}
-  }
-})
-
-import type * as VueUse from '@vueuse/core'
+import { useIntersectionObserver } from '@vueuse/core'
 
 const intersectionCallbacks = vi.hoisted(
   () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
 )
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
-  useIntersectionObserver: (
-    _target: unknown,
-    callback: (entries: { isIntersecting: boolean }[]) => void
-  ) => {
-    intersectionCallbacks.push(callback)
-    return { stop: () => {} }
-  }
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(useIntersectionObserver).mockImplementation((_target, callback) => {
+  intersectionCallbacks.push((entries) =>
+    callback(
+      entries.map((entry) => fromPartial(entry)),
+      fromPartial({})
+    )
+  )
+  return fromPartial({ stop: vi.fn() })
+})
 
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../schemas/agentApiSchema'
@@ -85,6 +75,17 @@ function mountHarness() {
 
 describe('ConversationView', () => {
   beforeEach(() => {
+    vi.mocked(useIntersectionObserver).mockImplementation(
+      (_target, callback) => {
+        intersectionCallbacks.push((entries) =>
+          callback(
+            entries.map((entry) => fromPartial(entry)),
+            fromPartial({})
+          )
+        )
+        return fromPartial({ stop: vi.fn() })
+      }
+    )
     Element.prototype.scrollIntoView = vi.fn()
     intersectionCallbacks.length = 0
   })
@@ -108,6 +109,61 @@ describe('ConversationView', () => {
       role: 'assistant',
       streaming: false
     })
+  })
+
+  it('follows the reply as each kind of content lands', async () => {
+    const settle = async () => {
+      await nextTick()
+      await nextTick()
+    }
+
+    const { store } = mountHarness()
+    store.recordUser(T, 'make a cat')
+    store.startTurn(T)
+    await settle()
+
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+
+    // a new part
+    store.ingest(thinking('msg-1', 'pondering'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // the tail part growing
+    scrollIntoView.mockClear()
+    store.ingest(delta('msg-1', 'Here is a cat'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // a tool call starting
+    scrollIntoView.mockClear()
+    store.ingest(toolCall('msg-1', 'add_node', 'running'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // the same tool call settling
+    scrollIntoView.mockClear()
+    store.ingest(toolCall('msg-1', 'add_node', 'success'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // a tool call settling behind a text tail
+    store.ingest(toolCall('msg-1', 'ls_nodes', 'running'))
+    store.ingest(delta('msg-1', 'Checking the graph'))
+    await settle()
+    scrollIntoView.mockClear()
+    store.ingest(toolCall('msg-1', 'ls_nodes', 'success'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // the turn settling with a text tail
+    store.ingest(delta('msg-1', 'Done.'))
+    await settle()
+    scrollIntoView.mockClear()
+    store.ingest(done('msg-1'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
   })
 
   it('shows a scroll-to-latest button when scrolled up and returns to bottom on click', async () => {
