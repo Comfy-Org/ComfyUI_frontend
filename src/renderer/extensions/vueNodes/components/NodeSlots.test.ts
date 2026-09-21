@@ -260,7 +260,8 @@ describe('NodeSlots.vue', () => {
   })
 
   it('measures slot offsets again after the layout store clears the graph', async () => {
-    const pinia = getActivePinia()!
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
     const graph = new LGraph()
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
