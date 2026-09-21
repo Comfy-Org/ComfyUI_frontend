@@ -485,7 +485,7 @@ overrides:
   sharp@^0.34.0: ^0.35.0
 
 patchedDependencies:
-  '@intlify/shared@11.4.10': 0105de038a37b573e639200a9202d208b8b9c945e6b2f03b211f8c30737d710b
+  '@intlify/shared@11.4.10': 8d6d627b04ee8064d06c2fde0b0eb939806f455eb2e182497d8992e90a78b542
 
 importers:
 
@@ -11523,12 +11523,12 @@ snapshots:
     dependencies:
       '@intlify/devtools-types': 11.4.10
       '@intlify/message-compiler': 11.4.10
-      '@intlify/shared': 11.4.10(patch_hash=0105de038a37b573e639200a9202d208b8b9c945e6b2f03b211f8c30737d710b)
+      '@intlify/shared': 11.4.10(patch_hash=8d6d627b04ee8064d06c2fde0b0eb939806f455eb2e182497d8992e90a78b542)
 
   '@intlify/devtools-types@11.4.10':
     dependencies:
       '@intlify/core-base': 11.4.10
-      '@intlify/shared': 11.4.10(patch_hash=0105de038a37b573e639200a9202d208b8b9c945e6b2f03b211f8c30737d710b)
+      '@intlify/shared': 11.4.10(patch_hash=8d6d627b04ee8064d06c2fde0b0eb939806f455eb2e182497d8992e90a78b542)
 
   '@intlify/eslint-plugin-vue-i18n@4.5.1(eslint@10.10.0(jiti@2.7.0))(jsonc-eslint-parser@3.1.0)(vue-eslint-parser@10.4.1(eslint@10.10.0(jiti@2.7.0)))(yaml-eslint-parser@2.1.0)':
     dependencies:
@@ -11556,10 +11556,10 @@ snapshots:
 
   '@intlify/message-compiler@11.4.10':
     dependencies:
-      '@intlify/shared': 11.4.10(patch_hash=0105de038a37b573e639200a9202d208b8b9c945e6b2f03b211f8c30737d710b)
+      '@intlify/shared': 11.4.10(patch_hash=8d6d627b04ee8064d06c2fde0b0eb939806f455eb2e182497d8992e90a78b542)
       source-map-js: 1.2.1
 
-  '@intlify/shared@11.4.10(patch_hash=0105de038a37b573e639200a9202d208b8b9c945e6b2f03b211f8c30737d710b)': {}
+  '@intlify/shared@11.4.10(patch_hash=8d6d627b04ee8064d06c2fde0b0eb939806f455eb2e182497d8992e90a78b542)': {}
 
   '@isaacs/cliui@8.0.2':
     dependencies:
@@ -18913,7 +18913,7 @@ snapshots:
     dependencies:
       '@intlify/core-base': 11.4.10
       '@intlify/devtools-types': 11.4.10
-      '@intlify/shared': 11.4.10(patch_hash=0105de038a37b573e639200a9202d208b8b9c945e6b2f03b211f8c30737d710b)
+      '@intlify/shared': 11.4.10(patch_hash=8d6d627b04ee8064d06c2fde0b0eb939806f455eb2e182497d8992e90a78b542)
       '@vue/devtools-api': 6.6.4
       vue: 3.5.42(typescript@6.0.3)
 
