@@ -10,6 +10,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { countDocFrames, webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -55,6 +56,7 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     test.setTimeout(90_000)
     const workflowId = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
     const agentPanel = new AgentPanel(page)
+    const command = new CommandHelper(page)
 
     await page.route('**/api/internal/cloud_analytics', (route) =>
       route.fulfill(jsonRoute({}))
@@ -166,9 +168,7 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
 
     await test.step('Opening a blank workflow suspends the restored follower', async () => {
       expect(countAfterReload('doc_unsubscribe')).toBe(0)
-      await page.evaluate(() =>
-        window.app!.extensionManager.command.execute('Comfy.NewBlankWorkflow')
-      )
+      await command.executeCommand('Comfy.NewBlankWorkflow')
       await expect.poll(() => countAfterReload('doc_unsubscribe')).toBe(1)
     })
   })
