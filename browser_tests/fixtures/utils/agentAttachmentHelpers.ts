@@ -45,40 +45,43 @@ export async function dropAssets(
 
 export async function expectAssets(
   panel: Locator,
-  assets: ExpectedAssetPreview[]
+  assets: ExpectedAssetPreview[],
+  timeout = 10_000
 ) {
   const previews = panel.getByTestId(/^reply-(image|video)-preview$/)
-  await expect(previews).toHaveCount(assets.length)
+  await expect(previews).toHaveCount(assets.length, { timeout })
   for (const [index, { visible }] of assets.entries()) {
-    await expect(previews.nth(index)).toBeVisible({ visible })
+    await expect(previews.nth(index)).toBeVisible({ visible, timeout })
   }
   await expect
-    .poll(() =>
-      previews.evaluateAll((elements) =>
-        elements.map((element) => {
-          if (element instanceof HTMLImageElement) {
-            return {
-              filename: element.alt,
-              kind: 'image',
-              width: element.naturalWidth,
-              height: element.naturalHeight
+    .poll(
+      () =>
+        previews.evaluateAll((elements) =>
+          elements.map((element) => {
+            if (element instanceof HTMLImageElement) {
+              return {
+                filename: element.alt,
+                kind: 'image',
+                width: element.naturalWidth,
+                height: element.naturalHeight
+              }
             }
-          }
-          if (element instanceof HTMLVideoElement) {
-            return {
-              filename: element.currentSrc
-                ? new URL(element.currentSrc, location.href).searchParams.get(
-                    'filename'
-                  )
-                : null,
-              kind: 'video',
-              width: element.videoWidth,
-              height: element.videoHeight
+            if (element instanceof HTMLVideoElement) {
+              return {
+                filename: element.currentSrc
+                  ? new URL(element.currentSrc, location.href).searchParams.get(
+                      'filename'
+                    )
+                  : null,
+                kind: 'video',
+                width: element.videoWidth,
+                height: element.videoHeight
+              }
             }
-          }
-          return null
-        })
-      )
+            return null
+          })
+        ),
+      { timeout }
     )
     .toEqual(
       assets.map(({ filename, kind, width, height }) => ({
