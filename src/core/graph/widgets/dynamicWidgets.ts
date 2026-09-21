@@ -658,7 +658,17 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   //not be mistaken for a swap just because it lands within the same
   //rAF-bounded window (PM-1496).
   let pendingConnectionSeen = false
-  let swappingConnection = false
+  //Which slot, if any, is mid a same-slot swap: `connectSlots` just fired
+  //that slot's disconnect (the swap's tail, detected above) and its
+  //matching connect event is expected synchronously right after. Scoped
+  //to a single slot - not node-wide - so a genuine connect on a
+  //*different* slot of this node in between is never mistaken for the
+  //swap's own connect and silently dropped. Cleared deterministically by
+  //the connection lifecycle itself (the matching connect event) rather
+  //than solely by a frame boundary, so it cannot stay armed indefinitely
+  //while `requestAnimationFrame` is suspended (e.g. a hidden background
+  //tab); the frame-boundary reset below is only a defensive fallback.
+  let swappingSlot: number | undefined
 
   const originalOnConnectInput = node.onConnectInput
   node.onConnectInput = function (slot: number, ...args) {
@@ -692,12 +702,21 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
         ensureWidgetForInput(node, input)
       if (iscon) {
         if (pendingConnection === slot) pendingConnectionSeen = true
-        if (swappingConnection || !linf) return
+        if (swappingSlot === slot) {
+          //This is the swap's own matching connect - the slot was already
+          //occupied, so the growth bookkeeping below doesn't apply.
+          //Resolved; no need to wait for a frame.
+          swappingSlot = undefined
+          return
+        }
+        if (!linf) return
         autogrowInputConnected(slot, this)
       } else {
         if (pendingConnection === slot && !pendingConnectionSeen) {
-          swappingConnection = true
-          requestAnimationFrame(() => (swappingConnection = false))
+          swappingSlot = slot
+          requestAnimationFrame(() => {
+            if (swappingSlot === slot) swappingSlot = undefined
+          })
           return
         }
         requestAnimationFrame(() => autogrowInputDisconnected(slot, this))

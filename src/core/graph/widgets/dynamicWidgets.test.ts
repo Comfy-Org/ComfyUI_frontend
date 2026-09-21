@@ -296,8 +296,8 @@ describe('Autogrow', () => {
     expect(node.inputs.length).toBe(5)
   })
   test(
-    'Disconnecting a just-connected slot before a render frame elapses ' +
-      'leaves the spare-slot compaction stuck (PM-1496)',
+    'Disconnecting a just-connected slot still compacts to one spare slot ' +
+      '(PM-1496)',
     async () => {
       // Mirrors OpenAI GPT Image 2.5 (`OpenAIGPTImageNodeV2`)'s real
       // `model.images` group: a *named* autogrow list (not the ordinal
@@ -316,8 +316,9 @@ describe('Autogrow', () => {
       await nextTick()
       // image_2 - the report's "extra image input slot" - connects too,
       // growing the group to [image_1, image_2, image_3]. This growth's
-      // `onConnectInput` sets the module-private `pendingConnection = 1`
-      // (dynamicWidgets.ts's `withComfyAutogrow`), reset only on the next
+      // `onConnectInput` sets `pendingConnection = 1` - per-node closure
+      // state inside `withComfyAutogrow` (dynamicWidgets.ts), one
+      // independent instance per autogrow node - reset only on the next
       // animation frame. No frame is awaited here - matching how the
       // in-app agent applies consecutive CRDT-driven connect/disconnect
       // ops synchronously in one materialization pass, with no render
@@ -333,19 +334,77 @@ describe('Autogrow', () => {
       await nextTick()
 
       // Autogrow's own invariant (asserted for the real node in
-      // browser_tests/tests/links/autogrowInputPersistence.spec.ts:
-      // "autogrow keeps exactly one empty slot after the connected ones")
-      // says this should settle at [image_1, image_2]: one real
-      // connection plus one spare. Instead, `withComfyAutogrow`'s swap
-      // guard misreads this disconnect as the tail end of image_2's own
-      // still-in-flight connect (`pendingConnection === slot` is still 1
-      // from that connect's `onConnectInput`, which hasn't been reset by
-      // an animation frame yet) and treats it as an atomic replace rather
-      // than a real disconnect - so the scheduled compaction
-      // (`autogrowInputDisconnected`) never runs at all, and the group
-      // is stuck at 3 slots with a disconnected, un-reclaimed image_2
-      // sitting in the middle of it until the page is reloaded.
+      // browser_tests/tests/links/autogrowInputPersistence.spec.ts, in a
+      // comment on its one test, 'grown slots and their links survive a
+      // serialize round-trip': "autogrow keeps exactly one empty slot
+      // after the connected ones") says this should settle at
+      // [image_1, image_2]: one real connection plus one spare.
+      // `withComfyAutogrow`'s swap guard now distinguishes this disconnect
+      // (a genuine, separate operation) from the synchronous tail of a
+      // same-slot swap by tracking whether image_2's own connect event has
+      // already fired (`pendingConnectionSeen`) rather than only whether a
+      // render frame has elapsed, so the compaction
+      // (`autogrowInputDisconnected`) is correctly scheduled and image_2
+      // is reclaimed down to the one spare slot.
       expect(node.inputs.map((i) => i.name)).toEqual(['0.image_1', '0.image_2'])
+      // The surviving slot must still be image_1's own link, not a
+      // mis-transplanted or dropped one.
+      expect(node.isInputConnected(0)).toBe(true)
+      expect(node.isInputConnected(1)).toBe(false)
+      expect(node.getInputLink(0)?.target_slot).toBe(0)
+    }
+  )
+  test(
+    'A same-slot swap in progress does not drop a genuine connect on a ' +
+      'different slot of the same node (PM-1496)',
+    async () => {
+      const graph = new LGraph()
+      const node = testNode()
+      graph.add(node)
+      addAutogrow(node, {
+        min: 0,
+        input: inputsSpec,
+        names: ['image_1', 'image_2', 'image_3', 'image_4']
+      })
+
+      // Grow to [image_1, image_2] and let it settle.
+      connectInput(node, 0, graph)
+      await nextTick()
+
+      // A drag starts on image_1 (slot 0) to replace its link, and its
+      // disconnect tail (fired synchronously, before the matching
+      // connect) arrives - the exact same-slot swap pattern the guard is
+      // meant to recognize and suppress.
+      const oldLink = node.getInputLink(0)
+      ;(
+        node.onConnectInput as unknown as
+          | ((slot: number) => boolean)
+          | undefined
+      )?.(0)
+      node.onConnectionsChange?.(
+        LiteGraph.INPUT,
+        0,
+        false,
+        oldLink,
+        node.inputs[0]
+      )
+
+      // While that swap's own matching connect for slot 0 is still
+      // pending, a genuine, unrelated connect lands on a different slot
+      // of the *same* node - image_2, the spare slot, growing the group.
+      // The swap guard is scoped to slot 0 only, so this must go through
+      // rather than being mistaken for the swap's own connect and
+      // silently dropped (which would have left the group stuck without
+      // its required spare slot node-wide, for as long as any swap
+      // elsewhere on the node was still in flight).
+      connectInput(node, 1, graph)
+      await nextTick()
+
+      expect(node.inputs.map((i) => i.name)).toEqual([
+        '0.image_1',
+        '0.image_2',
+        '0.image_3'
+      ])
     }
   )
   test('Autogrow compaction never emits a negative input slot', async () => {
