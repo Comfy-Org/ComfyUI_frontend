@@ -36,7 +36,7 @@ export const useAgentNodeSelectionStore = defineStore(
     const isBannerVisible = ref(false)
     const isLoadingWorkflow = ref(false)
     const restoredNodeIds = ref<string[] | null>(null)
-    const nodeIdsByWorkflow = ref<Record<string, string[]>>({})
+    const nodeIdsByWorkflow = ref<Partial<Record<string, string[]>>>({})
     let transitionTimeoutId: ReturnType<typeof setTimeout> | undefined
     let sidebarTimeoutId: ReturnType<typeof setTimeout> | undefined
     let restoreSidebarTabId: string | null = null
@@ -159,13 +159,7 @@ export const useAgentNodeSelectionStore = defineStore(
         oldWorkflowPath === newWorkflowPath
       )
         return
-      // `in`, not a falsy check on the indexed value: the map is typed
-      // `Record<string, string[]>`, so TypeScript believes every lookup returns
-      // an array and flags `if (!ids)` as an always-falsy condition. The key
-      // really can be absent at runtime, and moving a workflow that never had a
-      // selection must leave the destination untouched rather than write
-      // `undefined` into it.
-      if (!(oldWorkflowPath in nodeIdsByWorkflow.value)) return
+      if (!nodeIdsByWorkflow.value[oldWorkflowPath]) return
       const { [oldWorkflowPath]: ids, ...remaining } = nodeIdsByWorkflow.value
       nodeIdsByWorkflow.value = { ...remaining, [newWorkflowPath]: ids }
     }
