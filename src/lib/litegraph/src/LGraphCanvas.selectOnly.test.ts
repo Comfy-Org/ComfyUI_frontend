@@ -466,4 +466,31 @@ describe('LGraphCanvas selectOnly', () => {
       expect(dragFromReroute).toHaveBeenCalledTimes(linkDrags)
     }
   )
+
+  it.for([
+    { type: 'keydown', selectOnly: false, calls: 1 },
+    { type: 'keydown', selectOnly: true, calls: 0 },
+    { type: 'keyup', selectOnly: false, calls: 1 },
+    { type: 'keyup', selectOnly: true, calls: 0 }
+  ] as const)(
+    '$type with selectOnly=$selectOnly reaches the selected node callback $calls times',
+    ({ type, selectOnly, calls }) => {
+      const { canvas, firstNode } = createHarness()
+      const callback = vi.fn()
+      firstNode[type === 'keydown' ? 'onKeyDown' : 'onKeyUp'] = callback
+      canvas.select(firstNode)
+      canvas.selectOnly = selectOnly
+
+      canvas.processKey(
+        fromPartial<KeyboardEvent>({
+          type,
+          key: 'ArrowRight',
+          shiftKey: false,
+          target: canvas.canvas
+        })
+      )
+
+      expect(callback).toHaveBeenCalledTimes(calls)
+    }
+  )
 })

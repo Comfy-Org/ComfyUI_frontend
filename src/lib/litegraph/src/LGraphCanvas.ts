@@ -4019,10 +4019,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       // TODO
-      for (const node of Object.values(this.selected_nodes)) {
-        node.onKeyDown?.(e)
+      if (!this.selectOnly) {
+        for (const node of Object.values(this.selected_nodes)) {
+          node.onKeyDown?.(e)
+        }
       }
-    } else if (e.type == 'keyup') {
+    } else if (e.type == 'keyup' && !this.selectOnly) {
       for (const node of Object.values(this.selected_nodes)) {
         node.onKeyUp?.(e)
       }
