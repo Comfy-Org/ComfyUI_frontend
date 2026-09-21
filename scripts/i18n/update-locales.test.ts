@@ -604,10 +604,9 @@ describe('reportCheck', () => {
     ).toBe(1)
   })
 
-  it('does not let a stray baseline exempt the same key once it is pending', () => {
-    // `agent.askComfyAgent` is baselined as STRAY. Re-adding it to `en` makes
-    // it PENDING in every locale; a single shared baseline would exempt it and
-    // ship the silent English fallback this check exists to catch.
+  it('does not let a stray baseline exempt a future pending transition', () => {
+    // Simulate a key becoming pending after it was restored in `en` and its
+    // existing locale value was later removed or invalidated.
     expect(
       reportCheck([
         state({

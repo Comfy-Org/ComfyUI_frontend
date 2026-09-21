@@ -62,10 +62,9 @@ interface SourceManifest {
   // locale run heals and drops the entries for that entry file.
   //
   // Pending and stray are kept apart deliberately. A single shared list would
-  // exempt a key in BOTH directions: `agent.askComfyAgent` is baselined here
-  // because it is stray, and re-adding it to `en` would make it pending in
-  // every locale and silently inherit that exemption — the exact silent
-  // fallback this check exists to catch.
+  // exempt a key in both directions. A key baselined as stray can later become
+  // pending for a locale after it is restored in `en`; that new drift must not
+  // inherit the stale exemption.
   /** Keys with no usable translation yet (missing, blanked or invalidated). */
   knownPending?: Record<string, string[]>
   /** Keys the locale still carries that `en` no longer has. */
