@@ -1,5 +1,24 @@
 import path from 'node:path'
 
+/**
+ * lint-staged splits a large stage into chunks and calls this config once per
+ * chunk, running the chunks concurrently. The commands below scan the whole
+ * repository and ignore the file list they are handed, so a chunked commit
+ * starts a copy of each per chunk: two full lint passes together exhaust the
+ * memory on a 16GB machine and both are killed, which is what a branch merging
+ * main back in runs into. Give each one to the first chunk that asks for it.
+ */
+const claimed = new Set<string>()
+
+function repoWide(command: string) {
+  if (claimed.has(command)) {
+    return []
+  }
+
+  claimed.add(command)
+  return [command]
+}
+
 export default function lintStaged(stagedFiles: string[]) {
   const relativePaths = stagedFiles.map(toRelativePath)
 
@@ -46,7 +65,7 @@ function lintCommands(
   astroFiles: string[]
 ) {
   if (new Set([...codeFiles, ...styleFiles, ...astroFiles]).size > 10) {
-    return ['pnpm lint']
+    return repoWide('pnpm lint')
   }
 
   return [
@@ -68,12 +87,12 @@ function typecheckCommands(fileNames: string[]) {
   }
 
   return [
-    'pnpm typecheck',
+    ...repoWide('pnpm typecheck'),
     ...(fileNames.some((fileName) => fileName.startsWith('browser_tests/'))
-      ? ['pnpm typecheck:browser']
+      ? repoWide('pnpm typecheck:browser')
       : []),
     ...(fileNames.some((fileName) => fileName.startsWith('apps/website/'))
-      ? ['pnpm typecheck:website']
+      ? repoWide('pnpm typecheck:website')
       : [])
   ]
 }
