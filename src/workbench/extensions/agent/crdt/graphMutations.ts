@@ -60,11 +60,62 @@ function isSlotRecord(value: unknown): value is { name?: unknown } {
 type PatchableSlot = INodeInputSlot | INodeOutputSlot
 
 /**
- * Copies a serialized slot's presentation fields -- `name`, `localized_name`,
- * `label`, `type`, `dir`, `removable`, `shape`, `color_off`, `color_on`,
- * `locked`, `nameLocked`, `hasErrors` -- onto the live slot object, plus
- * `link`/`links` (handled separately below), so the node keeps its slot
- * identity; an omitted field keeps the live value.
+ * One closure per optional presentation field `patchLiveSlot` copies --
+ * `localized_name`, `label`, `dir`, `removable`, `shape`, `color_off`,
+ * `color_on`, `locked`, `nameLocked`, `hasErrors` -- each written against
+ * its own literal field name, never a `field` variable: a variable holding
+ * the union of every listed field's type reads `serialized[field]` as that
+ * whole union, and TypeScript rejects writing it back to `live[field]`
+ * because it cannot prove the value matches that specific field. A literal
+ * property access has no such union to collapse, so each closure below
+ * type-checks its one field on its own, with no generic indirection and no
+ * lint override; only the loop that calls them is generic over the list.
+ */
+const OPTIONAL_SLOT_FIELD_ASSIGNERS: ReadonlyArray<
+  (live: PatchableSlot, serialized: PatchableSlot) => void
+> = [
+  (live, serialized) => {
+    if (serialized.localized_name !== undefined)
+      live.localized_name = serialized.localized_name
+  },
+  (live, serialized) => {
+    if (serialized.label !== undefined) live.label = serialized.label
+  },
+  (live, serialized) => {
+    if (serialized.dir !== undefined) live.dir = serialized.dir
+  },
+  (live, serialized) => {
+    if (serialized.removable !== undefined)
+      live.removable = serialized.removable
+  },
+  (live, serialized) => {
+    if (serialized.shape !== undefined) live.shape = serialized.shape
+  },
+  (live, serialized) => {
+    if (serialized.color_off !== undefined)
+      live.color_off = serialized.color_off
+  },
+  (live, serialized) => {
+    if (serialized.color_on !== undefined) live.color_on = serialized.color_on
+  },
+  (live, serialized) => {
+    if (serialized.locked !== undefined) live.locked = serialized.locked
+  },
+  (live, serialized) => {
+    if (serialized.nameLocked !== undefined)
+      live.nameLocked = serialized.nameLocked
+  },
+  (live, serialized) => {
+    if (serialized.hasErrors !== undefined)
+      live.hasErrors = serialized.hasErrors
+  }
+]
+
+/**
+ * Copies a serialized slot's presentation fields -- `name`, `type`, and the
+ * ten optional fields `OPTIONAL_SLOT_FIELD_ASSIGNERS` lists -- onto the
+ * live slot object, plus `link`/`links` (handled separately below), so the
+ * node keeps its slot identity; an omitted field keeps the live value.
  *
  * `boundingRect` is deliberately excluded: on a real slot instance it is a
  * `Rectangle` (a `Float64Array` subclass) that the renderer measures, and
@@ -73,33 +124,14 @@ type PatchableSlot = INodeInputSlot | INodeOutputSlot
  * stub. A plain store record takes `link`/`links` as data, while a node's
  * slot instance derives them from the link store and must not have them
  * assigned.
- *
- * Each field is assigned individually, by its own literal name, rather than
- * looped over a `keyof INodeSlot` list: a variable holding that union type
- * reads `serialized[field]` as the union of every listed field's type, and
- * TypeScript rejects writing that back to `live[field]` because it cannot
- * prove the value matches that specific field. A literal key has no such
- * union to collapse, so each line below type-checks the read and the write
- * against that one field, with no generic indirection and no lint override.
  */
 function patchLiveSlot<T extends PatchableSlot>(live: T, serialized: T): void {
   // `name` and `type` are required on `INodeSlot`, so they are always
-  // present and copied unconditionally; every other field below is
-  // optional, and an omitted one keeps the live value.
+  // present and copied unconditionally; every field `OPTIONAL_SLOT_FIELD_
+  // ASSIGNERS` handles is optional, and an omitted one keeps the live value.
   live.name = serialized.name
   live.type = serialized.type
-  if (serialized.localized_name !== undefined)
-    live.localized_name = serialized.localized_name
-  if (serialized.label !== undefined) live.label = serialized.label
-  if (serialized.dir !== undefined) live.dir = serialized.dir
-  if (serialized.removable !== undefined) live.removable = serialized.removable
-  if (serialized.shape !== undefined) live.shape = serialized.shape
-  if (serialized.color_off !== undefined) live.color_off = serialized.color_off
-  if (serialized.color_on !== undefined) live.color_on = serialized.color_on
-  if (serialized.locked !== undefined) live.locked = serialized.locked
-  if (serialized.nameLocked !== undefined)
-    live.nameLocked = serialized.nameLocked
-  if (serialized.hasErrors !== undefined) live.hasErrors = serialized.hasErrors
+  for (const assign of OPTIONAL_SLOT_FIELD_ASSIGNERS) assign(live, serialized)
   if (!isPlainObject(live)) return
   if ('link' in serialized && serialized.link !== undefined) {
     ;(live as INodeInputSlot).link = serialized.link
@@ -107,6 +139,57 @@ function patchLiveSlot<T extends PatchableSlot>(live: T, serialized: T): void {
   if ('links' in serialized && serialized.links !== undefined) {
     ;(live as INodeOutputSlot).links = serialized.links
   }
+}
+
+/**
+ * Patches each live output slot the document still names, by document
+ * index. Outputs are never autogrown, so a live index past the document's
+ * own list is never reused -- doing so would resurrect an output the
+ * document dropped, with no later reconcile to remove it again. Split out
+ * of `commit`'s `connect` case, whose own complexity is otherwise dominated
+ * by this one slot-patching loop rather than by the mutation dispatch it
+ * exists to do.
+ */
+function patchLiveOutputSlots(
+  liveOutputs: NodeState['outputs'],
+  documentOutputs: NodeState['outputs']
+): NodeState['outputs'] {
+  const outputs = [...documentOutputs]
+  for (const [index, output] of liveOutputs.entries()) {
+    if (index >= outputs.length) break
+    if (isSlotRecord(output) && isSlotRecord(outputs[index])) {
+      patchLiveSlot(output, outputs[index])
+      outputs[index] = output
+    }
+  }
+  return outputs
+}
+
+/**
+ * Patches each live input slot by name (inputs may have been reordered
+ * locally). Litegraph does not enforce unique input names, so each
+ * document slot is consumed at most once -- otherwise two live inputs
+ * sharing a name would both resolve to the same document index and one
+ * live identity would be silently dropped. Split out of `commit`'s
+ * `connect` case for the same reason as `patchLiveOutputSlots`.
+ */
+function patchLiveInputSlots(
+  liveInputs: NodeState['inputs'],
+  documentInputs: NodeState['inputs']
+): NodeState['inputs'] {
+  const inputs = [...documentInputs]
+  const consumed = new Set<number>()
+  for (const input of liveInputs) {
+    if (!isSlotRecord(input)) continue
+    const index = inputs.findIndex(
+      (candidate, i) => !consumed.has(i) && candidate.name === input.name
+    )
+    if (index < 0) continue
+    consumed.add(index)
+    patchLiveSlot(input, inputs[index])
+    inputs[index] = input
+  }
+  return inputs
 }
 
 interface SemanticNodeLayout {
@@ -540,6 +623,68 @@ function mergeInputSlotsByName(
   return merged
 }
 
+type ConnectTargetSlotResolution =
+  | { readonly error: string }
+  | {
+      readonly targetInputs: NodeState['inputs']
+      readonly targetSlot: number
+    }
+
+/**
+ * Merges a `connect` payload's raw target inputs onto the live target node
+ * and resolves which merged slot `rawTargetSlot` (the payload's own index,
+ * pre-merge) now corresponds to, or an error string when that slot cannot
+ * be identified. Split out of `prepare`'s `connect` case, whose own
+ * complexity is otherwise dominated by this one slot's worth of resolution
+ * logic rather than by the mutation dispatch it exists to do.
+ */
+function resolveConnectTargetInputs(
+  liveInputs: NodeState['inputs'],
+  rawTargetInputs: readonly ISerialisableNodeInput[],
+  rawTargetSlot: number,
+  autogrowGroupOf: (name: unknown) => string | undefined
+): ConnectTargetSlotResolution {
+  if (liveInputs.some((input) => !isSlotRecord(input))) {
+    return { error: 'connect target inputs contain a malformed live slot' }
+  }
+  // Index the raw payload, not a filtered copy of it: dropping malformed
+  // entries first would shift every later index and resolve the wrong
+  // slot's name.
+  const rawTarget = rawTargetInputs[rawTargetSlot]
+  const name = isRecord(rawTarget) ? rawTarget.name : undefined
+  if (typeof name !== 'string') {
+    return { error: `connect target slot ${rawTargetSlot} does not exist` }
+  }
+  // The payload's own slot names are not guaranteed unique, so the target
+  // slot is resolved by occurrence -- the Nth slot named `name` up to
+  // `rawTargetSlot` in the raw payload maps to the Nth slot named `name` in
+  // the merged result -- rather than by first match.
+  const occurrence = rawTargetInputs
+    .slice(0, rawTargetSlot)
+    .filter(
+      (candidate) => isRecord(candidate) && candidate.name === name
+    ).length
+  const targetInputs = mergeInputSlotsByName(
+    liveInputs,
+    rawTargetInputs,
+    autogrowGroupOf
+  )
+  let seen = 0
+  let resolvedSlot = -1
+  for (const [index, input] of targetInputs.entries()) {
+    if (input.name !== name) continue
+    if (seen === occurrence) {
+      resolvedSlot = index
+      break
+    }
+    seen++
+  }
+  if (resolvedSlot < 0) {
+    return { error: `connect target slot ${rawTargetSlot} does not exist` }
+  }
+  return { targetInputs, targetSlot: resolvedSlot }
+}
+
 function readPair(
   value: unknown,
   fallback: readonly [number, number]
@@ -805,6 +950,51 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     rememberedAutogrowGroups.delete(nodeKey(nodeId))
   }
 
+  // Prefers the live node's own autogrow group registration (real
+  // provenance) over every fallback below. Trusts a `member`/`notMember`
+  // answer as authoritative and final, and remembers it (see
+  // `rememberAutogrowGroup`) so a later call for the same node and name
+  // can still use it once the live port stops being able to answer.
+  //
+  // The two fallbacks run only when the live port itself has no opinion,
+  // i.e. no port is wired at all, or the wired port answers `unavailable`
+  // (the live node couldn't be asked, not that it was asked and said no)
+  // -- see `SemanticLiveNodeQueryPort`/`LiveAutogrowGroupAnswer`. This
+  // follower's own memory of an earlier definitive answer for the exact
+  // same node and name is preferred first, since it is real provenance
+  // the node already gave, just not right now; `nameShapeAutogrowGroupOf`
+  // is a last resort, guessing from the name's shape, for a name this
+  // follower has never resolved definitively.
+  //
+  // Defined here, alongside the memory it reads, rather than inside
+  // `prepare` (its only caller): a closure nested in `prepare`'s own body
+  // adds its branches to `prepare`'s complexity score, even though none of
+  // them depend on anything `prepare` computes beyond `scope`, which it
+  // takes as a parameter instead.
+  function resolveAutogrowGroup(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: unknown
+  ): string | undefined {
+    if (typeof name !== 'string') return undefined
+    const fallback = (): string | undefined => {
+      const memory = rememberedAutogrowGroup(nodeId, name)
+      return memory.remembered ? memory.group : nameShapeAutogrowGroupOf(name)
+    }
+    if (!deps.liveNodes) return fallback()
+    const answer = deps.liveNodes.autogrowGroupOf(scope, nodeId, name)
+    switch (answer.kind) {
+      case 'member':
+        rememberAutogrowGroup(nodeId, name, answer.group)
+        return answer.group
+      case 'notMember':
+        rememberAutogrowGroup(nodeId, name, undefined)
+        return undefined
+      case 'unavailable':
+        return fallback()
+    }
+  }
+
   function fail(message: string): false {
     console.error(`[agent-crdt] graph mutation rejected: ${message}`)
     return false
@@ -822,43 +1012,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const links = new Map(
       [...linkStore.graphTopologies(scope)].map((link) => [link.id, link])
     )
-    // Prefers the live node's own autogrow group registration (real
-    // provenance) over both fallbacks below. Trusts a `member`/`notMember`
-    // answer as authoritative and final, and remembers it (see
-    // `rememberAutogrowGroup`) so a later call for the same node and name
-    // can still use it once the live port stops being able to answer.
-    //
-    // The two fallbacks run only when the live port itself has no opinion,
-    // i.e. no port is wired at all, or the wired port answers `unavailable`
-    // (the live node couldn't be asked, not that it was asked and said no)
-    // -- see `SemanticLiveNodeQueryPort`/`LiveAutogrowGroupAnswer`. This
-    // follower's own memory of an earlier definitive answer for the exact
-    // same node and name is preferred first, since it is real provenance
-    // the node already gave, just not right now; `nameShapeAutogrowGroupOf`
-    // is a last resort, guessing from the name's shape, for a name this
-    // follower has never resolved definitively.
-    const resolveAutogrowGroup = (
-      nodeId: NodeId,
-      name: unknown
-    ): string | undefined => {
-      if (typeof name !== 'string') return undefined
-      const fallback = (): string | undefined => {
-        const memory = rememberedAutogrowGroup(nodeId, name)
-        return memory.remembered ? memory.group : nameShapeAutogrowGroupOf(name)
-      }
-      if (!deps.liveNodes) return fallback()
-      const answer = deps.liveNodes.autogrowGroupOf(scope, nodeId, name)
-      switch (answer.kind) {
-        case 'member':
-          rememberAutogrowGroup(nodeId, name, answer.group)
-          return answer.group
-        case 'notMember':
-          rememberAutogrowGroup(nodeId, name, undefined)
-          return undefined
-        case 'unavailable':
-          return fallback()
-      }
-    }
     const validateNodeUpsert = (
       node: PreparedNode,
       key: string
@@ -914,7 +1067,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             node.state.inputs = mergeInputSlotsByName(
               existing.inputs,
               mutation.payload.inputs,
-              (name) => resolveAutogrowGroup(node.state.id, name)
+              (name) => resolveAutogrowGroup(scope, node.state.id, name)
             )
           }
           nodes.set(key, node.state)
@@ -1018,47 +1171,20 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             : origin.outputs
           let targetInputs = target.inputs
           if (mutation.link.targetInputs) {
-            if (target.inputs.some((input) => !isSlotRecord(input))) {
-              return 'connect target inputs contain a malformed live slot'
-            }
-            // Index the raw payload, not a filtered copy of it: dropping
-            // malformed entries first would shift every later index and
-            // resolve the wrong slot's name.
-            const rawTarget = mutation.link.targetInputs[topology.targetSlot]
-            const name = isRecord(rawTarget) ? rawTarget.name : undefined
-            if (typeof name !== 'string') {
-              return `connect target slot ${topology.targetSlot} does not exist`
-            }
-            // The payload's own slot names are not guaranteed unique, so the
-            // target slot is resolved by occurrence — the Nth slot named
-            // `name` up to `topology.targetSlot` in the raw payload maps to
-            // the Nth slot named `name` in the merged result — rather than
-            // by first match.
-            const occurrence = mutation.link.targetInputs
-              .slice(0, topology.targetSlot)
-              .filter(
-                (candidate) => isRecord(candidate) && candidate.name === name
-              ).length
-            targetInputs = mergeInputSlotsByName(
+            const resolution = resolveConnectTargetInputs(
               target.inputs,
               mutation.link.targetInputs,
+              topology.targetSlot,
               (candidateName) =>
-                resolveAutogrowGroup(topology.targetNodeId, candidateName)
+                resolveAutogrowGroup(
+                  scope,
+                  topology.targetNodeId,
+                  candidateName
+                )
             )
-            let seen = 0
-            let resolvedSlot = -1
-            for (const [index, input] of targetInputs.entries()) {
-              if (input.name !== name) continue
-              if (seen === occurrence) {
-                resolvedSlot = index
-                break
-              }
-              seen++
-            }
-            if (resolvedSlot < 0) {
-              return `connect target slot ${topology.targetSlot} does not exist`
-            }
-            topology.targetSlot = resolvedSlot
+            if ('error' in resolution) return resolution.error
+            targetInputs = resolution.targetInputs
+            topology.targetSlot = resolution.targetSlot
           }
           if (topology.originSlot >= originOutputs.length) {
             return `connect origin slot ${topology.originSlot} does not exist`
@@ -1523,50 +1649,30 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             nodeKey(mutation.topology.targetNodeId)
           )
           if (origin && mutation.originOutputs) {
-            const outputs = [...mutation.originOutputs]
-            // Outputs keep their document positions, so each live slot is
-            // patched from the serialized slot sharing its index. Outputs
-            // are never autogrown, so a live index past the document's own
-            // list is never reused — doing so would resurrect an output the
-            // document dropped, with no later reconcile to remove it again.
-            for (const [index, output] of origin.outputs.entries()) {
-              if (index >= outputs.length) break
-              if (isSlotRecord(output) && isSlotRecord(outputs[index])) {
-                patchLiveSlot(output, outputs[index])
-                outputs[index] = output
-              }
-            }
             nodeStore.updateNodeSlots(
               scope,
               origin.id,
-              { inputs: origin.inputs, outputs },
+              {
+                inputs: origin.inputs,
+                outputs: patchLiveOutputSlots(
+                  origin.outputs,
+                  mutation.originOutputs
+                )
+              },
               context
             )
           }
           if (target && mutation.targetInputs) {
-            const inputs = [...mutation.targetInputs]
-            // Inputs may have been reordered locally, so each live slot is
-            // matched to its serialized slot by name. Litegraph does not
-            // enforce unique input names, so each document slot is consumed
-            // at most once — otherwise two live inputs sharing a name would
-            // both resolve to the same document index and one live identity
-            // would be silently dropped.
-            const consumed = new Set<number>()
-            for (const input of target.inputs) {
-              if (!isSlotRecord(input)) continue
-              const index = inputs.findIndex(
-                (candidate, i) =>
-                  !consumed.has(i) && candidate.name === input.name
-              )
-              if (index < 0) continue
-              consumed.add(index)
-              patchLiveSlot(input, inputs[index])
-              inputs[index] = input
-            }
             nodeStore.updateNodeSlots(
               scope,
               target.id,
-              { inputs, outputs: target.outputs },
+              {
+                inputs: patchLiveInputSlots(
+                  target.inputs,
+                  mutation.targetInputs
+                ),
+                outputs: target.outputs
+              },
               context
             )
           }
