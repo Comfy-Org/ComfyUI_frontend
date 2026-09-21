@@ -11,7 +11,11 @@ export function createBillingCapabilities(
 ): BillingCapabilitiesResponse {
   return {
     resolved_for: {
-      user_id: 'e2e-user',
+      // The signed-in uid `CloudAuthHelper` mocks. Capabilities resolve per
+      // (user, workspace) and the SDK reader checks both halves
+      // (`capabilities.ts:180`), discarding an answer resolved for anyone else
+      // — so a placeholder here reads as "no capabilities" on the SDK rail.
+      user_id: 'test-user-e2e',
       workspace_id: workspaceId
     },
     capabilities: {

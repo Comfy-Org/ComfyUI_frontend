@@ -14,7 +14,6 @@ import { useCommandStore } from '@/stores/commandStore'
 
 import AppsSidebarTab from './AppsSidebarTab.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 beforeEach(() => {
   useAppMode().isAppMode = computed(() => true)

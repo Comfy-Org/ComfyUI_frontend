@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'packages/account-core/package.json'
+      - 'packages/account-ui/package.json'
       - 'packages/billing-contract/package.json'
       - 'packages/ingest-types/package.json'
 
@@ -44,7 +45,7 @@ jobs:
           set -euo pipefail
           INCLUDE='[]'
           SUMMARY=''
-          for PACKAGE in account-core billing-contract ingest-types; do
+          for PACKAGE in account-core account-ui billing-contract ingest-types; do
             PACKAGE_JSON="packages/$PACKAGE/package.json"
             if ! git diff --quiet HEAD^1 HEAD -- "$PACKAGE_JSON"; then
               PREV_JSON=$(git show "HEAD^1:$PACKAGE_JSON" 2>/dev/null || true)
@@ -100,32 +101,48 @@ jobs:
     secrets:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  comment_package_publish:
-    name: Comment ${{ matrix.package }} Publish Summary
+  # The release links are written to an artifact here and posted by
+  # pr-publish-report.yaml, a workflow_run consumer, so this pull_request-
+  # triggered workflow holds no write permission on pull requests.
+  publish_report:
+    name: Write Publish Report
     needs:
       - resolve
       - publish
     if: success() && needs.resolve.outputs.released != '0'
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.resolve.outputs.matrix) }}
     permissions:
       contents: read
-      issues: write
-      pull-requests: write
     steps:
-      - name: Checkout merge commit
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
-          fetch-depth: 2
+      - name: Write release links and the PR number
+        env:
+          MATRIX: ${{ needs.resolve.outputs.matrix }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p publish-report
+          {
+            echo 'Publish jobs finished successfully:'
+            echo ''
+            jq -r '
+              .include[]
+              | "- npm @comfyorg/\(.package): [`\(.version)`](https://www.npmjs.com/package/@comfyorg/\(.package)/v/\(.version)) on `\(.dist_tag)`"
+            ' <<<"$MATRIX"
+            echo "- Published from [\`${MERGE_SHA:0:10}\`](https://github.com/${REPO}/commit/${MERGE_SHA})"
+            echo ''
+          } > publish-report/report.md
+          printf '%s' "$PR_NUMBER" > publish-report/pr-number.txt
 
-      - name: Post package release summary comment
-        uses: ./.github/actions/comment-release-links
+      - name: Upload publish report
+        uses: actions/upload-artifact@v6
         with:
-          issue-number: ${{ github.event.pull_request.number }}
-          version_file: packages/${{ matrix.package }}/package.json
+          name: publish-report
+          path: publish-report/
+          if-no-files-found: error
+          retention-days: 7
 
   # publish is a matrix call, and GitHub attributes a matrix job's outputs to
   # whichever entry finished last, so `needs.publish.outputs.published` cannot

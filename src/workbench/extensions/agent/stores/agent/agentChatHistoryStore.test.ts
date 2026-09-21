@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
@@ -169,5 +169,17 @@ describe('useAgentChatHistoryStore', () => {
 
     expect(store.titleFor('a')).toBeUndefined()
     expect(store.sessions.map(({ id }) => id)).toEqual(['a'])
+  })
+
+  it('removes a session with no server request', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', 1)])
+
+    store.remove('a')
+
+    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(store.sessions).toHaveLength(0)
+    fetchSpy.mockRestore()
   })
 })

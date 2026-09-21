@@ -8,8 +8,8 @@ Accepted
 
 ## Context
 
-Three workspace packages are about to leave the monorepo and become npm
-artifacts that a second repository installs:
+Four workspace packages leave the monorepo and become npm artifacts that a
+second repository installs:
 
 - `@comfyorg/account-core` — the framework-free session core (session,
   billing transport, commands, readers).
@@ -19,9 +19,20 @@ artifacts that a second repository installs:
 - `@comfyorg/ingest-types` — the TypeScript types and Zod schemas generated
   from Cloud's ingest OpenAPI specification, which `account-core` depends on.
 
-`@comfyorg/account-ui` stays private for now. It is the Vue layer and has
-exactly one consumer inside this repository; it becomes a fourth publishable
-package only when a host outside the monorepo needs the components.
+- `@comfyorg/account-ui` — the Vue layer over that core: the composables and
+  unstyled components that present the operation lifecycle, the payment
+  surface and the sign-in pieces.
+
+The first three shipped when this decision was first accepted. `account-ui`
+was held back then, on the reading that it had one consumer inside this
+repository. That reading no longer holds: the cloud app, `apps/website` and
+`apps/billing-web` all import from it, and
+[ADR-PACKAGES-ACCOUNT-UI-0034](PACKAGES-ACCOUNT-UI-0034-payment-ui-belongs-to-the-shared-account-ui-package.md)
+makes it the home of the payment UI those hosts render — which turns its
+export map into an external contract, because the fourth consumer is
+Platform, installing from npm rather than from this workspace. It joined the
+tables once #17929 gave it a `dist` build and #17932 cut the two workspace
+dependencies that were never going to be published.
 
 The consumer that forces the question is Platform (platform.comfy.org), a
 separate repository with no pnpm workspace link into this one. It installs
@@ -55,13 +66,14 @@ Release the three SDK packages through the same version-bump PR the
 design-system uses, generalized over a `package` input instead of copied per
 package. Do not adopt Changesets yet.
 
-Three workflows carry it:
+Four workflows carry it:
 
-| Workflow                        | Trigger                               | What it does                                                                                                            |
-| ------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `version-bump-package.yaml`     | `workflow_dispatch`                   | Bumps one package on `main` and opens a `Release`-labelled PR titled `<package> <version>`                              |
-| `publish-package.yaml`          | `workflow_dispatch` + `workflow_call` | Validates, builds, smoke-tests, and publishes one package with provenance                                               |
-| `publish-package-on-merge.yaml` | `pull_request: closed` on `main`      | On a merged `Release` PR, publishes every package whose version changed, comments the release links, and posts to Slack |
+| Workflow                        | Trigger                                | What it does                                                                                                                         |
+| ------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `version-bump-package.yaml`     | `workflow_dispatch`                    | Bumps one package on `main` and opens a `Release`-labelled PR titled `<package> <version>`                                           |
+| `publish-package.yaml`          | `workflow_dispatch` + `workflow_call`  | Validates, builds, smoke-tests, and publishes one package with provenance                                                            |
+| `publish-package-on-merge.yaml` | `pull_request: closed` on `main`       | On a merged `Release` PR, publishes every package whose version changed, writes the release links to an artifact, and posts to Slack |
+| `pr-publish-report.yaml`        | `workflow_run` of the on-merge publish | Posts the release links to the Release PR, the only job on this path with write permission on pull requests                          |
 
 Pre-merge snapshot publishing is a deliberate follow-up, not part of this
 decision; the constraint that shapes it is recorded under Follow-ups.
@@ -69,10 +81,11 @@ decision; the constraint that shapes it is recorded under Follow-ups.
 The decisions inside those workflows:
 
 - **One parameterized pair, not three copies.** `package` is a choice input
-  over `account-core`, `billing-contract`, and `ingest-types`, mapped to its
-  npm name by an explicit table so an unknown value fails loudly rather than
-  publishing something unintended. The design-system workflows are left
-  untouched; a fourth package joins by adding one line to two tables.
+  over `account-core`, `account-ui`, `billing-contract`, and `ingest-types`,
+  mapped to its npm name by an explicit table so an unknown value fails loudly
+  rather than publishing something unintended. The design-system workflows are
+  left untouched; a further package joins by adding one line to each of the
+  two tables and one entry to the on-merge `paths` filter.
 - **The `Release` label is the publish gate.** A merged PR that touches a
   package manifest publishes nothing unless a human attached the label, and
   the on-merge job compares each manifest's `version` against its first parent
@@ -81,8 +94,9 @@ The decisions inside those workflows:
   with an explicit message while a package is still private. The latch came
   off the three manifests in the same reviewed PR that added these workflows,
   once the publish-readiness work (#17882) had proven the tarballs install
-  from plain Node; the check stays so a package that re-enters the tables
-  before it is ready fails loudly rather than shipping.
+  from plain Node, and off `account-ui` once the same proof covered it; the
+  check stays so a package that re-enters the tables before it is ready fails
+  loudly rather than shipping.
 - **Build and smoke-test before publish, tolerantly.** The job runs `build`
   and `smoke:pack` with `--if-present` so it works both before and after the
   packaging PRs that introduce those scripts land. `pnpm publish` passes
@@ -110,8 +124,8 @@ The decisions inside those workflows:
 
 ### Versioning policy
 
-- The hand-written packages — `account-core`, `billing-contract`, and
-  `account-ui` when it joins — stay on `1.0.0-alpha.N` published to `next`
+- The hand-written packages — `account-core`, `account-ui` and
+  `billing-contract` — stay on `1.0.0-alpha.N` published to `next`
   until the Phase 7 host proof: Platform installs from the registry in a clean
   non-workspace checkout and `billing-web` runs a live top-up against it.
   `1.0.0` on `latest` is that proof's reward, not its precondition.
@@ -179,8 +193,8 @@ monorepo was adopted ([ADR-DEVEX-MONOREPO-0002](DEVEX-MONOREPO-0002-adopt-a-pnpm
   other path is a `workflow_dispatch` of `publish-package.yaml` on `main`.
 - Provenance and the `private` guard make the accidental-publish path explicit
   rather than a matter of care.
-- Adding the fourth package (`account-ui`, when it goes public) is two table
-  entries and one `paths` line.
+- Adding a package is two table entries and one `paths` line; `account-ui`
+  joined on exactly that.
 
 ### Negative
 
@@ -208,18 +222,20 @@ monorepo was adopted ([ADR-DEVEX-MONOREPO-0002](DEVEX-MONOREPO-0002-adopt-a-pnpm
 
 ### Sequencing
 
-This ADR ships the release machinery and removes `private: true` from the
-three manifests. It sits on the publish-readiness PR (#17882: files
+This ADR shipped the release machinery and removed `private: true` from the
+first three manifests. It sits on the publish-readiness PR (#17882: files
 allowlist, `dist` build with declarations, pack smoke test, private-utility
 cut — the approach first drafted in #17838, #17839 and #17840), which in turn
 sits on the `account-core` rename (#17851) and the Vue move (#17854). With
-this merged, the remaining order to the first publish is bump and merge —
+this merged, the order to the first publish was bump and merge —
 `ingest-types` first, because `account-core` resolves it as a caret range
 from the registry, then `billing-contract` and `account-core`. `account-ui`
-comes after `account-core` on the same reasoning once #17929 (its library
-build) and #17932 (its dependency cut) have made it packable: `account-core`
-is its one runtime dependency, resolved as a caret range from the registry,
-so an `account-ui` published first is an artifact nothing can install.
+comes last on the same reasoning: `account-core` is its one runtime
+dependency, resolved as a caret range from the registry, so an `account-ui`
+published before it is an artifact nothing can install. That ordering is why
+its dependency on the core is `workspace:^` rather than the `workspace:*` it
+carried while private — the protocol is invisible until the package packs,
+and an exact pin is the lockfile conflict this ADR rejects below.
 
 ### Follow-ups
 
@@ -247,17 +263,18 @@ so an `account-ui` published first is an artifact nothing can install.
   `account-core` in a PR that does not touch `ingest-types` resolves its caret
   range against the registry, so an unpublished `ingest-types` change can only
   be tested when the same PR touches both.
-- **`account-ui` is the fourth candidate.** It joins the tables when an
-  out-of-repo host needs the Vue layer. What makes it packable is open as
-  #17929 and #17932; `private` stays on it until both land, and it publishes
-  after `account-core` per the sequencing above.
+- **`account-ui` has no version of its own on npm yet.** It is registered in
+  the tables and the latch is off, but nothing is published until someone runs
+  the bump workflow for it. Until then the export map
+  [ADR-PACKAGES-ACCOUNT-UI-0034](PACKAGES-ACCOUNT-UI-0034-payment-ui-belongs-to-the-shared-account-ui-package.md)
+  governs is an external contract only in intent.
 
 ### When to revisit Changesets
 
 Any one of these is enough to reopen the decision:
 
-- **Five or more published packages.** `account-ui` going public counts
-  toward the five.
+- **Five or more published packages.** Four are registered today, so one
+  more reopens this.
 - **Frequent lockstep releases.** More than an occasional change that has to
   ship across two or three packages at once, where the manual order is a thing
   to get right rather than a thing that happens to be right.
@@ -278,6 +295,8 @@ in place, with the `Release` label swapped for the bot's own PR marker.
   the workspace these packages are published out of.
 - [ADR-AUTH-BILLING-0032](AUTH-BILLING-0032-billing-stays-outside-the-account-package-in-v1.md) —
   what `account-core` owns, and what stays in the host.
+- [ADR-PACKAGES-ACCOUNT-UI-0034](PACKAGES-ACCOUNT-UI-0034-payment-ui-belongs-to-the-shared-account-ui-package.md) —
+  what `account-ui` exports, which publishing turns into an external contract.
 - [ADR-BILLING-WEB-0031](BILLING-WEB-0031-static-spa-boundary.md) —
   the hosted billing app that consumes `billing-contract`.
 - [ADR-AUTH-IDENTITY-0028](AUTH-IDENTITY-0028-account-package-firebase-entry-delivers-cloud-identity.md) —

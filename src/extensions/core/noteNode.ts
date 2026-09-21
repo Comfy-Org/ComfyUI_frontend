@@ -26,9 +26,6 @@ app.registerExtension({
         this.color = LGraphCanvas.node_colors.yellow.color
         this.bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
 
-        if (!this.properties) {
-          this.properties = { text: '' }
-        }
         ComfyWidgets.STRING(
           this,
           'text',
@@ -66,9 +63,6 @@ app.registerExtension({
         this.color = LGraphCanvas.node_colors.yellow.color
         this.bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
 
-        if (!this.properties) {
-          this.properties = { text: '' }
-        }
         ComfyWidgets.MARKDOWN(
           this,
           'text',

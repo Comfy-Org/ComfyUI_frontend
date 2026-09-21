@@ -62,6 +62,16 @@ export function useAgentWorkflowResolver({
     }
   }
 
+  /**
+   * Drops a workflow the server has refused. `cloudIdFor` reads this index
+   * ahead of the binding store, and `refreshCloudWorkflowIds` both swallows
+   * its errors and races a timeout, so a stale entry would keep handing the
+   * refused id back to the next turn however often the binding is released.
+   */
+  function forgetCloudWorkflowId(workflowId: string): void {
+    cloudIndex.value = cloudIndex.value.filter(({ id }) => id !== workflowId)
+  }
+
   function cloudWorkflowName(workflow: ComfyWorkflow): string {
     return workflow.suffix === 'app.json'
       ? `${workflow.filename}.app`
@@ -203,6 +213,7 @@ export function useAgentWorkflowResolver({
 
   return {
     refreshCloudWorkflowIds,
+    forgetCloudWorkflowId,
     cloudIdFor,
     cloudWorkflowName,
     boundOrOpenWorkflowFor,
