@@ -331,6 +331,68 @@ export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
       ]
     }
   ],
+  'agent-repro-combo-write-flux2': [
+    {
+      text: 'The Flux.2 Image node on the "Flux image" tab now generates with Flux.2 [max]. Nothing else was touched.',
+      groups: [
+        [
+          {
+            label: 'Switched tabs',
+            count: 1,
+            failed: false
+          },
+          {
+            label: 'Apply ops',
+            count: 1,
+            failed: false
+          }
+        ]
+      ]
+    },
+    {
+      text: 'Added a second Flux.2 Image node to the right of the first one. It is not connected to anything yet.',
+      groups: [
+        [
+          {
+            label: 'Add node',
+            count: 1,
+            failed: false
+          }
+        ]
+      ]
+    }
+  ],
+  'agent-repro-combo-write-ksampler': [
+    {
+      text: 'The KSampler on the "Text to image" tab now samples with dpmpp_2m on the karras scheduler. Nothing else was touched.',
+      groups: [
+        [
+          {
+            label: 'Switched tabs',
+            count: 1,
+            failed: false
+          },
+          {
+            label: 'Apply ops',
+            count: 1,
+            failed: false
+          }
+        ]
+      ]
+    },
+    {
+      text: 'Added a second KSampler below the first one. It is not connected to anything yet.',
+      groups: [
+        [
+          {
+            label: 'Add node',
+            count: 1,
+            failed: false
+          }
+        ]
+      ]
+    }
+  ],
   'agent-rec-set-widget-existing': [
     {
       text: 'You\'re now on the "Text to image" tab, with steps at 30 and cfg at 5. Nothing else was touched.',

@@ -16,6 +16,17 @@ union (`zAgentWsEvent` in `agentApiSchema.ts`) minus the thread and message ids
 the replay mints, so when production changes shape the fix is a new recording
 or a production-side change, never a looser fixture schema.
 
+## Synthesized repros (`repros/`)
+
+A bug repro that no recording covers yet lives under `repros/`, marked
+`response_side: synthesized`, and is named explicitly by its spec through
+`test.use({ conversationCase })`. `listRecordedConversations()` never lists
+it, so the replay suite stays recordings only. Mint its graph ops with
+comfy-cli against the pinned catalog (`comfy workflow add-node`,
+`comfy workflow set-widget` with `--input <object_info.json>`), strip the wire
+envelope, and cite the CLI version and catalog hash in `source.note`. Once the
+fix ships, record the real turn and move the case to `conversations/`.
+
 ## Playbook
 
 With the cloud repo's own local stack running (`cd ../cloud && cloud up`),
