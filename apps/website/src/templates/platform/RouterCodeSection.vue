@@ -11,31 +11,36 @@ import { ROUTER_PROVIDERS, routerCodeTabs } from './codeSamples'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const providerOptions: readonly {
-  id: RouterProvider
-  name: string
-  logo: string
-  logoClass: string
-}[] = [
-  {
-    id: 'fal',
+const providerLogos: Record<
+  RouterProvider,
+  { name: string; logo: string; logoClass: string }
+> = {
+  fal: {
     name: 'fal',
     logo: '/icons/router-providers/fal.svg',
     logoClass: 'h-3.5'
   },
-  {
-    id: 'runware',
+  runware: {
     name: 'Runware',
     logo: '/icons/router-providers/runware.svg',
     logoClass: 'h-3'
   },
-  {
-    id: 'wavespeed',
+  wavespeed: {
     name: 'WaveSpeed',
     logo: '/icons/router-providers/wavespeed.svg',
     logoClass: 'h-3'
+  },
+  higgsfield: {
+    name: 'Higgsfield',
+    logo: '/icons/router-providers/higgsfield.svg',
+    logoClass: 'h-3.5'
   }
-]
+}
+
+const providerOptions = ROUTER_PROVIDERS.map((id) => ({
+  id,
+  ...providerLogos[id]
+}))
 
 const selectedProvider = ref<RouterProvider>(providerOptions[0].id)
 </script>
@@ -43,7 +48,7 @@ const selectedProvider = ref<RouterProvider>(providerOptions[0].id)
 <template>
   <section class="mx-auto max-w-4xl px-6 py-10 lg:py-14">
     <h2
-      class="text-center text-2xl/tight font-light text-primary-comfy-canvas lg:text-3xl/tight"
+      class="text-center text-2xl/tight font-light text-balance text-primary-comfy-canvas lg:text-3xl/tight"
     >
       {{ t('platform.router.code.heading', locale) }}
     </h2>
@@ -52,6 +57,7 @@ const selectedProvider = ref<RouterProvider>(providerOptions[0].id)
         :tabs="routerCodeTabs"
         :label="t('platform.router.code.heading', locale)"
         :selected-index="ROUTER_PROVIDERS.indexOf(selectedProvider)"
+        picker="dropdown"
         content-class="bg-[#2a2230]"
         :copy-label="t('ui.copy', locale)"
         :copied-label="t('ui.copied', locale)"

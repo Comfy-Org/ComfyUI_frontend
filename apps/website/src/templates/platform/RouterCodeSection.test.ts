@@ -16,5 +16,10 @@ describe('RouterCodeSection', () => {
 
     expect(screen.getByText('wavespeed')).toBeTruthy()
     expect(screen.queryByText('fal')).toBeNull()
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Higgsfield' }))
+
+    expect(screen.getByText('higgsfield')).toBeTruthy()
+    expect(screen.queryByText('wavespeed')).toBeNull()
   })
 })

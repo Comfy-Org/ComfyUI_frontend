@@ -72,7 +72,12 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
 // cycles, illustrating that switching providers only changes one argument.
 const ROUTER_MODEL = 'openai/gpt-image-2'
 const ROUTER_PROMPT = 'aerial view of a neon coral reef at dusk'
-export const ROUTER_PROVIDERS = ['fal', 'runware', 'wavespeed'] as const
+export const ROUTER_PROVIDERS = [
+  'fal',
+  'runware',
+  'wavespeed',
+  'higgsfield'
+] as const
 export type RouterProvider = (typeof ROUTER_PROVIDERS)[number]
 
 export const routerCodeTabs: Record<string, CodeTab> = {
@@ -102,18 +107,20 @@ export const routerCodeTabs: Record<string, CodeTab> = {
       "',\n})"
     ]
   },
+  // Router picks the serving provider from the model_provider query parameter;
+  // the route and the model's native body stay the same (docs.comfy.org/development/comfy-router/providers).
   curl: {
     name: 'cURL',
     lang: 'shell',
     wrap: true,
     segments: [
-      'curl -X POST https://api.comfy.org/v1/models/' +
+      'curl -X POST "https://api.comfy.org/v2/models/' +
         ROUTER_MODEL +
-        ' \\\n  -H "X-API-Key: $COMFY_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"prompt": "' +
-        ROUTER_PROMPT +
-        '", "provider": "',
+        '?model_provider=',
       { values: [...ROUTER_PROVIDERS], highlight: true },
-      '"}\''
+      '" \\\n  -H "X-API-Key: $COMFY_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"prompt": "' +
+        ROUTER_PROMPT +
+        '"}\''
     ]
   }
 }
