@@ -49,6 +49,9 @@ export async function expectAssets(
 ) {
   const previews = panel.getByTestId(/^reply-(image|video)-preview$/)
   await expect(previews).toHaveCount(assets.length)
+  for (const [index, { visible }] of assets.entries()) {
+    await expect(previews.nth(index)).toBeVisible({ visible })
+  }
   await expect
     .poll(() =>
       previews.evaluateAll((elements) =>
@@ -58,8 +61,7 @@ export async function expectAssets(
               filename: element.alt,
               kind: 'image',
               width: element.naturalWidth,
-              height: element.naturalHeight,
-              visible: element.checkVisibility()
+              height: element.naturalHeight
             }
           }
           if (element instanceof HTMLVideoElement) {
@@ -69,13 +71,19 @@ export async function expectAssets(
               ),
               kind: 'video',
               width: element.videoWidth,
-              height: element.videoHeight,
-              visible: element.checkVisibility()
+              height: element.videoHeight
             }
           }
           return null
         })
       )
     )
-    .toEqual(assets)
+    .toEqual(
+      assets.map(({ filename, kind, width, height }) => ({
+        filename,
+        kind,
+        width,
+        height
+      }))
+    )
 }
