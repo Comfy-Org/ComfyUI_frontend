@@ -7,7 +7,7 @@ The current focus is the **billing SDK rail migration** (Milestone 1): every bil
 ## Baseline preconditions
 
 - Launch at `http://localhost:5173` with `nvm use 26 && pnpm dev:cloud` (backend: `testcloud.comfy.org`).
-- Run all three Doctor checks. In particular, confirm `curl -s http://localhost:5173/src/composables/useFeatureFlags.ts | grep -c billing_sdk` is non-zero. An environment without the migration makes every result below meaningless.
+- Run all four Doctor checks. In particular, confirm `curl -s http://localhost:5173/src/composables/useFeatureFlags.ts | grep -c billing_sdk` is non-zero. An environment without the migration makes every result below meaningless.
 - Sign in with an **email-verified `@comfy.org`** account. Without it `?ff=` overrides are silently ignored. The human signs in; never type someone's password.
 - Have ready: an account with a saved card, one without, a declining card, a 3DS card, and both a personal and a team workspace.
 - Never drive an instance this run did not start.
@@ -22,7 +22,7 @@ The current focus is the **billing SDK rail migration** (Milestone 1): every bil
 
 ## The scenario matrix
 
-Both rails are ANDed with `unified_cloud_auth`, and **testcloud serves that flag as `false`**, so it has to be overridden too, or the rail stays off and the run silently measures legacy on both sides.
+Both rails are ANDed with `unified_cloud_auth`. The anonymous `/api/features` reports it `false` in every environment, but it resolves `true` for a signed-in user. Resolve `flags.unifiedCloudAuthEnabled` in the page before trusting a scenario. The query strings below override it anyway, which is harmless when it is already `true`.
 
 | #   | Query string                                                                              | What it is                                               |
 | --- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------- |
