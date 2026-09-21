@@ -24,7 +24,6 @@ test.describe(
         .getByRole('textbox')
       await prompt.fill('saved before reload')
       await agentConversation.topbar.saveWorkflowAs('Reload reattachment')
-      const before = agentConversation.subscribeCount()
       const beforePath = testInfo.outputPath('before-reload.png')
       await page.screenshot({ path: beforePath })
       await testInfo.attach('before-reload', {
@@ -53,6 +52,7 @@ test.describe(
       await expect(picker).toHaveText('Reload reattachment')
       expect((await restoredContent).ok()).toBe(true)
       await expect(prompt).toHaveValue('saved before reload')
+      const before = agentConversation.subscribeCount()
       await agentConversation.sendPrompt()
       await expect
         .poll(() => agentConversation.subscribeCount())
