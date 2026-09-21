@@ -672,7 +672,23 @@ test.describe(
       // of the two that reaches the reattach step's second full turn round
       // trip, which the 90s budget didn't have headroom for (see the
       // `describe` comment above).
-      test.setTimeout(150_000)
+      //
+      // The prior 150s here (raised from 90s for the same reason) still
+      // wasn't enough
+      // (https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/35663417500/job/106550449557)
+      // and it was never actually sized for this job in the first place:
+      // `playwright-video-new-tests` invokes this project with its own
+      // `--timeout=180000` CLI default (ci-tests-e2e.yaml), which this
+      // in-code override was undercutting rather than building on. The
+      // regular (non-video) `cloud` project run of this same spec has no
+      // such override and needs its own explicit budget regardless, since
+      // that project's own default is 15s -- so this can't just be
+      // deleted in favor of the CLI flag. Set well above both the CLI
+      // default and the previous guess, inside the job's own 30-minute
+      // ceiling (`playwright-video-new-tests`'s `timeout-minutes`), so
+      // another round of under-provisioned SLOW_MO + video overhead
+      // doesn't require a fourth guess.
+      test.setTimeout(240_000)
       // The scenario's own assertions run inside the shared helper below;
       // this one confirms it completed rather than being rejected, which
       // both keeps a direct assertion in this test's own body (satisfying
