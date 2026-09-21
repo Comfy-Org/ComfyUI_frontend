@@ -30,7 +30,8 @@ const PANEL_MOUNT_TIMEOUT = 30_000
 // rejects a `set_widget` naming anything outside this list.
 const LOAD3D_CATALOG: WidgetCatalog = {
   types: {
-    Load3D: { widget_order: ['model_file', 'image', 'width', 'height'] }
+    Load3D: { widget_order: ['model_file', 'image', 'width', 'height'] },
+    PreviewImage: { widget_order: [] }
   }
 }
 
@@ -56,12 +57,42 @@ interface Load3dCapture {
 // stored by name, so nothing here depends on positional order.
 function seedWorkflow(): WorkflowJSON {
   const { extra, ...parsed } = zComfyWorkflow.parse(load3dWorkflow)
-  const nodes = parsed.nodes.map((node) => ({
+  const load3dNodes = parsed.nodes.map((node) => ({
     ...node,
+    outputs: node.outputs?.map((output, index) => ({
+      ...output,
+      links: index === 0 ? [9] : output.links
+    })),
     widgets_values: { model_file: '', width: 1024, height: 1024 }
   }))
+  const nodes: WorkflowJSON['nodes'] = [
+    ...load3dNodes,
+    {
+      id: 2,
+      type: 'PreviewImage',
+      pos: [500, 50],
+      size: [260, 220],
+      inputs: [{ name: 'images', type: 'IMAGE', link: 9 }],
+      outputs: [],
+      widgets_values: {}
+    },
+    {
+      id: 3,
+      type: 'PreviewImage',
+      pos: [800, 50],
+      size: [260, 220],
+      inputs: [{ name: 'prompt', type: 'STRING', link: null }],
+      outputs: [],
+      widgets_values: {}
+    }
+  ]
   // The workflow schema allows `extra: null`; the multi-player seed does not.
-  return { ...parsed, extra: extra ?? undefined, nodes, links: [] }
+  return {
+    ...parsed,
+    extra: extra ?? undefined,
+    nodes,
+    links: [[9, 1, 0, 2, 0, 'IMAGE']]
+  }
 }
 
 function getQueuedPrompt(body: unknown): ComfyApiWorkflow {
@@ -187,6 +218,31 @@ class Load3dAgentHarness {
         )
       )
       .toBe(model)
+  }
+
+  replaceLinkWithIncompatibleTarget(): void {
+    this.hostSocket.send(this.host.replaceLink([9, 1, 0, 3, 0, 'STRING']))
+  }
+
+  async expectRenderedLinks(expected: unknown[]): Promise<void> {
+    await expect
+      .poll(() =>
+        this.page.evaluate(() =>
+          [...window.app!.graph.links.values()].map((link) => [
+            link.id,
+            link.origin_id,
+            link.origin_slot,
+            link.target_id,
+            link.target_slot,
+            link.type
+          ])
+        )
+      )
+      .toEqual(expected)
+  }
+
+  expectHostLink(expected: unknown): void {
+    expect(this.host.link(9)).toEqual(expected)
   }
 
   /** Clicks Queue and resolves once the prompt for it has been posted. */
