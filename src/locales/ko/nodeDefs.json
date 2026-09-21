@@ -13234,6 +13234,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "더 정교한 표면 디테일과 높은 충실도의 기하 구조를 위해 추가 정제 패스를 실행합니다."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "울트라 패스의 해상도: 2k는 2048³, 4k는 4096³로 실행되어 가장 섬세한 표면 디테일을 제공합니다. 4k에는 meshy-7.1 이상이 필요합니다. ultra_mode가 활성화된 경우에만 사용됩니다."
       }
     },
     "outputs": {
@@ -13300,6 +13304,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "더 섬세한 표면 디테일과 높은 충실도의 형상을 위해 2048³에서 추가 정제 패스를 실행합니다."
       }
     },
     "outputs": {
@@ -13441,6 +13449,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "더 정교한 표면 디테일과 높은 충실도의 기하 구조를 위해 추가 정제 패스를 실행합니다."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "울트라 패스의 해상도: 2k는 2048³, 4k는 4096³로 실행되어 가장 섬세한 표면 디테일을 제공합니다. 4k에는 meshy-7.1 이상이 필요합니다. ultra_mode가 활성화된 경우에만 사용됩니다."
       }
     },
     "outputs": {
