@@ -231,9 +231,10 @@ const maxSize = api.getServerFeature('max_upload_size', 100 * 1024 * 1024)
 
 `useFeatureFlags()` returns `{ flags, featureFlag }`.
 
-`flags` is a readonly reactive object of named, camelCase properties — one per
-entry in the `ServerFeatureFlag` enum. Each is a getter, so reading it always
-reflects the current value and tracks reactively:
+`flags` is a readonly reactive object of named, camelCase properties. Most
+correspond to an entry in the `ServerFeatureFlag` enum; a few resolve a bare
+string path instead (`assetsEnabled` reads `'assets'`). Each is a getter, so
+reading it always reflects the current value and tracks reactively:
 
 ```typescript
 const { flags } = useFeatureFlags()
@@ -277,6 +278,59 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 const { flags } = useFeatureFlags()
 </script>
 ```
+
+### Flag Resolution Order
+
+Getters built on the `resolveFlag()` helper in
+`src/composables/useFeatureFlags.ts` do not read the server value directly.
+They resolve in this order, first match wins:
+
+1. **Session override** — `getSessionOverride()`
+   (`src/utils/sessionFeatureFlagOverride.ts`)
+2. **Dev override** — `getDevOverride()`
+   (`src/utils/devFeatureFlagOverride.ts`)
+3. **Remote config** — the matching `remoteConfig.value.*` field, when the
+   getter passes one
+4. **Server feature flag** — `api.getServerFeature(flagKey, defaultValue)`
+
+Getters that call `api.getServerFeature()` directly — `supportsPreviewMetadata`,
+`maxUploadSize`, `supportsManagerV4`, `nodeReplacementsEnabled`,
+`showSignInButton` — skip the override layers entirely.
+
+Two variants exist alongside `resolveFlag()`:
+
+- `resolveAuthGatedFlag()` — for per-user Cloud-only flags that select backend
+  behaviour. Always `false` off the Cloud build, and while authenticated config
+  is still loading it falls back to the cached session value so anonymous
+  bootstrap config cannot route the user to the wrong backend.
+- `resolveFailClosedBooleanFlag()` — returns `true` only for a literal `true`,
+  and `false` if the read throws.
+
+#### Dev overrides (local, `import.meta.env.DEV` only)
+
+Stripped from production builds. Set a JSON value under an `ff:` prefix in
+`localStorage`:
+
+```js
+localStorage.setItem('ff:linear_toggle_enabled', 'true')
+localStorage.removeItem('ff:linear_toggle_enabled')
+```
+
+#### Session overrides (`?ff=` query parameter)
+
+Captured into `sessionStorage` under `Comfy.FeatureFlagOverride` and scoped to
+the tab. These apply **only to a signed-in Comfy employee** with a verified
+`@comfy.org` address, so a link handed to a customer stays inert.
+
+| URL                     | Effect                                |
+| ----------------------- | ------------------------------------- |
+| `?ff=some_flag`         | Sets the flag to `true`               |
+| `?ff=some_flag:false`   | Sets the boolean `false`              |
+| `?ff=some_flag:12`      | Sets the number `12`                  |
+| `?ff=some_flag:"12"`    | Sets the string `"12"`                |
+| `?ff=some_flag:enforce` | Unparseable JSON is taken as a string |
+| `?ff=a&ff=b:2`          | Multiple overrides merge into the tab |
+| `?ff=`                  | Clears every override in the session  |
 
 ### Backend Access Patterns
 
@@ -325,7 +379,9 @@ if feature_flags.supports_feature(sockets_metadata, sid, "your_new_feature"):
 
 ```json
 {
-  "supports_preview_metadata": false,
+  "supports_preview_metadata": true,
+  "supports_manager_v4_ui": true,
+  "supports_progress_text_metadata": true,
   "your_new_feature": true
 }
 ```
@@ -356,9 +412,10 @@ export function useFeatureFlags() {
 }
 ```
 
-Adding it to the enum also opts the flag into the telemetry sweep in
-`startFeatureFlagTelemetry()`; add a matching entry there so its evaluated
-value is reported.
+The telemetry sweep in `startFeatureFlagTelemetry()` is an explicit list, not a
+loop over the enum — adding an enum entry does not enrol the flag. Add a
+matching line to the `evaluations` object there so its evaluated value is
+reported.
 
 For a one-off flag that does not warrant a named property, call
 `featureFlag(path, defaultValue)` at the call site instead.
