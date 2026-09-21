@@ -321,8 +321,18 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await panel.getByRole('button', { name: 'Run' }).click()
     await answerRequested
 
+    // `answerAsk()` only reaches its error handler after the 500 is received,
+    // so the absence assertion has to wait for that response. Without this the
+    // negative could pass while the route was still held open.
+    const answerFailure = page.waitForResponse(
+      (response) =>
+        /\/api\/agent\/threads\/[^/]+\/asks\/[^/]+\/answer$/.test(
+          response.url()
+        ) && response.status() === 500
+    )
     await panel.getByRole('button', { name: enMessages.agent.newChat }).click()
     releaseAnswer()
+    await answerFailure
 
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
     await expect(page.getByText('stale ask failure')).toHaveCount(0)
