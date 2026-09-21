@@ -16,7 +16,7 @@ import {
   AGENT_SUBGRAPH_LINK_ID,
   AGENT_SUBGRAPH_WORKFLOW_ID,
   agentSubgraphNodeDefs,
-  agentSubgraphUpdates
+  agentSubgraphFrames
 } from '@e2e/fixtures/data/agentSubgraphFollower'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -110,34 +110,8 @@ test.describe(
         )
         .toBe(true)
 
-      const updates = agentSubgraphUpdates()
-      socket.send(
-        JSON.stringify({
-          type: 'doc_subscribed',
-          data: {
-            v: 1,
-            workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID,
-            ok: true,
-            seq: 1
-          }
-        })
-      )
-      socket.send(
-        JSON.stringify({
-          type: 'doc_update',
-          data: {
-            v: 1,
-            workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID,
-            seq: 1,
-            update_b64: updates.initial,
-            actor: 'agent:e2e',
-            op_ids: [
-              '11111111111111111111111111111111',
-              '22222222222222222222222222222222'
-            ]
-          }
-        })
-      )
+      const frames = agentSubgraphFrames()
+      for (const frame of frames.initial) socket.send(JSON.stringify(frame))
 
       await expect
         .poll(() =>
@@ -198,19 +172,7 @@ test.describe(
           sourceLinks: [AGENT_SUBGRAPH_LINK_ID]
         })
 
-      socket.send(
-        JSON.stringify({
-          type: 'doc_update',
-          data: {
-            v: 1,
-            workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID,
-            seq: 2,
-            update_b64: updates.followUp,
-            actor: 'agent:e2e',
-            op_ids: ['44444444444444444444444444444444']
-          }
-        })
-      )
+      socket.send(JSON.stringify(frames.followUp))
 
       await expect
         .poll(() =>

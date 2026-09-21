@@ -1,10 +1,10 @@
-import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import * as Y from 'yjs'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import subgraphWorkflow from '@e2e/assets/subgraphs/subgraph-with-promoted-text-widget.json' with { type: 'json' }
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 
 export const AGENT_SUBGRAPH_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 export const AGENT_SUBGRAPH_HOST_ID = 11
@@ -143,15 +143,12 @@ const followUpOp = {
   }
 } satisfies Op
 
-function updateBase64(update: Uint8Array): string {
-  return Buffer.from(update).toString('base64')
-}
-
-export function agentSubgraphUpdates(): {
-  initial: string
-  followUp: string
+export function agentSubgraphFrames(): {
+  initial: HostFrame[]
+  followUp: HostFrame
 } {
-  const host = mint(
+  const host = new HostDoc(
+    AGENT_SUBGRAPH_WORKFLOW_ID,
     {
       ...subgraphWorkflow,
       definitions: {
@@ -165,17 +162,8 @@ export function agentSubgraphUpdates(): {
     },
     catalog
   )
-  const initialResult = applyOps(host, initialOps, catalog)
-  if (initialResult.outcomes.some(({ outcome }) => outcome !== 'applied')) {
-    throw new Error('Failed to build the initial agent subgraph frame')
-  }
-  const initial = updateBase64(Y.encodeStateAsUpdate(host))
-  const stateVector = Y.encodeStateVector(host)
-  const followUpResult = applyOps(host, [followUpOp], catalog)
-  if (followUpResult.outcomes[0]?.outcome !== 'applied') {
-    throw new Error('Failed to build the follow-up agent subgraph frame')
-  }
-  const followUp = updateBase64(Y.encodeStateAsUpdate(host, stateVector))
-  host.destroy()
+  host.apply(initialOps)
+  const initial = host.initialSync()
+  const followUp = host.apply([followUpOp])
   return { initial, followUp }
 }
