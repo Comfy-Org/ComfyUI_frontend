@@ -275,11 +275,15 @@ jobs:
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: |-
-            ## 🌐 Website E2E
+            ## 🌐 Website E2E: ⏳ Running…
             <!-- WEBSITE_E2E_STATUS -->
 
-            > [!NOTE]
-            > Tests are running… [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            <details>
+            <summary>Details</summary>
+
+            [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            </details>
 
   post-result-comment:
     needs: website-e2e-report
@@ -311,21 +315,29 @@ jobs:
             const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
             const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
 
-            const lines = ['## 🌐 Website E2E', '<!-- WEBSITE_E2E_STATUS -->', '']
+            const verdict = passed
+              ? '✅ Passed'
+              : infrastructure
+                ? '💥 Infrastructure failure'
+                : '❌ Failed'
+            const status = reportUrl ? `${verdict} — [View Report](${reportUrl})` : verdict
 
-            if (passed) {
-              lines.push('> [!TIP]', '> All tests passed.')
-            } else if (infrastructure) {
-              lines.push(
+            // pr-update-website-screenshots keys its comment trigger off this
+            // marker, so it has to survive every reformat of this section.
+            const lines = [`## 🌐 Website E2E: ${status}`, '<!-- WEBSITE_E2E_STATUS -->', '']
+
+            const details = []
+
+            if (infrastructure) {
+              details.push(
                 '> [!CAUTION]',
-                '> A shard failed before producing a report, so the suite did not fully run. No pass/fail counts are available.'
+                '> A shard failed before producing a report, so the suite did not fully run. No pass/fail counts are available.',
+                ''
               )
-            } else {
-              lines.push('> [!CAUTION]', '> Some tests failed.')
             }
 
             const rows = [
-              ['Status', passed ? '✅ Passed' : infrastructure ? '💥 Infrastructure failure' : '❌ Failed'],
+              ['Status', verdict],
               ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
             ]
             if (!passed && !infrastructure) {
@@ -334,8 +346,7 @@ jobs:
                 ['Other failures', String(otherFailures)]
               )
             }
-            lines.push(
-              '',
+            details.push(
               '| | |',
               '|---|---|',
               ...rows.map(([k, v]) => `| **${k}** | ${v} |`)
@@ -343,15 +354,17 @@ jobs:
 
             if (screenshotFailures > 0) {
               const s = screenshotFailures === 1 ? '' : 's'
-              lines.push('', `- [ ] Update website screenshots (${screenshotFailures} screenshot diff${s})`)
+              details.push('', `- [ ] Update website screenshots (${screenshotFailures} screenshot diff${s})`)
             }
             if (otherFailures > 0) {
-              lines.push(
+              details.push(
                 '',
                 '> [!WARNING]',
                 `> ${otherFailures} non-screenshot failure${otherFailures === 1 ? '' : 's'} — these require manual review.`
               )
             }
+
+            lines.push('<details>', '<summary>Details</summary>', '', ...details, '', '</details>')
 
             core.setOutput('section-content', lines.join('\n'))
 

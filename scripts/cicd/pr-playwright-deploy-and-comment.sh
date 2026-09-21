@@ -340,7 +340,9 @@ else
     if [ $total_failed -gt 0 ]; then
         comment="$comment
 
-### ❌ Failed Tests"
+<details>
+<summary>❌ Failed Tests</summary>
+"
 
         for counts_json in "${agg_counts_array[@]}"; do
             [ -z "$counts_json" ] || [ "$counts_json" = "{}" ] && continue
@@ -369,6 +371,10 @@ $test_line"
                 fi
             fi
         done
+
+        comment="$comment
+
+</details>"
     fi
     
     # Add browser reports in collapsible section

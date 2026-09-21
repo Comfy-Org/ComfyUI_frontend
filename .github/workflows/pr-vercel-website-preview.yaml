@@ -69,12 +69,17 @@ jobs:
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: |-
-            ## 🔗 Website Preview
+            ## 🔗 Website Preview: ✅ Deployed — [View Preview](${{ steps.urls.outputs.stable-url }})
 
-            **Website Preview:** ${{ steps.urls.outputs.stable-url }}
+            <details>
+            <summary>Details</summary>
+
+            **Links**
+            - 🔗 Stable: ${{ steps.urls.outputs.stable-url }}
+            - 📌 This commit: ${{ steps.urls.outputs.unique-url }}
 
             <sub>${{ steps.urls.outputs.build-note }}</sub>
 
-            <sub>This commit: ${{ steps.urls.outputs.unique-url }}</sub>
-
             <sub>Last updated: ${{ github.event.workflow_run.updated_at }} for `${{ steps.urls.outputs.short-sha }}`</sub>
+
+            </details>

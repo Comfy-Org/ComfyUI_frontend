@@ -124,7 +124,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p publish-report
+          PACKAGE_COUNT=$(jq -r '.include | length' <<<"$MATRIX")
           {
+            printf '## 🚀 Release: ✅ Published %s package' "$PACKAGE_COUNT"
+            [ "$PACKAGE_COUNT" = 1 ] || printf 's'
+            echo ''
+            echo ''
+            echo '<details>'
+            echo '<summary>Details</summary>'
+            echo ''
             echo 'Publish jobs finished successfully:'
             echo ''
             jq -r '
@@ -133,6 +141,7 @@ jobs:
             ' <<<"$MATRIX"
             echo "- Published from [\`${MERGE_SHA:0:10}\`](https://github.com/${REPO}/commit/${MERGE_SHA})"
             echo ''
+            echo '</details>'
           } > publish-report/report.md
           printf '%s' "$PR_NUMBER" > publish-report/pr-number.txt
 

@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 
+import { renderPrReportSection } from './cicd/prReportSection'
+
 const args: string[] = process.argv.slice(2)
 
 function getArg(name: string): string | undefined {
@@ -13,6 +15,18 @@ const sizeStatus = getArg('size-status') ?? 'pending'
 const perfStatus = getArg('perf-status') ?? 'pending'
 const coverageStatus = getArg('coverage-status') ?? 'skip'
 
+function bundleStatusLine(status: string): string {
+  return renderPrReportSection({ icon: '📦', title: 'Bundle', status })
+}
+
+function perfStatusLine(status: string): string {
+  return renderPrReportSection({ icon: '⚡', title: 'Performance', status })
+}
+
+function coverageStatusLine(status: string): string {
+  return renderPrReportSection({ icon: '🔬', title: 'E2E Coverage', status })
+}
+
 const lines: string[] = []
 
 const hasSizeData = existsSync('temp/size')
@@ -24,20 +38,20 @@ if (sizeStatus === 'ready' && hasSizeData) {
     }).trimEnd()
     lines.push(sizeReport)
   } catch {
-    lines.push('## 📦 Bundle Size')
-    lines.push('')
     lines.push(
-      '> ⚠️ Failed to render bundle size report. Check the CI workflow logs.'
+      bundleStatusLine(
+        '⚠️ Failed to render report — check the CI workflow logs'
+      )
     )
   }
 } else if (sizeStatus === 'failed') {
-  lines.push('## 📦 Bundle Size')
-  lines.push('')
-  lines.push('> ⚠️ Size data collection failed. Check the CI workflow logs.')
+  lines.push(
+    bundleStatusLine(
+      '⚠️ Size data collection failed — check the CI workflow logs'
+    )
+  )
 } else if (sizeStatus !== 'ready') {
-  lines.push('## 📦 Bundle Size')
-  lines.push('')
-  lines.push('> ⏳ Size data collection in progress…')
+  lines.push(bundleStatusLine('⏳ Size data collection in progress…'))
 }
 
 if (lines.length > 0) lines.push('')
@@ -51,23 +65,19 @@ if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
     ).trimEnd()
     lines.push(perfReport)
   } catch {
-    lines.push('## ⚡ Performance')
-    lines.push('')
     lines.push(
-      '> ⚠️ Failed to render performance report. Check the CI workflow logs.'
+      perfStatusLine('⚠️ Failed to render report — check the CI workflow logs')
     )
   }
 } else if (
   perfStatus === 'failed' ||
   (perfStatus === 'ready' && !existsSync('test-results/perf-metrics.json'))
 ) {
-  lines.push('## ⚡ Performance')
-  lines.push('')
-  lines.push('> ⚠️ Performance tests failed. Check the CI workflow logs.')
+  lines.push(
+    perfStatusLine('⚠️ Performance tests failed — check the CI workflow logs')
+  )
 } else if (perfStatus !== 'skip') {
-  lines.push('## ⚡ Performance')
-  lines.push('')
-  lines.push('> ⏳ Performance tests in progress…')
+  lines.push(perfStatusLine('⏳ Performance tests in progress…'))
 }
 
 if (coverageStatus === 'ready' && existsSync('temp/coverage/coverage.lcov')) {
@@ -86,17 +96,19 @@ if (coverageStatus === 'ready' && existsSync('temp/coverage/coverage.lcov')) {
     lines.push(coverageReport)
   } catch {
     lines.push('')
-    lines.push('## 🔬 E2E Coverage')
-    lines.push('')
     lines.push(
-      '> ⚠️ Failed to render coverage report. Check the CI workflow logs.'
+      coverageStatusLine(
+        '⚠️ Failed to render report — check the CI workflow logs'
+      )
     )
   }
 } else if (coverageStatus === 'failed') {
   lines.push('')
-  lines.push('## 🔬 E2E Coverage')
-  lines.push('')
-  lines.push('> ⚠️ Coverage collection failed. Check the CI workflow logs.')
+  lines.push(
+    coverageStatusLine(
+      '⚠️ Coverage collection failed — check the CI workflow logs'
+    )
+  )
 }
 
 process.stdout.write(lines.join('\n') + '\n')

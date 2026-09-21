@@ -236,8 +236,15 @@ jobs:
           pr-number: ${{ github.event.pull_request.number }}
           section-name: chromatic
           section-content: |
-            ### 🎨 Chromatic Visual Tests
+            ## 🎨 Chromatic: ✅ Published — [View Build](${{ needs.chromatic-deployment.outputs.chromatic-build-url }})
+
+            <details>
+            <summary>Details</summary>
+
+            **Links**
             - 📊 [View Chromatic Build](${{ needs.chromatic-deployment.outputs.chromatic-build-url }})
             - 📚 [View Chromatic Storybook](${{ needs.chromatic-deployment.outputs.chromatic-storybook-url }})
+
+            </details>
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ github.token }}

@@ -191,10 +191,14 @@ jobs:
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: |-
-            ## 📸 Screenshot Update
+            ## 📸 Screenshot Update: ⏳ Running…
 
-            > [!NOTE]
-            > Updating screenshots… [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            <details>
+            <summary>Details</summary>
+
+            [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            </details>
 
   post-result-comment:
     needs: update-screenshots
@@ -223,25 +227,31 @@ jobs:
             const changedCount = parseInt(process.env.CHANGED_COUNT) || 0
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
 
-            const lines = ['## 📸 Screenshot Update', '']
+            const s = changedCount === 1 ? '' : 's'
+            const status =
+              outcome !== 'success'
+                ? '❌ Failed'
+                : !hasChanges
+                  ? '✅ Already up to date'
+                  : `✅ Updated ${changedCount} screenshot${s}`
 
-            if (outcome !== 'success') {
-              lines.push(
-                '> [!CAUTION]',
-                `> Screenshot update failed. [View workflow run](${runUrl})`
-              )
-            } else if (!hasChanges) {
-              lines.push(
-                '> [!TIP]',
-                '> All screenshots are already up to date.'
-              )
-            } else {
-              const s = changedCount === 1 ? '' : 's'
-              lines.push(
-                '> [!TIP]',
-                `> Updated ${changedCount} screenshot${s} and pushed to the branch.`
-              )
-            }
+            const detail =
+              outcome !== 'success'
+                ? 'Screenshot update failed.'
+                : !hasChanges
+                  ? 'All screenshots are already up to date.'
+                  : `Updated ${changedCount} screenshot${s} and pushed to the branch.`
+
+            const lines = [
+              `## 📸 Screenshot Update: ${status}`,
+              '',
+              '<details>',
+              '<summary>Details</summary>',
+              '',
+              `${detail} [View workflow run](${runUrl})`,
+              '',
+              '</details>'
+            ]
 
             core.setOutput('section-content', lines.join('\n'))
 

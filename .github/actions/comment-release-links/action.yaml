@@ -53,6 +53,7 @@ runs:
         fi
 
         SECTION_NAME='release'
+        SECTION_TITLE='Release'
         MESSAGE='Publish jobs finished successfully:'
         LINKS_VALUE=''
 
@@ -64,18 +65,22 @@ runs:
             ;;
           packages/design-system/package.json)
             SECTION_NAME='design-system-release'
+            SECTION_TITLE='Design System Release'
             LINKS_VALUE='npm design-system|https://www.npmjs.com/package/@comfyorg/design-system/v/{{version}}'
             ;;
           packages/account-core/package.json)
             SECTION_NAME='account-core-release'
+            SECTION_TITLE='Account Core Release'
             LINKS_VALUE='npm account-core|https://www.npmjs.com/package/@comfyorg/account-core/v/{{version}}'
             ;;
           packages/billing-contract/package.json)
             SECTION_NAME='billing-contract-release'
+            SECTION_TITLE='Billing Contract Release'
             LINKS_VALUE='npm billing-contract|https://www.npmjs.com/package/@comfyorg/billing-contract/v/{{version}}'
             ;;
           packages/ingest-types/package.json)
             SECTION_NAME='ingest-types-release'
+            SECTION_TITLE='Ingest Types Release'
             LINKS_VALUE='npm ingest-types|https://www.npmjs.com/package/@comfyorg/ingest-types/v/{{version}}'
             ;;
         esac
@@ -86,6 +91,11 @@ runs:
         COMMENT_FILE=$(mktemp)
 
         {
+          echo "## 🚀 $SECTION_TITLE: ✅ Published \`$NEW_VERSION\`"
+          echo ""
+          echo "<details>"
+          echo "<summary>Details</summary>"
+          echo ""
           echo "$MESSAGE"
           echo ""
           echo "- $DIFF_LABEL: [\`$DIFF_PREFIX$PREV_VERSION...$DIFF_PREFIX$NEW_VERSION\`]($DIFF_URL)"
@@ -105,6 +115,7 @@ runs:
           done <<< "$LINKS_VALUE"
 
           echo ""
+          echo "</details>"
         } > "$COMMENT_FILE"
 
         {
