@@ -156,8 +156,8 @@
         :hidden="shouldHideInlineProgressSummary"
       />
       <QueueNotificationBannerHost
-        v-if="shouldShowQueueNotificationBanners"
-        class="pr-1"
+        v-if="isActionbarEnabled"
+        :class="cn('pr-1', isActionBarsHidden && 'hidden')"
       />
     </div>
   </div>
@@ -264,10 +264,8 @@ const shouldShowInlineProgressSummary = computed(
   () =>
     isQueuePanelV2Enabled.value &&
     isActionbarEnabled.value &&
-    isRunProgressBarEnabled.value
-)
-const shouldShowQueueNotificationBanners = computed(
-  () => isActionbarEnabled.value && !isActionBarsHidden.value
+    isRunProgressBarEnabled.value &&
+    !isActionBarsHidden.value
 )
 const progressTarget = ref<HTMLElement | null>(null)
 function updateProgressTarget(target: HTMLElement | null) {

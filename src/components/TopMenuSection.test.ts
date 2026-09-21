@@ -386,6 +386,20 @@ describe('TopMenuSection', () => {
       ).toBeNull()
     })
 
+    it('does not render inline progress summary while action bars are hidden', async () => {
+      const pinia = getActivePinia()!
+      configureSettings(pinia, true)
+      useAgentNodeSelectionStore(pinia).isActionBarsHidden = true
+
+      const { container } = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        container.querySelector('queue-inline-progress-summary-stub')
+      ).toBeNull()
+    })
+
     it('teleports inline progress summary when actionbar is floating', async () => {
       localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
       const actionbarTarget = document.createElement('div')
@@ -442,29 +456,11 @@ describe('TopMenuSection', () => {
     })
 
     it.for([
-      {
-        component: 'queue-progress-overlay-stub',
-        isActionBarsHidden: false,
-        rendered: true
-      },
-      {
-        component: 'queue-progress-overlay-stub',
-        isActionBarsHidden: true,
-        rendered: false
-      },
-      {
-        component: 'queue-notification-banner-host-stub',
-        isActionBarsHidden: false,
-        rendered: true
-      },
-      {
-        component: 'queue-notification-banner-host-stub',
-        isActionBarsHidden: true,
-        rendered: false
-      }
+      { isActionBarsHidden: false, rendered: true },
+      { isActionBarsHidden: true, rendered: false }
     ])(
-      'renders $component: $rendered when action bars hidden is $isActionBarsHidden',
-      async ({ component, isActionBarsHidden, rendered }) => {
+      'renders the queue progress overlay: $rendered when action bars hidden is $isActionBarsHidden',
+      async ({ isActionBarsHidden, rendered }) => {
         const pinia = getActivePinia()!
         configureSettings(pinia, false)
         useAgentNodeSelectionStore(pinia).isActionBarsHidden =
@@ -473,7 +469,31 @@ describe('TopMenuSection', () => {
         const { container } = createWrapper({ pinia })
         await nextTick()
 
-        expect(container.querySelector(component) !== null).toBe(rendered)
+        expect(
+          container.querySelector('queue-progress-overlay-stub') !== null
+        ).toBe(rendered)
+      }
+    )
+
+    it.for([
+      { isActionBarsHidden: false, hidden: false },
+      { isActionBarsHidden: true, hidden: true }
+    ])(
+      'keeps the queue notification banner host mounted and hidden=$hidden when action bars hidden is $isActionBarsHidden',
+      async ({ isActionBarsHidden, hidden }) => {
+        const pinia = getActivePinia()!
+        configureSettings(pinia, false)
+        useAgentNodeSelectionStore(pinia).isActionBarsHidden =
+          isActionBarsHidden
+
+        const { container } = createWrapper({ pinia })
+        await nextTick()
+
+        const host = container.querySelector(
+          'queue-notification-banner-host-stub'
+        )
+        if (!host) throw new Error('banner host is not mounted')
+        expect(host.classList.contains('hidden')).toBe(hidden)
       }
     )
 
