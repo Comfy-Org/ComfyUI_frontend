@@ -2,6 +2,7 @@ import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import type { z } from 'zod'
 
 import { api } from '@/scripts/api'
+import { forwardsComfyCredential } from '@/workbench/extensions/agent/agentDistribution'
 
 import {
   zAgentAnswerAccepted,
@@ -130,7 +131,7 @@ export function createAgentRestClient() {
   ): Promise<T> {
     const response = await api.fetchApi(
       route,
-      import.meta.env.VITE_AGENT_STANDALONE === 'true'
+      forwardsComfyCredential()
         ? await (await import('./comfyCredential')).withComfyCredential(init)
         : init
     )

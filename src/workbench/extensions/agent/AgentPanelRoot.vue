@@ -100,6 +100,11 @@ import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmis
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import { ensureComfyCredential } from './services/agent/comfyCredential'
+import {
+  forwardsComfyCredential,
+  hasCloudWorkflowIndex,
+  isAgentStandalone
+} from './agentDistribution'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -155,10 +160,9 @@ const userName = computed(
 
 const rest = createAgentRestClient()
 
-const events =
-  import.meta.env.VITE_AGENT_STANDALONE === 'true'
-    ? createStandaloneAgentEventSource()
-    : createAgentEventSource(api)
+const events = isAgentStandalone()
+  ? createStandaloneAgentEventSource()
+  : createAgentEventSource(api)
 
 function onPaywallAction(action: AgentPaywallAction): void {
   openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
@@ -479,7 +483,7 @@ function targetWorkflowTurnContext(
     id === undefined &&
     !target.isTemporary &&
     origin !== undefined &&
-    import.meta.env.VITE_AGENT_STANDALONE !== 'true'
+    hasCloudWorkflowIndex()
   )
     return undefined
   return id === undefined
@@ -958,10 +962,7 @@ const { submit: onSend } = useAgentDraftSubmission({
   send: async (text, attachments, nodes, references) => {
     // The local agent acts as the signed-in Comfy account, so a signed-out
     // user is asked to sign in rather than sending a turn that cannot run.
-    if (
-      import.meta.env.VITE_AGENT_STANDALONE === 'true' &&
-      !(await ensureComfyCredential())
-    )
+    if (forwardsComfyCredential() && !(await ensureComfyCredential()))
       return false
     useTelemetry()?.trackAgentMessageSent({
       attachment_count: attachments.length,

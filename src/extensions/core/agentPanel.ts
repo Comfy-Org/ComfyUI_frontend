@@ -8,6 +8,7 @@ import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { isAgentStandalone } from '@/workbench/extensions/agent/agentDistribution'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
@@ -165,6 +166,14 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
   const settle = (): void => {
     agentPanelStore.gateSettled = true
   }
+  // The local agent harness has no cloud account, so no PostHog flag either:
+  // the panel is on without waiting for (or depending on) PostHog.
+  if (isAgentStandalone()) {
+    agentPanelStore.enabled = true
+    settle()
+    loadConsentIfEligible()
+    return
+  }
   try {
     const [
       { createPostHogFlagSource, FLAG_SETTLE_TIMEOUT_MS },
@@ -174,12 +183,9 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
       import('posthog-js')
     ])
     const source = createPostHogFlagSource(posthog)
-    // The local agent harness has no cloud account, so no PostHog flag either.
-    const forceOn =
-      import.meta.env.MODE === 'development' ||
-      import.meta.env.VITE_AGENT_STANDALONE === 'true'
+    const forceInDev = import.meta.env.MODE === 'development'
     const sync = (): void => {
-      agentPanelStore.enabled = forceOn || source.isEnabled()
+      agentPanelStore.enabled = forceInDev || source.isEnabled()
       loadConsentIfEligible()
       if (!agentPanelStore.enabled) {
         const nodeSelectionStore = useAgentNodeSelectionStore()
@@ -192,7 +198,7 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
       settle()
     })
     sync()
-    if (forceOn) settle()
+    if (forceInDev) settle()
     else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
   } catch (error) {
     settle()

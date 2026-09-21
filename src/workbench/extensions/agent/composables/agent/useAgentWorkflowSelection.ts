@@ -6,6 +6,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { hasCloudWorkflowIndex } from '@/workbench/extensions/agent/agentDistribution'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
@@ -73,7 +74,31 @@ export function useAgentWorkflowSelection({
     panelStore.setWorkflowTarget(workflow)
   }
 
-  async function prepareWorkflowSelection(
+  type SelectionStep = 'ok' | 'failed' | 'stale'
+
+  async function refreshIndexFor(
+    isCurrent: () => boolean
+  ): Promise<SelectionStep> {
+    if (!(await refreshCloudWorkflowIds())) return 'failed'
+    return isCurrent() ? 'ok' : 'stale'
+  }
+
+  /** Saves an unsaved tab so the cloud index can give it an id. */
+  async function saveUnsavedTab(
+    tab: ComfyWorkflow,
+    isCurrent: () => boolean
+  ): Promise<SelectionStep> {
+    if (tab.isTemporary && cloudIdFor(tab) === undefined) {
+      const refreshed = await refreshIndexFor(isCurrent)
+      if (refreshed !== 'ok') return refreshed
+      const filename = nextSaveFilename(tab)
+      if (!(await workflowService.saveWorkflowAs(tab, { filename })))
+        return 'failed'
+    }
+    return isCurrent() ? 'ok' : 'stale'
+  }
+
+  async function prepareCloudSelection(
     tab: ComfyWorkflow,
     isCurrent: () => boolean
   ): Promise<string | undefined> {
@@ -81,31 +106,42 @@ export function useAgentWorkflowSelection({
       if (isCurrent()) warnWorkflowSelectionFailed(detail)
       return undefined
     }
-    if (import.meta.env.VITE_AGENT_STANDALONE === 'true') {
-      const workflowId = cloudIdFor(tab)
-      if (workflowId === undefined) warnWorkflowUnavailable()
-      return workflowId
-    }
     try {
-      if (tab.isTemporary && cloudIdFor(tab) === undefined) {
-        if (!(await refreshCloudWorkflowIds())) return fail()
-        if (!isCurrent()) return
-        const filename = nextSaveFilename(tab)
-        if (!(await workflowService.saveWorkflowAs(tab, { filename })))
-          return fail()
-      }
-      if (!isCurrent()) return
-      let workflowId = cloudIdFor(tab)
-      if (workflowId === undefined) {
-        if (!(await refreshCloudWorkflowIds())) return fail()
-        if (!isCurrent()) return
-        workflowId = cloudIdFor(tab)
-      }
+      let step = await saveUnsavedTab(tab, isCurrent)
+      if (step === 'ok' && cloudIdFor(tab) === undefined)
+        step = await refreshIndexFor(isCurrent)
+      if (step === 'failed') return fail()
+      if (step === 'stale') return undefined
+      const workflowId = cloudIdFor(tab)
       if (workflowId === undefined) warnWorkflowUnavailable()
       return workflowId
     } catch (error) {
       return fail(error instanceof Error ? error.message : undefined)
     }
+  }
+
+  async function prepareWorkflowSelection(
+    tab: ComfyWorkflow,
+    isCurrent: () => boolean
+  ): Promise<string | undefined> {
+    if (hasCloudWorkflowIndex()) return prepareCloudSelection(tab, isCurrent)
+    const workflowId = cloudIdFor(tab)
+    if (workflowId === undefined) warnWorkflowUnavailable()
+    return workflowId
+  }
+
+  /**
+   * Resolves the workflow id a target tab is sent under, or `null` for a
+   * target that goes unbound: without a cloud index the local agent mints a
+   * workflow on the first send and the session adopts it onto this tab, so
+   * nothing is saved here.
+   */
+  async function prepareWorkflowTarget(
+    tab: ComfyWorkflow,
+    isCurrent: () => boolean
+  ): Promise<string | null | undefined> {
+    if (hasCloudWorkflowIndex()) return prepareCloudSelection(tab, isCurrent)
+    return cloudIdFor(tab) ?? null
   }
 
   function warnWorkflowSelectionFailed(
@@ -118,6 +154,21 @@ export function useAgentWorkflowSelection({
     })
   }
 
+  async function openWorkflowTarget(
+    tab: ComfyWorkflow,
+    workflowId: string | null,
+    isCurrent: () => boolean
+  ): Promise<boolean> {
+    if (!(await workflowService.openWorkflow(tab))) {
+      if (isCurrent())
+        warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))
+      return false
+    }
+    if (!isCurrent()) return false
+    commitWorkflowTarget(tab, workflowId)
+    return true
+  }
+
   async function onSelectWorkflowTarget(path: string): Promise<boolean> {
     const tab = workflowStore.getWorkflowByPath(path)
     if (!tab || workflowSelection.value || !canSelectTarget()) return false
@@ -127,21 +178,9 @@ export function useAgentWorkflowSelection({
       generation === targetSelectionGeneration &&
       workflowStore.openWorkflows.includes(tab)
     try {
-      // The local agent mints a workflow for an unbound target on its first
-      // send and the session adopts it onto this tab, so nothing is saved here.
-      const workflowId =
-        import.meta.env.VITE_AGENT_STANDALONE === 'true'
-          ? (cloudIdFor(tab) ?? null)
-          : await prepareWorkflowSelection(tab, isCurrent)
+      const workflowId = await prepareWorkflowTarget(tab, isCurrent)
       if (workflowId === undefined || !isCurrent()) return false
-      if (!(await workflowService.openWorkflow(tab))) {
-        if (isCurrent())
-          warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))
-        return false
-      }
-      if (!isCurrent()) return false
-      commitWorkflowTarget(tab, workflowId)
-      return true
+      return await openWorkflowTarget(tab, workflowId, isCurrent)
     } catch (error) {
       if (isCurrent())
         warnWorkflowSelectionFailed(

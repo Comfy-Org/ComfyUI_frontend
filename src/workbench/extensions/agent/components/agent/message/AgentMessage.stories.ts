@@ -172,7 +172,7 @@ export const PermissionFolder: Story = {
           reason: 'List the checkpoints you mentioned'
         }
       ],
-      false
+      true
     )
   }
 }
@@ -189,7 +189,7 @@ export const PermissionHost: Story = {
           reason: 'Fetch the page you linked'
         }
       ],
-      false
+      true
     )
   }
 }

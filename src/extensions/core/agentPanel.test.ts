@@ -105,7 +105,9 @@ vi.mock(import('posthog-js'), () => ({
 const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
-async function loadEntryAndSetup(): Promise<void> {
+async function loadEntryAndSetup({
+  awaitFlagSource = true
+}: { awaitFlagSource?: boolean } = {}): Promise<void> {
   const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
   const ext = mocks.capturedExtensions.find(
@@ -115,6 +117,7 @@ async function loadEntryAndSetup(): Promise<void> {
   await setupScope.run(() =>
     ext!.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
   )
+  if (!awaitFlagSource) return
   for (let i = 0; i < 2000 && mocks.flagListener === null; i++) await flush()
   expect(mocks.flagListener).toBeTypeOf('function')
 }
@@ -407,13 +410,16 @@ describe('AgentPanel extension flag gate', () => {
     expect(consentStore.load).toHaveBeenCalledOnce()
   })
 
-  it('forces the panel on in the standalone agent harness without a flag', async () => {
+  it('forces the panel on in the standalone agent harness without PostHog', async () => {
     vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
 
-    await loadEntryAndSetup()
+    await loadEntryAndSetup({ awaitFlagSource: false })
 
     expect(agentStore.enabled).toBe(true)
     expect(agentStore.gateSettled).toBe(true)
+    expect(consentStore.load).toHaveBeenCalled()
+    // The gate never consulted PostHog, so a PostHog failure cannot hide it.
+    expect(mocks.flagListener).toBeNull()
   })
 
   it('leaves the panel disabled while the flag is undefined', async () => {

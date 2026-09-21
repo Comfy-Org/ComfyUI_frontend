@@ -10,6 +10,7 @@ import {
 } from '@/platform/settings/globalSettingsApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
+import { agentConsentScope } from '@/workbench/extensions/agent/agentDistribution'
 
 class AgentConsentAuthenticationError extends Error {
   override name = 'AgentConsentAuthenticationError'
@@ -48,7 +49,7 @@ function useStandaloneConsent() {
 }
 
 export const useAgentConsentStore = defineStore('agentConsent', () =>
-  import.meta.env.VITE_AGENT_STANDALONE === 'true'
+  agentConsentScope() === 'device'
     ? useStandaloneConsent()
     : useAccountConsent()
 )
