@@ -266,7 +266,7 @@ test.describe(
       })
     })
 
-    test('a canvas paste after copying transcript text pastes the node copied last on the canvas', async ({
+    test('a canvas paste after copying transcript text adds nothing', async ({
       agentConversation,
       page
     }) => {
@@ -294,14 +294,19 @@ test.describe(
         await agentConversation.clipboard.paste(page.locator('#graph-canvas'))
       })
 
-      await test.step('the earlier node is the one pasted', async () => {
+      await test.step('the graph is unchanged', async () => {
+        expect(await agentConversation.graphNodes()).toHaveLength(before.length)
+      })
+
+      await test.step('copying and pasting the agent-added node still adds exactly that node', async () => {
+        await agentConversation.selectNode(source.id)
+        await agentConversation.clipboard.copy()
+        await agentConversation.clipboard.paste()
         await expect
           .poll(() => agentConversation.graphNodes())
           .toHaveLength(before.length + 1)
         expect(await agentConversation.nodesAddedSince(before)).toEqual([
-          expect.objectContaining({
-            type: COPY_PASTE_SCENARIO.earlierNode.type
-          })
+          expect.objectContaining({ type: COPY_PASTE_SCENARIO.agentAddedType })
         ])
       })
     })

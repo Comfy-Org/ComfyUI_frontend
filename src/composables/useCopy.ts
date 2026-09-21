@@ -1,7 +1,9 @@
 import { useEventListener } from '@vueuse/core'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+import { selectedText, shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+
+const CANVAS_CLIPBOARD_KEY = 'litegrapheditor_clipboard'
 
 const clipboardHTMLWrapper = [
   '<meta charset="utf-8"><div><span data-metadata="',
@@ -40,6 +42,7 @@ export const useCopy = () => {
   useEventListener(document, 'copy', (e) => {
     if (shouldIgnoreCopyPaste(e.target)) {
       // Default system copy
+      if (selectedText() !== null) localStorage.removeItem(CANVAS_CLIPBOARD_KEY)
       return
     }
     // copy nodes and clear clipboard

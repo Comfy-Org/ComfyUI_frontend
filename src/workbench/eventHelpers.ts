@@ -4,7 +4,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
  * Utility functions for handling workbench events
  */
 
-function selectedText(): Selection | null {
+export function selectedText(): Selection | null {
   const selection = window.getSelection()
   return selection !== null &&
     !selection.isCollapsed &&
