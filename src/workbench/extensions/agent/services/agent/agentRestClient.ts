@@ -162,7 +162,7 @@ export function createAgentRestClient() {
       body.workflow_references = req.workflowReferences
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
-    if (req.draft !== undefined) body.draft = req.draft
+    if (req.draft !== undefined) body.draft = { content: req.draft.content }
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       jsonInit('POST', body),

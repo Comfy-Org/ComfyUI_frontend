@@ -273,12 +273,24 @@ describe('postMessage wire body', () => {
     })
   })
 
-  // 'forwards draft.version when the client has previously seen one' is
-  // deliberately deleted rather than inverted. The draft request object is
-  // content-only now, so the type already stops a caller supplying a version,
-  // and the exact-match assertion in the test above is what proves none reaches
-  // the wire. Asserting runtime stripping instead would have meant adding
-  // defensive code for a case the compiler already closes.
+  it('sends only draft.content when the provider hands over a wider snapshot', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    const snapshotWithVersion = {
+      content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] },
+      version: 4
+    }
+    await makeClient().postMessage('t1', {
+      content: "what's on my canvas",
+      draft: snapshotWithVersion
+    })
+
+    const parsed = JSON.parse(String(lastCall().init.body)) as {
+      draft: unknown
+    }
+    expect(parsed.draft).toEqual({
+      content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] }
+    })
+  })
 })
 
 describe('uploadImage multipart', () => {
