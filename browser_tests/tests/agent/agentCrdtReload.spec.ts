@@ -1,9 +1,11 @@
-import { expect, mergeTests } from '@playwright/test'
+import { expect, mergeTests, type Page } from '@playwright/test'
 
+import { AGENT_CRDT_DOC_ID_SESSION_KEY } from '@/platform/workflow/persistence/base/storageKeyConstants'
 import {
   agentTest,
   bootAgentApp,
   getAgentActiveWorkflowPath,
+  getAgentBoundWorkflowPath,
   pushAgentEvent
 } from '@e2e/fixtures/agentPanelFixture'
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
@@ -12,6 +14,33 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { countDocFrames, webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(agentTest, webSocketFixture)
+
+interface PersistedDocIdentity {
+  docId: string
+  nonce: string
+}
+
+async function readPersistedDocIdentity(
+  page: Page
+): Promise<PersistedDocIdentity> {
+  const raw = await page.evaluate(
+    (key) => sessionStorage.getItem(key),
+    AGENT_CRDT_DOC_ID_SESSION_KEY
+  )
+  if (raw === null) throw new Error('Persisted CRDT document record is missing')
+  const parsed: unknown = JSON.parse(raw)
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    !('docId' in parsed) ||
+    typeof parsed.docId !== 'string' ||
+    !('nonce' in parsed) ||
+    typeof parsed.nonce !== 'string'
+  ) {
+    throw new Error('Persisted CRDT document record is malformed')
+  }
+  return { docId: parsed.docId, nonce: parsed.nonce }
+}
 
 test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
@@ -72,23 +101,16 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
 
     await expect
       .poll(() =>
-        page.evaluate(() => sessionStorage.getItem('Comfy.Agent.CrdtDocId'))
+        page.evaluate(
+          (key) => sessionStorage.getItem(key),
+          AGENT_CRDT_DOC_ID_SESSION_KEY
+        )
       )
       .not.toBeNull()
-    const recordBeforeReload = await page.evaluate(() =>
-      JSON.parse(sessionStorage.getItem('Comfy.Agent.CrdtDocId')!)
-    )
+    const recordBeforeReload = await readPersistedDocIdentity(page)
     expect(recordBeforeReload).toMatchObject({ docId: workflowId })
 
-    const boundPath = await page.evaluate(
-      ([key, id]) => {
-        const bindings = JSON.parse(
-          localStorage.getItem(key) ?? '{}'
-        ) as Record<string, string>
-        return bindings[id]
-      },
-      ['Comfy.Agent.WorkflowTabBindings', workflowId]
-    )
+    const boundPath = await getAgentBoundWorkflowPath(page, workflowId)
     expect(boundPath).toBeTruthy()
     await expect.poll(() => getAgentActiveWorkflowPath(page)).toBe(boundPath)
     expect(
@@ -134,9 +156,7 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
       // record and the rebound tab are the two preconditions for resubscribing;
       // if either is wrong the subscribe assertion below is a downstream
       // symptom, and if both hold then the gap is in the follower bind itself.
-      const record = await page.evaluate(() =>
-        JSON.parse(sessionStorage.getItem('Comfy.Agent.CrdtDocId')!)
-      )
+      const record = await readPersistedDocIdentity(page)
       expect(record).toMatchObject({ docId: workflowId })
       expect(record.nonce).not.toBe(recordBeforeReload.nonce)
       await expect.poll(() => getAgentActiveWorkflowPath(page)).toBe(boundPath)
