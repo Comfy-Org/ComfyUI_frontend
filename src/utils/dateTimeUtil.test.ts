@@ -206,10 +206,16 @@ describe('formatClockTime', () => {
 
   it('takes the hour cycle from the system when no preference is given', () => {
     const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
-    const systemLocale = new Intl.DateTimeFormat().resolvedOptions().locale
+    const { hourCycle: systemHourCycle } = new Intl.DateTimeFormat(undefined, {
+      hour: 'numeric'
+    }).resolvedOptions()
+    const expected = new Intl.DateTimeFormat('de-DE', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: systemHourCycle
+    }).format(ts)
 
-    expect(formatClockTime(ts, 'de-DE')).toBe(
-      formatClockTime(ts, 'de-DE', systemLocale)
-    )
+    expect(formatClockTime(ts, 'de-DE')).toBe(expected)
   })
 })
