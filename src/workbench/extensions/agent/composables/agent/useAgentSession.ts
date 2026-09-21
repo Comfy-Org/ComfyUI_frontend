@@ -693,7 +693,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // the expected end of a cancelled job; anything else is an unexpected
       // settlement or storage failure and goes through the module's reporter.
       if (!recovery.signal.aborted)
-        reportError(error, { errorType: 'agent_turn_recovery_failed' })
+        reportError(error, { errorType: 'failure_recovering_agent_turn' })
     } finally {
       if (recoveringTurns.get(key) === recovery) recoveringTurns.delete(key)
     }

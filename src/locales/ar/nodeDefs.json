@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "فيديو كوزموس كامن فارغ",
+    "display_name": "فيديو Cosmos كامن فارغ",
     "inputs": {
       "batch_size": {
         "name": "حجم_الدُفعة"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "صورة Hunyuan كامنة فارغة",
     "inputs": {
       "batch_size": {
         "name": "حجم_الدفعة"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "فيديو هونييوان كامن فارغ",
+    "display_name": "فيديو Hunyuan 1.0 كامن فارغ",
     "inputs": {
       "batch_size": {
         "name": "حجم_الدُفعة"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "هونييوان 3D كامن فارغ نسخة 2",
+    "display_name": "Hunyuan 3D v2 كامن فارغ",
     "inputs": {
       "batch_size": {
         "name": "حجم_الدُفعة",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "بنية Trellis2 كامنة فارغة",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -8072,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 تكبير latent بالنموذج",
+    "display_name": "ترقية Hunyuan Video 1.5 الكامنة باستخدام نموذج",
     "inputs": {
       "crop": {
         "name": "اقتصاص"
@@ -10514,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Empty Latent Audio",
+    "display_name": "صوت LTXV كامن فارغ",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -14199,6 +14199,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 فقط: تمريرات تحسين حجمية متفرقة على العمق المتوقَّع. تزيد التمريرات الإضافية من حدة التفاصيل الدقيقة والحواف بتكلفة خطية تقريبًا. تعطّل القيمة 0 التحسين. يتجاهله MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "٠ = الأسرع، ٩ = أعلى تفاصيل."
@@ -14229,6 +14233,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 فقط: تمريرات تحسين حجمية متفرقة على العمق المتوقَّع. تزيد التمريرات الإضافية من حدة التفاصيل الدقيقة والحواف بتكلفة خطية تقريبًا. تعطّل القيمة 0 التحسين. يتجاهله MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17430,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "تكييف Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18391,6 +18399,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "البذرة لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "يتيح ضبط جهاز ذاكرة التخزين المؤقت KV والتكميم؛ يستخدم النموذج خيار auto افتراضيًا. قد يسرّع التكميم سير عمل التحرير عند نقص الذاكرة.",
+    "display_name": "ذاكرة تخزين مؤقت لـ Qwen Image 2.1",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "يستخدم auto ذاكرة VRAM الاحتياطية ثم RAM. تُحضَّر cpu ‏(RAM) مسبقًا أثناء الحساب ولا تؤثر كثيرًا في السرعة. يعيد off حساب البادئة في كل خطوة، وهو أبطأ لكنه الطريقة الوحيدة لاستبعاد ذاكرة التخزين المؤقت."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "دقة التخزين. الإعداد default بلا فقدان. يقلّص int8 ذاكرة التخزين المؤقت إلى النصف بدقة تقارب bf16، بينما يقلّصها int4 إلى الربع لكنه يضاعف تقريبًا الخطأ في كل خطوة."
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -22751,7 +22781,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "صورة كامنة فارغة من StableCascade",
+    "display_name": "صورة Stable Cascade كامنة فارغة",
     "inputs": {
       "batch_size": {
         "name": "حجم الدفعة"
@@ -22794,7 +22824,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "ترميز VAE للمرحلة ج من StableCascade",
+    "display_name": "ترميز VAE للمرحلة C من Stable Cascade",
     "inputs": {
       "compression": {
         "name": "ضغط"
@@ -23756,8 +23786,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "ترميز نص Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "صور مرجعية يراها مُرمِّز النص وتُدمج في التسلسل كـ latents لـ VAE."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "تُغيَّر أحجام الصور المرجعية إلى نحو resolution × resolution بكسل، بمضاعفات 32، مع الحفاظ على نسبة العرض إلى الارتفاع. تبقي القيمة 0 كل مرجع بحجمه الخاص، مع تقريبه إلى مضاعف للعدد 32."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سلبي",
+        "tooltip": null
+      },
+      "2": {
+        "name": "كامن",
+        "tooltip": "latent فارغ بحجم الصورة المرجعية الأولى، ليتوافق مع أخذ العينات لأن أي تغيير آخر في الحجم يغيّر التحرير."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "ترميز نص لتحرير Qwen Image",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23848,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "ترميز نص لتحرير Qwen Image Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +23924,10 @@
       "max_length": {
         "name": "الحد الأقصى للطول"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "فك ترميز تخميني باستخدام رأس التنبؤ متعدد الرموز الخاص بنقطة التحقق. لا تأثير دون أوزان MTP. يكيّف auto عمق المسودة؛ وتثبّته القيم 2-5. يظل الإخراج المُعيَّن موزعًا بصورة صحيحة، لكنه يختلف عن إخراج غير MTP للبذرة نفسها."
+      },
       "prompt": {
         "name": "الموجه"
       },
@@ -23916,6 +23989,10 @@
       },
       "max_length": {
         "name": "الحد الأقصى للطول"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "فك الترميز التخميني باستخدام رأس التنبؤ متعدد الرموز الخاص بنقطة التحقق. لا تأثير له من دون أوزان MTP. يتكيف auto مع عمق المسودة؛ وتثبّته 2-5. يبقى توزيع المخرجات المُعيّنة صحيحًا، لكنه يختلف عن المخرجات غير المعتمدة على MTP للبذرة نفسها."
       },
       "prompt": {
         "name": "المطالبة"
@@ -24432,7 +24509,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "تكييف Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24531,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "مرحلة الشكل في Trellis2",
     "inputs": {
       "negative": {
         "name": "سلبي"
@@ -24482,7 +24559,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "مرحلة النسيج في Trellis2",
     "inputs": {
       "negative": {
         "name": "سلبي"
@@ -26162,7 +26239,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "فك ترميز VAE Hunyuan3D",
+    "display_name": "فك ترميز Hunyuan 3D VAE",
     "inputs": {
       "num_chunks": {
         "name": "عدد القطع"
@@ -26470,7 +26547,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "فك ترميز شكل Trellis2 VAE",
     "inputs": {
       "samples": {
         "name": "العينات"
@@ -26491,7 +26568,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "فك ترميز بنية Trellis2 VAE",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -26511,7 +26588,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "فك ترميز نسيج Trellis2 VAE",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -29466,6 +29543,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "صِل مولّد ABC أو أدخل نوتة معدّلة. اتركه فارغًا لاستخدام وضع الإيقاف تلقائيًا."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "توجيه انحداري ذاتي للنمط والكلمات. تؤدي القيمة 1.0 إلى تعطيل CFG، بما يطابق سير عمل ABC. استخدم 1.01 لمطابقة توجيه الوضع المعطّل الأصلي."
       },
       "clip": {
         "name": "clip"

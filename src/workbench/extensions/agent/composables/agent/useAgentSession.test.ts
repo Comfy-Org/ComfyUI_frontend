@@ -1533,6 +1533,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(assistant.parts).toEqual([
         { type: 'text', text: 'partial from socket', state: 'done' }
       ])
+      expect(reportError).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -1563,6 +1564,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(60_000)
       expect(getMessages).toHaveBeenCalledTimes(1)
       expect(session.notices.value).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -1678,8 +1680,7 @@ describe('useAgentSession (v1 composition root)', () => {
     // `unhandledrejection` the session never sees and telemetry files as an
     // uncaught error rather than an agent failure. `getMessages` already maps
     // its own failures onto `TurnOutcome`, so the remaining sources are the
-    // settlement calls — here `localStorage`, which throws in Safari private
-    // mode.
+    // settlement calls — here an unavailable `localStorage` implementation.
     const storageFailure = new Error('localStorage is unavailable')
     const removeItem = vi
       .spyOn(localStorage, 'removeItem')
@@ -1705,7 +1706,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
       await vi.waitFor(() =>
         expect(reportError).toHaveBeenCalledWith(storageFailure, {
-          errorType: 'agent_turn_recovery_failed'
+          errorType: 'failure_recovering_agent_turn'
         })
       )
       expect(removeItem).toHaveBeenCalledWith('Comfy.Agent.ThreadId')
