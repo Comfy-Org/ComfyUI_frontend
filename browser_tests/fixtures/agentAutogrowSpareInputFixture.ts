@@ -54,6 +54,8 @@ const IMAGES_GROUP = 'model.images'
 const IMAGE_1_NAME = `${IMAGES_GROUP}.image_1`
 const IMAGE_2_NAME = `${IMAGES_GROUP}.image_2`
 const IMAGE_2_FRIENDLY_LABEL = 'image_2'
+const MARKER_WIDGET = 'marker'
+const CATCH_UP_MARKER = 'tab return catch-up landed'
 
 const SOURCE_NODE_ID = 1
 const GPT_NODE_ID = 2
@@ -76,8 +78,10 @@ const imageSourceNodeDef: ComfyNodeDef = {
   output: ['IMAGE'],
   output_is_list: [false],
   output_name: ['IMAGE'],
-  input: { required: {} },
-  input_order: { required: [] }
+  input: {
+    required: { [MARKER_WIDGET]: ['STRING', { default: 'before tab switch' }] }
+  },
+  input_order: { required: [MARKER_WIDGET] }
 }
 
 const gptImageNodeDef: ComfyNodeDef = {
@@ -110,7 +114,7 @@ const gptImageNodeDef: ComfyNodeDef = {
 
 const catalog: WidgetCatalog = {
   types: {
-    [IMAGE_SOURCE_NODE_TYPE]: { widget_order: [] },
+    [IMAGE_SOURCE_NODE_TYPE]: { widget_order: [MARKER_WIDGET] },
     [GPT_IMAGE_NODE_TYPE]: { widget_order: [] }
   }
 }
@@ -132,7 +136,7 @@ const seed: WorkflowJSON = {
       inputs: [],
       outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [LINK_ID] }],
       properties: {},
-      widgets_values: []
+      widgets_values: ['before tab switch']
     },
     {
       id: GPT_NODE_ID,
@@ -281,6 +285,14 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
       const node = window.app!.graph.getNodeById(id)
       return { color: node?.color, bgcolor: node?.bgcolor }
     }, toNodeId(GPT_NODE_ID))
+  const readMarker = () =>
+    page.evaluate(
+      ({ id, widget }) =>
+        window.app!.graph
+          .getNodeById(id)
+          ?.widgets?.find(({ name }) => name === widget)?.value,
+      { id: toNodeId(SOURCE_NODE_ID), widget: MARKER_WIDGET }
+    )
 
   await test.step('open the agent panel and target the workflow', async () => {
     await agentPanel.open()
@@ -319,8 +331,25 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
     await expect(topbar.workflowTabs.locator('.p-togglebutton')).toHaveCount(1)
     await topbar.newWorkflowButton.click()
     await expect(topbar.workflowTabs.locator('.p-togglebutton')).toHaveCount(2)
+    const subscribes = hostSocket.subscribeCount()
     await topbar.getTab(0).click()
     await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    await expect.poll(() => hostSocket.subscribeCount()).toBe(subscribes + 1)
+    hostSocket.send(
+      host.apply([
+        {
+          op: 'set_widget',
+          node_id: SOURCE_NODE_ID,
+          widget: MARKER_WIDGET,
+          value: CATCH_UP_MARKER
+        }
+      ])
+    )
+    await expect.poll(readMarker).toBe(CATCH_UP_MARKER)
+    await expect.poll(readImageSlots).toEqual([
+      { name: IMAGE_1_NAME, connected: true },
+      { name: IMAGE_2_NAME, connected: false }
+    ])
   })
 
   await page.evaluate((id) => {
