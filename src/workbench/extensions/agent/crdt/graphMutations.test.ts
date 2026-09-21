@@ -1331,13 +1331,14 @@ describe('graphMutations', () => {
       batch.addNode(node(1))
       batch.addNode({
         ...node(2),
-        // `group.grown`, not a bare name: an unlinked live-only leftover is
-        // only tolerated as unpropagated growth when it is shaped like an
-        // autogrow slot (see `drops an ordinary unlinked extra input...`
-        // below for the same leftover with an ordinary name).
+        // `group.grown_0`, not a bare name: an unlinked live-only leftover
+        // is only tolerated as unpropagated growth when it is shaped like an
+        // autogrow slot's default naming, ending in its ordinal (see
+        // `drops an ordinary unlinked extra input...` and the
+        // DynamicCombo test below for the same leftover without that shape).
         inputs: [
           { name: 'in', type: 'IMAGE', link: null },
-          { name: 'group.grown', type: 'IMAGE', link: null }
+          { name: 'group.grown_0', type: 'IMAGE', link: null }
         ]
       })
     })
@@ -1357,7 +1358,7 @@ describe('graphMutations', () => {
       .find(({ id }) => id === toNodeId(2))
     expect(target?.inputs.map(({ name }) => name)).toEqual([
       'in',
-      'group.grown'
+      'group.grown_0'
     ])
   })
 
@@ -1376,6 +1377,38 @@ describe('graphMutations', () => {
 
     expect(
       graph.batch({ ...context, opId: 'drop-obsolete' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [{ name: 'keep', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ name }) => name)).toEqual(['keep'])
+  })
+
+  it('drops a removed, unlinked DynamicCombo input instead of mistaking it for a spare autogrow slot', () => {
+    // `mode.strength` is COMFY_DYNAMICCOMBO_V3's own dotted shape
+    // (`dynamicWidgets.ts`'s `updateWidgets`: `${widget.name}.${key}`), not
+    // autogrow's -- its suffix is an ordinary field name, not an ordinal, so
+    // it must not be mistaken for an unpropagated autogrow spare.
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'keep', type: 'IMAGE', link: null },
+          { name: 'mode.strength', type: 'FLOAT', link: null }
+        ]
+      })
+    })
+
+    expect(
+      graph.batch({ ...context, opId: 'drop-dynamiccombo-input' }, (batch) => {
         batch.reconcileNode({
           ...node(2),
           inputs: [{ name: 'keep', type: 'IMAGE' }]
