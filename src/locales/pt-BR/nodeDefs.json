@@ -13234,6 +13234,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Execute uma etapa extra de refinamento para obter geometria de maior fidelidade com detalhes de superfície mais finos."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Resolução da passagem ultra: 2k executa em 2048³, 4k em 4096³ para o máximo detalhe de superfície. 4k requer meshy-7.1 ou mais recente. Usado apenas quando ultra_mode está ativado."
       }
     },
     "outputs": {
@@ -13300,6 +13304,10 @@
       },
       "symmetry_mode": {
         "name": "modo_de_simetria"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Executa uma passagem extra de refinamento em 2048³ para geometria de maior fidelidade com detalhes de superfície mais finos."
       }
     },
     "outputs": {
@@ -13441,6 +13449,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Execute uma etapa extra de refinamento para obter geometria de maior fidelidade com detalhes de superfície mais finos."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Resolução da passagem ultra: 2k executa em 2048³, 4k em 4096³ para o máximo detalhe de superfície. 4k requer meshy-7.1 ou mais recente. Usado apenas quando ultra_mode está ativado."
       }
     },
     "outputs": {

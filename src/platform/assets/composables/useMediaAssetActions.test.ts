@@ -18,8 +18,13 @@ import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
+import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
+import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
+import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
 import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
 import { useMediaAssetActions as createMediaAssetActions } from './useMediaAssetActions'
 
@@ -154,7 +159,9 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-const mockAppGraph = vi.hoisted(() => ({ value: { _nodes: [] as unknown[] } }))
+const mockAppGraph = vi.hoisted(() => ({
+  value: { nodes: [] as unknown[] }
+}))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     nodeOutputs: {},
@@ -173,21 +180,17 @@ const mockRemoveNodeOutputsForNode = vi.hoisted(() => vi.fn())
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
-const mockClearNodePreviewCache = vi.hoisted(() => vi.fn())
-vi.mock(import('../utils/clearNodePreviewCacheForValues'), () => ({
-  clearNodePreviewCacheForValues: mockClearNodePreviewCache,
-  findNodesReferencingValues: vi.fn(() => [])
-}))
+vi.mock(import('../utils/clearNodePreviewCacheForValues'), { spy: true })
+const mockClearNodePreviewCache = vi.mocked(clearNodePreviewCacheForValues)
 
-const mockClearWidgetValues = vi.hoisted(() => vi.fn())
-vi.mock(import('../utils/clearDeletedAssetWidgetValues'), () => ({
-  clearDeletedAssetWidgetValues: mockClearWidgetValues
-}))
+vi.mock(import('../utils/clearDeletedAssetWidgetValues'), { spy: true })
+const mockClearWidgetValues = vi.mocked(clearDeletedAssetWidgetValues)
 
-const mockMarkMissingMedia = vi.hoisted(() => vi.fn())
-vi.mock(import('../utils/markDeletedAssetsAsMissingMedia'), () => ({
-  markDeletedAssetsAsMissingMedia: mockMarkMissingMedia
-}))
+vi.mock(import('@/platform/missingMedia/missingMediaScan'), { spy: true })
+const mockScanNodeMediaCandidates = vi.mocked(scanNodeMediaCandidates)
+
+vi.mock(import('../utils/markDeletedAssetsAsMissingMedia'), { spy: true })
+const mockMarkMissingMedia = vi.mocked(markDeletedAssetsAsMissingMedia)
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return fromPartial({
@@ -1346,7 +1349,7 @@ describe('useMediaAssetActions', () => {
           props.onConfirm(true)
         }
       )
-      mockAppGraph.value = { _nodes: [] }
+      mockAppGraph.value = { nodes: [] }
     })
 
     it('completes the lifecycle for one confirmed asset record', async () => {
@@ -1534,7 +1537,84 @@ describe('useMediaAssetActions', () => {
           opts.props.onConfirm(true)
         }
       )
-      mockAppGraph.value = { _nodes: [] }
+      mockAppGraph.value = { nodes: [] }
+    })
+
+    it('cleans every shared reference only for successful assets after a partial deletion', async () => {
+      mockDeleteAsset.mockImplementation(async (id: string) => {
+        if (id === 'asset-failed') throw new Error('503 Service Unavailable')
+      })
+      const successfulCallbacks = [vi.fn(), vi.fn()]
+      const failedCallback = vi.fn()
+      const successfulNodes = successfulCallbacks.map((callback, index) =>
+        fromAny<LGraphNode, unknown>({
+          id: index + 10,
+          widgets: [
+            { name: 'image', value: 'shared.png', callback },
+            ...(index === 0
+              ? [
+                  {
+                    name: 'mask',
+                    value: 'failed.png',
+                    callback: failedCallback
+                  }
+                ]
+              : [])
+          ],
+          imgs: [{ src: `blob:shared-preview-${index}` }],
+          graph: { setDirtyCanvas: vi.fn() }
+        })
+      )
+      mockAppGraph.value = {
+        nodes: successfulNodes
+      }
+      mockScanNodeMediaCandidates.mockImplementation((_graph, node) => [
+        {
+          nodeId: String(node.id),
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: String(node.widgets?.[0].value),
+          isMissing: undefined
+        }
+      ])
+      const actions = useMediaAssetActions()
+
+      await actions.deleteAssets([
+        createMockAsset({ id: 'asset-success', name: 'shared.png' }),
+        createMockAsset({ id: 'asset-failed', name: 'failed.png' })
+      ])
+
+      expect(mockMarkMissingMedia).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        new Set(['shared.png', 'shared.png [input]'])
+      )
+      expect(useMissingMediaStore().missingMediaCandidates).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'shared.png',
+            isMissing: true
+          })
+        ])
+      )
+      expect(useMissingMediaStore().missingMediaCandidates).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: 'failed.png' })
+        ])
+      )
+      for (const [index, node] of successfulNodes.entries()) {
+        expect(mockRemoveNodeOutputsForNode).toHaveBeenCalledWith(node)
+        expect(node.imgs).toBeUndefined()
+        expect(node.widgets?.[0].value).toBe('')
+        expect(successfulCallbacks[index]).toHaveBeenCalledWith('')
+        expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
+      }
+      expect(successfulNodes[0].widgets?.[1].value).toBe('failed.png')
+      expect(failedCallback).not.toHaveBeenCalled()
+      expect(mockCaptureCanvasState).toHaveBeenCalledTimes(1)
+      expect(mockCaptureCanvasState).toHaveBeenCalledAfter(
+        mockClearWidgetValues
+      )
     })
 
     it('invokes clearNodePreviewCacheForValues with canonical widget-value variants', async () => {
@@ -1560,7 +1640,7 @@ describe('useMediaAssetActions', () => {
       )
       expect(typeof removeArg).toBe('function')
 
-      const sampleNode = { id: 42 }
+      const sampleNode = fromAny<LGraphNode, unknown>({ id: 42 })
       removeArg(sampleNode)
       expect(mockRemoveNodeOutputsForNode).toHaveBeenCalledWith(sampleNode)
       // Locator is resolved from the node's own graph, not from the raw id —
@@ -1669,7 +1749,7 @@ describe('useMediaAssetActions', () => {
         ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) =>
           props.onConfirm(true)
       )
-      mockAppGraph.value = { _nodes: [] }
+      mockAppGraph.value = { nodes: [] }
     })
 
     it('keeps a failed asset listed and removes it once a retry succeeds', async () => {
