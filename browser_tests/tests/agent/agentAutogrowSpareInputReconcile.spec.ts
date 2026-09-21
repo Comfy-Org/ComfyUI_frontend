@@ -361,8 +361,17 @@ test.describe(
         await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
       })
 
+      await page.evaluate((id) => {
+        const node = window.app!.graph.getNodeById(id)!
+        const canvas = window.app!.canvas
+        canvas.ds.fitToBounds(node.boundingRect, { zoom: 0.5 })
+        canvas.setDirty(true, true)
+      }, toNodeId(GPT_NODE_ID))
+      await expect(vueNodes.getNodeLocator(gptNodeId)).toBeInViewport({
+        ratio: 1
+      })
       await test.info().attach('after-tab-switch', {
-        body: await page.screenshot(),
+        body: await vueNodes.getNodeLocator(gptNodeId).screenshot(),
         contentType: 'image/png'
       })
       return { vueNodes, gptNodeId, readImageSlots }
