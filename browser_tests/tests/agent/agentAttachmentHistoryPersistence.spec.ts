@@ -1,12 +1,15 @@
 import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
 
 import type { AgentMessage } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import {
+  dropAssets,
+  expectAssets
+} from '@e2e/fixtures/utils/agentAttachmentHelpers'
+import type { ExpectedAssetPreview } from '@e2e/fixtures/utils/agentAttachmentHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
@@ -36,87 +39,25 @@ const firstImage = {
   width: 64,
   height: 64,
   visible: true
-}
+} satisfies ExpectedAssetPreview
 const secondImage = {
   filename: 'ComfyUI_00003_.png',
   kind: 'image',
   width: 32,
   height: 32,
   visible: true
-}
+} satisfies ExpectedAssetPreview
 const video = {
   filename: 'ComfyUI_00004_.mp4',
   kind: 'video',
   width: 128,
   height: 128,
   visible: true
-}
+} satisfies ExpectedAssetPreview
 const references = [
   { name: firstImage.filename, id: 'asset-first', kind: 'image' },
   { name: secondImage.filename, id: 'asset-second', kind: 'image' }
 ]
-
-async function dropAssets(
-  page: Page,
-  panel: Locator,
-  assets: (typeof firstImage)[]
-) {
-  for (const { filename, kind } of assets) {
-    const dataTransfer = await page.evaluateHandle(
-      ({ mime, filename, kind }) => {
-        const transfer = new DataTransfer()
-        transfer.setData(
-          mime,
-          JSON.stringify({
-            filename,
-            subfolder: '',
-            type: 'output',
-            attachment_ref: filename,
-            media_kind: kind
-          })
-        )
-        return transfer
-      },
-      { mime: MIME_ASSET_INFO, filename, kind }
-    )
-    await panel.dispatchEvent('drop', { dataTransfer })
-    await dataTransfer.dispose()
-  }
-}
-
-async function expectAssets(panel: Locator, assets: (typeof firstImage)[]) {
-  const previews = panel.getByTestId(/^reply-(image|video)-preview$/)
-  await expect(previews).toHaveCount(assets.length)
-  await expect
-    .poll(() =>
-      previews.evaluateAll((elements) =>
-        elements.map((element) => {
-          if (element instanceof HTMLImageElement) {
-            return {
-              filename: element.alt,
-              kind: 'image',
-              width: element.naturalWidth,
-              height: element.naturalHeight,
-              visible: element.checkVisibility()
-            }
-          }
-          if (element instanceof HTMLVideoElement) {
-            return {
-              filename: new URL(element.currentSrc).searchParams.get(
-                'filename'
-              ),
-              kind: 'video',
-              width: element.videoWidth,
-              height: element.videoHeight,
-              visible: element.checkVisibility()
-            }
-          }
-          return null
-        })
-      )
-    )
-    .toEqual(assets)
-}
 
 for (const scenario of [
   {
