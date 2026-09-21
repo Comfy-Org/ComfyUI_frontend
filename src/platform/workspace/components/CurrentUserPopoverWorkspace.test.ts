@@ -44,6 +44,11 @@ const state = vi.hoisted(() => {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
+// Stable across calls: the hosted-billing opener reads fetchStatus/fetchBalance
+// on one call and a test asserts on them via another, so a fresh vi.fn() pair
+// per call would make the two invisible to each other.
+const mockBillingContextFetchStatus = vi.hoisted(() => vi.fn())
+const mockBillingContextFetchBalance = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     billingStatus: computed(() => state.billingStatus),
@@ -56,7 +61,8 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
     })),
     balance: ref({ amountMicros: 100 }),
     isLoading: ref(false),
-    fetchBalance: vi.fn()
+    fetchStatus: mockBillingContextFetchStatus,
+    fetchBalance: mockBillingContextFetchBalance
   })
 }))
 
@@ -369,6 +375,41 @@ describe('CurrentUserPopoverWorkspace', () => {
       'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace'
     )
     expect(state.showPricingTable).not.toHaveBeenCalled()
+  })
+
+  it('includes the active workspace id in the hosted pricing url', async () => {
+    const user = userEvent.setup()
+    const tab = stubHostedTab()
+    vi.spyOn(window, 'open').mockReturnValue(tab)
+    state.canOpenPricingSurface = true
+    state.hostedBillingDestination = 'billing_web'
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-team-1' })
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+
+    expect(tab.location.href).toBe(
+      'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace&workspace_id=ws-team-1'
+    )
+  })
+
+  it('refreshes billing state when the hosted pricing tab regains focus', async () => {
+    const user = userEvent.setup()
+    const tab = stubHostedTab()
+    vi.spyOn(window, 'open').mockReturnValue(tab)
+    state.canOpenPricingSurface = true
+    state.hostedBillingDestination = 'billing_web'
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+
+    mockBillingContextFetchStatus.mockClear()
+    mockBillingContextFetchBalance.mockClear()
+
+    window.dispatchEvent(new Event('focus'))
+
+    expect(mockBillingContextFetchStatus).toHaveBeenCalledTimes(1)
+    expect(mockBillingContextFetchBalance).toHaveBeenCalledTimes(1)
   })
 
   it('falls back to the in-app pricing table when the hosted tab is blocked', async () => {
