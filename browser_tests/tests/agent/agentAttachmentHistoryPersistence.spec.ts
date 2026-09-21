@@ -90,10 +90,11 @@ for (const scenario of [
   }
 ]) {
   test(
-    `keeps ${scenario.name} after a browser refresh`,
+    `keeps ${scenario.name} after refresh and chat switching`,
     { tag: ['@cloud', '@ui'] },
     async ({ page, promptHistory, workflowSelection }, testInfo) => {
       const filenames = scenario.assets.map((asset) => asset.filename)
+      let attachmentThreadId: string | undefined
 
       await page.route(
         `**/view?filename=${firstImage.filename}&type=input`,
@@ -120,12 +121,19 @@ for (const scenario of [
       // not yet carry attachments through to `content` at all. POST still goes
       // through the fixture's handler unmodified (route.fallback()).
       await page.route('**/api/agent/threads/*/messages', (route) => {
-        if (route.request().method() !== 'GET') return route.fallback()
-        const request = promptHistory.requests.at(0)
-        if (!request) return route.fallback()
         const threadId = new URL(route.request().url()).pathname
           .split('/')
           .at(-2)!
+        if (route.request().method() === 'POST') {
+          attachmentThreadId = threadId
+          return route.fallback()
+        }
+        if (route.request().method() !== 'GET') return route.fallback()
+        if (threadId !== attachmentThreadId) {
+          return route.fulfill(jsonRoute([]))
+        }
+        const request = promptHistory.requests.at(0)
+        if (!request) return route.fallback()
         const turnId = 'e2e-attachment-turn'
         const messages: AgentMessage[] = [
           {
@@ -209,6 +217,30 @@ for (const scenario of [
       await expectAssets(reopenedPanel, scenario.assets)
       await reopenedPanel.screenshot({
         path: testInfo.outputPath('after-reload.png')
+      })
+
+      await reopenedPanel
+        .getByRole('button', { name: enMessages.agent.newChat })
+        .click()
+      await expect(reopenedPanel.getByTestId('user-message-bubble')).toHaveCount(
+        0
+      )
+      await expectAssets(reopenedPanel, [])
+      await reopenedPanel
+        .getByRole('button', { name: enMessages.agent.showChatHistory })
+        .click()
+      await reopenedPanel
+        .getByRole('button', {
+          name: 'Inline reference round trip',
+          exact: true
+        })
+        .click()
+      await expect(
+        reopenedPanel.getByTestId('user-message-bubble')
+      ).toContainText('compare these attachments')
+      await expectAssets(reopenedPanel, scenario.assets)
+      await reopenedPanel.screenshot({
+        path: testInfo.outputPath('after-chat-switch.png')
       })
     }
   )
