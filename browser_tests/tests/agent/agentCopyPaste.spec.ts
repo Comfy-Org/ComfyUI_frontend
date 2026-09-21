@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { COPY_PASTE_SCENARIO } from '@e2e/fixtures/data/agent/agentCopyPasteScenario'
 
@@ -122,6 +124,104 @@ test.describe(
         )
         expect(await agentConversation.graphNodes()).toHaveLength(before.length)
       })
+    })
+
+    test.describe('external text followed by intentional node paste', () => {
+      test.use({ permissions: ['clipboard-read', 'clipboard-write'] })
+
+      for (const { mode, preparePanel } of [
+        {
+          mode: 'docked',
+          preparePanel: async (panel: Locator) => expect(panel).toBeVisible()
+        },
+        {
+          mode: 'maximized',
+          preparePanel: async (panel: Locator) =>
+            panel
+              .getByRole('button', { name: enMessages.agent.maximize })
+              .click()
+        }
+      ]) {
+        test(`isolates external text in the ${mode} composer without breaking canvas paste`, async ({
+          agentConversation,
+          page
+        }, testInfo) => {
+          testInfo.annotations.push({
+            type: 'issue',
+            description: 'https://linear.app/comfyorg/issue/PM-1262'
+          })
+          const postedMessages: string[] = []
+          page.on('request', (request) => {
+            if (
+              request.method() === 'POST' &&
+              /\/api\/agent\/threads\/[^/]+\/messages$/.test(
+                new URL(request.url()).pathname
+              )
+            )
+              postedMessages.push(request.postData() ?? '')
+          })
+          const before = await agentConversation.graphNodes()
+          const source = await agentConversation.nodeOfType(
+            COPY_PASTE_SCENARIO.agentAddedType
+          )
+          await agentConversation.selectNode(source.id)
+          await agentConversation.clipboard.copy()
+          await preparePanel(agentConversation.panel)
+          const graphBefore = await page.evaluate(() => {
+            const { nodes, links } = window.app!.graph.serialize()
+            return { nodes, links }
+          })
+
+          await agentConversation.clipboard.writeText(
+            'Copper fox; keep seed 719 unchanged.'
+          )
+          await agentConversation.clipboard.paste(agentConversation.composer)
+          await expect(agentConversation.composer).toHaveText(
+            'Copper fox; keep seed 719 unchanged.'
+          )
+          await expect(
+            agentConversation.composer.getByTestId('node-reference-chip')
+          ).toHaveCount(0)
+          await expect(
+            agentConversation.panel.getByTestId('composer-node-section')
+          ).toHaveCount(0)
+          await expect
+            .poll(() =>
+              page.evaluate(() => {
+                const { nodes, links } = window.app!.graph.serialize()
+                return { nodes, links }
+              })
+            )
+            .toEqual(graphBefore)
+          expect(postedMessages).toEqual([])
+          await page.screenshot({
+            path: testInfo.outputPath('composer-external-text.png')
+          })
+
+          await agentConversation.panel
+            .getByRole('button', { name: enMessages.agent.close, exact: true })
+            .click()
+          await expect(agentConversation.panel).toBeHidden()
+          await agentConversation.selectNode(source.id)
+          await agentConversation.clipboard.copy()
+          await agentConversation.clipboard.paste()
+          await expect
+            .poll(() => agentConversation.graphNodes())
+            .toHaveLength(before.length + 1)
+          expect(await agentConversation.nodesAddedSince(before)).toEqual([
+            expect.objectContaining({
+              type: COPY_PASTE_SCENARIO.agentAddedType
+            })
+          ])
+          expect(
+            await page.evaluate(() => window.app!.graph.serialize().links)
+          ).toEqual(graphBefore.links)
+          expect(postedMessages).toEqual([])
+          await page.screenshot({
+            path: testInfo.outputPath('canvas-paste-after-composer.png')
+          })
+        })
+      }
     })
 
     test('Ctrl+C in the composer with nothing selected leaves the node clipboard alone', async ({
