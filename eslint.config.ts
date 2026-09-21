@@ -378,7 +378,7 @@ export default defineConfig([
       'no-restricted-syntax': [
         'error',
         {
-          selector: `CallExpression[callee.type='MemberExpression'][callee.property.name=/${es2023ArrayCopyMethodPattern}/]`,
+          selector: `CallExpression[callee.type='MemberExpression'][callee.computed=false][callee.property.name=/${es2023ArrayCopyMethodPattern}/]`,
           message:
             'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
         },

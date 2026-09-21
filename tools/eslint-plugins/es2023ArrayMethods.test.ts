@@ -88,6 +88,17 @@ builder.with(3)`,
     expect(result.messages).toEqual([])
   })
 
+  it('allows computed identifiers that resolve to unrelated methods', async () => {
+    const [result] = await eslint.lintText(
+      `const items = [1, 2]
+const toSorted = 'map' as const
+items[toSorted]((item) => item * 2)`,
+      { filePath: runtimeFilePath }
+    )
+
+    expect(result.messages).toEqual([])
+  })
+
   it.for([
     [
       'constrained generic',
