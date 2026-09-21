@@ -70,6 +70,10 @@ export type BatchOutcome =
 
 export interface OpSender {
   enqueue(operations: GraphOperation[]): void
+  /** Mint and target-pin operations without starting transport delivery. */
+  admit(operations: GraphOperation[]): void
+  /** Start delivery of already admitted batches. */
+  flush(): void
   /** In-flight + queued batch count (observability; 0 = drained). */
   pending(): number
   /** Every unsettled batch, in-flight first, each addressed to its mint-time workflow. */
@@ -217,6 +221,25 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     transmit(inFlight, 0)
   }
 
+  function admit(operations: GraphOperation[]): void {
+    if (detached || operations.length === 0) return
+    const minted = mintWireOps(operations, {
+      actor: deps.actor(),
+      baseVersion: deps.baseVersion()
+    })
+    const workflowId = deps.workflowId()
+    if (workflowId === null) {
+      deps.onBatchSettled({ state: 'undeliverable', ops: minted })
+      return
+    }
+    const previous = queue.at(-1)
+    const combined =
+      previous?.workflowId === workflowId
+        ? [...queue.pop()!.ops, ...minted]
+        : minted
+    queue.push(...chunkWireOps(combined).map((ops) => ({ workflowId, ops })))
+  }
+
   const unsubscribe = deps.onOpsResult((result) => {
     if (
       !inFlight ||
@@ -247,19 +270,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   return {
     enqueue(operations) {
-      if (detached || operations.length === 0) return
-      const minted = mintWireOps(operations, {
-        actor: deps.actor(),
-        baseVersion: deps.baseVersion()
-      })
-      const workflowId = deps.workflowId()
-      if (workflowId === null) {
-        deps.onBatchSettled({ state: 'undeliverable', ops: minted })
-        return
-      }
-      queue.push(...chunkWireOps(minted).map((ops) => ({ workflowId, ops })))
+      admit(operations)
       pump()
     },
+    admit,
+    flush: pump,
     pending() {
       return queue.length + (inFlight ? 1 : 0)
     },

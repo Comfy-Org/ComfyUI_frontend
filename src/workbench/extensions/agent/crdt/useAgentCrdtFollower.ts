@@ -352,9 +352,7 @@ function startAgentCrdtFollower(
     () => bridge.follower.doc,
     { pendingDeletes: pendingHumanDeletes }
   )
-  const coalescer = createOpCoalescer((operations) =>
-    sender.enqueue(operations)
-  )
+  const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on

@@ -58,7 +58,7 @@ describe('createOpCoalescer over the op sender', () => {
       baseVersion: () => 41,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
-    coalescer = createOpCoalescer((operations) => sender.enqueue(operations))
+    coalescer = createOpCoalescer(sender.admit, sender.flush)
   })
 
   it('sends eight same-tick single-op mints as one doc_ops batch in mint order', async () => {

@@ -1,11 +1,8 @@
 /**
- * Folds every human operation minted in one tick into a single delivery to
- * the sender. The layout store flushes an N-node edit as N changes in one
- * microtask, and the mint ports call `enqueue` once per change; without this
- * seam each call became its own serialized wire batch, so a clear made
- * while bound needed N round trips to reach the document and lost its tail
- * when the chat unbound mid-way. The microtask flush keeps mint order and
- * hands the sender one batch it chunks at the wire cap as usual.
+ * Admits every human operation to the sender synchronously, then defers only
+ * delivery until the end of the tick. Admission pins workflow, actor, version,
+ * and operation identity before a reactive retarget can change them, while the
+ * deferred flush still lets the sender combine an N-node edit into one batch.
  */
 import type { GraphOperation } from './graphOperations'
 
@@ -15,31 +12,27 @@ export interface OpCoalescer {
 }
 
 export function createOpCoalescer(
-  deliver: (operations: GraphOperation[]) => void
+  admit: (operations: GraphOperation[]) => void,
+  flush: () => void
 ): OpCoalescer {
-  let buffer: GraphOperation[] = []
   let flushScheduled = false
   let detached = false
 
-  function flush(): void {
+  function flushAdmitted(): void {
     flushScheduled = false
-    if (detached || buffer.length === 0) return
-    const batch = buffer
-    buffer = []
-    deliver(batch)
+    if (!detached) flush()
   }
 
   return {
     enqueue(operations) {
       if (detached || operations.length === 0) return
-      buffer.push(...operations)
+      admit(operations)
       if (flushScheduled) return
       flushScheduled = true
-      queueMicrotask(flush)
+      queueMicrotask(flushAdmitted)
     },
     detach() {
       detached = true
-      buffer = []
     }
   }
 }

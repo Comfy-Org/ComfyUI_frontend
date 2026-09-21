@@ -1444,6 +1444,25 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('pins a same-tick human edit to the workflow active at admission', async () => {
+    const { enqueue, workflowId, unmount } = mountWithHumanOps()
+    bridge().subscribe.mockImplementation((next: string) => {
+      bridge().subscribedWorkflowId = next
+    })
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    expect(clientState.sendOps).toHaveBeenCalledWith(
+      'wf-1',
+      expect.any(String),
+      [expect.objectContaining({ op: 'delete_node', node_id: '1' })]
+    )
+    unmount()
+  })
+
   function mountWithHumanOps(): {
     enqueue: ReturnType<typeof useAgentCrdtFollower>['enqueueHumanOperations']
     workflowId: Ref<string | null>
