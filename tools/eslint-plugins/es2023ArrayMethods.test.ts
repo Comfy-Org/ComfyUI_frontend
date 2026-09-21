@@ -6,7 +6,7 @@ const eslint = new ESLint()
 const runtimeFilePath = 'src/es2023-array-method-coverage.ts'
 
 describe('ES2023 array method restrictions', () => {
-  it.each([
+  it.for([
     ['toReversed dotted', 'items.toReversed()'],
     ['toReversed computed', "items['toReversed']()"],
     ['toSorted dotted', 'items.toSorted()'],
@@ -15,7 +15,7 @@ describe('ES2023 array method restrictions', () => {
     ['toSpliced computed', "items['toSpliced'](0, 1)"],
     ['with dotted', 'items.with(0, 1)'],
     ['with computed', "items['with'](0, 1)"]
-  ])('rejects %s calls in runtime files', async (_name, code) => {
+  ] as const)('rejects %s calls in runtime files', async ([_name, code]) => {
     const [result] = await eslint.lintText(`const items = [1, 2]\n${code}`, {
       filePath: runtimeFilePath
     })
@@ -28,18 +28,17 @@ describe('ES2023 array method restrictions', () => {
     ])
   })
 
-  it.each([
+  it.for([
     ['toReversed', 'items[`toReversed`]()'],
     ['toSorted', 'items[`toSorted`]()'],
     ['toSpliced', 'items[`toSpliced`](0, 1)'],
     ['with', 'items[`with`](0, 1)']
-  ])(
+  ] as const)(
     'rejects template-literal %s calls in runtime files',
-    async (_name, code) => {
-      const [result] = await eslint.lintText(
-        `const items = [1, 2]\n${code}`,
-        { filePath: runtimeFilePath }
-      )
+    async ([_name, code]) => {
+      const [result] = await eslint.lintText(`const items = [1, 2]\n${code}`, {
+        filePath: runtimeFilePath
+      })
 
       expect(result.messages).toEqual([
         expect.objectContaining({
