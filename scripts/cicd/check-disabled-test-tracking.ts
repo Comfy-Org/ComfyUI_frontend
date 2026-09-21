@@ -167,7 +167,12 @@ function correspondingBaseDeclarations(
     const substitution =
       costs[baseIndex - 1][headIndex - 1] +
       (base[baseIndex - 1].title === head[headIndex - 1].title ? 0 : 1)
-    if (costs[baseIndex][headIndex] === substitution) {
+    if (
+      costs[baseIndex][headIndex] ===
+      costs[baseIndex][headIndex - 1] + 1
+    ) {
+      headIndex -= 1
+    } else if (costs[baseIndex][headIndex] === substitution) {
       corresponding.set(headIndex - 1, base[baseIndex - 1])
       baseIndex -= 1
       headIndex -= 1
@@ -176,8 +181,6 @@ function correspondingBaseDeclarations(
       costs[baseIndex - 1][headIndex] + 1
     ) {
       baseIndex -= 1
-    } else {
-      headIndex -= 1
     }
   }
 

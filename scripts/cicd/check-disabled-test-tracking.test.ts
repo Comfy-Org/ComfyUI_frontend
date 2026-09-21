@@ -155,6 +155,29 @@ test.fixme(
     expect(findViolations(root, base, head)).toEqual([])
   })
 
+  it('finds an appended disabled test with the same title', () => {
+    const root = createRepository()
+    write(
+      root,
+      'tests/example.spec.ts',
+      `test.skip('duplicate title', () => existingFixture())\n`
+    )
+    const base = commit(root, 'base')
+
+    write(
+      root,
+      'tests/example.spec.ts',
+      `test.skip('duplicate title', () => existingFixture())
+test.skip('duplicate title', () => newFixture())
+`
+    )
+    const head = commit(root, 'append duplicate title')
+
+    expect(findViolations(root, base, head)).toEqual([
+      "  tests/example.spec.ts:2: test.skip('duplicate title', () => newFixture())"
+    ])
+  })
+
   it.for([
     { body: 'Re-enabled by #12345', expected: true },
     {
