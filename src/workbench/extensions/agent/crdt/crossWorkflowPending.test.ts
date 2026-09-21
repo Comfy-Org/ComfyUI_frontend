@@ -351,6 +351,26 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     })
   })
 
+  // The transport retry budget, measured rather than assumed: with the transport
+  // down, `sendOps` is attempted once every 500ms and stops after six. The two
+  // requirement cases below advance `500 * 6` to sit exactly at that boundary,
+  // so this case is what keeps that number honest - if the budget changes, this
+  // fails here rather than silently moving what the `it.fails` cases pin.
+  it('M7 stops attempting a target-keyed operation after six transport failures', () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    enqueue([deleteNode('exhaust-budget')])
+    vi.advanceTimersByTime(500 * 6)
+    expect(clientState.attempts).toHaveLength(6)
+    expect(clientState.sent).toHaveLength(0)
+
+    // Not merely slow: the loop is finished. Twenty further ticks add nothing,
+    // so the operation is abandoned rather than waiting for a longer backoff.
+    vi.advanceTimersByTime(500 * 20)
+    expect(clientState.attempts).toHaveLength(6)
+  })
+
   it.fails('M7 retains a target-keyed operation beyond the transport retry budget and resends its original ID after reconnect', () => {
     const { enqueue } = mountFollower('wf-a')
     clientState.transportUp = false
@@ -361,8 +381,19 @@ describe('R-73 cross-workflow pending operation characterization', () => {
 
     clientState.transportUp = true
     apiState.target.dispatchEvent(new Event('reconnected'))
+    vi.advanceTimersByTime(500)
 
-    expect(clientState.sent.at(-1)?.ops[0].op_id).toBe(operationId)
+    // Two separate requirements, asserted separately so the failure names which
+    // one broke. Today the first fails: nothing is resent at all. Asserting only
+    // the id would report `expected undefined to be '<id>'`, which reads the same
+    // whether the operation was dropped or resent under a reminted id - and a
+    // remint is the more serious defect, since `op_id` is the LWW tiebreak.
+    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent[0].ops[0]).toMatchObject({
+      op_id: operationId,
+      op: 'delete_node',
+      node_id: 'survive-outage'
+    })
   })
 
   it.fails('M7 restores a target-keyed operation after remount without reminting its ID', () => {
@@ -376,32 +407,14 @@ describe('R-73 cross-workflow pending operation characterization', () => {
 
     clientState.transportUp = true
     mountFollower('wf-a')
+    vi.advanceTimersByTime(500)
 
-    expect(clientState.sent.at(-1)?.ops[0].op_id).toBe(operationId)
-  })
-})
-
-// `abortIfUnbound()` (opSender.ts) settles an in-flight batch
-// 'undeliverable' purely because its mint-time workflow no longer matches
-// the currently bound one - without checking whether the transport had
-// already carried it, or whether the server ever committed it. A batch that
-// was accepted by `sendOps()` (so it left the client) and that the server
-// later confirms applying is still reported 'undeliverable', contradicting
-// that outcome's own contract ("the transport never carried it ... or no doc
-// was bound", opSender.ts:57-58). For a bulk add (paste/insert-workflow)
-// racing a doc unbind/resubscribe, this is the mechanism that leaves an
-// orphaned node in the CRDT doc while the client believes the add failed.
-describe('abortIfUnbound settles delivered ops as undeliverable', () => {
-  beforeEach(() => {
-    useAgentPanelStore().enabled = true
-    bridgeState.current = null
-    bridgeState.transport.up = true
-    clientState.transportUp = true
-    clientState.attempts = []
-    clientState.sent = []
-    clientState.sendOps.mockClear()
-    devLogState.recordDevEvent.mockClear()
-    vi.useFakeTimers()
+    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent[0].ops[0]).toMatchObject({
+      op_id: operationId,
+      op: 'delete_node',
+      node_id: 'survive-remount'
+    })
   })
 
   it('a batch the transport already accepted is never later reported undeliverable, even across a workflow retarget', async () => {
