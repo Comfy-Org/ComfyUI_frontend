@@ -74,6 +74,15 @@ export function workshopReleaseGate(): AstroIntegration {
                 context: 'client',
                 access: 'public',
                 default: process.env.VERCEL_ENV ?? ''
+              }),
+              // Derived from VERCEL_ENV independently of the field above, so
+              // overriding the deploy env cannot re-open comfy.org. Both are
+              // ordinary astro:env fields; this one is a second lever, not an
+              // unsettable one.
+              WORKSHOP_VERCEL_PRODUCTION: envField.boolean({
+                context: 'client',
+                access: 'public',
+                default: process.env.VERCEL_ENV === 'production'
               })
             }
           },

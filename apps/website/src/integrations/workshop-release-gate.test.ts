@@ -58,42 +58,65 @@ async function buildDone() {
   })
 }
 
+// Applies each update with the same merge Astro's hook runner uses, so the
+// assertions are on the configuration Astro would actually build with, not on
+// the argument the integration happened to pass.
+async function applySetup() {
+  const config = await validateConfig({}, root, 'build')
+  let applied = config
+  const updateConfig = vi.fn<
+    HookParameters<'astro:config:setup'>['updateConfig']
+  >((update) => {
+    applied = mergeConfig(applied, update)
+    return applied
+  })
+  const hook = workshopReleaseGate().hooks['astro:config:setup']
+  if (!hook) throw new Error('Missing config setup hook')
+  await hook({
+    config,
+    command: 'build',
+    isRestart: false,
+    updateConfig,
+    injectRoute: vi.fn(),
+    injectScript: vi.fn(),
+    addRenderer: vi.fn(),
+    addWatchFile: vi.fn(),
+    addClientDirective: vi.fn(),
+    addDevToolbarApp: vi.fn(),
+    addMiddleware: vi.fn(),
+    createCodegenDir: () => pathToFileURL(`${root}/.astro/`),
+    logger
+  })
+  return { applied, updateConfig }
+}
+
 describe('Workshop release output', () => {
   it('registers the catalogue client boundary during Astro setup', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
-    const config = await validateConfig({}, root, 'build')
-    // Applies each update with the same merge Astro's hook runner uses, so the
-    // assertion is on the configuration Astro would actually build with, not
-    // on the argument the integration happened to pass.
-    let applied = config
-    const updateConfig = vi.fn<
-      HookParameters<'astro:config:setup'>['updateConfig']
-    >((update) => {
-      applied = mergeConfig(applied, update)
-      return applied
-    })
-    const hook = workshopReleaseGate().hooks['astro:config:setup']
-    if (!hook) throw new Error('Missing config setup hook')
-    await hook({
-      config,
-      command: 'build',
-      isRestart: false,
-      updateConfig,
-      injectRoute: vi.fn(),
-      injectScript: vi.fn(),
-      addRenderer: vi.fn(),
-      addWatchFile: vi.fn(),
-      addClientDirective: vi.fn(),
-      addDevToolbarApp: vi.fn(),
-      addMiddleware: vi.fn(),
-      createCodegenDir: () => pathToFileURL(`${root}/.astro/`),
-      logger
-    })
+    const { applied, updateConfig } = await applySetup()
     expect(updateConfig).toHaveBeenCalledOnce()
     expect(pluginNames(applied.vite.plugins)).toContain(
       'workshop-client-boundary'
     )
   })
+
+  it.for([
+    { vercelEnv: 'production', deployEnv: 'production', isProduction: true },
+    { vercelEnv: 'preview', deployEnv: 'preview', isProduction: false },
+    { vercelEnv: 'development', deployEnv: 'development', isProduction: false }
+  ])(
+    'derives both deploy-env fields from VERCEL_ENV=$vercelEnv independently',
+    async ({ vercelEnv, deployEnv, isProduction }) => {
+      vi.stubEnv('VERCEL_ENV', vercelEnv)
+      const { applied } = await applySetup()
+      expect(applied.env.schema.WORKSHOP_DEPLOY_ENV).toMatchObject({
+        default: deployEnv
+      })
+      expect(applied.env.schema.WORKSHOP_VERCEL_PRODUCTION).toMatchObject({
+        default: isProduction
+      })
+    }
+  )
 
   it('rejects an invalid Cloud family before building', () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
