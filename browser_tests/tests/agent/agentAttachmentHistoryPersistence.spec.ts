@@ -30,14 +30,18 @@ test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
 test(
-  'keeps a user message asset preview after a browser refresh',
+  'keeps two distinct user message image previews after a browser refresh',
   { tag: ['@cloud', '@ui'] },
   async ({ page, promptHistory, workflowSelection }, testInfo) => {
     const droppedFilename = 'ComfyUI_00002_.png'
+    const secondFilename = 'ComfyUI_00003_.png'
 
     await page.route(
       `**/view?filename=${droppedFilename}&type=input`,
       (route) => route.fulfill({ path: assetPath('image64x64.webp') })
+    )
+    await page.route(`**/view?filename=${secondFilename}&type=input`, (route) =>
+      route.fulfill({ path: assetPath('image32x32.webp') })
     )
 
     // The real ingest API returns the message row's `content` map verbatim,
@@ -69,7 +73,7 @@ test(
             attachments: request.attachments,
             attachment_refs: (request.attachments ?? []).map((name) => ({
               name,
-              id: 'asset-e2e-attachment',
+              id: `asset-${name}`,
               kind: 'image'
             }))
           }
@@ -129,17 +133,47 @@ test(
         { mime: MIME_ASSET_INFO, filename: droppedFilename }
       )
     })
+    await panel.dispatchEvent('drop', {
+      dataTransfer: await page.evaluateHandle(
+        ({ mime, filename }) => {
+          const dataTransfer = new DataTransfer()
+          dataTransfer.setData(
+            mime,
+            JSON.stringify({
+              filename,
+              subfolder: '',
+              type: 'output',
+              attachment_ref: filename,
+              media_kind: 'image'
+            })
+          )
+          return dataTransfer
+        },
+        { mime: MIME_ASSET_INFO, filename: secondFilename }
+      )
+    })
 
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
-    await composer.pressSequentially('check this image')
+    await composer.pressSequentially('compare these images')
     await panel
       .getByRole('button', { name: enMessages.agent.send, exact: true })
       .click()
     await expect.poll(() => promptHistory.requests.length).toBe(1)
+    expect(promptHistory.requests[0].attachments).toEqual([
+      droppedFilename,
+      secondFilename
+    ])
 
-    const image = panel.getByTestId('reply-image-preview')
+    await expect(panel.getByTestId('reply-image-preview')).toHaveCount(2)
+    const image = panel.getByRole('img', { name: droppedFilename, exact: true })
     await expect(image).toBeVisible()
     await expect(image).toHaveJSProperty('naturalWidth', 64)
+    const secondImage = panel.getByRole('img', {
+      name: secondFilename,
+      exact: true
+    })
+    await expect(secondImage).toBeVisible()
+    await expect(secondImage).toHaveJSProperty('naturalWidth', 32)
     await panel.screenshot({ path: testInfo.outputPath('before-reload.png') })
 
     // Settle the (WS-less) turn so the reload below is not racing a
@@ -155,12 +189,20 @@ test(
     const reopenedPanel = page.locator('#agent-panel-root')
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
-    await expect(reopenedPanel.getByTestId('reply-image-preview')).toBeVisible({
-      timeout: 10_000
-    })
+    await expect(reopenedPanel.getByTestId('reply-image-preview')).toHaveCount(
+      2,
+      {
+        timeout: 10_000
+      }
+    )
     await expect(
-      reopenedPanel.getByTestId('reply-image-preview')
+      reopenedPanel.getByRole('img', { name: droppedFilename, exact: true })
     ).toHaveJSProperty('naturalWidth', 64)
+    await expect(
+      reopenedPanel.getByRole('img', { name: secondFilename, exact: true })
+    ).toHaveJSProperty('naturalWidth', 32)
+    await expect(image).toBeVisible()
+    await expect(secondImage).toBeVisible()
     await reopenedPanel.screenshot({
       path: testInfo.outputPath('after-reload.png')
     })

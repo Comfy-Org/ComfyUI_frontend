@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { authoredWorkshopModels } from './workshop-browse-content'
 import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
@@ -15,6 +15,9 @@ import creatorModels from '../data/workshop-creator-models.json'
 import { workshopContract } from './workshop-contract-catalog'
 import { formForContract } from './workshop-contract'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
+import { prepareWorkshopCreatorRequest } from './workshop-creator-request'
+import { workshopExampleFile } from './workshop-example-file'
+import { WorkshopRouterError } from './workshop-router-errors'
 
 const imageUrl = 'https://example.invalid/source.png'
 const videoUrl = 'https://example.invalid/source.mp4'
@@ -110,6 +113,56 @@ function prepare(id: string, values: FormValues = {}) {
 const models = authoredWorkshopModels.filter(
   (model) => getRouterWorkshopModelDetail(model.slug)?.execution?.creator
 )
+
+describe('creator file failure diagnostics', () => {
+  it('preserves the original download failure and identifies the example field', async () => {
+    const { creator } = modelFor('vertexai/gemini-3-pro-image').execution
+    assert.isDefined(creator)
+    const example = workshopExampleFile(
+      'https://example.invalid/creator-source.png'
+    )
+    assert.isDefined(example)
+    const cause = new TypeError('Private download detail')
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockRejectedValue(cause))
+
+    const failure = await prepareWorkshopCreatorRequest(
+      creator,
+      { prompt: 'Edit', images: [example] },
+      new AbortController().signal
+    ).catch((error: unknown) => error)
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(failure).toMatchObject({
+      reason: 'upload',
+      stage: 'example_download',
+      fieldErrors: { images: 'uploadFailed' }
+    })
+    expect(failure.cause).toBe(cause)
+  })
+
+  it('identifies the creator file widget when the real encoder cannot read its input', async () => {
+    const { creator } = modelFor('vertexai/gemini-3-pro-image').execution
+    assert.isDefined(creator)
+    const image = upload()
+    assert.instanceOf(image.file, File)
+    const cause = new DOMException('Private filename', 'NotReadableError')
+    vi.spyOn(image.file, 'arrayBuffer').mockRejectedValue(cause)
+
+    const failure = await prepareWorkshopCreatorRequest(
+      creator,
+      { prompt: 'Edit', images: [image] },
+      new AbortController().signal
+    ).catch((error: unknown) => error)
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(failure).toMatchObject({
+      reason: 'client',
+      stage: 'file_read',
+      fieldErrors: { images: 'fileUnreadable' }
+    })
+    expect(failure.cause).toBe(cause)
+  })
+})
 
 describe('creator widgets to native Router requests', () => {
   beforeEach(() => {
