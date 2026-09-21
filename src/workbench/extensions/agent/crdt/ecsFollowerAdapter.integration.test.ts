@@ -1376,4 +1376,72 @@ describe('EcsFollowerAdapter integration', () => {
     expect(combined.originLinks).toEqual([toLinkId(9)])
     expect(combined.targetLink).toEqual(toLinkId(9))
   })
+
+  describe('local intent during a full reconcile', () => {
+    function reconcileLinkedPair(pendingDeletes: ReadonlySet<string>) {
+      const mutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      const host = mint(
+        {
+          nodes: [
+            {
+              id: 1,
+              type: 'Source',
+              pos: [0, 0],
+              inputs: [],
+              outputs: [{ name: 'out', type: 'IMAGE', links: [9] }],
+              widgets_values: { seed: 1 }
+            },
+            {
+              id: 2,
+              type: 'Sink',
+              pos: [300, 0],
+              inputs: [{ name: 'in', type: 'IMAGE', link: 9 }],
+              outputs: []
+            }
+          ],
+          links: [[9, 1, 0, 2, 0, 'IMAGE']]
+        },
+        catalog
+      )
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(mutations, {
+        pendingDeletes: () => pendingDeletes
+      })
+      adapter.bind('wf', follower)
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      const committed = adapter.applyFrame({ workflowId: 'wf', seq: 1, update })
+      const nodeIds = useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+      const linked =
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(9)) !== undefined
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+      return { committed, nodeIds, linked }
+    }
+
+    it('skips a doc node whose human delete is still pending, along with its incident links, and still commits', () => {
+      expect(reconcileLinkedPair(new Set(['2']))).toEqual({
+        committed: true,
+        nodeIds: [toNodeId(1)],
+        linked: false
+      })
+    })
+
+    it('reconciles every doc node when nothing is pending', () => {
+      expect(reconcileLinkedPair(new Set())).toEqual({
+        committed: true,
+        nodeIds: [toNodeId(1), toNodeId(2)],
+        linked: true
+      })
+    })
+  })
 })
