@@ -97,6 +97,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import CanvasModeSelector from './CanvasModeSelector.vue'
 import ZoomControlsModal from './modals/ZoomControlsModal.vue'
@@ -149,25 +150,20 @@ const minimapCommandText = computed(() =>
 )
 
 // Computed properties for button classes and states
-const zoomButtonClass = computed(() => [
-  'bg-transparent',
-  isModalVisible.value ? 'not-active:bg-interface-panel-selected-surface!' : '',
-  'hover:bg-interface-button-hover-surface!',
-  'p-0',
-  'h-8',
-  'w-15'
-])
+const zoomButtonClass = computed(() =>
+  cn(
+    'h-8 w-15 bg-transparent p-0 hover:bg-interface-button-hover-surface!',
+    isModalVisible.value && 'not-active:bg-interface-panel-selected-surface!'
+  )
+)
 
-const minimapButtonClass = computed(() => ({
-  'bg-transparent': true,
-  'hover:bg-interface-button-hover-surface!': true,
-  'not-active:bg-interface-panel-selected-surface!': settingStore.get(
-    'Comfy.Minimap.Visible'
-  ),
-  'p-0': true,
-  'w-8': true,
-  'h-8': true
-}))
+const minimapButtonClass = computed(() =>
+  cn(
+    'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface!',
+    settingStore.get('Comfy.Minimap.Visible') &&
+      'not-active:bg-interface-panel-selected-surface!'
+  )
+)
 
 // Computed properties for tooltip and aria-label texts
 const fitViewTooltip = computed(() => {
@@ -192,14 +188,12 @@ const linkVisibilityAriaLabel = computed(() =>
     ? t('graphCanvasMenu.showLinks')
     : t('graphCanvasMenu.hideLinks')
 )
-const linkVisibleClass = computed(() => [
-  'bg-transparent',
-  linkHidden.value ? 'not-active:bg-interface-panel-selected-surface!' : '',
-  'hover:bg-interface-button-hover-surface!',
-  'p-0',
-  'w-8',
-  'h-8'
-])
+const linkVisibleClass = computed(() =>
+  cn(
+    'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface!',
+    linkHidden.value && 'not-active:bg-interface-panel-selected-surface!'
+  )
+)
 
 onMounted(() => {
   canvasStore.initScaleSync()
