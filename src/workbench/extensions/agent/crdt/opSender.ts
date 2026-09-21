@@ -17,6 +17,8 @@
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { chunkWireOps, mintWireOps } from './opEnvelope'
 
@@ -181,7 +183,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       settleUnbound(batch)
       return
     }
-    if (!deps.sendOps(batch.workflowId, deps.tab, batch.ops)) {
+    if (!trySend(batch)) {
       if (attempt < SEND_RETRY_LIMIT) {
         // Tracked in the same slot as the result timer (they never overlap:
         // the result timer is armed only after a successful send) so
@@ -197,6 +199,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
     batch.sends++
     armResultTimeout(batch)
+  }
+
+  function trySend(batch: InFlight): boolean {
+    try {
+      return deps.sendOps(batch.workflowId, deps.tab, batch.ops)
+    } catch (error) {
+      reportError(error, { errorType: 'agent_human_ops_send_failed' })
+      return false
+    }
   }
 
   function settleUnbound(batch: InFlight): void {
