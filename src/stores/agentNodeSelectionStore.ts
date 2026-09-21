@@ -4,6 +4,7 @@ import { ref, watch } from 'vue'
 
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -31,6 +32,7 @@ export const useAgentNodeSelectionStore = defineStore(
     const sidebarTabStore = useSidebarTabStore()
     const canvasStore = useCanvasStore()
     const settingStore = useSettingStore()
+    const workflowStore = useWorkflowStore()
     const isActive = ref(false)
     const isActionBarsHidden = ref(false)
     const isBannerVisible = ref(false)
@@ -41,6 +43,17 @@ export const useAgentNodeSelectionStore = defineStore(
     let sidebarTimeoutId: ReturnType<typeof setTimeout> | undefined
     let restoreSidebarTabId: string | null = null
     let restoreMinimap = false
+
+    watch(
+      [
+        () => workflowStore.activeWorkflow,
+        () => workflowStore.activeWorkflow?.path
+      ],
+      ([workflow, path], [previousWorkflow, previousPath]) => {
+        if (workflow !== previousWorkflow) return
+        moveNodeIds(previousPath, path)
+      }
+    )
 
     watch(isActive, (active) => {
       clearTimeout(transitionTimeoutId)

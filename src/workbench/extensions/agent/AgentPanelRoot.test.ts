@@ -6401,7 +6401,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
-  it('keeps node selection active when the active workflow is renamed', async () => {
+  it('restores node selection after the panel closes and the workflow is renamed', async () => {
     makeTab()
     mockMessagesEndpoint('wf-42')
     const selection = await startVueNodeSelection()
@@ -6411,19 +6411,20 @@ describe('AgentPanelRoot workflow binding', () => {
 
     const active = workflowStore.activeWorkflow
     if (!active) throw new Error('expected an active workflow')
+    selection.unmount()
     active.path = 'workflows/renamed.json'
     active.filename = 'renamed'
     await nextTick()
+    renderWithSelectedTarget()
+    await nextTick()
 
-    expect(selectionStore.isActive).toBe(true)
     expect(selectionStore.nodeIds('workflows/current.json')).toEqual([])
     expect(selectionStore.nodeIds('workflows/renamed.json')).toEqual([
       '9',
       '12'
     ])
-    expect(selection.canvas.multi_select).toBe(true)
-    expect(selection.canvas.allow_dragnodes).toBe(false)
-    expect(selection.canvas.selectOnly).toBe(true)
+    expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
 
   it('does not carry a saved node selection onto a different workflow', async () => {
