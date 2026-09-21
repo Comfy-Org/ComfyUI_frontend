@@ -33,40 +33,20 @@ function hasAccessor(obj: object, key: PropertyKey): boolean {
 }
 
 /**
- * Merges `incoming` slot descriptors into `existing` by name, updating a
- * matched slot's fields in place (preserving its object identity, e.g. a
- * SubgraphNode host's promoted-widget binding) and appending anything
- * genuinely new. `existing` is never reordered or shortened: a live node's
- * `inputs`/`outputs` ARE these arrays (`LGraphNode` binds
- * `_inputs = _state.inputs` once, at construction), so removing or moving
- * an entry here would also move it on the canvas while `linkStore`'s
- * index-keyed topology, and `LLink.target_slot`/`origin_slot`, keep
- * pointing at the old position — misattributing a live link to a different
- * slot, the exact failure mode this merge exists to avoid. A caller that
- * means to remove a slot must still go through the link-safe path
- * (`node.removeInput`/`removeOutput`).
+ * Merges `incoming` slot descriptors into `existing` by name: a matched
+ * slot's fields are updated in place, preserving its object identity and
+ * its position in `existing`; a slot present only in `incoming` is
+ * appended; a slot present only in `existing` is left untouched. `existing`
+ * is never reordered or shortened.
  *
- * `linkKey` (`link` for inputs, `links` for outputs) is excluded from the
- * assignment for an already-upgraded matched slot: `linkStore` owns
- * connectivity for a class-instance slot, and callers update it separately
- * from this store (there is no ordering guarantee — `removeLink` calls
- * `detachLinkSlots`/`updateNodeSlots` before `linkStore.deleteLink`, for
- * instance) — so the deprecated accessor's identity-based lookup
- * (`this.node.inputs`/`outputs.indexOf(this)`) must never be written
- * through here. For a matched slot that is still a plain descriptor,
- * `linkKey` is its only record of connectivity and is merged like any other
- * field. Every field is assigned through the reactive slot object itself
- * (never `toRaw`), so Vue's dependents (e.g. the node renderer) invalidate.
- *
- * The excluded key's value is never read either, even to discard it:
- * `graphMutations.ts`'s `connect` case calls this with a node's own live
- * `inputs`/`outputs` array passed back as both `existing` and `incoming`
- * for the side it didn't just connect, so every slot there matches itself
- * by identity. Reading `incomingSlot[linkKey]` in that case is reading the
- * live getter on the slot itself, which resyncs its legacy link cache as a
- * side effect — harmless as a value, but a real mutation triggered by a
- * merge that should be a no-op. Copying via `Object.keys` instead of
- * destructuring skips the excluded key entirely, so it's never read.
+ * `linkKey` (`link` for inputs, `links` for outputs) is `linkStore`'s
+ * connectivity for a slot already upgraded to a class instance, so it's
+ * excluded from the assignment there and never read off `incomingSlot`
+ * either — reading it invokes a deprecated accessor with its own side
+ * effect. For a matched slot that is still a plain descriptor, `linkKey`
+ * is its only record of connectivity and is copied like any other field.
+ * Every field is assigned through the reactive slot object itself (never
+ * `toRaw`), so Vue's dependents (e.g. the node renderer) invalidate.
  */
 function mergeSlotsByName<Slot extends { name: string }>(
   existing: Slot[],

@@ -11,6 +11,7 @@ import {
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
 import type { NodeState } from '@/types/nodeState'
 import { toNodeId } from '@/types/nodeId'
 import {
@@ -195,6 +196,55 @@ describe('useNodeDataStore', () => {
     ).toBe(false)
     expect(registered.title).toBe('Renamed')
   })
+
+  it.for([
+    {
+      slotKind: 'input',
+      existing: (): Pick<NodeState, 'inputs' | 'outputs'> => ({
+        inputs: [createMockNodeInputSlot({ name: 'a', link: toLinkId(1) })],
+        outputs: []
+      }),
+      incoming: (): Pick<NodeState, 'inputs' | 'outputs'> => ({
+        inputs: [createMockNodeInputSlot({ name: 'a', link: toLinkId(2) })],
+        outputs: []
+      }),
+      read: (state: NodeState) => state.inputs[0]?.link,
+      expected: toLinkId(2)
+    },
+    {
+      slotKind: 'output',
+      existing: (): Pick<NodeState, 'inputs' | 'outputs'> => ({
+        inputs: [],
+        outputs: [createMockNodeOutputSlot({ name: 'a', links: [toLinkId(1)] })]
+      }),
+      incoming: (): Pick<NodeState, 'inputs' | 'outputs'> => ({
+        inputs: [],
+        outputs: [
+          createMockNodeOutputSlot({
+            name: 'a',
+            links: [toLinkId(2), toLinkId(3)]
+          })
+        ]
+      }),
+      read: (state: NodeState) => state.outputs[0]?.links,
+      expected: [toLinkId(2), toLinkId(3)]
+    }
+  ])(
+    'copies a matched plain $slotKind descriptor’s connectivity field, since it has no live accessor',
+    ({ existing, incoming, read, expected }) => {
+      const store = useNodeDataStore()
+      const scope = graphScope(rootA, rootA)
+      const registered = store.registerNode(
+        scope,
+        createNodeState({ id: toNodeId(1), graphId: rootA, ...existing() })
+      )
+      assert(registered)
+
+      store.updateNodeSlots(scope, registered.id, incoming())
+
+      expect(read(registered)).toEqual(expected)
+    }
+  )
 })
 
 describe('nodeDataStore registration via LGraph', () => {
