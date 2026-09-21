@@ -69,8 +69,9 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
         .getNodeByTitle('CLIP Text Encode (Prompt)')
         .first()
       const prompt = node.getByRole('textbox')
-      const selectOnly = () =>
-        page.evaluate(() => window.app!.canvas.selectOnly)
+      function selectOnly() {
+        return page.evaluate(() => window.app!.canvas.selectOnly)
+      }
 
       await test.step('type into the prompt before picking', async () => {
         await comfyPage.nodeOps.clearGraph()
