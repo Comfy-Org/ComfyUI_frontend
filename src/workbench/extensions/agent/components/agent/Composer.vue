@@ -77,7 +77,6 @@ const emit = defineEmits<{
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
-  removeAttachment: [id: string]
   mentionPick: [node: SelectedNode]
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
@@ -252,11 +251,6 @@ function insert(text: string): void {
 function replaceDraft(prompt: PromptSnapshot): void {
   composer.replacePrompt(prompt)
   editorRef.value?.focus()
-}
-
-function onRemoveAttachment(id: string): void {
-  composer.removeReference(`asset:${id}`)
-  emit('removeAttachment', id)
 }
 
 defineExpose({
@@ -438,7 +432,7 @@ defineExpose({
           :name="item.name"
           :preview-url="item.previewUrl"
           :uploading="item.uploading"
-          @remove="onRemoveAttachment(item.id)"
+          @remove="composer.removeReference(`asset:${item.id}`)"
         />
       </div>
 

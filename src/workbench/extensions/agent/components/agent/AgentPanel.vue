@@ -108,7 +108,6 @@ const emit = defineEmits<{
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
-  removeAttachment: [id: string]
   mentionPick: [node: SelectedNode]
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
@@ -398,7 +397,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"
-            @remove-attachment="emit('removeAttachment', $event)"
             @mention-pick="emit('mentionPick', $event)"
             @request-workflow-references="emit('requestWorkflowReferences')"
             @remove-workflow-reference="emit('removeWorkflowReference', $event)"
