@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   collapseOutsideSelectionOnPrimaryPointerDown,
   collapseTextSelectionOutside,
+  hasTextSelection,
   shouldIgnoreCopyPaste
 } from '@/workbench/eventHelpers'
 
@@ -79,6 +80,29 @@ describe('shouldIgnoreCopyPaste', () => {
     expect(shouldIgnoreCopyPaste(mount(document.createElement('canvas')))).toBe(
       false
     )
+  })
+})
+
+describe('hasTextSelection', () => {
+  it.for([
+    { name: 'textarea', make: () => document.createElement('textarea') },
+    {
+      name: 'search input',
+      make: () =>
+        Object.assign(document.createElement('input'), { type: 'search' })
+    }
+  ])('detects selected text in a $name', ({ make }) => {
+    const input = mount(make())
+    input.value = 'selected text'
+    input.setSelectionRange(0, 'selected'.length)
+
+    expect(hasTextSelection(input)).toBe(true)
+  })
+
+  it('detects whitespace-only document text', () => {
+    selectTextOf(mount(textBlock('   ')))
+
+    expect(hasTextSelection(document)).toBe(true)
   })
 })
 

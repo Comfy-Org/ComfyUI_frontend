@@ -6,11 +6,23 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 export function activeTextSelection(): Selection | null {
   const selection = window.getSelection()
-  return selection !== null &&
-    !selection.isCollapsed &&
-    selection.toString().trim().length > 0
-    ? selection
-    : null
+  return selection !== null && !selection.isCollapsed ? selection : null
+}
+
+export function hasTextSelection(target: EventTarget | null): boolean {
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement
+  ) {
+    if (
+      target.selectionStart !== null &&
+      target.selectionEnd !== null &&
+      target.selectionStart !== target.selectionEnd
+    )
+      return true
+  }
+
+  return activeTextSelection() !== null
 }
 
 function rangesOf(selection: Selection): Range[] {
@@ -38,10 +50,6 @@ export function collapseTextSelectionOutside(container: Element): void {
     selection.removeAllRanges()
 }
 
-/**
- * A primary-button pointerdown on the graph collapses a selection made
- * outside the clicked element; other buttons leave it alone.
- */
 export function collapseOutsideSelectionOnPrimaryPointerDown(
   event: PointerEvent
 ): void {

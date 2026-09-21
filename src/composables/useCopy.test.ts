@@ -22,6 +22,7 @@ const copyMocks = {
 
 const multiChunkPayloadLength = 0x8000 * 6 + 123
 const canvasClipboardKey = 'litegrapheditor_clipboard'
+const canvasClipboardIdKey = 'litegrapheditor_clipboard_id'
 
 function mountCopy(): void {
   const scope = effectScope()
@@ -103,21 +104,33 @@ describe('useCopy', () => {
   describe('copy on a target the canvas ignores', () => {
     const keyboardNode = '{"nodes":[{"type":"LoadImage"}]}'
     const contextMenuNode = '{"nodes":[{"type":"SaveImage"}]}'
+    let copyId = 0
+
+    function writeCanvasClipboard(serializedData: string): void {
+      localStorage.setItem(canvasClipboardKey, serializedData)
+      localStorage.setItem(canvasClipboardIdKey, String(++copyId))
+    }
 
     function copyNodeWithKeyboard(): void {
       copyMocks.canvas.copyToClipboard.mockImplementation(() => {
-        localStorage.setItem(canvasClipboardKey, keyboardNode)
+        writeCanvasClipboard(keyboardNode)
         return keyboardNode
       })
       dispatchCopy()
     }
 
-    function copyNodeFromContextMenu(): void {
-      localStorage.setItem(canvasClipboardKey, contextMenuNode)
+    function copyNodeFromContextMenu(
+      serializedData: string = contextMenuNode
+    ): void {
+      writeCanvasClipboard(serializedData)
     }
 
     beforeEach(() => {
-      onTestFinished(() => localStorage.removeItem(canvasClipboardKey))
+      copyId = 0
+      onTestFinished(() => {
+        localStorage.removeItem(canvasClipboardKey)
+        localStorage.removeItem(canvasClipboardIdKey)
+      })
     })
 
     it.for([
@@ -148,6 +161,16 @@ describe('useCopy', () => {
         selection: 'selected document text',
         selectedCharacters: 'Transcript'.length,
         slotAfter: contextMenuNode
+      },
+      {
+        slot: 'an equal context-menu copy after a keyboard node copy',
+        writeSlot: [
+          copyNodeWithKeyboard,
+          () => copyNodeFromContextMenu(keyboardNode)
+        ],
+        selection: 'selected document text',
+        selectedCharacters: 'Transcript'.length,
+        slotAfter: keyboardNode
       }
     ])(
       'with $selection after $slot leaves the canvas clipboard slot as $slotAfter',
@@ -164,6 +187,28 @@ describe('useCopy', () => {
         expect(localStorage.getItem(canvasClipboardKey)).toBe(slotAfter)
         expect(dataTransfer.getData('text/html')).toBe('')
         expect(copyMocks.canvas.copyToClipboard).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      { name: 'textarea', make: () => document.createElement('textarea') },
+      {
+        name: 'search input',
+        make: () =>
+          Object.assign(document.createElement('input'), { type: 'search' })
+      }
+    ])(
+      'clears a keyboard node copy after copying selected $name text',
+      ({ make }) => {
+        copyNodeWithKeyboard()
+        const input = make()
+        input.value = 'selected text'
+        document.body.append(input)
+        input.setSelectionRange(0, 'selected'.length)
+
+        dispatchCopy(input)
+
+        expect(localStorage.getItem(canvasClipboardKey)).toBeNull()
       }
     )
   })

@@ -5,7 +5,6 @@ import { z } from 'zod'
 
 import { createI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
@@ -30,8 +29,6 @@ import type {
 } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-import { ClipboardHelper } from '@e2e/fixtures/helpers/ClipboardHelper'
-import { KeyboardHelper } from '@e2e/fixtures/helpers/KeyboardHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
@@ -54,11 +51,8 @@ const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
-// Only the Vue node renderer projects follower edits onto the canvas.
 const VUE_NODES_TAG = '@vue-nodes'
 const PANEL_MOUNT_TIMEOUT = 30_000
-// Screen point a node is panned to before it is clicked; left of the panel.
-const REVEAL_AT = { x: 400, y: 400 }
 const CANCEL_TIMEOUT = 10_000
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
@@ -123,8 +117,6 @@ async function attachJson(
   })
 }
 
-type LiveGraphNode = Pick<LGraphNode, 'type'> & { id: string }
-
 // [id, from, from_slot, to, to_slot, type], as the projection stores a link.
 const zProjectedLink = z
   .tuple([
@@ -181,12 +173,7 @@ export class AgentConversationHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
   readonly topbar: Topbar
-  /** Copy and paste keystrokes, sent the way `comfyPage.clipboard` sends them. */
-  readonly clipboard: ClipboardHelper
-  /** The prompt editor (a ProseMirror contenteditable, not a textarea). */
   readonly composer: Locator
-  /** Every assistant text block the panel has rendered, in order. */
-  readonly transcript: Locator
 
   private readonly host: HostDoc
   private readonly hostSocket: AgentFollowerHostSocket
@@ -227,14 +214,9 @@ export class AgentConversationHarness {
     this.panel = page.locator('#agent-panel-root')
     this.streams = this.panel.getByTestId('markdown-stream')
     this.composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
-    this.transcript = this.streams
     this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
     this.topbar = new Topbar(page)
-    this.clipboard = new ClipboardHelper(
-      new KeyboardHelper(page, page.locator('#graph-canvas')),
-      page
-    )
   }
 
   addedNodeIds(): string[] {
@@ -404,78 +386,6 @@ export class AgentConversationHarness {
       if (index === this.conversation.turns[turn].cancel_after)
         await this.stopTurn(turn)
     }
-  }
-
-  graphNodes(): Promise<LiveGraphNode[]> {
-    return this.page.evaluate(() =>
-      window.app!.graph.nodes.map((node) => ({
-        id: String(node.id),
-        type: node.type
-      }))
-    )
-  }
-
-  // Pans the canvas so `nodeId` sits clear of the docked panel, then selects
-  // it through its header the way a user would. The replayed graph extends
-  // past the seed, so an agent-added node can land under the panel, where a
-  // header click would never be delivered.
-  async selectNode(nodeId: string): Promise<void> {
-    await this.page.evaluate(
-      ({ id, at }) => {
-        const canvas = window.app!.canvas
-        const node = window.app!.graph.nodes.find((n) => String(n.id) === id)
-        if (!node) throw new Error(`no live node ${id}`)
-        const { scale } = canvas.ds
-        canvas.ds.offset[0] = at.x / scale - node.pos[0]
-        canvas.ds.offset[1] = at.y / scale - node.pos[1]
-        canvas.setDirty(true, true)
-      },
-      { id: nodeId, at: REVEAL_AT }
-    )
-    const header = this.vueNodes
-      .getNodeLocator(nodeId)
-      .locator('.lg-node-header')
-    await expect
-      .poll(async () => {
-        const box = await header.boundingBox()
-        if (!box || box.x < 0) return false
-        if (!(await this.panel.isVisible())) return true
-        const panelBox = await this.panel.boundingBox()
-        return panelBox !== null && box.x + box.width < panelBox.x
-      })
-      .toBe(true)
-    await this.vueNodes.selectNode(nodeId)
-    await expect(this.vueNodes.getNodeLocator(nodeId)).toHaveClass(
-      /outline-node-component-outline/
-    )
-  }
-
-  async nodeOfType(type: string): Promise<LiveGraphNode> {
-    const matches = (await this.graphNodes()).filter(
-      (node) => node.type === type
-    )
-    if (matches.length !== 1)
-      throw new Error(
-        `expected exactly one live ${type} node, found ${matches.length}`
-      )
-    return matches[0]
-  }
-
-  async nodesAddedSince(before: LiveGraphNode[]): Promise<LiveGraphNode[]> {
-    const known = new Set(before.map((node) => node.id))
-    return (await this.graphNodes()).filter((node) => !known.has(node.id))
-  }
-
-  // One turn landed on the canvas, without the panel and wiring assertions
-  // runTurns() makes; for specs that act on the replayed graph rather than
-  // judge the replay.
-  async replayTurn(turn: number): Promise<void> {
-    await this.sendPrompt(turn)
-    await this.replayResponse(turn)
-    await this.waitForTurnComplete()
-    await expect(this.page.getByTestId('node-title')).toHaveCount(
-      this.host.projection().nodes.length
-    )
   }
 
   // Every turn in order, each judged on the panel and the canvas as it lands.

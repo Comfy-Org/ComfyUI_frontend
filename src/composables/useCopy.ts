@@ -2,11 +2,12 @@ import { useEventListener } from '@vueuse/core'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
-  activeTextSelection,
+  hasTextSelection,
   shouldIgnoreCopyPaste
 } from '@/workbench/eventHelpers'
 
 const CANVAS_CLIPBOARD_KEY = 'litegrapheditor_clipboard'
+const CANVAS_CLIPBOARD_ID_KEY = 'litegrapheditor_clipboard_id'
 
 const clipboardHTMLWrapper = [
   '<meta charset="utf-8"><div><span data-metadata="',
@@ -41,18 +42,19 @@ function encodeClipboardData(data: string): string {
  */
 export const useCopy = () => {
   const canvasStore = useCanvasStore()
-  let keyboardCopy: string | null = null
+  let keyboardCopyId: string | null = null
 
   useEventListener(document, 'copy', (e) => {
     if (shouldIgnoreCopyPaste(e.target)) {
       // Default system copy
       if (
-        keyboardCopy !== null &&
-        activeTextSelection() !== null &&
-        localStorage.getItem(CANVAS_CLIPBOARD_KEY) === keyboardCopy
+        keyboardCopyId !== null &&
+        hasTextSelection(e.target) &&
+        localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY) === keyboardCopyId
       ) {
         localStorage.removeItem(CANVAS_CLIPBOARD_KEY)
-        keyboardCopy = null
+        localStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
+        keyboardCopyId = null
       }
       return
     }
@@ -60,7 +62,7 @@ export const useCopy = () => {
     const canvas = canvasStore.canvas
     if (canvas?.selectedItems) {
       const serializedData = canvas.copyToClipboard()
-      keyboardCopy = serializedData
+      keyboardCopyId = localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)
       try {
         const base64Data = encodeClipboardData(serializedData)
         // clearData doesn't remove images from clipboard
