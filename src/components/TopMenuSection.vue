@@ -36,14 +36,21 @@
           <div
             ref="actionbarCardRef"
             data-testid="action-bar-card"
-            class="pointer-events-auto relative z-1 flex flex-col floating-panel"
+            :class="
+              cn(
+                'pointer-events-auto relative z-1 flex flex-col',
+                isActionbarContainerEmpty
+                  ? 'has-[.border-dashed]:floating-panel'
+                  : 'floating-panel'
+              )
+            "
           >
             <div
               :class="
                 cn(
                   'actionbar-container relative flex items-center gap-2',
                   isActionbarContainerEmpty &&
-                    '-ml-1 w-0 min-w-0 border-transparent shadow-none has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-1 has-[.border-dashed]:shadow-interface'
+                    'w-0 min-w-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto'
                 )
               "
             >
