@@ -188,6 +188,35 @@ test.describe(
           path: test.info().outputPath('subgraph-edited.png')
         })
       })
+
+      await test.step('edit the promoted text without changing the seed', async () => {
+        const editedText = 'a painting of a lighthouse'
+        const node = new VueNodeHelpers(page).getNodeLocator(
+          String(AGENT_SUBGRAPH_HOST_ID)
+        )
+        const textbox = node.getByRole('textbox')
+        await expect(textbox).toBeEditable()
+        await textbox.fill(editedText)
+        await textbox.blur()
+
+        await expect
+          .poll(() =>
+            page.evaluate((hostId) => {
+              const widgets = window.app!.graph.nodes.find(
+                ({ id }) => String(id) === String(hostId)
+              )?.widgets
+              return widgets?.map(({ name, value }) => ({ name, value }))
+            }, AGENT_SUBGRAPH_HOST_ID)
+          )
+          .toEqual([
+            { name: 'text', value: editedText },
+            { name: 'seed', value: AGENT_SUBGRAPH_EDITED_SEED }
+          ])
+        await expect(textbox).toHaveValue(editedText)
+        await page.screenshot({
+          path: test.info().outputPath('subgraph-text-edited.png')
+        })
+      })
     })
   }
 )
