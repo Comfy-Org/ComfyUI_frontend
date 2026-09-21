@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 
 import {
   agentTest as test,
@@ -238,19 +239,25 @@ const EXPECTED_TARGETS: readonly { linkId: number; name: string }[] = [
 
 // The two socket-only slots each group keeps spare after its grown, linked
 // ones -- these render a real `.lg-slot--input` row this test can check is
-// NOT connected, unlike the widget-backed scalars.
-const SPARE_SLOTS: readonly { index: number; name: string }[] = [
-  { index: 2, name: 'ref_images.ref_image_2' },
-  { index: 5, name: 'ref_videos.ref_video_2' }
+// NOT connected, unlike the widget-backed scalars. Named rather than
+// indexed: interleaved autogrow growth during `node.configure()` does not
+// preserve the document's input order in the live node (each group's
+// members bubble in as their connections are replayed), so a slot's final
+// live index cannot be assumed from its position in `seed` above -- only
+// its name is stable. See `resolveInputSlotIndex` below.
+const SPARE_SLOTS: readonly { name: string }[] = [
+  { name: 'ref_images.ref_image_2' },
+  { name: 'ref_videos.ref_video_2' }
 ]
 
-// Socket-only slots (the autogrow groups), by their live index, so the test
-// can check the connected DOM class a widget-backed scalar never renders.
-const CONNECTED_SOCKET_SLOTS: readonly { index: number; linkId: number }[] = [
-  { index: 0, linkId: IMG0_LINK },
-  { index: 1, linkId: IMG1_LINK },
-  { index: 3, linkId: VID0_LINK },
-  { index: 4, linkId: VID1_LINK }
+// Socket-only slots (the autogrow groups), named so the test can check the
+// connected DOM class a widget-backed scalar never renders, at whatever
+// live index growth actually left them.
+const CONNECTED_SOCKET_SLOTS: readonly { name: string }[] = [
+  { name: 'ref_images.ref_image_0' },
+  { name: 'ref_images.ref_image_1' },
+  { name: 'ref_videos.ref_video_0' },
+  { name: 'ref_videos.ref_video_1' }
 ]
 
 test.describe(
@@ -404,6 +411,16 @@ test.describe(
           EXPECTED_TARGETS.map(({ linkId }) => toLinkId(linkId))
         )
 
+      // Resolves a named input's actual live slot index, rather than
+      // assuming it matches the seed's position -- see the comment on
+      // `SPARE_SLOTS` above.
+      const resolveInputSlotIndex = (name: string) =>
+        page.evaluate(
+          ({ nodeId, name }) =>
+            window.app!.graph.getNodeById(nodeId)?.findInputSlot(name) ?? -1,
+          { nodeId: toNodeId(TARGET_NODE_ID), name }
+        )
+
       // Verified independently below (the graph read above is the same
       // canonical link map litegraph paints wires from), the DOM check
       // additionally confirms the socket rows this test cares about are
@@ -412,12 +429,16 @@ test.describe(
         await expect
           .poll(readLinkTargets)
           .toEqual(EXPECTED_TARGETS.map(({ name }) => name))
-        for (const { index } of CONNECTED_SOCKET_SLOTS) {
+        for (const { name } of CONNECTED_SOCKET_SLOTS) {
+          const index = await resolveInputSlotIndex(name)
+          expect(index).toBeGreaterThanOrEqual(0)
           await expect(vueNodes.getInputSlotRow(TARGET_ID, index)).toHaveClass(
             /lg-slot--connected/
           )
         }
-        for (const { index } of SPARE_SLOTS) {
+        for (const { name } of SPARE_SLOTS) {
+          const index = await resolveInputSlotIndex(name)
+          expect(index).toBeGreaterThanOrEqual(0)
           await expect(
             vueNodes.getInputSlotRow(TARGET_ID, index)
           ).not.toHaveClass(/lg-slot--connected/)

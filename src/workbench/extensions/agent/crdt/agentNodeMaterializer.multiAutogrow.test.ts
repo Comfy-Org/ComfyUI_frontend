@@ -4,6 +4,8 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -116,6 +118,35 @@ crdtTest(
     const saved = structuredClone(graph.serialize())
     graph.configure(saved)
     expect(targets()).toEqual(connections.map(({ name }) => name))
+  }
+)
+
+crdtTest(
+  "keeps each named input's connected state correct at its actual live " +
+    'index, even though interleaved autogrow growth does not preserve the ' +
+    "document's input order",
+  async ({ createCrdtSession }) => {
+    const { graph, deliver } = await setup(createCrdtSession)
+    deliver()
+
+    const to = graph.getNodeById(toNodeId(2))!
+    const scope = graphScopeOf(graph)
+    const linkStore = useLinkStore()
+
+    // A regression here would previously have been masked by a test that
+    // assumed a named input's live index matches its position in the saved
+    // document -- assert by name, resolving each input's actual live index
+    // the same way a `data-slot-key`-driven DOM query has to (see
+    // `resolveInputSlotIndex` in
+    // `agentCrdtMultiAutogrowRealign.spec.ts`), not by the document's slot
+    // order.
+    for (const input of savedNode.inputs) {
+      const slot = to.findInputSlot(input.name)
+      expect(slot).toBeGreaterThanOrEqual(0)
+      expect(linkStore.isInputSlotConnected(scope, toNodeId(2), slot)).toBe(
+        input.link !== null
+      )
+    }
   }
 )
 
