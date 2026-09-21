@@ -55,7 +55,7 @@ function runNonce(label: string): string {
 
 async function openPanel(page: Page) {
   await page
-    .getByRole('button', { name: enMessages.agent.askComfyAgent })
+    .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
     .click()
   const panel = page.locator('#agent-panel-root')
   await expect(panel).toBeVisible()

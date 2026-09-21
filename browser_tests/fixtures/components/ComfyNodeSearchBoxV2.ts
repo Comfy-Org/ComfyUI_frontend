@@ -101,4 +101,24 @@ export class ComfyNodeSearchBoxV2 {
     await expect(this.dialog).toBeHidden()
     await this.comfyPage.page.mouse.click(position.x, position.y)
   }
+
+  /** {@link addNode}, returning the id the graph gave the added node. */
+  async addNodeAndGetId(
+    query: string,
+    options: { position?: Position } = {}
+  ): Promise<string> {
+    const before = new Set(await this.comfyPage.workflow.getGraphNodeIds())
+    await this.addNode(query, options)
+    await expect
+      .poll(async () =>
+        (await this.comfyPage.workflow.getGraphNodeIds()).filter(
+          (id) => !before.has(id)
+        )
+      )
+      .toHaveLength(1)
+    const after = await this.comfyPage.workflow.getGraphNodeIds()
+    const [added] = after.filter((id) => !before.has(id))
+    if (!added) throw new Error(`${query}: the search box add produced no node`)
+    return added
+  }
 }

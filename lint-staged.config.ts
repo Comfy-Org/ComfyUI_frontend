@@ -1,5 +1,18 @@
 import path from 'node:path'
 
+// lint-staged calls this config once per concurrent chunk in one process.
+// Claim each fixed-scope command once so only its first matching chunk runs it.
+const claimed = new Set<string>()
+
+function repoWide(command: string) {
+  if (claimed.has(command)) {
+    return []
+  }
+
+  claimed.add(command)
+  return [command]
+}
+
 export default function lintStaged(stagedFiles: string[]) {
   const relativePaths = stagedFiles.map(toRelativePath)
 
@@ -46,7 +59,7 @@ function lintCommands(
   astroFiles: string[]
 ) {
   if (new Set([...codeFiles, ...styleFiles, ...astroFiles]).size > 10) {
-    return ['pnpm lint']
+    return repoWide('pnpm lint')
   }
 
   return [
@@ -68,12 +81,12 @@ function typecheckCommands(fileNames: string[]) {
   }
 
   return [
-    'pnpm typecheck',
+    ...repoWide('pnpm typecheck'),
     ...(fileNames.some((fileName) => fileName.startsWith('browser_tests/'))
-      ? ['pnpm typecheck:browser']
+      ? repoWide('pnpm typecheck:browser')
       : []),
     ...(fileNames.some((fileName) => fileName.startsWith('apps/website/'))
-      ? ['pnpm typecheck:website']
+      ? repoWide('pnpm typecheck:website')
       : [])
   ]
 }
