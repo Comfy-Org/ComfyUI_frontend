@@ -644,12 +644,30 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   node.comfyDynamic.autogrow = {}
 
   let pendingConnection: number | undefined
+  //Whether the input-side `connect` event for `pendingConnection` has
+  //already fired. `connectSlots` (LGraphNode.ts) calls `onConnectInput`
+  //synchronously before it does anything else, then - only when the slot
+  //is replacing an existing link (a real swap) - fires the *disconnect*
+  //event for the old link before the *connect* event for the new one, all
+  //in the same synchronous call. So a disconnect that arrives for
+  //`pendingConnection` before its connect event has been seen is the
+  //synchronous tail of that swap. A disconnect that arrives *after* the
+  //connect event has already fired is a separate, later operation (e.g.
+  //the user - or an agent applying CRDT ops with no render yield between
+  //them - immediately disconnecting the slot it just connected) and must
+  //not be mistaken for a swap just because it lands within the same
+  //rAF-bounded window (PM-1496).
+  let pendingConnectionSeen = false
   let swappingConnection = false
 
   const originalOnConnectInput = node.onConnectInput
   node.onConnectInput = function (slot: number, ...args) {
     pendingConnection = slot
-    requestAnimationFrame(() => (pendingConnection = undefined))
+    pendingConnectionSeen = false
+    requestAnimationFrame(() => {
+      pendingConnection = undefined
+      pendingConnectionSeen = false
+    })
     return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
   }
 
@@ -673,10 +691,11 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
       if (app.configuringGraph && input.widget)
         ensureWidgetForInput(node, input)
       if (iscon) {
+        if (pendingConnection === slot) pendingConnectionSeen = true
         if (swappingConnection || !linf) return
         autogrowInputConnected(slot, this)
       } else {
-        if (pendingConnection === slot) {
+        if (pendingConnection === slot && !pendingConnectionSeen) {
           swappingConnection = true
           requestAnimationFrame(() => (swappingConnection = false))
           return
