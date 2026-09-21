@@ -306,7 +306,7 @@ describe('AssetsSidebarListView', () => {
     await user.hover(item)
 
     const actionsButton = await screen.findByRole('button', {
-      name: 'mediaAsset.actions.moreOptions'
+      name: 'More options'
     })
     actionsButton.focus()
     expect(actionsButton).toHaveFocus()
