@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia'
 import { reactive, toRaw } from 'vue'
 
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlot
+} from '@/lib/litegraph/src/interfaces'
+import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
+import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type {
   GraphScope,
@@ -12,38 +19,116 @@ import type { NodeId } from '@/types/nodeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { UUID } from '@/utils/uuid'
 
-function hasGetterInPrototypeChain(obj: object, key: PropertyKey): boolean {
-  for (
-    let proto: object | null = obj;
-    proto;
-    proto = Object.getPrototypeOf(proto)
+const SERIALISABLE_SLOT_FIELDS = [
+  'name',
+  'localized_name',
+  'label',
+  'type',
+  'dir',
+  'removable',
+  'shape',
+  'color_off',
+  'color_on',
+  'locked',
+  'nameLocked',
+  'pos'
+] as const satisfies readonly (keyof INodeSlot)[]
+
+function copyOwnFields<T extends object>(
+  target: T,
+  source: T,
+  fields: readonly (keyof T)[]
+): void {
+  Object.assign(
+    target,
+    Object.fromEntries(
+      fields.flatMap((field) =>
+        Object.hasOwn(source, field) ? [[field, source[field]]] : []
+      )
+    )
+  )
+}
+
+function patchInputSlot(
+  target: INodeInputSlot,
+  incoming: INodeInputSlot
+): void {
+  copyOwnFields(target, incoming, SERIALISABLE_SLOT_FIELDS)
+  copyOwnFields(target, incoming, ['widget'])
+  if (
+    !(toRaw(target) instanceof NodeInputSlot) &&
+    Object.hasOwn(incoming, 'link')
   ) {
-    const descriptor = Object.getOwnPropertyDescriptor(proto, key)
-    if (descriptor) return typeof descriptor.get === 'function'
+    target.link = incoming.link
   }
-  return false
+}
+
+function patchOutputSlot(
+  target: INodeOutputSlot,
+  incoming: INodeOutputSlot
+): void {
+  copyOwnFields(target, incoming, SERIALISABLE_SLOT_FIELDS)
+  copyOwnFields(target, incoming, ['slot_index'])
+  if (
+    !(toRaw(target) instanceof NodeOutputSlot) &&
+    Object.hasOwn(incoming, 'links')
+  ) {
+    target.links = incoming.links
+  }
+}
+
+function copyInputSlot(incoming: INodeInputSlot): INodeInputSlot {
+  const slot: INodeInputSlot = {
+    name: incoming.name,
+    type: incoming.type,
+    boundingRect: incoming.boundingRect
+  }
+  patchInputSlot(slot, incoming)
+  return slot
+}
+
+function copyOutputSlot(incoming: INodeOutputSlot): INodeOutputSlot {
+  const slot: INodeOutputSlot = {
+    name: incoming.name,
+    type: incoming.type,
+    boundingRect: incoming.boundingRect
+  }
+  patchOutputSlot(slot, incoming)
+  return slot
 }
 
 function mergeSlotsByName<Slot extends { name: string }>(
   existing: Slot[],
   incoming: readonly Slot[],
-  linkKey: keyof Slot
+  patch: (target: Slot, incoming: Slot) => void,
+  copy: (incoming: Slot) => Slot
 ): void {
-  const indexByName = new Map(existing.map((slot, index) => [slot.name, index]))
-  for (const incomingSlot of incoming) {
-    const index = indexByName.get(incomingSlot.name)
-    if (index === undefined) {
-      existing.push(incomingSlot)
+  const used = new Set<number>()
+  const matches = incoming.map((incomingSlot) => {
+    const index = existing.findIndex(
+      (slot, candidate) =>
+        !used.has(candidate) && slot.name === incomingSlot.name
+    )
+    if (index === -1) return undefined
+    used.add(index)
+    return { index, slot: existing[index] }
+  })
+  const insertions: number[] = []
+
+  for (const [incomingIndex, incomingSlot] of incoming.entries()) {
+    const match = matches[incomingIndex]
+    if (match) {
+      patch(match.slot, incomingSlot)
       continue
     }
-    const target = existing[index]
-    if (hasGetterInPrototypeChain(toRaw(target), linkKey)) {
-      for (const key of Object.keys(incomingSlot) as (keyof Slot)[]) {
-        if (key !== linkKey) target[key] = incomingSlot[key]
-      }
-    } else {
-      Object.assign(target, incomingSlot)
-    }
+
+    const anchor =
+      matches.slice(incomingIndex + 1).find((candidate) => candidate)?.index ??
+      existing.length - insertions.length
+    const insertionIndex =
+      anchor + insertions.filter((prior) => prior <= anchor).length
+    existing.splice(insertionIndex, 0, copy(incomingSlot))
+    insertions.push(anchor)
   }
 }
 
@@ -166,8 +251,13 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   ): boolean {
     const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
     if (!state || state.graphId !== graphScope.owningGraphId) return false
-    mergeSlotsByName(state.inputs, slots.inputs, 'link')
-    mergeSlotsByName(state.outputs, slots.outputs, 'links')
+    mergeSlotsByName(state.inputs, slots.inputs, patchInputSlot, copyInputSlot)
+    mergeSlotsByName(
+      state.outputs,
+      slots.outputs,
+      patchOutputSlot,
+      copyOutputSlot
+    )
     return true
   }
 

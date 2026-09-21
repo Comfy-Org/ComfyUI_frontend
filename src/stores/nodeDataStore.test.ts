@@ -231,7 +231,7 @@ describe('useNodeDataStore', () => {
       expected: [toLinkId(2), toLinkId(3)]
     }
   ])(
-    'copies a matched plain $slotKind descriptor’s connectivity field, since it has no live accessor',
+    'updates connectivity on matched plain $slotKind slots',
     ({ existing, incoming, read, expected }) => {
       const store = useNodeDataStore()
       const scope = graphScope(rootA, rootA)
@@ -244,6 +244,60 @@ describe('useNodeDataStore', () => {
       store.updateNodeSlots(scope, registered.id, incoming())
 
       expect(read(registered)).toEqual(expected)
+    }
+  )
+
+  it.for([
+    {
+      slotKind: 'input',
+      existing: (): NodeSlots => ({
+        inputs: [
+          createMockNodeInputSlot({ name: 'same', label: 'old-1' }),
+          createMockNodeInputSlot({ name: 'same', label: 'old-2' })
+        ],
+        outputs: []
+      }),
+      incoming: (): NodeSlots => ({
+        inputs: [
+          createMockNodeInputSlot({ name: 'same', label: 'new-1' }),
+          createMockNodeInputSlot({ name: 'same', label: 'new-2' })
+        ],
+        outputs: []
+      }),
+      read: (state: NodeState) => state.inputs.map(({ label }) => label)
+    },
+    {
+      slotKind: 'output',
+      existing: (): NodeSlots => ({
+        inputs: [],
+        outputs: [
+          createMockNodeOutputSlot({ name: 'same', label: 'old-1' }),
+          createMockNodeOutputSlot({ name: 'same', label: 'old-2' })
+        ]
+      }),
+      incoming: (): NodeSlots => ({
+        inputs: [],
+        outputs: [
+          createMockNodeOutputSlot({ name: 'same', label: 'new-1' }),
+          createMockNodeOutputSlot({ name: 'same', label: 'new-2' })
+        ]
+      }),
+      read: (state: NodeState) => state.outputs.map(({ label }) => label)
+    }
+  ])(
+    'updates duplicate $slotKind names by occurrence',
+    ({ existing, incoming, read }) => {
+      const store = useNodeDataStore()
+      const scope = graphScope(rootA, rootA)
+      const registered = store.registerNode(
+        scope,
+        createNodeState({ id: toNodeId(1), graphId: rootA, ...existing() })
+      )
+      assert(registered)
+
+      store.updateNodeSlots(scope, registered.id, incoming())
+
+      expect(read(registered)).toEqual(['new-1', 'new-2'])
     }
   )
 })
@@ -392,8 +446,9 @@ describe('nodeDataStore registration via LGraph', () => {
     })
 
     node.addInput('videos.video1', 'IMAGE')
-    const grown = node.inputs.pop()!
-    node.inputs.splice(1, 0, grown)
+    const grownInput = node.inputs.pop()
+    assert(grownInput)
+    node.inputs.splice(1, 0, grownInput)
     source.connect(0, node, 1)
 
     const nodeJson = graph
@@ -438,6 +493,36 @@ describe('nodeDataStore registration via LGraph', () => {
     expect(node.isInputConnected(1)).toBe(true)
   })
 
+  it('inserts a new synced slot at its incoming topology index', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    source.addOutput('out', 'IMAGE')
+    graph.add(source)
+
+    const node = new LGraphNode('test')
+    node.addInput('a', 'IMAGE')
+    node.addInput('c', 'IMAGE')
+    graph.add(node)
+    source.connect(0, node, 1)
+
+    useNodeDataStore().updateNodeSlots(
+      graphScope(graph.id, graph.id),
+      node.id,
+      {
+        inputs: [
+          createMockNodeInputSlot({ name: 'a', type: 'IMAGE' }),
+          createMockNodeInputSlot({ name: 'b', type: 'IMAGE' }),
+          createMockNodeInputSlot({ name: 'c', type: 'IMAGE' })
+        ],
+        outputs: []
+      }
+    )
+
+    expect(node.inputs.map(({ name }) => name)).toEqual(['a', 'b', 'c'])
+    expect(node.isInputConnected(1)).toBe(true)
+    expect(node.isInputConnected(2)).toBe(false)
+  })
+
   it('merges matched slot fields onto the existing object instead of replacing it', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -460,6 +545,62 @@ describe('nodeDataStore registration via LGraph', () => {
 
     expect(node.inputs[0]).toBe(original)
     expect(node.inputs[0].label).toBe('renamed')
+  })
+
+  it('preserves live output identity and reactivity during a partial sync', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addOutput('a', 'IMAGE')
+    node.addOutput('local', 'IMAGE')
+    graph.add(node)
+    const store = useNodeDataStore()
+    const liveOutputs = node.outputs
+    const [original, local] = liveOutputs
+    const label = computed(
+      () => store.getNode(graph.id, node.id)?.outputs[0]?.label
+    )
+
+    store.updateNodeSlots(graphScope(graph.id, graph.id), node.id, {
+      inputs: [],
+      outputs: [
+        createMockNodeOutputSlot({
+          name: 'a',
+          type: 'IMAGE',
+          label: 'remote'
+        })
+      ]
+    })
+
+    expect(node.outputs).toBe(liveOutputs)
+    expect(node.outputs[0]).toBe(original)
+    expect(node.outputs[1]).toBe(local)
+    expect(label.value).toBe('remote')
+  })
+
+  it('does not copy external fields into live slot internals', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addInput('a', 'IMAGE')
+    graph.add(node)
+    const incoming = {
+      name: 'a',
+      type: 'IMAGE',
+      boundingRect: [0, 0, 0, 0] as const,
+      _node: new LGraphNode('payload')
+    }
+
+    useNodeDataStore().updateNodeSlots(
+      graphScope(graph.id, graph.id),
+      node.id,
+      {
+        inputs: [incoming],
+        outputs: []
+      }
+    )
+
+    const [liveInput] = node.inputs
+    assert(liveInput instanceof NodeInputSlot)
+    expect(liveInput.node).toBe(node)
   })
 
   it('keeps a cached computed over a merged slot field up to date', () => {
@@ -574,9 +715,6 @@ describe('nodeDataStore registration via LGraph', () => {
     expect(outputLinksGetter).not.toHaveBeenCalled()
     expect(node.isInputConnected(0)).toBe(true)
     expect(source.isOutputConnected(0)).toBe(true)
-
-    inputLinkGetter.mockRestore()
-    outputLinksGetter.mockRestore()
   })
 
   it('drops the registration when the node is removed', () => {
