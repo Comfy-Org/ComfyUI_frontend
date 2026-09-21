@@ -5,6 +5,7 @@ import type {
   AgentThreadSummary,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
+import type { User } from 'firebase/auth'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6807,6 +6808,7 @@ describe('AgentPanelRoot in the standalone agent harness', () => {
     )
     ws.clear()
     useAgentPanelStore().enabled = true
+    useAuthStore().currentUser = fromPartial<User>({ uid: 'user-1' })
     vi.mocked(useAuthStore().getIdToken).mockResolvedValue('id-token')
     vi.mocked(useDialogService().showSignInDialog).mockReset()
   })
@@ -6830,7 +6832,7 @@ describe('AgentPanelRoot in the standalone agent harness', () => {
   }
 
   it('asks a signed-out user to sign in instead of sending, keeping the draft', async () => {
-    vi.mocked(useAuthStore().getIdToken).mockResolvedValue(undefined)
+    useAuthStore().currentUser = null
     vi.mocked(useDialogService().showSignInDialog).mockResolvedValue(false)
     const tab = addTab('workflows/current.json', { isTemporary: true })
     workflowStore.activeWorkflow = tab

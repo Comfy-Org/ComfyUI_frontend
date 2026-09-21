@@ -1,5 +1,6 @@
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/services/dialogService'))
+import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useDialogService } from '@/services/dialogService'
@@ -9,13 +10,18 @@ import { useAuthStore } from '@/stores/authStore'
 import { ensureComfyCredential, withComfyCredential } from './comfyCredential'
 
 function signIn({
+  firebase = false,
   idToken,
   apiKey
 }: {
+  firebase?: boolean
   idToken?: string
   apiKey?: string
 }): void {
-  vi.mocked(useAuthStore().getIdToken).mockResolvedValue(idToken)
+  const authStore = useAuthStore()
+  authStore.currentUser =
+    firebase || idToken !== undefined ? ({ uid: 'user-1' } as User) : null
+  vi.mocked(authStore.getIdToken).mockResolvedValue(idToken)
   vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(apiKey ?? null)
 }
 
@@ -48,6 +54,31 @@ describe('withComfyCredential', () => {
       expect(init.method).toBe('POST')
     }
   )
+
+  it('sends no API key when the Firebase session fails to produce a token', async () => {
+    signIn({ firebase: true, apiKey: 'comfyui-key' })
+
+    const init = await withComfyCredential({ method: 'GET' })
+
+    expect(new Headers(init.headers).has('X-Comfy-Token')).toBe(false)
+    expect(useApiKeyAuthStore().getApiKey).not.toHaveBeenCalled()
+  })
+
+  it('refuses redirects on a request carrying the credential', async () => {
+    signIn({ idToken: 'id-token' })
+
+    const init = await withComfyCredential({ method: 'GET' })
+
+    expect(init.redirect).toBe('error')
+  })
+
+  it('leaves the redirect policy alone when no credential is attached', async () => {
+    signIn({})
+
+    const init = await withComfyCredential({ method: 'GET' })
+
+    expect(init.redirect).toBeUndefined()
+  })
 })
 
 describe('ensureComfyCredential', () => {

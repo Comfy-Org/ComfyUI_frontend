@@ -6,17 +6,22 @@ const COMFY_TOKEN_HEADER = 'X-Comfy-Token'
 
 /**
  * The signed-in Comfy account's credential for the local agent, which makes
- * its model and CLI calls as this user: a fresh Firebase ID token (refreshed
- * when close to expiry), else the stored Comfy API key.
+ * its model and CLI calls as this user. The auth rail is chosen first: a
+ * Firebase session sends only its fresh ID token (refreshed when close to
+ * expiry), and a failed refresh sends nothing rather than a stored API key
+ * that may belong to another account. The API key is used only when there is
+ * no Firebase session.
  */
 async function getComfyCredential(): Promise<string | undefined> {
-  return (
-    (await useAuthStore().getIdToken()) ??
-    useApiKeyAuthStore().getApiKey() ??
-    undefined
-  )
+  const authStore = useAuthStore()
+  if (authStore.isAuthenticated) return await authStore.getIdToken()
+  return useApiKeyAuthStore().getApiKey() ?? undefined
 }
 
+/**
+ * Attaches the credential as `X-Comfy-Token`. A credential-bearing request
+ * refuses to follow redirects, so the header never reaches another origin.
+ */
 export async function withComfyCredential(
   init: RequestInit
 ): Promise<RequestInit> {
@@ -24,7 +29,7 @@ export async function withComfyCredential(
   if (credential === undefined) return init
   const headers = new Headers(init.headers)
   headers.set(COMFY_TOKEN_HEADER, credential)
-  return { ...init, headers }
+  return { ...init, headers, redirect: 'error' }
 }
 
 /**
