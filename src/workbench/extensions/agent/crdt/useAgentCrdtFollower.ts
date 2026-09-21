@@ -486,8 +486,11 @@ function startAgentCrdtFollower(
       actor: detail.actor ?? 'agent-reset',
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
-    projection.clearForReset(detail.workflowId, context)
-    sender.abortAll()
+    try {
+      projection.clearForReset(detail.workflowId, context)
+    } finally {
+      sender.abortAll()
+    }
     events.onReset?.(detail.workflowId)
     connected.value = false
     updatesApplied.value = 0
