@@ -428,6 +428,59 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('dedupes a repeated callId across two assistant rows of the same turn', () => {
+    const first = row(1, 'assistant', 'turn-a', '', 'row-1')
+    first.content = {
+      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const second = row(2, 'assistant', 'turn-a', 'Done', 'row-2')
+    second.content = {
+      text: 'Done',
+      tool_calls: [
+        {
+          id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'error',
+          duration_ms: 900
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([first, second])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('renders a persisted tool call with no status field as a failure, not a dropped entry', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes' }]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: false
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
   it('restores available and unavailable references without changing the latest workflow target', () => {
     const first = row(1, 'user', 'turn-a', 'Compare these', 'row-1')
     first.workflow_id = 'wf-target-a'

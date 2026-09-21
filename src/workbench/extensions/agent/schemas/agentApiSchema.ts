@@ -103,14 +103,18 @@ export type AgentRunModeValue = AgentRunModePreference['mode']
  * other than `pending`/`running`/`ok`/`success` as failure), so schema
  * validation should reject a malformed *entry* (missing `id`/`tool_name`),
  * not an unfamiliar *status* string or a bad `duration_ms` — `duration_ms` is
- * `z.unknown()` so a NaN/Infinity/negative value there doesn't sink the
- * whole entry; `parseToolCallEntry` narrows it separately and just omits it.
+ * `z.unknown().optional()` so a NaN/Infinity/negative value there doesn't
+ * sink the whole entry; `parseToolCallEntry` narrows it separately and just
+ * omits it. `status` is likewise `.optional()`: an entry that omits it
+ * entirely must still survive validation (`toolCallPartState`/`toolCallOk`
+ * already treat `undefined` as terminal-and-failed, matching the old
+ * parser's behavior for a status-less call).
  */
 export const zPersistedToolCallSummary = z
   .object({
     id: z.string(),
     tool_name: z.string(),
-    status: z.string(),
+    status: z.string().optional(),
     duration_ms: z.unknown().optional()
   })
   .passthrough()

@@ -200,6 +200,14 @@ function parseToolCalls(
  * running message. `isLive` is true only when this row is the one that will
  * be handed a live `AgentEventTransport` (the run_approval mid-ask case), so
  * its still-in-flight tool parts may legitimately stay `streaming`.
+ *
+ * `message.parts` is shared across every assistant row of one turn (via
+ * `assistants.get(turnId)` in `recordAssistantRow`), but `parseToolCalls`
+ * only dedupes within one row's own list — two rows of the same turn that
+ * each carry the same `callId` would otherwise still produce two separate
+ * `ToolPart`s. Dedupe is hoisted here to the message level — a parsed part
+ * whose `callId` already appears in `message.parts` is dropped — matching
+ * the live path's turn-wide keying.
  */
 function appendAssistantContent(
   message: AssistantMessage,
@@ -208,7 +216,17 @@ function appendAssistantContent(
   isLive: boolean
 ): void {
   const toolCalls = parseToolCalls(row.content, isLive)
-  if (toolCalls) message.parts = [...message.parts, ...toolCalls]
+  if (toolCalls) {
+    const existingCallIds = new Set(
+      message.parts.flatMap((part) =>
+        part.type === 'tool' ? [part.callId] : []
+      )
+    )
+    const newToolCalls = toolCalls.filter(
+      (part) => !existingCallIds.has(part.callId)
+    )
+    message.parts = [...message.parts, ...newToolCalls]
+  }
   if (text)
     message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
 }
