@@ -994,26 +994,12 @@ Fork PRs can't auto-commit screenshots — a maintainer commits them for you.
 
 ### Canvas baselines: pin the viewport instead of re-baselining
 
-**A canvas baseline generated on one rig usually will not match another, even
-on the same platform tag.** A committed `-cloud-linux` baseline does not
-reproduce against a local CI-container rig: the diff is not antialiasing but the
-whole graph translated by a couple hundred pixels, because the canvas viewport
-(pan and zoom from fit-to-content) settles differently depending on when the
-shot is taken relative to layout. Same image size, entirely different content
-placement.
-
-So before regenerating, decide which problem you have:
-
-- **The picture is genuinely stale** — the product changed and the baseline
-  should move. Regenerate, and open the diff to confirm the change is the one
-  you made rather than a viewport shift.
-- **The picture is right but your rig frames it differently** — regenerating
-  produces a baseline that passes locally and fails CI. Do not commit it. Run
-  the case in CI, or pin the viewport in the test before the shot.
-
-Pin the viewport rather than re-baselining whenever a case only needs to prove
-_what_ is drawn, not where. A screenshot that depends on undetermined pan/zoom
-is a flake waiting for a slower machine.
+If a canvas screenshot diff is only a viewport translation (same image size,
+the whole graph shifted), the baseline is not stale: pin the pan/zoom in the
+test before the shot rather than regenerating. A screenshot that depends on
+undetermined pan/zoom is a flake waiting for a slower machine. Regenerate only
+when the product changed, and open the diff to confirm the change is the one
+you made rather than a viewport shift.
 
 ## Debugging in CI
 
