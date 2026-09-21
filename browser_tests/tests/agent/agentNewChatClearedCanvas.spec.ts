@@ -8,6 +8,7 @@ import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { zAgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -67,7 +68,7 @@ async function recordPostedTurns(
       )
     )
       return
-    const accepted = (await response.json()) as AgentTurnAccepted
+    const accepted = zAgentTurnAccepted.parse(await response.json())
     acceptedThreadIds.push(accepted.thread_id)
   })
   await page.route('**/api/agent/threads/*/messages', (route) => {
