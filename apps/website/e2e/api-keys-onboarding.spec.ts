@@ -1,10 +1,10 @@
 import { expect } from '@playwright/test'
 
-import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
+import { MODEL_PATH, test } from './fixtures/modelsAccount'
 
 const API_KEYS = 'https://platform.comfy.org/profile/api-keys'
-const MODEL_SLUG = 'byteplus--seedream-5-pro--generate-images'
+const MODEL_SLUG = MODEL_PATH.split('/')[2]
 
 test.describe('API-keys onboarding links @smoke', () => {
   for (const { path, label } of [
@@ -25,7 +25,7 @@ test.describe('API-keys onboarding links @smoke', () => {
   test('model page API tab names the model in the Router onboarding link', async ({
     page
   }) => {
-    await page.goto(`/models/${MODEL_SLUG}/`)
+    await page.goto(MODEL_PATH)
     const apiTab = page.getByTestId('tab-api')
     await waitForIsland(page, apiTab)
     await apiTab.click()
