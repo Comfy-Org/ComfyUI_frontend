@@ -142,7 +142,7 @@ describe('native Router requests', () => {
         {
           prompt: 'Test',
           output_format: 'png',
-          safety_tolerance: 3,
+          seed: 123456,
           prompt_upsampling: false
         },
         signal
@@ -150,7 +150,7 @@ describe('native Router requests', () => {
     ).toEqual({
       prompt: 'Test',
       output_format: 'png',
-      safety_tolerance: 3,
+      seed: 123456,
       prompt_upsampling: false
     })
     await expect(

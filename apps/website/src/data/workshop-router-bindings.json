@@ -64,7 +64,7 @@
   {
     "id": "bfl/flux-2-pro",
     "routerId": "bfl/flux-2-pro",
-    "omit": ["safety_tolerance"],
+    "omit": [],
     "media": [
       {
         "name": "media_image",
@@ -126,7 +126,7 @@
         "required": false
       }
     ],
-    "advancedFields": ["safety_tolerance", "prompt_upsampling", "seed"],
+    "advancedFields": ["prompt_upsampling", "seed"],
     "output": {
       "format": "json",
       "selectors": [
@@ -229,7 +229,7 @@
         "required": false
       }
     ],
-    "advancedFields": ["safety_tolerance", "prompt_upsampling", "seed"],
+    "advancedFields": ["prompt_upsampling", "seed"],
     "output": {
       "format": "json",
       "selectors": [
