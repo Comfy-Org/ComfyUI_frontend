@@ -3,12 +3,10 @@ import { expect } from '@playwright/test'
 import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
-import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import type {
@@ -18,7 +16,11 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import {
+  agentTest,
+  bootAgentApp,
+  mockWorkflowPersistence
+} from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type {
@@ -275,46 +277,7 @@ export class AgentConversationHarness {
   }
 
   private async selectWorkflowTarget(): Promise<void> {
-    let savedName: string | undefined
-    await this.page.route('**/api/userdata/*', (route) => {
-      const request = route.request()
-      const path = decodeURIComponent(
-        new URL(request.url()).pathname.split('/userdata/')[1]
-      )
-      if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-        return route.fallback()
-      savedName = path.slice('workflows/'.length, -'.json'.length)
-      const saved: UserDataFullInfo = {
-        path,
-        modified: Date.now(),
-        size: request.postDataBuffer()?.length ?? 0
-      }
-      return route.fulfill(jsonRoute(saved))
-    })
-    await this.page.route('**/api/workflows?*', (route) => {
-      const workflows: WorkflowListResponse = {
-        data:
-          savedName === undefined
-            ? []
-            : [
-                {
-                  id: this.conversation.workflow.id,
-                  name: savedName,
-                  created_at: '2026-09-01T00:00:00Z',
-                  updated_at: '2026-09-01T00:00:00Z',
-                  created_by: 'test-user-e2e',
-                  latest_version: 1
-                }
-              ],
-        pagination: {
-          has_more: false,
-          limit: 100,
-          offset: 0,
-          total: savedName === undefined ? 0 : 1
-        }
-      }
-      return route.fulfill(jsonRoute(workflows))
-    })
+    await mockWorkflowPersistence(this.page, this.conversation.workflow.id)
     const picker = this.panel.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
@@ -323,6 +286,47 @@ export class AgentConversationHarness {
       .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
       .click()
     await expect(picker).toHaveText('Unsaved Workflow')
+  }
+
+  async persistSavedWorkflow(): Promise<void> {
+    let saved: { info: UserDataFullInfo; content: string } | undefined
+    await this.page.route('**/api/userdata**', (route) => {
+      const request = route.request()
+      const path = decodeURIComponent(
+        new URL(request.url()).pathname.split('/userdata/')[1] ?? ''
+      )
+      if (request.method() !== 'POST' || !path.startsWith('workflows/'))
+        return route.fallback()
+      saved = {
+        info: {
+          path,
+          modified: Date.now(),
+          size: request.postDataBuffer()?.length ?? 0
+        },
+        content: request.postData() ?? '{}'
+      }
+      return route.fallback()
+    })
+    await this.page.route('**/api/userdata**', (route) => {
+      const request = route.request()
+      if (request.method() !== 'GET' || !saved) return route.fallback()
+      const url = new URL(request.url())
+      const path = decodeURIComponent(url.pathname.split('/userdata/')[1] ?? '')
+      if (path === saved.info.path)
+        return route.fulfill({
+          contentType: 'application/json',
+          body: saved.content
+        })
+      if (url.searchParams.get('dir') !== 'workflows') return route.fallback()
+      return route.fulfill(
+        jsonRoute([
+          {
+            ...saved.info,
+            path: saved.info.path.slice('workflows/'.length)
+          }
+        ])
+      )
+    })
   }
 
   async sendPrompt(turn = 0): Promise<void> {
@@ -709,6 +713,14 @@ export class AgentConversationHarness {
         { op: 'set_widget', node_id: nodeId, widget, value, old: value }
       ] as RecordedGraphOperation[])
     )
+  }
+
+  async disconnectAndApplyRecordedTurn(turn: number): Promise<void> {
+    await this.hostSocket.disconnect()
+    for (const entry of this.conversation.turns[turn].response) {
+      if (entry.kind === 'graph_ops') this.host.apply(entry.ops)
+    }
+    for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
   }
 
   private graphNodeIds(): Promise<string[]> {
