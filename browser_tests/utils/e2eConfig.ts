@@ -1,9 +1,4 @@
-type E2EEnvironment = Pick<
-  NodeJS.ProcessEnv,
-  | 'DEV_SERVER_COMFYUI_URL'
-  | 'PLAYWRIGHT_SETUP_API_URL'
-  | 'PLAYWRIGHT_TEST_URL'
->
+type E2EEnvironment = Readonly<Record<string, string | undefined>>
 
 const defaultApiUrl = 'http://localhost:8188'
 const localHostname =
