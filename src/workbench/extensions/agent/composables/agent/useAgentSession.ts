@@ -103,9 +103,10 @@ const PREPARE_TIMEOUT_MS = 3000
  * session that started it stops or is superseded. It is open-ended only while
  * the server keeps answering with a streaming row: after
  * TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES checks in a row that fail or find no
- * row for the turn it gives up. A missing row settles the turn with the text
- * it already has, since the server has nothing more to deliver; a failing
- * fetch leaves the turn live for the socket and the next reconnect.
+ * row for the turn it gives up. If the last check finds no row, it settles the
+ * turn with the text it already has, since the server has nothing more to
+ * deliver; if the last check fails, it leaves the turn live for the socket and
+ * the next reconnect.
  * Switching threads stashes the turn rather than ending it, so its recovery
  * keeps running in the background.
  */
@@ -712,14 +713,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const outcome = await fetchTurnOutcome(turn, signal)
       if (!isTurnLive(turn, generation)) return
       if (settleFinishedTurn(turn, outcome)) return
-      consecutiveFailures =
-        outcome.kind === 'streaming' ? 0 : consecutiveFailures + 1
-      if (consecutiveFailures >= TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES)
-        return abandonTurnRecovery(turn, outcome)
       if (outcome.kind === 'error' && !noticed) {
         noticed = true
         pushError(outcome.message)
       }
+      consecutiveFailures =
+        outcome.kind === 'streaming' ? 0 : consecutiveFailures + 1
+      if (consecutiveFailures >= TURN_RECOVERY_MAX_CONSECUTIVE_FAILURES)
+        return abandonTurnRecovery(turn, outcome)
     }
   }
 

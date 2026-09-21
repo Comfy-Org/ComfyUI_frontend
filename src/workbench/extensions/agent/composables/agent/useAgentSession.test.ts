@@ -1843,6 +1843,40 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('(g26) an error at the recovery cap still surfaces a notice', async () => {
+    vi.useFakeTimers()
+    try {
+      const missingHistory = [historyRow(1, 'user', 'msg-1', 'go')]
+      const getMessages = vi
+        .fn<AgentRestClient['getMessages']>()
+        .mockRejectedValue(new Error('offline'))
+        .mockResolvedValueOnce(missingHistory)
+        .mockResolvedValueOnce(missingHistory)
+        .mockResolvedValueOnce(missingHistory)
+        .mockResolvedValueOnce(missingHistory)
+        .mockResolvedValueOnce(missingHistory)
+      const rest = fakeRest({ getMessages })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(31_000)
+
+      expect(getMessages).toHaveBeenCalledTimes(6)
+      expect(session.notices.value).toEqual([
+        { level: 'error', text: 'offline' }
+      ])
+      expect(session.isStreaming.value).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('(h) attachments pass through to the postMessage wire body', async () => {
     const rest = fakeRest()
     const { source } = fakeEvents()
