@@ -401,40 +401,32 @@ describe('reconcileAgentAdapters', () => {
       ).toBe(7)
     })
 
-    it.each([
-      { name: 'width', seeded: 832 },
-      { name: 'prompt', seeded: 'a cat on a bench' },
-      { name: 'sampler', seeded: 'dpmpp_2m' }
-    ])(
-      'keeps the seeded $name value when the live widget type differs from the placeholder',
-      ({ name, seeded }) => {
-        const graph = new LGraph()
-        const scope = graphScopeOf(graph)
-        remoteMutations(scope).addNode(
-          {
-            ...nodePayload(1, 'mixed-widget-node'),
-            widgets_values: {
-              width: 832,
-              prompt: 'a cat on a bench',
-              sampler: 'dpmpp_2m'
-            }
-          },
-          REMOTE
-        )
+    it('keeps seeded values when the live widget type differs from the placeholder', () => {
+      const seeded = {
+        width: 832,
+        prompt: 'a cat on a bench',
+        sampler: 'dpmpp_2m'
+      }
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      remoteMutations(scope).addNode(
+        { ...nodePayload(1, 'mixed-widget-node'), widgets_values: seeded },
+        REMOTE
+      )
 
-        reconcileAgentAdapters(graph)
+      reconcileAgentAdapters(graph)
 
-        const node = graph.getNodeById(toNodeId(1))
-        const widget = node?.widgets?.find((w) => w.name === name)
-        expect(widget?.value).toBe(seeded)
+      const node = graph.getNodeById(toNodeId(1))
+      for (const [name, value] of Object.entries(seeded)) {
+        expect(node?.widgets?.find((w) => w.name === name)?.value).toBe(value)
         expect(
           useWidgetValueStore().getWidget(
             widgetId(scope.rootGraphId, toNodeId(1), name)
           )?.value
-        ).toBe(seeded)
-        expect(LiteGraph.namedValuesRestore).toBe(false)
+        ).toBe(value)
       }
-    )
+      expect(LiteGraph.namedValuesRestore).toBe(false)
+    })
 
     it('applies a widget update received before the node materializes', () => {
       const graph = new LGraph()
