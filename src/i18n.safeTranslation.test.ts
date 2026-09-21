@@ -112,4 +112,22 @@ describe('the HTML sanitizer stays linear and correct', () => {
       "href='about:blank'"
     )
   })
+
+  // A name over the 100-char cap matches partially; its value must still be
+  // escaped so its quotes cannot re-pair and smuggle the next attribute through.
+  it('escapes the value of an over-length attribute name', () => {
+    expect(translate(`${'a'.repeat(101)}="<img>"`)).toContain('&lt;img&gt;')
+    expect(
+      translate(`<a ${'L'.repeat(101)}="a x=' q" href='javascript:alert(1)'>`)
+    ).not.toContain('javascript:alert(1)')
+  })
+
+  it('keeps sanitizeStyleValue linear on nested url()', () => {
+    const start = performance.now()
+    const k = 5_000
+    expect(() =>
+      translate(`<a style="${'url('.repeat(k)}${')'.repeat(k)}">`)
+    ).not.toThrow()
+    expect(performance.now() - start).toBeLessThan(5_000)
+  })
 })
