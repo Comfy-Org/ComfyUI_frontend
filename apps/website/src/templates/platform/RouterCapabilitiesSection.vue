@@ -34,7 +34,7 @@ const rows: FeatureRow[] = [
     description: routerT('platform.router.section3.body', locale),
     media: {
       type: 'image',
-      src: 'https://media.comfy.org/website/router/queue-job.webp',
+      src: 'https://media.comfy.org/website/router/model-stream.webp',
       fit: 'cover'
     }
   }
