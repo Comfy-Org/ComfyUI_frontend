@@ -72,7 +72,7 @@ export const modelsGalleryCards: ModelsGalleryCard[] = [
     badgeIcon: '/icons/ai-models/kling.svg',
     media: [
       {
-        src: 'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_kling_v3_video-1.webp'
+        src: 'https://media.comfy.org/website/router/kling-3-video.webp'
       }
     ]
   },
@@ -81,7 +81,7 @@ export const modelsGalleryCards: ModelsGalleryCard[] = [
     badgeIcon: '/icons/ai-models/bfl.svg',
     media: [
       {
-        src: 'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bfl_flux3_t2v-1.webp'
+        src: 'https://media.comfy.org/website/router/flux-3-t2v.webp'
       }
     ]
   }

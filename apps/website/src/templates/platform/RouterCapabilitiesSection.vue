@@ -14,7 +14,7 @@ const rows: FeatureRow[] = [
     description: t('platform.router.section1.body', locale),
     media: {
       type: 'image',
-      src: '/images/router/integrate-once.svg',
+      src: 'https://media.comfy.org/website/router/integrate-once.webp',
       fit: 'cover'
     }
   },
@@ -24,7 +24,7 @@ const rows: FeatureRow[] = [
     description: t('platform.router.section2.body', locale),
     media: {
       type: 'image',
-      src: '/images/router/choose-route.svg',
+      src: 'https://media.comfy.org/website/router/choose-route.webp',
       fit: 'cover'
     }
   },
@@ -34,7 +34,7 @@ const rows: FeatureRow[] = [
     description: t('platform.router.section3.body', locale),
     media: {
       type: 'image',
-      src: '/images/router/queue-job.svg',
+      src: 'https://media.comfy.org/website/router/queue-job.webp',
       fit: 'cover'
     }
   }
@@ -55,6 +55,11 @@ const supportedProviders = [
     name: 'WaveSpeed',
     src: '/icons/router-providers/wavespeed.svg',
     logoClass: 'h-9 w-auto'
+  },
+  {
+    name: 'Higgsfield',
+    src: '/icons/router-providers/higgsfield.svg',
+    logoClass: 'h-10 w-auto'
   }
 ]
 </script>
@@ -66,7 +71,7 @@ const supportedProviders = [
     title-class="text-primary-warm-white"
   />
 
-  <section class="mx-auto max-w-4xl px-6 py-16 md:py-24">
+  <section class="mx-auto max-w-6xl px-6 py-16 md:py-24">
     <p
       class="text-center text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
     >
