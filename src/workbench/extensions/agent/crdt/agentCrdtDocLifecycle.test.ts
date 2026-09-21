@@ -342,9 +342,6 @@ describe('AgentCrdtDocLifecycle ack timeout', () => {
   })
 })
 
-// Pins the shipped behaviour of the pure-refusal path. Unlike the silence
-// path above, exhausting the refusal budget is silent: no terminal event,
-// no report, no `onGaveUp`. A fix for that gap must update this block.
 describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -370,22 +367,26 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
     })
   })
 
-  it('six consecutive refusals stop retrying with no seventh subscribe, event, or report', () => {
+  it('six consecutive refusals stop retrying with no further subscribe, event, or report', () => {
     const { lifecycle, resubscribe, onGaveUp } = wire()
     lifecycle.onSubscribeSent(WORKFLOW_ID)
 
-    for (let attempt = 1; attempt <= 6; attempt += 1) {
-      lifecycle.onSubscribeRefused()
-      const delay = 500 * 2 ** (attempt - 1)
-      vi.advanceTimersByTime(delay - 1)
-      expect(resubscribe).toHaveBeenCalledTimes(attempt - 1)
-      vi.advanceTimersByTime(1)
-      expect(resubscribe).toHaveBeenCalledTimes(attempt)
-      expect(devEvents().at(-1)).toEqual({
-        kind: 'subscribe_retry',
-        detail: { attempt, workflowId: WORKFLOW_ID }
-      })
-    }
+    // Advance exactly to each backoff boundary: the retry fires, and the
+    // 15 s ack timeout it arms is cleared by the next refusal before it can
+    // add an ack-path resubscribe. The ladder itself is pinned above.
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(500)
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(1_000)
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(2_000)
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(4_000)
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(8_000)
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(16_000)
+    expect(resubscribe).toHaveBeenCalledTimes(6)
 
     lifecycle.onSubscribeRefused()
     vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
@@ -394,9 +395,13 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
     expect(lifecycle.shouldDeferSubscribe()).toBe(false)
     expect(onGaveUp).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
-    expect(devEvents()).toHaveLength(6)
-    expect(devEvents().map(({ kind }) => kind)).toEqual(
-      Array.from({ length: 6 }, () => 'subscribe_retry')
-    )
+    expect(devEvents().map(({ kind }) => kind)).toEqual([
+      'subscribe_retry',
+      'subscribe_retry',
+      'subscribe_retry',
+      'subscribe_retry',
+      'subscribe_retry',
+      'subscribe_retry'
+    ])
   })
 })
