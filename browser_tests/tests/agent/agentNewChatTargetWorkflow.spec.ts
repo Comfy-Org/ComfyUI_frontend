@@ -26,7 +26,7 @@ test.describe(
     }, testInfo) => {
       await page
         .getByRole('button', {
-          name: enMessages.agent.entryButton,
+          name: enMessages.agent.askComfyAgent,
           exact: true
         })
         .click()
@@ -94,7 +94,7 @@ test.describe(
     }) => {
       await page
         .getByRole('button', {
-          name: enMessages.agent.entryButton,
+          name: enMessages.agent.askComfyAgent,
           exact: true
         })
         .click()
