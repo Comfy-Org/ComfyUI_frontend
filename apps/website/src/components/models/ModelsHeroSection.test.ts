@@ -24,4 +24,21 @@ describe('ModelsHeroSection', () => {
       )
     }
   )
+
+  it('updates the title when its translation inputs change', async () => {
+    const { rerender } = render(ModelsHeroSection, {
+      props: {
+        locale: 'en',
+        modelName: 'Flux',
+        ctaHref: '/models',
+        videoSrc: '/video.mp4'
+      }
+    })
+
+    await rerender({ locale: 'zh-CN', modelName: 'Wan' })
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      /^ComfyUI 中的 Wan$/
+    )
+  })
 })

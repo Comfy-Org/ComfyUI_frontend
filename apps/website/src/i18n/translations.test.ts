@@ -31,6 +31,12 @@ describe('t()', () => {
     ).toBe('ComfyUI 中的 Flux')
   })
 
+  it('keeps missing named values visible', () => {
+    expect(t('validation.minLength', 'en')).toBe(
+      'Must be at least {length} characters'
+    )
+  })
+
   it('renders escaped special characters literally', () => {
     expect(t('auth.errors.signupBlocked')).toContain('support@comfy.org')
   })
@@ -60,6 +66,15 @@ describe('tAround', () => {
       ).toEqual(parts)
     }
   )
+
+  it('keeps copy after repeated occurrences of the slot', () => {
+    const [, after] = tAround('models.faq.whatIs.localAnswer', 'en', 'name', {
+      description: 'a model',
+      count: 3
+    })
+
+    expect(after).toContain('ready to load and customize.')
+  })
 })
 
 describe('hasKey', () => {

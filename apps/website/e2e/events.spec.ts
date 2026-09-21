@@ -684,13 +684,15 @@ test.describe('Events page — desktop @smoke', () => {
     await expect(agenda).toBeVisible()
 
     // Only the filtered events reach the agenda, and the control still shows
-    // the selection. The agenda regroups by month, so compare as sets.
+    // the selection. The agenda regroups by month, so ignore ordering.
     await expect(rows).toHaveCount(expected.length)
     const agendaIds = await rows.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute('data-event-id'))
     )
-    expect(new Set(agendaIds)).toEqual(
-      new Set(expected.map((event) => event.id))
+    expect(
+      agendaIds.toSorted((a, b) => String(a).localeCompare(String(b)))
+    ).toEqual(
+      expected.map((event) => event.id).toSorted((a, b) => a.localeCompare(b))
     )
     await expect(typeFilter).toHaveValue(category)
 

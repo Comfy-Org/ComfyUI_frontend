@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { Locale } from '../../i18n/translations'
 
 import { t, tAround } from '../../i18n/translations'
@@ -18,11 +20,8 @@ const {
   videoAriaLabel?: string
 }>()
 
-const [titleBefore, titleAfter] = tAround(
-  'models.list.heroTitle',
-  locale,
-  'brand',
-  { name: modelName }
+const titleParts = computed(() =>
+  tAround('models.list.heroTitle', locale, 'brand', { name: modelName })
 )
 </script>
 
@@ -31,9 +30,9 @@ const [titleBefore, titleAfter] = tAround(
     <h1
       class="max-w-4xl text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
     >
-      {{ titleBefore }}
+      {{ titleParts[0] }}
       <span class="text-primary-comfy-yellow">ComfyUI</span>
-      {{ titleAfter }}
+      {{ titleParts[1] }}
     </h1>
     <p
       class="mt-6 max-w-2xl text-sm text-pretty text-primary-comfy-canvas lg:text-base"
