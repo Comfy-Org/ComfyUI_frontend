@@ -66,11 +66,13 @@ export function useWorkshopDelivery() {
       finish('unverified')
   }
 
-  function loaded(url: string, status: 'succeeded' | 'failed') {
+  // `cancelled` is the media element for that URL being torn down before it
+  // reported: the visitor moved to another output, not a delivery failure.
+  function settle(url: string, status: 'succeeded' | 'failed' | 'cancelled') {
     if (url !== (pending?.output.urls?.[0] ?? pending?.output.url)) return
     finish(status, status === 'failed' ? 'media_error' : undefined)
   }
 
   onScopeDispose(cancel)
-  return { start, loaded, cancel }
+  return { start, settle, cancel }
 }

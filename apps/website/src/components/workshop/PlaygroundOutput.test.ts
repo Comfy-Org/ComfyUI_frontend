@@ -51,6 +51,56 @@ describe('PlaygroundOutput', () => {
     }
   )
 
+  it.for([
+    {
+      name: 'an earlier run',
+      latest: output('latest'),
+      leave: 'earlier-run-0'
+    },
+    {
+      name: 'another file of the run',
+      latest: output('latest'),
+      leave: 'Raw response'
+    },
+    {
+      name: 'another item of the batch',
+      latest: {
+        ...output('latest'),
+        urls: [output('latest').url, output('second').url]
+      },
+      leave: 'output-thumb-1'
+    }
+  ])(
+    'reports the primary output abandoned when the visitor opens $name',
+    async ({ latest, leave }) => {
+      const user = userEvent.setup()
+      const view = render(PlaygroundOutput, {
+        props: {
+          modelName: 'Demo',
+          state: succeeded(latest),
+          earlier: [{ output: output('first'), attachments: [] }],
+          attachments: [
+            {
+              kind: 'text',
+              url: 'https://example.com/response.json',
+              fileName: 'response.json'
+            }
+          ],
+          now: 2_000
+        }
+      })
+      expect(view.emitted().delivery).toBeUndefined()
+
+      await user.click(
+        screen.queryByTestId(leave) ??
+          screen.getByRole('button', { name: leave })
+      )
+      expect(view.emitted().delivery).toEqual([
+        [output('latest').url, 'cancelled']
+      ])
+    }
+  )
+
   it('contains focus in the expanded image and restores it on Escape', async () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {

@@ -443,15 +443,34 @@ describe('ModelDetail', () => {
   it.for([
     {
       name: 'leaving the Playground',
+      result: routerResult,
       abandon: () => user().click(screen.getByRole('tab', { name: 'API' }))
     },
     {
       name: 'replacing the result with an example',
+      result: routerResult,
       abandon: () => user().click(screen.getByTestId('example-card'))
+    },
+    {
+      name: 'viewing another file of the same run',
+      result: {
+        ...routerResult,
+        outputs: [
+          ...routerResult.outputs,
+          {
+            kind: 'text' as const,
+            url: 'blob:transcript',
+            fileName: 'transcript.txt',
+            text: 'A transcript'
+          }
+        ]
+      },
+      abandon: () =>
+        user().click(screen.getByRole('button', { name: 'Raw response' }))
     }
-  ])('excludes delivery after $name', async ({ abandon }) => {
+  ])('excludes delivery after $name', async ({ result, abandon }) => {
     auth.session.value = credential
-    vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
+    vi.mocked(runWorkshopRouter).mockResolvedValue(result)
     mountDetail({
       model: {
         ...runnable,

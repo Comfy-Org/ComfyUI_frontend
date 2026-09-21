@@ -40,10 +40,10 @@ describe('Workshop output delivery', () => {
     'reports %s only once for the current primary output',
     (status) => {
       const delivery = tracker()
-      delivery.loaded('blob:previous-output', status)
+      delivery.settle('blob:previous-output', status)
       expect(captureWorkshopEvent).not.toHaveBeenCalled()
-      delivery.loaded(output.url, status)
-      delivery.loaded(output.url, status)
+      delivery.settle(output.url, status)
+      delivery.settle(output.url, status)
       expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
         name: 'delivery_finished',
         properties: expect.objectContaining({
@@ -77,6 +77,23 @@ describe('Workshop output delivery', () => {
       name: 'delivery_finished',
       properties: expect.objectContaining({ status: 'cancelled' })
     })
+  })
+
+  it('settles an abandoned primary output as cancelled, never as a timeout', async () => {
+    const delivery = tracker()
+    delivery.settle('blob:another-output', 'cancelled')
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+
+    delivery.settle(output.url, 'cancelled')
+    delivery.settle(output.url, 'succeeded')
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
+      name: 'delivery_finished',
+      properties: expect.objectContaining({ status: 'cancelled' })
+    })
+    expect(vi.mocked(captureWorkshopEvent).mock.calls[0][0]).not.toHaveProperty(
+      'properties.reason'
+    )
   })
 
   it('does not classify a hidden-page deadline as media failure', async () => {

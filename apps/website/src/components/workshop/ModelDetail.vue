@@ -936,7 +936,7 @@ function useInCode() {
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"
           @download="captureOutputDownload"
-          @delivery="delivery.loaded"
+          @delivery="delivery.settle"
         />
         <div
           v-if="runState.status === 'succeeded' || requestId"
