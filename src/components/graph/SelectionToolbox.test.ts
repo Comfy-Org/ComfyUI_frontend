@@ -2,6 +2,7 @@
 import { fireEvent, render } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
@@ -449,15 +450,9 @@ describe('SelectionToolbox', () => {
         handlePointerMove: vi.fn(),
         handlePointerUp: vi.fn(),
         forwardEventToCanvas: forwardEventToCanvasSpy,
-        shouldHandleNodePointerEvents: { value: true } as ReturnType<
-          typeof useCanvasInteractions
-        >['shouldHandleNodePointerEvents'],
-        canEditNodes: { value: true } as ReturnType<
-          typeof useCanvasInteractions
-        >['canEditNodes'],
-        canFocusWidgets: { value: true } as ReturnType<
-          typeof useCanvasInteractions
-        >['canFocusWidgets']
+        shouldHandleNodePointerEvents: computed(() => true),
+        canEditNodes: computed(() => true),
+        canFocusWidgets: computed(() => true)
       })
 
       const mockExtensionService = vi.mocked(useExtensionService)

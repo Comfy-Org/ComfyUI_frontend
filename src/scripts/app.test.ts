@@ -3238,7 +3238,7 @@ describe('ComfyApp', () => {
       vi.mocked(isSelectOnly).mockReturnValue(true)
       const onDragDrop = vi.fn()
       app.dragOverNode = fromPartial({ onDragDrop })
-      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+      app['addDropHandler']()
 
       const event = new DragEvent('drop')
       const preventDefault = vi.spyOn(event, 'preventDefault')

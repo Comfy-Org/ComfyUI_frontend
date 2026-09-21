@@ -292,7 +292,9 @@ describe('ChangeTracker', () => {
         vi.spyOn(window, 'requestAnimationFrame').mockImplementation((frame) =>
           frames.push(frame)
         )
-        const addEventListener = vi.spyOn(window, 'addEventListener')
+        const addEventListener = vi
+          .spyOn(window, 'addEventListener')
+          .mockImplementation(() => {})
         ChangeTracker.init()
         const keydown = addEventListener.mock.calls.find(
           ([type]) => type === 'keydown'

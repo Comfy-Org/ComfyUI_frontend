@@ -14,22 +14,15 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
         comfyPage.page.evaluate(() => window.app!.canvas.show_info)
 
       await test.step('the overlay starts enabled', async () => {
-        await comfyPage.nextFrame()
-        expect(await showInfo()).toBe(true)
+        await expect.poll(showInfo).toBe(true)
       })
 
       await test.step('enter node selection mode', async () => {
         await agentPanel.enterNodeSelectionMode()
-        await comfyPage.nextFrame()
       })
 
       await test.step('the overlay is hidden', async () => {
-        await comfyPage.page.screenshot({
-          path: test
-            .info()
-            .outputPath('agent-node-selection-canvas-info-overlay.png')
-        })
-        expect(await showInfo()).toBe(false)
+        await expect.poll(showInfo).toBe(false)
       })
     })
   })
@@ -41,7 +34,7 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
       agentPanel,
       comfyPage
     }) => {
-      const overlay = comfyPage.page.getByTestId('queue-progress-overlay')
+      const { overlay } = comfyPage.queuePanel
 
       await test.step('open the queue overlay', async () => {
         await comfyPage.command.executeCommand('Comfy.Queue.ToggleOverlay')
@@ -53,9 +46,6 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
       })
 
       await test.step('the overlay is gone', async () => {
-        await comfyPage.page.screenshot({
-          path: test.info().outputPath('agent-node-selection-queue-overlay.png')
-        })
         await expect(overlay).toHaveCount(0)
       })
 
@@ -78,6 +68,8 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
         .getNodeByTitle('CLIP Text Encode (Prompt)')
         .first()
       const prompt = node.getByRole('textbox')
+      const selectOnly = () =>
+        page.evaluate(() => window.app!.canvas.selectOnly)
 
       await test.step('type into the prompt before picking', async () => {
         await comfyPage.nodeOps.clearGraph()
@@ -110,9 +102,7 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
             name: /Remove CLIP Text Encode \(Prompt\) #\d+ reference/
           })
         ).toBeVisible()
-        expect(await page.evaluate(() => window.app!.canvas.selectOnly)).toBe(
-          true
-        )
+        await expect.poll(selectOnly).toBe(true)
       })
 
       await test.step('typing does not edit the widget', async () => {
@@ -124,9 +114,7 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
       await test.step('exiting restores editing', async () => {
         await page.keyboard.press('Escape')
         await expect(agentPanel.nodeSelectionBanner).toHaveCount(0)
-        expect(await page.evaluate(() => window.app!.canvas.selectOnly)).toBe(
-          false
-        )
+        await expect.poll(selectOnly).toBe(false)
         await prompt.click()
         await page.keyboard.type('x')
         await expect(prompt).toHaveValue('beforex')
