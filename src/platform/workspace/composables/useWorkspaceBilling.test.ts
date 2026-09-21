@@ -124,6 +124,7 @@ const activeStatus = {
   occupied_seats: 72,
   has_funds: true,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_status: 'active' as const,
   subscription_tier: 'CREATOR' as const,
   subscription_duration: 'MONTHLY' as const,
@@ -137,6 +138,7 @@ const freeStatus = {
   occupied_seats: 100,
   has_funds: true,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_tier: 'FREE' as const,
   plan_slug: 'free'
 }
