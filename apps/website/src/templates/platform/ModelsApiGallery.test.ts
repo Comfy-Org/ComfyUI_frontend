@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { t } from '../../i18n/translations'
-import { routerT } from './routerCopy'
 import ModelsApiGallery from './ModelsApiGallery.vue'
 
 describe('ModelsApiGallery', () => {
@@ -24,9 +23,6 @@ describe('ModelsApiGallery', () => {
     ] as const) {
       expect(screen.getByText(t(titleKey, 'en'))).toBeTruthy()
     }
-    expect(
-      screen.getByText(routerT('platform.router.proof.comingSoon', 'en'))
-    ).toBeTruthy()
 
     const seedanceClip = () =>
       screen

@@ -4,7 +4,6 @@ import { ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { routerT } from './routerCopy'
 import type { GalleryMedia, ModelsGalleryCard } from './modelsGalleryCards'
 import { modelsGalleryCards } from './modelsGalleryCards'
 
@@ -98,8 +97,5 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
         </p>
       </div>
     </div>
-    <p class="mt-8 text-center text-xs text-primary-comfy-canvas/50">
-      {{ routerT('platform.router.proof.comingSoon', locale) }}
-    </p>
   </section>
 </template>

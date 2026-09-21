@@ -35,10 +35,6 @@ const copy = {
     en: 'The same models 3M+ ComfyUI users already use, now behind one API.',
     'zh-CN': '300 万+ ComfyUI 用户正在使用的同一批模型，现在都在一个 API 之后。'
   },
-  'platform.router.proof.comingSoon': {
-    en: 'More models coming soon.',
-    'zh-CN': '更多模型即将上线。'
-  },
   'platform.router.code.heading': {
     en: 'Choose the provider in one line.',
     'zh-CN': '一行代码，选择供应商。'
