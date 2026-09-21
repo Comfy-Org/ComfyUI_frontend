@@ -1,6 +1,9 @@
 import OpenAI from 'openai'
 import { zodTextFormat } from 'openai/helpers/zod'
-import type { ResponseUsage } from 'openai/resources/responses/responses'
+import type {
+  Response as OpenAiResponse,
+  ResponseUsage
+} from 'openai/resources/responses/responses'
 import { z } from 'zod'
 
 import type { OutputLocale, TranslationPipelineConfig } from './config'
@@ -120,6 +123,45 @@ function splitTruncatedBatch(items: TranslationItem[]): TranslationItem[][] {
   )
 }
 
+type TranslationAttempt =
+  | { status: 'translated'; translations: Record<string, string> }
+  | { status: 'truncated' }
+  | { status: 'retry' | 'defer'; reason: string }
+
+function getTranslationDeferralReason(
+  response: OpenAiResponse
+): string | undefined {
+  if (response.status !== 'completed') {
+    return `response status ${response.status}: ${response.incomplete_details?.reason ?? response.error?.code ?? 'no details'}`
+  }
+  if (
+    response.output.some(
+      (item) =>
+        item.type === 'message' &&
+        item.content.some((content) => content.type === 'refusal')
+    )
+  ) {
+    return 'the model refused the translation'
+  }
+}
+
+function parseTranslationOutput(
+  text: string,
+  schema: z.ZodType<Record<string, string>>
+): TranslationAttempt {
+  let output: unknown
+  try {
+    output = JSON.parse(text)
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error
+    return { status: 'retry', reason: error.message }
+  }
+  const parsed = schema.safeParse(output)
+  return parsed.success
+    ? { status: 'translated', translations: parsed.data }
+    : { status: 'retry', reason: parsed.error.message }
+}
+
 interface OpenAiTranslatorOptions {
   apiKey: string
   model: string
@@ -141,6 +183,40 @@ export function createOpenAiTranslator(
     maxRetries: maxNetworkRetries
   })
 
+  async function requestTranslation(
+    locale: OutputLocale,
+    items: TranslationItem[],
+    schema: z.ZodType<Record<string, string>>
+  ): Promise<TranslationAttempt> {
+    const request = client.responses.create({
+      model: options.model,
+      reasoning: { effort: options.reasoningEffort },
+      store: false,
+      text: { format: zodTextFormat(schema, 'translations') },
+      instructions: buildSystemPrompt(locale, options.glossary),
+      input: JSON.stringify({ items })
+    })
+    let response: OpenAiResponse
+    try {
+      response = await request
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error
+      options.onUsage?.(undefined)
+      return { status: 'retry', reason: error.message }
+    }
+    options.onUsage?.(response.usage)
+    if (
+      response.status === 'incomplete' &&
+      response.incomplete_details?.reason === 'max_output_tokens'
+    ) {
+      return { status: 'truncated' }
+    }
+    const reason = getTranslationDeferralReason(response)
+    return reason
+      ? { status: 'defer', reason }
+      : parseTranslationOutput(response.output_text, schema)
+  }
+
   async function translateBatch(
     locale: OutputLocale,
     items: TranslationItem[],
@@ -152,71 +228,32 @@ export function createOpenAiTranslator(
       .strict()
     let deferralReason = 'the request was not attempted'
     for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
-      const response = await client.responses
-        .create({
-          model: options.model,
-          reasoning: { effort: options.reasoningEffort },
-          store: false,
-          text: { format: zodTextFormat(schema, 'translations') },
-          instructions: buildSystemPrompt(locale, options.glossary),
-          input: JSON.stringify({ items })
-        })
-        .catch((error: unknown) => {
-          if (!(error instanceof SyntaxError)) throw error
-          deferralReason = error.message
-          return undefined
-        })
-      options.onUsage?.(response?.usage)
-      if (!response) continue
-      if (
-        response.status === 'incomplete' &&
-        response.incomplete_details?.reason === 'max_output_tokens'
-      ) {
-        if (items.length === 1) {
-          deferralReason = `the response was truncated (max_output_tokens) for the single string ${items[0].context}`
-          continue
-        }
-        if (splitDepth >= options.maxTruncationSplitDepth) {
-          deferralReason = `${items.length} strings were still truncated (max_output_tokens) at maxTruncationSplitDepth ${options.maxTruncationSplitDepth}`
-          break
-        }
-        const settled = await Promise.allSettled(
-          splitTruncatedBatch(items).map((chunk) =>
-            translateBatch(locale, chunk, splitDepth + 1)
-          )
-        )
-        const merged: Record<string, string> = {}
-        for (const result of settled) {
-          if (result.status === 'rejected') throw result.reason
-          Object.assign(merged, result.value)
-        }
-        return merged
-      }
-      if (response.status !== 'completed') {
-        deferralReason = `response status ${response.status}: ${response.incomplete_details?.reason ?? response.error?.code ?? 'no details'}`
-        break
-      }
-      if (
-        response.output.some(
-          (item) =>
-            item.type === 'message' &&
-            item.content.some((content) => content.type === 'refusal')
-        )
-      ) {
-        deferralReason = 'the model refused the translation'
-        break
-      }
-      let output: unknown
-      try {
-        output = JSON.parse(response.output_text)
-      } catch (error) {
-        if (!(error instanceof SyntaxError)) throw error
-        deferralReason = error.message
+      const result = await requestTranslation(locale, items, schema)
+      if (result.status === 'translated') return result.translations
+      if (result.status !== 'truncated') {
+        deferralReason = result.reason
+        if (result.status === 'defer') break
         continue
       }
-      const parsed = schema.safeParse(output)
-      if (parsed.success) return parsed.data
-      deferralReason = parsed.error.message
+      if (items.length === 1) {
+        deferralReason = `the response was truncated (max_output_tokens) for the single string ${items[0].context}`
+        continue
+      }
+      if (splitDepth >= options.maxTruncationSplitDepth) {
+        deferralReason = `${items.length} strings were still truncated (max_output_tokens) at maxTruncationSplitDepth ${options.maxTruncationSplitDepth}`
+        break
+      }
+      const settled = await Promise.allSettled(
+        splitTruncatedBatch(items).map((chunk) =>
+          translateBatch(locale, chunk, splitDepth + 1)
+        )
+      )
+      return Object.fromEntries(
+        settled.flatMap((result) => {
+          if (result.status === 'rejected') throw result.reason
+          return Object.entries(result.value)
+        })
+      )
     }
     console.warn(
       `${locale.code}: deferring ${items.length} strings for retry: ${deferralReason}`
