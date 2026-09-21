@@ -149,6 +149,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // swallowed own-result only costs the idempotent resend cycle, while a
   // mis-attributed settle poisons everything downstream of this seam.
   let staleAnonymousBudget = 0
+  const retiredOpIds = new Set<string>()
+
+  function retire(batch: InFlight): void {
+    staleAnonymousBudget += batch.sends
+    if (batch.sends > 0) for (const opId of batch.opIds) retiredOpIds.add(opId)
+  }
+
+  function drainStaleCredit(): void {
+    if (staleAnonymousBudget === 0) return
+    staleAnonymousBudget--
+    if (staleAnonymousBudget === 0) retiredOpIds.clear()
+  }
 
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
@@ -189,7 +201,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function settleUnbound(batch: InFlight): void {
     if (inFlight !== batch) return
-    staleAnonymousBudget += batch.sends
+    retire(batch)
     settle({
       state: batch.sends > 0 ? 'unconfirmed' : 'undeliverable',
       ops: batch.ops
@@ -201,7 +213,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     batch.timer = setTimeout(() => {
       if (inFlight !== batch) return
       if (batch.resent) {
-        staleAnonymousBudget += batch.sends
+        retire(batch)
         settle({ state: 'unacknowledged', ops: batch.ops })
         return
       }
@@ -257,36 +269,32 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
-    if (
-      !inFlight ||
-      (result.workflowId !== undefined &&
-        result.workflowId !== inFlight.workflowId)
-    ) {
-      // A late result with no batch waiting, or addressed to another workflow
-      // than the in-flight batch: drain a credit if one is outstanding so it
-      // cannot swallow a future batch's own result.
-      if (staleAnonymousBudget > 0) staleAnonymousBudget--
-      return
-    }
+    if (inFlight === null && staleAnonymousBudget === 0) return
     const identified = [...result.applied, ...result.skipped]
     if (result.failure?.op_id) identified.push(result.failure.op_id)
+    const addressed =
+      inFlight !== null &&
+      (result.workflowId === undefined ||
+        result.workflowId === inFlight.workflowId)
     if (identified.length > 0) {
-      if (!identified.some((opId) => inFlight!.opIds.has(opId))) {
-        // Names ops that are not in flight: a retired batch's own result, if
-        // a credit is outstanding for one.
-        if (staleAnonymousBudget > 0) staleAnonymousBudget--
-        return
+      if (addressed && identified.some((opId) => inFlight!.opIds.has(opId))) {
+        settle({ state: 'acknowledged', ops: inFlight!.ops, result })
+      } else if (identified.some((opId) => retiredOpIds.has(opId))) {
+        // A retired batch's own answer consumes the credit reserved for it;
+        // ops this sender never minted are nobody's answer here.
+        drainStaleCredit()
       }
-      settle({ state: 'acknowledged', ops: inFlight.ops, result })
       return
     }
-    // Anonymous failure (empty lists, no failure op_id): only attribute it
-    // to the in-flight batch once no stale credit could explain it.
-    if (staleAnonymousBudget > 0) {
-      staleAnonymousBudget--
+    // Anonymous failure (empty lists, no failure op_id): a late result with
+    // no batch waiting, one addressed to another workflow, or one a stale
+    // credit could explain drains that credit so it cannot swallow a future
+    // batch's own result. Only then is it the in-flight batch's.
+    if (!addressed || staleAnonymousBudget > 0) {
+      drainStaleCredit()
       return
     }
-    settle({ state: 'acknowledged', ops: inFlight.ops, result })
+    settle({ state: 'acknowledged', ops: inFlight!.ops, result })
   })
 
   return {
