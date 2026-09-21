@@ -211,14 +211,7 @@ function expandTwoDigitYear(
     now.getUTCMilliseconds()
   )
   for (const year of [candidateYear + 100, candidateYear]) {
-    const candidate = httpDateInstant(
-      year,
-      month,
-      day,
-      hour,
-      minute,
-      second
-    )
+    const candidate = httpDateInstant(year, month, day, hour, minute, second)
     if (candidate <= fiftyYearsFromNow) return year
   }
   return candidateYear - 100
