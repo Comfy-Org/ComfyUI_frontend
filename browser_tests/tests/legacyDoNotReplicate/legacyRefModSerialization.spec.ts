@@ -7,10 +7,6 @@ test.describe(
   'MiniMax RefMod schema-order wrappers',
   { tag: ['@vue-nodes', '@widget'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.loadWorkflow('widgets/refmod_loader')
-    })
-
     test('saving and reloading preserves values and unused-slot visibility', async ({
       comfyPage
     }) => {
@@ -23,7 +19,8 @@ test.describe(
         'mod_8'
       )
 
-      await test.step('Verify the selected model and hidden unused slot', async () => {
+      await test.step('Load the workflow and verify its initial state', async () => {
+        await comfyPage.workflow.loadWorkflow('widgets/refmod_loader')
         await expect(mod).toContainText('voice.refmod')
         await expect(unused).toBeHidden()
       })
