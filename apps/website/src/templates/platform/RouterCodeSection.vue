@@ -16,6 +16,11 @@ const providerLogos: Record<
   RouterProvider,
   { name: string; logo: string; logoClass: string }
 > = {
+  comfy: {
+    name: 'Comfy',
+    logo: '/icons/router-providers/comfy.svg',
+    logoClass: 'h-3.5'
+  },
   fal: {
     name: 'fal',
     logo: '/icons/router-providers/fal.svg',

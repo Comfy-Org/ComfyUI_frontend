@@ -73,6 +73,7 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
 const ROUTER_MODEL = 'openai/gpt-image-2'
 const ROUTER_PROMPT = 'aerial view of a neon coral reef at dusk'
 export const ROUTER_PROVIDERS = [
+  'comfy',
   'fal',
   'runware',
   'wavespeed',
