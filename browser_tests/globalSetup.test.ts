@@ -40,10 +40,6 @@ describe('browser test global setup', () => {
     {
       name: 'network failure',
       result: () => Promise.reject(new TypeError('network unavailable'))
-    },
-    {
-      name: 'timeout',
-      result: () => Promise.reject(new DOMException('timed out', 'AbortError'))
     }
   ])('leaves a $name to its owning fixture', async ({ result }) => {
     const fetchRequest = vi.fn<typeof fetch>(result)
@@ -55,6 +51,36 @@ describe('browser test global setup', () => {
         backup: vi.fn()
       })
     ).resolves.toBeUndefined()
+  })
+
+  it('bounds an unresponsive probe and leaves the failure to the fixture', async () => {
+    vi.useFakeTimers()
+    const timeout = vi
+      .spyOn(AbortSignal, 'timeout')
+      .mockImplementation((ms) => {
+        const controller = new AbortController()
+        setTimeout(() => controller.abort(), ms)
+        return controller.signal
+      })
+    const fetchRequest = vi.fn<typeof fetch>((_, init) => {
+      return new Promise((_, reject) => {
+        init?.signal?.addEventListener(
+          'abort',
+          () => reject(init.signal?.reason),
+          { once: true }
+        )
+      })
+    })
+
+    const setup = runGlobalSetup({
+      env: { CI: '1' },
+      fetch: fetchRequest,
+      backup: vi.fn()
+    })
+    await vi.advanceTimersByTimeAsync(5_000)
+
+    await expect(setup).resolves.toBeUndefined()
+    expect(timeout).toHaveBeenCalledWith(5_000)
   })
 
   it.for([
