@@ -79,15 +79,34 @@ describe('Dynamic Combos', () => {
     addDynamicCombo(node, [['INT'], ['STRING']])
     const selector = node.widgets[0]
     node.widgets.splice(0, 1)
-    const inputsBefore = [...node.inputs]
-    const widgetsBefore = [...node.widgets]
+    const inputsBefore = structuredClone(node.inputs)
+    const widgetsBefore = node.widgets.map(
+      ({ name, type, value, options }) => ({
+        name,
+        type,
+        value,
+        options: structuredClone(options)
+      })
+    )
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     selector.value = '1'
 
     expect(node.inputs).toEqual(inputsBefore)
-    expect(node.widgets).toEqual(widgetsBefore)
+    expect(
+      node.widgets.map(({ name, type, value, options }) => ({
+        name,
+        type,
+        value,
+        options
+      }))
+    ).toEqual(widgetsBefore)
+    expect(selector.value).toBe('0')
     expect(error).toHaveBeenCalledWith(expect.any(Error))
+
+    node.widgets.unshift(selector)
+    selector.value = '1'
+    expect(node.widgets).toHaveLength(3)
   })
   test.fails('Does not mutate when the dynamic input socket is missing', () => {
     const node = testNode()
@@ -98,16 +117,38 @@ describe('Dynamic Combos', () => {
     )
     expect(inputIndex).toBeGreaterThanOrEqual(0)
     if (inputIndex < 0) return
-    node.inputs.splice(inputIndex, 1)
-    const inputsBefore = [...node.inputs]
-    const widgetsBefore = [...node.widgets]
+    const [input] = node.inputs.splice(inputIndex, 1)
+    const inputsBefore = structuredClone(node.inputs)
+    const widgetsBefore = node.widgets.map(
+      ({ name, type, value, options }) => ({
+        name,
+        type,
+        value,
+        options: structuredClone(options)
+      })
+    )
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     selector.value = '1'
 
     expect(node.inputs).toEqual(inputsBefore)
-    expect(node.widgets).toEqual(widgetsBefore)
+    expect(
+      node.widgets.map(({ name, type, value, options }) => ({
+        name,
+        type,
+        value,
+        options
+      }))
+    ).toEqual(widgetsBefore)
+    expect(selector.value).toBe('0')
     expect(error).toHaveBeenCalledWith(expect.any(Error))
+
+    node.inputs.splice(inputIndex, 0, input)
+    selector.value = '1'
+    expect(node.inputs.map(({ name, type }) => ({ name, type }))).toEqual([
+      { name: '0', type: 'COMFY_DYNAMICCOMBO_V3' },
+      { name: '0.0.0.0', type: 'IMAGE' }
+    ])
   })
   test('Dynamically added inputs are well ordered', () => {
     const node = testNode()

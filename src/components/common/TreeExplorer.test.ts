@@ -47,15 +47,30 @@ async function submitRename(
   const user = userEvent.setup()
   await fireEvent.contextMenu(screen.getByTestId('tree-node-child'))
   await user.click(await screen.findByText('Rename'))
-  await fireEvent.blur(await screen.findByRole('textbox'))
+  const textbox = await screen.findByRole('textbox')
+  await user.clear(textbox)
+  await user.type(textbox, 'Renamed name')
+  await fireEvent.blur(textbox)
 }
 
 describe('TreeExplorer', () => {
   it('closes the label editor after renaming succeeds', async () => {
-    await submitRename(vi.fn().mockResolvedValue(undefined))
+    let finishRename: () => void = () => {}
+    const handleRename = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishRename = resolve
+        })
+    )
+    await submitRename(handleRename)
 
-    await nextTick()
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(handleRename).toHaveBeenCalledWith('Renamed name')
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
+
+    finishRename()
+    await waitFor(() =>
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    )
   })
 
   it('closes the label editor when renaming fails', async () => {
@@ -63,6 +78,7 @@ describe('TreeExplorer', () => {
     const handleRename = vi.fn().mockRejectedValue(new Error('rename failed'))
     await submitRename(handleRename, handleError)
 
+    expect(handleRename).toHaveBeenCalledWith('Renamed name')
     await waitFor(() => expect(handleError).toHaveBeenCalledOnce())
     await nextTick()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()

@@ -191,39 +191,34 @@ test.describe('Node library sidebar', () => {
       }
     })
 
-    test('Refuses slash and duplicate bookmark folder names without mutating', async ({
-      comfyPage
-    }) => {
-      const tab = comfyPage.menu.nodeLibraryTab
+    test.describe('Refuses invalid folder names without mutating', () => {
+      const cases = [
+        {
+          name: 'slash',
+          newName: 'bad/name',
+          error: 'Folder name cannot contain "/"'
+        },
+        {
+          name: 'duplicate',
+          newName: 'bar',
+          error: 'Folder name "bar/" already exists'
+        }
+      ]
 
-      await test.step('Refuse a folder name containing a slash', async () => {
-        await tab.getFolder('foo').click({ button: 'right' })
-        await comfyPage.contextMenu.clickMenuItem('Rename')
-        await renameInlineFolder(comfyPage, 'bad/name')
+      for (const { name, newName, error } of cases) {
+        test(`${name} bookmark folder name`, async ({ comfyPage }) => {
+          const tab = comfyPage.menu.nodeLibraryTab
+          await tab.getFolder('foo').click({ button: 'right' })
+          await comfyPage.contextMenu.clickMenuItem('Rename')
+          await renameInlineFolder(comfyPage, newName)
 
-        await expect(comfyPage.toast.toastErrors).toContainText(
-          'Folder name cannot contain "/"'
-        )
-        await expect(
-          comfyPage.page.locator('.editable-text input')
-        ).toHaveCount(0)
-        await expectBookmarks(comfyPage, ['foo/', 'bar/'])
-      })
-
-      await test.step('Refuse a duplicate folder name', async () => {
-        await comfyPage.toast.closeToasts()
-        await tab.getFolder('foo').click({ button: 'right' })
-        await comfyPage.contextMenu.clickMenuItem('Rename')
-        await renameInlineFolder(comfyPage, 'bar')
-
-        await expect(comfyPage.toast.toastErrors).toContainText(
-          'Folder name "bar/" already exists'
-        )
-        await expect(
-          comfyPage.page.locator('.editable-text input')
-        ).toHaveCount(0)
-        await expectBookmarks(comfyPage, ['foo/', 'bar/'])
-      })
+          await expect(comfyPage.toast.toastErrors).toContainText(error)
+          await expect(
+            comfyPage.page.locator('.editable-text input')
+          ).toHaveCount(0)
+          await expectBookmarks(comfyPage, ['foo/', 'bar/'])
+        })
+      }
     })
   })
 

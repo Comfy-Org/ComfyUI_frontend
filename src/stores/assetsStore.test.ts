@@ -1,5 +1,13 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { nextTick, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -620,6 +628,22 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 
   describe('updateAssetMetadata optimistic cache', () => {
+    function mockFailedUpdate(serverState: 'unknown' | 'unchanged') {
+      const descriptor = Object.getOwnPropertyDescriptor(
+        assetService,
+        'updateAsset'
+      )
+      Object.defineProperty(assetService, 'updateAsset', {
+        configurable: true,
+        value: vi.fn().mockResolvedValue({ kind: 'failed', serverState })
+      })
+      onTestFinished(() => {
+        if (descriptor) {
+          Object.defineProperty(assetService, 'updateAsset', descriptor)
+        }
+      })
+    }
+
     it('reflects the server response in the cache after a successful update', async () => {
       const store = useAssetsStore()
       const original = {
@@ -688,13 +712,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         makePage([original])
       )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
-      Object.defineProperty(assetService, 'updateAsset', {
-        configurable: true,
-        value: vi.fn().mockResolvedValue({
-          kind: 'failed',
-          serverState: 'unknown'
-        })
-      })
+      mockFailedUpdate('unknown')
 
       await store.updateAssetMetadata(
         original,
@@ -717,13 +735,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         makePage([original])
       )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
-      Object.defineProperty(assetService, 'updateAsset', {
-        configurable: true,
-        value: vi.fn().mockResolvedValue({
-          kind: 'failed',
-          serverState: 'unchanged'
-        })
-      })
+      mockFailedUpdate('unchanged')
 
       await store.updateAssetMetadata(
         original,

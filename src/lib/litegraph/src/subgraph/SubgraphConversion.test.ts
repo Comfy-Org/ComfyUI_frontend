@@ -69,11 +69,13 @@ describe('SubgraphConversion', () => {
     const rootGraph = createTestRootGraph()
     const before = JSON.stringify(rootGraph.serialize())
     const beforeChange = vi.spyOn(rootGraph, 'beforeChange')
+    const afterChange = vi.spyOn(rootGraph, 'afterChange')
 
     expect(() => rootGraph.convertToSubgraph(new Set())).toThrow(
       'Cannot convert to subgraph: nothing to convert'
     )
     expect(beforeChange).not.toHaveBeenCalled()
+    expect(afterChange).not.toHaveBeenCalled()
     expect(JSON.stringify(rootGraph.serialize())).toBe(before)
   })
 
@@ -215,14 +217,9 @@ describe('SubgraphConversion', () => {
       if (!interior) return
       subgraph.add(interior)
       LiteGraph.unregisterNodeType(nodeType)
-      const before = graph.serialize()
-      const beforeChange = vi.spyOn(graph, 'beforeChange')
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      expect(graph.unpackSubgraph(subgraphNode)).toBe(false)
-
-      expect(beforeChange).not.toHaveBeenCalled()
-      expect(graph.serialize()).toEqual(before)
+      expectUnpackRejected(graph, subgraphNode)
       expect(error).toHaveBeenCalledWith(
         '[Reported error]: error_unpacking_subgraph_node_type',
         expect.any(Error)

@@ -444,13 +444,13 @@ This is English documentation.
       test('Falls back to nonlocalized custom-node docs after a locale request fails', async ({
         comfyPage
       }) => {
-        test.fail()
         const customNode = await comfyPage.nodeOps.getNodeRefByType(
           helpFallbackNodeDef.name
         )
         await comfyPage.nodeOps.selectNodeWithPan(customNode)
 
         const helpPage = await openSelectionToolboxHelp(comfyPage)
+        test.fail()
         await expect(helpPage).toContainText('Custom fallback help')
         await expect(helpPage).toContainText('Nonlocalized custom node docs.')
         await expect(helpPage).not.toContainText(

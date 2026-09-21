@@ -1,6 +1,16 @@
 import { expect } from '@playwright/test'
 
+import type { ActivePathPointer } from '@/platform/workflow/persistence/base/draftTypes'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+
+const workflowRequest =
+  (method: string, name: string) =>
+  (request: { method(): string; url(): string }) =>
+    request.method() === method &&
+    decodeURIComponent(new URL(request.url()).pathname).endsWith(
+      `/userdata/workflows/${name}`
+    )
 
 test.describe('Workflow failure recovery', () => {
   test.use({
@@ -63,64 +73,78 @@ test.describe('Workflow failure recovery', () => {
   })
 
   test.afterEach(async ({ comfyPage }) => {
-    const appReady = await comfyPage.page.evaluate(
-      () => window.app?.extensionManager !== undefined
+    const response = await comfyPage.request.post(
+      `${comfyPage.url}/api/devtools/setup_folder_structure`,
+      {
+        data: {
+          tree_structure: {},
+          base_path: `user/${comfyPage.id}/workflows`
+        }
+      }
     )
-    if (!appReady) return
-    await comfyPage.workflow.setupWorkflowsDirectory({})
+    expect(response.ok()).toBe(true)
   })
 
-  test('keeps the active workflow when another workflow is unavailable', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.workflowsTab
-    await tab.getPersistedItem('stable').click()
-    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
+  for (const { name, failure } of [
+    { name: 'unavailable', failure: 'unavailable response' },
+    { name: 'malformed', failure: 'malformed response' }
+  ]) {
+    test(`keeps the active workflow after an ${failure}`, async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.workflowsTab
+      await tab.getPersistedItem('stable').click()
+      await expect.poll(() => tab.getActiveWorkflowName()).toBe('stable')
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
+      const request = comfyPage.page.waitForRequest(
+        workflowRequest('GET', `${name}.json`)
+      )
 
-    await tab.getPersistedItem('unavailable').click()
-    await comfyPage.workflow.waitForWorkflowIdle()
+      await tab.getPersistedItem(name).click()
+      expect((await request).method()).toBe('GET')
+      await comfyPage.workflow.waitForWorkflowIdle()
 
-    expect(await tab.getActiveWorkflowName()).toBe('stable')
-    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
-    expect(await tab.getOpenedWorkflowNames()).not.toContain('unavailable')
-  })
-
-  test('keeps the active workflow when another workflow is malformed', async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.workflowsTab
-    await tab.getPersistedItem('stable').click()
-    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
-
-    await tab.getPersistedItem('malformed').click()
-    await comfyPage.workflow.waitForWorkflowIdle()
-
-    expect(await tab.getActiveWorkflowName()).toBe('stable')
-    await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
-    expect(await tab.getOpenedWorkflowNames()).not.toContain('malformed')
-  })
+      expect(await tab.getActiveWorkflowName()).toBe('stable')
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
+      expect(await tab.getOpenedWorkflowNames()).not.toContain(name)
+    })
+  }
 
   test('restores the active workflow when graph configuration fails', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.workflowsTab
     await tab.getPersistedItem('stable').click()
+    await expect.poll(() => tab.getActiveWorkflowName()).toBe('stable')
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
     await comfyPage.page.evaluate(() => {
-      const graph = window.app?.graph
+      const graph = window.app?.rootGraph
       if (!graph) throw new Error('Missing graph')
       const configure = graph.configure.bind(graph)
       let failNextConfiguration = true
       graph.configure = (...args) => {
         if (!failNextConfiguration) return configure(...args)
         failNextConfiguration = false
+        sessionStorage.setItem('failure-recovery:configure-ran', 'true')
         throw new Error('Configure failed')
       }
     })
 
+    const request = comfyPage.page.waitForRequest(
+      workflowRequest('GET', 'configure-failure.json')
+    )
     await tab.getPersistedItem('configure-failure').click()
+    expect((await request).method()).toBe('GET')
     await comfyPage.workflow.waitForWorkflowIdle()
 
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() =>
+          sessionStorage.getItem('failure-recovery:configure-ran')
+        )
+      )
+      .toBe('true')
+    test.fail(true, 'Graph configuration failure recovery is not implemented')
     expect(await tab.getActiveWorkflowName()).toBe('stable')
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
   })
@@ -148,10 +172,14 @@ test.describe('Workflow failure recovery', () => {
   }) => {
     const tab = comfyPage.menu.workflowsTab
     const workflow = tab.getPersistedItem('delete')
+    const request = comfyPage.page.waitForRequest(
+      workflowRequest('DELETE', 'delete.json')
+    )
     await workflow.click({ button: 'right' })
     await comfyPage.contextMenu.clickMenuItem('Delete')
     await comfyPage.confirmDialog.delete.click()
 
+    expect((await request).method()).toBe('DELETE')
     await expect(workflow).toBeVisible()
     await expect(
       comfyPage.toast.toastSuccesses.filter({ hasText: 'Workflow deleted' })
@@ -163,9 +191,13 @@ test.describe('Workflow failure recovery', () => {
   }) => {
     const tab = comfyPage.menu.workflowsTab
     const originalNodeCount = await comfyPage.nodeOps.getNodeCount()
+    const request = comfyPage.page.waitForRequest(
+      workflowRequest('GET', 'unavailable.json')
+    )
 
     await tab.insertWorkflow(tab.getPersistedItem('unavailable'))
 
+    expect((await request).method()).toBe('GET')
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount())
       .toBe(originalNodeCount)
@@ -177,9 +209,13 @@ test.describe('Workflow failure recovery', () => {
     const tab = comfyPage.menu.workflowsTab
     const originalNames = await tab.getOpenedWorkflowNames()
     await tab.getPersistedItem('unavailable').click({ button: 'right' })
+    const request = comfyPage.page.waitForRequest(
+      workflowRequest('GET', 'unavailable.json')
+    )
 
     await comfyPage.contextMenu.clickMenuItem('Duplicate')
 
+    expect((await request).method()).toBe('GET')
     await expect.poll(() => tab.getOpenedWorkflowNames()).toEqual(originalNames)
   })
 
@@ -205,20 +241,37 @@ test.describe('Workflow failure recovery', () => {
         workflow?.changeTracker.captureCanvasState()
       })
       await comfyPage.workflow.waitForDraftPersisted()
-      await comfyPage.page.evaluate(() => {
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const key = sessionStorage.key(i)
-          if (!key?.startsWith('Comfy.Workflow.ActivePath:')) continue
-
-          const pointer = JSON.parse(sessionStorage.getItem(key)!) as {
-            path: string
+      const clientId = await comfyPage.page.evaluate(
+        () => window.app!.api.clientId
+      )
+      expect(clientId).toBeTruthy()
+      if (!clientId) throw new Error('Missing API client ID')
+      await comfyPage.page.evaluate(
+        ({ activePathKey, failedPath }) => {
+          const storedPointer: unknown = JSON.parse(
+            sessionStorage.getItem(activePathKey) ?? 'null'
+          )
+          if (
+            typeof storedPointer !== 'object' ||
+            storedPointer === null ||
+            !('workspaceId' in storedPointer) ||
+            typeof storedPointer.workspaceId !== 'string' ||
+            !('path' in storedPointer) ||
+            typeof storedPointer.path !== 'string'
+          ) {
+            throw new Error('Malformed active workflow persistence pointer')
           }
-          pointer.path = 'workflows/boot-failure.json'
-          sessionStorage.setItem(key, JSON.stringify(pointer))
-          return
+          const pointer: ActivePathPointer = {
+            workspaceId: storedPointer.workspaceId,
+            path: failedPath
+          }
+          sessionStorage.setItem(activePathKey, JSON.stringify(pointer))
+        },
+        {
+          activePathKey: StorageKeys.activePath(clientId),
+          failedPath: 'workflows/boot-failure.json'
         }
-        throw new Error('Missing active workflow persistence key')
-      })
+      )
     })
 
     test('falls back to the latest valid draft', async ({ comfyPage }) => {

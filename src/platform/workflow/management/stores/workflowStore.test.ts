@@ -368,10 +368,9 @@ describe('useWorkflowStore', () => {
     it.fails('does not open a workflow when loading fails', async () => {
       await syncRemoteWorkflows(['a.json'])
       const workflow = store.getWorkflowByPath('workflows/a.json')!
-      vi.mocked(api.getUserData).mockResolvedValue({
-        status: 404,
-        statusText: 'Not Found'
-      } as Response)
+      vi.mocked(api.getUserData).mockResolvedValue(
+        new Response(null, { status: 404, statusText: 'Not Found' })
+      )
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await expect(store.openWorkflow(workflow)).resolves.toBeUndefined()
@@ -385,16 +384,14 @@ describe('useWorkflowStore', () => {
     it.fails('preserves the loaded workflow when a forced refresh is invalid', async () => {
       await syncRemoteWorkflows(['a.json'])
       const workflow = store.getWorkflowByPath('workflows/a.json')!
-      vi.mocked(api.getUserData).mockResolvedValueOnce({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
-      } as Response)
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
+        new Response(defaultGraphJSON, { status: 200 })
+      )
       await workflow.load()
       const initialState = workflow.initialState
-      vi.mocked(api.getUserData).mockResolvedValueOnce({
-        status: 200,
-        text: () => Promise.resolve('{invalid')
-      } as Response)
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
+        new Response('{invalid', { status: 200 })
+      )
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await expect(workflow.load({ force: true })).resolves.toBeUndefined()

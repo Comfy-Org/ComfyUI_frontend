@@ -211,7 +211,7 @@ describe('BaseWorkflowsSidebarTab', () => {
 
   it.fails('propagates failed workflow deletion to the tree', async () => {
     const workflow = createMockWorkflow('workflows/test.json')
-    Object.assign(useWorkflowStore(), { workflows: [workflow] })
+    useWorkflowStore().attachWorkflow(workflow)
     mockWorkflowService.deleteWorkflow.mockResolvedValueOnce(false)
 
     renderComponent()
@@ -219,7 +219,8 @@ describe('BaseWorkflowsSidebarTab', () => {
     await nextTick()
     const leaf = getSearchRoot()?.children?.[0]
 
-    expect(leaf).toBeDefined()
+    expect(leaf?.data).toBe(workflow)
+    expect(leaf?.handleDelete).toBeTypeOf('function')
     expect(await leaf?.handleDelete?.()).toBe(false)
   })
 

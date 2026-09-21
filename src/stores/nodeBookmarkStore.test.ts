@@ -44,7 +44,7 @@ describe('node bookmark folder commands', () => {
 
   it.fails.for([
     {
-      name: 'non-folder rename',
+      name: 'non-folder node',
       error: 'Cannot rename non-folder node',
       command: () =>
         useNodeBookmarkStore().renameBookmarkFolder(nonFolder, 'Renamed')
@@ -66,13 +66,8 @@ describe('node bookmark folder commands', () => {
           folder('Folder/'),
           'Existing'
         )
-    },
-    {
-      name: 'non-folder delete',
-      error: undefined,
-      command: () => useNodeBookmarkStore().deleteBookmarkFolder(nonFolder)
     }
-  ])('does not persist $name', async ({ command, error }) => {
+  ])('does not persist a rename with $name', async ({ command, error }) => {
     const settingStore = useSettingStore()
     const originalBookmarks = [
       ...(settingStore.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] ?? [])
@@ -82,11 +77,25 @@ describe('node bookmark folder commands', () => {
       settingStore.settingValues['Comfy.NodeLibrary.Bookmarks.V2']
     ).toEqual(originalBookmarks)
     expect(settingStore.set).not.toHaveBeenCalled()
-    if (error) {
-      expect(useToastStore().messagesToAdd).toContainEqual(
-        expect.objectContaining({ severity: 'error', detail: error })
-      )
-    }
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({ severity: 'error', detail: error })
+    )
+  })
+
+  it.fails('does not persist a non-folder deletion', async () => {
+    const settingStore = useSettingStore()
+    const originalBookmarks = [
+      ...(settingStore.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] ?? [])
+    ]
+
+    await expect(
+      useNodeBookmarkStore().deleteBookmarkFolder(nonFolder)
+    ).resolves.toBe(false)
+
+    expect(
+      settingStore.settingValues['Comfy.NodeLibrary.Bookmarks.V2']
+    ).toEqual(originalBookmarks)
+    expect(settingStore.set).not.toHaveBeenCalled()
   })
 
   it('accepts an unchanged folder name without persisting', async () => {

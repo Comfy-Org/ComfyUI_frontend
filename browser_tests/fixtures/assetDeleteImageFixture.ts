@@ -1,12 +1,15 @@
 import { expect, mergeTests } from '@playwright/test'
 
-import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
+import type { Asset } from '@comfyorg/ingest-types'
+import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   STABLE_CHECKPOINT,
   STABLE_INPUT_IMAGE
 } from '@e2e/fixtures/data/assetFixtures'
+import type { AssetHelper } from '@e2e/fixtures/helpers/AssetHelper'
+import { withAsset, withDeleteFailure } from '@e2e/fixtures/helpers/AssetHelper'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
@@ -17,30 +20,8 @@ export const TARGET_ASSET: Asset = {
   mime_type: 'image/webp'
 }
 export const TARGET_CARD_TEXT = TARGET_ASSET.name.replace(/\.[^.]+$/, '')
-const SEEDED_ASSETS: Asset[] = [STABLE_CHECKPOINT, TARGET_ASSET]
-
-function parseTagParam(value: string | null): string[] {
-  return (
-    value
-      ?.split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean) ?? []
-  )
-}
-
-function filterByTags(assets: Asset[], url: URL): Asset[] {
-  const anyTags = parseTagParam(url.searchParams.get('tags_any'))
-  const noneTags = parseTagParam(url.searchParams.get('tags_none'))
-  return assets.filter((asset) => {
-    const tags = asset.tags ?? []
-    const matchesAny =
-      anyTags.length === 0 || anyTags.some((tag) => tags.includes(tag))
-    const matchesNone = noneTags.every((tag) => !tags.includes(tag))
-    return matchesAny && matchesNone
-  })
-}
-
 const imageFixture = base.extend<{
+  assetApi: AssetHelper
   comfyPage: ComfyPage
   loadImageNode: NodeReference
   assetMock: { readonly deleteCalls: ReadonlyArray<string> }
@@ -48,42 +29,21 @@ const imageFixture = base.extend<{
 }>({
   deleteStatus: [204, { option: true }],
   assetMock: [
-    async ({ page, deleteStatus }, use) => {
-      const deleteCalls: string[] = []
-      await page.route(/\/api\/assets(?:\?.*)?$/, (route) => {
-        if (route.request().method() !== 'GET') return route.fallback()
-        const assets = filterByTags(
-          SEEDED_ASSETS,
-          new URL(route.request().url())
-        )
-        const body: ListAssetsResponse = {
-          assets,
-          total: assets.length,
-          has_more: false
+    async ({ assetApi, deleteStatus }, use) => {
+      assetApi.configure(
+        withAsset(STABLE_CHECKPOINT),
+        withAsset(TARGET_ASSET),
+        ...(deleteStatus === 204 ? [] : [withDeleteFailure(deleteStatus)])
+      )
+      await assetApi.mock()
+      await use({
+        get deleteCalls() {
+          return assetApi
+            .getMutations()
+            .filter(({ method }) => method === 'DELETE')
+            .map(({ endpoint }) => endpoint.split('/').pop() ?? '')
         }
-        return route.fulfill({ json: body })
       })
-      await page.route(/\/api\/assets\/([^/?#]+)$/, (route) => {
-        const method = route.request().method()
-        const id =
-          new URL(route.request().url()).pathname.split('/').pop() ?? ''
-        if (method === 'DELETE') {
-          deleteCalls.push(id)
-          return route.fulfill(
-            deleteStatus === 204
-              ? { status: 204, body: '' }
-              : { status: deleteStatus, json: { error: 'delete refused' } }
-          )
-        }
-        if (method === 'GET') {
-          const asset = SEEDED_ASSETS.find((asset) => asset.id === id)
-          return asset
-            ? route.fulfill({ json: asset })
-            : route.fulfill({ status: 404, json: { error: 'Not found' } })
-        }
-        return route.fallback()
-      })
-      await use({ deleteCalls })
     },
     { auto: true }
   ],
@@ -126,5 +86,6 @@ const imageFixture = base.extend<{
 
 export const assetDeleteImageFixture = mergeTests(
   comfyPageFixture,
+  assetApiFixture,
   imageFixture
 )

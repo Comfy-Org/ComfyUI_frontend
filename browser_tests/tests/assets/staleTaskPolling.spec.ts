@@ -20,8 +20,6 @@ test.describe('Stale background task polling', { tag: ['@ui'] }, () => {
       comfyPage,
       staleTasks: { downloadToast, taskRequests }
     }) => {
-      test.fail()
-
       await test.step('Show the running download', async () => {
         await expect(downloadToast).toBeVisible()
         await downloadToast.getByRole('button', { name: 'Expand' }).click()
@@ -32,13 +30,21 @@ test.describe('Stale background task polling', { tag: ['@ui'] }, () => {
       })
 
       await test.step('Fail the missing task', async () => {
-        for (const pollCount of [1, 2, 3]) {
-          await comfyPage.page.clock.fastForward(10_000)
-          await expect.poll(() => taskRequests.length).toBe(pollCount)
-        }
+        await comfyPage.page.clock.fastForward(10_000)
+        await expect.poll(() => taskRequests.length).toBe(1)
+        await comfyPage.page.clock.fastForward(10_000)
+        await expect.poll(() => taskRequests.length).toBe(2)
+        await comfyPage.page.clock.fastForward(10_000)
+        await expect.poll(() => taskRequests.length).toBe(3)
+        expect(taskRequests.map((url) => new URL(url).pathname)).toEqual([
+          `/api/tasks/${runningDownload.task_id}`,
+          `/api/tasks/${runningDownload.task_id}`,
+          `/api/tasks/${runningDownload.task_id}`
+        ])
+        test.fail(true, 'Missing downloads are not marked as failed')
         await expect(
           downloadToast.getByText('Failed', { exact: true })
-        ).toBeVisible()
+        ).toBeVisible({ timeout: 1000 })
       })
 
       await test.step('Accept late completion and stop polling', async () => {
@@ -72,8 +78,6 @@ test.describe('Stale background task polling', { tag: ['@ui'] }, () => {
       comfyPage,
       staleTasks: { exportToast, taskRequests, downloadRequests }
     }) => {
-      test.fail()
-
       await test.step('Show the populated running export', async () => {
         await expect(exportToast).toBeVisible()
         await exportToast.getByRole('button', { name: 'Expand' }).click()
@@ -87,13 +91,21 @@ test.describe('Stale background task polling', { tag: ['@ui'] }, () => {
       })
 
       await test.step('Preserve counters when the task is missing', async () => {
-        for (const pollCount of [1, 2, 3]) {
-          await comfyPage.page.clock.fastForward(10_000)
-          await expect.poll(() => taskRequests.length).toBe(pollCount)
-        }
+        await comfyPage.page.clock.fastForward(10_000)
+        await expect.poll(() => taskRequests.length).toBe(1)
+        await comfyPage.page.clock.fastForward(10_000)
+        await expect.poll(() => taskRequests.length).toBe(2)
+        await comfyPage.page.clock.fastForward(10_000)
+        await expect.poll(() => taskRequests.length).toBe(3)
+        expect(taskRequests.map((url) => new URL(url).pathname)).toEqual([
+          `/api/tasks/${runningExport.task_id}`,
+          `/api/tasks/${runningExport.task_id}`,
+          `/api/tasks/${runningExport.task_id}`
+        ])
+        test.fail(true, 'Missing exports are not marked as failed')
         await expect(
           exportToast.getByText('Export failed', { exact: true })
-        ).toBeVisible()
+        ).toBeVisible({ timeout: 1000 })
         await expect(
           exportToast.getByText('2/7', { exact: true })
         ).toBeVisible()

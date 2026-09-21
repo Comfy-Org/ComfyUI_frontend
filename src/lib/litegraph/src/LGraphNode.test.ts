@@ -143,12 +143,14 @@ describe('LGraphNode', () => {
     node.addOutput('output', '*')
     graph.add(node)
     const parentId = toRerouteId(1)
-    graph.setReroute({
+    const parent = graph.setReroute({
       id: parentId,
       pos: [0, 0],
       linkIds: [],
       floating: { slotType: 'output' }
     })
+    expect(parent).toBeDefined()
+    const parentBefore = parent?.asSerialisable()
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(
@@ -156,6 +158,7 @@ describe('LGraphNode', () => {
     ).toBeUndefined()
 
     expect(graph.reroutes.size).toBe(1)
+    expect(graph.getReroute(parentId)?.asSerialisable()).toEqual(parentBefore)
     expect(graph.floatingLinks.size).toBe(0)
     expect(error).toHaveBeenCalledWith(expect.any(Error))
   })

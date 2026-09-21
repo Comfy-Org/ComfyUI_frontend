@@ -1,4 +1,4 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/types'
@@ -7,12 +7,7 @@ import { taskService } from '@/platform/tasks/services/taskService'
 import { api } from '@/scripts/api'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 
-type ExportEventHandler = (event: CustomEvent<AssetExportWsMessage>) => void
-
-const eventHandler = vi.hoisted(() => {
-  const state: { current: ExportEventHandler | null } = { current: null }
-  return state
-})
+const taskId = '4d1453c1-ec17-4a50-b6a3-34d49ba1b09f'
 
 vi.mock(import('@/platform/tasks/services/taskService'), () => ({
   taskService: { getTask: vi.fn() }
@@ -20,7 +15,7 @@ vi.mock(import('@/platform/tasks/services/taskService'), () => ({
 
 function taskResponse(overrides: Partial<TaskResponse> = {}): TaskResponse {
   return {
-    id: '4d1453c1-ec17-4a50-b6a3-34d49ba1b09f',
+    id: taskId,
     idempotency_key: 'export-assets',
     task_name: 'task:export_assets',
     payload: {},
@@ -33,32 +28,23 @@ function taskResponse(overrides: Partial<TaskResponse> = {}): TaskResponse {
 }
 
 function dispatchExport(overrides: Partial<AssetExportWsMessage> = {}) {
-  assert(eventHandler.current)
-  eventHandler.current(
-    new CustomEvent('asset_export', {
-      detail: {
-        task_id: '4d1453c1-ec17-4a50-b6a3-34d49ba1b09f',
-        export_name: 'export.zip',
-        assets_total: 3,
-        assets_attempted: 1,
-        assets_failed: 0,
-        bytes_total: 100,
-        bytes_processed: 25,
-        progress: 0.25,
-        status: 'running',
-        ...overrides
-      }
-    })
-  )
+  api.dispatchCustomEvent('asset_export', {
+    task_id: taskId,
+    export_name: 'export.zip',
+    assets_total: 3,
+    assets_attempted: 1,
+    assets_failed: 0,
+    bytes_total: 100,
+    bytes_processed: 25,
+    progress: 0.25,
+    status: 'running',
+    ...overrides
+  })
 }
 
 describe('useAssetExportStore', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    eventHandler.current = null
-    vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
-      if (event === 'asset_export') eventHandler.current = handler
-    })
   })
 
   it('completes a stale task and requests its download URL', async () => {
@@ -72,6 +58,7 @@ describe('useAssetExportStore', () => {
 
     await vi.advanceTimersByTimeAsync(45_000)
 
+    expect(taskService.getTask).toHaveBeenCalledWith(taskId)
     expect(store.activeExports).toHaveLength(0)
     expect(store.finishedExports[0]).toMatchObject({
       status: 'completed',
@@ -89,6 +76,7 @@ describe('useAssetExportStore', () => {
 
     await vi.advanceTimersByTimeAsync(45_000)
 
+    expect(taskService.getTask).toHaveBeenCalledWith(taskId)
     expect(store.activeExports).toEqual([beforePolling])
     expect(store.finishedExports).toHaveLength(0)
   })

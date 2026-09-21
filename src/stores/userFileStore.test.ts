@@ -103,10 +103,9 @@ describe('useUserFileStore', () => {
 
       it.fails('returns undefined and clears loading state on failed load', async () => {
         const file = new UserFile('file1.txt', 123, 100)
-        vi.mocked(api.getUserData).mockResolvedValue({
-          status: 404,
-          statusText: 'Not Found'
-        } as Response)
+        vi.mocked(api.getUserData).mockResolvedValue(
+          new Response(null, { status: 404, statusText: 'Not Found' })
+        )
         const consoleSpy = vi
           .spyOn(console, 'error')
           .mockImplementation(() => {})
@@ -166,10 +165,12 @@ describe('useUserFileStore', () => {
 
       it.fails('returns false when deleting fails', async () => {
         const file = new UserFile('file1.txt', 123, 100)
-        vi.mocked(api.deleteUserData).mockResolvedValue({
-          status: 500,
-          statusText: 'Internal Server Error'
-        } as Response)
+        vi.mocked(api.deleteUserData).mockResolvedValue(
+          new Response(null, {
+            status: 500,
+            statusText: 'Internal Server Error'
+          })
+        )
         const consoleSpy = vi
           .spyOn(console, 'error')
           .mockImplementation(() => {})
@@ -202,10 +203,9 @@ describe('useUserFileStore', () => {
 
       it.fails('does not change the path when renaming fails', async () => {
         const file = new UserFile('file1.txt', 123, 100)
-        vi.mocked(api.moveUserData).mockResolvedValue({
-          status: 409,
-          statusText: 'Conflict'
-        } as Response)
+        vi.mocked(api.moveUserData).mockResolvedValue(
+          new Response(null, { status: 409, statusText: 'Conflict' })
+        )
         const consoleSpy = vi
           .spyOn(console, 'error')
           .mockImplementation(() => {})

@@ -42,7 +42,7 @@ function markdownResponse(markdown: string): Response {
 function createMockNode(
   overrides: Partial<ComfyNodeDefImpl>
 ): ComfyNodeDefImpl {
-  return {
+  const node = {
     name: 'TestNode',
     display_name: 'Test Node',
     description: 'A test node',
@@ -54,11 +54,13 @@ function createMockNode(
     experimental: false,
     output_node: false,
     api_node: false,
-    nodeSource: getNodeSource(
-      overrides.python_module,
-      overrides.essentials_category
-    ),
     ...overrides
+  }
+  return {
+    ...node,
+    nodeSource:
+      overrides.nodeSource ??
+      getNodeSource(node.python_module, node.essentials_category)
   } as ComfyNodeDefImpl
 }
 

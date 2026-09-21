@@ -153,6 +153,7 @@ describe('useSubgraphStore', () => {
     expect(await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')).toBe(
       false
     )
+    expect(useCanvasStore().getCanvas).not.toHaveBeenCalled()
     expect(comfyApp.canvas.setGraph).not.toHaveBeenCalled()
   })
   it.fails('should reject stale edit and delete requests without mutating', async () => {
