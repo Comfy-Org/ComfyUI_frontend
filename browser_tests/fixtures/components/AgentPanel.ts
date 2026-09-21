@@ -16,6 +16,8 @@ export class AgentPanel {
   public readonly fileInput: Locator
   public readonly composerAssetSection: Locator
   public readonly attachmentChips: Locator
+  public readonly composer: Locator
+  public readonly sendButton: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -41,6 +43,10 @@ export class AgentPanel {
     this.fileInput = this.root.getByTestId('agent-file-input')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
+    this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
+    this.sendButton = this.root.getByRole('button', {
+      name: enMessages.agent.send
+    })
   }
 
   /**
@@ -75,6 +81,11 @@ export class AgentPanel {
     await this.workflowPicker.click()
     await this.page.getByRole('menuitemradio', { name, exact: true }).click()
     await expect(this.workflowPicker).toHaveText(name)
+  }
+
+  async sendMessage(message: string): Promise<void> {
+    await this.composer.fill(message)
+    await this.sendButton.click()
   }
 
   async turnOffOptionalReportSources(): Promise<void> {
