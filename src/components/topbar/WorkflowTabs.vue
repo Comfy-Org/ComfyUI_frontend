@@ -3,7 +3,7 @@
     ref="containerRef"
     :class="
       cn(
-        'workflow-tabs-container flex h-full max-w-full flex-auto flex-row items-center gap-1 overflow-hidden px-1',
+        'workflow-tabs-container flex h-full max-w-full flex-auto flex-row gap-1 overflow-hidden px-1',
         isDesktop && 'workflow-tabs-container-desktop'
       )
     "
@@ -19,7 +19,7 @@
     >
       <i class="icon-[lucide--chevron-left] size-full" />
     </Button>
-    <div class="no-drag h-full overflow-hidden">
+    <div class="no-drag overflow-hidden">
       <div
         ref="scrollContent"
         class="workflow-tabs-scroll flex size-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden p-0"
@@ -85,7 +85,7 @@
         value: $t('sideToolbar.newBlankWorkflow'),
         showDelay: 300
       }"
-      class="new-blank-workflow-button no-drag shrink-0 rounded-lg"
+      class="new-blank-workflow-button no-drag shrink-0 self-center rounded-lg"
       variant="muted-textonly"
       size="icon"
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
