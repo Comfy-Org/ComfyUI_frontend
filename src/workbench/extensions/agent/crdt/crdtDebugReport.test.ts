@@ -47,6 +47,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
   status: {
     enabled: true,
     connected: true,
+    subscriptionFailed: false,
     workflowId: 'doc-1',
     updatesApplied: 3,
     lastFrameType: 'doc_update',
