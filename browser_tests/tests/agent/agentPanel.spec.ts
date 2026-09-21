@@ -232,23 +232,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         ).toBeVisible()
         const ws = await getWebSocket()
         pushEvent(ws, THINKING_EVENT)
-        // `pushEvent` does not wait for the page to apply the frame, and the
-        // tool chip attaches to the turn the thinking event opens. Pushing both
-        // frames back to back races that, and the tool call is dropped when the
-        // turn is not there yet. Settle the thinking state first, as the
-        // streaming test above already does.
-        //
-        // Accept either observable, because the two rigs surface the thinking
-        // frame differently: a local CI-container run renders the
-        // `agent.thinking` label while hosted CI renders `THINKING_TEXT`, the
-        // thinking content. Pinning one makes the case pass on the rig it was
-        // written against and fail on the other; the assertion here is only
-        // that the frame landed, not which surface shows it.
         await expect(
-          agentPanel.root
-            .getByText(THINKING_TEXT)
-            .or(agentPanel.root.getByText(enMessages.agent.thinking))
-            .first()
+          agentPanel.root.getByText(THINKING_TEXT, { exact: true })
         ).toBeVisible()
 
         pushEvent(ws, TOOL_CALL_EVENT)
