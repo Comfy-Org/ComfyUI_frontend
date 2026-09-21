@@ -118,7 +118,11 @@ import {
   resolveDebugPanelEnabled
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
-import { createLiveWidgetProjection } from './crdt/liveWidgetProjection'
+import {
+  createLiveWidgetProjection,
+  owningGraph
+} from './crdt/liveWidgetProjection'
+import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -353,7 +357,16 @@ const graphMutations = (workflowId: string) => {
         return { x, y, width, height }
       }
     },
-    liveWidgets
+    liveWidgets,
+    liveNodes: {
+      autogrowGroupOf(scope, nodeId, name) {
+        const rootGraph = app.rootGraphOrUndefined
+        const node = rootGraph
+          ? owningGraph(rootGraph, scope)?.getNodeById(nodeId)
+          : undefined
+        return node ? liveAutogrowGroupOf(node, name) : undefined
+      }
+    }
   })
   graphMutationsByWorkflow.set(workflowId, mutations)
   return mutations

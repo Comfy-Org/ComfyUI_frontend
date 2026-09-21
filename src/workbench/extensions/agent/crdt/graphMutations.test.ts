@@ -16,7 +16,11 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
-import type { SemanticPlacementPort } from './graphMutations'
+import type {
+  GraphMutationBatch,
+  SemanticLiveNodeQueryPort,
+  SemanticPlacementPort
+} from './graphMutations'
 import { createGraphMutations } from './graphMutations'
 
 const mockReportError = vi.hoisted(() => vi.fn())
@@ -125,12 +129,13 @@ describe('graphMutations', () => {
     LiteGraph.registerNodeType('ContractSampler', ContractSampler)
   })
 
-  function mutations() {
+  function mutations(liveNodes?: SemanticLiveNodeQueryPort) {
     return createGraphMutations({
       getScope: () => scope,
       layout: { createNode: createLayout, deleteNodes: deleteLayouts },
       placement,
-      liveWidgets: { setValue: setLiveWidgetValue }
+      liveWidgets: { setValue: setLiveWidgetValue },
+      liveNodes
     })
   }
 
@@ -1420,6 +1425,208 @@ describe('graphMutations', () => {
       .getGraphNodesFor('root', 'root')
       .find(({ id }) => id === toNodeId(2))
     expect(target?.inputs.map(({ name }) => name)).toEqual(['keep'])
+  })
+
+  it('retains a DynamicCombo key that happens to end in an all-numeric segment, absent a live node to disprove it (documented heuristic limitation)', () => {
+    // A real DynamicCombo can mint a key whose final segment is itself
+    // numeric (e.g. nested combos producing `...0.0.0.0`), which passes
+    // `nameShapeAutogrowGroupOf`'s trailing-digit test exactly like a
+    // genuine autogrow ordinal would. Without a live node to ask, this
+    // heuristic-only fallback cannot tell the two apart and wrongly keeps
+    // the removed input -- see the false positive documented on
+    // `nameShapeAutogrowGroupOf`.
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'keep', type: 'IMAGE', link: null },
+          { name: '0.0.0.0', type: 'FLOAT', link: null }
+        ]
+      })
+    })
+
+    expect(
+      graph.batch(
+        { ...context, opId: 'drop-numeric-dynamiccombo-heuristic' },
+        (batch) => {
+          batch.reconcileNode({
+            ...node(2),
+            inputs: [{ name: 'keep', type: 'IMAGE' }]
+          })
+        }
+      )
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ name }) => name)).toEqual(['keep', '0.0.0.0'])
+  })
+
+  it('drops that same numeric-looking DynamicCombo key when a live node confirms it belongs to no autogrow group', () => {
+    const graph = mutations({ autogrowGroupOf: () => undefined })
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'keep', type: 'IMAGE', link: null },
+          { name: '0.0.0.0', type: 'FLOAT', link: null }
+        ]
+      })
+    })
+
+    expect(
+      graph.batch(
+        { ...context, opId: 'drop-numeric-dynamiccombo-live' },
+        (batch) => {
+          batch.reconcileNode({
+            ...node(2),
+            inputs: [{ name: 'keep', type: 'IMAGE' }]
+          })
+        }
+      )
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ name }) => name)).toEqual(['keep'])
+  })
+
+  // An autogrow group defined with an explicit `names` list (`refs.a`,
+  // `refs.b`, ...) rather than the default numeric-ordinal naming: its
+  // members don't end in a digit, so `nameShapeAutogrowGroupOf` can't
+  // recognize `refs.b` as autogrow-shaped at all.
+  function explicitNamesGroupScenario() {
+    return (batch: GraphMutationBatch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'refs.a', type: 'IMAGE', link: null },
+          // Unpropagated growth: grown live, not yet named by the document.
+          { name: 'refs.b', type: 'IMAGE', link: null },
+          { name: 'alpha', type: 'IMAGE', link: null },
+          { name: 'beta', type: 'IMAGE', link: null }
+        ]
+      })
+      batch.connect({
+        id: 60,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'IMAGE',
+        targetInputs: [
+          { name: 'refs.a', type: 'IMAGE', link: toLinkId(60) },
+          { name: 'refs.b', type: 'IMAGE', link: null },
+          { name: 'alpha', type: 'IMAGE', link: null },
+          { name: 'beta', type: 'IMAGE', link: null }
+        ]
+      })
+      batch.connect({
+        id: 61,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 2,
+        type: 'IMAGE',
+        targetInputs: [
+          { name: 'refs.a', type: 'IMAGE', link: toLinkId(60) },
+          { name: 'refs.b', type: 'IMAGE', link: null },
+          { name: 'alpha', type: 'IMAGE', link: toLinkId(61) },
+          { name: 'beta', type: 'IMAGE', link: null }
+        ]
+      })
+      batch.connect({
+        id: 62,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 3,
+        type: 'IMAGE',
+        targetInputs: [
+          { name: 'refs.a', type: 'IMAGE', link: toLinkId(60) },
+          { name: 'refs.b', type: 'IMAGE', link: null },
+          { name: 'alpha', type: 'IMAGE', link: toLinkId(61) },
+          { name: 'beta', type: 'IMAGE', link: toLinkId(62) }
+        ]
+      })
+    }
+  }
+
+  it("drops an explicit-names autogrow group's unpropagated spare and misattributes a later scalar's link onto the wrong name, absent a live node (documented heuristic limitation)", () => {
+    const graph = mutations()
+    graph.batch(context, explicitNamesGroupScenario())
+
+    // The document hasn't caught up to `refs.b`'s unpropagated growth yet.
+    expect(
+      graph.batch(
+        { ...context, opId: 'reconcile-explicit-names-heuristic' },
+        (batch) => {
+          batch.reconcileNode({
+            ...node(2),
+            inputs: [
+              { name: 'refs.a', type: 'IMAGE' },
+              { name: 'alpha', type: 'IMAGE' },
+              { name: 'beta', type: 'IMAGE' }
+            ]
+          })
+        }
+      )
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    // `refs.b` doesn't end in a digit, so the heuristic can't tell it's an
+    // autogrow member; it's dropped like a legitimately-removed input, and
+    // the positional fallback that follows then reads each later document
+    // entry against the wrong live slot: `alpha` loses its link (it reads
+    // `refs.b`'s null link at that position) and `beta` inherits the link
+    // that actually belonged to `alpha`.
+    expect(target?.inputs.map(({ name, link }) => [name, link])).toEqual([
+      ['refs.a', toLinkId(60)],
+      ['alpha', null],
+      ['beta', toLinkId(61)]
+    ])
+  })
+
+  it("keeps an explicit-names autogrow group's unpropagated spare and every scalar's own link when a live node confirms the group's members", () => {
+    const graph = mutations({
+      autogrowGroupOf: (_scope, _nodeId, name) =>
+        name.startsWith('refs.') ? 'refs' : undefined
+    })
+    graph.batch(context, explicitNamesGroupScenario())
+
+    expect(
+      graph.batch(
+        { ...context, opId: 'reconcile-explicit-names-live' },
+        (batch) => {
+          batch.reconcileNode({
+            ...node(2),
+            inputs: [
+              { name: 'refs.a', type: 'IMAGE' },
+              { name: 'alpha', type: 'IMAGE' },
+              { name: 'beta', type: 'IMAGE' }
+            ]
+          })
+        }
+      )
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ name, link }) => [name, link])).toEqual([
+      ['refs.a', toLinkId(60)],
+      ['refs.b', null],
+      ['alpha', toLinkId(61)],
+      ['beta', toLinkId(62)]
+    ])
   })
 
   it("resolves duplicate-named live occurrences by position when the document's own link is omitted", () => {

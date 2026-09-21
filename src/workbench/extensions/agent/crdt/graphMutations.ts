@@ -155,7 +155,23 @@ interface SemanticLiveWidgetMutationPort {
   rebind?(scope: GraphScope, nodeId: NodeId, name: string): void
 }
 
-interface GraphMutationBatch {
+/**
+ * Renderer-owned live node query port. Answers whether an input name is a
+ * member of one of the live node's own autogrow groups -- real provenance
+ * from the node's `comfyDynamic.autogrow` registration, rather than
+ * `nameShapeAutogrowGroupOf`'s inference from the name's shape. Undefined
+ * when the node isn't live (unmounted, background workflow) or `name` isn't
+ * a member of any of its groups.
+ */
+export interface SemanticLiveNodeQueryPort {
+  autogrowGroupOf(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string
+  ): string | undefined
+}
+
+export interface GraphMutationBatch {
   addNode(payload: SemanticNodePayload): void
   /**
    * For a node of the same type, resyncs fields and slots and patches widget
@@ -204,6 +220,7 @@ export interface GraphMutationsDeps {
   layout: SemanticLayoutMutationPort
   placement: SemanticPlacementPort
   liveWidgets?: SemanticLiveWidgetMutationPort
+  liveNodes?: SemanticLiveNodeQueryPort
 }
 
 type QueuedMutation =
@@ -388,7 +405,8 @@ function prepareOutputSlots(value: unknown): NodeState['outputs'] {
  */
 function hasNonGrowthInputSetChange(
   live: NodeState['inputs'],
-  documentInputs: Record<string, unknown>[]
+  documentInputs: Record<string, unknown>[],
+  autogrowGroupOf: (name: unknown) => string | undefined
 ): boolean {
   const liveCounts = new Map<unknown, number>()
   for (const input of live) {
@@ -437,25 +455,35 @@ const AUTOGROW_ORDINAL_SUFFIX = /\d+$/
  * DEFAULT naming (`group.prefixN`, ending in the member's ordinal) --
  * undefined for anything else.
  *
- * `group.member` alone is not enough: `dynamicWidgets.ts`'s
- * `COMFY_DYNAMICCOMBO_V3` support (`updateWidgets`) mints the exact same
- * `${widget.name}.${key}` shape for an unrelated reason, where `key` is an
- * ordinary schema field name (e.g. `mode.strength`), not an ordinal --
- * treating every dot as autogrow would wrongly keep a dynamic-combo input
- * the document had legitimately removed. Requiring the trailing digit
- * `resolveAutogrowOrdinal` itself falls back to rules that out for the
- * common (prefix-based) autogrow shape our own regression fixtures use
- * (`ref_image_0`, `ref_video_1`, ...).
+ * FALLBACK ONLY: used when no live node is reachable to answer this
+ * definitively (see `SemanticLiveNodeQueryPort`/`liveAutogrowGroupOf`,
+ * which reads the node's own `comfyDynamic.autogrow` registration instead
+ * of guessing from the name). A `NodeState` input carries no autogrow
+ * marker of its own, so absent that live answer this is inference from
+ * shape alone, and shape is not a reliable signal in either direction:
  *
- * This is the closest signal available at this semantic-state layer: a
- * `NodeState` input carries no other autogrow marker, and this layer has no
- * access to the node definition that would settle it exactly. A group
- * using an explicit, non-numeric `names` list is not recognized by this
- * check and falls through to being treated as an ordinary input -- a known,
- * narrow gap, and strictly safer than the alternative of over-retaining a
- * removed input.
+ * - False positive: `group.member` alone is not enough, because
+ *   `dynamicWidgets.ts`'s `COMFY_DYNAMICCOMBO_V3` support (`updateWidgets`)
+ *   mints the exact same `${widget.name}.${key}` shape for an unrelated
+ *   reason, where `key` is an ordinary schema field name (e.g.
+ *   `mode.strength`), not an ordinal. Requiring a trailing digit rules that
+ *   out for the common case, but a coincidentally-numeric DynamicCombo key
+ *   (e.g. a name ending `...0.0.0.0`) still passes it and is wrongly kept.
+ * - False negative: an autogrow group defined with an explicit, non-numeric
+ *   `names` list (`dynamicWidgets.ts`'s `resolveAutogrowOrdinal` matches
+ *   those by name, not by trailing ordinal) produces member names that
+ *   don't end in a digit at all, and are wrongly dropped as if they were an
+ *   ordinary input the document removed.
+ *
+ * Both failure directions are real and neither is fixable by refining the
+ * name-shape rule further -- the same suffix shape is genuinely ambiguous
+ * between "autogrow ordinal" and "unrelated dotted name" without the
+ * node's own group registration. This fallback stays strictly safer than
+ * over-retaining in the one case this layer can always tell apart (an
+ * ordinary, non-dotted extra input), and callers should prefer
+ * `SemanticLiveNodeQueryPort` whenever a live node is reachable.
  */
-function autogrowGroupOf(name: unknown): string | undefined {
+function nameShapeAutogrowGroupOf(name: unknown): string | undefined {
   if (typeof name !== 'string') return undefined
   const dot = name.lastIndexOf('.')
   if (dot < 0 || !AUTOGROW_ORDINAL_SUFFIX.test(name.slice(dot + 1)))
@@ -465,7 +493,8 @@ function autogrowGroupOf(name: unknown): string | undefined {
 
 function mergeInputSlotsByName(
   live: NodeState['inputs'],
-  supplied: unknown
+  supplied: unknown,
+  autogrowGroupOf: (name: unknown) => string | undefined
 ): NodeState['inputs'] {
   const documentInputs = Array.isArray(supplied)
     ? supplied.filter(isRecord)
@@ -488,7 +517,7 @@ function mergeInputSlotsByName(
   // for more copies of a shared name than live has), or the node kept a
   // live-only slot that still carries a link the document doesn't: either
   // way the input set changed, so the document decides the list positionally.
-  if (hasNonGrowthInputSetChange(live, documentInputs)) {
+  if (hasNonGrowthInputSetChange(live, documentInputs, autogrowGroupOf)) {
     return prepareInputSlots(documentInputs, live)
   }
   const merged = [...live]
@@ -747,6 +776,21 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const links = new Map(
       [...linkStore.graphTopologies(scope)].map((link) => [link.id, link])
     )
+    // Prefers the live node's own autogrow group registration (real
+    // provenance) over `nameShapeAutogrowGroupOf`'s inference from the
+    // name's shape. Trusts the live port's answer as-is, including
+    // "undefined" (not a member of any live group) -- it falls back to the
+    // heuristic only when no live port is wired at all, never as a second
+    // opinion on a live port's own "no" -- see `SemanticLiveNodeQueryPort`.
+    const resolveAutogrowGroup = (
+      nodeId: NodeId,
+      name: unknown
+    ): string | undefined => {
+      if (typeof name !== 'string') return undefined
+      return deps.liveNodes
+        ? deps.liveNodes.autogrowGroupOf(scope, nodeId, name)
+        : nameShapeAutogrowGroupOf(name)
+    }
     const validateNodeUpsert = (
       node: PreparedNode,
       key: string
@@ -801,7 +845,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             }
             node.state.inputs = mergeInputSlotsByName(
               existing.inputs,
-              mutation.payload.inputs
+              mutation.payload.inputs,
+              (name) => resolveAutogrowGroup(node.state.id, name)
             )
           }
           nodes.set(key, node.state)
@@ -928,7 +973,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               ).length
             targetInputs = mergeInputSlotsByName(
               target.inputs,
-              mutation.link.targetInputs
+              mutation.link.targetInputs,
+              (candidateName) =>
+                resolveAutogrowGroup(topology.targetNodeId, candidateName)
             )
             let seen = 0
             let resolvedSlot = -1
