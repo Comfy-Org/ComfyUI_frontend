@@ -193,8 +193,8 @@ agent store owns the fact; everything else is a projection of it.
   and the selection rectangle; alt-click clone, reroute and link drags from
   the canvas, link menus, group title-bar drags, click-to-front reordering
   and the group and empty-canvas double-click actions are suppressed. The
-  existing `LGraphCanvas.selectOnly.test.ts` cases pass unedited and gain
-  rows for each suppressed path.
+  existing `LGraphCanvas.selectOnly.test.ts` behavioral assertions are retained
+  and gain rows for each suppressed path.
 - `ADR-CANVAS-SELECTION-0028`'s compatibility clause still holds: picker
   mode keeps node-only accumulation, empty-canvas preservation and its edit
   and drag guards through `canvas.selectOnly`, now a projection rather than
