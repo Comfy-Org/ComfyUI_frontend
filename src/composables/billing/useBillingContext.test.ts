@@ -40,7 +40,13 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   subscription_duration: 'MONTHLY'
 }
 
-const { mockPlans, mockFetchPlans, mockBillingStatus, mockIsCloud, mockFreeTierExecutionPermitted } = vi.hoisted(() => {
+const {
+  mockPlans,
+  mockFetchPlans,
+  mockBillingStatus,
+  mockIsCloud,
+  mockFreeTierExecutionPermitted
+} = vi.hoisted(() => {
   const mockBillingStatus: { value: Partial<BillingStatusResponse> } = {
     value: {
       is_active: true,
@@ -61,7 +67,6 @@ const { mockPlans, mockFetchPlans, mockBillingStatus, mockIsCloud, mockFreeTierE
 let mockIsPersonal: Ref<boolean>
 let mockBillingRail: Ref<BillingRail | null | undefined>
 
-
 vi.mock(import('@/platform/distribution/types'), () => {
   return {
     get isCloud() {
@@ -69,7 +74,6 @@ vi.mock(import('@/platform/distribution/types'), () => {
     }
   }
 })
-
 
 vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
@@ -122,7 +126,6 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 
 describe('useBillingContext', () => {
   beforeEach(() => {
-
     mockIsCloud.value = true
     mockFreeTierExecutionPermitted.value = true
 
@@ -201,9 +204,9 @@ describe('useBillingContext', () => {
     })
   })
 
-
   describe('canRunWorkflows', () => {
     it('is true when not on free tier', async () => {
+      remoteConfigState.value = 'authenticated'
       useSubscription().subscriptionTier = computed(() => 'PRO')
       mockIsCloud.value = true
       mockFreeTierExecutionPermitted.value = false
@@ -213,10 +216,11 @@ describe('useBillingContext', () => {
     })
 
     it('is true when on free tier and freeTierExecutionPermitted is true', async () => {
+      remoteConfigState.value = 'authenticated'
       useSubscription().subscriptionTier = computed(() => 'FREE')
       mockBillingStatus.value.subscription_tier = 'FREE'
       useSubscription().subscriptionStatus.value = {
-        ...useSubscription().subscriptionStatus.value,
+        ...useSubscription().subscriptionStatus.value!,
         subscription_tier: 'FREE'
       }
       mockIsCloud.value = true
@@ -227,10 +231,11 @@ describe('useBillingContext', () => {
     })
 
     it('is false when on free tier on cloud and freeTierExecutionPermitted is false', async () => {
+      remoteConfigState.value = 'authenticated'
       useSubscription().subscriptionTier = computed(() => 'FREE')
       mockBillingStatus.value.subscription_tier = 'FREE'
       useSubscription().subscriptionStatus.value = {
-        ...useSubscription().subscriptionStatus.value,
+        ...useSubscription().subscriptionStatus.value!,
         subscription_tier: 'FREE'
       }
       mockIsCloud.value = true
@@ -241,13 +246,29 @@ describe('useBillingContext', () => {
     })
 
     it('is true when on free tier off cloud even if freeTierExecutionPermitted is false', async () => {
+      remoteConfigState.value = 'authenticated'
       useSubscription().subscriptionTier = computed(() => 'FREE')
       mockBillingStatus.value.subscription_tier = 'FREE'
       useSubscription().subscriptionStatus.value = {
-        ...useSubscription().subscriptionStatus.value,
+        ...useSubscription().subscriptionStatus.value!,
         subscription_tier: 'FREE'
       }
       mockIsCloud.value = false
+      mockFreeTierExecutionPermitted.value = false
+      const context = useBillingContext()
+      await context.initialize()
+      expect(context.canRunWorkflows.value).toBe(true)
+    })
+
+    it('is true when config is not loaded, even if freeTierExecutionPermitted is false', async () => {
+      remoteConfigState.value = 'unloaded'
+      useSubscription().subscriptionTier = computed(() => 'FREE')
+      mockBillingStatus.value.subscription_tier = 'FREE'
+      useSubscription().subscriptionStatus.value = {
+        ...useSubscription().subscriptionStatus.value!,
+        subscription_tier: 'FREE'
+      }
+      mockIsCloud.value = true
       mockFreeTierExecutionPermitted.value = false
       const context = useBillingContext()
       await context.initialize()

@@ -30,6 +30,7 @@ function createSubscriptionTest(
         await comfyPage.page.reload()
         // Firebase auth resolves asynchronously after app boot — wait for the
         // user button (v-if="isLoggedIn") before any test body interacts with it.
+        // Note: The 15s timeout accounts for video recording overhead in CI rather than expected load time.
         await expect(
           comfyPage.page.getByTestId(TestIds.user.currentUserButton)
         ).toBeVisible({ timeout: 15000 })
