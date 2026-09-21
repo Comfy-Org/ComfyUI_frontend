@@ -323,7 +323,14 @@ test.describe(
           name: /^Describe ideas/
         })
         await composer.fill('hello')
+        const turnAccepted = page.waitForResponse(
+          (response) =>
+            response.request().method() === 'POST' &&
+            response.url().includes('/api/agent/threads/') &&
+            response.url().endsWith('/messages')
+        )
         await panel.getByRole('button', { name: enMessages.agent.send }).click()
+        await turnAccepted
         await expect(panel.getByText('hello').first()).toBeVisible()
         socketSend!({
           type: 'agent_message_done',
