@@ -21,7 +21,7 @@ describe('browser test global setup', () => {
         fetch: fetchRequest,
         backup: vi.fn()
       })
-    ).rejects.toThrow('ComfyUI_devtools is not loaded')
+    ).rejects.toThrow('expected ComfyUI_devtools GET endpoint is unavailable')
     expect(fetchRequest).toHaveBeenCalledWith(
       'http://localhost:8188/api/devtools/fake_model.safetensors',
       expect.objectContaining({
@@ -150,7 +150,7 @@ describe('browser test global setup', () => {
         fetch: vi.fn<typeof fetch>(() => Promise.resolve(response(404))),
         backup
       })
-    ).rejects.toThrow('ComfyUI_devtools is not loaded')
+    ).rejects.toThrow('expected ComfyUI_devtools GET endpoint is unavailable')
     expect(backup).not.toHaveBeenCalled()
   })
 })
