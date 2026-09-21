@@ -62,7 +62,6 @@ let mockBillingRail: Ref<BillingRail | null | undefined>
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
