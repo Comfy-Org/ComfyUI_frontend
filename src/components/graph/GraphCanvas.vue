@@ -159,7 +159,6 @@ import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useA
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { NodeState } from '@/types/nodeState'
@@ -590,11 +589,6 @@ onMounted(async () => {
   }
   const sharedStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
-
-  comfyApp.canvas.onSelectionChange = useChainCallback(
-    comfyApp.canvas.onSelectionChange,
-    () => canvasStore.updateSelectedItems()
-  )
 
   // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing, ?topup)
   await runUrlActionLoaders()
