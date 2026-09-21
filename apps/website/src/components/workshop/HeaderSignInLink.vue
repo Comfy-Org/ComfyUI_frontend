@@ -28,7 +28,7 @@ const {
       )
     "
   >
-    <UserIcon v-if="compact" class="size-5" />
+    <UserIcon v-if="compact" data-testid="sign-in-icon" class="size-5" />
     <span :class="cn(compact && 'sr-only')">{{
       t('auth.header.signIn', locale)
     }}</span>
