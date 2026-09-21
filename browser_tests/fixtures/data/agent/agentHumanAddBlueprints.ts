@@ -218,7 +218,15 @@ export function agentHumanAddNestedBlueprint(): NestedBlueprint {
             subgraphs: [
               {
                 id: NESTED_INNER_ID,
+                version: 1,
                 revision: 0,
+                state: {
+                  lastGroupId: 0,
+                  lastNodeId: 1,
+                  lastLinkId: 1,
+                  lastRerouteId: 0
+                },
+                config: {},
                 name: 'inner prompt',
                 inputNode: { id: -10, bounding: [0, 0, 120, 60] },
                 outputNode: { id: -20, bounding: [700, 0, 120, 60] },
