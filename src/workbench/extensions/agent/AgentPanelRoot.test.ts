@@ -7,7 +7,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
@@ -6425,6 +6425,56 @@ describe('AgentPanelRoot workflow binding', () => {
     ])
     expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
+  })
+
+  it('moves saved node selections when an inactive workflow is renamed', async () => {
+    makeTab()
+    const inactive = addTab('workflows/inactive.json')
+    const selectionStore = useAgentNodeSelectionStore()
+    selectionStore.saveNodeIds(inactive.path, ['9', '12'])
+
+    await workflowStore.renameWorkflow(
+      inactive,
+      'workflows/inactive-renamed.json'
+    )
+    await nextTick()
+
+    expect(selectionStore.nodeIds('workflows/inactive.json')).toEqual([])
+    expect(selectionStore.nodeIds('workflows/inactive-renamed.json')).toEqual([
+      '9',
+      '12'
+    ])
+  })
+
+  it('moves saved node selections after the active workflow changes during rename', async () => {
+    const renamed = makeTab()
+    const selectionStore = useAgentNodeSelectionStore()
+    selectionStore.saveNodeIds(renamed.path, ['9', '12'])
+    let continueRename: (() => void) | undefined
+    const renamePaused = new Promise<void>((resolve) => {
+      continueRename = resolve
+    })
+    renamed.rename = vi.fn(async (newPath: string) => {
+      await renamePaused
+      renamed.path = newPath
+      return renamed
+    })
+
+    const rename = workflowStore.renameWorkflow(
+      renamed,
+      'workflows/renamed.json'
+    )
+    workflowStore.activeWorkflow = addTab('workflows/other.json')
+    assert.exists(continueRename)
+    continueRename()
+    await rename
+    await nextTick()
+
+    expect(selectionStore.nodeIds('workflows/current.json')).toEqual([])
+    expect(selectionStore.nodeIds('workflows/renamed.json')).toEqual([
+      '9',
+      '12'
+    ])
   })
 
   it('does not carry a saved node selection onto a different workflow', async () => {

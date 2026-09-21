@@ -45,13 +45,18 @@ export const useAgentNodeSelectionStore = defineStore(
     let restoreMinimap = false
 
     watch(
-      [
-        () => workflowStore.activeWorkflow,
-        () => workflowStore.activeWorkflow?.path
-      ],
-      ([workflow, path], [previousWorkflow, previousPath]) => {
-        if (workflow !== previousWorkflow) return
-        moveNodeIds(previousPath, path)
+      () =>
+        workflowStore.workflows.map((workflow) => ({
+          workflow,
+          path: workflow.path
+        })),
+      (workflows, previousWorkflows) => {
+        const previousPaths = new Map(
+          previousWorkflows.map(({ workflow, path }) => [workflow, path])
+        )
+        for (const { workflow, path } of workflows) {
+          moveNodeIds(previousPaths.get(workflow), path)
+        }
       }
     )
 
