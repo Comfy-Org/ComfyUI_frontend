@@ -3,8 +3,7 @@ import { isPlainObject } from 'es-toolkit'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  INodeSlot
+  INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import type {
   ISerialisableNodeInput,
@@ -58,60 +57,49 @@ function isSlotRecord(value: unknown): value is { name?: unknown } {
   return value !== null && typeof value === 'object'
 }
 
+type PatchableSlot = INodeInputSlot | INodeOutputSlot
+
 /**
- * Presentation fields `patchLiveSlot` may copy from a serialized slot onto a
- * live one, in addition to `link`/`links` (handled separately below).
+ * Copies a serialized slot's presentation fields -- `name`, `localized_name`,
+ * `label`, `type`, `dir`, `removable`, `shape`, `color_off`, `color_on`,
+ * `locked`, `nameLocked`, `hasErrors` -- onto the live slot object, plus
+ * `link`/`links` (handled separately below), so the node keeps its slot
+ * identity; an omitted field keeps the live value.
+ *
  * `boundingRect` is deliberately excluded: on a real slot instance it is a
  * `Rectangle` (a `Float64Array` subclass) that the renderer measures, and
  * `prepareInputSlot`/`prepareOutputSlots` always stub the serialized side to
  * `[0, 0, 0, 0]`, so copying it would clobber the live measurement with that
- * stub. An allowlist, rather than a blocklist, also keeps a serialized
- * slot's own `__proto__` or internal keys (`_node`, `_widget`, …) from ever
- * reaching `Object.assign` on the live instance.
- */
-const PATCHABLE_SLOT_FIELDS = [
-  'name',
-  'localized_name',
-  'label',
-  'type',
-  'dir',
-  'removable',
-  'shape',
-  'color_off',
-  'color_on',
-  'locked',
-  'nameLocked',
-  'hasErrors'
-] as const satisfies readonly (keyof INodeSlot)[]
-
-type PatchableSlot = INodeInputSlot | INodeOutputSlot
-
-// `K` pairs the read and write so TS can verify `live[field]` accepts
-// exactly what `serialized[field]` produced; a non-generic `keyof INodeSlot`
-// parameter loses that pairing and `live[field] = value` no longer
-// type-checks (the property's type collapses to the union of every field on
-// `INodeSlot`, which isn't assignable back to itself per-key).
-// oxlint-disable-next-line typescript/no-unnecessary-type-parameters
-function copySlotField<K extends keyof INodeSlot>(
-  live: INodeSlot,
-  serialized: INodeSlot,
-  field: K
-): void {
-  const value = serialized[field]
-  if (value !== undefined) live[field] = value
-}
-
-/**
- * Copies a serialized slot's presentation fields onto the live slot object
- * so the node keeps its slot identity; an omitted field keeps the live
- * value. A plain store record takes `link`/`links` as data, while a node's
+ * stub. A plain store record takes `link`/`links` as data, while a node's
  * slot instance derives them from the link store and must not have them
  * assigned.
+ *
+ * Each field is assigned individually, by its own literal name, rather than
+ * looped over a `keyof INodeSlot` list: a variable holding that union type
+ * reads `serialized[field]` as the union of every listed field's type, and
+ * TypeScript rejects writing that back to `live[field]` because it cannot
+ * prove the value matches that specific field. A literal key has no such
+ * union to collapse, so each line below type-checks the read and the write
+ * against that one field, with no generic indirection and no lint override.
  */
 function patchLiveSlot<T extends PatchableSlot>(live: T, serialized: T): void {
-  for (const field of PATCHABLE_SLOT_FIELDS) {
-    copySlotField(live, serialized, field)
-  }
+  // `name` and `type` are required on `INodeSlot`, so they are always
+  // present and copied unconditionally; every other field below is
+  // optional, and an omitted one keeps the live value.
+  live.name = serialized.name
+  live.type = serialized.type
+  if (serialized.localized_name !== undefined)
+    live.localized_name = serialized.localized_name
+  if (serialized.label !== undefined) live.label = serialized.label
+  if (serialized.dir !== undefined) live.dir = serialized.dir
+  if (serialized.removable !== undefined) live.removable = serialized.removable
+  if (serialized.shape !== undefined) live.shape = serialized.shape
+  if (serialized.color_off !== undefined) live.color_off = serialized.color_off
+  if (serialized.color_on !== undefined) live.color_on = serialized.color_on
+  if (serialized.locked !== undefined) live.locked = serialized.locked
+  if (serialized.nameLocked !== undefined)
+    live.nameLocked = serialized.nameLocked
+  if (serialized.hasErrors !== undefined) live.hasErrors = serialized.hasErrors
   if (!isPlainObject(live)) return
   if ('link' in serialized && serialized.link !== undefined) {
     ;(live as INodeInputSlot).link = serialized.link
@@ -183,9 +171,12 @@ interface SemanticLiveWidgetMutationPort {
  * autogrow groups. `unavailable` means the node itself couldn't be asked
  * (unmounted, background workflow) and carries no opinion either way; only
  * `member`/`notMember` are the node's own real provenance from its
- * `comfyDynamic.autogrow` registration. Callers must fall back to
- * `nameShapeAutogrowGroupOf`'s inference on `unavailable`, and never treat
- * it as an authoritative "no".
+ * `comfyDynamic.autogrow` registration. Callers must never treat
+ * `unavailable` as an authoritative "no"; `resolveAutogrowGroup` (in
+ * `createGraphMutations`) falls back first to its own remembered answer
+ * from an earlier `member`/`notMember` for the same node and name, and only
+ * to `nameShapeAutogrowGroupOf`'s inference when it has never resolved that
+ * name definitively either.
  */
 export type LiveAutogrowGroupAnswer =
   | { readonly kind: 'unavailable' }
@@ -770,6 +761,50 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   const linkPresentationStore = useLinkPresentationStore()
   const widgetStore = useWidgetValueStore()
 
+  // This follower's own memory of a live `member`/`notMember` autogrow
+  // answer, keyed by node then input name (`undefined` stored as `null`
+  // recorded a definitive "not a member", as opposed to no entry at all,
+  // which means never resolved). It exists so a later reconcile that finds
+  // the live node `unavailable` (unmounted, background workflow) can prefer
+  // this follower's own prior, real provenance over guessing from the
+  // name's shape again -- the same "carry it forward in the store we
+  // already control" approach `preserveSlotDisplayMetadata` takes for
+  // `localized_name`/`label`. It is scoped to this `GraphMutations`
+  // instance (one per follower), not the module, so distinct followers --
+  // and distinct tests -- never see each other's memory.
+  const rememberedAutogrowGroups = new Map<string, Map<string, string | null>>()
+
+  function rememberAutogrowGroup(
+    nodeId: NodeId,
+    name: string,
+    group: string | undefined
+  ): void {
+    const key = nodeKey(nodeId)
+    let forNode = rememberedAutogrowGroups.get(key)
+    if (!forNode) {
+      forNode = new Map()
+      rememberedAutogrowGroups.set(key, forNode)
+    }
+    forNode.set(name, group ?? null)
+  }
+
+  // Distinguishes "never resolved" (the caller should fall back to the
+  // name-shape heuristic) from a remembered, definitive `notMember`
+  // (`group: undefined`, but resolved -- the caller must trust that "no"
+  // and not let the heuristic override it).
+  function rememberedAutogrowGroup(
+    nodeId: NodeId,
+    name: string
+  ): { remembered: true; group: string | undefined } | { remembered: false } {
+    const forNode = rememberedAutogrowGroups.get(nodeKey(nodeId))
+    if (!forNode?.has(name)) return { remembered: false }
+    return { remembered: true, group: forNode.get(name) ?? undefined }
+  }
+
+  function forgetAutogrowGroups(nodeId: NodeId): void {
+    rememberedAutogrowGroups.delete(nodeKey(nodeId))
+  }
+
   function fail(message: string): false {
     console.error(`[agent-crdt] graph mutation rejected: ${message}`)
     return false
@@ -788,27 +823,40 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       [...linkStore.graphTopologies(scope)].map((link) => [link.id, link])
     )
     // Prefers the live node's own autogrow group registration (real
-    // provenance) over `nameShapeAutogrowGroupOf`'s inference from the
-    // name's shape. Trusts a `member`/`notMember` answer as authoritative
-    // and final -- it is a second opinion on the heuristic only when the
-    // live port itself has none to give, i.e. no port is wired at all, or
-    // the wired port answers `unavailable` (the live node couldn't be
-    // asked, not that it was asked and said no) -- see
-    // `SemanticLiveNodeQueryPort`/`LiveAutogrowGroupAnswer`.
+    // provenance) over both fallbacks below. Trusts a `member`/`notMember`
+    // answer as authoritative and final, and remembers it (see
+    // `rememberAutogrowGroup`) so a later call for the same node and name
+    // can still use it once the live port stops being able to answer.
+    //
+    // The two fallbacks run only when the live port itself has no opinion,
+    // i.e. no port is wired at all, or the wired port answers `unavailable`
+    // (the live node couldn't be asked, not that it was asked and said no)
+    // -- see `SemanticLiveNodeQueryPort`/`LiveAutogrowGroupAnswer`. This
+    // follower's own memory of an earlier definitive answer for the exact
+    // same node and name is preferred first, since it is real provenance
+    // the node already gave, just not right now; `nameShapeAutogrowGroupOf`
+    // is a last resort, guessing from the name's shape, for a name this
+    // follower has never resolved definitively.
     const resolveAutogrowGroup = (
       nodeId: NodeId,
       name: unknown
     ): string | undefined => {
       if (typeof name !== 'string') return undefined
-      if (!deps.liveNodes) return nameShapeAutogrowGroupOf(name)
+      const fallback = (): string | undefined => {
+        const memory = rememberedAutogrowGroup(nodeId, name)
+        return memory.remembered ? memory.group : nameShapeAutogrowGroupOf(name)
+      }
+      if (!deps.liveNodes) return fallback()
       const answer = deps.liveNodes.autogrowGroupOf(scope, nodeId, name)
       switch (answer.kind) {
         case 'member':
+          rememberAutogrowGroup(nodeId, name, answer.group)
           return answer.group
         case 'notMember':
+          rememberAutogrowGroup(nodeId, name, undefined)
           return undefined
         case 'unavailable':
-          return nameShapeAutogrowGroupOf(name)
+          return fallback()
       }
     }
     const validateNodeUpsert = (
@@ -1082,6 +1130,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           for (const id of nodeIds) {
             nodes.delete(nodeKey(id))
             removeIncidentLinks(nodes, links, id)
+            forgetAutogrowGroups(id)
           }
           const linkIds = [...links.keys()].filter(
             (id) => !retainedLinkIds.has(id)
@@ -1135,6 +1184,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           for (const id of removedLinkIds) {
             removeSimulatedLink(nodes, links, id)
           }
+          forgetAutogrowGroups(mutation.nodeId)
           prepared.push({
             kind: mutation.kind,
             nodeId: mutation.nodeId,
@@ -1146,6 +1196,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const nodeIds = [...nodes.values()].map(({ id }) => id)
           nodes.clear()
           links.clear()
+          for (const id of nodeIds) forgetAutogrowGroups(id)
           prepared.push({ kind: mutation.kind, nodeIds })
           break
         }

@@ -1541,6 +1541,69 @@ describe('graphMutations', () => {
     expect(target?.inputs.map(({ name }) => name)).toEqual(['keep'])
   })
 
+  it("drops a numeric-shaped DynamicCombo key remembered as not-a-member, even once the live node answers 'unavailable'", () => {
+    // The live node's `notMember` answer above is remembered for this exact
+    // node and name; a later resync that finds the same name live-only
+    // again must keep trusting that memory over the name-shape heuristic,
+    // even once the live node itself stops being reachable.
+    let liveReachable = true
+    const graph = mutations({
+      autogrowGroupOf: () =>
+        liveReachable ? { kind: 'notMember' } : { kind: 'unavailable' }
+    })
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'keep', type: 'IMAGE', link: null },
+          { name: '0.0.0.0', type: 'FLOAT', link: null }
+        ]
+      })
+    })
+
+    // Live confirms '0.0.0.0' belongs to no autogrow group; it is dropped
+    // and that answer is remembered.
+    graph.batch({ ...context, opId: 'drop-numeric-live' }, (batch) => {
+      batch.reconcileNode({
+        ...node(2),
+        inputs: [{ name: 'keep', type: 'IMAGE' }]
+      })
+    })
+
+    // The document re-adds '0.0.0.0' as an ordinary new input -- live has
+    // no occurrence of it yet, so this is an unambiguous addition, not the
+    // live-only-unaccounted-for case `autogrowGroupOf` is consulted for.
+    graph.batch({ ...context, opId: 're-add-numeric' }, (batch) => {
+      batch.reconcileNode({
+        ...node(2),
+        inputs: [
+          { name: 'keep', type: 'IMAGE' },
+          { name: '0.0.0.0', type: 'FLOAT' }
+        ]
+      })
+    })
+
+    // The document drops it again while the live node is unavailable. The
+    // name-shape heuristic alone would wrongly treat the trailing-digit
+    // shape as an unpropagated autogrow spare and retain it; the remembered
+    // `notMember` answer correctly treats it as an ordinary removed input.
+    liveReachable = false
+    expect(
+      graph.batch({ ...context, opId: 'drop-numeric-unavailable' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [{ name: 'keep', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+
+    const numericKeyTarget = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(numericKeyTarget?.inputs.map(({ name }) => name)).toEqual(['keep'])
+  })
+
   // An autogrow group defined with an explicit `names` list (`refs.a`,
   // `refs.b`, ...) rather than the default numeric-ordinal naming: its
   // members don't end in a digit, so `nameShapeAutogrowGroupOf` can't
@@ -1676,6 +1739,71 @@ describe('graphMutations', () => {
     ])
   })
 
+  it("keeps an explicit-names autogrow group's remembered spare and every scalar's own link once the live node answers 'unavailable'", () => {
+    // `refs.b` doesn't end in a digit, so `nameShapeAutogrowGroupOf` can't
+    // recognize it as autogrow-shaped at all -- exactly the false negative
+    // documented on `nameShapeAutogrowGroupOf` and on the "absent a live
+    // node" test above. The first reconcile below establishes the live
+    // node's real `member` answer and remembers it; the second finds the
+    // live node 'unavailable' (e.g. its tab is now in the background) and
+    // must keep trusting that memory instead of falling back to the
+    // heuristic, which would drop `refs.b` and misattribute `alpha`'s and
+    // `beta`'s links just like the heuristic-only test does.
+    let liveReachable = true
+    const graph = mutations({
+      autogrowGroupOf: (_scope, _nodeId, name) => {
+        if (!liveReachable) return { kind: 'unavailable' }
+        return name.startsWith('refs.')
+          ? { kind: 'member', group: 'refs' }
+          : { kind: 'notMember' }
+      }
+    })
+    graph.batch(context, explicitNamesGroupScenario())
+
+    graph.batch(
+      { ...context, opId: 'reconcile-explicit-names-live' },
+      (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [
+            { name: 'refs.a', type: 'IMAGE' },
+            { name: 'alpha', type: 'IMAGE' },
+            { name: 'beta', type: 'IMAGE' }
+          ]
+        })
+      }
+    )
+
+    liveReachable = false
+    expect(
+      graph.batch(
+        { ...context, opId: 'reconcile-explicit-names-unavailable' },
+        (batch) => {
+          batch.reconcileNode({
+            ...node(2),
+            inputs: [
+              { name: 'refs.a', type: 'IMAGE' },
+              { name: 'alpha', type: 'IMAGE' },
+              { name: 'beta', type: 'IMAGE' }
+            ]
+          })
+        }
+      )
+    ).toBe(true)
+
+    const rememberedTarget = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(
+      rememberedTarget?.inputs.map(({ name, link }) => [name, link])
+    ).toEqual([
+      ['refs.a', toLinkId(60)],
+      ['refs.b', null],
+      ['alpha', toLinkId(61)],
+      ['beta', toLinkId(62)]
+    ])
+  })
+
   it("resolves duplicate-named live occurrences by position when the document's own link is omitted", () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
@@ -1723,15 +1851,20 @@ describe('graphMutations', () => {
     graph.addNode(node(1), context)
     const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
     assert(existing)
-    // Simulates corrupted live state from an unrelated bug, through an
-    // `unknown` boundary rather than a `@ts-expect-error` suppression --
-    // this isn't verifying a compiler error, it's injecting a malformed
-    // runtime value the store must survive.
-    const corruptedInputs = existing.inputs as unknown as (
-      | NodeState['inputs'][number]
-      | null
-    )[]
-    corruptedInputs[0] = null
+    // Simulates corrupted live state written by an unrelated bug -- not
+    // something this module's own input pipeline could ever produce
+    // (`prepareInputSlots` filters out non-record entries before anything
+    // reaches the store) -- by writing it straight through the node
+    // store's own real mutation entry point, the same as any other caller
+    // of `updateNodeSlots`. The malformed value is built as `unknown`, the
+    // same as any other runtime state this boundary receives, and asserted
+    // once at that boundary, rather than double-asserting a value into the
+    // store's already-typed live array.
+    const corruptedInputs: unknown = [null, ...existing.inputs.slice(1)]
+    useNodeDataStore().updateNodeSlots(scope, existing.id, {
+      inputs: corruptedInputs as NodeState['inputs'],
+      outputs: existing.outputs
+    })
 
     expect(() =>
       graph.batch({ ...context, opId: 'resync' }, (batch) => {
