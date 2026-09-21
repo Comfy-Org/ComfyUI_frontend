@@ -28,33 +28,21 @@ export const noEs2023ArrayWith: Rule.RuleModule = {
       .parserServices as TypeScriptParserServices
     const checker = services.program.getTypeChecker()
 
+    function reportArrayWith(node: Rule.Node) {
+      const call = node as Rule.Node & { callee: { object: unknown } }
+      const receiver = services.esTreeNodeToTSNodeMap.get(call.callee.object)
+      if (!receiver) return
+      if (!isArrayType(checker, checker.getTypeAtLocation(receiver))) return
+      context.report({ node, messageId: 'unsupported' })
+    }
+
     return {
-      CallExpression(node) {
-        const callee = node.callee
-        if (callee.type !== 'MemberExpression') {
-          return
-        }
-
-        const property = callee.property
-        const propertyName =
-          property.type === 'Identifier'
-            ? property.name
-            : property.type === 'Literal'
-              ? property.value
-              : property.type === 'TemplateLiteral' &&
-                  property.expressions.length === 0
-                ? property.quasis[0]?.value.cooked
-                : undefined
-        if (propertyName !== 'with') return
-
-        const receiver = services.esTreeNodeToTSNodeMap.get(callee.object)
-        if (
-          receiver &&
-          isArrayType(checker, checker.getTypeAtLocation(receiver))
-        ) {
-          context.report({ node, messageId: 'unsupported' })
-        }
-      }
+      "CallExpression[callee.type='MemberExpression'][callee.property.name='with']":
+        reportArrayWith,
+      "CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='Literal'][callee.property.value='with']":
+        reportArrayWith,
+      "CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='TemplateLiteral'][callee.property.expressions.length=0]:has(TemplateElement[value.cooked='with'])":
+        reportArrayWith
     }
   }
 }
