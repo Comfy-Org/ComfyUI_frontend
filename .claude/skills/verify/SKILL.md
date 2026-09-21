@@ -28,7 +28,7 @@ The local frontend is whatever `main` currently holds; the backend is real. That
 
 ## Doctor
 
-Run all three before driving. Each is read-only and takes seconds.
+Run all four before driving. Each is read-only and takes seconds.
 
 **1. Is the code under test actually being served?** Vite serves transformed source over HTTP, so you can grep the running build with no auth and no browser:
 
@@ -54,6 +54,23 @@ curl -s http://localhost:5173/api/features | python3 -m json.tool | grep -E 'uni
 ```
 
 Read the values, do not assume them. On testcloud as of 2026-09-21: `unified_cloud_auth: false`, both `billing_sdk_*: false`, `embedded_checked_enabled: false`.
+
+**4. Does the tab render frames?** Browser automation often drives a hidden tab. The Claude-in-Chrome tab reports `document.visibilityState === 'hidden'` and runs `requestAnimationFrame` at 0 frames per second. In the page console:
+
+```js
+await new Promise((resolve) => {
+  let frames = 0
+  const start = performance.now()
+  const tick = () =>
+    performance.now() - start < 1000
+      ? (frames++, requestAnimationFrame(tick))
+      : resolve(frames)
+  requestAnimationFrame(tick)
+  setTimeout(() => resolve(frames), 1500)
+})
+```
+
+At 0 frames, Vue transitions never finish. A removed PrimeVue toast keeps its DOM node with `p-toast-message-leave-active` at opacity 0, and a new one sticks at `p-toast-message-enter-from`, so DOM queries report toasts a real user never sees. In that case assert on component state instead. Walk `el.__vueParentComponent` up to the component whose `type.name` is `Toast` and read `proxy.messages`. A 2026-09-21 run filed a false "verify toast stays after the top-up settles" finding this way.
 
 ## Drive
 
