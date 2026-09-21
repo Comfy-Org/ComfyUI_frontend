@@ -1,6 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import type * as VueUse from '@vueuse/core'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -192,8 +191,11 @@ vi.mock('@/renderer/core/canvas/links/linkDropOrchestrator', () => ({
   resolveNodeSurfaceSlotCandidate: () => null
 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({ activeWorkflow: null })
+}))
+
+vi.mock('@vueuse/core', () => ({
   useEventListener: (event: string, handler: (...args: unknown[]) => void) => {
     capturedHandlers[event] = handler
     return vi.fn()
