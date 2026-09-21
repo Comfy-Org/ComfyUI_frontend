@@ -142,26 +142,55 @@ interface HttpDateFields {
   second: number
 }
 
+function monthNumber(name: string): number {
+  return MONTHS.indexOf(name) + 1
+}
+
 /**
  * The four-digit year an RFC 850 two-digit year stands for. RFC 9110 requires a
  * timestamp that would read as more than 50 years in the future to be taken as
  * the most recent past year with those last two digits, which is a rolling
  * window rather than the fixed pivot `Date.parse` applies.
  */
-function expandTwoDigitYear(twoDigit: number): number {
-  const currentYear = new Date(Date.now()).getUTCFullYear()
-  const candidate = Math.floor(currentYear / 100) * 100 + twoDigit
-  return candidate > currentYear + 50 ? candidate - 100 : candidate
+function expandTwoDigitYear(
+  twoDigit: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number
+): number {
+  const now = new Date(Date.now())
+  const candidateYear = Math.floor(now.getUTCFullYear() / 100) * 100 + twoDigit
+  const fiftyYearsFromNow = Date.UTC(
+    now.getUTCFullYear() + 50,
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    now.getUTCHours(),
+    now.getUTCMinutes(),
+    now.getUTCSeconds(),
+    now.getUTCMilliseconds()
+  )
+  for (const year of [candidateYear + 100, candidateYear]) {
+    const candidate = Date.UTC(
+      year,
+      month - 1,
+      day,
+      hour,
+      minute,
+      Math.min(second, 59)
+    )
+    if (candidate <= fiftyYearsFromNow) return year
+  }
+  return candidateYear - 100
 }
 
 function httpDateFields(value: string): HttpDateFields | undefined {
-  const asMonth = (name: string) => MONTHS.indexOf(name) + 1
-
   const imf = IMF_FIXDATE.exec(value)
   if (imf)
     return {
       year: Number(imf[3]),
-      month: asMonth(imf[2]),
+      month: monthNumber(imf[2]),
       day: Number(imf[1]),
       hour: Number(imf[4]),
       minute: Number(imf[5]),
@@ -169,21 +198,34 @@ function httpDateFields(value: string): HttpDateFields | undefined {
     }
 
   const rfc850 = RFC850_DATE.exec(value)
-  if (rfc850)
+  if (rfc850) {
+    const month = monthNumber(rfc850[2])
+    const day = Number(rfc850[1])
+    const hour = Number(rfc850[4])
+    const minute = Number(rfc850[5])
+    const second = Number(rfc850[6])
     return {
-      year: expandTwoDigitYear(Number(rfc850[3])),
-      month: asMonth(rfc850[2]),
-      day: Number(rfc850[1]),
-      hour: Number(rfc850[4]),
-      minute: Number(rfc850[5]),
-      second: Number(rfc850[6])
+      year: expandTwoDigitYear(
+        Number(rfc850[3]),
+        month,
+        day,
+        hour,
+        minute,
+        second
+      ),
+      month,
+      day,
+      hour,
+      minute,
+      second
     }
+  }
 
   const asctime = ASCTIME_DATE.exec(value)
   if (asctime)
     return {
       year: Number(asctime[6]),
-      month: asMonth(asctime[1]),
+      month: monthNumber(asctime[1]),
       day: Number(asctime[2].trim()),
       hour: Number(asctime[3]),
       minute: Number(asctime[4]),
@@ -215,8 +257,8 @@ function parseHttpDate(value: string): number | undefined {
   if (fields === undefined) return undefined
   const { year, month, day, hour, minute, second } = fields
   if (hour > 23 || minute > 59 || second > 60) return undefined
-  // The grammar admits a leap second; no UTC instant carries one, so it reads
-  // as the last ordinary second of that minute.
+  // JavaScript Date cannot represent the leap second admitted by the grammar,
+  // so this parser maps `:60` to `:59`.
   const instant = Date.UTC(
     year,
     month - 1,
@@ -240,15 +282,12 @@ function parseHttpDate(value: string): number | undefined {
  * absent or cannot be read as one. Every return honours that contract, so a
  * caller never has to repair the result: a malformed HTTP-date leaves here as
  * `undefined` rather than as the `NaN` a bare `Date.parse` would produce.
- *
- * Exported for the contract tests; production code reaches it through
- * `toApiError`.
  */
-export function parseRetryAfter(header: string | null): number | undefined {
+function parseRetryAfter(header: string | null): number | undefined {
   if (header === null) return undefined
   if (/^\d+$/.test(header)) return asDelaySeconds(Number(header))
-  // A finite non-integer number (fractional, negative, exponent form) is a
-  // malformed delta-seconds, not a date, so it never reaches the date branch.
+  // Finite numeric strings outside the delta-seconds grammar, including
+  // fractional, signed, and exponent forms, never reach the date branch.
   if (Number.isFinite(Number(header))) return undefined
   const deadline = parseHttpDate(header)
   if (deadline === undefined) return undefined
