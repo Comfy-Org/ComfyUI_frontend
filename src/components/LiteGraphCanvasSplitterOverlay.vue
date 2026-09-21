@@ -339,6 +339,14 @@ const lastPanelStyle = computed(() => {
   pointer-events: auto;
 }
 
+:deep(.side-bar-panel + .p-splitter-gutter) {
+  background-color: color-mix(
+    in srgb,
+    var(--interface-stroke) 50%,
+    transparent
+  );
+}
+
 :deep(.p-splitter-gutter:hover),
 :deep(.p-splitter-gutter[data-p-gutter-resizing='true']) {
   transition: background-color 0.2s ease 300ms;

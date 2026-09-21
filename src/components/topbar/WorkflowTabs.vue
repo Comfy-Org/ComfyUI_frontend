@@ -3,7 +3,7 @@
     ref="containerRef"
     :class="
       cn(
-        'workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden',
+        'workflow-tabs-container flex h-full max-w-full flex-auto flex-row items-center gap-1 overflow-hidden px-1',
         isDesktop && 'workflow-tabs-container-desktop'
       )
     "
@@ -19,7 +19,7 @@
     >
       <i class="icon-[lucide--chevron-left] size-full" />
     </Button>
-    <div class="no-drag overflow-hidden">
+    <div class="no-drag h-full overflow-hidden">
       <div
         ref="scrollContent"
         class="workflow-tabs-scroll flex size-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden p-0"
@@ -75,7 +75,7 @@
         value: $t('sideToolbar.newBlankWorkflow'),
         showDelay: 300
       }"
-      class="new-blank-workflow-button no-drag aspect-square h-full w-auto shrink-0 rounded-none"
+      class="new-blank-workflow-button no-drag shrink-0 rounded-lg"
       variant="muted-textonly"
       size="icon"
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
@@ -375,13 +375,11 @@ onUpdated(checkOverflow)
   position: relative;
   flex-shrink: 1;
   border: 0;
-  border-right-style: solid;
-  border-right-width: 1px;
-  border-radius: 0;
+  border-radius: var(--radius-lg);
   background-color: transparent;
   padding: 0;
-  border-right-color: var(--border-color);
   min-width: 90px;
+  color: var(--muted-foreground);
 }
 
 .overflow-arrow {
@@ -405,29 +403,19 @@ onUpdated(checkOverflow)
   display: none;
 }
 
-:deep(.p-togglebutton:first-child) {
-  border-left-style: solid;
-  border-left-width: 1px;
-  border-left-color: var(--border-color);
-}
-
-:deep(.p-togglebutton:not(:first-child)) {
-  border-left-width: 0;
-}
-
 :deep(.p-togglebutton.p-togglebutton-checked) {
-  height: 100%;
-  border-bottom-style: solid;
-  border-bottom-width: 1px;
-  border-bottom-color: var(--p-button-text-primary-color);
+  background-color: var(--secondary-background);
+  color: var(--base-foreground);
 }
 
-:deep(.p-togglebutton:not(.p-togglebutton-checked)) {
-  opacity: 0.75;
+:deep(.p-togglebutton:hover) {
+  background-color: var(--secondary-background-hover);
 }
 
 :deep(.workflow-tabs) {
   display: flex;
+  align-items: center;
+  gap: var(--spacing);
 }
 
 :deep(.p-selectbutton) {
