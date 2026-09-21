@@ -164,6 +164,7 @@ const EVENT_KINDS: readonly DevEventKind[] = [
   'schema_error',
   'reconnected',
   'subscribe_retry',
+  'subscribe_ack_timeout',
   'stale_probe',
   'rebind',
   'doc_gap',
