@@ -1,16 +1,10 @@
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const DEFINITION_ID = '4d3f5a6e-0b1c-4d2e-9f80-1a2b3c4d5e6f'
 
-interface NestedDefinition {
-  id: string
-  definitions?: { subgraphs: NestedDefinition[] }
-  [key: string]: unknown
-}
-
 export interface NestedBlueprint {
-  definitions: { subgraphs: NestedDefinition[] }
-  [key: string]: unknown
+  definitions: { subgraphs: ExportedSubgraph[] }
 }
 
 /** Outer definition of the nested blueprint, and the inner one it wraps. */
