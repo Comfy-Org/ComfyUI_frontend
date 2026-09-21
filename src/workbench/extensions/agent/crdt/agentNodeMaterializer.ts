@@ -1,11 +1,7 @@
 import { reconcileAutogrowInputs } from '@/core/graph/widgets/dynamicWidgets'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
-import {
-  LGraphNode,
-  LiteGraph,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -207,54 +203,6 @@ function withNamedValuesRestore<T>(fn: () => T): T {
   }
 }
 
-function repairPromotedBindings(
-  graph: MaterializableGraph,
-  live: LGraphNode,
-  serialised: ISerialisedNode
-): void {
-  if (
-    !(live instanceof SubgraphNode) ||
-    (live.inputs.length === live.subgraph.inputNode.slots.length &&
-      live.inputs.every(
-        (input, index) =>
-          input._subgraphSlot === live.subgraph.inputNode.slots[index]
-      ))
-  ) {
-    return
-  }
-
-  try {
-    live.configure({
-      ...withNamedWidgetValues(serialised),
-      pos: [...live.pos],
-      size: [...live.size]
-    })
-  } catch (cause) {
-    reportError(cause, {
-      errorType: 'agent_node_materialize_configure_failed',
-      context: { graphId: graph.id, nodeId: String(live.id) }
-    })
-  }
-}
-
-/**
- * An instance this scope already owns is kept, never rebuilt. Autogrow inputs
- * are resynced either way; the promoted-binding repair needs the serialization
- * it replays, so it is skipped when there is none.
- */
-function resyncOwnedNode(
-  graph: MaterializableGraph,
-  live: LGraphNode,
-  serialised: ISerialisedNode | undefined
-): void {
-  reconcileAutogrowInputs(live)
-  // Reconciliation can retain the instance but replace its inputs with
-  // serialized slots, losing the bindings that create promoted widgets. Repair
-  // only broken bindings: replaying an intact host's serialization would
-  // overwrite later set_widget values. Layout remains FE-owned.
-  if (serialised) repairPromotedBindings(graph, live, serialised)
-}
-
 /**
  * @param pendingDefinitions definition ids the document seeds but the root
  * graph could not register. Nodes typed by one stay unmaterialized rather
@@ -287,11 +235,11 @@ function reconcile(
   const materialized: NodeId[] = []
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
-    const serialised = state.lastSerialization
     if (live && nodeStore.ownsNode(scope, live._state)) {
-      resyncOwnedNode(graph, live, serialised)
+      reconcileAutogrowInputs(live)
       continue
     }
+    const serialised = state.lastSerialization
     if (!serialised) continue
     if (pendingDefinitions.has(state.type)) continue
     if (
