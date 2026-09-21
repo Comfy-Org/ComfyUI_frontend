@@ -15,8 +15,8 @@ const {
   /** Comfy Cloud, opened on this template. */
   cloudUrl: string
   downloadUrl: string
-  /** Whether the model above already runs on the page, which then also has an
-    endpoint to hand over. */
+  /** Whether the model above already runs on the page, which then owns the
+    page's one filled action and also has an endpoint to hand over. */
   runsHere: boolean
   tutorialUrl: string | undefined
   locale?: Locale
@@ -35,7 +35,7 @@ const action =
         :class="
           cn(
             action,
-            'bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90'
+            'border border-transparency-white-t20 text-primary-warm-white hover:bg-transparency-white-t8'
           )
         "
         data-testid="workflow-endpoint"

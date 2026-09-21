@@ -3,7 +3,6 @@ import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
 import CatalogueBackLink from '../../../components/workshop/CatalogueBackLink.vue'
 import ModelRun from '../../../components/hub/ModelRun.vue'
 import WorkflowActions from '../../../components/hub/WorkflowActions.vue'
-import WorkflowAside from '../../../components/hub/WorkflowAside.vue'
 import WorkflowDetails from '../../../components/hub/WorkflowDetails.vue'
 import WorkflowGraph from '../../../components/hub/WorkflowGraph.vue'
 import WorkflowHowItWorks from '../../../components/hub/WorkflowHowItWorks.vue'
@@ -20,11 +19,12 @@ import {
 } from '../../../lib/hub/page-data'
 import { tagDisplayName } from '../../../lib/hub/tag-aliases'
 import {
-  formatWeights,
   getHubWorkflowPage,
   listHubWorkflows,
-  summarisePorts
+  summarisePorts,
+  workflowJobTitle
 } from '../../../lib/hub/workflow-detail'
+import { useCaseLabelKey } from '../../../lib/workshop/use-case-label'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 
@@ -67,11 +67,18 @@ const operations = runnable
   : []
 
 const pills = [
-  template.isApp ? t('workshop.v2.kind.app') : t('workshop.v2.kind.workflow'),
+  t('workshop.v2.kind.workflow'),
   mediaLabels[mediaType],
   operations.length > 0 ? t('workshop.v2.workflow.runsHere') : undefined,
   details.openSource ? t('workshop.v2.workflow.openWeights') : undefined
 ].filter((label): label is string => Boolean(label))
+
+const job = workflowJobTitle(page)
+const title = job
+  ? t('workshop.v2.workflow.jobTitle')
+      .replace('{useCase}', t(useCaseLabelKey[job.useCase]))
+      .replace('{model}', job.model)
+  : template.title
 
 const cloudUrl = `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.name)}`
 
@@ -93,9 +100,10 @@ const tagClass =
 ---
 
 <BaseLayout
-  title={`${template.title} - Comfy`}
-  description={details.description ?? template.title}
+  title={`${title} - Comfy`}
+  description={details.description ?? title}
   ogImage={template.thumbnails[0]}
+  ownsPrimaryAction
   noindex
 >
   <main class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-16">
@@ -118,7 +126,7 @@ const tagClass =
       <h1
         class="max-w-3xl text-3xl font-bold text-primary-comfy-canvas lg:text-5xl"
       >
-        {template.title}
+        {title}
       </h1>
       <p class="text-sm text-content-secondary" data-testid="workflow-author">
         {t('workshop.workflow.by').replace('{author}', author)}
@@ -195,7 +203,7 @@ const tagClass =
           {operations.length === 0 && template.thumbnails[0] && (
             <img
               src={template.thumbnails[0]}
-              alt={template.title}
+              alt={title}
               loading="lazy"
               decoding="async"
               class="aspect-4/3 w-full rounded-2xl bg-hub-surface object-cover"
@@ -210,13 +218,6 @@ const tagClass =
             runsHere={operations.length > 0}
             added={template.date}
           />
-
-          <WorkflowAside
-            weights={formatWeights(page.weightsBytes)}
-            models={runsOn.map((ref) => ref.name)}
-            customNodes={page.customNodes}
-            callsPartnerModel={page.callsPartnerModel}
-          />
         </div>
       </div>
     </div>
@@ -224,11 +225,7 @@ const tagClass =
     {relatedViews.length > 0 && <section
       class="mt-24 border-t border-transparency-white-t8 pt-12"
     >
-      <h2 class={sectionTitle}>
-        {template.isApp
-          ? t('workshop.v2.workflow.relatedApps')
-          : t('workshop.v2.workflow.related')}
-      </h2>
+      <h2 class={sectionTitle}>{t('workshop.v2.workflow.related')}</h2>
       <ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {relatedViews.map((view) => <li>
           <CatalogueCard view={view} />

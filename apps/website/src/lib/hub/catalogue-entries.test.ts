@@ -121,7 +121,9 @@ describe('buildCatalogue', () => {
     expect(titles(entries)).toContain('A poster, with Flux somewhere')
   })
 
-  it('marks an app apart from a node graph', () => {
+  // An app is a graph somebody wrapped in a form. Showing it as a second kind
+  // beside the graph offers the reader the same thing twice.
+  it('browses an app as the workflow it is', () => {
     const entries = buildCatalogue(
       [
         template({ name: 'studio', title: 'Studio', isApp: true }),
@@ -130,7 +132,7 @@ describe('buildCatalogue', () => {
       []
     )
 
-    expect(entries.map((entry) => entry.kind)).toEqual(['app', 'workflow'])
+    expect(entries.map((entry) => entry.kind)).toEqual(['workflow', 'workflow'])
   })
 
   it('opens a workflow at the model page only when one is safe', () => {

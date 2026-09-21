@@ -3,6 +3,7 @@ import { Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
 import {
   computed,
+  onMounted,
   onScopeDispose,
   onUnmounted,
   ref,
@@ -17,7 +18,10 @@ import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
 import { sameFormValues } from '../../lib/workshop/form-values'
 import { leaveForSignIn } from '../../config/workshop-return'
-import { apiPanelRequested } from '../../config/workshop-api-anchor'
+import {
+  apiPanelRequested,
+  releaseApiPanelHash
+} from '../../config/workshop-api-anchor'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
@@ -104,14 +108,19 @@ const sectionLabel: Record<Section, TranslationKey> = {
   api: 'workshop.model.tabs.api'
 }
 
-const activeSection = ref<Section>(apiPanelRequested() ? 'api' : 'playground')
+const activeSection = ref<Section>('playground')
 const { onKeydown: onTabKeydown } = useTablist(
   () => sections.value,
   activeSection
 )
 
 // The endpoint action sits in another island, so it asks through the address
-// bar. Landing on the link and following it later both have to work.
+// bar. The server has no address to read, so the fragment is applied on mount
+// rather than during setup, and the tabs render the same on both sides.
+onMounted(() => {
+  if (apiPanelRequested()) activeSection.value = 'api'
+})
+
 useEventListener(
   () => globalThis.window,
   'hashchange',
@@ -119,6 +128,12 @@ useEventListener(
     if (apiPanelRequested()) activeSection.value = 'api'
   }
 )
+
+// Leaving the panel gives the fragment back, so asking for it again is a
+// change of address and the endpoint action keeps working.
+watch(activeSection, (section) => {
+  if (section !== 'api') releaseApiPanelHash()
+})
 
 const initialPageState = initialWorkshopPageState(model)
 const examples = initialPageState.examples

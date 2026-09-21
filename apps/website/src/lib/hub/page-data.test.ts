@@ -67,10 +67,10 @@ describe('relatedCardViews', () => {
     expect(view.needsCustomNodes).toBe(true)
   })
 
-  it('reads an app as an app', () => {
+  it('reads an app as the workflow it is', () => {
     const [view] = relatedCardViews([template({ isApp: true })], [], new Set())
 
-    expect(view.kind).toBe('app')
+    expect(view.kind).toBe('workflow')
     expect(view.href).toBe('/playground/workflow/poster/')
   })
 })

@@ -103,8 +103,7 @@ const narrowings = computed<((entry: BrowseEntry) => boolean)[]>(() => {
 
 // An app is a workflow somebody wrapped in a form, so asking for workflows
 // returns it too and the badge on the card is what tells them apart.
-const isType = (entry: BrowseEntry, filter: TypeFilter) =>
-  entry.kind === filter || (filter === 'workflow' && entry.kind === 'app')
+const isType = (entry: BrowseEntry, filter: TypeFilter) => entry.kind === filter
 
 // The tab is read first and everything downstream sees one kind: the shelves,
 // the rows, the order and the banner are all about models or all about
@@ -186,8 +185,7 @@ const BANNER_SLIDES = 6
 
 const kindLabelKey: Record<string, TranslationKey> = {
   model: 'workshop.v2.kind.models',
-  workflow: 'workshop.v2.kind.workflows',
-  app: 'workshop.v2.kind.apps'
+  workflow: 'workshop.v2.kind.workflows'
 }
 
 const featured = computed(() =>

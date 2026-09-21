@@ -58,7 +58,7 @@ export function relatedCardViews(
   return templates.map((template) =>
     cardViewFor(
       {
-        kind: template.isApp ? 'app' : 'workflow',
+        kind: 'workflow',
         key: template.name,
         template: withFacetFields(template, models),
         runsOn: partnerModelFor(template, models)

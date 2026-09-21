@@ -80,7 +80,7 @@ test.describe('V2 catalogue', () => {
 
     // The word is there for a screen reader the whole time; what hovering
     // changes is whether it takes any room.
-    await expect(badge).toHaveText(/model|workflow|app/i)
+    await expect(badge).toHaveText(/model|workflow/i)
     const closed = await width()
 
     await card.hover()
@@ -137,14 +137,16 @@ test.describe('V2 catalogue', () => {
     await expect(page.getByTestId('model-run')).toBeVisible()
   })
 
-  test('a workflow page names what it loads, needs and produces', async ({
+  test('a workflow page names what it loads, runs on and produces', async ({
     page
   }) => {
     await page.goto('/playground/workflow/video_minimax_h3_i2v/')
 
     await expect(page.getByTestId('workflow-kind')).toContainText(/Workflow/i)
     await expect(page.getByTestId('workflow-outputs')).toBeVisible()
-    await expect(page.getByTestId('workflow-needs')).toBeVisible()
+    // The model it calls is the part the reader cannot work out from the
+    // inputs and outputs, so it is the one the page has to name.
+    await expect(page.getByTestId('workflow-runs-on')).toBeVisible()
     await expect(
       page.getByTestId('workflow-graph').getByRole('img')
     ).toBeVisible()

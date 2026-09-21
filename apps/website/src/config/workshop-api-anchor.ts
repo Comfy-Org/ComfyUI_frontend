@@ -10,3 +10,14 @@ export function apiPanelRequested(): boolean {
     typeof window !== 'undefined' && window.location.hash === WORKSHOP_API_HASH
   )
 }
+
+/**
+ * A panel the reader has left goes back to no fragment. Holding one the page
+ * is no longer showing would make the next click on the endpoint action a
+ * no-op, since the address would already say what the click asks for.
+ */
+export function releaseApiPanelHash(): void {
+  if (!apiPanelRequested()) return
+  const { pathname, search } = window.location
+  window.history.replaceState(window.history.state, '', `${pathname}${search}`)
+}

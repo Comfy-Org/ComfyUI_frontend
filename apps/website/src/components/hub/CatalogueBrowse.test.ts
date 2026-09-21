@@ -234,17 +234,6 @@ describe('CatalogueBrowse', () => {
     expect(lastShelf('/playground/model/flux/')).toBe('generate-images')
   })
 
-  // An app is a workflow somebody wrapped in a form, so it answers to the
-  // workflows tab rather than asking for a tab of its own.
-  it('returns the apps along with the workflows', async () => {
-    await at('', [
-      ...ENTRIES,
-      workflow({ key: 'sketch', title: 'Sketch to photo', kind: 'app' })
-    ])
-
-    expect(onShelf('generate-images')).toEqual(['workflow', 'app'])
-  })
-
   // Newest over models that carry no date is a ranking over nothing, so the
   // order follows the tab it was chosen for or gives way.
   it('drops a dated order when the reader leaves the workflows behind', async () => {

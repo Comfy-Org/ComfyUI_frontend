@@ -1,9 +1,9 @@
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import { workshopModels } from '../../config/workshop-browse-content'
 import hubTemplateDetails from '../../data/hubTemplateDetails.json'
 import hubTemplates from '../../data/hubTemplates.json'
 import { modelIdentity, modelName } from './model-identity'
-import { partnerModelFor } from './template-use-case'
+import { partnerModelFor, useCaseForTemplate } from './template-use-case'
 import type { HubTemplate, HubTemplateDetails } from './types'
 import { hubTemplateDetailsSchema, hubTemplatesSchema } from './types'
 
@@ -37,6 +37,8 @@ export interface HubWorkflowPage {
   readonly runsOn: readonly HubWorkflowModelRef[]
   /** The one model page this workflow can open without guessing. */
   readonly destination: HubWorkflowDestination | undefined
+  /** The job it does, which names it where the registry named it after a model. */
+  readonly useCase: UseCase | undefined
   readonly callsPartnerModel: boolean
   readonly customNodes: readonly string[]
   /** Bytes of weights to download before it runs. Zero for partner workflows. */
@@ -94,14 +96,12 @@ function modelRefs(
   }))
 }
 
-// Workflows sharing ground with this one: a tag or a model in common. Apps are
-// a different promise, so a node graph never recommends one.
+// Workflows sharing ground with this one: a tag or a model in common.
 function relatedTo(template: HubTemplate): readonly HubTemplate[] {
   return templates
     .filter(
       (other) =>
         other.name !== template.name &&
-        other.isApp === template.isApp &&
         (other.tags.some((tag) => template.tags.includes(tag)) ||
           other.models.some((model) => template.models.includes(model)))
     )
@@ -122,14 +122,6 @@ export function summarisePorts(
   const counts = new Map<string, number>()
   for (const row of rows) counts.set(row.type, (counts.get(row.type) ?? 0) + 1)
   return [...counts].map(([media, count]) => ({ media, count }))
-}
-
-export function formatWeights(bytes: number): string | undefined {
-  if (bytes <= 0) return undefined
-  const gigabytes = bytes / 1_000_000_000
-  return gigabytes >= 1
-    ? `${Math.round(gigabytes)} GB`
-    : `${Math.round(bytes / 1_000_000)} MB`
 }
 
 function destinationFor(
@@ -155,6 +147,7 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
     details: detail,
     runsOn: modelRefs(template, workshopModels),
     destination: destinationFor(template),
+    useCase: useCaseForTemplate(template, workshopModels),
     callsPartnerModel: template.tags.includes('API'),
     customNodes: detail.requiresCustomNodes ?? [],
     weightsBytes: detail.size ?? 0,
@@ -167,4 +160,21 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
     related: relatedTo(template),
     downloadUrl: `https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/${encodeURIComponent(template.name)}.json`
   }
+}
+
+/**
+ * A registry title like "Nano Banana 2: Image Edit" says which model runs, not
+ * what the workflow gets you. Where the title leads with the model's name, the
+ * page says the job first and keeps the model after it.
+ */
+export function workflowJobTitle(
+  page: HubWorkflowPage
+): { readonly useCase: UseCase; readonly model: string } | undefined {
+  const { destination, useCase, template } = page
+  if (!destination || !useCase) return undefined
+  const title = template.title.toLowerCase()
+  const model = destination.name.toLowerCase()
+  return title.startsWith(model)
+    ? { useCase, model: destination.name }
+    : undefined
 }

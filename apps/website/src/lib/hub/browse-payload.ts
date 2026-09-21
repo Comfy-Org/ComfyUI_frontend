@@ -24,7 +24,7 @@ function modelEntry(
 }
 
 function workflowEntry(
-  entry: Extract<CatalogueEntry, { kind: 'workflow' | 'app' }>,
+  entry: Extract<CatalogueEntry, { kind: 'workflow' }>,
   models: readonly WorkshopModel[],
   needsCustomNodes: ReadonlySet<string>
 ): BrowseEntry {

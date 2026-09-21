@@ -45,13 +45,14 @@ describe('WorkflowActions', () => {
   )
 
   // A workflow that is one call to a model we carry has an endpoint to hand
-  // over; one that needs local weights has nothing to hand over.
+  // over; one that needs local weights has nothing to hand over. It stays an
+  // outline, because the run above it is the page's one filled action.
   it('offers the endpoint only where the workflow runs here', () => {
     render(WorkflowActions, { props: props({ runsHere: true }) })
 
     const endpoint = screen.getByRole('link', { name: /Take the endpoint/ })
     expect(endpoint.getAttribute('href')).toBe('#api')
-    expect(endpoint.classList.contains('bg-primary-comfy-yellow')).toBe(true)
+    expect(endpoint.classList.contains('bg-primary-comfy-yellow')).toBe(false)
     expect(screen.getByTestId('workflow-save-note')).toHaveTextContent(
       /ready to copy into your own workspace/
     )

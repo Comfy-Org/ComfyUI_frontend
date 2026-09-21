@@ -44,7 +44,7 @@ function modelCard(
 }
 
 function workflowCard(
-  entry: Extract<CatalogueEntry, { kind: 'workflow' | 'app' }>,
+  entry: Extract<CatalogueEntry, { kind: 'workflow' }>,
   needsCustomNodes: ReadonlySet<string>
 ): CardView {
   const { template } = entry

@@ -305,6 +305,47 @@ describe('ModelDetail', () => {
     }
   )
 
+  // The endpoint action on a workflow page is a link to #api in another
+  // island, so the address bar is the only thing the two share.
+  describe('the API panel asked for through the address bar', () => {
+    const goTo = (hash: string) =>
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${hash}`
+      )
+
+    const selected = (name: string) =>
+      screen.getByRole('tab', { name }).getAttribute('aria-selected')
+
+    it('opens on a link followed into the page, once mounted', async () => {
+      goTo('#api')
+      mountDetail({ model: runnable })
+      await nextTick()
+
+      expect(selected('API')).toBe('true')
+      expect(selected('Playground')).toBe('false')
+    })
+
+    // Holding the fragment after the reader leaves would make the next
+    // request the address already satisfies, and the link would do nothing.
+    it('lets a reader ask for it again after going back to the playground', async () => {
+      goTo('#api')
+      mountDetail({ model: runnable })
+      await nextTick()
+      const visitor = user()
+
+      await visitor.click(screen.getByRole('tab', { name: 'Playground' }))
+      expect(window.location.hash).toBe('')
+
+      goTo('#api')
+      window.dispatchEvent(new HashChangeEvent('hashchange'))
+      await nextTick()
+
+      expect(selected('API')).toBe('true')
+    })
+  })
+
   it('prevents generation while the feature is hidden', async () => {
     auth.session.value = credential
     auth.workshopEnabled.value = false

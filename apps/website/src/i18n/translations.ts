@@ -10606,15 +10606,13 @@ Enterprise`
   },
   'workshop.v2.kind.label': { en: 'Show', 'zh-CN': '显示' },
   'workshop.v2.kind.model': { en: 'Model', 'zh-CN': '模型' },
-  'workshop.v2.kind.workflow': { en: 'Workflow', 'zh-CN': '工作流' },
-  'workshop.v2.kind.app': { en: 'App', 'zh-CN': '应用' },
   'workshop.v2.kind.models': { en: 'Models', 'zh-CN': '模型' },
   'workshop.v2.kind.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
-  'workshop.v2.kind.apps': { en: 'Apps', 'zh-CN': '应用' },
   'workshop.v2.card.runsOn': {
     en: 'Runs on {model}',
     'zh-CN': '运行于 {model}'
   },
+  'workshop.v2.kind.workflow': { en: 'Workflow', 'zh-CN': '工作流' },
   'workshop.v2.card.customNodes': {
     en: 'Custom nodes',
     'zh-CN': '自定义节点'
@@ -10659,19 +10657,6 @@ Enterprise`
     en: 'not in the catalogue',
     'zh-CN': '目录中暂无'
   },
-  'workshop.v2.workflow.needs': { en: "What you'll need", 'zh-CN': '所需条件' },
-  'workshop.v2.workflow.needsComfy': {
-    en: 'ComfyUI, on your own machine',
-    'zh-CN': '你自己机器上的 ComfyUI'
-  },
-  'workshop.v2.workflow.needsWeights': {
-    en: 'Model weights',
-    'zh-CN': '模型权重'
-  },
-  'workshop.v2.workflow.needsCustom': {
-    en: 'Custom nodes',
-    'zh-CN': '自定义节点'
-  },
   'workshop.v2.workflow.howItWorks': {
     en: 'How it works',
     'zh-CN': '工作方式'
@@ -10702,10 +10687,6 @@ Enterprise`
   'workshop.v2.workflow.runsLocal': {
     en: 'Runs in ComfyUI, on your machine',
     'zh-CN': '在你机器上的 ComfyUI 中运行'
-  },
-  'workshop.v2.workflow.needsNothing': {
-    en: 'Nothing to download. This one calls a partner model.',
-    'zh-CN': '无需下载。此工作流调用合作方模型。'
   },
   'workshop.v2.workflow.download': {
     en: 'Download the JSON',
@@ -10760,14 +10741,14 @@ Enterprise`
     'zh-CN':
       '此工作流发起的调用，可直接复制到你的工作区。也可以在你的 Cloud 账户中打开该图。'
   },
+  'workshop.v2.workflow.jobTitle': {
+    en: '{useCase} with {model}',
+    'zh-CN': '{useCase}（{model}）'
+  },
   'workshop.v2.workflow.tags': { en: 'Good for', 'zh-CN': '适用于' },
   'workshop.v2.workflow.related': {
     en: 'Workflows like this one',
     'zh-CN': '相似的工作流'
-  },
-  'workshop.v2.workflow.relatedApps': {
-    en: 'Apps like this one',
-    'zh-CN': '相似的应用'
   },
   'workshop.v2.model.noRun': {
     en: 'This model cannot be run here yet.',

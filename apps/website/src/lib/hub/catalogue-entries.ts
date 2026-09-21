@@ -4,7 +4,7 @@ import type { FacetedTemplate } from './facet-fields'
 import { groupByModel, groupName } from './model-identity'
 import { partnerModelFor, useCaseForTemplate } from './template-use-case'
 
-export type EntryKind = 'model' | 'workflow' | 'app'
+export type EntryKind = 'model' | 'workflow'
 
 export const modelGroupPath = (key: string) => `/playground/model/${key}/`
 
@@ -27,7 +27,7 @@ export interface ModelEntry {
 }
 
 interface WorkflowEntry {
-  readonly kind: 'workflow' | 'app'
+  readonly kind: 'workflow'
   readonly key: string
   readonly template: FacetedTemplate
   /** The single model page this workflow can safely open, when there is one. */
@@ -148,7 +148,7 @@ export function buildCatalogue(
   )
   const workflowEntries = standalone.map(
     (template): WorkflowEntry => ({
-      kind: template.isApp ? 'app' : 'workflow',
+      kind: 'workflow',
       key: template.name,
       template,
       runsOn: partnerModelFor(template, models)
