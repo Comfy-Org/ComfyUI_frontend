@@ -57,7 +57,6 @@
     "copy": "Kopyala",
     "copyMarkdown": "Markdown olarak kopyala",
     "copyUnavailable": "Bu sürümde yalnızca geçerli konuşma kopyalanabilir",
-    "credits": "kredi",
     "currentTab": "Geçerli sekme",
     "delete": "Sil",
     "diagnosticReport": {
@@ -151,7 +150,6 @@
     "runNoticeExpanded": "Aracı iş akışınızı değiştirebilir. Yürütmesine izin vermeden önce Çalıştırma izinlerini kontrol edin.",
     "runPermissions": "Çalıştırma izinleri",
     "runPermissionsDescription": "Aracının ne zaman onayınıza ihtiyaç duyacağını seçin",
-    "saveChanges": "Değişiklikleri kaydet",
     "savingWorkflow": "İş akışı kaydediliyor",
     "searchWorkflows": "İş akışlarını ara",
     "selectWorkflowForAgent": "Aracının çalışacağı bir iş akışı seçin",

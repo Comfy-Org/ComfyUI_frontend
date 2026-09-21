@@ -57,7 +57,6 @@
     "copy": "نسخ",
     "copyMarkdown": "نسخ بصيغة markdown",
     "copyUnavailable": "لا يمكن نسخ سوى المحادثة الحالية في هذا الإصدار",
-    "credits": "الرصيد",
     "currentTab": "علامة التبويب الحالية",
     "delete": "حذف",
     "diagnosticReport": {
@@ -151,7 +150,6 @@
     "runNoticeExpanded": "يمكن للوكيل تعديل سير العمل الخاص بك. تحقّق من أذونات التشغيل قبل السماح له بالتنفيذ.",
     "runPermissions": "أذونات التشغيل",
     "runPermissionsDescription": "اختر متى يحتاج الوكيل إلى موافقتك",
-    "saveChanges": "حفظ التغييرات",
     "savingWorkflow": "جارٍ حفظ سير العمل",
     "searchWorkflows": "ابحث في سير العمل",
     "selectWorkflowForAgent": "حدّد سير عمل ليعمل الوكيل فيه",

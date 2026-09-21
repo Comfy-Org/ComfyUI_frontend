@@ -57,7 +57,6 @@
     "copy": "کپی",
     "copyMarkdown": "کپی به‌صورت مارک‌داون",
     "copyUnavailable": "در این نسخه فقط گفت‌وگوی فعلی قابل کپی است",
-    "credits": "اعتبار",
     "currentTab": "تب فعلی",
     "delete": "حذف",
     "diagnosticReport": {
@@ -151,7 +150,6 @@
     "runNoticeExpanded": "عامل می‌تواند workflow شما را تغییر دهد. پیش از اجازه دادن به آن برای اجرا، مجوزهای اجرا را بررسی کنید.",
     "runPermissions": "مجوزهای اجرا",
     "runPermissionsDescription": "زمان نیاز agent به رضایت شما را انتخاب کنید",
-    "saveChanges": "ذخیره تغییرات",
     "savingWorkflow": "در حال ذخیره‌سازی workflow",
     "searchWorkflows": "جست‌وجوی workflowها",
     "selectWorkflowForAgent": "یک workflow برای کار agent انتخاب کنید",
