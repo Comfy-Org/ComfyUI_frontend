@@ -1551,6 +1551,27 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('a doc_reset whose reconcile throws still settles the sent human batch', async () => {
+    const { enqueue, unmount } = mountWithHumanOps()
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    adapterState.clearForReset.mockImplementationOnce(() => {
+      throw new Error('onRemoved threw')
+    })
+
+    expect(() =>
+      dispatchFrame('doc_reset', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:x'
+      })
+    ).toThrow('onRemoved threw')
+
+    expect(await settledHumanOpStates()).toEqual(['unconfirmed'])
+    unmount()
+  })
+
   it('unbinding settles queued human batches and sends nothing more', async () => {
     vi.useFakeTimers()
     const { enqueue, workflowId, unmount } = mountWithHumanOps()
