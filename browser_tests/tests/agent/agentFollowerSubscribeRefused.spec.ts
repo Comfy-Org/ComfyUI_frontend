@@ -36,7 +36,7 @@ test.describe(
     // no client spoke doc_subscribe at all; that premise is stale — the
     // follower ships and subscribes — so this is the narrower surviving
     // question: a refusal that outlives the retry budget.
-    test('retries a refused subscribe, then leaves the canvas silently unchanged', async ({
+    test('surfaces exhausted retries and recovers when the user retries', async ({
       agentConversation,
       page
     }) => {
@@ -113,31 +113,24 @@ test.describe(
         expect(agentConversation.subscribeCount()).toBe(0)
       })
 
-      // THE GAP. The document and the user's canvas have now genuinely
-      // diverged, and nothing user-visible says so: the follower's status feeds
-      // CrdtDevPanel only, which is a dev surface.
-      //
-      // These assertions describe CURRENT behavior deliberately. They are the
-      // repro, not the desired end state — see the bug note below.
-      await test.step('the canvas stays behind the document, silently', async () => {
+      await test.step('the canvas stays behind and the panel explains why', async () => {
         expect(agentConversation.hostNodeCount()).toBe(hostNodes)
         await expect(agentConversation.vueNodes.nodes).toHaveCount(nodesBefore)
-
-        // No alert, status message, or error region mentions the connection.
-        const alerts = page.getByRole('alert')
-        await expect(alerts).toHaveCount(0)
+        await expect(page.getByRole('alert')).toContainText(
+          'Workflow changes stopped syncing. Your chat is safe.'
+        )
       })
 
-      // BUG (crdtdeliv-1): when the retry budget is exhausted the follower is
-      // permanently inert for this workflow and the user has no signal. The
-      // desired behavior is a visible, recoverable state — the assertion below
-      // is what should replace the two above once that ships, and it fails
-      // today, which is the point of leaving it written down:
-      //
-      //   await expect(page.getByRole('alert')).toContainText(/reconnect/i)
-      //
-      // Deliberately NOT fixed in this change: this spec establishes the repro
-      // and the harness seam first, per harness-first QA.
+      await test.step('retry reconnects and catches the canvas up', async () => {
+        agentConversation.setSubscribeBehavior({ kind: 'accept' })
+        await page.getByRole('button', { name: 'Retry sync' }).click()
+
+        await expect
+          .poll(() => agentConversation.subscribeCount())
+          .toBeGreaterThanOrEqual(1)
+        await expect(agentConversation.vueNodes.nodes).toHaveCount(hostNodes)
+        await expect(page.getByRole('alert')).toHaveCount(0)
+      })
     })
 
     // The recovery direction, which does work today: a refusal that lifts

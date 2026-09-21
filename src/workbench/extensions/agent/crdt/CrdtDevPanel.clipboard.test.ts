@@ -41,6 +41,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 const status: AgentCrdtStatus = {
   enabled: true,
   connected: true,
+  subscriptionFailed: false,
   workflowId: 'doc-123',
   updatesApplied: 1,
   lastFrameType: 'doc_update',

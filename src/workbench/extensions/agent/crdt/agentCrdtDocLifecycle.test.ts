@@ -58,6 +58,14 @@ function devEvents(): { kind: string; detail: unknown }[] {
     .mock.calls.map(([kind, detail]) => ({ kind, detail }))
 }
 
+function exhaustRefusalBudget(lifecycle: AgentCrdtDocLifecycle): void {
+  lifecycle.onSubscribeRefused()
+  for (let attempt = 0; attempt < 6; attempt++) {
+    vi.advanceTimersByTime(500 * 2 ** attempt)
+    lifecycle.onSubscribeRefused()
+  }
+}
+
 describe('AgentCrdtDocLifecycle ack timeout', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -181,6 +189,33 @@ describe('AgentCrdtDocLifecycle ack timeout', () => {
         detail: { attempt: 1, workflowId: WORKFLOW_ID }
       }
     ])
+  })
+
+  it('reports terminal failure after the refusal retry budget is exhausted', () => {
+    const { lifecycle, resubscribe, onGaveUp } = wire()
+
+    exhaustRefusalBudget(lifecycle)
+
+    expect(resubscribe).toHaveBeenCalledTimes(6)
+    expect(onGaveUp).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      GAVE_UP_REPORT
+    )
+  })
+
+  it('manual retry resets the terminal latch and subscribes immediately', () => {
+    const { lifecycle, resubscribe, onGaveUp } = wire()
+
+    exhaustRefusalBudget(lifecycle)
+    expect(onGaveUp).toHaveBeenCalledOnce()
+
+    lifecycle.retry()
+
+    expect(resubscribe).toHaveBeenCalledTimes(7)
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(500)
+    expect(resubscribe).toHaveBeenCalledTimes(8)
   })
 
   it('gives up on the third unanswered attempt and reports it once', () => {

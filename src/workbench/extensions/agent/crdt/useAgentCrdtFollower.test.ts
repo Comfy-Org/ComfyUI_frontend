@@ -215,13 +215,15 @@ function mountFollower(
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
+  retrySubscription: () => void
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
+  let exposedRetry!: () => void
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(
+      const { status, retrySubscription } = useAgentCrdtFollower(
         workflowId,
         graphMutations,
         () => null,
@@ -230,6 +232,7 @@ function mountFollower(
         events
       )
       exposedStatus = () => status.value as AgentCrdtStatus
+      exposedRetry = retrySubscription
       return () => null
     }
   })
@@ -238,7 +241,8 @@ function mountFollower(
     unmount,
     workflowId,
     isTargetActive,
-    status: exposedStatus
+    status: exposedStatus,
+    retrySubscription: exposedRetry
   }
 }
 
@@ -419,9 +423,9 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FE-1901: retries a refused subscribe with bounded exponential backoff', () => {
+  it('FE-1901: surfaces exhausted refusal retries and lets the user retry', () => {
     vi.useFakeTimers()
-    const { unmount } = mountFollower('wf-1')
+    const { retrySubscription, status, unmount } = mountFollower('wf-1')
 
     dispatchFrame('doc_subscribed', { ok: false })
     expect(bridge().resubscribe).not.toHaveBeenCalled()
@@ -444,6 +448,12 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: false })
     vi.advanceTimersByTime(60_000)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+    expect(status().subscriptionFailed).toBe(true)
+
+    retrySubscription()
+
+    expect(status().subscriptionFailed).toBe(false)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(7)
     unmount()
   })
 
