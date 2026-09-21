@@ -24,7 +24,7 @@ const rows: FeatureRow[] = [
     description: routerT('platform.router.section2.body', locale),
     media: {
       type: 'image',
-      src: 'https://media.comfy.org/website/router/provider-param.webp',
+      src: 'https://media.comfy.org/website/router/provider-comfy.webp',
       fit: 'cover'
     }
   },
