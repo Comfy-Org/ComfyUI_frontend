@@ -54,7 +54,7 @@ export function persistDocId(docId: string): void {
 function isReloadNavigation(): boolean {
   return performance
     .getEntriesByType('navigation')
-    .some((entry) => (entry as PerformanceNavigationTiming).type === 'reload')
+    .some((entry) => 'type' in entry && entry.type === 'reload')
 }
 
 export function reconcilePersistedDocId(): string | null {

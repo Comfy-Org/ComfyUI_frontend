@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -27,7 +28,7 @@ function writeForeignRecord(docId: string, expiresAt: number): void {
 
 function asReloadNavigation(): void {
   vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
-    { type: 'reload' } as PerformanceNavigationTiming
+    fromPartial<PerformanceNavigationTiming>({ type: 'reload' })
   ])
 }
 
