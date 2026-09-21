@@ -50,7 +50,16 @@ describe('completeness CLI', () => {
     const target = join(dir, 'coverage-metadata.json')
     if (contents !== null) writeFileSync(target, contents)
     try {
-      return spawnSync(TSX, [MODULE, target], { encoding: 'utf8' }).stdout
+      const result = spawnSync(TSX, [MODULE, target], { encoding: 'utf8' })
+      // The workflow reads this under `bash -e`, so a nonzero exit fails the
+      // step rather than yielding a value. A case must not pass on stdout the
+      // step would never have used.
+      if (result.status !== 0) {
+        throw new Error(
+          `coverage-metadata.ts exited ${result.status}: ${result.stderr}`
+        )
+      }
+      return result.stdout
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

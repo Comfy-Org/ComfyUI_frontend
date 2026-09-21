@@ -27,7 +27,16 @@ function render(metadata: Record<string, unknown> | string | null): string {
     )
   }
   try {
-    return spawnSync(TSX, [SCRIPT, lcov], { encoding: 'utf8' }).stdout
+    const result = spawnSync(TSX, [SCRIPT, lcov], { encoding: 'utf8' })
+    // unified-report.ts runs this through execFileSync, which throws on a
+    // nonzero exit and degrades the PR comment to a render failure. Returning
+    // stdout regardless would let a case pass on output the report never got.
+    if (result.status !== 0) {
+      throw new Error(
+        `coverage-report.ts exited ${result.status}: ${result.stderr}`
+      )
+    }
+    return result.stdout
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

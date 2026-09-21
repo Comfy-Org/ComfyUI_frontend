@@ -333,6 +333,7 @@ describe('comparison span', () => {
 
     const result = fixture.run()
 
+    expect(result.status).toBe(0)
     expect(result.stdout).toBe('')
   })
 
