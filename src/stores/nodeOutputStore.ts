@@ -21,6 +21,7 @@ import { clone } from '@/scripts/utils'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { parseFilePath } from '@/utils/formatUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import {
@@ -41,11 +42,17 @@ const createOutputs = (
   type: ResultItemType,
   isAnimated: boolean
 ): ExecutedWsMessage['output'] => {
+  const parsedFilenames = filenames.map((filename) =>
+    parseAnnotatedPath(filename, type)
+  )
   return {
-    images: filenames.map((image) => ({ type, ...parseFilePath(image) })),
-    animated: filenames.map(
-      (image) =>
-        isAnimated && (image.endsWith('.webp') || image.endsWith('.png'))
+    images: parsedFilenames.map(({ filepath, rootFolder }) => ({
+      type: rootFolder,
+      ...parseFilePath(filepath)
+    })),
+    animated: parsedFilenames.map(
+      ({ filepath }) =>
+        isAnimated && (filepath.endsWith('.webp') || filepath.endsWith('.png'))
     )
   }
 }

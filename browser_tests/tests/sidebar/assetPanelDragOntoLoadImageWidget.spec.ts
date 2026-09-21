@@ -87,7 +87,7 @@ test.describe(
           .poll(() => imageWidget.getValue())
           .toBe(`${STALE_TEMP_FILENAME} [temp]`)
 
-        test.fail()
+        test.fail(!tempAvailable)
         await expect(
           loadImageNode.getByTestId(TestIds.node.mainImage)
         ).toBeVisible()

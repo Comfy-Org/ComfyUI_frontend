@@ -905,6 +905,19 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(store.nodeOutputs['5']?.images?.[0]?.type).toBe('input')
   })
 
+  it('routes an annotated widget value to its own directory', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'nested/preview.png [temp]')
+
+    expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
+      filename: 'preview.png',
+      subfolder: 'nested',
+      type: 'temp'
+    })
+  })
+
   it('leaves node images unchanged for preview change detection', () => {
     const store = useNodeOutputStore()
     const images = [{ filename: 'previous.png' }]
