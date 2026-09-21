@@ -20,15 +20,9 @@ class MaskEditorHelper {
     return this.comfyPage.page
   }
 
-  async loadImageOnNode(
-    workflow = 'widgets/load_image_widget',
-    nodeType = 'LoadImage'
-  ) {
-    await this.comfyPage.workflow.loadWorkflow(workflow)
-
-    const loadImageNode = (
-      await this.comfyPage.nodeOps.getNodeRefsByType(nodeType)
-    )[0]
+  async loadImageOnNode(nodeType = 'LoadImage') {
+    const loadImageNode =
+      await this.comfyPage.nodeOps.getNodeRefByType(nodeType)
     const { x, y } = await loadImageNode.getPosition()
 
     await this.comfyPage.dragDrop.dragAndDropFile('image64x64.webp', {
@@ -46,8 +40,8 @@ class MaskEditorHelper {
     }
   }
 
-  async openDialog(workflow?: string, nodeType?: string): Promise<Locator> {
-    const { imagePreview } = await this.loadImageOnNode(workflow, nodeType)
+  async openDialog(nodeType?: string): Promise<Locator> {
+    const { imagePreview } = await this.loadImageOnNode(nodeType)
 
     await imagePreview.getByRole('region').hover()
     await this.page.getByLabel('Edit or mask image').click()

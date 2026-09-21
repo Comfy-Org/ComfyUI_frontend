@@ -30,7 +30,7 @@ function legacyWidget(node, inputName, inputData) {
 }
 
 app.registerExtension({
-  name: 'DevTools.LegacyWidget',
+  name: 'DevTools.LegacyCompatibility',
   async getCustomWidgets() {
     return { DEVTOOLSLEGACYWIDGET: legacyWidget }
   },
