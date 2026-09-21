@@ -542,6 +542,74 @@ describe('parseRetryAfter contract', () => {
     }
   )
 
+  // `Date.parse` handles these pre-ISO formats by implementation-defined
+  // heuristics: V8 rolls an impossible day forward, reads `24:00:00` as the
+  // next day, and truncates a leap second. A well-shaped value that names no
+  // real instant has to read as no deadline instead.
+  it.for([
+    {
+      label: 'February 29 outside a leap year',
+      header: 'Wed, 29 Feb 2023 07:28:00 GMT'
+    },
+    {
+      label: 'a day past the end of the month',
+      header: 'Wed, 31 Nov 2026 07:28:00 GMT'
+    },
+    { label: 'an hour past midnight', header: 'Wed, 21 Oct 2026 24:00:00 GMT' },
+    {
+      label: 'a minute past the hour',
+      header: 'Wed, 21 Oct 2026 07:60:00 GMT'
+    },
+    {
+      label: 'an out-of-range RFC 850 day',
+      header: 'Wednesday, 29-Feb-23 07:28:00 GMT'
+    },
+    { label: 'an out-of-range asctime day', header: 'Sun Nov 31 07:28:00 2026' }
+  ])('returns undefined for $label', ({ header }) => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+    expect(parseRetryAfter(header)).toBeUndefined()
+  })
+
+  it('accepts February 29 in a leap year', () => {
+    vi.setSystemTime(new Date('2024-02-29T07:27:30Z'))
+
+    expect(parseRetryAfter('Thu, 29 Feb 2024 07:28:00 GMT')).toBe(30)
+  })
+
+  it('reads a leap second as the last ordinary second of its minute', () => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+    expect(parseRetryAfter('Wed, 21 Oct 2026 07:28:60 GMT')).toBe(89)
+  })
+
+  // RFC 9110 asks recipients to be robust, and the weekday carries no
+  // information the date does not, so a server that computes it wrong should
+  // not lose its deadline.
+  it('ignores a day-name that disagrees with the date', () => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+    expect(parseRetryAfter('Mon, 21 Oct 2026 07:28:00 GMT')).toBe(30)
+  })
+
+  // RFC 9110 resolves an RFC 850 two-digit year against a rolling 50-year
+  // window, not the fixed pivot `Date.parse` uses: in 2026, `-60` is 2060, and
+  // reading it as 1960 would clamp a real deadline to an immediate retry.
+  it('resolves an RFC 850 two-digit year against the rolling 50-year window', () => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+    const expected = Math.ceil(
+      (Date.UTC(2060, 9, 21, 7, 28, 0) - Date.now()) / 1000
+    )
+    expect(parseRetryAfter('Thursday, 21-Oct-60 07:28:00 GMT')).toBe(expected)
+  })
+
+  it('reads an RFC 850 year more than 50 years ahead as the past year it names', () => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+    expect(parseRetryAfter('Tuesday, 21-Oct-80 07:28:00 GMT')).toBe(0)
+  })
+
   it('never returns NaN, so the caller needs no safe-integer repair', () => {
     const headers = [
       null,

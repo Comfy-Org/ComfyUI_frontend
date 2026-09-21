@@ -102,43 +102,137 @@ function getErrorMessage(body: unknown, fallback: string): string {
 
 const DAY_NAME = 'Mon|Tue|Wed|Thu|Fri|Sat|Sun'
 const DAY_NAME_LONG = 'Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday'
-const MONTH = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec'
-const TIME_OF_DAY = '\\d{2}:\\d{2}:\\d{2}'
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec'
+]
+const MONTH = MONTHS.join('|')
+const TIME_OF_DAY = '(\\d{2}):(\\d{2}):(\\d{2})'
 
 /** `Sun, 06 Nov 1994 08:49:37 GMT` - the preferred RFC 9110 IMF-fixdate. */
 const IMF_FIXDATE = new RegExp(
-  `^(?:${DAY_NAME}), \\d{2} (?:${MONTH}) \\d{4} ${TIME_OF_DAY} GMT$`
+  `^(?:${DAY_NAME}), (\\d{2}) (${MONTH}) (\\d{4}) ${TIME_OF_DAY} GMT$`
 )
 /** `Sunday, 06-Nov-94 08:49:37 GMT` - the obsolete RFC 850 format. */
 const RFC850_DATE = new RegExp(
-  `^(?:${DAY_NAME_LONG}), \\d{2}-(?:${MONTH})-\\d{2} ${TIME_OF_DAY} GMT$`
+  `^(?:${DAY_NAME_LONG}), (\\d{2})-(${MONTH})-(\\d{2}) ${TIME_OF_DAY} GMT$`
 )
 /** `Sun Nov  6 08:49:37 1994` - the obsolete asctime format, day space-padded. */
 const ASCTIME_DATE = new RegExp(
-  `^(?:${DAY_NAME}) (${MONTH}) (\\d{2}| \\d) (${TIME_OF_DAY}) (\\d{4})$`
+  `^(?:${DAY_NAME}) (${MONTH}) (\\d{2}| \\d) ${TIME_OF_DAY} (\\d{4})$`
 )
+
+interface HttpDateFields {
+  year: number
+  /** 1-12, as the grammar writes it. */
+  month: number
+  day: number
+  hour: number
+  minute: number
+  second: number
+}
+
+/**
+ * The four-digit year an RFC 850 two-digit year stands for. RFC 9110 requires a
+ * timestamp that would read as more than 50 years in the future to be taken as
+ * the most recent past year with those last two digits, which is a rolling
+ * window rather than the fixed pivot `Date.parse` applies.
+ */
+function expandTwoDigitYear(twoDigit: number): number {
+  const currentYear = new Date(Date.now()).getUTCFullYear()
+  const candidate = Math.floor(currentYear / 100) * 100 + twoDigit
+  return candidate > currentYear + 50 ? candidate - 100 : candidate
+}
+
+function httpDateFields(value: string): HttpDateFields | undefined {
+  const asMonth = (name: string) => MONTHS.indexOf(name) + 1
+
+  const imf = IMF_FIXDATE.exec(value)
+  if (imf)
+    return {
+      year: Number(imf[3]),
+      month: asMonth(imf[2]),
+      day: Number(imf[1]),
+      hour: Number(imf[4]),
+      minute: Number(imf[5]),
+      second: Number(imf[6])
+    }
+
+  const rfc850 = RFC850_DATE.exec(value)
+  if (rfc850)
+    return {
+      year: expandTwoDigitYear(Number(rfc850[3])),
+      month: asMonth(rfc850[2]),
+      day: Number(rfc850[1]),
+      hour: Number(rfc850[4]),
+      minute: Number(rfc850[5]),
+      second: Number(rfc850[6])
+    }
+
+  const asctime = ASCTIME_DATE.exec(value)
+  if (asctime)
+    return {
+      year: Number(asctime[6]),
+      month: asMonth(asctime[1]),
+      day: Number(asctime[2].trim()),
+      hour: Number(asctime[3]),
+      minute: Number(asctime[4]),
+      second: Number(asctime[5])
+    }
+
+  return undefined
+}
 
 /**
  * The instant an RFC 9110 `HTTP-date` names, or `undefined` when the value is
  * not one of the three formats that grammar allows (IMF-fixdate, RFC 850,
- * asctime). `Date.parse` accepts far more than those - an ISO-8601 local
- * timestamp such as `2099-12-31T00:00:00` among them - so the shape is checked
- * before it is consulted, and a server sending one of those is treated as
- * having sent no usable deadline at all.
+ * asctime) or names no real date.
+ *
+ * The components are read and checked here rather than handed to `Date.parse`,
+ * which accepts far more than the grammar - an ISO-8601 local timestamp such as
+ * `2099-12-31T00:00:00` among them - and whose handling of these pre-ISO
+ * formats is implementation-defined: V8 rolls `29 Feb 2023` forward to March 1,
+ * reads `24:00:00` as the next day, and applies a fixed two-digit-year pivot
+ * rather than the rolling one RFC 9110 mandates. Every field is validated, and
+ * all three formats name a UTC instant (asctime carries no zone but is defined
+ * as UTC), so the result no longer varies with the engine or the host zone.
+ *
+ * Deliberately lenient about `day-name`: RFC 9110 asks recipients to be robust,
+ * so a weekday that disagrees with the date is ignored rather than rejected.
  */
 function parseHttpDate(value: string): number | undefined {
-  const asctime = ASCTIME_DATE.exec(value)
-  // asctime carries no zone but is defined as UTC, so restate it as GMT rather
-  // than let `Date.parse` read it in the host's local zone.
-  const normalized = asctime
-    ? `${asctime[2].trim().padStart(2, '0')} ${asctime[1]} ${asctime[4]} ${asctime[3]} GMT`
-    : IMF_FIXDATE.test(value) || RFC850_DATE.test(value)
-      ? value
-      : undefined
-  if (normalized === undefined) return undefined
-  // A well-shaped date can still name no instant (`Wed, 32 Oct 2026 ...`).
-  const parsed = Date.parse(normalized)
-  return Number.isNaN(parsed) ? undefined : parsed
+  const fields = httpDateFields(value)
+  if (fields === undefined) return undefined
+  const { year, month, day, hour, minute, second } = fields
+  if (hour > 23 || minute > 59 || second > 60) return undefined
+  // The grammar admits a leap second; no UTC instant carries one, so it reads
+  // as the last ordinary second of that minute.
+  const instant = Date.UTC(
+    year,
+    month - 1,
+    day,
+    hour,
+    minute,
+    Math.min(second, 59)
+  )
+  // `Date.UTC` rolls an impossible day into the next month (`31 Nov`, `29 Feb`
+  // outside a leap year), so the round-trip is what proves the date exists.
+  const utc = new Date(instant)
+  const exists =
+    utc.getUTCFullYear() === year &&
+    utc.getUTCMonth() === month - 1 &&
+    utc.getUTCDate() === day
+  return exists ? instant : undefined
 }
 
 /**
