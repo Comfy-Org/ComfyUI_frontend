@@ -49,7 +49,7 @@ const modelEntry = (
 })
 
 const workflowEntry = (
-  overrides: Partial<Extract<CatalogueEntry, { kind: 'workflow' | 'app' }>> = {}
+  overrides: Partial<Extract<CatalogueEntry, { kind: 'workflow' }>> = {}
 ): CatalogueEntry => ({
   kind: 'workflow',
   key: 'poster',
@@ -90,13 +90,13 @@ describe('cardViewFor', () => {
     ).toBe(true)
   })
 
-  it('carries the app kind through to the card', () => {
+  it('carries an app through to the card as the workflow it is', () => {
     expect(
       cardViewFor(
-        workflowEntry({ kind: 'app', template: template({ isApp: true }) }),
+        workflowEntry({ template: template({ isApp: true }) }),
         noNodes
       ).kind
-    ).toBe('app')
+    ).toBe('workflow')
   })
 
   it('shows no media for a workflow with no thumbnail', () => {

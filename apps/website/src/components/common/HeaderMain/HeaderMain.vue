@@ -25,7 +25,8 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   locale = 'en',
   githubStars = '',
-  workshopInBuild = false
+  workshopInBuild = false,
+  pageOwnsPrimaryAction = false
 } = defineProps<{
   locale?: Locale
   githubStars?: string
