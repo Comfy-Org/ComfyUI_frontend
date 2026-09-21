@@ -15,7 +15,6 @@ import {
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
@@ -1824,6 +1823,71 @@ describe('graphMutations', () => {
     ])
   })
 
+  it('leaves a remembered autogrow answer untouched when a later mutation in the same batch is rejected', () => {
+    let liveReachable = true
+    const graph = mutations({
+      autogrowGroupOf: (_scope, _nodeId, name) => {
+        if (!liveReachable) return { kind: 'unavailable' }
+        return name.startsWith('refs.')
+          ? { kind: 'member', group: 'refs' }
+          : { kind: 'notMember' }
+      }
+    })
+    graph.batch(context, explicitNamesGroupScenario())
+    graph.batch({ ...context, opId: 'reconcile-live' }, (batch) => {
+      batch.reconcileNode({
+        ...node(2),
+        inputs: [
+          { name: 'refs.a', type: 'IMAGE' },
+          { name: 'alpha', type: 'IMAGE' },
+          { name: 'beta', type: 'IMAGE' }
+        ]
+      })
+    })
+
+    liveReachable = false
+    // `deleteNode` would forget node 2's remembered autogrow answers on a
+    // successful commit, but `addNode` re-registering node 1 in the same
+    // batch is rejected ("already registered"), so the whole batch --
+    // including that delete -- must never take effect.
+    expect(
+      graph.batch({ ...context, opId: 'rejected-batch' }, (batch) => {
+        batch.deleteNode(toNodeId(2))
+        batch.addNode(node(1))
+      })
+    ).toBe(false)
+
+    expect(
+      graph.batch(
+        { ...context, opId: 'reconcile-after-rejected-batch' },
+        (batch) => {
+          batch.reconcileNode({
+            ...node(2),
+            inputs: [
+              { name: 'refs.a', type: 'IMAGE' },
+              { name: 'alpha', type: 'IMAGE' },
+              { name: 'beta', type: 'IMAGE' }
+            ]
+          })
+        }
+      )
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    // `refs.b` survives: the remembered `member` answer from the live
+    // reconcile above is still intact, so the unavailable live port's
+    // "unavailable" answer falls back to it rather than to the
+    // shape heuristic (which would drop `refs.b`).
+    expect(target?.inputs.map(({ name }) => name)).toEqual([
+      'refs.a',
+      'refs.b',
+      'alpha',
+      'beta'
+    ])
+  })
+
   it("classifies an explicit-names autogrow spare and a numeric DynamicCombo child correctly on this GraphMutations instance's very first reconcile of each node, with pre-existing store state and the live port answering 'unavailable' from the start", () => {
     // No prior reconcile ever ran on this `graph` before the ones under
     // test, so `rememberedAutogrowGroups` starts (and stays) empty -- the
@@ -1914,6 +1978,96 @@ describe('graphMutations', () => {
     expect(comboTarget?.inputs.map(({ name }) => name)).toEqual(['keep'])
   })
 
+  it('drops a remembered autogrow answer once the node id is replaced with a different, non-autogrow type, instead of letting it outlive the type it was answered for', () => {
+    useNodeDefStore().updateNodeDefs([
+      mockNodeDef({
+        name: 'RefsNode',
+        input: {
+          required: {
+            refs: [
+              'COMFY_AUTOGROW_V3',
+              { template: { input: {} }, names: ['a', 'b'] }
+            ]
+          }
+        }
+      }),
+      // Same literal input name the old type's autogrow member used, but
+      // here it is an ordinary, non-grouped, static input.
+      mockNodeDef({
+        name: 'PlainNode',
+        input: { required: { keep: ['IMAGE', {}], 'refs.b': ['IMAGE', {}] } }
+      })
+    ])
+
+    let liveReachable = true
+    const graph = mutations({
+      autogrowGroupOf: (_scope, _nodeId, name) => {
+        if (!liveReachable) return { kind: 'unavailable' }
+        return name.startsWith('refs.')
+          ? { kind: 'member', group: 'refs' }
+          : { kind: 'notMember' }
+      }
+    })
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        type: 'RefsNode',
+        inputs: [{ name: 'refs.b', type: 'IMAGE', link: null }]
+      })
+    })
+
+    // Prime: the live node answers `member` for `refs.b` under `RefsNode`,
+    // and this follower remembers it.
+    expect(
+      graph.batch({ ...context, opId: 'prime' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          type: 'RefsNode',
+          inputs: [{ name: 'refs.b', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+
+    // Replace: same node id, a different type whose own definition also
+    // has an input literally named `refs.b` -- static, not autogrow.
+    expect(
+      graph.batch({ ...context, opId: 'replace-type' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          type: 'PlainNode',
+          inputs: [
+            { name: 'keep', type: 'IMAGE' },
+            { name: 'refs.b', type: 'IMAGE' }
+          ]
+        })
+      })
+    ).toBe(true)
+
+    // Unavailable reconcile: the document catches up to `PlainNode`'s own
+    // shape and drops `refs.b`. The `RefsNode` memory primed above must
+    // not resurrect it -- the replacement type's own static definition
+    // (an ordinary, non-grouped input) must win instead.
+    liveReachable = false
+    expect(
+      graph.batch(
+        { ...context, opId: 'unavailable-after-replace' },
+        (batch) => {
+          batch.reconcileNode({
+            ...node(2),
+            type: 'PlainNode',
+            inputs: [{ name: 'keep', type: 'IMAGE' }]
+          })
+        }
+      )
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ name }) => name)).toEqual(['keep'])
+  })
+
   it("resolves duplicate-named live occurrences by position when the document's own link is omitted", () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
@@ -1966,13 +2120,14 @@ describe('graphMutations', () => {
     // (`prepareInputSlots` filters out non-record entries before anything
     // reaches the store) -- by writing it straight through the node
     // store's own real mutation entry point, the same as any other caller
-    // of `updateNodeSlots`. The malformed value is built as `unknown`, the
-    // same as any other runtime state this boundary receives, and asserted
-    // once at that boundary, rather than double-asserting a value into the
-    // store's already-typed live array.
-    const corruptedInputs: unknown = [null, ...existing.inputs.slice(1)]
+    // of `updateNodeSlots`. Round-tripped through `JSON` rather than cast to
+    // `NodeState['inputs']`: the malformed value stays untyped the same way
+    // real corrupted state arriving from outside this module would.
+    const corruptedInputs = JSON.parse(
+      JSON.stringify([null, ...existing.inputs.slice(1)])
+    )
     useNodeDataStore().updateNodeSlots(scope, existing.id, {
-      inputs: corruptedInputs as NodeState['inputs'],
+      inputs: corruptedInputs,
       outputs: existing.outputs
     })
 

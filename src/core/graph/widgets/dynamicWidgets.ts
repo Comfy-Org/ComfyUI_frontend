@@ -512,6 +512,23 @@ function addAutogrowGroup(
 }
 
 const ORDINAL_REGEX = /\d+$/
+
+/**
+ * Whether `key` -- an autogrow input name's segment after the group
+ * prefix -- is a member of an autogrow group: matched against an explicit
+ * `names` list when the group defines one, or (absent that) required to
+ * end in a numeric ordinal. The one membership rule a live autogrow
+ * registration (`resolveAutogrowOrdinal` below) and a node type's own
+ * static schema (`nodeDefAutogrowGroupOf` in `graphMutations.ts`) must
+ * agree on, so it is shared rather than reimplemented at each call site.
+ */
+export function isAutogrowGroupMember(
+  key: string,
+  names: readonly string[] | undefined
+): boolean {
+  return names ? names.includes(key) : ORDINAL_REGEX.test(key)
+}
+
 function resolveAutogrowOrdinal(
   inputName: string,
   groupName: string,
@@ -520,14 +537,8 @@ function resolveAutogrowOrdinal(
   //TODO preslice groupname?
   const name = inputName.slice(groupName.length + 1)
   const { names } = node.comfyDynamic.autogrow[groupName]
-  if (names) {
-    const ordinal = names.findIndex((s) => s === name)
-    return ordinal === -1 ? undefined : ordinal
-  }
-  const match = name.match(ORDINAL_REGEX)
-  if (!match) return undefined
-  const ordinal = parseInt(match[0])
-  return ordinal !== ordinal ? undefined : ordinal
+  if (!isAutogrowGroupMember(name, names)) return undefined
+  return names ? names.indexOf(name) : parseInt(name.match(ORDINAL_REGEX)![0])
 }
 function autogrowInputConnected(index: number, node: AutogrowNode) {
   const input = node.inputs.at(index)

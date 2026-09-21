@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { assert } from '@/base/assert'
+
 import { runCleanupsInReverse } from './crdtSession'
 
 describe('runCleanupsInReverse', () => {
@@ -40,7 +42,14 @@ describe('runCleanupsInReverse', () => {
       })
     ]
 
-    expect(() => runCleanupsInReverse(cleanups)).toThrow(failure)
+    let caught: unknown
+    try {
+      runCleanupsInReverse(cleanups)
+    } catch (error) {
+      caught = error
+    }
+
+    expect(caught).toBe(failure)
   })
 
   it('aggregates multiple thrown errors into an AggregateError carrying every cause', () => {
@@ -62,10 +71,8 @@ describe('runCleanupsInReverse', () => {
       caught = error
     }
 
-    expect(caught).toBeInstanceOf(AggregateError)
-    // Reverse registration order: the last-registered cleanup's error is
-    // caught first.
-    expect((caught as AggregateError).errors).toEqual([second, first])
+    assert(caught instanceof AggregateError, 'expected an AggregateError')
+    expect(caught.errors).toEqual([second, first])
   })
 
   it('does nothing when every cleanup succeeds', () => {

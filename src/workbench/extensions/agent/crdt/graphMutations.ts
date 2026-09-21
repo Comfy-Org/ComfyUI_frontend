@@ -1,5 +1,6 @@
 import { isPlainObject } from 'es-toolkit'
 
+import { isAutogrowGroupMember } from '@/core/graph/widgets/dynamicWidgets'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
@@ -63,18 +64,6 @@ function isSlotRecord(value: unknown): value is { name?: unknown } {
 
 type PatchableSlot = INodeInputSlot | INodeOutputSlot
 
-/**
- * One closure per optional presentation field `patchLiveSlot` copies --
- * `localized_name`, `label`, `dir`, `removable`, `shape`, `color_off`,
- * `color_on`, `locked`, `nameLocked`, `hasErrors` -- each written against
- * its own literal field name, never a `field` variable: a variable holding
- * the union of every listed field's type reads `serialized[field]` as that
- * whole union, and TypeScript rejects writing it back to `live[field]`
- * because it cannot prove the value matches that specific field. A literal
- * property access has no such union to collapse, so each closure below
- * type-checks its one field on its own, with no generic indirection and no
- * lint override; only the loop that calls them is generic over the list.
- */
 const OPTIONAL_SLOT_FIELD_ASSIGNERS: ReadonlyArray<
   (live: PatchableSlot, serialized: PatchableSlot) => void
 > = [
@@ -535,10 +524,6 @@ function hasNonGrowthInputSetChange(
   return documentExceedsLive || liveOnlyIsUnaccountedFor
 }
 
-// The trailing-ordinal shape `dynamicWidgets.ts`'s `resolveAutogrowOrdinal`
-// itself falls back to when a group has no explicit `names` list.
-const AUTOGROW_ORDINAL_SUFFIX = /\d+$/
-
 /**
  * Whether the node TYPE's own static definition has an opinion on `name`'s
  * autogrow membership -- and, when it does, what that opinion is. `known:
@@ -596,9 +581,7 @@ function nodeDefAutogrowGroupOf(
   const template =
     inputSpec && zAutogrowOptions.safeParse(inputSpec).data?.template
   if (!template) return { known: true, group: undefined }
-  const isMember = template.names
-    ? template.names.includes(key)
-    : AUTOGROW_ORDINAL_SUFFIX.test(key)
+  const isMember = isAutogrowGroupMember(key, template.names)
   return { known: true, group: isMember ? groupName : undefined }
 }
 
@@ -637,7 +620,7 @@ function nodeDefAutogrowGroupOf(
 function nameShapeAutogrowGroupOf(name: unknown): string | undefined {
   if (typeof name !== 'string') return undefined
   const dot = name.lastIndexOf('.')
-  if (dot < 0 || !AUTOGROW_ORDINAL_SUFFIX.test(name.slice(dot + 1)))
+  if (dot < 0 || !isAutogrowGroupMember(name.slice(dot + 1), undefined))
     return undefined
   return name.slice(0, dot)
 }
@@ -973,20 +956,30 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   const widgetStore = useWidgetValueStore()
 
   // This follower's own memory of a live `member`/`notMember` autogrow
-  // answer, keyed by node then input name (`undefined` stored as `null`
-  // recorded a definitive "not a member", as opposed to no entry at all,
-  // which means never resolved). It exists so a later reconcile that finds
-  // the live node `unavailable` (unmounted, background workflow) can prefer
-  // this follower's own prior, real provenance over guessing from the
-  // name's shape again -- the same "carry it forward in the store we
-  // already control" approach `preserveSlotDisplayMetadata` takes for
-  // `localized_name`/`label`. It is scoped to this `GraphMutations`
-  // instance (one per follower), not the module, so distinct followers --
-  // and distinct tests -- never see each other's memory.
-  const rememberedAutogrowGroups = new Map<string, Map<string, string | null>>()
+  // answer, keyed by node, then input name, then the node TYPE it was
+  // answered for (`undefined` stored as `null` recorded a definitive "not
+  // a member", as opposed to no entry at all, which means never resolved).
+  // It exists so a later reconcile that finds the live node `unavailable`
+  // (unmounted, background workflow) can prefer this follower's own prior,
+  // real provenance over guessing from the name's shape again -- the same
+  // "carry it forward in the store we already control" approach
+  // `preserveSlotDisplayMetadata` takes for `localized_name`/`label`. The
+  // node type is part of the key because a node ID can be reused for a
+  // different type (replace, or a same-named type re-registered with a
+  // different schema): an answer recorded under the old type must never
+  // win for the new one, so a type mismatch reads back as "never
+  // resolved" rather than resurrecting the stale answer. It is scoped to
+  // this `GraphMutations` instance (one per follower), not the module, so
+  // distinct followers -- and distinct tests -- never see each other's
+  // memory.
+  const rememberedAutogrowGroups = new Map<
+    string,
+    Map<string, { nodeType: string; group: string | null }>
+  >()
 
   function rememberAutogrowGroup(
     nodeId: NodeId,
+    nodeType: string,
     name: string,
     group: string | undefined
   ): void {
@@ -996,20 +989,24 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       forNode = new Map()
       rememberedAutogrowGroups.set(key, forNode)
     }
-    forNode.set(name, group ?? null)
+    forNode.set(name, { nodeType, group: group ?? null })
   }
 
   // Distinguishes "never resolved" (the caller should fall back to the
   // name-shape heuristic) from a remembered, definitive `notMember`
   // (`group: undefined`, but resolved -- the caller must trust that "no"
-  // and not let the heuristic override it).
+  // and not let the heuristic override it). An entry recorded for a
+  // different node type also reads back as "never resolved".
   function rememberedAutogrowGroup(
     nodeId: NodeId,
+    nodeType: string,
     name: string
   ): { remembered: true; group: string | undefined } | { remembered: false } {
-    const forNode = rememberedAutogrowGroups.get(nodeKey(nodeId))
-    if (!forNode?.has(name)) return { remembered: false }
-    return { remembered: true, group: forNode.get(name) ?? undefined }
+    const remembered = rememberedAutogrowGroups.get(nodeKey(nodeId))?.get(name)
+    if (!remembered || remembered.nodeType !== nodeType) {
+      return { remembered: false }
+    }
+    return { remembered: true, group: remembered.group ?? undefined }
   }
 
   function forgetAutogrowGroups(nodeId: NodeId): void {
@@ -1050,7 +1047,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   ): string | undefined {
     if (typeof name !== 'string') return undefined
     const fallback = (): string | undefined => {
-      const memory = rememberedAutogrowGroup(nodeId, name)
+      const memory = rememberedAutogrowGroup(nodeId, nodeType, name)
       if (memory.remembered) return memory.group
       const fromDef = nodeDefAutogrowGroupOf(nodeType, name)
       return fromDef.known ? fromDef.group : nameShapeAutogrowGroupOf(name)
@@ -1059,10 +1056,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const answer = deps.liveNodes.autogrowGroupOf(scope, nodeId, name)
     switch (answer.kind) {
       case 'member':
-        rememberAutogrowGroup(nodeId, name, answer.group)
+        rememberAutogrowGroup(nodeId, nodeType, name, answer.group)
         return answer.group
       case 'notMember':
-        rememberAutogrowGroup(nodeId, name, undefined)
+        rememberAutogrowGroup(nodeId, nodeType, name, undefined)
         return undefined
       case 'unavailable':
         return fallback()
@@ -1337,7 +1334,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           for (const id of nodeIds) {
             nodes.delete(nodeKey(id))
             removeIncidentLinks(nodes, links, id)
-            forgetAutogrowGroups(id)
           }
           const linkIds = [...links.keys()].filter(
             (id) => !retainedLinkIds.has(id)
@@ -1391,7 +1387,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           for (const id of removedLinkIds) {
             removeSimulatedLink(nodes, links, id)
           }
-          forgetAutogrowGroups(mutation.nodeId)
           prepared.push({
             kind: mutation.kind,
             nodeId: mutation.nodeId,
@@ -1403,7 +1398,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const nodeIds = [...nodes.values()].map(({ id }) => id)
           nodes.clear()
           links.clear()
-          for (const id of nodeIds) forgetAutogrowGroups(id)
           prepared.push({ kind: mutation.kind, nodeIds })
           break
         }
@@ -1640,6 +1634,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           )
           if (mutation.kind === 'replaceNode' && existing) {
             deleteNode(scope, existing.id, [], context)
+            forgetAutogrowGroups(existing.id)
             existing = undefined
           }
           if (mutation.kind === 'reconcileNode' && existing) {
@@ -1764,7 +1759,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             const topology = linkStore.getTopology(scope.rootGraphId, id)
             if (topology) removeLink(scope, topology, context)
           }
-          for (const id of mutation.nodeIds) deleteNode(scope, id, [], context)
+          for (const id of mutation.nodeIds) {
+            deleteNode(scope, id, [], context)
+            forgetAutogrowGroups(id)
+          }
           break
         case 'removeLinks':
           for (const id of mutation.linkIds) {
@@ -1774,10 +1772,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           break
         case 'deleteNode':
           deleteNode(scope, mutation.nodeId, mutation.removedLinkIds, context)
+          forgetAutogrowGroups(mutation.nodeId)
           break
         case 'clearSemanticGraph':
           for (const nodeId of mutation.nodeIds) {
             widgetStore.clearNode(scope.rootGraphId, nodeId, context)
+            forgetAutogrowGroups(nodeId)
           }
           deps.layout.deleteNodes(scope, mutation.nodeIds, context)
           linkStore.clearOwner(scope, context)
