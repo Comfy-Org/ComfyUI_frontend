@@ -90,3 +90,70 @@ describe('LGraphNode.configure onConfigure hook isolation', () => {
     expect(reserialized).not.toHaveProperty('mutated')
   })
 })
+
+describe('LGraphNode extension field serialization', () => {
+  it('does not throw when an extension value is a Proxy over plain JSON', () => {
+    // Regression: Proxy objects pass the JSON-shape check but cannot be
+    // structuredClone'd (DataCloneError), which aborted workflow load.
+    const node = new LGraphNode('TestNode')
+    const extensionValue = new Proxy({ tags: ['a', 'b'], count: 2 }, {})
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'thirdPartyData', extensionValue)
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toEqual({
+      thirdPartyData: { tags: ['a', 'b'], count: 2 }
+    })
+  })
+
+  it('preserves plain data from a proxy containing a function', () => {
+    const node = new LGraphNode('TestNode')
+    const extensionValue = new Proxy(
+      {
+        label: 'survives',
+        callback: () => 'not serializable'
+      },
+      {}
+    )
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'thirdPartyData', extensionValue)
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toEqual({
+      thirdPartyData: { label: 'survives' }
+    })
+  })
+
+  it('deep-clones plain extension data', () => {
+    const node = new LGraphNode('TestNode')
+    const extensionValue = { settings: { enabled: true } }
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'thirdPartyData', extensionValue)
+    }
+
+    const serialized = node.serialize()
+    const serializedValue = serialized.extensions?.thirdPartyData
+    if (
+      typeof serializedValue !== 'object' ||
+      serializedValue === null ||
+      Array.isArray(serializedValue) ||
+      !('settings' in serializedValue)
+    )
+      throw new Error('Expected serialized extension object')
+    const settings = serializedValue.settings
+    if (
+      typeof settings !== 'object' ||
+      settings === null ||
+      Array.isArray(settings) ||
+      !('enabled' in settings)
+    )
+      throw new Error('Expected serialized extension settings')
+    settings.enabled = false
+
+    expect(extensionValue).toEqual({ settings: { enabled: true } })
+  })
+})

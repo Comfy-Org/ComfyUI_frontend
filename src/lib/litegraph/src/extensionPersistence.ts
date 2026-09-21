@@ -16,6 +16,28 @@ interface ExtensionState {
 }
 
 const payloads = new WeakMap<object, ExtensionState>()
+let hasReportedUncloneableExtensionValue = false
+
+const safeCloneExtensionValue = (value: unknown): unknown => {
+  try {
+    return structuredClone(value)
+  } catch (error) {
+    if (!(error instanceof Error) || error.name !== 'DataCloneError')
+      throw error
+    try {
+      return JSON.parse(JSON.stringify(value))
+    } catch (fallbackError) {
+      if (!hasReportedUncloneableExtensionValue) {
+        hasReportedUncloneableExtensionValue = true
+        console.warn(
+          'LiteGraph: failed to clone non-serializable extension payload',
+          fallbackError
+        )
+      }
+      return value
+    }
+  }
+}
 
 const nodeCanonicalFields = {
   title: true,
@@ -132,18 +154,16 @@ function copyExtensionFields(
     if (
       !isSafeExtensionKey(key) ||
       canonicalFields.has(key) ||
-      key === 'extensions' ||
-      !isJsonValue(value)
+      key === 'extensions'
     ) {
-      if (
-        isSafeExtensionKey(key) &&
-        !canonicalFields.has(key) &&
-        key !== 'extensions'
-      )
-        console.warn('LiteGraph: ignoring non-serializable extension payload')
       continue
     }
-    target[key] = structuredClone(value)
+    const clonedValue = safeCloneExtensionValue(value)
+    if (isJsonValue(clonedValue)) {
+      target[key] = clonedValue
+    } else {
+      console.warn('LiteGraph: ignoring non-serializable extension payload')
+    }
   }
 }
 
