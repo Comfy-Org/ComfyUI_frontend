@@ -5,6 +5,7 @@ import {
   createSubscriptionHelper,
   withActiveSubscription,
   withFreeTier,
+  withFreeTierEnabled,
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
 import type { SubscriptionHelper } from '@e2e/fixtures/helpers/SubscriptionHelper'
@@ -44,7 +45,11 @@ function createSubscriptionTest(
 
 const unsubscribedTest = createSubscriptionTest(withUnsubscribed())
 const subscribedTest = createSubscriptionTest(withActiveSubscription('CREATOR'))
-const freeTierTest = createSubscriptionTest(withFreeTier())
+const freeTierTest = createSubscriptionTest(
+  withFreeTier(),
+  withFreeTierEnabled()
+)
+const freeTierDisabledTest = createSubscriptionTest(withFreeTier())
 
 unsubscribedTest.describe(
   'Subscription buttons — unsubscribed',
@@ -209,6 +214,24 @@ freeTierTest.describe(
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
         ).toBeVisible()
+      }
+    )
+  }
+)
+
+freeTierDisabledTest.describe(
+  'Subscription buttons — free tier disabled',
+  { tag: '@cloud' },
+  () => {
+    freeTierDisabledTest(
+      'SubscribeToRun visible and Topbar subscribe button hidden for free tier disabled',
+      async ({ comfyPage }) => {
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
+        ).toBeVisible()
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeButton)
+        ).toBeHidden()
       }
     )
   }

@@ -18,12 +18,14 @@ import { TestIds } from '@e2e/fixtures/selectors'
 export interface SubscriptionConfig {
   status: BillingStatusResponse
   balance: BalanceResponse
+  features: Record<string, unknown>
 }
 
 function emptyConfig(): SubscriptionConfig {
   return {
     status: createSubscriptionStatus(UNSUBSCRIBED),
-    balance: createBalance(ZERO_BALANCE)
+    balance: createBalance(ZERO_BALANCE),
+    features: { subscription_required: true }
   }
 }
 
@@ -57,6 +59,16 @@ export function withFreeTier(): SubscriptionOperator {
   })
 }
 
+export function withFreeTierEnabled(): SubscriptionOperator {
+  return (config) => ({
+    ...config,
+    features: {
+      ...config.features,
+      free_tier_job_allowance_enabled: true
+    }
+  })
+}
+
 export function withUnsubscribed(): SubscriptionOperator {
   return withSubscriptionStatus({
     is_active: false,
@@ -67,6 +79,7 @@ export function withUnsubscribed(): SubscriptionOperator {
 export class SubscriptionHelper {
   private statusResponse: BillingStatusResponse
   private balanceResponse: BalanceResponse
+  private featuresResponse: Record<string, unknown>
   private routeHandlers: Array<{
     pattern: string
     handler: (route: Route) => Promise<void>
@@ -78,6 +91,7 @@ export class SubscriptionHelper {
   ) {
     this.statusResponse = { ...config.status }
     this.balanceResponse = { ...config.balance }
+    this.featuresResponse = { ...config.features }
   }
 
   async mock(): Promise<void> {
@@ -93,7 +107,7 @@ export class SubscriptionHelper {
     // `subscription_required: true` after that fetch resolves.
     const featuresPattern = '**/api/features'
     const featuresHandler = async (route: Route) => {
-      await route.fulfill({ json: { subscription_required: true } })
+      await route.fulfill({ json: this.featuresResponse })
     }
     this.routeHandlers.push({
       pattern: featuresPattern,
@@ -146,10 +160,12 @@ export class SubscriptionHelper {
   configure(...operators: SubscriptionOperator[]): void {
     const config = operators.reduce<SubscriptionConfig>((cfg, op) => op(cfg), {
       status: { ...this.statusResponse },
-      balance: { ...this.balanceResponse }
+      balance: { ...this.balanceResponse },
+      features: { ...this.featuresResponse }
     })
     this.statusResponse = { ...config.status }
     this.balanceResponse = { ...config.balance }
+    this.featuresResponse = { ...config.features }
   }
 
   setStatus(overrides: Partial<BillingStatusResponse>): void {
@@ -260,6 +276,7 @@ export class SubscriptionHelper {
     this.routeHandlers = []
     this.statusResponse = { ...UNSUBSCRIBED }
     this.balanceResponse = { ...ZERO_BALANCE }
+    this.featuresResponse = { subscription_required: true }
   }
 }
 
