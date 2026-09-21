@@ -8,6 +8,7 @@ import type {
   AssistantMessage,
   TextPart
 } from '../../../services/agent/agentMessageParts'
+import { isAskPart } from '../../../services/agent/agentMessageParts'
 import { htmlReplyAssets } from '../../../utils/replyAssets'
 import { cn } from '@comfyorg/tailwind-utils'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
@@ -15,6 +16,7 @@ import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import AgentMessageGroup from './AgentMessageGroup.vue'
 import MessageFeedback from './MessageFeedback.vue'
 import type { AgentMessageGroup as Group } from './agentMessageGroup'
+import { toPartGroup } from './agentMessageGroup'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
@@ -53,23 +55,14 @@ const groups = computed<Group[]>(() => {
   let tracePlaced = activityParts.value.length === 0
   for (const part of message.parts) {
     if (part.type === 'tool' || part.type === 'thinking') {
-      if (tracePlaced) continue
+      if (!tracePlaced) out.push({ kind: 'trace' })
       tracePlaced = true
-      out.push({ kind: 'trace' })
-    } else if (part.type === 'text') {
-      out.push({ kind: 'text', part })
     } else if (part.type === 'tabLink') {
       const prev = out.at(-1)
       if (prev?.kind === 'tabLinks') prev.parts.push(part)
       else out.push({ kind: 'tabLinks', parts: [part] })
-    } else if (part.type === 'runApproval') {
-      out.push({ kind: 'runApproval', part })
-    } else if (part.type === 'permissionAsk') {
-      out.push({ kind: 'permissionAsk', part })
-    } else if (part.type === 'paywall') {
-      out.push({ kind: 'paywall', part })
     } else {
-      out.push({ kind: 'notice', part })
+      out.push(toPartGroup(part))
     }
   }
   return out
@@ -98,9 +91,7 @@ const composing = computed(
     message.parts.length > 0 &&
     message.parts.every(
       (part) =>
-        part.type !== 'runApproval' &&
-        part.type !== 'permissionAsk' &&
-        (!('state' in part) || part.state === 'done')
+        !isAskPart(part) && (!('state' in part) || part.state === 'done')
     )
 )
 

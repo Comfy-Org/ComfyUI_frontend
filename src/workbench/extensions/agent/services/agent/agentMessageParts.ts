@@ -61,6 +61,12 @@ export interface PermissionAskPart {
   reason?: string
 }
 
+export type AskPart = RunApprovalPart | PermissionAskPart
+
+export function isAskPart(part: MessagePart): part is AskPart {
+  return part.type === 'runApproval' || part.type === 'permissionAsk'
+}
+
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
 
 export type AgentAskSelection = 'run' | 'cancel' | 'allow' | 'deny'
