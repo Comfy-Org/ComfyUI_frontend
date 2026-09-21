@@ -1369,6 +1369,50 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('keeps a human delete pending for the reconcile even when its batch settles unconfirmed', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        )
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    const intent = adapterState.intent!
+    let docNodes: Record<string, unknown> = { '1': {} }
+    bridge().follower.doc.getMap = () => ({ toJSON: () => docNodes })
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+    // Same refusal as the sibling test above: the delete's delivery is left
+    // unresolved, not negative, yet the reconcile must still never resurrect
+    // node '1' from the host's still-current document.
+    bridge().subscribedWorkflowId = null
+    vi.advanceTimersByTime(10_000)
+
+    const settledStates = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'human_ops_settled')
+      .map(([, detail]) => (detail as BatchOutcome).state)
+    expect(settledStates).toEqual(['unconfirmed'])
+
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+    docNodes = {}
+    expect([...intent.pendingDeletes('wf-1')]).toEqual([])
+    unmount()
+  })
+
   it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')

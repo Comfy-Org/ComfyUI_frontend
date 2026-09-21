@@ -17,6 +17,8 @@
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { chunkWireOps, mintWireOps } from './opEnvelope'
 
@@ -73,7 +75,9 @@ export interface OpSender {
   /**
    * Mint and target-pin operations into the open admission group without
    * starting transport delivery. Consecutive admissions for one workflow
-   * share the group until `flush()` seals it.
+   * share the group until `flush()` seals it. After `detach()`, an admission
+   * settles at once as `'undeliverable'` instead of joining a group that
+   * will never flush.
    */
   admit(operations: GraphOperation[]): void
   /** Seal the open admission group into wire batches and start delivery. */
@@ -129,7 +133,9 @@ export interface OpSender {
    * - the CRDT follower's own `onScopeDispose` - must not lose track of a
    * human-authored op silently: an unreported drop here is indistinguishable
    * from success to `onBatchSettled`'s listener, and a delete the host never
-   * received can resurrect its node on the next reconcile.
+   * received can resurrect its node on the next reconcile. A listener that
+   * throws settling one batch never blocks the rest, and the transport
+   * always unsubscribes.
    */
   detach(): void
 }
@@ -158,6 +164,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // swallowed own-result only costs the idempotent resend cycle, while a
   // mis-attributed settle poisons everything downstream of this seam.
   let staleAnonymousBudget = 0
+
+  function reportDetachSettleFailure(cause: unknown): void {
+    reportError(cause, {
+      errorType: 'agent_op_sender_detach_settle_failed',
+      tags: { feature_area: 'agent', operation: 'sync', outcome: 'degraded' }
+    })
+  }
 
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
@@ -238,11 +251,20 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function admit(operations: GraphOperation[]): void {
-    if (detached || operations.length === 0) return
+    if (operations.length === 0) return
     const minted = mintWireOps(operations, {
       actor: deps.actor(),
       baseVersion: deps.baseVersion()
     })
+    // Detached is terminal: nothing will ever flush or transmit again, so an
+    // admission that arrives after detach (a re-entrant call from inside a
+    // settle listener, or a lingering caller that never learned the sender
+    // tore down) must settle immediately rather than join a group nobody
+    // will seal - the silent drop this whole file exists to close off.
+    if (detached) {
+      deps.onBatchSettled({ state: 'undeliverable', ops: minted })
+      return
+    }
     const workflowId = deps.workflowId()
     if (workflowId === null) {
       deps.onBatchSettled({ state: 'undeliverable', ops: minted })
@@ -345,12 +367,36 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       const queued = queue.splice(0)
       const admitted = open
       open = null
-      if (inFlight) settleUnbound(inFlight)
-      for (const batch of queued)
-        deps.onBatchSettled({ state: 'undeliverable', ops: batch.ops })
-      if (admitted)
-        deps.onBatchSettled({ state: 'undeliverable', ops: admitted.ops })
-      unsubscribe()
+      // Every settle below runs a caller-supplied listener. One throwing
+      // must not swallow the rest of this batch of settlements (each op is
+      // its own report to the caller) or skip `unsubscribe()` in the
+      // `finally` - a listener's bug is not licence to leave a dead
+      // listener attached to the bridge.
+      try {
+        if (inFlight) {
+          try {
+            settleUnbound(inFlight)
+          } catch (cause) {
+            reportDetachSettleFailure(cause)
+          }
+        }
+        for (const batch of queued) {
+          try {
+            deps.onBatchSettled({ state: 'undeliverable', ops: batch.ops })
+          } catch (cause) {
+            reportDetachSettleFailure(cause)
+          }
+        }
+        if (admitted) {
+          try {
+            deps.onBatchSettled({ state: 'undeliverable', ops: admitted.ops })
+          } catch (cause) {
+            reportDetachSettleFailure(cause)
+          }
+        }
+      } finally {
+        unsubscribe()
+      }
     }
   }
 }
