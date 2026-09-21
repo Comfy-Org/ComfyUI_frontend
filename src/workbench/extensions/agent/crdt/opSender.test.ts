@@ -575,13 +575,18 @@ describe('createOpSender', () => {
     ])
   })
 
-  it('a transport that throws is reported and retried like a refused send, never a stalled queue', () => {
+  it('a transport that throws is reported once and retried like a refused send, never a stalled queue', () => {
     transportThrows = true
 
     expect(() => sender.enqueue([addNode(1)])).not.toThrow()
 
     expect(sent).toHaveLength(0)
     expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(1_500)
+
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+
     transportThrows = false
     vi.advanceTimersByTime(500)
     expect(sent).toHaveLength(1)
