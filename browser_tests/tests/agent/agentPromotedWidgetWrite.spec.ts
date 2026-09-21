@@ -15,7 +15,7 @@ import {
   zComfyWorkflow,
   zComfyWorkflow1
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
@@ -25,6 +25,10 @@ const ASSET_PATH = path.resolve(
 )
 const SUBGRAPH_TYPE = 'f2fdebf6-dfaf-43b6-9eb2-7f70613cfdc1'
 const HOST_NODE_ID = '57'
+// Interior nodes of the promoted subgraph, named once so the frame builder and
+// the state reader below agree on which node each assertion is about.
+const INTERIOR_PROMPT_NODE_ID = '27'
+const INTERIOR_SAMPLER_NODE_ID = '3'
 
 // Catalog widget order for the node types present in the asset. Mirrors what
 // the cloud materializer feeds to mint() so widgets_values map onto names.
@@ -84,12 +88,16 @@ function buildFrames(asset: WorkflowJSON04) {
   )
   const promptValues = zComfyWorkflow1
     .parse(definition)
-    .nodes.find((node) => node.id === 27)?.widgets_values
+    .nodes.find(
+      (node) => String(node.id) === INTERIOR_PROMPT_NODE_ID
+    )?.widgets_values
   const interiorPrompt = Array.isArray(promptValues)
     ? promptValues[0]
     : undefined
   if (typeof interiorPrompt !== 'string')
-    throw new Error('Fixture must contain subgraph prompt node 27')
+    throw new Error(
+      `Fixture must contain subgraph prompt node ${INTERIOR_PROMPT_NODE_ID}`
+    )
 
   const doc = mint({ ...asset, extra: asset.extra ?? undefined }, CATALOG)
   const fullState = Y.encodeStateAsUpdate(doc)
@@ -179,9 +187,9 @@ test.describe(
         // Precondition: the host node exposes its promoted widgets before any
         // follower frame arrives. Guards against a silently-broken fixture load.
         const hostWidgetsBefore = await page.evaluate((id) => {
-          const host = window.app!.graph.getNodeById(id as NodeId)
+          const host = window.app!.graph.getNodeById(id)
           return (host?.widgets ?? []).map((w) => [w.name, w.value])
-        }, HOST_NODE_ID)
+        }, toNodeId(HOST_NODE_ID))
         expect(hostWidgetsBefore).toEqual(
           expect.arrayContaining([['steps', 8]])
         )
@@ -254,19 +262,25 @@ test.describe(
         )
 
         const readState = () =>
-          page.evaluate((id) => {
-            const host = window.app!.graph.getNodeById(id as NodeId)
-            if (!host?.isSubgraphNode())
-              throw new Error('Missing subgraph host')
-            const hostWidgets = host.widgets.map((w) => [w.name, w.value])
-            const interior = host.subgraph
-            const prompt = interior.getNodeById('27' as NodeId)?.widgets?.[0]
-              ?.value
-            const steps = interior
-              .getNodeById('3' as NodeId)
-              ?.widgets?.find((w) => w.name === 'steps')?.value
-            return { hostWidgets, prompt, steps }
-          }, HOST_NODE_ID)
+          page.evaluate(
+            ({ hostId, promptId, samplerId }) => {
+              const host = window.app!.graph.getNodeById(hostId)
+              if (!host?.isSubgraphNode())
+                throw new Error('Missing subgraph host')
+              const hostWidgets = host.widgets.map((w) => [w.name, w.value])
+              const interior = host.subgraph
+              const prompt = interior.getNodeById(promptId)?.widgets?.[0]?.value
+              const steps = interior
+                .getNodeById(samplerId)
+                ?.widgets?.find((w) => w.name === 'steps')?.value
+              return { hostWidgets, prompt, steps }
+            },
+            {
+              hostId: toNodeId(HOST_NODE_ID),
+              promptId: toNodeId(INTERIOR_PROMPT_NODE_ID),
+              samplerId: toNodeId(INTERIOR_SAMPLER_NODE_ID)
+            }
+          )
 
         // Host promoted widgets should reflect the agent write.
         await expect
