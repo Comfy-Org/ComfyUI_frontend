@@ -28,6 +28,7 @@ export interface RouterRenderOptions {
     | string
     | ((body: Readonly<Record<string, unknown>>) => string)
   readonly signal?: AbortSignal
+  readonly clientAttemptId?: string
   readonly model?: WorkshopModelDetail
   readonly form?: {
     readonly schema: readonly FieldSchema[]
@@ -98,7 +99,14 @@ export function resolveModelRouterRender(
 async function credential(options: RouterRenderOptions): Promise<string> {
   const token =
     typeof options.token === 'function' ? await options.token() : options.token
-  if (!token) throw new WorkshopRouterError('unavailable')
+  if (!token)
+    throw new WorkshopRouterError(
+      'unavailable',
+      null,
+      {},
+      undefined,
+      'credential'
+    )
   return token
 }
 
@@ -165,6 +173,7 @@ export async function router_render(
     freshToken: () => credential(options),
     idempotencyKey,
     signal,
+    clientAttemptId: options.clientAttemptId,
     rasterizeSvg: options.rasterizeSvg,
     ...(options.onRequestId ? { onRequestId: options.onRequestId } : {})
   })

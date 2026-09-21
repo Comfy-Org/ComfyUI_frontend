@@ -96,8 +96,19 @@ export interface RouterRunOptions {
   readonly freshToken?: () => Promise<string>
   readonly idempotencyKey: string
   readonly signal: AbortSignal
+  readonly clientAttemptId?: string
   readonly onRequestId?: (requestId: string | null) => void
   readonly rasterizeSvg?: WorkshopSvgRasterizer
+}
+
+export function workshopAttributionHeaders(
+  clientAttemptId: string | undefined
+): Record<string, string> {
+  if (!clientAttemptId) return {}
+  return {
+    'X-Comfy-Traffic-Source': 'models',
+    'X-Comfy-Client-Attempt-Id': clientAttemptId
+  }
 }
 
 interface RunProgress {
@@ -281,7 +292,8 @@ async function attempt(
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'Idempotency-Key': options.idempotencyKey
+          'Idempotency-Key': options.idempotencyKey,
+          ...workshopAttributionHeaders(options.clientAttemptId)
         },
         body: context.body,
         signal

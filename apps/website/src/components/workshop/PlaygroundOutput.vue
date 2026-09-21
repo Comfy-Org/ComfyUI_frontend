@@ -57,6 +57,7 @@ const emit = defineEmits<{
   switchPersonal: []
   buyCredits: []
   download: [kind: RunOutput['kind']]
+  delivery: [url: string, status: 'succeeded' | 'failed' | 'cancelled']
 }>()
 
 const elapsed = computed(() =>
@@ -159,6 +160,12 @@ const outputs = computed(() =>
     : []
 )
 const currentUrl = computed(() => outputs.value[selected.value] ?? '')
+// The media element is keyed on this URL, so leaving it destroys an element
+// that can no longer report. Whoever is waiting on that URL must hear it was
+// abandoned, or the wait ends as a media timeout the visitor caused.
+watch(currentUrl, (_, previous) => {
+  if (previous) emit('delivery', previous, 'cancelled')
+})
 const failedDownloadUrl = ref<string>()
 const downloadNeedsLink = computed(
   () => failedDownloadUrl.value === currentUrl.value
@@ -408,12 +415,16 @@ const earlierClass = (active: boolean) =>
             autoplay
             loop
             no-cors
+            @loaded="emit('delivery', $event, 'succeeded')"
+            @failed="emit('delivery', $event, 'failed')"
           />
           <img
             v-else-if="currentUrl && shown.kind === 'image' && !blurred"
             :src="currentUrl"
             :alt="t('workshop.output.title', locale)"
             class="size-full object-contain"
+            @load="emit('delivery', currentUrl, 'succeeded')"
+            @error="emit('delivery', currentUrl, 'failed')"
           />
           <pre
             v-else-if="shown.kind === 'text' && !blurred"
@@ -466,6 +477,8 @@ const earlierClass = (active: boolean) =>
           :src="currentUrl"
           :locale
           class="absolute inset-x-0 bottom-0"
+          @loaded="emit('delivery', $event, 'succeeded')"
+          @failed="emit('delivery', $event, 'failed')"
         />
         <button
           v-if="blurred"

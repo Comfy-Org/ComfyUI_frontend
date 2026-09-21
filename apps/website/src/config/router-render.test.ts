@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { RouterRenderOptions } from './router-render'
 import { router_render as renderWithModel } from './router-render'
@@ -31,6 +31,67 @@ function queueNotEnabled() {
 }
 
 describe('shared Router rendering', () => {
+  it('preserves caller attribution through queued rendering', async () => {
+    const requestId = '6f1a1a6e-6a53-4a5f-9d3a-2b3b0a1f9c21'
+    const requests = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        Response.json({ request_id: requestId }, { status: 201 })
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          id: 'generation',
+          status: 'Ready',
+          result: { sample: 'https://media.example/result.png' }
+        })
+      )
+    vi.stubGlobal('fetch', requests)
+
+    const result = await router_render(
+      'bfl--flux-2-pro--generate-images',
+      { prompt: 'A landscape' },
+      {
+        token: 'test-key',
+        clientAttemptId: '36a356b0-05f9-4d7b-9c5f-41e06a7c42e4'
+      }
+    )
+    onTestFinished(() => releaseRouterOutputs(result.outputs))
+
+    expect(result.requestId).toBe(requestId)
+    expect(result.outputs[0].url).toBe('https://media.example/result.png')
+    expect(
+      requests.mock.calls.map(([url, init]) => `${init?.method} ${String(url)}`)
+    ).toEqual([
+      `POST ${WORKSHOP_ROUTER_BASE_URL}/v2/models/bfl/flux-2-pro/requests`,
+      `GET ${WORKSHOP_ROUTER_BASE_URL}/v2/models/bfl/flux-2-pro/requests/${requestId}`
+    ])
+    expect(
+      requests.mock.calls.map(([, init]) => {
+        const headers = new Headers(init?.headers)
+        return [
+          headers.get('X-Comfy-Traffic-Source'),
+          headers.get('X-Comfy-Client-Attempt-Id')
+        ]
+      })
+    ).toEqual([
+      ['models', '36a356b0-05f9-4d7b-9c5f-41e06a7c42e4'],
+      ['models', '36a356b0-05f9-4d7b-9c5f-41e06a7c42e4']
+    ])
+  })
+
+  it('identifies a missing credential without submitting a model request', async () => {
+    const requests = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', requests)
+    await expect(
+      router_render(
+        'bfl--flux-2-pro--generate-images',
+        { prompt: 'A landscape' },
+        { token: '' }
+      )
+    ).rejects.toMatchObject({ reason: 'unavailable', stage: 'credential' })
+    expect(requests).not.toHaveBeenCalled()
+  })
+
   it('preserves unexpected preparation errors without dispatching a generation', async () => {
     const cause = new TypeError('Unexpected encoder failure')
     vi.spyOn(globalThis, 'btoa').mockImplementation(() => {

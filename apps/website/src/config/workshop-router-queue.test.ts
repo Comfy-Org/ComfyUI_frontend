@@ -126,6 +126,36 @@ describe('queued Router delivery', () => {
   })
 
   it.for([
+    { clientAttemptId: undefined, expected: [null, null] },
+    {
+      clientAttemptId: '36a356b0-05f9-4d7b-9c5f-41e06a7c42e4',
+      expected: ['models', '36a356b0-05f9-4d7b-9c5f-41e06a7c42e4']
+    }
+  ])(
+    'preserves optional Models attribution through queue recovery: $clientAttemptId',
+    async ({ clientAttemptId, expected }) => {
+      const calls = stubFetch(
+        new TypeError('Submit interrupted'),
+        admitted(),
+        pending(),
+        new TypeError('Result interrupted'),
+        result()
+      )
+      await settle(runWorkshopRouter({ ...options(), clientAttemptId }))
+
+      expect(
+        calls.mock.calls.map(([, init]) => {
+          const headers = new Headers(init?.headers)
+          return [
+            headers.get('X-Comfy-Traffic-Source'),
+            headers.get('X-Comfy-Client-Attempt-Id')
+          ]
+        })
+      ).toEqual([expected, expected, expected, expected, expected])
+    }
+  )
+
+  it.for([
     ['numeric', '60'],
     ['HTTP-date', 'Sat, 19 Sep 2026 12:01:00 GMT']
   ])(
@@ -321,6 +351,7 @@ describe('queued Router delivery', () => {
       settle(
         runWorkshopRouter({
           ...options(controller.signal),
+          clientAttemptId: '36a356b0-05f9-4d7b-9c5f-41e06a7c42e4',
           freshToken: async () => tokens.shift() ?? 'exhausted'
         })
       )
@@ -329,6 +360,11 @@ describe('queued Router delivery', () => {
     expect(
       new Headers(calls.mock.calls.at(-1)?.[1]?.headers).get('Authorization')
     ).toBe('Bearer poll-token')
+    const headers = new Headers(calls.mock.calls.at(-1)?.[1]?.headers)
+    expect(headers.get('X-Comfy-Traffic-Source')).toBe('models')
+    expect(headers.get('X-Comfy-Client-Attempt-Id')).toBe(
+      '36a356b0-05f9-4d7b-9c5f-41e06a7c42e4'
+    )
   })
 
   it.for([

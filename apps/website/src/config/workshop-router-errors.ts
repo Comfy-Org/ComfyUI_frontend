@@ -2,6 +2,7 @@ import type { FieldErrors } from './workshop-playground'
 import type { RunFailure } from './workshop-run'
 
 export type WorkshopFailureStage =
+  | 'credential'
   | 'upload_grant'
   | 'upload_put'
   | 'example_download'

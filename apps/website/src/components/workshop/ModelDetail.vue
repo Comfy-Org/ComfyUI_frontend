@@ -15,6 +15,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
+import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
 import { sameFormValues } from '../../lib/workshop/form-values'
 import { leaveForSignIn } from '../../config/workshop-return'
 import { useSignInHref } from '../../composables/useSignInHref'
@@ -369,6 +370,10 @@ interface ActiveRun {
 }
 
 let activeRun: ActiveRun | undefined
+const delivery = useWorkshopDelivery()
+watch(activeSection, (section) => {
+  if (section !== 'playground') delivery.cancel()
+})
 let pendingRequest: { fingerprint: string; key: string } | undefined
 const uploadUrl = createWorkshopUrlUploader()
 
@@ -382,6 +387,7 @@ watch(isRunning, (running) =>
 onScopeDispose(() => reportWorkshopRun(undefined))
 
 function cancelRun() {
+  delivery.cancel()
   if (activeRun) {
     activeRun.controller.abort()
     captureWorkshopEvent({
@@ -459,7 +465,13 @@ async function freshCredentialFor(
     credential.session.uid !== startedFor.uid ||
     credential.session.workspace.id !== startedFor.workspace.id
   )
-    throw new WorkshopRouterError('unavailable')
+    throw new WorkshopRouterError(
+      'unavailable',
+      null,
+      {},
+      undefined,
+      'credential'
+    )
   return credential.session
 }
 
@@ -490,6 +502,7 @@ async function renderRun(
       model,
       form: { schema: schema.value, values: values.value },
       signal: attempt.controller.signal,
+      clientAttemptId: attempt.analytics.attempt_id,
       token: async () => (await freshCredentialFor(startedFor, attempt)).token,
       uploadFile: async (file, signal) => {
         const credential = await freshCredentialFor(startedFor, attempt)
@@ -532,6 +545,8 @@ function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
   releaseRouterOutputs(
     discarded.flatMap((run) => [run.output, ...run.attachments])
   )
+  delivery.start(attempt.analytics, result.requestId, output)
+  if (activeSection.value !== 'playground') delivery.cancel()
   runState.value = transition(runState.value, {
     type: 'complete',
     at: Date.now(),
@@ -596,6 +611,7 @@ async function run() {
     return
   }
   const startedAt = Date.now()
+  delivery.cancel()
   const analytics: WorkshopRunAnalytics = {
     ...modelAnalytics,
     user_id: startedFor.uid,
@@ -634,6 +650,7 @@ function reset() {
 }
 
 function applyExample(example: PlaygroundExample) {
+  delivery.cancel()
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
@@ -921,6 +938,7 @@ function useInCode() {
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"
           @download="captureOutputDownload"
+          @delivery="delivery.settle"
         />
         <div
           v-if="runState.status === 'succeeded' || requestId"
