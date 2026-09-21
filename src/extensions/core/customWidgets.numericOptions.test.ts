@@ -212,7 +212,9 @@ describe('Primitive numeric widget options', () => {
       { precision: 4, expected: 0.0001 },
       { precision: 5, expected: 0.00001 },
       { precision: 6, expected: 0.000001 },
-      { precision: 1.5, expected: 0.1 }
+      { precision: 1.5, expected: 0.1 },
+      { precision: -1, expected: 1 },
+      { precision: 101, expected: 1e-100 }
     ])(
       'steps and rounds by one unit of the last decimal place at precision $precision',
       ({ precision, expected }) => {
