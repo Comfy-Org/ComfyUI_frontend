@@ -593,13 +593,13 @@ const isSending = computed(
   () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
 )
 
-// FE-1969: `boundWorkflowId` is the in-memory session binding and is reset
-// whenever the session restarts within the same page load — a panel remount,
-// or a reload inside the record's TTL. The follower can still rebind to the doc
-// it persisted for this page load, but only if this computed drives it with
-// `active=true`. "New chat" is deliberately not one of those cases: it ends the
-// session, so `onNewChat` drops the record and there is nothing left to
-// restore. The
+// FE-1969: `boundWorkflowId` is the in-memory session binding. A panel remount
+// can restore it within the same page load. A browser reload creates a new page
+// load, so `reconcilePersistedDocId()` adopts the previous load's unexpired
+// record and replaces its nonce. In either case, the follower can rebind only
+// if this computed drives it with `active=true`. "New chat" is deliberately not
+// one of those cases: it ends the session, so `onNewChat` drops the record and
+// there is nothing left to restore. The
 // fallback is scoped to that one doc: the active tab's persisted tab binding
 // counts only when it names the doc the follower would restore, so a tab that
 // merely carries a stale binding, or a second bound tab, never reads as
