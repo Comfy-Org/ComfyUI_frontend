@@ -423,16 +423,18 @@ describe('reportError', () => {
     expect(addError).toHaveBeenCalledOnce()
   })
 
-  it('writes the failure to the console so callers need no second sink', async () => {
+  it('logs the error stack without attached response data', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
-    const error = new Error('listener failed')
+    const error = Object.assign(new Error('listener failed'), {
+      body: { detail: 'response data' }
+    })
 
     reportError(error, { errorType: 'canvas_layout_listener_failed' })
 
     expect(consoleError).toHaveBeenCalledExactlyOnceWith(
       `${REPORTED_ERROR_PREFIX}canvas_layout_listener_failed`,
-      error
+      error.stack
     )
   })
 
@@ -440,18 +442,54 @@ describe('reportError', () => {
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
+    const error = Object.assign(new Error('cookie denied'), {
+      body: { detail: 'response data' }
+    })
 
-    reportError(new Error('cookie denied'), {
+    reportError(error, {
       errorType: 'session_cookie_creation_failure',
       level: 'warning'
     })
 
     expect(consoleWarn).toHaveBeenCalledWith(
       `${REPORTED_ERROR_PREFIX}session_cookie_creation_failure`,
-      expect.any(Error)
+      error.stack
     )
     expect(consoleError).not.toHaveBeenCalled()
   })
+
+  it('logs the error name and message when no stack is available', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { reportError } = await loadReportError()
+    const error = Object.assign(new TypeError('invalid response'), {
+      stack: undefined,
+      body: { detail: 'response data' }
+    })
+
+    reportError(error, { errorType: 'response_invalid' })
+
+    expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+      '[Reported error]: response_invalid',
+      'TypeError: invalid response'
+    )
+  })
+
+  it.for(['request failed', { reason: 'request failed' }, null])(
+    'preserves console output for a non-Error cause: %j',
+    async (cause) => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const { reportError } = await loadReportError()
+
+      reportError(cause, { errorType: 'request_failed' })
+
+      expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+        '[Reported error]: request_failed',
+        cause
+      )
+    }
+  )
 
   it('skips the console line for a caller that already logged', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
