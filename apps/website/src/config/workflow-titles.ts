@@ -4,7 +4,7 @@
  * written name beats anything derived from a registry title, so the page
  * prefers these and falls back to the rule in lib/hub/workflow-detail.ts.
  */
-export const curatedWorkflowTitles: Readonly<Record<string, string>> = {
+const curatedWorkflowTitles: Readonly<Record<string, string>> = {
   api_bria_eraser: 'Remove an object',
   flux_fill_inpaint_example: 'Edit a selected region',
   flux_fill_outpaint_example: 'Extend an image’s borders',

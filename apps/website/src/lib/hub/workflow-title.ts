@@ -16,7 +16,7 @@ const plainName = (value: string) =>
  * A title that already leads with its job — "Video Upscale: SeedVR2 3B Int8"
  * — is left alone, which is the shape everything here is moving towards.
  */
-export function workflowJobTitle(
+function workflowJobTitle(
   template: HubTemplate,
   useCase: UseCase | undefined
 ): { readonly useCase: UseCase; readonly model: string } | undefined {
