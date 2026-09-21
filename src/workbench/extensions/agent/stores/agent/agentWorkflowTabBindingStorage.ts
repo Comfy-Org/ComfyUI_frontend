@@ -48,10 +48,9 @@ export function readPersistedAgentWorkflowTabPath(
   try {
     const parsed: unknown = JSON.parse(raw)
     if (typeof parsed !== 'object' || parsed === null) return undefined
-    return liveAgentWorkflowTabBindings(
-      parsed as Record<string, unknown>,
-      now
-    )[workflowId]?.tabPath
+    return liveAgentWorkflowTabBindings(parsed as Record<string, unknown>, now)[
+      workflowId
+    ]?.tabPath
   } catch {
     return undefined
   }
