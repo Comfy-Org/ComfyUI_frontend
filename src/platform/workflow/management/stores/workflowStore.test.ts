@@ -762,8 +762,43 @@ describe('useWorkflowStore', () => {
       await store.syncWorkflows()
 
       expect(store.isOpen(workflow)).toBe(true)
-      expect(store.openWorkflows).not.toContain(undefined)
+      expect(store.openWorkflows).toEqual([])
     })
+
+    it.for([
+      { openOrder: ['orphan', 'alpha', 'beta'] },
+      { openOrder: ['alpha', 'orphan', 'beta'] }
+    ])(
+      'should navigate and reorder tabs by their surviving index when opened as $openOrder',
+      async ({ openOrder }) => {
+        const workflows = Object.fromEntries(
+          openOrder.map((name) => [name, store.createTemporary(`${name}.json`)])
+        )
+        for (const name of openOrder) await store.openWorkflow(workflows[name])
+        await store.openWorkflow(workflows.alpha)
+        vi.mocked(syncEntities).mockImplementationOnce(
+          async (_dir, entityByPath) => {
+            delete entityByPath[workflows.orphan.path]
+          }
+        )
+
+        await store.syncWorkflows()
+
+        expect(store.openedWorkflowIndexShift(1)?.path).toBe(
+          workflows.beta.path
+        )
+        expect(store.openedWorkflowIndexShift(-1)?.path).toBe(
+          workflows.beta.path
+        )
+
+        store.reorderWorkflows(0, 1)
+
+        expect(store.openWorkflows.map((w) => w.path)).toEqual([
+          workflows.beta.path,
+          workflows.alpha.path
+        ])
+      }
+    )
   })
 
   describe('save', () => {
