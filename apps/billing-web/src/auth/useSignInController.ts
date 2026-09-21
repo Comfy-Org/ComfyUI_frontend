@@ -25,7 +25,7 @@ import {
 const AUTH_ERROR_COPY: AuthErrorCopy = en.auth.errors
 
 export function useSignInController(onSignedIn: () => void) {
-  const { user } = useBillingWebSession()
+  const { user, failure } = useBillingWebSession()
   const state = ref<SignInState>({ step: 'idle' })
 
   const busy = computed(
@@ -132,6 +132,8 @@ export function useSignInController(onSignedIn: () => void) {
     busy,
     leaving,
     errorMessage,
+    /** The mint's own refusal, e.g. naming a workspace this account is not in. */
+    sessionFailureCode: computed(() => failure.value?.code),
     available: billingWebIdentity !== undefined,
     signInWith,
     submitEmail,

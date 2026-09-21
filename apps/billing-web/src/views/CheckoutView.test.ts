@@ -25,9 +25,11 @@ const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
 const ENTRY_QUERY_PATH = `/v1/checkout?${ENTRY_QUERY}`
 const CHECKOUT_PATH = `${ENTRY_QUERY_PATH}&plan=creator_monthly`
 
-/** The two values the view and its surface read; a test-family key stands in for a deployment's. */
+/** The values this view and its surface read; a test-family key stands in for a deployment's. */
 vi.mock<unknown>(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test',
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org',
+  FIREBASE_OPTIONS: undefined,
   STRIPE_PUBLISHABLE_KEY: 'pk_test_example'
 }))
 

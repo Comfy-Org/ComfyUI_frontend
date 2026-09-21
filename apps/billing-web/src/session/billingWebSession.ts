@@ -12,6 +12,14 @@
  * occur. `phase === 'pending'` is "Firebase has not answered yet", distinct
  * from a signed-out `null`. A caller that needs a token still awaits
  * `ensureFresh()` immediately before use.
+ *
+ * `workspaceId` is read once, at construction, from the entry binding: the
+ * default every mint that does not name its own target falls back to (the
+ * identity port's warm-up mint, and the sign-in flow's own `ensureFresh`
+ * call), so this origin never resolves the personal workspace first and
+ * switches afterwards. A later entry link that rebinds the tab reaches
+ * requests through the live `workspaceId` getter the transport passes per
+ * call instead (see `billingWebClient.ts`).
  */
 import type { User } from 'firebase/auth'
 import { computed, shallowRef } from 'vue'
@@ -24,6 +32,7 @@ import { createSessionClient } from '@comfyorg/account-core/session'
 
 import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebIdentity } from '@/config/firebase'
+import { boundWorkspaceId } from '@/entry/workspaceBinding'
 
 /**
  * Script-readable by design: an injected script on this origin could read the
@@ -63,7 +72,11 @@ let client: SessionClient<User> | undefined
 
 export function billingWebSessionClient(): SessionClient<User> {
   client ??= createSessionClient<User>(
-    { exchangeUrl: `${CLOUD_BASE_URL}/api/auth/token`, storage },
+    {
+      exchangeUrl: `${CLOUD_BASE_URL}/api/auth/token`,
+      storage,
+      workspaceId: boundWorkspaceId()
+    },
     billingWebIdentity
   )
   return client
@@ -111,6 +124,9 @@ export function useBillingWebSession() {
       snapshot.value.phase === 'authenticated'
         ? snapshot.value.session
         : undefined
+    ),
+    failure: computed(() =>
+      snapshot.value.phase === 'error' ? snapshot.value.failure : undefined
     )
   }
 }

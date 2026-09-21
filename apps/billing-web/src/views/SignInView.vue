@@ -9,8 +9,10 @@ import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
 import { safeReturnTo } from '@/auth/returnTo'
 import { useSignInController } from '@/auth/useSignInController'
 import SignInEmailForm from '@/components/auth/SignInEmailForm.vue'
+import { useHostedCopy } from '@/composables/useHostedCopy'
 
 const { t } = useI18n()
+const { coded } = useHostedCopy()
 const route = useRoute()
 const router = useRouter()
 
@@ -19,6 +21,7 @@ const {
   busy,
   leaving,
   errorMessage,
+  sessionFailureCode,
   available,
   signInWith,
   submitEmail,
@@ -57,6 +60,12 @@ const progressKey = computed(() =>
 const blocked = computed(() => busy.value || !available)
 const sessionFailed = computed(
   () => state.value.step === 'signedIn' && state.value.mintFailed === true
+)
+/** The refused workspace's own copy when the SDK named a reason; the generic retry prompt otherwise. */
+const sessionErrorMessage = computed(() =>
+  sessionFailureCode.value === undefined
+    ? t('auth.signIn.sessionError')
+    : coded('failure', sessionFailureCode.value)
 )
 
 const linkButtonClass =
@@ -148,7 +157,7 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
             role="alert"
             :class="cn(alertClass, 'text-destructive-background')"
           >
-            {{ t('auth.signIn.sessionError') }}
+            {{ sessionErrorMessage }}
           </div>
           <button type="button" :class="linkButtonClass" @click="retryMint">
             {{ t('auth.signIn.retry') }}

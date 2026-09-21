@@ -45,6 +45,30 @@ function hungFetch() {
   return vi.fn<typeof fetch>(() => new Promise<Response>(() => {}))
 }
 
+/** Mints whatever workspace the request body names, so a target-bound mint can settle. */
+function mintedFetchEchoingWorkspace() {
+  return vi.fn<typeof fetch>(async (_url, init) => {
+    const body: unknown = JSON.parse((init?.body as string | undefined) ?? '{}')
+    const workspaceId =
+      typeof body === 'object' &&
+      body !== null &&
+      'workspace_id' in body &&
+      typeof body.workspace_id === 'string'
+        ? body.workspace_id
+        : 'ws-1'
+    return new Response(
+      JSON.stringify({
+        token: 'jwt-1',
+        permissions: ['workspace:read'],
+        expires_at: new Date(Date.now() + 90 * 60_000).toISOString(),
+        workspace: { id: workspaceId, name: workspaceId, type: 'team' },
+        role: 'owner'
+      }),
+      { status: 200 }
+    )
+  })
+}
+
 async function freshSession({ configured = true } = {}) {
   vi.resetModules()
   const { createTestIdentity } = await import('@comfyorg/account-core/testing')
@@ -137,6 +161,43 @@ describe('useBillingWebSession', () => {
 
     await vi.waitFor(() => expect(phase()).toBe('authenticated'))
     expect(projection().phase).toBe('authenticated')
+  })
+
+  it('mints for the workspace a previous entry link bound this tab to', async () => {
+    sessionStorage.setItem('comfy.billing-web.workspace.v1', 'ws-team')
+    const mint = mintedFetchEchoingWorkspace()
+    vi.stubGlobal('fetch', mint)
+    const { session } = await freshSession()
+
+    h.deliver?.(signedInUser())
+
+    await vi.waitFor(() => expect(session.phase.value).toBe('authenticated'))
+    const [, init] = mint.mock.calls[0]
+    expect(JSON.parse((init as RequestInit).body as string)).toStrictEqual({
+      workspace_id: 'ws-team'
+    })
+  })
+})
+
+describe('a refused mint', () => {
+  it('surfaces the failure instead of falling back to a personal session', async () => {
+    sessionStorage.setItem('comfy.billing-web.workspace.v1', 'ws-team')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(
+        async () =>
+          new Response(JSON.stringify({ error: 'not a member' }), {
+            status: 403
+          })
+      )
+    )
+    const { session } = await freshSession()
+
+    h.deliver?.(signedInUser())
+
+    await vi.waitFor(() => expect(session.phase.value).toBe('error'))
+    expect(session.session.value).toBeUndefined()
+    expect(session.failure.value?.code).toBe('ACCESS_DENIED')
   })
 })
 

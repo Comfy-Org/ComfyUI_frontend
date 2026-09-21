@@ -105,6 +105,9 @@
       "workshop": "Comfy Workshop",
       "models": "Comfy Models"
     },
+    "workspace": {
+      "current": "Billing for {name}"
+    },
     "entryError": {
       "title": "We couldn't open that billing page",
       "unknown": "That link isn't a billing request we recognise. Go back and try again.",
