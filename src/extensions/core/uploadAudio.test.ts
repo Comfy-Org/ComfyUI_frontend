@@ -4,13 +4,29 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyExtension } from '@/types/comfy'
 
-const { mockAddAlert, mockApiURL, mockFetchApi, mockRegisterExtension } =
-  vi.hoisted(() => ({
-    mockAddAlert: vi.fn(),
-    mockApiURL: vi.fn((url: string) => `api:${url}`),
-    mockFetchApi: vi.fn(),
-    mockRegisterExtension: vi.fn()
-  }))
+type AudioWidget = (node: LGraphNode, inputName: string) => unknown
+
+const {
+  mockAddAlert,
+  mockApiURL,
+  mockFetchApi,
+  mockMediaRecorderConstruct,
+  mockMediaRecorderStart,
+  mockMediaRecorderStop,
+  mockRegisterExtension,
+  mockReportError,
+  mockStopAllTracks
+} = vi.hoisted(() => ({
+  mockAddAlert: vi.fn(),
+  mockApiURL: vi.fn((url: string) => `api:${url}`),
+  mockFetchApi: vi.fn(),
+  mockRegisterExtension: vi.fn(),
+  mockMediaRecorderConstruct: vi.fn(),
+  mockMediaRecorderStart: vi.fn(),
+  mockMediaRecorderStop: vi.fn(),
+  mockReportError: vi.fn(),
+  mockStopAllTracks: vi.fn()
+}))
 
 let capturedDragDrop: ((files: File[]) => Promise<File[] | never[]>) | undefined
 let capturedFileSelect:
@@ -18,10 +34,19 @@ let capturedFileSelect:
   | undefined
 let capturedPaste: ((files: File[]) => Promise<File[] | never[]>) | undefined
 
-type AudioUploadWidget = (node: LGraphNode, inputName: string) => unknown
-
 vi.mock('extendable-media-recorder', () => ({
-  MediaRecorder: class MockMediaRecorder {}
+  MediaRecorder: class MockMediaRecorder {
+    start = mockMediaRecorderStart
+    stop = mockMediaRecorderStop
+
+    constructor() {
+      mockMediaRecorderConstruct()
+    }
+  }
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 vi.mock('@/composables/node/useNodeDragAndDrop', () => ({
@@ -91,7 +116,7 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 }))
 
 vi.mock('@/services/audioService', () => ({
-  useAudioService: () => ({})
+  useAudioService: () => ({ stopAllTracks: mockStopAllTracks })
 }))
 
 function createFile(name = 'clip.mp3'): File {
@@ -147,7 +172,7 @@ async function loadAudioUploadWidget() {
   if (!extension)
     throw new Error('Comfy.UploadAudio extension was not registered')
   const widgets = await extension.getCustomWidgets!(fromAny({}))
-  return (widgets as Record<string, AudioUploadWidget>).AUDIOUPLOAD
+  return (widgets as Record<string, AudioWidget>).AUDIOUPLOAD
 }
 
 describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
@@ -269,8 +294,6 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
   })
 })
 
-type AudioUIWidget = (node: LGraphNode, inputName: string) => unknown
-
 async function loadAudioUIWidget() {
   vi.resetModules()
   mockRegisterExtension.mockClear()
@@ -281,7 +304,7 @@ async function loadAudioUIWidget() {
   if (!extension)
     throw new Error('Comfy.AudioWidget extension was not registered')
   const widgets = await extension.getCustomWidgets!(fromAny({}))
-  return (widgets as Record<string, AudioUIWidget>).AUDIO_UI
+  return (widgets as Record<string, AudioWidget>).AUDIO_UI
 }
 
 describe('Comfy.AudioWidget AUDIO_UI widget', () => {
@@ -289,7 +312,7 @@ describe('Comfy.AudioWidget AUDIO_UI widget', () => {
     const AUDIO_UI = await loadAudioUIWidget()
     const domWidget = {
       serialize: true,
-      options: {} as Record<string, unknown>
+      options: { serialize: true }
     }
     const node = fromAny<LGraphNode, unknown>({
       addDOMWidget: vi.fn(() => domWidget),
@@ -300,5 +323,148 @@ describe('Comfy.AudioWidget AUDIO_UI widget', () => {
 
     expect(domWidget.serialize).toBe(false)
     expect(domWidget.options.serialize).toBe(false)
+  })
+})
+
+async function loadAudioRecordWidget() {
+  vi.resetModules()
+  mockRegisterExtension.mockClear()
+  await import('./uploadAudio')
+  const extension = mockRegisterExtension.mock.calls
+    .map(([extension]) => extension as ComfyExtension)
+    .find((extension) => extension.name === 'Comfy.RecordAudio')
+  if (!extension)
+    throw new Error('Comfy.RecordAudio extension was not registered')
+  const widgets = await extension.getCustomWidgets!(fromAny({}))
+  return (widgets as Record<string, AudioWidget>).AUDIO_RECORD
+}
+
+const RECORDER_FAILURE_REPORT = {
+  errorType: 'failure_starting_audio_recorder',
+  tags: {
+    failure_kind: 'caught_unexpected',
+    feature_area: 'assets',
+    operation: 'execute',
+    outcome: 'recovered'
+  },
+  level: 'error'
+}
+
+async function pressRecord() {
+  const AUDIO_RECORD = await loadAudioRecordWidget()
+  const audioUIWidget = {
+    element: document.createElement('audio'),
+    options: { canvasOnly: true }
+  }
+  const recordWidget = { label: '', type: '' }
+  let record: (() => Promise<void>) | undefined
+  const node = fromAny<LGraphNode, unknown>({
+    addDOMWidget: vi.fn(() => audioUIWidget),
+    addWidget: vi.fn((_type, _name, _value, callback: () => Promise<void>) => {
+      record = callback
+      return recordWidget
+    })
+  })
+  AUDIO_RECORD(node, 'record')
+
+  if (!record) throw new Error('Record callback was not registered')
+  await record()
+
+  return recordWidget
+}
+
+describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
+  it('starts recording without reporting a failure', async () => {
+    vi.stubGlobal('navigator', {
+      mediaDevices: { getUserMedia: vi.fn().mockResolvedValue({}) }
+    })
+
+    const recordWidget = await pressRecord()
+
+    expect(mockMediaRecorderConstruct).toHaveBeenCalledTimes(1)
+    expect(mockMediaRecorderStart).toHaveBeenCalledTimes(1)
+    expect(recordWidget.label).toBe('g.stopRecording')
+    expect(mockReportError).not.toHaveBeenCalled()
+    expect(mockAddAlert).not.toHaveBeenCalled()
+  })
+
+  it('reports a recorder start failure after the microphone was granted', async () => {
+    const accessError = new Error('recorder start failed')
+    mockMediaRecorderStart.mockImplementationOnce(() => {
+      throw accessError
+    })
+    mockMediaRecorderStop.mockImplementationOnce(() => {
+      throw new Error('recorder stop failed')
+    })
+    vi.stubGlobal('navigator', {
+      mediaDevices: { getUserMedia: vi.fn().mockResolvedValue({}) }
+    })
+
+    await pressRecord()
+
+    expect(mockReportError).toHaveBeenCalledTimes(1)
+    expect(mockReportError).toHaveBeenCalledWith(
+      accessError,
+      RECORDER_FAILURE_REPORT
+    )
+    expect(mockMediaRecorderStop).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports a recorder construction failure and releases the granted stream', async () => {
+    const constructionError = new Error('mime type unsupported')
+    mockMediaRecorderConstruct.mockImplementationOnce(() => {
+      throw constructionError
+    })
+    const stream = { id: 'granted-stream' }
+    vi.stubGlobal('navigator', {
+      mediaDevices: { getUserMedia: vi.fn().mockResolvedValue(stream) }
+    })
+
+    const recordWidget = await pressRecord()
+
+    expect(mockReportError).toHaveBeenCalledTimes(1)
+    expect(mockReportError).toHaveBeenCalledWith(
+      constructionError,
+      RECORDER_FAILURE_REPORT
+    )
+    expect(mockStopAllTracks).toHaveBeenCalledWith(stream)
+    expect(mockAddAlert).toHaveBeenCalledWith('g.recordingFailedToStart')
+    expect(mockAddAlert).not.toHaveBeenCalledWith('g.micPermissionDenied')
+    expect(recordWidget.label).toBe('g.startRecording')
+  })
+
+  it('treats a rejected getUserMedia as a permission denial rather than a fault', async () => {
+    const permissionError = new DOMException(
+      'Permission denied',
+      'NotAllowedError'
+    )
+    vi.stubGlobal('navigator', {
+      mediaDevices: {
+        getUserMedia: vi.fn().mockRejectedValue(permissionError)
+      }
+    })
+
+    await pressRecord()
+
+    expect(mockAddAlert).toHaveBeenCalledWith('g.micPermissionDenied')
+    expect(mockReportError).not.toHaveBeenCalled()
+    expect(mockMediaRecorderConstruct).not.toHaveBeenCalled()
+  })
+
+  it('reports a non-permission getUserMedia failure', async () => {
+    const accessError = new DOMException('No microphone found', 'NotFoundError')
+    vi.stubGlobal('navigator', {
+      mediaDevices: { getUserMedia: vi.fn().mockRejectedValue(accessError) }
+    })
+
+    await pressRecord()
+
+    expect(mockReportError).toHaveBeenCalledWith(
+      accessError,
+      RECORDER_FAILURE_REPORT
+    )
+    expect(mockAddAlert).toHaveBeenCalledWith('g.recordingFailedToStart')
+    expect(mockAddAlert).not.toHaveBeenCalledWith('g.micPermissionDenied')
+    expect(mockMediaRecorderConstruct).not.toHaveBeenCalled()
   })
 })

@@ -2,7 +2,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-
 // jsdom lacks ResizeObserver, which the asset-preview import chain references.
 vi.hoisted(() => {
   globalThis.ResizeObserver = class {
@@ -33,6 +32,53 @@ function thinkingMessage(thinkingText?: string): AssistantMessage {
     thinkingText
   }
 }
+
+function paywallMessage(): AssistantMessage {
+  return {
+    id: 'msg-paywall' as TurnId,
+    role: 'assistant',
+    parts: [{ type: 'paywall' }],
+    streaming: false,
+    thinking: false
+  }
+}
+
+describe('AgentMessage paywall reply', () => {
+  it('renders the usage-limit card as an inline assistant reply', () => {
+    render(AgentMessage, {
+      props: { message: paywallMessage() },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Out of credits')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.'
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Upgrade plan' })
+    ).toBeInTheDocument()
+  })
+
+  it('exposes distinct actions for adding credits and upgrading', async () => {
+    const user = userEvent.setup()
+    const onPaywallAction = vi.fn()
+    render(AgentMessage, {
+      props: { message: paywallMessage() },
+      attrs: { onPaywallAction },
+      global: { plugins: [i18n] }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Add credits' }))
+    await user.click(screen.getByRole('button', { name: 'Upgrade plan' }))
+
+    expect(onPaywallAction.mock.calls).toEqual([['addCredits'], ['upgrade']])
+  })
+})
 
 describe('AgentMessage thinking narration', () => {
   it('T-10 / PM-656 / FE-1328 renders complete asset URLs as hyperlinks', () => {
@@ -318,6 +364,55 @@ describe('AgentMessage fallback content', () => {
     ).toHaveLength(2)
     expect(screen.getByRole('status')).toHaveTextContent('Saved locally')
     expect(screen.getByRole('alert')).toHaveTextContent('Could not publish')
+  })
+
+  it('renders a retry-after hint on an error notice that carries retryAfterSeconds', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'Billing status is temporarily unavailable; please retry.',
+          retryAfterSeconds: 30
+        }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent(
+      'Billing status is temporarily unavailable; please retry.'
+    )
+    expect(alert).toHaveTextContent('You can try again in 30s.')
+  })
+
+  it('omits the retry-after hint when the notice has no retryAfterSeconds', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'This workspace is blocked. Contact support to restore access.'
+        }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByText(/try again in/i)).not.toBeInTheDocument()
   })
 
   it('hides completed thinking when the response did not use tools', () => {

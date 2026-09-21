@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "فيديو كوزموس كامن فارغ",
+    "display_name": "فيديو Cosmos Latent فارغ",
     "inputs": {
       "batch_size": {
         "name": "حجم_الدُفعة"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "صورة Hunyuan Latent فارغة",
     "inputs": {
       "batch_size": {
         "name": "حجم_الدفعة"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "فيديو هونييوان كامن فارغ",
+    "display_name": "فيديو Hunyuan 1.0 Latent فارغ",
     "inputs": {
       "batch_size": {
         "name": "حجم_الدُفعة"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "فيديو Hunyuan 1.5 كامن فارغ",
+    "display_name": "فيديو Hunyuan 1.5 Latent فارغ",
     "inputs": {
       "batch_size": {
         "name": "حجم الدفعة"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "فيديو LTXV كامن فارغ",
+    "display_name": "فيديو LTXV Latent فارغ",
     "inputs": {
       "batch_size": {
         "name": "حجم_الدُفعة"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "هونييوان 3D كامن فارغ نسخة 2",
+    "display_name": "Hunyuan 3D v2 Latent فارغ",
     "inputs": {
       "batch_size": {
         "name": "حجم_الدُفعة",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "بنية Trellis2 Latent فارغة",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -8072,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 تكبير latent بالنموذج",
+    "display_name": "ترقية Hunyuan Video 1.5 Latent باستخدام نموذج",
     "inputs": {
       "crop": {
         "name": "اقتصاص"
@@ -10514,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Empty Latent Audio",
+    "display_name": "صوت LTXV Latent فارغ",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -14199,6 +14199,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "خاص بـ MoGe-3 فقط: تمريرات تحسين حجمية متفرقة على العمق المتوقَّع. تزيد التمريرات الإضافية من حدة التفاصيل الدقيقة والحواف بتكلفة خطية تقريبًا. تعطل القيمة 0 التحسين. يتجاهله MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "٠ = الأسرع، ٩ = أعلى تفاصيل."
@@ -14229,6 +14233,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "خاص بـ MoGe-3 فقط: تمريرات تحسين حجمية متفرقة على العمق المتوقَّع. تزيد التمريرات الإضافية من حدة التفاصيل الدقيقة والحواف بتكلفة خطية تقريبًا. تعطل القيمة 0 التحسين. يتجاهله MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17430,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "تكييف Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -22751,7 +22759,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "صورة كامنة فارغة من StableCascade",
+    "display_name": "صورة stable cascade Latent فارغة",
     "inputs": {
       "batch_size": {
         "name": "حجم الدفعة"
@@ -22794,7 +22802,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "ترميز VAE للمرحلة ج من StableCascade",
+    "display_name": "ترميز VAE للمرحلة C من stable cascade",
     "inputs": {
       "compression": {
         "name": "ضغط"
@@ -23757,7 +23765,7 @@
     }
   },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "ترميز النص لتعديل صورة Qwen",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23787,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "ترميز النص لتعديل صورة Qwen Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +23863,10 @@
       "max_length": {
         "name": "الحد الأقصى للطول"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "فك ترميز تخميني باستخدام رأس التنبؤ متعدد الرموز في نقطة التحقق. لا تأثير له دون أوزان MTP. يكيّف auto عمق المسودة؛ وتثبّته القيم 2-5. يبقى الإخراج المأخوذ بعينات موزعًا بشكل صحيح، لكنه يختلف عن إخراج غير MTP لنفس seed."
+      },
       "prompt": {
         "name": "الموجه"
       },
@@ -23916,6 +23928,10 @@
       },
       "max_length": {
         "name": "الحد الأقصى للطول"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "فك ترميز تخميني باستخدام رأس التنبؤ متعدد الرموز في نقطة التحقق. لا تأثير له دون أوزان MTP. يكيّف auto عمق المسودة؛ وتثبّته القيم 2-5. يبقى الإخراج المأخوذ بعينات موزعًا بشكل صحيح، لكنه يختلف عن إخراج غير MTP لنفس seed."
       },
       "prompt": {
         "name": "المطالبة"
@@ -24432,7 +24448,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "تكييف Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24470,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "مرحلة الشكل في Trellis2",
     "inputs": {
       "negative": {
         "name": "سلبي"
@@ -24482,7 +24498,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "مرحلة النسيج في Trellis2",
     "inputs": {
       "negative": {
         "name": "سلبي"
@@ -26162,7 +26178,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "فك ترميز VAE Hunyuan3D",
+    "display_name": "فك ترميز Hunyuan 3D VAE",
     "inputs": {
       "num_chunks": {
         "name": "عدد القطع"
@@ -26470,7 +26486,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "فك ترميز الشكل VAE في Trellis2",
     "inputs": {
       "samples": {
         "name": "العينات"
@@ -26491,7 +26507,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "فك ترميز البنية VAE في Trellis2",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -26511,7 +26527,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "فك ترميز النسيج VAE في Trellis2",
     "inputs": {
       "samples": {
         "name": "samples"

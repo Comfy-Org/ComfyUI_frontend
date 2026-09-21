@@ -138,7 +138,12 @@ watch(
           <div
             v-if="row.kind === 'thinking'"
             role="listitem"
-            class="text-agent-fg-muted ml-2 min-h-8 px-2 py-1 text-sm/5"
+            :class="
+              cn(
+                'text-agent-fg-muted ml-2 min-h-8 px-2 py-1 text-sm/5',
+                active && 'agent-row-enter'
+              )
+            "
           >
             <span>{{ row.text }}</span>
           </div>
@@ -149,6 +154,7 @@ watch(
             :ok="row.ok"
             :count="row.count"
             :duration-ms="row.durationMs"
+            :class="active && 'agent-row-enter'"
           />
         </template>
       </div>

@@ -148,27 +148,23 @@ describe('createOpSender', () => {
     expect(sent[1].workflowId).toBe(WORKFLOW)
   })
 
-  it('settles an in-flight batch undeliverable at the silence resend once its workflow is unbound', () => {
+  it('settles a transmitted in-flight batch unconfirmed at the silence resend once its workflow is unbound', () => {
     sender.enqueue([addNode(1)])
     boundWorkflow = null
 
     vi.advanceTimersByTime(10_000)
 
     expect(sent).toHaveLength(1)
-    expect(settled).toEqual([
-      { state: 'undeliverable', ops: expect.any(Array) }
-    ])
+    expect(settled).toEqual([{ state: 'unconfirmed', ops: expect.any(Array) }])
   })
 
-  it('abortIfUnbound settles an in-flight batch immediately, without waiting the 10s silence window', () => {
+  it('abortIfUnbound settles a transmitted in-flight batch unconfirmed immediately, without waiting the 10s silence window', () => {
     sender.enqueue([addNode(1)])
     boundWorkflow = null
 
     sender.abortIfUnbound()
 
-    expect(settled).toEqual([
-      { state: 'undeliverable', ops: expect.any(Array) }
-    ])
+    expect(settled).toEqual([{ state: 'unconfirmed', ops: expect.any(Array) }])
     // No resend was burned reaching this outcome.
     expect(sent).toHaveLength(1)
   })
@@ -183,7 +179,7 @@ describe('createOpSender', () => {
 
     expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe('wf-2')
-    expect(settled[0].state).toBe('undeliverable')
+    expect(settled[0].state).toBe('unconfirmed')
   })
 
   it('abortIfUnbound cascades through every queued batch minted for the dead workflow, synchronously', () => {
@@ -197,9 +193,10 @@ describe('createOpSender', () => {
     sender.abortIfUnbound()
 
     // No timer advance: settle -> pump -> transmit re-reads the binding and
-    // settles each wf-1 batch in turn until it reaches the wf-2 one.
+    // settles each wf-1 batch in turn until it reaches the wf-2 one. Only the
+    // first had left the client.
     expect(settled.map((outcome) => outcome.state)).toEqual([
-      'undeliverable',
+      'unconfirmed',
       'undeliverable',
       'undeliverable'
     ])
@@ -244,7 +241,7 @@ describe('createOpSender', () => {
 
     expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe('wf-2')
-    expect(settled[0].state).toBe('undeliverable')
+    expect(settled[0].state).toBe('unconfirmed')
   })
 
   it('settles undeliverable after the transport retry budget', () => {
@@ -310,6 +307,59 @@ describe('createOpSender', () => {
     resultListener?.({ ok: true, applied: ['ffff'.repeat(8)], skipped: [] })
 
     expect(settled).toHaveLength(0)
+  })
+
+  it('ignores an anonymous result for another workflow', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = 'wf-2'
+    sender.abortIfUnbound()
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+
+    expect(settled).toHaveLength(1)
+    expect(sender.pending()).toBe(1)
+  })
+
+  it('late results addressed to the old workflow drain the stale credits', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unacknowledged'])
+
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+    expect(settled).toHaveLength(1)
+
+    resultListener?.({
+      workflowId: 'wf-2',
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unacknowledged',
+      'acknowledged'
+    ])
   })
 
   it('a late anonymous failure from an unacknowledged batch never settles the next batch', () => {
