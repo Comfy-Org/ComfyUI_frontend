@@ -222,9 +222,9 @@ for (const scenario of [
       await reopenedPanel
         .getByRole('button', { name: enMessages.agent.newChat })
         .click()
-      await expect(reopenedPanel.getByTestId('user-message-bubble')).toHaveCount(
-        0
-      )
+      await expect(
+        reopenedPanel.getByTestId('user-message-bubble')
+      ).toHaveCount(0)
       await expectAssets(reopenedPanel, [])
       await reopenedPanel
         .getByRole('button', { name: enMessages.agent.showChatHistory })
