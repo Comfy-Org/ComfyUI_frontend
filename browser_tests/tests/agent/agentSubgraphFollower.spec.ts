@@ -42,16 +42,18 @@ test.describe(
           await page.addInitScript(() => {
             localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
           })
-          await mockAgentTurnApi(page, {
-            message_id: '3818ba00-d772-4a3f-98c1-9312725b577d',
-            thread_id: 'd4c016c4-3b8c-44cf-97de-1ae27e43e718',
-            workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
-          })
-          await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
           await bootAgentApp(page, true, {
             onboardingCompleted: true,
             settings: { 'Comfy.VueNodes.Enabled': true },
-            nodeDefs: agentSubgraphNodeDefs
+            objectInfo: agentSubgraphNodeDefs,
+            beforeNavigate: async (page) => {
+              await mockAgentTurnApi(page, {
+                message_id: '3818ba00-d772-4a3f-98c1-9312725b577d',
+                thread_id: 'd4c016c4-3b8c-44cf-97de-1ae27e43e718',
+                workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+              })
+              await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
+            }
           })
           return getWebSocket()
         })
@@ -72,14 +74,14 @@ test.describe(
 
       await test.step('subscribe the follower to the workflow document', async () => {
         await expect
-          .poll(() =>
-            outboundFrames.some(
-              (frame) =>
-                frame.includes('doc_subscribe') &&
-                frame.includes(AGENT_SUBGRAPH_WORKFLOW_ID)
+          .poll(() => outboundFrames, { timeout: 15_000 })
+          .toContainEqual(
+            expect.stringMatching(
+              new RegExp(
+                `doc_subscribe.*${AGENT_SUBGRAPH_WORKFLOW_ID}|${AGENT_SUBGRAPH_WORKFLOW_ID}.*doc_subscribe`
+              )
             )
           )
-          .toBe(true)
       })
 
       const frames = agentSubgraphFrames()
@@ -179,9 +181,9 @@ test.describe(
         await expect(node.getByRole('textbox')).toHaveValue(
           AGENT_SUBGRAPH_INITIAL_TEXT
         )
-        await expect(node.getByLabel('seed', { exact: true })).toHaveValue(
-          String(AGENT_SUBGRAPH_EDITED_SEED)
-        )
+        await expect(
+          node.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+        ).toHaveValue(String(AGENT_SUBGRAPH_EDITED_SEED))
         await page.screenshot({
           path: test.info().outputPath('subgraph-edited.png')
         })

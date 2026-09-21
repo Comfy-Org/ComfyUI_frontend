@@ -34,7 +34,6 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 }
 
 interface BootAgentAppOptions {
-  nodeDefs?: Record<string, ComfyNodeDef>
   /** Extra `/api/settings` entries layered over the panel defaults. */
   settings?: Record<string, unknown>
   /** Server definitions, optionally augmented with deterministic test entries. */
@@ -48,6 +47,7 @@ interface BootAgentAppOptions {
    * boot and relying on route-precedence order.
    */
   assets?: ListAssetsResponse
+  beforeNavigate?: (page: Page) => Promise<void>
 }
 
 async function mockAgentBoot(
@@ -56,8 +56,7 @@ async function mockAgentBoot(
     agentFlag,
     settings,
     objectInfo,
-    assets,
-    nodeDefs
+    assets
   }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
   await mockCloudBoot(page, {
@@ -90,11 +89,6 @@ async function mockAgentBoot(
     r.fulfill(jsonRoute(listedAssets))
   )
   await page.route('**/api/assets', (r) => r.fulfill(jsonRoute(listedAssets)))
-  if (nodeDefs) {
-    await page.route('**/api/object_info', (r) =>
-      r.fulfill(jsonRoute(nodeDefs))
-    )
-  }
   // The bootstrapped project token makes PostHogTelemetryProvider run a real
   // posthog.init(); route its ingest host so CI never emits live third-party
   // traffic under the fabricated token.
@@ -193,14 +187,14 @@ export async function bootAgentApp(
   agentFlag: boolean,
   options: BootAgentAppOptions = {}
 ): Promise<void> {
-  const { onboardingCompleted } = options
-  if (onboardingCompleted !== undefined)
-    await page.addInitScript((completed) => {
-      if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
-        localStorage.setItem('Comfy.AgentPanel.onboarded', String(completed))
-      }
-    }, onboardingCompleted)
+  const { onboardingCompleted = true } = options
+  await page.addInitScript((completed) => {
+    if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
+      localStorage.setItem('Comfy.AgentPanel.onboarded', String(completed))
+    }
+  }, onboardingCompleted)
   await mockAgentBoot(page, { agentFlag, ...options })
+  await options.beforeNavigate?.(page)
   await bootCloud(page)
   await page.goto(APP_URL)
   await waitForCloudApp(page)
