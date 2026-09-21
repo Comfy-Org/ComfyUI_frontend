@@ -11,7 +11,7 @@ describe('taskService.getTask', () => {
     )
   })
 
-  it.fails('returns undefined when the task does not exist', async () => {
+  it('returns undefined when the task does not exist', async () => {
     await expect(taskService.getTask('missing-task')).resolves.toBeUndefined()
   })
 

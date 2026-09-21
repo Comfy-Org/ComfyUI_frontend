@@ -169,7 +169,7 @@ describe('useKeybindingPresetService', () => {
   })
 
   describe('deletePreset', () => {
-    it.fails('calls deleteUserData and resets to default if active', async () => {
+    it('calls deleteUserData and resets to default if active', async () => {
       mockApi.deleteUserData.mockResolvedValue(
         new Response(null, { status: 200 })
       )
@@ -198,7 +198,7 @@ describe('useKeybindingPresetService', () => {
       })
     })
 
-    it.fails('returns false without changing state when the backend refuses deletion', async () => {
+    it('returns false without changing state when the backend refuses deletion', async () => {
       mockApi.deleteUserData.mockResolvedValue(
         new Response(null, { status: 500 })
       )
@@ -222,7 +222,7 @@ describe('useKeybindingPresetService', () => {
       })
     })
 
-    it.fails('returns false without changing state when user cancels confirmation', async () => {
+    it('returns false without changing state when user cancels confirmation', async () => {
       mockConfirm.mockResolvedValueOnce(false)
       store.currentPresetName = 'vim'
 
@@ -246,7 +246,7 @@ describe('useKeybindingPresetService', () => {
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
-    it.fails('does not reset to default when deleting a non-active preset', async () => {
+    it('does not reset to default when deleting a non-active preset', async () => {
       mockApi.deleteUserData.mockResolvedValue(
         new Response(null, { status: 200 })
       )

@@ -111,7 +111,8 @@ function convertPromotedWidgetNode(rootGraph: LGraph): SubgraphNode {
   rootGraph.add(node)
 
   if (!producer.connect(0, node, 0)) throw new Error('expected an input link')
-  return rootGraph.convertToSubgraph(new Set([node])).node
+  const result = rootGraph.convertToSubgraph(new Set([node]))
+  return result.node
 }
 
 interface DuplicatedSubgraphScenario {

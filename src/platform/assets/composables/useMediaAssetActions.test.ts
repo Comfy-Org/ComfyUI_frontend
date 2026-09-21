@@ -1749,7 +1749,7 @@ describe('useMediaAssetActions', () => {
       expect(mockCaptureCanvasState).not.toHaveBeenCalled()
     })
 
-    it.fails('treats a refused deletion as failed without clearing workflow values', async () => {
+    it('treats a refused deletion as failed without clearing workflow values', async () => {
       mockDeleteAsset.mockResolvedValue(false)
       const asset = createMockAsset({
         id: 'asset-refused',
@@ -1810,7 +1810,7 @@ describe('useMediaAssetActions', () => {
       mockAppGraph.value = { nodes: [] }
     })
 
-    it.fails('keeps a failed asset listed and removes it once a retry succeeds', async () => {
+    it('keeps a failed asset listed and removes it once a retry succeeds', async () => {
       mockDeleteAsset
         .mockRejectedValueOnce(new Error('503 Service Unavailable'))
         .mockResolvedValueOnce(true)

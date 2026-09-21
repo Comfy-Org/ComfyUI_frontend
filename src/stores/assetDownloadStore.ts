@@ -2,7 +2,10 @@ import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-import type { TaskId } from '@/platform/tasks/services/taskService'
+import type {
+  TaskId,
+  TaskResponse
+} from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
@@ -28,6 +31,7 @@ interface CompletedDownload {
 }
 const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000
+const MISSING_TASK_RETRY_LIMIT = 3
 
 function generateDownloadTrackingPlaceholder(
   taskId: TaskId,
@@ -46,8 +50,44 @@ function generateDownloadTrackingPlaceholder(
   }
 }
 
+function createMissingTaskEvent(
+  download: AssetDownload
+): CustomEvent<AssetDownloadWsMessage> {
+  return new CustomEvent('asset_download', {
+    detail: {
+      task_id: download.taskId,
+      asset_id: download.assetId,
+      asset_name: download.assetName,
+      bytes_total: download.bytesTotal,
+      bytes_downloaded: download.bytesDownloaded,
+      progress: download.progress,
+      status: 'failed'
+    }
+  })
+}
+
+function createTerminalTaskEvent(
+  download: AssetDownload,
+  task: TaskResponse
+): CustomEvent<AssetDownloadWsMessage> {
+  const result = task.result
+  return new CustomEvent('asset_download', {
+    detail: {
+      task_id: download.taskId,
+      asset_id: result?.asset_id ?? download.assetId,
+      asset_name: result?.filename ?? download.assetName,
+      bytes_total: download.bytesTotal,
+      bytes_downloaded: result?.bytes_downloaded ?? download.bytesTotal,
+      progress: task.status === 'completed' ? 100 : download.progress,
+      status: task.status,
+      error: task.error_message ?? result?.error
+    }
+  })
+}
+
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
+  const missingTaskPolls = new Map<TaskId, number>()
   const lastCompletedDownload = ref<CompletedDownload | null>(null)
 
   const downloadList = computed(() => Array.from(downloads.value.values()))
@@ -120,6 +160,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     if (existing?.status === 'completed') {
       return
     }
+    missingTaskPolls.delete(data.task_id)
 
     const download: AssetDownload = {
       taskId: data.task_id,
@@ -158,26 +199,23 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
         const task = await taskService.getTask(download.taskId)
         if (downloads.value.get(download.taskId) !== download) return
 
+        if (!task) {
+          const missingPolls = (missingTaskPolls.get(download.taskId) ?? 0) + 1
+          if (missingPolls < MISSING_TASK_RETRY_LIMIT) {
+            missingTaskPolls.set(download.taskId, missingPolls)
+            return
+          }
+          missingTaskPolls.delete(download.taskId)
+          handleAssetDownload(createMissingTaskEvent(download))
+          return
+        }
+        missingTaskPolls.delete(download.taskId)
+
         if (task.status === 'completed' || task.status === 'failed') {
-          const result = task.result
-          handleAssetDownload(
-            new CustomEvent('asset_download', {
-              detail: {
-                task_id: download.taskId,
-                asset_id: result?.asset_id ?? download.assetId,
-                asset_name: result?.filename ?? download.assetName,
-                bytes_total: download.bytesTotal,
-                bytes_downloaded:
-                  result?.bytes_downloaded ?? download.bytesTotal,
-                progress: task.status === 'completed' ? 100 : download.progress,
-                status: task.status,
-                error: task.error_message ?? result?.error
-              }
-            })
-          )
+          handleAssetDownload(createTerminalTaskEvent(download, task))
         }
       } catch {
-        // Task not ready or not found
+        return
       }
     }
 

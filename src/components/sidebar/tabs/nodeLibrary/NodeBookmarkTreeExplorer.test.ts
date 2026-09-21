@@ -18,9 +18,7 @@ beforeEach(() => {
   Object.assign(useNodeBookmarkStore(), { bookmarkedRoot: mockBookmarkedRoot })
   vi.mocked(useNodeBookmarkStore().addBookmark).mockResolvedValue(undefined)
   vi.mocked(useNodeBookmarkStore().toggleBookmark).mockResolvedValue(undefined)
-  vi.mocked(useNodeBookmarkStore().deleteBookmarkFolder).mockResolvedValue(
-    undefined
-  )
+  vi.mocked(useNodeBookmarkStore().deleteBookmarkFolder).mockResolvedValue(true)
 })
 
 const {
