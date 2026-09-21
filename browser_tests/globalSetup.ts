@@ -4,6 +4,11 @@ import { backupPath } from '@e2e/utils/backupUtils'
 
 dotenvConfig()
 
+const apiUrl =
+  process.env.PLAYWRIGHT_SETUP_API_URL ||
+  process.env.PLAYWRIGHT_TEST_URL ||
+  'http://localhost:8188'
+
 /**
  * Fail before the first test when ComfyUI is up but devtools did not import.
  *
@@ -36,10 +41,6 @@ async function missingDevtoolsStatus(endpoint: string): Promise<number | null> {
 }
 
 async function assertLocalDevtoolsInstalled(): Promise<void> {
-  const apiUrl =
-    process.env.PLAYWRIGHT_SETUP_API_URL ||
-    process.env.PLAYWRIGHT_TEST_URL ||
-    'http://localhost:8188'
   const hostname = new URL(apiUrl).hostname
   if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname)) return
 
