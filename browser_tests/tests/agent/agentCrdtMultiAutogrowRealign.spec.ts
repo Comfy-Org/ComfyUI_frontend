@@ -9,6 +9,7 @@ import type {
   UserDataFullInfo
 } from '@/platform/remote/comfyui/types'
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type {
@@ -186,14 +187,27 @@ test.describe(
       // most-recently-registered matching route first, so these have to
       // come after it to take over the workflow-save round trip.
       let savedName: string | undefined
+      // Keyed by the full `workflows/<name>.json` path, and overwritten on
+      // every save the same way `savedName` is -- a GET for that same path
+      // is served this retained body instead of falling through to the
+      // boot mock's empty response, so a reopen after `page.reload()`
+      // actually reads back what was saved rather than discarding it.
+      const savedWorkflowContent = new Map<string, string>()
       await page.route('**/api/userdata/*', (route) => {
         const request = route.request()
         const path = decodeURIComponent(
           new URL(request.url()).pathname.split('/userdata/')[1]
         )
-        if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-          return route.fallback()
+        if (!path.startsWith('workflows/')) return route.fallback()
+        if (request.method() === 'GET') {
+          const content = savedWorkflowContent.get(path)
+          return content === undefined
+            ? route.fallback()
+            : route.fulfill({ contentType: 'application/json', body: content })
+        }
+        if (request.method() !== 'POST') return route.fallback()
         savedName = path.slice('workflows/'.length, -'.json'.length)
+        savedWorkflowContent.set(path, request.postData() ?? '{}')
         const saved: UserDataFullInfo = {
           path,
           modified: Date.now(),
@@ -234,10 +248,11 @@ test.describe(
       let submittedPrompt: ComfyApiWorkflow | undefined
       await page.route('**/api/prompt', (route) => {
         if (route.request().method() !== 'POST') return route.fallback()
-        const body = route.request().postDataJSON() as {
-          prompt: ComfyApiWorkflow
-        }
-        submittedPrompt = body.prompt
+        const body = route.request().postDataJSON() as { prompt: unknown }
+        // Parses against the same schema the real API prompt payload must
+        // satisfy, so a drift in its shape fails loudly here instead of
+        // silently passing or failing on the wrong field below.
+        submittedPrompt = zComfyApiWorkflow.parse(body.prompt)
         const response: PromptResponse = {
           prompt_id: 'b6c1a2d3-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
           number: 1,
@@ -408,6 +423,24 @@ test.describe(
         await assertSubmittedValuesNamedCorrectly()
       })
 
+      await test.step('saving persists the sentinel values to the userdata mock', async () => {
+        // Forces a real save of the *current* (sentinel-bearing) graph
+        // through the same round trip a user's Ctrl+S takes, so
+        // `savedWorkflowContent` actually holds the state the reload step
+        // below claims survives a reopen, rather than whatever the
+        // target-selection step above auto-saved before any edits existed.
+        const saveResponse = page.waitForResponse(
+          (response) =>
+            response.request().method() === 'POST' &&
+            decodeURIComponent(new URL(response.url()).pathname).startsWith(
+              '/api/userdata/workflows/'
+            ) &&
+            response.ok()
+        )
+        await page.keyboard.press('Control+s')
+        await saveResponse
+      })
+
       await test.step('a full page reload forces the same resubscribe, and every link and value survive it', async () => {
         const subscribesBeforeReload = hostSocket.subscribeCount()
         await page.reload()
@@ -427,6 +460,15 @@ test.describe(
         await expect
           .poll(() => hostSocket.subscribeCount(), { timeout: 30_000 })
           .toBeGreaterThan(subscribesBeforeReload)
+
+        // Explicitly reopens the persisted workflow by its saved filename
+        // through the same real `agentPanel.selectWorkflow` picker the
+        // "target the workflow" step above used, instead of trusting
+        // whatever tab happened to restore itself -- every assertion below
+        // is then scoped to a workflow chosen by name, not by incidental
+        // reload continuity.
+        if (savedName === undefined) throw new Error('workflow was not saved')
+        await agentPanel.selectWorkflow(savedName)
 
         await expect(vueNodes.getNodeLocator(TARGET_ID)).toBeVisible({
           timeout: 30_000
