@@ -202,9 +202,9 @@ export class AgentFollowerHostSocket {
     if (update) this.send(update)
   }
 
-  // A doc_ops batch for a workflow this host does not serve is answered the
-  // way the relay answers, so the sender settles it instead of waiting
-  // forever; any other foreign frame is ignored.
+  // A doc_ops batch for a workflow this host does not serve gets a failed
+  // doc_ops_result for that workflow, so the sender settles it instead of
+  // waiting forever; any other foreign frame is ignored.
   private rejectForeignOps(frame: ParsedClientDocFrame): void {
     if (frame.type !== 'doc_ops' || frame.workflowId === null) return
     this.send({
