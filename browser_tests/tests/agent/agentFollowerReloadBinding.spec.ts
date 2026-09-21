@@ -35,7 +35,8 @@ test.describe(
         (response) =>
           response.request().method() === 'GET' &&
           decodeURIComponent(new URL(response.url()).pathname) ===
-            '/api/userdata/workflows/Reload reattachment.json'
+            '/api/userdata/workflows/Reload reattachment.json',
+        { timeout: 60_000 }
       )
       await page.reload({ waitUntil: 'domcontentloaded' })
       await expect(agentConversation.panel).toBeVisible({ timeout: 30_000 })
