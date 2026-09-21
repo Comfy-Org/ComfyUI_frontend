@@ -12,6 +12,8 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 
+import { zNodePackMetadata } from '@/platform/workflow/validation/schemas/workflowSchema'
+
 import { compressWidgetInputSlots } from './litegraphUtil'
 
 type ExportedWidgetValueWrapper = {
@@ -167,14 +169,27 @@ export const graphToPrompt = async (
       ]
     }
 
+    const cnrId = zNodePackMetadata.shape.cnr_id.safeParse(
+      node.properties.cnr_id
+    ).data
+    const auxId = zNodePackMetadata.shape.aux_id.safeParse(
+      node.properties.aux_id
+    ).data
+    const packVersion = zNodePackMetadata.shape.ver.safeParse(
+      node.properties.ver
+    ).data
     output[node.id] = {
       inputs,
       // TODO(huchenlei): Filter out all nodes that cannot be mapped to a
       // comfyClass.
       class_type: node.comfyClass!,
-      // Ignored by the backend.
+      // Ignored by the backend. Pack identity rides along so a re-imported
+      // prompt can offer install/locate for missing types.
       _meta: {
-        title: node.title
+        title: node.title,
+        ...(cnrId && { cnr_id: cnrId }),
+        ...(auxId && { aux_id: auxId }),
+        ...(packVersion && { ver: packVersion })
       }
     }
   }

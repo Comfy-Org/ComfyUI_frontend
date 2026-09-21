@@ -561,12 +561,14 @@ const zNodeInputValue = z.union([
   z.tuple([zNodeId, zSlotIndex])
 ])
 
+export const zNodePackMetadata = zProperties
+  .pick({ cnr_id: true, aux_id: true, ver: true })
+  .strip()
+
 const zNodeData = z.object({
   inputs: z.record(zNodeInputName, zNodeInputValue),
   class_type: z.string(),
-  _meta: z.object({
-    title: z.string()
-  })
+  _meta: zNodePackMetadata.extend({ title: z.string() })
 })
 
 export const zComfyApiWorkflow = z.record(zNodeId, zNodeData)

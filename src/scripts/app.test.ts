@@ -6,7 +6,15 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
@@ -30,11 +38,15 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
+import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { ComfyApp, app as singletonApp } from './app'
-import { createNode } from '@/utils/litegraphUtil'
+import { createNode, executeWidgetsCallback } from '@/utils/litegraphUtil'
+import { graphToPrompt } from '@/utils/executionUtil'
+import { applyTextReplacements } from '@/utils/searchAndReplace'
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -103,13 +115,7 @@ const {
   }
 }))
 
-vi.mock(import('@/utils/litegraphUtil'), () => ({
-  createNode: vi.fn(),
-  isImageNode: fromAny(vi.fn()),
-  isVideoNode: fromAny(vi.fn()),
-  isAudioNode: fromAny(vi.fn()),
-  executeWidgetsCallback: vi.fn()
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
 vi.mock(import('@/composables/usePaste'), () => ({
   pasteAudioNode: vi.fn(),
@@ -232,6 +238,8 @@ describe('ComfyApp', () => {
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
+    vi.mocked(createNode).mockResolvedValue(null)
+    vi.mocked(executeWidgetsCallback).mockImplementation(() => {})
     vi.mocked(useWorkflowService).mockReturnValue(
       fromPartial<WorkflowService>(mockWorkflowService)
     )
@@ -1544,6 +1552,204 @@ describe('ComfyApp', () => {
       expect(mockCanvas.graph).toBe(graph)
       expect(mockCanvas.subgraph).toBeNull()
     })
+
+    it.for([
+      { cnr_id: 'some-pack', ver: '9.9.9' },
+      { aux_id: 'someuser/some-repo', ver: 'abcdef12' },
+      { cnr_id: 'some-pack', aux_id: 'someuser/some-repo', ver: '9.9.9' }
+    ])(
+      'preserves pack identity through API import and workflow reload: %j',
+      async (properties) => {
+        const sourceGraph = new LGraph()
+        const source = new LGraphNode('Uninstalled')
+        source.comfyClass = 'UninstalledPackNode'
+        Object.assign(source.properties, properties)
+        sourceGraph.add(source)
+        const { output } = await graphToPrompt(sourceGraph)
+        expect(output[String(source.id)]._meta).toEqual({
+          title: 'Uninstalled',
+          ...properties
+        })
+
+        const graph = new LGraph()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const nodeReplacementStore = useNodeReplacementStore()
+        vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+
+        const cleanup = installErrorClearingHooks(graph)
+        try {
+          await app.loadApiJson(output, '')
+          expect(
+            useMissingNodesErrorStore().missingNodesError?.nodeTypes
+          ).toEqual([
+            expect.objectContaining({
+              type: 'UninstalledPackNode',
+              cnrId: properties.cnr_id ?? properties.aux_id
+            })
+          ])
+
+          const saved = graph.serialize()
+          expect(saved.nodes[0].properties).toEqual(properties)
+          expect(zComfyWorkflow.safeParse(saved).success).toBe(true)
+          const reloaded = new LGraph()
+          reloaded.configure({ ...saved, id: reloaded.id })
+          expect(reloaded.nodes[0].properties).toEqual(properties)
+          expect(reloaded.serialize().nodes[0].properties).toEqual(properties)
+        } finally {
+          cleanup()
+        }
+      }
+    )
+
+    it.for([
+      {
+        name: 'non-string fields',
+        metadata: { cnr_id: {}, aux_id: {}, ver: [] },
+        expectedProperties: {},
+        expectedCnrId: undefined
+      },
+      {
+        name: 'empty fields',
+        metadata: { cnr_id: '', aux_id: '', ver: '' },
+        expectedProperties: {},
+        expectedCnrId: undefined
+      },
+      {
+        name: 'invalid formats',
+        metadata: {
+          cnr_id: 'owner/repo',
+          aux_id: 'missing-slash',
+          ver: 'not a version'
+        },
+        expectedProperties: {},
+        expectedCnrId: undefined
+      },
+      {
+        name: 'invalid cnr_id with valid siblings',
+        metadata: { cnr_id: {}, aux_id: 'owner/repo', ver: '1.0.0' },
+        expectedProperties: { aux_id: 'owner/repo', ver: '1.0.0' },
+        expectedCnrId: 'owner/repo'
+      },
+      {
+        name: 'invalid aux_id with valid siblings',
+        metadata: { cnr_id: 'some-pack', aux_id: {}, ver: '1.0.0' },
+        expectedProperties: { cnr_id: 'some-pack', ver: '1.0.0' },
+        expectedCnrId: 'some-pack'
+      },
+      {
+        name: 'invalid ver with valid siblings',
+        metadata: { cnr_id: 'some-pack', aux_id: 'owner/repo', ver: [] },
+        expectedProperties: { cnr_id: 'some-pack', aux_id: 'owner/repo' },
+        expectedCnrId: 'some-pack'
+      },
+      {
+        name: 'empty cnr_id with valid aux_id fallback',
+        metadata: { cnr_id: '', aux_id: 'owner/repo', ver: '1.0.0' },
+        expectedProperties: { aux_id: 'owner/repo', ver: '1.0.0' },
+        expectedCnrId: 'owner/repo'
+      }
+    ])(
+      'validates API placeholder pack metadata: $name',
+      async ({ metadata, expectedProperties, expectedCnrId }) => {
+        const graph = new LGraph()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const cleanupErrorHooks = installErrorClearingHooks(graph)
+        const missingNodesStore = useMissingNodesErrorStore()
+        const nodeReplacementStore = useNodeReplacementStore()
+        vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+        const apiData: unknown = {
+          '1': {
+            class_type: 'UninstalledPackNode',
+            inputs: {},
+            _meta: {
+              title: 'Uninstalled',
+              ...metadata
+            }
+          }
+        }
+        assert(app.isApiJson(apiData), 'Expected valid API JSON')
+
+        try {
+          await app.loadApiJson(apiData, '')
+
+          const [placeholder] = graph.nodes
+          expect(placeholder?.properties).toEqual(expectedProperties)
+          expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+            expect.objectContaining({
+              type: 'UninstalledPackNode',
+              cnrId: expectedCnrId
+            })
+          ])
+        } finally {
+          cleanupErrorHooks()
+        }
+      }
+    )
+
+    it.for([
+      { name: 'without pack metadata', metadata: { title: 'Original text' } },
+      {
+        name: 'with pack metadata',
+        metadata: { title: 'Original text', cnr_id: 'old-pack', ver: '1.0.0' }
+      }
+    ])(
+      'preserves replacement defaults for API text substitutions $name',
+      async ({ metadata }) => {
+        const graph = new LGraph()
+        const previousGraph = Reflect.get(singletonApp, 'rootGraphInternal')
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const nodeType = 'test/ReplacementText'
+        class ReplacementText extends LGraphNode {
+          constructor() {
+            super('Replacement text')
+            this.addProperty('Node name for S&R', nodeType, 'string')
+            this.addWidget('text', 'text', 'Default text', () => {})
+          }
+        }
+        LiteGraph.registerNodeType(nodeType, ReplacementText)
+        const cleanupErrorHooks = installErrorClearingHooks(graph)
+        onTestFinished(() => {
+          cleanupErrorHooks()
+          Reflect.set(singletonApp, 'rootGraphInternal', previousGraph)
+        })
+        useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
+        const replacementStore = useNodeReplacementStore()
+        replacementStore.isLoaded = true
+        replacementStore.replacements = {
+          OldTextNode: [
+            {
+              old_node_id: 'OldTextNode',
+              new_node_id: nodeType,
+              old_widget_ids: ['text'],
+              input_mapping: [{ old_id: 'text', new_id: 'text' }],
+              output_mapping: null
+            }
+          ]
+        }
+
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: 'OldTextNode',
+              inputs: { text: 'Imported prompt text' },
+              _meta: metadata
+            }
+          },
+          ''
+        )
+        const missingTypes =
+          useMissingNodesErrorStore().missingNodesError?.nodeTypes ?? []
+        expect(useNodeReplacement().replaceNodesInPlace(missingTypes)).toEqual([
+          'OldTextNode'
+        ])
+        expect(
+          applyTextReplacements(graph, '%test/ReplacementText.text%')
+        ).toBe('Imported prompt text')
+      }
+    )
 
     it('restores late autogrow widgets and links without repeating callbacks', async () => {
       const graph = new LGraph()
