@@ -53,7 +53,7 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { download: 'Download' },
+      g: { download: 'Download', moreOptions: 'More Options' },
       linearMode: {
         rerun: 'Rerun',
         reuseParameters: 'Reuse Parameters',
@@ -172,7 +172,9 @@ describe('LinearPreview', () => {
 
     expect(await screen.findByTestId('linear-output-info')).toBeInTheDocument()
     expect(screen.getByTestId('image-preview')).toBeInTheDocument()
-    await userEvent.setup().click(screen.getByRole('button', { name: '' }))
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'More Options' }))
     expect(await screen.findByRole('dialog')).toHaveTextContent('Delete all')
     expect(screen.getByText('Rerun')).toBeInTheDocument()
     expect(screen.getByText('Reuse Parameters')).toBeInTheDocument()

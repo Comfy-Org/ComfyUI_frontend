@@ -359,14 +359,23 @@ describe('JobAssetsList', () => {
     expect(screen.queryByTestId('job-details')).not.toBeInTheDocument()
   })
 
-  it('anchors the popover to the active row through Reka', async () => {
+  it.for([
+    { rowX: 20, side: 'right' },
+    { rowX: 860, side: 'left' }
+  ])('places the popover $side of a row at x=$rowX', async ({ rowX, side }) => {
+    vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(
+      1024
+    )
+    vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(
+      768
+    )
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
     const jobRow = container.querySelector(`[data-job-id="${job.id}"]`)!
     const measureRow = vi
       .spyOn(jobRow, 'getBoundingClientRect')
-      .mockReturnValue(new DOMRect(20, 30, 160, 48))
+      .mockReturnValue(new DOMRect(rowX, 30, 160, 48))
 
     await fireEvent.mouseEnter(jobRow)
     await vi.advanceTimersByTimeAsync(200)
@@ -374,6 +383,7 @@ describe('JobAssetsList', () => {
 
     const popover = screen.getByTestId('queue-job-details-popover')
     expect(popover).toHaveAttribute('data-state', 'open')
+    expect(popover).toHaveAttribute('data-side', side)
     expect(popover).toHaveAttribute('data-align', 'start')
     expect(measureRow).toHaveBeenCalled()
   })

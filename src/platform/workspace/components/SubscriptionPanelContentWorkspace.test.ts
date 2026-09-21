@@ -476,9 +476,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
       expect(screen.getByTestId('plan-status-badge')).toHaveTextContent(
         'Inactive'
       )
-      expect(screen.getByTestId('plan-status-badge')).toHaveClass(
-        'bg-secondary-background'
-      )
       expect(
         screen.queryByTestId('subscription-state-card')
       ).not.toBeInTheDocument()

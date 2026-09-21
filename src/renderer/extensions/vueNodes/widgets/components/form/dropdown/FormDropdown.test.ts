@@ -134,7 +134,7 @@ function getCandidateLabel(): string {
 
 async function openDropdown(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Open' }))
-  await flushPromises()
+  await screen.findByTestId('dropdown-menu')
 }
 
 beforeEach(() => {
