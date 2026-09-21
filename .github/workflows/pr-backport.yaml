@@ -383,7 +383,13 @@ jobs:
 
               if [ -n "${PR_NUM}" ]; then
                 if [ "${PR_AUTHOR_IS_BOT}" != "true" ]; then
-                  gh pr edit "${PR_NUM}" --add-assignee "${PR_AUTHOR}" \
+                  # REST, not `gh pr edit`: that command resolves `author`,
+                  # `assignees` and team `slug`/`name` over GraphQL, which needs
+                  # `read:org`. PR_GH_TOKEN does not carry it, so every
+                  # `gh pr edit` here failed and backports went unassigned.
+                  gh api --silent --method POST \
+                    "repos/${{ github.repository }}/issues/${PR_NUM}/assignees" \
+                    -f "assignees[]=${PR_AUTHOR}" \
                     || echo "::warning::Failed to assign @${PR_AUTHOR} to PR #${PR_NUM}"
                 fi
                 gh pr merge "${PR_NUM}" --auto --squash --repo "${{ github.repository }}" \
@@ -541,4 +547,28 @@ jobs:
 
       - name: Remove needs-backport label
         if: steps.filter-targets.outputs.skip != 'true' && success()
-        run: gh pr edit ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} --remove-label "needs-backport"
+        env:
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
+        run: |
+          # REST, not `gh pr edit --remove-label`: that command resolves label
+          # and team `slug`/`name` fields over GraphQL, which needs `read:org`.
+          # PR_GH_TOKEN does not carry that scope, so this step failed after
+          # every otherwise-successful backport — reddening a job whose
+          # backport PRs had already been created, and leaving the label on,
+          # which re-arms the `labeled` trigger.
+          set -euo pipefail
+
+          # Read the labels into a variable first rather than piping straight
+          # into grep: under a pipe, a failed read is indistinguishable from a
+          # PR that simply does not carry the label, and would exit 0 here.
+          LABELS=$(gh api --paginate \
+            "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --jq '.[].name')
+
+          if ! printf '%s\n' "${LABELS}" | grep -qx 'needs-backport'; then
+            echo "Label 'needs-backport' already absent from PR #${PR_NUMBER}"
+            exit 0
+          fi
+
+          gh api --silent --method DELETE \
+            "repos/${GH_REPO}/issues/${PR_NUMBER}/labels/needs-backport"

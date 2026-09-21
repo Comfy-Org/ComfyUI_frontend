@@ -1,9 +1,12 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  LLink
+} from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
@@ -13,23 +16,30 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyApp } from '@/scripts/app'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { serializeNodeId, toNodeId } from '@/types/nodeId'
+
+const extensions = await vi.hoisted(async () => {
+  const { createExtensionCapture } =
+    await import('@/utils/__tests__/extensionTestUtils')
+  return createExtensionCapture()
+})
 
 /** `app.configuringGraph` is a getter on the real app, so route it via a ref. */
 const appState = vi.hoisted(() => ({ configuringGraph: false }))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
     canvas: { graph_mouse: [0, 0], graph: null },
     get configuringGraph() {
       return appState.configuringGraph
     },
-    registerExtension: vi.fn()
-  }
+    registerExtension: extensions.registerExtension
+  })
 }))
 
 import { app } from '@/scripts/app'
@@ -47,14 +57,10 @@ beforeEach(() => {
   app.canvas.graph = null
 })
 
-/**
- * `registerExtension` is a mock, and `mockReset: true` clears its calls before
- * the first test runs — so the registered extension is captured at collection.
- */
-const widgetInputsExtension = vi.mocked(app.registerExtension).mock
-  .calls[0]?.[0]
-if (!widgetInputsExtension)
-  throw new Error('Comfy.WidgetInputs was not registered on import')
+const widgetInputsExtension = extensions.getExtension('Comfy.WidgetInputs')
+
+await import('./rerouteNode')
+const rerouteNodeExtension = extensions.getExtension('Comfy.RerouteNode')
 
 /**
  * Applies the extension's `beforeRegisterNodeDef` to a throwaway node class.
@@ -87,7 +93,6 @@ function widgetSlot(
 
 describe('PrimitiveNode', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.namedValuesRestore = false
   })
 
@@ -141,7 +146,7 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(333)
   })
 
-  it.each([
+  it.for([
     { label: 'null', value: null },
     { label: 'undefined', value: undefined }
   ])('restores an explicit $label value', ({ value }) => {
@@ -208,7 +213,7 @@ describe('PrimitiveNode', () => {
   })
 
   it('keeps its serialized value for an asset browser widget', () => {
-    vi.spyOn(assetService, 'shouldUseAssetBrowser').mockReturnValue(true)
+    vi.spyOn(assetService, 'shouldUseWidgetAssetPicker').mockReturnValue(true)
     const graph = new LGraph()
     const target = new LGraphNode('Target')
     target.comfyClass = 'CheckpointLoaderSimple'
@@ -260,13 +265,20 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].type).toBe('custom_widget')
   })
 
-  it('restores its serialized value after a reroute resolves its widget config', () => {
+  it('restores its serialized value through the reroute lifecycle', () => {
+    widgetInputsExtension.registerCustomNodes?.(app)
+    localStorage.setItem('Comfy.RerouteNode.DefaultVisibility', 'true')
+    rerouteNodeExtension.registerCustomNodes?.(app)
+    const frameCallbacks: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frameCallbacks.push(callback)
+      return frameCallbacks.length
+    })
+
     const graph = new LGraph()
-    const reroute = new LGraphNode('Reroute')
+    const reroute = LiteGraph.createNode('Reroute')
+    if (!reroute) throw new Error('Reroute was not registered')
     graph.add(reroute)
-    reroute.addInput('', '*')
-    reroute.inputs[0].widget = { name: 'value' }
-    reroute.addOutput('', '*')
     const target = new LGraphNode('Target')
     graph.add(target)
     target.addInput('seed', 'INT')
@@ -275,21 +287,45 @@ describe('PrimitiveNode', () => {
       [GET_CONFIG]: () => ['INT', { control_after_generate: true }]
     }
     target.addWidget('number', 'seed', 111, () => {})
-    const primitive = new PrimitiveNode('Primitive')
+    const primitive = LiteGraph.createNode('PrimitiveNode')
+    if (!(primitive instanceof PrimitiveNode))
+      throw new Error('PrimitiveNode was not registered')
     graph.add(primitive)
     appState.configuringGraph = true
-    primitive.connect(0, reroute, 0)
-    reroute.connect(0, target, 0)
+    const primitiveLinkId = toLinkId(1)
+    graph._addLink(
+      new LLink(
+        primitiveLinkId,
+        'INT',
+        serializeNodeId(primitive.id),
+        0,
+        serializeNodeId(reroute.id),
+        0
+      )
+    )
+    graph._addLink(
+      new LLink(
+        toLinkId(2),
+        'INT',
+        serializeNodeId(reroute.id),
+        0,
+        serializeNodeId(target.id),
+        0
+      )
+    )
     primitive.configure(
-      fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
+      fromPartial({
+        widgets_values: [222],
+        outputs: [{ type: 'INT', links: [primitiveLinkId] }]
+      })
     )
     appState.configuringGraph = false
 
-    primitive.onAfterGraphConfigured()
+    for (const node of graph.nodes) node.onAfterGraphConfigured?.()
     expect(primitive.widgets).toBeUndefined()
-    reroute.inputs[0].widget![GET_CONFIG] =
-      target.inputs[0].widget?.[GET_CONFIG]
-    primitive.recreateWidget()
+
+    expect(frameCallbacks).toHaveLength(1)
+    frameCallbacks.shift()!(0)
 
     expect(primitive.widgets?.[0].value).toBe(222)
   })
@@ -318,7 +354,7 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(111)
   })
 
-  it('keeps an unconsumed serialized value until its widget is first built', () => {
+  it('drops an unconsumed serialized value after graph configuration', () => {
     const { primitive, target } = intFixture()
     primitive.configure(
       fromPartial({ widgets_values: [222], outputs: [{ type: 'INT' }] })
@@ -327,7 +363,7 @@ describe('PrimitiveNode', () => {
     primitive.onAfterGraphConfigured()
     primitive.connect(0, target, 0)
 
-    expect(primitive.widgets?.[0].value).toBe(222)
+    expect(primitive.widgets?.[0].value).toBe(111)
   })
 
   it('clears its serialized value when its output is disconnected', () => {
@@ -461,7 +497,6 @@ describe('convertToInput', () => {
 
 describe('setWidgetConfig', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     widgetInputsExtension.registerCustomNodes?.(app)
   })
 
@@ -531,10 +566,6 @@ describe('setWidgetConfig', () => {
 })
 
 describe('Comfy.WidgetInputs node-def hooks', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('onGraphConfigured', () => {
     it('resolves GET_CONFIG from the node definition, chaining the original hook', async () => {
       const original = vi.fn()
@@ -553,7 +584,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
       node.onGraphConfigured?.()
 
       expect(original).toHaveBeenCalled()
-      expect(node.inputs[0].widget![GET_CONFIG]!()).toEqual([
+      expect(node.inputs[0].widget[GET_CONFIG]!()).toEqual([
         'INT',
         { min: 0, max: 8 }
       ])
@@ -583,10 +614,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
       node.onConfigure?.(fromPartial({}))
 
-      expect(node.inputs[0].widget![GET_CONFIG]!()).toEqual([
-        'INT',
-        { max: 50 }
-      ])
+      expect(node.inputs[0].widget[GET_CONFIG]!()).toEqual(['INT', { max: 50 }])
     })
 
     it('defers to onGraphConfigured while a whole graph is loading', async () => {
@@ -598,7 +626,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
       node.onConfigure?.(fromPartial({}))
 
-      expect(node.inputs[0].widget![GET_CONFIG]).toBeUndefined()
+      expect(node.inputs[0].widget[GET_CONFIG]).toBeUndefined()
     })
   })
 

@@ -6,7 +6,10 @@ import * as Y from 'yjs'
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 
-import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
+import {
+  readSubgraphDefinitionIds,
+  readSubgraphDefinitions
+} from './agentSubgraphDefinitions'
 
 const CATALOG: WidgetCatalog = {
   types: {
@@ -63,6 +66,14 @@ describe('readSubgraphDefinitions', () => {
     // `Y.Doc.getMap` defines the shared type as a side effect; a reader must
     // leave the document's shape alone.
     expect(doc.share.has('definitions')).toBe(false)
+  })
+
+  it('ignores a definitions root with the wrong shared type', () => {
+    const doc = new Y.Doc()
+    doc.getArray('definitions')
+
+    expect(readSubgraphDefinitionIds(doc)).toEqual([])
+    expect(readSubgraphDefinitions(doc)).toEqual([])
   })
 
   it('projects a definition back to the shape it was minted from', () => {
@@ -138,6 +149,16 @@ describe('readSubgraphDefinitions', () => {
     expect(projected.definitions).toEqual({ subgraphs: [inner] })
   })
 
+  it('projects top-level and nested definition ids without reading bodies', () => {
+    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
+    const outer = createTestSubgraphData({
+      nodes: [interiorNode(2, inner.id)] as never,
+      definitions: { subgraphs: [inner] }
+    })
+
+    expect(readSubgraphDefinitionIds(seed(outer))).toEqual([outer.id, inner.id])
+  })
+
   it('skips definition and node entries that are not records', () => {
     const definition = createTestSubgraphData({
       nodes: [interiorNode(1)] as never
@@ -158,6 +179,40 @@ describe('readSubgraphDefinitions', () => {
 
     expect(projected).toHaveLength(1)
     expect(projected[0]?.nodes?.map((node) => node.id)).toEqual([1])
+  })
+
+  it.for<[string, (definition: Y.Map<unknown>) => void]>([
+    ['inputs', (stored) => stored.set('inputs', 'invalid')],
+    [
+      'input entry',
+      (stored) => {
+        const inputs = new Y.Array<unknown>()
+        stored.set('inputs', inputs)
+        inputs.push([null])
+      }
+    ],
+    ['nodes', (stored) => stored.set('nodes', 'invalid')],
+    ['links', (stored) => stored.set('links', 'invalid')],
+    ['definitions', (stored) => stored.set('definitions', 'invalid')],
+    [
+      'nested definition',
+      (stored) => {
+        const definitions = new Y.Map<unknown>()
+        const subgraphs = new Y.Array<unknown>()
+        stored.set('definitions', definitions)
+        definitions.set('subgraphs', subgraphs)
+        subgraphs.push([null])
+      }
+    ]
+  ])('skips a definition with invalid %s', ([_label, mutate]) => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = doc
+      .getMap<unknown>('definitions')
+      .get(definition.id) as Y.Map<unknown>
+    mutate(stored)
+
+    expect(readSubgraphDefinitions(doc)).toEqual([])
   })
 
   it('reads a node named twice in the order register once', () => {

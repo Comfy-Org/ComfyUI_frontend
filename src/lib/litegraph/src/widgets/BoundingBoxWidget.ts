@@ -10,8 +10,6 @@ export class BoundingBoxWidget
   extends BaseWidget<IBoundingBoxWidget>
   implements IBoundingBoxWidget
 {
-  override type = 'boundingbox' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(ctx, options, 'BoundingBox')
   }

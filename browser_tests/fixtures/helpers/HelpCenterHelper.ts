@@ -74,7 +74,7 @@ class HelpCenterHelper {
           body: JSON.stringify(releases)
         })
       } else {
-        await route.continue()
+        await route.fallback()
       }
     })
   }
@@ -116,7 +116,11 @@ class HelpCenterHelper {
    * opened by help center actions don't navigate to the real sites.
    */
   async stubExternalPages(): Promise<void> {
-    for (const pattern of ['https://comfy.org/**', 'https://github.com/**']) {
+    for (const pattern of [
+      'https://comfy.org/**',
+      'https://github.com/**',
+      'https://discord.com/invite/comfyorg'
+    ]) {
       await this.page.context().route(pattern, (route: Route) =>
         route.fulfill({
           status: 200,

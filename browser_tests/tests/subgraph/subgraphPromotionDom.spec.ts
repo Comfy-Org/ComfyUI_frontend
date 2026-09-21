@@ -155,7 +155,7 @@ test.describe(
           const interiorTextareas = comfyPage.page
             .locator('[data-node-id]')
             .getByRole('textbox')
-          await expect(interiorTextareas).toHaveCount(2)
+          await expect(interiorTextareas).toHaveCount(0)
 
           await comfyPage.subgraph.exitViaBreadcrumb()
 

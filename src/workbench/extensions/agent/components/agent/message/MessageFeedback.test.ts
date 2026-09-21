@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,19 +11,19 @@ import MessageFeedback from './MessageFeedback.vue'
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
 const fetchApi = vi.hoisted(() => vi.fn())
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (route: string) => '/api' + route,
     fetchApi
   }
 }))
 
-vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => false,
   findOutputAsset: async () => undefined
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   useClipboard: () => ({
     copy: clipboard.copy,
     copied: ref(false),
@@ -46,6 +45,14 @@ function renderFeedback(assets?: ReplyAsset[]) {
 
 describe('MessageFeedback', () => {
   beforeEach(() => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    )
     clipboard.copy.mockClear()
     fetchApi.mockReset()
   })

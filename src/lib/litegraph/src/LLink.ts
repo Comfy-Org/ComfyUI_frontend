@@ -5,6 +5,7 @@ import {
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -718,6 +719,9 @@ export function replaceLinkTopology(
   )
   if (!registered) return false
   if (incumbent) {
+    if (incumbent._graphScope) {
+      useLinkPresentationStore().take(incumbent._graphScope, incumbent.id)
+    }
     linkByTopology.delete(toRaw(incumbent._state))
     incumbent._graphScope = undefined
   }
@@ -743,7 +747,9 @@ function adoptLinkTopology(
  */
 export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
-  useLinkStore().deleteLink(link._graphScope, link._state)
+  if (useLinkStore().deleteLink(link._graphScope, link._state)) {
+    useLinkPresentationStore().take(link._graphScope, link.id)
+  }
   linkByTopology.delete(toRaw(link._state))
   link._graphScope = undefined
 }

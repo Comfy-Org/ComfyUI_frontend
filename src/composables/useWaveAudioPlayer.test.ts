@@ -1,30 +1,31 @@
 import { fromAny } from '@total-typescript/shoehorn'
+import { useMediaControls } from '@vueuse/core'
 import { ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useWaveAudioPlayer } from './useWaveAudioPlayer'
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  return {
-    ...actual,
-    useMediaControls: () => ({
+vi.mock(import('@vueuse/core'), { spy: true })
+
+const mockFetchApi = vi.fn()
+const originalAudioContext = globalThis.AudioContext
+
+beforeEach(() => {
+  vi.mocked(useMediaControls).mockImplementation(() =>
+    fromAny({
       playing: ref(false),
       currentTime: ref(0),
       duration: ref(0)
     })
-  }
+  )
 })
-
-const mockFetchApi = vi.fn()
-const originalAudioContext = globalThis.AudioContext
 
 afterEach(() => {
   globalThis.AudioContext = originalAudioContext
   mockFetchApi.mockReset()
 })
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (route: string) => '/api' + route,
     fetchApi: (...args: unknown[]) => mockFetchApi(...args)

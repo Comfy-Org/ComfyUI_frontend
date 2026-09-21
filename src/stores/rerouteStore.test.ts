@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
@@ -48,10 +46,6 @@ function link(id: number, targetSlot: number, parentId?: number): LinkTopology {
 }
 
 describe('useRerouteStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('refuses to overwrite a registration held by a different chain', () => {
     const store = useRerouteStore()
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})

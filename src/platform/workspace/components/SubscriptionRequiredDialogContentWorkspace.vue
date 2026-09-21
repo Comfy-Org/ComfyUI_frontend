@@ -78,6 +78,7 @@
       :authentication-state
       :authentication-error
       :reconciliation-operation-id
+      :parked-checkout-recovery
       :quote-is-current
       :is-applying-promotion-code
       @add-credit-card="handleAddCreditCard"
@@ -164,6 +165,7 @@ const {
   authenticationState,
   authenticationError,
   reconciliationOperationId,
+  parkedCheckoutRecovery,
   isPolling,
   handleSubscribeClick,
   handleBackToPricing,

@@ -8,13 +8,14 @@
     :data-testid="`subgraph-breadcrumb-item-${item.key}`"
     :data-active="isActive ? '' : undefined"
     draggable="false"
-    class="p-breadcrumb-item-link h-8 cursor-pointer px-2"
-    :class="{
-      'flex items-center gap-1': isActive,
-      'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
-      'p-breadcrumb-item-link-icon-visible': isActive,
-      'active-breadcrumb-item': isActive
-    }"
+    :class="
+      cn('p-breadcrumb-item-link flex h-8 cursor-pointer items-center px-2', {
+        'gap-1': isActive,
+        'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
+        'p-breadcrumb-item-link-icon-visible': isActive,
+        'active-breadcrumb-item': isActive
+      })
+    "
     @click="handleClick"
   >
     <i
@@ -60,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import InputText from 'primevue/inputtext'
 import type { MenuState } from 'primevue/menu'
 import Menu from 'primevue/menu'
@@ -79,6 +81,7 @@ import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
@@ -90,8 +93,10 @@ interface Props {
 const { item, isActive } = defineProps<Props>()
 
 const nodeDefStore = useNodeDefStore()
-const hasMissingNodes = computed(() =>
-  graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
+const hasMissingNodes = computed(
+  () =>
+    isMissingWarningVisible('nodes') &&
+    graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
 )
 
 const { t } = useI18n()

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import type { MockInstance } from 'vitest'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { reportError } from '@/platform/telemetry/reportError'
@@ -12,21 +10,21 @@ import { readIndex, resetStorageAvailable } from '../base/storageIO'
 import { StorageKeys } from '../base/storageKeys'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     clientId: 'test-client',
     initialClientId: 'test-client'
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     loadGraphData: vi.fn().mockResolvedValue(undefined)
   }
 }))
 
 const reportErrorMock = vi.hoisted(() => vi.fn<typeof reportError>())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
@@ -70,7 +68,6 @@ function failPayloadWrites(failTimes = Infinity): MockInstance {
 
 describe('workflowDraftStoreV2', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
     sessionStorage.clear()
     resetStorageAvailable()

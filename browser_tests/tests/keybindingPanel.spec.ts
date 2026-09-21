@@ -88,11 +88,6 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settingDialog.category('Keybinding').click()
 })
 
-test.afterEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.Keybinding.NewBindings', [])
-  await comfyPage.settings.setSetting('Comfy.Keybinding.UnsetBindings', [])
-})
-
 async function registerNoBindingCommand(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate((commandId) => {
     const app = window.app!

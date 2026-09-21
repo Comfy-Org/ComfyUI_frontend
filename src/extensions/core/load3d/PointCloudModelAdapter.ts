@@ -15,7 +15,7 @@ import type { MaterialMode } from './interfaces'
 import { FastPLYLoader } from './loader/FastPLYLoader'
 
 function getPLYEngine(): string {
-  return useSettingStore().get('Comfy.Load3D.PLYEngine') as string
+  return useSettingStore().get('Comfy.Load3D.PLYEngine')
 }
 
 const POINT_CLOUD_CAPABILITIES: ModelAdapterCapabilities = {

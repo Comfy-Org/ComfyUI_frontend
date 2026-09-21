@@ -1,12 +1,12 @@
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
-vi.mock('./SwapNodeGroupRow.vue', () => ({
+vi.mock<unknown>(import('./SwapNodeGroupRow.vue'), () => ({
   default: {
     name: 'SwapNodeGroupRow',
     template:
@@ -45,7 +45,7 @@ function mountCard(
       ...(callbacks?.onReplace ? { onReplace: callbacks.onReplace } : {})
     },
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue]
+      plugins: [getActivePinia()!, PrimeVue]
     }
   })
 }

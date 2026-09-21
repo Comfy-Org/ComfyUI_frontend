@@ -1,6 +1,4 @@
 import { toGroupId } from '@/types/groupId'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
@@ -16,12 +14,12 @@ import {
   createMockPositionable
 } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(),
   isImageNode: vi.fn()
 }))
 
-vi.mock('@/utils/nodeFilterUtil', () => ({
+vi.mock(import('@/utils/nodeFilterUtil'), () => ({
   filterOutputNodes: vi.fn()
 }))
 
@@ -78,12 +76,6 @@ function mockSettingValues(overrides: Record<string, unknown> = {}) {
 
 describe('useSelectionState', () => {
   beforeEach(() => {
-    // Create testing Pinia instance
-    setActivePinia(
-      createTestingPinia({
-        createSpy: vi.fn
-      })
-    )
     mockSettingValues()
 
     // Setup mock utility functions

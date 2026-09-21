@@ -40,7 +40,7 @@ const mockDistribution = vi.hoisted(
   (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: true })
 )
 
-vi.mock('@/platform/distribution/types', () => mockDistribution)
+vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 describe('assetMetadataUtils', () => {
   const mockAsset: AssetItem = {

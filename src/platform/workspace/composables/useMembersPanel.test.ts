@@ -1,8 +1,11 @@
-import { createTestingPinia } from '@pinia/testing'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
-import type * as VueI18n from 'vue-i18n'
+import { getActivePinia } from 'pinia'
+import type { Pinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp, defineComponent, ref } from 'vue'
+import type { App } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
@@ -12,7 +15,8 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import {
   filterBySearch,
   sortMembers,
-  sortPendingInvites
+  sortPendingInvites,
+  useMembersPanel
 } from './useMembersPanel'
 
 function createMember(
@@ -377,33 +381,37 @@ function setOriginalOwner(id = 'creator-1') {
   ]
 }
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: mockToastAdd })
-}))
-
-vi.mock('vue-i18n', async (importOriginal) => ({
-  ...(await importOriginal<typeof VueI18n>()),
-  useI18n: () => ({ t: (key: string) => key })
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: mockPermissions,
-    uiConfig: mockUiConfig,
-    workspaceRole: mockWorkspaceRole
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({ add: mockToastAdd })
   })
-}))
+)
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
-
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canChangeSeats: mockCanChangeSeats,
-    canInviteMembers: mockCanInviteMembers
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: mockPermissions,
+      uiConfig: mockUiConfig,
+      workspaceRole: mockWorkspaceRole
+    })
   })
-}))
+)
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canChangeSeats: mockCanChangeSeats,
+      canInviteMembers: mockCanInviteMembers
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     userPhotoUrl: ref(null),
     userEmail: ref('owner@example.com'),
@@ -411,14 +419,14 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({ show: mockShowSubscriptionDialog })
   })
 )
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
     isInitialized: mockIsInitialized,
@@ -439,14 +447,14 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({ show: vi.fn() })
   })
 )
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showRemoveMemberDialog: mockShowRemoveMemberDialog,
     showRevokeInviteDialog: mockShowRevokeInviteDialog,
@@ -457,28 +465,22 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
-const mockBillingControlEnabled = vi.hoisted(() => ({ value: true }))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get billingControlEnabled() {
-        return mockBillingControlEnabled.value
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 describe('useMembersPanel', () => {
+  const apps: App<Element>[] = []
+  let pinia: Pinia
+
   beforeEach(() => {
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
-    vi.mocked(workspaceStore.resendInvite).mockImplementation(mockResendInvite)
+    vi.spyOn(workspaceStore, 'resendInvite').mockImplementation(
+      mockResendInvite
+    )
     workspaceType = 'personal'
     workspaceMembers = []
     workspacePendingInvites = []
     updateWorkspaceStore()
-    mockBillingControlEnabled.value = true
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
     mockMaxSeats.value = 73
     mockOccupiedSeats.value = 0
     mockCanAccessSubscriptionFeatures.value = true
@@ -514,11 +516,27 @@ describe('useMembersPanel', () => {
     }
   })
 
-  // Lazy import so mocks are in place
   async function setup() {
-    const { useMembersPanel } = await import('./useMembersPanel')
-    return useMembersPanel()
+    let result: ReturnType<typeof useMembersPanel> | undefined
+    const app = createApp(
+      defineComponent({
+        setup() {
+          result = useMembersPanel()
+          return () => null
+        }
+      })
+    )
+    app.use(pinia)
+    app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
+    app.mount(document.createElement('div'))
+    apps.push(app)
+    if (!result) throw new Error('members panel not initialized')
+    return result
   }
+
+  afterEach(() => {
+    for (const app of apps.splice(0)) app.unmount()
+  })
 
   describe('team plan detection', () => {
     it('is on the team plan when billing reports an active Team plan', async () => {
@@ -868,7 +886,7 @@ describe('useMembersPanel', () => {
     })
 
     it('omits the credit-limit action when the flag is disabled', async () => {
-      mockBillingControlEnabled.value = false
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
@@ -880,7 +898,7 @@ describe('useMembersPanel', () => {
     })
 
     it('keeps the creator menu hidden when the flag is disabled', async () => {
-      mockBillingControlEnabled.value = false
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
       setOriginalOwner()
       const panel = await setup()
 
