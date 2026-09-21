@@ -26,7 +26,7 @@
         variant="secondary"
         :aria-label="fitViewTooltip"
         :style="stringifiedMinimapStyles.buttonStyles"
-        class="size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface!"
+        class="size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface"
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
         <i class="icon-[lucide--focus] size-4" aria-hidden="true" />
@@ -152,16 +152,16 @@ const minimapCommandText = computed(() =>
 // Computed properties for button classes and states
 const zoomButtonClass = computed(() =>
   cn(
-    'h-8 w-15 bg-transparent p-0 hover:bg-interface-button-hover-surface!',
-    isModalVisible.value && 'not-active:bg-interface-panel-selected-surface!'
+    'h-8 w-15 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+    isModalVisible.value && 'not-active:bg-interface-panel-selected-surface'
   )
 )
 
 const minimapButtonClass = computed(() =>
   cn(
-    'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface!',
+    'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
     settingStore.get('Comfy.Minimap.Visible') &&
-      'not-active:bg-interface-panel-selected-surface!'
+      'not-active:bg-interface-panel-selected-surface'
   )
 )
 
@@ -190,8 +190,8 @@ const linkVisibilityAriaLabel = computed(() =>
 )
 const linkVisibleClass = computed(() =>
   cn(
-    'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface!',
-    linkHidden.value && 'not-active:bg-interface-panel-selected-surface!'
+    'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+    linkHidden.value && 'not-active:bg-interface-panel-selected-surface'
   )
 )
 

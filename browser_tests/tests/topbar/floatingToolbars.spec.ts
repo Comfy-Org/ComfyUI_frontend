@@ -7,6 +7,7 @@ function panelStyle(locator: Locator) {
   return locator.evaluate((el) => {
     const style = getComputedStyle(el)
     return {
+      backgroundColor: style.backgroundColor,
       borderRadius: style.borderRadius,
       boxShadow: style.boxShadow,
       padding: style.padding,
@@ -63,6 +64,7 @@ test.describe('Floating toolbars', { tag: ['@ui', '@canvas'] }, () => {
       name: 'Cancel current run'
     })
     await expect(cancel).toBeDisabled()
+    await expect(cancel).toHaveClass(/bg-secondary-background/)
     await expect(cancel).not.toHaveClass(/destructive/)
   })
 })
