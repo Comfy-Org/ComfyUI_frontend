@@ -2,7 +2,7 @@ import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
-import subgraphWorkflow from '@e2e/assets/subgraphs/subgraph-with-promoted-text-widget.json' with { type: 'json' }
+import subgraphWorkflow from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 

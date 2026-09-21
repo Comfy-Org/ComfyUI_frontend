@@ -37,11 +37,19 @@
           "name": "latent_image",
           "type": "LATENT",
           "link": null
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
         }
       ],
       "outputs": [],
       "properties": {},
-      "widgets_values": [""]
+      "widgets_values": ["", 0]
     }
   ],
   "links": [],
@@ -54,7 +62,7 @@
         "state": {
           "lastGroupId": 0,
           "lastNodeId": 11,
-          "lastLinkId": 15,
+          "lastLinkId": 16,
           "lastRerouteId": 0
         },
         "revision": 0,
@@ -127,6 +135,16 @@
             "pos": {
               "0": 581.59912109375,
               "1": 499.13336181640625
+            }
+          },
+          {
+            "id": "a1af92b8-a772-4f1e-976a-b72b85f59367",
+            "name": "seed",
+            "type": "INT",
+            "linkIds": [16],
+            "pos": {
+              "0": 581.59912109375,
+              "1": 519.13336181640625
             }
           }
         ],
@@ -203,6 +221,15 @@
                 "name": "latent_image",
                 "type": "LATENT",
                 "link": 15
+              },
+              {
+                "localized_name": "seed",
+                "name": "seed",
+                "type": "INT",
+                "widget": {
+                  "name": "seed"
+                },
+                "link": 16
               }
             ],
             "outputs": [
@@ -268,6 +295,14 @@
             "target_id": 11,
             "target_slot": 3,
             "type": "LATENT"
+          },
+          {
+            "id": 16,
+            "origin_id": -10,
+            "origin_slot": 6,
+            "target_id": 11,
+            "target_slot": 4,
+            "type": "INT"
           }
         ],
         "extra": {}
