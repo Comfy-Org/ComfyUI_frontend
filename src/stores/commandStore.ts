@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 export interface ComfyCommand {
@@ -19,6 +20,7 @@ export interface ComfyCommand {
   source?: string
   active?: () => boolean // Getter to check if the command is active/toggled on
   category?: 'essentials' | 'view-controls' // For shortcuts panel organization
+  mutatesGraph?: boolean | (() => boolean)
 }
 
 export class ComfyCommandImpl implements ComfyCommand {
@@ -33,6 +35,7 @@ export class ComfyCommandImpl implements ComfyCommand {
   source?: string
   active?: () => boolean
   category?: 'essentials' | 'view-controls'
+  mutatesGraph?: boolean | (() => boolean)
 
   constructor(command: ComfyCommand) {
     this.id = command.id
@@ -46,6 +49,7 @@ export class ComfyCommandImpl implements ComfyCommand {
     this.source = command.source
     this.active = command.active
     this.category = command.category
+    this.mutatesGraph = command.mutatesGraph
   }
 
   get label() {
@@ -104,6 +108,11 @@ export const useCommandStore = defineStore('command', () => {
       throw new Error(`Command ${commandId} not found`)
     }
     const command = getCommand(commandId)
+    const mutatesGraph =
+      typeof command.mutatesGraph === 'function'
+        ? command.mutatesGraph()
+        : command.mutatesGraph
+    if (mutatesGraph && useCanvasStore().canvas?.selectOnly) return
     await wrapWithErrorHandlingAsync(
       () => command.function(options?.metadata),
       options?.errorHandler

@@ -1,5 +1,8 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
@@ -98,6 +101,42 @@ describe('commandStore', () => {
       const handler = vi.fn()
       await store.execute('err.test', { errorHandler: handler })
       expect(handler).toHaveBeenCalledWith(error)
+    })
+
+    it.for([
+      { selectOnly: false, calls: 1 },
+      { selectOnly: true, calls: 0 }
+    ])(
+      'executes graph mutations $calls times with selectOnly=$selectOnly',
+      async ({ selectOnly, calls }) => {
+        useCanvasStore().canvas = fromPartial<LGraphCanvas>({ selectOnly })
+        const fn = vi.fn()
+        const store = useCommandStore()
+        store.registerCommand({
+          id: 'graph.mutation',
+          function: fn,
+          mutatesGraph: true
+        })
+
+        await store.execute('graph.mutation')
+
+        expect(fn).toHaveBeenCalledTimes(calls)
+      }
+    )
+
+    it('evaluates conditional graph mutation capabilities at execution', async () => {
+      useCanvasStore().canvas = fromPartial<LGraphCanvas>({ selectOnly: true })
+      const fn = vi.fn()
+      const store = useCommandStore()
+      store.registerCommand({
+        id: 'conditional.mutation',
+        function: fn,
+        mutatesGraph: () => false
+      })
+
+      await store.execute('conditional.mutation')
+
+      expect(fn).toHaveBeenCalledOnce()
     })
   })
 

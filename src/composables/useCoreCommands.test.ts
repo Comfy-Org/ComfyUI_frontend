@@ -24,6 +24,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -374,8 +375,10 @@ describe('useCoreCommands', () => {
         selectedItem
       ]) as typeof app.canvas.selectedItems
       app.canvas.selectOnly = true
+      useCanvasStore().canvas = app.canvas
+      useCommandStore().registerCommands(useCoreCommands())
 
-      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+      await useCommandStore().execute('Comfy.Canvas.DeleteSelectedItems')
 
       expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
       expect(app.canvas.setDirty).not.toHaveBeenCalled()
@@ -384,10 +387,6 @@ describe('useCoreCommands', () => {
   })
 
   describe('graph mutation commands while picking nodes', () => {
-    function findCommand(id: string) {
-      return useCoreCommands().find((cmd) => cmd.id === id)!
-    }
-
     const readNode = {
       mode: (node: LGraphNode) => node.mode,
       pinned: (node: LGraphNode) => node.pinned,
@@ -406,6 +405,8 @@ describe('useCoreCommands', () => {
       app.canvas.selectedItems = new Set()
       app.canvas.selectOnly = false
       app.canvas.read_only = false
+      useCanvasStore().canvas = app.canvas
+      useCommandStore().registerCommands(useCoreCommands())
       useSettingStore().settingValues['Comfy.SnapToGrid.GridSize'] = 10
     })
 
@@ -523,7 +524,7 @@ describe('useCoreCommands', () => {
         app.canvas.selectOnly = selectOnly
         app.canvas.read_only = readOnly
 
-        await findCommand(id).function()
+        await useCommandStore().execute(id)
 
         expect(readNode[reads](node)).toEqual(expected)
       }
@@ -540,7 +541,7 @@ describe('useCoreCommands', () => {
         app.canvas.selectedItems = new Set([node])
         app.canvas.selectOnly = selectOnly
 
-        await findCommand('Comfy.Canvas.Resize').function()
+        await useCommandStore().execute('Comfy.Canvas.Resize')
 
         expect(setSize).toHaveBeenCalledTimes(resizes)
       }
@@ -567,7 +568,7 @@ describe('useCoreCommands', () => {
       async ({ id, selectOnly, pastes }) => {
         app.canvas.selectOnly = selectOnly
 
-        await findCommand(id).function()
+        await useCommandStore().execute(id)
 
         expect(app.canvas.pasteFromClipboard).toHaveBeenCalledTimes(pastes)
       }
@@ -603,7 +604,7 @@ describe('useCoreCommands', () => {
         }
         app.canvas.selectOnly = selectOnly
 
-        await findCommand(id).function()
+        await useCommandStore().execute(id)
 
         expect(spies[spy]).toHaveBeenCalledTimes(calls)
       }
@@ -623,7 +624,7 @@ describe('useCoreCommands', () => {
           .mockImplementation(() => {})
         app.canvas.selectOnly = true
 
-        await findCommand(id).function()
+        await useCommandStore().execute(id)
 
         expect(historySpy).toHaveBeenCalledOnce()
         expect(mockChangeTracker[history]).not.toHaveBeenCalled()
@@ -643,7 +644,7 @@ describe('useCoreCommands', () => {
         app.canvas.selectedItems = new Set([pickedNode()])
         app.canvas.selectOnly = selectOnly
 
-        await findCommand('Comfy.Graph.GroupSelectedNodes').function()
+        await useCommandStore().execute('Comfy.Graph.GroupSelectedNodes')
 
         expect(app.canvas.graph?.add).toHaveBeenCalledTimes(groupsAdded)
       }
@@ -658,7 +659,7 @@ describe('useCoreCommands', () => {
         app.canvas.selectedItems = new Set([pickedNode()])
         app.canvas.selectOnly = selectOnly
 
-        await findCommand('Comfy.Graph.ConvertToSubgraph').function()
+        await useCommandStore().execute('Comfy.Graph.ConvertToSubgraph')
 
         expect(app.canvas.graph?.convertToSubgraph).toHaveBeenCalledTimes(
           conversions
@@ -674,7 +675,7 @@ describe('useCoreCommands', () => {
       async ({ selectOnly, unpacks }) => {
         app.canvas.selectOnly = selectOnly
 
-        await findCommand('Comfy.Graph.UnpackSubgraph').function()
+        await useCommandStore().execute('Comfy.Graph.UnpackSubgraph')
 
         expect(mockUnpackSubgraph).toHaveBeenCalledTimes(unpacks)
       }
@@ -692,7 +693,7 @@ describe('useCoreCommands', () => {
         app.canvas.selectedItems = new Set([group])
         app.canvas.selectOnly = selectOnly
 
-        await findCommand('Comfy.Graph.FitGroupToContents').function()
+        await useCommandStore().execute('Comfy.Graph.FitGroupToContents')
 
         expect(resizeTo).toHaveBeenCalledTimes(resizes)
       }
