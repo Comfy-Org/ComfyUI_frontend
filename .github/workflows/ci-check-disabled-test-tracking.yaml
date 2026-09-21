@@ -1,0 +1,29 @@
+name: Check Disabled Test Tracking
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check-disabled-test-tracking:
+    name: Check newly disabled tests name a follow-up
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Write the pull request body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: printf '%s' "$PR_BODY" > "${RUNNER_TEMP}/pr-body.txt"
+
+      - name: Check newly disabled tests name a follow-up
+        run: |
+          bash .github/scripts/check-disabled-test-tracking.sh \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}" \
+            "${RUNNER_TEMP}/pr-body.txt"
