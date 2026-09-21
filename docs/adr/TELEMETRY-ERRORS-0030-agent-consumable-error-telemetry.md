@@ -22,10 +22,20 @@ and degraded paths. These signals need intentional common tags so agents can
 query them by family and Datadog RUM can route useful alerts without creating
 one monitor per error slug.
 
-The frontend already provides `reportError` and mandates it in
-`src/AGENTS.md`; 33 snake_case `errorType` slugs exist across 29 files.
-`src/base/assert.ts` is used much less widely, while hundreds of catch blocks
-remain. The gap is coverage and discipline, not another reporting API.
+The frontend already provides `reportError`, mandates it in `src/AGENTS.md`,
+and has production callers using snake_case `errorType` slugs.
+`src/base/assert.ts` is used much less widely, while many catch blocks remain.
+The gap is coverage and discipline, not another reporting API. Counts are
+deliberately omitted because they change independently of this decision.
+
+This decision originated in a 2026-09-03 product directive to expose
+invariants, bad states, missing bounded completions, unexpected catches, and
+degraded paths through one queryable taxonomy. The supporting research checked
+the existing frontend emitters and compared bounded indexed tags with diagnostic
+context, default grouping with explicit fingerprints, family-level alerting with
+per-slug alerts, and failure counts with rates that have denominators. Those
+tradeoffs lead to the fixed low-cardinality tags and alternatives recorded
+below; the decision does not depend on access to an external design document.
 
 ## Decision
 
@@ -43,17 +53,21 @@ remain. The gap is coverage and discipline, not another reporting API.
    - `feature_area`: `workflow`, `queue`, `canvas`, `nodes`, `auth`, `cloud`,
      `agent`, `crdt`, `billing`, `extensions`, `settings`, or `assets`
    - `operation`: `load`, `save`, `execute`, `sync`, `import`, `export`,
-     `render`, `navigate`, or `auth`
-   - `outcome`: `failed`, `recovered`, `aborted`, `timed_out`, or `missing`
+     `render`, `navigate`, `auth`, or `insert`
+   - `outcome`: `failed`, `recovered`, `aborted`, `timed_out`, `missing`, or
+     `degraded`
    - `assert_mode`: `soft`, `hard`, or `sampled` for assertions
 
    A conforming event always supplies `failure_kind`, `feature_area`, and
    `outcome`. It supplies `operation` when the failure occurs during one of the
    enumerated operations; invariants and bad states with no discrete operation
    omit it. Assertion events also supply `assert_mode`; non-assertion events
-   omit it. `ReportErrorOptions.tags` remains optional for existing callers,
-   but an event does not conform to this taxonomy unless its tags satisfy this
-   record shape.
+   omit it. An assertion event is any invariant or bad-state check reported with
+   assertion semantics, including a semantic soft assertion emitted through
+   `reportError` instead of `assert()`. Such an event supplies
+   `assert_mode:soft`. `ReportErrorOptions.tags` remains optional for existing
+   callers, but an event does not conform to this taxonomy unless its tags
+   satisfy this record shape.
 
    New enum values require an entry under Registry Amendments. Dynamic values
    such as ids, names, and paths are forbidden in tags; permitted diagnostic
@@ -122,9 +136,21 @@ remain. The gap is coverage and discipline, not another reporting API.
 
 Append `YYYY-MM-DD tag=value — reason — PR` lines here.
 
+- 2026-09-13 `error_type=workflow_insert_aborted_canvas_changed` — workflow
+  insertion was dropped after the canvas or graph changed while loading —
+  [#17593](https://github.com/Comfy-Org/ComfyUI_frontend/pull/17593)
+- 2026-09-13 `operation=insert` — workflow insertion into an existing graph —
+  [#17593](https://github.com/Comfy-Org/ComfyUI_frontend/pull/17593)
+- 2026-09-13 `outcome=degraded` — operation was dropped safely without
+  user-visible corruption —
+  [#17593](https://github.com/Comfy-Org/ComfyUI_frontend/pull/17593)
+
 ## References
 
 - [`reportError`](../../src/platform/telemetry/reportError.ts)
 - [`assert`](../../src/base/assert.ts)
-- [Source decision and research](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-029-agent-telemetry-tag-taxonomy.md)
+- [Sentry tags](https://docs.sentry.io/platforms/javascript/enriching-events/tags/)
+- [Sentry event grouping](https://docs.sentry.io/concepts/data-management/event-grouping/)
+- [Google SRE: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/)
+- [TigerBeetle assertion guidance](https://github.com/tigerbeetle/tigerbeetle/blob/main/docs/TIGER_STYLE.md)
 - [ADR-TELEMETRY-ROUTING-0013: Telemetry Routing Across Consumers](TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md)
