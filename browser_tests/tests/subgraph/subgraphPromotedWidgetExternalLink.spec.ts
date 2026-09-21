@@ -156,7 +156,7 @@ test.describe(
     // input. Hiding it comes from #17576 (WidgetGrid retains labels for
     // connected inputs), which is not on this release line yet. Re-enable
     // once #17576 is backported to cloud/1.54.
-    test.skip('hides the text control after a String is wired into a plain CLIPTextEncode', async ({
+    test.fixme('hides the text control after a String is wired into a plain CLIPTextEncode', async ({
       comfyPage
     }) => {
       const node = comfyPage.vueNodes.getNodeLocator(PLAIN_TEXT_ENCODE_ID)
