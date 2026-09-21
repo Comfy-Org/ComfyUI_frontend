@@ -46,6 +46,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get rootGraph() {
       return mockRootGraph.value
+    },
+    get rootGraphOrUndefined() {
+      return mockRootGraph.value
     }
   }
 }))

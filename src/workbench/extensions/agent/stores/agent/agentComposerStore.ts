@@ -22,6 +22,19 @@ interface ComposerDraft extends PromptSnapshot {
   attachments: ComposerAttachment[]
 }
 
+/**
+ * `insertComposerReference` (composerPrompt.ts) pads an empty `text` with a
+ * literal space on first insert. Once the last reference is removed, that
+ * padding is meaningless whitespace rather than real content, so it is
+ * cleared along with the reference that caused it.
+ */
+function resetTextWhenReferencesCleared(
+  text: string,
+  references: ComposerReference[]
+): string {
+  return references.length === 0 && text.trim() === '' ? '' : text
+}
+
 interface SubmittedDraft {
   attachments: ComposerAttachment[]
   nodes: SelectedNode[]
@@ -175,7 +188,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       (item) => composerReferenceKey(item) !== key
     )
     if (references.length !== prompt.value.references.length)
-      updateDraft({ text: draft.value, references })
+      updateDraft({
+        text: resetTextWhenReferencesCleared(draft.value, references),
+        references
+      })
   }
 
   function removeWorkflowReference(id: string): void {
@@ -187,9 +203,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     nodeScope.value = scope
     resetPromptHistory()
     if (nodes.value.length === 0) return
+    const references = prompt.value.references.filter(
+      (item) => item.kind !== 'node'
+    )
     updateDraft({
-      text: draft.value,
-      references: prompt.value.references.filter((item) => item.kind !== 'node')
+      text: resetTextWhenReferencesCleared(draft.value, references),
+      references
     })
   }
 
@@ -241,7 +260,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
         insertionPoint.value = inserted.insertion
       }
     }
-    updateDraft(result)
+    updateDraft({
+      ...result,
+      text: resetTextWhenReferencesCleared(result.text, result.references)
+    })
   }
 
   function addAttachment(attachment: ComposerAttachment): void {

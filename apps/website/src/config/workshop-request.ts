@@ -264,7 +264,7 @@ export async function prepareWorkshopRouterInput(
       })
     if (!(upload.file instanceof File))
       reserve(file, media.name, media.targets[index])
-    const encoded = await encodeFile(file, signal)
+    const encoded = await encodeFile(file, signal, media.name)
     try {
       setAtPointer(
         body,

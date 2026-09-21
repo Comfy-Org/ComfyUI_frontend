@@ -81,7 +81,10 @@ export class ComfyNodeSearchBox {
   }
 
   async removeFilter(index: number) {
-    await this.filterChips.nth(index).locator('.p-chip-remove-icon').click()
+    await this.filterChips
+      .nth(index)
+      .getByRole('button', { name: 'Remove' })
+      .click()
   }
 
   /**

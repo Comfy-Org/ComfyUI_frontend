@@ -23,7 +23,10 @@ import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 const mockApp = vi.hoisted(() => ({
   isGraphReady: true,
-  rootGraph: null as LGraph | null
+  rootGraph: null as LGraph | null,
+  get rootGraphOrUndefined() {
+    return this.rootGraph ?? undefined
+  }
 }))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))

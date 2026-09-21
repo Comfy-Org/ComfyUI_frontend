@@ -4,11 +4,11 @@ import { ref } from 'vue'
 
 import type { ModelLaunchHero } from './types'
 
+import { useHeroLogo } from '../../composables/useHeroLogo'
 import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
 
-vi.mock(import('../../composables/useHeroLogo'), () => ({
-  useHeroLogo: () => ({ loaded: ref(false) })
-}))
+vi.mock(import('../../composables/useHeroLogo'), { spy: true })
+vi.mocked(useHeroLogo).mockReturnValue({ loaded: ref(false) })
 
 const hero: ModelLaunchHero = {
   layout: 'media-first',
@@ -45,7 +45,11 @@ describe('ModelLaunchHeroSection', () => {
       }
     })
 
-    const mask = screen.getByTestId('model-launch-hero-logo-mask')
-    expect(within(mask).getByAltText('')).toHaveAttribute('src', '/still.webp')
+    const logoMask = screen.getByTestId('model-launch-hero-logo-mask')
+    expect(
+      within(logoMask).getByTestId('model-launch-hero-logo-fallback')
+    ).toBeTruthy()
+    expect(within(logoMask).queryByRole('img', { hidden: true })).toBeNull()
+    expect(screen.queryByAltText('')).toBeNull()
   })
 })

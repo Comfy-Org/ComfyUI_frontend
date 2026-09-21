@@ -13,7 +13,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Retrieve multiple node versions in a single request */
+        /**
+         * Retrieve multiple node versions in a single request
+         * @description Retrieves up to 1000 node versions in one request. Requests carrying more than 1000 identifiers are rejected in full with a 400 — there is no partial result — so clients with more than 1000 installed packs must split the list into batches of at most 1000 and merge the responses. Each node_id and version value is limited to 200 characters.
+         */
         post: operations["getBulkNodeVersions"];
         delete?: never;
         options?: never;
@@ -2268,41 +2271,6 @@ export interface paths {
         };
         /** KlingAI Query Single Image Generation Task */
         get: operations["klingImageGenerationsQuerySingleTask"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/proxy/kling/v1/images/kolors-virtual-try-on": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** KlingAI Query Virtual Try-On Task List */
-        get: operations["klingVirtualTryOnQueryTaskList"];
-        put?: never;
-        /** KlingAI Create Virtual Try-On Task */
-        post: operations["klingCreateVirtualTryOn"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/proxy/kling/v1/images/kolors-virtual-try-on/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** KlingAI Query Single Virtual Try-On Task */
-        get: operations["klingVirtualTryOnQuerySingleTask"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6718,7 +6686,17 @@ export interface components {
             image: string;
             /** @description Controls whether partially transparent areas from the input image are retained in the output after background removal. */
             preserve_alpha?: boolean;
-            /** @description When false (default), the request is processed asynchronously. When true, the API holds the connection open until complete. */
+            /**
+             * @description When false (default), the request is processed asynchronously. When
+             *     true, the API holds the connection open until complete. ON COMFY
+             *     ROUTER that second mode is refused rather than forwarded: Router
+             *     fixes the return mode before dispatch and polls for the result
+             *     inside the call, so `POST /v2/models/bria/{model}` answers 422
+             *     invalid_input for any `sync` this route carries other than `false`
+             *     or `null` (routerForbiddenBodyFields). The synchronous call is
+             *     still available on this operation's own `/proxy/` route, which is
+             *     the surface this schema also describes.
+             */
             sync?: boolean | null;
             /** @description When enabled, applies content moderation to input visual. Returns 422 if the image fails moderation. */
             visual_input_content_moderation?: boolean;
@@ -6749,8 +6727,8 @@ export interface components {
                 image_url?: string;
                 /** @description Original prompt. */
                 prompt?: string;
-                /** @description Refined version of the prompt. */
-                refined_prompt?: string;
+                /** @description Refined version of the prompt, or null on a COMPLETED generation Bria did not refine. Nullable because the key is PRESENT carrying null rather than omitted; observed live on bria/image-edit-gen-fill. */
+                refined_prompt?: string | null;
                 /** @description Seed used for generation. */
                 seed?: number;
                 /** @description The detailed JSON structured prompt. */
@@ -6884,6 +6862,8 @@ export interface components {
             /** @description List of retrieved node versions with their status */
             node_versions: components["schemas"]["BulkNodeVersionResult"][];
         };
+        /** @description Upstream ModelArk error code. SensitiveContentDetected, InputTextSensitiveContentDetected, InputImageSensitiveContentDetected, InputVideoSensitiveContentDetected, InputAudioSensitiveContentDetected, OutputTextSensitiveContentDetected, OutputImageSensitiveContentDetected, OutputVideoSensitiveContentDetected and OutputAudioSensitiveContentDetected identify content-policy refusals. A family may have a dot-separated reason, such as InputImageSensitiveContentDetected.PrivacyInformation, OutputVideoSensitiveContentDetected.PolicyViolation or OutputImageSensitiveContentDetected.DeepFake. This is an open string, not an enum: other codes describe validation and provider failures. Router recognizes policy families in HTTP 400 error envelopes and HTTP 200 failed-task responses without overriding transport failures. */
+        BytePlusErrorCode: string;
         /** @description File object returned by POST /api/v3/files and GET /api/v3/files/{id}. See https://docs.byteplus.com/en/docs/ModelArk/1873424. */
         BytePlusFile: {
             /** @description File size in bytes. Returned only when status is `active`. */
@@ -6955,7 +6935,7 @@ export interface components {
             purpose: string;
         };
         /**
-         * @description Request body for a BytePlus Seedream / Seededit image generation. The `example` below is the COMFY ROUTER form and deliberately omits `model`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/byteplus/api/v3/images/generations must add `model` to it. The example illustrates text-to-image calls. For seededit-3-0-i2i-250628, also supply the single `image` URL or base64 image to edit; omit `size` to retain that model's adaptive sizing. Layer decomposition accepts `image` without `prompt`. At least one of `prompt` or `image` is required; BytePlus validates the model-specific combination. The v1 wrapper separately requires `model`.
+         * @description Request body for a BytePlus Seedream / Seededit image generation. The `example` below is the COMFY ROUTER form and deliberately omits `model`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/byteplus/api/v3/images/generations must add `model` to it. The example illustrates text-to-image calls; an edit call also supplies the `image` URL or base64 image to edit. Layer decomposition accepts `image` without `prompt`. At least one of `prompt` or `image` is required; BytePlus validates the model-specific combination. The v1 wrapper separately requires `model`.
          * @example {
          *       "prompt": "A red fox trotting through a snowy pine forest, cinematic lighting",
          *       "response_format": "url",
@@ -6965,22 +6945,22 @@ export interface components {
         BytePlusImageGenerationInputs: {
             /**
              * Format: float
-             * @description Controls how closely the output image aligns with the input prompt. Range [1, 10]. Higher values result in stronger prompt adherence. Default 2.5 for seedream-3-0-t2i-250415 and 5.5 for seededit-3-0-i2i-250628. Not supported by seedream-5.0-pro, 5.0-lite, 4.5 and 4.0.
+             * @description Controls how closely the output image aligns with the input prompt. Range [1, 10]. Higher values result in stronger prompt adherence. Not supported by seedream-5.0-pro, 5.0-lite, 4.5 and 4.0.
              */
             guidance_scale?: number;
             /**
-             * @description Seedream-5.0-pro, 5.0-lite, 4.5 and 4.0, and seededit-3.0-i2i support this parameter.
+             * @description Seedream-5.0-pro, 5.0-lite, 4.5 and 4.0 support this parameter.
              *
-             *     Enter the Base64 encoding or an accessible URL of the image to edit. Seedream-5.0-pro, 5.0-lite, 4.5 and 4.0 support inputting a single image or multiple images (see the multi-image blending example), while seededit-3.0-i2i only supports single-image input.
+             *     Enter the Base64 encoding or an accessible URL of the image to edit. Seedream-5.0-pro, 5.0-lite, 4.5 and 4.0 support inputting a single image or multiple images (see the multi-image blending example).
              *
              *     • Image URL: Make sure that the image URL is accessible.
              *     • Base64 encoding: The format must be data:image/<image format>;base64,<Base64 encoding>. Note: <image format> must be in lowercase, e.g., data:image/png;base64,<base64_image>.
              *
-             *     Comfy Router limits the entire JSON request to 10 MiB, including base64 expansion and all reference images. Use URLs for inputs that would exceed this transport limit.
+             *     Comfy Router limits the entire JSON request to 20 MiB, including base64 expansion and all reference images. Use URLs for inputs that would exceed this transport limit.
              *
              *     An input image must meet the following requirements:
              *     • Image format: jpeg, png (seedream-5.0-pro, 5.0-lite, 4.5 and 4.0 also support webp, bmp, tiff and gif; seedream-5.0-pro also supports heic and heif)
-             *     • Aspect ratio (width/height): In the range [1/16, 16] for seedream-5.0-pro, 5.0-lite, 4.5 and 4.0; [1/3, 3] for seededit-3.0-i2i
+             *     • Aspect ratio (width/height): In the range [1/16, 16] for seedream-5.0-pro, 5.0-lite, 4.5 and 4.0
              *     • Width and height (px): > 14
              *     • Size: No more than 10 MB (30 MB for seedream-5.0-pro)
              *     • Total pixels: No more than 6000x6000 (36,000,000 px) for seedream-5.0-pro
@@ -6997,7 +6977,7 @@ export interface components {
              * @default false
              */
             layer_decomposition: boolean;
-            /** @description Model identifier. Supported models: seedream-3-0-t2i-250415, seededit-3-0-i2i-250628, seedream-4-0-250828, seedream-4-5-251128, seedream-5-0-260128 and seedream-5-0-pro-260628. A direct v1 call to POST /proxy/byteplus/api/v3/images/generations MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
+            /** @description Model identifier. Supported models: seedream-4-0-250828, seedream-4-5-251128, seedream-5-0-260128 and seedream-5-0-pro-260628. A direct v1 call to POST /proxy/byteplus/api/v3/images/generations MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
             model?: string | null;
             /** @description Configuration for prompt optimization feature. Only seedream-5.0-pro/5.0-lite/4.5 (only support standard mode) and seedream-4.0 support this parameter. */
             optimize_prompt_options?: {
@@ -7049,9 +7029,7 @@ export interface components {
                 max_images: number;
             };
             /**
-             * @description "seedream-3-0-t2i-250415": Specifies the dimensions (width x height in pixels) of the generated image. Must be between [512x512, 2048x2048]
-             *     "seededit-3-0-i2i-250628": The width and height pixels of the generated image. Currently only supports adaptive.
-             *     "seedream-4-0-250828": Set the specification for the generated image. Two methods are available but cannot be used together.
+             * @description "seedream-4-0-250828": Set the specification for the generated image. Two methods are available but cannot be used together.
              *       Method 1 | Specify the resolution. Optional values: 1K, 2K, 4K
              *       Method 2 | Specify width and height in pixels. Default: 2048x2048, total pixels: [1024x1024, 4096x4096], aspect ratio: [1/16, 16]
              *     "seedream-4-5-251128": Two methods available.
@@ -7081,7 +7059,7 @@ export interface components {
         } | unknown | unknown;
         /**
          * @description Request body for the v1 `POST /proxy/byteplus/api/v3/images/generations` proxy.
-         *     It composes `BytePlusImageGenerationInputs` rather than restating its fields, and adds back the two things only the v1 surface can demand. `model` is both of them: this route carries no path segment supplying it, so a direct caller must send it and must send one of the six allowlisted spellings, whereas the Comfy Router route `POST /v2/models/byteplus/{model}` supplies it from the path and its input schema must therefore neither require nor enum it (RouterBodyForTarget writes it in after routervalidate.Guard has validated the caller's bytes, so either constraint would refuse every Router call that exercises the documented contract — BE-11167).
+         *     It composes `BytePlusImageGenerationInputs` rather than restating its fields, and adds back the two things only the v1 surface can demand. `model` is both of them: this route carries no path segment supplying it, so a direct caller must send it and must send one of the four allowlisted spellings, whereas the Comfy Router route `POST /v2/models/byteplus/{model}` supplies it from the path and its input schema must therefore neither require nor enum it (RouterBodyForTarget writes it in after routervalidate.Guard has validated the caller's bytes, so either constraint would refuse every Router call that exercises the documented contract — BE-11167).
          *     The component has required `model` since the provider was added on 2025-08-21 (#634) and has carried the enum since the same commit, so this wrapper RESTORES a published requirement rather than inventing one. (`prompt` was required alongside it until #6331 on 2026-08-06 dropped it for the seedream-5.0-pro layer-separation path; that relaxation is not this change's and is not re-imposed here.) Read the note above `BytePlusImageGenerationInputs` for the full rule and the guard that enforces it.
          */
         BytePlusImageGenerationRequest: components["schemas"]["BytePlusImageGenerationInputs"] & {
@@ -7089,7 +7067,7 @@ export interface components {
              * @description The ID of the model to call. Required on this route, which has no path segment supplying it.
              * @enum {string}
              */
-            model: "seedream-3-0-t2i-250415" | "seededit-3-0-i2i-250628" | "seedream-4-0-250828" | "seedream-4-5-251128" | "seedream-5-0-260128" | "seedream-5-0-pro-260628";
+            model: "seedream-4-0-250828" | "seedream-4-5-251128" | "seedream-5-0-260128" | "seedream-5-0-pro-260628";
         };
         BytePlusImageGenerationResponse: {
             /** @description Unix timestamp (in seconds) indicating the time when the request was created */
@@ -7126,14 +7104,13 @@ export interface components {
             }[];
             /** @description Error information (if any) */
             error?: {
-                /** @description Error code */
-                code?: string;
+                code?: components["schemas"]["BytePlusErrorCode"];
                 /** @description Error message */
                 message?: string;
             };
             /**
              * @description The model ID used for the request
-             * @example seedream-3-0-t2i-250415
+             * @example seedream-4-0-250828
              */
             model?: string;
             usage?: {
@@ -7784,7 +7761,7 @@ export interface components {
             audio_config?: components["schemas"]["BytePlusTTSAudioConfig"];
             /** @description Model identifier. Supported models: seed-audio-1.0 and seed-audio-1.0-multilingual. A direct v1 call to POST /proxy/byteplus/api/v3/tts/create MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
             model?: string | null;
-            /** @description Reference resources. Omit for text-only generation. Up to 3 audio references (each up to 30 seconds and 10 MB decoded; wav, mp3, pcm or ogg_opus) or exactly 1 image reference (up to 10 MB decoded; jpeg, png or webp). Image references cannot be mixed with audio references. Those ceilings are BytePlus's and are stated in DECODED bytes: base64 inflates an asset by about 4/3, and a Comfy Router call is capped at 10 MiB for the whole JSON document, so an inline `audio_data`/`image_data` reference sent to /v2/models/byteplus/{model} has to stay under roughly 7.5 MB decoded. Use `audio_url`/`image_url` for anything larger — a reference at BytePlus's own 10 MB maximum is refused 413 before validation runs if it is inlined. */
+            /** @description Reference resources. Omit for text-only generation. Up to 3 audio references (each up to 30 seconds and 10 MB decoded; wav, mp3, pcm or ogg_opus) or exactly 1 image reference (up to 10 MB decoded; jpeg, png or webp). Image references cannot be mixed with audio references. Those ceilings are BytePlus's and are stated in DECODED bytes: base64 inflates an asset by about 4/3, and a Comfy Router call is capped at 20 MiB for the whole JSON document, so an inline `audio_data`/`image_data` reference sent to /v2/models/byteplus/{model} has to stay under roughly 15 MB decoded. Use `audio_url`/`image_url` for anything larger — three audio references at BytePlus's own 10 MB maximum are refused 413 before validation runs if they are inlined. */
             references?: components["schemas"]["BytePlusTTSReference"][];
             /** @description Prompt or text to synthesize (1 to 3,000 characters; an empty string is refused). When audio references are provided, reference them by order using @Audio1, @Audio2 and @Audio3. */
             text_prompt: string;
@@ -7912,6 +7889,16 @@ export interface components {
              *     - --camerafixed (--cf): true/false (default: false)
              *
              *     Example: "A beautiful landscape --ratio 16:9 --resolution 720p --duration 5"
+             *
+             *     Comfy-side guardrail, not a BytePlus constraint. BytePlus publishes no
+             *     text-length limit and accepted 40,000 characters under test (2026-09-17).
+             *     It counts characters, not bytes, so a multi-byte prompt may be several
+             *     times this size on the wire. It bounds this one field, not the request:
+             *     `content` is an array, and the per-request body limit is what bounds the
+             *     whole document. Comfy Router (/v2/models/byteplus/{model}) is the surface
+             *     that enforces it; on a direct v1 /proxy call BytePlus's own validator
+             *     answers instead. Set far above real traffic so it never adjudicates a
+             *     genuine prompt — raise it if a caller needs more.
              */
             text?: string;
             /**
@@ -7942,7 +7929,7 @@ export interface components {
             type?: "audio_url";
         });
         /**
-         * @description Request body for a BytePlus Seedance / Dreamina video generation task. The `example` below is the COMFY ROUTER form and deliberately omits `model`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/byteplus/api/v3/contents/generations/tasks must add `model` to it. This text-to-video example requires an additional `content` item with `type: image_url` and an `image_url.url` for seedance-1-0-lite-i2v-250428. Text-only models must omit that image item.
+         * @description Request body for a BytePlus Seedance / Dreamina video generation task. The `example` below is the COMFY ROUTER form and deliberately omits `model`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/byteplus/api/v3/contents/generations/tasks must add `model` to it. This text-to-video example omits the `content` item with `type: image_url` and an `image_url.url` that an image-to-video call supplies; text-only models must omit that image item.
          *     `content` is the whole `required` floor, and it is the floor the v1 surface already published and videoGenerationProxy's Rewrite already refuses an empty value for. Everything else BytePlus accepts varies by model — the per-model resolutions, durations, ratios and input kinds are documented on the individual fields — so the enums and bounds below are the union BytePlus admits across the family and BytePlus stays the authority on which member accepts which value.
          * @example {
          *       "content": [
@@ -7975,7 +7962,7 @@ export interface components {
              * @default true
              */
             generate_audio: boolean;
-            /** @description The ID of the model to call. Supported models: seedance-1-5-pro-251215, seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015, seedance-1-0-lite-t2v-250428, seedance-1-0-lite-i2v-250428, dreamina-seedance-2-0-260128, dreamina-seedance-2-0-fast-260128, dreamina-seedance-2-0-mini and dreamina-seedance-2-5-260628. A direct v1 call to POST /proxy/byteplus/api/v3/contents/generations/tasks MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
+            /** @description The ID of the model to call. Supported models: seedance-1-5-pro-251215, seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015, dreamina-seedance-2-0-260128, dreamina-seedance-2-0-fast-260128, dreamina-seedance-2-0-mini and dreamina-seedance-2-5-260628. A direct v1 call to POST /proxy/byteplus/api/v3/contents/generations/tasks MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
             model?: string | null;
             /**
              * @description Seedance 2.5 only. Container format of the output video.
@@ -8032,8 +8019,7 @@ export interface components {
             duration?: number;
             /** @description The error information. If the task succeeds, null is returned. If the task fails, the error information is returned. */
             error?: {
-                /** @description The error code */
-                code?: string;
+                code?: components["schemas"]["BytePlusErrorCode"];
                 /** @description The error message */
                 message?: string;
             } | null;
@@ -8067,15 +8053,15 @@ export interface components {
         };
         /**
          * @description Request body for the v1 `POST /proxy/byteplus/api/v3/contents/generations/tasks` proxy.
-         *     It composes `BytePlusVideoGenerationInputs` rather than restating its fields, and adds back the two things only the v1 surface can demand. `model` is both of them: this route carries no path segment supplying it, so a direct caller must send it and must send one of the nine allowlisted spellings, whereas the Comfy Router route `POST /v2/models/byteplus/{model}` supplies it from the path and its input schema must therefore neither require nor enum it (BE-11167). `content` is required on both surfaces and stays in the shared floor.
+         *     It composes `BytePlusVideoGenerationInputs` rather than restating its fields, and adds back the two things only the v1 surface can demand. `model` is both of them: this route carries no path segment supplying it, so a direct caller must send it and must send one of the seven allowlisted spellings, whereas the Comfy Router route `POST /v2/models/byteplus/{model}` supplies it from the path and its input schema must therefore neither require nor enum it (BE-11167). `content` is required on both surfaces and stays in the shared floor.
          *     The component has required `model` and `content`, and carried the enum, since the family was added on 2025-08-27 (#637), so this wrapper RESTORES a published requirement rather than inventing one and v1's generated `Model` stays the named enum type callers were compiled against. Read the note above `BytePlusVideoGenerationInputs` for the full rule and the guard that enforces it.
          */
         BytePlusVideoGenerationRequest: components["schemas"]["BytePlusVideoGenerationInputs"] & {
             /**
-             * @description The ID of the model to call. Available models include seedance-1-5-pro-251215, seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015, seedance-1-0-lite-t2v-250428, seedance-1-0-lite-i2v-250428
+             * @description The ID of the model to call. Available models include seedance-1-5-pro-251215, seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015
              * @enum {string}
              */
-            model: "seedance-1-5-pro-251215" | "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428" | "seedance-1-0-pro-fast-251015" | "dreamina-seedance-2-0-260128" | "dreamina-seedance-2-0-fast-260128" | "dreamina-seedance-2-0-mini" | "dreamina-seedance-2-5-260628";
+            model: "seedance-1-5-pro-251215" | "seedance-1-0-pro-250528" | "seedance-1-0-pro-fast-251015" | "dreamina-seedance-2-0-260128" | "dreamina-seedance-2-0-fast-260128" | "dreamina-seedance-2-0-mini" | "dreamina-seedance-2-5-260628";
         };
         BytePlusVideoGenerationResponse: {
             /** @description The ID of the video generation task */
@@ -8642,7 +8628,7 @@ export interface components {
             items: components["schemas"]["ElevenLabsSharedVoice"][];
         };
         /**
-         * @description Request body for generating sound effects from text. The `example` below is the COMFY ROUTER form and omits `model_id`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/elevenlabs/v1/sound-generation may send it, and the route admits `eleven_sfx_v2` alone.
+         * @description Request body for generating sound effects from text. The `example` below is the COMFY ROUTER form and omits `model_id`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/elevenlabs/v1/sound-generation may send it, and the route admits `eleven_sfx_v2` alone. `eleven_sfx_v2` is Comfy's id for the model ElevenLabs calls `eleven_text_to_sound_v2`; the proxy forwards the vendor spelling, so no caller sends it.
          * @example {
          *       "duration_seconds": 5,
          *       "text": "A distant rumble of thunder rolling across a valley."
@@ -8664,15 +8650,19 @@ export interface components {
             /**
              * @description Whether to create a sound effect that loops smoothly.
              *     ElevenLabs documents this as available only for the
-             *     'eleven_text_to_sound_v2' model, which this route does NOT admit
-             *     (see model_id), so it may have no effect here.
+             *     'eleven_text_to_sound_v2' model, which is the model this route
+             *     forwards 'eleven_sfx_v2' as (see model_id), so it applies here.
              * @default false
              */
             loop: boolean;
             /**
              * @description The model ID to use for the sound generation. This route admits
              *     'eleven_sfx_v2' and nothing else; any other value is rejected with
-             *     400 before the request reaches ElevenLabs. It is NOT in this
+             *     400 before the request reaches ElevenLabs. 'eleven_sfx_v2' is
+             *     Comfy's id for the model ElevenLabs calls 'eleven_text_to_sound_v2';
+             *     the proxy rewrites the forwarded body to that vendor spelling, which
+             *     ElevenLabs' own enum requires (it refuses 'eleven_sfx_v2' with 422),
+             *     so a caller never sends the vendor id. It is NOT in this
              *     schema's `required` list because Comfy Router fills it from the
              *     `{model}` path segment of /v2/models/elevenlabs/{model}, so a Router
              *     caller omits it.
@@ -9769,22 +9759,42 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * @description The Gemini Interactions fields, shared by the v1 `POST /proxy/gemini-interactions` request body and the Comfy Router input schema for the `gemini-interactions/*` models. Mirrors the upstream `/v1beta/interactions` schema with strict typing only on the fields the proxy reads (model, `input` for prompt extraction); all other fields (`response_format`, `generation_config`, `store`, `safety_settings`, ...) pass through unchanged via `additionalProperties`. TWO EXCEPTIONS, refused rather than forwarded: `background` and `stream`. Both are honoured by Google and both produce a 2xx this proxy cannot meter — `background: true` answers a queued `in_progress` document carrying no `usage`, whose finished generation is only ever reachable through `GET /proxy/gemini-interactions/{id}`, which meters nothing; `stream: true` answers a `text/event-stream` the billing path cannot decode. Naming either with a value other than `false` or `null` is a 400; omitting them, or sending them false/null, is the synchronous request this surface serves. On the Comfy Router route `POST /v2/models/gemini-interactions/{model}` both fields are settled to `false` before dispatch (routerSettledBoolFields) rather than refused. `required` here is the ROUTER-SAFE floor: `model` is absent from it because Router writes the path's model into the body after routervalidate.Guard has already validated the caller's bytes; the v1 wrapper `GeminiInteractionRequest` re-adds it.
+         * @example {
+         *       "input": "Reply with the single word: ok",
+         *       "stream": false
+         *     }
+         */
+        GeminiInteractionInputs: {
+            /** @description Either a prompt string or an array of typed content parts (text, image, audio, video, document). */
+            input: unknown;
+            /** @description Gemini model identifier: `gemini-omni-1.1-flash` (generally available), or the deprecated `gemini-omni-flash-preview`. On the Comfy Router route `POST /v2/models/gemini-interactions/{model}` it is supplied from the path and may be omitted. Those two spellings — the set Comfy Router addresses as `gemini-interactions/<model>` — are the ones this operation serves (supportedGeminiInteractionModels); they are written out here rather than constrained to an enum, because the proxy validates the model itself and answers its own 400 for a spelling it does not serve. */
+            model?: string | null;
+            /** @description ID of a prior stored interaction, enabling stateful multi-turn video editing. */
+            previous_interaction_id?: string;
+        } & {
+            [key: string]: unknown;
+        };
         /** @description Token count for one modality. */
         GeminiInteractionModalityTokens: {
             /** @description One of `text`, `image`, `audio`, `video`, `document`. */
             modality?: string;
             tokens?: number;
         };
-        /** @description Request body for the Gemini Interactions API (`/v1beta/interactions`). Mirrors the upstream schema with strict typing only on the fields the proxy reads (model, `input` for prompt extraction); all other fields (`response_format`, `generation_config`, `store`, `safety_settings`, ...) pass through unchanged via `additionalProperties`. TWO EXCEPTIONS, refused rather than forwarded: `background` and `stream`. Both are honoured by Google and both produce a 2xx this proxy cannot meter — `background: true` answers a queued `in_progress` document carrying no `usage`, whose finished generation is only ever reachable through `GET /proxy/gemini-interactions/{id}`, which meters nothing; `stream: true` answers a `text/event-stream` the billing path cannot decode. Naming either with a value other than `false` or `null` is a 400; omitting them, or sending them false/null, is the synchronous request this surface serves. */
-        GeminiInteractionRequest: {
-            /** @description Either a prompt string or an array of typed content parts (text, image, audio, video, document). */
-            input: unknown;
-            /** @description Gemini model identifier (e.g. `gemini-omni-flash-preview`). */
+        /**
+         * @description Request body for the v1 `POST /proxy/gemini-interactions` operation.
+         *     It composes `GeminiInteractionInputs` rather than restating its fields, and adds back the one field only the v1 surface can demand. `model` is load-bearing: this route carries no path segment supplying it, so a caller must send it (createInteractionProxy answers 400 "model parameter is missing" when it is absent), whereas the Comfy Router route `POST /v2/models/gemini-interactions/{model}` supplies it from the path and its input schema must NOT require it.
+         *     Read the note above `GeminiInteractionInputs` for the full rule and the guards that enforce it.
+         * @example {
+         *       "input": "Reply with the single word: ok",
+         *       "model": "gemini-omni-flash-preview",
+         *       "stream": false
+         *     }
+         */
+        GeminiInteractionRequest: components["schemas"]["GeminiInteractionInputs"] & {
+            /** @description Gemini model identifier: `gemini-omni-1.1-flash` (generally available), or the deprecated `gemini-omni-flash-preview`. Required on this route, which carries no path segment supplying it. */
             model: string;
-            /** @description ID of a prior stored interaction, enabling stateful multi-turn video editing. */
-            previous_interaction_id?: string;
-        } & {
-            [key: string]: unknown;
         };
         /** @description Token usage for a Gemini interaction. */
         GeminiInteractionUsage: {
@@ -9819,6 +9829,8 @@ export interface components {
         GeminiPart: {
             fileData?: components["schemas"]["GeminiFileData"];
             inlineData?: components["schemas"]["GeminiInlineData"];
+            /** @description How the model reads this part's video. Set "AGENTIC" to let the model decide which segments to inspect, instead of fixed-rate frame sampling. Omit for the default fixed-rate sampling. Supported on gemini-3.7-flash and newer Flash models. */
+            mediaProcessing?: string;
             /**
              * @description A text prompt or code snippet.
              * @example Write a story about a robot learning to paint
@@ -9886,6 +9898,8 @@ export interface components {
             thoughtsTokenCount?: number;
             /** @description Number of tokens present in tool-use prompt(s). */
             toolUsePromptTokenCount?: number;
+            /** @description Breakdown of tool-use prompt tokens by modality. */
+            toolUsePromptTokensDetails?: components["schemas"]["ModalityTokenCount"][];
             /** @description Total number of tokens (prompt + candidates). */
             totalTokenCount?: number;
             /** @description Traffic type used for the request (e.g., PROVISIONED_THROUGHPUT). */
@@ -10175,7 +10189,7 @@ export interface components {
         /**
          * @description Request body for HeyGen v3 text-to-speech generation
          * @example {
-         *       "text": "This is a billing verification test for HeyGen speech generation.",
+         *       "text": "Hello from Comfy. This voice is generated with the HeyGen Starfish engine.",
          *       "voice_id": "d2f4f24783d04e22ab49ee8fdc3715e0"
          *     }
          */
@@ -10663,6 +10677,49 @@ export interface components {
             style_reference_images?: string[];
             style_type?: components["schemas"]["IdeogramStyleType"];
         };
+        IdeogramV3Fields: {
+            /**
+             * @description Aspect ratio in format WxH
+             * @example 1x3
+             */
+            aspect_ratio?: string;
+            color_palette?: {
+                /** @description Explicit colors with optional weights */
+                members?: {
+                    /** @description Hexadecimal color code */
+                    color?: string;
+                    /** @description Optional weight for the color (0-1) */
+                    weight?: number;
+                }[];
+                /**
+                 * @description Name of the color palette
+                 * @example PASTEL
+                 */
+                name?: string;
+            };
+            /**
+             * @description Whether to enable magic prompt enhancement
+             * @enum {string}
+             */
+            magic_prompt?: "AUTO" | "ON" | "OFF";
+            /** @description Text prompt specifying what to avoid in the generation */
+            negative_prompt?: string;
+            /** @description Number of images to generate */
+            num_images?: number;
+            /** @description The text prompt for image generation */
+            prompt: string;
+            rendering_speed: components["schemas"]["RenderingSpeed"];
+            /**
+             * @description Image resolution in format WxH
+             * @example 1280x800
+             */
+            resolution?: string;
+            /** @description Seed value for reproducible generation */
+            seed?: number;
+            /** @description Array of style codes in hexadecimal format */
+            style_codes?: string[];
+            style_type?: components["schemas"]["IdeogramStyleType"];
+        };
         IdeogramV3IdeogramResponse: {
             /** Format: date-time */
             created?: string;
@@ -10722,47 +10779,18 @@ export interface components {
             style_codes?: string[];
             style_reference_images?: string[];
         };
-        IdeogramV3Request: {
-            /**
-             * @description Aspect ratio in format WxH
-             * @example 1x3
-             */
-            aspect_ratio?: string;
+        /**
+         * @description Parameters for Ideogram V3 image generation — the v1 `POST /proxy/ideogram/ideogram-v3/generate` body.
+         *     It composes `IdeogramV3Fields` rather than restating its fields, and adds the three reference-image arrays only the v1 surface can carry. They are `format: binary` file parts, sent as `multipart/form-data`; Comfy Router dispatches `application/json` only, so its input schema is `IdeogramV3Inputs`, which composes the same fields and refuses these three.
+         *     Read the note above `IdeogramV3Fields` for the full rule.
+         */
+        IdeogramV3Request: components["schemas"]["IdeogramV3Fields"] & {
             /** @description Generations with character reference are subject to the character reference pricing. A set of images to use as character references (maximum total size 10MB across all character references), currently only supports 1 character reference image. The images should be in JPEG, PNG or WebP format. */
             character_reference_images?: string[];
             /** @description Optional masks for character reference images. When provided, must match the number of character_reference_images. Each mask should be a grayscale image of the same dimensions as the corresponding character reference image. The images should be in JPEG, PNG or WebP format. */
             character_reference_images_mask?: string[];
-            color_palette?: {
-                /**
-                 * @description Name of the color palette
-                 * @example PASTEL
-                 */
-                name: string;
-            };
-            /**
-             * @description Whether to enable magic prompt enhancement
-             * @enum {string}
-             */
-            magic_prompt?: "ON" | "OFF";
-            /** @description Text prompt specifying what to avoid in the generation */
-            negative_prompt?: string;
-            /** @description Number of images to generate */
-            num_images?: number;
-            /** @description The text prompt for image generation */
-            prompt: string;
-            rendering_speed: components["schemas"]["RenderingSpeed"];
-            /**
-             * @description Image resolution in format WxH
-             * @example 1280x800
-             */
-            resolution?: string;
-            /** @description Seed value for reproducible generation */
-            seed?: number;
-            /** @description Array of style codes in hexadecimal format */
-            style_codes?: string[];
             /** @description Array of reference image URLs or identifiers */
             style_reference_images?: string[];
-            style_type?: components["schemas"]["IdeogramStyleType"];
         };
         /**
          * @description Parameters for the Ideogram 4.0 (V4) text-to-image generation proxy request. Supply exactly one of text_prompt or json_prompt.
@@ -10850,7 +10878,8 @@ export interface components {
             personGeneration?: "dont_allow" | "allow_adult" | "allow_all";
             /** @enum {string} */
             safetySetting?: "block_most" | "block_some" | "block_few" | "block_fewest";
-            sampleCount?: number;
+            /** @default 4 */
+            sampleCount: number;
             /** Format: uint32 */
             seed?: number;
             storageUri?: string;
@@ -11097,7 +11126,7 @@ export interface components {
             request_id: string;
         };
         /**
-         * @description Request body for a Kling image-to-video generation. The `example` below is the COMFY ROUTER form and deliberately omits `model_name`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/kling/v1/videos/image2video may add it (the proxy defaults an absent one to kling-v1). One example cannot serve both spellings, so the omitting form is the only one valid on both Router routes.
+         * @description Request body for a Kling image-to-video generation. The `example` below deliberately omits `model_name`; a direct v1 call to POST /proxy/kling/v1/videos/image2video may add it (the proxy forwards an absent one as-is and Kling applies its own default).
          * @example {
          *       "duration": "5",
          *       "image": "https://example.invalid/kling/reference.png",
@@ -11189,7 +11218,7 @@ export interface components {
         };
         /**
          * @description Request body for the v1 `POST /proxy/kling/v1/videos/image2video` proxy.
-         *     It composes `KlingImage2VideoInputs` rather than restating its fields, and adds back the one narrowing only the v1 surface can carry. `model_name` is that field: this route has no path segment supplying it, so the published enum (`KlingVideoGenModelName`, which legitimately keeps kling-v1-5) still describes what the proxy accepts, whereas the Comfy Router route supplies it from the path and its input schema must neither require nor enum-constrain it (BE-11167).
+         *     It composes `KlingImage2VideoInputs` rather than restating its fields, and adds back the one narrowing only the v1 surface can carry. `model_name` is that field: this route has no path segment supplying it, so the published enum (`KlingVideoGenModelName`, which lists the three surviving video ids) still describes what the proxy accepts, whereas the Comfy Router route supplies it from the path and its input schema must neither require nor enum-constrain it (BE-11167).
          *     The component has NEVER required `model_name` -- it carried no `required` list at all before this split -- so nothing here restores or invents a requirement; routerV1ProxyModelRequirement pins that answer.
          */
         KlingImage2VideoRequest: components["schemas"]["KlingImage2VideoInputs"] & {
@@ -11368,6 +11397,8 @@ export interface components {
             data?: {
                 /** @description Task creation time */
                 created_at?: number;
+                /** @description The deduction units of task */
+                final_unit_deduction?: string;
                 /** @description Task ID */
                 task_id?: string;
                 task_info?: {
@@ -11882,7 +11913,7 @@ export interface components {
          */
         KlingTaskStatus: "submitted" | "processing" | "succeed" | "failed";
         /**
-         * @description Request body for a Kling text-to-video generation. The `example` below is the COMFY ROUTER form and deliberately omits `model_name`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/kling/v1/videos/text2video may add it (the proxy defaults an absent one to kling-v1). One example cannot serve both surfaces -- this component is the Router input schema for all seven spellings, so an example naming one of them is refused by the other six routes for naming a different model, while the omitting form is valid on all seven.
+         * @description Request body for a Kling text-to-video generation. The `example` below is the COMFY ROUTER form and deliberately omits `model_name`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/kling/v1/videos/text2video may add it (the proxy forwards an absent one as-is and Kling applies its own default). One example cannot serve both surfaces -- this component is the Router input schema for all three spellings, so an example naming one of them is refused by the other two routes for naming a different model, while the omitting form is valid on all three.
          * @example {
          *       "aspect_ratio": "16:9",
          *       "duration": "5",
@@ -11950,10 +11981,10 @@ export interface components {
         };
         /**
          * @description Model Name
-         * @default kling-v1
+         * @default kling-v2-5-turbo
          * @enum {string}
          */
-        KlingTextToVideoModelName: "kling-v1" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1-master" | "kling-v2-5-turbo" | "kling-v2-6" | "kling-v3";
+        KlingTextToVideoModelName: "kling-v2-5-turbo" | "kling-v2-6" | "kling-v3";
         /** @description Response returned when a Kling 3.0 Turbo task is created. */
         KlingV2CreateTaskResponse: {
             /** @description Error code. 0 indicates success. */
@@ -12178,6 +12209,8 @@ export interface components {
             data?: {
                 /** @description Task creation time */
                 created_at?: number;
+                /** @description The deduction units of task */
+                final_unit_deduction?: string;
                 /** @description Task ID */
                 task_id?: string;
                 task_info?: {
@@ -12221,10 +12254,10 @@ export interface components {
         KlingVideoGenMode: "std" | "pro";
         /**
          * @description Model Name
-         * @default kling-v1
+         * @default kling-v2-5-turbo
          * @enum {string}
          */
-        KlingVideoGenModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1" | "kling-v2-1-master" | "kling-v2-5-turbo" | "kling-v2-6" | "kling-v3";
+        KlingVideoGenModelName: "kling-v2-5-turbo" | "kling-v2-6" | "kling-v3";
         KlingVideoResult: {
             /** @description Total video duration in seconds */
             duration?: string;
@@ -12240,46 +12273,6 @@ export interface components {
              * @description URL for generated video with watermark, hotlink protection format
              */
             watermark_url?: string;
-        };
-        /**
-         * @description Model Name
-         * @default kolors-virtual-try-on-v1
-         * @enum {string}
-         */
-        KlingVirtualTryOnModelName: "kolors-virtual-try-on-v1" | "kolors-virtual-try-on-v1-5";
-        KlingVirtualTryOnRequest: {
-            /**
-             * Format: uri
-             * @description The callback notification address
-             */
-            callback_url?: string;
-            /** @description Reference clothing image - Base64 encoded string or image URL */
-            cloth_image?: string;
-            /** @description Reference human image - Base64 encoded string or image URL */
-            human_image: string;
-            model_name?: components["schemas"]["KlingVirtualTryOnModelName"];
-        };
-        KlingVirtualTryOnResponse: {
-            /** @description Error code */
-            code?: number;
-            data?: {
-                /** @description Task creation time */
-                created_at?: number;
-                /** @description Task ID */
-                task_id?: string;
-                task_result?: {
-                    images?: components["schemas"]["KlingImageResult"][];
-                };
-                task_status?: components["schemas"]["KlingTaskStatus"];
-                /** @description Task status information */
-                task_status_msg?: string;
-                /** @description Task update time */
-                updated_at?: number;
-            };
-            /** @description Error message */
-            message?: string;
-            /** @description Request ID */
-            request_id?: string;
         };
         KreaAsset: {
             description?: string;
@@ -12411,7 +12404,18 @@ export interface components {
              */
             resolution: "1280x720" | "720x1280" | "1920x1080" | "1080x1920" | "2560x1440" | "1440x2560" | "3840x2160" | "2160x3840";
         };
-        LTXText2VideoRequest: {
+        /**
+         * @description The LTX text-to-video fields, shared by the v1 `POST /proxy/ltx/v1/text-to-video` and `POST /proxy/ltx/v2/text-to-video` request bodies and the Comfy Router input schema for the `ltx/*` models. See the note above this component for why the two surfaces share properties but not `required`.
+         *     `required` here is the ROUTER-SAFE floor: `model` is absent from it because Router writes the path's model into the body after routervalidate.Guard has already validated the caller's bytes. The v1 wrapper `LTXText2VideoRequest` re-adds it.
+         * @example {
+         *       "duration": 2,
+         *       "fps": 24,
+         *       "generate_audio": false,
+         *       "prompt": "A single red maple leaf resting on a plain white background.",
+         *       "resolution": "1280x720"
+         *     }
+         */
+        LTXText2VideoInputs: {
             /**
              * @description Video duration in seconds (maximum depends on resolution and frame rate)
              * @enum {integer}
@@ -12428,11 +12432,8 @@ export interface components {
              * @default true
              */
             generate_audio: boolean;
-            /**
-             * @description Model to use for generation
-             * @enum {string}
-             */
-            model: "ltx-2-5-fast" | "ltx-2-5-pro";
+            /** @description Model to use for generation. On the Comfy Router route `POST /v2/models/ltx/{model}` this field is supplied from the path and may be omitted. The spellings LTX serves on this operation -- the set Comfy Router addresses as `ltx/<model>` -- are ltx-2-5-fast and ltx-2-5-pro; they are written out here rather than constrained to an enum for the reason the comment above gives. Which resolutions each one admits is the `x-comfy-model-resolutions` matrix on the `resolution` property below. */
+            model?: string | null;
             /** @description Text prompt describing the desired video content */
             prompt: string;
             /**
@@ -12440,6 +12441,26 @@ export interface components {
              * @enum {string}
              */
             resolution: "1280x720" | "720x1280" | "1920x1080" | "1080x1920" | "2560x1440" | "1440x2560" | "3840x2160" | "2160x3840";
+        };
+        /**
+         * @description Request body for the v1 `POST /proxy/ltx/v1/text-to-video` and `POST /proxy/ltx/v2/text-to-video` operations.
+         *     It composes `LTXText2VideoInputs` rather than restating its fields, and adds back the one field only the v1 surface can demand. `model` is load-bearing: neither route carries a path segment supplying it, so a caller must send it and the published `enum` still describes what the proxy accepts, whereas the Comfy Router route `POST /v2/models/ltx/{model}` supplies it from the path and its input schema must neither require nor enum-constrain it.
+         *     Read the note above `LTXText2VideoInputs` for the full rule and the guards that enforce it.
+         * @example {
+         *       "duration": 2,
+         *       "fps": 24,
+         *       "generate_audio": false,
+         *       "model": "ltx-2-5-fast",
+         *       "prompt": "A single red maple leaf resting on a plain white background.",
+         *       "resolution": "1280x720"
+         *     }
+         */
+        LTXText2VideoRequest: components["schemas"]["LTXText2VideoInputs"] & {
+            /**
+             * @description Model to use for generation
+             * @enum {string}
+             */
+            model: "ltx-2-5-fast" | "ltx-2-5-pro";
         };
         /**
          * @description Output aspect ratio. The ray-3.2 video models support the subset 9:16, 3:4, 1:1, 4:3, 16:9, 21:9.
@@ -12956,7 +12977,7 @@ export interface components {
          * @default latest
          * @enum {string}
          */
-        MeshyAiModel: "meshy-5" | "meshy-6" | "meshy-7" | "latest";
+        MeshyAiModel: "meshy-5" | "meshy-6" | "meshy-7" | "meshy-7.1" | "latest";
         MeshyAnimationCreateResponse: {
             /** @description The task id of the newly created animation task. */
             result: string;
@@ -13074,6 +13095,12 @@ export interface components {
              * @default false
              */
             enable_pbr: boolean;
+            /**
+             * @description Geometry resolution of the generated mesh. 2k and 4k run the Ultra pass for finer surface detail. 2k requires ai_model meshy-7, meshy-7.1 or latest; 4k requires meshy-7.1 or latest.
+             * @default standard
+             * @enum {string}
+             */
+            geometry_resolution: "standard" | "2k" | "4k";
             /** @description Provide an image for Meshy to use in model creation. Supports .jpg, .jpeg, .png formats or base64-encoded data URI. */
             image_url: string;
             /**
@@ -13122,13 +13149,14 @@ export interface components {
             /** @description Provide a text prompt to guide the texturing process. Maximum 600 characters. */
             texture_prompt?: string;
             /**
-             * @description Texture resolution of the generated textures. One of 2k, 4k or 8k. 4k and 8k require ai_model meshy-6, meshy-7 or latest. Only applies when should_texture is true.
+             * @description Texture resolution of the generated textures. One of 2k, 4k or 8k. 4k and 8k require ai_model meshy-6, meshy-7, meshy-7.1 or latest. Only applies when should_texture is true.
              * @default 2k
              */
             texture_resolution: string;
             topology?: components["schemas"]["MeshyTopology"];
             /**
-             * @description Enables Ultra generation for higher-fidelity geometry with finer surface detail. Only supported when ai_model is meshy-7 or latest and model_type is standard.
+             * @deprecated
+             * @description Deprecated. Use geometry_resolution instead; true is equivalent to geometry_resolution 2k. Only supported when ai_model is meshy-7, meshy-7.1 or latest and model_type is standard.
              * @default false
              */
             ultra_mode: boolean;
@@ -13189,6 +13217,12 @@ export interface components {
              * @default false
              */
             enable_pbr: boolean;
+            /**
+             * @description Geometry resolution of the generated mesh. 2k runs the Ultra pass for finer surface detail and requires ai_model meshy-7, meshy-7.1 or latest. 4k is not available for multi-image input.
+             * @default standard
+             * @enum {string}
+             */
+            geometry_resolution: "standard" | "2k";
             /** @description Provide 1 to 4 images for Meshy to use in model creation. All images should depict the same object from different angles. */
             image_urls: string[];
             /**
@@ -13228,7 +13262,7 @@ export interface components {
             /** @description Provide a text prompt to guide the texturing process. Maximum 600 characters. */
             texture_prompt?: string;
             /**
-             * @description Texture resolution of the generated textures. One of 2k, 4k or 8k. 4k and 8k require ai_model meshy-6, meshy-7 or latest. Only applies when should_texture is true.
+             * @description Texture resolution of the generated textures. One of 2k, 4k or 8k. 4k and 8k require ai_model meshy-6, meshy-7, meshy-7.1 or latest. Only applies when should_texture is true.
              * @default 2k
              */
             texture_resolution: string;
@@ -13372,6 +13406,12 @@ export interface components {
          * @enum {string}
          */
         MeshyRemeshTaskStatus: "PENDING" | "PROCESSING" | "SUCCEEDED" | "FAILED";
+        /**
+         * @description ID of the model to use.
+         * @default latest
+         * @enum {string}
+         */
+        MeshyRetextureAiModel: "meshy-5" | "meshy-6" | "meshy-7" | "latest";
         MeshyRetextureCreateResponse: {
             /** @description The task id of the newly created Retexture task. */
             result: string;
@@ -13386,7 +13426,7 @@ export interface components {
             usdz?: string;
         };
         MeshyRetextureRequest: {
-            ai_model?: components["schemas"]["MeshyAiModel"];
+            ai_model?: components["schemas"]["MeshyRetextureAiModel"];
             /**
              * @description Use the original UV of the model instead of generating new UVs.
              * @default true
@@ -13555,6 +13595,12 @@ export interface components {
             ai_model?: string | null;
             art_style?: components["schemas"]["MeshyArtStyle"];
             /**
+             * @description Geometry resolution of the generated mesh. 2k and 4k run the Ultra pass for finer surface detail. 2k requires ai_model meshy-7, meshy-7.1 or latest; 4k requires meshy-7.1 or latest.
+             * @default standard
+             * @enum {string}
+             */
+            geometry_resolution: "standard" | "2k" | "4k";
+            /**
              * @description Deprecated. Use pose_mode instead. Whether to generate the model in an A/T pose.
              * @default false
              */
@@ -13585,7 +13631,8 @@ export interface components {
             target_polycount: number;
             topology?: components["schemas"]["MeshyTopology"];
             /**
-             * @description Enables Ultra generation for higher-fidelity geometry with finer surface detail. Only supported when ai_model is meshy-7 or latest.
+             * @deprecated
+             * @description Deprecated. Use geometry_resolution instead; true is equivalent to geometry_resolution 2k. Only supported when ai_model is meshy-7, meshy-7.1 or latest.
              * @default false
              */
             ultra_mode: boolean;
@@ -13632,7 +13679,7 @@ export interface components {
             /** @description Provide an additional text prompt to guide the texturing process. Maximum 600 characters. */
             texture_prompt?: string;
             /**
-             * @description Texture resolution of the generated textures. One of 2k, 4k or 8k. 4k and 8k require ai_model meshy-6, meshy-7 or latest.
+             * @description Texture resolution of the generated textures. One of 2k, 4k or 8k. 4k and 8k require ai_model meshy-6, meshy-7, meshy-7.1 or latest.
              * @default 2k
              * @enum {string}
              */
@@ -13826,8 +13873,22 @@ export interface components {
         MinimaxV2TaskResultResponse: {
             task?: components["schemas"]["MinimaxV2TaskResult"];
         };
-        /** @description Parameters for the Minimax V2 (Hailuo 03) video generation proxy request. */
-        MinimaxV2VideoGenerationRequest: {
+        /**
+         * @description The MiniMax V2 (Hailuo 03) video-generation fields, shared by the v1 `POST /proxy/minimax/v2/video_generation` request body and the Comfy Router input schema for `minimax/minimax-h3`.
+         *     `required` here is the ROUTER-SAFE floor: `model` is absent from it because Router writes the path's model into the body after routervalidate.Guard has already validated the caller's bytes. The v1 wrapper `MinimaxV2VideoGenerationRequest` re-adds it -- see the note there for why that route can demand what this one must not.
+         * @example {
+         *       "content": [
+         *         {
+         *           "text": "A single red maple leaf resting on a plain white background.",
+         *           "type": "text"
+         *         }
+         *       ],
+         *       "duration": 5,
+         *       "ratio": "16:9",
+         *       "resolution": "768P"
+         *     }
+         */
+        MinimaxV2VideoGenerationInputs: {
             /** @description Whether to add an AIGC watermark to the output. Defaults to false. */
             aigc_watermark?: boolean;
             /** @description Optional. URL to receive task state changes after challenge verification. */
@@ -13836,9 +13897,9 @@ export interface components {
             content: components["schemas"]["MinimaxV2ContentItem"][];
             /** @description Video length in seconds, 5 to 15. */
             duration: number;
-            /** @description Required. ID of model. Options: MiniMax-H3 */
-            model: string;
-            /** @description Aspect ratio. Options: adaptive (default), 21:9, 16:9, 4:3, 1:1, 3:4, 9:16. Ignored (treated as adaptive) for first-frame or last-frame generation. */
+            /** @description ID of model. Options: MiniMax-H3. Router callers may omit this field or send null; Router injects the model selected by the request path before provider dispatch. */
+            model?: string | null;
+            /** @description Aspect ratio. Options: adaptive (default), 21:9, 16:9, 4:3, 1:1, 3:4, 9:16. Required and must not be adaptive for text-to-video; ignored (treated as adaptive) for first-frame or last-frame generation. */
             ratio?: string;
             /** @description Video resolution. Options: 2K, 768P. */
             resolution: string;
@@ -13847,6 +13908,27 @@ export interface components {
              * @description Random seed in [-1, 2^32 - 1]; omitted or -1 is random.
              */
             seed?: number;
+        };
+        /**
+         * @description Parameters for the Minimax V2 (Hailuo 03) video generation proxy request -- the v1 `POST /proxy/minimax/v2/video_generation` body.
+         *     It composes `MinimaxV2VideoGenerationInputs` rather than restating its fields, and adds back the one field only the v1 surface can demand. `model` is load-bearing: this route carries no path segment supplying it and videoGenerationProxy refuses a body without it (`supportedModel("")` matches nothing and the call is cancelled with `unsupported model`), whereas the Comfy Router route `POST /v2/models/minimax/{model}` supplies it from the path and its input schema must not require it.
+         *     Read the note above `MinimaxV2VideoGenerationInputs` for the full rule and the guards that enforce it.
+         * @example {
+         *       "content": [
+         *         {
+         *           "text": "A single red maple leaf resting on a plain white background.",
+         *           "type": "text"
+         *         }
+         *       ],
+         *       "duration": 5,
+         *       "model": "MiniMax-H3",
+         *       "ratio": "16:9",
+         *       "resolution": "768P"
+         *     }
+         */
+        MinimaxV2VideoGenerationRequest: components["schemas"]["MinimaxV2VideoGenerationInputs"] & {
+            /** @description ID of model. Options: MiniMax-H3. */
+            model: string;
         };
         /** @description Response from the Minimax V2 video generation API. */
         MinimaxV2VideoGenerationResponse: {
@@ -14235,8 +14317,12 @@ export interface components {
              */
             store: boolean | null;
             /**
-             * @description If set to true, the model response data will be streamed to the client
-             *     as it is generated using [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format).
+             * @description Not supported on this proxy. `stream: true` is refused with 400 and the
+             *     request is never forwarded upstream; omit the field or send `false` to
+             *     receive the completed response as a single JSON body.
+             *
+             *     Upstream, this field would make the model response data be streamed to the
+             *     client as it is generated using [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format).
              *     See the [Streaming section below](/docs/api-reference/responses-streaming)
              *     for more information.
              * @default false
@@ -14262,7 +14348,7 @@ export interface components {
              */
             moderation?: "low" | "auto";
             /**
-             * @description The number of images to generate
+             * @description The number of images to generate (1-10).
              * @example 1
              */
             n?: number;
@@ -14951,7 +15037,11 @@ export interface components {
         OpenRouterChatReasoningSummaryVerbosityEnum: "auto" | "concise" | "detailed";
         /**
          * ChatRequest
-         * @description Chat completion request parameters
+         * @description Chat completion request parameters.
+         *
+         *     `model` is CALLER-CHOSEN and is not resolved by Comfy Router: the Router model ID `openrouter/chat-completions` names this operation, not a model, and whatever you put in `model` (or in the `models` fallback list) is forwarded to OpenRouter unchanged. Use OpenRouter's own model IDs - `anthropic/claude-sonnet-4.5`, `openai/gpt-5` - which carry characters a `{provider}/{model}` Router ID cannot spell, which is why the operation rather than the model is what Router enumerates. A request with no `model` is rejected with a 400 — and `models` alone does NOT satisfy that: the fallback list is forwarded, but the attribution model is read from `model`, so send `model` and use `models` to say what to fall back to.
+         *
+         *     `stream` is not available on either ingress. Comfy Router forces it to `false` on the forwarded request and serves the completed JSON document; the `/proxy/` route rejects `stream: true` with a 400.
          */
         OpenRouterChatRequest: {
             cache_control?: components["schemas"]["OpenRouterAnthropicCacheControlDirective"];
@@ -15191,7 +15281,27 @@ export interface components {
         OpenRouterChatRequestStop: string | string[] | unknown;
         /**
          * ChatResult
-         * @description Chat completion response
+         * @description Chat completion response, forwarded from OpenRouter unchanged. `model` names the model OpenRouter actually ran, which is the caller's `model` unless a `models` fallback list selected another one. `usage.cost` is what Comfy meters the call on.
+         * @example {
+         *       "choices": [
+         *         {
+         *           "finish_reason": "stop",
+         *           "index": 0,
+         *           "message": {}
+         *         }
+         *       ],
+         *       "created": 1750000000,
+         *       "id": "gen-0000000000-examplecompletion",
+         *       "model": "anthropic/claude-sonnet-4.5",
+         *       "object": "chat.completion",
+         *       "system_fingerprint": null,
+         *       "usage": {
+         *         "completion_tokens": 128,
+         *         "cost": 0.00123,
+         *         "prompt_tokens": 42,
+         *         "total_tokens": 170
+         *       }
+         *     }
          */
         OpenRouterChatResult: {
             /** @description List of completion choices */
@@ -15480,7 +15590,24 @@ export interface components {
          */
         OpenRouterFormatJsonObjectConfigType: "json_object";
         /** ImageConfig */
-        OpenRouterImageConfig: string | number | unknown[];
+        OpenRouterImageConfig: ({
+            /** @description Output aspect ratio, e.g. "16:9". */
+            aspect_ratio?: string;
+            /** @description Background treatment for the generated image. */
+            background?: string;
+            /** @description Moderation strength applied to image generation. */
+            moderation?: string;
+            /** @description Compression level for the encoded output. */
+            output_compression?: number;
+            /** @description Encoding of the returned image, e.g. "png". */
+            output_format?: string;
+            /** @description Rendering quality preset. */
+            quality?: string;
+            /** @description Output size, e.g. "1024x1024". */
+            size?: string;
+        } & {
+            [key: string]: unknown;
+        }) | string | number | unknown[];
         /**
          * ImageGenerationServerToolConfig
          * @description Configuration for the openrouter:image_generation server tool. Accepts all image_config params (aspect_ratio, quality, size, background, output_format, output_compression, moderation, etc.) plus a model field.
@@ -16597,10 +16724,17 @@ export interface components {
              */
             file5?: string;
             /**
-             * @description The base style of the generated images
+             * @description How closely generations follow the reference images. Recraft defaults it to `precise` for V4 styles.
              * @enum {string}
              */
-            style: "realistic_image" | "digital_illustration" | "vector_illustration" | "icon";
+            match?: "regular" | "precise" | "flexible";
+            /** @description The Recraft model this style is created FOR. A style records the model passed here, and the returned style_id must be used at generation time with a model of the SAME OUTPUT TYPE — per `RecraftV4CreateStyleNode` (services/ingest/data/object_info.json), Standard and Pro share one style pool, so a raster style works with every Recraft V4 and V4.1 RASTER model and a `*_vector` style with every V4 and V4.1 VECTOR model. It is the raster/vector split that binds, not the exact spelling. That node offers exactly the four `recraftv4_styles*` ids for this field. Deliberately an unconstrained string, like RecraftImageGenerationRequest.model: upstream accepts the sixteen enrolled RecraftGenerationModel spellings plus Recraft's own `_raster` variants, which this spec does not enumerate. Omitted, Recraft defaults it to `recraftv4_styles` — a V4 RASTER spelling, so a vector mint and a V3-era mint must both send this field explicitly rather than rest on the default. */
+            model?: string;
+            /**
+             * @description The V3-era base style of the generated images. Optional: V4 raster models default it to `any` and vector models to `vector_illustration`, and a V4 Styles `model` must NOT be paired with a V3 base style — that combination is what Recraft answers 4xx `invalid_input` for. Send it only for a V3-shaped mint, and then send `model` explicitly too (e.g. `recraftv3`): with `model` omitted Recraft defaults it to `recraftv4_styles`, so `style` on its own is not a V3 mint at all — it is exactly the rejected V4-model-plus-V3-base-style pairing.
+             * @enum {string}
+             */
+            style?: "realistic_image" | "digital_illustration" | "vector_illustration" | "icon";
         };
         /** @description Response containing the created style ID */
         RecraftCreateStyleResponse: {
@@ -16654,10 +16788,11 @@ export interface components {
             };
             /** @description The model to use for generation (e.g., "recraftv3"). This field is NOT constrained to an enum: the proxy forwards whatever the caller sends. The spellings Comfy ships — the set Comfy Router addresses as `recraft/<model>` — are recraftv2, recraftv3, recraftv4, recraftv4_pro, recraftv4_1, recraftv4_1_utility, recraftv4_1_pro, recraftv4_1_utility_pro, recraftv4_styles, recraftv4_styles_pro, recraftv4_1_vector, recraftv4_1_utility_vector, recraftv4_1_pro_vector, recraftv4_1_utility_pro_vector, recraftv4_styles_vector and recraftv4_styles_pro_vector. They are written out here rather than named by reference because the RecraftGenerationModel component that declares them is `$ref`-ed by nothing and is therefore pruned from the spec served at GET /openapi, so a pointer to it would dangle in the served document. The four `recraftv4_styles*` spellings additionally require `style_id` — see that field. */
             model?: string | null;
-            /** @description The number of images to generate */
+            /** @description The number of images to generate. Recraft accepts 1-6. */
             n?: number;
             /** @description The text prompt describing the image to generate */
             prompt: string;
+            response_format?: components["schemas"]["RecraftResponseFormat"];
             /** @description The size of the generated image (e.g., "1024x1024") */
             size?: string;
             /** @description The style to apply to the generated image (e.g., "digital_illustration") */
@@ -16681,11 +16816,15 @@ export interface components {
             credits: number;
             /** @description Array of generated image information */
             data: {
+                /** @description Base64-encoded image data (present instead of `url` when the request set `response_format: b64_json`) */
+                b64_json?: string;
                 /** @description Unique identifier for the generated image */
                 image_id?: string;
-                /** @description URL to access the generated image */
+                /** @description URL to access the generated image (present when `response_format` is `url`, the default) */
                 url?: string;
             }[];
+            /** @description The resolved style id, returned by Recraft when style references are used (notably required-input models recraftv4_styles*); reusable as `style_id` in later requests. */
+            style_id?: string;
         };
         /** @enum {string} */
         RecraftImageStyle: "digital_illustration" | "icon" | "realistic_image" | "vector_illustration";
@@ -19686,8 +19825,8 @@ export interface components {
             /** @description Image processing parameters */
             parameters?: {
                 /**
-                 * @description Number of generated images. Range 1-4, default is 1
-                 * @default 1
+                 * @description Number of generated images. Range 1-4, default is 4
+                 * @default 4
                  */
                 n?: number;
                 /** @description Random number seed to control randomness. Range [0, 2147483647] */
@@ -19869,7 +20008,7 @@ export interface components {
                 duration?: number;
                 /** @description Frame rate of the generated video (wan3.0-video tasks) */
                 fps?: number;
-                /** @description Number of generated images (T2I tasks) */
+                /** @description Number of generated images (T2I and I2I tasks) */
                 image_count?: number;
                 /** @description Duration of the input video in seconds, 0.0 when no video input (wan3.0-video tasks) */
                 input_video_duration?: number;
@@ -19877,7 +20016,7 @@ export interface components {
                 output_video_duration?: number;
                 /** @description Aspect ratio of the generated video, e.g. 16:9 (wan3.0-video tasks) */
                 ratio?: string;
-                /** @description Image resolution (T2I tasks) */
+                /** @description Image resolution (T2I and I2I tasks) */
                 size?: string;
                 /** @description Number of generated videos (T2V tasks) */
                 video_count?: number;
@@ -19896,11 +20035,21 @@ export interface components {
             input: {
                 /** @description Audio file download URL. Supported formats: mp3 and wav. Cannot be used with reference_video_urls. */
                 audio_url?: string;
-                /** @description First frame image URL or Base64 encoded data. Required for I2V models. Image formats: JPEG, JPG, PNG, BMP, WEBP. Resolution: 360-2000 pixels. File size: max 10MB. */
+                /**
+                 * @description First frame image URL or Base64 encoded data.
+                 *     Required for the wan2.5-i2v-preview and wan2.6-i2v models only. The
+                 *     happyhorse-1.x i2v spellings do NOT take their first frame here: they
+                 *     take it as a `media` element of type `first_frame` (see `media` below),
+                 *     and an `img_url` body that succeeds on wan2.6-i2v is refused by the
+                 *     provider on happyhorse-1.0-i2v and happyhorse-1.1-i2v.
+                 *     Image formats: JPEG, JPG, PNG, BMP, WEBP. Resolution: 360-2000 pixels.
+                 *     File size: max 10MB.
+                 */
                 img_url?: string;
                 /**
-                 * @description Media asset list for wan2.7 and wan3.0 models. Specifies reference materials (image, audio, video)
-                 *     for video generation. Each element contains a type and url field.
+                 * @description Media asset list for the wan2.7, wan3.0 and happyhorse-1.x models. Specifies reference
+                 *     materials (image, audio, video) for video generation. Each element contains a type and
+                 *     url field.
                  *     Supported type values vary by model:
                  *     - wan2.7-i2v: first_frame, last_frame, driving_audio, first_clip
                  *     - wan2.7-r2v: reference_image, reference_video
@@ -19911,6 +20060,22 @@ export interface components {
                  *       be used with file). The reference_*\/file/link types and first_frame/last_frame types
                  *       are mutually exclusive within the same request. The array order defines the reference
                  *       order of assets in the prompt (Image 1, Video 1, Audio 1, ...).
+                 *     - happyhorse-1.x-i2v: first_frame only, exactly 1. At least 300x300 pixels,
+                 *       JPEG/JPG/PNG/WEBP, max 20MB, a public URL or a data:{MIME_type};base64,... URL.
+                 *       These spellings take NO img_url; the first frame goes here.
+                 *     - happyhorse-1.x-r2v: reference_image only, 1 to 9 of them. Shortest side at least
+                 *       400 pixels, max 20MB, a public URL or a data: URL. reference_video is NOT an input
+                 *       type for this operation.
+                 *     - happyhorse-1.x-video-edit: video
+                 *     The per-asset "max 20MB" figures above are the PARTNER's ceiling on the image it
+                 *     ends up with, and they apply as written when the asset is a public URL, because
+                 *     those bytes never travel through Comfy. An INLINE data: URL does travel through
+                 *     Comfy and meets a lower transport ceiling first: a Comfy Router POST body is
+                 *     capped at 20 MiB in total and answered 413 past it, and base64 inflates a payload
+                 *     by about 4/3, so a single inline asset above roughly 15 MB is refused before
+                 *     any of the partner rules here are reached — sooner still when the body carries
+                 *     several of them, since the 20 MiB Router cap bounds the WHOLE request
+                 *     rather than each element. Send anything near these ceilings as a public URL.
                  */
                 media?: {
                     /**
@@ -19918,7 +20083,7 @@ export interface components {
                      * @enum {string}
                      */
                     type: "first_frame" | "last_frame" | "driving_audio" | "first_clip" | "reference_image" | "reference_video" | "reference_audio" | "video" | "file" | "link";
-                    /** @description URL of the media file (public HTTP/HTTPS URL or OSS temporary URL) */
+                    /** @description URL of the media file: a public HTTP/HTTPS URL, an OSS temporary URL, or — where the model's entry in the `media` description above says so, as the happyhorse-1.x i2v and r2v spellings do — an inline `data:{MIME_type};base64,...` URL. See that description for the per-model size and pixel floors, and for the 20 MiB Router request-body cap that bounds an inline payload before any partner rule applies. */
                     url: string;
                 }[];
                 /** @description Reverse prompt words are used to describe content that you do not want to see in the video screen */
@@ -20257,7 +20422,7 @@ export interface components {
              */
             resolution: "1k" | "2k";
             /**
-             * @description Response format to return the image in. Can be url or b64_json.
+             * @description Response format to return the image in. Can be url or b64_json. Comfy coerces this to `url` on the outbound request because image results are served as re-hosted URLs either way. The field is accepted and ignored rather than rejected; send it or omit it, the answer is the same.
              * @default url
              * @enum {string}
              */
@@ -20307,7 +20472,7 @@ export interface components {
              */
             resolution: "1k" | "2k";
             /**
-             * @description Response format to return the image in. Can be url or b64_json. Comfy Router (`POST /v2/models/xai/{model}`) coerces this to `url` on the outbound request because it serves image results as re-hosted URLs either way; this `/proxy/` route honours it as written.
+             * @description Response format to return the image in. Can be url or b64_json. Comfy coerces this to `url` on the outbound request — on the Comfy Router dispatch (`POST /v2/models/xai/{model}`) and on this `/proxy/` route too — because image results are served as re-hosted URLs either way. The field is accepted and ignored rather than rejected; send it or omit it, the answer is the same.
              * @default url
              * @enum {string}
              */
@@ -20354,7 +20519,7 @@ export interface components {
         };
         /** @description Request body for xAI Grok Imagine video editing */
         XAIVideoEditRequest: {
-            /** @description Model to be used */
+            /** @description Model to be used. Supported: grok-imagine-video (default), grok-imagine-video-1.5-preview, grok-imagine-video-1.5. The deprecated grok-imagine-video-beta id is aliased to grok-imagine-video. */
             model?: string | null;
             /** @description Optional output destination for generated video */
             output?: Record<string, never> | null;
@@ -20371,7 +20536,7 @@ export interface components {
              * @default 6
              */
             duration: number | null;
-            /** @description Model to use */
+            /** @description Model to be used. Supported: grok-imagine-video (default), grok-imagine-video-1.5-preview, grok-imagine-video-1.5. The deprecated grok-imagine-video-beta id is aliased to grok-imagine-video. */
             model?: string | null;
             /** @description Text description of what should happen next in the video */
             prompt: string;
@@ -20400,7 +20565,7 @@ export interface components {
              */
             duration: number | null;
             image?: components["schemas"]["XAIImageObject"];
-            /** @description Model to be used */
+            /** @description Model to be used. Supported: grok-imagine-video (default), grok-imagine-video-1.5-preview, grok-imagine-video-1.5. The deprecated grok-imagine-video-beta id is aliased to grok-imagine-video. */
             model?: string | null;
             /** @description Optional output destination for generated video */
             output?: Record<string, never> | null;
@@ -20473,7 +20638,7 @@ export interface operations {
                     "application/json": components["schemas"]["BulkNodeVersionsResponse"];
                 };
             };
-            /** @description Bad request, invalid input */
+            /** @description Bad request — a missing request body, an empty node_versions array, more than 1000 identifiers, or a node_id or version value over 200 characters. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -20659,6 +20824,18 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description API-key verification could not complete; the caller is not authenticated. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example API key verification service unavailable */
+                        message: string;
+                    };
                 };
             };
         };
@@ -21233,7 +21410,7 @@ export interface operations {
             query?: {
                 /** @description Page number of the nodes list */
                 page?: number;
-                /** @description Number of nodes to return per page */
+                /** @description Number of events to return per page. Values above the declared maximum are outside the contract, but this service does not reject them: it serves the maximum instead, and the page size actually served is echoed back as limit (and drives totalPages), so a clamp is always detectable by the caller. Treat the maximum as the real page stride — a client that asks for more and assumes it received more will miss rows. 0 and negative values are also accepted and select the default, which is why no minimum is declared: sub-1 is meaningful here, not invalid. */
                 limit?: number;
                 /** @description Event type to filter */
                 filter?: string;
@@ -21351,7 +21528,7 @@ export interface operations {
                     content_type?: string;
                     /** @description The hash of the file. If provided, an existing file with the same hash may be returned. */
                     file_hash?: string;
-                    /** @description The desired name of the file (e.g., 'profile.jpg') */
+                    /** @description The desired name of the file (e.g., 'profile.jpg'). Must be a flat file name - it is stored as <customer_id>/<file_name>, so a name containing a path separator ('/' or '\'), a bare '.' or '..', a URL-significant character ('?', '#' or '%'), a control character, or one long enough to push the full object name past 1024 bytes is rejected with a 400. */
                     file_name: string;
                 };
             };
@@ -26891,295 +27068,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KlingImageGenerationsResponse"];
-                };
-            };
-            /** @description Invalid request parameters */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Unauthorized access to requested resource */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Service temporarily unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Server timeout */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-        };
-    };
-    klingVirtualTryOnQueryTaskList: {
-        parameters: {
-            query?: {
-                /** @description Page number */
-                pageNum?: number;
-                /** @description Data volume per page */
-                pageSize?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response (Request successful) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingVirtualTryOnResponse"];
-                };
-            };
-            /** @description Invalid request parameters */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Unauthorized access to requested resource */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Service temporarily unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Server timeout */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-        };
-    };
-    klingCreateVirtualTryOn: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Create task for virtual try-on of clothing on human images */
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["KlingVirtualTryOnRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful response (Request successful) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingVirtualTryOnResponse"];
-                };
-            };
-            /** @description Invalid request parameters */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Authentication failed */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Unauthorized access to requested resource */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Resource not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Service temporarily unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-            /** @description Server timeout */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingErrorResponse"];
-                };
-            };
-        };
-    };
-    klingVirtualTryOnQuerySingleTask: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Task ID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful response (Request successful) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KlingVirtualTryOnResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -37545,6 +37433,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActionJobResult"];
+                };
+            };
+            /** @description Invalid workflowResultId */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Commit not found */

@@ -177,7 +177,7 @@ export function createOpenAiTranslator(
         ]
       })
       options.onCompletion?.(completion)
-      const choice = completion.choices[0]
+      const choice = completion.choices.at(0)
       if (choice?.finish_reason === 'length') {
         if (items.length === 1) {
           deferralReason = `the response was truncated (finish_reason "length") for the single string ${items[0].context}`
@@ -199,7 +199,7 @@ export function createOpenAiTranslator(
         }
         return merged
       }
-      const content = choice?.message?.content
+      const content = choice?.message.content
       if (typeof content !== 'string') {
         deferralReason = 'the response has no message content'
         continue

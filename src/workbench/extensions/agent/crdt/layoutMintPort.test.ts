@@ -100,6 +100,76 @@ describe('attachLayoutMintPort', () => {
     ])
   })
 
+  it('skips a redo that recreates an already-minted node instead of re-minting add_node', () => {
+    // Simulate litegraph's own undo/redo stack: a redo re-delivers the same
+    // createNode shape a genuine new node would, for a node this port
+    // already relayed. Without a delete_node in between, the second
+    // createNode is a replay, not a new node, and must not mint again.
+    deliver(createNodeChange('1'))
+    minted.length = 0
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toEqual([])
+  })
+
+  it('mints add_node again for the same id after a delete_node clears it', () => {
+    deliver(createNodeChange('1'))
+    deliver(deleteChange('1'))
+    minted.length = 0
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toHaveLength(1)
+  })
+
+  it('mints add_node again for the same id after an intentional clear', () => {
+    deliver(createNodeChange('1'))
+    port.runIntentionalClear(() => {
+      graphNodes.clear()
+      deliver(clearChange())
+    })
+    graphNodes.set('1', {
+      id: 1,
+      type: 'TestNode',
+      pos: [128, 96],
+      widgets_values: [7]
+    })
+    minted.length = 0
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toHaveLength(1)
+  })
+
+  it('mints add_node without the ghost flag of a node still being placed', () => {
+    graphNodes.set('1', {
+      id: 1,
+      type: 'TestNode',
+      pos: [128, 96],
+      flags: { ghost: true, pinned: true },
+      widgets_values: [7]
+    })
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toEqual([
+      {
+        op: 'add_node',
+        node_id: '1',
+        class_type: 'TestNode',
+        pos: [128, 96],
+        node: {
+          id: 1,
+          type: 'TestNode',
+          pos: [128, 96],
+          flags: { pinned: true },
+          widgets_values: [7]
+        }
+      }
+    ])
+  })
+
   it('surfaces interior create and delete without minting root operations', () => {
     const interior = {
       graphId: 'root',

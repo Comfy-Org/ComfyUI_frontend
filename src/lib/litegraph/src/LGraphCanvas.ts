@@ -4212,6 +4212,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // Nodes
+    const dx = position[0] - offsetX
+    const dy = position[1] - offsetY
     const targetSlotByLink = new Map<LinkId, number>()
     for (const info of parsed.nodes) {
       const node = LiteGraph.createNode(info.type)
@@ -4224,6 +4226,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       info.id = -1
 
       const linkByInputName = detachSerialisedLinks(info)
+      // `add` snapshots the position into the layout store; configure runs after.
+      node.pos = [info.pos[0] + dx, info.pos[1] + dy]
       graph.add(node)
       node.configure(info)
 
@@ -4322,8 +4326,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // Children of pasted groups are in `created` already, so skip them here.
-    const dx = position[0] - offsetX
-    const dy = position[1] - offsetY
     for (const item of created) {
       // Repositioning a paste is not a user drag, so it ignores the pin.
       if (item instanceof LGraphNode)
@@ -5497,7 +5499,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   renderInfo(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     const lineHeight = 13
     const lineCount = (this.graph ? 5 : 1) + (this.info_text ? 1 : 0)
-    x = x || 10
+    x = x || 15
     y =
       y ||
       this.canvas.height /
@@ -5515,22 +5517,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (this.graph) {
       ctx.fillText(
         `T: ${this.graph.globaltime.toFixed(2)}s`,
-        5,
+        0,
         lineHeight * line++
       )
-      ctx.fillText(`I: ${this.graph.iteration}`, 5, lineHeight * line++)
+      ctx.fillText(`I: ${this.graph.iteration}`, 0, lineHeight * line++)
       ctx.fillText(
         `N: ${this.graph._nodes.length} [${this.visible_nodes.length}]`,
-        5,
+        0,
         lineHeight * line++
       )
-      ctx.fillText(`V: ${this.graph._version}`, 5, lineHeight * line++)
-      ctx.fillText(`FPS:${this.fps.toFixed(2)}`, 5, lineHeight * line++)
+      ctx.fillText(`V: ${this.graph._version}`, 0, lineHeight * line++)
+      ctx.fillText(`FPS:${this.fps.toFixed(2)}`, 0, lineHeight * line++)
     } else {
-      ctx.fillText('No graph selected', 5, lineHeight * line++)
+      ctx.fillText('No graph selected', 0, lineHeight * line++)
     }
     if (this.info_text) {
-      ctx.fillText(this.info_text, 5, lineHeight * line)
+      ctx.fillText(this.info_text, 0, lineHeight * line)
     }
     ctx.restore()
   }

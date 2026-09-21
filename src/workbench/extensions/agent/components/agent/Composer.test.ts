@@ -112,6 +112,15 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
+  it('preserves new input on Enter without stopping an active run', async () => {
+    const { emitted } = mount({ streaming: true })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'Next draft{Enter}')
+    expect(textbox).toHaveTextContent('Next draft')
+    expect(emitted().stop).toBeUndefined()
+    expect(emitted().send).toBeUndefined()
+  })
+
   it('blocks all node entry points and explains why while workflow references remain available', async () => {
     const reason = 'Please select a workflow first'
     const props = {
@@ -448,28 +457,33 @@ describe('Composer', () => {
         await screen.findByText('Choose when the agent needs your consent')
       ).toBeInTheDocument()
       expect(
-        screen.getByRole('radio', { name: /Ask before a workflow runs/ })
+        screen.getByRole('menuitemradio', {
+          name: /Ask before a workflow runs/
+        })
       ).toBeChecked()
+      expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
       expect(
-        screen.getByRole('button', { name: 'Save changes' })
-      ).toBeDisabled()
-      expect(screen.getAllByRole('radio')).toHaveLength(2)
-      expect(
-        screen.queryByRole('radio', { name: /Auto-run with limits/ })
+        screen.queryByRole('menuitemradio', { name: /Auto-run with limits/ })
       ).not.toBeInTheDocument()
+
+      const menu = screen.getByRole('menu')
+      expect(within(menu).queryAllByRole('button')).toHaveLength(0)
+      expect(menu).toHaveAccessibleDescription(
+        'Choose when the agent needs your consent'
+      )
+      expect(menu).not.toContainElement(screen.getByRole('status'))
     })
 
-    it('saves auto mode and closes', async () => {
+    it('applies the picked mode without a separate save step', async () => {
       mount()
       const store = useAgentRunModeStore()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       )
-      const save = screen.getByRole('button', { name: 'Save changes' })
-      expect(save).toBeEnabled()
-      await userEvent.click(save)
       await vi.waitFor(() => expect(store.mode).toBe('auto'))
       await nextTick()
 
@@ -479,30 +493,160 @@ describe('Composer', () => {
       expect(
         await screen.findByRole('button', { name: 'Auto' })
       ).toBeInTheDocument()
-      expect(store.mode).toBe('auto')
       expect(store.creditLimit).toBeNull()
     })
 
-    it('keeps the popover open and reports a failed save', async () => {
+    it('rewrites the active mode when it is picked again', async () => {
+      mount()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Ask before a workflow runs/
+        })
+      )
+
+      expect(
+        screen.queryByText('Choose when the agent needs your consent')
+      ).toBeNull()
+      expect(
+        fetchApi.mock.calls.filter(([, init]) => init?.method === 'PUT')
+      ).toHaveLength(1)
+      expect(useAgentRunModeStore().mode).toBe('ask_approval')
+    })
+
+    it('keeps the popover open on the unchanged mode when the save fails', async () => {
       fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
       mount()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run without approval/ })
-      )
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Save changes' })
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       )
 
       expect(
         await screen.findByText('Choose when the agent needs your consent')
       ).toBeInTheDocument()
       expect(useAgentRunModeStore().mode).toBe('ask_approval')
+      await vi.waitFor(() =>
+        expect(
+          screen.getByRole('menuitemradio', {
+            name: /Ask before a workflow runs/
+          })
+        ).toBeChecked()
+      )
+      expect(screen.getByRole('status')).toBeEmptyDOMElement()
       expect(useToastStore().messagesToAdd).toContainEqual({
         severity: 'error',
         detail: i18n.global.t('agent.runModeSaveFailed')
       })
+    })
+
+    it('blocks a second pick while the write is in flight', async () => {
+      let resolvePut!: (response: Response) => void
+      fetchApi.mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          resolvePut = resolve
+        })
+      )
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      )
+
+      const ask = screen.getByRole('menuitemradio', {
+        name: /Ask before a workflow runs/
+      })
+      const auto = screen.getByRole('menuitemradio', {
+        name: /Auto-run without approval/
+      })
+      expect(screen.getByRole('status')).toHaveTextContent('Saving')
+      expect(ask).toHaveAttribute('aria-disabled', 'true')
+      expect(auto).toHaveAttribute('aria-disabled', 'true')
+      expect(auto).toHaveAttribute('aria-busy', 'true')
+      expect(ask).not.toHaveAttribute('aria-busy')
+      expect(ask).toBeChecked()
+      await userEvent.click(ask)
+      expect(fetchApi).toHaveBeenCalledTimes(1)
+
+      resolvePut(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      expect(fetchApi).toHaveBeenCalledTimes(1)
+      expect(
+        screen.queryByText('Choose when the agent needs your consent')
+      ).toBeNull()
+    })
+
+    it('takes a retry after a failed save', async () => {
+      fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      const auto = await screen.findByRole('menuitemradio', {
+        name: /Auto-run without approval/
+      })
+      await userEvent.click(auto)
+      await vi.waitFor(() => expect(auto).not.toHaveAttribute('aria-disabled'))
+
+      await userEvent.click(auto)
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      expect(fetchApi).toHaveBeenCalledTimes(2)
+    })
+
+    it('commits the focused mode on Enter', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await screen.findByRole('menu')
+      screen
+        .getByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+        .focus()
+      await userEvent.keyboard('{Enter}')
+
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+    })
+
+    it('keeps a re-picked mode when a slower load disagrees', async () => {
+      let resolveGet!: (response: Response) => void
+      const pendingGet = new Promise<Response>((resolve) => {
+        resolveGet = resolve
+      })
+      fetchApi.mockImplementation(async (_route, init) =>
+        init?.method === 'PUT'
+          ? jsonResponse(200, { mode: 'auto', credit_limit: null })
+          : pendingGet
+      )
+      localStorage.setItem(
+        'Comfy.Agent.RunModePreference',
+        JSON.stringify({ mode: 'auto', credit_limit: null })
+      )
+      mount()
+      const store = useAgentRunModeStore()
+      const load = store.load()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Auto' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      )
+      resolveGet(
+        jsonResponse(200, { mode: 'ask_approval', credit_limit: null })
+      )
+      await load
+
+      expect(store.mode).toBe('auto')
     })
 
     it('keeps unlimited auto mode distinct from limited auto mode', async () => {
@@ -537,20 +681,60 @@ describe('Composer', () => {
       }
     )
 
-    it('discards an unsaved draft when the popover closes without saving', async () => {
+    it('leaves a menu reopened during the write open once it settles', async () => {
+      let resolvePut!: (response: Response) => void
+      fetchApi.mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          resolvePut = resolve
+        })
+      )
       mount()
       const store = useAgentRunModeStore()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       )
       await userEvent.keyboard('{Escape}')
-      expect(store.mode).toBe('ask_approval')
+      await waitFor(() =>
+        expect(
+          screen.queryByText('Choose when the agent needs your consent')
+        ).toBeNull()
+      )
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       expect(
-        await screen.findByRole('radio', { name: /Ask before a workflow runs/ })
+        await screen.findByText('Choose when the agent needs your consent')
+      ).toBeInTheDocument()
+
+      resolvePut(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      await nextTick()
+
+      expect(
+        screen.getByText('Choose when the agent needs your consent')
+      ).toBeInTheDocument()
+    })
+
+    it('reopens on the mode saved by the previous choice', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      )
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Auto' }))
+      expect(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       ).toBeChecked()
     })
   })

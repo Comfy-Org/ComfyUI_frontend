@@ -3,7 +3,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { WorkshopModel } from '../src/config/models-catalogue'
-import { workshopModels } from '../src/config/workshop-browse-content'
+import {
+  authoredWorkshopModels,
+  workshopModels
+} from '../src/config/workshop-browse-content'
+import { isWorkshopModelDisabled } from '../src/config/workshop-model-availability'
 import hubTemplates from '../src/data/hubTemplates.json'
 import templateModelJoin from '../src/data/templateModelJoin.json'
 import {
@@ -40,6 +44,14 @@ function template(name: string): HubTemplate {
   }
 }
 
+const templates = hubTemplatesSchema.parse(hubTemplates)
+
+function templateNamed(name: string): HubTemplate {
+  const row = templates.find((template) => template.name === name)
+  if (!row) throw new Error(`Missing template ${name}`)
+  return row
+}
+
 describe('buildTemplateModelJoin', () => {
   it('requires a complete provider prefix token', () => {
     const result = buildTemplateModelJoin(
@@ -66,8 +78,7 @@ describe('buildTemplateModelJoin', () => {
     ).toThrow()
   })
 
-  it('keeps HappyHorse operations and versions distinct and never links chat to an image model', () => {
-    const templates = hubTemplatesSchema.parse(hubTemplates)
+  it('keeps supported HappyHorse operations and versions distinct', () => {
     const { joined } = buildTemplateModelJoin(templates)
     const expected = {
       api_happyhorse1_1_i2v: 'wan--happyhorse-image-to-video--animate-images',
@@ -77,11 +88,14 @@ describe('buildTemplateModelJoin', () => {
     }
     for (const [name, slug] of Object.entries(expected)) {
       expect(joined[name]).toBe(slug)
-      const row = templates.find((row) => row.name === name)
-      expect(row).toBeDefined()
-      if (!row) throw new Error(`Missing template ${name}`)
-      expect(partnerModelFor(row, workshopModels)?.slug).toBe(slug)
+      expect(
+        partnerModelFor(templateNamed(name), authoredWorkshopModels)?.slug
+      ).toBe(slug)
     }
+  })
+
+  it('does not guess unsupported operations or cross media types', () => {
+    const { joined } = buildTemplateModelJoin(templates)
     for (const name of [
       'api_happyhorse1_0_i2v',
       'api_happyhorse1_0_r2v',
@@ -95,16 +109,20 @@ describe('buildTemplateModelJoin', () => {
       'api_bria_remove_video_background'
     ]) {
       expect(joined).not.toHaveProperty(name)
-      const row = templates.find((row) => row.name === name)
-      expect(row).toBeDefined()
-      if (!row) throw new Error(`Missing template ${name}`)
-      expect(partnerModelFor(row, workshopModels)).toBeUndefined()
+      expect(
+        partnerModelFor(templateNamed(name), workshopModels)
+      ).toBeUndefined()
     }
-    const reference = templates.find(
-      (row) => row.name === 'api_happyhorse1_1_r2v'
-    )
-    if (!reference) throw new Error('Missing reference-video fixture')
+  })
+
+  it('applies publication state without changing the canonical join', () => {
+    const reference = templateNamed('api_happyhorse1_1_r2v')
     expect(useCaseForTemplate(reference, workshopModels)).toBe('animate-images')
+    const imageToVideo = templateNamed('api_happyhorse1_1_i2v')
+    const slug = 'wan--happyhorse-image-to-video--animate-images'
+    expect(partnerModelFor(imageToVideo, workshopModels)?.slug).toBe(
+      isWorkshopModelDisabled(slug) ? undefined : slug
+    )
   })
 
   it('preserves non-HappyHorse reference-video operations', () => {
@@ -117,10 +135,10 @@ describe('buildTemplateModelJoin', () => {
     expect(useCaseForTemplate(row, workshopModels)).toBe('animate-images')
   })
 
-  it('reproduces canonical targets that all exist in the published catalogue', () => {
+  it('reproduces canonical authored targets independently of publication', () => {
     const { joined } = buildTemplateModelJoin(hubTemplates)
     expect(joined).toEqual(templateModelJoin)
-    const slugs = new Set(workshopModels.map((model) => model.slug))
+    const slugs = new Set(authoredWorkshopModels.map((model) => model.slug))
     expect(Object.values(joined).every((slug) => slugs.has(slug))).toBe(true)
   })
 })

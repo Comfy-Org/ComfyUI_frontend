@@ -24,7 +24,7 @@ function isParkedDeadline(response: Response): boolean {
   )
 }
 
-function inFlightWaitMs(response: Response): number | undefined {
+export function inFlightWaitMs(response: Response): number | undefined {
   const retryAfter = response.headers.get('Retry-After')
   if (response.status !== 409 || !retryAfter?.trim()) return
   const seconds = Number(retryAfter)
@@ -35,7 +35,7 @@ function inFlightWaitMs(response: Response): number | undefined {
   return Math.min(delay, IN_FLIGHT_MAX_WAIT_MS)
 }
 
-function waitFor(ms: number, signal: AbortSignal): Promise<void> {
+export function waitFor(ms: number, signal: AbortSignal): Promise<void> {
   signal.throwIfAborted()
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -89,10 +89,11 @@ function failureFor(response: Response): RunFailure {
   return 'provider'
 }
 
-interface RouterRunOptions {
+export interface RouterRunOptions {
   readonly contract: WorkshopContract
   readonly body: Readonly<Record<string, unknown>>
   readonly token: string
+  readonly freshToken?: () => Promise<string>
   readonly idempotencyKey: string
   readonly signal: AbortSignal
   readonly onRequestId?: (requestId: string | null) => void
@@ -118,7 +119,7 @@ type RunState =
       readonly outputs: RunOutput[]
     })
 
-interface AttemptContext {
+export interface AttemptContext {
   readonly options: RouterRunOptions
   readonly body: string
   readonly controller: AbortController
@@ -126,7 +127,7 @@ interface AttemptContext {
   readonly deadlineAt: number
 }
 
-async function withRunDeadline<T>(
+export async function withRunDeadline<T>(
   context: AttemptContext,
   limit: number,
   action: () => Promise<T>
@@ -169,7 +170,7 @@ function retryState(
   return undefined
 }
 
-function throwRunFailure(
+export function throwRunFailure(
   error: unknown,
   context: AttemptContext,
   requestId: string | null
@@ -187,24 +188,18 @@ function throwRunFailure(
   )
 }
 
-async function handleAttemptResponse(
+export async function settleRouterResponse(
   response: Response,
-  progress: RunProgress,
+  requestId: string | null,
   context: AttemptContext
-): Promise<RunState> {
+): Promise<RunOutput[]> {
   const { options, signal } = context
   try {
-    options.onRequestId?.(progress.requestId)
-    const retry = retryState(response, progress)
-    if (retry) {
-      await response.body?.cancel().catch(() => {})
-      return retry
-    }
     if (!response.ok) {
       const details = await failureDetails(response)
       throw new WorkshopRouterError(
         failureFor(response),
-        progress.requestId,
+        requestId,
         {},
         details.response,
         'request',
@@ -221,13 +216,13 @@ async function handleAttemptResponse(
       releaseRouterOutputs(outputs)
       signal.throwIfAborted()
     }
-    return { ...progress, phase: 'complete', outputs }
+    return outputs
   } catch (error) {
     options.signal.throwIfAborted()
     if (signal.aborted)
       throw new WorkshopRouterError(
         'timeout',
-        progress.requestId,
+        requestId,
         {},
         workshopResponseDetails(response),
         'response'
@@ -235,12 +230,31 @@ async function handleAttemptResponse(
     if (error instanceof WorkshopRouterError) throw error
     throw new WorkshopRouterError(
       'response',
-      progress.requestId,
+      requestId,
       {},
       workshopResponseDetails(response),
       'response'
     )
   }
+}
+
+async function handleAttemptResponse(
+  response: Response,
+  progress: RunProgress,
+  context: AttemptContext
+): Promise<RunState> {
+  context.options.onRequestId?.(progress.requestId)
+  const retry = retryState(response, progress)
+  if (retry) {
+    await response.body?.cancel().catch(() => {})
+    return retry
+  }
+  const outputs = await settleRouterResponse(
+    response,
+    progress.requestId,
+    context
+  )
+  return { ...progress, phase: 'complete', outputs }
 }
 
 async function attempt(
@@ -256,6 +270,8 @@ async function attempt(
       const { waitMs, ...progress } = state
       return { ...progress, phase: 'request' }
     }
+    const token = (await options.freshToken?.()) ?? options.token
+    signal.throwIfAborted()
     const response = await fetch(
       `${WORKSHOP_ROUTER_BASE_URL}/v2/models/${options.contract.id}`,
       {
@@ -263,7 +279,7 @@ async function attempt(
         credentials: 'omit',
         redirect: 'error',
         headers: {
-          Authorization: `Bearer ${options.token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
           'Idempotency-Key': options.idempotencyKey
         },
@@ -312,11 +328,15 @@ function recoverInterruptedRequest(
   }
 }
 
-export async function runWorkshopRouter(options: RouterRunOptions): Promise<{
+export interface RouterRunResult {
   readonly outputs: RunOutput[]
   readonly requestId: string | null
   readonly deadlineCollections: number
-}> {
+}
+
+export function createAttemptContext(
+  options: RouterRunOptions
+): AttemptContext {
   if (
     !options.token ||
     !options.idempotencyKey ||
@@ -326,13 +346,19 @@ export async function runWorkshopRouter(options: RouterRunOptions): Promise<{
   if (!validateWorkshopInput(options.body, options.contract.inputSchema))
     throw new WorkshopRouterError('validation')
   const controller = new AbortController()
-  const context: AttemptContext = {
+  return {
     options,
     body: serializeRouterInput(options.body),
     controller,
     signal: AbortSignal.any([controller.signal, options.signal]),
     deadlineAt: Date.now() + TOTAL_RUN_TIMEOUT_MS
   }
+}
+
+export async function runSynchronousWorkshopRouter(
+  options: RouterRunOptions,
+  context: AttemptContext = createAttemptContext(options)
+): Promise<RouterRunResult> {
   let state: RunState = {
     phase: 'request',
     requestId: null,

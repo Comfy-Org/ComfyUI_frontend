@@ -13,8 +13,10 @@ import type {
 import { toolGlyph, toolLabel } from '../../../services/agent/agentToolGlyph'
 import { formatDurationCompact } from '../../../utils/formatDuration'
 
-const { parts } = defineProps<{
+const { parts, live = false } = defineProps<{
   parts: readonly ActivityPart[]
+  /** The turn is still running, so a newly mounted row is a real arrival. */
+  live?: boolean
 }>()
 
 const { t } = useI18n()
@@ -48,9 +50,9 @@ function rowSignature(row: ActivityRow): string {
     <div
       v-for="(row, index) in rows"
       :key="index"
-      v-memo="[rowSignature(row), index === rows.length - 1]"
+      v-memo="[rowSignature(row), index === rows.length - 1, live]"
       role="listitem"
-      class="flex gap-2 px-2"
+      :class="cn('flex gap-2 px-2', live && 'agent-row-enter')"
     >
       <div class="flex w-4 shrink-0 flex-col items-center">
         <span

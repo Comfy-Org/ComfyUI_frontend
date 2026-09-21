@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { buildSnippet } from '../../config/models-snippets'
 import { workshopContract } from '../../config/workshop-contract-catalog'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
 import ApiTab from './ApiTab.vue'
 

@@ -409,11 +409,19 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       this._visibility
     )
     if (!registered) return
-    this._state = registered
-    const visibility = useWidgetValueStore().getWidgetVisibility(
-      widgetId(graphId, nodeId, this.name)
-    )
+    this.bindRegisteredState(nodeId)
+  }
+
+  bindRegisteredState(nodeId: NodeId): boolean {
+    const graphId = this.node.graph?.rootGraph.id
+    if (!graphId) return false
+    const id = widgetId(graphId, nodeId, this.name)
+    const state = useWidgetValueStore().getWidget(id)
+    if (!state) return false
+    this._state = state
+    const visibility = useWidgetValueStore().getWidgetVisibility(id)
     if (visibility) this._visibility = visibility
+    return true
   }
 
   constructor(widget: TWidget & { node: LGraphNode })

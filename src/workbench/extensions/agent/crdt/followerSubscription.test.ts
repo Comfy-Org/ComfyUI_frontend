@@ -1137,3 +1137,142 @@ describe('FEB-5 — switching workflows is a lineage break, never a fold', () =>
     expect(bridge.subscribedWorkflowId).toBe('wf-2')
   })
 })
+
+describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
+  function observeSent(bridge: LayoutFollowerBridge): unknown[] {
+    const sent: unknown[] = []
+    bridge.addEventListener('doc_subscribe_sent', (event) => {
+      if (event instanceof CustomEvent) sent.push(event.detail)
+    })
+    return sent
+  }
+
+  it('is dispatched once per subscribe frame that leaves the transport', () => {
+    const { transport, bridge } = wire()
+    const sent = observeSent(bridge)
+    transport.open = true
+
+    bridge.subscribe(WORKFLOW_ID)
+    bridge.reconcile()
+
+    expect(sent).toEqual([{ workflowId: WORKFLOW_ID }])
+  })
+
+  it('is not dispatched while the frame cannot leave a closed socket', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { transport, bridge } = wire()
+    const sent = observeSent(bridge)
+
+    bridge.subscribe(WORKFLOW_ID)
+    expect(sent).toEqual([])
+
+    transport.open = true
+    bridge.reconcile()
+    expect(sent).toEqual([{ workflowId: WORKFLOW_ID }])
+  })
+
+  it.for([
+    {
+      label: 'an explicit resubscribe',
+      provoke: ({ bridge }: ReturnType<typeof wire>) => bridge.resubscribe()
+    },
+    {
+      label: 'a gap-forced resync',
+      provoke: ({ transport }: ReturnType<typeof wire>) => {
+        transport.deliver('doc_subscribed', {
+          v: 1,
+          workflow_id: WORKFLOW_ID,
+          ok: true,
+          seq: 1
+        })
+        transport.deliver(
+          'doc_update',
+          docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+        )
+      }
+    },
+    {
+      label: 'a doc_reset',
+      provoke: ({ transport }: ReturnType<typeof wire>) =>
+        transport.deliver('doc_reset', {
+          v: 1,
+          workflow_id: WORKFLOW_ID,
+          seq: 43
+        })
+    }
+  ])('is dispatched again on $label', ({ provoke }) => {
+    const wired = wire()
+    const sent = observeSent(wired.bridge)
+    wired.transport.open = true
+    wired.bridge.subscribe(WORKFLOW_ID)
+
+    provoke(wired)
+
+    expect(sent).toEqual([
+      { workflowId: WORKFLOW_ID },
+      { workflowId: WORKFLOW_ID }
+    ])
+    expect(wired.transport.framesOfType('doc_subscribe')).toHaveLength(2)
+  })
+
+  it('accepts a late acknowledgement of a superseded subscribe to the same workflow', () => {
+    const { transport, bridge } = wire()
+    const acks: unknown[] = []
+    bridge.addEventListener('doc_subscribed', (event) => {
+      if (event instanceof CustomEvent) acks.push(event.detail)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    bridge.resubscribe()
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 2
+    })
+
+    expect(acks).toEqual([
+      expect.objectContaining({ workflowId: WORKFLOW_ID, ok: true, seq: 2 })
+    ])
+    expect(bridge.lastSequence).toBe(2)
+    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+  })
+
+  it('a slow first subscribe answered after the retry merges idempotently with no stale or gap signal', () => {
+    const { transport, bridge } = wire()
+    const stale: unknown[] = []
+    const gaps: unknown[] = []
+    bridge.addEventListener('doc_stale', (event) => {
+      if (event instanceof CustomEvent) stale.push(event.detail)
+    })
+    bridge.addEventListener('doc_gap', (event) => {
+      if (event instanceof CustomEvent) gaps.push(event.detail)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    bridge.resubscribe()
+    const catchUp = hostDocUpdate()
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 2
+    })
+    transport.deliver('doc_update', docUpdateFrame(catchUp, WORKFLOW_ID, 2))
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 2
+    })
+    transport.deliver('doc_update', docUpdateFrame(catchUp, WORKFLOW_ID, 2))
+
+    expect(nodesMap(bridge.follower.doc).size).toBe(1)
+    expect(stale).toEqual([])
+    expect(gaps).toEqual([])
+    expect(bridge.lastSequence).toBe(2)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+  })
+})

@@ -8,11 +8,15 @@ import type { HeroSlide } from '../../config/hero-slides'
 
 const slides = vi.hoisted(() => ({ value: [] as HeroSlide[] }))
 
-vi.mock<unknown>(import('../../config/hero-slides'), () => ({
+vi.mock(import('../../config/hero-slides'), () => ({
+  PROVIDER_ICON: {
+    gemini: '/icons/gemini.svg',
+    kling: '/icons/kling.svg',
+    bytedance: '/icons/bytedance.svg'
+  },
   get HERO_SLIDES() {
     return slides.value
-  },
-  PROVIDER_ICON: { gemini: '/gemini.svg' }
+  }
 }))
 
 const buildSlide = (id: string, title: string): HeroSlide => ({

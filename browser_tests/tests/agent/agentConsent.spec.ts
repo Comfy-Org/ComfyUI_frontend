@@ -20,7 +20,8 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
   }) => {
     const page = comfyPage.page
     const openButton = page.getByRole('button', {
-      name: enMessages.agent.askComfyAgent
+      name: enMessages.agent.entryButton,
+      exact: true
     })
     const dialog = page.getByRole('dialog', {
       name: enMessages.agent.consent.title
@@ -82,15 +83,16 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       await expect(panel).toBeVisible()
     })
 
-    await test.step('Saved consent reopens Agent without another prompt', async () => {
-      await expect(openButton).toHaveCount(0)
-      await panel
-        .getByRole('button', { name: enMessages.agent.close, exact: true })
-        .click()
+    await test.step('Agent button closes and reopens the panel without another consent prompt', async () => {
+      await expect(openButton).toBeVisible()
+      await expect(openButton).toHaveAttribute('aria-pressed', 'true')
+      await openButton.click()
       await expect(panel).toHaveCount(0)
+      await expect(openButton).toHaveAttribute('aria-pressed', 'false')
       await openButton.click()
       await expect(dialog).toHaveCount(0)
       await expect(panel).toBeVisible()
+      await expect(openButton).toHaveAttribute('aria-pressed', 'true')
     })
 
     await test.step('Saved consent survives reload', async () => {
@@ -120,7 +122,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
 
       await test.step('Explicit acceptance makes the panel visible', async () => {
         await page
-          .getByRole('button', { name: enMessages.agent.askComfyAgent })
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
           .click()
         await expect(dialog).toBeVisible()
         await expect(panel).toHaveCount(0)
@@ -151,7 +156,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       await test.step('A failed save leaves the panel closed and allows retry', async () => {
         agentConsentSave.status = 500
         await page
-          .getByRole('button', { name: enMessages.agent.askComfyAgent })
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
           .click()
         await accept.click()
 
@@ -183,7 +191,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
 
     await test.step('Consent keeps its dark surface and readable heading', async () => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       await expect(page.getByTestId('agent-consent-card')).toHaveCSS(
         'background-color',
@@ -221,7 +232,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
 
       await test.step('Narrow layout keeps media widescreen and actions in visual order', async () => {
         await page
-          .getByRole('button', { name: enMessages.agent.askComfyAgent })
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
           .click()
         await expect
           .poll(async () => {
@@ -262,7 +276,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     test('plays the MP4 fallback', async ({ comfyPage }) => {
       const page = comfyPage.page
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
 
       const video = page.getByTestId('agent-consent-video')
@@ -290,7 +307,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       }) => {
         const page = comfyPage.page
         await page
-          .getByRole('button', { name: enMessages.agent.askComfyAgent })
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
           .click()
 
         const dialog = page.getByRole('dialog', {
@@ -321,7 +341,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         const page = comfyPage.page
         await comfyPage.settings.setSetting('Comfy.Locale', 'fr')
         await page
-          .getByRole('button', { name: frMessages.agent.askComfyAgent })
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
           .click()
 
         const dialog = page.getByRole('dialog', {
@@ -370,7 +393,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     await test.step('Short wide layout keeps both actions reachable', async () => {
       await page.setViewportSize({ width: 1280, height: 480 })
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       await accept.scrollIntoViewIfNeeded()
       await expect(accept).toBeInViewport({ ratio: 1 })
@@ -400,7 +426,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     await test.step('Short narrow layout lets the user reach the heading', async () => {
       await page.setViewportSize({ width: 430, height: 600 })
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       await heading.scrollIntoViewIfNeeded()
       await expect(heading).toBeInViewport({ ratio: 1 })
@@ -419,7 +448,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
   }) => {
     const page = comfyPage.page
     await page
-      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
       .click()
     const dialog = page.getByRole('dialog', {
       name: enMessages.agent.consent.title

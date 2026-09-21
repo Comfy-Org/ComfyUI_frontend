@@ -15,6 +15,7 @@ import { toNodeId } from '@/types/nodeId'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
 import { createGraphMutations } from './graphMutations'
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 
 class TestSource extends LGraphNode {
   static override title = 'Test Source'
@@ -50,7 +51,11 @@ const CATALOG: WidgetCatalog = {
 const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }
 
 function remoteMutations(scope: GraphScope) {
-  return createGraphMutations({ getScope: () => scope, layout })
+  return createGraphMutations({
+    getScope: () => scope,
+    layout,
+    placement: inertPlacementPort
+  })
 }
 
 function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {

@@ -9,7 +9,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 
 import type { OpenAI } from 'openai'
 
@@ -46,6 +46,7 @@ import {
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
+import { isMainModule } from '../isMainModule'
 
 interface SourceManifest {
   files: Record<string, string>
@@ -665,10 +666,7 @@ async function run(argv: readonly string[]): Promise<void> {
   print(`Source provenance: ${relative(repoRoot, manifestFile)}`)
 }
 
-const invokedAsScript = process.argv[1]
-  ? pathToFileURL(process.argv[1]).href === import.meta.url
-  : false
-if (invokedAsScript) {
+if (isMainModule(import.meta.url)) {
   run(process.argv.slice(2)).catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : error)
     process.exitCode = 1

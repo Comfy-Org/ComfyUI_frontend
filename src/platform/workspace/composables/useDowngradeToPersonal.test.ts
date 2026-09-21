@@ -671,6 +671,11 @@ describe('useDowngradeToPersonal', () => {
       await downgradeToPersonal('founder-monthly')
 
       expect(windowOpen).not.toHaveBeenCalled()
+      // One poller, whichever rail the flag names: `subscribe` is already
+      // railed upstream in `useWorkspaceBilling`, and a rail subscribe settles
+      // before it returns, so a `pending_payment` here came off the legacy
+      // transport and this registration is its only one.
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-4',
         'subscription',

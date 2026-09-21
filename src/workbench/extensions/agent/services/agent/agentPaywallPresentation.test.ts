@@ -31,6 +31,7 @@ describe('resolveAgentPaywallPresentation', () => {
   ])('maps the ready server pair for $name', (testCase) => {
     expect(
       resolveAgentPaywallPresentation({
+        distribution: 'cloud',
         role: 'owner',
         tier: 'STANDARD',
         canTopUp: testCase.canTopUp,
@@ -52,6 +53,7 @@ describe('resolveAgentPaywallPresentation', () => {
     ({ tier, showUpgrade }) => {
       expect(
         resolveAgentPaywallPresentation({
+          distribution: 'cloud',
           role: 'owner',
           tier,
           canTopUp: true,
@@ -61,14 +63,51 @@ describe('resolveAgentPaywallPresentation', () => {
     }
   )
 
-  it('keeps the member override ahead of the server pair', () => {
+  // One cloud table for the member capability dimension, so a regression here
+  // names the member policy only.
+  it.for([
+    {
+      name: 'keeps a member without billing permissions actionless',
+      canTopUp: false,
+      expected: { kind: 'member' }
+    },
+    {
+      name: 'respects a member top-up capability',
+      canTopUp: true,
+      expected: { kind: 'subscribed', showUpgrade: false }
+    }
+  ])('$name', ({ canTopUp, expected }) => {
     expect(
       resolveAgentPaywallPresentation({
+        distribution: 'cloud',
         role: 'member',
-        tier: 'STANDARD',
-        canTopUp: true,
-        canSubscribeSelfServe: true
+        tier: 'TEAM',
+        canTopUp,
+        canSubscribeSelfServe: false
       })
-    ).toEqual({ kind: 'member' })
+    ).toEqual(expected)
+  })
+
+  // The local override is its own policy: it short-circuits before role and
+  // capability are read, so it must not be asserted through a member case.
+  it('overrides every cloud policy on the local distribution', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'local',
+        role: 'owner',
+        tier: null,
+        canTopUp: true,
+        canSubscribeSelfServe: false
+      })
+    ).toEqual({ kind: 'local' })
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'local',
+        role: 'member',
+        tier: 'TEAM',
+        canTopUp: true,
+        canSubscribeSelfServe: false
+      })
+    ).toEqual({ kind: 'local' })
   })
 })

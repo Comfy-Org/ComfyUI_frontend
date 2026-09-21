@@ -122,6 +122,7 @@ export const useImageUploadWidget = () => {
       nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
         isAnimated
       })
+      showPreview({ block: false })
       node.graph?.setDirtyCanvas(true)
     }
 

@@ -651,7 +651,7 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
 
 test(
   'link interactions',
-  { tag: ['@vue-nodes', '@subgraph'] },
+  { tag: ['@vue-nodes', '@subgraph', '@screenshot'] },
   async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
     await comfyPage.vueNodes.enterSubgraph('2')

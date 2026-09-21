@@ -54,6 +54,7 @@
       </ModelInfoField>
       <ModelInfoField :label="t('g.status')">
         <PackStatusMessage
+          :has-import-failed="hasImportFailed"
           :status-type="overallStatus"
           :has-compatibility-issues="hasConflicts"
         />
@@ -70,7 +71,7 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { computed, onUnmounted, provide, ref, toRef } from 'vue'
+import { computed, onUnmounted, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
@@ -88,7 +89,6 @@ import { usePacksStatus } from '@/workbench/extensions/manager/composables/nodeP
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
-import { ImportFailedKey } from '@/workbench/extensions/manager/types/importFailedTypes'
 
 const { nodePacks } = defineProps<{
   nodePacks: components['schemas']['Node'][]
@@ -145,12 +145,6 @@ const updateSelectedLabel = computed(() =>
 
 const { checkNodeCompatibility } = useConflictDetection()
 const { getNodeDefs } = useComfyRegistryStore()
-
-// Provide import failed context for PackStatusMessage
-provide(ImportFailedKey, {
-  importFailed: hasImportFailed,
-  showImportFailedDialog: () => {} // No-op for multi-selection
-})
 
 // Check for conflicts in not-installed packages - keep original logic but simplified
 const packageConflicts = computed(() => {

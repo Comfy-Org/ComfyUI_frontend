@@ -102,7 +102,7 @@ export async function prepareWorkshopCreatorRequest(
         value.file instanceof File
           ? value.file
           : await loadWorkshopExampleFile(value, signal)
-    } catch {
+    } catch (cause) {
       signal.throwIfAborted()
       throw new WorkshopRouterError(
         'upload',
@@ -111,14 +111,15 @@ export async function prepareWorkshopCreatorRequest(
           [name]: 'uploadFailed'
         },
         undefined,
-        'example_download'
+        'example_download',
+        { cause }
       )
     }
     if (accept.length && !accept.includes(file.type))
       throw new WorkshopRouterError('validation', null, { [name]: 'badType' })
     if (!(value.file instanceof File)) reserve(file, name)
     const encoded = {
-      data: await encodeFile(file, signal),
+      data: await encodeFile(file, signal, name),
       mimeType: file.type
     }
     files[name] = [...(files[name] ?? []), encoded]

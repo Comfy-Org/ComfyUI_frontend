@@ -574,7 +574,7 @@ describe('createOpenAiTranslator', () => {
       requestBodies.push(init.body)
       calls++
       const response = Array.isArray(respond)
-        ? respond[calls - 1]
+        ? respond.at(calls - 1)
         : respond(init.body, calls)
       if (!response) {
         throw new Error(`no scripted response for request ${calls}`)

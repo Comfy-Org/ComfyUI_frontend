@@ -42,7 +42,10 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 // Mock comfyApp globally for the store setup
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    canvas: {} // Start with empty canvas object
+    canvas: {}, // Start with empty canvas object
+    get canvasOrUndefined() {
+      return this.canvas
+    }
   }
 }))
 

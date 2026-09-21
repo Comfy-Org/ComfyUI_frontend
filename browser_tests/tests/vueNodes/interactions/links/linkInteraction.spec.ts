@@ -168,6 +168,26 @@ test.describe(
         })
     })
 
+    test('undo right after dropping a link on a slot removes that link', async ({
+      comfyPage
+    }) => {
+      const samplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      const vaeNode = await comfyPage.nodeOps.getNodeRefByType('VAEDecode')
+      const vaeInput = await vaeNode.getInput(0)
+
+      await connectSlots(
+        comfyPage.page,
+        { nodeId: samplerNode.id, index: 0 },
+        { nodeId: vaeNode.id, index: 0 },
+        () => comfyPage.nextFrame()
+      )
+      await vaeInput.expectLinkCount(1)
+
+      await comfyPage.keyboard.undo()
+
+      await vaeInput.expectLinkCount(0)
+    })
+
     test('should not create a link when slot types are incompatible', async ({
       comfyPage
     }) => {

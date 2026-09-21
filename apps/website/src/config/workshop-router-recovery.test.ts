@@ -1,7 +1,7 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import { workshopContract } from './workshop-contract-catalog'
-import { runWorkshopRouter } from './workshop-router'
+import { runSynchronousWorkshopRouter } from './workshop-router'
 
 function options() {
   const contract = workshopContract('bfl/flux-2-pro')
@@ -40,12 +40,14 @@ describe('Router delivery failures', () => {
       )
     )
     vi.stubGlobal('fetch', calls)
-    await expect(runWorkshopRouter(options())).rejects.toMatchObject({
-      reason: 'noCredits',
-      requestId: 'rejected-request',
-      response: { status: 402, body: '' },
-      cause
-    })
+    await expect(runSynchronousWorkshopRouter(options())).rejects.toMatchObject(
+      {
+        reason: 'noCredits',
+        requestId: 'rejected-request',
+        response: { status: 402, body: '' },
+        cause
+      }
+    )
     expect(calls).toHaveBeenCalledOnce()
   })
 
@@ -73,7 +75,7 @@ describe('Router delivery failures', () => {
         )
       calls.mockResolvedValueOnce(result())
       vi.stubGlobal('fetch', calls)
-      const rendered = await runWorkshopRouter(options())
+      const rendered = await runSynchronousWorkshopRouter(options())
       expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
       expect(rendered.requestId).toBe('replay-request')
       expect(calls).toHaveBeenCalledTimes(2)
@@ -91,10 +93,12 @@ describe('Router delivery failures', () => {
       .fn<typeof fetch>()
       .mockRejectedValue(new TypeError('Failed to fetch'))
     vi.stubGlobal('fetch', calls)
-    await expect(runWorkshopRouter(options())).rejects.toMatchObject({
-      reason: 'network',
-      stage: 'request'
-    })
+    await expect(runSynchronousWorkshopRouter(options())).rejects.toMatchObject(
+      {
+        reason: 'network',
+        stage: 'request'
+      }
+    )
     expect(calls).toHaveBeenCalledTimes(2)
   })
 
@@ -108,12 +112,14 @@ describe('Router delivery failures', () => {
       })
     )
     vi.stubGlobal('fetch', calls)
-    await expect(runWorkshopRouter(options())).rejects.toMatchObject({
-      reason: 'response',
-      stage: 'response',
-      requestId: 'completed-request',
-      response: { status: 200 }
-    })
+    await expect(runSynchronousWorkshopRouter(options())).rejects.toMatchObject(
+      {
+        reason: 'response',
+        stage: 'response',
+        requestId: 'completed-request',
+        response: { status: 200 }
+      }
+    )
     expect(calls).toHaveBeenCalledOnce()
   })
 
@@ -139,7 +145,9 @@ describe('Router delivery failures', () => {
         })
       )
       vi.stubGlobal('fetch', calls)
-      await expect(runWorkshopRouter(options())).rejects.toMatchObject({
+      await expect(
+        runSynchronousWorkshopRouter(options())
+      ).rejects.toMatchObject({
         reason,
         stage: 'request',
         requestId: 'rejected-request',

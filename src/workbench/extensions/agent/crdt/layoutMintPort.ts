@@ -71,9 +71,35 @@ export interface LayoutMintPort {
   detach(): void
 }
 
+/**
+ * A node minted mid-placement still carries `flags.ghost`, because `LGraph.add`
+ * sets it before the layout change that mints `add_node`. The document must not
+ * record it: the placement click clears the flag locally and mints no op, so the
+ * document's copy would outlive the placement it describes.
+ */
+function withoutGhostFlag(node: WorkflowNode): WorkflowNode {
+  if (node.flags?.ghost === undefined) return node
+  const { ghost: _ghost, ...flags } = node.flags
+  return { ...node, flags }
+}
+
 export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   let intentionalClearNodes: NodeId[] | null = null
   const reportedInteriorChanges = new Set<string>()
+  // Ids this port has itself minted an add_node for, and that the local
+  // document has not since lost (by any deleteNode or clearGraph change,
+  // whether or not that change itself went on to mint an op). Deliberately
+  // NOT seeded from `deps.source.nodeIds()`: that snapshot already includes
+  // a node the moment its own createNode change fires (the live graph
+  // mutates before the change event reaches this port), so checking it at
+  // mint time would reject every genuine create. This set instead answers
+  // "did *this port* already relay an add for this id, and does the
+  // document still hold that id" — the shape of a redo that recreates an
+  // already-doc-known node under its original id (the node id_collision
+  // replay storm in agentCrdtProjection debug reports) without falsely
+  // suppressing a genuine recreate after a real (possibly remote or
+  // teardown) removal.
+  const mintedNodeIds = new Set<string>()
 
   function gate(change: LayoutChangeView, teardown: boolean): boolean {
     const actor = change.operation.actor
@@ -144,7 +170,9 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         if (!gate(change, inTeardown)) return
         if (reportUnrepresentableInteriorChange(operation, 'create')) return
         if (operation.nodeId === undefined || !operation.layout) return
-        const node = deps.source.serializeNode(String(operation.nodeId))
+        const nodeIdKey = String(operation.nodeId)
+        if (mintedNodeIds.has(nodeIdKey)) return
+        const node = deps.source.serializeNode(nodeIdKey)
         if (!node) {
           // A dropped human mint is a local-graph-vs-doc divergence; it must
           // be observable, never silent (the surfacing-honesty principle).
@@ -160,15 +188,21 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
             node_id: operation.nodeId,
             class_type: node.type,
             pos: [operation.layout.position.x, operation.layout.position.y],
-            node
+            node: withoutGhostFlag(node)
           }
         ])
+        mintedNodeIds.add(nodeIdKey)
         return
       }
       case 'deleteNode': {
+        // The document lost this id the moment a deleteNode change fired,
+        // regardless of whether this port also gates the delete_node op for
+        // echo-suppression or teardown - the two questions are independent
+        // (see the leading comment on `mintedNodeIds`).
+        if (operation.nodeId === undefined) return
+        mintedNodeIds.delete(String(operation.nodeId))
         if (!gate(change, inTeardown)) return
         if (reportUnrepresentableInteriorChange(operation, 'delete')) return
-        if (operation.nodeId === undefined) return
         deps.enqueue([
           {
             op: 'delete_node',
@@ -181,6 +215,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       case 'clearGraph': {
         const captured = intentionalClearNodes
         intentionalClearNodes = null
+        mintedNodeIds.clear()
         if (!gate(change, inTeardown || captured === null)) return
         deps.enqueue([{ op: 'clear', removed_nodes: captured ?? [] }])
         return

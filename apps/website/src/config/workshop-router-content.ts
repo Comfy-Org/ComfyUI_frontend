@@ -10,6 +10,9 @@ import { workshopPromptDefaults } from './workshop-prompt-defaults'
 import type { WorkshopContract } from './workshop-contract'
 import { workshopExampleValues } from './workshop-example-values'
 import {
+  authoredRouterModelSlugAliases,
+  authoredRouterContentBySlug,
+  authoredWorkshopModels,
   routerContentBySlug,
   routerModelSlugAliases,
   workshopModels
@@ -82,8 +85,11 @@ function defaultsFor(
   }
 }
 
-function detailFor(model: WorkshopModel): WorkshopModelDetail {
-  const source = routerContentBySlug.get(model.slug)
+function detailFor(
+  model: WorkshopModel,
+  contentBySlug: ReadonlyMap<string, RouterContentSource>
+): WorkshopModelDetail {
+  const source = contentBySlug.get(model.slug)
   if (!source) throw new Error(`Missing content record: ${model.slug}`)
   const execution = model.incompleteReason
     ? undefined
@@ -109,8 +115,25 @@ function detailFor(model: WorkshopModel): WorkshopModelDetail {
 }
 
 const detailBySlug = new Map(
-  workshopModels.map((model) => [model.slug, detailFor(model)])
+  workshopModels.map((model) => [
+    model.slug,
+    detailFor(model, routerContentBySlug)
+  ])
 )
+const authoredDetailBySlug = new Map(
+  authoredWorkshopModels.map((model) => [
+    model.slug,
+    detailFor(model, authoredRouterContentBySlug)
+  ])
+)
+
+export function getAuthoredRouterWorkshopModelDetail(
+  slug: string
+): WorkshopModelDetail | undefined {
+  return authoredDetailBySlug.get(
+    authoredRouterModelSlugAliases.get(slug) ?? slug
+  )
+}
 
 export function getRouterWorkshopModelDetail(
   slug: string

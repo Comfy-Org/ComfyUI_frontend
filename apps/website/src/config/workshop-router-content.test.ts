@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { workshopModels, routerContentBySlug } from './workshop-browse-content'
+import {
+  authoredRouterContentBySlug,
+  authoredWorkshopModels
+} from './workshop-browse-content'
 import { deriveWorkshopFields } from './workshop-fields'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
   groupPlaygroundFields,
@@ -109,7 +112,9 @@ describe('Router catalog form projection', () => {
     'gemini-interactions/gemini-omni-flash-preview',
     'ideogram/ideogram-v3'
   ])('enables the previously incomplete %s with a seeded prompt', (id) => {
-    const pages = workshopModels.filter((model) => model.routerId === id)
+    const pages = authoredWorkshopModels.filter(
+      (model) => model.routerId === id
+    )
     expect(pages.length).toBeGreaterThan(0)
     for (const page of pages) {
       const detail = getRouterWorkshopModelDetail(page.slug)
@@ -149,13 +154,15 @@ describe('Router catalog form projection', () => {
     )
     expect(getRouterWorkshopModelDetail('byteplus--seedream-4-5')).toBe(create)
     for (const model of [create, edit])
-      expect(routerContentBySlug.get(model.slug)?.overlay.slug).toBe(model.slug)
+      expect(authoredRouterContentBySlug.get(model.slug)?.overlay.slug).toBe(
+        model.slug
+      )
   })
 
   it("starts a native request with Rob's prompt without importing legacy settings", async () => {
     const model = getRouterWorkshopModelDetail('bfl--flux-3-video')
     if (!model?.execution) throw new Error('Missing model')
-    const prompt = routerContentBySlug
+    const prompt = authoredRouterContentBySlug
       .get(model.slug)
       ?.overlay.examples.map((example) => example.values.prompt)
       .find((value) => typeof value === 'string' && value.trim())
@@ -189,7 +196,7 @@ describe('Router catalog form projection', () => {
   })
 
   it('starts every visible plain prompt with schema-valid text', () => {
-    for (const entry of workshopModels) {
+    for (const entry of authoredWorkshopModels) {
       const model = getRouterWorkshopModelDetail(entry.slug)
       if (!model) throw new Error('Missing model')
       const schema = schemaForModel(model)
@@ -216,7 +223,7 @@ describe('Router catalog form projection', () => {
     }
   })
 
-  it.for(workshopModels)(
+  it.for(authoredWorkshopModels)(
     'preserves native input types and constraints with curated presentation on $routerId',
     (model) => {
       const detail = getRouterWorkshopModelDetail(model.slug)

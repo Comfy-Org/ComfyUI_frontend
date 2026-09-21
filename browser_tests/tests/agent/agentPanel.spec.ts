@@ -5,6 +5,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   INTERMEDIATE_MESSAGE_EVENT,
@@ -25,13 +26,23 @@ function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
 
+// Parsed through the generated admission contract so a server-side rename of a
+// `reason` or `type` breaks this fixture instead of silently passing.
+const NO_FUNDS_ERROR = zAgentAdmissionError.parse({
+  error: {
+    message: 'Add credits to continue.',
+    reason: 'no_funds',
+    type: 'PAYMENT_REQUIRED'
+  }
+})
+
 test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
 
   test.describe('flag off', () => {
     test.use({ agentFlagEnabled: false })
 
-    test('does not expose the Ask Comfy Agent button', async ({
+    test('does not expose the Agent button', async ({
       agentPanel,
       postedMessages
     }) => {
@@ -161,6 +172,47 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText('Opened a new tab')).toBeVisible()
     await expect(panel.getByText('Resize image node')).toBeVisible()
+  })
+
+  test('shows an admission paywall without losing the rejected prompt', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    const panel = agentPanel.root
+    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const prompt = 'Build a product photo workflow'
+
+    await test.step('reject the next turn with a no-funds admission error', async () => {
+      // Scoped to POST so the fixture's GET handler for the same URL still
+      // serves the thread's message history.
+      await page.route('**/api/agent/threads/*/messages', async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        await route.fulfill({
+          status: 402,
+          contentType: 'application/json',
+          body: JSON.stringify(NO_FUNDS_ERROR)
+        })
+      })
+    })
+
+    await test.step('open the agent panel on a workflow', async () => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+    })
+
+    await test.step('send a prompt the server will reject', async () => {
+      await composer.fill(prompt)
+      await panel.getByRole('button', { name: 'Send' }).click()
+    })
+
+    await test.step('keep the rejected prompt and surface the paywall', async () => {
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
+      await expect(composer).toHaveText(prompt)
+      const paywall = panel.getByRole('alert')
+      await expect(paywall).toContainText(enMessages.agent.paywall.title)
+      await expect(paywall).toContainText('Add credits to continue.')
+    })
   })
 
   test.describe('diagnostic report', () => {

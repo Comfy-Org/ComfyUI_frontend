@@ -27,9 +27,21 @@
     "disabled": true,
     "reason": "Router forwards the model ID eleven_sfx_v2, which ElevenLabs rejects; needs the backend alias fix."
   },
+  "freepik--magnific-upscaler-precise-v2--edit-images": {
+    "disabled": true,
+    "reason": "Production runs can request outputs above the provider's 25.3-megapixel limit; disable until the page validates scaled dimensions before submission."
+  },
+  "kling--omni-pro-first-last-frame--animate-images": {
+    "disabled": true,
+    "reason": "Production first/last-frame runs repeatedly failed at the provider; disable while the route and request contract are investigated."
+  },
   "kling--video-extend--edit-videos": {
     "disabled": true,
     "reason": "Requires the provider ID of an earlier Kling generation, which a page cannot supply by default."
+  },
+  "ltx--text-to-video-v2--generate-videos": {
+    "disabled": true,
+    "reason": "Production runs returned invalid-input responses for values offered by the page; disable until the request constraints are corrected."
   },
   "meshy--animate--3d": {
     "disabled": true,
@@ -70,5 +82,9 @@
   "tencent-hunyuan3d--smart-topology--3d": {
     "disabled": true,
     "reason": "Untested: the model tester verifies image, video and audio output only."
+  },
+  "wan--happyhorse-image-to-video--animate-images": {
+    "disabled": true,
+    "reason": "Production image-to-video runs repeatedly returned provider errors; disable while the route is investigated."
   }
 }

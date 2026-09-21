@@ -280,6 +280,24 @@ describe('eventJsonLdNode', () => {
   })
 })
 
+describe('nyc-creative-ai-september-forum event entry', () => {
+  const event = directoryEvents.find(
+    (candidate) => candidate.id === 'nyc-creative-ai-september-forum'
+  )
+
+  it('exists with the expected core fields', () => {
+    expect(event).toMatchObject({
+      category: 'meetup',
+      organizer: 'community',
+      title: { en: 'ZeroSpace: NYC Creative AI September Forum' },
+      location: { en: 'New York, NY' },
+      startDateTime: '2026-09-22T18:00:00-04:00',
+      endDateTime: '2026-09-22T21:00:00-04:00',
+      link: { href: { en: 'https://luma.com/of64wqdr' } }
+    })
+  })
+})
+
 describe('site event data', () => {
   it('has unique event ids', () => {
     const ids = [...upcomingEvents, ...pastEvents].map((event) => event.id)

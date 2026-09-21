@@ -30,8 +30,7 @@ describe('UserCredit', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          Skeleton: { template: '<div data-testid="skeleton" />' },
-          Tag: true
+          Skeleton: { template: '<div data-testid="skeleton" />' }
         }
       }
     })

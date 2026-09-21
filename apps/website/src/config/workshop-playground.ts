@@ -112,6 +112,7 @@ export type FieldErrorCode =
   | 'outOfRange'
   | 'badOption'
   | 'uploadFailed'
+  | 'fileUnreadable'
   | 'rejected'
 export type FieldErrors = Readonly<Record<string, FieldErrorCode>>
 

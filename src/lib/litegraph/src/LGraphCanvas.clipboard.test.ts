@@ -37,6 +37,7 @@ import type {
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
@@ -668,5 +669,46 @@ describe('clipboard reroute id integrity', () => {
     expect(
       store.getReroute(graphScopeOf(liveSubgraph), toRerouteId(1))
     ).toBeUndefined()
+  })
+})
+
+// A bulk-add path (paste, insert-workflow) calls `graph.add(node)`
+// before `node.configure(info)` sets the real position. `graph.add()`
+// synchronously fires `attachNodeLayout`, which snapshots `node._pos` into a
+// `createNode` layout operation right then — while it still holds
+// `LGraphNode`'s constructor default of `[10, 10]`, not the position the
+// paste is about to configure. Anything that mints wire ops off that layout
+// change feed (the agent CRDT layout-mint port) permanently records the
+// wrong position, even though the node visibly lands in the right place on
+// canvas once `configure()` runs.
+describe('paste-time createNode layout snapshot ordering', () => {
+  it('the createNode layout snapshot carries the pasted position, not the pre-configure default', () => {
+    const nodeType = 'test/pm1295-position-fingerprint'
+    registerClipboardNodeType(nodeType)
+
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+    const source = LiteGraph.createNode(nodeType)!
+    source.pos = [500, 500]
+    rootGraph.add(source)
+
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+
+    const result = canvas._deserializeItems(canvas._serializeItems([source]), {
+      position: [900, 900]
+    })
+    const pastedNode = [...(result?.nodes.values() ?? [])][0]
+    expect(pastedNode).toBeDefined()
+
+    const createNodeOp = applyOperation.mock.calls
+      .map(([op]) => op)
+      .find((op) => op.type === 'createNode' && op.nodeId === pastedNode.id)
+    if (createNodeOp?.type !== 'createNode')
+      throw new Error('expected a createNode layout operation')
+
+    expect(createNodeOp.layout.position).toEqual({
+      x: pastedNode.pos[0],
+      y: pastedNode.pos[1]
+    })
   })
 })

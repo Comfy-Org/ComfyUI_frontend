@@ -226,6 +226,74 @@ describe('mint ports against the real layout store delivery', () => {
     expect(minted).toEqual([])
   })
 
+  it('re-mints add_node for an id a remote delete removed from the document', async () => {
+    graphNodes.set('5', {
+      id: toNodeId('5'),
+      serialize: () => ({ id: 5, type: 'TestNode' })
+    })
+
+    layoutStore.applyOperation(createNodeOp(graphId, '5'))
+    await realDelivery()
+    expect(minted).toHaveLength(1)
+    minted.length = 0
+
+    layoutStore.applyOperation({
+      ...deleteNodeOp(graphId, '5'),
+      source: LayoutSource.AgentRemote
+    })
+    await realDelivery()
+    expect(minted).toEqual([])
+
+    layoutStore.applyOperation(createNodeOp(graphId, '5'))
+    await realDelivery()
+
+    expect(minted).toEqual([
+      {
+        op: 'add_node',
+        node_id: toNodeId('5'),
+        class_type: 'TestNode',
+        pos: [10, 20],
+        node: { id: 5, type: 'TestNode' }
+      }
+    ])
+  })
+
+  it('re-mints add_node for an id a graph-load teardown clear removed', async () => {
+    graphNodes.set('5', {
+      id: toNodeId('5'),
+      serialize: () => ({ id: 5, type: 'TestNode' })
+    })
+
+    layoutStore.applyOperation(createNodeOp(graphId, '5'))
+    await realDelivery()
+    expect(minted).toHaveLength(1)
+    minted.length = 0
+
+    wiring.onBeforeGraphLoad()
+    graphNodes.delete('5')
+    layoutStore.clearGraph(graphId)
+    await realDelivery()
+    wiring.onAfterGraphConfigure()
+    expect(minted).toEqual([])
+
+    graphNodes.set('5', {
+      id: toNodeId('5'),
+      serialize: () => ({ id: 5, type: 'TestNode' })
+    })
+    layoutStore.applyOperation(createNodeOp(graphId, '5'))
+    await realDelivery()
+
+    expect(minted).toEqual([
+      {
+        op: 'add_node',
+        node_id: toNodeId('5'),
+        class_type: 'TestNode',
+        pos: [10, 20],
+        node: { id: 5, type: 'TestNode' }
+      }
+    ])
+  })
+
   it('surfaces a real bare disconnect as divergence after the sweep', async () => {
     const linkStore = useLinkStore()
     const dangling = linkTopology(43, '9')

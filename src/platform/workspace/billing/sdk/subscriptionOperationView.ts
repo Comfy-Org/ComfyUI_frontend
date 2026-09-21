@@ -38,6 +38,8 @@ export interface SettledSubscribeResponse extends SubscribeResponse {
   readonly requiredPayment?: boolean
 }
 
+import type { BillingOperationRecordView } from './operationRecordView'
+
 export type SubscriptionRailOutcome<T = void> =
   | { readonly status: 'ok'; readonly value: T }
   | { readonly status: 'error'; readonly error: Error }
@@ -57,6 +59,14 @@ export interface SubscriptionRail {
    * when the browser blocked that open.
    */
   readonly subscriptionActionUrl: string | null
+  /**
+   * The subscribe waiting on the customer, as the poller's record. The checkout
+   * drives its parked-recovery prompt, its authentication state and its busy
+   * state off this, so on this rail it has to come from the lifecycle.
+   */
+  readonly subscriptionActionOperation: BillingOperationRecordView | undefined
+  /** One operation by id, unscoped: the caller compares the workspace itself. */
+  getOperation: (opId: string) => BillingOperationRecordView | undefined
   subscribe: (
     input: SubscribeInput
   ) => Promise<SubscriptionRailOutcome<SettledSubscribeResponse>>

@@ -256,7 +256,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
       styles.getPropertyValue('--comfy-widget-height')
 
     const isPercentageHeight =
-      typeof prefHeight === 'string' && prefHeight.endsWith?.('%')
+      typeof prefHeight === 'string' && prefHeight.endsWith('%')
     if (!isPercentageHeight && isNaN(minHeight)) {
       minHeight =
         typeof prefHeight === 'number' ? prefHeight : parseInt(prefHeight)

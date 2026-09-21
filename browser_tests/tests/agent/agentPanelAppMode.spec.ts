@@ -5,7 +5,7 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
@@ -26,7 +26,10 @@ test.describe('In-App Agent panel across view modes', { tag: '@cloud' }, () => {
 
     expect(selectedWorkflowPath).toBeTruthy()
 
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+    const openButton = page.getByRole('button', {
+      name: OPEN_AGENT_LABEL,
+      exact: true
+    })
     await expect(openButton).toBeVisible()
     await openButton.click()
 

@@ -1,3 +1,5 @@
+import { applyOps, mint } from '@comfyorg/comfy-multi-player'
+import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -14,6 +16,7 @@ import { widgetId } from '@/types/widgetId'
 
 import type { GraphOperation } from './graphOperations'
 import type { LayoutChangeView } from './layoutMintPort'
+import { mintWireOps } from './opEnvelope'
 import {
   attachMintPortWiring,
   runMintPortsIntentionalClear
@@ -25,9 +28,17 @@ const ROOT_ID = 'root-uuid'
 /** Structural stand-in for the two LGraphNode members the wiring reads. */
 interface FakeGraphNode {
   id?: unknown
+  type?: string
+  isVirtualNode?: boolean
   serialize?: () => unknown
   widgets?: { name: string; type: string; serialize?: boolean }[]
 }
+
+/** The doc host's pinned catalog: server classes only. */
+const CATALOG: WidgetCatalog = {
+  types: { LoadImage: { widget_order: ['image'] } }
+}
+const BLUEPRINT_ID = '4d3f5a6e-0b1c-4d2e-9f80-1a2b3c4d5e6f'
 
 const ROOT_SCOPE: GraphScope = {
   rootGraphId: toRootGraphId(ROOT_ID),
@@ -277,6 +288,7 @@ describe('attachMintPortWiring', () => {
       serialize: () => ({
         id: 5,
         type: 'LoadImage',
+        __incarnation: 'source-node-incarnation',
         widgets_values: ['positional'],
         widgets_values_named: { image: 'cat.png', upload: 'button-slot' }
       }),
@@ -309,6 +321,70 @@ describe('attachMintPortWiring', () => {
       }
     ])
   })
+
+  // Note, PrimitiveNode, Get/Set nodes and blueprint hosts have no catalog
+  // entry: the applier rejects a name-keyed record for them and stores a
+  // positional array opaquely.
+  it.for([
+    {
+      name: 'a frontend-only node',
+      type: 'Note',
+      widgetsValues: ['a note'],
+      named: { text: 'a note' },
+      widgets: [{ name: 'text', type: 'markdown' }]
+    },
+    {
+      name: 'a subgraph blueprint host with a promoted widget',
+      type: BLUEPRINT_ID,
+      widgetsValues: ['a pasted prompt'],
+      named: { text: 'a pasted prompt' },
+      widgets: [{ name: 'text', type: 'text' }]
+    }
+  ])(
+    'keeps add_node widgets_values positional for $name, and the applier takes it',
+    ({ type, widgetsValues, named, widgets }) => {
+      graphNodes.set('7', {
+        type,
+        isVirtualNode: true,
+        serialize: () => ({
+          id: 7,
+          type,
+          widgets_values: widgetsValues,
+          widgets_values_named: named
+        }),
+        widgets
+      })
+
+      deliverLayoutChange({
+        operation: {
+          type: 'createNode',
+          actor: 'user-abc',
+          nodeId: toNodeId(7),
+          layout: { position: { x: 10, y: 20 } }
+        }
+      })
+
+      expect(minted).toEqual([
+        {
+          op: 'add_node',
+          node_id: toNodeId(7),
+          class_type: type,
+          pos: [10, 20],
+          node: { id: 7, type, widgets_values: widgetsValues }
+        }
+      ])
+      const doc = mint({ nodes: [], links: [] }, CATALOG)
+      const { outcomes } = applyOps(
+        doc,
+        mintWireOps(minted, { actor: 'human:user:tab', baseVersion: 1 }),
+        CATALOG
+      )
+      expect(outcomes).toEqual([
+        expect.objectContaining({ outcome: 'applied' })
+      ])
+      doc.destroy()
+    }
+  )
 
   it('positive control: an unbound workflow runs normally, zero mint and zero blockage', () => {
     bound = false

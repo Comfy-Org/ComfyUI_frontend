@@ -50,5 +50,5 @@ const slides = computed<FeaturedSplitSlide[]>(() =>
 </script>
 
 <template>
-  <FeaturedCarousel02 :locale :slides class="py-14 md:py-20" />
+  <FeaturedCarousel02 :locale :slides class="px-4 py-20 lg:px-20 lg:py-24" />
 </template>

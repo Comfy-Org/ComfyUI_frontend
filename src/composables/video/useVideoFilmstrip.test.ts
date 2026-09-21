@@ -1,6 +1,6 @@
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fetchVideoMetadata } from '@/utils/videoMetadataUtil'
 
@@ -145,6 +145,11 @@ describe('useVideoFilmstrip', () => {
     scope = effectScope()
     return scope.run(fn)!
   }
+
+  beforeEach(() => {
+    vi.stubGlobal('createImageBitmap', undefined)
+    vi.stubGlobal('OffscreenCanvas', undefined)
+  })
 
   afterEach(() => {
     scope?.stop()

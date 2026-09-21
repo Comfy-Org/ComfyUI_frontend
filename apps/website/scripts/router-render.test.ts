@@ -1,15 +1,21 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { loadWorkshopExampleFile } from '../src/config/workshop-example-file-loader'
-import { runWorkshopRouter } from '../src/config/workshop-router'
+import { runWorkshopRouter } from '../src/config/workshop-router-queue'
 import { WorkshopRouterError } from '../src/config/workshop-router-errors'
+import { getAuthoredRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
 import {
-  prepareRouterRender,
-  router_for_model,
-  router_render
+  createRouterRenderHelpers,
+  prepareRouterRender as preparePublishedRouterRender,
+  resolveRouterRender as resolvePublishedRouterRender,
+  router_render as renderPublishedRouter,
+  router_for_model as routerForPublishedModel
 } from './router-render'
 
-vi.mock(import('../src/config/workshop-router'), () => ({
+const { prepareRouterRender, router_for_model, router_render } =
+  createRouterRenderHelpers(getAuthoredRouterWorkshopModelDetail)
+
+vi.mock(import('../src/config/workshop-router-queue'), () => ({
   runWorkshopRouter: vi.fn()
 }))
 
@@ -18,6 +24,17 @@ vi.mock(import('../src/config/workshop-example-file-loader'), () => ({
 }))
 
 describe('router_render', () => {
+  it('keeps the documented default helpers available for published pages', async () => {
+    const slug = 'bfl--flux-2-pro--generate-images'
+    const router = routerForPublishedModel(slug)
+    const resolved = resolvePublishedRouterRender(slug)
+    const prepared = await preparePublishedRouterRender(slug)
+
+    expect(resolved.routerId).toBe('bfl/flux-2-pro')
+    expect(prepared.routerId).toBe('bfl/flux-2-pro')
+    expect(prepared.body.prompt).toBe(router.router_get_default_value('prompt'))
+  })
+
   it.for([
     {
       slug: 'bfl--flux-3-text-to-video--generate-videos',
@@ -202,7 +219,7 @@ describe('router_render', () => {
       ]
     })
 
-    const result = await router_render(
+    const result = await renderPublishedRouter(
       'bfl--flux-2-pro--generate-images',
       {},
       { idempotencyKey: 'render-1' }

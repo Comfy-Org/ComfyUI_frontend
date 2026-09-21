@@ -145,10 +145,11 @@
         <div
           :class="
             cn(
-              'flex flex-1 flex-col gap-1 bg-component-node-background pt-1 pb-3',
+              'flex flex-1 flex-col bg-component-node-background pt-1 pb-3',
               bodyRoundingClass
             )
           "
+          :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
           :data-testid="`node-body-${nodeData.id}`"
         >
           <NodeSlots :node-data />
@@ -159,7 +160,17 @@
             :widget-ids="renderedWidgetIds"
           />
 
-          <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
+          <div
+            v-if="hasCustomContent"
+            :class="
+              cn(
+                'flex min-h-0 flex-col',
+                nodeMedia?.type === 'image' && hasExpandingWidget
+                  ? 'shrink-0'
+                  : 'flex-1'
+              )
+            "
+          >
             <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
             <NodeContent
               v-for="preview in promotedPreviews"
@@ -272,6 +283,7 @@ import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
+import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
@@ -285,6 +297,7 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { nodeHasError } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
+import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import {
   applyLightThemeColor,
   shapeVariantClass
@@ -318,6 +331,10 @@ import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
+import {
+  IMAGE_PREVIEW_HEIGHT_RESERVE,
+  NODE_CONTENT_GAP
+} from './imagePreviewLayout'
 
 const { nodeData } = defineProps<{
   nodeData: NodeState
@@ -399,12 +416,18 @@ onErrorCaptured((error) => {
 
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 
+const imagePreviewGrowth = computed(() =>
+  nodeMedia.value?.type === 'image' && hasExpandingWidget.value
+    ? IMAGE_PREVIEW_HEIGHT_RESERVE
+    : 0
+)
+
 const nodeSizeStyle = computed(() =>
   isCollapsed.value
     ? {}
     : {
         '--node-width': `${size.value.width}px`,
-        '--node-height': `${size.value.height + LiteGraph.NODE_TITLE_HEIGHT}px`
+        '--node-height': `${size.value.height + LiteGraph.NODE_TITLE_HEIGHT + imagePreviewGrowth.value}px`
       }
 )
 
@@ -455,7 +478,8 @@ const { startResize } = useNodeResize((result) => {
     node,
     {
       width: Math.max(result.size.width, MIN_NODE_WIDTH),
-      height: removeNodeTitleHeight(result.size.height)
+      height:
+        removeNodeTitleHeight(result.size.height) - imagePreviewGrowth.value
     },
     {
       position: result.position,
@@ -654,6 +678,15 @@ const renderedWidgetIds = computed(() => {
 })
 
 const hasRenderableWidgets = computed(() => renderedWidgetIds.value.length > 0)
+const { processedWidgets } = useProcessedWidgets(
+  () => nodeData,
+  () => renderedWidgetIds.value
+)
+const hasExpandingWidget = computed(() =>
+  processedWidgets.value.some(
+    (widget) => widget.visible && shouldExpand(widget.simplified.type)
+  )
+)
 
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value

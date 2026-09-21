@@ -152,6 +152,32 @@ describe('useTopupOperation', () => {
     expect(mockContextTopup).not.toHaveBeenCalled()
   })
 
+  it.for([
+    { rail: 'legacy', flagOn: false, registers: true },
+    { rail: 'SDK', flagOn: true, registers: false }
+  ])(
+    'registers exactly one poller per pending top-up on the $rail rail',
+    ({ flagOn, registers }) => {
+      flagState.billingSdkTopupEnabled = flagOn
+      const store = useBillingOperationStore()
+
+      // Not awaited: the legacy registration settles only when the operation
+      // does, which is the reason the dialog holds it as a promise.
+      void useTopupOperation()
+        .adoptPendingOperation('op-pending', { attemptStartedAt: 1000 })
+        .catch(() => {})
+
+      expect(store.startOperation).toHaveBeenCalledTimes(registers ? 1 : 0)
+      if (registers) {
+        expect(store.startOperation).toHaveBeenCalledWith(
+          'op-pending',
+          'topup',
+          { attemptStartedAt: 1000, autoHandleRequiresAction: true }
+        )
+      }
+    }
+  )
+
   it('surfaces an SDK refusal as a workspace error', async () => {
     flagState.billingSdkTopupEnabled = true
     vi.mocked(harness.sdk.topup.createTopupCheckout).mockResolvedValue({

@@ -173,6 +173,43 @@ describe('agentPanelStore engagement telemetry', () => {
   })
 })
 
+describe('agentPanelStore discovery', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('stays undiscovered while the panel has never docked', async () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    await nextTick()
+
+    expect(store.hasEverOpened).toBe(false)
+  })
+
+  it('records discovery once the panel docks, and keeps it after a close', async () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    await nextTick()
+
+    expect(store.hasEverOpened).toBe(true)
+
+    store.close('topbar_button')
+    await nextTick()
+
+    expect(store.hasEverOpened).toBe(true)
+  })
+
+  it('records discovery for a panel restored from a previous visit', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    await nextTick()
+
+    expect(store.hasEverOpened).toBe(true)
+  })
+})
+
 describe('agentPanelStore open-state persistence', () => {
   beforeEach(() => {
     localStorage.clear()

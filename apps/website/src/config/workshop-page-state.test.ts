@@ -5,7 +5,7 @@ import {
   initialWorkshopPageState,
   workshopExampleState
 } from './workshop-page-state'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import { validateForm } from './workshop-playground'
 
 const model: WorkshopModelDetail = {

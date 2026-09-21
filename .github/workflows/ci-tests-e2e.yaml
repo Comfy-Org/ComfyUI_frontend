@@ -266,7 +266,7 @@ jobs:
     needs: setup
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     container:
       image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
       credentials:

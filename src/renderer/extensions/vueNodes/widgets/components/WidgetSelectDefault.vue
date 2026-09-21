@@ -340,7 +340,10 @@ const comboboxValue = computed(() => selectedOption.value?.comboboxValue ?? '')
 
 const isInvalid = computed(
   () =>
-    modelValue.value != null && modelValue.value !== '' && !selectedOption.value
+    widgetOptions.value?.values !== undefined &&
+    modelValue.value != null &&
+    modelValue.value !== '' &&
+    !selectedOption.value
 )
 
 const selectedLabel = computed(() => {

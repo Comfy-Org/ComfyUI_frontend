@@ -41,6 +41,8 @@
             :stack-count="getStackCount(item.asset)"
             :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
             :stack-expanded="isStackExpanded(item.asset)"
+            :draggable="true"
+            @dragstart="startAssetDrag($event, item.asset)"
             @mouseenter="onAssetEnter(item.asset.id)"
             @mouseleave="onAssetLeave(item.asset.id)"
             @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
@@ -77,6 +79,7 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'

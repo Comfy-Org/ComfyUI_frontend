@@ -104,6 +104,7 @@ function useBillingCapabilitiesInternal() {
 
     return state.response.capabilities
   })
+  const hasResolvedCapabilities = computed(() => capabilities.value !== null)
   const readUnavailableForCurrentScope = computed(() => {
     const state = readState.value
     return (
@@ -460,6 +461,7 @@ function useBillingCapabilitiesInternal() {
     canInviteMembers,
     canDowngradeToPersonal,
     isReady,
+    hasResolvedCapabilities,
     snapshotAuthoritative,
     initialize,
     refresh

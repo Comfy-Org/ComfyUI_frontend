@@ -7,8 +7,11 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
+
+vi.mock(import('@/composables/useFeatureFlags'))
 
 const i18n = createI18n({
   legacy: false,
@@ -168,5 +171,89 @@ describe('AssetsSidebarListView', () => {
     await fireEvent.dblClick(stub)
 
     expect(onPreviewAsset).toHaveBeenCalledWith(imageAsset)
+  })
+
+  // A row that is not draggable, or that starts a drag carrying nothing, is
+  // silently unattachable: the agent composer only accepts a drop whose
+  // dataTransfer advertises MIME_ASSET_INFO (AgentPanelRoot `isAssetDrag`).
+  describe('dragging an asset out of list view', () => {
+    const dragAsset = {
+      ...buildAsset('drag-asset', 'clip.mp4'),
+      tags: ['output'],
+      display_name: 'Clip',
+      preview_url: '/api/view?filename=clip.mp4&type=output&subfolder=',
+      user_metadata: {}
+    } satisfies AssetItem
+
+    function renderDraggableRow() {
+      const { container } = renderListView([buildOutputItem(dragAsset)])
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the draggable row intentionally has no interactive role
+      const row = container.querySelector('[data-testid="assets-list-item"]')!
+      return row
+    }
+
+    function dispatchDragStart(
+      row: Element,
+      init: { ctrlKey?: boolean; metaKey?: boolean } = {}
+    ) {
+      const dataTransfer = new DataTransfer()
+      const add = vi
+        .spyOn(dataTransfer.items, 'add')
+        .mockImplementation(() => null)
+      const event = new DragEvent('dragstart', {
+        bubbles: true,
+        cancelable: true
+      })
+      // happy-dom's DragEvent ignores dataTransfer/modifier init, so set them here.
+      Object.defineProperties(event, {
+        dataTransfer: { value: dataTransfer, configurable: true },
+        ctrlKey: { value: init.ctrlKey ?? false, configurable: true },
+        metaKey: { value: init.metaKey ?? false, configurable: true }
+      })
+      row.dispatchEvent(event)
+      return { event, add }
+    }
+
+    it('marks rows draggable so a native drag can start at all', () => {
+      expect(renderDraggableRow().getAttribute('draggable')).toBe('true')
+    })
+
+    it('publishes the asset payload the composer resolves an attachment from', () => {
+      const { event, add } = dispatchDragStart(renderDraggableRow())
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(add).toHaveBeenCalledWith(
+        JSON.stringify({
+          filename: 'clip.mp4',
+          type: 'output',
+          display_name: 'Clip',
+          attachment_ref: 'clip.mp4',
+          media_kind: 'video',
+          preview_url: undefined
+        }),
+        MIME_ASSET_INFO
+      )
+    })
+
+    it('publishes the file URL as the uri-list flavour, as the grid card does', () => {
+      const { add } = dispatchDragStart(renderDraggableRow())
+
+      expect(add).toHaveBeenCalledWith(
+        'http://localhost:3000/api/view?filename=clip.mp4&type=output&subfolder=',
+        'text/uri-list'
+      )
+    })
+
+    it.for([{ modifier: 'ctrlKey' }, { modifier: 'metaKey' }] as const)(
+      'cancels the drag while $modifier is held, matching the grid card',
+      ({ modifier }) => {
+        const { event, add } = dispatchDragStart(renderDraggableRow(), {
+          [modifier]: true
+        })
+
+        expect(event.defaultPrevented).toBe(true)
+        expect(add).not.toHaveBeenCalled()
+      }
+    )
   })
 })

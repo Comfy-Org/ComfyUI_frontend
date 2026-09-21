@@ -107,6 +107,10 @@
     "routerId": "kling/kling-v3-omni",
     "options": { "mode": "reference-video" }
   },
+  "kling--video-extend--edit-videos": {
+    "routerId": "kling/videos-video-extend",
+    "unavailableReason": "This route requires the provider ID of an earlier Kling generation; it cannot accept an uploaded source video."
+  },
   "openai--gpt-image-2--edit-images": {
     "routerId": "openai/gpt-image-2",
     "unavailableReason": "The current Router route exposes image generation only; it has no image or mask inputs for editing."

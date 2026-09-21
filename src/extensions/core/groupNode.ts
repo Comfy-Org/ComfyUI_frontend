@@ -55,9 +55,14 @@ export type GroupNodeLink = [
   sourceNodeId: SerializedNodeId,
   type: ISlotType
 ]
-type LinksFromMap = Record<number, Record<number, GroupNodeLink[]>>
-type LinksToMap = Record<number, Record<number, GroupNodeLink>>
-type ExternalFromMap = Record<number, Record<number, string | number>>
+type SlotLinks = Partial<Record<number, GroupNodeLink>>
+type LinksFromMap = Partial<
+  Record<number, Partial<Record<number, GroupNodeLink[]>>>
+>
+type LinksToMap = Partial<Record<number, SlotLinks>>
+type ExternalFromMap = Partial<
+  Record<number, Partial<Record<number, string | number>>>
+>
 
 interface GroupNodeConfigEntry {
   input?: Record<string, { name?: string; visible?: boolean }>
@@ -74,7 +79,7 @@ interface GroupNodeData extends Partial<
 }
 
 export interface GroupNodeWorkflowData {
-  external: (number | string)[][]
+  external?: (number | string)[][]
   links: GroupNodeLink[]
   nodes: GroupNodeData[]
   config?: Record<number, GroupNodeConfigEntry>
@@ -94,18 +99,19 @@ export class GroupNodeConfig {
   name: string
   nodeData: GroupNodeWorkflowData
   inputCount: number
-  oldToNewOutputMap: Record<number, Record<number, number>>
-  newToOldOutputMap: Record<number, { node: GroupNodeData; slot: number }>
-  oldToNewInputMap: Record<number, Record<string, number>>
-  oldToNewWidgetMap: Record<number, Record<string, string | null>>
-  newToOldWidgetMap: Record<string, { node: GroupNodeData; inputName: string }>
-  primitiveDefs: Record<number, GroupNodeDef>
-  widgetToPrimitive: Record<number, Record<string, number | number[]>>
-  primitiveToWidget: Record<
-    number,
-    { nodeId: number | string | null; inputName: string }[]
+  oldToNewOutputMap: Partial<Record<number, Record<number, number>>>
+  newToOldOutputMap: Partial<
+    Record<number, { node: GroupNodeData; slot: number }>
   >
-  nodeInputs: Record<number, Record<string, string>>
+  oldToNewInputMap: Partial<Record<number, Record<string, number>>>
+  oldToNewWidgetMap: Partial<Record<number, Record<string, string | null>>>
+  newToOldWidgetMap: Record<string, { node: GroupNodeData; inputName: string }>
+  primitiveDefs: Partial<Record<number, GroupNodeDef>>
+  widgetToPrimitive: Partial<Record<number, Record<string, number | number[]>>>
+  primitiveToWidget: Partial<
+    Record<number, { nodeId: number | string | null; inputName: string }[]>
+  >
+  nodeInputs: Partial<Record<number, Record<string, string>>>
   outputVisibility: boolean[]
   nodeDef: ComfyNodeDef | undefined
   inputs!: unknown[]
@@ -160,7 +166,6 @@ export class GroupNodeConfig {
       p()
     }
     this._convertedToProcess = []
-    if (!this.nodeDef) return
     const typeName = `${PREFIX}${SEPARATOR}${this.name}`
     await app.registerNodeDef(typeName, this.nodeDef)
     markGroupNodeType(typeName, this)
@@ -179,32 +184,17 @@ export class GroupNodeConfig {
       // Skip links outside the copy config
       if (sourceNodeIndex == null) continue
 
-      if (!this.linksFrom[sourceNodeIndex]) {
-        this.linksFrom[sourceNodeIndex] = {}
-      }
-      if (!this.linksFrom[sourceNodeIndex][sourceSlot]) {
-        this.linksFrom[sourceNodeIndex][sourceSlot] = []
-      }
-      this.linksFrom[sourceNodeIndex][sourceSlot].push(link)
-
-      if (!this.linksTo[targetNodeIndex]) {
-        this.linksTo[targetNodeIndex] = {}
-      }
-      this.linksTo[targetNodeIndex][targetSlot] = link
+      const fromSlots = (this.linksFrom[sourceNodeIndex] ??= {})
+      ;(fromSlots[sourceSlot] ??= []).push(link)
+      ;(this.linksTo[targetNodeIndex] ??= {})[targetSlot] = link
     }
 
-    if (this.nodeData.external) {
-      for (const ext of this.nodeData.external) {
-        const nodeIdx = Number(ext[0])
-        const slotIdx = Number(ext[1])
-        const typeVal = ext[2]
-        if (typeVal == null) continue
-        if (!this.externalFrom[nodeIdx]) {
-          this.externalFrom[nodeIdx] = { [slotIdx]: typeVal }
-        } else {
-          this.externalFrom[nodeIdx][slotIdx] = typeVal
-        }
-      }
+    for (const ext of this.nodeData.external ?? []) {
+      const nodeIdx = Number(ext[0])
+      const slotIdx = Number(ext[1])
+      const typeVal = ext.at(2)
+      if (typeVal == null) continue
+      ;(this.externalFrom[nodeIdx] ??= {})[slotIdx] = typeVal
     }
   }
 
@@ -238,14 +228,15 @@ export class GroupNodeConfig {
       // Skip as its not linked
       if (!linksFrom) return
 
-      let type: string | number | null = linksFrom[0]?.[0]?.[5] ?? null
+      const firstLink = linksFrom[0]?.at(0)
+      let type: string | number | null = firstLink?.[5] ?? null
       if (type === 'COMBO') {
         // Use the array items
         const output = node.outputs?.[0]
         const source = output?.widget?.name
-        const nodeIdx = linksFrom[0]?.[0]?.[2]
+        const nodeIdx = firstLink?.[2]
         if (source && nodeIdx != null) {
-          const fromTypeName = this.nodeData.nodes[nodeIdx]?.type
+          const fromTypeName = this.nodeData.nodes.at(nodeIdx)?.type
           if (fromTypeName) {
             const fromType = globalDefs[fromTypeName]
             const input =
@@ -283,7 +274,7 @@ export class GroupNodeConfig {
       if (linksFrom) {
         const links = linksFrom[0] ?? []
         for (const [, , targetNodeIndex, targetSlot] of links) {
-          const targetNode = this.nodeData.nodes[targetNodeIndex]
+          const targetNode = this.nodeData.nodes.at(targetNodeIndex)
           const input = targetNode?.inputs?.[targetSlot]
           if (input?.type && rerouteType === '*') {
             rerouteType = input.type
@@ -307,14 +298,14 @@ export class GroupNodeConfig {
                 undefined,
                 widgetSpec
               )
-              config = (res?.customConfig as Record<string, unknown>) ?? config
+              config = res.customConfig ?? config
             }
           }
         }
       } else if (linksTo) {
         const link = linksTo[0]
         if (link?.[0] != null) {
-          const output = this.nodeData.nodes[link[0]]?.outputs?.[link[1]]
+          const output = this.nodeData.nodes.at(link[0])?.outputs?.[link[1]]
           if (output) rerouteType = output.type
         }
       } else {
@@ -466,7 +457,7 @@ export class GroupNodeConfig {
   ) {
     const [sourceNodeIndex, , targetNodeIndex] = link
     if (sourceNodeIndex == null) return
-    const sourceNode = this.nodeData.nodes[sourceNodeIndex]
+    const sourceNode = this.nodeData.nodes.at(sourceNodeIndex)
     if (sourceNode?.type === 'PrimitiveNode') {
       // Merge link configurations
       const primitiveDef = this.primitiveDefs[sourceNodeIndex]
@@ -487,7 +478,7 @@ export class GroupNodeConfig {
       )
       const inputConfig = inputs[inputName]?.[1]
       primitiveConfig[1] =
-        (config?.customConfig ?? inputConfig)
+        (config.customConfig ?? inputConfig)
           ? { ...(typeof inputConfig === 'object' ? inputConfig : {}) }
           : {}
 
@@ -498,10 +489,7 @@ export class GroupNodeConfig {
         primitiveConfig[1].control_prefix = name
       }
 
-      let toPrimitive = this.widgetToPrimitive[targetNodeIndex]
-      if (!toPrimitive) {
-        toPrimitive = this.widgetToPrimitive[targetNodeIndex] = {}
-      }
+      const toPrimitive = (this.widgetToPrimitive[targetNodeIndex] ??= {})
       const existing = toPrimitive[inputName]
       if (Array.isArray(existing)) {
         existing.push(sourceNodeIndex)
@@ -511,11 +499,10 @@ export class GroupNodeConfig {
         toPrimitive[inputName] = sourceNodeIndex
       }
 
-      let toWidget = this.primitiveToWidget[sourceNodeIndex]
-      if (!toWidget) {
-        toWidget = this.primitiveToWidget[sourceNodeIndex] = []
-      }
-      toWidget.push({ nodeId: targetNodeIndex, inputName })
+      ;(this.primitiveToWidget[sourceNodeIndex] ??= []).push({
+        nodeId: targetNodeIndex,
+        inputName
+      })
     }
   }
 
@@ -523,16 +510,17 @@ export class GroupNodeConfig {
     inputs: Record<string, unknown[]>,
     node: GroupNodeData,
     slots: string[],
-    linksTo: Record<number, GroupNodeLink>,
+    linksTo: SlotLinks,
     inputMap: Record<string, number>,
     seenInputs: Record<string, number>
   ) {
     const nodeIdx = node.index ?? -1
-    this.nodeInputs[nodeIdx] = {}
+    const nodeInputs: Record<string, string> = (this.nodeInputs[nodeIdx] = {})
     for (let i = 0; i < slots.length; i++) {
       const inputName = slots[i]
-      if (linksTo[i]) {
-        this.checkPrimitiveConnection(linksTo[i], inputName, inputs)
+      const link = linksTo[i]
+      if (link) {
+        this.checkPrimitiveConnection(link, inputName, inputs)
         // This input is linked so we can skip it
         continue
       }
@@ -544,7 +532,7 @@ export class GroupNodeConfig {
         inputs[inputName]
       )
 
-      this.nodeInputs[nodeIdx][inputName] = name
+      nodeInputs[inputName] = name
       if (customConfig?.visible === false) continue
 
       if (this.nodeDef?.input?.required) {
@@ -560,7 +548,7 @@ export class GroupNodeConfig {
     node: GroupNodeData,
     slots: string[],
     converted: Map<number, string>,
-    linksTo: Record<number, GroupNodeLink>,
+    linksTo: SlotLinks,
     inputMap: Record<string, number>,
     seenInputs: Record<string, number>
   ) {
@@ -571,9 +559,10 @@ export class GroupNodeConfig {
     for (let i = 0; i < convertedSlots.length; i++) {
       const inputName = convertedSlots[i]
       if (!inputName) continue
-      if (linksTo[slots.length + i]) {
+      const link = linksTo[slots.length + i]
+      if (link) {
         this.checkPrimitiveConnection(
-          linksTo[slots.length + i],
+          link,
           inputName,
           inputs as Record<string, unknown[]>
         )
@@ -598,10 +587,7 @@ export class GroupNodeConfig {
       this.newToOldWidgetMap[name] = { node, inputName }
 
       const nodeIndex = node.index ?? -1
-      if (!this.oldToNewWidgetMap[nodeIndex]) {
-        this.oldToNewWidgetMap[nodeIndex] = {}
-      }
-      this.oldToNewWidgetMap[nodeIndex][inputName] = name
+      ;(this.oldToNewWidgetMap[nodeIndex] ??= {})[inputName] = name
 
       inputMap[inputName] = this.inputCount++
     }
@@ -811,9 +797,9 @@ export class GroupNodeHandler {
   node: LGraphNode
   groupData: GroupNodeConfig
 
-  constructor(node: LGraphNode) {
+  constructor(node: LGraphNode, groupData: GroupNodeConfig) {
     this.node = node
-    this.groupData = node.constructor?.nodeData?.[GROUP] as GroupNodeConfig
+    this.groupData = groupData
   }
 
   /**
@@ -847,7 +833,7 @@ export class GroupNodeHandler {
         const newNode = selectedId
           ? app.rootGraph.getNodeById(selectedId)
           : null
-        const innerNodeData = nodeData.nodes[i]
+        const innerNodeData = nodeData.nodes.at(i)
         if (!newNode) continue
         newNodes.push(newNode)
 
@@ -901,16 +887,13 @@ export class GroupNodeHandler {
     }
 
     const reconnectInputs = (selectedIds: (string | number)[]) => {
-      for (const innerNodeIndex in oldToNewInputMap) {
+      for (const [innerNodeIndex, map] of Object.entries(oldToNewInputMap)) {
         const selectedId = parseNodeId(selectedIds[Number(innerNodeIndex)])
         const newNode = selectedId
           ? app.rootGraph.getNodeById(selectedId)
           : null
-        if (!newNode) continue
-        const map = oldToNewInputMap[Number(innerNodeIndex)]
-        for (const innerInputName in map) {
-          const groupSlotId = map[innerInputName]
-          if (groupSlotId == null) continue
+        if (!newNode || !map) continue
+        for (const [innerInputName, groupSlotId] of Object.entries(map)) {
           const link = node.getInputLink(groupSlotId)
           if (!link) continue
           const originNode = app.rootGraph.getNodeById(link.origin_id)
@@ -925,7 +908,7 @@ export class GroupNodeHandler {
     const reconnectOutputs = (selectedIds: (string | number)[]) => {
       for (
         let groupOutputId = 0;
-        groupOutputId < node.outputs?.length;
+        groupOutputId < node.outputs.length;
         groupOutputId++
       ) {
         const links = outputLinks(app.rootGraph, node.id, groupOutputId)
@@ -957,17 +940,23 @@ export class GroupNodeHandler {
   }
 
   static getHandler(node: LGraphNode): GroupNodeHandler | undefined {
-    let handler = (node as LGraphNode & { [GROUP]?: GroupNodeHandler })[GROUP]
-    if (!handler && GroupNodeHandler.isGroupNode(node)) {
-      handler = new GroupNodeHandler(node)
-      ;(node as LGraphNode & { [GROUP]: GroupNodeHandler })[GROUP] = handler
-    }
+    const cached = (node as LGraphNode & { [GROUP]?: GroupNodeHandler })[GROUP]
+    if (cached) return cached
+    const groupData = groupConfigOf(node)
+    if (!groupData) return undefined
+    const handler = new GroupNodeHandler(node, groupData)
+    ;(node as LGraphNode & { [GROUP]: GroupNodeHandler })[GROUP] = handler
     return handler
   }
 
   static isGroupNode(node: LGraphNode) {
-    return !!node.constructor?.nodeData?.[GROUP]
+    return groupConfigOf(node) !== undefined
   }
+}
+
+function groupConfigOf(node: LGraphNode): GroupNodeConfig | undefined {
+  const config = node.constructor.nodeData?.[GROUP]
+  return config instanceof GroupNodeConfig ? config : undefined
 }
 
 export const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
@@ -1032,7 +1021,7 @@ const id = 'Comfy.GroupNode'
  * extension initialization and read by {@link GroupNodeConfig.getNodeDef} when
  * synthesizing temporary group-node definitions during load.
  */
-let globalDefs: Record<string, ComfyNodeDef>
+let globalDefs: Partial<Record<string, ComfyNodeDef>> = {}
 const ext: ComfyExtension = {
   name: id,
   addCustomNodeDefs(defs: Record<string, ComfyNodeDef>) {
@@ -1042,7 +1031,7 @@ const ext: ComfyExtension = {
     graphData: ComfyWorkflowJSON,
     missingNodeTypes: MissingNodeType[]
   ) {
-    const nodes = graphData?.extra?.groupNodes as
+    const nodes = graphData.extra?.groupNodes as
       | Record<string, GroupNodeWorkflowData>
       | undefined
     if (nodes) {
@@ -1050,9 +1039,8 @@ const ext: ComfyExtension = {
       const instanceIndicesByGroup = new Map<string, number[]>()
       const groupTypePrefix = `${PREFIX}${SEPARATOR}`
       for (const [nodeIndex, n] of graphData.nodes.entries()) {
-        const type = n.type ?? ''
-        if (!type.startsWith(groupTypePrefix)) continue
-        const groupName = type.slice(groupTypePrefix.length)
+        if (!n.type.startsWith(groupTypePrefix)) continue
+        const groupName = n.type.slice(groupTypePrefix.length)
         const indices = instanceIndicesByGroup.get(groupName) ?? []
         indices.push(nodeIndex)
         instanceIndicesByGroup.set(groupName, indices)
@@ -1080,7 +1068,7 @@ const ext: ComfyExtension = {
       const nodeIndex = groupNodeReportIndices.get(report)
       if (nodeIndex === undefined) continue
       groupNodeReportIndices.delete(report)
-      const node = app.rootGraph.nodes[nodeIndex]
+      const node = app.rootGraph.nodes.at(nodeIndex)
       if (node) {
         report.nodeId = String(node.id)
       } else {
@@ -1088,7 +1076,7 @@ const ext: ComfyExtension = {
       }
     }
     if (convertLoadedGroupNodes() > 0) {
-      delete app.rootGraph.extra?.groupNodes
+      delete app.rootGraph.extra.groupNodes
     }
   },
   nodeCreated(node: LGraphNode) {

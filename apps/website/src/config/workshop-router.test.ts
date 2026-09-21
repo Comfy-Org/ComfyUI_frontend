@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { runWorkshopRouter } from './workshop-router'
+import { runSynchronousWorkshopRouter } from './workshop-router'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { WorkshopRouterError } from './workshop-router-errors'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopContractSchema } from './workshop-contract'
 import { z } from 'astro/zod'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
   schemaForModel,
@@ -121,7 +121,7 @@ describe('native Router requests', () => {
         .fn()
         .mockResolvedValue(Response.json(contract.output.schema.example))
       vi.stubGlobal('fetch', fetch)
-      const result = await runWorkshopRouter({
+      const result = await runSynchronousWorkshopRouter({
         contract,
         body,
         token: 'test-token',
@@ -142,7 +142,7 @@ describe('native Router requests', () => {
         {
           prompt: 'Test',
           output_format: 'png',
-          safety_tolerance: 3,
+          seed: 123456,
           prompt_upsampling: false
         },
         signal
@@ -150,7 +150,7 @@ describe('native Router requests', () => {
     ).toEqual({
       prompt: 'Test',
       output_format: 'png',
-      safety_tolerance: 3,
+      seed: 123456,
       prompt_upsampling: false
     })
     await expect(
@@ -277,6 +277,33 @@ describe('native Router requests', () => {
     ).rejects.toBeInstanceOf(WorkshopRouterError)
   })
 
+  it('associates an unreadable native media input with its field', async () => {
+    const file = new File(['pixels'], 'private.png', { type: 'image/png' })
+    const cause = new DOMException('File gone', 'NotFoundError')
+    vi.spyOn(file, 'arrayBuffer').mockRejectedValue(cause)
+
+    await expect(
+      prepareWorkshopRouterInput(
+        contractFor('bfl/flux-2-pro'),
+        {
+          prompt: 'Edit',
+          media_image: {
+            file,
+            name: file.name,
+            size: file.size,
+            type: file.type
+          }
+        },
+        new AbortController().signal
+      )
+    ).rejects.toMatchObject({
+      reason: 'client',
+      stage: 'file_read',
+      cause,
+      fieldErrors: { media_image: 'fileUnreadable' }
+    })
+  })
+
   it('calls /v2/models with the workspace bearer, keeps the request ID and reads native output', async () => {
     const requests: Request[] = []
     vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
@@ -290,7 +317,7 @@ describe('native Router requests', () => {
         { headers: { 'X-Comfy-Request-Id': 'request-123' } }
       )
     })
-    const result = await runWorkshopRouter({
+    const result = await runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test', seed: 42 },
       token: 'test-workspace-token',
@@ -326,7 +353,7 @@ describe('native Router requests', () => {
           })
       )
     )
-    const request = runWorkshopRouter({
+    const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
       token: 'test-token',
@@ -357,7 +384,7 @@ describe('native Router requests', () => {
     )
     await Promise.all([
       expect(
-        runWorkshopRouter({
+        runSynchronousWorkshopRouter({
           contract: contractFor('bfl/flux-2-pro'),
           body: { prompt: 'Test' },
           token: 'test-token',
@@ -393,7 +420,7 @@ describe('native Router requests', () => {
     const fetch = vi.fn()
     vi.stubGlobal('fetch', fetch)
     await expect(
-      runWorkshopRouter({
+      runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
         body: { prompt: '汉'.repeat(4 * 1024 * 1024) },
         token: 'test-token',
@@ -428,7 +455,7 @@ describe('native Router requests', () => {
       )
       vi.stubGlobal('fetch', requests)
       await expect(
-        runWorkshopRouter({
+        runSynchronousWorkshopRouter({
           contract: contractFor('bfl/flux-2-pro'),
           body: { prompt: 'Test' },
           token: 'test-token',
@@ -449,7 +476,7 @@ describe('native Router requests', () => {
     )
     vi.stubGlobal('fetch', fetch)
     await expect(
-      runWorkshopRouter({
+      runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
         body: { prompt: 'Test' },
         token: 'test-token',
@@ -488,7 +515,7 @@ describe('native Router requests', () => {
       if (!response) throw new Error('Unexpected Router request')
       return response
     })
-    const result = await runWorkshopRouter({
+    const result = await runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test', seed: 42 },
       token: 'test-token',
@@ -523,7 +550,7 @@ describe('native Router requests', () => {
     )
     vi.stubGlobal('fetch', fetch)
     await expect(
-      runWorkshopRouter({
+      runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
         body: { prompt: 'Test' },
         token: 'test-token',
@@ -544,7 +571,7 @@ describe('native Router requests', () => {
     )
     vi.stubGlobal('fetch', fetch)
     await expect(
-      runWorkshopRouter({
+      runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
         body: { prompt: 'Test' },
         token: 'test-token',
@@ -570,7 +597,7 @@ describe('native Router requests', () => {
         })
       )
     vi.stubGlobal('fetch', fetch)
-    const request = runWorkshopRouter({
+    const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
       token: 'test-token',
@@ -613,7 +640,7 @@ describe('native Router requests', () => {
         })
       )
     vi.stubGlobal('fetch', fetch)
-    const request = runWorkshopRouter({
+    const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
       token: 'token',
@@ -665,7 +692,7 @@ describe('native Router requests', () => {
       )
     })
     vi.stubGlobal('fetch', fetch)
-    const request = runWorkshopRouter({
+    const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
       token: 'token',
@@ -709,7 +736,7 @@ describe('native Router requests', () => {
           })
         )
       vi.stubGlobal('fetch', fetch)
-      const request = runWorkshopRouter({
+      const request = runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
         body: { prompt: 'Test' },
         token: 'token',
@@ -742,7 +769,7 @@ describe('native Router requests', () => {
       )
       vi.stubGlobal('fetch', fetch)
       await expect(
-        runWorkshopRouter({
+        runSynchronousWorkshopRouter({
           contract: contractFor('bfl/flux-2-pro'),
           body: { prompt: 'Test' },
           token: 'token',
@@ -763,7 +790,7 @@ describe('native Router requests', () => {
       )
     vi.stubGlobal('fetch', fetch)
     const controller = new AbortController()
-    const request = runWorkshopRouter({
+    const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
       token: 'token',
@@ -810,7 +837,7 @@ describe('native Router requests', () => {
         })
     )
     vi.stubGlobal('fetch', fetch)
-    const request = runWorkshopRouter({
+    const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
       token: 'token',
@@ -843,7 +870,7 @@ describe('native Router requests', () => {
       .mockResolvedValue(new Response(null, { status: 409 }))
     vi.stubGlobal('fetch', fetch)
     await expect(
-      runWorkshopRouter({
+      runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
         body: { prompt: 'Test' },
         token: 'test-token',
@@ -861,7 +888,7 @@ describe('native Router requests', () => {
     ]) {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(data)))
       await expect(
-        runWorkshopRouter({
+        runSynchronousWorkshopRouter({
           contract: contractFor('bfl/flux-2-pro'),
           body: { prompt: 'Test' },
           token: 'test-token',

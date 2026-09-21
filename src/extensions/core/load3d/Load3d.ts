@@ -62,8 +62,9 @@ class Load3d extends Viewport3d {
   animationManager: AnimationManager
   gizmoManager: GizmoManager
   adapterRef: AdapterRef
+  private configurationCleanup?: () => void
 
-  private loadingPromise: Promise<void> | null = null
+  private loadingPromise: Promise<boolean> | null = null
   private _loadGeneration: number = 0
   private hasLoadedModel: boolean = false
 
@@ -332,27 +333,39 @@ class Load3d extends Viewport3d {
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<void> {
+  ): Promise<boolean> {
     this._loadGeneration += 1
+    const loadGeneration = this._loadGeneration
 
-    if (this.loadingPromise) {
+    const previousLoad = this.loadingPromise
+    const acceptedLoad = (async () => {
       try {
-        await this.loadingPromise
+        await previousLoad
       } catch {
         // Serialization only: the rejection already reached the loadModel caller.
       }
-    }
 
-    this.loadingPromise = this._loadModelInternal(
-      url,
-      originalFileName,
-      options
-    )
-    return this.loadingPromise
+      try {
+        await this._loadModelInternal(url, originalFileName, options)
+      } finally {
+        if (loadGeneration !== this._loadGeneration) this.clearModelState()
+      }
+
+      return loadGeneration === this._loadGeneration
+    })()
+
+    // Publish the tail before waiting so every accepted load is visible to
+    // whenLoadIdle(), including loads queued behind the current one.
+    this.loadingPromise = acceptedLoad
+    try {
+      return await acceptedLoad
+    } finally {
+      if (this.loadingPromise === acceptedLoad) this.loadingPromise = null
+    }
   }
 
   async whenLoadIdle(): Promise<void> {
-    let last: Promise<void> | null = null
+    let last: Promise<boolean> | null = null
     while (this.loadingPromise && this.loadingPromise !== last) {
       last = this.loadingPromise
       try {
@@ -402,8 +415,6 @@ class Load3d extends Viewport3d {
     }
 
     this.handleResize()
-
-    this.loadingPromise = null
   }
 
   isSplatModel(): boolean {
@@ -419,6 +430,11 @@ class Load3d extends Viewport3d {
   }
 
   clearModel(): void {
+    this._loadGeneration += 1
+    this.clearModelState()
+  }
+
+  private clearModelState(): void {
     this.animationManager.dispose()
     this.gizmoManager.detach()
     this.modelManager.clearModel()
@@ -662,7 +678,18 @@ class Load3d extends Viewport3d {
     this.forceRender()
   }
 
+  setConfigurationCleanup(cleanup: () => void): void {
+    this.clearConfigurationCleanup()
+    this.configurationCleanup = cleanup
+  }
+
+  private clearConfigurationCleanup(): void {
+    this.configurationCleanup?.()
+    this.configurationCleanup = undefined
+  }
+
   protected override disposeManagers(): void {
+    this.clearConfigurationCleanup()
     super.disposeManagers()
     this.hdriManager.dispose()
     this.loaderManager.dispose()

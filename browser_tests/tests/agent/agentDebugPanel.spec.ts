@@ -26,7 +26,10 @@ test.describe('Agent debug log', { tag: ['@cloud', '@agent', '@ui'] }, () => {
     },
     async ({ page }) => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       await page.getByTestId('crdt-dev-panel-tab-log').click()
 

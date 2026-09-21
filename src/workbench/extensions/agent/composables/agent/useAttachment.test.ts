@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComposerAttachment } from './useComposer'
 import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 function fileOfSize(name: string, size: number, type = 'image/png'): File {
   const file = new File(['x'], name, { type })
@@ -93,10 +98,13 @@ describe('useAttachment', () => {
   })
 
   it('stages an uploading chip immediately, then settles it with the server ref', async () => {
-    let resolveUpload: (result: { ref: string }) => void = () => {}
+    let resolveUpload: (result: {
+      ref: string
+      url?: string
+    }) => void = () => {}
     const upload = vi.fn(
       () =>
-        new Promise<{ ref: string }>((resolve) => {
+        new Promise<{ ref: string; url?: string }>((resolve) => {
           resolveUpload = resolve
         })
     )
@@ -113,10 +121,14 @@ describe('useAttachment', () => {
     })
     expect(registry.chips[0].previewUrl).toBeTruthy()
 
-    resolveUpload({ ref: 'uploaded_cat.png' })
+    resolveUpload({
+      ref: 'uploaded_cat.png',
+      url: '/api/view?filename=uploaded_cat.png&type=input'
+    })
     await batch
     expect(registry.chips[0]).toMatchObject({
       ref: 'uploaded_cat.png',
+      previewUrl: '/api/view?filename=uploaded_cat.png&type=input',
       uploading: false
     })
   })
@@ -184,15 +196,40 @@ describe('useAttachment', () => {
   })
 
   it('removes the chip and surfaces the error when the upload fails', async () => {
-    const upload = vi.fn().mockRejectedValue(new Error('network down'))
+    const privateFilename = 'private-cat.png'
+    const privatePath = `/Users/alice/Secret/${privateFilename}`
+    const error = new Error(`upload failed for ${privatePath}`)
+    const upload = vi.fn().mockRejectedValue(error)
     const onError = vi.fn()
     const registry = chipRegistry()
     const { addFiles } = useAttachment({ upload, onError, ...registry })
 
-    await addFiles([fileOfSize('cat.png', 1024)])
+    await addFiles([fileOfSize(privateFilename, 1024)])
 
     expect(registry.chips).toEqual([])
     expect(onError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_attachment_upload_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'save',
+        outcome: 'failed',
+        integration_target: 'assets',
+        feature_flag: 'agent_panel',
+        feature_flag_state: 'enabled',
+        project_context: 'agent_composer'
+      }
+    })
+    const reportedError = vi.mocked(reportError).mock.calls[0][0] as Error
+    expect(reportedError).not.toBe(error)
+    expect(reportedError.message).toBe('Agent attachment upload failed')
+    expect(`${reportedError.message}\n${reportedError.stack}`).not.toContain(
+      privateFilename
+    )
+    expect(`${reportedError.message}\n${reportedError.stack}`).not.toContain(
+      privatePath
+    )
   })
 
   it('keeps earlier settled chips and continues the batch when one upload fails', async () => {
