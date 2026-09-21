@@ -428,6 +428,25 @@ describe('reconcileAgentAdapters', () => {
       expect(LiteGraph.namedValuesRestore).toBe(false)
     })
 
+    it('preserves an already-enabled named restore flag', () => {
+      LiteGraph.namedValuesRestore = true
+      try {
+        const graph = new LGraph()
+        const scope = graphScopeOf(graph)
+        remoteMutations(scope).addNode(
+          { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+          REMOTE
+        )
+
+        reconcileAgentAdapters(graph)
+
+        expect(graph.getNodeById(toNodeId(1))?.widgets?.[0].value).toBe(7)
+        expect(LiteGraph.namedValuesRestore).toBe(true)
+      } finally {
+        LiteGraph.namedValuesRestore = false
+      }
+    })
+
     it('applies a widget update received before the node materializes', () => {
       const graph = new LGraph()
       const scope = graphScopeOf(graph)
