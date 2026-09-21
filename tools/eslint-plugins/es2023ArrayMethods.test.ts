@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest'
 const eslint = new ESLint()
 const runtimeFilePath = 'src/config/subscriptionPricesConfig.ts'
 const testFilePath = 'src/types/linkId.test.ts'
+const restrictionMessage =
+  'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
 
 describe('ES2023 array method restrictions', () => {
   it.for([
@@ -26,7 +28,8 @@ describe('ES2023 array method restrictions', () => {
       expect(result.messages).toEqual([
         expect.objectContaining({
           ruleId: expectedRuleId,
-          severity: 2
+          severity: 2,
+          message: restrictionMessage
         })
       ])
     }
@@ -47,7 +50,8 @@ describe('ES2023 array method restrictions', () => {
       expect(result.messages).toEqual([
         expect.objectContaining({
           ruleId: expectedRuleId,
-          severity: 2
+          severity: 2,
+          message: restrictionMessage
         })
       ])
     }
