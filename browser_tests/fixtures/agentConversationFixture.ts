@@ -179,10 +179,7 @@ export class AgentConversationHarness {
   private readonly seenIds: Set<string>
   private readonly expectations: ExpectedTurn[]
   private postedTurns = 0
-  // Whether the last search-box add was actually rendered as a placement ghost
-  // before it was committed. Lets a spec assert its own precondition instead of
-  // trusting that the add took the FollowCursor path.
-  private lastAddGhosted: boolean | null = null
+  private lastAddGhosted = false
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
@@ -252,22 +249,16 @@ export class AgentConversationHarness {
       .sort()
   }
 
-  async boot(agentFlag: boolean): Promise<void> {
+  async boot(agentFlag: boolean, vueNodes: boolean): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
     const objectInfo = this.page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith('/api/object_info')
     )
     await bootAgentApp(this.page, agentFlag, {
-      // Only the Vue node renderer projects follower edits onto the canvas.
+      vueNodes,
       settings: {
-        'Comfy.VueNodes.Enabled': true,
         'Comfy.Graph.CanvasInfo': false,
-        // `flags.ghost` is only ever set when the search box routes an add
-        // through FollowCursor placement, which needs both of these. They are
-        // the product defaults today, so pinning them changes nothing now and
-        // keeps a spec that asserts the flag's *absence* from silently
-        // covering nothing if a default flips.
         'Comfy.NodeSearchBoxImpl': 'default',
         'Comfy.NodeSearchBoxImpl.FollowCursor': true
       },
@@ -770,11 +761,17 @@ export class AgentConversationHarness {
     await this.page.keyboard.press('Enter')
     await expect(dialog).toBeHidden()
 
-    // Between Enter and the committing click the node is on the graph and
-    // following the cursor, which is the only window in which `flags.ghost` is
-    // observable. Captured here rather than asserted, so the fixture stays
-    // usable by specs that do not care.
-    this.lastAddGhosted = await this.ghostedDuringPlacement(before)
+    this.lastAddGhosted = await this.page.evaluate(() => {
+      const app = window.app!
+      const ghostNodeId = app.canvas.state.ghostNodeId
+      const ghostNode =
+        ghostNodeId === null
+          ? null
+          : app.graph.nodes.find(
+              (node) => String(node.id) === String(ghostNodeId)
+            )
+      return Boolean(ghostNode?.flags.ghost)
+    })
 
     await this.page.mouse.click(position.x, position.y)
     const after = await this.graphNodeIds()
@@ -783,30 +780,7 @@ export class AgentConversationHarness {
     return added
   }
 
-  // True when a node appeared during placement carrying the ghost flag, false
-  // when one appeared without it, null when placement committed too fast to
-  // observe. Null is not a failure: a spec that needs the precondition asserts
-  // on it, and one that does not is unaffected.
-  private async ghostedDuringPlacement(
-    before: Set<string>
-  ): Promise<boolean | null> {
-    const known = [...before]
-    const deadline = Date.now() + 2_000
-    while (Date.now() < deadline) {
-      const ghosted = await this.page.evaluate((seenIds: string[]) => {
-        const seen = new Set(seenIds)
-        const placing = window.app!.graph.nodes.find(
-          (node) => !seen.has(String(node.id))
-        )
-        return placing ? Boolean(placing.flags.ghost) : null
-      }, known)
-      if (ghosted !== null) return ghosted
-    }
-    return null
-  }
-
-  // What `addNoteThroughSearchBox` observed during its placement window.
-  get placementWasGhosted(): boolean | null {
+  get placementWasGhosted(): boolean {
     return this.lastAddGhosted
   }
 
@@ -972,7 +946,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   },
   agentConversation: async (
     { page, agentFlagEnabled, conversationCase, replayTiming, humanOpsHost },
-    use
+    use,
+    testInfo
   ) => {
     if (conversationCase.length === 0)
       throw new Error('test.use({ conversationCase }) names the conversation')
@@ -983,7 +958,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       conversationCase,
       humanOpsHost
     )
-    await harness.boot(agentFlagEnabled)
+    await harness.boot(agentFlagEnabled, testInfo.tags.includes('@vue-nodes'))
     await use(harness)
   }
 })

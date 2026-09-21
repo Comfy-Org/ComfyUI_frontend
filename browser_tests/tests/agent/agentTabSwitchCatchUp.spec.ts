@@ -14,7 +14,7 @@ const EMPTY_CANVAS_SPOT = { x: 1050, y: 1075 }
 
 test.describe(
   'Agent workflow tab switch',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: EDITED_CASE })
 
@@ -128,7 +128,7 @@ const TAB_B = {
 
 test.describe(
   'Agent workflow tab switch between two workflows',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: WIRING_CASE })
 

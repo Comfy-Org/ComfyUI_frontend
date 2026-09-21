@@ -8,7 +8,7 @@ import { toNodeId } from '@/types/nodeId'
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
 const WIDGET_CASE = 'agent-rec-set-widget-existing'
 
-test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
+test.describe('Agent replay', { tag: ['@cloud', '@vue-nodes'] }, () => {
   test.describe('wire evidence', () => {
     test.use({ conversationCase: WIRING_CASE })
 
