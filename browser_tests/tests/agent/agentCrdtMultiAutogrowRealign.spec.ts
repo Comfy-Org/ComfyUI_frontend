@@ -2,14 +2,19 @@ import { expect } from '@playwright/test'
 
 import type {
   AgentThreadListResponse,
+  JobsListResponse,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
+import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 import type {
   PromptResponse,
   UserDataFullInfo
 } from '@/platform/remote/comfyui/types'
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { zComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  zComfyApiWorkflow,
+  zComfyWorkflow
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type {
@@ -71,8 +76,8 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
  * (`AgentFollowerHostSocket`) and reads the painted result off the live
  * canvas, the way a user would see it: right after the workflow is
  * subscribed, again after a tab switch forces the follower to resubscribe
- * and reconcile the same node in place, and once more after a full page
- * reload forces the same resubscribe from a cold start. It also proves the
+ * and reconcile the same node in place, after a saved-file reload, and after
+ * a new turn explicitly reattaches the follower. It also proves the
  * PR's submitted-value guarantee: the reconcile must not just paint links
  * correctly while still serializing a scalar widget's or a link's value
  * under the wrong input name.
@@ -92,9 +97,23 @@ test.describe(
   'Agent CRDT multi-autogrow link realignment',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test('keeps every link and scalar under its named slot across a reconcile, a resubscribe, and a reload', async ({
+    test.beforeEach(async ({ page }) => {
+      const folders: ModelFolderInfo[] = []
+      await page.route('**/api/experiment/models', (route) =>
+        route.fulfill(jsonRoute(folders))
+      )
+      const jobs: JobsListResponse = {
+        jobs: [],
+        pagination: { offset: 0, limit: 200, total: 0, has_more: false }
+      }
+      await page.route('**/api/jobs?*', (route) =>
+        route.fulfill(jsonRoute(jobs))
+      )
+    })
+
+    test('preserves named links and scalars through saved-file reload and receives fresh edits after reattachment', async ({
       page
-    }) => {
+    }, testInfo) => {
       test.setTimeout(90_000)
 
       // Registered before `bootAgentApp` (with `objectInfo: 'server'` below)
@@ -115,7 +134,8 @@ test.describe(
         page,
         WORKFLOW_ID,
         host,
-        SOCKET_SID
+        SOCKET_SID,
+        'apply'
       )
       await hostSocket.install()
 
@@ -141,9 +161,8 @@ test.describe(
       // Stateful once the turn is sent: a page reload re-runs
       // `useAgentSession.start()`, which finds the persisted thread id in
       // `localStorage` and hydrates from this same endpoint -- the message
-      // row's `workflow_id` is what lets the agent panel rebind its target
-      // and resubscribe the CRDT follower after the reload, proving
-      // persistence survives it rather than just a tab switch.
+      // row's `workflow_id` restores the panel's selected target, not the
+      // page-session CRDT subscription, which needs a new turn.
       let turnSent = false
       await page.route('**/api/agent/threads/*/messages', (route) => {
         if (route.request().method() !== 'POST') {
@@ -193,6 +212,22 @@ test.describe(
       // boot mock's empty response, so a reopen after `page.reload()`
       // actually reads back what was saved rather than discarding it.
       const savedWorkflowContent = new Map<string, string>()
+      await page.route('**/api/userdata?*', (route) => {
+        const request = route.request()
+        if (
+          request.method() !== 'GET' ||
+          new URL(request.url()).searchParams.get('dir') !== 'workflows'
+        )
+          return route.fallback()
+        const files: UserDataFullInfo[] = [...savedWorkflowContent].map(
+          ([path, content]) => ({
+            path: path.slice('workflows/'.length),
+            modified: 1,
+            size: Buffer.byteLength(content)
+          })
+        )
+        return route.fulfill(jsonRoute(files))
+      })
       await page.route('**/api/userdata/*', (route) => {
         const request = route.request()
         const path = decodeURIComponent(
@@ -332,9 +367,11 @@ test.describe(
         return submittedPrompt![TARGET_ID].inputs
       }
 
-      async function assertSubmittedValuesNamedCorrectly(): Promise<void> {
+      async function assertSubmittedValuesNamedCorrectly(
+        expectedPrompt = SENTINEL_PROMPT
+      ): Promise<void> {
         const inputs = await runAndCaptureSubmission()
-        expect(inputs.prompt).toBe(SENTINEL_PROMPT)
+        expect(inputs.prompt).toBe(expectedPrompt)
         expect(inputs.width).toBe(SENTINEL_WIDTH)
         expect(inputs.height).toBe(SENTINEL_HEIGHT)
         const sourceId = String(SOURCE_NODE_ID)
@@ -410,6 +447,7 @@ test.describe(
         await expect(
           topbar.workflowTabs.locator('.p-togglebutton')
         ).toHaveCount(2)
+        await expect(topbar.getTab(1)).toHaveAttribute('aria-pressed', 'true')
         await topbar.getTab(0).click()
         await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
         await expect.poll(() => hostSocket.subscribeCount()).toBe(2)
@@ -421,29 +459,65 @@ test.describe(
       await test.step('submitting the workflow serializes every scalar and link under its own name', async () => {
         await fillSentinelWidgetValues()
         await assertSubmittedValuesNamedCorrectly()
+        await expect
+          .poll(
+            () =>
+              host.projection().nodes.find((node) => node.id === TARGET_NODE_ID)
+                ?.widgets_values
+          )
+          .toEqual([SENTINEL_PROMPT, SENTINEL_WIDTH, SENTINEL_HEIGHT])
       })
 
-      await test.step('saving persists the sentinel values to the userdata mock', async () => {
-        // Forces a real save of the *current* (sentinel-bearing) graph
-        // through the same round trip a user's Ctrl+S takes, so
-        // `savedWorkflowContent` actually holds the state the reload step
-        // below claims survives a reopen, rather than whatever the
-        // target-selection step above auto-saved before any edits existed.
-        const saveResponse = page.waitForResponse(
+      const persistedContent =
+        await test.step('saving persists the sentinel values to the userdata mock', async () => {
+          await expect(
+            page.getByRole('dialog', { includeHidden: true })
+          ).toHaveCount(0)
+          // Forces a real save of the *current* (sentinel-bearing) graph
+          // through the same round trip a user's Ctrl+S takes, so
+          // `savedWorkflowContent` actually holds the state the reload step
+          // below claims survives a reopen, rather than whatever the
+          // target-selection step above auto-saved before any edits existed.
+          const saveResponse = page.waitForResponse(
+            (response) =>
+              response.request().method() === 'POST' &&
+              decodeURIComponent(new URL(response.url()).pathname).startsWith(
+                '/api/userdata/workflows/'
+              ) &&
+              response.ok()
+          )
+          await page.keyboard.press('Control+s')
+          const response = await saveResponse
+          const content = response.request().postData() ?? ''
+          const workflow = zComfyWorkflow.parse(JSON.parse(content))
+          const target = workflow.nodes.find(
+            (node) => node.id === TARGET_NODE_ID
+          )
+          expect(target?.widgets_values).toEqual([
+            SENTINEL_PROMPT,
+            SENTINEL_WIDTH,
+            SENTINEL_HEIGHT
+          ])
+          expect(
+            EXPECTED_TARGETS.map(({ linkId }) => {
+              const link = workflow.links.find(([id]) => id === linkId)
+              return link && [link[3], target?.inputs?.[link[4]]?.name]
+            })
+          ).toEqual(EXPECTED_TARGETS.map(({ name }) => [TARGET_NODE_ID, name]))
+          return content
+        })
+
+      await test.step('a full page reload reads the saved file before a new turn resubscribes', async () => {
+        if (savedName === undefined) throw new Error('workflow was not saved')
+        const restoredFile = page.waitForResponse(
           (response) =>
-            response.request().method() === 'POST' &&
-            decodeURIComponent(new URL(response.url()).pathname).startsWith(
-              '/api/userdata/workflows/'
-            ) &&
+            response.request().method() === 'GET' &&
+            decodeURIComponent(new URL(response.url()).pathname) ===
+              `/api/userdata/workflows/${savedName}.json` &&
             response.ok()
         )
-        await page.keyboard.press('Control+s')
-        await saveResponse
-      })
-
-      await test.step('a full page reload forces the same resubscribe, and every link and value survive it', async () => {
-        const subscribesBeforeReload = hostSocket.subscribeCount()
         await page.reload()
+        expect(await (await restoredFile).text()).toBe(persistedContent)
 
         // The panel's open state persisted through the earlier `agentPanel.
         // open()` call, so it remounts itself open once the agent gate
@@ -458,25 +532,10 @@ test.describe(
         )
         await expect(panel).toBeVisible({ timeout: 30_000 })
 
-        // Explicitly reopens the persisted workflow by its saved filename
-        // through the same real `agentPanel.selectWorkflow` picker the
-        // "target the workflow" step above used, instead of trusting
-        // whatever tab happened to restore itself -- every assertion below
-        // is then scoped to a workflow chosen by name, not by incidental
-        // reload continuity.
-        //
-        // This has to happen BEFORE polling `subscribeCount`: the follower
-        // only subscribes while its bound workflow is also the *active* tab
-        // (`isBoundWorkflowActive` in AgentPanelRoot.vue), and a fresh reload
-        // does not reopen this workflow's tab on its own. Polling first (as
-        // this test originally did) waits on a resubscribe that nothing
-        // before this selection would ever trigger, and reliably times out.
-        if (savedName === undefined) throw new Error('workflow was not saved')
         await agentPanel.selectWorkflow(savedName)
-
-        await expect
-          .poll(() => hostSocket.subscribeCount(), { timeout: 30_000 })
-          .toBeGreaterThan(subscribesBeforeReload)
+        await page
+          .getByRole('button', { name: 'Fit View (.)', exact: true })
+          .click()
 
         await expect(vueNodes.getNodeLocator(TARGET_ID)).toBeVisible({
           timeout: 30_000
@@ -501,6 +560,64 @@ test.describe(
         ).toHaveValue(String(SENTINEL_HEIGHT))
 
         await assertSubmittedValuesNamedCorrectly()
+        const restoredScreenshot = testInfo.outputPath(
+          'saved-file-restored.png'
+        )
+        await page.screenshot({ path: restoredScreenshot })
+        await testInfo.attach('saved-file-restored', {
+          path: restoredScreenshot,
+          contentType: 'image/png'
+        })
+
+        await panel
+          .getByRole('textbox', { name: /^Describe ideas/ })
+          .fill('Check the restored workflow')
+        const subscribesBeforeTurn = hostSocket.subscribeCount()
+        await panel.getByRole('button', { name: enMessages.agent.send }).click()
+        await expect
+          .poll(() => hostSocket.subscribeCount(), { timeout: 30_000 })
+          .toBeGreaterThan(subscribesBeforeTurn)
+        hostSocket.send({
+          type: 'agent_message_done',
+          data: { message_id: MESSAGE_ID, thread_id: THREAD_ID }
+        })
+        await expect(
+          panel.getByRole('button', { name: enMessages.agent.stop })
+        ).toHaveCount(0)
+        await assertVisiblyCorrect()
+        await expect(
+          nodeLocator.getByRole('textbox', { name: 'prompt' })
+        ).toHaveValue(SENTINEL_PROMPT)
+        await expect(
+          vueNodes.getInputNumberControls(widthWidget).input
+        ).toHaveValue(String(SENTINEL_WIDTH))
+        await expect(
+          vueNodes.getInputNumberControls(heightWidget).input
+        ).toHaveValue(String(SENTINEL_HEIGHT))
+        await assertSubmittedValuesNamedCorrectly()
+
+        const freshPrompt = 'fresh host edit after saved-file reload'
+        hostSocket.send(
+          host.apply([
+            {
+              op: 'set_widget',
+              node_id: TARGET_NODE_ID,
+              widget: 'prompt',
+              value: freshPrompt
+            }
+          ])
+        )
+        await expect(
+          nodeLocator.getByRole('textbox', { name: 'prompt' })
+        ).toHaveValue(freshPrompt)
+        await assertVisiblyCorrect()
+        await assertSubmittedValuesNamedCorrectly(freshPrompt)
+        const replayScreenshot = testInfo.outputPath('fresh-host-edit.png')
+        await page.screenshot({ path: replayScreenshot })
+        await testInfo.attach('fresh-host-edit', {
+          path: replayScreenshot,
+          contentType: 'image/png'
+        })
       })
     })
   }
