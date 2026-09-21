@@ -3,7 +3,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 
 const DEFINITION_ID = '4d3f5a6e-0b1c-4d2e-9f80-1a2b3c4d5e6f'
 
-export interface NestedBlueprint {
+export interface NestedSubgraphDefinitions {
   definitions: { subgraphs: ExportedSubgraph[] }
 }
 
@@ -114,9 +114,9 @@ export function agentHumanAddBlueprint(
 }
 
 /**
- * The same blueprint shape one level deeper: the pasted root node is typed by
- * an outer definition whose own interior node is typed by an inner definition,
- * carried in the outer's `definitions.subgraphs`.
+ * The definitions envelope consumed by `pushNestedDefinition`: an outer
+ * definition whose own interior node is typed by an inner definition, carried
+ * in the outer's `definitions.subgraphs`.
  *
  * This is the shape the follower's document reader drops wholesale when it
  * cannot read a nested `definitions` map - `isSafeDefinition` rejects an
@@ -126,34 +126,8 @@ export function agentHumanAddBlueprint(
  * Regression cover for
  * https://github.com/Comfy-Org/ComfyUI_frontend/pull/18148.
  */
-// Deliberately not typed as `ComfyWorkflowJSON`: the schema's nested
-// definition type is IO-only and carries no interior `nodes`, while the doc
-// shape under test does. The host mints this structurally.
-export function agentHumanAddNestedBlueprint(): NestedBlueprint {
+export function agentNestedSubgraphDefinitions(): NestedSubgraphDefinitions {
   return {
-    last_node_id: 3,
-    last_link_id: 0,
-    nodes: [
-      {
-        id: 3,
-        type: NESTED_OUTER_ID,
-        title: 'nested blueprint',
-        pos: [0, 0],
-        size: [300, 120],
-        flags: {},
-        order: 0,
-        mode: 0,
-        inputs: [],
-        outputs: [{ name: 'CONDITIONING', type: 'CONDITIONING', links: null }],
-        properties: { proxyWidgets: [] },
-        widgets_values: []
-      }
-    ],
-    links: [],
-    groups: [],
-    config: {},
-    extra: {},
-    version: 0.4,
     definitions: {
       subgraphs: [
         {
