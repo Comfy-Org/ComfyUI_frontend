@@ -1,5 +1,3 @@
-import { z } from 'zod'
-
 import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
 import type { SerializedNodeId } from '@/types/nodeId'
 
@@ -18,40 +16,14 @@ interface CloudValidationError {
   node_errors?: Record<SerializedNodeId, NodeError>
 }
 
-const promptErrorSchema = z.object({
-  type: z.string(),
-  message: z.string(),
-  details: z.string()
-})
-
-const cloudValidationErrorSchema = z
-  .object({
-    error: z.union([z.string(), promptErrorSchema.partial()]).optional(),
-    node_errors: z
-      .record(
-        z.object({
-          class_type: z.string(),
-          dependent_outputs: z.array(z.unknown()),
-          errors: z.array(
-            promptErrorSchema.extend({
-              extra_info: z
-                .object({ input_name: z.string().optional() })
-                .passthrough()
-                .optional()
-            })
-          )
-        })
-      )
-      .optional()
-  })
-  .refine(
-    (value) => value.error !== undefined || value.node_errors !== undefined
-  )
-
 export function isCloudValidationError(
   value: unknown
 ): value is CloudValidationError {
-  return cloudValidationErrorSchema.safeParse(value).success
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    ('error' in value || 'node_errors' in value)
+  )
 }
 
 /**

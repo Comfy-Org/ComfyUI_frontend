@@ -1,3 +1,4 @@
+import type { PromptErrorResponse } from '@comfyorg/ingest-types'
 import type { Page } from '@playwright/test'
 
 import { expect, mergeTests } from '@playwright/test'
@@ -217,6 +218,40 @@ test.describe('Error dialog', () => {
   test.describe('Catalog messages', { tag: ['@ui', '@workflow'] }, () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    })
+
+    test('preserves HTTP diagnostics when validation details are not text', async ({
+      comfyPage
+    }) => {
+      const response: PromptErrorResponse = {
+        node_errors: {
+          '3': {
+            class_type: 'KSampler',
+            dependent_outputs: [],
+            errors: [
+              {
+                type: 'required_input_missing',
+                message: 'Required input is missing',
+                details: 42,
+                extra_info: { input_name: 'positive' }
+              }
+            ]
+          }
+        }
+      }
+      await comfyPage.page.route(
+        '**/api/prompt',
+        (route) => route.fulfill({ status: 400, json: response }),
+        { times: 1 }
+      )
+      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+
+      const dialog = comfyPage.page.getByTestId(TestIds.dialogs.errorDialog)
+      await expect(dialog).toContainText('Required input is missing: 42')
+      await dialog.getByTestId(TestIds.dialogs.errorDialogShowReport).click()
+      await expect(dialog.locator('pre')).toContainText(
+        'Required input is missing: 42'
+      )
     })
 
     for (const scenario of [

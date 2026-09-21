@@ -13,6 +13,7 @@ import {
 import { i18n, loadLocale } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { PromptFailureResponse } from '@/platform/remote/comfyui/types'
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api, PromptExecutionError } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -21,6 +22,15 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useDialogService } from './dialogService'
 
 vi.mock(import('@/platform/telemetry'))
+// eslint-disable-next-line primevue-removal/no-imports
+vi.mock(import('primevue/usetoast'), () => ({
+  useToast: () => ({
+    add: vi.fn(),
+    remove: vi.fn(),
+    removeGroup: vi.fn(),
+    removeAllGroups: vi.fn()
+  })
+}))
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => {}) })
 }))
@@ -80,7 +90,113 @@ function sam3ValidationResponse(): PromptFailureResponse {
   }
 }
 
+async function openHttpPromptError(payload: unknown) {
+  vi.spyOn(api, 'fetchApi').mockResolvedValue(
+    new Response(JSON.stringify(payload), { status: 400 })
+  )
+  const error: unknown = await api
+    .queuePrompt(0, {
+      output: {},
+      workflow: zComfyWorkflow.parse(new LGraph().serialize())
+    })
+    .catch((error: unknown) => error)
+  assert.instanceOf(error, PromptExecutionError)
+  useDialogService().showErrorDialog(error)
+}
+
 describe('legacy error dialog catalog', () => {
+  it.for([
+    {
+      name: 'numeric details',
+      node: {
+        class_type: 'SAM3_Detect',
+        errors: [
+          { type: 'required_input_missing', message: 'Missing', details: 42 }
+        ]
+      },
+      expected: 'Missing: 42'
+    },
+    {
+      name: 'numeric input name',
+      node: {
+        class_type: 'SAM3_Detect',
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing',
+            details: '',
+            extra_info: { input_name: 42 }
+          }
+        ]
+      },
+      expected: 'Required input slots have no connection feeding them.'
+    },
+    {
+      name: 'missing details',
+      node: {
+        class_type: 'SAM3_Detect',
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Missing',
+            extra_info: { input_name: 'image' }
+          }
+        ]
+      },
+      expected: 'SAM3_Detect (#6) is missing a required input: image'
+    },
+    {
+      name: 'null errors',
+      node: { class_type: 'SAM3_Detect', errors: null },
+      expected: '"errors":null'
+    }
+  ])('shows HTTP diagnostics with $name', async ({ node, expected }) => {
+    await openHttpPromptError({ node_errors: { '6': node } })
+    renderOpenedDialog()
+
+    expect(screen.getByTestId('error-dialog')).toHaveTextContent(expected)
+  })
+
+  it.for([
+    { source: 'HTTP', open: openHttpPromptError },
+    {
+      source: 'embedded',
+      open: (payload: unknown) =>
+        useDialogService().showExecutionErrorDialog({
+          exception_type: 'PromptValidationError',
+          exception_message: `Failed: ${JSON.stringify(payload)}`
+        })
+    }
+  ])(
+    'keeps usable node errors and original diagnostics from $source',
+    async ({ open }) => {
+      const user = userEvent.setup()
+      await open({
+        error: {
+          type: 'prompt_outputs_failed_validation',
+          message: 'Validation failed',
+          details: ''
+        },
+        node_errors: {
+          '3': {
+            class_type: 'KSampler',
+            errors: [validationError('required_input_missing', 'model')]
+          },
+          '6': { class_type: 'SAM3_Detect', errors: null }
+        }
+      })
+      renderOpenedDialog()
+
+      expect(screen.getByTestId('error-dialog')).toHaveTextContent(
+        'KSampler (#3) is missing a required input: model'
+      )
+      await user.click(screen.getByRole('button', { name: 'Show Report' }))
+      expect(
+        await screen.findByText(/# ComfyUI Error Report/)
+      ).toHaveTextContent('"errors":null')
+    }
+  )
+
   it.for([
     {
       source: 'HTTP prompt validation',
@@ -213,7 +329,6 @@ describe('legacy error dialog catalog', () => {
   })
 
   it.for([
-    { error: 'Bad input', node_errors: null },
     { error: { message: 400, details: 'Bad input' } },
     { node_errors: { '6': { class_type: 'SAM3_Detect', errors: null } } },
     {
@@ -239,6 +354,22 @@ describe('legacy error dialog catalog', () => {
       screen.getByRole('heading', { name: 'Execution failed' })
     ).toBeVisible()
     expect(screen.getByTestId('error-dialog')).toHaveTextContent(message)
+  })
+
+  it('keeps a prompt message when its embedded node collection is unreadable', async () => {
+    const user = userEvent.setup()
+    const message = 'Provider failed: {"error":"Bad input","node_errors":null}'
+    useDialogService().showExecutionErrorDialog({
+      exception_type: 'RuntimeError',
+      exception_message: message
+    })
+    renderOpenedDialog()
+
+    expect(screen.getByTestId('error-dialog')).toHaveTextContent('Bad input')
+    await user.click(screen.getByRole('button', { name: 'Show Report' }))
+    expect(await screen.findByText(/# ComfyUI Error Report/)).toHaveTextContent(
+      message
+    )
   })
 
   it.for(['', 'Blocked by workspace policy'])(

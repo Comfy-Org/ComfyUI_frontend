@@ -62,6 +62,7 @@
 </template>
 
 <script setup lang="ts">
+import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -72,7 +73,6 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
 import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
@@ -109,7 +109,7 @@ const showReport = () => {
   })
   reportOpen.value = true
 }
-const toast = useToastStore()
+const toast = useToast()
 const { t } = useI18n()
 const systemStatsStore = useSystemStatsStore()
 const telemetry = useTelemetry()

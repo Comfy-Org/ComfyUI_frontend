@@ -35,6 +35,7 @@ export const primeVueImportAllowlist = [
   'src/components/dialog/GlobalDialog.test.ts',
   'src/components/dialog/GlobalDialog.vue',
   'src/components/dialog/bodyPointerEventsRestore.test.ts',
+  'src/components/dialog/content/ErrorDialogContent.vue',
   'src/components/dialog/content/SignInContent.vue',
   'src/components/dialog/content/TopUpCreditsDialogContentLegacy.vue',
   'src/components/dialog/content/UpdatePasswordContent.vue',

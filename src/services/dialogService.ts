@@ -1,3 +1,5 @@
+import { zPromptErrorResponse } from '@comfyorg/ingest-types/zod'
+import { isPlainObject } from 'es-toolkit'
 import { merge } from 'es-toolkit/compat'
 import { watch } from 'vue'
 import type { Component } from 'vue'
@@ -16,12 +18,9 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
-import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
+import type { PromptError } from '@/platform/remote/comfyui/types'
 import { PromptExecutionError } from '@/scripts/api'
-import {
-  normalizePromptError,
-  tryExtractValidationError
-} from '@/utils/executionErrorUtil'
+import { tryExtractValidationError } from '@/utils/executionErrorUtil'
 import type {
   DialogComponentProps,
   ShowDialogOptions
@@ -115,22 +114,83 @@ export interface ExecutionErrorDialogInput {
 
 const GLOBAL_PROMPT_KEY = 'global-prompt'
 
-function getPromptErrorSources(
-  promptError: PromptError | null,
-  nodeErrors: Record<string, NodeError> = {}
-): RunErrorMessageSource[] {
+function getCatalogPromptError(value: unknown): PromptError | null {
+  if (typeof value === 'string')
+    return { type: 'error', message: value, details: '' }
+  if (!isPlainObject(value)) return null
+
+  const {
+    type = 'error',
+    message = '',
+    details = ''
+  }: Record<string, unknown> = value
+  return typeof type === 'string' &&
+    typeof message === 'string' &&
+    typeof details === 'string'
+    ? { type, message, details }
+    : null
+}
+
+function getPromptErrorSources(response: unknown): RunErrorMessageSource[] {
+  const parsed = zPromptErrorResponse.safeParse(response)
+  if (!parsed.success) return []
+
+  const promptError = getCatalogPromptError(parsed.data.error)
+  const nodeErrors: Record<string, unknown> = isPlainObject(
+    parsed.data.node_errors
+  )
+    ? parsed.data.node_errors
+    : {}
+
   return [
     ...(promptError
       ? [{ kind: 'prompt' as const, error: promptError, isCloud }]
       : []),
-    ...Object.entries(nodeErrors).flatMap(([nodeId, nodeError]) =>
-      nodeError.errors.map((error) => ({
-        kind: 'node_validation' as const,
-        error,
-        nodeDisplayName: `${nodeError.class_type} (#${nodeId})`
-      }))
-    )
+    ...Object.entries(nodeErrors).flatMap(([nodeId, value]) => {
+      if (!isPlainObject(value)) return []
+      const node: Record<string, unknown> = value
+      const errors: unknown[] = Array.isArray(node.errors) ? node.errors : []
+      return errors.flatMap((value): RunErrorMessageSource[] => {
+        if (!isPlainObject(value)) return []
+        const error = getCatalogPromptError(value)
+        if (!error) return []
+
+        const extraInfo: Record<string, unknown> = isPlainObject(
+          value.extra_info
+        )
+          ? value.extra_info
+          : {}
+        return [
+          {
+            kind: 'node_validation',
+            error: {
+              ...error,
+              extra_info: {
+                ...extraInfo,
+                input_name:
+                  typeof extraInfo.input_name === 'string'
+                    ? extraInfo.input_name
+                    : undefined
+              }
+            },
+            nodeDisplayName:
+              typeof node.class_type === 'string'
+                ? `${node.class_type} (#${nodeId})`
+                : `#${nodeId}`
+          }
+        ]
+      })
+    })
   ]
+}
+
+function formatDialogError(error: Error): string {
+  try {
+    return error.toString()
+  } catch (cause) {
+    if (!(error instanceof PromptExecutionError)) throw cause
+    return JSON.stringify(error.response)
+  }
 }
 
 // dialogStore.showDialog raises an existing dialog with the same key instead of
@@ -162,12 +222,10 @@ export const useDialogService = () => {
     const validationError = tryExtractValidationError(
       executionError.exception_message
     )
+    const validationSources = getPromptErrorSources(validationError)
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
-      errorSources: validationError
-        ? getPromptErrorSources(
-            normalizePromptError(validationError.error),
-            validationError.node_errors
-          )
+      errorSources: validationSources.length
+        ? validationSources
         : [
             {
               kind: 'execution',
@@ -213,7 +271,7 @@ export const useDialogService = () => {
       : undefined
 
     return {
-      errorMessage: error.toString(),
+      errorMessage: formatDialogError(error),
       stackTrace: error.stack,
       extensionFile
     }
@@ -245,10 +303,7 @@ export const useDialogService = () => {
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
       errorSources:
         error instanceof PromptExecutionError
-          ? getPromptErrorSources(
-              normalizePromptError(error.response.error),
-              error.response.node_errors ?? {}
-            )
+          ? getPromptErrorSources(error.response)
           : undefined,
       error: {
         exceptionType: options.title ?? 'Unknown Error',
