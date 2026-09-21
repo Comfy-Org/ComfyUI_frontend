@@ -4,21 +4,31 @@ import { runCleanupsInReverse } from './crdtSession'
 
 describe('runCleanupsInReverse', () => {
   it('runs every registered cleanup, in reverse order, even after an earlier one throws', () => {
-    const order: number[] = []
-    const first = vi.fn(() => {
-      order.push(1)
-      throw new Error('first cleanup failed')
+    const order: string[] = []
+    // Registered first, so it runs LAST (reverse order) -- the one that
+    // must still run despite the throw below it in execution order.
+    const registeredFirst = vi.fn(() => order.push('registered-first'))
+    // Registered second, so it runs in the MIDDLE of execution order: a
+    // regression back to swallow-and-stop would skip `registeredFirst`
+    // entirely once this one throws.
+    const registeredSecond = vi.fn(() => {
+      order.push('registered-second')
+      throw new Error('registered-second cleanup failed')
     })
-    const second = vi.fn(() => order.push(2))
-    const third = vi.fn(() => order.push(3))
+    const registeredThird = vi.fn(() => order.push('registered-third'))
 
-    expect(() => runCleanupsInReverse([first, second, third])).toThrow()
+    expect(() =>
+      runCleanupsInReverse([registeredFirst, registeredSecond, registeredThird])
+    ).toThrow()
 
-    expect(first).toHaveBeenCalledOnce()
-    expect(second).toHaveBeenCalledOnce()
-    expect(third).toHaveBeenCalledOnce()
-    // Reverse registration order: the last-registered cleanup runs first.
-    expect(order).toEqual([3, 2, 1])
+    expect(registeredFirst).toHaveBeenCalledOnce()
+    expect(registeredSecond).toHaveBeenCalledOnce()
+    expect(registeredThird).toHaveBeenCalledOnce()
+    expect(order).toEqual([
+      'registered-third',
+      'registered-second',
+      'registered-first'
+    ])
   })
 
   it('rethrows a single thrown error unchanged', () => {
