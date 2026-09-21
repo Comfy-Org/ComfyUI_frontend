@@ -154,7 +154,7 @@ const seed: WorkflowJSON = {
 
 test.describe(
   'Agent CRDT autogrow node keeps a free slot across a tab switch',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     // Everything up to and including the tab switch, shared by both cases
     // below: they differ only in where they look for the free slot
