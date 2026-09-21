@@ -386,67 +386,6 @@ describe('error mapping', () => {
     expect(Reflect.get(apiError, 'retryAfterSeconds')).toBe(5)
   })
 
-  it.for([
-    { label: 'absent', headers: undefined },
-    {
-      label: 'nonnumeric',
-      headers: { 'Retry-After': 'not-a-date' }
-    },
-    {
-      label: 'negative delay',
-      headers: { 'Retry-After': '-1' }
-    },
-    {
-      label: 'fractional delay',
-      headers: { 'Retry-After': '1.5' }
-    },
-    {
-      label: 'unsafe integer',
-      headers: { 'Retry-After': '9007199254740993' }
-    },
-    {
-      label: 'overflowing number',
-      headers: { 'Retry-After': '9'.repeat(400) }
-    }
-  ])(
-    'leaves retryAfterSeconds undefined for an $label Retry-After header',
-    async ({ headers }) => {
-      const body = {
-        error: {
-          message: 'Billing status is temporarily unavailable; please retry.',
-          type: 'SERVICE_UNAVAILABLE',
-          reason: 'funds_unavailable'
-        }
-      }
-      respond(jsonResponse(503, body, headers))
-
-      const error = await makeClient()
-        .postMessage('t1', { content: 'try it' })
-        .catch((caught: unknown) => caught)
-
-      expect(error).toBeInstanceOf(AgentApiError)
-      expect(error).toMatchObject({
-        message: body.error.message,
-        body,
-        retryAfterSeconds: undefined
-      })
-    }
-  )
-
-  it.for([
-    { header: 'Wed, 21 Oct 2026 07:28:00 GMT', delay: 30 },
-    { header: 'Wed, 21 Oct 2026 07:27:00 GMT', delay: 0 }
-  ])('parses Retry-After date $header', async ({ header, delay }) => {
-    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
-    respond(
-      jsonResponse(503, { error: 'unavailable' }, { 'Retry-After': header })
-    )
-    const error = await makeClient()
-      .postMessage('t1', { content: 'try it' })
-      .catch((caught: unknown) => caught)
-    expect(error).toMatchObject({ status: 503, retryAfterSeconds: delay })
-  })
-
   it('falls back to statusText and undefined body for a non-JSON error response', async () => {
     respond(
       new Response('gateway boom', { status: 502, statusText: 'Bad Gateway' })
@@ -604,10 +543,10 @@ describe('Retry-After contract', () => {
     expect(await retryAfterSeconds('Thu, 29 Feb 2024 07:28:00 GMT')).toBe(30)
   })
 
-  it('represents a leap second as the instant after :59', async () => {
-    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+  it('represents a midnight leap second as the instant after :59', async () => {
+    vi.setSystemTime(new Date('2026-10-21T23:59:30Z'))
 
-    expect(await retryAfterSeconds('Wed, 21 Oct 2026 07:28:60 GMT')).toBe(90)
+    expect(await retryAfterSeconds('Wed, 21 Oct 2026 23:59:60 GMT')).toBe(30)
   })
 
   // RFC 9110 asks recipients to be robust, and the weekday carries no

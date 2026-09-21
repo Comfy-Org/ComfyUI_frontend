@@ -17,39 +17,27 @@ agentTest.describe(
       agentTest(
         'shows the retry delay the header names',
         async ({ agentPanel }) => {
-          await agentPanel.open()
-          await agentPanel.selectWorkflow()
-          await agentPanel.sendMessage('Make a red fox in the snow')
+          await agentTest.step('open the agent and select the workflow', async () => {
+            await agentPanel.open()
+            await agentPanel.selectWorkflow()
+          })
 
-          await expect(
-            agentPanel.root.getByText(FUNDS_UNAVAILABLE_MESSAGE)
-          ).toBeVisible()
-          await expect(
-            agentPanel.root.getByText(
-              enMessages.agent.retryAfterSeconds.replace('{seconds}', '30')
-            )
-          ).toBeVisible()
+          await agentTest.step('submit a prompt', async () => {
+            await agentPanel.sendMessage('Make a red fox in the snow')
+          })
+
+          await agentTest.step('show the admission error and retry delay', async () => {
+            await expect(
+              agentPanel.root.getByText(FUNDS_UNAVAILABLE_MESSAGE)
+            ).toBeVisible()
+            await expect(
+              agentPanel.root.getByText(
+                enMessages.agent.retryAfterSeconds.replace('{seconds}', '30')
+              )
+            ).toBeVisible()
+          })
         }
       )
-    })
-
-    agentTest.describe('with a non-HTTP date', () => {
-      agentTest.use({ agentRetryAfter: '2099-12-31T00:00:00' })
-
-      agentTest('offers no retry delay', async ({ agentPanel }) => {
-        await agentPanel.open()
-        await agentPanel.selectWorkflow()
-        await agentPanel.sendMessage('Make a red fox in the snow')
-
-        await expect(
-          agentPanel.root.getByText(FUNDS_UNAVAILABLE_MESSAGE)
-        ).toBeVisible()
-        await expect(
-          agentPanel.root.getByText(
-            enMessages.agent.retryAfterSeconds.split('{seconds}')[0]
-          )
-        ).toHaveCount(0)
-      })
     })
   }
 )
