@@ -1,29 +1,30 @@
 import { expect, mergeTests } from '@playwright/test'
 
+import { canvasMenuFixture } from '@e2e/fixtures/canvasMenuFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
-import { readPanelStyle } from '@e2e/fixtures/helpers/PanelStyleHelper'
+import { readPanelStyle } from '@e2e/fixtures/utils/panelStyle'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
-const test = mergeTests(comfyPageFixture, webSocketFixture)
+const test = mergeTests(comfyPageFixture, webSocketFixture, canvasMenuFixture)
 
 test.describe('Floating toolbars', { tag: ['@ui', '@canvas'] }, () => {
   test.use({ initialSettings: { 'Comfy.Graph.CanvasMenu': true } })
 
   test('graph toggle, actionbar card and canvas menu share one panel style', async ({
-    comfyPage
+    comfyPage,
+    canvasMenu
   }) => {
     const toggle = comfyPage.appMode.workflowActions.viewModeToggle
     const card = comfyPage.actionbar.card
-    const canvasMenu = comfyPage.canvasMenu.root
     await expect(toggle).toBeVisible()
     await expect(card).toBeVisible()
-    await expect(canvasMenu).toBeVisible()
+    await expect(canvasMenu.root).toBeVisible()
 
     const [toggleStyle, cardStyle, canvasMenuStyle] = await Promise.all([
       readPanelStyle(toggle),
       readPanelStyle(card),
-      readPanelStyle(canvasMenu)
+      readPanelStyle(canvasMenu.root)
     ])
     expect(toggleStyle.borderStyle).toBe('none')
     expect(cardStyle).toEqual(toggleStyle)
@@ -35,15 +36,20 @@ test.describe('Floating toolbars', { tag: ['@ui', '@canvas'] }, () => {
   }) => {
     const toggle = comfyPage.appMode.workflowActions.viewModeToggle
     const card = comfyPage.actionbar.card
-    await expect(toggle).toBeVisible()
-    await expect(card).toBeVisible()
 
-    const [toggleBox, cardBox] = await Promise.all([
-      toggle.boundingBox(),
-      card.boundingBox()
-    ])
-    expect(toggleBox?.y).toBe(cardBox?.y)
-    expect(toggleBox?.height).toBe(cardBox?.height)
+    await expect
+      .poll(async () => {
+        const [toggleBox, cardBox] = await Promise.all([
+          toggle.boundingBox(),
+          card.boundingBox()
+        ])
+        if (!toggleBox || !cardBox) return null
+        return {
+          topOffset: cardBox.y - toggleBox.y,
+          heightDifference: cardBox.height - toggleBox.height
+        }
+      })
+      .toEqual({ topOffset: 0, heightDifference: 0 })
   })
 
   test('cancel run button is secondary while idle and destructive while running', async ({

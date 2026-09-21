@@ -5,7 +5,15 @@ import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import type { MenuItem } from 'primevue/menuitem'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -26,11 +34,11 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 vi.mock(import('firebase/auth'))
 
 const mockData = vi.hoisted(() => ({
-  setShowConflictRedDot: (_value: boolean) => {},
-  setShowManagerButtons: (_value: boolean) => {}
+  setShowConflictRedDot: (_value: boolean) => {}
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
@@ -61,15 +69,17 @@ vi.mock<unknown>(
   import('@/workbench/extensions/manager/composables/useManagerState'),
 
   () => {
-    const shouldShowManagerButtons = ref(true)
-    mockData.setShowManagerButtons = (value: boolean) => {
-      shouldShowManagerButtons.value = value
+    const managerState = {
+      shouldShowManagerButtons: computed(() => true),
+      openManager: vi.fn()
     }
 
     return {
-      useManagerState: () => ({
-        shouldShowManagerButtons,
-        openManager: vi.fn()
+      useManagerState: vi.fn(() => {
+        onTestFinished(() => {
+          managerState.shouldShowManagerButtons = computed(() => true)
+        })
+        return managerState
       })
     }
   }
@@ -192,7 +202,6 @@ function createComfyActionbarStub(actionbarTarget: HTMLElement) {
 describe('TopMenuSection', () => {
   beforeEach(() => {
     mockData.setShowConflictRedDot(false)
-    mockData.setShowManagerButtons(true)
   })
 
   describe('authentication state', () => {
@@ -558,7 +567,8 @@ describe('TopMenuSection', () => {
   it('keeps the floating actionbar container open for the extensions button', async () => {
     localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
 
-    const pinia = getActivePinia()!
+    const pinia = getActivePinia()
+    assert.exists(pinia)
     const settingStore = useSettingStore(pinia)
     vi.mocked(settingStore.get).mockImplementation((key) => {
       if (key === 'Comfy.UseNewMenu') return 'Top'
@@ -581,7 +591,7 @@ describe('TopMenuSection', () => {
 
   it('coalesces legacy topbar mutation scans to one check per frame', async () => {
     localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
-    mockData.setShowManagerButtons(false)
+    useManagerState().shouldShowManagerButtons = computed(() => false)
 
     const rafCallbacks: FrameRequestCallback[] = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {

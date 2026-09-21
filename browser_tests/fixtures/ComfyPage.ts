@@ -20,7 +20,6 @@ import {
   ZERO_BALANCE
 } from '@e2e/fixtures/data/subscriptionFixtures'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
-import { GraphCanvasMenu } from '@e2e/fixtures/components/GraphCanvasMenu'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -195,7 +194,6 @@ export class ComfyPage {
   public readonly searchBoxV2: ComfyNodeSearchBoxV2
   public readonly menu: ComfyMenu
   public readonly actionbar: ComfyActionbar
-  public readonly canvasMenu: GraphCanvasMenu
   public readonly templates: ComfyTemplates
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
@@ -253,7 +251,6 @@ export class ComfyPage {
     this.searchBoxV2 = new ComfyNodeSearchBoxV2(this)
     this.menu = new ComfyMenu(page)
     this.actionbar = new ComfyActionbar(page)
-    this.canvasMenu = new GraphCanvasMenu(page)
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)

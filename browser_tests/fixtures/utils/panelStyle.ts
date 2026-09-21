@@ -1,6 +1,5 @@
 import type { Locator } from '@playwright/test'
 
-/** The computed surface properties every floating panel is expected to share. */
 export function readPanelStyle(locator: Locator) {
   return locator.evaluate((el) => {
     const style = getComputedStyle(el)
