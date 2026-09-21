@@ -364,6 +364,21 @@ export default defineConfig([
     }
   },
   {
+    files: ['src/**/*.{js,mjs,cjs,ts,mts,cts,vue}'],
+    ignores: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.type='MemberExpression'][callee.property.name=/^(toReversed|toSorted|toSpliced)$/]",
+          message:
+            'ES2023 array method is not polyfilled for build target es2022; use an ES2022-safe non-mutating equivalent such as [...array].reverse().'
+        }
+      ]
+    }
+  },
+  {
     files: ['**/*.test.ts'],
     rules: {
       'no-restricted-properties': [
