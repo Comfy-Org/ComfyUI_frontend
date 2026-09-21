@@ -1513,25 +1513,28 @@ describe('useMediaAssetActions', () => {
         if (id === 'asset-failed') throw new Error('503 Service Unavailable')
       })
       const successfulCallbacks = [vi.fn(), vi.fn()]
+      const failedCallback = vi.fn()
       const successfulNodes = successfulCallbacks.map((callback, index) =>
         fromAny<LGraphNode, unknown>({
           id: index + 10,
-          widgets: [{ name: 'image', value: 'shared.png', callback }],
+          widgets: [
+            { name: 'image', value: 'shared.png', callback },
+            ...(index === 0
+              ? [
+                  {
+                    name: 'mask',
+                    value: 'failed.png',
+                    callback: failedCallback
+                  }
+                ]
+              : [])
+          ],
           imgs: [{ src: `blob:shared-preview-${index}` }],
           graph: { setDirtyCanvas: vi.fn() }
         })
       )
-      const failedCallback = vi.fn()
-      const failedNode = fromAny<LGraphNode, unknown>({
-        id: 12,
-        widgets: [
-          { name: 'image', value: 'failed.png', callback: failedCallback }
-        ],
-        imgs: [{ src: 'blob:failed-preview' }],
-        graph: { setDirtyCanvas: vi.fn() }
-      })
       mockAppGraph.value = {
-        nodes: [...successfulNodes, failedNode]
+        nodes: successfulNodes
       }
       mockScanNodeMediaCandidates.mockImplementation((_graph, node) => [
         {
@@ -1574,9 +1577,7 @@ describe('useMediaAssetActions', () => {
         expect(successfulCallbacks[index]).toHaveBeenCalledWith('')
         expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
       }
-      expect(mockRemoveNodeOutputsForNode).not.toHaveBeenCalledWith(failedNode)
-      expect(failedNode.imgs).toEqual([{ src: 'blob:failed-preview' }])
-      expect(failedNode.widgets?.[0].value).toBe('failed.png')
+      expect(successfulNodes[0].widgets?.[1].value).toBe('failed.png')
       expect(failedCallback).not.toHaveBeenCalled()
       expect(mockCaptureCanvasState).toHaveBeenCalledTimes(1)
       expect(mockCaptureCanvasState).toHaveBeenCalledAfter(
