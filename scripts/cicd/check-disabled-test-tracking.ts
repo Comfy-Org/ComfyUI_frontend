@@ -50,28 +50,27 @@ function lineOf(node: Node, sourceFile: SourceFile): number {
   )
 }
 
+function isTestReceiver(expression: LeftHandSideExpression): boolean {
+  if (
+    isIdentifier(expression) &&
+    ['test', 'it', 'describe'].includes(expression.text)
+  ) {
+    return true
+  }
+  return (
+    isPropertyAccessExpression(expression) &&
+    isIdentifier(expression.expression) &&
+    expression.expression.text === 'test' &&
+    expression.name.text === 'describe'
+  )
+}
+
 function disablingModifier(
   expression: LeftHandSideExpression
 ): MemberName | undefined {
   if (!isPropertyAccessExpression(expression)) return
-  if (expression.name.text !== 'skip' && expression.name.text !== 'fixme')
-    return
-
-  const receiver = expression.expression
-  if (
-    isIdentifier(receiver) &&
-    ['test', 'it', 'describe'].includes(receiver.text)
-  ) {
-    return expression.name
-  }
-  if (
-    isPropertyAccessExpression(receiver) &&
-    isIdentifier(receiver.expression) &&
-    receiver.expression.text === 'test' &&
-    receiver.name.text === 'describe'
-  ) {
-    return expression.name
-  }
+  if (!['skip', 'fixme'].includes(expression.name.text)) return
+  if (isTestReceiver(expression.expression)) return expression.name
 }
 
 function isDisablingArgument(argument: Expression): boolean {
@@ -83,19 +82,10 @@ function isDisablingArgument(argument: Expression): boolean {
 }
 
 function isTestCall(expression: LeftHandSideExpression): boolean {
-  if (isIdentifier(expression)) {
-    return ['test', 'it', 'describe'].includes(expression.text)
-  }
-  if (!isPropertyAccessExpression(expression)) return false
-
-  const receiver = expression.expression
   return (
-    (isIdentifier(receiver) &&
-      ['test', 'it', 'describe'].includes(receiver.text)) ||
-    (isPropertyAccessExpression(receiver) &&
-      isIdentifier(receiver.expression) &&
-      receiver.expression.text === 'test' &&
-      receiver.name.text === 'describe')
+    isTestReceiver(expression) ||
+    (isPropertyAccessExpression(expression) &&
+      isTestReceiver(expression.expression))
   )
 }
 
