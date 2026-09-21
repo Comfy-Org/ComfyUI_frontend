@@ -103,14 +103,14 @@ function parseLcov(filePath: string): CoverageData | null {
  * Every shard loads the whole bundle, so a lost shard drops its hits while the
  * lines they covered stay in the denominator. Reporting that against a complete
  * baseline invents a regression, and storing it invents the recovery that
- * follows. Artifacts packaged before this metadata existed carry none and are
- * trusted.
+ * follows. Absent or unreadable metadata is therefore treated as incomplete:
+ * the artifact has to prove it is whole before its number is published.
  */
 function e2eCoverageIsComplete(): boolean {
   const metadata = readCoverageMetadata(
     join(E2E_COVERAGE_DIR, COVERAGE_METADATA_FILE)
   )
-  return metadata === null || metadata.complete
+  return metadata?.complete === true
 }
 
 function progressBar(percentage: number): string {

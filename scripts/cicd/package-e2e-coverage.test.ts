@@ -15,15 +15,24 @@ import { parse } from 'yaml'
 
 const SCRIPT = join(import.meta.dirname, 'package-e2e-coverage.sh')
 
+interface WorkflowStep {
+  uses?: string
+  with?: { name?: string; path?: string }
+}
+
 interface E2eWorkflow {
   jobs?: Record<
     string,
     {
       strategy?: { matrix?: { shardIndex?: number[]; shardTotal?: number[] } }
+      steps?: WorkflowStep[]
       with?: { shard_total?: number }
     }
   >
 }
+
+const readWorkflow = (path: string) =>
+  parse(readFileSync(path, 'utf8')) as E2eWorkflow
 
 function coverage(sourcePrefix: string) {
   return Array.from(
@@ -226,9 +235,7 @@ describe('package-e2e-coverage.sh', () => {
 // count is passed in by hand. Nothing else stops the two from drifting.
 describe('shard total contract', () => {
   it('passes the chromium matrix size to the coverage packager', () => {
-    const workflow = parse(
-      readFileSync('.github/workflows/ci-tests-e2e.yaml', 'utf8')
-    ) as E2eWorkflow
+    const workflow = readWorkflow('.github/workflows/ci-tests-e2e.yaml')
 
     const matrix =
       workflow.jobs?.['playwright-tests-chromium-sharded']?.strategy?.matrix
@@ -239,5 +246,28 @@ describe('shard total contract', () => {
     expect(matrix?.shardIndex).toEqual(
       Array.from({ length: Number(shardTotal) }, (_, index) => index + 1)
     )
+  })
+})
+
+// The sidecar only reaches the notifier because the whole coverage directory
+// is uploaded. Narrowing either upload to coverage.lcov would strand it, and
+// consumers treat absent metadata as an incomplete merge.
+describe('e2e-coverage artifact contract', () => {
+  it.for([
+    '.github/workflows/ci-tests-e2e-coverage-package.yaml',
+    '.github/workflows/ci-tests-e2e-coverage.yaml'
+  ])('uploads the coverage directory in %s', (file) => {
+    const uploads = Object.values(readWorkflow(file).jobs ?? {})
+      .flatMap((job) => job.steps ?? [])
+      .filter(
+        (step) =>
+          step.uses?.startsWith('actions/upload-artifact@') === true &&
+          step.with?.name === 'e2e-coverage'
+      )
+
+    expect(uploads).not.toHaveLength(0)
+    for (const upload of uploads) {
+      expect(upload.with?.path).toMatch(/\/$/)
+    }
   })
 })

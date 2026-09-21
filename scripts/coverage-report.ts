@@ -125,9 +125,14 @@ const metadata = readCoverageMetadata(
   join(dirname(lcovPath), COVERAGE_METADATA_FILE)
 )
 if (metadata && !metadata.complete) {
+  const { shardsFound, shardsExpected } = metadata
+  const detail =
+    shardsFound !== undefined && shardsExpected !== undefined
+      ? `only ${shardsFound} of ${shardsExpected} shards reported coverage`
+      : 'not every shard reported coverage'
   lines.push(
     '> [!WARNING]',
-    `> Partial shard merge — only ${metadata.shardsFound} of ${metadata.shardsExpected} shards reported coverage. Every shard loads the whole bundle, so these totals understate real coverage.`,
+    `> Partial shard merge — ${detail}. Every shard loads the whole bundle, so these totals understate real coverage.`,
     ''
   )
 }

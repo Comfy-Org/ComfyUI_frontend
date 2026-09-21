@@ -243,7 +243,10 @@ describe('partial shard merges', () => {
     expect(result.stdout).toBe('')
   })
 
-  it('trusts artifacts packaged before the metadata existed', () => {
+  // Absence must not read as "whole": otherwise narrowing the uploaded
+  // artifact back to coverage.lcov alone would quietly restore the old
+  // behaviour of publishing understated numbers.
+  it('withholds E2E when the artifact carries no shard metadata', () => {
     using fixture = notifyFixture()
     fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))
     fixture.writeE2e(67, null)
@@ -251,6 +254,31 @@ describe('partial shard merges', () => {
     const result = fixture.run()
 
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain('64.0% → 67.0%')
+    expect(result.stdout).toBe('')
+  })
+
+  it('withholds E2E when the shard metadata is unreadable', () => {
+    using fixture = notifyFixture()
+    fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))
+    fixture.writeE2e(67, null)
+    fixture.write('temp/e2e-coverage/coverage-metadata.json', '{ truncated')
+
+    const result = fixture.run()
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toBe('')
+  })
+
+  it('still reports unit coverage while E2E is withheld', () => {
+    using fixture = notifyFixture()
+    fixture.write('temp/coverage-baseline/lcov.info', tracefile(70))
+    fixture.write('coverage/lcov.info', tracefile(72))
+    fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))
+    fixture.writeE2e(67, null)
+
+    const result = fixture.run()
+
+    expect(result.stdout).toContain('*Unit:*  70.0% → 72.0%')
+    expect(result.stdout).not.toContain('E2E')
   })
 })

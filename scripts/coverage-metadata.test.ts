@@ -11,8 +11,26 @@ describe('parseCoverageMetadata', () => {
     ).toEqual({ shardsFound: 14, shardsExpected: 16, complete: false })
   })
 
-  // A malformed file must not read as `complete: false`, which would silence
-  // E2E reporting indefinitely instead of for one bad run.
+  // Only `complete` gates the trust decision, so it must survive counts that
+  // are absent or the wrong shape rather than being discarded with them.
+  it.for([
+    ['absent', '{"complete":false}'],
+    ['non-numeric', '{"complete":false,"shardsFound":"14"}']
+  ])(
+    'honours an explicit incomplete flag when counts are %s',
+    ([, content]) => {
+      expect(parseCoverageMetadata(content)?.complete).toBe(false)
+    }
+  )
+
+  it('omits counts it cannot read', () => {
+    expect(parseCoverageMetadata('{"complete":true}')).toEqual({
+      complete: true,
+      shardsFound: undefined,
+      shardsExpected: undefined
+    })
+  })
+
   it.for([
     ['malformed JSON', '{'],
     ['a JSON scalar', '42'],
@@ -21,8 +39,7 @@ describe('parseCoverageMetadata', () => {
     [
       'a non-boolean complete flag',
       '{"shardsFound":16,"shardsExpected":16,"complete":"yes"}'
-    ],
-    ['missing shard counts', '{"complete":true}']
+    ]
   ])('returns null for %s', ([, content]) => {
     expect(parseCoverageMetadata(content)).toBeNull()
   })
