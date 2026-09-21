@@ -20,36 +20,32 @@ export interface TutorialCard {
   id: string
   titleKey: string
   url: string
-  thumbnailTemplate: (typeof CURATED_TEMPLATE_IDS)[number]
+  thumbnail: string
 }
 
-/**
- * Thumbnails are offset from the Templates tab's order so the two grids don't
- * read as the same four images in the same places.
- */
 export const tutorialCards: readonly TutorialCard[] = [
   {
     id: 'interface-overview',
     titleKey: 'gettingStarted.tutorials.interfaceOverview',
     url: 'https://docs.comfy.org/interface/overview',
-    thumbnailTemplate: 'image_z_image_turbo'
+    thumbnail: '/assets/images/tutorials/interface-overview.webp'
   },
   {
     id: 'text-to-image',
     titleKey: 'gettingStarted.tutorials.textToImage',
     url: 'https://docs.comfy.org/tutorials/basic/text-to-image',
-    thumbnailTemplate: 'video_ltx2_3_i2v'
+    thumbnail: '/assets/images/tutorials/text-to-image.webp'
   },
   {
     id: 'image-to-image',
     titleKey: 'gettingStarted.tutorials.imageToImage',
     url: 'https://docs.comfy.org/tutorials/basic/image-to-image',
-    thumbnailTemplate: 'video_wan2_2_14B_i2v'
+    thumbnail: '/assets/images/tutorials/image-to-image.webp'
   },
   {
     id: 'inpaint',
     titleKey: 'gettingStarted.tutorials.inpaint',
     url: 'https://docs.comfy.org/tutorials/basic/inpaint',
-    thumbnailTemplate: 'image_krea2_turbo_t2i'
+    thumbnail: '/assets/images/tutorials/inpaint.webp'
   }
 ]
