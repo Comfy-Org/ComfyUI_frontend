@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
@@ -45,6 +46,7 @@ interface SentAttachment {
 
 interface SentTag {
   id: string
+  locatorId?: NodeLocatorId
   title: string
 }
 
@@ -315,7 +317,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function selectedNodes(tags: SentTag[] | undefined) {
     if (tags === undefined || tags.length === 0) return undefined
-    return { node_ids: tags.map((tag) => tag.id) }
+    // `node.id` is only unique inside its containing subgraph, so the bare id
+    // can name two different nodes in two subgraph instances. The chip's key,
+    // remove action and dedupe all use `selectedNodeKey` (`locatorId ?? id`);
+    // the payload uses the same identity so `node_ids` cannot diverge from
+    // what the chips visibly represent. Root nodes are unaffected - their
+    // locatorId is the bare id string.
+    return { node_ids: tags.map((tag) => tag.locatorId ?? tag.id) }
   }
 
   function canSendDraft(
