@@ -82,6 +82,7 @@
         type="button"
         data-testid="hdr-open-button"
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
+        data-preview-control
         @click="openHdrViewer(currentImageUrl)"
       >
         <i class="icon-[lucide--sun] size-12" />
@@ -107,6 +108,7 @@
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
         class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
+        data-preview-control
       >
         <!-- Mask/Edit Button -->
         <button
@@ -193,6 +195,7 @@
     <div
       v-if="viewMode === 'gallery' && hasMultipleImages"
       class="flex flex-wrap items-center justify-center gap-1 pt-4"
+      data-preview-control
     >
       <!-- Back to Grid button -->
       <button
@@ -283,6 +286,7 @@ const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
 const imageAspectRatio = ref(1)
+const gestureStartedOnControl = ref(false)
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -455,11 +459,17 @@ function openInLightbox(index: number) {
 }
 
 function handleRepeatedClick(event: MouseEvent) {
-  if (event.detail > 1) event.stopPropagation()
+  if (event.detail === 1) {
+    gestureStartedOnControl.value =
+      event.target instanceof Element &&
+      Boolean(event.target.closest('[data-preview-control]'))
+    return
+  }
+  event.stopPropagation()
 }
 
-function handleGalleryDoubleClick(event: MouseEvent) {
-  if (event.target instanceof Element && event.target.closest('button')) return
+function handleGalleryDoubleClick() {
+  if (gestureStartedOnControl.value) return
   openCurrentInLightbox()
 }
 

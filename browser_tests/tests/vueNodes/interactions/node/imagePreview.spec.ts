@@ -294,7 +294,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
   )
 
   wstest(
-    'opens the lightbox when the top-right grid image is double-clicked',
+    'opens the lightbox on a dense grid cell that the action bar covers',
     async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
       const downloads: string[] = []
@@ -314,21 +314,21 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
       const gridImages = node.imageGrid.locator('img')
 
-      // Cell 2 is top-right, where the gallery panel reveals its action bar
-      // under the stationary cursor between the two clicks.
-      await test.step('Inject a multi-image grid', async () => {
-        const images = [
-          { filename: 'decoy-a.png', subfolder: '', type: 'input' },
-          { filename: 'example.png', subfolder: '', type: 'input' },
-          { filename: 'decoy-c.png', subfolder: '', type: 'input' },
-          { filename: 'decoy-d.png', subfolder: '', type: 'input' }
-        ]
+      // At 16 cells the top-row cell centres fall inside the action bar that
+      // the gallery panel reveals on focus, so the second click of the gesture
+      // retargets onto a control that did not exist when the gesture began.
+      await test.step('Inject a dense grid', async () => {
+        const images = Array.from({ length: 16 }, () => ({
+          filename: 'example.png',
+          subfolder: '',
+          type: 'input'
+        }))
         execution.executed('', '1', { images })
-        await expect(gridImages).toHaveCount(4)
+        await expect(gridImages).toHaveCount(16)
       })
 
       await node.imageGrid
-        .getByRole('button', { name: 'View image 2 of 4' })
+        .getByRole('button', { name: 'View image 2 of 16' })
         .dblclick()
 
       const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
@@ -339,6 +339,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         'src',
         /[?&]filename=example\.png/
       )
+      await expect(lightboxImage).not.toHaveAttribute('src', /[?&]preview=/)
 
       expect(downloads).toEqual([])
       await expect(comfyPage.page.locator('.mask-editor-dialog')).toHaveCount(0)
