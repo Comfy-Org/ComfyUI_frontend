@@ -26,7 +26,7 @@ function useStandaloneConsent() {
     writeDefaults: false
   })
   const identity = computed<string | null>(() => STANDALONE_IDENTITY)
-  const accepted = computed(() =>  stored.value)
+  const accepted = computed(() => stored.value)
   const isChecking = computed(() => false)
 
   async function ensureScope(): Promise<string | null> {

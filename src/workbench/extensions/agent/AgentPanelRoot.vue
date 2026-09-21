@@ -99,6 +99,7 @@ import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import { ensureComfyCredential } from './services/agent/comfyCredential'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -954,7 +955,14 @@ const { submit: onSend } = useAgentDraftSubmission({
     replace: replaceSelectionTags,
     exit: exitNodeSelectionMode
   },
-  send: (text, attachments, nodes, references) => {
+  send: async (text, attachments, nodes, references) => {
+    // The local agent acts as the signed-in Comfy account, so a signed-out
+    // user is asked to sign in rather than sending a turn that cannot run.
+    if (
+      import.meta.env.VITE_AGENT_STANDALONE === 'true' &&
+      !(await ensureComfyCredential())
+    )
+      return false
     useTelemetry()?.trackAgentMessageSent({
       attachment_count: attachments.length,
       node_tag_count: nodes.length

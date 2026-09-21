@@ -7,6 +7,7 @@ import {
   zAgentAnswerAccepted,
   zAgentCancelAccepted,
   zAgentError,
+  zAgentIdentity,
   zAgentMessages,
   zAgentRunMode,
   zAgentThreads,
@@ -127,7 +128,12 @@ export function createAgentRestClient() {
     init: RequestInit,
     schema: z.ZodType<T>
   ): Promise<T> {
-    const response = await api.fetchApi(route, init)
+    const response = await api.fetchApi(
+      route,
+      import.meta.env.VITE_AGENT_STANDALONE === 'true'
+        ? await (await import('./comfyCredential')).withComfyCredential(init)
+        : init
+    )
     if (!response.ok) throw await toApiError(response)
     return schema.parse(await response.json())
   }
@@ -245,6 +251,11 @@ export function createAgentRestClient() {
     )
   }
 
+  /** Hands the local agent a fresh credential for a long-running turn. */
+  async function refreshCredential(): Promise<void> {
+    await request('/agent/identity', { method: 'GET' }, zAgentIdentity)
+  }
+
   async function uploadImage(
     image: Blob,
     filename: string
@@ -267,6 +278,7 @@ export function createAgentRestClient() {
     listCloudWorkflows,
     cancelMessage,
     answerAsk,
+    refreshCredential,
     uploadImage
   }
 }

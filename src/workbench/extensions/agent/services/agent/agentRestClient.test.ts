@@ -6,6 +6,17 @@ const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+const credential = vi.hoisted(() => ({
+  token: undefined as string | undefined
+}))
+vi.mock(import('./comfyCredential'), () => ({
+  withComfyCredential: async (init: RequestInit) => {
+    if (credential.token === undefined) return init
+    const headers = new Headers(init.headers)
+    headers.set('X-Comfy-Token', credential.token)
+    return { ...init, headers }
+  }
+}))
 
 import { AgentApiError, createAgentRestClient } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
@@ -451,5 +462,77 @@ describe('error mapping', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error).not.toBeInstanceOf(AgentApiError)
+  })
+})
+
+describe('Comfy credential forwarding', () => {
+  beforeEach(() => {
+    credential.token = 'id-token'
+  })
+
+  const calls: [
+    string,
+    (client: AgentRestClient) => Promise<unknown>,
+    unknown
+  ][] = [
+    [
+      'POST messages',
+      (c) => c.postMessage('new', { content: 'hi' }),
+      turnAccepted
+    ],
+    ['GET messages', (c) => c.getMessages('t1'), []],
+    [
+      'POST answer',
+      (c) => c.answerAsk('t1', 'ask-1', ['allow']),
+      { status: 'answered' }
+    ],
+    ['GET identity', (c) => c.refreshCredential(), { user_id: 'local-user' }]
+  ]
+
+  it.for(calls)(
+    'attaches X-Comfy-Token to %s in the standalone agent harness',
+    async ([, call, body]) => {
+      vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+      respond(jsonResponse(200, body))
+
+      await call(makeClient())
+
+      expect(new Headers(lastCall().init.headers).get('X-Comfy-Token')).toBe(
+        'id-token'
+      )
+    }
+  )
+
+  it('sends no X-Comfy-Token for a signed-out standalone user', async () => {
+    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+    credential.token = undefined
+    respond(jsonResponse(200, []))
+
+    await makeClient().getMessages('t1')
+
+    expect(new Headers(lastCall().init.headers).has('X-Comfy-Token')).toBe(
+      false
+    )
+  })
+
+  it('leaves cloud requests to the host auth headers', async () => {
+    respond(jsonResponse(200, []))
+
+    await makeClient().getMessages('t1')
+
+    expect(new Headers(lastCall().init.headers).has('X-Comfy-Token')).toBe(
+      false
+    )
+  })
+
+  it('refreshes the credential through GET /agent/identity', async () => {
+    respond(jsonResponse(200, { user_id: 'local-user', workspace_id: 'w-1' }))
+
+    await makeClient().refreshCredential()
+
+    expect(lastCall()).toMatchObject({
+      route: '/agent/identity',
+      init: { method: 'GET' }
+    })
   })
 })

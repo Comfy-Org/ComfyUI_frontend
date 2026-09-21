@@ -13,6 +13,7 @@ import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/services/dialogService'))
 
 import { i18n } from '@/i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -34,6 +35,8 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogService } from '@/services/dialogService'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -6804,13 +6807,17 @@ describe('AgentPanelRoot in the standalone agent harness', () => {
     )
     ws.clear()
     useAgentPanelStore().enabled = true
+    vi.mocked(useAuthStore().getIdToken).mockResolvedValue('id-token')
+    vi.mocked(useDialogService().showSignInDialog).mockReset()
   })
 
   function stubLocalAgent(workflowId: string) {
     const bodies: Record<string, unknown>[] = []
+    const comfyTokens: (string | null)[] = []
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.includes('/messages') && init?.method === 'POST') {
         bodies.push(JSON.parse(String(init.body)))
+        comfyTokens.push(new Headers(init.headers).get('X-Comfy-Token'))
         return json(202, ack(workflowId))
       }
       if (url.includes('/messages')) return json(200, [])
@@ -6819,8 +6826,29 @@ describe('AgentPanelRoot in the standalone agent harness', () => {
       return new Response('{}', { status: 200 })
     })
     vi.stubGlobal('fetch', fetchMock)
-    return { bodies, fetchMock }
+    return { bodies, comfyTokens, fetchMock }
   }
+
+  it('asks a signed-out user to sign in instead of sending, keeping the draft', async () => {
+    vi.mocked(useAuthStore().getIdToken).mockResolvedValue(undefined)
+    vi.mocked(useDialogService().showSignInDialog).mockResolvedValue(false)
+    const tab = addTab('workflows/current.json', { isTemporary: true })
+    workflowStore.activeWorkflow = tab
+    const { bodies } = stubLocalAgent('wf-minted')
+    renderWithSelectedTarget()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('build here')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await vi.waitFor(() =>
+      expect(useDialogService().showSignInDialog).toHaveBeenCalledOnce()
+    )
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().draft).toBe('build here')
+    )
+    expect(bodies).toHaveLength(0)
+  })
 
   it.for([
     { label: 'an unsaved tab', isTemporary: true },
@@ -6837,7 +6865,7 @@ describe('AgentPanelRoot in the standalone agent harness', () => {
         activeState
       })
       workflowStore.activeWorkflow = tab
-      const { bodies, fetchMock } = stubLocalAgent('wf-minted')
+      const { bodies, comfyTokens, fetchMock } = stubLocalAgent('wf-minted')
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
       await userEvent.click(screen.getByRole('textbox'))
@@ -6857,6 +6885,7 @@ describe('AgentPanelRoot in the standalone agent harness', () => {
         draft: { content: activeState }
       })
       expect(bodies[0]).not.toHaveProperty('workflow_id')
+      expect(comfyTokens).toEqual(['id-token'])
       await vi.waitFor(() =>
         expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-minted')).toBe(
           tab.path
