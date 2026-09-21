@@ -234,9 +234,12 @@ describe('cancel subscription on the billing SDK rail', () => {
   it.for([
     [
       { status: 'error', code: 'REQUEST_FAILED', httpStatus: 500 },
-      'REQUEST_FAILED (500)'
+      "We couldn't update your subscription. Please try again."
     ],
-    [{ status: 'error', code: 'SUPERSEDED' }, 'SUPERSEDED']
+    [
+      { status: 'error', code: 'SUPERSEDED' },
+      "We couldn't update your subscription. Please try again."
+    ]
   ] as const)(
     'reports %o as its own detail instead of retrying on legacy',
     async ([failure, detail]) => {
