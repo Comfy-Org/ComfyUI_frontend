@@ -331,6 +331,9 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
     expect(emitted().send).toBeUndefined()
 
+    // An auto-repeated Escape is still contained (preventDefault/
+    // stopPropagation) so it can't leak past the composer, but it doesn't
+    // itself trigger a stop.
     const repeatedEscape = box.dispatchEvent(
       new KeyboardEvent('keydown', {
         key: 'Escape',
@@ -339,7 +342,7 @@ describe('Composer', () => {
         cancelable: true
       })
     )
-    expect(repeatedEscape).toBe(true)
+    expect(repeatedEscape).toBe(false)
     expect(emitted().stop).toBeUndefined()
 
     await userEvent.type(box, '{Escape}')
@@ -355,6 +358,34 @@ describe('Composer', () => {
 
     await rerender({ streaming: true })
     await userEvent.keyboard('{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('stops the run on Escape after clicking Send without moving focus (Safari/Firefox)', async () => {
+    // Safari and Firefox don't move focus onto a plain-clicked <button> the
+    // way Chrome does, so simulate that by dispatching the click directly
+    // instead of going through userEvent.click(), which always focuses the
+    // element it clicks.
+    useAgentComposerStore().setText('run this')
+    const { rerender, emitted } = mount()
+
+    const sendButton = screen.getByRole('button', { name: 'Send' })
+    sendButton.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+    await nextTick()
+    expect(emitted().send).toHaveLength(1)
+    // eslint-disable-next-line testing-library/no-node-access
+    expect(document.activeElement).toBe(document.body)
+
+    await rerender({ streaming: true })
+    document.body.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true
+      })
+    )
     expect(emitted().stop).toHaveLength(1)
   })
 

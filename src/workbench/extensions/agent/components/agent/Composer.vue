@@ -10,6 +10,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from 'reka-ui'
+import { useEventListener } from '@vueuse/core'
 import { computed, inject, nextTick, ref, useTemplateRef, watch } from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -243,27 +244,52 @@ function onPrimaryAction(): void {
   else composer.submit()
 }
 
+const composerContainerRef = useTemplateRef<HTMLDivElement>(
+  'composerContainerRef'
+)
+
 // The prompt editor only forwards `keydown` while it (the ProseMirror
-// contenteditable) itself has focus, so pressing Escape after submitting
-// via Enter is caught there. Clicking Send with the mouse instead leaves
-// focus on the button, so that same Escape press never reaches the editor.
-// This container-level handler catches Escape from any focused element
-// still inside the composer - including the Send/Stop button - while
-// leaving focus (and the editor-scoped handler above) untouched. Escapes
-// the editor already handled call stopPropagation, so they never reach
-// here, and once focus leaves the composer entirely this listener isn't in
-// the event's bubble path either.
-function onContainerKeydown(event: KeyboardEvent): void {
+// contenteditable) itself has focus, so pressing Escape after submitting via
+// Enter is caught there (see the editor-scoped handler above). Clicking Send
+// with the mouse doesn't reliably leave focus in a place a container-scoped
+// listener would see: Chrome moves it onto the button, but Safari and
+// Firefox leave it on <body> without moving it at all, so a plain pointer
+// click can leave the next Escape with nothing inside the composer in its
+// bubble path.
+//
+// This listener is attached to `document` instead, so it always sees the
+// keydown regardless of where focus landed, and decides whether to act by
+// checking focus directly rather than relying on the event's bubble path:
+// it fires while focus is inside this composer, or nowhere in particular
+// (the Safari/Firefox click case), but stays out of the way once focus has
+// genuinely moved elsewhere on the page (see the "once focus has left the
+// composer entirely" test). It's registered on the bubble phase (matching
+// the window-level listener in GraphView.vue it needs to run ahead of), so
+// any more specific handler closer to the target - the mention list or the
+// editor-scoped handler above, both of which call stopPropagation - still
+// gets first refusal and this one never sees the event.
+useEventListener(document, 'keydown', (event: KeyboardEvent) => {
   if (
-    event.key === 'Escape' &&
-    running.value &&
-    !event.isComposing &&
-    !event.repeat
-  ) {
-    event.preventDefault()
-    emit('stop')
-  }
-}
+    event.key !== 'Escape' ||
+    !running.value ||
+    event.isComposing ||
+    event.defaultPrevented
+  )
+    return
+
+  const active = document.activeElement
+  const focusedElsewhere =
+    active !== null &&
+    active !== document.body &&
+    !composerContainerRef.value?.contains(active)
+  if (focusedElsewhere) return
+
+  event.preventDefault()
+  // Stop the event here so it can't also reach GraphView's window-level
+  // keydown listener, which runs Comfy.Graph.ExitSubgraph on Escape.
+  event.stopPropagation()
+  if (!event.repeat) emit('stop')
+})
 
 function insert(text: string): void {
   composer.insert(text)
@@ -287,8 +313,8 @@ defineExpose({
 <template>
   <div
     id="agent-composer"
+    ref="composerContainerRef"
     class="relative flex flex-col rounded-lg border border-border-default bg-base-background"
-    @keydown="onContainerKeydown"
   >
     <div
       v-if="mentionVisible"
