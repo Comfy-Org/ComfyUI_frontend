@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "空の Cosmos latent 動画",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "空の Hunyuan Image latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "EmptyHunyuanLatentVideo",
+    "display_name": "空の Hunyuan Video 1.0 latent",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Empty HunyuanVideo 1.5 Latent",
+    "display_name": "空の Hunyuan Video 1.5 latent",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "空のLTXV潜在ビデオ",
+    "display_name": "空の LTXV latent 動画",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "空の Hunyuan 3D v2 latent",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "空の Trellis2 latent 構造",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -8072,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "モデルによる Hunyuan Video 1.5 latent アップスケール",
     "inputs": {
       "crop": {
         "name": "切り抜き"
@@ -10514,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV 空のラテントオーディオ",
+    "display_name": "空の LTXV latent オーディオ",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -13234,6 +13234,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "より精細なサーフェスディテールを持つ高忠実度なジオメトリのために、追加のリファインメント処理を実行します。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "ウルトラパスの解像度：2kでは2048³、4kでは4096³で実行し、最高水準の表面ディテールを実現します。4kにはmeshy-7.1以降が必要です。ultra_modeが有効な場合にのみ使用されます。"
       }
     },
     "outputs": {
@@ -13300,6 +13304,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "2048³で追加のリファインメントパスを実行し、より細かな表面ディテールを備えた高忠実度のジオメトリを生成します。"
       }
     },
     "outputs": {
@@ -13441,6 +13449,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "より精細なサーフェスディテールを持つ高忠実度なジオメトリのために、追加のリファインメント処理を実行します。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "ウルトラパスの解像度：2kでは2048³、4kでは4096³で実行し、最高水準の表面ディテールを実現します。4kにはmeshy-7.1以降が必要です。ultra_modeが有効な場合にのみ使用されます。"
       }
     },
     "outputs": {
@@ -14199,6 +14211,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 専用: 予測深度に対してスパースなボリューム精緻化パスを実行します。パスを増やすと、ほぼ線形のコストで細部とエッジが鮮明になります。0 で精緻化を無効にします。MoGe-1 / MoGe-2 では無視されます。"
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = 最速、9 = 最高詳細。"
@@ -14229,6 +14245,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 専用: 予測深度に対してスパースなボリューム精緻化パスを実行します。パスを増やすと、ほぼ線形のコストで細部とエッジが鮮明になります。0 で精緻化を無効にします。MoGe-1 / MoGe-2 では無視されます。"
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17442,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Pixal3D コンディショニング",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18391,6 +18411,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "KV キャッシュのデバイスと量子化を設定できます。デフォルトではモデルは auto オプションを使用します。メモリ不足時には、量子化により編集ワークフローが高速化される可能性があります。",
+    "display_name": "Qwen Image 2.1 キャッシュ",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto は空き VRAM を使用し、次に RAM を使用します。cpu (RAM) は計算中にプリフェッチされるため、速度低下はわずかです。off は毎ステップでプレフィックスを再計算します。低速ですが、キャッシュを除外する唯一の方法です。"
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "保存精度。default は無損失です。int8 は bf16 とほぼ同等の精度でキャッシュを半分にし、int4 は4分の1にしますが、ステップあたりの誤差はおよそ2倍になります。"
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -22751,7 +22793,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "安定カスケード_空の潜在画像",
+    "display_name": "空の Stable Cascade latent 画像",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -22794,7 +22836,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "安定カスケード_ステージC_VAEエンコード",
+    "display_name": "Stable Cascade ステージ C VAE エンコード",
     "inputs": {
       "compression": {
         "name": "圧縮"
@@ -23756,8 +23798,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "テキストエンコード Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "テキストエンコーダーが参照し、VAE latent としてシーケンスに挿入される参照画像。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "参照画像はアスペクト比を維持し、32 の倍数で、およそ resolution x resolution ピクセルにリサイズされます。0 は各参照をそれぞれのサイズのまま、32 の倍数に丸めて保持します。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "最初の参照画像のサイズに合わせた空の latent。ほかのサイズでは編集がずれるため、サンプリングと一致させます。"
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "テキストエンコード Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23860,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "テキストエンコード Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +23936,10 @@
       "max_length": {
         "name": "最大長"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "チェックポイントのマルチトークン予測ヘッドを使用した投機的デコーディング。MTP 重みがない場合は効果がありません。auto はドラフト深度を適応的に調整し、2-5 は固定します。サンプリング出力は正しい分布を維持しますが、同じシードでも非 MTP 出力とは異なります。"
+      },
       "prompt": {
         "name": "プロンプト"
       },
@@ -23916,6 +24001,10 @@
       },
       "max_length": {
         "name": "最大長"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "チェックポイントのマルチトークン予測ヘッドによる投機的デコーディング。MTP重みがない場合は効果がありません。autoはドラフト深度を自動調整し、2～5では固定します。サンプリング出力は正しい分布を維持しますが、同じシードでも非MTP出力とは異なります。"
       },
       "prompt": {
         "name": "プロンプト"
@@ -24432,7 +24521,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Trellis2 コンディショニング",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24543,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Trellis2 形状ステージ",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24482,7 +24571,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Trellis2 テクスチャステージ",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -26162,7 +26251,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Hunyuan 3D VAE デコード",
     "inputs": {
       "num_chunks": {
         "name": "num_chunks"
@@ -26470,7 +26559,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Trellis2 VAE 形状デコード",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -26491,7 +26580,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Trellis2 VAE 構造デコード",
     "inputs": {
       "resolution": {
         "name": "解像度"
@@ -26511,7 +26600,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Trellis2 VAE テクスチャデコード",
     "inputs": {
       "samples": {
         "name": "サンプル"
@@ -29466,6 +29555,10 @@
       "abc": {
         "name": "ABC",
         "tooltip": "ABCジェネレーターを接続するか、編集済みのスコアを指定します。空のままにすると、自動的に off モードが使用されます。"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "スタイルと歌詞の自己回帰ガイダンス。1.0ではCFGが無効になり、ABCワークフローと一致します。元のオフモードのガイダンスに合わせるには1.01を使用します。"
       },
       "clip": {
         "name": "clip"

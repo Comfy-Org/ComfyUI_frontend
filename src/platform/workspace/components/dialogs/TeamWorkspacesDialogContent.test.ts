@@ -55,13 +55,6 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-const ButtonStub = {
-  name: 'Button',
-  template:
-    '<button :disabled="disabled" :data-loading="loading" @click="$emit(\'click\')"><slot /></button>',
-  props: ['disabled', 'loading', 'variant', 'size']
-}
-
 function mountComponent(props: Record<string, unknown> = {}) {
   const user = userEvent.setup()
   const { container } = render(TeamWorkspacesDialogContent, {
@@ -69,7 +62,6 @@ function mountComponent(props: Record<string, unknown> = {}) {
     global: {
       plugins: [pinia, i18n],
       stubs: {
-        Button: ButtonStub,
         WorkspaceProfilePic: true
       }
     }
@@ -363,7 +355,7 @@ describe('TeamWorkspacesDialogContent', () => {
 
       await typeAndCreate(container, user, 'New Team')
 
-      expect(findCreateButton(container).dataset.loading).toBe('false')
+      expect(findCreateButton(container)).not.toHaveAttribute('aria-busy')
     })
 
     it('resets loading state after onConfirm fails', async () => {
@@ -379,7 +371,7 @@ describe('TeamWorkspacesDialogContent', () => {
 
       await typeAndCreate(container, user, 'New Team')
 
-      expect(findCreateButton(container).dataset.loading).toBe('false')
+      expect(findCreateButton(container)).not.toHaveAttribute('aria-busy')
     })
   })
 

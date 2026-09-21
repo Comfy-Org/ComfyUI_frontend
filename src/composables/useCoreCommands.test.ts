@@ -16,6 +16,8 @@ import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useLitegraphService } from '@/services/litegraphService'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -108,26 +110,11 @@ vi.mock<unknown>(
 
 vi.mock(import('@/services/dialogService'))
 
-const mockResetView = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: vi.fn(() => ({
-    resetView: mockResetView
-  }))
-}))
+vi.mock(import('@/services/litegraphService'))
 
 vi.mock(import('@/platform/telemetry'))
 
-const mockShowAbout = vi.hoisted(() => vi.fn())
-const mockShowSettings = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(
-  import('@/platform/settings/composables/useSettingsDialog'),
-  () => ({
-    useSettingsDialog: vi.fn(() => ({
-      show: mockShowSettings,
-      showAbout: mockShowAbout
-    }))
-  })
-)
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 const mockAssetBrowse = vi.hoisted(() =>
@@ -153,15 +140,7 @@ let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscription'),
-  () => ({
-    useSubscription: vi.fn(() => ({
-      canAccessSubscriptionFeatures: vi.fn().mockReturnValue(true),
-      showSubscriptionDialog: vi.fn()
-    }))
-  })
-)
+vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
@@ -527,7 +506,7 @@ describe('useCoreCommands', () => {
     it('Comfy.Canvas.ResetView delegates to litegraphService.resetView', async () => {
       await findCmd('Comfy.Canvas.ResetView').function()
 
-      expect(mockResetView).toHaveBeenCalled()
+      expect(useLitegraphService().resetView).toHaveBeenCalled()
     })
 
     it('Comfy.Canvas.ZoomIn scales the canvas up by 1.1× and marks it dirty', async () => {
@@ -755,7 +734,7 @@ describe('useCoreCommands', () => {
     it('Comfy.Help.AboutComfyUI opens the About dialog', async () => {
       await findCmd('Comfy.Help.AboutComfyUI').function()
 
-      expect(mockShowAbout).toHaveBeenCalled()
+      expect(useSettingsDialog().showAbout).toHaveBeenCalled()
     })
   })
 

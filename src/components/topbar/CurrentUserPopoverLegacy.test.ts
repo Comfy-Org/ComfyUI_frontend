@@ -1,13 +1,15 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { h, ref, computed } from 'vue'
+import { computed, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -46,15 +48,7 @@ afterAll(() => {
   window.open = originalWindowOpen
 })
 
-const mockHandleSignOut = vi.fn()
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: vi.fn(() => ({
-    userPhotoUrl: 'https://example.com/avatar.jpg',
-    userDisplayName: 'Test User',
-    userEmail: 'test@example.com',
-    handleSignOut: mockHandleSignOut
-  }))
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/services/dialogService'))
 
@@ -81,20 +75,10 @@ const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
 const mockBalance = ref<BalanceInfo | null>(null)
 const mockIsLoading = ref(false)
 const mockIsTeamPlan = ref(false)
-const mockCanTopUp = ref(true)
-const mockCanSubscribeSelfServe = ref(false)
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canTopUp: mockCanTopUp,
-      canSubscribeSelfServe: mockCanSubscribeSelfServe
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
   default: {
@@ -113,6 +97,11 @@ vi.mock(import('@/platform/telemetry'))
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
+    useCurrentUser().userPhotoUrl = computed(
+      () => 'https://example.com/avatar.jpg'
+    )
+    useCurrentUser().userDisplayName = computed(() => 'Test User')
+    useCurrentUser().userEmail = computed(() => 'test@example.com')
     mockCanAccessSubscriptionFeatures.value = true
     mockTier.value = 'CREATOR'
     mockSubscription.value = makeSubscription()
@@ -122,8 +111,6 @@ describe('CurrentUserPopoverLegacy', () => {
       currency: 'usd'
     }
     mockIsLoading.value = false
-    mockCanTopUp.value = true
-    mockCanSubscribeSelfServe.value = false
   })
 
   function renderComponent(teamWorkspaceState?: Record<string, unknown>) {
@@ -254,7 +241,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(screen.getByTestId('logout-menu-item'))
 
-    expect(mockHandleSignOut).toHaveBeenCalled()
+    expect(useCurrentUser().handleSignOut).toHaveBeenCalled()
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
@@ -477,7 +464,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     it('keeps credits visible but hides top-up for workspace members', () => {
       mockCanAccessSubscriptionFeatures.value = false
-      mockCanTopUp.value = false
+      useBillingCapabilities().canTopUp = computed(() => false)
       renderComponent({
         ...readyWorkspaceState,
         activeWorkspaceId: 'ws-team'

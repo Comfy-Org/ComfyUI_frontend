@@ -420,10 +420,10 @@ import { isCloud } from '@/platform/distribution/types'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useSubscriptionOperationView } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
 import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   formatSubscriptionDate,
@@ -447,11 +447,7 @@ const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
 
-const billingOperationStore = useBillingOperationStore()
-const isSettingUp = computed(() => billingOperationStore.isSettingUp)
-const subscriptionActionUrl = computed(
-  () => billingOperationStore.subscriptionActionOperation?.actionUrl ?? null
-)
+const { isSettingUp, subscriptionActionUrl } = useSubscriptionOperationView()
 
 function openSubscriptionVerification() {
   if (!subscriptionActionUrl.value) return

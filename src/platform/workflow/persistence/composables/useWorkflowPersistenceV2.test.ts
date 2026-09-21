@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '../base/storageKeys'
@@ -77,17 +78,7 @@ vi.mock<unknown>(import('vue-router'), () => ({
   })
 }))
 
-const currentUserMocks = vi.hoisted(() => ({
-  onUserLogout: vi.fn(),
-  onUserResolved: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    onUserLogout: currentUserMocks.onUserLogout,
-    onUserResolved: currentUserMocks.onUserResolved
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const preservedQueryMocks = vi.hoisted(() => ({
   payloads: {} as Record<string, Record<string, string> | undefined>
@@ -803,8 +794,9 @@ describe('useWorkflowPersistenceV2', () => {
     sessionStorage.setItem('Comfy.Workflow.ActivePath:test-client', '{}')
     mountWorkflowPersistence()
 
-    const onLogout = currentUserMocks.onUserLogout.mock.calls[0][0]
-    const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
     onLogout()
 
     expect(localStorage).toHaveLength(0)
@@ -845,8 +837,9 @@ describe('useWorkflowPersistenceV2', () => {
     )
     mountWorkflowPersistence()
 
-    const onLogout = currentUserMocks.onUserLogout.mock.calls[0][0]
-    const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
     onLogout()
     onUserResolved({ id: 'user-b' })
     onLogout()
@@ -867,8 +860,9 @@ describe('useWorkflowPersistenceV2', () => {
     )
     mountWorkflowPersistence()
 
-    const onLogout = currentUserMocks.onUserLogout.mock.calls[0][0]
-    const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
     onLogout()
     onUserResolved({ id: 'user-a' })
 
@@ -897,8 +891,9 @@ describe('useWorkflowPersistenceV2', () => {
     mocks.state.currentGraph = { marker: 'stale-source-edit' }
     mocks.state.graphChangedHandler?.()
 
-    const onLogout = currentUserMocks.onUserLogout.mock.calls[0][0]
-    const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
     onLogout()
     onUserResolved({ id: 'user-b' })
     await vi.runAllTimersAsync()
