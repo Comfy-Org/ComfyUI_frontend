@@ -1164,6 +1164,9 @@ describe('Composer', () => {
       await userEvent.keyboard(insertedText)
 
       expect(textbox).toHaveTextContent(expectedText)
+      expect(
+        within(textbox).getAllByTestId('workflow-reference-chip')
+      ).toHaveLength(2)
       expect(store.workflowReferences).toEqual([
         {
           id: 'wf-1',
