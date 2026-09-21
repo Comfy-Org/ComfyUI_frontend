@@ -7,10 +7,7 @@ import {
   watch
 } from 'vue'
 
-import type {
-  PreviewSubscribeInput,
-  SubscribeInput
-} from '@comfyorg/account-core/billing'
+import type { PreviewSubscribeInput } from '@comfyorg/account-core/billing'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
@@ -43,6 +40,7 @@ import type { BillingReadRail } from '@/platform/workspace/composables/useBillin
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { subscribeInputFrom } from '@/platform/workspace/billing/subscribeInput'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
@@ -125,36 +123,6 @@ async function resyncQuietly(refresh: () => Promise<unknown>): Promise<void> {
 
 /** The SDK rail refusing an action, distinct from any value it could return. */
 const DECLINED = Symbol('subscription rail declined')
-
-/**
- * The host's options as the generated request body, field for field, including
- * the two the workspace client drops when they arrive empty: JSON keeps `''`,
- * so an empty credential would reach the server as present but meaningless.
- *
- * `SubscribeOptions` carries nothing the generated body lacks. `SubscribeInput`
- * also has `checkout_attempt_id` and `idempotency_key`, which no host caller
- * sets: the SDK mints the key itself, and the checkout attempt is carried on
- * the quote rather than the subscribe.
- */
-function subscribeInputFrom(
-  planSlug: string,
-  options: SubscribeOptions = {}
-): SubscribeInput {
-  return {
-    plan_slug: planSlug,
-    confirmation_token: options.confirmationToken || undefined,
-    saved_payment_method_id: options.savedPaymentMethodId || undefined,
-    promotion_code: options.promotionCode,
-    quote_id: options.quoteId,
-    quote_version: options.quoteVersion,
-    return_url: options.returnUrl,
-    cancel_url: options.cancelUrl,
-    team_credit_stop_id: options.teamCreditStopId,
-    billing_cycle: options.billingCycle,
-    confirm_reactivation: options.confirmReactivation,
-    proration_at: options.prorationAt
-  }
-}
 
 function previewSubscribeInputFrom(
   planSlug: string,
@@ -301,6 +269,24 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
+  /**
+   * Whether the rail that issues this kind of operation is the one that owns a
+   * pending one at load. Adopting on the other rail is what makes a mid-session
+   * flag flip ambiguous: the operation's writes went one way and its poller the
+   * other.
+   *
+   * A server predating `pending_billing_op_type` only ever had subscriptions to
+   * hand back, so it follows the subscription rail — the same reading
+   * `resumeModeFor` takes of an absent field.
+   */
+  function railOwnsResume(
+    type: BillingStatusResponse['pending_billing_op_type']
+  ): boolean {
+    return type === 'topup'
+      ? flags.billingSdkTopupRailEnabled
+      : flags.billingSdkSubscriptionRailEnabled
+  }
+
   function resumePendingOperation(status: BillingStatusResponse): void {
     if (
       !status.pending_billing_op_id ||
@@ -308,10 +294,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     ) {
       return
     }
-    if (
-      flags.billingSdkTopupRailEnabled &&
-      status.pending_billing_op_type === 'topup'
-    ) {
+    if (railOwnsResume(status.pending_billing_op_type)) {
       useBillingSdkStore().recover()
       return
     }

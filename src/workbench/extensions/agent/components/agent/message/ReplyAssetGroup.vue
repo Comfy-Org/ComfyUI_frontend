@@ -169,6 +169,7 @@ function stopPreview(event: Event): void {
           v-if="asset.kind === 'image'"
           :src="asset.url"
           :alt="asset.label ?? asset.filename"
+          data-testid="reply-image-preview"
           loading="lazy"
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
         />
