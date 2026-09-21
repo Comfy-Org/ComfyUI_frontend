@@ -142,6 +142,7 @@ import {
   executeWidgetsCallback,
   createNode,
   isImageNode,
+  isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
 import {
@@ -745,6 +746,7 @@ export class ComfyApp {
 
         const n = this.dragOverNode
         this.dragOverNode = null
+        if (isSelectOnly(canvas)) return
         // Node handles file drop, we dont use the built in onDropFile handler as its buggy
         // If you drag multiple files it will call it multiple times with the same file
         if (await n?.onDragDrop?.(event)) return

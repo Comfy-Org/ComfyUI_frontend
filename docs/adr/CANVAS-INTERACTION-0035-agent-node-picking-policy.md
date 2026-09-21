@@ -100,10 +100,21 @@ agent store owns the fact; everything else is a projection of it.
    returns before `handleNodeRightClick` and `showNodeOptions`, the
    alt-pointerdown clone, the footer's advanced toggle and the native
    drag-over/drop handlers that register `app.dragOverNode`;
-   `useNodeEventHandlers.ts` collapse (L70), title (L87) and right-click
-   (L106); `useSlotLinkInteraction.ts` `onPointerDown`, `onClick`,
-   `onDoubleClick`, `finishInteraction` (cleanup only) and
-   `handlePointerMove` (L462); `DomWidgets.vue` L119 `readonly`. The
+   the node media wrapper around `NodeContent` (`:inert="!canFocusWidgets"`,
+   so the image preview's mask, layer-editor and download buttons neither
+   act nor swallow the pick click);
+   `useNodeEventHandlers.ts` collapse (L70), title (L87), right-click
+   (L106) and the bring-to-front `setNodeOrder` in `handleNodeSelect` and
+   `toggleNodeSelectionAfterPointerUp`, so a pick click leaves the node
+   order and the undo history untouched; `useSlotLinkInteraction.ts`
+   `onPointerDown`, `onClick`, `onDoubleClick` and `handlePointerMove`
+   (L462). `finishInteraction` cancels a drop only while picking, read
+   through `canvas.selectOnly`, not through `canEditNodes`: a space-bar pan
+   flips `read_only` mid-drag and the drop released while the key is held
+   still completes as it did before this ADR; every finish, cancelled or
+   not, calls `captureCanvasState()`. `DomWidgets.vue` L119 `readonly` plus
+   `:inert="!canFocusWidgets"` on the DOM widget layer, since
+   `pointer-events: none` alone leaves the widgets tabbable. The
    derivation lives in the composable, not `canvasStore`:
    `agentNodeSelectionStore.ts` L7 already imports `canvasStore` (the reverse
    import is a module cycle),
@@ -117,7 +128,12 @@ agent store owns the fact; everything else is a projection of it.
    Its explicit sources are the setting, `canvasStore.canvas` and `isActive`.
    While picking it pins `canvas.selectOnly` to `true`, remembering the
    value it overwrote, and restores that value when picking ends, when the
-   canvas is replaced mid-pick and when its scope is disposed; it writes
+   canvas is replaced mid-pick and when its scope is disposed. The pin is
+   reasserted on every run of the watch, and the restore happens only while
+   `selectOnly` still holds the `true` the composable wrote: a second live
+   instance (overlapping `GraphCanvas` mounts, HMR) captures the first
+   instance's `true` as its "before" value, and without that check the
+   later release would leave the canvas select-only for good. It writes
    `canvas.show_info = canvasInfoEnabled && !picking`, then one
    `draw(false, true)`. It uses
    `flush: 'sync'`: today's writes in `AgentPanelRoot.vue` L960-962 are
@@ -149,15 +165,29 @@ agent store owns the fact; everything else is a projection of it.
    value at keypress and returns `true` so the event is consumed. In the
    classic canvas `_processPrimaryButton` adds `!this.selectOnly` to the
    alt-click clone condition and skips the subgraph IO node, reroute and
-   link-segment handling and the group and empty-canvas double-click actions
-   while select-only; node clicks, empty-canvas clicks, panning and the
-   selection rectangle are unchanged. These are condition edits, not new
-   members. A `mutatesGraph` flag on `ComfyCommand`, checked once in the
+   link-segment handling, the group and empty-canvas double-click actions,
+   the group title-bar drag callbacks (`_processDraggedItems` snaps
+   `selectedItems` on shift or `alwaysSnapToGrid`, which would move the
+   picked nodes) and `_processNodeClick`'s `bringToFront` while select-only;
+   node clicks, empty-canvas clicks, panning and the selection rectangle are
+   unchanged. `Comfy.Undo` and `Comfy.Redo` keep their guard below the
+   `global-mask-editor` branch, so the mask editor's own history still
+   undoes while picking. The two file-drop paths return while select-only:
+   the document `drop` listener in `app.ts` after `preventDefault()` (the
+   browser must not navigate to the file) and `useCanvasDrop.ts` `onDrop`
+   for sidebar node, model and workflow drags. These are condition edits,
+   not new members. A `mutatesGraph` flag on `ComfyCommand`, checked once in the
    command store, is deferred (below).
 6. **Chrome keeps reading the store.** Action bars, sidebar, splitter panels,
    selection toolbox, toasts, banner and the queue and error overlays in
    `TopMenuSection.vue` keep gating on `isActive` or `isActionBarsHidden`.
-   They are presentation, not canvas interaction.
+   They are presentation, not canvas interaction. Chrome that owns
+   listeners is hidden, not unmounted: `QueueNotificationBannerHost` stays
+   mounted with a `hidden` class, because its `useQueueNotificationBanners`
+   removes the `promptQueueing`/`promptQueued` listeners on unmount and a run
+   queued during picking would lose its banner. `QueueInlineProgressSummary`
+   is a pure projection of the execution store and is gated like the legacy
+   overlay.
 
 ### Compatibility requirements
 
@@ -167,8 +197,8 @@ agent store owns the fact; everything else is a projection of it.
   callbacks and `node.widgets` access are untouched.
 - Classic picking keeps node selection, empty-canvas preservation, panning
   and the selection rectangle; alt-click clone, reroute and link drags from
-  the canvas, link menus and the group and empty-canvas double-click actions
-  are suppressed. The existing `LGraphCanvas.selectOnly.test.ts` cases pass
+  the canvas, link menus, group title-bar drags, click-to-front reordering
+  and the group and empty-canvas double-click actions are suppressed. The existing `LGraphCanvas.selectOnly.test.ts` cases pass
   unedited and gain rows for each suppressed path.
 - `ADR-CANVAS-SELECTION-0028`'s compatibility clause (L113-114) still holds:
   picker mode keeps node-only accumulation, empty-canvas preservation and its
@@ -234,9 +264,11 @@ agent store owns the fact; everything else is a projection of it.
 - Guards remain per-site until command metadata exists; a new mutating
   command or keyboard path must opt in.
 - An extension that sets `canvas.selectOnly` itself is overridden to `true`
-  while picking; its value is restored on exit, but a value it writes
-  during picking is lost. No first-party writer outside `AgentPanelRoot.vue`
-  exists; the extension corpus has not been scanned.
+  while picking; its pre-pick value is restored on exit. A `false` it writes
+  during picking disables the `isSelectOnly()` guards until the projection
+  next runs, and exit then leaves that `false` in place; a `true` it writes
+  is restored to the pre-pick value. No first-party writer outside
+  `AgentPanelRoot.vue` exists; the extension corpus has not been scanned.
 - The `show_info` settings write moves from the platform layer into a
   renderer composable, so two composables now sync settings onto litegraph.
 
