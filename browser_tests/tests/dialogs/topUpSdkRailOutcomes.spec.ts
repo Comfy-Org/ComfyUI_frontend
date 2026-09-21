@@ -32,7 +32,7 @@ const RAIL_FEATURES = {
 } satisfies RemoteConfig
 
 const SAVED_CARD = {
-  id: 'pm-1',
+  id: 'pm_e2e_visa',
   type: 'card',
   brand: 'visa',
   last4: '4242',
