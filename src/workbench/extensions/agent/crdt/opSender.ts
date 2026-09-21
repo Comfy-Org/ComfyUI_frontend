@@ -135,13 +135,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let inFlight: InFlight | null = null
   let detached = false
   let suspended = false
-  // Late-result credits: a batch that settled 'unacknowledged' was
-  // transmitted twice, so up to two of its results may still arrive - as
-  // ANONYMOUS failures (empty id lists, no failure op_id) they are
-  // indistinguishable from the current batch's. Swallowing up to the credit
-  // beats mis-attribution: a swallowed own-result only costs the idempotent
-  // resend cycle, while a mis-attributed settle poisons everything
-  // downstream of this seam.
+  // Late-result credits: a batch retired after transmission (settled
+  // 'unacknowledged' after two sends, or 'unconfirmed' by an abort after one
+  // or two) may still draw one result per send - as ANONYMOUS failures
+  // (empty id lists, no failure op_id) they are indistinguishable from the
+  // current batch's. Swallowing up to the credit beats mis-attribution: a
+  // swallowed own-result only costs the idempotent resend cycle, while a
+  // mis-attributed settle poisons everything downstream of this seam.
   let staleAnonymousBudget = 0
 
   function settle(outcome: BatchOutcome): void {
@@ -256,7 +256,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     const identified = [...result.applied, ...result.skipped]
     if (result.failure?.op_id) identified.push(result.failure.op_id)
     if (identified.length > 0) {
-      if (!identified.some((opId) => inFlight!.opIds.has(opId))) return
+      if (!identified.some((opId) => inFlight!.opIds.has(opId))) {
+        // Names ops that are not in flight: a retired batch's own result, if
+        // a credit is outstanding for one.
+        if (staleAnonymousBudget > 0) staleAnonymousBudget--
+        return
+      }
       settle({ state: 'acknowledged', ops: inFlight.ops, result })
       return
     }

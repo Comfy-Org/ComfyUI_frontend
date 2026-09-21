@@ -74,6 +74,10 @@ depends on it.
    `undeliverable` and a transmitted in-flight batch `unconfirmed` at once,
    symmetric to the unbind case. Those operations were minted against the old
    lineage and the draft that caused the reset already carries their effect.
+   A result the host still returns for the transmitted batch is retired, not
+   attributed: the sender reserves one late-result credit per transmission
+   when it aborts a sent batch, as it already does after result silence, so
+   the batch admitted after the reset settles only on its own result.
 5. **The blank-tab door is closed by document identity, not by this
    record.** A persisted binding is adopted only by a tab whose workflow
    document id matches the one it was bound with, as decided in
