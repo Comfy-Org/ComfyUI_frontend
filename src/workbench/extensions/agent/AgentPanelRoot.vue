@@ -455,7 +455,9 @@ watch(
 
 const newChatDetached = ref(false)
 const workflowDetached = computed(
-  () => newChatDetached.value || selectedTarget.value === null
+  () =>
+    newChatDetached.value ||
+    (selectedTarget.value === null && !agentPanelStore.canRestoreWorkflow)
 )
 watch(selectedTarget, (target) => {
   if (target !== null) newChatDetached.value = false
