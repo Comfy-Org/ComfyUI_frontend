@@ -288,6 +288,26 @@ describe('reconcileAgentAdapters', () => {
   // case below - threading a "preserve this node's reconcile baseline"
   // signal through `LGraph.clear()`'s per-node teardown - not a change
   // local to this module.
+  // The missing-node fallback (`missingNode`) constructs a bare `LGraphNode`,
+  // which is exactly the type `serializeFromStoreState` special-cases to
+  // replay a frozen doc snapshot instead of serializing live state (see its
+  // `this.constructor === LGraphNode` branch). Carrying the record's CRDT
+  // reconcile baseline into that node's `lastSerialization` would trip that
+  // branch and silently drop every change made after materialization.
+  it('serializes current state, not a stale doc snapshot, for a node materialized via the missing-node fallback', () => {
+    const graph = new LGraph()
+    seedAgentAddedNode(graph, 1, 'unregistered-type')
+
+    reconcileAgentAdapters(graph)
+
+    const live = graph.getNodeById(toNodeId(1))
+    assert.exists(live)
+    expect(live.constructor).toBe(LGraphNode)
+
+    live.title = 'Renamed Locally'
+    expect(live.serialize().title).toBe('Renamed Locally')
+  })
+
   it.fails('keeps a live rename after the workflow tab reloads and an unrelated reconcile runs', () => {
     const graph = new LGraph()
     const scope = graphScopeOf(graph)

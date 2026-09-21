@@ -15,6 +15,7 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
+import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 
 import type { SemanticPlacementPort } from './graphMutations'
 import { createGraphMutations } from './graphMutations'
@@ -326,6 +327,34 @@ describe('graphMutations', () => {
     expect(
       useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
     ).toBe('My Custom Sampler')
+  })
+
+  // A record that predates any CRDT reconcile (e.g. a plain canvas-added
+  // node) has no baseline at all, so an equally titleless payload is not
+  // evidence the doc's title is unchanged — it should fall back through
+  // `nodeTitle`, not pin the node at whatever placeholder title it happens
+  // to carry.
+  it('does not preserve a pre-existing title with no CRDT baseline against an equally titleless payload', () => {
+    const graph = mutations()
+    useNodeDataStore().registerNode(
+      scope,
+      createNodeState({
+        id: toNodeId(5),
+        graphId: scope.owningGraphId,
+        type: 'Type5',
+        title: ''
+      })
+    )
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({ id: 5, type: 'Type5' })
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(5))?.title
+    ).toBe('Type5')
   })
 
   it('still applies a title the doc payload genuinely changed to', () => {
