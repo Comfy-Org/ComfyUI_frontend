@@ -231,84 +231,102 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
     return true
   }
 
+  function handleCreateNode(
+    change: LayoutChangeView,
+    operation: LayoutChangeView['operation'],
+    inTeardown: boolean
+  ): void {
+    if (!gate(change, inTeardown)) return
+    if (reportUnrepresentableInteriorChange(operation, 'create')) return
+    if (reportOpForUnboundGraph(operation, 'create')) return
+    if (operation.nodeId === undefined || !operation.layout) return
+    const nodeIdKey = String(operation.nodeId)
+    const mintedNodeIds = mintedNodeIdsForRoot(operation.graphId ?? null)
+    if (mintedNodeIds.has(nodeIdKey)) return
+    const node = deps.source.serializeNode(nodeIdKey)
+    if (!node) {
+      // A dropped human mint is a local-graph-vs-doc divergence; it must
+      // be observable, never silent (the surfacing-honesty principle).
+      console.error(
+        '[agent-crdt] add_node mint dropped: no snapshot for node',
+        operation.nodeId
+      )
+      return
+    }
+    deps.enqueue([
+      {
+        op: 'add_node',
+        node_id: operation.nodeId,
+        class_type: node.type,
+        pos: [operation.layout.position.x, operation.layout.position.y],
+        node: withoutGhostFlag(node)
+      }
+    ])
+    mintedNodeIds.add(nodeIdKey)
+  }
+
+  function handleDeleteNode(
+    change: LayoutChangeView,
+    operation: LayoutChangeView['operation'],
+    inTeardown: boolean
+  ): void {
+    // The document lost this id the moment a same-graph, root-owned
+    // deleteNode change fired, regardless of whether this port also
+    // gates the delete_node op for echo-suppression or teardown - the
+    // two questions are independent (see the leading comment on
+    // `mintedNodeIdsByRoot`). A subgraph-interior delete carries the
+    // root's graphId with a different ownerGraphId, so it must not
+    // forget an entry from the root's bucket for what is really a
+    // different node's namespace.
+    if (operation.nodeId === undefined) return
+    if (operation.ownerGraphId === operation.graphId) {
+      mintedNodeIdsByRoot
+        .get(operation.graphId ?? null)
+        ?.delete(String(operation.nodeId))
+    }
+    if (!gate(change, inTeardown)) return
+    if (reportUnrepresentableInteriorChange(operation, 'delete')) return
+    if (reportOpForUnboundGraph(operation, 'delete')) return
+    deps.enqueue([
+      {
+        op: 'delete_node',
+        node_id: operation.nodeId,
+        removed_links: deps.severedLinks.take(String(operation.nodeId))
+      }
+    ])
+  }
+
+  function handleClearGraph(
+    change: LayoutChangeView,
+    operation: LayoutChangeView['operation'],
+    inTeardown: boolean
+  ): void {
+    if (reportOpForUnboundGraph(operation, 'clear')) return
+    const captured = intentionalClearNodes
+    intentionalClearNodes = null
+    // Only an intentional (human-confirmed) clear may forget this
+    // graph's dedupe bucket: an incidental clearGraph outside that
+    // bracket - a tab switch reconfiguring the shared canvas graph in
+    // place - mints no doc-level clear and must leave the bucket alone
+    // for nodes that are still in the doc, or a later replay re-mints
+    // them (id_collision).
+    if (captured !== null) {
+      mintedNodeIdsByRoot.delete(operation.graphId ?? null)
+    }
+    if (!gate(change, inTeardown || captured === null)) return
+    deps.enqueue([{ op: 'clear', removed_nodes: captured ?? [] }])
+  }
+
   function onChange(change: LayoutChangeView): void {
     const operation = change.operation
     const inTeardown = deps.session.inTeardown()
     switch (operation.type) {
-      case 'createNode': {
-        if (!gate(change, inTeardown)) return
-        if (reportUnrepresentableInteriorChange(operation, 'create')) return
-        if (reportOpForUnboundGraph(operation, 'create')) return
-        if (operation.nodeId === undefined || !operation.layout) return
-        const nodeIdKey = String(operation.nodeId)
-        const mintedNodeIds = mintedNodeIdsForRoot(operation.graphId ?? null)
-        if (mintedNodeIds.has(nodeIdKey)) return
-        const node = deps.source.serializeNode(nodeIdKey)
-        if (!node) {
-          // A dropped human mint is a local-graph-vs-doc divergence; it must
-          // be observable, never silent (the surfacing-honesty principle).
-          console.error(
-            '[agent-crdt] add_node mint dropped: no snapshot for node',
-            operation.nodeId
-          )
-          return
-        }
-        deps.enqueue([
-          {
-            op: 'add_node',
-            node_id: operation.nodeId,
-            class_type: node.type,
-            pos: [operation.layout.position.x, operation.layout.position.y],
-            node: withoutGhostFlag(node)
-          }
-        ])
-        mintedNodeIds.add(nodeIdKey)
-        return
-      }
-      case 'deleteNode': {
-        // The document lost this id the moment a same-graph, root-owned
-        // deleteNode change fired, regardless of whether this port also
-        // gates the delete_node op for echo-suppression or teardown - the
-        // two questions are independent (see the leading comment on
-        // `mintedNodeIdsByRoot`). A subgraph-interior delete carries the
-        // root's graphId with a different ownerGraphId, so it must not
-        // forget an entry from the root's bucket for what is really a
-        // different node's namespace.
-        if (operation.nodeId === undefined) return
-        if (operation.ownerGraphId === operation.graphId) {
-          mintedNodeIdsByRoot
-            .get(operation.graphId ?? null)
-            ?.delete(String(operation.nodeId))
-        }
-        if (!gate(change, inTeardown)) return
-        if (reportUnrepresentableInteriorChange(operation, 'delete')) return
-        if (reportOpForUnboundGraph(operation, 'delete')) return
-        deps.enqueue([
-          {
-            op: 'delete_node',
-            node_id: operation.nodeId,
-            removed_links: deps.severedLinks.take(String(operation.nodeId))
-          }
-        ])
-        return
-      }
-      case 'clearGraph': {
-        if (reportOpForUnboundGraph(operation, 'clear')) return
-        const captured = intentionalClearNodes
-        intentionalClearNodes = null
-        // Only an intentional (human-confirmed) clear may forget this
-        // graph's dedupe bucket: an incidental clearGraph outside that
-        // bracket - a tab switch reconfiguring the shared canvas graph in
-        // place - mints no doc-level clear and must leave the bucket alone
-        // for nodes that are still in the doc, or a later replay re-mints
-        // them (id_collision).
-        if (captured !== null) {
-          mintedNodeIdsByRoot.delete(operation.graphId ?? null)
-        }
-        if (!gate(change, inTeardown || captured === null)) return
-        deps.enqueue([{ op: 'clear', removed_nodes: captured ?? [] }])
-        return
-      }
+      case 'createNode':
+        return handleCreateNode(change, operation, inTeardown)
+      case 'deleteNode':
+        return handleDeleteNode(change, operation, inTeardown)
+      case 'clearGraph':
+        return handleClearGraph(change, operation, inTeardown)
       default:
         return
     }
