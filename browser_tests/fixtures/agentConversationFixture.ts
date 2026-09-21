@@ -874,9 +874,7 @@ export class AgentConversationHarness {
     const inner = outer.definitions!.subgraphs[0]
     const { frame, outerId } = this.host.seedNestedDefinition(
       { ...outer, definitions: undefined },
-      inner,
-      outer.id,
-      inner.id
+      inner
     )
     this.hostSocket.send(frame)
     return outerId
