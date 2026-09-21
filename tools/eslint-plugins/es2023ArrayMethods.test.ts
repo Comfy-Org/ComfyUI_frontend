@@ -3,7 +3,8 @@ import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
 
 const eslint = new ESLint()
-const runtimeFilePath = 'src/es2023-array-method-coverage.ts'
+const runtimeFilePath = 'src/config/subscriptionPricesConfig.ts'
+const testFilePath = 'src/types/linkId.test.ts'
 
 describe('ES2023 array method restrictions', () => {
   it.for([
@@ -56,7 +57,7 @@ items.toReversed()
 items['toSorted']()
 items.toSpliced(0, 1)
 items['with'](0, 1)`,
-      { filePath: 'src/es2023-array-method-coverage.test.ts' }
+      { filePath: testFilePath }
     )
 
     expect(result.messages).toEqual([])
