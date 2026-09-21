@@ -17,10 +17,8 @@ import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
-import { cn } from '@comfyorg/tailwind-utils'
-
-import UserIcon from '@/components/icons/UserIcon.vue'
 import HeaderAccountMenu from './HeaderAccountMenu.vue'
+import HeaderSignInLink from './HeaderSignInLink.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
 
 const { locale = 'en', compact = false } = defineProps<{
@@ -314,25 +312,15 @@ async function signOutFromMenu() {
 
 <template>
   <div v-if="enabled" class="shrink-0">
-    <a
+    <HeaderSignInLink
       v-if="!user"
       :href="signInHref"
-      data-testid="header-sign-in"
-      :class="
-        cn(
-          'flex h-10 items-center justify-center rounded-2xl bg-transparency-white-t4 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 md:text-sm',
-          compact ? 'w-10' : 'px-6 py-2.5'
-        )
-      "
+      :locale
+      :compact
       @pointerdown="prepareSignInHref"
       @focus="prepareSignInHref"
       @click="goToSignIn"
-    >
-      <UserIcon v-if="compact" class="size-5" />
-      <span :class="cn(compact && 'sr-only')">{{
-        t('auth.header.signIn', locale)
-      }}</span>
-    </a>
+    />
 
     <button
       v-else-if="!session && sessionFailure"
