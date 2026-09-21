@@ -2,6 +2,11 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  clearAllWorkflowStorage,
+  clearWorkflowRestoreState
+} from '@/platform/workflow/persistence/base/storageIO'
+
+import {
   DOC_ID_SESSION_KEY,
   DOC_ID_TTL_MS,
   clearPersistedDocId,
@@ -143,9 +148,7 @@ describe('persistedDocId', () => {
   })
 
   describe('identity transitions drop the binding', () => {
-    it('workspace switching clears it', async () => {
-      const { clearWorkflowRestoreState } =
-        await import('@/platform/workflow/persistence/base/storageIO')
+    it('workspace switching clears it', () => {
       persistDocId('wf-1')
 
       clearWorkflowRestoreState()
@@ -153,9 +156,7 @@ describe('persistedDocId', () => {
       expect(rawRecord()).toBeNull()
     })
 
-    it('signing out clears it', async () => {
-      const { clearAllWorkflowStorage } =
-        await import('@/platform/workflow/persistence/base/storageIO')
+    it('signing out clears it', () => {
       persistDocId('wf-1')
 
       clearAllWorkflowStorage()
