@@ -992,11 +992,25 @@ describe('graphMutations', () => {
 
   it('lets two connects on one target within a batch both keep their links', () => {
     const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(
+      {
+        ...node(2),
+        inputs: [
+          { name: 'in', type: 'IMAGE', link: null },
+          { name: 'grown', type: 'IMAGE', link: null }
+        ]
+      },
+      context
+    )
+    graph.addNode(node(3), context)
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    const [firstInput, grownInput] = target.inputs
+    Object.assign(firstInput, { label: 'live input' })
+    Object.assign(grownInput, { label: 'live grown input' })
+
     expect(
       graph.batch(context, (batch) => {
-        batch.addNode(node(1))
-        batch.addNode(node(2))
-        batch.addNode(node(3))
         batch.connect({
           id: 5,
           originNodeId: 1,
@@ -1024,12 +1038,15 @@ describe('graphMutations', () => {
       })
     ).toBe(true)
 
-    const target = useNodeDataStore()
-      .getGraphNodesFor('root', 'root')
-      .find(({ id }) => id === toNodeId(2))
-    expect(target?.inputs.map(({ link }) => link)).toEqual([
+    expect(target.inputs.map(({ link }) => link)).toEqual([
       toLinkId(5),
       toLinkId(9)
+    ])
+    expect(target.inputs[0]).toBe(firstInput)
+    expect(target.inputs[1]).toBe(grownInput)
+    expect(target.inputs.map(({ label }) => label)).toEqual([
+      'live input',
+      'live grown input'
     ])
   })
 

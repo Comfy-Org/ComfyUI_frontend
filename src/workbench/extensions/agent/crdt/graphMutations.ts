@@ -73,19 +73,6 @@ function patchLiveSlot(live: object, serialized: object): void {
   )
 }
 
-/**
- * One endpoint's prepared slot patch. The document's slots and the live slots
- * they are merged onto are decided together at prepare time and are only ever
- * read together at commit, so they travel as one value rather than as two
- * optionals that could disagree about whether this endpoint was prepared.
- */
-interface EndpointPatch<TSlots> {
-  /** Slots derived from the document, in document order. */
-  serialized: TSlots
-  /** The node's own slot objects, whose identity commit must preserve. */
-  live: TSlots
-}
-
 interface SemanticNodeLayout {
   position: { x: number; y: number }
   size: { width: number; height: number }
@@ -236,8 +223,8 @@ type PreparedMutation =
   | {
       kind: 'connect'
       topology: LinkTopology
-      originPatch?: EndpointPatch<NodeState['outputs']>
-      targetPatch?: EndpointPatch<NodeState['inputs']>
+      originOutputs?: NodeState['outputs']
+      targetInputs?: NodeState['inputs']
     }
   | {
       kind: 'removeMissing'
@@ -846,16 +833,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             kind: mutation.kind,
             topology,
             ...(mutation.link.originOutputs && {
-              originPatch: {
-                serialized: originOutputs,
-                live: [...origin.outputs]
-              }
+              originOutputs
             }),
             ...(mutation.link.targetInputs && {
-              targetPatch: {
-                serialized: targetInputs,
-                live: [...target.inputs]
-              }
+              targetInputs
             })
           })
           break
@@ -1265,40 +1246,40 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const target = endpointNodes.get(
             nodeKey(mutation.topology.targetNodeId)
           )
-          if (origin && mutation.originPatch) {
-            const { serialized, live } = mutation.originPatch
+          if (origin && mutation.originOutputs) {
+            const outputs = [...mutation.originOutputs]
             // Outputs keep their document positions, so each live slot is
             // patched from the serialized slot sharing its index.
-            for (const [index, output] of live.entries()) {
-              if (isSlotRecord(output) && isSlotRecord(serialized[index])) {
-                patchLiveSlot(output, serialized[index])
+            for (const [index, output] of origin.outputs.entries()) {
+              if (isSlotRecord(output) && isSlotRecord(outputs[index])) {
+                patchLiveSlot(output, outputs[index])
               }
-              serialized[index] = output
+              outputs[index] = output
             }
             nodeStore.updateNodeSlots(
               scope,
               origin.id,
-              { inputs: origin.inputs, outputs: serialized },
+              { inputs: origin.inputs, outputs },
               context
             )
           }
-          if (target && mutation.targetPatch) {
-            const { serialized, live } = mutation.targetPatch
+          if (target && mutation.targetInputs) {
+            const inputs = [...mutation.targetInputs]
             // Inputs may have been reordered locally, so each live slot is
             // matched to its serialized slot by name (CRDT-INPUTS-0030).
-            for (const input of live) {
+            for (const input of target.inputs) {
               if (!isSlotRecord(input)) continue
-              const index = serialized.findIndex(
+              const index = inputs.findIndex(
                 (candidate) => candidate.name === input.name
               )
               if (index < 0) continue
-              patchLiveSlot(input, serialized[index])
-              serialized[index] = input
+              patchLiveSlot(input, inputs[index])
+              inputs[index] = input
             }
             nodeStore.updateNodeSlots(
               scope,
               target.id,
-              { inputs: serialized, outputs: target.outputs },
+              { inputs, outputs: target.outputs },
               context
             )
           }
