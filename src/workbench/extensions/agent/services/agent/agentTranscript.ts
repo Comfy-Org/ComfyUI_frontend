@@ -151,6 +151,62 @@ function parseToolCalls(
   return parts.length > 0 ? parts : undefined
 }
 
+/**
+ * Appends a persisted assistant row's tool-call and text parts onto its
+ * running message.
+ */
+function appendAssistantContent(
+  message: AssistantMessage,
+  row: AgentMessages[number],
+  text: string
+): void {
+  const toolCalls = parseToolCalls(row.content)
+  if (toolCalls) message.parts = [...message.parts, ...toolCalls]
+  if (text)
+    message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
+}
+
+/**
+ * A row's `pending_ask` carries a `run_approval` context only while that row
+ * is still mid-ask; this reads it into the flat shape the `runApproval` part
+ * renders, or `undefined` once the ask is resolved or absent.
+ */
+function pendingRunApproval(
+  row: AgentMessages[number]
+): { askId: string; workflowId?: string; workflowName?: string } | undefined {
+  const ask = row.pending_ask
+  if (ask?.kind !== 'run_approval') return undefined
+  return {
+    askId: ask.ask_id,
+    workflowId: ask.context?.workflow_id || undefined,
+    workflowName: ask.context?.workflow_name || undefined
+  }
+}
+
+/**
+ * Applies one persisted assistant row onto its running message: appends any
+ * parsed tool-call parts and text part, then, when the row is mid-ask,
+ * attaches a `runApproval` part and marks the message still-streaming.
+ * Returns the `pending` entry to record when the row is mid-ask, or
+ * `undefined` otherwise.
+ */
+function applyAssistantRow(
+  row: AgentMessages[number],
+  message: AssistantMessage,
+  text: string
+): NormalizedAgentTranscript['pending'] {
+  message.streaming = false
+  appendAssistantContent(message, row, text)
+
+  if (row.status !== 'streaming') return undefined
+  const runApproval = pendingRunApproval(row)
+  if (!runApproval) return undefined
+
+  message.parts.push({ type: 'runApproval', ...runApproval })
+  message.streaming = true
+  return { messageId: row.id as TurnId, message }
+}
+
 export function normalizeAgentTranscript(
   history: AgentMessages
 ): NormalizedAgentTranscript {
@@ -188,30 +244,8 @@ export function normalizeAgentTranscript(
     }
     if (row.role === 'assistant') {
       const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
-      message.streaming = false
-      const toolCalls = parseToolCalls(row.content)
-      if (toolCalls) message.parts = [...message.parts, ...toolCalls]
-      if (text)
-        message.parts = [
-          ...message.parts,
-          { type: 'text', text, state: 'done' }
-        ]
-      if (
-        row.status === 'streaming' &&
-        row.pending_ask?.kind === 'run_approval'
-      ) {
-        message.parts.push({
-          type: 'runApproval',
-          askId: row.pending_ask.ask_id,
-          workflowId: row.pending_ask.context?.workflow_id || undefined,
-          workflowName: row.pending_ask.context?.workflow_name || undefined
-        })
-        message.streaming = true
-        pending = {
-          messageId: row.id as TurnId,
-          message
-        }
-      }
+      const rowPending = applyAssistantRow(row, message, text)
+      if (rowPending) pending = rowPending
       assistants.set(turnId, message)
     }
   }
