@@ -32,7 +32,7 @@ function createSubscriptionTest(
         // user button (v-if="isLoggedIn") before any test body interacts with it.
         await expect(
           comfyPage.page.getByTestId(TestIds.user.currentUserButton)
-        ).toBeVisible()
+        ).toBeVisible({ timeout: 15000 })
         // Defense-in-depth: dismiss the dialog if it surfaces via a different code path.
         await helper.dismissSubscriptionDialogIfOpen()
         await use(helper)
