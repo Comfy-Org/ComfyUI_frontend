@@ -15,6 +15,14 @@ import type { UUID } from '@/utils/uuid'
 export type NodeProperty = string | number | boolean | object | null
 
 /**
+ * The durable node flags a local edit may write back to a bound CRDT document.
+ * Narrower than {@link INodeFlags} on purpose: `ghost` is transient placement
+ * state the document must never hold, and the remaining flags have no UI that
+ * toggles them.
+ */
+export type NodeFlagsPatch = Pick<INodeFlags, 'collapsed' | 'pinned'>
+
+/**
  * The fields the renderer draws. Selection, execution, errors, geometry, widget
  * values and links live elsewhere — see docs/architecture/node-data-store.md.
  */

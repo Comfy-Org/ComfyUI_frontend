@@ -7,7 +7,7 @@ import type {
   OwningGraphId,
   RootGraphId
 } from '@/types/graphScopeId'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeFlagsPatch, NodeState } from '@/types/nodeState'
 import type { NodeId } from '@/types/nodeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { UUID } from '@/utils/uuid'
@@ -169,6 +169,31 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     return true
   }
 
+  /**
+   * Applies a durable node-flag patch as one named, serializable command.
+   *
+   * Collapse and pin are durable node state a collaborator must see, so they
+   * take the command seam ADR-CRDT-LAYOUT-0003 prescribes for durable
+   * mutations rather than a direct `node.flags.x = …` write: an observer (the
+   * CRDT mint ports) can then relay the change to a bound document.
+   *
+   * @returns Whether the patch changed the node.
+   */
+  function setNodeFlags(
+    graphScope: GraphScope,
+    nodeId: NodeId,
+    flags: NodeFlagsPatch,
+    _context?: RemoteMutationContext
+  ): boolean {
+    const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
+    if (!state || state.graphId !== graphScope.owningGraphId) return false
+    const entries = Object.entries(flags) as [keyof NodeFlagsPatch, boolean][]
+    if (entries.every(([key, value]) => state.flags[key] === value))
+      return false
+    Object.assign(state.flags, flags)
+    return true
+  }
+
   function assignNodeFields(state: NodeState, replacement: NodeState): void {
     const {
       graphId: _graphId,
@@ -214,6 +239,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     getNode,
     ownsNode,
     registerNode,
+    setNodeFlags,
     updateNode,
     updateNodeFields,
     updateNodeSlots

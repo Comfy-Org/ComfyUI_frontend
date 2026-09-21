@@ -77,7 +77,7 @@ export interface LayoutMintPort {
  * record it: the placement click clears the flag locally and mints no op, so the
  * document's copy would outlive the placement it describes.
  */
-function withoutGhostFlag(node: WorkflowNode): WorkflowNode {
+export function withoutGhostFlag(node: WorkflowNode): WorkflowNode {
   if (node.flags?.ghost === undefined) return node
   const { ghost: _ghost, ...flags } = node.flags
   return { ...node, flags }

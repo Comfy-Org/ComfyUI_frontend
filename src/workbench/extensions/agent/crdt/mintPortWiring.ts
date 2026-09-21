@@ -12,6 +12,7 @@ import type { NodeId } from '@/types/nodeId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { isFloatingTopology } from '@/types/linkTopology'
 import { isRemoteMutationContext } from '@/types/graphMutationContext'
@@ -22,6 +23,7 @@ import type { GraphOperation } from './graphOperations'
 import { attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { attachLinkMintPort } from './linkMintPort'
+import { attachNodeFlagMintPort } from './nodeFlagMintPort'
 import { attachWidgetMintPort } from './widgetMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
@@ -174,6 +176,21 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const placedListeners = new Set<PlacedListener>()
   const deletedListeners = new Set<DeletedListener>()
   const setListeners = new Set<SetListener>()
+  type FlagsListener = Parameters<
+    Parameters<typeof attachNodeFlagMintPort>[0]['events']['onFlagsChanged']
+  >[0]
+  const flagsListeners = new Set<FlagsListener>()
+
+  function rootGraphId(): string | null {
+    const graph = deps.getGraph()
+    if (!graph) return null
+    return graph.rootGraph?.id ?? graph.id
+  }
+
+  function serializeNode(id: string): WorkflowNode | null {
+    const node = deps.getGraph()?.getNodeById(id as NodeId)
+    return node ? serializeForMint(node) : null
+  }
 
   const linkPort = attachLinkMintPort({
     events: {
@@ -200,14 +217,26 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
     source: {
-      serializeNode(id) {
-        const node = deps.getGraph()?.getNodeById(id as NodeId)
-        return node ? serializeForMint(node) : null
-      },
+      serializeNode,
       nodeIds() {
         return (deps.getGraph()?._nodes ?? []).map((node) => node.id)
       }
     },
+    enqueue
+  })
+
+  const nodeFlagPort = attachNodeFlagMintPort({
+    events: {
+      onFlagsChanged(listener) {
+        flagsListeners.add(listener)
+        return () => flagsListeners.delete(listener)
+      }
+    },
+    session,
+    isEnabled: deps.isEnabled,
+    isDocBound: deps.isDocBound,
+    rootGraphId,
+    serializeNode,
     enqueue
   })
 
@@ -221,11 +250,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     session,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
-    rootGraphId() {
-      const graph = deps.getGraph()
-      if (!graph) return null
-      return graph.rootGraph?.id ?? graph.id
-    },
+    rootGraphId,
     resolveInteriorPath(owningGraphId) {
       const graph = deps.getGraph()
       if (!graph) return null
@@ -235,7 +260,21 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   })
 
   const linkStore = useLinkStore()
+  const nodeDataStore = useNodeDataStore()
   const widgetStore = useWidgetValueStore()
+
+  const detachNodeFlagActions = nodeDataStore.$onAction(
+    ({ name, args, after }) => {
+      if (name !== 'setNodeFlags') return
+      const [graphScope, nodeId, , context] = args
+      if (isRemoteMutationContext(context)) return
+      after((changed) => {
+        if (!changed) return
+        for (const listener of flagsListeners)
+          listener({ graphId: graphScope.owningGraphId, nodeId })
+      })
+    }
+  )
 
   const detachLinkActions = linkStore.$onAction(({ name, args, after }) => {
     // The remote origin travels on the store call itself. Do not rely on the
@@ -294,7 +333,9 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     detach() {
       activeWirings.delete(wiring)
       detachLinkActions()
+      detachNodeFlagActions()
       detachWidgetChanges()
+      nodeFlagPort.detach()
       widgetPort.detach()
       layoutPort.detach()
       linkPort.detach()

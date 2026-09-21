@@ -18,7 +18,7 @@ import type {
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeFlagsPatch, NodeState } from '@/types/nodeState'
 
 /**
  * Wraps a node's `inputs` array with a rehydration view — e.g.
@@ -81,6 +81,21 @@ export function setTrackedNodeState<K extends keyof NodeState>(
     oldValue,
     newValue: value
   })
+}
+
+/**
+ * Writes durable node flags through {@link useNodeDataStore}'s command seam,
+ * so an observer can relay the change (see the store action's contract). A
+ * node that has not joined a graph yet has no scope to command against, and
+ * writes its own shell state directly.
+ */
+export function setNodeFlags(node: LGraphNode, flags: NodeFlagsPatch): void {
+  const graphScope = node._graphScope
+  if (!graphScope) {
+    Object.assign(node._state.flags, flags)
+    return
+  }
+  useNodeDataStore().setNodeFlags(graphScope, node.id, flags)
 }
 
 /**

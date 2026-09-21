@@ -2,6 +2,7 @@ import { toValue } from 'vue'
 
 import {
   createNodeShellState,
+  setNodeFlags,
   setTrackedNodeState
 } from '@/core/graph/nodeShell/nodeShellState'
 import {
@@ -3749,7 +3750,7 @@ export class LGraphNode
     if (!this.collapsible && !force) return
     if (!this.graph) throw new NullGraphError()
     this.graph.incrementVersion()
-    this.flags.collapsed = !this.flags.collapsed
+    setNodeFlags(this, { collapsed: !this.flags.collapsed })
     this.setDirtyCanvas(true, true)
   }
 
@@ -3777,9 +3778,9 @@ export class LGraphNode
     if (!this.graph) throw new NullGraphError()
 
     this.graph.incrementVersion()
-    this.flags.pinned = v ?? !this.flags.pinned
-    this.resizable = !this.pinned
-    if (!this.pinned) this.flags.pinned = undefined
+    const pinned = v ?? !this.flags.pinned
+    setNodeFlags(this, { pinned: pinned || undefined })
+    this.resizable = !pinned
   }
 
   unpin(): void {
