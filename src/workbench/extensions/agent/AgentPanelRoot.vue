@@ -472,7 +472,14 @@ function targetWorkflowTurnContext(
   const target = originWorkflow(origin)
   if (!target) return undefined
   const id = cloudIdFor(target)
-  if (id === undefined && !target.isTemporary && origin !== undefined)
+  // Saved local files never get a cloud id; the local agent adopts them like
+  // an unsaved tab.
+  if (
+    id === undefined &&
+    !target.isTemporary &&
+    origin !== undefined &&
+    import.meta.env.VITE_AGENT_STANDALONE !== 'true'
+  )
     return undefined
   return id === undefined
     ? { tabPath: target.path }

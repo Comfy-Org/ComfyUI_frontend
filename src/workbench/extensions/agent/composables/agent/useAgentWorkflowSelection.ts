@@ -64,11 +64,13 @@ export function useAgentWorkflowSelection({
   let targetSelectionGeneration = 0
   function commitWorkflowTarget(
     workflow: ComfyWorkflow,
-    workflowId: string
+    workflowId: string | null
   ): void {
-    bindingStore.bind(workflowId, workflow.path)
+    if (workflowId !== null) {
+      bindingStore.bind(workflowId, workflow.path)
+      composerStore.removeWorkflowReference(workflowId)
+    }
     panelStore.setWorkflowTarget(workflow)
-    composerStore.removeWorkflowReference(workflowId)
   }
 
   async function prepareWorkflowSelection(
@@ -78,6 +80,11 @@ export function useAgentWorkflowSelection({
     function fail(detail?: string): undefined {
       if (isCurrent()) warnWorkflowSelectionFailed(detail)
       return undefined
+    }
+    if (import.meta.env.VITE_AGENT_STANDALONE === 'true') {
+      const workflowId = cloudIdFor(tab)
+      if (workflowId === undefined) warnWorkflowUnavailable()
+      return workflowId
     }
     try {
       if (tab.isTemporary && cloudIdFor(tab) === undefined) {
@@ -120,7 +127,12 @@ export function useAgentWorkflowSelection({
       generation === targetSelectionGeneration &&
       workflowStore.openWorkflows.includes(tab)
     try {
-      const workflowId = await prepareWorkflowSelection(tab, isCurrent)
+      // The local agent mints a workflow for an unbound target on its first
+      // send and the session adopts it onto this tab, so nothing is saved here.
+      const workflowId =
+        import.meta.env.VITE_AGENT_STANDALONE === 'true'
+          ? (cloudIdFor(tab) ?? null)
+          : await prepareWorkflowSelection(tab, isCurrent)
       if (workflowId === undefined || !isCurrent()) return false
       if (!(await workflowService.openWorkflow(tab))) {
         if (isCurrent())

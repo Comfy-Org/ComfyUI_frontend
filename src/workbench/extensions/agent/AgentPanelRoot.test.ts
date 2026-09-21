@@ -6791,3 +6791,81 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 })
+
+describe('AgentPanelRoot in the standalone agent harness', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+    vi.stubGlobal(
+      'WebSocket',
+      class {
+        addEventListener(): void {}
+        close(): void {}
+      }
+    )
+    ws.clear()
+    useAgentPanelStore().enabled = true
+  })
+
+  function stubLocalAgent(workflowId: string) {
+    const bodies: Record<string, unknown>[] = []
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes('/messages') && init?.method === 'POST') {
+        bodies.push(JSON.parse(String(init.body)))
+        return json(202, ack(workflowId))
+      }
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      if (url.includes('/workflows')) return json(404, { error: 'not found' })
+      return new Response('{}', { status: 200 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    return { bodies, fetchMock }
+  }
+
+  it.for([
+    { label: 'an unsaved tab', isTemporary: true },
+    { label: 'a saved local file', isTemporary: false }
+  ])(
+    'sends from $label without the cloud index or a save, then binds the minted workflow',
+    async ({ isTemporary }) => {
+      const activeState = fromPartial<ComfyWorkflowJSON>({
+        nodes: [{ id: 1, type: 'LoadImage' }],
+        links: []
+      })
+      const tab = addTab('workflows/Unsaved Workflow (6).json', {
+        isTemporary,
+        activeState
+      })
+      workflowStore.activeWorkflow = tab
+      const { bodies, fetchMock } = stubLocalAgent('wf-minted')
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('build here')
+      await userEvent.keyboard('{Enter}')
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: 'Unsaved Workflow (6)'
+        })
+      )
+      await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+      await vi.waitFor(() => expect(bodies).toHaveLength(1))
+      expect(bodies[0]).toMatchObject({
+        content: 'build here',
+        draft: { content: activeState }
+      })
+      expect(bodies[0]).not.toHaveProperty('workflow_id')
+      await vi.waitFor(() =>
+        expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-minted')).toBe(
+          tab.path
+        )
+      )
+      expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+      expect(
+        fetchMock.mock.calls.some(([url]) => url.includes('/workflows'))
+      ).toBe(false)
+    }
+  )
+})

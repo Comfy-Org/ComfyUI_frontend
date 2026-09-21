@@ -45,6 +45,9 @@ export function useAgentWorkflowResolver({
   })
 
   async function refreshCloudWorkflowIds(): Promise<boolean> {
+    // The local agent has no cloud workflow index; tabs bind to the ids it
+    // mints on send instead.
+    if (import.meta.env.VITE_AGENT_STANDALONE === 'true') return true
     const generation = ++refreshGeneration
     try {
       const entries = await listCloudWorkflows()
