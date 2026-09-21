@@ -260,6 +260,17 @@ describe('useNodeEventHandlers', () => {
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
     })
 
+    it('keeps the node order unchanged on select and on pointer-up toggle', () => {
+      const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
+        useNodeEventHandlers()
+
+      handleNodeSelect(new PointerEvent('pointerdown'), testNodeId)
+      toggleNodeSelectionAfterPointerUp(testNodeId, false)
+      toggleNodeSelectionAfterPointerUp(testNodeId, true)
+
+      expect(mockLayoutMutations.setNodeOrder).not.toHaveBeenCalled()
+    })
+
     it('leaves the title unchanged', () => {
       const { handleNodeTitleUpdate } = useNodeEventHandlers()
 

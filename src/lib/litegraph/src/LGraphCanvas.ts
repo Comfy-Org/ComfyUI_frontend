@@ -2649,11 +2649,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           ) {
             // In title bar
             pointer.onClick = () => this.processSelect(group, e)
-            pointer.onDragStart = (pointer) => {
-              group.recomputeInsideNodes()
-              this._startDraggingItems(group, pointer, true)
+            if (!this.selectOnly) {
+              pointer.onDragStart = (pointer) => {
+                group.recomputeInsideNodes()
+                this._startDraggingItems(group, pointer, true)
+              }
+              pointer.onDragEnd = (e) => this._processDraggedItems(e)
             }
-            pointer.onDragEnd = (e) => this._processDraggedItems(e)
           }
         }
 
@@ -2760,7 +2762,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     pointer.onClick = () => this.processSelect(node, e)
 
     // Immediately bring to front
-    if (!node.flags.pinned) {
+    if (!node.flags.pinned && !this.selectOnly) {
       this.bringToFront(node)
     }
 

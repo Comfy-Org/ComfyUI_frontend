@@ -286,6 +286,53 @@ describe('LGraphCanvas selectOnly', () => {
   })
 
   it.for([
+    { selectOnly: false, snaps: 1 },
+    { selectOnly: true, snaps: 0 }
+  ])(
+    'ending a group title-bar drag with selectOnly=$selectOnly snaps the selected items $snaps times',
+    ({ selectOnly, snaps }) => {
+      const { canvas, graph } = createHarness()
+      const group = new LGraphGroup('Group')
+      group._bounding.set([300, 300, 100, 100])
+      graph.add(group)
+      const snapToGrid = vi.spyOn(graph, 'snapToGrid')
+      canvas.selectOnly = selectOnly
+
+      canvas['_processPrimaryButton'](
+        fromPartial<CanvasPointerEvent>({ canvasX: 350, canvasY: 310 }),
+        undefined
+      )
+      canvas.pointer.onDragEnd?.(
+        fromPartial<CanvasPointerEvent>({ shiftKey: true })
+      )
+
+      expect(snapToGrid).toHaveBeenCalledTimes(snaps)
+    }
+  )
+
+  it.for([
+    { selectOnly: false, reorders: 1 },
+    { selectOnly: true, reorders: 0 }
+  ])(
+    'clicking a node with selectOnly=$selectOnly brings it to the front $reorders times',
+    ({ selectOnly, reorders }) => {
+      const { canvas, firstNode } = createHarness()
+      const bringToFront = vi
+        .spyOn(canvas, 'bringToFront')
+        .mockImplementation(() => {})
+      canvas.selectOnly = selectOnly
+
+      canvas['_processNodeClick'](
+        fromPartial<CanvasPointerEvent>({ canvasX: 150, canvasY: 140 }),
+        false,
+        firstNode
+      )
+
+      expect(bringToFront).toHaveBeenCalledTimes(reorders)
+    }
+  )
+
+  it.for([
     { selectOnly: false, searchBoxes: 1 },
     { selectOnly: true, searchBoxes: 0 }
   ])(
