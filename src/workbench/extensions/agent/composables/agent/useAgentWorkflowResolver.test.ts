@@ -337,4 +337,25 @@ describe('Agent workflow resolution', () => {
       expect(bindings.tabPathFor('cloud-zimage')).toBeUndefined()
     }
   )
+
+  it.for(['boundOrOpenWorkflowFor', 'storedWorkflowFor'] as const)(
+    'rejects a stale %s binding when the bound name is duplicated in the cloud index',
+    async (resolve) => {
+      const portrait = workflow('workflows/portrait.json', 'Portrait')
+      const { resolver, bindings } = setup(
+        [portrait],
+        [
+          { id: 'cloud-zimage', name: 'image_z_image_turbo' },
+          { id: 'cloud-portrait', name: 'Portrait' },
+          { id: 'cloud-portrait-copy', name: 'Portrait' }
+        ]
+      )
+      bindings.bind('cloud-zimage', portrait.path)
+      await resolver.refreshCloudWorkflowIds()
+
+      expect(resolver[resolve]('cloud-zimage')).toBeNull()
+      expect(resolver.cloudIdFor(portrait)).toBeUndefined()
+      expect(bindings.tabPathFor('cloud-zimage')).toBeUndefined()
+    }
+  )
 })
