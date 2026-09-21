@@ -12,12 +12,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 
 import type { MessageVariants } from '@/components/ui/message/message.variants'
 import Message from '@/components/ui/message/Message.vue'
 import type { components } from '@/types/comfyRegistryTypes'
-import { ImportFailedKey } from '@/workbench/extensions/manager/types/importFailedTypes'
 
 type PackVersionStatus = components['schemas']['NodeVersionStatus']
 type PackStatus = components['schemas']['NodeStatus']
@@ -28,14 +27,11 @@ type StatusProps = {
   severity: MessageVariants['severity']
 }
 
-const { statusType, hasCompatibilityIssues } = defineProps<{
+const { statusType, hasCompatibilityIssues, hasImportFailed } = defineProps<{
   statusType: Status
   hasCompatibilityIssues?: boolean
+  hasImportFailed?: boolean
 }>()
-
-// Inject import failed context from parent
-const importFailedContext = inject(ImportFailedKey)
-const importFailed = importFailedContext?.importFailed
 
 const statusPropsMap: Record<Status, StatusProps> = {
   NodeStatusActive: {
@@ -73,12 +69,12 @@ const statusPropsMap: Record<Status, StatusProps> = {
 }
 
 const statusLabel = computed(() => {
-  if (importFailed?.value) return 'importFailed'
+  if (hasImportFailed) return 'importFailed'
   if (hasCompatibilityIssues) return 'conflicting'
   return statusPropsMap[statusType]?.label || 'unknown'
 })
 const statusSeverity = computed(() => {
-  if (hasCompatibilityIssues || importFailed?.value) return 'error'
+  if (hasCompatibilityIssues || hasImportFailed) return 'error'
   return statusPropsMap[statusType]?.severity || 'secondary'
 })
 </script>

@@ -4,13 +4,13 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import {
-  type FallowReport,
   readReport,
   renderCloneGroups,
   renderComplexity,
   renderDeadCode,
   renderReport
 } from './fallow-findings'
+import type { FallowReport } from './fallow-findings'
 
 /**
  * The shape below is the real one: it is the abridged output of
@@ -118,7 +118,7 @@ describe('fallow findings renderer', () => {
           clone_groups: [
             {
               instances: [
-                REAL_REPORT.duplication!.clone_groups![0]!.instances![0]!
+                REAL_REPORT.duplication!.clone_groups![0].instances![0]
               ]
             }
           ]
