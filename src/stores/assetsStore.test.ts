@@ -9,6 +9,8 @@ import type {
   AssetResponse
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { api } from '@/scripts/api'
 
 // Mock the api module
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -84,6 +86,51 @@ vi.mock<unknown>(
     unflattenOutputAssets: vi.fn((items: AssetItem[]) => items)
   })
 )
+
+function createHistoryPage(start: number): JobListItem[] {
+  return Array.from({ length: 200 }, (_, index) => {
+    const id = `job_${start + index}`
+    return {
+      id,
+      status: 'completed',
+      create_time: start + index,
+      priority: 0,
+      outputs_count: 1,
+      previewable_outputs_count: 1,
+      preview_output: {
+        filename: `${id}.png`,
+        mediaType: 'images',
+        nodeId: '1',
+        subfolder: '',
+        type: 'output'
+      }
+    }
+  })
+}
+
+describe('assetsStore - OSS history pagination', () => {
+  it('serializes refresh with pagination without skipping the next offset', async () => {
+    let resolveFirstPage!: (jobs: JobListItem[]) => void
+    const firstPage = new Promise<JobListItem[]>((resolve) => {
+      resolveFirstPage = resolve
+    })
+    vi.mocked(api.getHistory)
+      .mockImplementationOnce(() => firstPage)
+      .mockResolvedValueOnce([])
+    const store = useAssetsStore()
+
+    const refresh = store.outputAssets.invalidate()
+    const pagination = store.outputAssets.loadMore()
+    await vi.waitFor(() => expect(api.getHistory).toHaveBeenCalledTimes(1))
+
+    resolveFirstPage(createHistoryPage(0))
+    await Promise.all([refresh, pagination])
+
+    expect(
+      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
+    ).toEqual([{ offset: 0 }, { offset: 200 }])
+  })
+})
 
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {

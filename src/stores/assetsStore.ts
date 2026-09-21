@@ -224,12 +224,14 @@ export const useAssetsStore = defineStore('assets', () => {
     const historyAssets = ref<AssetItem[]>([])
     const historyLoading = ref(false)
     const historyError = ref<unknown>(null)
+    let historyQueue = Promise.resolve()
+    let refreshPromise: Promise<void> | undefined
     let loadMorePromise: Promise<boolean> | undefined
 
     /**
      * Initial load of history assets
      */
-    const updateHistory = async () => {
+    const doUpdateHistory = async () => {
       historyLoading.value = true
       historyError.value = null
       try {
@@ -245,6 +247,16 @@ export const useAssetsStore = defineStore('assets', () => {
       } finally {
         historyLoading.value = false
       }
+    }
+
+    const updateHistory = () => {
+      if (!refreshPromise) {
+        refreshPromise = historyQueue.then(doUpdateHistory).finally(() => {
+          refreshPromise = undefined
+        })
+        historyQueue = refreshPromise
+      }
+      return refreshPromise
     }
 
     /**
@@ -272,11 +284,14 @@ export const useAssetsStore = defineStore('assets', () => {
     }
 
     const loadMoreHistory = () => {
-      if (!hasMoreHistory.value) return Promise.resolve(false)
       if (!loadMorePromise) {
-        loadMorePromise = doLoadMoreHistory().finally(() => {
+        const operation = historyQueue.then(() =>
+          hasMoreHistory.value ? doLoadMoreHistory() : false
+        )
+        loadMorePromise = operation.finally(() => {
           loadMorePromise = undefined
         })
+        historyQueue = operation.then(() => undefined)
       }
       return loadMorePromise
     }

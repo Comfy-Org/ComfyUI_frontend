@@ -206,7 +206,7 @@ const createInputMappingWidget = (
 
   async function loadAll() {
     while (toValue(assetsStore.inputAssets.hasMore)) {
-      await assetsStore.inputAssets.loadMore()
+      if (!(await assetsStore.inputAssets.loadMore())) break
       node.setDirtyCanvas(true, false)
     }
   }
