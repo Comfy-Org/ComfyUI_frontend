@@ -60,7 +60,7 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
   test.describe('with Vue nodes', { tag: '@vue-nodes' }, () => {
     test.use({ objectInfo: 'server' })
 
-    test('keeps the selected node while zooming during node selection mode', async ({
+    test('keeps panning and zooming available while picking without dropping the picked node', async ({
       agentPanel,
       comfyPage
     }) => {
@@ -71,6 +71,12 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
       const selectedNodeReference = agentPanel.root.getByRole('button', {
         name: /Remove CLIP Text Encode \(Prompt\) #\d+ reference/
       })
+      function viewport() {
+        return page.evaluate(() => {
+          const { ds } = window.app!.canvas
+          return { offset: [ds.offset[0], ds.offset[1]], scale: ds.scale }
+        })
+      }
 
       await test.step('create and select a node while picking', async () => {
         await comfyPage.nodeOps.clearGraph()
@@ -80,25 +86,38 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
         })
         await expect(node).toBeVisible()
         await agentPanel.enterNodeSelectionMode()
+        await expect(node).toBeInViewport()
         await node.getByTestId('node-title').click()
         await expect(node).toHaveClass(/outline-node-component-outline/)
         await expect(selectedNodeReference).toBeVisible()
       })
 
-      const initialScale = await page.evaluate(
-        () => window.app!.canvas.ds.scale
-      )
+      const before = await viewport()
+      const nodeBox = await node.boundingBox()
+      if (!nodeBox) throw new Error('node is not rendered')
+      const emptyCanvasSpot = {
+        x: nodeBox.x + nodeBox.width / 2,
+        y: nodeBox.y + nodeBox.height + 120
+      }
 
-      await test.step('zoom through the canvas interaction path', async () => {
-        await comfyPage.canvasOps.zoom(120)
+      await test.step('dragging empty canvas pans the viewport', async () => {
+        await comfyPage.canvasOps.pan({ x: -120, y: -80 }, emptyCanvasSpot)
         await expect
-          .poll(() => page.evaluate(() => window.app!.canvas.ds.scale))
-          .not.toBe(initialScale)
-      })
-
-      await test.step('the selected node remains selected', async () => {
+          .poll(async () => (await viewport()).offset)
+          .not.toEqual(before.offset)
         await expect(node).toHaveClass(/outline-node-component-outline/)
         await expect(selectedNodeReference).toBeVisible()
+      })
+
+      await test.step('the wheel over empty canvas zooms the viewport', async () => {
+        await page.mouse.move(emptyCanvasSpot.x, emptyCanvasSpot.y)
+        await page.mouse.wheel(0, -240)
+        await expect
+          .poll(async () => (await viewport()).scale)
+          .not.toBe(before.scale)
+        await expect(node).toHaveClass(/outline-node-component-outline/)
+        await expect(selectedNodeReference).toBeVisible()
+        await expect(agentPanel.nodeSelectionBanner).toBeVisible()
       })
     })
 
