@@ -134,10 +134,6 @@ const assetsGridStub = {
   `
 }
 
-const buttonStub = {
-  template: '<button><slot /></button>'
-}
-
 function renderTab() {
   return render(AssetsSidebarTab, {
     global: {
@@ -149,7 +145,6 @@ function renderTab() {
         SidebarTabTemplate: sidebarTabTemplateStub,
         AssetsSidebarGridView: assetsGridStub,
         AssetsSidebarListView: true,
-        Button: buttonStub,
         MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
         MediaLightbox: true,

@@ -20,13 +20,13 @@ import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
   comfyUiSourceCodeNode,
-  pageContext,
+  pageContext
 } from '../../utils/jsonLd'
 
 const { siteUrl } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 
 const discoveryProviders = await resolveDiscoveryProviders(isWorkshopInBuild())
@@ -36,15 +36,39 @@ const discoveryProviders = await resolveDiscoveryProviders(isWorkshopInBuild())
   title="Comfy - 视觉 AI 的最强可控性"
   description={t('hero.subtitle', 'zh-CN')}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
-  extraJsonLd={[comfyUiApplicationNode(siteUrl), comfyUiSourceCodeNode(siteUrl)]}
-  keywords={['comfyui app', 'comfyui web app', 'comfyui application', 'ComfyUI 应用', 'ComfyUI 网页版', 'ComfyUI 桌面应用', 'ComfyUI 下载', '可视化 AI', '节点式 AI', '生成式 AI 工作流']}
+  extraJsonLd={[
+    comfyUiApplicationNode(siteUrl),
+    comfyUiSourceCodeNode(siteUrl)
+  ]}
+  keywords={[
+    'comfyui app',
+    'comfyui web app',
+    'comfyui application',
+    'ComfyUI 应用',
+    'ComfyUI 网页版',
+    'ComfyUI 桌面应用',
+    'ComfyUI 下载',
+    '可视化 AI',
+    '节点式 AI',
+    '生成式 AI 工作流'
+  ]}
 >
   <HeroGraphSection locale="zh-CN" client:load />
   <SocialProofBarSection />
   <DeveloperPlatformSection locale="zh-CN" client:visible />
   <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
-  <ModelReleaseSection locale="zh-CN" modelLinks={await modelReleaseLinks(isWorkshopInBuild())} client:visible />
-  {isWorkshopInBuild() && <ModelDiscoverySection locale="zh-CN" providers={discoveryProviders} client:load />}
+  <ModelReleaseSection
+    locale="zh-CN"
+    modelLinks={await modelReleaseLinks(isWorkshopInBuild())}
+    client:visible
+  />
+  {isWorkshopInBuild() && (
+    <ModelDiscoverySection
+      locale="zh-CN"
+      providers={discoveryProviders}
+      client:load
+    />
+  )}
   <FeaturedWorkflowsSection locale="zh-CN" client:load />
   <ProductShowcaseSection locale="zh-CN" client:load />
   <IndustriesSection locale="zh-CN" client:load />

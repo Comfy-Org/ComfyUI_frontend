@@ -16,8 +16,8 @@ import {
   getResourceURL,
   splitFilePath
 } from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
 import type { NodeLocatorId } from '@/types'
@@ -153,14 +153,16 @@ app.registerExtension({
           }
         }
 
-        audioUIWidget.options.getValue = () =>
-          (useWidgetValueStore().getWidget(
+        audioUIWidget.options.getValue = () => {
+          const value = useWidgetValueStore().getWidget(
             widgetId(
               resolveNodeRootGraphId(node, app.rootGraph.id),
               node.id,
               inputName
             )
-          )?.value as string) ?? ''
+          )?.value
+          return typeof value === 'string' ? value : ''
+        }
         audioUIWidget.options.setValue = (v) => {
           const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
           const widgetState = useWidgetValueStore().getWidget(
@@ -202,8 +204,10 @@ app.registerExtension({
     _nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef
   ) {
-    if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
-      nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
+    const required: Partial<Record<string, InputSpec>> | undefined =
+      nodeData.input?.required
+    if (required?.audio?.[1]?.audio_upload === true) {
+      required.upload = ['AUDIOUPLOAD', {}]
     }
   },
   getCustomWidgets() {
@@ -244,7 +248,7 @@ app.registerExtension({
         }
 
         const handleUpload = async (files: File[]) => {
-          if (!files?.length) return files
+          if (!files.length) return files
 
           if (node.isUploading) {
             useToastStore().addAlert(t('g.uploadAlreadyInProgress'))
@@ -489,7 +493,7 @@ app.registerExtension({
             mediaRecorder.stop()
           }
           useAudioService().stopAllTracks(currentStream)
-          if (audioUIWidget.element.src?.startsWith('blob:')) {
+          if (audioUIWidget.element.src.startsWith('blob:')) {
             URL.revokeObjectURL(audioUIWidget.element.src)
           }
           originalOnRemoved?.call(this)

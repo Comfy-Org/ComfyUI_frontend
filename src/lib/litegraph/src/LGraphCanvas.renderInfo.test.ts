@@ -35,6 +35,16 @@ describe('LGraphCanvas.renderInfo', () => {
     expect(spy).not.toHaveBeenCalled()
   })
 
+  it('draws every line at the x it was given', () => {
+    lgCanvas.renderInfo(ctx, 100, 500)
+
+    expect(ctx.translate).toHaveBeenCalledWith(100, 500)
+
+    const drawnAt = vi.mocked(ctx.fillText).mock.calls
+    expect(drawnAt.length).toBeGreaterThan(0)
+    expect(drawnAt.map(([, x]) => x)).toEqual(drawnAt.map(() => 0))
+  })
+
   it('uses canvas.height divided by devicePixelRatio as y fallback', () => {
     lgCanvas.canvas.width = 1920
     lgCanvas.canvas.height = 2160

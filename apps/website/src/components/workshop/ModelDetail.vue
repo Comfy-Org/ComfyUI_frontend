@@ -45,7 +45,10 @@ import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import type { RouterRenderResult } from '../../config/router-render'
 import { router_render } from '../../config/router-render'
 import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
-import { WorkshopRouterError } from '../../config/workshop-router-errors'
+import {
+  WorkshopRouterError,
+  workshopRunMayStillSettle
+} from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
 import { reportWorkshopRun } from '../../config/workshop-run-state'
@@ -63,12 +66,13 @@ import {
 } from '../../scripts/posthog'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
 import {
-  workshopHttpStatus,
-  workshopModelAnalytics,
-  workshopRouterErrorType
+  workshopFailureAnalytics,
+  workshopFieldErrorCodes,
+  workshopModelAnalytics
 } from '../../scripts/workshop-analytics'
 import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
+import { frameRatioRule } from '../../config/workshop-model-restrictions'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
@@ -90,6 +94,7 @@ const {
 
 const slots = useSlots()
 const modelAnalytics = workshopModelAnalytics(model)
+const frameRatio = frameRatioRule(model.slug)
 
 type Section = 'playground' | 'details' | 'api'
 const sections = computed<readonly Section[]>(() =>
@@ -388,6 +393,7 @@ function cancelRun() {
       }
     })
     activeRun = undefined
+    pendingRequest = undefined
   }
   runState.value = transition(runState.value, { type: 'cancel' })
 }
@@ -494,7 +500,10 @@ async function renderRun(
           signal
         )
       },
-      idempotencyKey: (body) => idempotencyKeyFor(startedFor, body)
+      idempotencyKey: (body) => idempotencyKeyFor(startedFor, body),
+      onRequestId: (id) => {
+        if (runIsActive(attempt)) requestId.value = id
+      }
     }
   )
 }
@@ -507,7 +516,14 @@ function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
   pendingRequest = undefined
   requestId.value = result.requestId
   const [output, ...attachments] = result.outputs
-  if (!output) throw new WorkshopRouterError('provider', result.requestId)
+  if (!output)
+    throw new WorkshopRouterError(
+      'response',
+      result.requestId,
+      {},
+      undefined,
+      'response'
+    )
   const { retained, discarded } = retainRunHistory([
     { output, attachments },
     ...runs.value
@@ -539,9 +555,8 @@ function failRun(error: unknown, attempt: ActiveRun): void {
   const failure =
     error instanceof WorkshopRouterError
       ? error
-      : new WorkshopRouterError('provider')
-  const httpStatus = workshopHttpStatus(failure.response?.status)
-  const routerErrorType = workshopRouterErrorType(failure.response?.errorType)
+      : new WorkshopRouterError('client')
+  if (!workshopRunMayStillSettle(failure)) pendingRequest = undefined
   requestId.value = failure.requestId
   runState.value = transition(runState.value, {
     type: 'fail',
@@ -553,13 +568,8 @@ function failRun(error: unknown, attempt: ActiveRun): void {
     properties: {
       ...attempt.analytics,
       status: 'failed',
-      reason: failure.reason,
       duration_ms: Date.now() - attempt.startedAt,
-      request_id: failure.requestId ?? undefined,
-      ...(httpStatus === undefined ? {} : { http_status: httpStatus }),
-      ...(routerErrorType === undefined
-        ? {}
-        : { router_error_type: routerErrorType })
+      ...workshopFailureAnalytics(failure)
     }
   })
 }
@@ -571,7 +581,10 @@ async function run() {
   if (Object.keys(fieldErrors).length) {
     captureWorkshopEvent({
       name: 'run_validation_failed',
-      properties: modelAnalytics
+      properties: {
+        ...modelAnalytics,
+        field_error_codes: workshopFieldErrorCodes(fieldErrors)
+      }
     })
     runState.value = transition(runState.value, {
       type: 'fail',
@@ -751,6 +764,7 @@ function useInCode() {
             v-model="values"
             :schema
             :errors
+            :frame-ratio
             :locale
             :disabled="isRunning || draftPending"
             :file-uploads-disabled="!mounted"

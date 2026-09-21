@@ -128,13 +128,17 @@ describe('getAssetFileUrl', () => {
         'http://localhost:8188/api/assets/asset-model/content'
       )
     })
+
+    it('requests an inline disposition when asked, for in-page playback', () => {
+      const asset = createAsset({ id: 'asset-1' })
+
+      expect(getAssetFileUrl(asset, { disposition: 'inline' })).toBe(
+        'http://localhost:8188/api/assets/asset-1/content?disposition=inline'
+      )
+    })
   })
 
   describe('with history-backed assets', () => {
-    beforeEach(() => {
-      vi.mocked(useFeatureFlags().flags).assetsEnabled = false
-    })
-
     it('uses preview_url, which already points at the file', () => {
       const asset = createAsset({
         preview_url: '/api/view?filename=clip.webm&type=output&subfolder=vid'

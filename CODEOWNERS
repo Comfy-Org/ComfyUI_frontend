@@ -73,7 +73,7 @@
 # The billing half only. The account layer's session and identity paths are
 # deliberately unlisted until their owner claims them; until then a change
 # crossing that side of the boundary still has no required reviewer.
-/packages/account/src/core/billing/               @dante01yoon @Comfy-Org/comfy_frontend_devs
+/packages/account-core/src/core/billing/               @dante01yoon @Comfy-Org/comfy_frontend_devs
 /apps/billing-web/                                @dante01yoon @Comfy-Org/comfy_frontend_devs
 /apps/website/src/lib/workshop/                   @dante01yoon @Comfy-Org/comfy_website_devs
 /apps/website/src/config/workshop-account.ts      @dante01yoon @Comfy-Org/comfy_website_devs
@@ -107,7 +107,6 @@
 .claude/
 .cursor/
 .cursorrules
-**/CLAUDE.md
 
 # Agent instructions
 **/AGENTS.md                                      @christian-byrne

@@ -87,6 +87,20 @@ describe('agentPanelStore engagement telemetry', () => {
     })
   })
 
+  it('attributes automatic consent to its own source without duplicate opens', async () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+
+    store.open('automatic_consent')
+    await nextTick()
+    store.open('automatic_consent')
+
+    expect(store.isVisible).toBe(true)
+    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledExactlyOnceWith({
+      source: 'automatic_consent'
+    })
+  })
+
   it('never emits for a rehydrated-open panel while the feature stays disabled', async () => {
     localStorage.setItem(OPEN_STORAGE_KEY, 'true')
     useAgentPanelStore()
@@ -156,6 +170,43 @@ describe('agentPanelStore engagement telemetry', () => {
     store.close('close_button')
     store.close('close_button')
     expect(telemetry.trackAgentPanelClosed).not.toHaveBeenCalled()
+  })
+})
+
+describe('agentPanelStore discovery', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('stays undiscovered while the panel has never docked', async () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    await nextTick()
+
+    expect(store.hasEverOpened).toBe(false)
+  })
+
+  it('records discovery once the panel docks, and keeps it after a close', async () => {
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    store.open()
+    await nextTick()
+
+    expect(store.hasEverOpened).toBe(true)
+
+    store.close('topbar_button')
+    await nextTick()
+
+    expect(store.hasEverOpened).toBe(true)
+  })
+
+  it('records discovery for a panel restored from a previous visit', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    await nextTick()
+
+    expect(store.hasEverOpened).toBe(true)
   })
 })
 

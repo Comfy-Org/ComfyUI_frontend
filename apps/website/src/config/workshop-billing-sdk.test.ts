@@ -1,46 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  AccountCredential,
-  SessionSnapshot
-} from '@comfyorg/account/session'
+import type { AccountCredential } from '@comfyorg/account-core/session'
 
+import { testFirebaseUser } from './__fixtures__/workshopSessionFakes'
+let { workshopSessionClient } = await import('./workshop-account')
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
-const account = vi.hoisted(() => {
-  const credential: AccountCredential = {
-    token: 'workspace-jwt',
-    expiresAt: Number.MAX_SAFE_INTEGER,
-    uid: 'uid-1',
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner',
-    permissions: ['workspace:read']
-  }
-  const snapshot: SessionSnapshot = {
-    phase: 'authenticated',
-    user: {
-      uid: credential.uid,
-      getIdToken: () => Promise.resolve('id-token')
-    },
-    session: credential
-  }
-  const ensureFresh = vi.fn()
-  const remint = vi.fn()
-  return {
-    credential,
-    ensureFresh,
-    client: {
-      getSnapshot: () => snapshot,
-      subscribe: () => () => {},
-      ensureFresh,
-      remint
-    }
-  }
-})
+const credential: AccountCredential = {
+  token: 'workspace-jwt',
+  expiresAt: Number.MAX_SAFE_INTEGER,
+  uid: 'uid-1',
+  workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+  role: 'owner',
+  permissions: ['workspace:read']
+}
 
-vi.mock<unknown>(import('./workshop-account'), () => ({
-  workshopSessionClient: account.client
-}))
+vi.mock(import('./workshop-account'))
 
 const CHECKOUT = {
   checkout_url: 'https://checkout.stripe.com/c/pay_1',
@@ -92,14 +67,13 @@ function stubCloudFetch() {
   return fetchCloud
 }
 
-async function importFresh() {
-  vi.resetModules()
+async function loadBillingSdk() {
   return import('./workshop-billing-sdk')
 }
 
 async function openHostedCheckout() {
   const fetchCloud = stubCloudFetch()
-  const { workshopTopupCommand } = await importFresh()
+  const { workshopTopupCommand } = await loadBillingSdk()
   const result = await workshopTopupCommand().createHostedTopupCheckout({
     amountCents: 5_000,
     returnUrl: RETURN_URL
@@ -114,16 +88,28 @@ function requestTo(calls: readonly Parameters<typeof fetch>[], url: string) {
   return { init: call[1] ?? {}, headers: new Headers(call[1]?.headers), body }
 }
 
-beforeEach(() => {
-  account.ensureFresh.mockResolvedValue({
+beforeEach(async () => {
+  vi.resetModules()
+  ;({ workshopSessionClient } = await import('./workshop-account'))
+
+  vi.mocked(workshopSessionClient.getSnapshot).mockReturnValue({
+    phase: 'authenticated',
+    user: testFirebaseUser({ uid: credential.uid }),
+    session: credential
+  })
+  vi.mocked(workshopSessionClient.subscribe).mockImplementation((listener) => {
+    listener(workshopSessionClient.getSnapshot())
+    return () => {}
+  })
+  vi.mocked(workshopSessionClient.ensureFresh).mockResolvedValue({
     status: 'ok',
-    session: account.credential
+    session: credential
   })
 })
 
 describe('workshopTopupCommand', () => {
   it('builds the top-up command once for the page', async () => {
-    const { workshopTopupCommand } = await importFresh()
+    const { workshopTopupCommand } = await loadBillingSdk()
 
     expect(workshopTopupCommand()).toBe(workshopTopupCommand())
   })
@@ -150,7 +136,7 @@ describe('workshopTopupCommand', () => {
   it('mints for the workspace the session currently holds', async () => {
     await openHostedCheckout()
 
-    expect(account.ensureFresh).toHaveBeenCalledWith(
+    expect(vi.mocked(workshopSessionClient.ensureFresh)).toHaveBeenCalledWith(
       undefined,
       expect.objectContaining({ workspaceId: 'ws-1' })
     )

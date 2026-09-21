@@ -14,7 +14,11 @@ interface QueryOptions {
   onError?: (reason: string, error?: unknown) => void
 }
 
+/** Rows per fetch. Mirrors the API default; pinned so paging stays client-owned. */
+const ASSET_PAGE_SIZE = 20
+
 const BASE_PARAMS: ListAssetsData['query'] = {
+  limit: ASSET_PAGE_SIZE,
   sort: 'created_at',
   tags_none: ['missing']
 }

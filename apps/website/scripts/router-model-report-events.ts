@@ -36,28 +36,56 @@ const eventSchema = z.object({
     .optional()
 })
 
-function failureCode(event: z.infer<typeof eventSchema>): ReportFailureCode {
-  if (event.response?.errorType === 'concurrency_limit_exceeded')
+const localFailureCodes = new Map<string, ReportFailureCode>([
+  ['upload', 'upload'],
+  ['network', 'network'],
+  ['response', 'response'],
+  ['client', 'client'],
+  ['conflict', 'conflict']
+])
+
+const modelFailureCodes = new Map<string, ReportFailureCode>([
+  ['noCredits', 'no-credits'],
+  ['unavailable', 'unavailable'],
+  ['validation', 'invalid-input'],
+  ['provider', 'provider-error'],
+  ['policy', 'policy'],
+  ['timeout', 'timeout'],
+  ['verification', 'invalid-artifact']
+])
+
+function admissionFailureCode(
+  event: z.infer<typeof eventSchema>
+): ReportFailureCode | undefined {
+  if (
+    event.reason === 'concurrency' ||
+    event.response?.errorType === 'concurrency_limit_exceeded'
+  )
     return 'concurrency-limit'
   if (event.response?.status === 429 || event.reason === 'rateLimit')
     return 'rate-limit'
   if (event.response?.status === 401) return 'authentication'
-  if (event.reason === 'noCredits') return 'no-credits'
-  if (event.reason === 'unavailable') return 'unavailable'
-  if (
-    event.response?.errorType === 'invalid_input' ||
-    event.reason === 'validation'
-  )
+  return undefined
+}
+
+function modelFailureCode(
+  event: z.infer<typeof eventSchema>
+): ReportFailureCode {
+  const failure = modelFailureCodes.get(event.reason ?? '') ?? 'unknown'
+  const errorType = event.response?.errorType
+  if (failure === 'no-credits' || failure === 'unavailable') return failure
+  if (errorType === 'invalid_input' || failure === 'invalid-input')
     return 'invalid-input'
-  if (
-    event.response?.errorType === 'provider_error' ||
-    event.reason === 'provider'
+  if (errorType === 'provider_error') return 'provider-error'
+  return failure
+}
+
+function failureCode(event: z.infer<typeof eventSchema>): ReportFailureCode {
+  return (
+    localFailureCodes.get(event.reason ?? '') ??
+    admissionFailureCode(event) ??
+    modelFailureCode(event)
   )
-    return 'provider-error'
-  if (event.reason === 'policy') return 'policy'
-  if (event.reason === 'timeout') return 'timeout'
-  if (event.reason === 'verification') return 'invalid-artifact'
-  return 'unknown'
 }
 
 export function routerReportUpdate(

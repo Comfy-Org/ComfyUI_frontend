@@ -222,6 +222,26 @@ export class WorkflowHelper {
     })
   }
 
+  async openPersistedWorkflow(workflowName: string): Promise<void> {
+    await this.comfyPage.page.evaluate(async (name) => {
+      const store = (window.app!.extensionManager as WorkspaceStore).workflow
+      await store.syncWorkflows()
+      const workflow =
+        store.getWorkflowByPath(`workflows/${name}.json`) ??
+        store.persistedWorkflows.find(
+          (candidate) =>
+            candidate.filename === name ||
+            candidate.path.endsWith(`${name}.json`)
+        )
+      if (!workflow) {
+        throw new Error(`Persisted workflow not found: ${name}`)
+      }
+      await store.openWorkflow(workflow)
+    }, workflowName)
+    await this.waitForWorkflowIdle()
+    await this.comfyPage.vueNodes.waitForNodes()
+  }
+
   async waitForWorkflowIdle(timeout = 5000): Promise<void> {
     await this.comfyPage.page.waitForFunction(
       () =>
@@ -234,6 +254,41 @@ export class WorkflowHelper {
 
   async switchToTab(tabName: string): Promise<void> {
     await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
+    await this.waitForWorkflowIdle()
+  }
+
+  /** Node ids on the live graph, read from LiteGraph rather than the DOM. */
+  getGraphNodeIds(): Promise<string[]> {
+    return this.comfyPage.page.evaluate(() =>
+      window.app!.graph.nodes.map((node) => String(node.id))
+    )
+  }
+
+  /** A blank workflow tab, with an empty graph confirmed before returning. */
+  async newBlankWorkflow(): Promise<void> {
+    await this.comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+    await expect.poll(() => this.getGraphNodeIds()).toEqual([])
+  }
+
+  /**
+   * Opens a new workflow tab, confirms it switched to an empty graph, then
+   * returns to the tab that was active beforehand.
+   */
+  async openNewTabThenReturn(): Promise<void> {
+    const { topbar } = this.comfyPage.menu
+    const originalTabIndex = (await topbar.getTabNames()).length - 1
+    await expect(topbar.getTab(originalTabIndex)).toHaveClass(
+      /p-togglebutton-checked/
+    )
+    await topbar.newWorkflowButton.click()
+    await expect
+      .poll(() => topbar.getTabNames())
+      .toHaveLength(originalTabIndex + 2)
+    await expect.poll(() => this.getGraphNodeIds()).toEqual([])
+    await topbar.getTab(originalTabIndex).click()
+    await expect(topbar.getTab(originalTabIndex)).toHaveClass(
+      /p-togglebutton-checked/
+    )
     await this.waitForWorkflowIdle()
   }
 
