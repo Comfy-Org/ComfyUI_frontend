@@ -10,8 +10,9 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
       agentPanel,
       comfyPage
     }) => {
-      const showInfo = () =>
-        comfyPage.page.evaluate(() => window.app!.canvas.show_info)
+      function showInfo() {
+        return comfyPage.page.evaluate(() => window.app!.canvas.show_info)
+      }
 
       await test.step('the overlay starts enabled', async () => {
         await expect.poll(showInfo).toBe(true)
