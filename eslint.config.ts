@@ -28,6 +28,7 @@ import { noEs2023ArrayWith } from './tools/eslint-plugins/noEs2023ArrayWith'
 import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
 
 const extraFileExtensions = ['.vue']
+const es2023ArrayCopyMethodPattern = '^(toReversed|toSorted|toSpliced)$'
 
 const commonGlobals = {
   ...globals.browser,
@@ -377,20 +378,17 @@ export default defineConfig([
       'no-restricted-syntax': [
         'error',
         {
-          selector:
-            "CallExpression[callee.type='MemberExpression'][callee.property.name=/^(toReversed|toSorted|toSpliced)$/]",
+          selector: `CallExpression[callee.type='MemberExpression'][callee.property.name=/${es2023ArrayCopyMethodPattern}/]`,
           message:
             'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
         },
         {
-          selector:
-            "CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='Literal'][callee.property.value=/^(toReversed|toSorted|toSpliced)$/]",
+          selector: `CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='Literal'][callee.property.value=/${es2023ArrayCopyMethodPattern}/]`,
           message:
             'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
         },
         {
-          selector:
-            "CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='TemplateLiteral'][callee.property.expressions.length=0]:has(TemplateElement[value.cooked=/^(toReversed|toSorted|toSpliced)$/])",
+          selector: `CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='TemplateLiteral'][callee.property.expressions.length=0]:has(TemplateElement[value.cooked=/${es2023ArrayCopyMethodPattern}/])`,
           message:
             'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
         }
