@@ -15,6 +15,7 @@ import {
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApi } from '@/scripts/api'
@@ -34,6 +35,7 @@ vi.mock(import('@/scripts/app'), () => ({
     nodePreviewImages: {},
     graph: {},
     rootGraph: {
+      subgraphs: new Map(),
       serialize: vi.fn(() => ({
         nodes: [],
         links: [],
@@ -47,7 +49,8 @@ vi.mock(import('@/scripts/app'), () => ({
     },
     loadGraphData: vi.fn(() => Promise.resolve()),
     canvas: {
-      ds: { scale: 1, offset: [0, 0] }
+      ds: { scale: 1, offset: [0, 0] },
+      setGraph: vi.fn()
     },
     ui: {
       autoQueueEnabled: false,
@@ -214,6 +217,7 @@ describe('ChangeTracker', () => {
     vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
       () => {}
     )
+    app.rootGraph.subgraphs.clear()
   })
 
   describe('captureCanvasState', () => {
@@ -1208,6 +1212,39 @@ describe('ChangeTracker', () => {
 
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
       expect(useNodeOutputStore().snapshotOutputs).toHaveBeenCalled()
+    })
+  })
+
+  describe('restore', () => {
+    function deactivateWithNavigation(navigation: string[]) {
+      const tracker = createTracker(createState(1))
+      vi.mocked(useSubgraphNavigationStore().exportState).mockReturnValue(
+        navigation
+      )
+      tracker.deactivate()
+      return tracker
+    }
+
+    it('reopens the deepest subgraph the undone state still contains', () => {
+      const survivor = fromPartial<Subgraph>({ id: 'outer' })
+      app.rootGraph.subgraphs.set('outer', survivor)
+      const tracker = deactivateWithNavigation(['outer', 'inner', 'innermost'])
+
+      tracker.restore()
+
+      expect(useSubgraphNavigationStore().restoreState).toHaveBeenCalledWith([
+        'outer'
+      ])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(survivor)
+    })
+
+    it('returns to the root graph when the undone state removed every ancestor', () => {
+      const tracker = deactivateWithNavigation(['outer', 'inner'])
+
+      tracker.restore()
+
+      expect(useSubgraphNavigationStore().restoreState).toHaveBeenCalledWith([])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
     })
 
     it('is a full no-op and calls assert when called on inactive tracker', () => {
