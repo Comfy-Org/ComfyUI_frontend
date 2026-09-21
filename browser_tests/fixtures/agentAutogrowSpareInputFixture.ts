@@ -187,9 +187,8 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
   await page.route('**/api/agent/run-mode', (route) =>
     route.fulfill(jsonRoute({ mode: 'ask_approval', credit_limit: null }))
   )
-  // The CRDT follower only binds a workflow once a real turn's ack
-  // names one (`bindWorkflow(ack.workflow_id)` in `useAgentSession.ts`)
-  // — picking a target from the switcher alone does not bind it.
+  // Include the workflow id in the mocked turn acknowledgement so this setup
+  // binds the follower to the seeded document.
   await page.route('**/api/agent/threads/*/messages', (route) => {
     if (route.request().method() !== 'POST') return route.fulfill(jsonRoute([]))
     return route.fulfill({
