@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { WORKSHOP_API_HASH } from '../../config/workshop-api-anchor'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -14,8 +15,8 @@ const {
   /** Comfy Cloud, opened on this template. */
   cloudUrl: string
   downloadUrl: string
-  /** Whether the model above already runs on the page, which then owns the
-    page's one filled action. */
+  /** Whether the model above already runs on the page, which then also has an
+    endpoint to hand over. */
   runsHere: boolean
   tutorialUrl: string | undefined
   locale?: Locale
@@ -29,6 +30,14 @@ const action =
   <div class="flex flex-col gap-3" data-testid="workflow-actions">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
       <a
+        v-if="runsHere"
+        :href="WORKSHOP_API_HASH"
+        :class="cn(action, 'bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90')"
+        data-testid="workflow-endpoint"
+      >
+        {{ t('workshop.v2.workflow.endpoint', locale) }}
+      </a>
+      <a
         :href="cloudUrl"
         target="_blank"
         rel="noopener"
@@ -36,7 +45,7 @@ const action =
           cn(
             action,
             runsHere
-              ? 'border border-primary-comfy-yellow text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink'
+              ? 'border border-transparency-white-t20 text-primary-warm-white hover:bg-transparency-white-t8'
               : 'bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90'
           )
         "
@@ -71,7 +80,14 @@ const action =
     <!-- The PRD's confirmed path for a 1P workflow: the user's own Cloud
       account runs it, and Desktop is not the first stop. -->
     <p class="text-xs text-content-muted" data-testid="workflow-save-note">
-      {{ t('workshop.v2.workflow.openCloudNote', locale) }}
+      {{
+        t(
+          runsHere
+            ? 'workshop.v2.workflow.endpointNote'
+            : 'workshop.v2.workflow.openCloudNote',
+          locale
+        )
+      }}
     </p>
   </div>
 </template>

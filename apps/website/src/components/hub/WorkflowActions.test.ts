@@ -44,6 +44,28 @@ describe('WorkflowActions', () => {
     }
   )
 
+  // A workflow that is one call to a model we carry has an endpoint to hand
+  // over; one that needs local weights has nothing to hand over.
+  it('offers the endpoint only where the workflow runs here', () => {
+    render(WorkflowActions, { props: props({ runsHere: true }) })
+
+    const endpoint = screen.getByRole('link', { name: /Take the endpoint/ })
+    expect(endpoint.getAttribute('href')).toBe('#api')
+    expect(endpoint.classList.contains('bg-primary-comfy-yellow')).toBe(true)
+    expect(screen.getByTestId('workflow-save-note')).toHaveTextContent(
+      /ready to copy into your own workspace/
+    )
+  })
+
+  it('says nothing about an endpoint a local workflow does not have', () => {
+    render(WorkflowActions, { props: props({ runsHere: false }) })
+
+    expect(screen.queryByTestId('workflow-endpoint')).toBeNull()
+    expect(screen.getByTestId('workflow-save-note')).toHaveTextContent(
+      /Opens in your own Cloud account/
+    )
+  })
+
   it('links a tutorial only where the registry has one', () => {
     render(WorkflowActions, {
       props: props({ tutorialUrl: 'https://example.test/how-to' })
