@@ -1,5 +1,8 @@
+import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
+import contractsJson from '../content/workshop-router-contracts.json'
+import { workshopContractRecordSchema } from './workshop-contract'
 import { workshopModels } from './workshop-browse-content'
 import { initialWorkshopPageState } from './workshop-page-state'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
@@ -21,6 +24,8 @@ const MODERATION_CONTROLS = [
   'visual_input_content_moderation',
   'visual_output_content_moderation'
 ]
+
+const contracts = z.array(workshopContractRecordSchema).parse(contractsJson)
 
 const states = workshopModels.flatMap((model) => {
   const detail = getRouterWorkshopModelDetail(model.slug)
@@ -47,4 +52,53 @@ describe('provider moderation controls', () => {
 
     expect(sent).toEqual([])
   })
+
+  // Where the safe value came from our own defaultCandidates rather than the
+  // provider's declared default, dropping the control would hand the decision
+  // back to a provider that defaults the other way. Those stay pinned.
+  it.for([
+    ['bria/image-edit-erase', 'visual_input_content_moderation', true],
+    ['bria/image-edit-erase', 'visual_output_content_moderation', true],
+    ['bria/image-edit-expand', 'prompt_content_moderation', true],
+    ['bria/image-edit-expand', 'visual_input_content_moderation', true],
+    ['bria/image-edit-expand', 'visual_output_content_moderation', true],
+    ['bria/image-edit-gen-fill', 'prompt_content_moderation', true],
+    ['bria/image-edit-gen-fill', 'visual_input_content_moderation', true],
+    ['bria/image-edit-gen-fill', 'visual_output_content_moderation', true],
+    [
+      'bria/image-edit-increase-resolution',
+      'visual_input_content_moderation',
+      true
+    ],
+    [
+      'bria/image-edit-increase-resolution',
+      'visual_output_content_moderation',
+      true
+    ],
+    [
+      'bria/image-edit-remove-background',
+      'visual_input_content_moderation',
+      true
+    ],
+    [
+      'bria/image-edit-remove-background',
+      'visual_output_content_moderation',
+      true
+    ],
+    ['ideogram/ideogram-v4', 'enable_copyright_detection', true],
+    ['ideogram/p-image-ideogram', 'enable_copyright_detection', true],
+    ['openai/gpt-image-1', 'moderation', 'auto'],
+    ['openai/gpt-image-1.5', 'moderation', 'auto'],
+    ['openai/gpt-image-2', 'moderation', 'auto'],
+    ['openai/gpt-image-2.5-flare', 'moderation', 'auto'],
+    ['openai/gpt-image-2.5-sunburst', 'moderation', 'auto']
+  ] as const)(
+    'keeps sending %s its curated safe value',
+    ([id, name, value]) => {
+      const contract = contracts.find((entry) => entry.id === id)
+      if (!contract) throw new Error(`Missing contract: ${id}`)
+
+      expect(contract.defaultInput).toMatchObject({ [name]: value })
+    }
+  )
 })

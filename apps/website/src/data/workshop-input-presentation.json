@@ -1030,6 +1030,12 @@
         "advanced": true,
         "options": ["manual", "automatic"],
         "default": "manual"
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/image-edit-expand": {
@@ -1057,11 +1063,29 @@
         "label": "Source image",
         "help": "Choose the image to expand.",
         "urlUpload": "image"
+      },
+      "prompt_content_moderation": {
+        "fixed": true
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/image-edit-gen-fill": {
       "mask": {
         "help": "Provide a mask: white fills, black keeps."
+      },
+      "prompt_content_moderation": {
+        "fixed": true
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/image-edit-increase-resolution": {
@@ -1072,6 +1096,12 @@
       },
       "desired_increase": {
         "options": [2, 4]
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/image-edit-remove-background": {
@@ -1079,6 +1109,12 @@
         "label": "Source image",
         "help": "",
         "urlUpload": "image"
+      },
+      "visual_input_content_moderation": {
+        "fixed": true
+      },
+      "visual_output_content_moderation": {
+        "fixed": true
       }
     },
     "bria/structured-instruction": {
@@ -1830,6 +1866,9 @@
       },
       "text_prompt": {
         "help": "Describe the image, or leave empty when using Structured prompt."
+      },
+      "enable_copyright_detection": {
+        "fixed": true
       }
     },
     "ideogram/p-image-ideogram": {
@@ -1864,6 +1903,9 @@
       "resolution": {
         "options": ["1K", "2K"],
         "default": "1K"
+      },
+      "enable_copyright_detection": {
+        "fixed": true
       }
     },
     "kling/kling-3.0-turbo": {
@@ -2373,6 +2415,9 @@
         "advanced": false,
         "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/gpt-image-1.5": {
@@ -2388,6 +2433,9 @@
         "advanced": false,
         "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/gpt-image-2": {
@@ -2413,6 +2461,9 @@
           "2160x3840"
         ],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/gpt-image-2.5-flare": {
@@ -2435,6 +2486,9 @@
           "2160x3840"
         ],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/gpt-image-2.5-sunburst": {
@@ -2457,6 +2511,9 @@
           "2160x3840"
         ],
         "default": "1024x1024"
+      },
+      "moderation": {
+        "fixed": "auto"
       }
     },
     "openai/o1": {
