@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -79,6 +79,15 @@ describe('MediaLightbox', () => {
       id: '3'
     }
   ]
+
+  const createOpener = () => {
+    const opener = document.createElement('button')
+    opener.textContent = 'Open gallery'
+    document.body.append(opener)
+    onTestFinished(() => opener.remove())
+    opener.focus()
+    return opener
+  }
 
   const renderGallery = (props = {}, stubs = {}) => {
     const onUpdateActiveIndex = vi.fn()
@@ -161,10 +170,7 @@ describe('MediaLightbox', () => {
   })
 
   it('returns focus to the opener after navigating and closing', async () => {
-    const opener = document.createElement('button')
-    opener.textContent = 'Open gallery'
-    document.body.append(opener)
-    opener.focus()
+    const opener = createOpener()
 
     const { rerender } = renderGallery({ activeIndex: -1 })
     await rerender({ activeIndex: 0 })
@@ -175,14 +181,10 @@ describe('MediaLightbox', () => {
     await nextTick()
 
     expect(opener).toHaveFocus()
-    opener.remove()
   })
 
   it('returns focus to the opener when the gallery is closed externally', async () => {
-    const opener = document.createElement('button')
-    opener.textContent = 'Open gallery'
-    document.body.append(opener)
-    opener.focus()
+    const opener = createOpener()
 
     const { rerender } = renderGallery({ activeIndex: -1 })
     await rerender({ activeIndex: 0 })
@@ -191,7 +193,6 @@ describe('MediaLightbox', () => {
     await nextTick()
 
     expect(opener).toHaveFocus()
-    opener.remove()
   })
 
   it('keeps failed text media actionable until the viewer closes', async () => {

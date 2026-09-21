@@ -218,10 +218,6 @@ describe('ImagePreview', () => {
   })
 
   describe('opening the lightbox from the node preview', () => {
-    // The real grid gesture is covered end-to-end in
-    // browser_tests/tests/vueNodes/interactions/node/imagePreview.spec.ts:
-    // jsdom cannot retarget the second click, so this only pins the outcome
-    // once the gallery panel is showing.
     it('opens the lightbox on the image the grid switched to', async () => {
       renderImagePreview()
       const user = userEvent.setup()

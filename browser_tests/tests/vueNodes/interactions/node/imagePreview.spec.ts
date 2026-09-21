@@ -1,8 +1,11 @@
-import { expect, mergeTests } from '@playwright/test'
+import { mergeTests } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import {
   getPromotedWidgetNames,
@@ -222,25 +225,32 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
     }
   )
 
+  async function addPreviewImageNode(comfyPage: ComfyPage) {
+    await comfyPage.menu.topbar.newWorkflowButton.click()
+    await comfyPage.nextFrame()
+
+    await comfyPage.searchBoxV2.addNode('Preview Image')
+    await expect(
+      comfyPage.vueNodes.getNodeByTitle('Preview Image')
+    ).toBeVisible()
+
+    return comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+  }
+
+  function collectDownloads(comfyPage: ComfyPage) {
+    const downloads: string[] = []
+    comfyPage.page.on('download', (download) =>
+      downloads.push(download.suggestedFilename())
+    )
+    return downloads
+  }
+
   wstest(
     'opens the lightbox when a grid image is double-clicked',
-    async ({ comfyPage, getWebSocket }) => {
+    async ({ comfyPage, comfyMouse, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const downloads: string[] = []
-      comfyPage.page.on('download', (download) =>
-        downloads.push(download.suggestedFilename())
-      )
-
-      await test.step('Add node', async () => {
-        await comfyPage.menu.topbar.newWorkflowButton.click()
-        await comfyPage.nextFrame()
-
-        await comfyPage.searchBoxV2.addNode('Preview Image')
-        const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
-        await expect(previewImage).toBeVisible()
-      })
-
-      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+      const downloads = collectDownloads(comfyPage)
+      const node = await addPreviewImageNode(comfyPage)
       const gridImages = node.imageGrid.locator('img')
 
       await test.step('Inject a multi-image grid', async () => {
@@ -260,15 +270,9 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       )
 
       const nodeBoxBefore = await node.root.boundingBox()
+      if (!nodeBoxBefore) throw new Error('node has no bounding box')
       const selectedBefore = await comfyPage.nodeOps.getSelectedNodeIds()
-      const gridCellBox = await node.imageGrid
-        .getByRole('button', { name: 'View image 3 of 4' })
-        .boundingBox()
-      if (!gridCellBox) throw new Error('grid cell has no bounding box')
 
-      // The first click swaps the grid out for the gallery panel, so the
-      // browser retargets the second click. jsdom cannot reproduce that,
-      // which is why this gesture is only coverable here.
       await node.imageGrid
         .getByRole('button', { name: 'View image 3 of 4' })
         .dblclick()
@@ -288,28 +292,24 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
 
       expect(downloads).toEqual([])
       await expect(comfyPage.page.locator('.mask-editor-dialog')).toHaveCount(0)
-      expect(await node.root.boundingBox()).toEqual(nodeBoxBefore)
-      expect(await comfyPage.nodeOps.getSelectedNodeIds()).toEqual(
-        selectedBefore
-      )
+      await expect(node.root).toHaveBounds(nodeBoxBefore)
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+        .toEqual(selectedBefore)
 
       await comfyPage.page.keyboard.press('Escape')
       await expect(lightbox).toBeHidden()
 
-      await test.step('dragging from the preview neither moves nor selects', async () => {
-        const startX = gridCellBox.x + gridCellBox.width / 2
-        const startY = gridCellBox.y + gridCellBox.height / 2
+      await test.step('dragging the live preview neither moves nor selects', async () => {
+        const previewRegion = node.imagePreview.getByRole('region')
+        await expect(previewRegion).toBeVisible()
 
-        await comfyPage.page.mouse.move(startX, startY)
-        await comfyPage.page.mouse.down()
-        await comfyPage.page.mouse.move(startX + 40, startY + 40, { steps: 8 })
-        await comfyPage.page.mouse.up()
-        await comfyPage.nextFrame()
+        await comfyMouse.dragElementBy(previewRegion, { x: 40, y: 40 })
 
-        expect(await node.root.boundingBox()).toEqual(nodeBoxBefore)
-        expect(await comfyPage.nodeOps.getSelectedNodeIds()).toEqual(
-          selectedBefore
-        )
+        await expect(node.root).toHaveBounds(nodeBoxBefore)
+        await expect
+          .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+          .toEqual(selectedBefore)
       })
     }
   )
@@ -318,26 +318,10 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
     'opens the lightbox on a dense grid cell that the action bar covers',
     async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      const downloads: string[] = []
-      comfyPage.page.on('download', (download) =>
-        downloads.push(download.suggestedFilename())
-      )
-
-      await test.step('Add node', async () => {
-        await comfyPage.menu.topbar.newWorkflowButton.click()
-        await comfyPage.nextFrame()
-
-        await comfyPage.searchBoxV2.addNode('Preview Image')
-        const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
-        await expect(previewImage).toBeVisible()
-      })
-
-      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+      const downloads = collectDownloads(comfyPage)
+      const node = await addPreviewImageNode(comfyPage)
       const gridImages = node.imageGrid.locator('img')
 
-      // At 16 cells the top-row cell centres fall inside the action bar that
-      // the gallery panel reveals on focus, so the second click of the gesture
-      // retargets onto a control that did not exist when the gesture began.
       await test.step('Inject a dense grid', async () => {
         const images = Array.from({ length: 16 }, (_unused, index) => ({
           filename: index === 1 ? 'example.png' : `decoy-${index}.png`,
@@ -375,17 +359,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
     'stays open when the lightbox action button is double-clicked',
     async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-
-      await test.step('Add node', async () => {
-        await comfyPage.menu.topbar.newWorkflowButton.click()
-        await comfyPage.nextFrame()
-
-        await comfyPage.searchBoxV2.addNode('Preview Image')
-        const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
-        await expect(previewImage).toBeVisible()
-      })
-
-      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+      const node = await addPreviewImageNode(comfyPage)
 
       execution.executed('', '1', {
         images: [{ filename: 'example.png', subfolder: '', type: 'input' }]
@@ -397,11 +371,56 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         .getByRole('button', { name: 'Open in lightbox' })
         .dblclick()
 
-      // The button opens on the first click, so the second lands on a backdrop
-      // that did not exist when the gesture began and must not dismiss it.
       const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
       await comfyPage.nextFrame()
       await expect(lightbox).toBeVisible()
+
+      await comfyPage.page.keyboard.press('Escape')
+      await expect(lightbox).toBeHidden()
+    }
+  )
+
+  wstest(
+    'keeps tab focus inside the lightbox in both directions',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const node = await addPreviewImageNode(comfyPage)
+      const gridImages = node.imageGrid.locator('img')
+
+      execution.executed('', '1', {
+        images: Array.from({ length: 4 }, (_unused, index) => ({
+          filename: `example-${index}.png`,
+          subfolder: '',
+          type: 'input'
+        }))
+      })
+      await expect(gridImages).toHaveCount(4)
+
+      await node.imageGrid
+        .getByRole('button', { name: 'View image 3 of 4' })
+        .dblclick()
+
+      const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
+      await expect(lightbox).toBeVisible()
+
+      const focusIsInsideDialog = () =>
+        comfyPage.page.evaluate(() => {
+          const dialog = document.querySelector('[data-mask]')
+          return !!(
+            dialog &&
+            document.activeElement &&
+            dialog.contains(document.activeElement)
+          )
+        })
+
+      for (const key of ['Tab', 'Shift+Tab']) {
+        for (let press = 0; press < 5; press++) {
+          await comfyPage.page.keyboard.press(key)
+          expect(await focusIsInsideDialog(), `${key} press ${press}`).toBe(
+            true
+          )
+        }
+      }
 
       await comfyPage.page.keyboard.press('Escape')
       await expect(lightbox).toBeHidden()
