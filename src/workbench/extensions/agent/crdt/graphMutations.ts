@@ -379,16 +379,17 @@ function prepareOutputSlots(value: unknown): NodeState['outputs'] {
  * node def) while still carrying a live wire, and keeping it would leave that
  * wire attached to a slot the document no longer has. Fall back there too.
  */
-function mergeInputSlotsByName(
+/**
+ * True when the document's input set has diverged from live in a way that
+ * growth alone can't explain: the document asks for a name more often than
+ * live has it, or live kept a linked slot the document doesn't name. Either
+ * means the input set genuinely changed (rename, definition change, an
+ * autogrow group shrinking), not just live growing ahead of the document.
+ */
+function hasNonGrowthInputSetChange(
   live: NodeState['inputs'],
-  supplied: unknown
-): NodeState['inputs'] {
-  const documentInputs = Array.isArray(supplied)
-    ? supplied.filter(isRecord)
-    : []
-  const liveByName = documentInputs.map((slot) =>
-    live.find((input) => input.name === slot.name)
-  )
+  documentInputs: Record<string, unknown>[]
+): boolean {
   const liveCounts = new Map<unknown, number>()
   for (const input of live) {
     liveCounts.set(input.name, (liveCounts.get(input.name) ?? 0) + 1)
@@ -407,11 +408,24 @@ function mergeInputSlotsByName(
   const liveOnlyIsLinked = live.some(
     (input) => !documentNames.has(input.name) && input.link !== null
   )
+  return documentExceedsLive || liveOnlyIsLinked
+}
+
+function mergeInputSlotsByName(
+  live: NodeState['inputs'],
+  supplied: unknown
+): NodeState['inputs'] {
+  const documentInputs = Array.isArray(supplied)
+    ? supplied.filter(isRecord)
+    : []
+  const liveByName = documentInputs.map((slot) =>
+    live.find((input) => input.name === slot.name)
+  )
   // The document names something this node does not have (including asking
   // for more copies of a shared name than live has), or the node kept a
   // live-only slot that still carries a link the document doesn't: either
   // way the input set changed, so the document decides the list positionally.
-  if (documentExceedsLive || liveOnlyIsLinked) {
+  if (hasNonGrowthInputSetChange(live, documentInputs)) {
     return prepareInputSlots(documentInputs, live)
   }
   const merged = [...live]
