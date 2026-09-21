@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "從文字中的第一個有效 JSON 物件擷取鍵的值，包括 Markdown 程式碼區塊。",
     "display_name": "從 JSON 擷取字串",
     "inputs": {
       "json_string": {
@@ -13234,6 +13235,10 @@
       "ultra_mode": {
         "name": "超高模式",
         "tooltip": "執行額外的細化處理，以取得更高保真度的幾何形狀與更精細的表面細節。"
+      },
+      "ultra_resolution": {
+        "name": "超高解析度",
+        "tooltip": "超高處理的解析度：2k 以 2048³ 執行，4k 以 4096³ 執行，以取得最精細的表面細節。4k 需要 meshy-7.1 或更新版本。僅在啟用 ultra_mode 時使用。"
       }
     },
     "outputs": {
@@ -13300,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "超高模式",
+        "tooltip": "以 2048³ 執行額外的精修處理，以提高幾何結構保真度並呈現更精細的表面細節。"
       }
     },
     "outputs": {
@@ -13441,6 +13450,10 @@
       "ultra_mode": {
         "name": "超高模式",
         "tooltip": "執行額外的細化處理，以取得更高保真度的幾何形狀與更精細的表面細節。"
+      },
+      "ultra_resolution": {
+        "name": "超高解析度",
+        "tooltip": "超高處理的解析度：2k 以 2048³ 執行，4k 以 4096³ 執行，以取得最精細的表面細節。4k 需要 meshy-7.1 或更新版本。僅在啟用 ultra_mode 時使用。"
       }
     },
     "outputs": {
@@ -18399,6 +18412,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "可設定 KV 快取裝置與量化；預設模型使用 auto 選項。記憶體不足時，量化可能加速編輯工作流程。",
+    "display_name": "Qwen Image 2.1 快取",
+    "inputs": {
+      "device": {
+        "name": "裝置",
+        "tooltip": "auto 會使用剩餘 VRAM，接著使用 RAM。cpu（RAM）會在運算期間預先擷取，幾乎不影響速度。off 會在每個步驟重新計算前綴，較慢，但這是排除快取影響的唯一方式。"
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "儲存精度。default 為無損。int8 會將快取減半，精度約為 bf16；int4 會將其降至四分之一，但每步誤差約增加一倍。"
+      },
+      "model": {
+        "name": "模型"
       }
     },
     "outputs": {
@@ -23761,6 +23796,45 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "TextEncodeQwenImage21": {
+    "display_name": "Qwen Image 2.1 文字編碼",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "參考影像會由文字編碼器處理，並以 vae 潛在空間的形式拼接至序列中。"
+      },
+      "negative_prompt": {
+        "name": "負面提示詞"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "參考影像會在保留長寬比的情況下，調整為約解析度 × 解析度像素，並取 32 的倍數。0 會保留各參考影像原始尺寸，並四捨五入至 32 的倍數。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "負向",
+        "tooltip": null
+      },
+      "2": {
+        "name": "潛在空間",
+        "tooltip": "依第一張參考影像的尺寸建立空白潛在空間，以配合取樣；任何其他尺寸都會造成編輯偏移。"
       }
     }
   },

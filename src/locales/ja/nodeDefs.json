@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "テキスト内の最初の有効なJSONオブジェクトから、Markdownコードブロックを含めてキーの値を抽出します。",
     "display_name": "JSONから文字列を抽出",
     "inputs": {
       "json_string": {
@@ -13234,6 +13235,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "より精細なサーフェスディテールを持つ高忠実度なジオメトリのために、追加のリファインメント処理を実行します。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "ultraパスの解像度です。2kでは2048³、4kでは4096³で実行し、最高の表面ディテールを得られます。4kにはmeshy-7.1以降が必要です。ultra_modeが有効な場合にのみ使用されます。"
       }
     },
     "outputs": {
@@ -13300,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "2048³で追加のリファインメントパスを実行し、より細かな表面ディテールを備えた高忠実度のジオメトリを生成します。"
       }
     },
     "outputs": {
@@ -13441,6 +13450,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "より精細なサーフェスディテールを持つ高忠実度なジオメトリのために、追加のリファインメント処理を実行します。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "ultraパスの解像度です。2kでは2048³、4kでは4096³で実行し、最高の表面ディテールを得られます。4kにはmeshy-7.1以降が必要です。ultra_modeが有効な場合にのみ使用されます。"
       }
     },
     "outputs": {
@@ -18399,6 +18412,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "KVキャッシュのデバイスと量子化を設定できます。デフォルトではモデルはautoオプションを使用します。メモリ不足時には、量子化によって編集ワークフローが高速化される可能性があります。",
+    "display_name": "Qwen Image 2.1 キャッシュ",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "autoは空きVRAMを使用し、次にRAMを使用します。cpu（RAM）は計算の裏でプリフェッチされるため、速度低下はわずかです。offは毎ステップでプレフィックスを再計算するため低速ですが、キャッシュを除外する唯一の方法です。"
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "保存精度です。defaultは無損失です。int8はbf16程度の精度でキャッシュを半分にし、int4は4分の1にしますが、ステップごとの誤差はおよそ2倍になります。"
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -23761,6 +23796,45 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "TextEncodeQwenImage21": {
+    "display_name": "Qwen Image 2.1 テキストエンコード",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "テキストエンコーダーで参照され、VAE latentとしてシーケンスに挿入される参照画像です。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "参照画像はアスペクト比を維持したまま、32の倍数で約resolution x resolutionピクセルにリサイズされます。0の場合、各参照画像はそれぞれのサイズを維持し、32の倍数に丸められます。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "最初の参照画像のサイズの空のlatentです。ほかのサイズでは編集結果がずれるため、サンプリングに合わせます。"
       }
     }
   },

@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "从文本中的第一个有效 JSON 对象提取键的值，包括 Markdown 代码块。",
     "display_name": "从JSON提取字符串",
     "inputs": {
       "json_string": {
@@ -13234,6 +13235,10 @@
       "ultra_mode": {
         "name": "超精细模式",
         "tooltip": "运行额外的细化步骤，以获得保真度更高、表面细节更精细的几何体。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "超精细处理的分辨率：2k 以 2048³ 运行，4k 以 4096³ 运行，以获得最精细的表面细节。4k 需要 meshy-7.1 或更高版本。仅在启用 ultra_mode 时使用。"
       }
     },
     "outputs": {
@@ -13300,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "以 2048³ 运行额外的细化处理，以获得保真度更高的几何结构和更精细的表面细节。"
       }
     },
     "outputs": {
@@ -13441,6 +13450,10 @@
       "ultra_mode": {
         "name": "超精细模式",
         "tooltip": "运行额外的细化步骤，以获得保真度更高、表面细节更精细的几何体。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "超精细处理的分辨率：2k 以 2048³ 运行，4k 以 4096³ 运行，以获得最精细的表面细节。4k 需要 meshy-7.1 或更高版本。仅在启用 ultra_mode 时使用。"
       }
     },
     "outputs": {
@@ -18399,6 +18412,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "可设置 KV 缓存设备和量化方式，默认模型使用 auto 选项。内存不足时，量化可能会加快编辑工作流。",
+    "display_name": "Qwen Image 2.1 缓存",
+    "inputs": {
+      "device": {
+        "name": "设备",
+        "tooltip": "auto 会使用可用的显存，然后使用内存。cpu（内存）会在计算期间预取，速度损失很小。off 会在每一步重新计算前缀，速度较慢，但这是排除缓存影响的唯一方法。"
+      },
+      "dtype": {
+        "name": "数据类型",
+        "tooltip": "存储精度。default 为无损。int8 可将缓存减半，精度约为 bf16；int4 可将其缩减至四分之一，但每步误差约增加一倍。"
+      },
+      "model": {
+        "name": "模型"
       }
     },
     "outputs": {
@@ -23761,6 +23796,45 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "TextEncodeQwenImage21": {
+    "display_name": "Qwen Image 2.1 文本编码",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "参考图像，文本编码器可见，并作为 VAE latent 拼接到序列中。"
+      },
+      "negative_prompt": {
+        "name": "负面提示词"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "参考图像会在保持宽高比的前提下，调整为约为 resolution × resolution 像素，且尺寸为 32 的倍数。0 会保留每张参考图像自身的尺寸，并向上或向下取整为 32 的倍数。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负面",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "以第一张参考图像的尺寸创建空 latent，以匹配采样；任何其他尺寸都会导致编辑发生偏移。"
       }
     }
   },
