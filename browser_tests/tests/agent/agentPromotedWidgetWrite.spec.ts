@@ -1,158 +1,27 @@
 import { expect, mergeTests } from '@playwright/test'
-import { applyOps, mint } from '@comfyorg/comfy-multi-player'
-import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import fs from 'node:fs'
-import path from 'node:path'
-import * as Y from 'yjs'
 
+import {
+  PROMOTED_WIDGET_HOST_NODE_ID,
+  PROMOTED_WIDGET_NEW_PROMPT,
+  PROMOTED_WIDGET_NEW_STEPS,
+  PROMOTED_WIDGET_PROMPT_NODE_ID,
+  PROMOTED_WIDGET_SAMPLER_NODE_ID,
+  PROMOTED_WIDGET_SUBGRAPH_TYPE,
+  PROMOTED_WIDGET_WORKFLOW_LABEL,
+  PROMOTED_WIDGET_WORKFLOW_NAME
+} from '@e2e/fixtures/data/agent/promotedWidgetWrite'
+import { promotedWidgetWriteFixture } from '@e2e/fixtures/promotedWidgetWriteFixture'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
-import type { WorkflowJSON04 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  validateComfyWorkflow,
-  zComfyWorkflow,
-  zComfyWorkflow1
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
 
-const test = mergeTests(agentTest, webSocketFixture)
-
-const ASSET_PATH = path.resolve(
-  import.meta.dirname,
-  '../../assets/subgraphs/nested-pack-promoted-values.json'
-)
-const SUBGRAPH_TYPE = 'f2fdebf6-dfaf-43b6-9eb2-7f70613cfdc1'
-const HOST_NODE_ID = '57'
-// Interior nodes of the promoted subgraph, named once so the frame builder and
-// the state reader below agree on which node each assertion is about.
-const INTERIOR_PROMPT_NODE_ID = '27'
-const INTERIOR_SAMPLER_NODE_ID = '3'
-
-// Catalog widget order for the node types present in the asset. Mirrors what
-// the cloud materializer feeds to mint() so widgets_values map onto names.
-const CATALOG: WidgetCatalog = {
-  types: {
-    CLIPTextEncode: { widget_order: ['text'] },
-    KSampler: {
-      widget_order: [
-        'seed',
-        'control_after_generate',
-        'steps',
-        'cfg',
-        'sampler_name',
-        'scheduler',
-        'denoise'
-      ]
-    },
-    CLIPLoader: { widget_order: ['clip_name', 'type', 'device'] },
-    VAELoader: { widget_order: ['vae_name'] },
-    UNETLoader: { widget_order: ['unet_name', 'weight_dtype'] },
-    EmptySD3LatentImage: { widget_order: ['width', 'height', 'batch_size'] },
-    ModelSamplingAuraFlow: { widget_order: ['shift'] },
-    SaveImage: { widget_order: ['filename_prefix'] },
-    MarkdownNote: { widget_order: ['text'] },
-    ConditioningZeroOut: { widget_order: [] },
-    VAEDecode: { widget_order: [] },
-    [SUBGRAPH_TYPE]: {
-      widget_order: [
-        'text',
-        'width',
-        'height',
-        'unet_name',
-        'clip_name',
-        'vae_name',
-        'steps'
-      ]
-    }
-  }
-}
-
-const NEW_PROMPT = 'NEW PROMPT'
-const NEW_STEPS = 12
+const test = mergeTests(agentTest, webSocketFixture, promotedWidgetWriteFixture)
 
 function b64(u8: Uint8Array): string {
   return Buffer.from(u8).toString('base64')
-}
-
-/**
- * Build the two doc_update payloads the follower would receive when the agent
- * writes promoted widgets on subgraph host node 57:
- *   seq 0: full mint state (system:mint)
- *   seq 1: delta with two set_widget ops on the host (agent:test:1)
- */
-function buildFrames(asset: WorkflowJSON04) {
-  const definition = asset.definitions?.subgraphs.find(
-    (subgraph) => subgraph.id === SUBGRAPH_TYPE
-  )
-  const promptValues = zComfyWorkflow1
-    .parse(definition)
-    .nodes.find(
-      (node) => String(node.id) === INTERIOR_PROMPT_NODE_ID
-    )?.widgets_values
-  const interiorPrompt = Array.isArray(promptValues)
-    ? promptValues[0]
-    : undefined
-  if (typeof interiorPrompt !== 'string')
-    throw new Error(
-      `Fixture must contain subgraph prompt node ${INTERIOR_PROMPT_NODE_ID}`
-    )
-
-  const doc = mint({ ...asset, extra: asset.extra ?? undefined }, CATALOG)
-  const fullState = Y.encodeStateAsUpdate(doc)
-  const vectorBefore = Y.encodeStateVector(doc)
-
-  const hostValues = [
-    interiorPrompt,
-    1024,
-    1024,
-    'z_image_turbo_bf16.safetensors',
-    'qwen_3_4b.safetensors',
-    'ae.safetensors',
-    8
-  ]
-
-  const ops: Op[] = [
-    {
-      op_id: 'op-1',
-      actor: 'agent:test:1',
-      base_version: 1,
-      stamp: [1, 'agent:test:1'],
-      op: 'set_widget',
-      node_id: HOST_NODE_ID,
-      widget: 'text',
-      value: NEW_PROMPT,
-      promoted: {
-        instance_path: [HOST_NODE_ID],
-        value_index: 0,
-        host_widgets_values: hostValues
-      }
-    },
-    {
-      op_id: 'op-2',
-      actor: 'agent:test:1',
-      base_version: 1,
-      stamp: [2, 'agent:test:1'],
-      op: 'set_widget',
-      node_id: HOST_NODE_ID,
-      widget: 'steps',
-      value: NEW_STEPS,
-      promoted: {
-        instance_path: [HOST_NODE_ID],
-        value_index: 6,
-        host_widgets_values: hostValues
-      }
-    }
-  ]
-  expect(applyOps(doc, ops, CATALOG).outcomes).toEqual([
-    { op_id: 'op-1', outcome: 'applied' },
-    { op_id: 'op-2', outcome: 'applied' }
-  ])
-  const delta = Y.encodeStateAsUpdate(doc, vectorBefore)
-  doc.destroy()
-
-  return { fullState, delta, interiorPrompt }
 }
 
 test.describe(
@@ -165,14 +34,13 @@ test.describe(
       agentPanel,
       comfyPage,
       postedMessages,
-      getWebSocket
+      getWebSocket,
+      promotedWidgetWriteData
     }) => {
       test.setTimeout(60_000)
       const page = comfyPage.page
-
-      const rawAsset: unknown = JSON.parse(fs.readFileSync(ASSET_PATH, 'utf8'))
-      const asset = zComfyWorkflow.parse(rawAsset)
-      const { fullState, delta, interiorPrompt } = buildFrames(asset)
+      const { fullState, delta, interiorPrompt, interiorWidth, interiorSteps } =
+        promotedWidgetWriteData
 
       // agentPanelMocks stubs `/api/object_info` with `{}`. Routes match
       // last-registered-first, so registering the setup-API object_info route
@@ -182,7 +50,7 @@ test.describe(
       try {
         await test.step('load the promoted-widget workflow', async () => {
           await comfyPage.workflow.reloadAndWaitForApp()
-          await comfyPage.workflow.loadGraphData(asset)
+          await comfyPage.workflow.loadWorkflow(PROMOTED_WIDGET_WORKFLOW_NAME)
           await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
 
           // Precondition: the host node exposes its promoted widgets before any
@@ -191,9 +59,9 @@ test.describe(
           const hostWidgetsBefore = await page.evaluate((id) => {
             const host = window.app!.graph.getNodeById(id)
             return (host?.widgets ?? []).map((w) => [w.name, w.value])
-          }, toNodeId(HOST_NODE_ID))
+          }, toNodeId(PROMOTED_WIDGET_HOST_NODE_ID))
           expect(hostWidgetsBefore).toEqual(
-            expect.arrayContaining([['steps', 8]])
+            expect.arrayContaining([['steps', interiorSteps]])
           )
           expect(hostWidgetsBefore.length).toBeGreaterThanOrEqual(7)
         })
@@ -207,7 +75,15 @@ test.describe(
             // subscribes on. Asserting the picker is merely visible leaves the
             // panel unbound, so the click posts nothing and the CRDT leg below
             // is never reached.
-            await agentPanel.selectWorkflow()
+            await agentPanel.selectWorkflow(PROMOTED_WIDGET_WORKFLOW_LABEL)
+            await expect
+              .poll(() =>
+                page.evaluate(
+                  (id) => window.app!.graph.getNodeById(id)?.type,
+                  toNodeId(PROMOTED_WIDGET_HOST_NODE_ID)
+                )
+              )
+              .toBe(PROMOTED_WIDGET_SUBGRAPH_TYPE)
             return agentPanel.root
           })
 
@@ -302,9 +178,9 @@ test.describe(
               return { hostWidgets, prompt, steps }
             },
             {
-              hostId: toNodeId(HOST_NODE_ID),
-              promptId: toNodeId(INTERIOR_PROMPT_NODE_ID),
-              samplerId: toNodeId(INTERIOR_SAMPLER_NODE_ID)
+              hostId: toNodeId(PROMOTED_WIDGET_HOST_NODE_ID),
+              promptId: toNodeId(PROMOTED_WIDGET_PROMPT_NODE_ID),
+              samplerId: toNodeId(PROMOTED_WIDGET_SAMPLER_NODE_ID)
             }
           )
 
@@ -317,15 +193,15 @@ test.describe(
               })
               .toEqual(
                 expect.arrayContaining([
-                  ['text', NEW_PROMPT],
-                  ['steps', NEW_STEPS],
-                  ['width', 1024]
+                  ['text', PROMOTED_WIDGET_NEW_PROMPT],
+                  ['steps', PROMOTED_WIDGET_NEW_STEPS],
+                  ['width', interiorWidth]
                 ])
               )
 
             const state = await readState()
             expect(state.prompt).toBe(interiorPrompt)
-            expect(state.steps).toBe(8)
+            expect(state.steps).toBe(interiorSteps)
             return state
           })
 
