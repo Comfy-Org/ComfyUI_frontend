@@ -23,19 +23,22 @@ describe('lint-staged config', () => {
     expect(second).not.toContain('pnpm typecheck')
   })
 
-  // Only the chunk holding website files asks for the website typecheck, and
-  // an earlier chunk taking the plain one must not swallow it.
-  it('still hands out a command no earlier chunk asked for', async () => {
-    const lintStaged = await freshConfig()
+  // Only the chunk holding these files asks for their typecheck, and an
+  // earlier chunk taking the plain one must not swallow it.
+  it.for([
+    ['browser_tests/example.spec.ts', 'pnpm typecheck:browser'],
+    ['apps/website/src/pages/index.astro', 'pnpm typecheck:website']
+  ] as const)(
+    'still hands out a command no earlier chunk asked for: %s',
+    async ([fileName, command]) => {
+      const lintStaged = await freshConfig()
 
-    lintStaged(chunkOf('a', 12))
-    const website = lintStaged([
-      ...chunkOf('b', 12),
-      'apps/website/src/pages/index.astro'
-    ])
+      lintStaged(chunkOf('a', 12))
+      const later = lintStaged([...chunkOf('b', 12), fileName])
 
-    expect(website).toContain('pnpm typecheck:website')
-  })
+      expect(later).toContain(command)
+    }
+  )
 
   it('keeps per-file commands scoped to their own chunk', async () => {
     const lintStaged = await freshConfig()
