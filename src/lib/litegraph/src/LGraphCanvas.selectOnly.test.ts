@@ -101,7 +101,11 @@ describe('LGraphCanvas selectOnly', () => {
       canvas.selectOnly = selectOnly
 
       canvas['_processPrimaryButton'](
-        { canvasX: 710, canvasY: 110, altKey: true } as CanvasPointerEvent,
+        fromPartial<CanvasPointerEvent>({
+          canvasX: 710,
+          canvasY: 110,
+          altKey: true
+        }),
         clonable
       )
 
@@ -149,7 +153,7 @@ describe('LGraphCanvas selectOnly', () => {
 
   it('keeps collapse clicks as node selection clicks', () => {
     const { canvas, firstNode } = createHarness()
-    const event = { canvasX: 110, canvasY: 80 } as CanvasPointerEvent
+    const event = fromPartial<CanvasPointerEvent>({ canvasX: 110, canvasY: 80 })
     const collapseSpy = vi.spyOn(firstNode, 'collapse')
     canvas.selectOnly = true
 
@@ -199,17 +203,19 @@ describe('LGraphCanvas selectOnly', () => {
   it('does not resize groups', () => {
     const { canvas, graph } = createHarness()
     const group = new LGraphGroup('Group')
-    const event = { canvasX: 399, canvasY: 399 } as CanvasPointerEvent
+    const event = fromPartial<CanvasPointerEvent>({
+      canvasX: 399,
+      canvasY: 399
+    })
     group._bounding.set([300, 300, 100, 100])
     graph.add(group)
     const resizeSpy = vi.spyOn(group, 'resize')
     canvas.selectOnly = true
 
     canvas['_processPrimaryButton'](event, undefined)
-    canvas.pointer.onDrag?.({
-      canvasX: 450,
-      canvasY: 450
-    } as CanvasPointerEvent)
+    canvas.pointer.onDrag?.(
+      fromPartial<CanvasPointerEvent>({ canvasX: 450, canvasY: 450 })
+    )
 
     expect(canvas.pointer.onDrag).toBeDefined()
     expect(resizeSpy).not.toHaveBeenCalled()
@@ -223,7 +229,7 @@ describe('LGraphCanvas selectOnly', () => {
     canvas.selectOnly = true
 
     canvas['_processMiddleButton'](
-      { canvasX, canvasY } as CanvasPointerEvent,
+      fromPartial<CanvasPointerEvent>({ canvasX, canvasY }),
       firstNode
     )
 
@@ -263,7 +269,7 @@ describe('LGraphCanvas selectOnly', () => {
 
   it('retains the normal replace-and-clear selection behavior when disabled', () => {
     const { canvas, firstNode, secondNode } = createHarness()
-    const event = {} as CanvasPointerEvent
+    const event = fromPartial<CanvasPointerEvent>({})
 
     canvas.processSelect(firstNode, event)
     canvas.processSelect(secondNode, event)

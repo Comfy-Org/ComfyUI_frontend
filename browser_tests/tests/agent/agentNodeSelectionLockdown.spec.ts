@@ -3,51 +3,67 @@ import { expect } from '@playwright/test'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
-  test('hides the canvas info overlay while node selection mode is active', async ({
-    agentPanel,
-    comfyPage
-  }) => {
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', true)
-    await comfyPage.nextFrame()
-    expect(
-      await comfyPage.page.evaluate(() => window.app!.canvas.show_info),
-      'Precondition: canvas info overlay is enabled'
-    ).toBe(true)
+  test.describe('canvas info overlay', () => {
+    test.use({ initialSettings: { 'Comfy.Graph.CanvasInfo': true } })
 
-    await agentPanel.enterNodeSelectionMode()
-    await comfyPage.nextFrame()
+    test('hides the canvas info overlay while node selection mode is active', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      const showInfo = () =>
+        comfyPage.page.evaluate(() => window.app!.canvas.show_info)
 
-    await comfyPage.page.screenshot({
-      path: test
-        .info()
-        .outputPath('agent-node-selection-canvas-info-overlay.png')
+      await test.step('the overlay starts enabled', async () => {
+        await comfyPage.nextFrame()
+        expect(await showInfo()).toBe(true)
+      })
+
+      await test.step('enter node selection mode', async () => {
+        await agentPanel.enterNodeSelectionMode()
+        await comfyPage.nextFrame()
+      })
+
+      await test.step('the overlay is hidden', async () => {
+        await comfyPage.page.screenshot({
+          path: test
+            .info()
+            .outputPath('agent-node-selection-canvas-info-overlay.png')
+        })
+        expect(await showInfo()).toBe(false)
+      })
     })
-
-    expect(
-      await comfyPage.page.evaluate(() => window.app!.canvas.show_info)
-    ).toBe(false)
   })
 
-  test('hides the floating queue overlay while node selection mode is active', async ({
-    agentPanel,
-    comfyPage
-  }) => {
-    await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', false)
-    await comfyPage.command.executeCommand('Comfy.Queue.ToggleOverlay')
-    const overlay = comfyPage.page.getByTestId('queue-progress-overlay')
-    await expect(overlay).toBeVisible()
+  test.describe('floating queue overlay', () => {
+    test.use({ initialSettings: { 'Comfy.Queue.QPOV2': false } })
 
-    await agentPanel.enterNodeSelectionMode()
+    test('hides the floating queue overlay while node selection mode is active', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      const overlay = comfyPage.page.getByTestId('queue-progress-overlay')
 
-    await comfyPage.page.screenshot({
-      path: test.info().outputPath('agent-node-selection-queue-overlay.png')
+      await test.step('open the queue overlay', async () => {
+        await comfyPage.command.executeCommand('Comfy.Queue.ToggleOverlay')
+        await expect(overlay).toBeVisible()
+      })
+
+      await test.step('enter node selection mode', async () => {
+        await agentPanel.enterNodeSelectionMode()
+      })
+
+      await test.step('the overlay is gone', async () => {
+        await comfyPage.page.screenshot({
+          path: test.info().outputPath('agent-node-selection-queue-overlay.png')
+        })
+        await expect(overlay).toHaveCount(0)
+      })
+
+      await test.step('exiting restores the overlay', async () => {
+        await agentPanel.exitNodeSelectionMode()
+        await expect(overlay).toBeVisible()
+      })
     })
-
-    await expect(overlay).toHaveCount(0)
-
-    await agentPanel.exitNodeSelectionMode()
-
-    await expect(overlay).toBeVisible()
   })
 
   test.describe('with Vue nodes', { tag: '@vue-nodes' }, () => {
