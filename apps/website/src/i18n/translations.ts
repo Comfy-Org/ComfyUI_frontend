@@ -10757,7 +10757,8 @@ Enterprise`
   },
   'workshop.v2.workflow.endpointNote': {
     en: 'The call this workflow makes, ready to copy into your own workspace. Or open the graph in your Cloud account.',
-    'zh-CN': '此工作流发起的调用，可直接复制到你的工作区。也可以在你的 Cloud 账户中打开该图。'
+    'zh-CN':
+      '此工作流发起的调用，可直接复制到你的工作区。也可以在你的 Cloud 账户中打开该图。'
   },
   'workshop.v2.workflow.tags': { en: 'Good for', 'zh-CN': '适用于' },
   'workshop.v2.workflow.related': {
