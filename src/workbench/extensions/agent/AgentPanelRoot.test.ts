@@ -731,32 +731,45 @@ describe('AgentPanelRoot paywall actions', () => {
     ).not.toBeInTheDocument()
   })
 
-  it.for(['pending', 'denied', 'unresolved-role'] as const)(
-    'withholds purchase actions for %s without inventing a sales-managed plan',
-    async (state) => {
-      paywallCapabilities.canTopUp = false
-      paywallCapabilities.canSubscribeSelfServe = false
-      paywallCapabilities.isReady = state !== 'pending'
-      paywallCapabilities.hasResolvedCapabilities = state === 'unresolved-role'
-      if (state === 'unresolved-role') paywallWorkspace.role = undefined
-      render(AgentPanelRoot, { global: { plugins: [i18n] } })
-      useAgentConversationStore().messages.push({
-        id: toTurnId('msg-paywall'),
-        role: 'assistant',
-        parts: [{ type: 'paywall' }],
-        streaming: false,
-        thinking: false
-      })
+  // Each unresolved input is its own wiring test: the panel reads
+  // `hasResolvedCapabilities` and `workspaceRole`, so a table varying both at
+  // once would need a conditional body. Pending-versus-denied capability
+  // policy belongs to useBillingCapabilities.test.ts, which owns that split;
+  // the panel cannot tell the two apart because it never reads `isReady`.
+  async function expectWithheldPurchaseActions() {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: toTurnId('msg-paywall'),
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
 
-      expect(await screen.findByText('Out of credits')).toBeInTheDocument()
-      expect(
-        screen.queryByRole('button', { name: /add credits|upgrade|subscribe/i })
-      ).not.toBeInTheDocument()
-      expect(
-        screen.queryByText(/billed through your Comfy account team/i)
-      ).not.toBeInTheDocument()
-    }
-  )
+    expect(await screen.findByText('Out of credits')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /add credits|upgrade|subscribe/i })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(/billed through your Comfy account team/i)
+    ).not.toBeInTheDocument()
+  }
+
+  it('withholds purchase actions while capabilities are unresolved, without inventing a sales-managed plan', async () => {
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
+    paywallCapabilities.hasResolvedCapabilities = false
+
+    await expectWithheldPurchaseActions()
+  })
+
+  it('withholds purchase actions while the workspace role is unresolved, without inventing a sales-managed plan', async () => {
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
+    paywallWorkspace.role = undefined
+
+    await expectWithheldPurchaseActions()
+  })
 })
 
 describe('AgentPanelRoot session notices', () => {
@@ -2343,6 +2356,16 @@ describe('AgentPanelRoot feedback capture', () => {
     store.startTurn(turnId)
     store.ingest(
       zAgentWsEventForTest({
+        type: 'agent_active_tab',
+        data: {
+          workflow_id: 'wf-rated',
+          message_id: 'turn-9',
+          thread_id: 'th'
+        }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
         type: 'agent_message_delta',
         data: { delta: 'Here is a cat', message_id: 'turn-9', thread_id: 'th' }
       })
@@ -2363,8 +2386,80 @@ describe('AgentPanelRoot feedback capture', () => {
     )
 
     expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-9', vote: 'up', workflow_id: null }],
-      [{ message_id: 'turn-9', vote: null, workflow_id: null }]
+      [{ message_id: 'turn-9', vote: 'up', workflow_id: 'wf-rated' }],
+      [{ message_id: 'turn-9', vote: null, workflow_id: 'wf-rated' }]
+    ])
+  })
+
+  it('attributes the vote to the last tab the rated message linked', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const store = useAgentConversationStore()
+    const turnId = 'turn-10' as TurnId
+    store.recordUser(turnId, 'make two cats')
+    store.startTurn(turnId)
+    for (const workflowId of ['wf-first', 'wf-last']) {
+      store.ingest(
+        zAgentWsEventForTest({
+          type: 'agent_active_tab',
+          data: {
+            workflow_id: workflowId,
+            message_id: 'turn-10',
+            thread_id: 'th'
+          }
+        })
+      )
+    }
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'Two cats', message_id: 'turn-10', thread_id: 'th' }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: 'turn-10', thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Helpful' })
+    )
+
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-10', vote: 'up', workflow_id: 'wf-last' }]
+    ])
+  })
+
+  it('reports a null workflow when the rated message never linked a tab', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const store = useAgentConversationStore()
+    const turnId = 'turn-11' as TurnId
+    store.recordUser(turnId, 'hello')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'Hi there', message_id: 'turn-11', thread_id: 'th' }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: 'turn-11', thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Helpful' })
+    )
+
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-11', vote: 'up', workflow_id: null }]
     ])
   })
 })
