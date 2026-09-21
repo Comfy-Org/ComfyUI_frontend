@@ -147,6 +147,9 @@ test.describe('V2 catalogue', () => {
     // The model it calls is the part the reader cannot work out from the
     // inputs and outputs, so it is the one the page has to name.
     await expect(page.getByTestId('workflow-runs-on')).toBeVisible()
+    // The graph hydrates on sight, so it has to be in view before it has
+    // drawn anything to assert on.
+    await waitForIsland(page, page.getByTestId('workflow-graph'))
     await expect(
       page.getByTestId('workflow-graph').getByRole('img')
     ).toBeVisible()
