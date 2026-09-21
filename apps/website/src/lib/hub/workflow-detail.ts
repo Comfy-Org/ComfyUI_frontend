@@ -163,18 +163,26 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
 }
 
 /**
- * A registry title like "Nano Banana 2: Image Edit" says which model runs, not
- * what the workflow gets you. Where the title leads with the model's name, the
- * page says the job first and keeps the model after it.
+ * A registry title is written as "<model>: <operation>", which says which
+ * model runs before it says what the workflow gets you, and sometimes says
+ * only the model. Where the title leads with a model the workflow names, the
+ * page puts the job first and keeps the model after it.
+ *
+ * A title that already leads with its job — "Video Upscale: SeedVR2 3B Int8"
+ * — is left alone, which is the shape everything here is moving towards.
  */
 export function workflowJobTitle(
   page: HubWorkflowPage
 ): { readonly useCase: UseCase; readonly model: string } | undefined {
-  const { destination, useCase, template } = page
-  if (!destination || !useCase) return undefined
-  const title = template.title.toLowerCase()
-  const model = destination.name.toLowerCase()
-  return title.startsWith(model)
-    ? { useCase, model: destination.name }
-    : undefined
+  const { useCase, template } = page
+  if (!useCase) return undefined
+  const lead = template.title.split(':')[0].trim()
+  if (!lead) return undefined
+  const namesTheModel = template.models.some(
+    (model) => plainName(model) === plainName(lead)
+  )
+  return namesTheModel ? { useCase, model: lead } : undefined
 }
+
+const plainName = (value: string) =>
+  value.toLowerCase().replace(/[^a-z0-9]/g, '')
