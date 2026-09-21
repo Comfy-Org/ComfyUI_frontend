@@ -55,6 +55,7 @@ test.describe(
         await topbar.newWorkflowButton.click()
         await expect(tabs).toHaveCount(2)
         await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
+        await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
         await expect(panel).toBeVisible()
       })
 

@@ -8,7 +8,6 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
-    "scripts/patch-playwright-agents.js",
     "scripts/registry-census/detection-proof/**",
     "src/__ecs_matrix__/**",
     "src/types/generatedManagerTypes.ts",
@@ -270,7 +269,7 @@
       }
     },
     {
-      "files": ["tools/test-recorder/**/*.ts"],
+      "files": ["scripts/**", "tools/test-recorder/**/*.ts"],
       "rules": {
         "no-console": "allow"
       }

@@ -475,6 +475,102 @@ describe('ModelDetail', () => {
     expect(screen.queryByTestId('output-download')).not.toBeInTheDocument()
   })
 
+  it('captures unexpected client exceptions without the error message', async () => {
+    auth.session.value = credential
+    const cause = new TypeError('Private prompt and token=secret')
+    cause.stack = `${cause.toString()}\n    at https://comfy.org/_website/run.abc.js:12:34`
+    vi.mocked(runWorkshopRouter).mockRejectedValue(cause)
+    mountDetail({ model: runnable })
+    await user().type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'An image'
+    )
+    await user().click(screen.getByRole('button', { name: 'Run' }))
+
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'failed',
+          reason: 'client',
+          exception_name: 'TypeError',
+          exception_frames: ['/_website/run.abc.js:12:34']
+        })
+      })
+    )
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('Private prompt')
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('token=secret')
+  })
+
+  it('asks for an unreadable image to be reselected and then runs successfully', async () => {
+    auth.session.value = credential
+    const fetch = vi.fn<typeof globalThis.fetch>()
+    vi.stubGlobal('fetch', fetch)
+    const model = getRouterWorkshopModelDetail(
+      'vertexai--gemini-nano-banana-2--edit-images'
+    )
+    if (!model) throw new Error('Missing Nano Banana model')
+    mountDetail({
+      model: { ...model, examples: [], defaults: { prompt: 'Edit this image' } }
+    })
+    await nextTick()
+    const sources = within(screen.getByRole('group', { name: 'Source images' }))
+    for (const remove of sources.queryAllByRole('button', { name: /^Remove / }))
+      await user().click(remove)
+    const file = new File(['pixels'], 'private.png', { type: 'image/png' })
+    vi.spyOn(file, 'arrayBuffer').mockRejectedValue(
+      new DOMException('Private file detail', 'NotReadableError')
+    )
+    const input = screen.getByLabelText('Source images', {
+      selector: 'input[type="file"]'
+    })
+    await user().upload(input, file)
+    await user().click(screen.getByTestId('run-button'))
+
+    await vi.waitFor(() =>
+      expect(input).toHaveAttribute('aria-invalid', 'true')
+    )
+    expect(screen.getByTestId('error-images')).toHaveTextContent(
+      'This file can no longer be read. Select it again.'
+    )
+    expect(screen.getByTestId('playground-output')).toHaveTextContent(
+      'The model has not run.'
+    )
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+    expect(runWorkshopRouter).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'run_finished',
+      properties: expect.objectContaining({
+        status: 'failed',
+        reason: 'client',
+        failure_stage: 'file_read',
+        exception_name: 'NotReadableError',
+        field_error_codes: ['fileUnreadable']
+      })
+    })
+
+    await user().click(
+      screen.getByRole('button', { name: 'Remove private.png' })
+    )
+    await user().upload(
+      input,
+      new File(['pixels'], 'private.png', { type: 'image/png' })
+    )
+    expect(input).toHaveAttribute('aria-invalid', 'false')
+    vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
+    await user().click(screen.getByTestId('run-button'))
+    await screen.findByTestId('output-download')
+    expect(runWorkshopRouter).toHaveBeenCalledOnce()
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('private.png')
+  })
+
   it('omits an unrecognized Router error header from analytics', async () => {
     auth.session.value = credential
     vi.mocked(runWorkshopRouter).mockRejectedValue(
