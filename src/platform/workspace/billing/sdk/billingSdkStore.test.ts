@@ -13,6 +13,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingSdkStore } from './billingSdkStore'
 import {
   fakeBillingSdk,
+  failedOperation,
   failedTopup,
   pendingTopup,
   pendingSubscription,
@@ -513,6 +514,84 @@ describe('useBillingSdkStore subscription commands', () => {
     })
     expect(mockReconcileSubscription).toHaveBeenCalledOnce()
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+  })
+
+  function reattached(operationType: 'subscription' | 'cancel') {
+    options.onTelemetry({
+      name: 'billing.operation.started',
+      billing_op_id: 'op-1',
+      operation_type: operationType,
+      presentation: 'hosted',
+      resumed: true
+    })
+  }
+
+  it('finishes a reattached subscribe the way the poller did', async () => {
+    useBillingSdkStore()
+
+    reattached('subscription')
+    harness.publish(settledOperation('succeeded', 'subscription'))
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({
+          severity: 'success',
+          summary: 'Subscription updated successfully'
+        })
+      )
+    )
+    expect(mockReconcileSubscription).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+  })
+
+  it('finishes a reattached cancel the way the poller did', async () => {
+    useBillingSdkStore()
+
+    reattached('cancel')
+    harness.publish(settledOperation('succeeded', 'cancel'))
+
+    await vi.waitFor(() =>
+      expect(
+        useTeamWorkspaceStore().updateActiveWorkspace
+      ).toHaveBeenCalledWith({ isSubscribed: false })
+    )
+    expect(mockFetchStatus).toHaveBeenCalledOnce()
+    expect(mockFetchBalance).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+    expect(useToastStore().messagesToAdd).toEqual([])
+  })
+
+  it('reports the failure of a reattached subscribe', () => {
+    useBillingSdkStore()
+
+    reattached('subscription')
+    harness.publish(failedOperation('subscription'))
+
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'Subscription update failed'
+      })
+    )
+  })
+
+  it('reports nothing for the failure of a reattached cancel', () => {
+    useBillingSdkStore()
+
+    reattached('cancel')
+    harness.publish(failedOperation('cancel'))
+
+    expect(useToastStore().messagesToAdd).toEqual([])
+  })
+
+  it('leaves a subscribe it issued to the checkout that issued it', async () => {
+    useBillingSdkStore()
+
+    harness.publish(settledOperation('succeeded', 'subscription'))
+    await nextTick()
+
+    expect(mockReconcileSubscription).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toEqual([])
   })
 
   it('hands back the quote without refreshing anything', async () => {
