@@ -409,6 +409,25 @@ describe('createOpSender', () => {
     expect(settled).toHaveLength(0)
   })
 
+  it('a late identified result from an unacknowledged batch drains a stale credit', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unacknowledged'])
+    const staleOpId = sent[0].ops[0].op_id
+
+    sender.enqueue([addNode(2)])
+    resultListener?.({ ok: true, applied: [staleOpId], skipped: [] })
+    resultListener?.({ ok: true, applied: [staleOpId], skipped: [] })
+    expect(settled).toHaveLength(1)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unacknowledged',
+      'acknowledged'
+    ])
+  })
+
   it('idle late results drain the stale credits so a fresh batch can settle anonymously', () => {
     sender.enqueue([addNode(1)])
     vi.advanceTimersByTime(10_000)
