@@ -7,6 +7,7 @@ import re
 import subprocess
 import sys
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 
 TEST_PATHS = (
@@ -18,57 +19,115 @@ TEST_PATHS = (
     b"*.test.mts",
 )
 HUNK_RE = re.compile(rb"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
-DISABLE_RE = re.compile(
-    r"\b(?:test|it|describe)(?:\.describe)?\.(?:skip|fixme)\s*\(\s*"
-    r"(?:['\"`]|true\b)",
-    re.MULTILINE,
+IDENTIFIER_RE = re.compile(r"[A-Za-z_$][\w$]*")
+DISABLE_CALLEES = (
+    ("test", ".", "skip", "("),
+    ("test", ".", "fixme", "("),
+    ("it", ".", "skip", "("),
+    ("it", ".", "fixme", "("),
+    ("describe", ".", "skip", "("),
+    ("describe", ".", "fixme", "("),
+    ("test", ".", "describe", ".", "skip", "("),
+    ("test", ".", "describe", ".", "fixme", "("),
 )
 
 
-def added_blocks(patch: bytes) -> Iterable[list[tuple[int, str]]]:
-    """Yield contiguous added lines paired with their target-file line numbers."""
-    block: list[tuple[int, str]] = []
+@dataclass(frozen=True)
+class Token:
+    kind: str
+    value: str
+    line: int
+
+
+def added_target_lines(patch: bytes) -> set[int]:
+    """Return target-file line numbers added by a zero-context Git diff."""
+    added: set[int] = set()
     target_line: int | None = None
 
     for raw_line in patch.splitlines():
         hunk = HUNK_RE.match(raw_line)
         if hunk:
-            if block:
-                yield block
-                block = []
             target_line = int(hunk.group(1))
+        elif target_line is not None and raw_line.startswith(b"+"):
+            added.add(target_line)
+            target_line += 1
+        elif target_line is not None and raw_line.startswith(b"-"):
+            continue
+        elif target_line is not None and raw_line.startswith(b" "):
+            target_line += 1
+
+    return added
+
+
+def tokens(source: str) -> Iterable[Token]:
+    """Tokenize the small JavaScript surface needed to identify test calls."""
+    index = 0
+    line = 1
+
+    while index < len(source):
+        char = source[index]
+        if char.isspace():
+            line += char == "\n"
+            index += 1
+            continue
+        if source.startswith("//", index):
+            newline = source.find("\n", index + 2)
+            index = len(source) if newline == -1 else newline
+            continue
+        if source.startswith("/*", index):
+            end = source.find("*/", index + 2)
+            end = len(source) if end == -1 else end + 2
+            line += source.count("\n", index, end)
+            index = end
+            continue
+        if char in "'\"`":
+            quote = char
+            start_line = line
+            index += 1
+            while index < len(source):
+                if source[index] == "\\":
+                    index += 2
+                    continue
+                if source[index] == quote:
+                    index += 1
+                    break
+                line += source[index] == "\n"
+                index += 1
+            yield Token("string", quote, start_line)
             continue
 
-        if target_line is None:
+        identifier = IDENTIFIER_RE.match(source, index)
+        if identifier:
+            value = identifier.group()
+            yield Token("identifier", value, line)
+            index = identifier.end()
             continue
-        if raw_line.startswith(b"+"):
-            block.append(
-                (target_line, raw_line[1:].decode("utf-8", errors="replace"))
-            )
-            target_line += 1
-        elif raw_line.startswith(b"-"):
-            if block:
-                yield block
-                block = []
-        elif raw_line.startswith(b" "):
-            if block:
-                yield block
-                block = []
-            target_line += 1
-        else:
-            if block:
-                yield block
-                block = []
 
-    if block:
-        yield block
+        yield Token("punctuation", char, line)
+        index += 1
 
 
-def matches_in_block(block: list[tuple[int, str]]) -> Iterable[tuple[int, str]]:
-    text = "\n".join(content for _, content in block)
-    for match in DISABLE_RE.finditer(text):
-        block_index = text.count("\n", 0, match.start())
-        yield block[block_index]
+def disabled_declaration_lines(source: str) -> Iterable[int]:
+    parsed = list(tokens(source))
+    for index, token in enumerate(parsed):
+        if token.kind != "identifier":
+            continue
+        if index and parsed[index - 1].value == ".":
+            continue
+
+        for callee in DISABLE_CALLEES:
+            values = tuple(item.value for item in parsed[index : index + len(callee)])
+            if values != callee:
+                continue
+            argument_index = index + len(callee)
+            if argument_index >= len(parsed):
+                continue
+            argument = parsed[argument_index]
+            if argument.kind == "string" or (
+                argument.kind == "identifier" and argument.value == "true"
+            ):
+                yield parsed[index + len(callee) - 2].line
+            break
 
 
 def git(*args: bytes) -> bytes:
@@ -103,10 +162,16 @@ def find_violations(base_sha: str, head_sha: str) -> Iterable[str]:
             b"--",
             path,
         )
+        source = git(b"show", head_sha.encode() + b":" + path).decode(
+            "utf-8", errors="replace"
+        )
+        source_lines = source.splitlines()
+        added_lines = added_target_lines(patch)
         display_path = path.decode("utf-8", errors="replace")
-        for block in added_blocks(patch):
-            for line_number, content in matches_in_block(block):
-                yield f"  {display_path}:{line_number}: {content.strip()}"
+        for line_number in disabled_declaration_lines(source):
+            if line_number in added_lines:
+                content = source_lines[line_number - 1].strip()
+                yield f"  {display_path}:{line_number}: {content}"
 
 
 def main() -> int:
