@@ -229,12 +229,18 @@ function onCustomFloatCreated(this: LGraphNode) {
     return Number((10 ** -places).toFixed(places))
   }
   const declaredStep = valueWidget.options.step2 ?? lastDecimalPlace()
-  // Only precision set on this node steers the step; `defaultPrecision` also
-  // carries the global `Comfy.FloatRoundingPrecision`, which must not.
+  const declaredRound = valueWidget.options.round
+  // Only precision set on this node steers step and round; `defaultPrecision`
+  // also carries the global `Comfy.FloatRoundingPrecision`, which must not.
+  const nodePrecisionSet = () => typeof this.properties.precision === 'number'
   const stepForPrecision = () =>
-    typeof this.properties.precision === 'number'
+    nodePrecisionSet() ? lastDecimalPlace() : declaredStep
+  // `Comfy.DisableFloatRounding` leaves `declaredRound` undefined; node
+  // precision refines the granularity but must not switch rounding back on.
+  const roundForPrecision = () =>
+    declaredRound !== undefined && nodePrecisionSet()
       ? lastDecimalPlace()
-      : declaredStep
+      : declaredRound
 
   Object.defineProperty(valueWidget.options, 'precision', {
     get: precision,
@@ -248,7 +254,7 @@ function onCustomFloatCreated(this: LGraphNode) {
     set: (v) => (this.properties.step = v)
   })
   Object.defineProperty(valueWidget.options, 'round', {
-    get: () => this.properties.round || lastDecimalPlace(),
+    get: () => this.properties.round ?? roundForPrecision(),
     set: (v) => {
       this.properties.round = v
       valueWidget.callback?.(valueWidget.value)

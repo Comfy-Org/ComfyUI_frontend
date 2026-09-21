@@ -22,8 +22,9 @@ const extension = extensions.getExtension('Comfy.CustomWidgets')
 
 // Imported after `app` to break the `app` -> `scripts/widgets` -> composable
 // cycle; a static import here yields an uninitialised binding.
-const { useFloatWidget } =
+const { useFloatWidget, _for_testing: floatWidgetInternals } =
   await import('@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget')
+const { onFloatValueChange } = floatWidgetInternals
 const { useIntWidget } =
   await import('@/renderer/extensions/vueNodes/widgets/composables/useIntWidget')
 
@@ -92,15 +93,13 @@ class TestQuarterStepFloatNode extends LGraphNode {
   }
 }
 
-function stubFloatRoundingPrecision(decimalPlaces: number) {
+function stubSettings(overrides: Partial<Settings>) {
   const settingStore = useSettingStore(getActivePinia())
   vi.spyOn(settingStore, 'get').mockImplementation(
-    <K extends keyof Settings>(key: K): Settings[K] => {
-      if (key === 'Comfy.FloatRoundingPrecision') {
-        return decimalPlaces as Settings[K]
-      }
-      return undefined as Settings[K]
-    }
+    <K extends keyof Settings>(key: K): Settings[K] =>
+      (Object.hasOwn(overrides, key)
+        ? overrides[key]
+        : undefined) as Settings[K]
   )
 }
 
@@ -158,13 +157,44 @@ describe('Primitive numeric widget options', () => {
     })
 
     it('keeps the declared step when the float rounding setting adds decimal places', () => {
-      stubFloatRoundingPrecision(3)
+      stubSettings({ 'Comfy.FloatRoundingPrecision': 3 })
       const { widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
 
       expect(widget.options.step2).toBe(0.1)
       expect(getWidgetStep(widget.options)).toBe(0.1)
       expect(widget.options.round).toBe(0.001)
       expect(widget.options.precision).toBe(3)
+    })
+
+    it('does not round when float rounding is disabled', () => {
+      stubSettings({ 'Comfy.DisableFloatRounding': true })
+      const { widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+
+      expect(widget.options.round).toBeUndefined()
+
+      onFloatValueChange.call(widget, 0.123456)
+      expect(widget.value).toBe(0.123456)
+    })
+
+    it('keeps rounding off when precision is set on a node that does not round', () => {
+      stubSettings({ 'Comfy.DisableFloatRounding': true })
+      const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+
+      node.properties.precision = 3
+
+      expect(widget.options.round).toBeUndefined()
+      expect(widget.options.step2).toBe(0.001)
+    })
+
+    it('preserves a round of zero configured on the node', () => {
+      const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+
+      node.properties.round = 0
+
+      expect(widget.options.round).toBe(0)
+
+      onFloatValueChange.call(widget, 0.123456)
+      expect(widget.value).toBe(0.123456)
     })
 
     it('keeps a declared step that is not a power of ten', () => {
