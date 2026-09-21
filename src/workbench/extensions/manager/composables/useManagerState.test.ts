@@ -421,5 +421,26 @@ describe('useManagerState', () => {
       const managerState = useManagerState()
       expect(managerState.shouldShowManagerButtons.value).toBe(true)
     })
+
+    it.for([
+      { argv: ['python', 'main.py'], expected: false },
+      { argv: ['python', 'main.py', '--enable-manager'], expected: true }
+    ])(
+      'shouldShowExtensionsButton follows manager availability off cloud ($argv)',
+      ({ argv, expected }) => {
+        systemStatsStore.$patch({
+          systemStats: systemStatsFixture(argv),
+          isInitialized: true
+        })
+        vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+          supports_manager_v4_ui: true
+        })
+        mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
+
+        expect(useManagerState().shouldShowExtensionsButton.value).toBe(
+          expected
+        )
+      }
+    )
   })
 })

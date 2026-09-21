@@ -73,7 +73,7 @@
               />
               <LoginButton v-else-if="!isIntegratedTabBar" />
               <Button
-                v-if="isExtensionsButtonVisible"
+                v-if="managerState.shouldShowExtensionsButton.value"
                 v-tooltip.bottom="customNodesManagerTooltipConfig"
                 variant="secondary"
                 size="icon"
@@ -244,7 +244,7 @@ const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
-  if (isExtensionsButtonVisible.value) return true
+  if (managerState.shouldShowExtensionsButton.value) return true
   if (isCloud && flags.workflowSharingEnabled) return true
   if (!isRightSidePanelOpen.value) return true
   return false
@@ -281,9 +281,6 @@ const inlineProgressSummaryTarget = computed(() => {
 })
 const shouldHideInlineProgressSummary = computed(
   () => isQueueProgressOverlayEnabled.value && isQueueOverlayExpanded.value
-)
-const isExtensionsButtonVisible = computed(
-  () => managerState.shouldShowManagerButtons.value || isCloud
 )
 const customNodesManagerTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.manageExtensions'))

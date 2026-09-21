@@ -2,6 +2,7 @@ import { storeToRefs } from 'pinia'
 import { computed, readonly, watch } from 'vue'
 
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
@@ -183,6 +184,14 @@ export function useManagerState() {
     })
   )
 
+  /**
+   * The top bar Extensions button also opens the cloud custom nodes survey,
+   * so it stays visible on cloud where the manager itself is disabled.
+   */
+  const shouldShowExtensionsButton = readonly(
+    computed((): boolean => isCloud || shouldShowManagerButtons.value)
+  )
+
   // Fire the upgrade-required toast once when we first observe the
   // INCOMPATIBLE state. immediate: true handles the common case where the
   // composable is mounted after feature flags have already arrived.
@@ -274,6 +283,7 @@ export function useManagerState() {
     isIncompatibleManager,
     shouldShowInstallButton,
     shouldShowManagerButtons,
+    shouldShowExtensionsButton,
     openManager
   }
 }

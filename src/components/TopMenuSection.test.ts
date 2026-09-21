@@ -70,14 +70,14 @@ vi.mock<unknown>(
 
   () => {
     const managerState = {
-      shouldShowManagerButtons: computed(() => true),
+      shouldShowExtensionsButton: computed(() => true),
       openManager: vi.fn()
     }
 
     return {
       useManagerState: vi.fn(() => {
         onTestFinished(() => {
-          managerState.shouldShowManagerButtons = computed(() => true)
+          managerState.shouldShowExtensionsButton = computed(() => true)
         })
         return managerState
       })
@@ -591,7 +591,7 @@ describe('TopMenuSection', () => {
 
   it('coalesces legacy topbar mutation scans to one check per frame', async () => {
     localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
-    useManagerState().shouldShowManagerButtons = computed(() => false)
+    useManagerState().shouldShowExtensionsButton = computed(() => false)
 
     const rafCallbacks: FrameRequestCallback[] = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
