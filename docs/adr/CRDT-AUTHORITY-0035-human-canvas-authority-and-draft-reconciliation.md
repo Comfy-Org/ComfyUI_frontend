@@ -29,11 +29,13 @@ The server previously treated an existing document as permanently
 authoritative over the posted draft. A user who cleared the canvas without
 those deletions reaching the document (edited while unbound, or dropped at
 unbind) then started a new chat on the same workflow and the agent read the
-old nodes. A backend change making the posted, human-authored canvas
-authoritative over a divergent document (with a sequence check so it cannot
-erase a collaborator's later write, and a `doc_reset` broadcast) is merged to
-the agent release branch and awaits promotion to main. It derives everything
-it needs from the `draft` field the client already sends.
+old nodes. This record assumes a backend change that makes the posted,
+human-authored canvas authoritative over a divergent document, guarded by a
+sequence check so it cannot erase a collaborator's later write and announced
+to followers as a `doc_reset`. That change lives outside this repository:
+nothing here can verify its status or semantics, so every claim about it
+below is conditional until it is released. It needs nothing beyond the
+`draft` field the client already sends.
 
 The same symptom has a second, independent door. Scratch-tab bindings are
 persisted so a restored unsaved draft reconnects to its thread after reload
@@ -89,8 +91,9 @@ depends on it.
 6. **The server's sequence check is the guard against a stale canvas.** A
    human-authored draft posted from a canvas that missed follower frames (gap,
    disconnect) would revert agent work the user never saw. We rely on the
-   backend's sequence check for now and record as a follow-up that the client
-   should withhold `draft` while a bound follower is disconnected or in a gap.
+   sequence check the assumed backend change carries and record as a
+   follow-up that the client should withhold `draft` while a bound follower
+   is disconnected or in a gap.
 
 Alternatives considered and rejected:
 
@@ -128,9 +131,10 @@ Alternatives considered and rejected:
 
 ### Negative
 
-- Until the backend change is promoted, the first door (a saved target whose
-  document diverged from the cleared canvas) still fails in production; the
-  frontend cannot fix it alone.
+- Until the assumed backend change is released, the first door (a saved
+  target whose document diverged from the cleared canvas) still fails in
+  production; the frontend cannot fix it alone, and nothing in this
+  repository can confirm when that happens.
 - The stale-canvas risk in decision 6 is accepted, not removed, until the
   withhold-draft follow-up lands.
 - Coalescing shares one batch's prefix-abort semantics across operations that
@@ -153,12 +157,13 @@ re-send dropped operations" is about the human write path. GRAPH-DOCUMENT-0024's
 frames by state-vector delta. The write-path non-guarantee does not weaken the
 read-path guarantee.
 
-The server-side document replacement is a `doc_reset` lineage break, which
-GRAPH-DOCUMENT-0024 already sanctions as the sole ordinary replacement path,
-not the whole-graph-replace mutation primitive that CRDT-FOLLOWER-0025 rejects.
-It is gated to a human-authored divergence rather than routine edits, and it is
-guarded against concurrent collaborator writes by a sequence check. The
-follower's one-way invariant is unchanged.
+The server-side document replacement this record assumes is a `doc_reset`
+lineage break, which GRAPH-DOCUMENT-0024 already sanctions as the sole
+ordinary replacement path, not the whole-graph-replace mutation primitive that
+CRDT-FOLLOWER-0025 rejects. As assumed here it is gated to a human-authored
+divergence rather than routine edits and guarded against concurrent
+collaborator writes by a sequence check. The follower's one-way invariant is
+unchanged.
 
 Relates to [CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md)
 (the human write path and the one-way follower invariant are unchanged),
