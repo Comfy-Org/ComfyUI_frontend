@@ -10,44 +10,41 @@ Proposed
 
 The agent panel's node selection mode turns the canvas into a picking
 surface: clicking a node adds it to the prompt, and no graph mutation should
-happen. The mode is entered from `AgentPanelRoot.vue`, which writes
-`canvas.selectOnly`, `canvas.allow_dragnodes` and `canvas.multi_select`
-directly (L958-962), saves the previous values in module-level variables
-(L874-877), then calls `agentNodeSelectionStore.enter()`. The store's
-`watch(isActive)` hides the action bars, sidebar, toasts, minimap and (on this
-branch) `canvas.show_info`, each with its own restore slot. Exit runs from
-four watchers and must reset every variable in order. "Picking is on" has two
+happen. Before this decision the mode was entered from `AgentPanelRoot.vue`,
+which wrote `canvas.selectOnly`, `canvas.allow_dragnodes` and
+`canvas.multi_select` directly, saved the previous values in module-level
+variables, then called `agentNodeSelectionStore.enter()`. The store's
+`watch(isActive)` hid the action bars, sidebar, toasts, minimap and
+`canvas.show_info`, each with its own restore slot. Exit ran from four
+watchers and had to reset every variable in order. "Picking is on" had two
 writers (`isActive` and `selectOnly`) and no derivation between them, the
 "duplicated authority" pattern `.agents/checks/adr-compliance.md` flags.
 
-`selectOnly` is only read by the classic canvas: `_processNodeClick` returns
-before widget, collapse, slot and resize handling (`LGraphCanvas.ts` L2755),
-`processSelect` keeps empty-canvas preservation and accumulation
-(L4550-4556) and `select()` refuses non-node items (L4591). Vue-rendered
-nodes, the default on cloud and desktop, gate pointer handling on
-`shouldHandleNodePointerEvents`, which is `!canvasStore.isReadOnly`
-(`useCanvasInteractions.ts` L34); nothing under
-`src/renderer/extensions/vueNodes` reads `selectOnly`. During picking a user
-can still type into a Vue text widget, rename a node from its header,
+`selectOnly` was only read by the classic canvas: `_processNodeClick`
+returned before widget, collapse, slot and resize handling, `processSelect`
+kept empty-canvas preservation and accumulation and `select()` refused
+non-node items. Vue-rendered nodes, the default on cloud and desktop, gated
+pointer handling on `shouldHandleNodePointerEvents`, which was
+`!canvasStore.isReadOnly` (`useCanvasInteractions`); nothing under
+`src/renderer/extensions/vueNodes` read `selectOnly`. During picking a user
+could still type into a Vue text widget, rename a node from its header,
 collapse it, resize it, drag a link from a slot, Ctrl+Alt-click a slot to
-disconnect it (`useSlotLinkInteraction.ts` L697-707) and right-click it for
-the options menu (`LGraphNode.vue` L435-444); classic DOM widgets read
-`read_only` (`DomWidgets.vue` L119) and stay editable too. The e2e case
-dropped in `f58339a` dragged a canvas-drawn widget in classic mode, which
-L2755 does block, so it never exercised the Vue or DOM path.
+disconnect it (`useSlotLinkInteraction`) and right-click it for the options
+menu (`LGraphNode.vue`); classic DOM widgets read `read_only`
+(`DomWidgets.vue`) and stayed editable too. The e2e case dropped in
+`f58339a` dragged a canvas-drawn widget in classic mode, which
+`_processNodeClick` does block, so it never exercised the Vue or DOM path.
 
 Pinning `canvas.read_only` (`bf70f9c`) closed those gaps and broke the one
 interaction the mode needs: `_processPrimaryButton` turns every press into a
-pan (L2453-2457) and `LGraphNode.vue` L24-28 makes the whole node
-`pointer-events-none`, so click-to-select died and the pin was reverted in
-`5ff9afc`.
+pan and `LGraphNode.vue` makes the whole node `pointer-events-none`, so
+click-to-select died and the pin was reverted in `5ff9afc`.
 
-Keyboard paths are a third gap. `Comfy.Canvas.DeleteSelectedItems` checks
-`selectOnly` (`useCoreCommands.ts` L949) but the bypass, mute, pin, collapse,
-resize, nudge, paste, group and subgraph commands do not; Ctrl+Z runs through
-`changeTracker.ts` L490-503 and plain Ctrl+V through `usePaste.ts` L200,
-neither via the command store. The picker leaves nodes selected, so Ctrl+B
-during picking bypasses the picked nodes.
+Keyboard paths were a third gap. `Comfy.Canvas.DeleteSelectedItems` checked
+`selectOnly` but the bypass, mute, pin, collapse, resize, nudge, paste, group
+and subgraph commands did not; Ctrl+Z ran through `changeTracker.ts` and
+plain Ctrl+V through `usePaste.ts`, neither via the command store. The picker
+leaves nodes selected, so Ctrl+B during picking bypassed the picked nodes.
 
 [ADR-CANVAS-SELECTION-0028](CANVAS-SELECTION-0028-single-selection-store.md)
 requires picker mode to keep "its current edit and drag guards through
@@ -65,6 +62,8 @@ agent store owns the fact; everything else is a projection of it.
 1. **One authoritative fact.** `agentNodeSelectionStore.isActive` is the only
    stored representation of "picking is on". It already owns entry, exit,
    Escape and the workflow, target and graph-change exits.
+   `AgentPanelRoot.vue` calls `store.enter()` and `store.exit()` and holds no
+   canvas save/restore state of its own.
 2. **One pure derivation.** `resolvePickingPolicy({ readOnly, picking })` in
    `src/renderer/core/canvas/interaction/pickingPolicy.ts` returns a
    `PickingPolicy` with `canSelectNodes: !readOnly`,
@@ -80,73 +79,63 @@ agent store owns the fact; everything else is a projection of it.
    | true     | true    | false          | false        | false           |
 
    There is no mode ordering. Space-bar pan, drag-zoom and the lock commands
-   write `read_only` synchronously (`LGraphCanvas.ts` L3959-3963,
-   L3984-3990, L2271-2277; `useCoreCommands.ts` L437-461) and
-   `canvasStore.isReadOnly` mirrors it (L154-161), so `readOnly` may narrow
-   `canSelectNodes` but never changes what is projected onto `selectOnly` or
-   `show_info`. The module has no Vue or store imports
-   (`docs/guidance/state-and-effects.md` §2: a transition is a pure function
-   in its own module).
+   write `read_only` synchronously and `canvasStore.isReadOnly` mirrors it,
+   so `readOnly` may narrow `canSelectNodes` but never changes what is
+   projected onto `selectOnly` or `show_info`. The module has no Vue or store
+   imports (`docs/guidance/state-and-effects.md` §2: a transition is a pure
+   function in its own module).
 
 3. **Vue surfaces read the policy through `useCanvasInteractions`.** It keeps
    `shouldHandleNodePointerEvents` (`canSelectNodes`) for selection paths and
-   adds `canEditNodes` for mutation paths: `NodeWidgets.vue` pointer gating
-   plus `:inert="!canFocusWidgets"` so Tab or an already-focused textarea
-   cannot type while picking (`inert` stays off under plain read-only: the
-   app builder's select step sets `read_only` and its `AppInput.vue`
-   promotion overlay must keep receiving clicks under the
-   `pointer-events-none` grid); `NodeHeader.vue` title double-click; `LGraphNode.vue`
-   `handleResizePointerDown` (L472), `handleContextMenu` (L435-444), which
-   returns before `handleNodeRightClick` and `showNodeOptions`, the
-   alt-pointerdown clone, the footer's advanced toggle and the native
-   drag-over/drop handlers that register `app.dragOverNode`;
-   the node media wrapper around `NodeContent` (`:inert="!canFocusWidgets"`,
-   so the image preview's mask, layer-editor and download buttons neither
-   act nor swallow the pick click);
-   `useNodeEventHandlers.ts` collapse (L70), title (L87), right-click
-   (L106) and the bring-to-front `setNodeOrder` in `handleNodeSelect` and
-   `toggleNodeSelectionAfterPointerUp`, so a pick click leaves the node
-   order and the undo history untouched; `useSlotLinkInteraction.ts`
-   `onPointerDown`, `onClick`, `onDoubleClick` and `handlePointerMove`
-   (L462). `finishInteraction` cancels a drop only while picking, read
-   through `canvas.selectOnly`, not through `canEditNodes`: a space-bar pan
-   flips `read_only` mid-drag and the drop released while the key is held
-   still completes as it did before this ADR; every finish, cancelled or
-   not, calls `captureCanvasState()`. `DomWidgets.vue` L119 `readonly` plus
-   `:inert="!canFocusWidgets"` on the DOM widget layer, since
-   `pointer-events: none` alone leaves the widgets tabbable. The
-   derivation lives in the composable, not `canvasStore`:
-   `agentNodeSelectionStore.ts` L7 already imports `canvasStore` (the reverse
-   import is a module cycle),
-   and a store whose only content is a `computed` over two other stores is a
-   derivation, not state.
+   adds `canEditNodes` and `canFocusWidgets` for mutation and focus paths.
+   Widget grids, DOM widget layers and node media wrappers use
+   `:inert="!canFocusWidgets"`, keyed on picking rather than read-only: the
+   app builder's select step sets `read_only` and its promotion overlay must
+   keep receiving clicks. Header, resize, context menu, alt-clone, advanced
+   toggle, drag-over/drop, collapse, title, right-click, click-to-front
+   reordering and the slot link interaction read `canEditNodes`. The slot
+   link `finishInteraction` cancels a drop only while picking, read through
+   `canvas.selectOnly` rather than `canEditNodes`, so a space-bar pan that
+   flips `read_only` mid-drag still completes the drop, and every finish
+   calls `captureCanvasState()`. The derivation lives in the composable, not
+   `canvasStore`: `agentNodeSelectionStore` already imports `canvasStore`
+   (the reverse import is a module cycle), and a store whose only content is
+   a `computed` over two other stores is a derivation, not state.
 4. **One outward projection onto litegraph.**
-   `src/renderer/core/canvas/interaction/useCanvasPickingPolicySync.ts`,
-   instantiated once from `GraphCanvas.vue` next to `useLitegraphSettings()`
-   (L491), takes over the `Comfy.Graph.CanvasInfo` watch from
-   `useLitegraphSettings.ts` L19-31 so `canvas.show_info` keeps one writer.
-   Its explicit sources are the setting, `canvasStore.canvas` and `isActive`.
-   While picking it pins `canvas.selectOnly` to `true`, remembering the
-   value it overwrote, and restores that value when picking ends, when the
-   canvas is replaced mid-pick and when its scope is disposed. The pin is
-   reasserted on every run of the watch, and the restore happens only while
-   `selectOnly` still holds the `true` the composable wrote: a second live
-   instance (overlapping `GraphCanvas` mounts, HMR) captures the first
-   instance's `true` as its "before" value, and without that check the
-   later release would leave the canvas select-only for good. It writes
-   `canvas.show_info = canvasInfoEnabled && !picking`, then one
-   `draw(false, true)`. It uses
-   `flush: 'sync'`: today's writes in `AgentPanelRoot.vue` L960-962 are
-   synchronous and the store's chrome watch is created synchronously, so a
-   click or key in the same task as `enter()` already sees `selectOnly`.
-   `allow_dragnodes` and
-   `multi_select` are not projected: `selectOnly` already forces accumulation
-   (L4556) and blocks node drag (L2755, L3616), and writing them would
-   overwrite extension-set values. `AgentPanelRoot.vue` L874-877, L893-909
-   and L958-962 shrink to `store.enter()` and `store.exit()`; the
-   save/restore slots and the branch's `restoreShowInfo` are deleted. Exit
-   has nothing to restore on the canvas: the policy is recomputed from the
-   current setting, so a mid-mode `Comfy.ToggleCanvasInfo` is honoured.
+   `useCanvasPickingPolicySync`, instantiated once from `GraphCanvas.vue`
+   next to `useLitegraphSettings()`, takes over the `Comfy.Graph.CanvasInfo`
+   watch from `useLitegraphSettings` so `canvas.show_info` keeps one writer.
+   Its explicit sources are the setting, `canvasStore.canvas` and `isActive`;
+   it runs with `flush: 'sync'` because `enter()` and `exit()` update the
+   store synchronously and the store's chrome watch is created
+   synchronously, so a click or key in the same task as `enter()` already
+   sees `selectOnly`. It writes `canvas.show_info = canvasInfoEnabled &&
+!picking`, then one `draw(false, true)`. Exit has nothing to recompute by
+   hand: the policy is derived from the current setting, so a mid-mode
+   `Comfy.ToggleCanvasInfo` is honoured.
+
+   **Picking owns `canvas.selectOnly` through `selectOnlyPin.ts`**, a
+   module-level registry keyed by canvas instance. Each live sync scope is
+   an owner. The first owner records the pre-pick value and installs an
+   own accessor for `selectOnly` on that canvas instance whose getter
+   returns `true` and whose setter records the written value as the value
+   to restore. Further owners join the owner set without touching the
+   recorded value. When the last owner releases, because picking ended, the
+   canvas was replaced mid-pick or the scope was disposed, the accessor is
+   removed and the recorded value is written once through the class's own
+   setter. The invariant this buys is structural rather than polled: while
+   any owner holds the pin, every reader (`isSelectOnly()`, the classic
+   canvas, the commands, paste, drops and history) sees `true` regardless of
+   how many `GraphCanvas` scopes are alive (overlapping mounts during a
+   route transition, HMR) or what an outside writer does; an outside write
+   during picking is neither applied early nor lost, it becomes the value
+   restored on exit. The registry lives in the composable's module, not on
+   `LGraphCanvas`, which gains no member.
+
+   `allow_dragnodes` and `multi_select` are not projected: `selectOnly`
+   already forces accumulation and blocks node drag, and writing them would
+   overwrite extension-set values.
+
 5. **Guards at each mutation site.** Guards read the store or the policy;
    `isSelectOnly()` remains for existing call sites and is equivalent once
    `selectOnly` is a pure projection of `isActive`. Every graph-mutating
@@ -158,7 +147,9 @@ agent store owns the fact; everything else is a projection of it.
    `Comfy.Graph.GroupSelectedNodes`, `Comfy.Graph.ConvertToSubgraph`,
    `Comfy.Graph.UnpackSubgraph`, `Comfy.Graph.FitGroupToContents`,
    `Comfy.Graph.ToggleWidgetPromotion`, `Comfy.Undo`, `Comfy.Redo` and
-   `Comfy.ClearWorkflow` (`DeleteSelectedItems` already does). The two
+   `Comfy.ClearWorkflow` (`DeleteSelectedItems` already does). `Comfy.Undo`
+   and `Comfy.Redo` keep their guard below the `global-mask-editor` branch,
+   so the mask editor's own history still undoes while picking. The two
    non-command keyboard paths get the same guard: the `usePaste.ts` handler
    returns, and the `ChangeTracker` keydown listener snapshots `selectOnly`
    before deferring to the animation frame so `undoRedo` decides with the
@@ -170,14 +161,12 @@ agent store owns the fact; everything else is a projection of it.
    `selectedItems` on shift or `alwaysSnapToGrid`, which would move the
    picked nodes) and `_processNodeClick`'s `bringToFront` while select-only;
    node clicks, empty-canvas clicks, panning and the selection rectangle are
-   unchanged. `Comfy.Undo` and `Comfy.Redo` keep their guard below the
-   `global-mask-editor` branch, so the mask editor's own history still
-   undoes while picking. The two file-drop paths return while select-only:
-   the document `drop` listener in `app.ts` after `preventDefault()` (the
-   browser must not navigate to the file) and `useCanvasDrop.ts` `onDrop`
-   for sidebar node, model and workflow drags. These are condition edits,
-   not new members. A `mutatesGraph` flag on `ComfyCommand`, checked once in the
-   command store, is deferred (below).
+   unchanged. The two file-drop paths return while select-only: the document
+   `drop` listener in `app.ts` after `preventDefault()` (the browser must not
+   navigate to the file) and `useCanvasDrop.ts` `onDrop` for sidebar node,
+   model and workflow drags. These are condition edits, not new members. A
+   `mutatesGraph` flag on `ComfyCommand`, checked once in the command store,
+   is deferred (below).
 6. **Chrome keeps reading the store.** Action bars, sidebar, splitter panels,
    selection toolbox, toasts, banner and the queue and error overlays in
    `TopMenuSection.vue` keep gating on `isActive` or `isActionBarsHidden`.
@@ -195,15 +184,21 @@ agent store owns the fact; everything else is a projection of it.
   `canvas.multi_select` keep their types, defaults and meaning. No member is
   added to `LGraphCanvas`, `LGraphNode`, `LGraph` or `Subgraph`. Entity
   callbacks and `node.widgets` access are untouched.
+- While picking is active on a canvas, `canvas.selectOnly` reads `true` for
+  every reader. A value written to it during picking is recorded and becomes
+  the value restored when picking ends; a value it held before picking is
+  restored otherwise. The restore happens exactly once, when the last sync
+  owner releases.
 - Classic picking keeps node selection, empty-canvas preservation, panning
   and the selection rectangle; alt-click clone, reroute and link drags from
   the canvas, link menus, group title-bar drags, click-to-front reordering
-  and the group and empty-canvas double-click actions are suppressed. The existing `LGraphCanvas.selectOnly.test.ts` cases pass
-  unedited and gain rows for each suppressed path.
-- `ADR-CANVAS-SELECTION-0028`'s compatibility clause (L113-114) still holds:
-  picker mode keeps node-only accumulation, empty-canvas preservation and its
-  edit and drag guards through `canvas.selectOnly`, now a projection rather
-  than a second source. Its deferred item at L145 stays with 0029.
+  and the group and empty-canvas double-click actions are suppressed. The
+  existing `LGraphCanvas.selectOnly.test.ts` cases pass unedited and gain
+  rows for each suppressed path.
+- `ADR-CANVAS-SELECTION-0028`'s compatibility clause still holds: picker
+  mode keeps node-only accumulation, empty-canvas preservation and its edit
+  and drag guards through `canvas.selectOnly`, now a projection rather than
+  a second source. Its deferred `InteractionPolicy` item stays with 0029.
 - Vue node DOM structure and `data-*` attributes used by e2e tests do not
   change. `shouldHandleNodePointerEvents` keeps its name and meaning.
 
@@ -224,26 +219,35 @@ agent store owns the fact; everything else is a projection of it.
 - **A: keep `selectOnly` and add per-surface guards.** Zero API change, but
   `selectOnly` is a plain class field with no reactive mirror, so every Vue
   surface would read `agentNodeSelectionStore.isActive` directly, spreading
-  the second source across about ten files. `litegraphUtil.ts` L139-142
-  already documents that every new edit path must opt in, which is exactly
-  how the Vue and DOM widget paths were missed.
+  the second source across about ten files. `litegraphUtil.ts` already
+  documents that every new edit path must opt in, which is exactly how the
+  Vue and DOM widget paths were missed.
 - **B with mode ordering (earlier draft).** `readOnly` won and produced a
   `pan` mode from which `selectOnly` was derived. Both reviews found that a
   space-bar press mid-pick then wrote `selectOnly = false` and disabled every
   `isSelectOnly()` guard for the duration of the hold. The orthogonal table
   above replaces it.
 - **C: pin `read_only` with picking carve-outs.** Every surface honours
-  `read_only`, but selection needs exceptions at `_processPrimaryButton`
-  L2453, `LGraphNode.vue` L24-28, `NodeWidgets.vue` L11-15 and the Vue
-  select paths; space-bar pan and drag-zoom save and restore `read_only` and
-  would fight the pin, which is why `appModeStore` L251-261 installs a re-pin
-  watcher, the effect-writes-what-effect-reads loop
+  `read_only`, but selection needs exceptions at `_processPrimaryButton`,
+  `LGraphNode.vue`, `NodeWidgets.vue` and the Vue select paths; space-bar
+  pan and drag-zoom save and restore `read_only` and would fight the pin,
+  which is why `appModeStore` installs a re-pin watcher, the
+  effect-writes-what-effect-reads loop
   `docs/guidance/state-and-effects.md` §5 warns against, and it conflicts
   with 0029 decision 6.
 - **D: a `pick` app mode in `appModeStore`.** Reuses `enforceReadOnly` and so
-  inherits C's selection failure; `autoEnableVueNodes` (L263-272) would flip
-  a classic user's renderer setting on opening the picker; app modes are
-  persisted layout state while picking is a transient gesture.
+  inherits C's selection failure; `autoEnableVueNodes` would flip a classic
+  user's renderer setting on opening the picker; app modes are persisted
+  layout state while picking is a transient gesture.
+- **E: a scope-local pin that re-pins on each watch run (earlier draft).**
+  Each sync scope remembered the value it overwrote and wrote it back only
+  while `selectOnly` still held `true`. Two live scopes still restored the
+  first scope's value when the first was disposed while the second and
+  picking remained active, and an outside `false` written mid-pick stayed in
+  force until an unrelated watched source changed, because `selectOnly` is
+  not reactive. Both intervals reopened every guard that reads
+  `selectOnly`, contradicting the lockdown invariant, so the shared owner
+  registry and accessor in decision 4 replace it.
 
 ## Consequences
 
@@ -256,6 +260,9 @@ agent store owns the fact; everything else is a projection of it.
   slot disconnects, context menus, paste, undo and the mutation commands are
   blocked while picking in both renderers; click-to-select, space-bar pan,
   zoom and lock behave as they do today.
+- `selectOnly` cannot be observed as anything but `true` while picking, so
+  the per-site guards hold without each site having to know about owners,
+  scopes or extension writers.
 - The policy is table-testable without a canvas or DOM, and the enumerated
   guard list is finite and reviewable.
 
@@ -263,12 +270,13 @@ agent store owns the fact; everything else is a projection of it.
 
 - Guards remain per-site until command metadata exists; a new mutating
   command or keyboard path must opt in.
-- An extension that sets `canvas.selectOnly` itself is overridden to `true`
-  while picking; its pre-pick value is restored on exit. A `false` it writes
-  during picking disables the `isSelectOnly()` guards until the projection
-  next runs, and exit then leaves that `false` in place; a `true` it writes
-  is restored to the pre-pick value. No first-party writer outside
-  `AgentPanelRoot.vue` exists; the extension corpus has not been scanned.
+- An extension that sets `canvas.selectOnly` itself reads `true` while
+  picking and sees its own write take effect only once picking ends. No
+  first-party writer outside the sync exists; the extension corpus has not
+  been scanned.
+- While pinned, `selectOnly` is an own accessor on the canvas instance
+  rather than the prototype accessor; code that redefines that property on
+  the instance mid-pick would defeat the pin.
 - The `show_info` settings write moves from the platform layer into a
   renderer composable, so two composables now sync settings onto litegraph.
 
