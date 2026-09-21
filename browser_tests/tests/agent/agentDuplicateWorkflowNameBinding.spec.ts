@@ -133,11 +133,6 @@ test(
       route.fulfill(jsonRoute(history))
     )
 
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
-      .click()
-    const panel = page.locator('#agent-panel-root')
-    await expect(panel).toBeVisible()
     await page.evaluate(async (path) => {
       const store = (window.app!.extensionManager as WorkspaceStore).workflow
       await store.syncWorkflows()
@@ -145,6 +140,12 @@ test(
       if (!portrait) throw new Error('Portrait workflow was not indexed')
       await store.openWorkflow(portrait)
     }, PORTRAIT_PATH)
+
+    await page
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
+      .click()
+    const panel = page.locator('#agent-panel-root')
+    await expect(panel).toBeVisible()
 
     const topbar = new Topbar(page)
     await expect(topbar.getActiveTab()).toContainText('Portrait')
