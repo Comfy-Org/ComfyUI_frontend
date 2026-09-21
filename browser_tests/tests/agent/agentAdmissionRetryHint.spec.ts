@@ -1,4 +1,3 @@
-import type { Page } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -39,40 +38,19 @@ const RETRY_AFTER_SECONDS = 45
 test.describe('In-App Agent admission denials', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
 
-  /**
-   * Rejects the next turn POST with `body`, always sending a `Retry-After`
-   * header. The header is deliberately present for both reasons: the branch
-   * under test is the `reason`, not the header, so a `manual_block` that starts
-   * rendering the hint is a real regression rather than a missing fixture.
-   */
-  async function rejectNextTurn(
-    page: Page,
-    status: number,
-    body: unknown
-  ): Promise<void> {
-    // Scoped to POST so the fixture's GET handler for the same URL still serves
-    // the thread's message history.
-    await page.route('**/api/agent/threads/*/messages', async (route) => {
-      if (route.request().method() !== 'POST') return route.fallback()
-      await route.fulfill({
-        status,
-        contentType: 'application/json',
-        headers: { 'Retry-After': String(RETRY_AFTER_SECONDS) },
-        body: JSON.stringify(body)
-      })
-    })
-  }
-
   test('tells the user when to retry a transient funds_unavailable denial', async ({
-    agentPanel,
-    comfyPage
+    agentPanel
   }) => {
     const panel = agentPanel.root
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     const prompt = 'Upscale the hero shot'
 
     await test.step('reject the next turn with a funds_unavailable denial', async () => {
-      await rejectNextTurn(comfyPage.page, 503, FUNDS_UNAVAILABLE_ERROR)
+      await agentPanel.rejectNextTurn(
+        503,
+        FUNDS_UNAVAILABLE_ERROR,
+        RETRY_AFTER_SECONDS
+      )
     })
 
     await test.step('open the agent panel on a workflow', async () => {
@@ -100,15 +78,18 @@ test.describe('In-App Agent admission denials', { tag: '@cloud' }, () => {
   })
 
   test('does not invite a retry on a deliberate manual_block denial', async ({
-    agentPanel,
-    comfyPage
+    agentPanel
   }) => {
     const panel = agentPanel.root
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     const prompt = 'Upscale the hero shot'
 
     await test.step('reject the next turn with a manual_block denial', async () => {
-      await rejectNextTurn(comfyPage.page, 402, MANUAL_BLOCK_ERROR)
+      await agentPanel.rejectNextTurn(
+        402,
+        MANUAL_BLOCK_ERROR,
+        RETRY_AFTER_SECONDS
+      )
     })
 
     await test.step('open the agent panel on a workflow', async () => {

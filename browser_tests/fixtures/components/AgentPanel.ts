@@ -77,6 +77,26 @@ export class AgentPanel {
     await expect(this.workflowPicker).toHaveText(name)
   }
 
+  async rejectNextTurn(
+    status: number,
+    body: unknown,
+    retryAfterSeconds: number
+  ): Promise<void> {
+    // Scoped to POST so the agent fixture's GET handler still serves history.
+    await this.page.route(
+      '**/api/agent/threads/*/messages',
+      async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        await route.fulfill({
+          status,
+          contentType: 'application/json',
+          headers: { 'Retry-After': String(retryAfterSeconds) },
+          body: JSON.stringify(body)
+        })
+      }
+    )
+  }
+
   async turnOffOptionalReportSources(): Promise<void> {
     await this.serverLogsSwitch.click()
     await this.settingsSwitch.click()
