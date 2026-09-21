@@ -1,10 +1,17 @@
-import type { Page } from '@playwright/test'
+import type { Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { AgentThreadListResponse } from '@comfyorg/ingest-types'
+import type {
+  AgentThreadListResponse,
+  JobsListResponse
+} from '@comfyorg/ingest-types'
+import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 import type { PromptResponse } from '@/platform/remote/comfyui/types'
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { zComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  zComfyApiWorkflow,
+  zComfyWorkflow
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type {
@@ -67,9 +74,11 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
  * (`AgentFollowerHostSocket`) and reads the painted result off the live
  * canvas, the way a user would see it: right after the workflow is
  * subscribed, again after a tab switch forces the follower to resubscribe
- * and reconcile the same node in place, and once more after a full page
- * reload forces the same resubscribe from a cold start. It also proves the
- * PR's submitted-value guarantee: the reconcile must not just paint links
+ * and reconcile the same node in place, once more after a full page
+ * reload forces the same resubscribe from a cold start, and again after a
+ * new turn against the reopened workflow explicitly reattaches the
+ * follower and the host pushes a fresh edit. It also proves the PR's
+ * submitted-value guarantee: the reconcile must not just paint links
  * correctly while still serializing a scalar widget's or a link's value
  * under the wrong input name.
  *
@@ -106,6 +115,7 @@ function getQueuedPrompt(body: unknown): ComfyApiWorkflow {
  */
 async function runMultiAutogrowRealignScenario(
   page: Page,
+  testInfo: TestInfo,
   {
     corruptPersistedContent = false
   }: { corruptPersistedContent?: boolean } = {}
@@ -128,7 +138,8 @@ async function runMultiAutogrowRealignScenario(
     page,
     WORKFLOW_ID,
     host,
-    SOCKET_SID
+    SOCKET_SID,
+    'apply'
   )
   await hostSocket.install()
 
@@ -295,9 +306,11 @@ async function runMultiAutogrowRealignScenario(
     return submittedPrompt![TARGET_ID].inputs
   }
 
-  async function assertSubmittedValuesNamedCorrectly(): Promise<void> {
+  async function assertSubmittedValuesNamedCorrectly(
+    expectedPrompt = SENTINEL_PROMPT
+  ): Promise<void> {
     const inputs = await runAndCaptureSubmission()
-    expect(inputs.prompt).toBe(SENTINEL_PROMPT)
+    expect(inputs.prompt).toBe(expectedPrompt)
     expect(inputs.width).toBe(SENTINEL_WIDTH)
     expect(inputs.height).toBe(SENTINEL_HEIGHT)
     const sourceId = String(SOURCE_NODE_ID)
@@ -367,6 +380,7 @@ async function runMultiAutogrowRealignScenario(
     await expect(topbar.workflowTabs.locator('.p-togglebutton')).toHaveCount(1)
     await topbar.newWorkflowButton.click()
     await expect(topbar.workflowTabs.locator('.p-togglebutton')).toHaveCount(2)
+    await expect(topbar.getTab(1)).toHaveAttribute('aria-pressed', 'true')
     await topbar.getTab(0).click()
     await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
     await expect.poll(() => hostSocket.subscribeCount()).toBe(2)
@@ -378,9 +392,27 @@ async function runMultiAutogrowRealignScenario(
   await test.step('submitting the workflow serializes every scalar and link under its own name', async () => {
     await fillSentinelWidgetValues()
     await assertSubmittedValuesNamedCorrectly()
+    // The submitted body above only proves the live app's own document is
+    // correct; this confirms the widget edits actually round-tripped to the
+    // host's CRDT doc (via the `apply` host, not just `hold`), which the
+    // saved-file reload and reattach steps below depend on.
+    await expect
+      .poll(
+        () =>
+          host.projection().nodes.find((node) => node.id === TARGET_NODE_ID)
+            ?.widgets_values
+      )
+      .toEqual([SENTINEL_PROMPT, SENTINEL_WIDTH, SENTINEL_HEIGHT])
   })
 
   await test.step('saving persists the sentinel values to the userdata mock', async () => {
+    // No leftover dialog (e.g. a save-conflict prompt from an earlier
+    // step) can be sitting in front of the canvas eating the shortcut
+    // below.
+    await expect(page.getByRole('dialog', { includeHidden: true })).toHaveCount(
+      0
+    )
+
     // Forces a real save of the *current* (sentinel-bearing) graph
     // through the same round trip a user's Ctrl+S takes, so
     // `savedWorkflowContent` actually holds the state the reload step
@@ -399,7 +431,26 @@ async function runMultiAutogrowRealignScenario(
     // inputs can still hold focus, and an unfocused `Control+s` is
     // swallowed by that control instead of reaching the app.
     await page.locator('#graph-canvas').press('Control+s')
-    await saveResponse
+    const response = await saveResponse
+
+    // Validates the exact bytes POSTed, not just that a save happened:
+    // proves the serializer itself named every scalar and link correctly,
+    // independent of whatever the reopen step below reads back.
+    const workflow = zComfyWorkflow.parse(
+      JSON.parse(response.request().postData() ?? '{}')
+    )
+    const target = workflow.nodes.find((node) => node.id === TARGET_NODE_ID)
+    expect(target?.widgets_values).toEqual([
+      SENTINEL_PROMPT,
+      SENTINEL_WIDTH,
+      SENTINEL_HEIGHT
+    ])
+    expect(
+      EXPECTED_TARGETS.map(({ linkId }) => {
+        const link = workflow.links.find(([id]) => id === linkId)
+        return link && [link[3], target?.inputs?.[link[4]]?.name]
+      })
+    ).toEqual(EXPECTED_TARGETS.map(({ name }) => [TARGET_NODE_ID, name]))
 
     if (corruptPersistedContent) {
       const original = savedContent()
@@ -488,9 +539,83 @@ async function runMultiAutogrowRealignScenario(
 
     if (corruptPersistedContent) {
       await expect(assertPersistedValuesSurvived()).rejects.toThrow()
-    } else {
-      await assertPersistedValuesSurvived()
+      return
     }
+    await assertPersistedValuesSurvived()
+
+    const restoredScreenshot = testInfo.outputPath('saved-file-restored.png')
+    await page.screenshot({ path: restoredScreenshot })
+    await testInfo.attach('saved-file-restored', {
+      path: restoredScreenshot,
+      contentType: 'image/png'
+    })
+  })
+
+  // The reload above already forced a resubscribe on its own (see the
+  // `subscribesBeforeReload` poll). This step proves the *other* path to
+  // reattachment also works: sending a brand-new turn against the
+  // reopened workflow subscribes the follower again, and edits the host
+  // pushes after that reattach reach the live canvas, rather than only
+  // ones that happened to arrive before the follower dropped its old
+  // subscription.
+  if (corruptPersistedContent) return
+  await test.step('a new turn against the reopened workflow reattaches the follower, and a fresh host edit still lands', async () => {
+    const nodeLocator = vueNodes.getNodeLocator(TARGET_ID)
+    const widthWidget = nodeLocator.getByLabel('width', { exact: true }).first()
+    const heightWidget = nodeLocator
+      .getByLabel('height', { exact: true })
+      .first()
+
+    await panel
+      .getByRole('textbox', { name: /^Describe ideas/ })
+      .fill('Check the restored workflow')
+    const subscribesBeforeTurn = hostSocket.subscribeCount()
+    await panel.getByRole('button', { name: enMessages.agent.send }).click()
+    await expect
+      .poll(() => hostSocket.subscribeCount(), { timeout: 30_000 })
+      .toBeGreaterThan(subscribesBeforeTurn)
+    hostSocket.send({
+      type: 'agent_message_done',
+      data: { message_id: MESSAGE_ID, thread_id: THREAD_ID }
+    })
+    await expect(
+      panel.getByRole('button', { name: enMessages.agent.stop })
+    ).toHaveCount(0)
+    await assertVisiblyCorrect()
+    await expect(
+      nodeLocator.getByRole('textbox', { name: 'prompt' })
+    ).toHaveValue(SENTINEL_PROMPT)
+    await expect(
+      vueNodes.getInputNumberControls(widthWidget).input
+    ).toHaveValue(String(SENTINEL_WIDTH))
+    await expect(
+      vueNodes.getInputNumberControls(heightWidget).input
+    ).toHaveValue(String(SENTINEL_HEIGHT))
+    await assertSubmittedValuesNamedCorrectly()
+
+    const freshPrompt = 'fresh host edit after saved-file reload'
+    hostSocket.send(
+      host.apply([
+        {
+          op: 'set_widget',
+          node_id: TARGET_NODE_ID,
+          widget: 'prompt',
+          value: freshPrompt
+        }
+      ])
+    )
+    await expect(
+      nodeLocator.getByRole('textbox', { name: 'prompt' })
+    ).toHaveValue(freshPrompt)
+    await assertVisiblyCorrect()
+    await assertSubmittedValuesNamedCorrectly(freshPrompt)
+
+    const replayScreenshot = testInfo.outputPath('fresh-host-edit.png')
+    await page.screenshot({ path: replayScreenshot })
+    await testInfo.attach('fresh-host-edit', {
+      path: replayScreenshot,
+      contentType: 'image/png'
+    })
   })
 }
 
@@ -498,9 +623,30 @@ test.describe(
   'Agent CRDT multi-autogrow link realignment',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
+    // The reattach step below sends a second turn, which re-renders chrome
+    // (models picker, jobs indicator) that the boot mocks in
+    // `cloudBootMocks.ts` don't cover -- registered here, ahead of
+    // `bootAgentApp`'s own routes, they still win for these two paths since
+    // nothing else ever claims them (see the "most-recently-registered
+    // wins" note elsewhere in this file for why order matters when two
+    // handlers *do* overlap).
+    test.beforeEach(async ({ page }) => {
+      const folders: ModelFolderInfo[] = []
+      await page.route('**/api/experiment/models', (route) =>
+        route.fulfill(jsonRoute(folders))
+      )
+      const jobs: JobsListResponse = {
+        jobs: [],
+        pagination: { offset: 0, limit: 200, total: 0, has_more: false }
+      }
+      await page.route('**/api/jobs?*', (route) =>
+        route.fulfill(jsonRoute(jobs))
+      )
+    })
+
     test('keeps every link and scalar under its named slot across a reconcile, a resubscribe, and a reload', async ({
       page
-    }) => {
+    }, testInfo) => {
       test.setTimeout(90_000)
       // The scenario's own assertions run inside the shared helper below;
       // this one confirms it completed rather than being rejected, which
@@ -508,16 +654,18 @@ test.describe(
       // `expect-expect`) and is itself the true/false signal the test cares
       // about.
       await expect(
-        runMultiAutogrowRealignScenario(page)
+        runMultiAutogrowRealignScenario(page, testInfo)
       ).resolves.toBeUndefined()
     })
 
     test('a corrupted persisted body fails the post-reload sentinel assertions, proving they read the saved GET response', async ({
       page
-    }) => {
+    }, testInfo) => {
       test.setTimeout(90_000)
       await expect(
-        runMultiAutogrowRealignScenario(page, { corruptPersistedContent: true })
+        runMultiAutogrowRealignScenario(page, testInfo, {
+          corruptPersistedContent: true
+        })
       ).resolves.toBeUndefined()
     })
   }
