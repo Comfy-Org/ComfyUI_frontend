@@ -164,6 +164,7 @@
 
   <audio
     :ref="(el) => (audioRef = el as HTMLAudioElement)"
+    data-testid="wave-audio-media"
     :src="mediaSrc"
     preload="metadata"
     class="hidden"

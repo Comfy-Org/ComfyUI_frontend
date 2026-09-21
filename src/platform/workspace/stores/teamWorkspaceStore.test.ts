@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -10,6 +11,8 @@ import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
+
+vi.mock(import('firebase/auth'))
 
 const mockClearWorkflowRestoreState = vi.hoisted(() => vi.fn())
 const mockPrepareWorkflowWorkspaceTransition = vi.hoisted(() => vi.fn())
@@ -134,6 +137,7 @@ function expectCleanupBeforeContextAndReload(): void {
 }
 
 beforeEach(() => {
+  stubAccountIdentityPort()
   useCurrentUser().userEmail = computed(() => null)
 
   Object.assign(useWorkspaceAuthStore(), {

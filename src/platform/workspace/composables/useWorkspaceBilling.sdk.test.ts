@@ -9,6 +9,9 @@ import { fakeBillingSdk } from '@/platform/workspace/billing/sdk/billingSdkTestU
 import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingSdk'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
+
+vi.mock(import('firebase/auth'))
 
 const flagState = vi.hoisted(() => ({
   billingSdkTopupEnabled: false,
@@ -55,12 +58,7 @@ vi.mock(
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: vi.fn(async () => undefined) })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackBillingEvent: vi.fn() })
@@ -118,6 +116,7 @@ function setupBilling() {
 }
 
 beforeEach(() => {
+  stubAccountIdentityPort()
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
   flagState.billingSdkSubscriptionEnabled = false
@@ -193,6 +192,66 @@ describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
     )
     expect(harness.sdk.lifecycle.recover).not.toHaveBeenCalled()
   })
+
+  // Each kind of pending operation follows the rail that issues it. An
+  // operation adopted on the other rail is the mid-session-flip ambiguity: its
+  // writes went one way and its poller the other. A server predating
+  // `pending_billing_op_type` only ever had subscriptions to hand back.
+  it.for<{
+    type: 'topup' | 'subscription' | undefined
+    topupRail: boolean
+    subscriptionRail: boolean
+    adopter: 'SDK' | 'poller'
+  }>([
+    {
+      type: 'subscription',
+      topupRail: false,
+      subscriptionRail: true,
+      adopter: 'SDK'
+    },
+    {
+      type: undefined,
+      topupRail: false,
+      subscriptionRail: true,
+      adopter: 'SDK'
+    },
+    {
+      type: 'topup',
+      topupRail: false,
+      subscriptionRail: true,
+      adopter: 'poller'
+    },
+    {
+      type: 'subscription',
+      topupRail: true,
+      subscriptionRail: false,
+      adopter: 'poller'
+    },
+    {
+      type: undefined,
+      topupRail: true,
+      subscriptionRail: false,
+      adopter: 'poller'
+    }
+  ])(
+    'a pending $type resumes on the $adopter with topup rail $topupRail and subscription rail $subscriptionRail',
+    async ({ type, topupRail, subscriptionRail, adopter }) => {
+      flagState.billingSdkTopupEnabled = topupRail
+      flagState.billingSdkSubscriptionEnabled = subscriptionRail
+      sdkStatus({
+        pending_billing_op_id: 'op-pending',
+        ...(type !== undefined && { pending_billing_op_type: type })
+      })
+
+      await setupBilling().fetchStatus()
+
+      const onSdk = adopter === 'SDK'
+      expect(harness.sdk.lifecycle.recover).toHaveBeenCalledTimes(onSdk ? 1 : 0)
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledTimes(
+        onSdk ? 0 : 1
+      )
+    }
+  )
 })
 
 describe('useWorkspaceBilling reads with the billing SDK flag', () => {

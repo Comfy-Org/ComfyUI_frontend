@@ -8,7 +8,6 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
-    "scripts/patch-playwright-agents.js",
     "scripts/registry-census/detection-proof/**",
     "src/__ecs_matrix__/**",
     "src/types/generatedManagerTypes.ts",
@@ -167,12 +166,6 @@
       }
     },
     {
-      "files": ["src/extensions/core/groupNode.ts"],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["src/**/*.ts", "src/**/*.vue"],
       "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": {
@@ -210,18 +203,6 @@
       }
     },
     {
-      "files": [
-        "src/extensions/core/customWidgets.ts",
-        "src/extensions/core/widgetInputs.ts",
-        "src/extensions/core/widgetValuePropagation.ts",
-        "src/scripts/domWidget.ts",
-        "src/scripts/widgets.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["**/*.spec.ts"],
       "excludeFiles": [
         "browser_tests/tests/**/*.spec.ts",
@@ -235,21 +216,6 @@
       "files": ["**/*.{ts,tsx,vue}"],
       "rules": {
         "comfy/no-deprecated-api-schema": "error"
-      }
-    },
-    {
-      "files": [
-        "src/scripts/metadata/json.ts",
-        "src/scripts/metadata/mp3.ts",
-        "src/scripts/metadata/ogg.ts",
-        "src/scripts/metadata/parser.ts",
-        "src/scripts/metadata/ply.ts",
-        "src/scripts/metadata/png.test.ts",
-        "src/scripts/metadata/png.ts",
-        "src/scripts/pnginfo.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
       }
     },
     {
@@ -303,28 +269,7 @@
       }
     },
     {
-      "files": [
-        "src/extensions/core/load3d.ts",
-        "src/extensions/core/load3d/AnimationManager.ts",
-        "src/extensions/core/load3d/CameraManager.ts",
-        "src/extensions/core/load3d/EventManager.ts",
-        "src/extensions/core/load3d/Load3DConfiguration.ts",
-        "src/extensions/core/load3d/Load3d.ts",
-        "src/extensions/core/load3d/PointCloudModelAdapter.ts",
-        "src/extensions/core/load3d/RecordingManager.ts",
-        "src/extensions/core/load3d/SceneManager.ts",
-        "src/extensions/core/load3d/SceneModelManager.ts",
-        "src/extensions/core/load3d/ViewHelperManager.ts",
-        "src/extensions/core/load3d/load3dContextMenuGuard.test.ts",
-        "src/extensions/core/load3dPreviewExtensions.ts",
-        "src/extensions/core/saveMesh.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
-      "files": ["tools/test-recorder/**/*.ts"],
+      "files": ["scripts/**", "tools/test-recorder/**/*.ts"],
       "rules": {
         "no-console": "allow"
       }
@@ -333,29 +278,6 @@
       "files": ["browser_tests/tests/**/*.spec.ts", "apps/*/e2e/**/*.spec.ts"],
       "rules": {
         "comfy/no-comfy-page-setup-call": "error"
-      }
-    },
-    {
-      "files": [
-        "src/extensions/core/agentPanel.ts",
-        "src/extensions/core/clipspace.ts",
-        "src/extensions/core/cloudFeedbackTopbarButton.test.ts",
-        "src/extensions/core/contextMenuFilter.ts",
-        "src/extensions/core/groupOptions.ts",
-        "src/extensions/core/imageCompositor.ts",
-        "src/extensions/core/layerEditor.ts",
-        "src/extensions/core/maskeditor.ts",
-        "src/extensions/core/nodeTemplates.ts",
-        "src/extensions/core/noteNode.ts",
-        "src/extensions/core/rerouteNode.ts",
-        "src/extensions/core/saveImageExtraOutput.ts",
-        "src/extensions/core/simpleTouchSupport.ts",
-        "src/extensions/core/uploadAudio.test.ts",
-        "src/extensions/core/uploadAudio.ts",
-        "src/extensions/core/uploadImage.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
       }
     },
     {
