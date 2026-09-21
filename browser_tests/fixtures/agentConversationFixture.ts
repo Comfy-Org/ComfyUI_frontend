@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import type {
