@@ -1,12 +1,14 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readonly, ref } from 'vue'
 
 import type {
   TurnstileApi,
   TurnstileRenderOptions
 } from '@comfyorg/account-core/turnstileScript'
 
+import { useWorkshopTurnstileMode } from '../../scripts/posthog'
 import AuthEmailForm from './AuthEmailForm.vue'
 
 const widgetBehavior = vi.hoisted(() => ({
@@ -26,15 +28,13 @@ vi.mock(import('@comfyorg/account-core/turnstileScript'), () => ({
   loadTurnstile: () => Promise.resolve(turnstileApi)
 }))
 
-vi.mock<unknown>(import('../../scripts/posthog'), async () => {
-  const { ref } = await import('vue')
-  return { useWorkshopTurnstileMode: () => ref('shadow') }
-})
+vi.mock(import('../../scripts/posthog'))
 
 const submitButton = (name: RegExp) =>
   screen.getByRole('button', { name }) as HTMLButtonElement
 
 beforeEach(() => {
+  vi.mocked(useWorkshopTurnstileMode).mockReturnValue(readonly(ref('shadow')))
   widgetBehavior.mode = 'silent'
   widgetBehavior.reset.mockReset()
   turnstileApi.render.mockImplementation(
