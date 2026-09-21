@@ -25,7 +25,7 @@ const routes = getRoutes(locale)
     :subtitle="t('platform.modelsHero.subtitle', locale)"
     :primary-cta="{
       label: routerT('platform.router.cta.getApiKey', locale),
-      href: externalLinks.apiKeys,
+      href: externalLinks.routerApiKeys,
       target: '_blank'
     }"
     :secondary-cta="{

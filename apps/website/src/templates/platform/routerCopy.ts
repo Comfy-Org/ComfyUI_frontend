@@ -11,7 +11,7 @@ const copy = {
     'zh-CN': 'ROUTER'
   },
   'platform.router.cta.getApiKey': {
-    en: 'Get API Key',
+    en: 'Get an API Key',
     'zh-CN': '获取 API 密钥'
   },
   'platform.router.cta.browseModels': {
