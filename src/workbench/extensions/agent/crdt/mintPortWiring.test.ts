@@ -75,6 +75,7 @@ describe('attachMintPortWiring', () => {
     for (const listener of layoutListeners) listener(change)
   }
 
+  const graphEvents = new EventTarget()
   const graph: MintableGraph = {
     id: ROOT_ID,
     rootGraph: { id: ROOT_ID },
@@ -82,7 +83,19 @@ describe('attachMintPortWiring', () => {
       (graphNodes.get(String(id)) as unknown as LGraphNode | undefined) ?? null,
     get _nodes() {
       return [...graphNodes.values()] as LGraphNode[]
-    }
+    },
+    events: graphEvents as unknown as MintableGraph['events']
+  }
+
+  function dispatchPropertyChanged(detail: {
+    nodeId: unknown
+    property: string
+    oldValue: unknown
+    newValue: unknown
+  }): void {
+    graphEvents.dispatchEvent(
+      new CustomEvent('node:property:changed', { detail })
+    )
   }
 
   beforeEach(() => {
@@ -246,6 +259,89 @@ describe('attachMintPortWiring', () => {
     useWidgetValueStore().setValue(widgetId(ROOT_ID, toNodeId(9), 'missing'), 1)
 
     expect(minted).toEqual([])
+  })
+
+  it('mints a top-level set_title from the root graph title property change', () => {
+    dispatchPropertyChanged({
+      nodeId: toNodeId(7),
+      property: 'title',
+      oldValue: 'Old Name',
+      newValue: 'New Name'
+    })
+
+    expect(minted).toEqual([
+      { op: 'set_title', node_id: toNodeId(7), title: 'New Name' }
+    ])
+  })
+
+  it('ignores a non-title property change (e.g. color)', () => {
+    dispatchPropertyChanged({
+      nodeId: toNodeId(7),
+      property: 'color',
+      oldValue: undefined,
+      newValue: '#fff'
+    })
+
+    expect(minted).toEqual([])
+  })
+
+  it('suppresses a title change inside a graph-teardown bracket', () => {
+    wiring.onBeforeGraphLoad()
+    dispatchPropertyChanged({
+      nodeId: toNodeId(7),
+      property: 'title',
+      oldValue: 'Old Name',
+      newValue: 'New Name'
+    })
+
+    expect(minted).toEqual([])
+  })
+
+  it('attaches the title listener late once the graph becomes available', () => {
+    const lateEvents = new EventTarget()
+    const lateGraphReady: MintableGraph = {
+      ...graph,
+      events: lateEvents as unknown as MintableGraph['events']
+    }
+    let lateGraph: MintableGraph | null = null
+    const lateWiring = attachMintPortWiring({
+      isEnabled: () => enabled,
+      isDocBound: () => bound,
+      enqueue: (operations) => minted.push(...operations),
+      layoutChanges: () => () => undefined,
+      localActorPrefix: 'user-',
+      getGraph: () => lateGraph
+    })
+
+    lateEvents.dispatchEvent(
+      new CustomEvent('node:property:changed', {
+        detail: {
+          nodeId: toNodeId(7),
+          property: 'title',
+          oldValue: 'Old Name',
+          newValue: 'Too Early'
+        }
+      })
+    )
+    expect(minted).toEqual([])
+
+    lateGraph = lateGraphReady
+    lateWiring.onAfterGraphConfigure()
+    lateEvents.dispatchEvent(
+      new CustomEvent('node:property:changed', {
+        detail: {
+          nodeId: toNodeId(7),
+          property: 'title',
+          oldValue: 'Old Name',
+          newValue: 'New Name'
+        }
+      })
+    )
+
+    expect(minted).toEqual([
+      { op: 'set_title', node_id: toNodeId(7), title: 'New Name' }
+    ])
+    lateWiring.detach()
   })
 
   it('suppresses remote store calls from their call-carried context', () => {
@@ -412,6 +508,18 @@ describe('attachMintPortWiring', () => {
       typeof widgetStore.registerWidget
     >[1])
     widgetStore.setValue(id, 42)
+
+    expect(minted).toEqual([])
+  })
+
+  it('stops observing the graph title event after detach', () => {
+    wiring.detach()
+    dispatchPropertyChanged({
+      nodeId: toNodeId(7),
+      property: 'title',
+      oldValue: 'Old Name',
+      newValue: 'New Name'
+    })
 
     expect(minted).toEqual([])
   })

@@ -1,10 +1,18 @@
 /**
- * Composition seam for the three mint ports. Layout pieces are injected
- * (workbench must not import renderer); link and widget events come from their
- * owning stores. A replace maps to PLACED and never DELETED (the store
- * displaces incumbents internally). Load brackets are a fail-closed boolean
- * over beforeLoadGraph/afterConfigureGraph: a failed load leaves mints
- * suppressed until the next load's pair recloses.
+ * Composition seam for the four mint ports. Layout pieces are injected
+ * (workbench must not import renderer); link, widget and title events come
+ * from their owning stores/graph. A replace maps to PLACED and never DELETED
+ * (the store displaces incumbents internally). Load brackets are a
+ * fail-closed boolean over beforeLoadGraph/afterConfigureGraph: a failed load
+ * leaves mints suppressed until the next load's pair recloses.
+ *
+ * Title has no owning Pinia store (a canvas rename writes straight onto the
+ * `LGraphNode` instance via its tracked `title` setter, `setTrackedNodeState`
+ * - see `nodeShellState.ts`), so its mint port instead listens to the ROOT
+ * graph's own `node:property:changed` event, filtered to `property ===
+ * 'title'`. Listening only on the root graph's event target (never a
+ * subgraph's) is what scopes this to top-level nodes, matching `set_title`
+ * having no interior/subgraph-instance variant.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -17,21 +25,35 @@ import { isFloatingTopology } from '@/types/linkTopology'
 import { isRemoteMutationContext } from '@/types/graphMutationContext'
 import { parseWidgetId } from '@/types/widgetId'
 import { findSubgraphNodePathById } from '@/utils/graphTraversalUtil'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 
 import type { GraphOperation } from './graphOperations'
 import { attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { attachLinkMintPort } from './linkMintPort'
+import { attachTitleMintPort } from './titleMintPort'
 import { attachWidgetMintPort } from './widgetMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
 
-/** The graph surface the wiring reads for snapshots and scope. */
+type PropertyChangedEvent = CustomEvent<LGraphEventMap['node:property:changed']>
+
+/** The graph surface the wiring reads for snapshots, scope, and events. */
 export interface MintableGraph {
   id: string
   rootGraph?: { id: string }
   getNodeById(id: NodeId): LGraphNode | null
   _nodes: LGraphNode[]
+  events: {
+    addEventListener(
+      type: 'node:property:changed',
+      listener: (event: PropertyChangedEvent) => void
+    ): void
+    removeEventListener(
+      type: 'node:property:changed',
+      listener: (event: PropertyChangedEvent) => void
+    ): void
+  }
 }
 
 export interface MintPortWiringDeps {
@@ -171,9 +193,13 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   type SetListener = Parameters<
     Parameters<typeof attachWidgetMintPort>[0]['events']['onSet']
   >[0]
+  type TitleListener = Parameters<
+    Parameters<typeof attachTitleMintPort>[0]['events']['onChange']
+  >[0]
   const placedListeners = new Set<PlacedListener>()
   const deletedListeners = new Set<DeletedListener>()
   const setListeners = new Set<SetListener>()
+  const titleListeners = new Set<TitleListener>()
 
   const linkPort = attachLinkMintPort({
     events: {
@@ -234,6 +260,37 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     enqueue
   })
 
+  const titlePort = attachTitleMintPort({
+    events: {
+      onChange(listener) {
+        titleListeners.add(listener)
+        return () => titleListeners.delete(listener)
+      }
+    },
+    session,
+    isEnabled: deps.isEnabled,
+    isDocBound: deps.isDocBound,
+    enqueue
+  })
+
+  function handlePropertyChanged(event: PropertyChangedEvent): void {
+    const { property, nodeId, newValue } = event.detail
+    if (property !== 'title' || typeof newValue !== 'string') return
+    for (const listener of titleListeners) listener({ nodeId, title: newValue })
+  }
+
+  let attachedGraphEvents: MintableGraph['events'] | null = null
+  function tryAttachGraphEvents(): void {
+    const graph = deps.getGraph()
+    if (!graph || attachedGraphEvents === graph.events) return
+    graph.events.addEventListener(
+      'node:property:changed',
+      handlePropertyChanged
+    )
+    attachedGraphEvents = graph.events
+  }
+  tryAttachGraphEvents()
+
   const linkStore = useLinkStore()
   const widgetStore = useWidgetValueStore()
 
@@ -287,6 +344,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       session.beginGraphTeardown()
     },
     onAfterGraphConfigure() {
+      tryAttachGraphEvents()
       if (!loadBracketOpen) return
       loadBracketOpen = false
       session.endGraphTeardown()
@@ -295,6 +353,14 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       activeWirings.delete(wiring)
       detachLinkActions()
       detachWidgetChanges()
+      if (attachedGraphEvents) {
+        attachedGraphEvents.removeEventListener(
+          'node:property:changed',
+          handlePropertyChanged
+        )
+        attachedGraphEvents = null
+      }
+      titlePort.detach()
       widgetPort.detach()
       layoutPort.detach()
       linkPort.detach()
