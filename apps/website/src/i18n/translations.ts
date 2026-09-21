@@ -1,6 +1,70 @@
 type Locale = 'en' | 'zh-CN' | 'ja'
 
 const translations = {
+  'workshop.history.title': { en: 'Your generations', 'zh-CN': '你的生成记录' },
+  'workshop.history.unavailable': {
+    en: 'This output is no longer available.',
+    'zh-CN': '此输出已不可用。'
+  },
+  'workshop.history.mediaError': {
+    en: 'Could not load this output.',
+    'zh-CN': '无法加载此输出。'
+  },
+  'workshop.history.retry': { en: 'Try again', 'zh-CN': '重试' },
+  'workshop.history.generatedImage': {
+    en: 'Generated image',
+    'zh-CN': '生成的图像'
+  },
+  'workshop.history.open': { en: 'Open original', 'zh-CN': '打开原始文件' },
+  'workshop.history.loadingMedia': {
+    en: 'Loading output…',
+    'zh-CN': '正在加载输出…'
+  },
+  'workshop.history.assetId': { en: 'Asset ID:', 'zh-CN': '素材 ID：' },
+  'workshop.history.copyAssetId': {
+    en: 'Copy asset ID',
+    'zh-CN': '复制素材 ID'
+  },
+  'workshop.history.saving': {
+    en: 'Saving outputs…',
+    'zh-CN': '正在保存输出…'
+  },
+  'workshop.history.saved': { en: 'Saved', 'zh-CN': '已保存' },
+  'workshop.history.partial': {
+    en: 'Some outputs saved',
+    'zh-CN': '部分输出已保存'
+  },
+  'workshop.history.saveFailed': {
+    en: 'Could not save this output.',
+    'zh-CN': '无法保存此输出。'
+  },
+  'workshop.history.noOutput': {
+    en: 'Generation ended without saved outputs.',
+    'zh-CN': '生成已结束，没有保存的输出。'
+  },
+  'workshop.history.generating': { en: 'Generating…', 'zh-CN': '正在生成…' },
+  'workshop.history.refresh': { en: 'Refresh', 'zh-CN': '刷新' },
+  'workshop.history.allModels': {
+    en: 'Show generations from all models',
+    'zh-CN': '显示所有模型的生成记录'
+  },
+  'workshop.history.retained': {
+    en: 'Saved outputs stay in your library. You can leave this page while a generation finishes.',
+    'zh-CN': '已保存的输出会保留在素材库中。生成过程中可以离开此页面。'
+  },
+  'workshop.history.loadError': {
+    en: 'Could not load your generations. Try refreshing.',
+    'zh-CN': '无法加载生成记录。请尝试刷新。'
+  },
+  'workshop.history.cancelError': {
+    en: 'Could not request cancellation. Your generation may still be running.',
+    'zh-CN': '无法请求取消。生成可能仍在进行。'
+  },
+  'workshop.history.empty': {
+    en: 'Your saved generations will appear here.',
+    'zh-CN': '已保存的生成记录将显示在此处。'
+  },
+  'workshop.history.more': { en: 'Load more', 'zh-CN': '加载更多' },
   'home.workshop.heading': {
     en: 'Run any model, from one place',
     'zh-CN': '在同一个地方运行任何模型'

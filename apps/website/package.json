@@ -16,6 +16,7 @@
     "test:workshop-upload": "tsx ./scripts/test-workshop-upload.ts",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:generation-assets": "playwright test --config playwright-assets.config.ts",
     "test:e2e:local": "cross-env PLAYWRIGHT_LOCAL=1 playwright test",
     "test:visual": "playwright test --project visual",
     "test:visual:update": "playwright test --project visual --update-snapshots",

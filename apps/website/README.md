@@ -354,3 +354,20 @@ the hosted script once, and renders the documented embed container.
 - `pnpm test:e2e` — Playwright E2E tests (requires `pnpm build` first)
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot
+
+### Router generation assets rollout
+
+`PUBLIC_WORKSHOP_SAVE_ASSETS=1` makes MODELS request `comfy_save_asset=true` on
+queued submissions, show private saved-generation history, and detach polling
+on navigation. Explicit Cancel still calls the Router cancellation endpoint.
+The flag is off by default. Enable it only after compatible Router APIs/workers,
+Cloud imports, migrations and the dedicated service secret are deployed.
+The first release accepts reviewed HTTPS image/video/audio operations; unsupported
+operations and inline-output options fail before dispatch. Align the enabled
+model catalog with backend support before a broad rollout.
+
+The Cloud repo's `docs/design/router-generation-assets-runbook.md` records
+configuration, supported operations, limits, deployment order and rollback.
+See `e2e/README.md` for the dedicated browser recovery profile. History and signed
+media URLs are private to the active user/workspace and are cleared on a session
+change. No browser token is forwarded to media URLs.
