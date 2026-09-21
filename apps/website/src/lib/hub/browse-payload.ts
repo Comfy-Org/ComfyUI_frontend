@@ -33,7 +33,7 @@ function workflowEntry(
   return {
     key: entry.key,
     kind: entry.kind,
-    title: workflowDisplayTitle(template, template.useCase),
+    title: workflowDisplayTitle(template),
     useCases: entryUseCases(entry, models),
     models: template.models,
     tags: template.tags,

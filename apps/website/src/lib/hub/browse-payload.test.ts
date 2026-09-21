@@ -61,7 +61,7 @@ describe('browseEntries', () => {
       date: undefined,
       card: expect.objectContaining({
         kind: 'model',
-        href: '/playground/model/bfl--flux/'
+        href: '/hub/model/bfl--flux/'
       })
     })
   })

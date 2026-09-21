@@ -4,7 +4,7 @@ import { expect } from '@playwright/test'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
-const CATALOGUE = '/playground/'
+const CATALOGUE = '/hub/'
 
 // The catalogue opens on its shelves; asking it anything is what makes a list.
 const openShelf = async (page: Page, useCase: string) => {
@@ -20,7 +20,7 @@ test.describe('V2 catalogue', () => {
     await waitForIsland(page, page.getByTestId('catalogue-browse'))
 
     const shelves = page
-      .getByTestId('playground-sections')
+      .getByTestId('hub-sections')
       .locator('[data-testid^="shelf-"][aria-labelledby]')
     expect(await shelves.count()).toBeGreaterThan(1)
     await expect(page.getByTestId('catalogue-grid')).toHaveCount(0)
@@ -40,23 +40,23 @@ test.describe('V2 catalogue', () => {
           ...new Set(cards.map((card) => card.getAttribute('data-kind')))
         ])
 
-    await expect.poll(kinds).not.toContain('model')
-
-    await page.getByTestId('catalogue-type-model').click()
     await expect.poll(kinds).toEqual(['model'])
+
+    await page.getByTestId('catalogue-type-workflow').click()
+    await expect.poll(kinds).not.toContain('model')
   })
 
-  // Three of the eight use cases hold no model at all, and an empty shelf
-  // reads as a broken catalogue rather than as a tab that has none.
+  // The two halves do not cover the same ground, and an empty shelf reads as
+  // a broken catalogue rather than as a tab that has nothing there.
   test('leaves out a use case the chosen tab has nothing in', async ({
     page
   }) => {
     await page.goto(CATALOGUE)
     await waitForIsland(page, page.getByTestId('catalogue-browse'))
 
-    await expect(page.getByTestId('shelf-3d')).toBeVisible()
-    await page.getByTestId('catalogue-type-model').click()
-    await expect(page.getByTestId('shelf-3d')).toHaveCount(0)
+    await expect(page.getByTestId('shelf-audio')).toBeVisible()
+    await page.getByTestId('catalogue-type-workflow').click()
+    await expect(page.getByTestId('shelf-audio')).toHaveCount(0)
   })
 
   test('a shelf opens into the list for that use case', async ({ page }) => {
@@ -92,8 +92,6 @@ test.describe('V2 catalogue', () => {
     await openShelf(page, 'generate-images')
 
     const models = page.getByTestId('catalogue-type-model')
-    await expect(models).toHaveAttribute('aria-pressed', 'false')
-    await models.click()
     await expect(models).toHaveAttribute('aria-pressed', 'true')
 
     const kinds = await grid(page)
@@ -129,7 +127,7 @@ test.describe('V2 catalogue', () => {
       .getAttribute('href')
     // The key is the model half of a registry slug, so it stops before the
     // operation every row appends: two segments where a row carries three.
-    expect(href).toMatch(/^\/playground\/model\/[a-z0-9.-]+--[a-z0-9.-]+\/$/)
+    expect(href).toMatch(/^\/hub\/model\/[a-z0-9.-]+--[a-z0-9.-]+\/$/)
     expect(href!.split('--')).toHaveLength(2)
 
     await card.getByTestId('catalogue-card-link').click()
@@ -137,15 +135,12 @@ test.describe('V2 catalogue', () => {
     await expect(page.getByTestId('model-run')).toBeVisible()
   })
 
-  test('a workflow page names what it loads, runs on and produces', async ({
-    page
-  }) => {
-    await page.goto('/playground/workflow/video_minimax_h3_i2v/')
+  test('a workflow page names the model it runs on', async ({ page }) => {
+    await page.goto('/hub/workflow/api_google_nano_banana2_image_edit/')
 
     await expect(page.getByTestId('workflow-kind')).toContainText(/Workflow/i)
-    await expect(page.getByTestId('workflow-outputs')).toBeVisible()
-    // The model it calls is the part the reader cannot work out from the
-    // inputs and outputs, so it is the one the page has to name.
+    // The form says what goes in and the output says what comes back, so the
+    // model it calls is the one thing left for the page to name.
     await expect(page.getByTestId('workflow-runs-on')).toBeVisible()
     // The graph hydrates on sight, so it has to be in view before it has
     // drawn anything to assert on.
@@ -160,7 +155,7 @@ test.describe('V2 catalogue', () => {
   test('a workflow page opens its graph in the Cloud and offers the file', async ({
     page
   }) => {
-    await page.goto('/playground/workflow/video_minimax_h3_i2v/')
+    await page.goto('/hub/workflow/api_google_nano_banana2_image_edit/')
 
     // The graph is what decides whether to take the workflow anywhere, so the
     // two ways of taking it live with it rather than in the sidebar.
@@ -169,7 +164,7 @@ test.describe('V2 catalogue', () => {
       .getByTestId('workflow-actions')
     await expect(actions.getByTestId('workflow-open-cloud')).toHaveAttribute(
       'href',
-      /cloud\.comfy\.org\/\?template=video_minimax_h3_i2v/
+      /cloud\.comfy\.org\/\?template=api_google_nano_banana2_image_edit/
     )
     await expect(
       actions.getByRole('link', { name: /Download the JSON/ })
@@ -180,7 +175,7 @@ test.describe('V2 catalogue', () => {
   // model with its graph around it, so the page runs rather than sending the
   // reader somewhere else.
   test('runs a partner workflow on its own page', async ({ page }) => {
-    await page.goto('/playground/workflow/api_nano_banana_pro/')
+    await page.goto('/hub/workflow/api_nano_banana_pro/')
 
     await expect(page.getByTestId('workflow-run')).toBeVisible()
     await expect(page.getByTestId('workflow-kind')).toContainText(/Runs here/i)

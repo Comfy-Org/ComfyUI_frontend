@@ -6,9 +6,9 @@ import { partnerModelFor, useCaseForTemplate } from './template-use-case'
 
 export type EntryKind = 'model' | 'workflow'
 
-export const modelGroupPath = (key: string) => `/playground/model/${key}/`
+export const modelGroupPath = (key: string) => `/hub/model/${key}/`
 
-export const hubWorkflowPath = (name: string) => `/playground/workflow/${name}/`
+export const hubWorkflowPath = (name: string) => `/hub/workflow/${name}/`
 
 export interface ModelEntry {
   readonly kind: 'model'

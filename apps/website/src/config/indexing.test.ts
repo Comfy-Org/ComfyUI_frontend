@@ -31,11 +31,11 @@ describe('indexing policy', () => {
     'keeps the V2 catalogue proposal out of the sitemap (%s)',
     (value) => {
       vi.stubEnv('WORKSHOP_IN_BUILD', value)
-      expect(isExcludedFromSitemap('https://comfy.org/playground/')).toBe(true)
-      expect(
-        isExcludedFromSitemap('https://comfy.org/playground/workflow/a/')
-      ).toBe(true)
-      expect(isNoindexPathname('/playground/')).toBe(true)
+      expect(isExcludedFromSitemap('https://comfy.org/hub/')).toBe(true)
+      expect(isExcludedFromSitemap('https://comfy.org/hub/workflow/a/')).toBe(
+        true
+      )
+      expect(isNoindexPathname('/hub/')).toBe(true)
     }
   )
 

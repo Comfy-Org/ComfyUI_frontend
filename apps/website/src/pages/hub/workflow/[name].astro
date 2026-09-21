@@ -35,7 +35,7 @@ export function getStaticPaths() {
 
 const { name } = Astro.params
 const page = name ? getHubWorkflowPage(name) : undefined
-if (!page) return Astro.redirect('/playground/')
+if (!page) return Astro.redirect('/hub/')
 
 const { template, mediaType, details, runsOn, related } = page
 
@@ -72,7 +72,7 @@ const pills = [
   details.openSource ? t('workshop.v2.workflow.openWeights') : undefined
 ].filter((label): label is string => Boolean(label))
 
-const title = workflowDisplayTitle(template, page.useCase)
+const title = workflowDisplayTitle(template)
 
 const cloudUrl = `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.name)}`
 
@@ -102,7 +102,7 @@ const tagClass =
 >
   <main class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-16">
     <CatalogueBackLink
-      catalogue="/playground/"
+      catalogue="/hub/"
       fallback-key="workshop.v2.workflow.back"
       class="mb-8"
       client:load
@@ -171,18 +171,14 @@ const tagClass =
           </div>
         </section>
 
-        <WorkflowHowItWorks
-          brings={summarisePorts(page.inputs)}
-          models={runsOn}
-          produces={summarisePorts(page.outputs)}
-        />
+        <WorkflowHowItWorks models={runsOn} />
 
         <section>
           <h2 class={sectionTitle}>{t('workshop.v2.workflow.tags')}</h2>
           <ul class="mt-3 flex flex-wrap gap-2" data-testid="workflow-tags">
             {template.tags.map((tag) => <li>
               <a
-                href={`/playground/?q=${encodeURIComponent(tagDisplayName(tag))}`}
+                href={`/hub/?q=${encodeURIComponent(tagDisplayName(tag))}`}
                 class={tagClass}
               >
                 {tagDisplayName(tag)}

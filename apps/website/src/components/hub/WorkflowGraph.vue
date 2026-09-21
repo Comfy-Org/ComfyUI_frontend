@@ -49,11 +49,6 @@ function reset() {
   panY.value = 0
 }
 
-function onWheel(event: WheelEvent) {
-  event.preventDefault()
-  zoomBy(event.deltaY < 0 ? 1.1 : 1 / 1.1)
-}
-
 function onPointerDown(event: PointerEvent) {
   dragging.value = true
   frame.value?.setPointerCapture(event.pointerId)
@@ -80,7 +75,6 @@ const control =
     class="relative h-96 touch-none overflow-hidden rounded-2xl bg-hub-surface select-none"
     :class="dragging ? 'cursor-grabbing' : 'cursor-grab'"
     data-testid="workflow-graph"
-    @wheel="onWheel"
     @pointerdown="onPointerDown"
     @pointermove="onPointerMove"
     @pointerup="onPointerUp"

@@ -5,10 +5,10 @@ import { browseRequestFrom, sortBrowseEntries } from './browse-entry'
 
 describe('browseRequestFrom', () => {
   // There is no tab holding both, so a link that names none opens on the one
-  // the catalogue is about: what people built.
-  it('opens on the workflows when the link asks for nothing', () => {
+  // the catalogue leads with: the capabilities everything else is built on.
+  it('opens on the models when the link asks for nothing', () => {
     expect(browseRequestFrom('')).toEqual({
-      type: 'workflow',
+      type: 'model',
       useCase: 'all',
       usesModel: '',
       query: ''
@@ -28,7 +28,7 @@ describe('browseRequestFrom', () => {
 
   // An app browses as a workflow, so it is not a tab a link can ask for.
   it.for(['sculpture', 'app', 'all'])('reads %s as no tab at all', (asked) => {
-    expect(browseRequestFrom(`?type=${asked}`).type).toBe('workflow')
+    expect(browseRequestFrom(`?type=${asked}`).type).toBe('model')
   })
 
   it('ignores a use case it does not have', () => {

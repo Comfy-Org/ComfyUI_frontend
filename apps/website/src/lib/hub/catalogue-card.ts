@@ -54,7 +54,7 @@ function workflowCard(
     // The card opens the workflow, never the model behind it. Sending a
     // workflow card to a model page is what makes the two read as one thing.
     href: hubWorkflowPath(template.name),
-    title: workflowDisplayTitle(template, template.useCase),
+    title: workflowDisplayTitle(template),
     media: template.thumbnails[0]
       ? { url: template.thumbnails[0], kind: 'image' }
       : undefined,

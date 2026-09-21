@@ -1,9 +1,10 @@
-import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
+import type { WorkshopModel } from '../../config/models-catalogue'
 import { workshopModels } from '../../config/workshop-browse-content'
 import hubTemplateDetails from '../../data/hubTemplateDetails.json'
 import hubTemplates from '../../data/hubTemplates.json'
 import { modelIdentity, modelName } from './model-identity'
-import { partnerModelFor, useCaseForTemplate } from './template-use-case'
+import { runsHere } from './runs-here'
+import { partnerModelFor } from './template-use-case'
 import type { HubTemplate, HubTemplateDetails } from './types'
 import { hubTemplateDetailsSchema, hubTemplatesSchema } from './types'
 
@@ -37,8 +38,6 @@ export interface HubWorkflowPage {
   readonly runsOn: readonly HubWorkflowModelRef[]
   /** The one model page this workflow can open without guessing. */
   readonly destination: HubWorkflowDestination | undefined
-  /** The job it does, which names it where the registry named it after a model. */
-  readonly useCase: UseCase | undefined
   readonly callsPartnerModel: boolean
   readonly customNodes: readonly string[]
   /** Bytes of weights to download before it runs. Zero for partner workflows. */
@@ -49,7 +48,7 @@ export interface HubWorkflowPage {
   readonly downloadUrl: string
 }
 
-const templates = hubTemplatesSchema.parse(hubTemplates)
+const templates = hubTemplatesSchema.parse(hubTemplates).filter(runsHere)
 const details: HubTemplateDetails =
   hubTemplateDetailsSchema.parse(hubTemplateDetails)
 
@@ -147,7 +146,6 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
     details: detail,
     runsOn: modelRefs(template, workshopModels),
     destination: destinationFor(template),
-    useCase: useCaseForTemplate(template, workshopModels),
     callsPartnerModel: template.tags.includes('API'),
     customNodes: detail.requiresCustomNodes ?? [],
     weightsBytes: detail.size ?? 0,

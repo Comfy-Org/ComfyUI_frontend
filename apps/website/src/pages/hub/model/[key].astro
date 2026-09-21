@@ -22,7 +22,7 @@ export function getStaticPaths() {
 
 const { key } = Astro.params
 const page = key ? getModelGroupPage(key) : undefined
-if (!page) return Astro.redirect('/playground/')
+if (!page) return Astro.redirect('/hub/')
 
 const { name, provider, operations, uses, operationsFromWorkflows } = page
 
@@ -62,7 +62,7 @@ const sectionTitle =
 >
   <main class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-16">
     <CatalogueBackLink
-      catalogue="/playground/"
+      catalogue="/hub/"
       fallback-key="workshop.v2.workflow.back"
       class="mb-8"
       client:load
@@ -113,7 +113,7 @@ const sectionTitle =
         </li>)}
       </ul>
       {madeWith.length > 8 && <a
-        href={`/playground/?model=${encodeURIComponent(name)}`}
+        href={`/hub/?model=${encodeURIComponent(name)}`}
         class="mt-6 inline-flex text-sm text-primary-comfy-yellow underline underline-offset-4"
       >
         {t('workshop.v2.loadMore')}

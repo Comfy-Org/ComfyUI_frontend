@@ -12,8 +12,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const type = defineModel<TypeFilter>({ required: true })
 
 const TABS: readonly { value: TypeFilter; label: TranslationKey }[] = [
-  { value: 'workflow', label: 'workshop.v2.kind.workflows' },
-  { value: 'model', label: 'workshop.v2.kind.models' }
+  { value: 'model', label: 'workshop.v2.kind.models' },
+  { value: 'workflow', label: 'workshop.v2.kind.workflows' }
 ]
 
 // The two tabs share one moving marker rather than each painting its own

@@ -12,57 +12,61 @@ describe('getHubWorkflowPage', () => {
     expect(getHubWorkflowPage('no-such-template')).toBeUndefined()
   })
 
-  it('gives every template in the snapshot a page of its own', () => {
-    expect(listHubWorkflows().length).toBeGreaterThan(600)
+  it('gives every workflow that runs here a page of its own', () => {
+    expect(listHubWorkflows().length).toBeGreaterThan(20)
     expect(hubWorkflowPath('api_nano_banana_pro')).toBe(
-      '/playground/workflow/api_nano_banana_pro/'
+      '/hub/workflow/api_nano_banana_pro/'
     )
   })
 
-  it('offers a destination only where the catalogue carries the model', () => {
+  // The catalogue holds only what this page can run, so every page in it
+  // reaches one partner model, downloads nothing, and installs nothing.
+  it('carries a destination, no weights and no custom nodes throughout', () => {
+    const pages = listHubWorkflows().map((template) =>
+      getHubWorkflowPage(template.name)!
+    )
+
+    expect(pages.every((page) => page.callsPartnerModel)).toBe(true)
+    expect(pages.every((page) => page.destination !== undefined)).toBe(true)
+    expect(pages.every((page) => page.weightsBytes === 0)).toBe(true)
+    expect(pages.every((page) => page.customNodes.length === 0)).toBe(true)
+  })
+
+  it('names the model page a workflow can open', () => {
     const routed = getHubWorkflowPage('api_nano_banana_pro')!
-    expect(routed.callsPartnerModel).toBe(true)
+
     expect(routed.destination?.name).toBe('Nano Banana Pro')
-
-    const absent = getHubWorkflowPage('api_minimax_h3_max_flf2v')!
-    expect(absent.callsPartnerModel).toBe(true)
-    expect(absent.destination).toBeUndefined()
-    expect(absent.runsOn).toEqual([{ name: 'MiniMax H3', model: undefined }])
+    expect(routed.runsOn.map((ref) => ref.name)).toContain('Nano Banana Pro')
   })
 
-  it('separates a partner workflow from one that downloads weights', () => {
-    expect(getHubWorkflowPage('api_minimax_h3_max_flf2v')!.weightsBytes).toBe(0)
-
-    const local = getHubWorkflowPage('video_minimax_h3_i2v')!
-    expect(local.callsPartnerModel).toBe(false)
-    expect(local.destination).toBeUndefined()
-    expect(local.weightsBytes).toBeGreaterThan(0)
-  })
-
-  it('lists the custom nodes a workflow declares, and none otherwise', () => {
-    expect(
-      getHubWorkflowPage('video_ltx_2_audio_to_video')!.customNodes.length
-    ).toBeGreaterThan(0)
-    expect(getHubWorkflowPage('image_z_image_turbo')!.customNodes).toEqual([])
+  // A graph the catalogue no longer holds has no page at all, whatever the
+  // registry still ships under that name.
+  it.for([
+    'video_minimax_h3_i2v',
+    'flux_fill_inpaint_example',
+    'video_ltx_2_audio_to_video'
+  ])('has no page for %s, which cannot run here', (name) => {
+    expect(getHubWorkflowPage(name)).toBeUndefined()
   })
 
   it('reads the ports the details declare, and falls back to the medium', () => {
-    const withPorts = getHubWorkflowPage('video_minimax_h3_i2v')!
+    const withPorts = getHubWorkflowPage('api_google_nano_banana2_image_edit')!
     expect(withPorts.inputs).toContainEqual({
       name: 'LoadImage',
       type: 'image'
     })
-    expect(withPorts.mediaType).toBe('video')
+    expect(withPorts.mediaType).toBe('image')
 
-    const noOutputs = getHubWorkflowPage('api_minimax_h3_max_flf2v')!
-    expect(noOutputs.outputs).toEqual([{ name: 'video', type: 'video' }])
+    const noInputs = getHubWorkflowPage('api_bytedance_seedream_5_0_pro_t2i')!
+    expect(noInputs.inputs).toEqual([])
   })
 
   it('never recommends the workflow itself', () => {
-    const page = getHubWorkflowPage('video_minimax_h3_i2v')!
-    expect(page.related).toHaveLength(8)
+    const page = getHubWorkflowPage('api_nano_banana_pro')!
+
+    expect(page.related.length).toBeGreaterThan(0)
     expect(page.related.map((other) => other.name)).not.toContain(
-      'video_minimax_h3_i2v'
+      'api_nano_banana_pro'
     )
   })
 })

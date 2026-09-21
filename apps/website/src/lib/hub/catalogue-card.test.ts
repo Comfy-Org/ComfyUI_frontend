@@ -66,7 +66,7 @@ describe('cardViewFor', () => {
 
     expect(view).toMatchObject({
       kind: 'model',
-      href: '/playground/model/bfl--flux/',
+      href: '/hub/model/bfl--flux/',
       title: 'Flux',
       needsCustomNodes: false
     })
@@ -78,7 +78,7 @@ describe('cardViewFor', () => {
 
     expect(view).toMatchObject({
       kind: 'workflow',
-      href: '/playground/workflow/poster/'
+      href: '/hub/workflow/poster/'
     })
     expect(view.media).toEqual({ url: 'first.png', kind: 'image' })
     expect(view.hoverMedia).toBe('second.png')

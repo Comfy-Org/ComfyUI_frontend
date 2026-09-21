@@ -21,11 +21,12 @@ import FeaturedBanner from '../workshop/FeaturedBanner.vue'
 import WorkshopHero from '../workshop/WorkshopHero.vue'
 import type { OrderOption } from './CatalogueSort.vue'
 import CatalogueGrid from './CatalogueGrid.vue'
+import CatalogueModelFilter from './CatalogueModelFilter.vue'
 import CatalogueToolbar from './CatalogueToolbar.vue'
 import CatalogueSort from './CatalogueSort.vue'
 import CatalogueTypeFilter from './CatalogueTypeFilter.vue'
 import OutcomeRows from './OutcomeRows.vue'
-import PlaygroundSections from './PlaygroundSections.vue'
+import HubSections from './HubSections.vue'
 
 // The catalogue is resolved on the server and arrives card-sized: the browser
 // never receives the model list or the template index, only what the grid
@@ -38,7 +39,7 @@ const { entries, locale = 'en' } = defineProps<{
 const PAGE = 30
 
 const useCase = ref<UseCase | 'all'>('all')
-const type = ref<TypeFilter>('workflow')
+const type = ref<TypeFilter>('model')
 const order = ref<CatalogueOrder>('popular')
 const query = ref('')
 // Set by a model card's "N workflows use this": the catalogue arrives already
@@ -200,6 +201,18 @@ const featured = computed(() =>
       )
 )
 
+// The models the workflows on this tab name, most used first, so the filter
+// opens on the ones a reader is most likely to be after.
+const modelsInTab = computed(() => {
+  const counts = new Map<string, number>()
+  for (const entry of inTab.value)
+    for (const model of entry.models)
+      counts.set(model, (counts.get(model) ?? 0) + 1)
+  return [...counts]
+    .sort(([aName, a], [bName, b]) => b - a || aName.localeCompare(bName))
+    .map(([name]) => name)
+})
+
 // The rows are a way in, so they stand while the medium is the only thing
 // chosen: once a reader narrows further they are past being shown around.
 const showRows = computed(() => useCase.value !== 'all' && !narrowed.value)
@@ -251,6 +264,13 @@ const heading = computed(() =>
           />
         </div>
 
+        <CatalogueModelFilter
+          v-if="type === 'workflow'"
+          v-model="usesModel"
+          :models="modelsInTab"
+          :locale
+        />
+
         <CatalogueSort v-model:order="order" :orders="ORDERS" :locale />
       </div>
     </div>
@@ -262,7 +282,7 @@ const heading = computed(() =>
       class="mb-10 short:mb-6"
     />
 
-    <PlaygroundSections
+    <HubSections
       v-if="!browsing"
       :entries="matched"
       :locale

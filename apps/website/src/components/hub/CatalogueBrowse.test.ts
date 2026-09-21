@@ -22,7 +22,7 @@ function entry(overrides: Partial<BrowseEntry> = {}): BrowseEntry {
     ...overrides,
     card: {
       kind: overrides.kind ?? 'model',
-      href: `/playground/model/${key}/`,
+      href: `/hub/model/${key}/`,
       title,
       media: undefined,
       hoverMedia: undefined,
@@ -85,19 +85,19 @@ const onShelf = (useCase: string) =>
 
 // The URL is read on mount, so the first paint is one tick behind it.
 async function at(search: string, entries: readonly BrowseEntry[] = ENTRIES) {
-  window.history.replaceState({}, '', `/playground/${search}`)
+  window.history.replaceState({}, '', `/hub/${search}`)
   render(CatalogueBrowse, { props: { entries } })
   await nextTick()
 }
 
 describe('CatalogueBrowse', () => {
-  afterEach(() => window.history.replaceState({}, '', '/playground/'))
+  afterEach(() => window.history.replaceState({}, '', '/hub/'))
 
   // At rest the catalogue is one shelf per thing you might want to make, not a
   // list you have to filter down.
   it('opens on the use cases rather than on a list', async () => {
     await at('')
-    expect(screen.getByTestId('playground-sections')).toBeTruthy()
+    expect(screen.getByTestId('hub-sections')).toBeTruthy()
     expect(screen.queryByTestId('catalogue-grid')).toBeNull()
   })
 
@@ -106,16 +106,16 @@ describe('CatalogueBrowse', () => {
   // a filter over one shared list.
   it('gives each tab its own shelves', async () => {
     await at('')
-    expect(onShelf('generate-images')).toEqual(['workflow'])
-
-    await userEvent.click(screen.getByTestId('catalogue-type-model'))
     expect(onShelf('generate-images')).toEqual(['model'])
+
+    await userEvent.click(screen.getByTestId('catalogue-type-workflow'))
+    expect(onShelf('generate-images')).toEqual(['workflow'])
   })
 
   // Three of the eight use cases hold no model at all, and a shelf standing
   // empty says the catalogue is broken rather than that this tab has none.
   it('leaves out a use case the chosen tab has nothing in', async () => {
-    await at('', [
+    await at('?type=workflow', [
       ...ENTRIES,
       workflow({ key: 'mesh', title: 'Photo to mesh', useCases: ['3d'] })
     ])
@@ -126,12 +126,36 @@ describe('CatalogueBrowse', () => {
   })
 
   it('opens a shelf into the list for that use case', async () => {
-    await at('')
+    await at('?type=workflow')
     await userEvent.click(screen.getByTestId('shelf-generate-images-see-all'))
     expect(shown()).toEqual(['Movie poster'])
     expect(screen.getByTestId('catalogue-heading').textContent).toMatch(
       /image/i
     )
+  })
+
+  // A workflow is a graph around a model, so the model is the thing a reader
+  // is most likely to be choosing between. The models tab needs no such
+  // filter: a model there is the card itself.
+  it('offers the model filter on the workflows tab only', async () => {
+    await at('')
+    expect(screen.queryByTestId('catalogue-model-filter')).toBeNull()
+
+    await userEvent.click(screen.getByTestId('catalogue-type-workflow'))
+    expect(screen.getByTestId('catalogue-model-filter')).toBeTruthy()
+  })
+
+  it('narrows the workflows to the model a reader picks', async () => {
+    await at('?type=workflow', [
+      ...ENTRIES,
+      workflow({ key: 'cover', title: 'Album cover', models: ['Seedream'] })
+    ])
+
+    await userEvent.click(screen.getByTestId('catalogue-model-filter'))
+    await userEvent.click(screen.getByRole('menuitemradio', { name: 'Flux' }))
+
+    expect(shown()).toEqual(['Movie poster'])
+    expect(screen.getByTestId('catalogue-chips').textContent).toMatch(/Flux/)
   })
 
   it('opens already narrowed when a model card sent the reader here', async () => {
@@ -154,7 +178,7 @@ describe('CatalogueBrowse', () => {
   })
 
   it('opens a medium on the rows that name a job inside it', async () => {
-    await at('', [...ENTRIES, ...EDITING])
+    await at('?type=workflow', [...ENTRIES, ...EDITING])
     await userEvent.click(screen.getByTestId('shelf-edit-images-open'))
 
     const rows = screen.getByTestId('outcome-rows')
@@ -179,7 +203,7 @@ describe('CatalogueBrowse', () => {
         tags: ['Frame Interpolation']
       })
     ]
-    await at('', [...EDITING, ...videos])
+    await at('?type=workflow', [...EDITING, ...videos])
 
     await userEvent.click(screen.getByTestId('shelf-edit-videos-open'))
     expect(
@@ -208,7 +232,7 @@ describe('CatalogueBrowse', () => {
   })
 
   it('narrows the listing to a row a reader asks to see in full', async () => {
-    await at('', [...ENTRIES, ...EDITING])
+    await at('?type=workflow', [...ENTRIES, ...EDITING])
     await userEvent.click(screen.getByTestId('shelf-edit-images-open'))
 
     await userEvent.click(screen.getByTestId('outcome-upscale-restore-see-all'))
@@ -231,7 +255,7 @@ describe('CatalogueBrowse', () => {
       )[0]
     )
 
-    expect(lastShelf('/playground/model/flux/')).toBe('generate-images')
+    expect(lastShelf('/hub/model/flux/')).toBe('generate-images')
   })
 
   // Newest over models that carry no date is a ranking over nothing, so the

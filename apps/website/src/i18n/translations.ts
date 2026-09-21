@@ -10538,14 +10538,14 @@ Enterprise`
   'workshop.hub.docs': { en: 'Read docs', 'zh-CN': '阅读文档' },
 
   'workshop.v2.meta.title': {
-    en: 'Playground - Comfy',
-    'zh-CN': 'Playground - Comfy'
+    en: 'Hub - Comfy',
+    'zh-CN': 'Hub - Comfy'
   },
   'workshop.v2.meta.description': {
     en: 'Every model Comfy can run, and the workflows built on them.',
     'zh-CN': 'Comfy 可运行的全部模型，以及基于它们构建的工作流。'
   },
-  'workshop.v2.eyebrow': { en: 'Playground', 'zh-CN': 'Playground' },
+  'workshop.v2.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
   'workshop.outcome.animateCharacters': {
     en: 'Animate characters',
     'zh-CN': '让角色动起来'
@@ -10653,19 +10653,9 @@ Enterprise`
     en: 'The models this workflow calls.',
     'zh-CN': '此工作流调用的模型。目录中收录的会附带链接。'
   },
-  'workshop.v2.workflow.notInCatalogue': {
-    en: 'not in the catalogue',
-    'zh-CN': '目录中暂无'
-  },
   'workshop.v2.workflow.howItWorks': {
     en: 'How it works',
     'zh-CN': '工作方式'
-  },
-  'workshop.v2.workflow.youBring': { en: 'You bring', 'zh-CN': '你提供' },
-  'workshop.v2.workflow.youGet': { en: 'You get', 'zh-CN': '你得到' },
-  'workshop.v2.workflow.bringsPrompt': {
-    en: 'Just a prompt',
-    'zh-CN': '只需一段提示词'
   },
   'workshop.v2.workflow.perRun': {
     en: '{count} per run',
@@ -10710,8 +10700,8 @@ Enterprise`
     'zh-CN': '此工作流的节点及其连接'
   },
   'workshop.v2.workflow.graphHint': {
-    en: 'Read-only \u00b7 scroll to zoom \u00b7 drag to pan',
-    'zh-CN': '仅供查看 \u00b7 滚动缩放 \u00b7 拖动平移'
+    en: 'Read-only \u00b7 drag to pan',
+    'zh-CN': '仅供查看 \u00b7 拖动平移'
   },
   'workshop.v2.workflow.graphLoading': {
     en: 'Loading the graph',
@@ -10741,10 +10731,6 @@ Enterprise`
     'zh-CN':
       '此工作流发起的调用，可直接复制到你的工作区。也可以在你的 Cloud 账户中打开该图。'
   },
-  'workshop.v2.workflow.jobTitle': {
-    en: '{useCase} with {model}',
-    'zh-CN': '{useCase}（{model}）'
-  },
   'workshop.v2.workflow.tags': { en: 'Good for', 'zh-CN': '适用于' },
   'workshop.v2.workflow.related': {
     en: 'Workflows like this one',
@@ -10754,6 +10740,8 @@ Enterprise`
     en: 'This model cannot be run here yet.',
     'zh-CN': 'Router 尚未提供该模型可运行的操作。'
   },
+  'workshop.v2.model.filter': { en: 'Filter by model', 'zh-CN': '按模型筛选' },
+  'workshop.v2.model.allModels': { en: 'All models', 'zh-CN': '全部模型' },
   'workshop.v2.model.operations': { en: 'Operations', 'zh-CN': '操作' },
   'workshop.v2.model.operationsNote': {
     en: 'Pick what you want it to do.',

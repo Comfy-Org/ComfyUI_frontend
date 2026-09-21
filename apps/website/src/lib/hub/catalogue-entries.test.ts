@@ -227,6 +227,6 @@ describe('catalogueNameIndex', () => {
 
 describe('modelGroupPath', () => {
   it('addresses a model by its group key, not by an operation slug', () => {
-    expect(modelGroupPath('seedance25')).toBe('/playground/model/seedance25/')
+    expect(modelGroupPath('seedance25')).toBe('/hub/model/seedance25/')
   })
 })

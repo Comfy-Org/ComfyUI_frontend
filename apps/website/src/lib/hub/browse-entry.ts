@@ -86,9 +86,7 @@ export function browseRequestFrom(search: string): BrowseRequest {
   return {
     // "N workflows use this" lands on that model's uses, so the link implies
     // the tab even when it does not name one.
-    type: model
-      ? 'workflow'
-      : (TABS.find((tab) => tab === asked) ?? 'workflow'),
+    type: model ? 'workflow' : (TABS.find((tab) => tab === asked) ?? 'model'),
     useCase: useCase ?? 'all',
     usesModel: model,
     query: params.get('q') ?? ''

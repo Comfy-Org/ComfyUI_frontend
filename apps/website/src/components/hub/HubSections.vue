@@ -46,7 +46,7 @@ const cardClass = 'peek-card shrink-0 snap-start'
 </script>
 
 <template>
-  <div class="flex flex-col gap-12" data-testid="playground-sections">
+  <div class="flex flex-col gap-12" data-testid="hub-sections">
     <section
       v-for="shelf in shelves"
       :key="shelf.useCase"

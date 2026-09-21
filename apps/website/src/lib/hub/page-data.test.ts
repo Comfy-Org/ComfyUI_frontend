@@ -71,7 +71,7 @@ describe('relatedCardViews', () => {
     const [view] = relatedCardViews([template({ isApp: true })], [], new Set())
 
     expect(view.kind).toBe('workflow')
-    expect(view.href).toBe('/playground/workflow/poster/')
+    expect(view.href).toBe('/hub/workflow/poster/')
   })
 })
 
