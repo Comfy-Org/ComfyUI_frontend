@@ -220,25 +220,29 @@ function onCustomFloatCreated(this: LGraphNode) {
     }
   })
   const defaultPrecision = valueWidget.options.precision ?? 1
-  const precision = () => {
+  // Consumers pass precision straight to `toFixed`/`Intl.NumberFormat`, which
+  // reject anything outside 0-100, so it is normalised here, not where it is used.
+  const nodePrecision = () => {
     const configured = this.properties.precision
-    return typeof configured === 'number' ? configured : defaultPrecision
+    return typeof configured === 'number' && Number.isFinite(configured)
+      ? clamp(Math.trunc(configured), 0, 100)
+      : undefined
   }
+  const precision = () => nodePrecision() ?? defaultPrecision
   const lastDecimalPlace = () => {
-    const places = clamp(Math.trunc(precision()), 0, 100)
+    const places = precision()
     return Number((10 ** -places).toFixed(places))
   }
   const declaredStep = valueWidget.options.step2 ?? lastDecimalPlace()
   const declaredRound = valueWidget.options.round
   // Only precision set on this node steers step and round; `defaultPrecision`
   // also carries the global `Comfy.FloatRoundingPrecision`, which must not.
-  const nodePrecisionSet = () => typeof this.properties.precision === 'number'
   const stepForPrecision = () =>
-    nodePrecisionSet() ? lastDecimalPlace() : declaredStep
+    nodePrecision() !== undefined ? lastDecimalPlace() : declaredStep
   // `Comfy.DisableFloatRounding` leaves `declaredRound` undefined; node
   // precision refines the granularity but must not switch rounding back on.
   const roundForPrecision = () =>
-    declaredRound !== undefined && nodePrecisionSet()
+    declaredRound !== undefined && nodePrecision() !== undefined
       ? lastDecimalPlace()
       : declaredRound
 

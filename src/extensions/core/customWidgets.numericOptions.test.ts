@@ -197,6 +197,37 @@ describe('Primitive numeric widget options', () => {
       expect(widget.value).toBe(0.123456)
     })
 
+    it.for([-1, 101, 324, Number.POSITIVE_INFINITY, Number.NaN])(
+      'keeps the widget usable when precision is out of range (%s)',
+      (precision) => {
+        const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+
+        node.properties.precision = precision
+
+        expect(() => onFloatValueChange.call(widget, 0.123456)).not.toThrow()
+        expect(Number.isFinite(widget.value)).toBe(true)
+        expect(
+          () =>
+            new Intl.NumberFormat('en-US', {
+              minimumFractionDigits: widget.options.precision,
+              maximumFractionDigits: widget.options.precision
+            })
+        ).not.toThrow()
+      }
+    )
+
+    it.for(['3', null])(
+      'falls back to the declared precision for a non-numeric property (%s)',
+      (precision) => {
+        const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+
+        node.properties.precision = precision
+
+        expect(widget.options.precision).toBe(1)
+        expect(widget.options.step2).toBe(0.1)
+      }
+    )
+
     it('keeps a declared step that is not a power of ten', () => {
       const { widget } = createNode(TEST_QUARTER_STEP_FLOAT_TYPE)
 
@@ -204,25 +235,33 @@ describe('Primitive numeric widget options', () => {
       expect(getWidgetStep(widget.options)).toBe(0.25)
     })
 
+    it('ignores an unusable precision rather than half-applying it', () => {
+      const { node, widget } = createNode(TEST_QUARTER_STEP_FLOAT_TYPE)
+
+      node.properties.precision = Number.NaN
+
+      expect(widget.options.step2).toBe(0.25)
+    })
+
     it.for([
-      { precision: 0, expected: 1 },
-      { precision: 1, expected: 0.1 },
-      { precision: 2, expected: 0.01 },
-      { precision: 3, expected: 0.001 },
-      { precision: 4, expected: 0.0001 },
-      { precision: 5, expected: 0.00001 },
-      { precision: 6, expected: 0.000001 },
-      { precision: 1.5, expected: 0.1 },
-      { precision: -1, expected: 1 },
-      { precision: 101, expected: 1e-100 }
+      { precision: 0, usedPrecision: 0, expected: 1 },
+      { precision: 1, usedPrecision: 1, expected: 0.1 },
+      { precision: 2, usedPrecision: 2, expected: 0.01 },
+      { precision: 3, usedPrecision: 3, expected: 0.001 },
+      { precision: 4, usedPrecision: 4, expected: 0.0001 },
+      { precision: 5, usedPrecision: 5, expected: 0.00001 },
+      { precision: 6, usedPrecision: 6, expected: 0.000001 },
+      { precision: 1.5, usedPrecision: 1, expected: 0.1 },
+      { precision: -1, usedPrecision: 0, expected: 1 },
+      { precision: 101, usedPrecision: 100, expected: 1e-100 }
     ])(
       'steps and rounds by one unit of the last decimal place at precision $precision',
-      ({ precision, expected }) => {
+      ({ precision, usedPrecision, expected }) => {
         const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
 
         node.properties.precision = precision
 
-        expect(widget.options.precision).toBe(precision)
+        expect(widget.options.precision).toBe(usedPrecision)
         expect(widget.options.step2).toBe(expected)
         expect(widget.options.round).toBe(expected)
       }
