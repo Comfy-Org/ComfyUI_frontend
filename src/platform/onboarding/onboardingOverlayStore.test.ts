@@ -51,4 +51,14 @@ describe('useOnboardingOverlayStore', () => {
     stopA()
     expect(store.active).toBe(true)
   })
+
+  it('keeps registrations independent when the same getter is registered twice', () => {
+    const store = useOnboardingOverlayStore()
+    const getter = () => true
+    const stopA = store.registerSource(getter)
+    store.registerSource(getter)
+
+    stopA()
+    expect(store.active).toBe(true)
+  })
 })

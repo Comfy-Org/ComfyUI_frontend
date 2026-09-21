@@ -17,10 +17,13 @@ export const useOnboardingOverlayStore = defineStore(
     )
 
     function registerSource(isActive: () => boolean): () => void {
-      sources.value = new Set(sources.value).add(isActive)
+      // Wrap so each call owns a unique entry; two callers passing the same
+      // getter reference must not collapse to one, or one stop() drops both.
+      const source = () => isActive()
+      sources.value = new Set(sources.value).add(source)
       const stop = () => {
         const next = new Set(sources.value)
-        next.delete(isActive)
+        next.delete(source)
         sources.value = next
       }
       // Drop the source with the caller's scope, so a component consumer cannot
