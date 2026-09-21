@@ -276,7 +276,7 @@ describe('AssetsSidebarListView', () => {
       })
 
       const item = screen.getByRole('button', {
-        name: 'assetBrowser.ariaLabel.assetCard'
+        name: 'image.png - image asset'
       })
       item.focus()
       expect(item).toHaveFocus()
@@ -301,7 +301,7 @@ describe('AssetsSidebarListView', () => {
     })
 
     const item = screen.getByRole('button', {
-      name: 'assetBrowser.ariaLabel.assetCard'
+      name: 'image.png - image asset'
     })
     await user.hover(item)
 
@@ -309,6 +309,7 @@ describe('AssetsSidebarListView', () => {
       name: 'mediaAsset.actions.moreOptions'
     })
     actionsButton.focus()
+    expect(actionsButton).toHaveFocus()
     await user.keyboard('{Enter}')
 
     expect(onSelectAsset).not.toHaveBeenCalled()
