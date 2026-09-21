@@ -148,9 +148,9 @@ const copy = {
       '在支持的模型上使用你自己的供应商密钥，同时保留同一套 Comfy Router 集成。'
   },
   'platform.router.roadmap.4.details': {
-    en: 'Bring your own key for the models that support it and nothing else changes: the same route, the same request shape and the same job surface. BYOK is available for select models on Enterprise today, enabled by request.',
+    en: 'Connect your own provider credentials and run supported models through the same Comfy Router API. Keep one SDK and job lifecycle while usage and billing for those calls stay with your provider.',
     'zh-CN':
-      '在支持的模型上使用你自己的密钥，其余一切不变：同一条路由、同一种请求格式、同一套任务接口。目前企业版的部分模型已支持 BYOK，需申请开通。'
+      '接入你自己的供应商凭据，通过同一套 Comfy Router API 运行支持的模型。SDK 和任务生命周期保持不变，这些调用的用量与计费仍归属于你的供应商。'
   },
   'platform.router.roadmap.learnMore': {
     en: 'LEARN MORE',
