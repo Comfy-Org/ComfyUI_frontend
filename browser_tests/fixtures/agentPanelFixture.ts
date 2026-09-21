@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Page, Route } from '@playwright/test'
 
 import type {
   AgentRunMode,
@@ -146,7 +146,7 @@ export async function mockWorkflowPersistence(
     }
     return route.fulfill(jsonRoute(saved))
   })
-  await page.route('**/api/workflows?*', (route) => {
+  const fulfillWorkflowList = (route: Route) => {
     const workflows: WorkflowListResponse = {
       data:
         savedName === undefined
@@ -169,7 +169,9 @@ export async function mockWorkflowPersistence(
       }
     }
     return route.fulfill(jsonRoute(workflows))
-  })
+  }
+  await page.route('**/api/workflows?*', fulfillWorkflowList)
+  await page.route('**/api/workflows', fulfillWorkflowList)
 }
 
 type AgentFixtures = {
