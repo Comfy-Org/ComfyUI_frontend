@@ -1488,6 +1488,53 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.boundWorkflowId.value).toBeNull()
   })
 
+  // FE-2501: the tab -> workflow binding is persisted, so a workflow the
+  // backend refuses to serve poisons its tab for good - every later turn from
+  // that tab re-posts the same dead id, and a reload re-affirms the binding
+  // from the thread's own workflow pointer. Only the workflow-scoped refusal
+  // releases the binding; the thread-scoped one names a different resource.
+  it.for([
+    { refusal: 'workflow not found or access denied', released: true },
+    { refusal: 'thread not found or access denied', released: false }
+  ])('(k2) 403 $refusal releases the binding: $released', async (scenario) => {
+    const tabPath = 'workflows/portrait.json'
+    useAgentWorkflowTabBindingStore().bind('wf-dead', tabPath)
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockRejectedValue(
+        new AgentApiError(scenario.refusal, 403, { error: scenario.refusal })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ id: 'wf-dead', tabPath }),
+        adopted: vi.fn()
+      }
+    })
+    session.start()
+    session.bindWorkflow('wf-dead')
+
+    expect(await session.sendMessage('run it')).toBe(false)
+
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-dead')).toBe(
+      scenario.released ? undefined : tabPath
+    )
+    expect(session.boundWorkflowId.value).toBe(
+      scenario.released ? null : 'wf-dead'
+    )
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: `Message failed to send: ${scenario.refusal}`
+        }
+      ]
+    })
+  })
+
   it('(k) a failed POST records the user text plus a settled error reply and returns false', async () => {
     const postMessage = vi
       .fn<

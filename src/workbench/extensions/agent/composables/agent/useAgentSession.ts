@@ -12,7 +12,8 @@ import {
   isAgentEvent,
   parseAgentWsEvent,
   toTurnId,
-  zAgentAdmissionError
+  zAgentAdmissionError,
+  zDisownedWorkflowError
 } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
@@ -107,6 +108,14 @@ function parseAdmissionError(error: unknown) {
     parsed.data.error.type === 'PAYMENT_REQUIRED' ? 402 : 503
   if (error.status !== expectedStatus) return undefined
   return { ...parsed.data.error, retryAfterSeconds: error.retryAfterSeconds }
+}
+
+function disownsWorkflow(error: unknown): boolean {
+  return (
+    error instanceof AgentApiError &&
+    error.status === 403 &&
+    zDisownedWorkflowError.safeParse(error.body).success
+  )
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
@@ -388,6 +397,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  /**
+   * The server will not serve the id this turn was posted under, and the
+   * binding that produced it outlives the page. Left in place it poisons the
+   * tab: every later turn re-posts the same dead id, and a reload re-affirms
+   * the binding through the thread's own workflow pointer. Releasing it lets
+   * the next turn resolve the tab again.
+   */
+  function releaseDisownedWorkflow(
+    sent: WorkflowTurnContext | undefined,
+    error: unknown
+  ): void {
+    if (sent?.id === undefined || !disownsWorkflow(error)) return
+    bindingStore.unbind(sent.tabPath)
+    if (boundWorkflowId.value === sent.id) boundWorkflowId.value = null
+    if (rememberedWorkflowId === sent.id) rememberedWorkflowId = null
+  }
+
   async function performSend(
     text: string,
     attachments?: SentAttachment[],
@@ -399,6 +425,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const originContext = workflow?.current()
     const origin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
+    let sentContext: WorkflowTurnContext | undefined
     try {
       await prepareWorkflow()
       if (generation !== loadGeneration) return false
@@ -407,6 +434,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         recordUnavailableTarget(text)
         return false
       }
+      sentContext = wfContext
       const ack = await postTurn(
         threadAtSend,
         text,
@@ -421,6 +449,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return true
     } catch (error) {
       if (generation !== loadGeneration) return false
+      releaseDisownedWorkflow(sentContext, error)
       recordSendError(error, text)
       return false
     }
