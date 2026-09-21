@@ -178,6 +178,39 @@ test.skip('duplicate title', () => newFixture())
     ])
   })
 
+  it('compares renamed tests with their base path', () => {
+    const root = createRepository()
+    write(
+      root,
+      'tests/old-name.spec.ts',
+      `test.skip('already disabled', () => {})
+test('still enabled one', () => {})
+test('still enabled two', () => {})
+test('newly disabled', () => {})
+`
+    )
+    const base = commit(root, 'base')
+
+    write(
+      root,
+      'tests/new-name.spec.ts',
+      `test.skip(
+  'already disabled',
+  () => {}
+)
+test('still enabled one', () => {})
+test('still enabled two', () => {})
+test.skip('newly disabled', () => {})
+`
+    )
+    rmSync(join(root, 'tests/old-name.spec.ts'))
+    const head = commit(root, 'rename and disable test')
+
+    expect(findViolations(root, base, head)).toEqual([
+      "  tests/new-name.spec.ts:7: test.skip('newly disabled', () => {})"
+    ])
+  })
+
   it.for([
     { body: 'Re-enabled by #12345', expected: true },
     {

@@ -30,6 +30,11 @@ type TestDeclaration = DisabledDeclaration & {
   title: string
 }
 
+type ChangedFile = {
+  basePath?: string
+  path: string
+}
+
 const HUNK_PATTERN = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/
 const TEST_SOURCE_PATTERN = /\.(?:spec|test)\.[cm]?[jt]sx?$/
 const RESTORATION_INTENT_PATTERN =
@@ -42,6 +47,23 @@ function git(cwd: string, ...args: string[]): Buffer {
     cwd,
     stdio: ['ignore', 'pipe', 'pipe']
   })
+}
+
+function changedFiles(output: Buffer): ChangedFile[] {
+  const fields = output.toString('utf8').split('\0')
+  const files: ChangedFile[] = []
+
+  for (let index = 0; fields[index]; ) {
+    const status = fields[index++]
+    if (status.startsWith('R') || status.startsWith('C')) {
+      files.push({ basePath: fields[index++], path: fields[index++] })
+    } else {
+      const path = fields[index++]
+      files.push({ basePath: status === 'A' ? undefined : path, path })
+    }
+  }
+
+  return files
 }
 
 function lineOf(node: Node, sourceFile: SourceFile): number {
@@ -212,37 +234,28 @@ export function findViolations(
   headSha: string
 ): string[] {
   const revision = `${baseSha}...${headSha}`
-  const changedPaths = git(
-    cwd,
-    'diff',
-    '--name-only',
-    '-z',
-    '--diff-filter=d',
-    revision
-  )
-    .toString('utf8')
-    .split('\0')
-    .filter((path) => path && TEST_SOURCE_PATTERN.test(path))
+  const changed = changedFiles(
+    git(cwd, 'diff', '--name-status', '-z', '-M', '--diff-filter=d', revision)
+  ).filter(({ path }) => TEST_SOURCE_PATTERN.test(path))
   const violations: string[] = []
 
-  for (const path of changedPaths) {
+  for (const { basePath, path } of changed) {
     const patch = git(
       cwd,
       'diff',
+      '-M',
       '--unified=0',
       '--no-color',
       '--no-ext-diff',
       revision,
       '--',
+      ...(basePath && basePath !== path ? [basePath] : []),
       path
     ).toString('utf8')
     const source = git(cwd, 'show', `${headSha}:${path}`).toString('utf8')
-    let baseSource = ''
-    try {
-      baseSource = git(cwd, 'show', `${baseSha}:${path}`).toString('utf8')
-    } catch {
-      // The file was added after the base revision.
-    }
+    const baseSource = basePath
+      ? git(cwd, 'show', `${baseSha}:${basePath}`).toString('utf8')
+      : ''
     const sourceLines = source.split('\n')
     const addedLines = addedTargetLines(patch)
     const headDeclarations = testDeclarations(source, path)
