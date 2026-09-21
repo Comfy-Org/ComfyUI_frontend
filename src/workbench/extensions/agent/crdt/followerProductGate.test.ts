@@ -143,9 +143,15 @@ it.fails('keeps a projection-rejected sequence replayable through the compositio
     update_b64: encodeBase64(Y.encodeStateAsUpdate(host))
   }
 
-  api.dispatchEvent(new CustomEvent('doc_update', { detail: frame }))
+  EventTarget.prototype.dispatchEvent.call(
+    api,
+    new CustomEvent('doc_update', { detail: frame })
+  )
   const sequenceAfterRejection = follower.debugSnapshot().lastSeq
-  api.dispatchEvent(new CustomEvent('doc_update', { detail: frame }))
+  EventTarget.prototype.dispatchEvent.call(
+    api,
+    new CustomEvent('doc_update', { detail: frame })
+  )
 
   expect({
     sequenceAfterRejection,
