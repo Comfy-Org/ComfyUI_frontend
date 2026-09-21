@@ -180,29 +180,36 @@ test.describe(
       // the subgraph host never materializes its promoted widgets.
       const unrouteObjectInfo = await routeObjectInfoFromSetupApi(page)
       try {
-        await comfyPage.workflow.reloadAndWaitForApp()
-        await comfyPage.workflow.loadGraphData(asset)
-        await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
+        await test.step('load the promoted-widget workflow', async () => {
+          await comfyPage.workflow.reloadAndWaitForApp()
+          await comfyPage.workflow.loadGraphData(asset)
+          await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
 
-        // Precondition: the host node exposes its promoted widgets before any
-        // follower frame arrives. Guards against a silently-broken fixture load.
-        const hostWidgetsBefore = await page.evaluate((id) => {
-          const host = window.app!.graph.getNodeById(id)
-          return (host?.widgets ?? []).map((w) => [w.name, w.value])
-        }, toNodeId(HOST_NODE_ID))
-        expect(hostWidgetsBefore).toEqual(
-          expect.arrayContaining([['steps', 8]])
-        )
-        expect(hostWidgetsBefore.length).toBeGreaterThanOrEqual(7)
+          // Precondition: the host node exposes its promoted widgets before any
+          // follower frame arrives. Guards against a silently-broken fixture
+          // load.
+          const hostWidgetsBefore = await page.evaluate((id) => {
+            const host = window.app!.graph.getNodeById(id)
+            return (host?.widgets ?? []).map((w) => [w.name, w.value])
+          }, toNodeId(HOST_NODE_ID))
+          expect(hostWidgetsBefore).toEqual(
+            expect.arrayContaining([['steps', 8]])
+          )
+          expect(hostWidgetsBefore.length).toBeGreaterThanOrEqual(7)
+        })
 
-        await agentPanel.open()
-        const panel = agentPanel.root
-        // The send is inert until the session has a workflow target: `Send` is
-        // gated on `workflowSelecting || !composer.canSend.value`, and the ack
-        // that carries `workflow_id` is what `bindWorkflow` subscribes on.
-        // Asserting the picker is merely visible leaves the panel unbound, so
-        // the click posts nothing and the CRDT leg below is never reached.
-        await agentPanel.selectWorkflow()
+        const panel =
+          await test.step('point the agent panel at that workflow', async () => {
+            await agentPanel.open()
+            // The send is inert until the session has a workflow target:
+            // `Send` is gated on `workflowSelecting || !composer.canSend.value`,
+            // and the ack that carries `workflow_id` is what `bindWorkflow`
+            // subscribes on. Asserting the picker is merely visible leaves the
+            // panel unbound, so the click posts nothing and the CRDT leg below
+            // is never reached.
+            await agentPanel.selectWorkflow()
+            return agentPanel.root
+          })
 
         const ws = await getWebSocket()
         // Resolve only a `doc_subscribe` that is proven to carry a string
@@ -233,44 +240,52 @@ test.describe(
           })
         })
 
-        const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
-        await composer.fill('set the prompt and steps')
-        await panel.getByRole('button', { name: 'Send' }).click()
-        await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
+        const workflowId =
+          await test.step('send a turn and capture the document subscribe', async () => {
+            const composer = panel.getByRole('textbox', {
+              name: /^Describe ideas/
+            })
+            await composer.fill('set the prompt and steps')
+            await panel.getByRole('button', { name: 'Send' }).click()
+            await expect
+              .poll(() => postedMessages.length)
+              .toBeGreaterThanOrEqual(1)
+            return subscribedWorkflowId
+          })
 
-        const workflowId = await subscribedWorkflowId
-
-        ws.send(
-          JSON.stringify({
-            type: 'doc_subscribed',
-            data: { v: 1, workflow_id: workflowId, ok: true, seq: 0 }
-          })
-        )
-        ws.send(
-          JSON.stringify({
-            type: 'doc_update',
-            data: {
-              v: 1,
-              workflow_id: workflowId,
-              seq: 0,
-              actor: 'system:mint',
-              update_b64: b64(fullState)
-            }
-          })
-        )
-        ws.send(
-          JSON.stringify({
-            type: 'doc_update',
-            data: {
-              v: 1,
-              workflow_id: workflowId,
-              seq: 1,
-              actor: 'agent:test:1',
-              op_ids: ['op-1', 'op-2'],
-              update_b64: b64(delta)
-            }
-          })
-        )
+        await test.step('deliver the mint and agent set_widget frames', () => {
+          ws.send(
+            JSON.stringify({
+              type: 'doc_subscribed',
+              data: { v: 1, workflow_id: workflowId, ok: true, seq: 0 }
+            })
+          )
+          ws.send(
+            JSON.stringify({
+              type: 'doc_update',
+              data: {
+                v: 1,
+                workflow_id: workflowId,
+                seq: 0,
+                actor: 'system:mint',
+                update_b64: b64(fullState)
+              }
+            })
+          )
+          ws.send(
+            JSON.stringify({
+              type: 'doc_update',
+              data: {
+                v: 1,
+                workflow_id: workflowId,
+                seq: 1,
+                actor: 'agent:test:1',
+                op_ids: ['op-1', 'op-2'],
+                update_b64: b64(delta)
+              }
+            })
+          )
+        })
 
         const readState = () =>
           page.evaluate(
@@ -293,27 +308,34 @@ test.describe(
             }
           )
 
-        await expect
-          .poll(async () => {
-            const s = await readState()
-            return s.hostWidgets
-          })
-          .toEqual(
-            expect.arrayContaining([
-              ['text', NEW_PROMPT],
-              ['steps', NEW_STEPS],
-              ['width', 1024]
-            ])
-          )
+        const state =
+          await test.step('the write lands on the host, not on the interior defaults', async () => {
+            await expect
+              .poll(async () => {
+                const s = await readState()
+                return s.hostWidgets
+              })
+              .toEqual(
+                expect.arrayContaining([
+                  ['text', NEW_PROMPT],
+                  ['steps', NEW_STEPS],
+                  ['width', 1024]
+                ])
+              )
 
-        const state = await readState()
-        expect(state.prompt).toBe(interiorPrompt)
-        expect(state.steps).toBe(8)
-        const saved = await page.evaluate(() => window.app!.graph.serialize())
-        const validatedSave = await validateComfyWorkflow(saved)
-        if (!validatedSave) throw new Error('Invalid saved workflow')
-        await comfyPage.workflow.loadGraphData(validatedSave)
-        await expect.poll(readState).toEqual(state)
+            const state = await readState()
+            expect(state.prompt).toBe(interiorPrompt)
+            expect(state.steps).toBe(8)
+            return state
+          })
+
+        await test.step('the write survives save and reload', async () => {
+          const saved = await page.evaluate(() => window.app!.graph.serialize())
+          const validatedSave = await validateComfyWorkflow(saved)
+          if (!validatedSave) throw new Error('Invalid saved workflow')
+          await comfyPage.workflow.loadGraphData(validatedSave)
+          await expect.poll(readState).toEqual(state)
+        })
       } finally {
         await unrouteObjectInfo()
       }
