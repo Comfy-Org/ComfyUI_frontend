@@ -29,10 +29,7 @@ describe('UserCredit', () => {
     return render(UserCredit, {
       props,
       global: {
-        plugins: [i18n],
-        stubs: {
-          Tag: true
-        }
+        plugins: [i18n]
       }
     })
   }
