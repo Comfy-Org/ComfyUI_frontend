@@ -10,9 +10,13 @@ import type {
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { zAutogrowOptions } from '@/schemas/nodeDefSchema'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
@@ -536,16 +540,79 @@ function hasNonGrowthInputSetChange(
 const AUTOGROW_ORDINAL_SUFFIX = /\d+$/
 
 /**
+ * Whether the node TYPE's own static definition has an opinion on `name`'s
+ * autogrow membership -- and, when it does, what that opinion is. `known:
+ * false` means the type itself hasn't loaded into `useNodeDefStore()` yet,
+ * so this has no evidence either way and the name-shape heuristic is the
+ * only option left. `known: true` means the type's full, authoritative set
+ * of `COMFY_AUTOGROW_V3` groups is available, so `group: undefined` is a
+ * real "not a member of any of them" -- not "unknown" -- exactly like a
+ * live node's own `notMember` answer.
+ */
+type NodeDefAutogrowAnswer =
+  | { readonly known: false }
+  | { readonly known: true; readonly group: string | undefined }
+
+/**
+ * `ComfyNodeDefImpl.inputs` is `Record<string, InputSpecV2>`, which this
+ * project's TypeScript config (`noUncheckedIndexedAccess` is off) types as
+ * always present, even though a candidate group name commonly has no
+ * matching input. Matches `nodeDefStore.ts`'s own `getInputSpecForWidget`,
+ * which widens the same access through a declared `| undefined` return
+ * type, so callers get an honest optional instead of a type-checker-only
+ * guarantee the runtime doesn't share.
+ */
+function nodeDefInputSpec(
+  nodeDef: ComfyNodeDefImpl,
+  name: string
+): InputSpecV2 | undefined {
+  return nodeDef.inputs[name]
+}
+
+/**
+ * Reads the same `COMFY_AUTOGROW_V3` registration `SemanticLiveNodeQueryPort`
+ * would, off the node TYPE's own static definition rather than a live
+ * instance -- real provenance, just as authoritative as a live answer,
+ * since a live node's `comfyDynamic.autogrow` registration is itself built
+ * from exactly this data (`dynamicWidgets.ts`'s `applyAutogrow` parses the
+ * same input spec this function reads). It is available whenever the
+ * type's definition has loaded, independent of whether any live instance
+ * of the node exists to ask -- which is what lets `resolveAutogrowGroup`
+ * (in `createGraphMutations`) classify a node correctly even the very
+ * first time it ever reconciles that node while the live port answers
+ * `unavailable` and this follower has no remembered answer yet.
+ */
+function nodeDefAutogrowGroupOf(
+  nodeType: string,
+  name: string
+): NodeDefAutogrowAnswer {
+  const nodeDef = useNodeDefStore().getNodeDefByName(nodeType)
+  if (!nodeDef) return { known: false }
+  const dot = name.lastIndexOf('.')
+  if (dot < 0) return { known: true, group: undefined }
+  const groupName = name.slice(0, dot)
+  const key = name.slice(dot + 1)
+  const inputSpec = nodeDefInputSpec(nodeDef, groupName)
+  const template =
+    inputSpec && zAutogrowOptions.safeParse(inputSpec).data?.template
+  if (!template) return { known: true, group: undefined }
+  const isMember = template.names
+    ? template.names.includes(key)
+    : AUTOGROW_ORDINAL_SUFFIX.test(key)
+  return { known: true, group: isMember ? groupName : undefined }
+}
+
+/**
  * The group prefix of a live-only input shaped like an autogrow member's
  * DEFAULT naming (`group.prefixN`, ending in the member's ordinal) --
  * undefined for anything else.
  *
- * FALLBACK ONLY: used when no live node is reachable to answer this
- * definitively (see `SemanticLiveNodeQueryPort`/`liveAutogrowGroupOf`,
- * which reads the node's own `comfyDynamic.autogrow` registration instead
- * of guessing from the name). A `NodeState` input carries no autogrow
- * marker of its own, so absent that live answer this is inference from
- * shape alone, and shape is not a reliable signal in either direction:
+ * LAST RESORT: used only once both the live node (`SemanticLiveNodeQueryPort`)
+ * and the node type's own static definition (`nodeDefAutogrowGroupOf`) have
+ * no opinion -- e.g. the type hasn't loaded yet. A `NodeState` input itself
+ * carries no autogrow marker, so absent either real answer this is
+ * inference from shape alone, and shape is not a reliable signal in either
+ * direction:
  *
  * - False positive: `group.member` alone is not enough, because
  *   `dynamicWidgets.ts`'s `COMFY_DYNAMICCOMBO_V3` support (`updateWidgets`)
@@ -560,13 +627,12 @@ const AUTOGROW_ORDINAL_SUFFIX = /\d+$/
  *   don't end in a digit at all, and are wrongly dropped as if they were an
  *   ordinary input the document removed.
  *
- * Both failure directions are real and neither is fixable by refining the
+ * Both failure directions are real, and neither is fixable by refining the
  * name-shape rule further -- the same suffix shape is genuinely ambiguous
  * between "autogrow ordinal" and "unrelated dotted name" without the
- * node's own group registration. This fallback stays strictly safer than
- * over-retaining in the one case this layer can always tell apart (an
- * ordinary, non-dotted extra input), and callers should prefer
- * `SemanticLiveNodeQueryPort` whenever a live node is reachable.
+ * node's own group registration, live or from its type definition. This
+ * fallback stays strictly safer than over-retaining in the one case this
+ * layer can always tell apart (an ordinary, non-dotted extra input).
  */
 function nameShapeAutogrowGroupOf(name: unknown): string | undefined {
   if (typeof name !== 'string') return undefined
@@ -956,30 +1022,38 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   // `rememberAutogrowGroup`) so a later call for the same node and name
   // can still use it once the live port stops being able to answer.
   //
-  // The two fallbacks run only when the live port itself has no opinion,
-  // i.e. no port is wired at all, or the wired port answers `unavailable`
-  // (the live node couldn't be asked, not that it was asked and said no)
-  // -- see `SemanticLiveNodeQueryPort`/`LiveAutogrowGroupAnswer`. This
-  // follower's own memory of an earlier definitive answer for the exact
-  // same node and name is preferred first, since it is real provenance
-  // the node already gave, just not right now; `nameShapeAutogrowGroupOf`
-  // is a last resort, guessing from the name's shape, for a name this
-  // follower has never resolved definitively.
+  // The fallbacks run only when the live port itself has no opinion, i.e.
+  // no port is wired at all, or the wired port answers `unavailable` (the
+  // live node couldn't be asked, not that it was asked and said no) -- see
+  // `SemanticLiveNodeQueryPort`/`LiveAutogrowGroupAnswer`. This follower's
+  // own memory of an earlier definitive answer for the exact same node and
+  // name is preferred first, since it is real provenance the node already
+  // gave, just not right now. Absent that memory too -- including on this
+  // follower's very first reconcile of the node, before it has ever had a
+  // chance to ask the live node anything -- `nodeDefAutogrowGroupOf` reads
+  // the same registration `SemanticLiveNodeQueryPort` would, off the node
+  // TYPE's own static definition rather than a live instance, so it is
+  // equally real provenance and does not depend on the node being live at
+  // all. `nameShapeAutogrowGroupOf` is the true last resort, guessing from
+  // the name's shape, for a name neither of those has ever resolved.
   //
   // Defined here, alongside the memory it reads, rather than inside
   // `prepare` (its only caller): a closure nested in `prepare`'s own body
   // adds its branches to `prepare`'s complexity score, even though none of
-  // them depend on anything `prepare` computes beyond `scope`, which it
-  // takes as a parameter instead.
+  // them depend on anything `prepare` computes beyond `scope`/`nodeType`,
+  // which it takes as parameters instead.
   function resolveAutogrowGroup(
     scope: GraphScope,
     nodeId: NodeId,
+    nodeType: string,
     name: unknown
   ): string | undefined {
     if (typeof name !== 'string') return undefined
     const fallback = (): string | undefined => {
       const memory = rememberedAutogrowGroup(nodeId, name)
-      return memory.remembered ? memory.group : nameShapeAutogrowGroupOf(name)
+      if (memory.remembered) return memory.group
+      const fromDef = nodeDefAutogrowGroupOf(nodeType, name)
+      return fromDef.known ? fromDef.group : nameShapeAutogrowGroupOf(name)
     }
     if (!deps.liveNodes) return fallback()
     const answer = deps.liveNodes.autogrowGroupOf(scope, nodeId, name)
@@ -1067,7 +1141,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             node.state.inputs = mergeInputSlotsByName(
               existing.inputs,
               mutation.payload.inputs,
-              (name) => resolveAutogrowGroup(scope, node.state.id, name)
+              (name) =>
+                resolveAutogrowGroup(
+                  scope,
+                  node.state.id,
+                  node.state.type,
+                  name
+                )
             )
           }
           nodes.set(key, node.state)
@@ -1179,6 +1259,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 resolveAutogrowGroup(
                   scope,
                   topology.targetNodeId,
+                  target.type,
                   candidateName
                 )
             )

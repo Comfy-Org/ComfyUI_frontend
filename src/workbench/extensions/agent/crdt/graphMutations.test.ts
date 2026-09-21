@@ -1,9 +1,11 @@
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
   graphScopeOf,
@@ -58,6 +60,24 @@ function node(id: number, widgets_values: Record<string, unknown> = {}) {
     outputs: [{ name: 'out', type: 'IMAGE', links: [] }],
     properties: { source: 'mint-time' },
     widgets_values
+  }
+}
+
+function mockNodeDef(overrides: Partial<ComfyNodeDef> = {}): ComfyNodeDef {
+  return {
+    name: 'MockNode',
+    display_name: 'Mock Node',
+    category: 'test',
+    python_module: 'test_module',
+    description: 'Test node',
+    input: {},
+    output: [],
+    output_is_list: [],
+    output_name: [],
+    output_node: false,
+    deprecated: false,
+    experimental: false,
+    ...overrides
   }
 }
 
@@ -1802,6 +1822,96 @@ describe('graphMutations', () => {
       ['alpha', toLinkId(61)],
       ['beta', toLinkId(62)]
     ])
+  })
+
+  it("classifies an explicit-names autogrow spare and a numeric DynamicCombo child correctly on this GraphMutations instance's very first reconcile of each node, with pre-existing store state and the live port answering 'unavailable' from the start", () => {
+    // No prior reconcile ever ran on this `graph` before the ones under
+    // test, so `rememberedAutogrowGroups` starts (and stays) empty -- the
+    // "activate/resubscribe" case where this follower's memory has nothing
+    // to fall back on yet, addressed in review comment 4065689832. Absent
+    // `nodeDefAutogrowGroupOf`, both nodes below would fall straight to
+    // `nameShapeAutogrowGroupOf` and get the WRONG answer for each: the
+    // explicit-names spare dropped (the false negative documented on
+    // `nameShapeAutogrowGroupOf`) and the DynamicCombo child kept (the
+    // false positive documented there) -- exactly the bug this whole fix
+    // chain exists to close.
+    useNodeDefStore().updateNodeDefs([
+      mockNodeDef({
+        name: 'AutogrowRefsNode',
+        input: {
+          required: {
+            refs: [
+              'COMFY_AUTOGROW_V3',
+              { template: { input: {}, names: ['a', 'b'] } }
+            ]
+          }
+        }
+      }),
+      // Registered with no autogrow group at all, so its own definition
+      // affirmatively rules out '0.0.0.0' as a member -- it is not merely
+      // "unknown".
+      mockNodeDef({ name: 'DynamicComboNode' })
+    ])
+
+    const graph = mutations({
+      autogrowGroupOf: () => ({ kind: 'unavailable' })
+    })
+
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        type: 'AutogrowRefsNode',
+        inputs: [
+          { name: 'refs.a', type: 'IMAGE', link: null },
+          // Unpropagated growth: grown live, not yet named by the document.
+          { name: 'refs.b', type: 'IMAGE', link: null }
+        ]
+      })
+      batch.addNode({
+        ...node(3),
+        type: 'DynamicComboNode',
+        inputs: [
+          { name: 'keep', type: 'IMAGE', link: null },
+          // `dynamicWidgets.ts`'s COMFY_DYNAMICCOMBO_V3 dotted shape,
+          // coincidentally all-numeric in its final segment.
+          { name: '0.0.0.0', type: 'FLOAT', link: null }
+        ]
+      })
+    })
+
+    expect(
+      graph.batch({ ...context, opId: 'first-reconcile-refs' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          type: 'AutogrowRefsNode',
+          inputs: [{ name: 'refs.a', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+    expect(
+      graph.batch({ ...context, opId: 'first-reconcile-combo' }, (batch) => {
+        batch.reconcileNode({
+          ...node(3),
+          type: 'DynamicComboNode',
+          inputs: [{ name: 'keep', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+
+    const nodes = useNodeDataStore().getGraphNodesFor('root', 'root')
+    const refsTarget = nodes.find(({ id }) => id === toNodeId(2))
+    const comboTarget = nodes.find(({ id }) => id === toNodeId(3))
+    // The spare is a real autogrow member per `AutogrowRefsNode`'s own
+    // definition -- kept even though `refs.b` doesn't end in a digit.
+    expect(refsTarget?.inputs.map(({ name }) => name)).toEqual([
+      'refs.a',
+      'refs.b'
+    ])
+    // The DynamicCombo child is definitively not an autogrow member per
+    // `DynamicComboNode`'s own definition -- dropped even though its
+    // trailing segment is all-digits.
+    expect(comboTarget?.inputs.map(({ name }) => name)).toEqual(['keep'])
   })
 
   it("resolves duplicate-named live occurrences by position when the document's own link is omitted", () => {
