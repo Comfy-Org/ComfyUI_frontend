@@ -168,6 +168,19 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   }
 
   /**
+   * Refills `target` with `source`'s elements without changing `target`'s
+   * identity. A spread into `splice`/`push` turns the element count into an
+   * argument count and can throw `RangeError: Maximum call stack size
+   * exceeded` for a pathologically long slot list; an index-by-index copy
+   * has no such limit.
+   */
+  function refillArray<T>(target: T[], source: readonly T[]): void {
+    const length = source.length
+    for (let i = 0; i < length; i++) target[i] = source[i]
+    target.length = length
+  }
+
+  /**
    * Refills the registered slot arrays in place so every holder of the live
    * array (a node's own `inputs`/`outputs`, a reactive view over them) keeps
    * the identity it was handed. Reassigning the properties instead would
@@ -177,8 +190,8 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     state: NodeState,
     slots: Pick<NodeState, 'inputs' | 'outputs'>
   ): void {
-    state.inputs.splice(0, state.inputs.length, ...slots.inputs)
-    state.outputs.splice(0, state.outputs.length, ...slots.outputs)
+    refillArray(state.inputs, slots.inputs)
+    refillArray(state.outputs, slots.outputs)
   }
 
   function assignNodeFields(state: NodeState, replacement: NodeState): void {

@@ -1086,6 +1086,255 @@ describe('graphMutations', () => {
     ).toBeDefined()
   })
 
+  it("patches only a target slot's presentation fields, never its boundingRect", () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode(node(2))
+    })
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    assert.exists(target)
+    const liveBoundingRect: readonly [number, number, number, number] = [
+      1, 2, 3, 4
+    ]
+    target.inputs[0].boundingRect = liveBoundingRect
+    const [first] = target.inputs
+
+    expect(
+      graph.connect(
+        {
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          targetInputs: [
+            {
+              name: 'in',
+              localized_name: 'Renamed',
+              type: 'IMAGE',
+              link: toLinkId(9)
+            }
+          ]
+        },
+        context
+      )
+    ).toBe(true)
+
+    expect(target.inputs[0]).toBe(first)
+    expect(target.inputs[0].localized_name).toBe('Renamed')
+    // Not the stub `prepareInputSlot` bakes into the serialized side: the
+    // live measurement must survive the patch untouched.
+    expect(target.inputs[0].boundingRect).toEqual([1, 2, 3, 4])
+  })
+
+  it('never resurrects a live output beyond the ones the document supplies', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode({
+        ...node(1),
+        outputs: [
+          { name: 'out-0', type: 'IMAGE', links: [] },
+          { name: 'out-1', type: 'IMAGE', links: [] }
+        ]
+      })
+      batch.addNode(node(2))
+    })
+
+    expect(
+      graph.connect(
+        {
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          originOutputs: [
+            { name: 'out-0', type: 'IMAGE', links: [toLinkId(9)] }
+          ]
+        },
+        context
+      )
+    ).toBe(true)
+
+    const origin = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(1))
+    expect(origin?.outputs).toHaveLength(1)
+    expect(origin?.outputs[0]).toMatchObject({
+      name: 'out-0',
+      links: [toLinkId(9)]
+    })
+  })
+
+  it('keeps two identically named target inputs as distinct live slots', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'dup', type: 'IMAGE', link: null },
+          { name: 'dup', type: 'IMAGE', link: null }
+        ]
+      })
+    })
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    assert.exists(target)
+    const [first, second] = target.inputs
+
+    expect(
+      graph.connect(
+        {
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 1,
+          type: 'IMAGE',
+          targetInputs: [
+            { name: 'dup', type: 'IMAGE', link: null },
+            { name: 'dup', type: 'IMAGE', link: toLinkId(9) }
+          ]
+        },
+        context
+      )
+    ).toBe(true)
+
+    expect(target.inputs).toHaveLength(2)
+    expect(target.inputs[0]).toBe(first)
+    expect(target.inputs[1]).toBe(second)
+    expect(target.inputs.map(({ link }) => link)).toEqual([null, toLinkId(9)])
+  })
+
+  it('grows a live target to match a document that repeats a shared input name more often than live has it', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [{ name: 'dup', type: 'IMAGE', link: null }]
+      })
+    })
+
+    expect(
+      graph.connect(
+        {
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 1,
+          type: 'IMAGE',
+          targetInputs: [
+            { name: 'dup', type: 'IMAGE', link: null },
+            { name: 'dup', type: 'IMAGE', link: toLinkId(9) }
+          ]
+        },
+        context
+      )
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ link }) => link)).toEqual([null, toLinkId(9)])
+  })
+
+  it('drops a live-only linked input the reconciled document no longer names', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'in', type: 'IMAGE', link: null },
+          { name: 'grown', type: 'IMAGE', link: null }
+        ]
+      })
+      batch.connect({
+        id: 9,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 1,
+        type: 'IMAGE',
+        targetInputs: [
+          { name: 'in', type: 'IMAGE', link: null },
+          { name: 'grown', type: 'IMAGE', link: toLinkId(9) }
+        ]
+      })
+    })
+
+    expect(
+      graph.batch({ ...context, opId: 'shrink' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [{ name: 'in', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ name }) => name)).toEqual(['in'])
+  })
+
+  it('keeps an unlinked grown input the document has not caught up to yet', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'in', type: 'IMAGE', link: null },
+          { name: 'grown', type: 'IMAGE', link: null }
+        ]
+      })
+    })
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          title: 'Resynced',
+          inputs: [{ name: 'in', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ name }) => name)).toEqual(['in', 'grown'])
+  })
+
+  it('rejects a reconcile against a malformed live input instead of throwing', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    // @ts-expect-error simulating corrupted live state from an unrelated bug
+    existing.inputs[0] = null
+
+    expect(() =>
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNode({ ...node(1), title: 'Reconciled' })
+      })
+    ).not.toThrow()
+    expect(
+      graph.batch({ ...context, opId: 'resync-2' }, (batch) => {
+        batch.reconcileNode({ ...node(1), title: 'Reconciled' })
+      })
+    ).toBe(false)
+  })
+
   it('does not restore a removed link from an omitted reconciled slot field', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
