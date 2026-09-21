@@ -162,7 +162,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 }))
 
 const mockAppGraph = vi.hoisted(() => ({
-  value: { _nodes: [] as unknown[], nodes: [] as unknown[] }
+  value: { nodes: [] as unknown[] }
 }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -1317,7 +1317,7 @@ describe('useMediaAssetActions', () => {
           props.onConfirm(true)
         }
       )
-      mockAppGraph.value = { _nodes: [], nodes: [] }
+      mockAppGraph.value = { nodes: [] }
     })
 
     it('completes the lifecycle for one confirmed asset record', async () => {
@@ -1531,7 +1531,6 @@ describe('useMediaAssetActions', () => {
         graph: { setDirtyCanvas: vi.fn() }
       })
       mockAppGraph.value = {
-        _nodes: [...successfulNodes, failedNode],
         nodes: [...successfulNodes, failedNode]
       }
       mockScanNodeMediaCandidates.mockImplementation((_graph, node) => [
@@ -1717,7 +1716,7 @@ describe('useMediaAssetActions', () => {
         ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) =>
           props.onConfirm(true)
       )
-      mockAppGraph.value = { _nodes: [], nodes: [] }
+      mockAppGraph.value = { nodes: [] }
     })
 
     it('keeps a failed asset listed and removes it once a retry succeeds', async () => {
