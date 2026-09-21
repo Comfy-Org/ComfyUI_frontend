@@ -10,6 +10,7 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { parseClientDocFrame } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -180,27 +181,16 @@ test.describe(
       await page.routeWebSocket(/\/ws/, (socket) => {
         socketSend = (frame) => socket.send(JSON.stringify(frame))
         socket.onMessage((raw) => {
-          const frame: unknown = JSON.parse(raw.toString())
-          if (typeof frame !== 'object' || frame === null) return
-          const { type, data } = frame as { type?: unknown; data?: unknown }
+          const frame = parseClientDocFrame(raw)
           if (
-            type !== 'doc_subscribe' ||
-            typeof data !== 'object' ||
-            data === null
+            frame?.type !== 'doc_subscribe' ||
+            frame.workflowId !== WORKFLOW_ID ||
+            frame.stateVector === null
           )
             return
-          const { workflow_id, state_vector_b64 } = data as {
-            workflow_id?: unknown
-            state_vector_b64?: unknown
-          }
-          if (
-            workflow_id !== WORKFLOW_ID ||
-            typeof state_vector_b64 !== 'string'
-          )
-            return
-          subscribedTo = workflow_id
+          subscribedTo = frame.workflowId
           socketSend!(host.subscribed())
-          socketSend!(host.catchUp(state_vector_b64))
+          socketSend!(host.catchUp(frame.stateVector))
         })
         socketSend({
           type: 'status',
