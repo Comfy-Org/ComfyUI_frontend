@@ -49,7 +49,7 @@ const { card } = defineProps<{ card: RouterRoadmapCardId }>()
     <rect x="28" y="110" width="68" height="30" rx="10" fill="#4b3e78" />
     <rect x="206" y="56" width="66" height="48" rx="14" fill="#efff45" />
   </svg>
-  <svg v-else viewBox="40 150 640 410" class="size-full" fill="none">
+  <svg v-else viewBox="40 150 716 575" class="size-full" fill="none">
     <rect
       x="2.59808"
       y="-8.9407e-08"
@@ -80,7 +80,7 @@ const { card } = defineProps<{ card: RouterRoadmapCardId }>()
       rx="63.396"
       transform="matrix(0.866025 0.5 0.866025 -0.5 49.0883 397.102)"
       fill="#211927"
-      stroke="#49378B"
+      stroke="#F2FF59"
       stroke-width="3"
     />
     <path
