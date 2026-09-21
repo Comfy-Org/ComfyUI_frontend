@@ -157,9 +157,7 @@
           <NodeWidgets
             v-if="hasRenderableWidgets"
             :node-data
-            :processed-widgets
-            :node-type
-            :can-select-inputs
+            :processed-widget-model
           />
 
           <div
@@ -684,6 +682,11 @@ const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
   () => nodeData,
   () => renderedWidgetIds.value
 )
+const processedWidgetModel = computed(() => ({
+  processedWidgets: processedWidgets.value,
+  nodeType: nodeType.value,
+  canSelectInputs: canSelectInputs.value
+}))
 const hasExpandingWidget = computed(() =>
   processedWidgets.value.some(
     (widget) => widget.visible && shouldExpand(widget.simplified.type)

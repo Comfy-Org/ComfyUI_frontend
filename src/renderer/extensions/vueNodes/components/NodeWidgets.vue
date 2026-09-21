@@ -4,9 +4,9 @@
   </div>
   <WidgetGrid
     v-else
-    :processed-widgets="resolvedProcessedWidgets"
-    :node-type="resolvedNodeType"
-    :can-select-inputs="resolvedCanSelectInputs"
+    :processed-widgets="resolvedProcessedWidgetModel.processedWidgets"
+    :node-type="resolvedProcessedWidgetModel.nodeType"
+    :can-select-inputs="resolvedProcessedWidgetModel.canSelectInputs"
     :node-id="nodeData?.id"
     :class="
       shouldHandleNodePointerEvents
@@ -36,17 +36,17 @@ import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/
 interface NodeWidgetsProps {
   nodeData?: NodeState
   widgetIds?: readonly WidgetId[]
-  processedWidgets?: ProcessedWidget[]
-  nodeType?: string
-  canSelectInputs?: boolean
+  processedWidgetModel?: {
+    processedWidgets: ProcessedWidget[]
+    nodeType: string
+    canSelectInputs: boolean
+  }
 }
 
 const {
   nodeData,
   widgetIds,
-  processedWidgets: suppliedProcessedWidgets,
-  nodeType: suppliedNodeType,
-  canSelectInputs: suppliedCanSelectInputs
+  processedWidgetModel: suppliedProcessedWidgetModel
 } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
@@ -84,13 +84,12 @@ const {
   () => nodeData,
   () => widgetIds
 )
-const resolvedProcessedWidgets = computed(
-  () => suppliedProcessedWidgets ?? computedProcessedWidgets.value
-)
-const resolvedNodeType = computed(
-  () => suppliedNodeType ?? computedNodeType.value
-)
-const resolvedCanSelectInputs = computed(
-  () => suppliedCanSelectInputs ?? computedCanSelectInputs.value
+const resolvedProcessedWidgetModel = computed(
+  () =>
+    suppliedProcessedWidgetModel ?? {
+      processedWidgets: computedProcessedWidgets.value,
+      nodeType: computedNodeType.value,
+      canSelectInputs: computedCanSelectInputs.value
+    }
 )
 </script>
