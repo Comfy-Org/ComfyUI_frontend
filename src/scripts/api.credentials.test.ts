@@ -63,7 +63,10 @@ describe('ComfyApi local API-node credentials', () => {
           'X-Comfy-Client-Id': 'client-a',
           'X-Comfy-Credential-Key': 'credential-key-a'
         }),
-        body: JSON.stringify({ auth_token_comfy_org: 'fresh-token' })
+        body: JSON.stringify({
+          auth_token_comfy_org: 'fresh-token',
+          write_sequence: 1
+        })
       })
     )
     expect(fetchMock).toHaveBeenNthCalledWith(
@@ -139,6 +142,66 @@ describe('ComfyApi local API-node credentials', () => {
     expect(JSON.parse(String(promptRequest?.body))).toMatchObject({
       extra_data: { auth_token_comfy_org: 'token-b' }
     })
+  })
+
+  it('marks a clear issued during an in-flight token write as the later write', async () => {
+    let deliverTokenWrite: (response: Response) => void = () => {}
+    const fetchMock = vi
+      .mocked(global.fetch)
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            deliverTokenWrite = resolve
+          })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ generation: 2 }), { status: 200 })
+      )
+
+    const tokenWrite = api.syncApiNodeCredential('token-a')
+    const clear = api.syncApiNodeCredential(null)
+
+    // The clear must not wait for the token write: logout has to close the
+    // old account's session promptly, so both are on the wire at once and
+    // the backend can see them in either order.
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    await expect(clear).resolves.toBe(true)
+
+    // Reversed arrival: the older token write lands after the newer clear.
+    deliverTokenWrite(
+      new Response(JSON.stringify({ generation: 1 }), { status: 200 })
+    )
+    await expect(tokenWrite).resolves.toBe(false)
+
+    const writeAt = (call: number) =>
+      JSON.parse(String(fetchMock.mock.calls[call][1]?.body))
+    expect(writeAt(0)).toMatchObject({ auth_token_comfy_org: 'token-a' })
+    expect(writeAt(1)).toMatchObject({ auth_token_comfy_org: null })
+    // The sequence is what lets the backend reject the stale write before
+    // storing it, whichever order the two requests arrive in.
+    expect(writeAt(1).write_sequence).toBeGreaterThan(writeAt(0).write_sequence)
+  })
+
+  it('resumes the write sequence for a client session restored after a reload', async () => {
+    vi.mocked(global.fetch).mockResolvedValue(
+      new Response(JSON.stringify({ generation: 1 }), { status: 200 })
+    )
+
+    await expect(api.syncApiNodeCredential('token-a')).resolves.toBe(true)
+
+    // A reload re-presents the stored credential key, and the backend still
+    // holds the session while a prompt is bound to it.
+    const reloaded = new ComfyApi()
+    reloaded.clientId = 'client-a'
+    Reflect.set(reloaded, 'credentialKey', 'credential-key-a')
+    reloaded.serverFeatureFlags.value = api.serverFeatureFlags.value
+
+    await expect(reloaded.syncApiNodeCredential('token-b')).resolves.toBe(true)
+
+    const fetchMock = vi.mocked(global.fetch)
+    const sequenceAt = (call: number) =>
+      JSON.parse(String(fetchMock.mock.calls[call][1]?.body)).write_sequence
+    expect(sequenceAt(1)).toBeGreaterThan(sequenceAt(0))
   })
 
   it('rejects a capability whose handshake identifier is not the one sent', async () => {

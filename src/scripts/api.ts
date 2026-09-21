@@ -142,6 +142,7 @@ interface QueuePromptRequestBody {
 
 const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
 const API_NODE_CREDENTIAL_KEY_PREFIX = 'Comfy.ApiNode.CredentialKey:'
+const API_NODE_CREDENTIAL_SEQUENCE_PREFIX = 'Comfy.ApiNode.CredentialSeq:'
 
 const WS_CREDENTIAL_AUTH_MESSAGE = 'credential_auth'
 
@@ -161,6 +162,7 @@ interface CredentialSyncSession {
   credentialKey: string
   token: string | null
   generation: number
+  writeSequence: number
 }
 
 interface FetchApiOptions extends RequestInit {
@@ -527,6 +529,15 @@ export class ComfyApi extends EventTarget {
     promise: Promise<boolean>
   }
   private credentialSyncGeneration = 0
+  /**
+   * Monotonic write number sent with every credential update. Two updates can
+   * be in flight at once — a token refresh and the clear issued on logout do
+   * not wait for each other — so arrival order does not imply issue order.
+   * The backend stores the sequence it accepted and rejects any write that is
+   * not greater, which is what stops a late old-token write from overwriting
+   * a newer clear.
+   */
+  private credentialWriteSequence = 0
 
   constructor() {
     super()
@@ -574,11 +585,49 @@ export class ComfyApi extends EventTarget {
     }
   }
 
+  /**
+   * Allocates the next write number for this client session, resuming the
+   * count a reload would otherwise restart. The backend keeps a session's
+   * registry entry while a prompt is still bound to it, so a page reload can
+   * re-present the stored credential key to a backend that still remembers
+   * the last sequence it accepted; restarting at 1 there would make every
+   * further update look stale and lock the session out of refreshing.
+   */
+  private nextCredentialWriteSequence(clientId: string): number {
+    let resumed = 0
+    try {
+      const stored = Number(
+        sessionStorage.getItem(
+          `${API_NODE_CREDENTIAL_SEQUENCE_PREFIX}${clientId}`
+        )
+      )
+      if (Number.isSafeInteger(stored) && stored > 0) resumed = stored
+    } catch {
+      // sessionStorage can be unavailable in privacy-restricted contexts.
+    }
+
+    const next = Math.max(this.credentialWriteSequence, resumed) + 1
+    this.credentialWriteSequence = next
+    try {
+      sessionStorage.setItem(
+        `${API_NODE_CREDENTIAL_SEQUENCE_PREFIX}${clientId}`,
+        String(next)
+      )
+    } catch {
+      // Writes still order correctly within this page; only a reload would
+      // restart the count.
+    }
+    return next
+  }
+
   private clearCredentialKey(clientId?: string): void {
     if (clientId) {
       try {
         sessionStorage.removeItem(
           `${API_NODE_CREDENTIAL_KEY_PREFIX}${clientId}`
+        )
+        sessionStorage.removeItem(
+          `${API_NODE_CREDENTIAL_SEQUENCE_PREFIX}${clientId}`
         )
       } catch {
         // sessionStorage can be unavailable in privacy-restricted contexts.
@@ -634,7 +683,8 @@ export class ComfyApi extends EventTarget {
     session: CredentialSyncSession,
     endpoint: string
   ): Promise<boolean> {
-    const { clientId, credentialKey, token, generation } = session
+    const { clientId, credentialKey, token, generation, writeSequence } =
+      session
     try {
       const response = await this.fetchApi(endpoint, {
         method: 'POST',
@@ -643,7 +693,10 @@ export class ComfyApi extends EventTarget {
           'X-Comfy-Client-Id': clientId,
           'X-Comfy-Credential-Key': credentialKey
         },
-        body: JSON.stringify({ auth_token_comfy_org: token }),
+        body: JSON.stringify({
+          auth_token_comfy_org: token,
+          write_sequence: writeSequence
+        }),
         timeoutMs: 5000
       })
       if (!response.ok) return this.discardSupersededSync(generation)
@@ -697,7 +750,8 @@ export class ComfyApi extends EventTarget {
       clientId,
       credentialKey,
       token,
-      generation: ++this.credentialSyncGeneration
+      generation: ++this.credentialSyncGeneration,
+      writeSequence: this.nextCredentialWriteSequence(clientId)
     }
     const promise = this.pushCredentialToken(session, capability.endpoint)
     const pending = { clientId, credentialKey, token, promise }

@@ -150,6 +150,10 @@ describe('ComfyApi realtime socket reset', () => {
       'Comfy.ApiNode.CredentialKey:client-from-account-a',
       'credential-key-a'
     )
+    sessionStorage.setItem(
+      'Comfy.ApiNode.CredentialSeq:client-from-account-a',
+      '7'
+    )
     await api.resetSocket()
     api.clientId = 'client-from-account-a'
 
@@ -161,6 +165,11 @@ describe('ComfyApi realtime socket reset', () => {
     expect(
       sessionStorage.getItem(
         'Comfy.ApiNode.CredentialKey:client-from-account-a'
+      )
+    ).toBeNull()
+    expect(
+      sessionStorage.getItem(
+        'Comfy.ApiNode.CredentialSeq:client-from-account-a'
       )
     ).toBeNull()
   })
