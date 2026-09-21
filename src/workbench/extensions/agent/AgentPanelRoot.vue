@@ -179,6 +179,7 @@ const workflowResolver = useAgentWorkflowResolver({
 })
 const {
   refreshCloudWorkflowIds,
+  forgetCloudWorkflowId,
   cloudIdFor,
   boundOrOpenWorkflowFor,
   storedWorkflowFor,
@@ -275,6 +276,7 @@ const graphMutationsByWorkflow = new Map<
 >()
 const liveWidgets = createLiveWidgetProjection({
   getRootGraph: () => app.rootGraphOrUndefined,
+  getCanvas: () => app.canvas,
   markDirty: () => app.canvas?.setDirty(true)
 })
 const graphMutations = (workflowId: string) => {
@@ -326,6 +328,30 @@ const graphMutations = (workflowId: string) => {
             timestamp
           }))
         )
+      }
+    },
+    placement: {
+      nodeBounds(scope, nodeId) {
+        const layout = layoutStore.getNodeLayout(scope.rootGraphId, nodeId)
+        return layout
+          ? {
+              x: layout.position.x,
+              y: layout.position.y,
+              width: layout.size.width,
+              height: layout.size.height
+            }
+          : null
+      },
+      viewportBounds(scope) {
+        const canvas = canvasStore.canvas
+        if (
+          !canvas ||
+          String(canvas.graph?.id) !== String(scope.owningGraphId)
+        ) {
+          return null
+        }
+        const [x, y, width, height] = canvas.ds.visible_area
+        return { x, y, width, height }
       }
     },
     liveWidgets
@@ -546,6 +572,7 @@ const {
     prepare: async () => {
       await refreshCloudWorkflowIds()
     },
+    disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
     draft: targetWorkflowDraft
@@ -814,10 +841,20 @@ const history = useAgentChatHistoryStore()
 const { copy } = useClipboard({ legacy: true })
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
+  const message = entries.value.find(
+    (entry) => entry.role === 'assistant' && entry.id === turnId
+  )
+  const workflowId =
+    message?.role === 'assistant'
+      ? (message.parts
+          .flatMap((part) => (part.type === 'tabLink' ? [part.workflowId] : []))
+          .at(-1) ?? null)
+      : null
+
   useTelemetry()?.trackAgentMessageFeedback({
     message_id: turnId,
     vote,
-    workflow_id: boundWorkflowId.value
+    workflow_id: workflowId
   })
 }
 
@@ -946,6 +983,10 @@ function onNewChat(): void {
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
+  // A new chat targets whatever tab is on screen right now, not the previous
+  // chat's target - unlike onSelectHistory(), which resets to 'uninitialized'
+  // so restoreTarget() can re-apply the loaded thread's own binding.
+  agentPanelStore.setWorkflowTarget(workflowStore.activeWorkflow)
   newChat()
 }
 

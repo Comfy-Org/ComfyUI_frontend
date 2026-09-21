@@ -29,6 +29,7 @@ import {
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
 import { applyLiveWidgetValue } from './liveWidgetProjection'
 
@@ -159,7 +160,8 @@ function remoteMutations(scope: GraphScope) {
         })
       },
       deleteNodes: vi.fn()
-    }
+    },
+    placement: inertPlacementPort
   })
 }
 

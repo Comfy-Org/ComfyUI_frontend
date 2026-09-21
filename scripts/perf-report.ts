@@ -168,7 +168,7 @@ function computeCV(stats: MetricStats): number {
 function formatValue(value: number, unit: string): string {
   if (unit === 'ms') return `${value.toFixed(0)}ms`
   if (unit === 'bytes') return formatBytes(value)
-  return `${value.toFixed(0)}`
+  return value.toFixed(0)
 }
 
 function formatDelta(pct: number | null): string {
