@@ -45,11 +45,13 @@ const itemClass =
           :class="itemClass"
           @select.prevent="void copy(asset.svg)"
         >
-          <template v-if="copied && copiedSvg === asset.svg">
-            <Check class="size-4" aria-hidden="true" />
-            {{ t('nav.copied', locale) }}
-          </template>
-          <template v-else>{{ asset.label }}</template>
+          <span role="status" aria-live="polite">
+            <template v-if="copied && copiedSvg === asset.svg">
+              <Check class="size-4" aria-hidden="true" />
+              {{ t('nav.copied', locale) }}
+            </template>
+            <template v-else>{{ asset.label }}</template>
+          </span>
         </ContextMenuItem>
         <ContextMenuItem as-child>
           <a :href="routes.brand" :class="itemClass">
