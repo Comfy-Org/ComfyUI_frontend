@@ -285,7 +285,7 @@ describe('Primitive numeric widget options', () => {
       expect(getWidgetStep(widget.options)).toBeGreaterThan(0)
     })
 
-    it.for([0, -1, '0.5'])(
+    it.for([0, -1, Number.POSITIVE_INFINITY, '0.5'])(
       'ignores an unusable step property rather than adopting it (%s)',
       (step) => {
         const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
