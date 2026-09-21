@@ -160,7 +160,6 @@ test.describe('Workflow failure recovery', () => {
     await expect(tab.getOpenedItem('rename')).toBeVisible()
     await expect(tab.getOpenedItem('renamed')).toBeHidden()
 
-    test.fail(true, 'A failed workflow rename has no specific error message')
     await expect(comfyPage.toast.toastErrors).toContainText(
       'Failed to rename workflow. Please try again.',
       { timeout: 1000 }
