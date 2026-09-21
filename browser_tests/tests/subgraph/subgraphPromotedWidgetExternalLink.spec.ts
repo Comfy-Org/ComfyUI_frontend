@@ -152,7 +152,11 @@ test.describe(
       ).toBeVisible()
     })
 
-    test('hides the text control after a String is wired into a plain CLIPTextEncode', async ({
+    // cloud/1.54 still renders the disabled textarea for a connected plain
+    // input. Hiding it comes from #17576 (WidgetGrid retains labels for
+    // connected inputs), which is not on this release line yet. Re-enable
+    // once #17576 is backported to cloud/1.54.
+    test.skip('hides the text control after a String is wired into a plain CLIPTextEncode', async ({
       comfyPage
     }) => {
       const node = comfyPage.vueNodes.getNodeLocator(PLAIN_TEXT_ENCODE_ID)

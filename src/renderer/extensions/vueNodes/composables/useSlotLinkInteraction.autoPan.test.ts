@@ -204,10 +204,6 @@ vi.mock('@/lib/litegraph/src/LLink', () => ({
   slotFloatingLinks: () => []
 }))
 
-vi.mock('@/lib/litegraph/src/types/globalEnums', () => ({
-  LinkDirection: { LEFT: 0, RIGHT: 1, NONE: -1 }
-}))
-
 vi.mock('@/utils/rafBatch', () => ({
   createRafBatch: (fn: () => void) => ({
     schedule: () => {},
