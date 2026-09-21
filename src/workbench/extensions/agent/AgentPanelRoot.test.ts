@@ -259,17 +259,20 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import {
+  attachMintPortWiring,
+  notifyMintPortsBeforeGraphLoad
+} from './crdt/mintPortWiring'
 import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
 
 const mintPortWiringDeps = vi.hoisted(() => ({
   current: null as MintPortWiringDeps | null
 }))
-vi.mock(import('./crdt/mintPortWiring'), () => ({
-  attachMintPortWiring: (deps: MintPortWiringDeps) => {
-    mintPortWiringDeps.current = deps
-    return fromPartial<MintPortWiring>({ detach: vi.fn() })
-  }
-}))
+vi.mock(import('./crdt/mintPortWiring'), { spy: true })
+vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
+  mintPortWiringDeps.current = deps
+  return fromPartial<MintPortWiring>({ detach: vi.fn() })
+})
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
@@ -340,6 +343,10 @@ beforeEach(() => {
   appMock.isGraphReady = false
   appMock.canvas = undefined
   mintPortWiringDeps.current = null
+  vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
+    mintPortWiringDeps.current = deps
+    return fromPartial<MintPortWiring>({ detach: vi.fn() })
+  })
   workflowService.saveWorkflow.mockClear()
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
@@ -6678,5 +6685,11 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-42-rotated')
     )
+  })
+})
+
+describe('AgentPanelRoot mintPortWiring module mock', () => {
+  it("keeps the module's other exports real instead of undefined (regression)", () => {
+    expect(() => notifyMintPortsBeforeGraphLoad()).not.toThrow()
   })
 })
