@@ -1,36 +1,32 @@
 <template>
-  <Teleport to="body">
-    <FocusScope
-      v-if="galleryVisible"
-      as-child
-      trapped
-      loop
-      @mount-auto-focus.prevent
-      @unmount-auto-focus.prevent
-    >
-      <div
-        ref="dialogRef"
-        role="dialog"
+  <DialogRoot :open="isOpen" @update:open="setOpen">
+    <DialogPortal>
+      <DialogOverlay class="bg-black/90" />
+      <DialogContent
+        v-if="activeItem"
         aria-modal="true"
-        :aria-label="$t('g.gallery')"
-        tabindex="-1"
-        class="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 outline-none"
-        data-mask
+        :aria-describedby="undefined"
+        class="fixed inset-0 z-1700 flex items-center justify-center outline-none"
         @mousedown.capture="onDialogGestureCapture"
         @click.capture="onDialogGestureCapture"
-        @mousedown="onMaskMouseDown"
-        @mouseup="onMaskMouseUp"
-        @keydown.stop="handleKeyDown"
+        @mousedown.self="onBackdropMouseDown"
+        @mouseup="onBackdropMouseUp"
+        @keydown="handleKeyDown"
       >
-        <Button
-          variant="secondary"
-          size="icon-lg"
-          class="absolute top-4 right-4 z-10 rounded-full"
-          :aria-label="$t('g.close')"
-          @click="close"
-        >
-          <i class="icon-[lucide--x] size-5" />
-        </Button>
+        <VisuallyHidden>
+          <DialogTitle>{{ $t('g.gallery') }}</DialogTitle>
+        </VisuallyHidden>
+
+        <DialogClose as-child>
+          <Button
+            variant="secondary"
+            size="icon-lg"
+            class="absolute top-4 right-4 z-10 rounded-full"
+            :aria-label="$t('g.close')"
+          >
+            <i class="icon-[lucide--x] size-5" />
+          </Button>
+        </DialogClose>
 
         <Button
           v-if="hasMultiple"
@@ -38,13 +34,13 @@
           size="icon-lg"
           class="fixed top-1/2 left-4 z-10 -translate-y-1/2 rounded-full"
           :aria-label="$t('g.previous')"
-          @click="navigateImage(-1)"
+          @click="navigate(-1)"
         >
           <i class="icon-[lucide--chevron-left] size-6" />
         </Button>
 
         <div class="flex max-h-full max-w-full items-center justify-center">
-          <MediaLightboxItem v-if="activeItem" :item="activeItem" />
+          <MediaLightboxItem :item="activeItem" />
         </div>
 
         <Button
@@ -53,73 +49,68 @@
           size="icon-lg"
           class="fixed top-1/2 right-4 z-10 -translate-y-1/2 rounded-full"
           :aria-label="$t('g.next')"
-          @click="navigateImage(1)"
+          @click="navigate(1)"
         >
           <i class="icon-[lucide--chevron-right] size-6" />
         </Button>
-      </div>
-    </FocusScope>
-  </Teleport>
+      </DialogContent>
+    </DialogPortal>
+  </DialogRoot>
 </template>
 
 <script setup lang="ts">
-import { FocusScope } from 'reka-ui'
-import { computed, nextTick, ref, watch } from 'vue'
+import {
+  DialogClose,
+  DialogContent,
+  DialogRoot,
+  DialogTitle,
+  VisuallyHidden
+} from 'reka-ui'
+import { computed, watch } from 'vue'
 
 import MediaLightboxItem from '@/components/common/MediaLightboxItem.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
+import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
-const emit = defineEmits<{
-  (e: 'update:activeIndex', value: number): void
+const { items } = defineProps<{
+  readonly items: readonly AugmentedResultItem[]
 }>()
+const activeIndex = defineModel<number | null>('activeIndex', {
+  required: true
+})
 
-const { allGalleryItems, activeIndex } = defineProps<{
-  readonly allGalleryItems: AugmentedResultItem[]
-  readonly activeIndex: number
-}>()
-
-const galleryVisible = ref(false)
-const dialogRef = ref<HTMLElement>()
-let previouslyFocusedElement: HTMLElement | null = null
 let openingGestureActive = false
-const hasMultiple = computed(() => allGalleryItems.length > 1)
-const activeItem = computed(() => allGalleryItems[activeIndex])
+let backdropPressed = false
+const activeItem = computed(() =>
+  activeIndex.value === null ? undefined : items[activeIndex.value]
+)
+const isOpen = computed(() => activeItem.value !== undefined)
+const hasMultiple = computed(() => items.length > 1)
 
 watch(
-  () => activeIndex,
-  (index, previousIndex) => {
-    galleryVisible.value = index !== -1
-    if (index === -1) {
+  [activeIndex, () => items.length],
+  ([index], [previousIndex]) => {
+    if (index === null || !items[index]) {
       openingGestureActive = false
-      const opener = previouslyFocusedElement
-      previouslyFocusedElement = null
-      void nextTick(() => {
-        if (opener?.isConnected) opener.focus()
-      })
+      if (index !== null) activeIndex.value = null
       return
     }
-    if (previousIndex !== undefined && previousIndex !== -1) return
-    openingGestureActive = true
-    const opener = document.activeElement
-    previouslyFocusedElement = opener instanceof HTMLElement ? opener : null
-    void nextTick(() => dialogRef.value?.focus())
+    if (previousIndex === null) openingGestureActive = true
   },
   { immediate: true }
 )
 
-function close() {
-  galleryVisible.value = false
-  emit('update:activeIndex', -1)
+function setOpen(open: boolean) {
+  if (!open) activeIndex.value = null
 }
 
-function navigateImage(direction: number) {
-  const newIndex =
-    (activeIndex + direction + allGalleryItems.length) % allGalleryItems.length
-  emit('update:activeIndex', newIndex)
+function navigate(direction: number) {
+  if (activeIndex.value === null || items.length === 0) return
+  activeIndex.value =
+    (activeIndex.value + direction + items.length) % items.length
 }
-
-let maskMouseDownTarget: EventTarget | null = null
 
 function onDialogGestureCapture(event: MouseEvent) {
   if (!openingGestureActive) return
@@ -131,31 +122,25 @@ function onDialogGestureCapture(event: MouseEvent) {
   openingGestureActive = false
 }
 
-function onMaskMouseDown(event: MouseEvent) {
-  maskMouseDownTarget = event.target
+function onBackdropMouseDown() {
+  backdropPressed = true
 }
 
-function onMaskMouseUp(event: MouseEvent) {
-  if (
-    maskMouseDownTarget === event.target &&
-    event.target instanceof Element &&
-    event.target.hasAttribute('data-mask')
-  ) {
-    close()
+function onBackdropMouseUp(event: MouseEvent) {
+  if (backdropPressed && event.target === event.currentTarget) {
+    activeIndex.value = null
   }
+  backdropPressed = false
 }
 
 function handleKeyDown(event: KeyboardEvent) {
   const actions: Record<string, () => void> = {
-    ArrowLeft: () => navigateImage(-1),
-    ArrowRight: () => navigateImage(1),
-    Escape: () => close()
+    ArrowLeft: () => navigate(-1),
+    ArrowRight: () => navigate(1)
   }
-
   const action = actions[event.key]
-  if (action) {
-    event.preventDefault()
-    action()
-  }
+  if (!action) return
+  event.preventDefault()
+  action()
 }
 </script>

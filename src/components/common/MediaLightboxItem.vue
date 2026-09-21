@@ -1,21 +1,21 @@
 <template>
-  <KeepAlive :max="RETAINED_VIDEO_COUNT" include="ResultVideo">
-    <ComfyImage
-      v-if="isImageResult(item)"
-      :key="resultItemUrl(item)"
-      :src="resultItemUrl(item)"
-      :contain="false"
-      :alt="item.filename"
-      class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
-    />
+  <KeepAlive :max="RETAINED_VIDEO_COUNT">
     <ResultVideo
-      v-else-if="isVideoResult(item)"
+      v-if="isVideoResult(item)"
       :key="resultItemUrl(item)"
       :result="item"
     />
-    <ResultAudio v-else-if="isAudioResult(item)" :result="item" />
-    <ResultText v-else-if="isTextResult(item)" :result="item" />
   </KeepAlive>
+  <ComfyImage
+    v-if="isImageResult(item)"
+    :key="resultItemUrl(item)"
+    :src="resultItemUrl(item)"
+    :contain="false"
+    :alt="item.filename"
+    class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
+  />
+  <ResultAudio v-if="isAudioResult(item)" :result="item" />
+  <ResultText v-if="isTextResult(item)" :result="item" />
 </template>
 
 <script setup lang="ts">

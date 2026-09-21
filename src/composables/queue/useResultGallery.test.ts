@@ -83,7 +83,7 @@ describe('useResultGallery', () => {
     await onViewItem(createJobViewItem('job-missing'))
 
     expect(galleryItems.value).toEqual([])
-    expect(galleryActiveIndex.value).toBe(-1)
+    expect(galleryActiveIndex.value).toBeNull()
   })
 
   it('activates the index that matches the viewed preview URL', async () => {

@@ -268,11 +268,13 @@ describe('nodeOutputStore getNodeImages', () => {
       createMockOutputs(images)
     )
 
-    expect(store.getNodeImages(node)?.map(({ item }) => item)).toEqual(images)
+    expect(store.getNodeImages(node)?.map(({ result }) => result)).toEqual(
+      images
+    )
     expect(store.getNodeImages(node)).toHaveLength(images.length)
   })
 
-  it('preserves null entries so positions still line up with the URLs', () => {
+  it('keeps URL positions while omitting missing result records', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 1 })
     store.setNodeOutputsByExecutionId(
@@ -282,7 +284,7 @@ describe('nodeOutputStore getNodeImages', () => {
 
     const images = store.getNodeImages(node)
     expect(images).toHaveLength(2)
-    expect(images?.[0].item).toBeNull()
+    expect(images?.[0]).toEqual({ url: expect.any(String) })
   })
 
   it('omits records while live previews are showing', () => {
@@ -307,7 +309,7 @@ describe('nodeOutputStore getNodeImages', () => {
     )
 
     expect(
-      store.getNodeImagesByExecutionId(executionId, node)?.[0].item
+      store.getNodeImagesByExecutionId(executionId, node)?.[0].result
     ).toEqual({ filename: 'a.png', type: 'output' })
 
     store.setNodePreviewsByExecutionId(executionId, ['blob:live'])

@@ -66,7 +66,7 @@
         />
         <MediaLightbox
           v-model:active-index="galleryActiveIndex"
-          :all-gallery-items="galleryItems"
+          :items="galleryItems"
         />
       </div>
     </template>

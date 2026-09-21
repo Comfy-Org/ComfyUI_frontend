@@ -65,7 +65,7 @@ export const MultipleImages: Story = {
         </div>
         <MediaLightbox
           v-model:active-index="activeIndex"
-          :all-gallery-items="items"
+          :items="items"
         />
       </div>
     `
@@ -76,7 +76,7 @@ export const SingleImage: Story = {
   render: () => ({
     components: { MediaLightbox },
     setup() {
-      const activeIndex = ref(-1)
+      const activeIndex = ref<number | null>(null)
       const items = SAMPLE_IMAGES.slice(0, 1)
       return { activeIndex, items }
     },
@@ -93,7 +93,7 @@ export const SingleImage: Story = {
         </button>
         <MediaLightbox
           v-model:active-index="activeIndex"
-          :all-gallery-items="items"
+          :items="items"
         />
       </div>
     `
@@ -104,14 +104,14 @@ export const Closed: Story = {
   render: () => ({
     components: { MediaLightbox },
     setup() {
-      const activeIndex = ref(-1)
+      const activeIndex = ref<number | null>(null)
       const items = SAMPLE_IMAGES
       return { activeIndex, items }
     },
     template: `
       <div>
         <p class="mb-4 text-sm text-muted-foreground">
-          Lightbox is closed (activeIndex = -1). Click a button to open.
+          Lightbox is closed. Click a button to open.
         </p>
         <div class="flex gap-2">
           <button
@@ -125,7 +125,7 @@ export const Closed: Story = {
         </div>
         <MediaLightbox
           v-model:active-index="activeIndex"
-          :all-gallery-items="items"
+          :items="items"
         />
       </div>
     `

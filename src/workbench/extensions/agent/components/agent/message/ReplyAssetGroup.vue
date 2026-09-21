@@ -61,7 +61,7 @@ const galleryAssets = computed(() =>
 const galleryItems = computed(() =>
   galleryAssets.value.map(replyAssetResultItem)
 )
-const galleryIndex = ref(-1)
+const galleryIndex = ref<number | null>(null)
 
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
@@ -251,11 +251,6 @@ function stopPreview(event: Event): void {
       </Button>
     </div>
 
-    <MediaLightbox
-      v-if="galleryIndex !== -1"
-      :all-gallery-items="galleryItems"
-      :active-index="galleryIndex"
-      @update:active-index="galleryIndex = $event"
-    />
+    <MediaLightbox v-model:active-index="galleryIndex" :items="galleryItems" />
   </div>
 </template>

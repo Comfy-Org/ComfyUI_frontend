@@ -1,9 +1,9 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { ref, shallowRef } from 'vue'
 
 import MediaLightbox from '@/components/common/MediaLightbox.vue'
-import { useMediaGalleryStore } from '@/stores/mediaGalleryStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
@@ -17,7 +17,8 @@ const meta: Meta<typeof MediaAssetCard> = {
     (_story, context) => ({
       components: { MediaLightbox },
       setup() {
-        const galleryStore = useMediaGalleryStore()
+        const galleryItems = shallowRef<AugmentedResultItem[]>([])
+        const galleryIndex = ref<number | null>(null)
         const args = context.args as {
           onZoom?: (asset: AssetItem) => void
         }
@@ -31,16 +32,17 @@ const meta: Meta<typeof MediaAssetCard> = {
             mediaType: kind === 'image' ? 'images' : kind,
             url: asset.preview_url || ''
           }
-          galleryStore.openItems([item], item)
+          galleryItems.value = [item]
+          galleryIndex.value = 0
         }
-        return { galleryStore }
+        return { galleryIndex, galleryItems }
       },
       template: `
         <div>
           <story />
           <MediaLightbox
-            v-model:active-index="galleryStore.activeIndex"
-            :all-gallery-items="galleryStore.items"
+            v-model:active-index="galleryIndex"
+            :items="galleryItems"
           />
         </div>
       `

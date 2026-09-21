@@ -92,7 +92,7 @@ function arrangePromotedPreview(options: ArrangeOptions = {}) {
   seedOutputs(setup.subgraph.id, [id])
   const images = urls.map((url) => ({
     url,
-    item: { filename: 'output.png' }
+    result: { filename: 'output.png' }
   }))
   vi.mocked(useNodeOutputStore().getNodeImages).mockReturnValue(images)
   vi.mocked(useNodeOutputStore().getNodeImagesByExecutionId).mockReturnValue(
@@ -306,7 +306,7 @@ describe(usePromotedPreviews, () => {
     vi.mocked(useNodeOutputStore().getNodeImages).mockImplementation(
       (node: LGraphNode) =>
         node === leafNode
-          ? [{ url: mockUrls[0], item: { filename: 'output.png' } }]
+          ? [{ url: mockUrls[0], result: { filename: 'output.png' } }]
           : []
     )
 
@@ -318,7 +318,7 @@ describe(usePromotedPreviews, () => {
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
-        images: [{ url: mockUrls[0], item: { filename: 'output.png' } }]
+        images: [{ url: mockUrls[0], result: { filename: 'output.png' } }]
       }
     ])
   })
@@ -366,7 +366,7 @@ describe(usePromotedPreviews, () => {
           ? [
               {
                 url: '/view?filename=leaf.png',
-                item: { filename: 'leaf.png' }
+                result: { filename: 'leaf.png' }
               }
             ]
           : []
@@ -377,7 +377,7 @@ describe(usePromotedPreviews, () => {
     )
 
     expect(promotedPreviews.value[0]).toMatchObject({
-      images: [{ item: { filename: 'leaf.png' } }]
+      images: [{ result: { filename: 'leaf.png' } }]
     })
   })
 
@@ -391,14 +391,14 @@ describe(usePromotedPreviews, () => {
     vi.mocked(outputStore.getNodeImagesByExecutionId).mockReturnValue([
       {
         url: '/view?filename=execution.png',
-        item: { filename: 'execution.png' }
+        result: { filename: 'execution.png' }
       }
     ])
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
 
     expect(promotedPreviews.value[0]).toMatchObject({
-      images: [{ item: { filename: 'execution.png' } }]
+      images: [{ result: { filename: 'execution.png' } }]
     })
   })
 
@@ -421,7 +421,7 @@ describe(usePromotedPreviews, () => {
     expect(promotedPreviews.value[0]).toMatchObject({
       images: [{ url: 'blob:live' }]
     })
-    expect(promotedPreviews.value[0]).not.toHaveProperty('images.0.item')
+    expect(promotedPreviews.value[0]).not.toHaveProperty('images.0.result')
   })
 
   it('keeps promoted previews distinct for multiple instances of a shared subgraph definition', () => {

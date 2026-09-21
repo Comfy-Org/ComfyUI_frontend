@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
+    data-testid="image-preview"
     class="image-preview group relative flex size-full min-w-16 flex-col justify-center px-2"
     :style="{ minHeight: `${IMAGE_PREVIEW_CONTENT_MIN_HEIGHT}px` }"
     @keydown="handleKeyDown"
@@ -226,6 +227,7 @@
       />
     </div>
   </div>
+  <MediaLightbox v-model:active-index="lightboxIndex" :items="lightboxItems" />
 </template>
 
 <script setup lang="ts">
@@ -234,10 +236,10 @@ import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import MediaLightbox from '@/components/common/MediaLightbox.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from '@/renderer/extensions/vueNodes/components/imagePreviewLayout'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import { useMediaGalleryStore } from '@/stores/mediaGalleryStore'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -267,7 +269,6 @@ const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const toastStore = useToastStore()
-const galleryStore = useMediaGalleryStore()
 
 const actionButtonClass =
   'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background shadow-interface transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
@@ -291,6 +292,8 @@ const imageError = ref(false)
 const showLoader = ref(false)
 const imageAspectRatio = ref(1)
 const gestureStartedOnControl = ref(false)
+const lightboxIndex = ref<number | null>(null)
+const lightboxItems = ref<AugmentedResultItem[]>([])
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -336,6 +339,7 @@ watch(
 
     // Reset loading and error states when URLs change
     actualDimensions.value = null
+    lightboxIndex.value = null
 
     viewMode.value = defaultViewMode(newUrls)
     imageError.value = false
@@ -433,11 +437,11 @@ function isTransientUrl(url: string): boolean {
   return url.startsWith('blob:') || url.startsWith('data:')
 }
 
-function toGalleryItem({ url, item }: NodeImage): AugmentedResultItem {
+function toGalleryItem({ url, result }: NodeImage): AugmentedResultItem {
   return {
-    ...item,
-    filename: item?.filename ?? getImageFilenameFromUrl(url) ?? '',
-    subfolder: item?.subfolder ?? '',
+    ...result,
+    filename: result?.filename ?? getImageFilenameFromUrl(url) ?? '',
+    subfolder: result?.subfolder ?? '',
     mediaType: 'images',
     nodeId: nodeId ?? '',
     url: toFullResolutionUrl(url)
@@ -457,9 +461,10 @@ function openInLightbox(index: number) {
   const renderable = images.filter(
     ({ url }) => !isHdrImageUrl(url) && !isTransientUrl(url)
   )
-  const galleryItems = renderable.map(toGalleryItem)
-  const selectedItem = galleryItems[renderable.indexOf(selectedImage)]
-  if (selectedItem) galleryStore.openItems(galleryItems, selectedItem)
+  const selectedIndex = renderable.indexOf(selectedImage)
+  if (selectedIndex === -1) return
+  lightboxItems.value = renderable.map(toGalleryItem)
+  lightboxIndex.value = selectedIndex
 }
 
 function handleRepeatedClick(event: MouseEvent) {

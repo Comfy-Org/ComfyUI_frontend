@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { fromAny } from '@total-typescript/shoehorn'
 
@@ -153,7 +153,8 @@ const i18n = createI18n({
   messages: {
     en: {
       g: {
-        error: 'Error'
+        error: 'Error',
+        resizeFromBottomRight: 'Resize from bottom right'
       },
       rightSidePanel: {
         showAdvancedShort: 'Show Advanced',
@@ -479,7 +480,10 @@ describe('LGraphNode', () => {
       images: [{ filename: 'output.png', type: 'output' }]
     }
     vi.mocked(nodeOutputStore.getNodeImages).mockReturnValue([
-      { url: '/output.png', item: { filename: 'output.png', type: 'output' } }
+      {
+        url: '/output.png',
+        result: { filename: 'output.png', type: 'output' }
+      }
     ])
 
     renderLGraphNode({
@@ -501,7 +505,7 @@ describe('LGraphNode', () => {
     vi.mocked(nodeOutputStore.getNodeImages).mockReturnValue([
       {
         url: '/output.png',
-        item: { filename: 'output.png', subfolder: 'sub', type: 'output' }
+        result: { filename: 'output.png', subfolder: 'sub', type: 'output' }
       }
     ])
 
@@ -512,7 +516,7 @@ describe('LGraphNode', () => {
       images: [
         {
           url: '/output.png',
-          item: { filename: 'output.png', subfolder: 'sub', type: 'output' }
+          result: { filename: 'output.png', subfolder: 'sub', type: 'output' }
         }
       ]
     })
@@ -735,19 +739,19 @@ describe('LGraphNode', () => {
     })
 
     it('should not render resize handle for reroute nodes', () => {
-      const { container } = renderLGraphNode({
-        nodeData: mockRerouteNodeData
-      })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelector('[role="button"][aria-label]')).toBeNull()
+      renderLGraphNode({ nodeData: mockRerouteNodeData })
+
+      expect(
+        screen.queryByRole('button', { name: 'Resize from bottom right' })
+      ).not.toBeInTheDocument()
     })
 
     it('should render resize handle for regular nodes', () => {
-      const { container } = renderLGraphNode({ nodeData: mockNodeData })
+      renderLGraphNode({ nodeData: mockNodeData })
+
       expect(
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-        container.querySelector('[role="button"][aria-label]')
-      ).not.toBeNull()
+        screen.getByRole('button', { name: 'Resize from bottom right' })
+      ).toBeInTheDocument()
     })
   })
 
@@ -760,12 +764,10 @@ describe('LGraphNode', () => {
 
       const { container } = renderLGraphNode({ nodeData: mockNodeData })
       const nodeEl = getNodeRoot(container)
-      // eslint-disable-next-line testing-library/no-node-access
-      const parent = nodeEl.parentElement!
 
       const parentListener = vi.fn()
-      expect(parent).not.toBeNull()
-      parent.addEventListener('drop', parentListener)
+      document.addEventListener('drop', parentListener)
+      onTestFinished(() => document.removeEventListener('drop', parentListener))
 
       nodeEl.dispatchEvent(
         new Event('drop', { bubbles: true, cancelable: true })

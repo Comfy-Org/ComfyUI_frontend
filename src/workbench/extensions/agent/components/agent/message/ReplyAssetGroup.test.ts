@@ -56,9 +56,9 @@ function renderGroup(assets: ReplyAsset[]) {
       plugins: [i18n],
       stubs: {
         MediaLightbox: {
-          props: ['allGalleryItems', 'activeIndex'],
+          props: ['items', 'activeIndex'],
           template:
-            '<div data-testid="lightbox" :data-active="activeIndex" :data-count="allGalleryItems.length" />'
+            '<div v-if="activeIndex !== null" data-testid="lightbox" :data-active="activeIndex" :data-count="items.length" />'
         },
         ReplyAudioCard: {
           props: ['asset', 'title'],

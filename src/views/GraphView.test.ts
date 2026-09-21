@@ -4,14 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useMediaGalleryStore } from '@/stores/mediaGalleryStore'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -140,9 +138,6 @@ vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => ({
       '<canvas id="graph-canvas" tabindex="-1" aria-label="Graph canvas" />'
   }
 }))
-vi.mock<unknown>(import('@/components/common/MediaLightbox.vue'), () => ({
-  default: { template: '<div />' }
-}))
 vi.mock<unknown>(import('@/views/LinearView.vue'), () => stubModule)
 vi.mock<unknown>(
   import('@/components/builder/BuilderToolbar.vue'),
@@ -238,65 +233,22 @@ describe('GraphView - partner nodes education card', () => {
   })
 })
 
-describe('GraphView - media lightbox lifetime', () => {
+describe('GraphView - workflow focus', () => {
   const makeWorkflow = (path: string) =>
     fromPartial<LoadedComfyWorkflow>({
       path,
       filename: path.split('/').pop()
     })
 
-  const galleryItem: AugmentedResultItem = {
-    filename: 'a.png',
-    mediaType: 'image',
-    nodeId: '1',
-    subfolder: '',
-    type: 'output'
-  }
-
-  const openLightbox = () => {
-    const galleryStore = useMediaGalleryStore()
-    galleryStore.openItems([galleryItem], galleryItem)
-    expect(galleryStore.activeIndex).toBe(0)
-    return galleryStore
-  }
-
-  it('closes an open lightbox when the active workflow changes', async () => {
+  it('focuses the incoming canvas when the active workflow changes', async () => {
     const workflowStore = useWorkflowStore()
     workflowStore.activeWorkflow = makeWorkflow('/workflows/a.json')
 
     render(GraphView, { global: { plugins: [i18n] } })
-    const galleryStore = openLightbox()
-
-    workflowStore.activeWorkflow = makeWorkflow('/workflows/b.json')
-    await nextTick()
-
-    expect(galleryStore.activeIndex).toBe(-1)
-  })
-
-  it('focuses the incoming canvas when a workflow switch closes the gallery', async () => {
-    const workflowStore = useWorkflowStore()
-    workflowStore.activeWorkflow = makeWorkflow('/workflows/a.json')
-
-    render(GraphView, { global: { plugins: [i18n] } })
-    openLightbox()
-
     workflowStore.activeWorkflow = makeWorkflow('/workflows/b.json')
     await nextTick()
     await nextTick()
 
     expect(screen.getByLabelText('Graph canvas')).toHaveFocus()
-  })
-
-  it('leaves the lightbox open while the active workflow is unchanged', async () => {
-    const workflowStore = useWorkflowStore()
-    workflowStore.activeWorkflow = makeWorkflow('/workflows/a.json')
-
-    render(GraphView, { global: { plugins: [i18n] } })
-    const galleryStore = openLightbox()
-
-    workflowStore.activeWorkflow = makeWorkflow('/workflows/a.json')
-    await nextTick()
-
-    expect(galleryStore.activeIndex).toBe(0)
   })
 })

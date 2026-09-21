@@ -153,7 +153,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     const outputs = getNodeOutputs(node)
     const urls = buildImageUrls(node, outputs)
-    return urls?.map((url, index) => ({ url, item: outputs?.images?.[index] }))
+    return urls?.map((url, index) => {
+      const result = outputs?.images?.[index]
+      return result ? { url, result } : { url }
+    })
   }
 
   function getNodeOutputByExecutionId(
@@ -181,7 +184,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     const outputs = getNodeOutputByExecutionId(executionId)
     const urls = buildImageUrls(node, outputs)
-    return urls?.map((url, index) => ({ url, item: outputs?.images?.[index] }))
+    return urls?.map((url, index) => {
+      const result = outputs?.images?.[index]
+      return result ? { url, result } : { url }
+    })
   }
 
   function setOutputsByLocatorId(

@@ -10,7 +10,7 @@ import { resultItemUrl } from '@/utils/resultItemUrl'
  * Manages result gallery state and activation for queue items.
  */
 export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
-  const galleryActiveIndex = ref(-1)
+  const galleryActiveIndex = ref<number | null>(null)
   const galleryItems = shallowRef<AugmentedResultItem[]>([])
 
   async function onViewItem(item: JobListItem) {

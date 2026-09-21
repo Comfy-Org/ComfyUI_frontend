@@ -30,10 +30,6 @@
   <DesktopCloudNotificationController />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
-  <MediaLightbox
-    v-model:active-index="galleryStore.activeIndex"
-    :all-gallery-items="galleryStore.items"
-  />
   <TourOverlay v-if="graphReady" />
   <FirstRunTour />
 </template>
@@ -54,7 +50,6 @@ import {
 
 import { runWhenGlobalIdle } from '@/base/common/async'
 import MenuHamburger from '@/components/MenuHamburger.vue'
-import MediaLightbox from '@/components/common/MediaLightbox.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
@@ -95,7 +90,6 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useMediaGalleryStore } from '@/stores/mediaGalleryStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import {
@@ -120,7 +114,6 @@ useBrowserTabTitle()
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
-const galleryStore = useMediaGalleryStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
@@ -294,15 +287,11 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   executionStore.unbindExecutionEvents()
-  galleryStore.close()
 })
 
 watch(
   () => workflowStore.activeWorkflow?.path,
   () => {
-    const wasOpen = galleryStore.activeIndex !== -1
-    galleryStore.close()
-    if (!wasOpen) return
     void nextTick(() => {
       graphCanvasContainerRef.value
         ?.querySelector<HTMLElement>('#graph-canvas')

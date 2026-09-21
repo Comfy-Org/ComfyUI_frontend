@@ -91,9 +91,9 @@ describe('MarkdownStream', () => {
       global: {
         stubs: {
           MediaLightbox: {
-            props: ['allGalleryItems', 'activeIndex'],
+            props: ['items', 'activeIndex'],
             template:
-              '<div data-testid="lightbox" :data-active="activeIndex" />'
+              '<div v-if="activeIndex !== null" data-testid="lightbox" :data-active="activeIndex" />'
           }
         }
       }

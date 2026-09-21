@@ -84,7 +84,7 @@ const MediaLightbox = defineAsyncComponent(
 )
 
 const proseItems = ref<AugmentedResultItem[]>([])
-const proseIndex = ref(-1)
+const proseIndex = ref<number | null>(null)
 
 function onProseClick(event: MouseEvent): void {
   const image = event.target
@@ -134,11 +134,6 @@ const proseClass = cn(
         @click="onProseClick"
       />
     </template>
-    <MediaLightbox
-      v-if="proseIndex !== -1"
-      :all-gallery-items="proseItems"
-      :active-index="proseIndex"
-      @update:active-index="proseIndex = $event"
-    />
+    <MediaLightbox v-model:active-index="proseIndex" :items="proseItems" />
   </div>
 </template>

@@ -17,10 +17,6 @@ import {
 } from '@/utils/resultItemUrl'
 import { resultItemHtmlVideoType } from '@/utils/resultItem'
 
-/* MediaLightbox retains this component via KeepAlive include, which matches on
-   the registered component name. */
-defineOptions({ name: 'ResultVideo' })
-
 const props = defineProps<{
   readonly result: AugmentedResultItem
 }>()

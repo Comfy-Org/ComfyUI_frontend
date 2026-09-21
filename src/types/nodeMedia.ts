@@ -2,7 +2,7 @@ import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 
 export interface NodeImage {
   url: string
-  item?: ResultItem | null
+  result?: ResultItem
 }
 
 export type NodeMedia =

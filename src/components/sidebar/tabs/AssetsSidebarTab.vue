@@ -157,7 +157,7 @@
   </Teleport>
   <MediaLightbox
     v-model:active-index="galleryActiveIndex"
-    :all-gallery-items="galleryItems"
+    :items="galleryItems"
   />
   <MediaAssetContextMenu
     v-if="contextMenuAsset"
@@ -346,7 +346,7 @@ const currentAssets = computed(() =>
 const loading = computed(() => toValue(currentAssets.value.isLoading))
 const mediaAssets = computed(() => toValue(currentAssets.value.items))
 
-const galleryActiveIndex = ref(-1)
+const galleryActiveIndex = ref<number | null>(null)
 const currentGalleryAssetId = ref<string | null>(null)
 
 const DEFAULT_SKELETON_COUNT = 6
@@ -445,16 +445,16 @@ watch(visibleAssets, (newAssets) => {
   // Alternative: keep hidden selections and surface them in UI; for now prune
   // so selection stays consistent with what this view can act on.
   reconcileSelection(newAssets)
-  if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
+  if (currentGalleryAssetId.value && galleryActiveIndex.value !== null) {
     const newIndex = previewableVisibleAssets.value.findIndex(
       (asset) => asset.id === currentGalleryAssetId.value
     )
-    galleryActiveIndex.value = newIndex
+    galleryActiveIndex.value = newIndex === -1 ? null : newIndex
   }
 })
 
 watch(galleryActiveIndex, (index) => {
-  if (index === -1) {
+  if (index === null) {
     currentGalleryAssetId.value = null
   }
 })

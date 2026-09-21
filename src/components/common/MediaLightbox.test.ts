@@ -100,13 +100,10 @@ describe('MediaLightbox', () => {
           ResultVideo: mockResultVideo,
           ResultAudio: mockResultAudio
         },
-        stubs: {
-          teleport: true,
-          ...stubs
-        }
+        stubs
       },
       props: {
-        allGalleryItems: mockGalleryItems,
+        items: mockGalleryItems,
         activeIndex: 0,
         'onUpdate:activeIndex': onUpdateActiveIndex,
         ...props
@@ -135,7 +132,7 @@ describe('MediaLightbox', () => {
 
   it('hides navigation buttons for single item', async () => {
     renderGallery({
-      allGalleryItems: [mockGalleryItems[0]]
+      items: [mockGalleryItems[0]]
     })
     await nextTick()
 
@@ -143,15 +140,15 @@ describe('MediaLightbox', () => {
     expect(screen.queryByLabelText('Next')).not.toBeInTheDocument()
   })
 
-  it('shows gallery when activeIndex changes from -1', async () => {
-    const { rerender } = renderGallery({ activeIndex: -1 })
+  it('shows gallery when activeIndex changes from null', async () => {
+    const { rerender } = renderGallery({ activeIndex: null })
 
     expect(
       screen.queryByRole('dialog', { name: 'Gallery' })
     ).not.toBeInTheDocument()
 
     await rerender({
-      allGalleryItems: mockGalleryItems,
+      items: mockGalleryItems,
       activeIndex: 0
     })
     await nextTick()
@@ -159,25 +156,35 @@ describe('MediaLightbox', () => {
     expect(screen.getByRole('dialog', { name: 'Gallery' })).toBeInTheDocument()
   })
 
-  it('emits update:activeIndex with -1 when close button clicked', async () => {
+  it('closes instead of rendering an invalid selection', async () => {
+    const { onUpdateActiveIndex } = renderGallery({ activeIndex: 99 })
+    await nextTick()
+
+    expect(onUpdateActiveIndex).toHaveBeenCalledWith(null)
+    expect(
+      screen.queryByRole('dialog', { name: 'Gallery' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('emits update:activeIndex with null when close button clicked', async () => {
     const { user, onUpdateActiveIndex } = renderGallery()
     await nextTick()
 
     await user.click(screen.getByLabelText('Close'))
     await nextTick()
 
-    expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
+    expect(onUpdateActiveIndex).toHaveBeenCalledWith(null)
   })
 
   it('returns focus to the opener after navigating and closing', async () => {
     const opener = createOpener()
 
-    const { rerender } = renderGallery({ activeIndex: -1 })
+    const { rerender } = renderGallery({ activeIndex: null })
     await rerender({ activeIndex: 0 })
     await nextTick()
     await rerender({ activeIndex: 1 })
     await nextTick()
-    await rerender({ activeIndex: -1 })
+    await rerender({ activeIndex: null })
     await nextTick()
 
     expect(opener).toHaveFocus()
@@ -186,10 +193,10 @@ describe('MediaLightbox', () => {
   it('returns focus to the opener when the gallery is closed externally', async () => {
     const opener = createOpener()
 
-    const { rerender } = renderGallery({ activeIndex: -1 })
+    const { rerender } = renderGallery({ activeIndex: null })
     await rerender({ activeIndex: 0 })
     await nextTick()
-    await rerender({ activeIndex: -1 })
+    await rerender({ activeIndex: null })
     await nextTick()
 
     expect(opener).toHaveFocus()
@@ -201,9 +208,9 @@ describe('MediaLightbox', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    const { user } = renderGallery(
+    const { user, rerender } = renderGallery(
       {
-        allGalleryItems: [
+        items: [
           {
             ...mockGalleryItems[0],
             filename: 'failed.txt',
@@ -219,6 +226,7 @@ describe('MediaLightbox', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/view?filename=failed.txt')
 
     await user.click(screen.getByLabelText('Close'))
+    await rerender({ activeIndex: null })
 
     expect(screen.queryByText('Text failed to load')).not.toBeInTheDocument()
   })
@@ -261,7 +269,7 @@ describe('MediaLightbox', () => {
       await user.keyboard('{Escape}')
       await nextTick()
 
-      expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
+      expect(onUpdateActiveIndex).toHaveBeenCalledWith(null)
     })
   })
 
@@ -281,13 +289,13 @@ describe('MediaLightbox', () => {
       const { rerender } = render(MediaLightbox, {
         global: { plugins: [i18n] },
         props: {
-          allGalleryItems: items,
+          items,
           activeIndex: 0
         }
       })
-      const show = async (activeIndex: number) => {
+      const show = async (activeIndex: number | null) => {
         await rerender({
-          allGalleryItems: items,
+          items,
           activeIndex
         })
         await nextTick()
@@ -354,7 +362,7 @@ describe('MediaLightbox', () => {
       await nextTick()
       const first = video()
 
-      await show(-1)
+      await show(null)
       await show(0)
 
       const reopened = video()
