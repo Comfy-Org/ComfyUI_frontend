@@ -1,8 +1,12 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { markRaw, reactive } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CORE_KEYBINDINGS } from '@/platform/keybindings/defaults'
+import {
+  clearEscapeOverrides,
+  registerEscapeOverride
+} from '@/platform/keybindings/escapeOverride'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
@@ -59,6 +63,10 @@ describe('keybindingService - Escape key handling', () => {
 
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
+  })
+
+  afterEach(() => {
+    clearEscapeOverrides()
   })
 
   function createKeyboardEvent(
@@ -138,6 +146,88 @@ describe('keybindingService - Escape key handling', () => {
 
     expect(event.preventDefault).not.toHaveBeenCalled()
     expect(mockCommandExecute).not.toHaveBeenCalled()
+  })
+
+  describe('registered Escape override', () => {
+    it('suppresses ExitSubgraph when a registered override handles the event', async () => {
+      const override = vi.fn().mockReturnValue(true)
+      registerEscapeOverride(override)
+
+      const event = createKeyboardEvent('Escape')
+      await keybindingService.keybindHandler(event)
+
+      expect(override).toHaveBeenCalledWith(event)
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
+      expect(event.preventDefault).toHaveBeenCalled()
+    })
+
+    it('still dispatches ExitSubgraph when no override is registered', async () => {
+      const event = createKeyboardEvent('Escape')
+      await keybindingService.keybindHandler(event)
+
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
+        'Comfy.Graph.ExitSubgraph'
+      )
+    })
+
+    it('still dispatches ExitSubgraph when the registered override declines', async () => {
+      registerEscapeOverride(() => false)
+
+      const event = createKeyboardEvent('Escape')
+      await keybindingService.keybindHandler(event)
+
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
+        'Comfy.Graph.ExitSubgraph'
+      )
+    })
+
+    it('never consults the override for a non-Escape keybinding', async () => {
+      const override = vi.fn().mockReturnValue(true)
+      registerEscapeOverride(override)
+
+      const keybindingStore = useKeybindingStore()
+      keybindingStore.addDefaultKeybinding(
+        new KeybindingImpl({ commandId: 'Test.BareF9', combo: { key: 'F9' } })
+      )
+
+      const event = createKeyboardEvent('F9')
+      await keybindingService.keybindHandler(event)
+
+      expect(override).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).toHaveBeenCalledWith('Test.BareF9')
+    })
+
+    it('lets an open menu win over a registered override', async () => {
+      const override = vi.fn().mockReturnValue(true)
+      registerEscapeOverride(override)
+
+      const menu = document.createElement('div')
+      menu.setAttribute('role', 'menu')
+      const menuItem = document.createElement('div')
+      menuItem.setAttribute('role', 'menuitemcheckbox')
+      menu.appendChild(menuItem)
+
+      const event = createKeyboardEvent('Escape', { target: menuItem })
+      await keybindingService.keybindHandler(event)
+
+      expect(override).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
+    })
+
+    it('lets an open dialog win over a registered override', async () => {
+      const override = vi.fn().mockReturnValue(true)
+      registerEscapeOverride(override)
+
+      const dialogStore = useDialogStore()
+      dialogStore.dialogStack.push(createTestDialogInstance('test-dialog'))
+      keybindingService = useKeybindingService()
+
+      const event = createKeyboardEvent('Escape')
+      await keybindingService.keybindHandler(event)
+
+      expect(override).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
+    })
   })
 
   it('should verify Escape keybinding exists in CORE_KEYBINDINGS', () => {
