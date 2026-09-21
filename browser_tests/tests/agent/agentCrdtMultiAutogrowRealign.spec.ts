@@ -559,6 +559,7 @@ async function runMultiAutogrowRealignScenario(
   // ones that happened to arrive before the follower dropped its old
   // subscription.
   if (corruptPersistedContent) return
+
   await test.step('a new turn against the reopened workflow reattaches the follower, and a fresh host edit still lands', async () => {
     const nodeLocator = vueNodes.getNodeLocator(TARGET_ID)
     const widthWidget = nodeLocator.getByLabel('width', { exact: true }).first()
@@ -623,6 +624,17 @@ test.describe(
   'Agent CRDT multi-autogrow link realignment',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
+    // Both tests below run the full scenario (page reload, real Run
+    // submission, CRDT resubscribe) and CI's default `workers: 2` would
+    // otherwise put them in two Chromium instances at once. The
+    // `playwright-video-new-tests` job additionally forces `--retries=0`
+    // and records video, so the two heavy instances' CPU contention -- not
+    // a logic bug in either scenario -- is what pushed both to the
+    // individual 90s `test.setTimeout` below in CI
+    // (https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/35656959584/job/106524115146).
+    // `serial` runs them one after another in a single worker instead.
+    test.describe.configure({ mode: 'serial' })
+
     // The reattach step below sends a second turn, which re-renders chrome
     // (models picker, jobs indicator) that the boot mocks in
     // `cloudBootMocks.ts` don't cover -- registered here, ahead of
