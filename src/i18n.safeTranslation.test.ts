@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n, st, stRaw } from './i18n'
 
@@ -79,10 +79,17 @@ describe('stRaw', () => {
   })
 })
 
-// Guards patches/@intlify__shared: its unbounded attribute-name regex overflows
-// Firefox's regex engine on a long word run. The payloads carry `=` and quotes so
-// vue-i18n's HTML sanitizer actually runs; without the patch the first hangs.
+// Guards patches/@intlify__shared: its unbounded attribute-name regex goes
+// quadratic (and overflows Firefox's regex engine) on a long word run when the
+// quote it wants is missing, and a rescan bug makes sanitizeStyleValue O(n^2).
+// The assertions are on output size and content, not wall-clock, so they fail
+// deterministically if the patch is dropped — Vitest's fake timers would make a
+// timing assertion inert here.
 describe('the HTML sanitizer stays linear and correct', () => {
+  beforeEach(() => {
+    vi.useRealTimers()
+  })
+
   const translate = (message: string) => {
     i18n.global.mergeLocaleMessage('en', {
       safeTranslationTest: { sanitize: message }
@@ -90,21 +97,18 @@ describe('the HTML sanitizer stays linear and correct', () => {
     return i18n.global.t('safeTranslationTest.sanitize')
   }
 
-  it('does not blow up on a long attribute-name run', () => {
-    const start = performance.now()
-    expect(() => translate(`<a ${'x'.repeat(500_000)}="y">`)).not.toThrow()
-    expect(performance.now() - start).toBeLessThan(5_000)
+  it('handles a long attribute-name run in both quote passes', () => {
+    // Ends in a single quote so the double-quote pass keeps retrying the run —
+    // the quadratic case; the unbounded regex hangs, the bounded one returns.
+    expect(() => translate(`<a ${'x'.repeat(500_000)}='y'>`)).not.toThrow()
+    expect(translate(`<a ${'x'.repeat(500_000)}="y">`)).toContain('="y"')
   })
 
-  it('still neutralizes a javascript: url after a long name', () => {
+  it('neutralizes a javascript: url after and abutting a long name', () => {
     expect(
       translate(`<a ${'x'.repeat(200)}="1" href="javascript:alert(1)">`)
     ).toContain('href="about:blank"')
-  })
-
-  // The boundary is enforced in the callback, not by consuming a char, so an
-  // attribute that abuts the previous value's closing quote still matches.
-  it('neutralizes a javascript: url that abuts the previous attribute', () => {
+    // no separator before href — the boundary is not consumed
     expect(translate('<a x="1"href="javascript:alert(1)">')).toContain(
       'href="about:blank"'
     )
@@ -113,21 +117,23 @@ describe('the HTML sanitizer stays linear and correct', () => {
     )
   })
 
-  // A name over the 100-char cap matches partially; its value must still be
-  // escaped so its quotes cannot re-pair and smuggle the next attribute through.
   it('escapes the value of an over-length attribute name', () => {
     expect(translate(`${'a'.repeat(101)}="<img>"`)).toContain('&lt;img&gt;')
+    // the long name's unescaped quotes must not re-pair and smuggle href through
     expect(
       translate(`<a ${'L'.repeat(101)}="a x=' q" href='javascript:alert(1)'>`)
-    ).not.toContain('javascript:alert(1)')
+    ).toContain("href='about:blank'")
   })
 
-  it('keeps sanitizeStyleValue linear on nested url()', () => {
-    const start = performance.now()
+  it('keeps sanitizeStyleValue single-pass on nested url()', () => {
     const k = 5_000
-    expect(() =>
-      translate(`<a style="${'url('.repeat(k)}${')'.repeat(k)}">`)
-    ).not.toThrow()
-    expect(performance.now() - start).toBeLessThan(5_000)
+    // The unpatched rescan re-appends every processed span, so the output blows
+    // up to tens of MB; the fixed single pass stays near the input size.
+    const out = translate(`<a style="${'url('.repeat(k)}${')'.repeat(k)}">`)
+    expect(out.length).toBeLessThan(200_000)
+    // a sibling url() after a processed one is still scanned and neutralized
+    expect(
+      translate('<a style="background:url(a) url(javascript:alert(1))">')
+    ).toContain('url(about:blank)')
   })
 })
