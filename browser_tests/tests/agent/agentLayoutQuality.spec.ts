@@ -30,6 +30,12 @@ test.describe('Agent layout quality', { tag: '@cloud' }, () => {
         .poll(() => nodesWithoutGeometry(nodes), { timeout: SETTLE })
         .toEqual([])
 
+      // Pins a real defect, not a flaky assertion. Measured on this case with the
+      // marker removed: two pairs overlap, `2559261621971657 and
+      // 2214070360209981 overlap by 216x27px` and `3 and 2559261621971657
+      // overlap by 95x32px`. The sequential case below asserts the same property
+      // unmarked because it passes, so the marker is scoped to the build mode
+      // that actually overlaps rather than to the property.
       test.fail()
       await expect
         .poll(() => overlappingNodePairs(nodes), { timeout: SETTLE })
