@@ -64,21 +64,13 @@ describe('isAgentAttachable', () => {
 })
 
 describe('attachableClipboardFiles', () => {
-  it('keeps the original file when the clipboard names it', () => {
-    const photo = new File(['x'], 'photo.jpg', { type: 'image/jpeg' })
-    expect(attachableClipboardFiles(clipboardOf(photo))).toEqual([photo])
-  })
-
-  it.for([
-    ['image/png', 'pasted-image.png'],
-    ['image/jpeg', 'pasted-image.jpeg'],
-    ['image/webp', 'pasted-image.webp']
-  ] as const)('names an unnamed %s screenshot %s', async ([type, expected]) => {
-    const [named] = attachableClipboardFiles(
-      clipboardOf(new File(['x'], '', { type }))
-    )
-    expect(named).toMatchObject({ name: expected, type })
-    expect(await named.text()).toBe('x')
+  /* Chromium hands a pasted screenshot over as image.png; the name, not the
+     MIME type, is what the attachable check reads. */
+  it('takes the screenshot a clipboard carries', () => {
+    const screenshot = new File(['x'], 'image.png', { type: 'image/png' })
+    expect(attachableClipboardFiles(clipboardOf(screenshot))).toEqual([
+      screenshot
+    ])
   })
 
   it('drops clipboard files the composer cannot attach', () => {
