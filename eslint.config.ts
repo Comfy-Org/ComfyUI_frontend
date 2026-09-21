@@ -24,11 +24,10 @@ import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
 import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
-import { noEs2023ArrayWith } from './tools/eslint-plugins/noEs2023ArrayWith'
+import { noEs2023ArrayCopyMethod } from './tools/eslint-plugins/noEs2023ArrayCopyMethod'
 import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
 
 const extraFileExtensions = ['.vue']
-const es2023ArrayCopyMethodPattern = '^(toReversed|toSorted|toSpliced)$'
 
 const commonGlobals = {
   ...globals.browser,
@@ -370,29 +369,11 @@ export default defineConfig([
     ignores: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     plugins: {
       'es2022-compat': {
-        rules: { 'no-array-with': noEs2023ArrayWith }
+        rules: { 'no-array-copy-method': noEs2023ArrayCopyMethod }
       }
     },
     rules: {
-      'es2022-compat/no-array-with': 'error',
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: `CallExpression[callee.type='MemberExpression'][callee.computed=false][callee.property.name=/${es2023ArrayCopyMethodPattern}/]`,
-          message:
-            'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
-        },
-        {
-          selector: `CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='Literal'][callee.property.value=/${es2023ArrayCopyMethodPattern}/]`,
-          message:
-            'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
-        },
-        {
-          selector: `CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='TemplateLiteral'][callee.property.expressions.length=0]:has(TemplateElement[value.cooked=/${es2023ArrayCopyMethodPattern}/])`,
-          message:
-            'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
-        }
-      ]
+      'es2022-compat/no-array-copy-method': 'error'
     }
   },
   {

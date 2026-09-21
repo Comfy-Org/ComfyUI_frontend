@@ -10,20 +10,20 @@ const restrictionMessage =
 
 describe('ES2023 array method restrictions', () => {
   it.for([
-    ['toReversed', 'items.toReversed()', 'no-restricted-syntax'],
-    ['toSorted', 'items.toSorted()', 'no-restricted-syntax'],
-    ['toSpliced', 'items.toSpliced(0, 1)', 'no-restricted-syntax'],
-    ['with', 'items.with(0, 1)', 'es2022-compat/no-array-with']
+    ['toReversed', 'items.toReversed()'],
+    ['toSorted', 'items.toSorted()'],
+    ['toSpliced', 'items.toSpliced(0, 1)'],
+    ['with', 'items.with(0, 1)']
   ] as const)(
     'rejects %s calls in runtime files',
-    async ([_name, code, expectedRuleId]) => {
+    async ([_name, code]) => {
       const [result] = await eslint.lintText(`const items = [1, 2]\n${code}`, {
         filePath: runtimeFilePath
       })
 
       expect(result.messages).toEqual([
         expect.objectContaining({
-          ruleId: expectedRuleId,
+          ruleId: 'es2022-compat/no-array-copy-method',
           severity: 2,
           message: restrictionMessage
         })
@@ -42,7 +42,7 @@ describe('ES2023 array method restrictions', () => {
 
     expect(result.messages).toEqual([
       expect.objectContaining({
-        ruleId: 'no-restricted-syntax',
+        ruleId: 'es2022-compat/no-array-copy-method',
         severity: 2,
         message: restrictionMessage
       })
@@ -58,7 +58,7 @@ items['with'](0, 1)`,
 
     expect(result.messages).toEqual([
       expect.objectContaining({
-        ruleId: 'es2022-compat/no-array-with',
+        ruleId: 'es2022-compat/no-array-copy-method',
         severity: 2,
         message: restrictionMessage
       })
@@ -78,9 +78,13 @@ items['with'](0, 1)`,
     expect(result.messages).toEqual([])
   })
 
-  it('allows unrelated APIs named with in runtime files', async () => {
+  it('allows unrelated APIs with restricted method names', async () => {
     const [result] = await eslint.lintText(
-      `const builder = { with: (value: number) => value }
+      `const builder = {
+  toSorted: () => 'sorted',
+  with: (value: number) => value
+}
+builder.toSorted()
 builder.with(3)`,
       { filePath: runtimeFilePath }
     )
@@ -125,7 +129,7 @@ items?.with(0, 1)`
 
       expect(result.messages).toEqual([
         expect.objectContaining({
-          ruleId: 'es2022-compat/no-array-with',
+          ruleId: 'es2022-compat/no-array-copy-method',
           severity: 2,
           message: restrictionMessage
         })

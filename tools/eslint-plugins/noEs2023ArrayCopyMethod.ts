@@ -2,6 +2,13 @@ import { ESLintUtils } from '@typescript-eslint/utils'
 import type { TSESTree } from '@typescript-eslint/utils'
 import type ts from 'typescript'
 
+const es2023ArrayCopyMethods = new Set([
+  'toReversed',
+  'toSorted',
+  'toSpliced',
+  'with'
+])
+
 function isArrayType(checker: ts.TypeChecker, type: ts.Type): boolean {
   const nonNullableType = checker.getNonNullableType(type)
   if (nonNullableType !== type) {
@@ -24,7 +31,29 @@ function isArrayType(checker: ts.TypeChecker, type: ts.Type): boolean {
   return checker.isArrayType(type) || checker.isTupleType(type)
 }
 
-export const noEs2023ArrayWith = ESLintUtils.RuleCreator.withoutDocs({
+function getMethodName(member: TSESTree.MemberExpression): string | undefined {
+  if (!member.computed && member.property.type === 'Identifier') {
+    return member.property.name
+  }
+
+  if (
+    member.computed &&
+    member.property.type === 'Literal' &&
+    typeof member.property.value === 'string'
+  ) {
+    return member.property.value
+  }
+
+  if (
+    member.computed &&
+    member.property.type === 'TemplateLiteral' &&
+    member.property.expressions.length === 0
+  ) {
+    return member.property.quasis[0]?.value.cooked ?? undefined
+  }
+}
+
+export const noEs2023ArrayCopyMethod = ESLintUtils.RuleCreator.withoutDocs({
   meta: {
     type: 'problem',
     schema: [],
@@ -38,20 +67,17 @@ export const noEs2023ArrayWith = ESLintUtils.RuleCreator.withoutDocs({
     const services = ESLintUtils.getParserServices(context)
     const checker = services.program.getTypeChecker()
 
-    function reportArrayWith(node: TSESTree.CallExpression) {
+    function reportArrayCopyMethod(node: TSESTree.CallExpression) {
       if (node.callee.type !== 'MemberExpression') return
+      const methodName = getMethodName(node.callee)
+      if (!methodName || !es2023ArrayCopyMethods.has(methodName)) return
       const receiver = services.esTreeNodeToTSNodeMap.get(node.callee.object)
       if (!isArrayType(checker, checker.getTypeAtLocation(receiver))) return
       context.report({ node, messageId: 'unsupported' })
     }
 
     return {
-      "CallExpression[callee.type='MemberExpression'][callee.property.name='with']":
-        reportArrayWith,
-      "CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='Literal'][callee.property.value='with']":
-        reportArrayWith,
-      "CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='TemplateLiteral'][callee.property.expressions.length=0]:has(TemplateElement[value.cooked='with'])":
-        reportArrayWith
+      CallExpression: reportArrayCopyMethod
     }
   }
 })
