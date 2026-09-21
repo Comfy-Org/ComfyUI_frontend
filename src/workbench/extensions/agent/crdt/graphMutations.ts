@@ -1,3 +1,4 @@
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
@@ -18,6 +19,8 @@ import type { NodeState } from '@/types/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { isWidgetId, widgetId } from '@/types/widgetId'
 
+import type { PlacementRect } from './batchPlacement'
+import { placementOffset } from './batchPlacement'
 import type { PlaceholderWidget, WidgetValuePayload } from './nodePayload'
 import {
   cloneWidgetValue,
@@ -65,6 +68,17 @@ interface SemanticLayoutMutationPort {
     nodeIds: readonly NodeId[],
     context: RemoteMutationContext
   ): void
+}
+
+/**
+ * Renderer-owned placement geometry. `viewportBounds` returns the visible
+ * area in canvas coordinates only while the displayed graph is the scope's
+ * owning graph, and null otherwise (background workflow, subgraph editing,
+ * no canvas mounted). See ADR-CRDT-PLACEMENT-0035.
+ */
+export interface SemanticPlacementPort {
+  nodeBounds(scope: GraphScope, nodeId: NodeId): PlacementRect | null
+  viewportBounds(scope: GraphScope): PlacementRect | null
 }
 
 type LiveWidgetMutationResult =
@@ -137,6 +151,7 @@ export interface GraphMutations {
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
   layout: SemanticLayoutMutationPort
+  placement: SemanticPlacementPort
   liveWidgets?: SemanticLiveWidgetMutationPort
 }
 
@@ -166,7 +181,11 @@ interface PreparedNode {
 }
 
 type PreparedMutation =
-  | { kind: 'addNode'; node: PreparedNode }
+  | {
+      kind: 'addNode'
+      node: PreparedNode
+      queued: 'addNode' | 'reconcileNodeFields'
+    }
   | { kind: 'reconcileNode'; node: PreparedNode }
   | { kind: 'replaceNode'; node: PreparedNode }
   | {
@@ -200,6 +219,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function cloneRecord(value: unknown): Record<string, unknown> {
   return isRecord(value) ? structuredClone(value) : {}
+}
+
+/**
+ * `ghost` marks a node still following the cursor during search-box placement.
+ * The placement click clears it locally and mints no op, so a document that
+ * recorded the flag would resurrect it here and leave an already-placed node
+ * translucent and unclickable.
+ */
+function cloneNodeFlags(value: unknown): Record<string, unknown> {
+  const { ghost: _ghost, ...flags } = cloneRecord(value)
+  return flags
 }
 
 /**
@@ -342,17 +372,21 @@ function prepareNode(
   const [x, y] = readPair(payload.pos, [0, 0])
   const [width, height] = readPair(payload.size, [270, 100])
   const mode = Number(payload.mode)
+  const flags = cloneNodeFlags(payload.flags)
   const state: NodeState = {
     id,
     graphId: scope.owningGraphId,
     type: payload.type,
     title: nodeTitle(payload.title, payload.type),
-    flags: cloneRecord(payload.flags),
+    flags,
     inputs: prepareInputSlots(payload.inputs, incumbent?.inputs),
     outputs: prepareOutputSlots(payload.outputs),
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
-    lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
+    lastSerialization: structuredClone({
+      ...payload,
+      flags
+    }) as unknown as ISerialisedNode,
     ...resolveNodeColors(payload, incumbent),
     ...resolveNodeDisplayFlags(payload)
   }
@@ -383,6 +417,34 @@ function prepareTopology(
 
 function nodeKey(nodeId: NodeId): string {
   return String(nodeId)
+}
+
+/**
+ * Whether a link's declared origin output type and target input type are
+ * both resolvable and definitively incompatible, using the exact rule
+ * `connect` enforces before applying a link (`LiteGraph.isValidConnection`).
+ * An unresolvable slot (missing slot list, or an index past its end) reports
+ * `false` rather than `true`: `connect`'s own "does not exist" checks give
+ * that case a more specific rejection reason, and this predicate exists only
+ * to let a caller pre-exclude a link it already knows would be refused for
+ * an origin/target TYPE mismatch, not to duplicate every reason `connect`
+ * can refuse a link.
+ *
+ * Exposed so `EcsFollowerAdapter` can keep an already-invalid retained link
+ * out of what it projects into the local canvas mirror during
+ * reconciliation, without duplicating `LiteGraph`'s compatibility rules or
+ * risking them drifting from what `connect` actually enforces.
+ */
+export function isIncompatibleLinkType(link: {
+  originSlot: number
+  targetSlot: number
+  originOutputs?: readonly ISerialisableNodeOutput[]
+  targetInputs?: readonly ISerialisableNodeInput[]
+}): boolean {
+  const originType = link.originOutputs?.[link.originSlot]?.type
+  const targetType = link.targetInputs?.[link.targetSlot]?.type
+  if (originType === undefined || targetType === undefined) return false
+  return !LiteGraph.isValidConnection(originType, targetType)
 }
 
 function detachedLinkSlots(
@@ -523,15 +585,17 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             return `node id ${key} is already registered`
           }
           nodes.set(key, node.state)
-          prepared.push({
-            kind:
-              mutation.kind === 'reconcileNode' &&
-              existing &&
-              existing.type !== node.state.type
-                ? 'replaceNode'
-                : mutation.kind,
-            node
-          })
+          if (mutation.kind === 'addNode') {
+            prepared.push({ kind: 'addNode', node, queued: 'addNode' })
+          } else {
+            prepared.push({
+              kind:
+                existing && existing.type !== node.state.type
+                  ? 'replaceNode'
+                  : 'reconcileNode',
+              node
+            })
+          }
           break
         }
         case 'reconcileNodeFields': {
@@ -550,10 +614,15 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             const validationError = validateNodeUpsert(node, key)
             if (validationError) return validationError
             nodes.set(key, node.state)
-            prepared.push({
-              kind: existing ? 'replaceNode' : 'addNode',
-              node
-            })
+            if (existing) {
+              prepared.push({ kind: 'replaceNode', node })
+            } else {
+              prepared.push({
+                kind: 'addNode',
+                node,
+                queued: 'reconcileNodeFields'
+              })
+            }
           } else {
             node.state.inputs = existing.inputs
             node.state.outputs = existing.outputs
@@ -622,6 +691,18 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           if (topology.targetSlot >= targetInputs.length) {
             return `connect target slot ${topology.targetSlot} does not exist`
+          }
+          const originType = originOutputs[topology.originSlot]?.type
+          const targetType = targetInputs[topology.targetSlot]?.type
+          if (
+            isIncompatibleLinkType({
+              originSlot: topology.originSlot,
+              targetSlot: topology.targetSlot,
+              originOutputs,
+              targetInputs
+            })
+          ) {
+            return `connect origin slot ${topology.originSlot} type ${String(originType)} is not compatible with target slot ${topology.targetSlot} type ${String(targetType)}`
           }
           if (mutation.link.originOutputs) {
             nodes.set(nodeKey(topology.originNodeId), {
@@ -745,6 +826,46 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       }
     }
     return prepared
+  }
+
+  function offsetInsertedBatch(
+    scope: GraphScope,
+    existingIds: readonly NodeId[],
+    prepared: readonly PreparedMutation[]
+  ): void {
+    const inserted = prepared.filter(
+      (mutation): mutation is Extract<PreparedMutation, { kind: 'addNode' }> =>
+        mutation.kind === 'addNode' && mutation.queued === 'addNode'
+    )
+    if (inserted.length === 0) return
+    const offset = placementOffset({
+      existing: existingIds
+        .map((id) => deps.placement.nodeBounds(scope, id))
+        .filter((rect): rect is PlacementRect => rect !== null),
+      viewport: deps.placement.viewportBounds(scope),
+      incoming: inserted.map(({ node }) => ({
+        x: node.layout.position.x,
+        y: node.layout.position.y,
+        width: node.layout.size.width,
+        height: node.layout.size.height
+      }))
+    })
+    if (!offset) return
+    for (const { node } of inserted) {
+      node.layout.position = {
+        x: node.layout.position.x + offset.dx,
+        y: node.layout.position.y + offset.dy
+      }
+      // The materializer configures the live node from lastSerialization, so
+      // its pos must carry the same offset or configure() re-applies the raw
+      // coordinates over the adopted layout entry.
+      if (node.state.lastSerialization) {
+        node.state.lastSerialization.pos = [
+          node.layout.position.x,
+          node.layout.position.y
+        ]
+      }
+    }
   }
 
   function detachLinkSlots(
@@ -1115,8 +1236,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           queued.push({ kind: 'clearSemanticGraph' })
         }
       })
+      const existingIds = nodeStore
+        .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+        .map((node) => node.id)
       const prepared = prepare(scope, queued)
       if (typeof prepared === 'string') return fail(prepared)
+      offsetInsertedBatch(scope, existingIds, prepared)
       commit(scope, prepared, context)
       return true
     },
