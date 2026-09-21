@@ -44,8 +44,14 @@ trap cleanup EXIT
 
 cp -R "$repo_root/tools/devtools/." "$devtools_stage/"
 chmod -R a+rX "$devtools_stage"
-if [[ ! -r "$devtools_stage/__init__.py" ]]; then
-  echo 'Staged devtools are unreadable; the browser tests would fail at the' >&2
+unreadable="$(
+  find "$devtools_stage" \
+    \( \( -type f ! -perm -o=r \) -o \( -type d ! -perm -o=rx \) \) \
+    -print -quit
+)"
+if [[ -n "$unreadable" ]]; then
+  echo "Staged devtools path is unreadable by the container user: $unreadable" >&2
+  echo 'The browser tests would fail at the' >&2
   echo 'ComfyPage fixture with an unrelated HTTP error. Aborting.' >&2
   exit 1
 fi
