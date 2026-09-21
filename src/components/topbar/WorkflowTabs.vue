@@ -26,7 +26,17 @@
         @wheel="handleWheel"
       >
         <SelectButton
-          :class="cn('workflow-tabs bg-transparent', props.class)"
+          :class="
+            cn(
+              'workflow-tabs flex items-center gap-1 bg-transparent',
+              props.class
+            )
+          "
+          :pt="{
+            pcToggleButton: {
+              root: 'rounded-lg bg-transparent text-base-foreground/75 hover:bg-secondary-background-hover hover:text-base-foreground aria-pressed:bg-secondary-background aria-pressed:text-base-foreground aria-pressed:hover:bg-secondary-background-hover'
+            }
+          }"
           :model-value="selectedWorkflow"
           :options
           option-label="label"
@@ -375,11 +385,8 @@ onUpdated(checkOverflow)
   position: relative;
   flex-shrink: 1;
   border: 0;
-  border-radius: var(--radius-lg);
-  background-color: transparent;
   padding: 0;
   min-width: 90px;
-  color: rgb(from var(--base-foreground) r g b / 0.75);
 }
 
 .overflow-arrow {
@@ -401,22 +408,6 @@ onUpdated(checkOverflow)
 
 :deep(.p-togglebutton::before) {
   display: none;
-}
-
-:deep(.p-togglebutton.p-togglebutton-checked) {
-  background-color: var(--secondary-background);
-  color: var(--base-foreground);
-}
-
-:deep(.p-togglebutton:hover) {
-  background-color: var(--secondary-background-hover);
-  color: var(--base-foreground);
-}
-
-:deep(.workflow-tabs) {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing);
 }
 
 :deep(.p-selectbutton) {

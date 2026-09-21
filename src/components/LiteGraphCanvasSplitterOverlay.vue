@@ -20,6 +20,7 @@
         <Splitter
           :key="splitterRefreshKey"
           class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
+          pt:gutter="[.side-bar-panel+&]:bg-interface-stroke/50 has-[+.side-bar-panel]:bg-interface-stroke/50"
           :state-key="
             isSelectMode
               ? sidebarLocation === 'left'
@@ -337,15 +338,6 @@ const lastPanelStyle = computed(() => {
 <style scoped>
 :deep(.p-splitter-gutter) {
   pointer-events: auto;
-}
-
-:deep(.side-bar-panel + .p-splitter-gutter),
-:deep(.p-splitter-gutter:has(+ .side-bar-panel)) {
-  background-color: color-mix(
-    in srgb,
-    var(--interface-stroke) 50%,
-    transparent
-  );
 }
 
 :deep(.p-splitter-gutter:hover),
