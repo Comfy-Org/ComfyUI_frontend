@@ -28,9 +28,10 @@ test.describe(
         route.fulfill(jsonRoute(jobs))
       )
       const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
-      await page.route('**/api/agent/run-mode', (route) =>
-        route.fulfill(jsonRoute(runMode))
-      )
+      await page.route('**/api/agent/run-mode', (route) => {
+        if (route.request().method() !== 'GET') return route.fallback()
+        return route.fulfill(jsonRoute(runMode))
+      })
     })
 
     test('reloads a saved workflow and receives a fresh host edit after a new turn', async ({
