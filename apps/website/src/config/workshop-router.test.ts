@@ -142,7 +142,7 @@ describe('native Router requests', () => {
         {
           prompt: 'Test',
           output_format: 'png',
-          safety_tolerance: 3,
+          seed: 123456,
           prompt_upsampling: false
         },
         signal
@@ -150,7 +150,7 @@ describe('native Router requests', () => {
     ).toEqual({
       prompt: 'Test',
       output_format: 'png',
-      safety_tolerance: 3,
+      seed: 123456,
       prompt_upsampling: false
     })
     await expect(
@@ -275,6 +275,33 @@ describe('native Router requests', () => {
         signal
       )
     ).rejects.toBeInstanceOf(WorkshopRouterError)
+  })
+
+  it('associates an unreadable native media input with its field', async () => {
+    const file = new File(['pixels'], 'private.png', { type: 'image/png' })
+    const cause = new DOMException('File gone', 'NotFoundError')
+    vi.spyOn(file, 'arrayBuffer').mockRejectedValue(cause)
+
+    await expect(
+      prepareWorkshopRouterInput(
+        contractFor('bfl/flux-2-pro'),
+        {
+          prompt: 'Edit',
+          media_image: {
+            file,
+            name: file.name,
+            size: file.size,
+            type: file.type
+          }
+        },
+        new AbortController().signal
+      )
+    ).rejects.toMatchObject({
+      reason: 'client',
+      stage: 'file_read',
+      cause,
+      fieldErrors: { media_image: 'fileUnreadable' }
+    })
   })
 
   it('calls /v2/models with the workspace bearer, keeps the request ID and reads native output', async () => {

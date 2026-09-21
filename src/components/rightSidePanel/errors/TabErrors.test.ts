@@ -16,11 +16,11 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/types/comfy'
 import { toNodeId } from '@/types/nodeId'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import TabErrors from './TabErrors.vue'
@@ -1126,10 +1126,8 @@ describe('TabErrors.vue', () => {
       })
     )
 
-    let canvasStore!: ReturnType<typeof useCanvasStore>
     let executionErrorStore!: ReturnType<typeof useExecutionErrorStore>
     renderComponent((pinia) => {
-      canvasStore = useCanvasStore(pinia)
       executionErrorStore = useExecutionErrorStore(pinia)
       executionErrorStore.recordNodeErrors({
         '1': nodeError(
@@ -1174,7 +1172,7 @@ describe('TabErrors.vue', () => {
 
     const missingMediaNode = new LGraphNode('LoadImage')
     missingMediaNode.id = toNodeId(3)
-    canvasStore.selectedItems = [missingMediaNode]
+    setCanvasSelection([missingMediaNode])
     await nextTick()
 
     expect(errorChip).toHaveAttribute('aria-pressed', 'false')
@@ -1190,10 +1188,8 @@ describe('TabErrors.vue', () => {
       })
     )
 
-    let canvasStore!: ReturnType<typeof useCanvasStore>
     let executionErrorStore!: ReturnType<typeof useExecutionErrorStore>
     renderComponent((pinia) => {
-      canvasStore = useCanvasStore(pinia)
       executionErrorStore = useExecutionErrorStore(pinia)
       executionErrorStore.recordNodeErrors({
         '1': nodeError(
@@ -1223,7 +1219,7 @@ describe('TabErrors.vue', () => {
 
     const missingMediaNode = new LGraphNode('LoadImage')
     missingMediaNode.id = toNodeId(3)
-    canvasStore.selectedItems = [missingMediaNode]
+    setCanvasSelection([missingMediaNode])
     await nextTick()
 
     const user = userEvent.setup()
