@@ -205,18 +205,31 @@ test.describe(
         await agentPanel.selectWorkflow()
 
         const ws = await getWebSocket()
-        const subscribeFrame = new Promise<{
-          type: string
-          data: { workflow_id: string }
-        }>((resolve) => {
+        // Resolve only a `doc_subscribe` that is proven to carry a string
+        // workflow id. Accepting the frame on `type` alone lets a drifted
+        // frame with missing or null `data` satisfy the promise, after which
+        // every `doc_update` below is addressed to `undefined`.
+        const subscribedWorkflowId = new Promise<string>((resolve) => {
           ws.onMessage((msg) => {
             if (typeof msg !== 'string') return
+            let frame: unknown
             try {
-              const parsed = JSON.parse(msg)
-              if (parsed?.type === 'doc_subscribe') resolve(parsed)
+              frame = JSON.parse(msg)
             } catch {
-              // not JSON, ignore
+              return // not JSON, ignore
             }
+            if (typeof frame !== 'object' || frame === null) return
+            const { type, data } = frame as { type?: unknown; data?: unknown }
+            if (
+              type !== 'doc_subscribe' ||
+              typeof data !== 'object' ||
+              data === null
+            )
+              return
+            const { workflow_id: workflowId } = data as {
+              workflow_id?: unknown
+            }
+            if (typeof workflowId === 'string') resolve(workflowId)
           })
         })
 
@@ -225,9 +238,7 @@ test.describe(
         await panel.getByRole('button', { name: 'Send' }).click()
         await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
 
-        const sub = await subscribeFrame
-        const workflowId: string = sub.data.workflow_id
-        expect(typeof workflowId).toBe('string')
+        const workflowId = await subscribedWorkflowId
 
         ws.send(
           JSON.stringify({
