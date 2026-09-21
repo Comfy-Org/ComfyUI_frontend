@@ -129,6 +129,32 @@ const regex = /describe.fixme('not code')/
     ])
   })
 
+  it('ignores title and formatting edits to disabled tests', () => {
+    const root = createRepository()
+    write(
+      root,
+      'tests/example.spec.ts',
+      `test.skip('old title', () => {})
+test.fixme('formatted test', () => {})
+`
+    )
+    const base = commit(root, 'base')
+
+    write(
+      root,
+      'tests/example.spec.ts',
+      `test.skip('new title', () => {})
+test.fixme(
+  'formatted test',
+  () => {}
+)
+`
+    )
+    const head = commit(root, 'edit disabled tests')
+
+    expect(findViolations(root, base, head)).toEqual([])
+  })
+
   it.for([
     { body: 'Re-enabled by #12345', expected: true },
     {
