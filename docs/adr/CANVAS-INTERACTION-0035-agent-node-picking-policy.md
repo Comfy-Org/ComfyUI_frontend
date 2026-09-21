@@ -63,7 +63,13 @@ agent store owns the fact; everything else is a projection of it.
    stored representation of "picking is on". It already owns entry, exit,
    Escape and the workflow, target and graph-change exits.
    `AgentPanelRoot.vue` calls `store.enter()` and `store.exit()` and holds no
-   canvas save/restore state of its own.
+   canvas save/restore state of its own. Graph replacement is a projection
+   boundary: `LGraphCanvas.setGraph()` and `openSubgraph()` dispatch
+   `litegraph:set-graph` before they clear the outgoing selection, and the
+   panel exits picking synchronously when `canvasStore.currentGraph` changes,
+   so the outgoing clear runs with the live-selection projection off and
+   every staged reference, including one to a node of another graph scope,
+   survives the switch.
 2. **One pure derivation.** `resolvePickingPolicy({ readOnly, picking })` in
    `src/renderer/core/canvas/interaction/pickingPolicy.ts` returns a
    `PickingPolicy` with `canSelectNodes: !readOnly`,
@@ -136,24 +142,34 @@ agent store owns the fact; everything else is a projection of it.
    already forces accumulation and blocks node drag, and writing them would
    overwrite extension-set values.
 
-5. **One gate for commands, guards at every other mutation site.** Every
-   graph-mutating core command declares `mutatesGraph` on `ComfyCommand`,
+5. **One gate for commands, guards at every other mutation site.**
+   Graph-mutating core commands declare `mutatesGraph` on `ComfyCommand`,
    either `true` or a predicate evaluated at dispatch, and
    `commandStore.execute` refuses a command whose capability holds while
-   `canvasStore.canvas.selectOnly` is `true`, so menus, keybindings and the
-   selection toolbox share one check and a command body carries no policy of
-   its own. The command store loads the canvas store lazily inside that
-   check, so its module graph stays independent of the canvas. The declared
-   set is the four `Comfy.Canvas.ToggleSelectedNodes` commands (`Mute`,
-   `Bypass`, `Pin`, `Collapse`), `Comfy.Canvas.ToggleSelected.Pin`,
-   `Comfy.Canvas.Resize`, the four `Comfy.Canvas.MoveSelectedNodes`
-   commands, `Comfy.Canvas.DeleteSelectedItems`,
+   `commandPolicyStore.graphMutationsLocked` is `true`, so menus, keybindings
+   and the selection toolbox share one check and a command body carries no
+   policy of its own. The sync in decision 4 writes that flag next to the
+   `selectOnly` pin; `commandPolicyStore` holds nothing else and imports no
+   canvas or app module, so the command store reads the policy synchronously
+   and the decision, the predicate and the command body all run in the
+   dispatching task. A lazy canvas-store import in an earlier revision moved
+   the decision past an `await`: the lock could change before the body ran,
+   Undo could take a different branch from the one its predicate described,
+   and Ctrl+B applied its bypass after the `ChangeTracker` keydown
+   checkpoint had already run. The declared set is the four
+   `Comfy.Canvas.ToggleSelectedNodes` commands (`Mute`, `Bypass`, `Pin`,
+   `Collapse`), `Comfy.Canvas.ToggleSelected.Pin`, `Comfy.Canvas.Resize`,
+   the four `Comfy.Canvas.MoveSelectedNodes` commands,
+   `Comfy.Canvas.DeleteSelectedItems`,
    `Comfy.Canvas.PasteFromClipboard[WithConnect]`,
    `Comfy.Graph.GroupSelectedNodes`, `Comfy.Graph.ConvertToSubgraph`,
    `Comfy.Graph.UnpackSubgraph`, `Comfy.Graph.FitGroupToContents`,
-   `Comfy.Graph.ToggleWidgetPromotion`, `Comfy.ClearWorkflow`, `Comfy.Undo`
-   and `Comfy.Redo`; `useCoreCommands.selectOnly.test.ts` pins that
-   inventory. `Comfy.Undo` and `Comfy.Redo` declare the predicate
+   `Comfy.Graph.ToggleWidgetPromotion`, `Comfy.Subgraph.SetDescription`,
+   `Comfy.Subgraph.SetSearchAliases`, `Comfy.ClearWorkflow`, `Comfy.Undo`
+   and `Comfy.Redo`. `useCoreCommands.selectOnly.test.ts` pins the currently
+   classified set so a change to it is visible in review; the classification
+   is hand-maintained and the test cannot prove that every mutating command
+   carries it. `Comfy.Undo` and `Comfy.Redo` declare the predicate
    `!dialogStore.isDialogOpen('global-mask-editor')`: with the mask editor
    open they run its own history, which must keep working during picking,
    and only their workflow-tracker branch is a graph mutation. A command
@@ -172,7 +188,10 @@ agent store owns the fact; everything else is a projection of it.
    handling, the group and empty-canvas double-click actions, the group
    title-bar drag callbacks (`_processDraggedItems` snaps `selectedItems` on
    shift or `alwaysSnapToGrid`, which would move the picked nodes) and
-   `_processNodeClick`'s `bringToFront` while select-only; node clicks,
+   `_processNodeClick`'s `bringToFront` while select-only, and `processKey`
+   skips the selected-node `onKeyDown` and `onKeyUp` dispatch (the
+   first-party handler steps preview images and extension handlers are
+   unrestricted) while keeping its Space and Escape handling; node clicks,
    empty-canvas clicks, panning and the selection rectangle are unchanged.
    The two file-drop paths return while select-only: the document
    `drop` listener in `app.ts` after `preventDefault()` (the browser must not
@@ -203,8 +222,9 @@ agent store owns the fact; everything else is a projection of it.
   owner releases.
 - Classic picking keeps node selection, empty-canvas preservation, panning
   and the selection rectangle; alt-click clone, reroute and link drags from
-  the canvas, link menus, group title-bar drags, click-to-front reordering
-  and the group and empty-canvas double-click actions are suppressed. The
+  the canvas, link menus, group title-bar drags, click-to-front reordering,
+  selected-node key callbacks and the group and empty-canvas double-click
+  actions are suppressed. The
   existing `LGraphCanvas.selectOnly.test.ts` behavioral assertions are retained
   and gain rows for each suppressed path.
 - `ADR-CANVAS-SELECTION-0028`'s compatibility clause still holds: picker
@@ -213,6 +233,10 @@ agent store owns the fact; everything else is a projection of it.
   a second source. Its deferred `InteractionPolicy` item stays with 0029.
 - Vue node DOM structure and `data-*` attributes used by e2e tests do not
   change. `shouldHandleNodePointerEvents` keeps its name and meaning.
+- `litegraph:set-graph` keeps its detail and still fires once per
+  `setGraph()` with the new graph attached; it now fires before the outgoing
+  selection is cleared rather than after, so a listener sees the old
+  selection for the duration of the event.
 
 ### Deferred decisions
 
@@ -276,15 +300,20 @@ agent store owns the fact; everything else is a projection of it.
 - `selectOnly` cannot be observed as anything but `true` while picking, so
   the command gate and the per-site guards hold without each site having to
   know about owners, scopes or extension writers.
-- The policy is table-testable without a canvas or DOM, the command
-  inventory is one asserted list, and the remaining guard list is finite
-  and reviewable.
+- The policy is table-testable without a canvas or DOM, the classified
+  command inventory is one asserted list that makes changes reviewable, and
+  the remaining guard list is finite and reviewable.
 
 ### Negative
 
-- A new mutating core command declares `mutatesGraph`; the classic canvas,
-  paste, drop and history paths keep per-site guards, so a new keyboard or
-  pointer mutation path must still opt in.
+- A new mutating core command declares `mutatesGraph` and nothing checks
+  that it does; the classic canvas, paste, drop and history paths keep
+  per-site guards, so a new keyboard or pointer mutation path must still opt
+  in.
+- `commandPolicyStore.graphMutationsLocked` is a second projection of
+  `isActive`, written by the same sync as the `selectOnly` pin, kept because
+  the command store cannot import the agent or canvas stores without
+  pulling the app module into every command-store consumer.
 - An extension that sets `canvas.selectOnly` itself reads `true` while
   picking and sees its own write take effect only once picking ends. No
   first-party writer outside the sync exists; the extension corpus has not

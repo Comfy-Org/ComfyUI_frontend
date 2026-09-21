@@ -60,6 +60,10 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
   test.describe('with Vue nodes', { tag: '@vue-nodes' }, () => {
     test.use({ objectInfo: 'server' })
 
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.canvasOps.resetView()
+    })
+
     test('keeps panning and zooming available while picking without dropping the picked node', async ({
       agentPanel,
       comfyPage
@@ -71,12 +75,6 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
       const selectedNodeReference = agentPanel.root.getByRole('button', {
         name: /Remove CLIP Text Encode \(Prompt\) #\d+ reference/
       })
-      function viewport() {
-        return page.evaluate(() => {
-          const { ds } = window.app!.canvas
-          return { offset: [ds.offset[0], ds.offset[1]], scale: ds.scale }
-        })
-      }
 
       await test.step('create and select a node while picking', async () => {
         await comfyPage.nodeOps.clearGraph()
@@ -92,7 +90,8 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
         await expect(selectedNodeReference).toBeVisible()
       })
 
-      const before = await viewport()
+      const offsetBefore = await comfyPage.canvasOps.getOffset()
+      const scaleBefore = await comfyPage.canvasOps.getScale()
       const nodeBox = await node.boundingBox()
       if (!nodeBox) throw new Error('node is not rendered')
       const emptyCanvasSpot = {
@@ -103,8 +102,8 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
       await test.step('dragging empty canvas pans the viewport', async () => {
         await comfyPage.canvasOps.pan({ x: -120, y: -80 }, emptyCanvasSpot)
         await expect
-          .poll(async () => (await viewport()).offset)
-          .not.toEqual(before.offset)
+          .poll(() => comfyPage.canvasOps.getOffset())
+          .not.toEqual(offsetBefore)
         await expect(node).toHaveClass(/outline-node-component-outline/)
         await expect(selectedNodeReference).toBeVisible()
       })
@@ -113,8 +112,8 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
         await page.mouse.move(emptyCanvasSpot.x, emptyCanvasSpot.y)
         await page.mouse.wheel(0, -240)
         await expect
-          .poll(async () => (await viewport()).scale)
-          .not.toBe(before.scale)
+          .poll(() => comfyPage.canvasOps.getScale())
+          .not.toBe(scaleBefore)
         await expect(node).toHaveClass(/outline-node-component-outline/)
         await expect(selectedNodeReference).toBeVisible()
         await expect(agentPanel.nodeSelectionBanner).toBeVisible()
