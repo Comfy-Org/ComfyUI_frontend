@@ -373,13 +373,13 @@ export default defineConfig([
           selector:
             "CallExpression[callee.type='MemberExpression'][callee.property.name=/^(toReversed|toSorted|toSpliced|with)$/]",
           message:
-            'ES2023 array method is not polyfilled for build target es2022; use an ES2022-safe non-mutating equivalent such as [...array].reverse().'
+            'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
         },
         {
           selector:
             "CallExpression[callee.type='MemberExpression'][callee.computed=true][callee.property.type='Literal'][callee.property.value=/^(toReversed|toSorted|toSpliced|with)$/]",
           message:
-            'ES2023 array method is not polyfilled for build target es2022; use an ES2022-safe non-mutating equivalent such as [...array].reverse().'
+            'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
         }
       ]
     }
