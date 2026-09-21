@@ -136,24 +136,10 @@ describe('LGraphNode extension field serialization', () => {
     }
 
     const serialized = node.serialize()
-    const serializedValue = serialized.extensions?.thirdPartyData
-    if (
-      typeof serializedValue !== 'object' ||
-      serializedValue === null ||
-      Array.isArray(serializedValue) ||
-      !('settings' in serializedValue)
-    )
-      throw new Error('Expected serialized extension object')
-    const settings = serializedValue.settings
-    if (
-      typeof settings !== 'object' ||
-      settings === null ||
-      Array.isArray(settings) ||
-      !('enabled' in settings)
-    )
-      throw new Error('Expected serialized extension settings')
-    settings.enabled = false
+    extensionValue.settings.enabled = false
 
-    expect(extensionValue).toEqual({ settings: { enabled: true } })
+    expect(serialized.extensions).toEqual({
+      thirdPartyData: { settings: { enabled: true } }
+    })
   })
 })
