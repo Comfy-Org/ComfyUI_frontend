@@ -157,7 +157,9 @@
           <NodeWidgets
             v-if="hasRenderableWidgets"
             :node-data
-            :widget-ids="renderedWidgetIds"
+            :processed-widgets
+            :node-type
+            :can-select-inputs
           />
 
           <div
@@ -678,7 +680,7 @@ const renderedWidgetIds = computed(() => {
 })
 
 const hasRenderableWidgets = computed(() => renderedWidgetIds.value.length > 0)
-const { processedWidgets } = useProcessedWidgets(
+const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
   () => nodeData,
   () => renderedWidgetIds.value
 )

@@ -177,9 +177,14 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
         NodeHeader: true,
         NodeSlots: true,
         NodeWidgets: {
-          props: ['nodeData', 'widgetIds'],
+          props: [
+            'nodeData',
+            'processedWidgets',
+            'nodeType',
+            'canSelectInputs'
+          ],
           template:
-            '<div data-testid="node-widgets">{{ widgetIds.join(",") }}</div>'
+            '<div data-testid="node-widgets">{{ processedWidgets.map((widget) => widget.widgetId).join(",") }}</div>'
         },
         NodeContent: {
           template: '<div data-testid="node-content" />'

@@ -4,9 +4,9 @@
   </div>
   <WidgetGrid
     v-else
-    :processed-widgets
-    :node-type
-    :can-select-inputs
+    :processed-widgets="resolvedProcessedWidgets"
+    :node-type="resolvedNodeType"
+    :can-select-inputs="resolvedCanSelectInputs"
     :node-id="nodeData?.id"
     :class="
       shouldHandleNodePointerEvents
@@ -21,8 +21,9 @@
 </template>
 
 <script setup lang="ts">
-import { onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 
+import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import type { NodeState } from '@/types/nodeState'
 import type { WidgetId } from '@/types/widgetId'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -35,9 +36,18 @@ import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/
 interface NodeWidgetsProps {
   nodeData?: NodeState
   widgetIds?: readonly WidgetId[]
+  processedWidgets?: ProcessedWidget[]
+  nodeType?: string
+  canSelectInputs?: boolean
 }
 
-const { nodeData, widgetIds } = defineProps<NodeWidgetsProps>()
+const {
+  nodeData,
+  widgetIds,
+  processedWidgets: suppliedProcessedWidgets,
+  nodeType: suppliedNodeType,
+  canSelectInputs: suppliedCanSelectInputs
+} = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
@@ -66,8 +76,21 @@ onErrorCaptured((error) => {
   return false
 })
 
-const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
+const {
+  canSelectInputs: computedCanSelectInputs,
+  nodeType: computedNodeType,
+  processedWidgets: computedProcessedWidgets
+} = useProcessedWidgets(
   () => nodeData,
   () => widgetIds
+)
+const resolvedProcessedWidgets = computed(
+  () => suppliedProcessedWidgets ?? computedProcessedWidgets.value
+)
+const resolvedNodeType = computed(
+  () => suppliedNodeType ?? computedNodeType.value
+)
+const resolvedCanSelectInputs = computed(
+  () => suppliedCanSelectInputs ?? computedCanSelectInputs.value
 )
 </script>
