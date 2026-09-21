@@ -186,12 +186,16 @@ function tryCreateSubgraph(
 /**
  * Run `fn` with `LGraphNode.configure()` honouring `widgets_values_named`.
  *
- * The op layer stores interior widget values by name and the follower has no
- * widget catalog to project them positionally the way the package's
- * `project()` does. Named restore is otherwise gated behind the experimental
+ * The op layer stores widget values by name and the follower has no widget
+ * catalog to project them positionally the way the package's `project()`
+ * does. Named restore is otherwise gated behind the experimental
  * `Comfy.Workflow.NamedValuesRestore` setting; enabling it only while the
- * agent's definitions configure lets values land inside `configure()`, before
- * `onConfigure`, exactly as they do for a human-loaded workflow.
+ * agent's definitions and root nodes configure lets values land inside
+ * `configure()`, before `onConfigure`, exactly as they do for a human-loaded
+ * workflow. Root nodes need it too: `LGraph.add()` re-registers each live
+ * widget, and a placeholder record whose type differs from the live widget's
+ * (`'string'` vs `'text'`/`'combo'`) is replaced by the live default, so
+ * only `configure()` can put the seeded value back.
  */
 function withNamedValuesRestore<T>(fn: () => T): T {
   const previous = LiteGraph.namedValuesRestore
@@ -351,7 +355,9 @@ function materialize(
   if (!added) return rollback('LGraph.add returned no node')
 
   try {
-    node.configure(withNamedWidgetValues(serialised, widgets))
+    withNamedValuesRestore(() => {
+      node.configure(withNamedWidgetValues(serialised, widgets))
+    })
     replayUpdatedWidgetCallbacks(node, serialised, widgets)
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
