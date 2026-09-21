@@ -228,7 +228,7 @@ describe('buildPayload', () => {
 describe('partial shard merges', () => {
   it('reports E2E movement when every shard contributed', () => {
     using fixture = notifyFixture()
-    fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))
+    fixture.writeE2eBaseline(64, { complete: true })
     fixture.writeE2e(67, {
       shardsFound: 16,
       shardsExpected: 16,
@@ -316,9 +316,39 @@ describe('comparison span', () => {
     expect(result.stdout).toContain('may cover several merges')
   })
 
-  it('claims no span when the baseline cannot identify itself', () => {
+  // Baselines stored before this gate existed are bare coverage.lcov files
+  // saved from any merge, whole or not. search_artifacts walks back to them,
+  // so the first run after this ships must withhold rather than publish an
+  // unvetted delta — with no span note and no milestone to dress it up.
+  it('withholds a baseline that cannot prove it was whole', () => {
     using fixture = notifyFixture()
     fixture.writeE2eBaseline(64)
+    fixture.writeE2e(67, { complete: true, sourceSha: '9876543fedcba0' })
+
+    const result = fixture.run()
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toBe('')
+  })
+
+  it('withholds a baseline whose own metadata says it was partial', () => {
+    using fixture = notifyFixture()
+    fixture.writeE2eBaseline(64, {
+      complete: false,
+      shardsFound: 3,
+      shardsExpected: 16,
+      sourceSha: 'abc1234def5678'
+    })
+    fixture.writeE2e(67, { complete: true, sourceSha: '9876543fedcba0' })
+
+    const result = fixture.run()
+
+    expect(result.stdout).toBe('')
+  })
+
+  it('reports once both sides prove they were whole', () => {
+    using fixture = notifyFixture()
+    fixture.writeE2eBaseline(64, { complete: true })
     fixture.writeE2e(67, { complete: true, sourceSha: '9876543fedcba0' })
 
     const result = fixture.run()

@@ -79,7 +79,7 @@ printf '{"shardsFound":%d,"shardsExpected":%d,"complete":%s,"reason":"%s","sourc
   > "$COVERAGE_DIR/coverage-metadata.json"
 
 if [[ "$COMPLETE" != true ]]; then
-  echo "::warning::E2E coverage merge is not whole — $REASON. It is excluded from trend reporting."
+  echo "::warning::E2E coverage merge is not verified as whole — $REASON. It is excluded from trend reporting."
 fi
 
 ADD_ARGS=()
@@ -98,7 +98,7 @@ append_summary "- **$FOUND_SHARDS / $EXPECTED_SHARDS** shards merged"
 if [[ "$COMPLETE" != true ]]; then
   append_summary ''
   append_summary "> [!WARNING]"
-  append_summary "> Not a whole merge — $REASON. It is excluded from trend reporting."
+  append_summary "> Not verified as a whole merge — $REASON. It is excluded from trend reporting."
 fi
 append_summary ''
 append_summary '| Shard | Files | Lines Hit |'
@@ -127,7 +127,7 @@ lcov --remove "$COVERAGE_DIR/coverage.lcov" \
 
 HTML_TITLE='ComfyUI E2E Coverage'
 if [[ "$COMPLETE" != true ]]; then
-  HTML_TITLE="$HTML_TITLE — NOT A WHOLE MERGE ($REASON)"
+  HTML_TITLE="$HTML_TITLE — NOT VERIFIED AS A WHOLE MERGE ($REASON)"
 fi
 
 genhtml "$COVERAGE_DIR/coverage.lcov" \

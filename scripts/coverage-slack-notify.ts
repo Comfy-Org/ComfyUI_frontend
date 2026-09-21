@@ -110,7 +110,12 @@ function parseLcov(filePath: string): CoverageData | null {
  * treated as incomplete: the artifact has to prove it is whole before its
  * number is published.
  *
- * Because incomplete merges never become baselines, the baseline can be
+ * The baseline is held to the same bar, and must prove itself separately:
+ * baselines stored before this gate existed carry no metadata at all, and
+ * were saved from partial merges. Withholding one costs a single run of
+ * silence, after which this run's own artifact becomes the baseline.
+ *
+ * Because incomplete merges never become baselines, a vetted baseline can be
  * several merges behind. It carries the commit it measured so the report can
  * say so rather than implying one PR caused the whole movement.
  */
@@ -120,13 +125,18 @@ function readE2eSnapshot(): CoverageSnapshot {
   )
   if (metadata?.complete !== true) return { current: null, baseline: null }
 
+  const baseline = readCoverageMetadata(
+    join(E2E_BASELINE_DIR, COVERAGE_METADATA_FILE)
+  )
+  const baselineIsWhole = baseline?.complete === true
+
   return {
     current: parseLcov(join(E2E_COVERAGE_DIR, 'coverage.lcov')),
-    baseline: parseLcov(join(E2E_BASELINE_DIR, 'coverage.lcov')),
+    baseline: baselineIsWhole
+      ? parseLcov(join(E2E_BASELINE_DIR, 'coverage.lcov'))
+      : null,
     currentSha: metadata.sourceSha,
-    baselineSha: readCoverageMetadata(
-      join(E2E_BASELINE_DIR, COVERAGE_METADATA_FILE)
-    )?.sourceSha
+    baselineSha: baselineIsWhole ? baseline.sourceSha : undefined
   }
 }
 

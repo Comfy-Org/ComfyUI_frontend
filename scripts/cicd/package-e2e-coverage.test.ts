@@ -199,7 +199,7 @@ describe('package-e2e-coverage.sh', () => {
       sourceSha: 'abc1234def5678'
     })
     expect(result.output).toContain(
-      '::warning::E2E coverage merge is not whole — only 1 of 16 shards'
+      '::warning::E2E coverage merge is not verified as whole — only 1 of 16 shards'
     )
     expect(
       readFileSync(join(fixture.output, 'coverage.lcov'), 'utf8')
@@ -234,7 +234,7 @@ describe('package-e2e-coverage.sh', () => {
       sourceSha: 'abc1234def5678'
     })
     expect(result.output).toContain(
-      '::warning::E2E coverage merge is not whole'
+      '::warning::E2E coverage merge is not verified as whole'
     )
   })
 
