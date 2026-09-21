@@ -749,9 +749,12 @@ export class AgentConversationHarness {
    */
   pushNestedDefinition(): string {
     const fixture = agentNestedSubgraphDefinitions()
-    const outer = fixture.definitions.subgraphs[0]
-    const inner = outer?.definitions?.subgraphs[0]
-    if (!outer || !inner) {
+    const outer = fixture.definitions.subgraphs.at(0)
+    if (!outer) {
+      throw new Error('nested subgraph fixture is missing its outer definition')
+    }
+    const inner = outer.definitions?.subgraphs.at(0)
+    if (!inner) {
       throw new Error('nested subgraph fixture is incomplete')
     }
     const { frame, outerId } = this.host.seedNestedDefinition(
