@@ -1,3 +1,6 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { computed, ref } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,7 +15,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
@@ -21,7 +24,7 @@ const mockRouteQuery = vi.hoisted(() => ({
 }))
 const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockRouteQuery.value
   }),
@@ -32,8 +35,8 @@ vi.mock('vue-router', () => ({
 
 const mockShowPricingTable = vi.hoisted(() => vi.fn())
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({
       showPricingTable: mockShowPricingTable
@@ -44,35 +47,23 @@ vi.mock(
 const mockPermissions = vi.hoisted(() => ({
   value: { canManageSubscription: true }
 }))
-const mockTeamCreditStops = vi.hoisted(() => ({
-  value: null as TeamCreditStops | null
-}))
-const mockFetchPlans = vi.hoisted(() => vi.fn())
+const mockTeamCreditStops = ref<TeamCreditStops | null>(null)
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    teamCreditStops: mockTeamCreditStops,
-    fetchPlans: mockFetchPlans
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 const mockCanOpenPricingSurface = vi.hoisted(() => ({ value: true }))
-const mockInitializeCapabilities = vi.hoisted(() =>
-  vi.fn(async () => undefined)
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: mockPermissions,
+      canOpenPricingSurface: mockCanOpenPricingSurface
+    })
+  })
 )
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: mockPermissions,
-    canOpenPricingSurface: mockCanOpenPricingSurface
-  })
-}))
-
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    initialize: mockInitializeCapabilities
-  })
-}))
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 const TEAM_CREDIT_STOPS = {
   default_stop_index: 2,
@@ -92,13 +83,16 @@ const TEAM_CREDIT_STOPS = {
 
 describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
+    const billing = useBillingContext()
+    billing.teamCreditStops = computed(() => mockTeamCreditStops.value)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
+
     mockRouteQuery.value = {}
     mockPermissions.value = { canManageSubscription: true }
     mockCanOpenPricingSurface.value = true
-    mockInitializeCapabilities.mockClear()
-    mockInitializeCapabilities.mockResolvedValue(undefined)
+
     mockTeamCreditStops.value = TEAM_CREDIT_STOPS
-    mockFetchPlans.mockResolvedValue(undefined)
+    vi.mocked(billing.fetchPlans).mockResolvedValue(undefined)
     mockShowPricingTable.mockResolvedValue(undefined)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
@@ -139,14 +133,18 @@ describe('usePricingTableUrlLoader', () => {
   it('resolves the capability snapshot before deciding', async () => {
     mockRouteQuery.value = { pricing: '1' }
     mockCanOpenPricingSurface.value = true
-    mockInitializeCapabilities.mockImplementation(async () => {
-      mockCanOpenPricingSurface.value = false
-    })
+    vi.mocked(useBillingCapabilities().initialize).mockImplementation(
+      async () => {
+        mockCanOpenPricingSurface.value = false
+      }
+    )
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockInitializeCapabilities).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(useBillingCapabilities().initialize)
+    ).toHaveBeenCalledOnce()
     expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
 
@@ -379,14 +377,16 @@ describe('usePricingTableUrlLoader', () => {
       cycle: 'yearly'
     }
     mockTeamCreditStops.value = null
-    mockFetchPlans.mockImplementationOnce(async () => {
-      mockTeamCreditStops.value = TEAM_CREDIT_STOPS
-    })
+    vi.mocked(useBillingContext().fetchPlans).mockImplementationOnce(
+      async () => {
+        mockTeamCreditStops.value = TEAM_CREDIT_STOPS
+      }
+    )
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockFetchPlans).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchPlans).toHaveBeenCalledOnce()
     expect(mockShowPricingTable).toHaveBeenCalledWith(
       expect.objectContaining({
         initialCheckout: expect.objectContaining({
@@ -404,7 +404,9 @@ describe('usePricingTableUrlLoader', () => {
       cycle: 'yearly'
     }
     mockTeamCreditStops.value = null
-    mockFetchPlans.mockRejectedValueOnce(new Error('catalog unavailable'))
+    vi.mocked(useBillingContext().fetchPlans).mockRejectedValueOnce(
+      new Error('catalog unavailable')
+    )
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()

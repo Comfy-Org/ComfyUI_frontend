@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { TurnId } from '../../schemas/agentApiSchema'
 import { zAgentWsEvent } from '../../schemas/agentApiSchema'
@@ -16,8 +15,6 @@ const T1 = 't1' as TurnId
 const T2 = 't2' as TurnId
 
 describe('agentConversationStore entries (user + assistant interleave)', () => {
-  beforeEach(() => setActivePinia(createPinia()))
-
   it('pairs each recorded user prompt before its assistant turn, in order', () => {
     const store = useAgentConversationStore()
     store.recordUser(T1, 'first prompt')

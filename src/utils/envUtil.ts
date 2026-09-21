@@ -15,7 +15,7 @@ export function electronAPI() {
 }
 
 export function showNativeSystemMenu() {
-  electronAPI()?.showContextMenu()
+  electronAPI().showContextMenu()
 }
 
 export function isNativeWindow() {

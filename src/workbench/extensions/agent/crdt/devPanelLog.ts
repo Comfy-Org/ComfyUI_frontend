@@ -1,6 +1,6 @@
 import { shallowRef, triggerRef } from 'vue'
 
-import { isCrdtDebugOptedOut } from './crdtDebugGate'
+import { isCrdtDebugEnabled } from './crdtDebugGate'
 import type { CrdtLogLevel } from './crdtDebugGate'
 
 /**
@@ -21,21 +21,28 @@ import type { CrdtLogLevel } from './crdtDebugGate'
  */
 export type CrdtLogScope = 'wire' | 'doc'
 
-export type DevEventKind =
-  | 'ws_out'
-  | 'doc_subscribed'
-  | 'doc_update'
-  | 'doc_ops_result'
-  | 'human_ops_settled'
-  | 'doc_reset'
-  | 'schema_error'
-  | 'reconnected'
-  | 'subscribe_retry'
-  | 'doc_nodes_changed'
-  | 'rebind'
-  | 'stale_probe'
-  | 'doc_gap'
-  | 'doc_stale'
+export const DEV_EVENT_KINDS = [
+  'ws_out',
+  'doc_subscribed',
+  'doc_update',
+  'doc_ops_result',
+  'human_ops_settled',
+  'doc_reset',
+  'doc_nodes_changed',
+  'schema_error',
+  'reconnected',
+  'subscribe_retry',
+  'subscribe_ack_timeout',
+  'stale_probe',
+  'catchup_probe',
+  'rebind',
+  'doc_gap',
+  'doc_stale',
+  'frame_send_failed',
+  'agent_node_adapters_materialized'
+] as const
+
+export type DevEventKind = (typeof DEV_EVENT_KINDS)[number]
 
 export interface DevEvent {
   seq: number
@@ -54,22 +61,24 @@ export interface DevEventOptions {
 const CAPACITY = 500
 
 let nextSeq = 1
-const buffer: DevEvent[] = []
+let buffer: DevEvent[] | undefined
 
 /**
- * Shallow ref over the ring buffer. Consumers get a stable array identity;
- * mutations are announced via triggerRef so a 500-entry log never churns
- * deep reactivity.
+ * Shallow ref over the lazily allocated ring buffer. Production sessions that
+ * never enable the debug instrument retain no event buffer. Once recording is
+ * enabled, consumers get a stable array identity and mutations are announced
+ * via triggerRef so a 500-entry log never churns deep reactivity.
  */
-export const devEvents = shallowRef<readonly DevEvent[]>(buffer)
+export const devEvents = shallowRef<readonly DevEvent[]>([])
 
 export function recordDevEvent(
   kind: DevEventKind,
   detail: unknown,
   options: DevEventOptions = {}
 ): void {
-  if (isCrdtDebugOptedOut()) return
-  buffer.push({
+  if (!isCrdtDebugEnabled()) return
+  const events = buffer ?? (buffer = [])
+  events.push({
     seq: nextSeq++,
     at: Date.now(),
     kind,
@@ -77,11 +86,13 @@ export function recordDevEvent(
     level: options.level ?? 'info',
     detail
   })
-  if (buffer.length > CAPACITY) buffer.splice(0, buffer.length - CAPACITY)
-  triggerRef(devEvents)
+  if (events.length > CAPACITY) events.splice(0, events.length - CAPACITY)
+  if (devEvents.value !== events) devEvents.value = events
+  else triggerRef(devEvents)
 }
 
 export function clearDevEvents(): void {
+  if (!buffer) return
   buffer.length = 0
   triggerRef(devEvents)
 }

@@ -1,25 +1,23 @@
 <script setup lang="ts">
-import {
-  PopoverContent,
-  PopoverPortal,
-  PopoverRoot,
-  PopoverTrigger,
-  RadioGroupItem,
-  RadioGroupRoot
-} from 'reka-ui'
+import { PopoverTrigger, RadioGroupItem, RadioGroupRoot } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
-import type { AgentRunMode } from '../../../stores/agent/agentRunModeStore'
+import type { AgentRunModeValue } from '../../../stores/agent/agentRunModeStore'
 import {
   DEFAULT_CREDIT_LIMIT,
   useAgentRunModeStore
 } from '../../../stores/agent/agentRunModeStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const store = useAgentRunModeStore()
@@ -27,7 +25,7 @@ const toast = useToastStore()
 
 const open = ref(false)
 const saving = ref(false)
-const draftMode = ref<AgentRunMode>(store.mode)
+const draftMode = ref<AgentRunModeValue>(store.mode)
 const draftLimit = ref(store.creditLimit ?? DEFAULT_CREDIT_LIMIT)
 
 function onOpenChange(next: boolean): void {
@@ -76,7 +74,7 @@ const saveable = computed(
   () => dirty.value && limitValid.value && !saving.value
 )
 
-const TRIGGER_LABEL_KEYS: Record<AgentRunMode, string> = {
+const TRIGGER_LABEL_KEYS: Record<AgentRunModeValue, string> = {
   ask_approval: 'agent.runModeTriggerAsk',
   auto: 'agent.runModeTriggerAuto',
   auto_limited: 'agent.runModeTriggerAutoLimit'
@@ -84,7 +82,7 @@ const TRIGGER_LABEL_KEYS: Record<AgentRunMode, string> = {
 
 const triggerLabel = computed(() => t(TRIGGER_LABEL_KEYS[store.mode]))
 
-const TRIGGER_TOOLTIP_KEYS: Record<AgentRunMode, string> = {
+const TRIGGER_TOOLTIP_KEYS: Record<AgentRunModeValue, string> = {
   ask_approval: 'agent.runModeTriggerAskTooltip',
   auto: 'agent.runModeTriggerAutoTooltip',
   auto_limited: 'agent.runModeTriggerAutoLimitTooltip'
@@ -93,7 +91,7 @@ const TRIGGER_TOOLTIP_KEYS: Record<AgentRunMode, string> = {
 const triggerTooltip = computed(() => t(TRIGGER_TOOLTIP_KEYS[store.mode]))
 
 const options: {
-  mode: AgentRunMode
+  mode: AgentRunModeValue
   icon: string
   title: string
   description: string
@@ -109,76 +107,70 @@ const options: {
     icon: 'icon-[lucide--zap]',
     title: 'agent.runModeAuto',
     description: 'agent.runModeAutoDescription'
-  },
-  {
-    mode: 'auto_limited',
-    icon: 'icon-[lucide--gauge]',
-    title: 'agent.runModeLimit',
-    description: 'agent.runModeLimitDescription'
   }
 ]
 </script>
 
 <template>
-  <PopoverRoot :open @update:open="onOpenChange">
-    <PopoverTrigger
-      v-tooltip.top="buildAgentTooltipConfig(triggerTooltip)"
-      :class="
-        cn(
-          'text-agent-fg-muted hover:bg-agent-surface-hover flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors',
-          open && 'bg-agent-surface-hover text-agent-fg'
-        )
-      "
-    >
-      <span>{{ triggerLabel }}</span>
-      <span class="icon-[lucide--chevron-down] size-3" />
-    </PopoverTrigger>
-    <PopoverPortal>
-      <PopoverContent
-        side="top"
-        align="end"
-        :side-offset="8"
-        class="agent-scope border-agent-border bg-agent-surface-raised z-1100 flex w-80 flex-col gap-2.5 rounded-[10px] border p-2.5 shadow-lg"
+  <Popover :open @update:open="onOpenChange">
+    <PopoverTrigger as-child>
+      <Button
+        v-tooltip.top="buildTooltipConfig(triggerTooltip)"
+        variant="muted-textonly"
+        size="md"
+        :class="cn('gap-1', open && 'bg-secondary-background-hover')"
       >
-        <div class="flex flex-col gap-0.5">
-          <div class="text-agent-fg text-sm/5 font-medium">
-            {{ t('agent.runPermissions') }}
-          </div>
-          <div class="text-agent-fg-muted text-xs/4">
-            {{ t('agent.runPermissionsDescription') }}
-          </div>
+        <span>{{ triggerLabel }}</span>
+        <span
+          data-testid="run-mode-chevron"
+          class="icon-[lucide--chevron-down] size-4"
+        />
+      </Button>
+    </PopoverTrigger>
+    <PopoverContent
+      side="top"
+      align="end"
+      :side-offset="8"
+      class="agent-scope z-1100 flex w-80 flex-col gap-2.5 rounded-lg border-border-default bg-secondary-background p-2.5 shadow-lg"
+      @escape-key-down="open = false"
+    >
+      <div class="flex flex-col gap-0.5">
+        <div class="text-sm/5 font-medium text-base-foreground">
+          {{ t('agent.runPermissions') }}
         </div>
+        <div class="text-xs/4 text-muted-foreground">
+          {{ t('agent.runPermissionsDescription') }}
+        </div>
+      </div>
 
-        <RadioGroupRoot
-          :model-value="draftMode"
-          :aria-label="t('agent.runPermissions')"
-          class="flex flex-col gap-1"
-          @update:model-value="onDraftMode"
-        >
-          <div
-            v-for="option in options"
-            :key="option.mode"
-            :class="
-              cn(
-                'rounded-[10px]',
-                draftMode === option.mode && 'bg-charcoal-500'
-              )
-            "
-          >
-            <RadioGroupItem
-              :value="option.mode"
-              class="hover:bg-agent-surface-hover flex w-full cursor-pointer items-start gap-3 rounded-[10px] px-2.5 py-2 text-left"
+      <RadioGroupRoot
+        :model-value="draftMode"
+        :aria-label="t('agent.runPermissions')"
+        class="flex flex-col gap-1"
+        @update:model-value="onDraftMode"
+      >
+        <div v-for="option in options" :key="option.mode" class="rounded-lg">
+          <RadioGroupItem :value="option.mode" as-child>
+            <Button
+              :variant="
+                draftMode === option.mode ? 'tertiary' : 'muted-textonly'
+              "
+              size="unset"
+              class="w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal"
             >
               <span
                 :class="
-                  cn('text-agent-fg-muted mt-0.5 size-4 shrink-0', option.icon)
+                  cn(
+                    'mt-0.5 size-4 shrink-0 text-muted-foreground',
+                    option.icon
+                  )
                 "
               />
               <span class="min-w-0 flex-1">
-                <span class="text-agent-fg block text-sm/5">
+                <span class="block text-sm/5 text-base-foreground">
                   {{ t(option.title) }}
                 </span>
-                <span class="text-agent-fg-muted mt-0.5 block text-xs/4">
+                <span class="mt-0.5 block text-xs/4 text-muted-foreground">
                   {{ t(option.description) }}
                 </span>
               </span>
@@ -187,40 +179,40 @@ const options: {
                   cn(
                     'mt-0.5 size-4 shrink-0',
                     draftMode === option.mode &&
-                      'text-agent-fg icon-[lucide--check]'
+                      'icon-[lucide--check] text-base-foreground'
                   )
                 "
               />
-            </RadioGroupItem>
-            <div
-              v-if="
-                option.mode === 'auto_limited' && draftMode === 'auto_limited'
-              "
-              class="flex items-center gap-3 px-9.5 pb-2.5"
-            >
-              <input
-                v-model.number="draftLimit"
-                type="number"
-                min="1"
-                :aria-label="t('agent.credits')"
-                class="border-agent-border text-agent-fg focus:border-agent-fg-muted h-8 min-w-0 flex-1 rounded-[10px] border bg-transparent px-2.5 text-sm/5 outline-none"
-              />
-              <span class="text-agent-fg-muted text-xs/4">
-                {{ t('agent.credits') }}
-              </span>
-            </div>
+            </Button>
+          </RadioGroupItem>
+          <div
+            v-if="
+              option.mode === 'auto_limited' && draftMode === 'auto_limited'
+            "
+            class="flex items-center gap-3 px-9.5 pb-2.5"
+          >
+            <Input
+              v-model.number="draftLimit"
+              type="number"
+              min="1"
+              :aria-label="t('agent.credits')"
+              class="h-8 flex-1 px-2.5 text-sm/5"
+            />
+            <span class="text-xs/4 text-muted-foreground">
+              {{ t('agent.credits') }}
+            </span>
           </div>
-        </RadioGroupRoot>
+        </div>
+      </RadioGroupRoot>
 
-        <button
-          type="button"
-          :disabled="!saveable"
-          class="bg-agent-fg text-agent-surface hover:bg-agent-fg/90 h-8 w-full cursor-pointer rounded-[10px] text-sm/5 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-          @click="saveChanges"
-        >
-          {{ t('agent.saveChanges') }}
-        </button>
-      </PopoverContent>
-    </PopoverPortal>
-  </PopoverRoot>
+      <Button
+        variant="inverted"
+        :disabled="!saveable"
+        class="w-full"
+        @click="saveChanges"
+      >
+        {{ t('agent.saveChanges') }}
+      </Button>
+    </PopoverContent>
+  </Popover>
 </template>

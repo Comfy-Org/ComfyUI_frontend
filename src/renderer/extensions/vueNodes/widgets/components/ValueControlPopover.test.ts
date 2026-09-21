@@ -1,17 +1,12 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ControlOptions } from '@/types/simplifiedWidget'
-
-const mockGet = vi.hoisted(() => vi.fn<(key: string) => string>())
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: mockGet })
-}))
 
 import ValueControlPopover from './ValueControlPopover.vue'
 
@@ -52,13 +47,6 @@ const i18n = createI18n({
   }
 })
 
-const ButtonStub = defineComponent({
-  name: 'Button',
-  inheritAttrs: false,
-  props: { as: { type: String, default: 'button' } },
-  template: '<label v-bind="$attrs"><slot /></label>'
-})
-
 function renderPopover(modelValue: ControlOptions = 'randomize') {
   const value = ref<ControlOptions | undefined>(modelValue)
   const Harness = defineComponent({
@@ -68,8 +56,7 @@ function renderPopover(modelValue: ControlOptions = 'randomize') {
   })
   const utils = render(Harness, {
     global: {
-      plugins: [PrimeVue, i18n],
-      stubs: { Button: ButtonStub }
+      plugins: [PrimeVue, i18n]
     }
   })
   return { ...utils, value }
@@ -77,21 +64,25 @@ function renderPopover(modelValue: ControlOptions = 'randomize') {
 
 describe('ValueControlPopover', () => {
   beforeEach(() => {
-    mockGet.mockReturnValue('after')
+    useSettingStore().settingValues['Comfy.WidgetControlMode'] = 'after'
   })
 
   describe('Header text from setting store', () => {
     it('shows AFTER copy when Comfy.WidgetControlMode is "after"', () => {
       renderPopover()
-      expect(mockGet).toHaveBeenCalledWith('Comfy.WidgetControlMode')
+      expect(useSettingStore().get).toHaveBeenCalledWith(
+        'Comfy.WidgetControlMode'
+      )
       expect(screen.getByText('AFTER')).toBeInTheDocument()
       expect(screen.queryByText('BEFORE')).not.toBeInTheDocument()
     })
 
     it('shows BEFORE copy when Comfy.WidgetControlMode is "before"', () => {
-      mockGet.mockReturnValue('before')
+      useSettingStore().settingValues['Comfy.WidgetControlMode'] = 'before'
       renderPopover()
-      expect(mockGet).toHaveBeenCalledWith('Comfy.WidgetControlMode')
+      expect(useSettingStore().get).toHaveBeenCalledWith(
+        'Comfy.WidgetControlMode'
+      )
       expect(screen.getByText('BEFORE')).toBeInTheDocument()
       expect(screen.queryByText('AFTER')).not.toBeInTheDocument()
     })

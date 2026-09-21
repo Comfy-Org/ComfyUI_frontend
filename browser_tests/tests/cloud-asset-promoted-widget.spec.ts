@@ -53,7 +53,6 @@ test.describe(
       cloudAssetRequests,
       comfyPage
     }) => {
-      await comfyPage.settings.setSetting('Comfy.Assets.UseAssetAPI', true)
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
       await expect

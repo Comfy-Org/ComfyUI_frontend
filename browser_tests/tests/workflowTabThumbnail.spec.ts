@@ -4,14 +4,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
-    await comfyPage.setup()
-  })
-
   async function getTab(comfyPage: ComfyPage, index: number) {
     const tab = comfyPage.page
       .locator(`.workflow-tabs .p-togglebutton`)

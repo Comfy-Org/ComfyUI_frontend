@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,7 +10,7 @@ const { connectionSpy, clientSpy } = vi.hoisted(() => ({
   clientSpy: vi.fn()
 }))
 
-vi.mock('../../scripts/posthog', () => ({
+vi.mock(import('../../scripts/posthog'), () => ({
   captureCliConnectionTabClick: connectionSpy,
   captureCliClientTabClick: clientSpy
 }))

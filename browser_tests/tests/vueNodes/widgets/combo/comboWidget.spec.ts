@@ -81,8 +81,6 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
 
   async function getMixedGraphSamplerCombos(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
-    await comfyPage.vueNodes.waitForNodes(3)
-
     const nodes = comfyPage.vueNodes.getNodeByTitle('KSampler')
     await expect(nodes).toHaveCount(3)
 
@@ -265,12 +263,8 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
 
     const serialized = await comfyPage.workflow.getExportedWorkflow()
     await comfyPage.workflow.loadGraphData(serialized)
-    await comfyPage.vueNodes.waitForNodes()
 
-    const [ksamplerNode] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-    if (!ksamplerNode) {
-      throw new Error('KSampler node not found after reload')
-    }
+    const ksamplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
 
     const schedulerWidget = await ksamplerNode.getWidgetByName('scheduler')
     await expect.poll(() => schedulerWidget.getValue()).toBe('karras')
@@ -279,6 +273,48 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
       .getNodeByTitle('KSampler')
       .getByRole('combobox', { name: 'scheduler', exact: true })
     await expect(schedulerComboAfterReload).toContainText('karras')
+  })
+
+  test('a combo value tracks undo and redo', async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
+
+    const scheduler = async () => {
+      const ksampler = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      return (await ksampler.getWidgetByName('scheduler')).getValue()
+    }
+
+    const original =
+      await test.step('Selecting a combo value records history', async () => {
+        const original = await scheduler()
+        expect(original, 'fixture should start on a known scheduler').toBe(
+          'simple'
+        )
+
+        await comfyPage.vueNodes.selectComboOption(
+          'KSampler',
+          'scheduler',
+          'karras'
+        )
+        await expect.poll(scheduler).toBe('karras')
+        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+
+        return original
+      })
+
+    await test.step('Undo restores the original value', async () => {
+      await comfyPage.page.keyboard.press('ControlOrMeta+z')
+      await expect.poll(scheduler).toBe(original)
+    })
+
+    await test.step('Redo reapplies the selected value', async () => {
+      await comfyPage.page.keyboard.press('ControlOrMeta+Shift+z')
+      await expect.poll(scheduler).toBe('karras')
+    })
+
+    await test.step('Undo after redo restores the original value', async () => {
+      await comfyPage.page.keyboard.press('ControlOrMeta+z')
+      await expect.poll(scheduler).toBe(original)
+    })
   })
 
   test('Dropdown displays over Selection Toolbox', async ({ comfyPage }) => {

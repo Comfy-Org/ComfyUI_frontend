@@ -1,36 +1,35 @@
+import { useDialogService } from '@/services/dialogService'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope } from 'vue'
+import { computed, effectScope } from 'vue'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 const {
-  mockIsLoggedIn,
-  mockReportError,
-  mockAccessBillingPortal,
-  mockShowSubscriptionRequiredDialog,
   mockGetAuthHeader,
   mockGetCheckoutAttribution,
   mockTelemetry,
-  mockUserId,
+
   mockIsCloud,
-  mockAuthStoreInitialized,
+
   mockGetBillingStatus,
-  mockActiveWorkspaceId,
+
   mockSetWorkspaceBillingRail,
   mockLocalStorage
 } = vi.hoisted(() => ({
-  mockIsLoggedIn: { value: false },
   mockIsCloud: { value: true },
-  mockAuthStoreInitialized: { value: true },
+
   mockGetBillingStatus: vi.fn(),
-  mockActiveWorkspaceId: { value: 'workspace-123' },
+
   mockSetWorkspaceBillingRail: vi.fn(),
-  mockReportError: vi.fn(),
-  mockAccessBillingPortal: vi.fn(),
-  mockShowSubscriptionRequiredDialog: vi.fn(),
   mockGetAuthHeader: vi.fn(() =>
-    Promise.resolve({ Authorization: 'Bearer test-token' })
+    Promise.resolve({ Authorization: 'Bearer test-token' as const })
   ),
   mockGetCheckoutAttribution: vi.fn(() => ({
     im_ref: 'impact-click-001',
@@ -42,7 +41,7 @@ const {
     trackMonthlySubscriptionCancelled: vi.fn(),
     trackBillingEvent: vi.fn()
   },
-  mockUserId: { value: 'user-123' },
+
   mockLocalStorage: (() => {
     const store = new Map<string, string>()
 
@@ -96,24 +95,15 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true
 })
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: vi.fn(() => ({
-    isLoggedIn: mockIsLoggedIn
-  }))
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: vi.fn(() => ({
-    reportError: mockReportError,
-    accessBillingPortal: mockAccessBillingPortal
-  }))
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: vi.fn(() => ({
     wrapWithErrorHandlingAsync: vi.fn(
       (fn, errorHandler) =>
@@ -131,54 +121,109 @@ vi.mock('@/composables/useErrorHandling', () => ({
   }))
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
-  getCheckoutAttribution: mockGetCheckoutAttribution
-}))
+vi.mock<unknown>(
+  import('@/platform/telemetry/utils/checkoutAttribution'),
+  () => ({
+    getCheckoutAttribution: mockGetCheckoutAttribution
+  })
+)
 
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: {
     getBillingStatus: mockGetBillingStatus
+  },
+  // What a failed rail read throws; only its message reaches the wrapper.
+  WorkspaceApiError: class extends Error {}
+}))
+
+/** Null is the legacy client; a rail is what the SDK store would hand back. */
+const railState = vi.hoisted(() => ({
+  rail: null as Pick<BillingReadRail, 'readStatus'> | null
+}))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingReadRail'),
+  () => ({ useBillingReadRail: () => railState.rail })
+)
+
+vi.mock(import('@/services/dialogService'))
+
+const mockReadStatus = vi.fn<BillingReadRail['readStatus']>()
+
+const buildStatus = (
+  overrides: Partial<BillingStatusResponse> = {}
+): BillingStatusResponse => ({
+  is_active: true,
+  has_funds: true,
+  max_seats: 1,
+  occupied_seats: 1,
+  scheduled_change: null,
+  team_credit_stop: null,
+  ...overrides
+})
+
+/**
+ * The two clients the status read can go through, so the rows below pin one
+ * behaviour on both rather than one path's behaviour twice.
+ */
+const statusReadPaths = [
+  {
+    reader: 'the workspace client',
+    select: () => {
+      railState.rail = null
+    },
+    resolve: (status: BillingStatusResponse) => {
+      mockGetBillingStatus.mockResolvedValue(status)
+    },
+    fail: () => {
+      mockGetBillingStatus.mockRejectedValue(
+        new Error('Subscription not found')
+      )
+    },
+    failure: 'Subscription not found',
+    idleReader: () => mockReadStatus
+  },
+  {
+    reader: 'the SDK reader',
+    select: () => {
+      railState.rail = { readStatus: mockReadStatus }
+    },
+    resolve: (status: BillingStatusResponse) => {
+      mockReadStatus.mockResolvedValue({ status: 'ok', value: status })
+    },
+    fail: () => {
+      mockReadStatus.mockResolvedValue({
+        status: 'error',
+        code: 'ACCESS_DENIED',
+        httpStatus: 403
+      })
+    },
+    failure: 'ACCESS_DENIED',
+    idleReader: () => mockGetBillingStatus
   }
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return mockActiveWorkspaceId.value
-    },
-    setWorkspaceBillingRail: mockSetWorkspaceBillingRail
-  })
-}))
-
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: vi.fn(() => ({
-    showSubscriptionRequiredDialog: mockShowSubscriptionRequiredDialog
-  }))
-}))
-
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => ({
-    getFirebaseAuthHeader: mockGetAuthHeader,
-    fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
-      fetch(input, init),
-    get isInitialized() {
-      return mockAuthStoreInitialized.value
-    },
-    get userId() {
-      return mockUserId.value
-    }
-  })),
-  AuthStoreError: class extends Error {}
-}))
+]
 
 // Mock fetch
 global.fetch = vi.fn()
+
+beforeEach(() => {
+  Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
+  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
+    mockGetAuthHeader
+  )
+  vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
+    (input, init) => fetch(input, init)
+  )
+
+  vi.mocked(useTeamWorkspaceStore().setWorkspaceBillingRail).mockImplementation(
+    mockSetWorkspaceBillingRail
+  )
+})
 
 describe('useSubscription', () => {
   afterEach(() => {
@@ -194,12 +239,13 @@ describe('useSubscription', () => {
     setDistribution('cloud')
 
     mockLocalStorage.__reset()
-    mockIsLoggedIn.value = false
-    mockAccessBillingPortal.mockResolvedValue(true)
-    mockUserId.value = 'user-123'
+    railState.rail = null
+    Object.assign(useAuthStore(), { userId: 'user-123' })
     mockIsCloud.value = true
-    mockAuthStoreInitialized.value = true
-    mockActiveWorkspaceId.value = 'workspace-123'
+    Object.assign(useAuthStore(), { isInitialized: true })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-123'
+    })
     mockGetBillingStatus.mockResolvedValue({
       is_active: false,
       has_funds: false,
@@ -228,7 +274,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { canAccessSubscriptionFeatures, fetchStatus } =
         useSubscriptionWithScope()
 
@@ -245,7 +291,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { canAccessSubscriptionFeatures, fetchStatus } =
         useSubscriptionWithScope()
 
@@ -260,7 +306,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16T12:00:00Z'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { formattedRenewalDate, fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
@@ -284,7 +330,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16T12:00:00Z'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const { subscriptionTier, fetchStatus } = useSubscriptionWithScope()
 
       await fetchStatus()
@@ -314,50 +360,60 @@ describe('useSubscription', () => {
   })
 
   describe('fetchStatus', () => {
-    it('should fetch subscription status successfully', async () => {
-      const mockStatus = {
-        is_active: true,
-        has_funds: true,
-        renewal_date: '2025-11-16',
-        team_credit_stop: null
+    it.for(statusReadPaths)(
+      'publishes a status read through $reader and updates the workspace billing rail',
+      async (path) => {
+        const status = buildStatus({
+          renewal_date: '2025-11-16',
+          billing_rail: 'stripe'
+        })
+        path.select()
+        path.resolve(status)
+
+        useCurrentUser().isLoggedIn = computed(() => true)
+        const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
+
+        await fetchStatus()
+
+        expect(subscriptionStatus.value).toEqual(status)
+        expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
+          'workspace-123',
+          'stripe'
+        )
+        // One transport per read: the rail a read is on is the only client it
+        // asks, or the panels read one thing and the rail settled another.
+        expect(path.idleReader()).not.toHaveBeenCalled()
       }
+    )
 
-      mockGetBillingStatus.mockResolvedValue(mockStatus)
+    it.for(statusReadPaths)(
+      'reports a failed read through $reader in the same message',
+      async (path) => {
+        path.select()
+        path.fail()
 
-      mockIsLoggedIn.value = true
-      const { fetchStatus } = useSubscriptionWithScope()
+        const { fetchStatus } = useSubscriptionWithScope()
 
+        await expect(fetchStatus()).rejects.toThrow(
+          `Failed to fetch subscription status: ${path.failure}`
+        )
+      }
+    )
+
+    it('keeps the published status when a rail read is superseded', async () => {
+      const published = buildStatus({ renewal_date: '2025-11-16' })
+      mockGetBillingStatus.mockResolvedValue(published)
+      const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
       await fetchStatus()
 
-      expect(mockGetBillingStatus).toHaveBeenCalledOnce()
-    })
-
-    it('should handle fetch errors gracefully', async () => {
-      mockGetBillingStatus.mockRejectedValue(
-        new Error('Subscription not found')
-      )
-
-      const { fetchStatus } = useSubscriptionWithScope()
-
-      await expect(fetchStatus()).rejects.toThrow(
-        'Failed to fetch subscription status: Subscription not found'
-      )
-    })
-
-    it('updates the active workspace billing rail from status', async () => {
-      mockGetBillingStatus.mockResolvedValue({
-        is_active: true,
-        has_funds: true,
-        billing_rail: 'stripe'
+      railState.rail = { readStatus: mockReadStatus }
+      mockReadStatus.mockResolvedValue({
+        status: 'error',
+        code: 'SUPERSEDED'
       })
+      await expect(fetchStatus()).resolves.toBeNull()
 
-      const { fetchStatus } = useSubscriptionWithScope()
-      await fetchStatus()
-
-      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
-        'workspace-123',
-        'stripe'
-      )
+      expect(subscriptionStatus.value).toEqual(published)
     })
 
     it('does not apply the previous account response after an identity switch', async () => {
@@ -381,8 +437,10 @@ describe('useSubscription', () => {
       const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
       const previousAccountRequest = fetchStatus()
 
-      mockUserId.value = 'user-456'
-      mockActiveWorkspaceId.value = 'workspace-456'
+      Object.assign(useAuthStore(), { userId: 'user-456' })
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-456'
+      })
       const currentAccountRequest = fetchStatus()
       await currentAccountRequest
 
@@ -468,7 +526,7 @@ describe('useSubscription', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            Authorization: 'Bearer test-token',
+            Authorization: 'Bearer test-token' as const,
             'Content-Type': 'application/json'
           }),
           body: JSON.stringify({
@@ -533,7 +591,7 @@ describe('useSubscription', () => {
       const { subscribeDirect } = useSubscriptionWithScope()
 
       await expect(subscribeDirect()).rejects.toThrow()
-      expect(mockReportError).not.toHaveBeenCalled()
+      expect(useAuthActions().reportError).not.toHaveBeenCalled()
     })
 
     it('tags the pending attempt as a resubscribe when called with operation/source', async () => {
@@ -584,7 +642,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -629,7 +687,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -670,7 +728,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -703,7 +761,7 @@ describe('useSubscription', () => {
         renewal_date: '2025-11-16'
       })
 
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -715,7 +773,7 @@ describe('useSubscription', () => {
     })
 
     it('rechecks pending checkout attempts when the document becomes visible', async () => {
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       const visibilityStateSpy = vi
         .spyOn(document, 'visibilityState', 'get')
         .mockReturnValue('visible')
@@ -780,8 +838,8 @@ describe('useSubscription', () => {
     })
 
     it('does not clear pending attempts before auth initialization resolves', async () => {
-      mockAuthStoreInitialized.value = false
-      mockIsLoggedIn.value = false
+      Object.assign(useAuthStore(), { isInitialized: false })
+      useCurrentUser().isLoggedIn = computed(() => false)
 
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -815,7 +873,7 @@ describe('useSubscription', () => {
         })
       )
 
-      mockIsLoggedIn.value = false
+      useCurrentUser().isLoggedIn = computed(() => false)
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
@@ -838,7 +896,9 @@ describe('useSubscription', () => {
 
       await requireActiveSubscription()
 
-      expect(mockShowSubscriptionRequiredDialog).not.toHaveBeenCalled()
+      expect(
+        useDialogService().showSubscriptionRequiredDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('should show dialog when subscription is inactive', async () => {
@@ -852,14 +912,16 @@ describe('useSubscription', () => {
 
       await requireActiveSubscription()
 
-      expect(mockShowSubscriptionRequiredDialog).toHaveBeenCalled()
+      expect(
+        useDialogService().showSubscriptionRequiredDialog
+      ).toHaveBeenCalled()
     })
   })
 
   describe('non-cloud environments', () => {
     it('should not fetch subscription status when not on cloud', async () => {
       mockIsCloud.value = false
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
 
       useSubscriptionWithScope()
 
@@ -925,7 +987,7 @@ describe('useSubscription', () => {
 
       await handleInvoiceHistory()
 
-      expect(mockAccessBillingPortal).toHaveBeenCalled()
+      expect(useAuthActions().accessBillingPortal).toHaveBeenCalled()
     })
 
     it('should call accessBillingPortal for manage subscription', async () => {
@@ -933,12 +995,14 @@ describe('useSubscription', () => {
 
       await manageSubscription()
 
-      expect(mockAccessBillingPortal).toHaveBeenCalled()
+      expect(useAuthActions().accessBillingPortal).toHaveBeenCalled()
     })
 
     it('does not start cancellation watching when the billing portal does not open', async () => {
-      mockIsLoggedIn.value = true
-      mockAccessBillingPortal.mockResolvedValueOnce(false)
+      useCurrentUser().isLoggedIn = computed(() => true)
+      vi.mocked(useAuthActions().accessBillingPortal).mockResolvedValueOnce(
+        false
+      )
 
       mockGetBillingStatus.mockResolvedValue({
         is_active: true,
@@ -961,7 +1025,7 @@ describe('useSubscription', () => {
     })
 
     it('tracks cancellation after manage subscription when status flips', async () => {
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
 
       const activeStatus = {
         is_active: true,
@@ -993,7 +1057,7 @@ describe('useSubscription', () => {
     })
 
     it('handles rapid focus events during cancellation polling', async () => {
-      mockIsLoggedIn.value = true
+      useCurrentUser().isLoggedIn = computed(() => true)
 
       const activeStatus = {
         is_active: true,
@@ -1026,3 +1090,4 @@ describe('useSubscription', () => {
     })
   })
 })
+vi.mock(import('firebase/auth'))

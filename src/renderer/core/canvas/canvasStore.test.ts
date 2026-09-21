@@ -1,47 +1,11 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { nextTick, ref } from 'vue'
-import type { Ref } from 'vue'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphCanvas, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-
-const { appModeState } = vi.hoisted(() => ({
-  appModeState: {} as { isAppMode: Ref<boolean> }
-}))
-
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => ({
-    isAppMode: appModeState.isAppMode,
-    setMode: vi.fn()
-  })
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: {
-    canvas: {
-      ds: {
-        scale: 1,
-        offset: [0, 0] as [number, number],
-        onChanged: undefined as
-          | ((scale: number, offset: [number, number]) => void)
-          | undefined,
-        element: null,
-        changeScale: vi.fn()
-      },
-      setDirty: vi.fn(),
-      graph: null,
-      selectedItems: new Set(),
-      subgraph: undefined,
-      canvas: {
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn()
-      }
-    }
-  }
-}))
 
 function createMockCanvas(readOnly = false): LGraphCanvas {
   return fromPartial<LGraphCanvas>({
@@ -54,48 +18,91 @@ describe('useCanvasStore', () => {
   let store: ReturnType<typeof useCanvasStore>
 
   beforeEach(() => {
-    appModeState.isAppMode = ref(false)
     store = useCanvasStore()
   })
 
   describe('appScalePercentage', () => {
-    it('rounds scale to integer percentage', async () => {
-      const { app } = await import('@/scripts/app')
+    function createScaleCanvas(scale: number) {
+      const ds = {
+        scale,
+        offset: [0, 0] as [number, number],
+        onChanged: undefined as
+          | ((scale: number, offset: [number, number]) => void)
+          | undefined,
+        element: document.createElement('canvas'),
+        changeScale: vi.fn()
+      }
+      return fromPartial<LGraphCanvas>({
+        ds,
+        setDirty: vi.fn(),
+        canvas: document.createElement('canvas')
+      })
+    }
 
-      app.canvas.ds.scale = 1.004
+    it('rounds scale to integer percentage', async () => {
+      const canvas = createScaleCanvas(1.004)
+      store.canvas = canvas
+      await nextTick()
+
       store.initScaleSync()
       expect(store.appScalePercentage).toBe(100)
 
-      app.canvas.ds.scale = 1.506
-      app.canvas.ds.onChanged!(app.canvas.ds.scale, app.canvas.ds.offset)
+      canvas.ds.scale = 1.506
+      canvas.ds.onChanged!(canvas.ds.scale, canvas.ds.offset)
       expect(store.appScalePercentage).toBe(151)
     })
 
     it('updates reactive value when rounded scale changes', async () => {
-      const { app } = await import('@/scripts/app')
+      const canvas = createScaleCanvas(1.0)
+      store.canvas = canvas
+      await nextTick()
 
-      app.canvas.ds.scale = 1.0
       store.initScaleSync()
       expect(store.appScalePercentage).toBe(100)
 
-      app.canvas.ds.scale = 1.5
-      app.canvas.ds.onChanged!(app.canvas.ds.scale, app.canvas.ds.offset)
+      canvas.ds.scale = 1.5
+      canvas.ds.onChanged!(canvas.ds.scale, canvas.ds.offset)
 
       expect(store.appScalePercentage).toBe(150)
     })
 
     it('preserves original onChanged handler', async () => {
-      const { app } = await import('@/scripts/app')
+      const canvas = createScaleCanvas(1.0)
       const originalHandler = vi.fn()
-      app.canvas.ds.onChanged = originalHandler
+      canvas.ds.onChanged = originalHandler
+      store.canvas = canvas
+      await nextTick()
 
-      app.canvas.ds.scale = 1.0
       store.initScaleSync()
 
-      app.canvas.ds.scale = 2.0
-      app.canvas.ds.onChanged(app.canvas.ds.scale, app.canvas.ds.offset)
+      canvas.ds.scale = 2.0
+      canvas.ds.onChanged(canvas.ds.scale, canvas.ds.offset)
 
-      expect(originalHandler).toHaveBeenCalledWith(2.0, app.canvas.ds.offset)
+      expect(originalHandler).toHaveBeenCalledWith(2.0, canvas.ds.offset)
+    })
+
+    it('is a no-op before the canvas exists', () => {
+      store.canvas = null
+
+      store.initScaleSync()
+      store.setAppZoomFromPercentage(150)
+      store.cleanupScaleSync()
+
+      expect(store.appScalePercentage).toBe(100)
+    })
+
+    it('zooms the canvas around its centre from a percentage', async () => {
+      const canvas = createScaleCanvas(1.0)
+      canvas.ds.element.width = 400
+      canvas.ds.element.height = 200
+      store.canvas = canvas
+      await nextTick()
+
+      store.setAppZoomFromPercentage(150)
+
+      expect(canvas.ds.changeScale).toHaveBeenCalledWith(1.5, [200, 100])
+      expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
+      expect(store.appScalePercentage).toBe(150)
     })
   })
 

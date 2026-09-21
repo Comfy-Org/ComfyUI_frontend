@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import type { DetachedWindowAPI } from 'happy-dom'
-import { setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -25,10 +23,6 @@ export function createMockNodeDef(
     experimental: false,
     ...overrides
   })
-}
-
-export function setupTestPinia() {
-  setActivePinia(createTestingPinia({ stubActions: false }))
 }
 
 export const testI18n = createI18n({

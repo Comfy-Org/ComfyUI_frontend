@@ -1,6 +1,6 @@
 <template>
   <div class="widget-markdown relative w-full" @dblclick="startEditing">
-    <div
+    <SanitizedHtml
       class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg"
       :class="isEditing ? 'invisible' : 'visible'"
       tabindex="0"
@@ -8,7 +8,7 @@
       role="textarea"
       :aria-label="widget.name || $t('g.markdown')"
       aria-readonly="true"
-      v-html="renderedHtml"
+      :html="renderedHtml"
     />
 
     <Textarea
@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'

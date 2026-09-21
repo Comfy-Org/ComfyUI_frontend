@@ -247,7 +247,7 @@ export function useMaskEditorSaver() {
       )
     }
 
-    if (!data?.name) {
+    if (!data.name) {
       throw new Error(
         `Upload response missing 'name' for ${layer.ref.filename}`
       )
@@ -294,7 +294,7 @@ export function useMaskEditorSaver() {
         type: isResultItemType(mainRef.type) ? mainRef.type : 'input'
       }
     ])
-    node.graph?.setDirtyCanvas(true)
+    node.graph.setDirtyCanvas(true)
   }
 
   function loadImageFromUrl(url: string): Promise<HTMLImageElement> {

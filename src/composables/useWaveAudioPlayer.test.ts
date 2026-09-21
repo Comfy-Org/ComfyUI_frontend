@@ -1,30 +1,31 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { ref } from 'vue'
+import { useMediaControls } from '@vueuse/core'
+import { nextTick, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useWaveAudioPlayer } from './useWaveAudioPlayer'
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  return {
-    ...actual,
-    useMediaControls: () => ({
+vi.mock(import('@vueuse/core'), { spy: true })
+
+const mockFetchApi = vi.fn()
+const originalAudioContext = globalThis.AudioContext
+
+beforeEach(() => {
+  vi.mocked(useMediaControls).mockImplementation(() =>
+    fromAny({
       playing: ref(false),
       currentTime: ref(0),
       duration: ref(0)
     })
-  }
+  )
 })
-
-const mockFetchApi = vi.fn()
-const originalAudioContext = globalThis.AudioContext
 
 afterEach(() => {
   globalThis.AudioContext = originalAudioContext
   mockFetchApi.mockReset()
 })
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (route: string) => '/api' + route,
     fetchApi: (...args: unknown[]) => mockFetchApi(...args)
@@ -164,6 +165,25 @@ describe('useWaveAudioPlayer', () => {
 
     expect(bars.value[0].height).toBe(8)
     expect(bars.value[9].height).toBe(100)
+  })
+
+  it('re-decodes when the source is cleared and set again', async () => {
+    mockDecodedChannel(new Float32Array(80))
+
+    const src = ref<string | undefined>()
+    useWaveAudioPlayer({ src, barCount: 10 })
+
+    src.value = '/audio.wav'
+    await nextTick()
+    expect(mockFetchApi).toHaveBeenCalledTimes(1)
+
+    src.value = undefined
+    await nextTick()
+
+    src.value = '/audio.wav'
+    await nextTick()
+
+    expect(mockFetchApi).toHaveBeenCalledTimes(2)
   })
 
   it('skips the waveform fetch entirely when waveform is disabled', () => {

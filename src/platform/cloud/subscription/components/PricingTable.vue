@@ -191,7 +191,7 @@
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                 >
-                  ~{{ n(tier.pricing.videoEstimate) }}
+                  ~{{ n(getVideoEstimateDisplay(tier)) }}
                 </span>
               </div>
             </div>
@@ -270,6 +270,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
   TIER_PRICING,
+  amountForBillingCycle,
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
@@ -455,8 +456,13 @@ const getPrice = (tier: PricingTierConfig): number =>
 const getAnnualTotal = (tier: PricingTierConfig): number =>
   tier.pricing.yearly * 12
 
+const isYearly = computed(() => currentBillingCycle.value === 'yearly')
+
 const getCreditsDisplay = (tier: PricingTierConfig): number =>
-  tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)
+  amountForBillingCycle(tier.pricing.credits, isYearly.value)
+
+const getVideoEstimateDisplay = (tier: PricingTierConfig): number =>
+  amountForBillingCycle(tier.pricing.videoEstimate, isYearly.value)
 
 const handleSubscribe = wrapWithErrorHandlingAsync(
   async (tierKey: CheckoutTierKey) => {

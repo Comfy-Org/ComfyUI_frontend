@@ -61,6 +61,21 @@ export interface MintPortWiring {
 }
 
 const activeWirings = new Set<MintPortWiring>()
+const bufferedEnqueues: Array<Array<() => void>> = []
+
+export function runMintPortsBuffered<T>(fn: () => T): T {
+  const pending: Array<() => void> = []
+  bufferedEnqueues.push(pending)
+  try {
+    const result = fn()
+    bufferedEnqueues.pop()
+    for (const enqueue of pending) enqueue()
+    return result
+  } catch (error) {
+    bufferedEnqueues.pop()
+    throw error
+  }
+}
 
 export function notifyMintPortsBeforeGraphLoad(): void {
   for (const wiring of activeWirings) wiring.onBeforeGraphLoad()
@@ -68,6 +83,21 @@ export function notifyMintPortsBeforeGraphLoad(): void {
 
 export function notifyMintPortsAfterGraphConfigure(): void {
   for (const wiring of activeWirings) wiring.onAfterGraphConfigure()
+}
+
+/**
+ * Run a graph mutation that replays already-committed remote state (so the
+ * live graph catches up with the stores) without any active mint port echoing
+ * it back into the doc as a local op.
+ */
+export function runMintPortsSuppressed<T>(fn: () => T): T {
+  const wirings = [...activeWirings]
+  for (const wiring of wirings) wiring.session.beginGraphTeardown()
+  try {
+    return fn()
+  } finally {
+    for (const wiring of wirings) wiring.session.endGraphTeardown()
+  }
 }
 
 /** Run a confirmed root-workflow clear through every active mint port. */
@@ -81,11 +111,17 @@ export function runMintPortsIntentionalClear<T>(clear: () => T): T {
 }
 
 /**
- * Serialized save-format node, `widgets_values` NAME-KEYED via the node's own
- * `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
+ * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
+ * own `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
  * sidecar projection accepts only the pinned catalog's `widget_order` names;
  * control widgets like a `button` serialize a named entry but are not in
  * `widget_order`, and any extra key is an opaque server-side 500).
+ *
+ * A frontend-only class (`isVirtualNode`: Note, MarkdownNote, PrimitiveNode,
+ * Get/Set nodes from node packs, subgraph blueprint hosts) has no catalog
+ * entry. The applier rejects a name-keyed record for such a class
+ * (`uncatalogued_widget_write`) but stores a positional array opaquely, so
+ * those keep the positional form `serialize()` already produced.
  */
 function serializeForMint(node: LGraphNode): WorkflowNode | null {
   let serialized: Record<string, unknown>
@@ -94,23 +130,37 @@ function serializeForMint(node: LGraphNode): WorkflowNode | null {
   } catch {
     return null
   }
+  delete serialized.__incarnation
   const named = serialized.widgets_values_named
   if (named != null && typeof named === 'object') {
-    const filtered: Record<string, unknown> = {}
-    for (const [name, value] of Object.entries(named)) {
-      const widget = node.widgets?.find((candidate) => candidate.name === name)
-      if (widget && widget.type !== 'button' && widget.serialize !== false) {
-        filtered[name] = value
-      }
-    }
-    serialized.widgets_values = filtered
+    if (!node.isVirtualNode)
+      serialized.widgets_values = valueWidgetsOnly(node, named)
     delete serialized.widgets_values_named
   }
   return serialized as unknown as WorkflowNode
 }
 
+function valueWidgetsOnly(
+  node: LGraphNode,
+  named: object
+): Record<string, unknown> {
+  const filtered: Record<string, unknown> = {}
+  for (const [name, value] of Object.entries(named)) {
+    const widget = node.widgets?.find((candidate) => candidate.name === name)
+    if (widget && widget.type !== 'button' && widget.serialize !== false) {
+      filtered[name] = value
+    }
+  }
+  return filtered
+}
+
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const session = createMintSession()
+  const enqueue = (operations: GraphOperation[]) => {
+    const pending = bufferedEnqueues.at(-1)
+    if (pending) pending.push(() => deps.enqueue(operations))
+    else deps.enqueue(operations)
+  }
 
   type PlacedListener = Parameters<
     Parameters<typeof attachLinkMintPort>[0]['events']['onPlaced']
@@ -139,7 +189,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     session,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
-    enqueue: deps.enqueue
+    enqueue
   })
 
   const layoutPort: LayoutMintPort = attachLayoutMintPort({
@@ -158,7 +208,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
         return (deps.getGraph()?._nodes ?? []).map((node) => node.id)
       }
     },
-    enqueue: deps.enqueue
+    enqueue
   })
 
   const widgetPort = attachWidgetMintPort({
@@ -174,14 +224,14 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     rootGraphId() {
       const graph = deps.getGraph()
       if (!graph) return null
-      return String(graph.rootGraph?.id ?? graph.id)
+      return graph.rootGraph?.id ?? graph.id
     },
     resolveInteriorPath(owningGraphId) {
       const graph = deps.getGraph()
       if (!graph) return null
       return findSubgraphNodePathById(graph as unknown as LGraph, owningGraphId)
     },
-    enqueue: deps.enqueue
+    enqueue
   })
 
   const linkStore = useLinkStore()
@@ -214,7 +264,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       const { graphId, nodeId, name: widgetName } = parseWidgetId(widgetId)
       for (const listener of setListeners) {
         listener({
-          graphId: String(graphId),
+          graphId,
           nodeId,
           name: widgetName,
           value,
