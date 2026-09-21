@@ -44,6 +44,8 @@ import type {
   WorkflowQueueIntent
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { reportError } from '@/platform/telemetry/reportError'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -361,7 +363,22 @@ export class ComfyApp {
     return !!this.rootGraphInternal
   }
 
-  canvas!: LGraphCanvas
+  private canvasInternal: LGraphCanvas | undefined
+
+  /** The canvas, once {@link setup} has created it. Accessing it earlier is a bug. */
+  get canvas(): LGraphCanvas {
+    return this.canvasInternal!
+  }
+
+  set canvas(value: LGraphCanvas) {
+    this.canvasInternal = value
+  }
+
+  /** Same as {@link canvas}, but `undefined` before {@link setup} creates it. */
+  get canvasOrUndefined(): LGraphCanvas | undefined {
+    return this.canvasInternal
+  }
+
   dragOverNode: Pick<LGraphNode, 'onDragDrop' | 'id'> | null = null
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
   get canvasEl() {
@@ -721,9 +738,10 @@ export class ComfyApp {
         // graph_mouse is only updated on mousemove, so when files are dragged
         // in from another window the canvas-space cursor is stale. Sync it
         // from the drop event so nodes created below land at the cursor.
-        this.canvas.adjustMouseEvent(event)
-        this.canvas.graph_mouse[0] = event.canvasX
-        this.canvas.graph_mouse[1] = event.canvasY
+        const canvas: LGraphCanvas = this.canvas
+        canvas.adjustMouseEvent(event)
+        canvas.graph_mouse[0] = event.canvasX
+        canvas.graph_mouse[1] = event.canvasY
 
         const n = this.dragOverNode
         this.dragOverNode = null
@@ -732,7 +750,15 @@ export class ComfyApp {
         if (await n?.onDragDrop?.(event)) return
 
         const files = await extractFilesFromDragEvent(event)
-        if (files.length === 0) return
+        if (files.length === 0) {
+          if (event.dataTransfer?.types.includes(MIME_ASSET_INFO)) {
+            reportError(new Error('Dropped asset card yielded no file'), {
+              errorType: 'asset_drop_load_failure'
+            })
+            useToastStore().addAlert(t('toastMessages.assetDropFailed'))
+          }
+          return
+        }
 
         const workspace = useWorkspaceStore()
         try {
@@ -791,11 +817,9 @@ export class ComfyApp {
       this.canvasElRef,
       'dragover',
       (event: DragEvent) => {
-        this.canvas.adjustMouseEvent(event)
-        const node = this.canvas.graph?.getNodeOnPos(
-          event.canvasX,
-          event.canvasY
-        )
+        const canvas: LGraphCanvas = this.canvas
+        canvas.adjustMouseEvent(event)
+        const node = canvas.graph?.getNodeOnPos(event.canvasX, event.canvasY)
 
         if (!node?.onDragOver?.(event)) {
           this.dragOverNode = null

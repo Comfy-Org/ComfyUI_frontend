@@ -1,0 +1,57 @@
+# Description: Generates and updates website translations using OpenAI
+name: 'i18n: Update Website'
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: i18n-update-website-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update-locales:
+    if: github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: false
+          # Blobless full history: the locale pipeline lazily fetches the
+          # English source blobs recorded in
+          # apps/website/src/locales/.source-manifest.json
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Setup ComfyUI Frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Update translations
+        run: pnpm locale:website
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Commit updated locales
+        id: commit
+        run: |
+          git add apps/website/src/locales/
+          if git diff --cached --quiet; then exit 0; fi
+          ./scripts/cicd/check-json.sh
+          git -c user.name=github-actions -c user.email=github-actions@github.com \
+            commit -m 'Update website locales'
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+
+      # Only this step sees the push token: the steps above run scripts from
+      # the dispatched branch
+      - name: Push updated locales
+        if: steps.commit.outputs.committed == 'true'
+        env:
+          TARGET_BRANCH: ${{ github.ref_name }}
+          PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+        run: |
+          git push "https://x-access-token:${PR_GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "HEAD:refs/heads/$TARGET_BRANCH"
