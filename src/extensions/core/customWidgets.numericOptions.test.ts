@@ -1,8 +1,12 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getActivePinia } from 'pinia'
+
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { getWidgetStep } from '@/lib/litegraph/src/utils/widget'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { Settings } from '@/platform/settings/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
@@ -23,8 +27,9 @@ const { useFloatWidget } =
 const { useIntWidget } =
   await import('@/renderer/extensions/vueNodes/widgets/composables/useIntWidget')
 
-// Mirrors the backend schema in comfy_extras/nodes_primitive.py:
-// io.Float.Input("value", min=-sys.maxsize, max=sys.maxsize, step=0.1)
+// `step` is the increment PrimitiveFloat declares in
+// comfy_extras/nodes_primitive.py; min/max stand in for its sys.maxsize
+// bounds, which exceed what a JS number represents exactly.
 const PRIMITIVE_FLOAT_INPUT_SPEC: InputSpec = {
   type: 'FLOAT',
   name: 'value',
@@ -34,7 +39,7 @@ const PRIMITIVE_FLOAT_INPUT_SPEC: InputSpec = {
   step: 0.1
 }
 
-// io.Int.Input("value", min=-sys.maxsize, max=sys.maxsize, control_after_generate=fixed)
+// PrimitiveInt declares no step, so the widget falls back to 1.
 const PRIMITIVE_INT_INPUT_SPEC: InputSpec = {
   type: 'INT',
   name: 'value',
@@ -43,8 +48,16 @@ const PRIMITIVE_INT_INPUT_SPEC: InputSpec = {
   max: Number.MAX_SAFE_INTEGER
 }
 
+// A step that is not a power of ten cannot be recovered from the decimal
+// places it implies, so it detects a step derived from precision.
+const QUARTER_STEP_INPUT_SPEC: InputSpec = {
+  ...PRIMITIVE_FLOAT_INPUT_SPEC,
+  step: 0.25
+}
+
 const TEST_PRIMITIVE_FLOAT_TYPE = 'test/PrimitiveFloatNumericOptions'
 const TEST_PRIMITIVE_INT_TYPE = 'test/PrimitiveIntNumericOptions'
+const TEST_QUARTER_STEP_FLOAT_TYPE = 'test/QuarterStepFloatNumericOptions'
 
 class TestPrimitiveFloatNode extends LGraphNode {
   static override title = 'Float'
@@ -68,6 +81,29 @@ class TestPrimitiveIntNode extends LGraphNode {
   }
 }
 
+class TestQuarterStepFloatNode extends LGraphNode {
+  static override title = 'Float'
+
+  constructor() {
+    super('PrimitiveFloat')
+    this.comfyClass = 'PrimitiveFloat'
+    this.addOutput('FLOAT', 'FLOAT')
+    useFloatWidget()(this, QUARTER_STEP_INPUT_SPEC)
+  }
+}
+
+function stubFloatRoundingPrecision(decimalPlaces: number) {
+  const settingStore = useSettingStore(getActivePinia())
+  vi.spyOn(settingStore, 'get').mockImplementation(
+    <K extends keyof Settings>(key: K): Settings[K] => {
+      if (key === 'Comfy.FloatRoundingPrecision') {
+        return decimalPlaces as Settings[K]
+      }
+      return undefined as Settings[K]
+    }
+  )
+}
+
 function createNode(type: string) {
   const graph = new LGraph()
   const node = LiteGraph.createNode(type)!
@@ -87,6 +123,11 @@ describe('Primitive numeric widget options', () => {
       { name: 'PrimitiveInt' } as ComfyNodeDef,
       app
     )
+    await extension.beforeRegisterNodeDef?.(
+      TestQuarterStepFloatNode,
+      { name: 'PrimitiveFloat' } as ComfyNodeDef,
+      app
+    )
   })
 
   beforeEach(() => {
@@ -95,6 +136,10 @@ describe('Primitive numeric widget options', () => {
       TestPrimitiveFloatNode
     )
     LiteGraph.registerNodeType(TEST_PRIMITIVE_INT_TYPE, TestPrimitiveIntNode)
+    LiteGraph.registerNodeType(
+      TEST_QUARTER_STEP_FLOAT_TYPE,
+      TestQuarterStepFloatNode
+    )
   })
 
   describe('PrimitiveFloat', () => {
@@ -112,11 +157,31 @@ describe('Primitive numeric widget options', () => {
       expect(widget.options.precision).toBe(1)
     })
 
+    it('keeps the declared step when the float rounding setting adds decimal places', () => {
+      stubFloatRoundingPrecision(3)
+      const { widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+
+      expect(widget.options.step2).toBe(0.1)
+      expect(getWidgetStep(widget.options)).toBe(0.1)
+      expect(widget.options.round).toBe(0.001)
+      expect(widget.options.precision).toBe(3)
+    })
+
+    it('keeps a declared step that is not a power of ten', () => {
+      const { widget } = createNode(TEST_QUARTER_STEP_FLOAT_TYPE)
+
+      expect(widget.options.step2).toBe(0.25)
+      expect(getWidgetStep(widget.options)).toBe(0.25)
+    })
+
     it.for([
       { precision: 0, expected: 1 },
       { precision: 1, expected: 0.1 },
       { precision: 2, expected: 0.01 },
-      { precision: 3, expected: 0.001 }
+      { precision: 3, expected: 0.001 },
+      { precision: 4, expected: 0.0001 },
+      { precision: 5, expected: 0.00001 },
+      { precision: 6, expected: 0.000001 }
     ])(
       'steps and rounds by one unit of the last decimal place at precision $precision',
       ({ precision, expected }) => {
@@ -125,8 +190,8 @@ describe('Primitive numeric widget options', () => {
         node.properties.precision = precision
 
         expect(widget.options.precision).toBe(precision)
-        expect(widget.options.step2).toBeCloseTo(expected, 10)
-        expect(widget.options.round).toBeCloseTo(expected, 10)
+        expect(widget.options.step2).toBe(expected)
+        expect(widget.options.round).toBe(expected)
       }
     )
 

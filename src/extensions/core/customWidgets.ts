@@ -1,3 +1,4 @@
+import { clamp } from 'es-toolkit'
 import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
@@ -223,7 +224,17 @@ function onCustomFloatCreated(this: LGraphNode) {
     const configured = this.properties.precision
     return typeof configured === 'number' ? configured : defaultPrecision
   }
-  const lastDecimalPlace = () => 10 ** -precision()
+  const lastDecimalPlace = () => {
+    const places = clamp(precision(), 0, 100)
+    return Number((10 ** -places).toFixed(places))
+  }
+  const declaredStep = valueWidget.options.step2 ?? lastDecimalPlace()
+  // Only precision set on this node steers the step; `defaultPrecision` also
+  // carries the global `Comfy.FloatRoundingPrecision`, which must not.
+  const stepForPrecision = () =>
+    typeof this.properties.precision === 'number'
+      ? lastDecimalPlace()
+      : declaredStep
 
   Object.defineProperty(valueWidget.options, 'precision', {
     get: precision,
@@ -233,7 +244,7 @@ function onCustomFloatCreated(this: LGraphNode) {
     }
   })
   Object.defineProperty(valueWidget.options, 'step2', {
-    get: () => this.properties.step || lastDecimalPlace(),
+    get: () => this.properties.step || stepForPrecision(),
     set: (v) => (this.properties.step = v)
   })
   Object.defineProperty(valueWidget.options, 'round', {
