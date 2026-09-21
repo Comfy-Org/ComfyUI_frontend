@@ -219,22 +219,29 @@ function onCustomFloatCreated(this: LGraphNode) {
       valueWidget.callback?.(valueWidget.value)
     }
   })
-  const defaultPrecision = valueWidget.options.precision ?? 1
+  // Properties are restored from workflow JSON unvalidated, so anything can
+  // arrive here.
+  const usableNumber = (value: unknown) =>
+    typeof value === 'number' && Number.isFinite(value) ? value : undefined
   // Consumers pass precision straight to `toFixed`/`Intl.NumberFormat`, which
-  // reject anything outside 0-100, so it is normalised here, not where it is used.
-  const nodePrecision = () => {
-    const configured = this.properties.precision
-    return typeof configured === 'number' && Number.isFinite(configured)
-      ? clamp(Math.trunc(configured), 0, 100)
-      : undefined
+  // reject anything outside 0-100.
+  const usablePrecision = (value: unknown) => {
+    const configured = usableNumber(value)
+    return configured === undefined
+      ? undefined
+      : clamp(Math.trunc(configured), 0, 100)
   }
+
+  const defaultPrecision = usablePrecision(valueWidget.options.precision) ?? 1
+  const declaredStep = valueWidget.options.step2
+  const declaredRound = valueWidget.options.round
+
+  const nodePrecision = () => usablePrecision(this.properties.precision)
   const precision = () => nodePrecision() ?? defaultPrecision
   const lastDecimalPlace = () => {
     const places = precision()
     return Number((10 ** -places).toFixed(places))
   }
-  const declaredStep = valueWidget.options.step2 ?? lastDecimalPlace()
-  const declaredRound = valueWidget.options.round
   // Only precision set on this node steers step and round; `defaultPrecision`
   // also carries the global `Comfy.FloatRoundingPrecision`, which must not.
   const stepForPrecision = () =>
@@ -258,7 +265,7 @@ function onCustomFloatCreated(this: LGraphNode) {
     set: (v) => (this.properties.step = v)
   })
   Object.defineProperty(valueWidget.options, 'round', {
-    get: () => this.properties.round ?? roundForPrecision(),
+    get: () => usableNumber(this.properties.round) ?? roundForPrecision(),
     set: (v) => {
       this.properties.round = v
       valueWidget.callback?.(valueWidget.value)

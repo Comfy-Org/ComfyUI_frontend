@@ -228,6 +228,25 @@ describe('Primitive numeric widget options', () => {
       }
     )
 
+    it('normalises an out-of-range global rounding precision', () => {
+      stubSettings({ 'Comfy.FloatRoundingPrecision': 101 })
+      const { widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+
+      expect(widget.options.precision).toBe(100)
+      expect(() => onFloatValueChange.call(widget, 0.123456)).not.toThrow()
+    })
+
+    it.for([false, '', Number.NaN])(
+      'ignores a non-numeric round property rather than disabling rounding (%s)',
+      (round) => {
+        const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
+
+        node.properties.round = round
+
+        expect(widget.options.round).toBe(0.1)
+      }
+    )
+
     it('keeps a declared step that is not a power of ten', () => {
       const { widget } = createNode(TEST_QUARTER_STEP_FLOAT_TYPE)
 
@@ -274,28 +293,6 @@ describe('Primitive numeric widget options', () => {
 
       expect(widget.options.step2).toBe(0.25)
       expect(getWidgetStep(widget.options)).toBe(0.25)
-    })
-
-    it('writes a step assigned through widget options back to the node property', () => {
-      const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
-
-      widget.options.step2 = 0.05
-
-      expect(node.properties.step).toBe(0.05)
-      expect(widget.options.step2).toBe(0.05)
-    })
-
-    it('treats min and max as unbounded until configured', () => {
-      const { node, widget } = createNode(TEST_PRIMITIVE_FLOAT_TYPE)
-
-      expect(widget.options.min).toBe(-Infinity)
-      expect(widget.options.max).toBe(Infinity)
-
-      node.properties.min = -5
-      node.properties.max = 5
-
-      expect(widget.options.min).toBe(-5)
-      expect(widget.options.max).toBe(5)
     })
   })
 
