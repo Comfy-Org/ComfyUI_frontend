@@ -4595,9 +4595,16 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
 
-    await renderAndSend('first message')
+    await startVueNodeSelection()
+    await sendFromComposer('first message')
 
-    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-cloud-current' })
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-cloud-current',
+      selection: {
+        node_ids: ['9', '12'],
+        workflow_id: 'wf-cloud-current'
+      }
+    })
   })
 
   it('does not resolve two same-named open saved tabs to one cloud id', async () => {
@@ -5239,7 +5246,11 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(bodies[0]).toMatchObject({
         content: '@[Node: KSampler #12] Keep this draft',
         workflow_id: 'wf-cloud-current',
-        selection: { node_ids: ['12'] },
+        // The chip was staged while `wf-cloud-current` was viewed, and the
+        // user then navigated to `wf-reference` before sending. Ownership must
+        // follow the workflow the node came from, not the one on screen at
+        // send time, so this asserts the owner rather than only `node_ids`.
+        selection: { node_ids: ['12'], workflow_id: 'wf-cloud-current' },
         workflow_references: []
       })
     }
@@ -6477,7 +6488,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('edit the selected workflow')
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-42',
-      selection: { node_ids: ['12'] }
+      selection: { node_ids: ['12'], workflow_id: 'wf-42' }
     })
   })
 
@@ -6819,7 +6830,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {
-    makeTab()
+    makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
     appMock.canvas = {
       graph: {
@@ -6842,7 +6853,9 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(await screen.findByText('KSampler'))
     await sendFromComposer('explain this')
 
-    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['12'] } })
+    expect(bodies[0]).toMatchObject({
+      selection: { node_ids: ['12'], workflow_id: 'wf-42' }
+    })
   })
 
   it('never subscribes to the retired draft_patch frame', async () => {
