@@ -13234,6 +13234,10 @@
       "ultra_mode": {
         "name": "超高模式",
         "tooltip": "執行額外的細化處理，以取得更高保真度的幾何形狀與更精細的表面細節。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "超高精細處理的解析度：2k 以 2048³ 執行，4k 以 4096³ 執行，提供最細緻的表面細節。4k 需要 meshy-7.1 或更新版本。僅在啟用 ultra_mode 時使用。"
       }
     },
     "outputs": {
@@ -13300,6 +13304,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "以 2048³ 執行額外的精修處理，以獲得保真度更高的幾何結構與更細緻的表面細節。"
       }
     },
     "outputs": {
@@ -13441,6 +13449,10 @@
       "ultra_mode": {
         "name": "超高模式",
         "tooltip": "執行額外的細化處理，以取得更高保真度的幾何形狀與更精細的表面細節。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "超高精細處理的解析度：2k 以 2048³ 執行，4k 以 4096³ 執行，提供最細緻的表面細節。4k 需要 meshy-7.1 或更新版本。僅在啟用 ultra_mode 時使用。"
       }
     },
     "outputs": {

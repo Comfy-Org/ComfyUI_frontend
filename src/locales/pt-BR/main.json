@@ -65,6 +65,7 @@
     "dismiss": "Dispensar",
     "downloadAssets": "Baixar recursos",
     "dragAndDropAssets": "Arraste e solte recursos aqui",
+    "editWhileWorking": "Você pode continuar editando enquanto ele trabalha",
     "entryButton": "Agente",
     "feedbackCaption": "Enviar feedback",
     "focusNode": "Mostrar na tela",
@@ -99,6 +100,7 @@
       "selectNode": "Selecionar nó"
     },
     "nodes": "Nós",
+    "nodesAdded": "O agente adicionou 1 nó ao grafo | O agente adicionou {count} nós ao grafo",
     "notHelpful": "Não foi útil",
     "openWorkflowTab": "Abrir {name}",
     "otherOpenWorkflows": "Outros fluxos de trabalho abertos",
@@ -183,7 +185,9 @@
     "unavailableWorkflowReference": "{name} (indisponível)",
     "unsavedWorkflow": "Não salvo",
     "untitledChat": "Sem título",
+    "updatingGraph": "O agente está atualizando o grafo",
     "uploading": "Enviando",
+    "viewAddedNodes": "Ver nó | Ver nós",
     "worked": "Concluído",
     "workedForMinutes": "Concluído em {minutes}m {seconds}s",
     "workedForSeconds": "Concluído em {seconds} segundos",
@@ -2461,7 +2465,9 @@
     "cancelThisRun": "Cancelar esta execução",
     "deleteAllAssets": "Excluir todos os ativos desta execução",
     "downloadAll": "Baixar {count} recursos desta execução",
+    "dragAndDropAudio": "Clique para procurar ou arraste um arquivo de áudio",
     "dragAndDropImage": "Arraste e solte uma imagem",
+    "dragAndDropVideo": "Clique para procurar ou arraste um vídeo",
     "emptyWorkflowExplanation": "Seu fluxo de trabalho está vazio. Você precisa adicionar alguns nós primeiro para começar a construir um app.",
     "enterNodeGraph": "Entrar no grafo de nós",
     "error": {
@@ -3103,6 +3109,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "Nós destacados: {count}",
+    "label": "Minimapa",
     "nodeColors": "Cores dos Nós",
     "renderBypassState": "Exibir Estado de Ignorar",
     "renderErrorState": "Exibir Estado de Erro",
@@ -4827,6 +4835,7 @@
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Não foi possível carregar o fluxo de trabalho porque esta instalação do ComfyUI está sem os nós principais. Verifique se o backend foi iniciado corretamente.",
     "a1111EmbeddingsUnavailable": "Não foi possível carregar os embeddings do servidor. O fluxo de trabalho foi importado, mas os nomes dos embeddings foram mantidos como texto simples.",
+    "assetDropFailed": "Não foi possível carregar o recurso solto",
     "cannotCreateSubgraph": "Não é possível criar subgrafo",
     "couldNotDetermineFileType": "Não foi possível determinar o tipo de arquivo",
     "dropFileError": "Não foi possível processar o item arrastado: {error}",
