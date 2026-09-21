@@ -63,11 +63,12 @@ depends on it.
    thread, the retained id and the cleared draft, not a different id.
 3. **Operations are best-effort delivery; the draft is the reconciliation
    primitive.** The frontend does not persist or re-send operations dropped as
-   `undeliverable`. Operations minted in one tick are coalesced into one batch
-   (`opCoalescer.ts`) so a multi-node edit is one round trip instead of N,
-   which narrows the window in which a clear made while bound is lost at
-   unbind. It does nothing for edits made while unbound; only the draft covers
-   those.
+   `undeliverable`. Operations minted in one tick form one sender admission
+   (`opCoalescer.ts`), which `OpSender` splits into the minimum number of
+   wire-capped batches. Edits within the wire cap therefore take one round trip
+   instead of N, narrowing the window in which a clear made while bound is lost
+   at unbind. It does nothing for edits made while unbound; only the draft
+   covers those.
 4. **A lineage break settles pending human operations.** When `doc_reset`
    arrives for the bound document, the sender settles its queued batches
    `undeliverable` and a transmitted in-flight batch `unconfirmed` at once,
