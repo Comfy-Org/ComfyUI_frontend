@@ -275,15 +275,8 @@ jobs:
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: |-
-            ## 🌐 Website E2E: ⏳ Running…
+            ## 🌐 Website E2E: ⏳ Running… — [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
             <!-- WEBSITE_E2E_STATUS -->
-
-            <details>
-            <summary>Details</summary>
-
-            [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-            </details>
 
   post-result-comment:
     needs: website-e2e-report
@@ -320,7 +313,25 @@ jobs:
               : infrastructure
                 ? '💥 Infrastructure failure'
                 : '❌ Failed'
-            const status = reportUrl ? `${verdict} — [View Report](${reportUrl})` : verdict
+
+            // The screenshot-diff count belongs on the heading: the checkbox
+            // that acts on it sits inside the box, so nothing would hint the
+            // self-service fix exists without expanding.
+            const breakdown = []
+            if (screenshotFailures > 0) {
+              breakdown.push(`${screenshotFailures} screenshot diff${screenshotFailures === 1 ? '' : 's'}`)
+            }
+            if (otherFailures > 0) {
+              breakdown.push(`${otherFailures} other failure${otherFailures === 1 ? '' : 's'}`)
+            }
+
+            const status = [
+              verdict,
+              breakdown.length > 0 ? breakdown.join(', ') : '',
+              reportUrl ? `[View Report](${reportUrl})` : ''
+            ]
+              .filter(Boolean)
+              .join(' — ')
 
             // pr-update-website-screenshots keys its comment trigger off this
             // marker, so it has to survive every reformat of this section.

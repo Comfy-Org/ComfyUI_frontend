@@ -191,14 +191,7 @@ jobs:
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: |-
-            ## 📸 Screenshot Update: ⏳ Running…
-
-            <details>
-            <summary>Details</summary>
-
-            [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-            </details>
+            ## 📸 Screenshot Update: ⏳ Running… — [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
   post-result-comment:
     needs: update-screenshots
@@ -235,25 +228,12 @@ jobs:
                   ? '✅ Already up to date'
                   : `✅ Updated ${changedCount} screenshot${s}`
 
-            const detail =
-              outcome !== 'success'
-                ? 'Screenshot update failed.'
-                : !hasChanges
-                  ? 'All screenshots are already up to date.'
-                  : `Updated ${changedCount} screenshot${s} and pushed to the branch.`
+            const pushed = outcome === 'success' && hasChanges ? ', pushed to the branch' : ''
 
-            const lines = [
-              `## 📸 Screenshot Update: ${status}`,
-              '',
-              '<details>',
-              '<summary>Details</summary>',
-              '',
-              `${detail} [View workflow run](${runUrl})`,
-              '',
-              '</details>'
-            ]
-
-            core.setOutput('section-content', lines.join('\n'))
+            core.setOutput(
+              'section-content',
+              `## 📸 Screenshot Update: ${status}${pushed} — [View workflow run](${runUrl})`
+            )
 
       - uses: ./.github/actions/upsert-comment-section
         with:

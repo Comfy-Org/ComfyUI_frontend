@@ -242,7 +242,6 @@ jobs:
             <summary>Details</summary>
 
             **Links**
-            - 📊 [View Chromatic Build](${{ needs.chromatic-deployment.outputs.chromatic-build-url }})
             - 📚 [View Chromatic Storybook](${{ needs.chromatic-deployment.outputs.chromatic-storybook-url }})
 
             </details>

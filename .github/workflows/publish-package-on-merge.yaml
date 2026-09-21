@@ -124,10 +124,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p publish-report
+          # The matrix counts packages the release resolved, not pushes: a
+          # version already on npm is skipped and still lands here.
           PACKAGE_COUNT=$(jq -r '.include | length' <<<"$MATRIX")
           {
-            printf '## 🚀 Release: ✅ Published %s package' "$PACKAGE_COUNT"
+            printf '## 🚀 Release: ✅ %s package' "$PACKAGE_COUNT"
             [ "$PACKAGE_COUNT" = 1 ] || printf 's'
+            printf ' on npm'
             echo ''
             echo ''
             echo '<details>'

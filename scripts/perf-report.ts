@@ -401,7 +401,7 @@ function renderColdStartReport(
   const lines: string[] = []
   const baselineGroups = groupByName(baseline.measurements)
   lines.push(
-    `> ℹ️ Collecting baseline variance data (${historicalCount}/15 runs). Significance will appear after 2 main branch runs.`,
+    '> Significance will appear after 2 main branch runs.',
     '',
     '<details><summary>All metrics (cold start)</summary>',
     '',
