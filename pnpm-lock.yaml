@@ -135,6 +135,9 @@ catalogs:
     '@total-typescript/shoehorn':
       specifier: ^0.1.2
       version: 0.1.2
+    '@typescript-eslint/utils':
+      specifier: ^8.69.0
+      version: 8.69.0
     '@types/fs-extra':
       specifier: ^11.0.4
       version: 11.0.4
@@ -750,6 +753,9 @@ importers:
       '@total-typescript/shoehorn':
         specifier: 'catalog:'
         version: 0.1.2
+      '@typescript-eslint/utils':
+        specifier: 'catalog:'
+        version: 8.69.0(eslint@10.10.0(jiti@2.7.0))(typescript@6.0.3)
       '@types/fs-extra':
         specifier: 'catalog:'
         version: 11.0.4

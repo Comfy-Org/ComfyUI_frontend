@@ -181,6 +181,7 @@
     "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",
     "@total-typescript/shoehorn": "catalog:",
+    "@typescript-eslint/utils": "catalog:",
     "@types/fs-extra": "catalog:",
     "@types/jsdom": "catalog:",
     "@types/node": "catalog:",

@@ -1,10 +1,6 @@
-import type { Rule } from 'eslint'
+import { ESLintUtils } from '@typescript-eslint/utils'
+import type { TSESTree } from '@typescript-eslint/utils'
 import type ts from 'typescript'
-
-interface TypeScriptParserServices {
-  esTreeNodeToTSNodeMap: ReadonlyMap<unknown, ts.Node>
-  program: ts.Program
-}
 
 function isArrayType(checker: ts.TypeChecker, type: ts.Type): boolean {
   if (type.isUnion()) {
@@ -14,24 +10,23 @@ function isArrayType(checker: ts.TypeChecker, type: ts.Type): boolean {
   return checker.isArrayType(type) || checker.isTupleType(type)
 }
 
-export const noEs2023ArrayWith: Rule.RuleModule = {
+export const noEs2023ArrayWith = ESLintUtils.RuleCreator.withoutDocs({
   meta: {
     type: 'problem',
     schema: [],
     messages: {
       unsupported:
         'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
-    }
+    },
+    defaultOptions: []
   },
   create(context) {
-    const services = context.sourceCode
-      .parserServices as TypeScriptParserServices
+    const services = ESLintUtils.getParserServices(context)
     const checker = services.program.getTypeChecker()
 
-    function reportArrayWith(node: Rule.Node) {
-      const call = node as Rule.Node & { callee: { object: unknown } }
-      const receiver = services.esTreeNodeToTSNodeMap.get(call.callee.object)
-      if (!receiver) return
+    function reportArrayWith(node: TSESTree.CallExpression) {
+      if (node.callee.type !== 'MemberExpression') return
+      const receiver = services.esTreeNodeToTSNodeMap.get(node.callee.object)
       if (!isArrayType(checker, checker.getTypeAtLocation(receiver))) return
       context.report({ node, messageId: 'unsupported' })
     }
@@ -45,4 +40,4 @@ export const noEs2023ArrayWith: Rule.RuleModule = {
         reportArrayWith
     }
   }
-}
+})
