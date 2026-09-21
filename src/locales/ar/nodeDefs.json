@@ -13234,6 +13234,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "شغّل تمريرة تحسين إضافية للحصول على هندسة أعلى دقة وتفاصيل سطح أدق."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "دقة تمرير ultra: يعمل 2k بدقة 2048³، و4k بدقة 4096³ للحصول على أدق تفاصيل السطح. يتطلب 4k الإصدار meshy-7.1 أو أحدث. يُستخدم فقط عند تمكين ultra_mode."
       }
     },
     "outputs": {
@@ -13300,6 +13304,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "شغّل تمرير تحسين إضافيًا بدقة 2048³ للحصول على هندسة أعلى دقة مع تفاصيل سطح أدق."
       }
     },
     "outputs": {
@@ -13441,6 +13449,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "شغّل تمريرة تحسين إضافية للحصول على هندسة أعلى دقة وتفاصيل سطح أدق."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "دقة تمرير ultra: يعمل 2k بدقة 2048³، و4k بدقة 4096³ للحصول على أدق تفاصيل السطح. يتطلب 4k الإصدار meshy-7.1 أو أحدث. يُستخدم فقط عند تمكين ultra_mode."
       }
     },
     "outputs": {
