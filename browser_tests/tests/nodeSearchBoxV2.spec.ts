@@ -4,8 +4,11 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Node search box V2', { tag: '@node' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.searchBoxV2.setup()
+  test.use({
+    initialSettings: {
+      'Comfy.LinkRelease.Action': 'search box',
+      'Comfy.LinkRelease.ActionShift': 'search box'
+    }
   })
 
   test('Can open search and add node', async ({ comfyPage }) => {

@@ -47,7 +47,7 @@ export class PrimitiveNode extends LGraphNode {
     this.serialize_widgets = true
     this.isVirtualNode = true
 
-    if (!this.properties || !(replacePropertyName in this.properties)) {
+    if (!(replacePropertyName in this.properties)) {
       this.addProperty(replacePropertyName, false, 'boolean')
     }
   }
@@ -84,12 +84,12 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   private _resolveComboValues(
-    defs?: Record<string, ComfyNodeDef>
+    defs?: Partial<Record<string, ComfyNodeDef>>
   ): (string | number)[] | undefined {
     const fromDefs = defs ? this._comboValuesFromDefs(defs) : undefined
     if (fromDefs !== undefined) return fromDefs
 
-    const slotWidget = this.outputs?.[0]?.widget
+    const slotWidget = this.outputs[0].widget
     const config = slotWidget?.[GET_CONFIG]?.()
     if (!config || !isComboInputSpec(config)) return undefined
 
@@ -97,19 +97,17 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   private _comboValuesFromDefs(
-    defs: Record<string, ComfyNodeDef>
+    defs: Partial<Record<string, ComfyNodeDef>>
   ): (string | number)[] | undefined {
     const graph = this.graph
     const links = graph ? outputLinks(graph, this.id, 0) : []
-    if (!graph || !links?.length) return undefined
+    if (!graph || !links.length) return undefined
 
     let values: (string | number)[] | undefined
     for (const link of links) {
-      const targetNode = graph.getNodeById(link?.target_id)
+      const targetNode = graph.getNodeById(link.target_id)
       const targetType = targetNode?.type
-      const targetInput = link
-        ? targetNode?.inputs[link.target_slot]
-        : undefined
+      const targetInput = targetNode?.inputs.at(link.target_slot)
       const inputName = targetInput?.widget?.name ?? targetInput?.name
       if (!targetType || !inputName) return undefined
 
@@ -220,7 +218,7 @@ export class PrimitiveNode extends LGraphNode {
       this.onLastDisconnect()
       return
     }
-    const [link] = outputLinks(this.graph, this.id, 0)
+    const link = outputLinks(this.graph, this.id, 0).at(0)
     if (!link) {
       if (outputHasLinks(this.graph, this.id, 0)) {
         console.warn(
@@ -232,9 +230,9 @@ export class PrimitiveNode extends LGraphNode {
     }
 
     const theirNode = this.graph.getNodeById(link.target_id)
-    if (!theirNode || !theirNode.inputs) return
+    if (!theirNode) return
 
-    const input = theirNode.inputs[link.target_slot]
+    const input = theirNode.inputs.at(link.target_slot)
     if (!input) return
 
     let widget: IWidgetLocator
@@ -292,7 +290,7 @@ export class PrimitiveNode extends LGraphNode {
     try {
       if (
         type === 'COMBO' &&
-        assetService.shouldUseAssetBrowser(node.comfyClass, widgetName)
+        assetService.shouldUseWidgetAssetPicker(node.comfyClass, widgetName)
       ) {
         widget = this._createAssetWidget(node, widgetName, inputData)
         const theirWidget = node.widgets?.find((w) => w.name === widgetName)
@@ -303,8 +301,7 @@ export class PrimitiveNode extends LGraphNode {
       }
 
       if (isValidWidgetType(type)) {
-        widget = (ComfyWidgets[type](this, 'value', inputData, app) || {})
-          .widget
+        widget = ComfyWidgets[type](this, 'value', inputData, app).widget
       } else {
         widget = this.addCustomWidget({
           type: type.toLowerCase(),
@@ -316,7 +313,7 @@ export class PrimitiveNode extends LGraphNode {
         })
       }
 
-      if (node?.widgets && widget) {
+      if (node.widgets) {
         const theirWidget = node.widgets.find((w) => w.name === widgetName)
         if (theirWidget) {
           widget.value = theirWidget.value
@@ -325,7 +322,7 @@ export class PrimitiveNode extends LGraphNode {
       if (restoredValue) widget.value = restoredValue.value
 
       if (
-        !inputData?.[1]?.control_after_generate &&
+        !inputData[1]?.control_after_generate &&
         (widget.type === 'number' || widget.type === 'combo')
       ) {
         addValueControlWidgets(this, widget, 'fixed', undefined, inputData)
@@ -436,16 +433,12 @@ export class PrimitiveNode extends LGraphNode {
 
   private _isValidConnection(input: INodeInputSlot, forceUpdate?: boolean) {
     // Only allow connections where the configs match
-    const output = this.outputs?.[0]
+    const output = this.outputs[0]
     const config2 = input.widget?.[GET_CONFIG]?.()
     if (!config2) return false
 
-    return !!mergeIfValid.call(
-      this,
-      output,
-      config2,
-      forceUpdate,
-      this.recreateWidget
+    return !!mergeIfValid(output, config2, forceUpdate, () =>
+      this.recreateWidget()
     )
   }
 
@@ -551,7 +544,7 @@ export function mergeIfValid(
   output: INodeOutputSlot | INodeInputSlot,
   config2: InputSpec,
   forceUpdate?: boolean,
-  recreateWidget?: () => void,
+  recreateWidget?: () => IBaseWidget | undefined | void,
   config1?: InputSpec
 ): { customConfig: InputSpec[1] } {
   if (!config1) {
@@ -566,20 +559,15 @@ export function mergeIfValid(
       output.widget[CONFIG] = customSpec
     }
 
-    // @ts-expect-error fixme ts strict error
-    const widget = recreateWidget?.call(this)
+    const widget = recreateWidget?.()
     // When deleting a node this can be null
     if (widget) {
-      // @ts-expect-error fixme ts strict error
-      const min = widget.options.min
-      // @ts-expect-error fixme ts strict error
-      const max = widget.options.max
-      // @ts-expect-error fixme ts strict error
-      if (min != null && widget.value < min) widget.value = min
-      // @ts-expect-error fixme ts strict error
-      if (max != null && widget.value > max) widget.value = max
-      // @ts-expect-error fixme ts strict error
-      widget.callback(widget.value)
+      const { min, max } = widget.options
+      if (typeof widget.value === 'number') {
+        if (min != null && widget.value < min) widget.value = min
+        if (max != null && widget.value > max) widget.value = max
+      }
+      widget.callback?.(widget.value)
     }
   }
 
@@ -603,7 +591,6 @@ app.registerExtension({
     nodeType.prototype.onGraphConfigured = useChainCallback(
       nodeType.prototype.onGraphConfigured,
       function (this: LGraphNode) {
-        if (!this.inputs) return
         this.widgets ??= []
 
         for (const input of this.inputs) {
@@ -613,7 +600,7 @@ app.registerExtension({
               input.widget[GET_CONFIG] = () => getConfig.call(this, name)
             }
 
-            const w = this.widgets?.find((w) => w.name === name)
+            const w = this.widgets.find((w) => w.name === name)
             if (!w) {
               this.removeInput(this.inputs.findIndex((i) => i === input))
             }
@@ -625,7 +612,7 @@ app.registerExtension({
     nodeType.prototype.onConfigure = useChainCallback(
       nodeType.prototype.onConfigure,
       function (this: LGraphNode) {
-        if (!app.configuringGraph && this.inputs) {
+        if (!app.configuringGraph) {
           // On copy + paste of nodes, ensure that widget configs are set up
           for (const input of this.inputs) {
             if (input.widget && !input.widget[GET_CONFIG]) {
@@ -658,7 +645,7 @@ app.registerExtension({
       const graph = app.canvas.graph
       if (!node || !graph) return r
 
-      graph?.add(node)
+      graph.add(node)
 
       // Calculate a position that won't directly overlap another node
       const pos: [number, number] = [

@@ -1,8 +1,10 @@
 import type { Page } from '@playwright/test'
 
-import type { ListAssetsResponse } from '@comfyorg/ingest-types'
+import type { GlobalSetting, ListAssetsResponse } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -23,24 +25,61 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
   }
 }
 
+interface BootAgentAppOptions {
+  /** Extra `/api/settings` entries layered over the panel defaults. */
+  settings?: Record<string, unknown>
+  /** Server definitions, optionally augmented with deterministic test entries. */
+  objectInfo?: 'server' | Record<string, ComfyNodeDef>
+  /** Preserve existing tests by default; onboarding specs opt into the tour. */
+  onboardingCompleted?: boolean
+  /**
+   * Assets the Media Assets panel serves. Defaults to empty, which is what
+   * every panel spec that does not care about assets expects; specs covering
+   * asset-to-composer flows seed it instead of re-routing `/api/assets` after
+   * boot and relying on route-precedence order.
+   */
+  assets?: ListAssetsResponse
+}
+
 async function mockAgentBoot(
   page: Page,
-  { agentFlag }: { agentFlag: boolean }
+  {
+    agentFlag,
+    settings,
+    objectInfo,
+    assets
+  }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
   await mockCloudBoot(page, {
     features: agentFeatures(agentFlag),
     settings: {
       'Comfy.TutorialCompleted': true,
-      'Comfy.RightSidePanel.ShowErrorsTab': false
-    }
+      'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...settings
+    },
+    objectInfo
   })
   await mockBilling(page)
-  const emptyAssets: ListAssetsResponse = {
+  const storedConsent: GlobalSetting = {
+    key: AGENT_CONSENT_SETTING_ID,
+    value: true,
+    updated_at: '2026-09-09T00:00:00Z'
+  }
+  await page.route(
+    `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
+    (route) => route.fulfill(jsonRoute(storedConsent))
+  )
+  const listedAssets: ListAssetsResponse = assets ?? {
     assets: [],
     total: 0,
     has_more: false
   }
-  await page.route('**/api/assets**', (r) => r.fulfill(jsonRoute(emptyAssets)))
+  // Scoped to the list endpoint so a spec can still route `/api/assets/<id>/content`
+  // for the file itself; `**/api/assets**` would otherwise swallow it.
+  await page.route('**/api/assets?**', (r) =>
+    r.fulfill(jsonRoute(listedAssets))
+  )
+  await page.route('**/api/assets', (r) => r.fulfill(jsonRoute(listedAssets)))
   // The bootstrapped project token makes PostHogTelemetryProvider run a real
   // posthog.init(); route its ingest host so CI never emits live third-party
   // traffic under the fabricated token.
@@ -65,14 +104,16 @@ export const agentTest = cloudAppFixture.extend<AgentFixtures>({
 
 export async function bootAgentApp(
   page: Page,
-  agentFlag: boolean
+  agentFlag: boolean,
+  options: BootAgentAppOptions = {}
 ): Promise<void> {
-  // The shell's onboarding coach is a modal; pre-seed its dismissal so the
-  // panel chrome is interactable, as the canonical agent suite does.
-  await page.addInitScript(() => {
-    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
-  })
-  await mockAgentBoot(page, { agentFlag })
+  const { onboardingCompleted = true } = options
+  await page.addInitScript((completed) => {
+    if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
+      localStorage.setItem('Comfy.AgentPanel.onboarded', String(completed))
+    }
+  }, onboardingCompleted)
+  await mockAgentBoot(page, { agentFlag, ...options })
   await bootCloud(page)
   await page.goto(APP_URL)
   await waitForCloudApp(page)

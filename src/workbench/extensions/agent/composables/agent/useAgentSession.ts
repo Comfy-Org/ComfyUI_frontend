@@ -3,7 +3,11 @@ import { computed, ref } from 'vue'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
-import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
+import type {
+  AgentActiveTabData,
+  AgentTurnAccepted,
+  TurnId
+} from '../../schemas/agentApiSchema'
 import {
   isAgentEvent,
   parseAgentWsEvent,
@@ -14,10 +18,13 @@ import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
   DraftSnapshot,
-  OpenTabsSnapshot
+  OpenTabsSnapshot,
+  PostMessageInput
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+import type { WorkflowReference } from '../../types/workflowReference'
+import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
 
 export interface AgentEventSource {
   subscribe(listener: (raw: unknown) => void): () => void
@@ -46,18 +53,10 @@ export interface WorkflowTurnContext {
 }
 
 /**
- * Which tab a turn belongs to, resolved once before prepare() and then handed
- * to every post-await lookup. The three states are deliberately distinct:
- *
- * - omitted: resolve whatever tab is active right now. Only correct outside a
- *   send, where there is nothing to pin to.
- * - `null`: the send had no origin tab at all (panel detached, or no workflow
- *   open when it started).
- * - `{ tabPath }`: pin resolution to that tab.
- *
- * Collapsing `null` into the omitted case is what lets a detached send pick up
- * whichever tab the user selects during prepare(), i.e. exactly the late
- * binding this pin exists to remove.
+ * Workflow lookup context: omitted resolves the currently selected target,
+ * `null` pins the absence of a target, and `{ tabPath }` pins its identity.
+ * A send captures this before preparation so later selections cannot change
+ * which workflow owns the turn.
  */
 export type TurnOrigin = { tabPath: string } | null
 
@@ -71,12 +70,16 @@ export interface AgentSessionDeps {
   events: AgentEventSource
   workflow?: {
     // origin, when given, pins resolution to the tab that initiated the send
-    // instead of whatever tab is active when this is called - it is read
+    // instead of the target selected when this is called - it is read
     // after prepare() so cloud ids it resolves are fresh, but must still
     // describe the pre-await originating tab, not a later switch. See
     // TurnOrigin for why "no origin tab" is a value rather than an omission.
     current(origin?: TurnOrigin): WorkflowTurnContext | undefined
     adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
+    restored?(
+      workflowId: string | undefined,
+      isCurrent: () => boolean
+    ): Promise<void> | void
     prepare?(): Promise<void>
     tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
@@ -99,7 +102,11 @@ let rememberedWorkflowId: string | null = null
 function parseAdmissionError(error: unknown) {
   if (!(error instanceof AgentApiError)) return undefined
   const parsed = zAgentAdmissionError.safeParse(error.body)
-  return parsed.success ? parsed.data.error : undefined
+  if (!parsed.success) return undefined
+  const expectedStatus =
+    parsed.data.error.type === 'PAYMENT_REQUIRED' ? 402 : 503
+  if (error.status !== expectedStatus) return undefined
+  return { ...parsed.data.error, retryAfterSeconds: error.retryAfterSeconds }
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
@@ -193,6 +200,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
+      await workflow?.restored?.(conversationStore.latestWorkflowId, isCurrent)
+      if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
     } catch (error) {
       if (!isCurrent()) return false
@@ -220,10 +229,216 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
+  async function prepareWorkflow(): Promise<void> {
+    if (!workflow?.prepare) return
+    await Promise.race([
+      workflow.prepare().catch(() => undefined),
+      new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
+    ])
+  }
+
+  function recordUnavailableTarget(text: string): void {
+    conversationStore.recordFailedSend(
+      nextLocalErrorId(),
+      text,
+      i18n.global.t('agent.targetNavigationUnavailable')
+    )
+  }
+
+  function postTurn(
+    threadId: string,
+    text: string,
+    origin: TurnOrigin,
+    wfContext: WorkflowTurnContext | undefined,
+    attachments?: SentAttachment[],
+    tags?: SentTag[],
+    workflowReferences?: WorkflowReference[]
+  ): Promise<AgentTurnAccepted> {
+    const input = buildPostInput(
+      threadId,
+      text,
+      origin,
+      wfContext,
+      attachments,
+      tags,
+      workflowReferences
+    )
+    if (wfContext?.id === undefined) return rest.postMessage(threadId, input)
+    return rest.postMessage(threadId, { ...input, workflowId: wfContext.id })
+  }
+
+  function buildPostInput(
+    threadId: string,
+    text: string,
+    origin: TurnOrigin,
+    wfContext: WorkflowTurnContext | undefined,
+    attachments?: SentAttachment[],
+    tags?: SentTag[],
+    workflowReferences?: WorkflowReference[]
+  ): PostMessageInput {
+    const draft = workflow?.draft?.(origin)
+    return {
+      content: serializeWorkflowReferences(text, workflowReferences ?? []),
+      tabs: workflow?.tabs?.(origin),
+      workflowReferences: serializeReferencedWorkflows(
+        workflowReferences,
+        wfContext?.id
+      ),
+      selection: selectedNodes(tags),
+      attachments: attachments?.map((attachment) => attachment.ref),
+      ...(canSendDraft(threadId, wfContext, draft) ? { draft } : {})
+    }
+  }
+
+  function serializeReferencedWorkflows(
+    references: WorkflowReference[] | undefined,
+    currentWorkflowId: string | undefined
+  ) {
+    return (references ?? [])
+      .filter((reference) => reference.id !== currentWorkflowId)
+      .map((reference) => ({
+        workflow_id: reference.id,
+        name: reference.name
+      }))
+  }
+
+  function selectedNodes(tags: SentTag[] | undefined) {
+    if (tags === undefined || tags.length === 0) return undefined
+    return { node_ids: tags.map((tag) => tag.id) }
+  }
+
+  function canSendDraft(
+    threadId: string,
+    wfContext: WorkflowTurnContext | undefined,
+    draft: DraftSnapshot | undefined
+  ): boolean {
+    if (draft === undefined) return false
+    return threadId === 'new' || wfContext?.id !== undefined
+  }
+
+  function acceptTurn(
+    ack: AgentTurnAccepted,
+    text: string,
+    wfContext: WorkflowTurnContext | undefined,
+    attachments?: SentAttachment[],
+    tags?: SentTag[],
+    workflowReferences?: WorkflowReference[]
+  ): void {
+    conversationStore.setThreadId(ack.thread_id)
+    localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
+    if (ack.workflow_id !== undefined) {
+      const boundAtAck = boundWorkflowId.value
+      bindWorkflow(ack.workflow_id)
+      const shouldAdopt =
+        wfContext?.id !== undefined ||
+        (ack.workflow_id !== boundAtAck &&
+          bindingStore.tabPathFor(ack.workflow_id) === undefined)
+      if (shouldAdopt) workflow?.adopted(ack.workflow_id, wfContext)
+    }
+    const turnId = ack.message_id as TurnId
+    conversationStore.recordUser(
+      turnId,
+      text,
+      attachments?.map(({ name, previewUrl, ref }) => ({
+        name,
+        previewUrl,
+        ref
+      })),
+      tags?.map((tag) => `${tag.title} #${tag.id}`),
+      workflowReferences
+    )
+    conversationStore.startTurn(turnId)
+    if (wasStopRequestedWhileSending()) {
+      stopRequestedWhileSending.value = false
+      void stopTurn()
+    }
+  }
+
+  function recordSendError(error: unknown, text: string): void {
+    const admission = parseAdmissionError(error)
+    if (admission?.reason === 'no_funds') {
+      conversationStore.recordPaywall(
+        nextLocalErrorId(),
+        text,
+        admission.message
+      )
+      return
+    }
+    if (admission !== undefined) {
+      conversationStore.recordFailedSend(
+        nextLocalErrorId(),
+        text,
+        admission.message,
+        admission.reason === 'funds_unavailable'
+          ? admission.retryAfterSeconds
+          : undefined
+      )
+      return
+    }
+    const message =
+      error instanceof AgentApiError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : String(error)
+    conversationStore.recordFailedSend(
+      nextLocalErrorId(),
+      text,
+      `${i18n.global.t('agent.sendFailed')}: ${message}`
+    )
+  }
+
+  async function performSend(
+    text: string,
+    attachments?: SentAttachment[],
+    tags?: SentTag[],
+    workflowReferences?: WorkflowReference[]
+  ): Promise<boolean> {
+    const generation = loadGeneration
+    const threadAtSend = conversationStore.threadId ?? 'new'
+    const originContext = workflow?.current()
+    const origin: TurnOrigin =
+      originContext === undefined ? null : { tabPath: originContext.tabPath }
+    try {
+      await prepareWorkflow()
+      if (generation !== loadGeneration) return false
+      const wfContext = workflow?.current(origin)
+      if (workflowTargetChanged(originContext, wfContext)) {
+        recordUnavailableTarget(text)
+        return false
+      }
+      const ack = await postTurn(
+        threadAtSend,
+        text,
+        origin,
+        wfContext,
+        attachments,
+        tags,
+        workflowReferences
+      )
+      if (generation !== loadGeneration) return false
+      acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
+      return true
+    } catch (error) {
+      if (generation !== loadGeneration) return false
+      recordSendError(error, text)
+      return false
+    }
+  }
+
+  function workflowTargetChanged(
+    origin: WorkflowTurnContext | undefined,
+    current: WorkflowTurnContext | undefined
+  ): boolean {
+    if (origin?.id === undefined) return false
+    return current?.id !== origin.id
+  }
+
   async function sendMessage(
     text: string,
     attachments?: SentAttachment[],
-    tags?: SentTag[]
+    tags?: SentTag[],
+    workflowReferences?: WorkflowReference[]
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -236,111 +451,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     sending.value = true
     stopRequestedWhileSending.value = false
-    // Capture the originating tab identity before the first await: prepare()
-    // can take up to PREPARE_TIMEOUT_MS, and a tab switch while it is
-    // pending must not reattribute this send to the newly active tab. The id
-    // lookups themselves stay post-await (prepare() is what warms them), but
-    // pinned to this originating path rather than whatever is active later.
-    // A send that starts with no origin tab must stay that way: `null` is not
-    // "resolve the active tab", or re-attaching during prepare() reattributes
-    // the turn to the tab selected afterwards.
-    const originContext = workflow?.current()
-    const origin: TurnOrigin =
-      originContext === undefined ? null : { tabPath: originContext.tabPath }
-    if (workflow?.prepare)
-      await Promise.race([
-        workflow.prepare().catch(() => undefined),
-        new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
-      ])
-    const wfContext = workflow?.current(origin)
-    const tabs = workflow?.tabs?.(origin)
-    async function postTurn(threadId: string) {
-      const draft = workflow?.draft?.(origin)
-      // An unsaved tab now yields a context carrying only its tabPath, so a
-      // merely-defined wfContext no longer implies the tab has a workflow the
-      // thread could own. An existing thread takes a draft only from a tab
-      // with a real workflow id; otherwise an unbound scratch tab would leak
-      // its canvas into someone else's thread.
-      const shouldSendDraft =
-        draft !== undefined &&
-        (threadId === 'new' || wfContext?.id !== undefined)
-      const input = {
-        content: text,
-        tabs,
-        selection:
-          tags !== undefined && tags.length > 0
-            ? { node_ids: tags.map((tag) => tag.id) }
-            : undefined,
-        attachments: attachments?.map((attachment) => attachment.ref),
-        ...(shouldSendDraft ? { draft } : {})
-      }
-      return rest.postMessage(
-        threadId,
-        wfContext?.id !== undefined
-          ? { ...input, workflowId: wfContext.id }
-          : input
-      )
-    }
     try {
-      const ack = await postTurn(conversationStore.threadId ?? 'new')
-      conversationStore.setThreadId(ack.thread_id)
-      localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
-      if (ack.workflow_id !== undefined) {
-        // The ack does not say whether the server minted a workflow or echoed
-        // the thread's existing one. The persisted binding store preserves
-        // ownership across reloads; the session binding covers a bind that
-        // lands while this request is in flight.
-        const boundAtAck = boundWorkflowId.value
-        bindWorkflow(ack.workflow_id)
-        const shouldAdopt =
-          wfContext?.id !== undefined ||
-          (ack.workflow_id !== boundAtAck &&
-            bindingStore.tabPathFor(ack.workflow_id) === undefined)
-        if (shouldAdopt) workflow?.adopted(ack.workflow_id, wfContext)
-      }
-      const turnId = ack.message_id as TurnId
-      conversationStore.recordUser(
-        turnId,
-        text,
-        attachments?.map(({ name, previewUrl, ref }) => ({
-          name,
-          previewUrl,
-          ref
-        })),
-        tags?.map((tag) => `${tag.title} #${tag.id}`)
-      )
-      conversationStore.startTurn(turnId)
-      if (wasStopRequestedWhileSending()) {
-        stopRequestedWhileSending.value = false
-        void stopTurn()
-      }
-      return true
-    } catch (error) {
-      const admission = parseAdmissionError(error)
-      if (admission?.reason === 'no_funds') {
-        conversationStore.recordPaywall(nextLocalErrorId(), text)
-        return false
-      }
-      if (admission !== undefined) {
-        conversationStore.recordFailedSend(
-          nextLocalErrorId(),
-          text,
-          admission.message
-        )
-        return false
-      }
-      const message =
-        error instanceof AgentApiError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : String(error)
-      conversationStore.recordFailedSend(
-        nextLocalErrorId(),
-        text,
-        `${i18n.global.t('agent.sendFailed')}: ${message}`
-      )
-      return false
+      return await performSend(text, attachments, tags, workflowReferences)
     } finally {
       sending.value = false
     }

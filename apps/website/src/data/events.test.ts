@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import type { ComfyEvent } from './events'
 import {
+  deriveDirectoryEvents,
   deriveFeaturedEvents,
   derivePastEvents,
   deriveUpcomingEvents,
+  directoryEvents,
   eventJsonLdNode,
   eventStatus,
   pastEvents,
@@ -160,6 +162,15 @@ describe('event list derivation', () => {
       'older'
     ])
   })
+
+  it('lists the whole directory latest-first', () => {
+    expect(deriveDirectoryEvents(list).map((event) => event.id)).toEqual([
+      'later',
+      'sooner',
+      'done',
+      'older'
+    ])
+  })
 })
 
 describe('deriveFeaturedEvents', () => {
@@ -269,10 +280,88 @@ describe('eventJsonLdNode', () => {
   })
 })
 
+describe('nyc-creative-ai-september-forum event entry', () => {
+  const event = directoryEvents.find(
+    (candidate) => candidate.id === 'nyc-creative-ai-september-forum'
+  )
+
+  it('exists with the expected core fields', () => {
+    expect(event).toMatchObject({
+      category: 'meetup',
+      organizer: 'community',
+      title: { en: 'ZeroSpace: NYC Creative AI September Forum' },
+      location: { en: 'New York, NY' },
+      startDateTime: '2026-09-22T18:00:00-04:00',
+      endDateTime: '2026-09-22T21:00:00-04:00',
+      link: { href: { en: 'https://luma.com/of64wqdr' } }
+    })
+  })
+})
+
 describe('site event data', () => {
   it('has unique event ids', () => {
     const ids = [...upcomingEvents, ...pastEvents].map((event) => event.id)
 
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  // The directory's organizer filter drops any event that carries no
+  // organizer, so an unlabelled event is unreachable from that select.
+  it('labels every event with an organizer', () => {
+    for (const event of directoryEvents) {
+      expect({ id: event.id, missing: event.organizer === undefined }).toEqual({
+        id: event.id,
+        missing: false
+      })
+    }
+  })
+
+  // Marketing asked for no dashes anywhere in the events copy, in either
+  // locale. This guards the whole rendered surface rather than the strings
+  // that happened to have one when the request came in.
+  it('keeps em and en dashes out of every rendered string', () => {
+    const dash = /[\u2012-\u2015\u2212]/
+    for (const event of directoryEvents) {
+      for (const locale of ['en', 'zh-CN'] as const) {
+        const strings = [
+          event.title[locale],
+          event.description[locale],
+          event.location?.[locale],
+          event.dateLabel?.[locale]
+        ]
+        for (const value of strings) {
+          if (value) {
+            expect({
+              event: `${event.id}.${locale}`,
+              hasDash: dash.test(value)
+            }).toEqual({ event: `${event.id}.${locale}`, hasDash: false })
+          }
+        }
+      }
+    }
+  })
+
+  // The map view pins every event that has coords, so a virtual event with
+  // coords would render a bogus pin.
+  it('gives coords only to in-person events, within valid ranges', () => {
+    for (const event of directoryEvents) {
+      if (event.location?.en === 'Online') {
+        expect({ id: event.id, coords: event.coords }).toEqual({
+          id: event.id,
+          coords: undefined
+        })
+      }
+      if (event.coords) {
+        expect({
+          id: event.id,
+          validLatitude: Math.abs(event.coords.lat) <= 90,
+          validLongitude: Math.abs(event.coords.lng) <= 180
+        }).toEqual({
+          id: event.id,
+          validLatitude: true,
+          validLongitude: true
+        })
+      }
+    }
   })
 })

@@ -1,12 +1,21 @@
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-const mockBrowseModelAssets = vi.fn()
+const mockOpenModelLibraryBrowser = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(
+  import('@/platform/assets/composables/openModelLibraryBrowser'),
+  () => ({
+    openModelLibraryBrowser: mockOpenModelLibraryBrowser
+  })
+)
 
 vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key,
@@ -76,6 +85,7 @@ vi.mock(
 describe('useSidebarTabStore', () => {
   beforeEach(() => {
     vi.mocked(useMenuItemStore().registerCommands).mockImplementation(() => {})
+    mockOpenModelLibraryBrowser.mockClear()
   })
 
   const toggleModelLibrary = async () => {
@@ -139,13 +149,14 @@ describe('useSidebarTabStore', () => {
   })
 
   describe('model library view selection', () => {
-    it('toggles the sidebar tab when the asset view is disabled', async () => {
+    const useAssetBrowserSetting = (enabled: boolean) => {
       useSettingStore().settingValues['Comfy.ModelLibrary.UseAssetBrowser'] =
-        false
-      useCommandStore().registerCommand({
-        id: 'Comfy.BrowseModelAssets',
-        function: mockBrowseModelAssets
-      })
+        enabled
+    }
+
+    it('toggles the sidebar tab when the asset view is disabled', async () => {
+      useAssetBrowserSetting(false)
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
 
       const store = useSidebarTabStore()
       store.registerCoreSidebarTabs()
@@ -153,35 +164,24 @@ describe('useSidebarTabStore', () => {
       await toggleModelLibrary()
 
       expect(store.activeSidebarTabId).toBe('model-library')
-      expect(mockBrowseModelAssets).not.toHaveBeenCalled()
+      expect(mockOpenModelLibraryBrowser).not.toHaveBeenCalled()
     })
 
-    it('opens the asset browser when the browser and asset API are enabled', async () => {
-      useSettingStore().settingValues['Comfy.ModelLibrary.UseAssetBrowser'] =
-        true
-      useSettingStore().settingValues['Comfy.Assets.UseAssetAPI'] = true
-      useCommandStore().registerCommand({
-        id: 'Comfy.BrowseModelAssets',
-        function: mockBrowseModelAssets
-      })
+    it('opens the asset browser when the asset view and the assets capability are both enabled', async () => {
+      useAssetBrowserSetting(true)
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
 
       const store = useSidebarTabStore()
       store.registerCoreSidebarTabs()
 
       await toggleModelLibrary()
 
-      expect(mockBrowseModelAssets).toHaveBeenCalledOnce()
+      expect(mockOpenModelLibraryBrowser).toHaveBeenCalledOnce()
       expect(store.activeSidebarTabId).toBeNull()
     })
 
-    it('falls back to the sidebar tree when the asset API is disabled', async () => {
-      useSettingStore().settingValues['Comfy.ModelLibrary.UseAssetBrowser'] =
-        true
-      useSettingStore().settingValues['Comfy.Assets.UseAssetAPI'] = false
-      useCommandStore().registerCommand({
-        id: 'Comfy.BrowseModelAssets',
-        function: mockBrowseModelAssets
-      })
+    it('falls back to the sidebar tree when the assets capability is missing', async () => {
+      useAssetBrowserSetting(true)
 
       const store = useSidebarTabStore()
       store.registerCoreSidebarTabs()
@@ -189,7 +189,7 @@ describe('useSidebarTabStore', () => {
       await toggleModelLibrary()
 
       expect(store.activeSidebarTabId).toBe('model-library')
-      expect(mockBrowseModelAssets).not.toHaveBeenCalled()
+      expect(mockOpenModelLibraryBrowser).not.toHaveBeenCalled()
     })
   })
 })

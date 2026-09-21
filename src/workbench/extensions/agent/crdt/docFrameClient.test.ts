@@ -230,6 +230,30 @@ describe('doc frame client', () => {
     })
   })
 
+  it('keeps a seq-0 or absent-seq doc_subscribed ok ack as a valid baseline', () => {
+    // The relay's DocSubscribedFrame uses `json:"seq,omitempty"`, so a fresh
+    // (unminted) doc acked at seq 0 arrives with `seq` absent. Both shapes are
+    // valid baseline-0 acks and must not be treated as malformed.
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-1', ok: true, seq: 0 }
+      })
+    ).toEqual({
+      type: 'doc_subscribed',
+      data: { workflowId: 'wf-1', ok: true, seq: 0 }
+    })
+    const absent = parseServerDocFrame({
+      type: 'doc_subscribed',
+      data: { v: 1, workflow_id: 'wf-1', ok: true }
+    })
+    expect(absent).toEqual({
+      type: 'doc_subscribed',
+      data: { workflowId: 'wf-1', ok: true }
+    })
+    expect(absent?.data).not.toHaveProperty('seq')
+  })
+
   it('reports the first malformed inbound frame per type', () => {
     const transport = new TestTransport()
     const client = new DocFrameClient(transport)
@@ -257,6 +281,27 @@ describe('doc frame client', () => {
       errorType: 'agent_crdt_invalid_server_frame',
       tags: { frame_type: 'awareness' },
       level: 'warning'
+    })
+  })
+
+  // The subscribe-ack side of this domain is pinned by 'keeps a seq-0 or
+  // absent-seq doc_subscribed ok ack as a valid baseline' above. Both frame
+  // types share `isSequence`, so pin the update side too: a seq-0 `doc_update`
+  // must survive parsing rather than being read as "no seq".
+  it('keeps seq zero on a doc update', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_update',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          seq: 0,
+          update_b64: encodeBase64(new Uint8Array([1]))
+        }
+      })
+    ).toEqual({
+      type: 'doc_update',
+      data: { workflowId: 'wf-1', seq: 0, update: new Uint8Array([1]) }
     })
   })
 })
