@@ -58,13 +58,19 @@ test.describe(
           expect(
             outcomes.filter((outcome) => outcome.outcome === 'rejected')
           ).toEqual([])
+          // Every other assertion here is an absence assertion, so without this
+          // the case stays green while covering nothing if the add stops
+          // routing through FollowCursor placement. The fixture pins the two
+          // settings that path needs; this proves the flag was actually set
+          // before the rest asserts it is gone.
+          expect(agentConversation.placementWasGhosted).toBe(true)
           return addedNodeId
         })
 
       // Placement has finished, so the placement preview is already gone
       // locally. The regression only appears once something re-reads the
       // document, which the tab return does.
-      await test.step('the placed node is interactive before any reconcile', async () => {
+      await test.step('the placement flag is already clear locally', async () => {
         await expect(
           agentConversation.vueNodes.getNodeLocator(nodeId)
         ).not.toHaveAttribute('data-ghost')
@@ -86,9 +92,12 @@ test.describe(
       })
 
       await test.step('the user can still select the node they placed', async () => {
-        // The decisive check. Under the regression the root carries
-        // `pointer-events-none`, so this click lands on the canvas behind the
-        // node and the selection outline never appears.
+        // The assertion that pins user-visible interactivity rather than a
+        // rendering detail. Under the regression the root carries
+        // `pointer-events-none`, so Playwright's actionability check never
+        // resolves and this click times out rather than silently landing on
+        // the canvas behind the node. In practice the earlier step fails first
+        // on `data-ghost`, so this one does not usually get to run.
         await agentConversation.vueNodes.selectNode(nodeId)
         await expect(agentConversation.vueNodes.selectedNodes).toHaveCount(1)
         await expect(
