@@ -39,7 +39,7 @@ test(
     )
 
     await page
-      .getByRole('button', { name: enMessages.agent.entryButton })
+      .getByRole('button', { name: enMessages.agent.askComfyAgent })
       .click()
     await page
       .getByRole('button', {
