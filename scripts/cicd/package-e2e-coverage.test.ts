@@ -226,7 +226,7 @@ describe('package-e2e-coverage.sh', () => {
     using fixture = coverageFixture()
     fixture.writeShard('e2e-coverage-shard-1', coverage('src'))
 
-    const result = fixture.run(1, 'yes')
+    const result = fixture.run('yes')
 
     expect(result.status).toBe(1)
     expect(result.output).toContain(
