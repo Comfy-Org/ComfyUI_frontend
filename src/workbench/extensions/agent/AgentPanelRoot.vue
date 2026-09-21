@@ -18,6 +18,7 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -359,12 +360,19 @@ const graphMutations = (workflowId: string) => {
     },
     liveWidgets,
     liveNodes: {
-      autogrowGroupOf(scope, nodeId, name) {
+      autogrowGroupOf(scope, nodeId, name): LiveAutogrowGroupAnswer {
         const rootGraph = app.rootGraphOrUndefined
         const node = rootGraph
           ? owningGraph(rootGraph, scope)?.getNodeById(nodeId)
           : undefined
-        return node ? liveAutogrowGroupOf(node, name) : undefined
+        // Unmounted / background workflow: the node itself can't be asked,
+        // so this carries no opinion -- callers fall back to the name-shape
+        // heuristic instead of treating it as "not a member".
+        if (!node) return { kind: 'unavailable' }
+        const group = liveAutogrowGroupOf(node, name)
+        return group === undefined
+          ? { kind: 'notMember' }
+          : { kind: 'member', group }
       }
     }
   })

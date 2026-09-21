@@ -13,6 +13,7 @@ import {
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
@@ -1367,6 +1368,50 @@ describe('graphMutations', () => {
     ])
   })
 
+  it("keeps an unlinked grown input when the live node answers 'unavailable' (activate/resubscribe, before the live node can answer), falling back to the name-shape heuristic instead of treating it as not a member", () => {
+    // A wired `liveNodes` port that cannot yet answer for this node (e.g.
+    // right after activate/resubscribe, before the live node exists) must
+    // fall back to `nameShapeAutogrowGroupOf` exactly like having no port at
+    // all -- not be trusted as an authoritative "not a member", which would
+    // drop the spare and misattribute a later link (see the DynamicCombo
+    // "confirms it belongs to no autogrow group" test above for what an
+    // authoritative "no" from a live port should do instead).
+    const graph = mutations({
+      autogrowGroupOf: () => ({ kind: 'unavailable' })
+    })
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'in', type: 'IMAGE', link: null },
+          { name: 'group.grown_0', type: 'IMAGE', link: null }
+        ]
+      })
+    })
+
+    expect(
+      graph.batch(
+        { ...context, opId: 'resubscribe-before-live-answers' },
+        (batch) => {
+          batch.reconcileNode({
+            ...node(2),
+            title: 'Resynced',
+            inputs: [{ name: 'in', type: 'IMAGE' }]
+          })
+        }
+      )
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ name }) => name)).toEqual([
+      'in',
+      'group.grown_0'
+    ])
+  })
+
   it('drops an ordinary unlinked extra input the document legitimately dropped', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
@@ -1466,7 +1511,7 @@ describe('graphMutations', () => {
   })
 
   it('drops that same numeric-looking DynamicCombo key when a live node confirms it belongs to no autogrow group', () => {
-    const graph = mutations({ autogrowGroupOf: () => undefined })
+    const graph = mutations({ autogrowGroupOf: () => ({ kind: 'notMember' }) })
     graph.batch(context, (batch) => {
       batch.addNode(node(1))
       batch.addNode({
@@ -1598,7 +1643,9 @@ describe('graphMutations', () => {
   it("keeps an explicit-names autogrow group's unpropagated spare and every scalar's own link when a live node confirms the group's members", () => {
     const graph = mutations({
       autogrowGroupOf: (_scope, _nodeId, name) =>
-        name.startsWith('refs.') ? 'refs' : undefined
+        name.startsWith('refs.')
+          ? { kind: 'member', group: 'refs' }
+          : { kind: 'notMember' }
     })
     graph.batch(context, explicitNamesGroupScenario())
 
@@ -1675,8 +1722,16 @@ describe('graphMutations', () => {
     const graph = mutations()
     graph.addNode(node(1), context)
     const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
-    // @ts-expect-error simulating corrupted live state from an unrelated bug
-    existing.inputs[0] = null
+    assert(existing)
+    // Simulates corrupted live state from an unrelated bug, through an
+    // `unknown` boundary rather than a `@ts-expect-error` suppression --
+    // this isn't verifying a compiler error, it's injecting a malformed
+    // runtime value the store must survive.
+    const corruptedInputs = existing.inputs as unknown as (
+      | NodeState['inputs'][number]
+      | null
+    )[]
+    corruptedInputs[0] = null
 
     expect(() =>
       graph.batch({ ...context, opId: 'resync' }, (batch) => {
