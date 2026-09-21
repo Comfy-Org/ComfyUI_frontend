@@ -404,10 +404,23 @@ function hasNonGrowthInputSetChange(
   const documentExceedsLive = [...documentCounts].some(
     ([name, count]) => count > (liveCounts.get(name) ?? 0)
   )
-  const documentNames = new Set(documentInputs.map((slot) => slot.name))
-  const liveOnlyIsLinked = live.some(
-    (input) => !documentNames.has(input.name) && input.link !== null
-  )
+  // Consume one document occurrence per live occurrence of the same name, in
+  // live order, so a repeated name is matched pairwise rather than by a
+  // presence check: with live `[dup, dup]` and a document naming `dup` once,
+  // only the first live `dup` is accounted for. Any live occurrence left over
+  // once the document's occurrences of that name are exhausted is, by name
+  // alone, indistinguishable from unpropagated growth — but growth only ever
+  // adds an UNLINKED trailing slot, so a leftover that is still linked is a
+  // slot the document dropped instead.
+  const remainingByName = new Map(documentCounts)
+  const liveOnlyIsLinked = live.some((input) => {
+    const remaining = remainingByName.get(input.name) ?? 0
+    if (remaining > 0) {
+      remainingByName.set(input.name, remaining - 1)
+      return false
+    }
+    return input.link !== null
+  })
   return documentExceedsLive || liveOnlyIsLinked
 }
 
