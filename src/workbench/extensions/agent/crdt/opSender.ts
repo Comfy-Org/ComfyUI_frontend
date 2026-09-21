@@ -70,9 +70,13 @@ export type BatchOutcome =
 
 export interface OpSender {
   enqueue(operations: GraphOperation[]): void
-  /** Mint and target-pin operations without starting transport delivery. */
+  /**
+   * Mint and target-pin operations into the open admission group without
+   * starting transport delivery. Consecutive admissions for one workflow
+   * share the group until `flush()` seals it.
+   */
   admit(operations: GraphOperation[]): void
-  /** Start delivery of already admitted batches. */
+  /** Seal the open admission group into wire batches and start delivery. */
   flush(): void
   /** In-flight + queued batch count (observability; 0 = drained). */
   pending(): number
@@ -132,6 +136,7 @@ interface InFlight {
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
+  let open: { workflowId: string; ops: Op[] } | null = null
   let inFlight: InFlight | null = null
   let detached = false
   let suspended = false
@@ -233,12 +238,21 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       deps.onBatchSettled({ state: 'undeliverable', ops: minted })
       return
     }
-    const previous = queue.at(-1)
-    const combined =
-      previous?.workflowId === workflowId
-        ? [...queue.pop()!.ops, ...minted]
-        : minted
-    queue.push(...chunkWireOps(combined).map((ops) => ({ workflowId, ops })))
+    if (open?.workflowId !== workflowId) seal()
+    if (open) open.ops.push(...minted)
+    else open = { workflowId, ops: minted }
+  }
+
+  function seal(): void {
+    if (!open) return
+    const { workflowId, ops } = open
+    open = null
+    queue.push(...chunkWireOps(ops).map((ops) => ({ workflowId, ops })))
+  }
+
+  function flush(): void {
+    seal()
+    pump()
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
@@ -276,19 +290,20 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   return {
     enqueue(operations) {
+      seal()
       admit(operations)
-      pump()
+      flush()
     },
     admit,
-    flush: pump,
+    flush,
     pending() {
-      return queue.length + (inFlight ? 1 : 0)
+      return queue.length + (inFlight ? 1 : 0) + (open ? 1 : 0)
     },
     pendingOps() {
       const batches = inFlight
         ? [{ workflowId: inFlight.workflowId, ops: inFlight.ops }]
         : []
-      return [...batches, ...queue]
+      return [...batches, ...queue, ...(open ? [open] : [])]
     },
     suspend() {
       suspended = true
@@ -307,15 +322,20 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     },
     abortAll() {
       const queued = queue.splice(0)
+      const admitted = open
+      open = null
       if (inFlight) settleUnbound(inFlight)
       for (const batch of queued)
         deps.onBatchSettled({ state: 'undeliverable', ops: batch.ops })
+      if (admitted)
+        deps.onBatchSettled({ state: 'undeliverable', ops: admitted.ops })
     },
     detach() {
       detached = true
       if (inFlight?.timer) clearTimeout(inFlight.timer)
       inFlight = null
       queue.length = 0
+      open = null
       unsubscribe()
     }
   }
