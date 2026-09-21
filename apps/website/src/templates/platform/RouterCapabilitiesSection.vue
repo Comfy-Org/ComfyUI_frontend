@@ -2,7 +2,7 @@
 import FeatureRows01 from '../../components/blocks/FeatureRows01.vue'
 import type { FeatureRow } from '../../components/blocks/FeatureRows01.vue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { routerT } from './routerCopy'
 import RouterProviderLogoRow from './RouterProviderLogoRow.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -10,8 +10,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const rows: FeatureRow[] = [
   {
     id: 'integrate',
-    title: t('platform.router.section1.heading', locale),
-    description: t('platform.router.section1.body', locale),
+    title: routerT('platform.router.section1.heading', locale),
+    description: routerT('platform.router.section1.body', locale),
     media: {
       type: 'image',
       src: 'https://media.comfy.org/website/router/integrate-once.webp',
@@ -20,8 +20,8 @@ const rows: FeatureRow[] = [
   },
   {
     id: 'route',
-    title: t('platform.router.section2.heading', locale),
-    description: t('platform.router.section2.body', locale),
+    title: routerT('platform.router.section2.heading', locale),
+    description: routerT('platform.router.section2.body', locale),
     media: {
       type: 'image',
       src: 'https://media.comfy.org/website/router/choose-route.webp',
@@ -30,8 +30,8 @@ const rows: FeatureRow[] = [
   },
   {
     id: 'queue',
-    title: t('platform.router.section3.heading', locale),
-    description: t('platform.router.section3.body', locale),
+    title: routerT('platform.router.section3.heading', locale),
+    description: routerT('platform.router.section3.body', locale),
     media: {
       type: 'image',
       src: 'https://media.comfy.org/website/router/queue-job.webp',
@@ -75,7 +75,7 @@ const supportedProviders = [
     <p
       class="text-center text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
     >
-      {{ t('platform.router.section2.providersLabel', locale) }}
+      {{ routerT('platform.router.section2.providersLabel', locale) }}
     </p>
     <RouterProviderLogoRow
       :animated="false"

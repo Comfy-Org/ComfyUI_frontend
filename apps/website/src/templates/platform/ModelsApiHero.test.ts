@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import { t } from '../../i18n/translations'
+import { routerT } from './routerCopy'
 import ModelsApiHero from './ModelsApiHero.vue'
 
 describe('ModelsApiHero', () => {
@@ -24,7 +25,7 @@ describe('ModelsApiHero', () => {
       screen.getAllByText(t('nav.badgeBeta', 'en')).length
     ).toBeGreaterThan(0)
     const browseModels = screen.getAllByRole('link', {
-      name: t('platform.router.cta.browseModels', 'en')
+      name: routerT('platform.router.cta.browseModels', 'en')
     })
     expect(browseModels.length).toBeGreaterThan(0)
     for (const link of browseModels)

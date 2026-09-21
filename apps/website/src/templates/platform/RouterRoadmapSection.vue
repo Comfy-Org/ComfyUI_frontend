@@ -10,6 +10,7 @@ import Button from '../../components/ui/button/Button.vue'
 import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { routerT } from './routerCopy'
 import type { RouterRoadmapCardId } from '../../scripts/posthog'
 import { captureRouterRoadmapCardExpanded } from '../../scripts/posthog'
 import FeatureCard from './FeatureCard.vue'
@@ -24,21 +25,21 @@ const cards: readonly {
 }[] = [
   {
     id: 'workflow',
-    title: t('platform.router.roadmap.1.title', locale),
-    description: t('platform.router.roadmap.1.description', locale),
-    details: t('platform.router.roadmap.1.details', locale)
+    title: routerT('platform.router.roadmap.1.title', locale),
+    description: routerT('platform.router.roadmap.1.description', locale),
+    details: routerT('platform.router.roadmap.1.details', locale)
   },
   {
     id: 'strategy',
-    title: t('platform.router.roadmap.2.title', locale),
-    description: t('platform.router.roadmap.2.description', locale),
-    details: t('platform.router.roadmap.2.details', locale)
+    title: routerT('platform.router.roadmap.2.title', locale),
+    description: routerT('platform.router.roadmap.2.description', locale),
+    details: routerT('platform.router.roadmap.2.details', locale)
   },
   {
     id: 'use-case',
-    title: t('platform.router.roadmap.3.title', locale),
-    description: t('platform.router.roadmap.3.description', locale),
-    details: t('platform.router.roadmap.3.details', locale)
+    title: routerT('platform.router.roadmap.3.title', locale),
+    description: routerT('platform.router.roadmap.3.description', locale),
+    details: routerT('platform.router.roadmap.3.details', locale)
   }
 ]
 
@@ -104,16 +105,16 @@ function panelStyle(index: number, expanded: boolean): CSSProperties {
 <template>
   <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader
-      :label="t('platform.router.roadmap.eyebrow', locale)"
+      :label="routerT('platform.router.roadmap.eyebrow', locale)"
       max-width="xl"
       heading-size="compact"
     >
-      {{ t('platform.router.roadmap.heading', locale) }}
+      {{ routerT('platform.router.roadmap.heading', locale) }}
       <template #subtitle>
         <p
           class="mx-auto mt-4 max-w-2xl text-sm text-pretty text-primary-comfy-canvas/70"
         >
-          {{ t('platform.router.roadmap.subtitle', locale) }}
+          {{ routerT('platform.router.roadmap.subtitle', locale) }}
         </p>
       </template>
     </SectionHeader>
@@ -275,7 +276,7 @@ function panelStyle(index: number, expanded: boolean): CSSProperties {
 
     <div class="mt-8 flex justify-center">
       <Button as="a" :href="externalLinks.docsComfyRouter" variant="outline">
-        {{ t('platform.router.roadmap.learnMore', locale) }}
+        {{ routerT('platform.router.roadmap.learnMore', locale) }}
       </Button>
     </div>
   </section>

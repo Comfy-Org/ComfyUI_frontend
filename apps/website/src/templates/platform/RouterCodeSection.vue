@@ -5,6 +5,7 @@ import { ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { routerT } from './routerCopy'
 import CodeTabs from './CodeTabs.vue'
 import type { RouterProvider } from './codeSamples'
 import { ROUTER_PROVIDERS, routerCodeTabs } from './codeSamples'
@@ -50,12 +51,12 @@ const selectedProvider = ref<RouterProvider>(providerOptions[0].id)
     <h2
       class="text-center text-2xl/tight font-light text-balance text-primary-comfy-canvas lg:text-3xl/tight"
     >
-      {{ t('platform.router.code.heading', locale) }}
+      {{ routerT('platform.router.code.heading', locale) }}
     </h2>
     <div class="mt-8">
       <CodeTabs
         :tabs="routerCodeTabs"
-        :label="t('platform.router.code.heading', locale)"
+        :label="routerT('platform.router.code.heading', locale)"
         :selected-index="ROUTER_PROVIDERS.indexOf(selectedProvider)"
         picker="dropdown"
         content-class="bg-[#2a2230]"
@@ -66,7 +67,7 @@ const selectedProvider = ref<RouterProvider>(providerOptions[0].id)
           <RadioGroupRoot
             v-model="selectedProvider"
             orientation="horizontal"
-            :aria-label="t('platform.router.code.providerLabel', locale)"
+            :aria-label="routerT('platform.router.code.providerLabel', locale)"
             class="flex w-full max-w-full items-center rounded-2xl border border-white/15 bg-primary-comfy-ink p-1 sm:w-auto"
           >
             <RadioGroupItem
@@ -87,7 +88,7 @@ const selectedProvider = ref<RouterProvider>(providerOptions[0].id)
       </CodeTabs>
     </div>
     <p class="mt-6 text-center text-sm text-primary-comfy-canvas/70">
-      {{ t('platform.router.code.supporting', locale) }}
+      {{ routerT('platform.router.code.supporting', locale) }}
     </p>
   </section>
 </template>

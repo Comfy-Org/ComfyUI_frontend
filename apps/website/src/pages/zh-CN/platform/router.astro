@@ -13,6 +13,7 @@ import RouterProofStripSection from '../../../templates/platform/RouterProofStri
 import RouterRoadmapSection from '../../../templates/platform/RouterRoadmapSection.vue'
 import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
+import { routerFaq, routerT } from '../../../templates/platform/routerCopy'
 ---
 
 <BaseLayout
@@ -29,18 +30,17 @@ import { t } from '../../../i18n/translations'
   <RouterRoadmapSection locale="zh-CN" client:visible />
   <FAQSection
     locale="zh-CN"
-    headingKey="platform.router.faq.heading"
-    faqPrefix="platform.router.faq"
-    faqCount={12}
+    heading={routerT('platform.router.faq.heading', 'zh-CN')}
+    items={routerFaq('zh-CN')}
     client:load
   />
   <ClosingCtaSection
     locale="zh-CN"
-    heading-after-badge={t(
+    heading-after-badge={routerT(
       'platform.router.closing.headingAfterBadge',
       'zh-CN'
     )}
-    subtitle={t('platform.router.closing.subtitle', 'zh-CN')}
+    subtitle={routerT('platform.router.closing.subtitle', 'zh-CN')}
     primary-href={externalLinks.apiKeys}
     client:visible
   />

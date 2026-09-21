@@ -3,6 +3,7 @@ import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { routerT } from './routerCopy'
 import CodeTabs from './CodeTabs.vue'
 import { routerCodeTabs } from './codeSamples'
 
@@ -16,19 +17,19 @@ const routes = getRoutes(locale)
     :locale="locale"
     compact
     beta
-    :badge-text="t('platform.router.badge.label', locale)"
+    :badge-text="routerT('platform.router.badge.label', locale)"
     :title="t('platform.modelsHero.heading', locale)"
     title-class="text-primary-comfy-yellow text-3xl/tight font-light tracking-[-1.44px] md:text-4xl/tight lg:text-5xl/tight"
     class="lg:items-stretch"
     media-wrapper-class="hidden min-w-0 lg:flex lg:flex-col"
     :subtitle="t('platform.modelsHero.subtitle', locale)"
     :primary-cta="{
-      label: t('platform.router.cta.getApiKey', locale),
+      label: routerT('platform.router.cta.getApiKey', locale),
       href: externalLinks.apiKeys,
       target: '_blank'
     }"
     :secondary-cta="{
-      label: t('platform.router.cta.browseModels', locale),
+      label: routerT('platform.router.cta.browseModels', locale),
       href: routes.modelsShowcase
     }"
   >

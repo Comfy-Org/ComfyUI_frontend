@@ -5,7 +5,7 @@ import { useClipboard } from '@vueuse/core'
 
 import { ROUTER_MIGRATION_PROMPT } from '../../config/router-migration-prompt'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { routerT } from './routerCopy'
 import BrandButton from '../../components/common/BrandButton.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -20,10 +20,10 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000 })
     >
       <div>
         <p class="text-lg font-bold text-primary-comfy-canvas">
-          {{ t('platform.router.migrate.title', locale) }}
+          {{ routerT('platform.router.migrate.title', locale) }}
         </p>
         <p class="mt-1 text-sm text-pretty text-primary-comfy-canvas">
-          {{ t('platform.router.migrate.subtitle', locale) }}
+          {{ routerT('platform.router.migrate.subtitle', locale) }}
         </p>
       </div>
       <BrandButton
@@ -38,17 +38,17 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000 })
               :class="cn('[grid-area:1/1]', copied && 'invisible')"
               aria-hidden="true"
             >
-              {{ t('platform.router.migrate.copyPrompt', locale) }}
+              {{ routerT('platform.router.migrate.copyPrompt', locale) }}
             </span>
             <span
               :class="cn('[grid-area:1/1]', !copied && 'invisible')"
               aria-hidden="true"
             >
-              {{ t('platform.router.migrate.copied', locale) }}
+              {{ routerT('platform.router.migrate.copied', locale) }}
             </span>
             <span class="sr-only">
               {{
-                t(
+                routerT(
                   copied
                     ? 'platform.router.migrate.copied'
                     : 'platform.router.migrate.copyPrompt',
