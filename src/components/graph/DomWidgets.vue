@@ -1,6 +1,6 @@
 <template>
   <!-- Create a new stacking context for widgets to avoid z-index issues -->
-  <div class="isolate">
+  <div class="isolate" data-testid="dom-widgets" :inert="!canFocusWidgets">
     <DomWidget
       v-for="widgetState in widgetStates"
       :key="widgetState.widget.id"
@@ -123,7 +123,7 @@ const updateWidgets = () => {
 }
 
 const canvasStore = useCanvasStore()
-const { canEditNodes } = useCanvasInteractions()
+const { canEditNodes, canFocusWidgets } = useCanvasInteractions()
 whenever(
   () => canvasStore.canvas,
   (canvas) =>

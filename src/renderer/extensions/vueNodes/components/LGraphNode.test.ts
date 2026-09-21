@@ -708,6 +708,28 @@ describe('LGraphNode', () => {
     )
 
     it.for([
+      { picking: false, inert: false },
+      { picking: true, inert: true }
+    ])(
+      'picking=$picking renders the node media content inert=$inert',
+      ({ picking, inert }) => {
+        useAgentNodeSelectionStore().isActive = picking
+        useNodeOutputStore().nodeOutputs['test-node-123'] = {
+          images: [{ filename: 'output.png', type: 'output' }]
+        }
+        vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+          '/output.png'
+        ])
+
+        renderLGraphNode({ nodeData: mockNodeData })
+
+        expect(screen.getByTestId('node-media').hasAttribute('inert')).toBe(
+          inert
+        )
+      }
+    )
+
+    it.for([
       { picking: false, cloneCalls: 1, showAdvanced: true, acceptsDrop: true },
       { picking: true, cloneCalls: 0, showAdvanced: false, acceptsDrop: false }
     ])(

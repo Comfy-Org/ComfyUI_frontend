@@ -162,6 +162,8 @@
 
           <div
             v-if="hasCustomContent"
+            data-testid="node-media"
+            :inert="!canFocusWidgets"
             :class="
               cn(
                 'flex min-h-0 flex-col',
@@ -402,8 +404,12 @@ const nodeOpacity = computed(() => {
 const hasInputs = computed(() => nonWidgetedInputs(nodeData.inputs).length > 0)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
-const { handleWheel, shouldHandleNodePointerEvents, canEditNodes } =
-  useCanvasInteractions()
+const {
+  handleWheel,
+  shouldHandleNodePointerEvents,
+  canEditNodes,
+  canFocusWidgets
+} = useCanvasInteractions()
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
