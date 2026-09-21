@@ -256,6 +256,16 @@ export function flushErrorReports(): void {
   }
 }
 
+function logReport(
+  cause: unknown,
+  options: ReportErrorOptions,
+  suffix = ''
+): void {
+  if (options.logToConsole === false) return
+  const log = options.level === 'warning' ? console.warn : console.error
+  log(`${REPORTED_ERROR_PREFIX}${options.errorType}${suffix}`, cause)
+}
+
 /**
  * Report an error to every observability sink at once.
  *
@@ -276,16 +286,10 @@ export function flushErrorReports(): void {
 export function reportError(cause: unknown, options: ReportErrorOptions): void {
   try {
     if (dispatching) {
-      console.error(
-        `${REPORTED_ERROR_PREFIX}${options.errorType} (suppressed: raised while reporting)`,
-        cause
-      )
+      logReport(cause, options, ' (suppressed: raised while reporting)')
       return
     }
-    if (options.logToConsole !== false) {
-      const log = options.level === 'warning' ? console.warn : console.error
-      log(`${REPORTED_ERROR_PREFIX}${options.errorType}`, cause)
-    }
+    logReport(cause, options)
     flushErrorReports()
 
     const error = toError(cause)
