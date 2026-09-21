@@ -16,27 +16,22 @@ interface ExtensionState {
 }
 
 const payloads = new WeakMap<object, ExtensionState>()
-let hasReportedUncloneableExtensionValue = false
 
-const safeCloneExtensionValue = (value: unknown): unknown => {
+function safeCloneExtensionValue(value: unknown): JsonValue | undefined {
+  let clonedValue: unknown
   try {
-    return structuredClone(value)
+    clonedValue = structuredClone(value)
   } catch (error) {
     if (!(error instanceof Error) || error.name !== 'DataCloneError')
       throw error
     try {
-      return JSON.parse(JSON.stringify(value))
-    } catch (fallbackError) {
-      if (!hasReportedUncloneableExtensionValue) {
-        hasReportedUncloneableExtensionValue = true
-        console.warn(
-          'LiteGraph: failed to clone non-serializable extension payload',
-          fallbackError
-        )
-      }
-      return value
+      clonedValue = JSON.parse(JSON.stringify(value))
+    } catch {
+      return
     }
   }
+
+  return isJsonValue(clonedValue) ? clonedValue : undefined
 }
 
 const nodeCanonicalFields = {
@@ -128,20 +123,19 @@ const isJsonValue = (
 const isSafeExtensionKey = (key: string): boolean => key !== '__proto__'
 
 const readPayload = (value: unknown): ExtensionPayload => {
+  if (value === undefined) return {}
+  const clonedValue = safeCloneExtensionValue(value)
   if (
-    !isJsonValue(value) ||
-    value === null ||
-    typeof value !== 'object' ||
-    Array.isArray(value)
+    clonedValue === undefined ||
+    clonedValue === null ||
+    typeof clonedValue !== 'object' ||
+    Array.isArray(clonedValue)
   ) {
-    if (value !== undefined)
-      console.warn('LiteGraph: ignoring non-serializable extension payload')
+    console.warn('LiteGraph: ignoring non-serializable extension payload')
     return {}
   }
   return Object.fromEntries(
-    Object.entries(value)
-      .filter(([key]) => isSafeExtensionKey(key))
-      .map(([key, entry]) => [key, structuredClone(entry)])
+    Object.entries(clonedValue).filter(([key]) => isSafeExtensionKey(key))
   )
 }
 
@@ -159,7 +153,7 @@ function copyExtensionFields(
       continue
     }
     const clonedValue = safeCloneExtensionValue(value)
-    if (isJsonValue(clonedValue)) {
+    if (clonedValue !== undefined) {
       target[key] = clonedValue
     } else {
       console.warn('LiteGraph: ignoring non-serializable extension payload')

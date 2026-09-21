@@ -128,18 +128,55 @@ describe('LGraphNode extension field serialization', () => {
     })
   })
 
-  it('deep-clones plain extension data', () => {
+  it('deep-clones proxied extension data', () => {
     const node = new LGraphNode('TestNode')
-    const extensionValue = { settings: { enabled: true } }
+    const target = { settings: { enabled: true } }
+    const extensionValue = new Proxy(target, {})
     node.onSerialize = (data) => {
       Reflect.set(data, 'thirdPartyData', extensionValue)
     }
 
     const serialized = node.serialize()
-    extensionValue.settings.enabled = false
+    target.settings.enabled = false
 
     expect(serialized.extensions).toEqual({
       thirdPartyData: { settings: { enabled: true } }
     })
+  })
+})
+
+describe('LGraphNode extension payload fallbacks', () => {
+  it('serializes a Proxy in the namespaced extension payload', () => {
+    const node = new LGraphNode('TestNode')
+    const extensionValue = new Proxy({ source: 'namespaced' }, {})
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'extensions', { thirdPartyData: extensionValue })
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toEqual({
+      thirdPartyData: { source: 'namespaced' }
+    })
+  })
+
+  it('omits an extension value when both clone strategies fail', () => {
+    const node = new LGraphNode('TestNode')
+    const extensionValue = new Proxy(
+      { label: 'not serializable' },
+      {
+        get(target, property, receiver) {
+          if (property === 'toJSON') throw new Error('Cannot serialize')
+          return Reflect.get(target, property, receiver)
+        }
+      }
+    )
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'thirdPartyData', extensionValue)
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toBeUndefined()
   })
 })
