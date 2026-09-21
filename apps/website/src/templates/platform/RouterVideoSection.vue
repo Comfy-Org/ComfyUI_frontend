@@ -11,8 +11,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     <VideoPlayer
       :locale="locale"
       :aria-label="t('platform.router.video.alt', locale)"
-      src="/videos/router/router-animatic.mp4"
-      poster="/videos/router/router-animatic-poster.webp"
+      src="https://media.comfy.org/website/router/router-animatic-v002.mp4"
+      poster="https://media.comfy.org/website/router/router-animatic-v002-poster.webp"
       autoplay
       lazy-autoplay
     />
