@@ -459,6 +459,17 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
   })
 
+  it('does not attribute a late anonymous result from an aborted batch to the next batch', () => {
+    sender.enqueue([addNode(1)])
+    sender.abortAll()
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(sender.pending()).toBe(1)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+  })
+
   describe('suspension', () => {
     function parkSecondBatch(): string {
       sender.enqueue([addNode(1)])

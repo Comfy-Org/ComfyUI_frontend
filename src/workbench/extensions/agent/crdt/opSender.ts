@@ -183,6 +183,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function settleUnbound(batch: InFlight): void {
     if (inFlight !== batch) return
+    if (batch.transmitted) staleAnonymousBudget += batch.resent ? 2 : 1
     settle({
       state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
       ops: batch.ops
