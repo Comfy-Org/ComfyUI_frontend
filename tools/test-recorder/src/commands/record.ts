@@ -155,6 +155,67 @@ function answered<T>(value: T | symbol): T {
   return value
 }
 
+type CommandResult = ReturnType<typeof runCommand>
+
+function commandFailure(
+  result: CommandResult,
+  label: string
+): Error | undefined {
+  if (result.error) return new Error(`${label} failed: ${result.error.message}`)
+  if (result.status !== 0) {
+    return new Error(`${label} exited with status ${result.status}`)
+  }
+  return undefined
+}
+
+function commandOutput(
+  result: CommandResult,
+  label: string,
+  required: boolean
+): string {
+  const failure = commandFailure(result, label)
+  if (failure) throw failure
+  const output = result.stdout?.toString().trim() ?? ''
+  if (required && !output) throw new Error(`${label} returned no output`)
+  return output
+}
+
+function checkoutRevision(projectRoot: string): {
+  branch: string
+  head: string
+} {
+  const branch = commandOutput(
+    runCommand('git', ['branch', '--show-current'], {
+      cwd: projectRoot,
+      stdio: 'pipe'
+    }),
+    'git branch --show-current',
+    true
+  )
+  const head = commandOutput(
+    runCommand('git', ['rev-parse', 'HEAD'], {
+      cwd: projectRoot,
+      stdio: 'pipe'
+    }),
+    'git rev-parse HEAD',
+    true
+  )
+  return { branch, head }
+}
+
+function checkoutIsDirty(projectRoot: string): boolean {
+  return Boolean(
+    commandOutput(
+      runCommand('git', ['status', '--porcelain'], {
+        cwd: projectRoot,
+        stdio: 'pipe'
+      }),
+      'git status --porcelain',
+      false
+    )
+  )
+}
+
 export async function preparePrCheckout(
   pr: string,
   projectRoot: string,
@@ -190,24 +251,13 @@ export async function preparePrCheckout(
       throw new Error(`PR #${pr} checkout was not verified: ${reason}`)
     }
 
-    const branch = runCommand('git', ['branch', '--show-current'], {
-      cwd: projectRoot,
-      stdio: 'pipe'
-    })
-      .stdout.toString()
-      .trim()
-    const head = runCommand('git', ['rev-parse', 'HEAD'], {
-      cwd: projectRoot,
-      stdio: 'pipe'
-    })
-      .stdout.toString()
-      .trim()
+    const effectiveRevision = checkoutRevision(projectRoot)
     warn(`Continuing without verified PR #${pr}: ${reason}`)
     return {
       requestedBranch,
       requestedHead,
-      effectiveBranch: branch,
-      effectiveHead: head,
+      effectiveBranch: effectiveRevision.branch,
+      effectiveHead: effectiveRevision.head,
       mode: 'explicit-fallback'
     }
   }
@@ -219,29 +269,18 @@ export async function preparePrCheckout(
     )
   }
 
-  const [prBranch, prHead, title] = details.stdout.toString().trim().split('\t')
+  const detailsOutput = details.stdout?.toString().trim() ?? ''
+  if (!detailsOutput) {
+    return fallback('gh pr view returned no head revision data')
+  }
+  const [prBranch, prHead, title] = detailsOutput.split('\t')
   if (!prBranch || !prHead || !title) {
     return fallback('gh pr view returned incomplete head revision data')
   }
-  const currentBranch = runCommand('git', ['branch', '--show-current'], {
-    cwd: projectRoot,
-    stdio: 'pipe'
-  })
-    .stdout.toString()
-    .trim()
-  const dirty =
-    runCommand('git', ['status', '--porcelain'], {
-      cwd: projectRoot,
-      stdio: 'pipe'
-    })
-      .stdout.toString()
-      .trim().length > 0
-  const currentHead = runCommand('git', ['rev-parse', 'HEAD'], {
-    cwd: projectRoot,
-    stdio: 'pipe'
-  })
-    .stdout.toString()
-    .trim()
+  const currentRevision = checkoutRevision(projectRoot)
+  const currentBranch = currentRevision.branch
+  const currentHead = currentRevision.head
+  const dirty = checkoutIsDirty(projectRoot)
   if (currentBranch === prBranch && currentHead === prHead) {
     pass(`Your checkout already has the code for PR #${pr}`, prBranch)
     return {
@@ -294,18 +333,9 @@ export async function preparePrCheckout(
     )
   }
 
-  const effectiveBranch = runCommand('git', ['branch', '--show-current'], {
-    cwd: projectRoot,
-    stdio: 'pipe'
-  })
-    .stdout.toString()
-    .trim()
-  const effectiveHead = runCommand('git', ['rev-parse', 'HEAD'], {
-    cwd: projectRoot,
-    stdio: 'pipe'
-  })
-    .stdout.toString()
-    .trim()
+  const effectiveRevision = checkoutRevision(projectRoot)
+  const effectiveBranch = effectiveRevision.branch
+  const effectiveHead = effectiveRevision.head
   if (effectiveBranch !== prBranch || effectiveHead !== prHead) {
     return fallback(
       `effective checkout ${effectiveBranch || '(detached)'}@${effectiveHead || '(unknown)'} ` +
