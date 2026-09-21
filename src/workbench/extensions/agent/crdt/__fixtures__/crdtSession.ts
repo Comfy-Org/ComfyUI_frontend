@@ -102,12 +102,21 @@ export const crdtTest = baseTest.extend<CrdtFixtures>({
       }
     })
 
+    // Every cleanup still runs even if an earlier one throws -- a broken
+    // detach/destroy must not skip the rest and leak state into later
+    // tests -- but the failure(s) are re-thrown afterward so the test that
+    // owns them fails instead of passing silently.
+    const errors: unknown[] = []
     for (const cleanup of cleanups.reverse()) {
       try {
         cleanup()
       } catch (error) {
-        console.error('[agent-crdt] fixture cleanup failed', error)
+        errors.push(error)
       }
+    }
+    if (errors.length === 1) throw errors[0]
+    if (errors.length > 1) {
+      throw new AggregateError(errors, '[agent-crdt] fixture cleanup failed')
     }
   }
 })

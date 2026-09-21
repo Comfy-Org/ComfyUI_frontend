@@ -1,18 +1,50 @@
 import { expect } from '@playwright/test'
 
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type {
+  AgentThreadListResponse,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
+import type {
+  PromptResponse,
+  UserDataFullInfo
+} from '@/platform/remote/comfyui/types'
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type {
+  AgentMessages,
+  AgentRunModePreference,
+  AgentTurnAccepted
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import {
+  CONNECTED_SOCKET_SLOTS,
+  EXPECTED_TARGETS,
+  MESSAGE_ID,
+  NODE_TYPE,
+  SOCKET_SID,
+  SOURCE_NODE_ID,
+  SOURCE_NODE_TYPE,
+  SPARE_SLOTS,
+  TARGET_ID,
+  TARGET_NODE_ID,
+  THREAD_ID,
+  WORKFLOW_ID,
+  catalog,
+  nodeDef,
+  seed,
+  sourceNodeDef
+} from '@e2e/fixtures/data/agent/agentCrdtMultiAutogrowRealignFixture'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 /**
@@ -34,240 +66,35 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
  * against the live node, not by the document's position, so live order wins
  * regardless of how many autogrow groups reordered it.
  *
- * Mirrors the Vitest regression in
- * `agentNodeMaterializer.multiAutogrow.test.ts` (same interleaved shape),
- * but drives the real CRDT follower over a mocked `/ws` socket and reads the
- * painted result off the live canvas, the way a user would see it -- once
- * right after the workflow is subscribed, and again after a tab switch
- * forces the follower to resubscribe and reconcile the same node in place
- * (see `agentAutogrowTabSwitchReconcile.spec.ts` for that same replay
- * mechanism, and its note that a node the store already holds -- unlike a
+ * This drives the real CRDT follower over a mocked `/ws` socket
+ * (`AgentFollowerHostSocket`) and reads the painted result off the live
+ * canvas, the way a user would see it: right after the workflow is
+ * subscribed, again after a tab switch forces the follower to resubscribe
+ * and reconcile the same node in place, and once more after a full page
+ * reload forces the same resubscribe from a cold start. It also proves the
+ * PR's submitted-value guarantee: the reconcile must not just paint links
+ * correctly while still serializing a scalar widget's or a link's value
+ * under the wrong input name.
+ *
+ * See `agentNodeMaterializer.multiAutogrow.test.ts` for the Vitest
+ * regression on the same interleaved shape, and
+ * `agentAutogrowTabSwitchReconcile.spec.ts` for the same tab-switch replay
+ * mechanism (its note that a node the store already holds -- unlike a
  * brand new one -- is reconciled rather than freshly added).
  */
 
-const NODE_TYPE = 'TestMultiAutogrowRealign'
-const SOURCE_NODE_TYPE = 'TestMultiAutogrowRealignSource'
-
-const SOURCE_NODE_ID = 1
-const TARGET_NODE_ID = 2
-const TARGET_ID = String(TARGET_NODE_ID)
-
-const WORKFLOW_ID = '4c1e9f2a-6b3d-4a7e-8f01-2c3d4e5f6a7b'
-const THREAD_ID = 'a2b3c4d5-6e7f-4a8b-9c0d-1e2f3a4b5c6d'
-const MESSAGE_ID = 'f1e2d3c4-b5a6-4978-8c6d-5e4f3a2b1c0d'
-
-// Link ids, one per wire in the saved graph below.
-const IMG0_LINK = 201
-const IMG1_LINK = 202
-const VID0_LINK = 203
-const VID1_LINK = 204
-const PROMPT_LINK = 205
-const WIDTH_LINK = 206
-const HEIGHT_LINK = 207
-
-const nodeDef: ComfyNodeDef = {
-  name: NODE_TYPE,
-  display_name: 'Test Multi Autogrow Realign',
-  description: '',
-  category: 'test',
-  python_module: 'test',
-  output_node: false,
-  output: [],
-  output_is_list: [],
-  output_name: [],
-  input: {
-    required: {
-      prompt: ['STRING', { multiline: true }],
-      width: ['INT', { default: 640 }],
-      height: ['INT', { default: 480 }]
-    },
-    optional: {
-      ref_images: [
-        'COMFY_AUTOGROW_V3',
-        {
-          template: {
-            input: { required: { ref_image: ['IMAGE', {}] } },
-            prefix: 'ref_image_',
-            min: 0,
-            max: 4
-          }
-        }
-      ],
-      ref_videos: [
-        'COMFY_AUTOGROW_V3',
-        {
-          template: {
-            input: { required: { ref_video: ['VIDEO', {}] } },
-            prefix: 'ref_video_',
-            min: 0,
-            max: 4
-          }
-        }
-      ]
-    }
-  },
-  input_order: {
-    required: ['prompt', 'width', 'height'],
-    optional: ['ref_images', 'ref_videos']
-  }
-}
-
-const sourceNodeDef: ComfyNodeDef = {
-  name: SOURCE_NODE_TYPE,
-  display_name: 'Test Multi Autogrow Realign Source',
-  description: '',
-  category: 'test',
-  python_module: 'test',
-  output_node: false,
-  output: ['IMAGE', 'IMAGE', 'VIDEO', 'VIDEO', 'STRING', 'INT', 'INT'],
-  output_is_list: [false, false, false, false, false, false, false],
-  output_name: [
-    'ref_image_0',
-    'ref_image_1',
-    'ref_video_0',
-    'ref_video_1',
-    'prompt',
-    'width',
-    'height'
-  ],
-  input: { required: {} },
-  input_order: { required: [] }
-}
-
-const catalog: WidgetCatalog = {
-  types: {
-    [SOURCE_NODE_TYPE]: { widget_order: [] },
-    [NODE_TYPE]: { widget_order: ['prompt', 'width', 'height'] }
-  }
-}
-
-// The shape a saved MiniMax-style template reaches disk in: two autogrow
-// groups (ref_images, ref_videos) both already grown to two slots -- the
-// last of each still spare -- interleaved with the scalar widgets that come
-// after them. Every named link below must survive materialization landing
-// on the input it names, not on whichever input the document happens to
-// have at that position.
-const seed: WorkflowJSON = {
-  nodes: [
-    {
-      id: SOURCE_NODE_ID,
-      type: SOURCE_NODE_TYPE,
-      pos: [0, 0],
-      size: [220, 260],
-      flags: {},
-      order: 0,
-      mode: 0,
-      inputs: [],
-      outputs: [
-        { name: 'ref_image_0', type: 'IMAGE', links: [IMG0_LINK] },
-        { name: 'ref_image_1', type: 'IMAGE', links: [IMG1_LINK] },
-        { name: 'ref_video_0', type: 'VIDEO', links: [VID0_LINK] },
-        { name: 'ref_video_1', type: 'VIDEO', links: [VID1_LINK] },
-        { name: 'prompt', type: 'STRING', links: [PROMPT_LINK] },
-        { name: 'width', type: 'INT', links: [WIDTH_LINK] },
-        { name: 'height', type: 'INT', links: [HEIGHT_LINK] }
-      ],
-      properties: {},
-      widgets_values: []
-    },
-    {
-      id: TARGET_NODE_ID,
-      type: NODE_TYPE,
-      pos: [400, 0],
-      size: [320, 320],
-      flags: {},
-      order: 1,
-      mode: 0,
-      inputs: [
-        { name: 'ref_images.ref_image_0', type: 'IMAGE', link: IMG0_LINK },
-        { name: 'ref_images.ref_image_1', type: 'IMAGE', link: IMG1_LINK },
-        { name: 'ref_images.ref_image_2', type: 'IMAGE', link: null },
-        { name: 'ref_videos.ref_video_0', type: 'VIDEO', link: VID0_LINK },
-        { name: 'ref_videos.ref_video_1', type: 'VIDEO', link: VID1_LINK },
-        { name: 'ref_videos.ref_video_2', type: 'VIDEO', link: null },
-        {
-          name: 'prompt',
-          type: 'STRING',
-          widget: { name: 'prompt' },
-          link: PROMPT_LINK
-        },
-        {
-          name: 'width',
-          type: 'INT',
-          widget: { name: 'width' },
-          link: WIDTH_LINK
-        },
-        {
-          name: 'height',
-          type: 'INT',
-          widget: { name: 'height' },
-          link: HEIGHT_LINK
-        }
-      ],
-      outputs: [],
-      properties: {},
-      widgets_values: ['', 640, 480]
-    }
-  ],
-  links: [
-    [IMG0_LINK, SOURCE_NODE_ID, 0, TARGET_NODE_ID, 0, 'IMAGE'],
-    [IMG1_LINK, SOURCE_NODE_ID, 1, TARGET_NODE_ID, 1, 'IMAGE'],
-    [VID0_LINK, SOURCE_NODE_ID, 2, TARGET_NODE_ID, 3, 'VIDEO'],
-    [VID1_LINK, SOURCE_NODE_ID, 3, TARGET_NODE_ID, 4, 'VIDEO'],
-    [PROMPT_LINK, SOURCE_NODE_ID, 4, TARGET_NODE_ID, 6, 'STRING'],
-    [WIDTH_LINK, SOURCE_NODE_ID, 5, TARGET_NODE_ID, 7, 'INT'],
-    [HEIGHT_LINK, SOURCE_NODE_ID, 6, TARGET_NODE_ID, 8, 'INT']
-  ],
-  groups: [],
-  config: {},
-  extra: {},
-  version: 0.4
-}
-
-// Every saved link, and the input name it must still terminate on -- the
-// two interleaved autogrow groups' grown-and-linked slots, plus the scalar
-// widgets that follow them.
-const EXPECTED_TARGETS: readonly { linkId: number; name: string }[] = [
-  { linkId: IMG0_LINK, name: 'ref_images.ref_image_0' },
-  { linkId: IMG1_LINK, name: 'ref_images.ref_image_1' },
-  { linkId: VID0_LINK, name: 'ref_videos.ref_video_0' },
-  { linkId: VID1_LINK, name: 'ref_videos.ref_video_1' },
-  { linkId: PROMPT_LINK, name: 'prompt' },
-  { linkId: WIDTH_LINK, name: 'width' },
-  { linkId: HEIGHT_LINK, name: 'height' }
-]
-
-// The two socket-only slots each group keeps spare after its grown, linked
-// ones -- these render a real `.lg-slot--input` row this test can check is
-// NOT connected, unlike the widget-backed scalars. Named rather than
-// indexed: interleaved autogrow growth during `node.configure()` does not
-// preserve the document's input order in the live node (each group's
-// members bubble in as their connections are replayed), so a slot's final
-// live index cannot be assumed from its position in `seed` above -- only
-// its name is stable. See `resolveInputSlotIndex` below.
-const SPARE_SLOTS: readonly { name: string }[] = [
-  { name: 'ref_images.ref_image_2' },
-  { name: 'ref_videos.ref_video_2' }
-]
-
-// Socket-only slots (the autogrow groups), named so the test can check the
-// connected DOM class a widget-backed scalar never renders, at whatever
-// live index growth actually left them.
-const CONNECTED_SOCKET_SLOTS: readonly { name: string }[] = [
-  { name: 'ref_images.ref_image_0' },
-  { name: 'ref_images.ref_image_1' },
-  { name: 'ref_videos.ref_video_0' },
-  { name: 'ref_videos.ref_video_1' }
-]
+const SENTINEL_PROMPT = 'multi-autogrow-realign-sentinel-prompt'
+const SENTINEL_WIDTH = 777
+const SENTINEL_HEIGHT = 555
 
 test.describe(
   'Agent CRDT multi-autogrow link realignment',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test('keeps every link on its named slot across two interleaved autogrow groups, before and after a reconcile', async ({
+    test('keeps every link and scalar under its named slot across a reconcile, a resubscribe, and a reload', async ({
       page
     }) => {
-      test.setTimeout(60_000)
+      test.setTimeout(90_000)
 
       // Registered before `bootAgentApp` (with `objectInfo: 'server'` below)
       // so it wins over the empty handler `mockCloudBootRoutes` would
@@ -283,55 +110,63 @@ test.describe(
       )
 
       const host = new HostDoc(WORKFLOW_ID, seed, catalog)
-      let socketSend: ((frame: unknown) => void) | null = null
-      let subscribeCount = 0
-      await page.routeWebSocket(/\/ws/, (socket) => {
-        socketSend = (frame) => socket.send(JSON.stringify(frame))
-        socket.onMessage((raw) => {
-          const frame: unknown = JSON.parse(raw.toString())
-          if (typeof frame !== 'object' || frame === null) return
-          const { type, data } = frame as { type?: unknown; data?: unknown }
-          if (
-            type !== 'doc_subscribe' ||
-            typeof data !== 'object' ||
-            data === null
-          )
-            return
-          const { workflow_id, state_vector_b64 } = data as {
-            workflow_id?: unknown
-            state_vector_b64?: unknown
-          }
-          if (
-            workflow_id !== WORKFLOW_ID ||
-            typeof state_vector_b64 !== 'string'
-          )
-            return
-          subscribeCount += 1
-          socketSend!(host.subscribed())
-          socketSend!(host.catchUp(state_vector_b64))
-        })
-        socketSend({
-          type: 'status',
-          data: { status: { exec_info: { queue_remaining: 0 } }, sid: 's' }
-        })
-      })
+      const hostSocket = new AgentFollowerHostSocket(
+        page,
+        WORKFLOW_ID,
+        host,
+        SOCKET_SID
+      )
+      await hostSocket.install()
+
+      const threadList: AgentThreadListResponse = {
+        pagination: { has_more: false, limit: 100, offset: 0, total: 0 },
+        threads: []
+      }
       await page.route('**/api/agent/threads', (route) =>
-        route.fulfill(jsonRoute({ threads: [] }))
+        route.fulfill(jsonRoute(threadList))
       )
+      const runModePreference: AgentRunModePreference = {
+        mode: 'ask_approval',
+        credit_limit: null
+      }
       await page.route('**/api/agent/run-mode', (route) =>
-        route.fulfill(jsonRoute({ mode: 'ask_approval', credit_limit: null }))
+        route.fulfill(jsonRoute(runModePreference))
       )
+      const turnAccepted: AgentTurnAccepted = {
+        thread_id: THREAD_ID,
+        message_id: MESSAGE_ID,
+        workflow_id: WORKFLOW_ID
+      }
+      // Stateful once the turn is sent: a page reload re-runs
+      // `useAgentSession.start()`, which finds the persisted thread id in
+      // `localStorage` and hydrates from this same endpoint -- the message
+      // row's `workflow_id` is what lets the agent panel rebind its target
+      // and resubscribe the CRDT follower after the reload, proving
+      // persistence survives it rather than just a tab switch.
+      let turnSent = false
       await page.route('**/api/agent/threads/*/messages', (route) => {
-        if (route.request().method() !== 'POST')
-          return route.fulfill(jsonRoute([]))
+        if (route.request().method() !== 'POST') {
+          const history: AgentMessages = turnSent
+            ? [
+                {
+                  id: 'msg-user-1',
+                  role: 'user',
+                  seq: 1,
+                  status: 'complete',
+                  thread_id: THREAD_ID,
+                  turn_id: 'turn-1',
+                  workflow_id: WORKFLOW_ID,
+                  content: { text: 'hello' }
+                }
+              ]
+            : []
+          return route.fulfill(jsonRoute(history))
+        }
+        turnSent = true
         return route.fulfill({
           status: 202,
           contentType: 'application/json',
-          body: JSON.stringify({
-            thread_id: THREAD_ID,
-            message_id: MESSAGE_ID,
-            workflow_id: WORKFLOW_ID
-          })
+          body: JSON.stringify(turnAccepted)
         })
       })
 
@@ -359,43 +194,62 @@ test.describe(
         if (request.method() !== 'POST' || !path.startsWith('workflows/'))
           return route.fallback()
         savedName = path.slice('workflows/'.length, -'.json'.length)
-        return route.fulfill(
-          jsonRoute({
-            path,
-            modified: Date.now(),
-            size: request.postDataBuffer()?.length ?? 0
-          })
-        )
+        const saved: UserDataFullInfo = {
+          path,
+          modified: Date.now(),
+          size: request.postDataBuffer()?.length ?? 0
+        }
+        return route.fulfill(jsonRoute(saved))
       })
-      await page.route('**/api/workflows?*', (route) =>
-        route.fulfill(
-          jsonRoute({
-            data:
-              savedName === undefined
-                ? []
-                : [
-                    {
-                      id: WORKFLOW_ID,
-                      name: savedName,
-                      created_at: '2026-09-01T00:00:00Z',
-                      updated_at: '2026-09-01T00:00:00Z',
-                      created_by: 'test-user-e2e',
-                      latest_version: 1
-                    }
-                  ],
-            pagination: {
-              has_more: false,
-              limit: 100,
-              offset: 0,
-              total: savedName === undefined ? 0 : 1
-            }
-          })
-        )
-      )
+      await page.route('**/api/workflows?*', (route) => {
+        const workflows: WorkflowListResponse = {
+          data:
+            savedName === undefined
+              ? []
+              : [
+                  {
+                    id: WORKFLOW_ID,
+                    name: savedName,
+                    created_at: '2026-09-01T00:00:00Z',
+                    updated_at: '2026-09-01T00:00:00Z',
+                    created_by: 'test-user-e2e',
+                    latest_version: 1
+                  }
+                ],
+          pagination: {
+            has_more: false,
+            limit: 100,
+            offset: 0,
+            total: savedName === undefined ? 0 : 1
+          }
+        }
+        return route.fulfill(jsonRoute(workflows))
+      })
+
+      // Captures the exact body a real Run submits, keyed by node id ->
+      // `{inputs}` -- a literal value under a scalar widget's own name, or
+      // an `[originNodeId, originSlot]` tuple under a linked slot's own
+      // name. Overwritten on every submit so re-running after the reload
+      // step below reads that submission, not a stale one.
+      let submittedPrompt: ComfyApiWorkflow | undefined
+      await page.route('**/api/prompt', (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        const body = route.request().postDataJSON() as {
+          prompt: ComfyApiWorkflow
+        }
+        submittedPrompt = body.prompt
+        const response: PromptResponse = {
+          prompt_id: 'b6c1a2d3-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
+          number: 1,
+          node_errors: {}
+        }
+        return route.fulfill(jsonRoute(response))
+      })
 
       const topbar = new Topbar(page)
       const vueNodes = new VueNodeHelpers(page)
-      const panel = page.locator('#agent-panel-root')
+      const agentPanel = new AgentPanel(page)
+      const panel = agentPanel.root
 
       const readLinkTargets = () =>
         page.evaluate(
@@ -413,7 +267,7 @@ test.describe(
 
       // Resolves a named input's actual live slot index, rather than
       // assuming it matches the seed's position -- see the comment on
-      // `SPARE_SLOTS` above.
+      // `SPARE_SLOTS` in the fixture module.
       const resolveInputSlotIndex = (name: string) =>
         page.evaluate(
           ({ nodeId, name }) =>
@@ -445,17 +299,64 @@ test.describe(
         }
       }
 
+      // Clicks the real Run button and waits for the resulting `/api/prompt`
+      // submission, rather than calling `app.queuePrompt()` directly (see
+      // `browser_tests/README.md`'s `page.evaluate` guidance: an action with
+      // a UI equivalent goes through the UI). An implementation that keeps
+      // the canvas painted correctly (asserted above) but serializes a
+      // scalar or a link positionally in that submitted body would still
+      // fail this.
+      async function runAndCaptureSubmission(): Promise<
+        ComfyApiWorkflow[string]['inputs']
+      > {
+        submittedPrompt = undefined
+        await page
+          .getByRole('button', { name: enMessages.menu.run, exact: true })
+          .click()
+        await expect.poll(() => submittedPrompt !== undefined).toBe(true)
+        return submittedPrompt![TARGET_ID].inputs
+      }
+
+      async function assertSubmittedValuesNamedCorrectly(): Promise<void> {
+        const inputs = await runAndCaptureSubmission()
+        expect(inputs.prompt).toBe(SENTINEL_PROMPT)
+        expect(inputs.width).toBe(SENTINEL_WIDTH)
+        expect(inputs.height).toBe(SENTINEL_HEIGHT)
+        const sourceId = String(SOURCE_NODE_ID)
+        expect(inputs['ref_images.ref_image_0']).toEqual([sourceId, 0])
+        expect(inputs['ref_images.ref_image_1']).toEqual([sourceId, 1])
+        expect(inputs['ref_videos.ref_video_0']).toEqual([sourceId, 2])
+        expect(inputs['ref_videos.ref_video_1']).toEqual([sourceId, 3])
+      }
+
+      async function fillSentinelWidgetValues(): Promise<void> {
+        const nodeLocator = vueNodes.getNodeLocator(TARGET_ID)
+        const promptField = nodeLocator.getByRole('textbox', {
+          name: 'prompt'
+        })
+        await promptField.fill(SENTINEL_PROMPT)
+        await promptField.blur()
+
+        const widthWidget = nodeLocator
+          .getByLabel('width', { exact: true })
+          .first()
+        const heightWidget = nodeLocator
+          .getByLabel('height', { exact: true })
+          .first()
+        const widthInput = vueNodes.getInputNumberControls(widthWidget).input
+        const heightInput = vueNodes.getInputNumberControls(heightWidget).input
+        await widthInput.fill(String(SENTINEL_WIDTH))
+        await widthInput.blur()
+        await heightInput.fill(String(SENTINEL_HEIGHT))
+        await heightInput.blur()
+
+        await expect(widthInput).toHaveValue(String(SENTINEL_WIDTH))
+        await expect(heightInput).toHaveValue(String(SENTINEL_HEIGHT))
+      }
+
       await test.step('open the agent panel and target the workflow', async () => {
-        await page
-          .getByRole('button', { name: enMessages.agent.entryButton })
-          .click()
-        await expect(panel).toBeVisible()
-        await panel
-          .getByRole('button', { name: enMessages.agent.switchWorkflow })
-          .click()
-        await page
-          .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-          .click()
+        await agentPanel.open()
+        await agentPanel.selectWorkflow()
       })
 
       await test.step('send a turn so the session binds the workflow', async () => {
@@ -465,16 +366,14 @@ test.describe(
         await composer.fill('hello')
         await panel.getByRole('button', { name: enMessages.agent.send }).click()
         await expect(panel.getByText('hello').first()).toBeVisible()
-        socketSend!({
+        hostSocket.send({
           type: 'agent_message_done',
           data: { message_id: MESSAGE_ID, thread_id: THREAD_ID }
         })
         await expect(
           panel.getByRole('button', { name: enMessages.agent.stop })
         ).toHaveCount(0)
-        // The CRDT follower subscribes once the turn's ack binds this
-        // workflow (`bindWorkflow` in `useAgentSession.ts`).
-        await expect.poll(() => subscribeCount, { timeout: 20_000 }).toBe(1)
+        await hostSocket.waitForSubscribe()
       })
 
       await test.step('every link lands on its named slot right after materialization', async () => {
@@ -498,10 +397,49 @@ test.describe(
         ).toHaveCount(2)
         await topbar.getTab(0).click()
         await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
-        await expect.poll(() => subscribeCount).toBe(2)
+        await expect.poll(() => hostSocket.subscribeCount()).toBe(2)
 
         await expect(vueNodes.getNodeLocator(TARGET_ID)).toBeVisible()
         await assertVisiblyCorrect()
+      })
+
+      await test.step('submitting the workflow serializes every scalar and link under its own name', async () => {
+        await fillSentinelWidgetValues()
+        await assertSubmittedValuesNamedCorrectly()
+      })
+
+      await test.step('a full page reload forces the same resubscribe, and every link and value survive it', async () => {
+        const subscribesBeforeReload = hostSocket.subscribeCount()
+        await page.reload()
+
+        await agentPanel.open()
+        await expect
+          .poll(() => hostSocket.subscribeCount(), { timeout: 30_000 })
+          .toBeGreaterThan(subscribesBeforeReload)
+
+        await expect(vueNodes.getNodeLocator(TARGET_ID)).toBeVisible({
+          timeout: 30_000
+        })
+        await assertVisiblyCorrect()
+
+        const nodeLocator = vueNodes.getNodeLocator(TARGET_ID)
+        await expect(
+          nodeLocator.getByRole('textbox', { name: 'prompt' })
+        ).toHaveValue(SENTINEL_PROMPT)
+        const widthWidget = nodeLocator
+          .getByLabel('width', { exact: true })
+          .first()
+        const heightWidget = nodeLocator
+          .getByLabel('height', { exact: true })
+          .first()
+        await expect(
+          vueNodes.getInputNumberControls(widthWidget).input
+        ).toHaveValue(String(SENTINEL_WIDTH))
+        await expect(
+          vueNodes.getInputNumberControls(heightWidget).input
+        ).toHaveValue(String(SENTINEL_HEIGHT))
+
+        await assertSubmittedValuesNamedCorrectly()
       })
     })
   }
