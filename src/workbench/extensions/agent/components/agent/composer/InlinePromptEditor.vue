@@ -7,7 +7,7 @@ import { keymap } from '@tiptap/pm/keymap'
 import { EditorState, TextSelection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, EditorView } from '@tiptap/pm/view'
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
-import DOMPurify from 'dompurify'
+import { default as DOMPurify } from 'dompurify'
 import { useI18n } from 'vue-i18n'
 
 import type { ComposerPrompt } from '../../../types/composerPrompt'
@@ -86,6 +86,12 @@ function createState(): EditorState {
   })
 }
 
+function deleteReference(state: EditorState, position: number, node: Node) {
+  const end = position + node.nodeSize
+  const padding = state.doc.nodeAt(end)?.text?.startsWith(' ') ? 1 : 0
+  return state.tr.delete(position, end + padding)
+}
+
 function referenceClipboardText(node: Node): string {
   const reference = promptNodeReference(node, 0)
   if (!reference) return ''
@@ -127,7 +133,7 @@ onMounted(() => {
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
       class:
-        'text-agent-fg min-h-7 w-full cursor-text font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
+        'text-base-foreground min-h-7 w-full cursor-text font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
     }),
     decorations(state) {
       if (state.selection.empty) return null
@@ -208,9 +214,7 @@ onMounted(() => {
           const start =
             event.key === 'Backspace' ? from - adjacent.nodeSize : from
           editor.dispatch(
-            editor.state.tr
-              .delete(start, start + adjacent.nodeSize)
-              .scrollIntoView()
+            deleteReference(editor.state, start, adjacent).scrollIntoView()
           )
           event.preventDefault()
         }
@@ -342,10 +346,10 @@ onMounted(() => {
           t('agent.removeWorkflowReference', { name })
         )
         remove.className =
-          'text-agent-fg pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 opacity-0 transition-opacity group-focus-within/workflow:pointer-events-auto group-focus-within/workflow:opacity-100 group-hover/workflow:pointer-events-auto group-hover/workflow:opacity-100 focus-visible:outline-2 focus-visible:outline-primary-background touch:pointer-events-auto touch:opacity-100'
+          'text-base-foreground pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 opacity-0 transition-opacity group-focus-within/workflow:pointer-events-auto group-focus-within/workflow:opacity-100 group-hover/workflow:pointer-events-auto group-hover/workflow:opacity-100 focus-visible:outline-2 focus-visible:outline-primary-background touch:pointer-events-auto touch:opacity-100'
         const badge = document.createElement('span')
         badge.className =
-          'bg-agent-surface hover:bg-agent-surface-hover flex size-3 items-center justify-center rounded-full ring-1 ring-border-default'
+          'bg-base-background hover:bg-secondary-background-hover flex size-3 items-center justify-center rounded-full ring-1 ring-border-default'
         const cross = document.createElement('span')
         cross.className = 'icon-[lucide--x] size-2'
         badge.append(cross)
@@ -353,9 +357,7 @@ onMounted(() => {
         remove.onclick = () => {
           const position = getPos()
           if (position === undefined) return
-          editor.dispatch(
-            editor.state.tr.delete(position, position + node.nodeSize)
-          )
+          editor.dispatch(deleteReference(editor.state, position, node))
         }
         removeAnchor.append(remove)
         dom.append(open, removeAnchor)

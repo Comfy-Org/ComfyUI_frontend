@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { routerWorkshopModels } from './workshop-browse-content'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { authoredWorkshopModels } from './workshop-browse-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
   schemaForModel,
@@ -107,7 +107,7 @@ function prepare(id: string, values: FormValues = {}) {
   )
 }
 
-const models = routerWorkshopModels.filter(
+const models = authoredWorkshopModels.filter(
   (model) => getRouterWorkshopModelDetail(model.slug)?.execution?.creator
 )
 
@@ -157,7 +157,7 @@ describe('creator widgets to native Router requests', () => {
 
   it.for([
     ...new Map(
-      routerWorkshopModels.map((model) => [model.routerId, model])
+      authoredWorkshopModels.map((model) => [model.routerId, model])
     ).values()
   ])(
     'initializes valid defaults and leaves optional seeds unset: $slug',
@@ -233,7 +233,7 @@ describe('creator widgets to native Router requests', () => {
     expect([...new Set(models.map((model) => model.routerId))].sort()).toEqual(
       Object.keys(creatorModels.models)
         .filter((id) =>
-          routerWorkshopModels.some((model) => model.routerId === id)
+          authoredWorkshopModels.some((model) => model.routerId === id)
         )
         .sort()
     )
@@ -337,7 +337,8 @@ describe('creator widgets to native Router requests', () => {
       const field = fields.find((entry) => entry.name === widget)
       if (field?.kind !== 'select')
         throw new Error(`Missing resolution dropdown: ${id}`)
-      expect(field.label).toBe('Resolution')
+      // Seedream and GPT Image widgets mix resolution tiers with pixel presets.
+      expect(['Resolution', 'Image size']).toContain(field.label)
       expect(field.options).toContain(value)
       expect(await prepare(id, { [widget]: value })).toMatchObject(expected)
       await expect(
