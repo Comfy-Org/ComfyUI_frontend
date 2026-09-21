@@ -1505,7 +1505,7 @@ describe('useMediaAssetActions', () => {
           opts.props.onConfirm(true)
         }
       )
-      mockAppGraph.value = { _nodes: [], nodes: [] }
+      mockAppGraph.value = { nodes: [] }
     })
 
     it('cleans every shared reference only for successful assets after a partial deletion', async () => {
