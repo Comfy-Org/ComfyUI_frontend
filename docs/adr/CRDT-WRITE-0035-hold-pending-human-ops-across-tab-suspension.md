@@ -100,18 +100,23 @@ Alternatives considered:
   actor edits it before the delete lands; only the full reconcile consults
   local intent.
 - Terminal `unacknowledged` or `unconfirmed` deletes keep local intent
-  (`useAgentCrdtFollower`'s per-workflow `confirmedDeletes`) until the
-  document's own state agrees the node is gone, rather than dropping it the
-  moment the batch settles: the transport carried the batch at least once, so
-  the host may have applied it even without a confirming result, and the
-  reconcile must not resurrect it in that window. This is bounded, not
-  indefinite - it resolves the moment the document catches up either way.
-  `undeliverable` deletes are excluded from this: the transport never carried
-  them, so the host is certain to still hold the node and no later frame will
-  ever say otherwise on its own; keeping one would hide its node forever
-  rather than for a bounded window. Immediate catch-up and lost-write feedback
-  for a genuinely lost `undeliverable` delete remain follow-up work; unknown
-  outcomes are not hidden indefinitely.
+  (`useAgentCrdtFollower`'s per-workflow `confirmedDeletes`) rather than
+  dropping it the moment the batch settles: the transport carried the batch
+  at least once, so the host may have applied it even without a confirming
+  result, and the reconcile must not resurrect it while that is still
+  possible. The document agreeing the node is gone ends that early. It is not
+  the only exit: no frame in this doc-sync system certifies "the host's
+  answer to this specific op is now settled", so retention also carries a
+  hard expiry (`PENDING_DELETE_EXPIRY_MS`, reusing the channel's own
+  `STALE_AFTER_MS` recency budget) and releases on that alone if the doc never
+  agrees. This is a deliberate, bounded resurrect risk in exchange for never
+  hiding a node past that budget. `undeliverable` deletes are excluded from
+  retention entirely: the transport never carried them, so the host is
+  certain to still hold the node and no later frame will ever say otherwise
+  on its own; keeping one would hide its node forever, not for a bounded
+  window. Immediate catch-up and lost-write feedback for a genuinely lost
+  `undeliverable` delete remain follow-up work; unknown outcomes are not
+  hidden indefinitely.
 
 ## Notes
 

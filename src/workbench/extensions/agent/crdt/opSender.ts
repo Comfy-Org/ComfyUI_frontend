@@ -64,12 +64,22 @@ export interface OpSenderDeps {
   onBatchSettled(outcome: BatchOutcome): void
 }
 
-export type BatchOutcome = { workflowId: string | null } & (
-  | { state: 'acknowledged'; ops: Op[]; result: OpsResultView }
-  | { state: 'unacknowledged'; ops: Op[] }
-  | { state: 'unconfirmed'; ops: Op[] }
-  | { state: 'undeliverable'; ops: Op[] }
-)
+// A discriminated union, not `{ workflowId: string | null } & (state union)`:
+// only an immediate, never-bound `admit()` (no doc to address the batch to)
+// can settle without a workflow id, and only as 'undeliverable'. Every other
+// state settles a batch that was minted against a real `InFlight.workflowId`
+// (a `string`), so making `workflowId: null` uncombinable with them here
+// means a caller cannot construct an invalid pairing and have it compile.
+export type BatchOutcome =
+  | {
+      workflowId: string
+      state: 'acknowledged'
+      ops: Op[]
+      result: OpsResultView
+    }
+  | { workflowId: string; state: 'unacknowledged'; ops: Op[] }
+  | { workflowId: string; state: 'unconfirmed'; ops: Op[] }
+  | { workflowId: string | null; state: 'undeliverable'; ops: Op[] }
 
 export interface OpSender {
   enqueue(operations: GraphOperation[]): void

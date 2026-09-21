@@ -1432,7 +1432,7 @@ describe('useAgentCrdtFollower', () => {
       vi.useFakeTimers()
       vi.mocked(recordDevEvent).mockClear()
       const { enqueue, unmount } = mountWithHumanOps()
-      const intent = adapterState.intent!
+      const intent = requireIntent()
       bridge().follower.doc.getMap = () => ({ toJSON: () => ({ '1': {} }) })
 
       await settle(enqueue)
@@ -1448,6 +1448,31 @@ describe('useAgentCrdtFollower', () => {
     }
   )
 
+  it('releases an unconfirmed delete once it expires even though the host kept the node (no doc frame ever says otherwise)', async () => {
+    vi.useFakeTimers()
+    const { enqueue, unmount } = mountWithHumanOps()
+    const intent = requireIntent()
+    // The host legitimately never applied the delete: the doc keeps node
+    // '1' for the rest of this test, so `!docNodeIds.has(id)` - the doc's
+    // half of the release condition - never fires on its own.
+    bridge().follower.doc.getMap = () => ({ toJSON: () => ({ '1': {} }) })
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    bridge().subscribedWorkflowId = null
+    vi.advanceTimersByTime(10_000)
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+    // Short of the expiry budget: still pending, so the test is exercising
+    // the expiry itself rather than some other, earlier release path.
+    vi.advanceTimersByTime(STALE_AFTER_MS - 1)
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+    vi.advanceTimersByTime(1)
+    expect([...intent.pendingDeletes('wf-1')]).toEqual([])
+    unmount()
+  })
+
   it("never lets workflow A's pending delete suppress workflow B's unrelated node sharing the same id", async () => {
     vi.useFakeTimers()
     const { enqueue, workflowId, unmount } = mountWithHumanOps()
@@ -1458,7 +1483,7 @@ describe('useAgentCrdtFollower', () => {
     // taken to still hold a node id '1' of their own, which is exactly the
     // ambiguous case the fix must tell apart.
     bridge().follower.doc.getMap = () => ({ toJSON: () => ({ '1': {} }) })
-    const intent = adapterState.intent!
+    const intent = requireIntent()
 
     // Workflow A's own delete of node '1' is left unresolved and stays
     // pending for A's reconcile.
@@ -1576,6 +1601,25 @@ describe('useAgentCrdtFollower', () => {
     )
     unmount()
   })
+
+  /**
+   * `adapterState.intent` is only ever set by the mocked `EcsFollowerAdapter`
+   * constructor, so it is populated the moment a follower is mounted - but a
+   * bare `!` would turn a future regression (the composable no longer
+   * constructing it with an intent port) into an opaque "Cannot read
+   * properties of null" deep inside a test instead of a clear failure here.
+   */
+  function requireIntent(): {
+    pendingDeletes(workflowId: string): ReadonlySet<string>
+  } {
+    const intent = adapterState.intent
+    if (!intent) {
+      throw new Error(
+        'expected the mounted follower to construct EcsFollowerAdapter with an intent port'
+      )
+    }
+    return intent
+  }
 
   function mountWithHumanOps(): {
     enqueue: ReturnType<typeof useAgentCrdtFollower>['enqueueHumanOperations']
@@ -1867,7 +1911,7 @@ describe('useAgentCrdtFollower', () => {
 
     it('keeps a human delete pending for the reconcile until the doc no longer holds the node', async () => {
       const { unmount, enqueue } = mountWriter('wf-1')
-      const intent = adapterState.intent!
+      const intent = requireIntent()
       let docNodes: Record<string, unknown> = { '1': {} }
       bridge().follower.doc.getMap = () => ({ toJSON: () => docNodes })
 
