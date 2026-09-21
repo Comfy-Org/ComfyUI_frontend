@@ -7,11 +7,7 @@ const fetchApi = vi.hoisted(() =>
 )
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
 
-import {
-  AgentApiError,
-  createAgentRestClient,
-  parseRetryAfter
-} from './agentRestClient'
+import { AgentApiError, createAgentRestClient } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
 
 function jsonResponse(
@@ -39,6 +35,26 @@ function contentType(init: RequestInit): string | undefined {
 }
 
 const makeClient = createAgentRestClient
+
+async function retryAfterSeconds(
+  header: string | null
+): Promise<number | undefined> {
+  respond(
+    jsonResponse(
+      503,
+      { error: 'unavailable' },
+      header === null ? undefined : { 'Retry-After': header }
+    )
+  )
+
+  try {
+    await makeClient().postMessage('thread-1', { content: 'hi' })
+    throw new Error('Expected postMessage to reject')
+  } catch (error) {
+    if (!(error instanceof AgentApiError)) throw error
+    return error.retryAfterSeconds
+  }
+}
 
 const turnAccepted = {
   message_id: 'm1',
@@ -461,7 +477,7 @@ describe('error mapping', () => {
 // FE-2461: the helper declares `number | undefined`, so every input class has to
 // leave it as a whole non-negative number of seconds or as `undefined`. A caller
 // repairing a `NaN` afterwards is the contract leaking, not a fix.
-describe('parseRetryAfter contract', () => {
+describe('Retry-After contract', () => {
   it.for([
     { label: 'absent header', header: null, expected: undefined },
     { label: 'integer delta-seconds', header: '5', expected: 5 },
@@ -485,17 +501,17 @@ describe('parseRetryAfter contract', () => {
       header: '9'.repeat(400),
       expected: undefined
     }
-  ])('returns $expected for a $label', ({ header, expected }) => {
-    expect(parseRetryAfter(header)).toBe(expected)
+  ])('returns $expected for a $label', async ({ header, expected }) => {
+    expect(await retryAfterSeconds(header)).toBe(expected)
   })
 
   it.for([
     { header: 'Wed, 21 Oct 2026 07:28:00 GMT', expected: 30 },
     { header: 'Wed, 21 Oct 2026 07:27:00 GMT', expected: 0 }
-  ])('reads the HTTP-date $header as a delay', ({ header, expected }) => {
+  ])('reads the HTTP-date $header as a delay', async ({ header, expected }) => {
     vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
 
-    expect(parseRetryAfter(header)).toBe(expected)
+    expect(await retryAfterSeconds(header)).toBe(expected)
   })
 
   // RFC 9110 defines HTTP-date as exactly three formats, and a recipient must
@@ -505,16 +521,16 @@ describe('parseRetryAfter contract', () => {
     { label: 'IMF-fixdate', header: 'Wed, 21 Oct 2026 07:28:00 GMT' },
     { label: 'obsolete RFC 850', header: 'Wednesday, 21-Oct-26 07:28:00 GMT' },
     { label: 'obsolete asctime', header: 'Wed Oct 21 07:28:00 2026' }
-  ])('accepts the $label form of HTTP-date', ({ header }) => {
+  ])('accepts the $label form of HTTP-date', async ({ header }) => {
     vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
 
-    expect(parseRetryAfter(header)).toBe(30)
+    expect(await retryAfterSeconds(header)).toBe(30)
   })
 
-  it('reads a space-padded asctime day as UTC, not as local time', () => {
+  it('reads a space-padded asctime day as UTC, not as local time', async () => {
     vi.setSystemTime(new Date('1994-11-06T08:49:07Z'))
 
-    expect(parseRetryAfter('Sun Nov  6 08:49:37 1994')).toBe(30)
+    expect(await retryAfterSeconds('Sun Nov  6 08:49:37 1994')).toBe(30)
   })
 
   // FE-2461 follow-up: `Date.parse` accepts far more than HTTP-date, so an
@@ -535,10 +551,10 @@ describe('parseRetryAfter contract', () => {
     }
   ])(
     'returns undefined for a $label, which is not an HTTP-date',
-    ({ header }) => {
+    async ({ header }) => {
       vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
 
-      expect(parseRetryAfter(header)).toBeUndefined()
+      expect(await retryAfterSeconds(header)).toBeUndefined()
     }
   )
 
@@ -565,69 +581,67 @@ describe('parseRetryAfter contract', () => {
       header: 'Wednesday, 29-Feb-23 07:28:00 GMT'
     },
     { label: 'an out-of-range asctime day', header: 'Sun Nov 31 07:28:00 2026' }
-  ])('returns undefined for $label', ({ header }) => {
+  ])('returns undefined for $label', async ({ header }) => {
     vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
 
-    expect(parseRetryAfter(header)).toBeUndefined()
+    expect(await retryAfterSeconds(header)).toBeUndefined()
   })
 
-  it('accepts February 29 in a leap year', () => {
+  it('accepts February 29 in a leap year', async () => {
     vi.setSystemTime(new Date('2024-02-29T07:27:30Z'))
 
-    expect(parseRetryAfter('Thu, 29 Feb 2024 07:28:00 GMT')).toBe(30)
+    expect(await retryAfterSeconds('Thu, 29 Feb 2024 07:28:00 GMT')).toBe(30)
   })
 
-  it('reads a leap second as the last ordinary second of its minute', () => {
+  it('reads a leap second as the last ordinary second of its minute', async () => {
     vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
 
-    expect(parseRetryAfter('Wed, 21 Oct 2026 07:28:60 GMT')).toBe(89)
+    expect(await retryAfterSeconds('Wed, 21 Oct 2026 07:28:60 GMT')).toBe(89)
   })
 
   // RFC 9110 asks recipients to be robust, and the weekday carries no
   // information the date does not, so a server that computes it wrong should
   // not lose its deadline.
-  it('ignores a day-name that disagrees with the date', () => {
+  it('ignores a day-name that disagrees with the date', async () => {
     vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
 
-    expect(parseRetryAfter('Mon, 21 Oct 2026 07:28:00 GMT')).toBe(30)
+    expect(await retryAfterSeconds('Mon, 21 Oct 2026 07:28:00 GMT')).toBe(30)
   })
 
   // RFC 9110 resolves an RFC 850 two-digit year against a rolling 50-year
   // window, not the fixed pivot `Date.parse` uses: in 2026, `-60` is 2060, and
   // reading it as 1960 would clamp a real deadline to an immediate retry.
-  it('resolves an RFC 850 two-digit year against the rolling 50-year window', () => {
+  it('resolves an RFC 850 two-digit year against the rolling 50-year window', async () => {
     vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
 
     const expected = Math.ceil(
       (Date.UTC(2060, 9, 21, 7, 28, 0) - Date.now()) / 1000
     )
-    expect(parseRetryAfter('Thursday, 21-Oct-60 07:28:00 GMT')).toBe(expected)
+    expect(await retryAfterSeconds('Thursday, 21-Oct-60 07:28:00 GMT')).toBe(
+      expected
+    )
   })
 
-  it('reads an RFC 850 year more than 50 years ahead as the past year it names', () => {
+  it('reads an RFC 850 year more than 50 years ahead as the past year it names', async () => {
     vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
 
-    expect(parseRetryAfter('Tuesday, 21-Oct-80 07:28:00 GMT')).toBe(0)
+    expect(await retryAfterSeconds('Tuesday, 21-Oct-80 07:28:00 GMT')).toBe(0)
   })
 
-  it('never returns NaN, so the caller needs no safe-integer repair', () => {
-    const headers = [
-      null,
-      '',
-      '5',
-      'not-a-date',
-      '1.5',
-      '-1',
-      '9007199254740993',
-      'Wed, 21 Oct 2026 07:28:00 GMT',
-      '2099-12-31T00:00:00'
-    ]
+  it('applies the RFC 850 50-year rule to the full timestamp', async () => {
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
 
-    for (const header of headers) {
-      const parsed = parseRetryAfter(header)
-      expect(
-        parsed === undefined || (Number.isSafeInteger(parsed) && parsed >= 0)
-      ).toBe(true)
-    }
+    expect(await retryAfterSeconds('Thursday, 31-Dec-76 00:00:00 GMT')).toBe(0)
+  })
+
+  it('rolls an RFC 850 year into the next century when it is within 50 years', async () => {
+    vi.setSystemTime(new Date('2076-01-01T00:00:00Z'))
+
+    const expected = Math.ceil(
+      (Date.UTC(2100, 11, 31, 0, 0, 0) - Date.now()) / 1000
+    )
+    expect(await retryAfterSeconds('Friday, 31-Dec-00 00:00:00 GMT')).toBe(
+      expected
+    )
   })
 })
