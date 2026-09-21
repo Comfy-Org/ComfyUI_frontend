@@ -1,6 +1,21 @@
+import { spawnSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
-import { parseLcovContent } from './coverage-slack-notify'
+import { buildPayload, parseLcovContent } from './coverage-slack-notify'
+
+const ROOT = join(import.meta.dirname, '..')
+const TSX = join(ROOT, 'node_modules/.bin/tsx')
+const SCRIPT = join(import.meta.dirname, 'coverage-slack-notify.ts')
+
+const CONTEXT = {
+  prUrl: 'https://github.com/Comfy-Org/ComfyUI_frontend/pull/7',
+  prNumber: '7',
+  author: 'someone'
+}
 
 function lcov(entries: [file: string, lf: number, lh: number][]): string {
   return entries
@@ -18,6 +33,63 @@ function sourceEntries(
     lf,
     lh
   ])
+}
+
+/** A tracefile whose overall line coverage is exactly `percentage`. */
+function tracefile(percentage: number): string {
+  return lcov(sourceEntries(120, 100, percentage))
+}
+
+function coverage(percentage: number) {
+  return {
+    percentage,
+    totalLines: 1000,
+    coveredLines: Math.round(percentage * 10)
+  }
+}
+
+const NO_DATA = { current: null, baseline: null }
+
+function notifyFixture() {
+  const root = mkdtempSync(join(tmpdir(), 'coverage-notify-'))
+
+  return {
+    root,
+    write(relativePath: string, contents: string) {
+      const target = join(root, relativePath)
+      mkdirSync(dirname(target), { recursive: true })
+      writeFileSync(target, contents)
+    },
+    writeE2e(percentage: number, metadata: Record<string, unknown> | null) {
+      this.write('temp/e2e-coverage/coverage.lcov', tracefile(percentage))
+      if (metadata) {
+        this.write(
+          'temp/e2e-coverage/coverage-metadata.json',
+          JSON.stringify(metadata)
+        )
+      }
+    },
+    run() {
+      const result = spawnSync(
+        TSX,
+        [
+          SCRIPT,
+          `--pr-url=${CONTEXT.prUrl}`,
+          `--pr-number=${CONTEXT.prNumber}`,
+          `--author=${CONTEXT.author}`
+        ],
+        { cwd: root, encoding: 'utf8' }
+      )
+      return {
+        status: result.status,
+        stdout: result.stdout.trim(),
+        stderr: result.stderr
+      }
+    },
+    [Symbol.dispose]() {
+      rmSync(root, { recursive: true, force: true })
+    }
+  }
 }
 
 describe('parseLcovContent', () => {
@@ -57,5 +129,128 @@ describe('parseLcovContent', () => {
 
   it('returns null for an empty tracefile', () => {
     expect(parseLcovContent('')).toBeNull()
+  })
+})
+
+describe('buildPayload', () => {
+  it('announces a decrease rather than staying silent', () => {
+    const payload = buildPayload(
+      NO_DATA,
+      { current: coverage(63.5), baseline: coverage(67.2) },
+      CONTEXT
+    )
+
+    expect(payload?.text).toBe('Coverage decreased')
+    expect(payload?.blocks[0]?.text.text).toContain(
+      '*E2E:*  67.2% → 63.5%  (-3.7%)'
+    )
+  })
+
+  it('announces an increase', () => {
+    const payload = buildPayload(
+      NO_DATA,
+      { current: coverage(67.2), baseline: coverage(63.5) },
+      CONTEXT
+    )
+
+    expect(payload?.text).toBe('Coverage improved!')
+    expect(payload?.blocks[0]?.text.text).toContain(
+      '*E2E:*  63.5% → 67.2%  (+3.7%)'
+    )
+  })
+
+  it('reports both directions when one metric rises and the other falls', () => {
+    const payload = buildPayload(
+      { current: coverage(71), baseline: coverage(70) },
+      { current: coverage(63), baseline: coverage(67) },
+      CONTEXT
+    )
+
+    expect(payload?.text).toBe('Coverage changed')
+    expect(payload?.blocks[0]?.text.text).toContain('*Unit:*  70.0% → 71.0%')
+    expect(payload?.blocks[0]?.text.text).toContain('*E2E:*  67.0% → 63.0%')
+  })
+
+  it('returns null when no metric moved past the threshold', () => {
+    expect(
+      buildPayload(
+        { current: coverage(70.01), baseline: coverage(70) },
+        NO_DATA,
+        CONTEXT
+      )
+    ).toBeNull()
+  })
+
+  it('returns null when a metric has no baseline to compare against', () => {
+    expect(
+      buildPayload(NO_DATA, { current: coverage(67), baseline: null }, CONTEXT)
+    ).toBeNull()
+  })
+
+  it('does not celebrate a milestone on the way down', () => {
+    const payload = buildPayload(
+      NO_DATA,
+      { current: coverage(64), baseline: coverage(67) },
+      CONTEXT
+    )
+
+    expect(payload?.blocks).toHaveLength(1)
+  })
+
+  it('celebrates a milestone crossed on the way up', () => {
+    const payload = buildPayload(
+      NO_DATA,
+      { current: coverage(67), baseline: coverage(64) },
+      CONTEXT
+    )
+
+    expect(payload?.blocks[1]?.text.text).toContain(
+      'MILESTONE: E2E test coverage hit 65%!'
+    )
+  })
+})
+
+describe('partial shard merges', () => {
+  it('reports E2E movement when every shard contributed', () => {
+    using fixture = notifyFixture()
+    fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))
+    fixture.writeE2e(67, {
+      shardsFound: 16,
+      shardsExpected: 16,
+      complete: true
+    })
+
+    const result = fixture.run()
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('64.0% → 67.0%')
+  })
+
+  // The "recovery" a partial run appears to make is just its lost shards
+  // coming back, so it must not be reported as coverage the team gained.
+  it('says nothing when the merge lost shards', () => {
+    using fixture = notifyFixture()
+    fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))
+    fixture.writeE2e(67, {
+      shardsFound: 14,
+      shardsExpected: 16,
+      complete: false
+    })
+
+    const result = fixture.run()
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toBe('')
+  })
+
+  it('trusts artifacts packaged before the metadata existed', () => {
+    using fixture = notifyFixture()
+    fixture.write('temp/e2e-coverage-baseline/coverage.lcov', tracefile(64))
+    fixture.writeE2e(67, null)
+
+    const result = fixture.run()
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('64.0% → 67.0%')
   })
 })

@@ -62,6 +62,19 @@ jobs:
           path: temp/e2e-coverage-baseline
           if_no_artifact_found: warn
 
+      # A partial shard merge understates coverage, so it must neither be
+      # reported nor stored as the baseline the next run compares against.
+      - name: Resolve E2E coverage completeness
+        id: e2e-meta
+        run: |
+          META=temp/e2e-coverage/coverage-metadata.json
+          if [ -f "$META" ] && [ "$(jq -r '.complete' "$META")" = 'false' ]; then
+            echo 'complete=false' >> "$GITHUB_OUTPUT"
+            echo "::warning::E2E coverage came from a partial shard merge ($(jq -r '.shardsFound' "$META")/$(jq -r '.shardsExpected' "$META") shards); skipping E2E trend reporting."
+          else
+            echo 'complete=true' >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Resolve merged PR metadata
         id: pr-meta
         uses: actions/github-script@v9
@@ -140,7 +153,9 @@ jobs:
           if-no-files-found: warn
 
       - name: Save E2E coverage baseline
-        if: always() && hashFiles('temp/e2e-coverage/coverage.lcov') != ''
+        if: >
+          always() && steps.e2e-meta.outputs.complete == 'true' &&
+          hashFiles('temp/e2e-coverage/coverage.lcov') != ''
         uses: actions/upload-artifact@v6
         with:
           name: e2e-coverage-baseline

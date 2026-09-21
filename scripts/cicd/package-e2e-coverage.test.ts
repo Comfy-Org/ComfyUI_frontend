@@ -11,8 +11,19 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
+import { parse } from 'yaml'
 
 const SCRIPT = join(import.meta.dirname, 'package-e2e-coverage.sh')
+
+interface E2eWorkflow {
+  jobs?: Record<
+    string,
+    {
+      strategy?: { matrix?: { shardIndex?: number[]; shardTotal?: number[] } }
+      with?: { shard_total?: number }
+    }
+  >
+}
 
 function coverage(sourcePrefix: string) {
   return Array.from(
@@ -93,16 +104,20 @@ exit 1
       mkdirSync(shard, { recursive: true })
       writeFileSync(join(shard, 'coverage.lcov'), contents)
     },
-    run() {
-      const result = spawnSync('bash', [SCRIPT, shards, output, html], {
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          PATH: `${bin}:${process.env.PATH ?? ''}`,
-          GITHUB_OUTPUT: githubOutput,
-          GITHUB_STEP_SUMMARY: summary
+    run(expectedShards: string | number = 1) {
+      const result = spawnSync(
+        'bash',
+        [SCRIPT, shards, output, html, String(expectedShards)],
+        {
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            PATH: `${bin}:${process.env.PATH ?? ''}`,
+            GITHUB_OUTPUT: githubOutput,
+            GITHUB_STEP_SUMMARY: summary
+          }
         }
-      })
+      )
       return {
         status: result.status,
         output: `${result.stdout}${result.stderr}`
@@ -114,28 +129,67 @@ exit 1
   }
 }
 
-describe('package-e2e-coverage.sh', () => {
-  it('packages available coverage from a partial run with a whitespace path', () => {
-    using fixture = coverageFixture()
-    fixture.writeShard('failed shard 1', coverage('src'))
+function readMetadata(outputDir: string): unknown {
+  return JSON.parse(
+    readFileSync(join(outputDir, 'coverage-metadata.json'), 'utf8')
+  )
+}
 
-    const result = fixture.run()
+describe('package-e2e-coverage.sh', () => {
+  it('marks a merge complete when every shard reported coverage', () => {
+    using fixture = coverageFixture()
+    fixture.writeShard('e2e-coverage-shard-1', coverage('src'))
+    fixture.writeShard('e2e-coverage-shard-2', coverage('src'))
+
+    const result = fixture.run(2)
 
     expect(result.status).toBe(0)
     expect(readFileSync(fixture.githubOutput, 'utf8')).toBe(
-      'has-coverage=true\n'
+      'has-coverage=true\nshards-found=2\nshards-expected=2\ncomplete=true\n'
+    )
+    expect(readMetadata(fixture.output)).toEqual({
+      shardsFound: 2,
+      shardsExpected: 2,
+      complete: true
+    })
+    expect(result.output).not.toContain('::warning::')
+  })
+
+  // Preserves #15342: a flaky shard must not discard every other shard's real
+  // coverage. It stays published for Codecov and the PR comment, but flagged.
+  it('publishes a partial run with a whitespace path but flags it incomplete', () => {
+    using fixture = coverageFixture()
+    fixture.writeShard('failed shard 1', coverage('src'))
+
+    const result = fixture.run(16)
+
+    expect(result.status).toBe(0)
+    expect(readFileSync(fixture.githubOutput, 'utf8')).toBe(
+      'has-coverage=true\nshards-found=1\nshards-expected=16\ncomplete=false\n'
+    )
+    expect(readMetadata(fixture.output)).toEqual({
+      shardsFound: 1,
+      shardsExpected: 16,
+      complete: false
+    })
+    expect(result.output).toContain(
+      '::warning::Partial E2E coverage merge: 1/16 shards'
     )
     expect(
       readFileSync(join(fixture.output, 'coverage.lcov'), 'utf8')
     ).toContain('SF:src/file 0.ts')
-    expect(readFileSync(fixture.summary, 'utf8')).toContain('failed shard 1')
+
+    const summary = readFileSync(fixture.summary, 'utf8')
+    expect(summary).toContain('failed shard 1')
+    expect(summary).toContain('**1 / 16** shards merged')
+    expect(summary).toContain('15 shard(s) reported no coverage')
     expect(existsSync(join(fixture.html, 'index.html'))).toBe(true)
   })
 
   it('skips successfully when no shard artifacts exist', () => {
     using fixture = coverageFixture()
 
-    const result = fixture.run()
+    const result = fixture.run(16)
 
     expect(result.status).toBe(0)
     expect(readFileSync(fixture.githubOutput, 'utf8')).toBe(
@@ -148,10 +202,42 @@ describe('package-e2e-coverage.sh', () => {
     using fixture = coverageFixture()
     fixture.writeShard('served-bundle', coverage('assets'))
 
-    const result = fixture.run()
+    const result = fixture.run(1)
 
     expect(result.status).toBe(1)
     expect(result.output).toContain('Only 0 files under src/ or packages/')
     expect(existsSync(join(fixture.html, 'index.html'))).toBe(false)
+  })
+
+  it('rejects a non-numeric expected shard count', () => {
+    using fixture = coverageFixture()
+    fixture.writeShard('e2e-coverage-shard-1', coverage('src'))
+
+    const result = fixture.run('sixteen')
+
+    expect(result.status).toBe(1)
+    expect(result.output).toContain(
+      'expected-shards must be a positive integer'
+    )
+  })
+})
+
+// The packager cannot see the matrix that produced its shards, so the expected
+// count is passed in by hand. Nothing else stops the two from drifting.
+describe('shard total contract', () => {
+  it('passes the chromium matrix size to the coverage packager', () => {
+    const workflow = parse(
+      readFileSync('.github/workflows/ci-tests-e2e.yaml', 'utf8')
+    ) as E2eWorkflow
+
+    const matrix =
+      workflow.jobs?.['playwright-tests-chromium-sharded']?.strategy?.matrix
+    const shardTotal = workflow.jobs?.['upload-e2e-coverage']?.with?.shard_total
+
+    expect(shardTotal).toBeTypeOf('number')
+    expect(matrix?.shardTotal).toEqual([shardTotal])
+    expect(matrix?.shardIndex).toEqual(
+      Array.from({ length: Number(shardTotal) }, (_, index) => index + 1)
+    )
   })
 })

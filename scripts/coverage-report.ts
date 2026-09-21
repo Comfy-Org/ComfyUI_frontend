@@ -1,4 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+
+import {
+  COVERAGE_METADATA_FILE,
+  readCoverageMetadata
+} from './coverage-metadata'
 
 interface FileStats {
   lines: number
@@ -114,6 +120,18 @@ function bar(covered: number, total: number): string {
 const lines: string[] = []
 lines.push('## 🔬 E2E Coverage')
 lines.push('')
+
+const metadata = readCoverageMetadata(
+  join(dirname(lcovPath), COVERAGE_METADATA_FILE)
+)
+if (metadata && !metadata.complete) {
+  lines.push(
+    '> [!WARNING]',
+    `> Partial shard merge — only ${metadata.shardsFound} of ${metadata.shardsExpected} shards reported coverage. Every shard loads the whole bundle, so these totals understate real coverage.`,
+    ''
+  )
+}
+
 lines.push('| Metric | Covered | Total | Pct | |')
 lines.push('|---|--:|--:|--:|---|')
 lines.push(

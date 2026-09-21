@@ -260,6 +260,9 @@ jobs:
     uses: ./.github/workflows/ci-tests-e2e-coverage-package.yaml
     with:
       source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
+      # Kept in sync with playwright-tests-chromium-sharded's shardTotal by
+      # scripts/cicd/package-e2e-coverage.test.ts.
+      shard_total: 16
 
   # Records video only for tests newly added in this PR, to keep cost bounded.
   playwright-video-new-tests:

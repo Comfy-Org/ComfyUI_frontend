@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SHARDS_DIR="${1:?Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir>}"
-COVERAGE_DIR="${2:?Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir>}"
-HTML_DIR="${3:?Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir>}"
+USAGE='Usage: package-e2e-coverage.sh <shards-dir> <coverage-dir> <html-dir> <expected-shards>'
+SHARDS_DIR="${1:?$USAGE}"
+COVERAGE_DIR="${2:?$USAGE}"
+HTML_DIR="${3:?$USAGE}"
+EXPECTED_SHARDS="${4:?$USAGE}"
+
+# Bash resolves a non-numeric operand of -ge to 0, which would silently mark
+# every partial merge complete.
+if ! [[ "$EXPECTED_SHARDS" =~ ^[1-9][0-9]*$ ]]; then
+  echo "::error::expected-shards must be a positive integer, got '$EXPECTED_SHARDS'."
+  exit 1
+fi
 
 append_summary() {
   if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
@@ -26,11 +35,34 @@ if [[ ${#COVERAGE_FILES[@]} -eq 0 ]]; then
   exit 0
 fi
 
+FOUND_SHARDS=${#COVERAGE_FILES[@]}
+if [[ "$FOUND_SHARDS" -ge "$EXPECTED_SHARDS" ]]; then
+  COMPLETE=true
+else
+  COMPLETE=false
+fi
+
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-  echo 'has-coverage=true' >> "$GITHUB_OUTPUT"
+  {
+    echo 'has-coverage=true'
+    echo "shards-found=$FOUND_SHARDS"
+    echo "shards-expected=$EXPECTED_SHARDS"
+    echo "complete=$COMPLETE"
+  } >> "$GITHUB_OUTPUT"
 fi
 
 mkdir -p "$COVERAGE_DIR"
+
+# Every shard loads the whole bundle, so a lost shard drops its hits but keeps
+# the lines they covered in the denominator: partial merges understate coverage.
+printf '{"shardsFound":%d,"shardsExpected":%d,"complete":%s}\n' \
+  "$FOUND_SHARDS" "$EXPECTED_SHARDS" "$COMPLETE" \
+  > "$COVERAGE_DIR/coverage-metadata.json"
+
+if [[ "$COMPLETE" != true ]]; then
+  echo "::warning::Partial E2E coverage merge: $FOUND_SHARDS/$EXPECTED_SHARDS shards reported coverage. The merged total understates real coverage and is excluded from trend reporting."
+fi
+
 ADD_ARGS=()
 for file in "${COVERAGE_FILES[@]}"; do
   ADD_ARGS+=(-a "$file")
@@ -43,6 +75,12 @@ MERGED_LF=$(awk -F: '/^LF:/{s+=$2}END{print s+0}' "$COVERAGE_DIR/coverage.lcov")
 append_summary '### Merged coverage'
 append_summary "- **$MERGED_SF** source files"
 append_summary "- **$MERGED_LH / $MERGED_LF** lines hit"
+append_summary "- **$FOUND_SHARDS / $EXPECTED_SHARDS** shards merged"
+if [[ "$COMPLETE" != true ]]; then
+  append_summary ''
+  append_summary "> [!WARNING]"
+  append_summary "> $((EXPECTED_SHARDS - FOUND_SHARDS)) shard(s) reported no coverage, so this total understates real coverage and is excluded from trend reporting."
+fi
 append_summary ''
 append_summary '| Shard | Files | Lines Hit |'
 append_summary '|-------|-------|-----------|'

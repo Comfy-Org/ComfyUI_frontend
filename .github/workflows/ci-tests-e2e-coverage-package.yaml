@@ -6,6 +6,9 @@ on:
       source_sha:
         required: true
         type: string
+      shard_total:
+        required: true
+        type: number
 
 permissions:
   contents: read
@@ -41,7 +44,8 @@ jobs:
           scripts/cicd/package-e2e-coverage.sh \
             temp/coverage-shards \
             coverage/playwright \
-            coverage/html
+            coverage/html \
+            "${{ inputs.shard_total }}"
 
       - name: Upload merged coverage data
         if: steps.coverage.outputs.has-coverage == 'true'
