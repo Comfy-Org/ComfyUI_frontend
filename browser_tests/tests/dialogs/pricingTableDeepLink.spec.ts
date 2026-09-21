@@ -697,7 +697,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       await cloudAppExpect(
         page.getByRole('heading', { name: 'Confirm your payment' })
       ).toBeVisible()
-      await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+      await page.getByRole('button', { name: 'Subscribe to Creator' }).click()
 
       await expect(
         page.locator('.p-toast-message.p-toast-message-error').filter({

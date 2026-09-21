@@ -11,44 +11,43 @@ test.describe('Workflow failure recovery', () => {
     await comfyPage.page.route('**/api/userdata/**', async (route) => {
       const request = route.request()
       const path = decodeURIComponent(new URL(request.url()).pathname)
+      const failure = [
+        {
+          method: 'GET',
+          suffix: '/userdata/workflows/unavailable.json',
+          response: { status: 503 }
+        },
+        {
+          method: 'GET',
+          suffix: '/userdata/workflows/boot-failure.json',
+          response: { status: 503 }
+        },
+        {
+          method: 'GET',
+          suffix: '/userdata/workflows/malformed.json',
+          response: {
+            status: 200,
+            contentType: 'application/json',
+            body: '{invalid'
+          }
+        },
+        {
+          method: 'POST',
+          suffix: '/userdata/workflows/rename.json/move/workflows/renamed.json',
+          response: { status: 500 }
+        },
+        {
+          method: 'DELETE',
+          suffix: '/userdata/workflows/delete.json',
+          response: { status: 500 }
+        }
+      ].find(
+        ({ method, suffix }) =>
+          request.method() === method && path.endsWith(suffix)
+      )
 
-      if (
-        request.method() === 'GET' &&
-        (path.endsWith('/userdata/workflows/unavailable.json') ||
-          path.endsWith('/userdata/workflows/boot-failure.json'))
-      ) {
-        await route.fulfill({ status: 503 })
-        return
-      }
-      if (
-        request.method() === 'GET' &&
-        path.endsWith('/userdata/workflows/malformed.json')
-      ) {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: '{invalid'
-        })
-        return
-      }
-      if (
-        request.method() === 'POST' &&
-        path.endsWith(
-          '/userdata/workflows/rename.json/move/workflows/renamed.json'
-        )
-      ) {
-        await route.fulfill({ status: 500 })
-        return
-      }
-      if (
-        request.method() === 'DELETE' &&
-        path.endsWith('/userdata/workflows/delete.json')
-      ) {
-        await route.fulfill({ status: 500 })
-        return
-      }
-
-      await route.fallback()
+      if (failure) await route.fulfill(failure.response)
+      else await route.fallback()
     })
 
     await comfyPage.workflow.setupWorkflowsDirectory({
@@ -108,7 +107,13 @@ test.describe('Workflow failure recovery', () => {
     await tab.getPersistedItem('stable').click()
     await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
     await comfyPage.page.evaluate(() => {
-      ;(window.graph as { configure: () => void }).configure = () => {
+      const graph = window.app?.graph
+      if (!graph) throw new Error('Missing graph')
+      const configure = graph.configure.bind(graph)
+      let failNextConfiguration = true
+      graph.configure = (...args) => {
+        if (!failNextConfiguration) return configure(...args)
+        failNextConfiguration = false
         throw new Error('Configure failed')
       }
     })
