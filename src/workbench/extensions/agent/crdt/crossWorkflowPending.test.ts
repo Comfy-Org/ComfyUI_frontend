@@ -259,7 +259,8 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       'human_ops_settled',
       {
         state: 'unconfirmed',
-        ops: [expect.objectContaining({ op_id: operationAId })]
+        ops: [expect.objectContaining({ op_id: operationAId })],
+        workflowId: 'wf-a'
       }
     )
     await enqueue([deleteNode('b-pending')])

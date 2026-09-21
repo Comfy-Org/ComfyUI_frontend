@@ -162,7 +162,9 @@ describe('createOpSender', () => {
     vi.advanceTimersByTime(10_000)
 
     expect(sent).toHaveLength(1)
-    expect(settled).toEqual([{ state: 'unconfirmed', ops: expect.any(Array) }])
+    expect(settled).toEqual([
+      { state: 'unconfirmed', ops: expect.any(Array), workflowId: WORKFLOW }
+    ])
   })
 
   it('abortIfUnbound settles a transmitted in-flight batch unconfirmed immediately, without waiting the 10s silence window', () => {
@@ -171,7 +173,9 @@ describe('createOpSender', () => {
 
     sender.abortIfUnbound()
 
-    expect(settled).toEqual([{ state: 'unconfirmed', ops: expect.any(Array) }])
+    expect(settled).toEqual([
+      { state: 'unconfirmed', ops: expect.any(Array), workflowId: WORKFLOW }
+    ])
     // No resend was burned reaching this outcome.
     expect(sent).toHaveLength(1)
   })
@@ -258,7 +262,7 @@ describe('createOpSender', () => {
     vi.advanceTimersByTime(500 * 6)
 
     expect(settled).toEqual([
-      { state: 'undeliverable', ops: expect.any(Array) }
+      { state: 'undeliverable', ops: expect.any(Array), workflowId: WORKFLOW }
     ])
   })
 
@@ -282,7 +286,11 @@ describe('createOpSender', () => {
 
     vi.advanceTimersByTime(10_000)
     expect(settled).toEqual([
-      { state: 'unacknowledged', ops: expect.any(Array) }
+      {
+        state: 'unacknowledged',
+        ops: expect.any(Array),
+        workflowId: WORKFLOW
+      }
     ])
   })
 
@@ -374,7 +382,11 @@ describe('createOpSender', () => {
     vi.advanceTimersByTime(10_000)
     vi.advanceTimersByTime(10_000)
     expect(settled).toEqual([
-      { state: 'unacknowledged', ops: expect.any(Array) }
+      {
+        state: 'unacknowledged',
+        ops: expect.any(Array),
+        workflowId: WORKFLOW
+      }
     ])
 
     sender.enqueue([addNode(2)])
@@ -441,6 +453,37 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(1)
   })
 
+  it('detach clears the armed result-timeout timer so no late resend or settlement follows', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent).toHaveLength(1)
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    sender.detach()
+
+    expect(vi.getTimerCount()).toBe(0)
+    const settledAfterDetach = settled.length
+    vi.advanceTimersByTime(10_000)
+
+    expect(sent).toHaveLength(1)
+    expect(settled).toHaveLength(settledAfterDetach)
+  })
+
+  it('detach clears an armed transport-retry timer so no late retry send follows', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    expect(sent).toHaveLength(0)
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    sender.detach()
+
+    expect(vi.getTimerCount()).toBe(0)
+    const settledAfterDetach = settled.length
+    vi.advanceTimersByTime(500 * 6)
+
+    expect(sent).toHaveLength(0)
+    expect(settled).toHaveLength(settledAfterDetach)
+  })
+
   it('an admission after detach settles undeliverable instead of vanishing', () => {
     // Reachable in production: a re-entrant `enqueueHumanOperations` call from
     // inside a settle listener, or a lingering caller that admits an edit
@@ -463,12 +506,6 @@ describe('createOpSender', () => {
   })
 
   it('detach settles every outstanding batch instead of dropping it silently', () => {
-    // #1 transmits and is left awaiting a result; #2 sits queued behind it;
-    // #3 is only admitted, still open, never sealed into a wire batch. A
-    // human op abandoned in any of these three states must be reported to
-    // `onBatchSettled` on detach - otherwise the caller (and the CRDT
-    // follower's pending-delete tracking) has no record the op never
-    // reached the host, and a later reconcile can silently undo it.
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])
     sender.admit([addNode(3)])
@@ -488,56 +525,55 @@ describe('createOpSender', () => {
     ).toEqual([[1], [2], [3]])
   })
 
-  it('detach settles every other batch and still unsubscribes when one listener throws', () => {
-    const localSettled: BatchOutcome[] = []
-    let unsubscribed = false
-    let threwOnce = false
-    const localSender = createOpSender({
-      sendOps: (workflowId, tab, ops) => {
-        sent.push({ workflowId, tab, ops })
-        return true
-      },
-      onOpsResult: (listener) => {
-        resultListener = listener
-        return () => {
-          unsubscribed = true
+  it.for([
+    ['in-flight', 0],
+    ['queued', 1],
+    ['open', 2]
+  ] as const)(
+    'detach settles every other batch and still unsubscribes when the %s listener throws',
+    ([, throwingOrdinal]) => {
+      const localSettled: BatchOutcome[] = []
+      let unsubscribed = false
+      let ordinal = 0
+      const localSender = createOpSender({
+        sendOps: (workflowId, tab, ops) => {
+          sent.push({ workflowId, tab, ops })
+          return true
+        },
+        onOpsResult: (listener) => {
+          resultListener = listener
+          return () => {
+            unsubscribed = true
+          }
+        },
+        workflowId: () => boundWorkflow,
+        tab: TAB,
+        actor: () => ACTOR,
+        baseVersion: () => 41,
+        onBatchSettled: (outcome) => {
+          if (ordinal++ === throwingOrdinal) throw new Error('listener boom')
+          localSettled.push(outcome)
         }
-      },
-      workflowId: () => boundWorkflow,
-      tab: TAB,
-      actor: () => ACTOR,
-      baseVersion: () => 41,
-      onBatchSettled: (outcome) => {
-        if (!threwOnce) {
-          threwOnce = true
-          throw new Error('listener boom')
-        }
-        localSettled.push(outcome)
-      }
-    })
-
-    localSender.enqueue([addNode(1)])
-    localSender.enqueue([addNode(2)])
-    localSender.admit([addNode(3)])
-    expect(sent).toHaveLength(1)
-
-    localSender.detach()
-
-    // The in-flight batch's settle (#1) is the one that throws and is lost
-    // to the caller; #2 and #3 still reach it, and the transport still
-    // unsubscribes despite the throw.
-    expect(localSettled.map((outcome) => outcome.state)).toEqual([
-      'undeliverable',
-      'undeliverable'
-    ])
-    expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        errorType: 'agent_op_sender_detach_settle_failed'
       })
-    )
-    expect(unsubscribed).toBe(true)
-  })
+
+      localSender.enqueue([addNode(1)])
+      localSender.enqueue([addNode(2)])
+      localSender.admit([addNode(3)])
+      expect(sent).toHaveLength(1)
+
+      localSender.detach()
+
+      expect(localSettled).toHaveLength(2)
+      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_op_sender_detach_settle_failed'
+        })
+      )
+      expect(unsubscribed).toBe(true)
+    }
+  )
 
   it('abortAll settles the transmitted batch and every queued batch in mint order', () => {
     sender.enqueue([addNode(1)])

@@ -22,6 +22,7 @@ import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
+import { recordDevEvent } from './devPanelLog'
 import type { BatchOutcome } from './opSender'
 import type { DocFrameTransport } from './docFrameClient'
 
@@ -175,6 +176,9 @@ import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
+type HumanEnqueue = ReturnType<
+  typeof useAgentCrdtFollower
+>['enqueueHumanOperations']
 const TEARDOWN_ERROR_TYPE = 'failure_tearing_down_agent_crdt_follower'
 
 function persistedRecord(): {
@@ -1369,47 +1373,108 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('keeps a human delete pending for the reconcile even when its batch settles unconfirmed', async () => {
-    vi.useFakeTimers()
-    const { recordDevEvent } = await import('./devPanelLog')
-    const workflowId = ref<string | null>('wf-1')
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        )
-        enqueue = enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
-    const intent = adapterState.intent!
-    let docNodes: Record<string, unknown> = { '1': {} }
-    bridge().follower.doc.getMap = () => ({ toJSON: () => docNodes })
+  it.for([
+    [
+      'left in flight then unbound',
+      async (enqueue: HumanEnqueue) => {
+        enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+        await Promise.resolve()
+        bridge().subscribedWorkflowId = null
+        vi.advanceTimersByTime(10_000)
+      },
+      'unconfirmed',
+      true
+    ],
+    [
+      'resent once then still silent',
+      async (enqueue: HumanEnqueue) => {
+        enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+        await Promise.resolve()
+        vi.advanceTimersByTime(10_000)
+        vi.advanceTimersByTime(10_000)
+      },
+      'unacknowledged',
+      true
+    ],
+    [
+      // The transport never carries this one at all (it settles before the
+      // first send is even attempted), so nothing will ever tell the host
+      // it happened - unlike the two cases above, whose batch left the
+      // transport at least once.
+      'unbound before the first send',
+      async (enqueue: HumanEnqueue) => {
+        bridge().subscribedWorkflowId = null
+        enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+        await Promise.resolve()
+      },
+      'undeliverable',
+      false
+    ],
+    [
+      'rejected by the host (skipped, not applied)',
+      async (enqueue: HumanEnqueue) => {
+        enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+        await Promise.resolve()
+        const opId = clientState.sendOps.mock.calls.at(-1)![2][0].op_id
+        dispatchFrame('doc_ops_result', {
+          workflowId: 'wf-1',
+          ok: true,
+          applied: [],
+          skipped: [opId]
+        })
+      },
+      'acknowledged',
+      false
+    ]
+  ] as const)(
+    'a delete %s (%s) stays pending for the reconcile: %s',
+    async ([, settle, expectedState, staysPending]) => {
+      vi.useFakeTimers()
+      vi.mocked(recordDevEvent).mockClear()
+      const { enqueue, unmount } = mountWithHumanOps()
+      const intent = adapterState.intent!
+      bridge().follower.doc.getMap = () => ({ toJSON: () => ({ '1': {} }) })
 
+      await settle(enqueue)
+
+      expect(recordDevEvent).toHaveBeenCalledWith(
+        'human_ops_settled',
+        expect.objectContaining({ state: expectedState })
+      )
+      expect([...intent.pendingDeletes('wf-1')]).toEqual(
+        staysPending ? ['1'] : []
+      )
+      unmount()
+    }
+  )
+
+  it("never lets workflow A's pending delete suppress workflow B's unrelated node sharing the same id", async () => {
+    vi.useFakeTimers()
+    const { enqueue, workflowId, unmount } = mountWithHumanOps()
+    bridge().subscribe.mockImplementation((next: string) => {
+      bridge().subscribedWorkflowId = next
+    })
+    // One shared doc mock backs both workflows in this fixture; both are
+    // taken to still hold a node id '1' of their own, which is exactly the
+    // ambiguous case the fix must tell apart.
+    bridge().follower.doc.getMap = () => ({ toJSON: () => ({ '1': {} }) })
+    const intent = adapterState.intent!
+
+    // Workflow A's own delete of node '1' is left unresolved and stays
+    // pending for A's reconcile.
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
-    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
-
-    // Same refusal as the sibling test above: the delete's delivery is left
-    // unresolved, not negative, yet the reconcile must still never resurrect
-    // node '1' from the host's still-current document.
     bridge().subscribedWorkflowId = null
     vi.advanceTimersByTime(10_000)
-
-    const settledStates = vi
-      .mocked(recordDevEvent)
-      .mock.calls.filter(([event]) => event === 'human_ops_settled')
-      .map(([, detail]) => (detail as BatchOutcome).state)
-    expect(settledStates).toEqual(['unconfirmed'])
-
     expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
-    docNodes = {}
-    expect([...intent.pendingDeletes('wf-1')]).toEqual([])
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    // Workflow B's own node '1' is unrelated and was never touched by any
+    // delete on B - the reconcile must not suppress it just because a
+    // same-numbered node on a different workflow is pending.
+    expect([...intent.pendingDeletes('wf-2')]).toEqual([])
     unmount()
   })
 

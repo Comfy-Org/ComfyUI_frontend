@@ -64,11 +64,12 @@ export interface OpSenderDeps {
   onBatchSettled(outcome: BatchOutcome): void
 }
 
-export type BatchOutcome =
+export type BatchOutcome = { workflowId: string | null } & (
   | { state: 'acknowledged'; ops: Op[]; result: OpsResultView }
   | { state: 'unacknowledged'; ops: Op[] }
   | { state: 'unconfirmed'; ops: Op[] }
   | { state: 'undeliverable'; ops: Op[] }
+)
 
 export interface OpSender {
   enqueue(operations: GraphOperation[]): void
@@ -214,7 +215,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (batch.transmitted) staleAnonymousBudget += batch.resent ? 2 : 1
     settle({
       state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
-      ops: batch.ops
+      ops: batch.ops,
+      workflowId: batch.workflowId
     })
   }
 
@@ -224,7 +226,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (inFlight !== batch) return
       if (batch.resent) {
         staleAnonymousBudget += 2
-        settle({ state: 'unacknowledged', ops: batch.ops })
+        settle({
+          state: 'unacknowledged',
+          ops: batch.ops,
+          workflowId: batch.workflowId
+        })
         return
       }
       // One silent-result resend of the SAME minted ops: idempotent at the
@@ -232,6 +238,43 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       batch.resent = true
       transmit(batch, 0)
     }, RESULT_TIMEOUT_MS)
+  }
+
+  /**
+   * Drains the queue, the open group and the in-flight batch (in that mint
+   * order) and reports each through `notify`, which owns only whether a
+   * settlement failure is caught: {@link abortAll} lets one propagate,
+   * {@link detach} reports and continues to the next.
+   */
+  function drainOutstanding(notify: (outcome: BatchOutcome) => void): void {
+    const queued = queue.splice(0)
+    const admitted = open
+    open = null
+    if (inFlight) {
+      const batch = inFlight
+      if (batch.timer) clearTimeout(batch.timer)
+      if (batch.transmitted) staleAnonymousBudget += batch.resent ? 2 : 1
+      inFlight = null
+      notify({
+        state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
+        ops: batch.ops,
+        workflowId: batch.workflowId
+      })
+    }
+    for (const batch of queued) {
+      notify({
+        state: 'undeliverable',
+        ops: batch.ops,
+        workflowId: batch.workflowId
+      })
+    }
+    if (admitted) {
+      notify({
+        state: 'undeliverable',
+        ops: admitted.ops,
+        workflowId: admitted.workflowId
+      })
+    }
   }
 
   function pump(): void {
@@ -256,18 +299,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       actor: deps.actor(),
       baseVersion: deps.baseVersion()
     })
-    // Detached is terminal: nothing will ever flush or transmit again, so an
-    // admission that arrives after detach (a re-entrant call from inside a
-    // settle listener, or a lingering caller that never learned the sender
-    // tore down) must settle immediately rather than join a group nobody
-    // will seal - the silent drop this whole file exists to close off.
-    if (detached) {
-      deps.onBatchSettled({ state: 'undeliverable', ops: minted })
-      return
-    }
     const workflowId = deps.workflowId()
-    if (workflowId === null) {
-      deps.onBatchSettled({ state: 'undeliverable', ops: minted })
+    // Detached (nothing will ever flush again - a re-entrant admit from a
+    // settle listener, or a lingering caller) and unbound (no doc to join a
+    // group for) both settle at once rather than silently vanish.
+    if (detached || workflowId === null) {
+      deps.onBatchSettled({ state: 'undeliverable', ops: minted, workflowId })
       return
     }
     if (open?.workflowId !== workflowId) seal()
@@ -308,7 +345,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         if (staleAnonymousBudget > 0) staleAnonymousBudget--
         return
       }
-      settle({ state: 'acknowledged', ops: inFlight.ops, result })
+      settle({
+        state: 'acknowledged',
+        ops: inFlight.ops,
+        result,
+        workflowId: inFlight.workflowId
+      })
       return
     }
     // Anonymous failure (empty lists, no failure op_id): only attribute it
@@ -317,7 +359,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       staleAnonymousBudget--
       return
     }
-    settle({ state: 'acknowledged', ops: inFlight.ops, result })
+    settle({
+      state: 'acknowledged',
+      ops: inFlight.ops,
+      result,
+      workflowId: inFlight.workflowId
+    })
   })
 
   return {
@@ -353,47 +400,21 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
     },
     abortAll() {
-      const queued = queue.splice(0)
-      const admitted = open
-      open = null
-      if (inFlight) settleUnbound(inFlight)
-      for (const batch of queued)
-        deps.onBatchSettled({ state: 'undeliverable', ops: batch.ops })
-      if (admitted)
-        deps.onBatchSettled({ state: 'undeliverable', ops: admitted.ops })
+      drainOutstanding((outcome) => deps.onBatchSettled(outcome))
     },
     detach() {
       detached = true
-      const queued = queue.splice(0)
-      const admitted = open
-      open = null
-      // Every settle below runs a caller-supplied listener. One throwing
-      // must not swallow the rest of this batch of settlements (each op is
-      // its own report to the caller) or skip `unsubscribe()` in the
-      // `finally` - a listener's bug is not licence to leave a dead
-      // listener attached to the bridge.
       try {
-        if (inFlight) {
+        // A listener throwing on one batch must not swallow the rest -
+        // each is its own report - or skip `unsubscribe()` below: a
+        // listener's bug is not licence to leave a dead listener attached.
+        drainOutstanding((outcome) => {
           try {
-            settleUnbound(inFlight)
+            deps.onBatchSettled(outcome)
           } catch (cause) {
             reportDetachSettleFailure(cause)
           }
-        }
-        for (const batch of queued) {
-          try {
-            deps.onBatchSettled({ state: 'undeliverable', ops: batch.ops })
-          } catch (cause) {
-            reportDetachSettleFailure(cause)
-          }
-        }
-        if (admitted) {
-          try {
-            deps.onBatchSettled({ state: 'undeliverable', ops: admitted.ops })
-          } catch (cause) {
-            reportDetachSettleFailure(cause)
-          }
-        }
+        })
       } finally {
         unsubscribe()
       }
