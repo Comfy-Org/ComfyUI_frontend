@@ -334,35 +334,40 @@ export class AgentConversationHarness {
     let saved: { info: UserDataFullInfo; content: string } | undefined
     await this.page.route('**/api/userdata**', (route) => {
       const request = route.request()
-      const url = new URL(request.url())
-      const path = decodeURIComponent(url.pathname.split('/userdata/')[1] ?? '')
-      if (request.method() === 'POST' && path.startsWith('workflows/')) {
-        saved = {
-          info: {
-            path,
-            modified: Date.now(),
-            size: request.postDataBuffer()?.length ?? 0
-          },
-          content: request.postData() ?? '{}'
-        }
-      }
-      if (request.method() === 'GET' && saved) {
-        if (path === saved.info.path)
-          return route.fulfill({
-            contentType: 'application/json',
-            body: saved.content
-          })
-        if (url.searchParams.get('dir') === 'workflows')
-          return route.fulfill(
-            jsonRoute([
-              {
-                ...saved.info,
-                path: saved.info.path.slice('workflows/'.length)
-              }
-            ])
-          )
+      const path = decodeURIComponent(
+        new URL(request.url()).pathname.split('/userdata/')[1] ?? ''
+      )
+      if (request.method() !== 'POST' || !path.startsWith('workflows/'))
+        return route.fallback()
+      saved = {
+        info: {
+          path,
+          modified: Date.now(),
+          size: request.postDataBuffer()?.length ?? 0
+        },
+        content: request.postData() ?? '{}'
       }
       return route.fallback()
+    })
+    await this.page.route('**/api/userdata**', (route) => {
+      const request = route.request()
+      if (request.method() !== 'GET' || !saved) return route.fallback()
+      const url = new URL(request.url())
+      const path = decodeURIComponent(url.pathname.split('/userdata/')[1] ?? '')
+      if (path === saved.info.path)
+        return route.fulfill({
+          contentType: 'application/json',
+          body: saved.content
+        })
+      if (url.searchParams.get('dir') !== 'workflows') return route.fallback()
+      return route.fulfill(
+        jsonRoute([
+          {
+            ...saved.info,
+            path: saved.info.path.slice('workflows/'.length)
+          }
+        ])
+      )
     })
   }
 
