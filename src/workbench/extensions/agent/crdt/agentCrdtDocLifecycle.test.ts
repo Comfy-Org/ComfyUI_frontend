@@ -341,3 +341,62 @@ describe('AgentCrdtDocLifecycle ack timeout', () => {
     expect(resubscribe).toHaveBeenCalledTimes(3)
   })
 })
+
+// Pins the shipped behaviour of the pure-refusal path. Unlike the silence
+// path above, exhausting the refusal budget is silent: no terminal event,
+// no report, no `onGaveUp`. A fix for that gap must update this block.
+describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  it('a confirm between refusals restarts the backoff from the base delay', () => {
+    const { lifecycle, resubscribe } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(500)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
+    lifecycle.onSubscribeConfirmed()
+    lifecycle.onSubscribeRefused()
+
+    vi.advanceTimersByTime(499)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(2)
+    expect(devEvents().at(-1)).toEqual({
+      kind: 'subscribe_retry',
+      detail: { attempt: 1, workflowId: WORKFLOW_ID }
+    })
+  })
+
+  it('six consecutive refusals stop retrying with no seventh subscribe, event, or report', () => {
+    const { lifecycle, resubscribe, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+    for (let attempt = 1; attempt <= 6; attempt += 1) {
+      lifecycle.onSubscribeRefused()
+      const delay = 500 * 2 ** (attempt - 1)
+      vi.advanceTimersByTime(delay - 1)
+      expect(resubscribe).toHaveBeenCalledTimes(attempt - 1)
+      vi.advanceTimersByTime(1)
+      expect(resubscribe).toHaveBeenCalledTimes(attempt)
+      expect(devEvents().at(-1)).toEqual({
+        kind: 'subscribe_retry',
+        detail: { attempt, workflowId: WORKFLOW_ID }
+      })
+    }
+
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(resubscribe).toHaveBeenCalledTimes(6)
+    expect(lifecycle.shouldDeferSubscribe()).toBe(false)
+    expect(onGaveUp).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(devEvents()).toHaveLength(6)
+    expect(devEvents().map(({ kind }) => kind)).toEqual(
+      Array.from({ length: 6 }, () => 'subscribe_retry')
+    )
+  })
+})
