@@ -11,7 +11,11 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { CURATED_TEMPLATE_IDS, FALLBACK_TEMPLATE_IDS } from './tutorialCards'
+import {
+  CURATED_TEMPLATE_IDS,
+  FALLBACK_TEMPLATE_IDS,
+  tutorialCards
+} from './tutorialCards'
 
 const mocks = vi.hoisted(() => ({
   dismiss: vi.fn(),
@@ -27,6 +31,14 @@ vi.mock<unknown>(import('./firstRunEntry'), () => ({
 
 vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
+}))
+
+vi.mock<unknown>(import('@/components/common/LazyImage.vue'), () => ({
+  default: {
+    name: 'LazyImage',
+    template: '<img :src="src" :alt="alt" draggable="false" />',
+    props: ['src', 'alt', 'imageClass', 'imageStyle']
+  }
 }))
 
 vi.mock<unknown>(
@@ -210,6 +222,32 @@ describe('GettingStartedScreen', () => {
         `getting-started-card-${FALLBACK_TEMPLATE_IDS[0]}`,
         'getting-started-card-catalog-filler'
       ])
+    })
+  })
+
+  describe('tutorials', () => {
+    async function openTutorials() {
+      await renderScreen()
+      await userEvent.click(
+        screen.getByText(enMessages.gettingStarted.tabs.tutorials)
+      )
+    }
+
+    it('shows each tutorial its own bundled cover while the catalog is still loading', async () => {
+      useWorkflowTemplatesStore().isLoaded = false
+
+      await openTutorials()
+
+      const sources = tutorialCards.map((tutorial) =>
+        screen
+          .getByAltText(i18n.global.t(tutorial.titleKey))
+          .getAttribute('src')
+      )
+
+      expect(
+        sources,
+        'the covers ship with the app, so a catalog that never loads must not leave the tutorials blank or borrowing template art'
+      ).toEqual(tutorialCards.map((tutorial) => tutorial.thumbnail))
     })
   })
 
