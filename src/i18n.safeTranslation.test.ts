@@ -78,3 +78,16 @@ describe('stRaw', () => {
     )
   })
 })
+
+// Guards patches/@intlify__shared: without it, a long word run overflows Firefox's
+// regex engine in vue-i18n's HTML sanitizer. Fails here if the patch stops applying.
+describe('translating a long string stays linear', () => {
+  it('does not blow up on a long attribute-name run', () => {
+    i18n.global.mergeLocaleMessage('en', {
+      safeTranslationTest: { long: 'x'.repeat(500_000) }
+    })
+    const start = performance.now()
+    expect(() => i18n.global.t('safeTranslationTest.long')).not.toThrow()
+    expect(performance.now() - start).toBeLessThan(500)
+  })
+})
