@@ -31,7 +31,7 @@ test.describe('DOM widget ordering baseline', { tag: ['@perf'] }, () => {
         ({ nodeCount, widgetCount, interactions }) => {
           const app = window.app
           const LiteGraph = window.LiteGraph
-          if (!app?.graph || !app.canvas || !LiteGraph) {
+          if (!app?.graph || !LiteGraph) {
             throw new Error('Comfy graph runtime is unavailable')
           }
 
@@ -142,15 +142,13 @@ test.describe('DOM widget ordering baseline', { tag: ['@perf'] }, () => {
             }
           }
         ).__domWidgetOrderPerfState
-        if (!app?.graph || !app.canvas || !state) {
+        if (!app?.graph || !state) {
           throw new Error('DOM widget performance state is unavailable')
         }
 
-        const widgetNodes = state.widgetNodeIndexes.map((nodeIndex) => {
-          const node = app.graph.nodes[nodeIndex]
-          if (!node) throw new Error(`Widget node ${nodeIndex} is unavailable`)
-          return node
-        })
+        const widgetNodes = state.widgetNodeIndexes.map(
+          (nodeIndex) => app.graph.nodes[nodeIndex]
+        )
 
         state.counter.enabled = true
         try {
