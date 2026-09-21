@@ -9,7 +9,6 @@ import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -76,7 +75,6 @@ export function registerAgentPanelExtension(): void {
           nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
         )
         canvas.selectItems(nodes)
-        useCanvasStore().updateSelectedItems()
       } catch (error) {
         nodeSelectionStore.finishWorkflowLoad()
         throw error
@@ -193,6 +191,17 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
     else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
   } catch (error) {
     settle()
-    reportError(error, { errorType: 'agent_flag_gate_load_failure' })
+    reportError(error, {
+      errorType: 'agent_flag_gate_load_failure',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'load',
+        outcome: 'failed',
+        feature_flag: 'agent_panel',
+        feature_flag_state: 'unknown',
+        project_context: 'application_bootstrap'
+      }
+    })
   }
 }

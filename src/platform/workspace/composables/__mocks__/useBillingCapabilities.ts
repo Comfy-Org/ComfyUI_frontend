@@ -12,6 +12,7 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   canInviteMembers: computed(() => false),
   canDowngradeToPersonal: computed(() => false),
   isReady: computed(() => true),
+  hasResolvedCapabilities: computed(() => true),
   snapshotAuthoritative: computed(() => true),
   initialize: vi.fn(async () => undefined),
   refresh: vi.fn(async () => undefined)

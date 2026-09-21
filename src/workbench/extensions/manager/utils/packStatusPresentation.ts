@@ -1,10 +1,11 @@
+import type { MessageVariants } from '@/components/ui/message/message.variants'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type PackVersionStatus = components['schemas']['NodeVersionStatus']
 type PackStatus = components['schemas']['NodeStatus']
 
 export type PackStatusType = PackVersionStatus | PackStatus
-type PackStatusSeverity = 'success' | 'warn' | 'error' | 'secondary'
+type PackStatusSeverity = MessageVariants['severity']
 
 interface PackStatusPresentation {
   label: string
@@ -13,12 +14,12 @@ interface PackStatusPresentation {
 
 const STATUS_PRESENTATION: Record<PackStatusType, PackStatusPresentation> = {
   NodeStatusActive: { label: 'active', severity: 'success' },
-  NodeStatusDeleted: { label: 'deleted', severity: 'warn' },
+  NodeStatusDeleted: { label: 'deleted', severity: 'warning' },
   NodeStatusBanned: { label: 'banned', severity: 'error' },
   NodeVersionStatusActive: { label: 'active', severity: 'success' },
-  NodeVersionStatusPending: { label: 'pending', severity: 'warn' },
-  NodeVersionStatusDeleted: { label: 'deleted', severity: 'warn' },
-  NodeVersionStatusFlagged: { label: 'flagged', severity: 'warn' },
+  NodeVersionStatusPending: { label: 'pending', severity: 'warning' },
+  NodeVersionStatusDeleted: { label: 'deleted', severity: 'warning' },
+  NodeVersionStatusFlagged: { label: 'flagged', severity: 'warning' },
   NodeVersionStatusBanned: { label: 'banned', severity: 'error' }
 }
 

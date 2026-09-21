@@ -6,13 +6,13 @@ import { resolvePackStatusPresentation } from '@/workbench/extensions/manager/ut
 describe('resolvePackStatusPresentation', () => {
   it.for([
     ['NodeVersionStatusActive', 'active', 'success'],
-    ['NodeVersionStatusPending', 'pending', 'warn'],
-    ['NodeVersionStatusFlagged', 'flagged', 'warn'],
+    ['NodeVersionStatusPending', 'pending', 'warning'],
+    ['NodeVersionStatusFlagged', 'flagged', 'warning'],
     ['NodeVersionStatusBanned', 'banned', 'error'],
-    ['NodeVersionStatusDeleted', 'deleted', 'warn'],
+    ['NodeVersionStatusDeleted', 'deleted', 'warning'],
     ['NodeStatusActive', 'active', 'success'],
     ['NodeStatusBanned', 'banned', 'error'],
-    ['NodeStatusDeleted', 'deleted', 'warn']
+    ['NodeStatusDeleted', 'deleted', 'warning']
   ] as const)('presents %s as %s/%s', ([statusType, label, severity]) => {
     expect(resolvePackStatusPresentation({ statusType })).toEqual({
       label,
@@ -28,12 +28,12 @@ describe('resolvePackStatusPresentation', () => {
       statusType: 'NodeVersionStatusBanned'
     })
 
-    expect(flagged.severity).toBe('warn')
+    expect(flagged.severity).toBe('warning')
     expect(banned.severity).toBe('error')
   })
 
   it.for([
-    ['NodeVersionStatusFlagged', 'flagged', 'warn'],
+    ['NodeVersionStatusFlagged', 'flagged', 'warning'],
     ['NodeVersionStatusBanned', 'banned', 'error'],
     ['NodeStatusBanned', 'banned', 'error']
   ] as const)(
