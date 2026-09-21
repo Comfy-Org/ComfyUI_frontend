@@ -1,23 +1,11 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useNodeVideo } from '@/composables/node/useNodeImage'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 
-const { canvasInteractionsMock } = vi.hoisted(() => ({
-  canvasInteractionsMock: {
-    handleWheel: vi.fn(),
-    handlePointerDown: vi.fn(),
-    handlePointerMove: vi.fn()
-  }
-}))
-
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/useCanvasInteractions'),
-  () => ({
-    useCanvasInteractions: () => canvasInteractionsMock
-  })
-)
+vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 vi.mock(import('@/utils/imageUtil'), () => ({
   fitDimensionsToNodeWidth: () => ({ minHeight: 256, minWidth: 256 })
 }))
@@ -69,9 +57,9 @@ describe('useNodeVideo', () => {
     video.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
     video.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
 
-    expect(canvasInteractionsMock.handleWheel).toHaveBeenCalledTimes(1)
-    expect(canvasInteractionsMock.handlePointerMove).toHaveBeenCalledTimes(1)
-    expect(canvasInteractionsMock.handlePointerDown).toHaveBeenCalledTimes(1)
+    expect(useCanvasInteractions().handleWheel).toHaveBeenCalledTimes(1)
+    expect(useCanvasInteractions().handlePointerMove).toHaveBeenCalledTimes(1)
+    expect(useCanvasInteractions().handlePointerDown).toHaveBeenCalledTimes(1)
   })
 
   it('detaches every listener when the widget is removed', async () => {
@@ -83,8 +71,8 @@ describe('useNodeVideo', () => {
     video.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
     video.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
 
-    expect(canvasInteractionsMock.handleWheel).not.toHaveBeenCalled()
-    expect(canvasInteractionsMock.handlePointerMove).not.toHaveBeenCalled()
-    expect(canvasInteractionsMock.handlePointerDown).not.toHaveBeenCalled()
+    expect(useCanvasInteractions().handleWheel).not.toHaveBeenCalled()
+    expect(useCanvasInteractions().handlePointerMove).not.toHaveBeenCalled()
+    expect(useCanvasInteractions().handlePointerDown).not.toHaveBeenCalled()
   })
 })

@@ -3,6 +3,8 @@ import { pickBy } from 'es-toolkit/compat'
 import type { Ref } from 'vue'
 import { computed, ref } from 'vue'
 
+import { t } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { normalizePackKeys } from '@/utils/packUtils'
 import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
@@ -26,6 +28,8 @@ export const useManagerQueue = (
   taskQueue: Ref<ManagerTaskQueue>,
   installedPacks: Ref<Record<string, unknown>>
 ) => {
+  const toastStore = useToastStore()
+
   // Task queue state (read-only from server)
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
@@ -106,7 +110,22 @@ export const useManagerQueue = (
     MANAGER_WS_TASK_DONE_NAME,
     (event: CustomEvent<ManagerWsTaskDoneMsg>) => {
       if (event.type === MANAGER_WS_TASK_DONE_NAME) {
-        updateTaskState(event.detail.state)
+        const { ui_id: taskId, state, status, result } = event.detail
+        const wasCompleted = Object.hasOwn(taskHistory.value, taskId)
+        const completedTask = state.history[taskId]
+        updateTaskState(state)
+        if (
+          Object.hasOwn(state.history, taskId) &&
+          (status ?? completedTask.status)?.status_str === 'error' &&
+          isHistoryTaskFromThisClient(completedTask) &&
+          !wasCompleted
+        ) {
+          toastStore.add({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: result
+          })
+        }
       }
     }
   )
