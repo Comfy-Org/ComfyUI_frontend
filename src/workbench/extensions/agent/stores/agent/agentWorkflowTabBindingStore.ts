@@ -6,35 +6,23 @@ import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflo
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
+import {
+  AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY,
+  liveAgentWorkflowTabBindings
+} from './agentWorkflowTabBindingStorage'
+import type {
+  PersistedAgentWorkflowTabBinding,
+  PersistedAgentWorkflowTabBindings
+} from './agentWorkflowTabBindingStorage'
+
 const LEGACY_STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings'
-export const AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY =
-  'Comfy.Agent.WorkflowTabBindings.v2'
-const BINDING_TTL_MS = 30 * 24 * 60 * 60 * 1000
-
-interface PersistedBinding {
-  tabPath: string
-  graphId: string | null
-  confirmedAt: number
-}
-
-type PersistedBindings = Record<string, PersistedBinding>
 
 interface OpenTab {
   tab: ComfyWorkflow
   path: string
 }
 
-function isPersistedBinding(value: unknown): value is PersistedBinding {
-  if (typeof value !== 'object' || value === null) return false
-  const { tabPath, graphId, confirmedAt } = value as Record<string, unknown>
-  return (
-    typeof tabPath === 'string' &&
-    (graphId === null || typeof graphId === 'string') &&
-    typeof confirmedAt === 'number'
-  )
-}
-
-function readLegacyBindings(now: number): PersistedBindings {
+function readLegacyBindings(now: number): PersistedAgentWorkflowTabBindings {
   try {
     const parsed: unknown = JSON.parse(
       localStorage.getItem(LEGACY_STORAGE_KEY) ?? 'null'
@@ -49,35 +37,6 @@ function readLegacyBindings(now: number): PersistedBindings {
     )
   } catch {
     return {}
-  }
-}
-
-function liveBindings(
-  bindings: Record<string, unknown>,
-  now: number
-): PersistedBindings {
-  return Object.fromEntries(
-    Object.entries(bindings).filter(
-      (entry): entry is [string, PersistedBinding] =>
-        isPersistedBinding(entry[1]) &&
-        entry[1].confirmedAt + BINDING_TTL_MS >= now
-    )
-  )
-}
-
-export function readPersistedAgentWorkflowTabPath(
-  raw: string | null,
-  workflowId: string,
-  now = Date.now()
-): string | undefined {
-  if (raw === null) return undefined
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed !== 'object' || parsed === null) return undefined
-    return liveBindings(parsed as Record<string, unknown>, now)[workflowId]
-      ?.tabPath
-  } catch {
-    return undefined
   }
 }
 
@@ -104,11 +63,11 @@ export const useAgentWorkflowTabBindingStore = defineStore(
     const now = Date.now()
     const hasStoredBindings =
       localStorage.getItem(AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY) !== null
-    const tabByWorkflow = useLocalStorage<PersistedBindings>(
+    const tabByWorkflow = useLocalStorage<PersistedAgentWorkflowTabBindings>(
       AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY,
       {}
     )
-    tabByWorkflow.value = liveBindings(
+    tabByWorkflow.value = liveAgentWorkflowTabBindings(
       hasStoredBindings ? tabByWorkflow.value : readLegacyBindings(now),
       now
     )
@@ -117,7 +76,9 @@ export const useAgentWorkflowTabBindingStore = defineStore(
     const boundInstances = new Map<string, ComfyWorkflow>()
     const refusedInstances = new Map<string, ComfyWorkflow>()
 
-    function recordFor(workflowId: string): PersistedBinding | undefined {
+    function recordFor(
+      workflowId: string
+    ): PersistedAgentWorkflowTabBinding | undefined {
       return Object.hasOwn(tabByWorkflow.value, workflowId)
         ? tabByWorkflow.value[workflowId]
         : undefined
@@ -139,7 +100,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
     // by being saved in place at the record's path.
     function claimable(
       workflowId: string,
-      record: PersistedBinding,
+      record: PersistedAgentWorkflowTabBinding,
       tab: ComfyWorkflow
     ): boolean {
       if (refusedInstances.get(workflowId) === toRaw(tab)) return false
@@ -151,7 +112,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
 
     function blockedByOccupant(
       workflowId: string,
-      record: PersistedBinding
+      record: PersistedAgentWorkflowTabBinding
     ): boolean {
       const occupant = workflows.openWorkflows.find(
         (tab) => tab.path === record.tabPath

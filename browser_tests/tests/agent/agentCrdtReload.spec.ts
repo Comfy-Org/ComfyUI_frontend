@@ -5,7 +5,7 @@ import { AGENT_CRDT_DOC_ID_SESSION_KEY } from '@/platform/workflow/persistence/b
 import {
   AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY,
   readPersistedAgentWorkflowTabPath
-} from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
+} from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStorage'
 import {
   agentTest,
   bootAgentApp,
