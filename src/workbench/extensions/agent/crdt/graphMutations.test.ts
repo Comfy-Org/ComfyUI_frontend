@@ -1331,9 +1331,13 @@ describe('graphMutations', () => {
       batch.addNode(node(1))
       batch.addNode({
         ...node(2),
+        // `group.grown`, not a bare name: an unlinked live-only leftover is
+        // only tolerated as unpropagated growth when it is shaped like an
+        // autogrow slot (see `drops an ordinary unlinked extra input...`
+        // below for the same leftover with an ordinary name).
         inputs: [
           { name: 'in', type: 'IMAGE', link: null },
-          { name: 'grown', type: 'IMAGE', link: null }
+          { name: 'group.grown', type: 'IMAGE', link: null }
         ]
       })
     })
@@ -1351,7 +1355,80 @@ describe('graphMutations', () => {
     const target = useNodeDataStore()
       .getGraphNodesFor('root', 'root')
       .find(({ id }) => id === toNodeId(2))
-    expect(target?.inputs.map(({ name }) => name)).toEqual(['in', 'grown'])
+    expect(target?.inputs.map(({ name }) => name)).toEqual([
+      'in',
+      'group.grown'
+    ])
+  })
+
+  it('drops an ordinary unlinked extra input the document legitimately dropped', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'keep', type: 'IMAGE', link: null },
+          { name: 'obsolete', type: 'IMAGE', link: null }
+        ]
+      })
+    })
+
+    expect(
+      graph.batch({ ...context, opId: 'drop-obsolete' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [{ name: 'keep', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ name }) => name)).toEqual(['keep'])
+  })
+
+  it("resolves duplicate-named live occurrences by position when the document's own link is omitted", () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [{ name: 'dup', type: 'IMAGE', link: null }]
+      })
+      batch.connect({
+        id: 83,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 1,
+        type: 'IMAGE',
+        targetInputs: [
+          { name: 'dup', type: 'IMAGE', link: null },
+          { name: 'dup', type: 'IMAGE', link: toLinkId(83) }
+        ]
+      })
+    })
+
+    // Neither document entry names a link: both fall back to the live
+    // occurrence at their own position, not both to the first.
+    expect(
+      graph.batch({ ...context, opId: 'resync-dup' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [
+            { name: 'dup', type: 'IMAGE' },
+            { name: 'dup', type: 'IMAGE' }
+          ]
+        })
+      })
+    ).toBe(true)
+
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(target?.inputs.map(({ link }) => link)).toEqual([null, toLinkId(83)])
   })
 
   it('rejects a reconcile against a malformed live input instead of throwing', () => {

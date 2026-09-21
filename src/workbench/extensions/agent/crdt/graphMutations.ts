@@ -410,18 +410,35 @@ function hasNonGrowthInputSetChange(
   // only the first live `dup` is accounted for. Any live occurrence left over
   // once the document's occurrences of that name are exhausted is, by name
   // alone, indistinguishable from unpropagated growth — but growth only ever
-  // adds an UNLINKED trailing slot, so a leftover that is still linked is a
-  // slot the document dropped instead.
+  // adds an UNLINKED trailing slot in an autogrow group specifically, so a
+  // leftover is only tolerated when it is both unlinked AND shaped like an
+  // autogrow slot (`group.member`, the naming `dynamicWidgets.ts` gives
+  // every grown slot); an ordinary extra input the document legitimately
+  // dropped is neither linked nor autogrow-shaped, and must not survive.
   const remainingByName = new Map(documentCounts)
-  const liveOnlyIsLinked = live.some((input) => {
+  const liveOnlyIsUnaccountedFor = live.some((input) => {
     const remaining = remainingByName.get(input.name) ?? 0
     if (remaining > 0) {
       remainingByName.set(input.name, remaining - 1)
       return false
     }
-    return input.link !== null
+    if (input.link !== null) return true
+    return autogrowGroupOf(input.name) === undefined
   })
-  return documentExceedsLive || liveOnlyIsLinked
+  return documentExceedsLive || liveOnlyIsUnaccountedFor
+}
+
+/**
+ * The group prefix of a dotted autogrow slot name (`group.member` ->
+ * `group`), or undefined for an ordinary, non-autogrow input name.
+ * `dynamicWidgets.ts`'s `addAutogrowGroup` is the only place that mints this
+ * shape; this is the semantic layer's only way to recognize it, since a
+ * `NodeState` input carries no other autogrow marker.
+ */
+function autogrowGroupOf(name: unknown): string | undefined {
+  if (typeof name !== 'string') return undefined
+  const dot = name.lastIndexOf('.')
+  return dot < 0 ? undefined : name.slice(0, dot)
 }
 
 function mergeInputSlotsByName(
@@ -431,9 +448,20 @@ function mergeInputSlotsByName(
   const documentInputs = Array.isArray(supplied)
     ? supplied.filter(isRecord)
     : []
-  const liveByName = documentInputs.map((slot) =>
-    live.find((input) => input.name === slot.name)
-  )
+  // Each live occurrence is consumed at most once, in document order: with
+  // two same-named live slots and two document entries sharing that name,
+  // the first document entry falls back to the first live slot and the
+  // second to the second, rather than both re-finding the same (first) live
+  // slot and losing whatever link/value only the second live slot carried.
+  const consumedLive = new Set<number>()
+  const liveByName = documentInputs.map((slot) => {
+    const index = live.findIndex(
+      (input, i) => !consumedLive.has(i) && input.name === slot.name
+    )
+    if (index < 0) return undefined
+    consumedLive.add(index)
+    return live[index]
+  })
   // The document names something this node does not have (including asking
   // for more copies of a shared name than live has), or the node kept a
   // live-only slot that still carries a link the document doesn't: either
