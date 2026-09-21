@@ -99,6 +99,26 @@ describe('browser test global setup', () => {
     )
   })
 
+  it('normalizes a trailing slash in the setup API URL', async () => {
+    const fetchRequest = vi.fn<typeof fetch>(() =>
+      Promise.resolve(response(200))
+    )
+
+    await runGlobalSetup({
+      env: {
+        CI: '1',
+        PLAYWRIGHT_SETUP_API_URL: 'http://localhost:8188/'
+      },
+      fetch: fetchRequest,
+      backup: vi.fn()
+    })
+
+    expect(fetchRequest).toHaveBeenCalledWith(
+      'http://localhost:8188/api/devtools/fake_model.safetensors',
+      expect.any(Object)
+    )
+  })
+
   it('honors an explicit local setup API despite a remote Vite backend', async () => {
     const fetchRequest = vi.fn<typeof fetch>(() =>
       Promise.resolve(response(200))

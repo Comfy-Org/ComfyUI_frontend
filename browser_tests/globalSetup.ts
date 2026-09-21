@@ -33,7 +33,10 @@ async function assertLocalDevtoolsInstalled(
   const apiUrl = resolveLocalSetupApiUrl(env)
   if (!apiUrl) return
 
-  const endpoint = `${apiUrl}/api/devtools/fake_model.safetensors`
+  const endpoint = new URL(
+    '/api/devtools/fake_model.safetensors',
+    apiUrl
+  ).toString()
 
   const status = await missingDevtoolsStatus(endpoint, fetchRequest)
   if (status === null) return
