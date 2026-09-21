@@ -30,21 +30,12 @@ import HighlightedCode from './HighlightedCode.vue'
 const {
   contract,
   values,
-  locale = 'en',
-  modelSlug
+  locale = 'en'
 } = defineProps<{
   contract?: WorkshopContract
   values: FormValues
   locale?: Locale
-  /** The model page's id, sent so the API-keys page shows this model's call. */
-  modelSlug?: string
 }>()
-
-const apiKeysHref = computed(() =>
-  modelSlug
-    ? apiKeysLink({ source: 'model', model: modelSlug })
-    : externalLinks.apiKeys
-)
 
 const language = ref<SnippetLanguage>('python')
 const { onKeydown: onLanguageKeydown } = useTablist(
@@ -288,7 +279,7 @@ const highlightLanguage = {
     <div class="flex flex-wrap gap-3">
       <Button
         as="a"
-        :href="apiKeysHref"
+        :href="apiKeysLink({ onboarding: 'router' })"
         target="_blank"
         rel="noopener noreferrer"
         data-testid="api-get-key"

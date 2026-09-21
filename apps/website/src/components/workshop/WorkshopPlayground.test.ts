@@ -321,14 +321,12 @@ describe('WorkshopPlayground', () => {
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeTruthy()
   })
 
-  it('sends the get-key link with the model page id', () => {
+  it('sends the get-key link as a Router onboarding arrival', () => {
     render(WorkshopPlayground, { props: { model } })
     expect(
       screen
         .getByRole('link', { name: 'Get your API key' })
         .getAttribute('href')
-    ).toBe(
-      'https://platform.comfy.org/profile/api-keys?source=model&model=bfl--flux-3'
-    )
+    ).toBe('https://platform.comfy.org/profile/api-keys?onboarding=router')
   })
 })

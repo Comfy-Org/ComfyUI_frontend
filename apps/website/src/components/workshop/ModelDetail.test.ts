@@ -1969,13 +1969,13 @@ describe('ModelDetail', () => {
     }
   )
 
-  it("sends the API tab's get-key link with the model page id", async () => {
+  it("sends the API tab's get-key link as a Router onboarding arrival", async () => {
     auth.session.value = credential
     mountDetail({ model: runnable })
     await nextTick()
     await user().click(screen.getByTestId('tab-api'))
     expect(screen.getByTestId('api-get-key').getAttribute('href')).toBe(
-      'https://platform.comfy.org/profile/api-keys?source=model&model=bfl--flux-2-pro'
+      'https://platform.comfy.org/profile/api-keys?onboarding=router'
     )
   })
 })

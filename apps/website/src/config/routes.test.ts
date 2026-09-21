@@ -74,18 +74,17 @@ describe('getRoutes minimaxLicenseProfessionalRequest', () => {
 describe('apiKeysLink', () => {
   it.for([
     {
-      from: { source: 'router' } as const,
-      href: 'https://platform.comfy.org/profile/api-keys?source=router'
+      onboarding: 'router' as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=router'
     },
     {
-      from: {
-        source: 'model',
-        model: 'byteplus--seedream-5-pro--generate-images'
-      } as const,
-      href: 'https://platform.comfy.org/profile/api-keys?source=model&model=byteplus--seedream-5-pro--generate-images'
+      onboarding: 'comfy_api' as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=comfy_api'
     }
-  ])('names the source in the query: $from.source', ({ from, href }) => {
-    expect(apiKeysLink(from)).toBe(href)
-    expect(apiKeysLink(from).startsWith(externalLinks.apiKeys)).toBe(true)
+  ])('names the onboarding product: $onboarding', ({ onboarding, href }) => {
+    expect(apiKeysLink({ onboarding })).toBe(href)
+    expect(apiKeysLink({ onboarding }).startsWith(externalLinks.apiKeys)).toBe(
+      true
+    )
   })
 })
