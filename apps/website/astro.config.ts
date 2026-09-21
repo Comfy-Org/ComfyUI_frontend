@@ -37,6 +37,10 @@ export default defineConfig({
   ],
   vite: {
     plugins: [tailwindcss()],
+    define: {
+      __VUE_I18N_LEGACY_API__: false,
+      __VUE_I18N_FULL_INSTALL__: false
+    },
     optimizeDeps: {
       // Leaflet only reaches the graph through a dynamic import inside an
       // island (MapPins01), which Vite's dep scanner does not walk. Without
