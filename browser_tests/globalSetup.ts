@@ -1,3 +1,5 @@
+import { isIP } from 'node:net'
+
 import { config as dotenvConfig } from 'dotenv'
 
 import { backupPath } from '@e2e/utils/backupUtils'
@@ -42,7 +44,10 @@ async function missingDevtoolsStatus(endpoint: string): Promise<number | null> {
 
 async function assertLocalDevtoolsInstalled(): Promise<void> {
   const hostname = new URL(apiUrl).hostname
-  if (!['localhost', '127.0.0.1', '[::1]'].includes(hostname)) return
+  const isIpv4Loopback = isIP(hostname) === 4 && hostname.startsWith('127.')
+  if (hostname !== 'localhost' && hostname !== '[::1]' && !isIpv4Loopback) {
+    return
+  }
 
   const endpoint = `${apiUrl}/api/devtools/fake_model.safetensors`
 
