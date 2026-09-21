@@ -54,23 +54,48 @@ function isSlotRecord(value: unknown): value is { name?: unknown } {
 }
 
 /**
- * Copies a serialized slot's fields onto the live slot object so the node
- * keeps its slot identity; an omitted field keeps the live value. A plain
- * store record takes `link`/`links` as data, while a node's slot instance
- * derives them from the link store and must not have them assigned.
+ * Presentation fields `patchLiveSlot` may copy from a serialized slot onto a
+ * live one, in addition to `link`/`links` (handled separately below).
+ * `boundingRect` is deliberately excluded: on a real slot instance it is a
+ * `Rectangle` (a `Float64Array` subclass) that the renderer measures, and
+ * `prepareInputSlot`/`prepareOutputSlots` always stub the serialized side to
+ * `[0, 0, 0, 0]`, so copying it would clobber the live measurement with that
+ * stub. An allowlist, rather than a blocklist, also keeps a serialized
+ * slot's own `__proto__` or internal keys (`_node`, `_widget`, …) from ever
+ * reaching `Object.assign` on the live instance.
+ */
+const PATCHABLE_SLOT_FIELDS = [
+  'name',
+  'localized_name',
+  'label',
+  'type',
+  'dir',
+  'removable',
+  'shape',
+  'color_off',
+  'color_on',
+  'locked',
+  'nameLocked',
+  'hasErrors'
+] as const
+
+/**
+ * Copies a serialized slot's presentation fields onto the live slot object
+ * so the node keeps its slot identity; an omitted field keeps the live
+ * value. A plain store record takes `link`/`links` as data, while a node's
+ * slot instance derives them from the link store and must not have them
+ * assigned.
  */
 function patchLiveSlot(live: object, serialized: object): void {
-  const derivesLinks = !isPlainObject(live)
-  Object.assign(
-    live,
-    Object.fromEntries(
-      Object.entries(serialized).filter(
-        ([key, value]) =>
-          value !== undefined &&
-          !(derivesLinks && (key === 'link' || key === 'links'))
-      )
-    )
-  )
+  const source = serialized as Record<string, unknown>
+  const target = live as Record<string, unknown>
+  for (const field of PATCHABLE_SLOT_FIELDS) {
+    if (source[field] !== undefined) target[field] = source[field]
+  }
+  if (isPlainObject(live)) {
+    if (source.link !== undefined) target.link = source.link
+    if (source.links !== undefined) target.links = source.links
+  }
 }
 
 interface SemanticNodeLayout {
@@ -346,6 +371,13 @@ function prepareOutputSlots(value: unknown): NodeState['outputs'] {
  * there, so fall back to positional preparation and let stale live slots go.
  * Preserving them would carry a dead slot (and its stale label) onto a node
  * that no longer has it.
+ *
+ * Growth is one-directional too: it only ever adds an unlinked trailing slot,
+ * so a live-only name that is still unlinked is tolerated as unpropagated
+ * growth. A live-only name that IS linked cannot be that — it is a slot the
+ * document dropped (an autogrow group shrinking, an input removed from the
+ * node def) while still carrying a live wire, and keeping it would leave that
+ * wire attached to a slot the document no longer has. Fall back there too.
  */
 function mergeInputSlotsByName(
   live: NodeState['inputs'],
@@ -357,16 +389,45 @@ function mergeInputSlotsByName(
   const liveByName = documentInputs.map((slot) =>
     live.find((input) => input.name === slot.name)
   )
-  // The document names something this node does not have: its input set
-  // changed, so the document decides the list positionally.
-  if (liveByName.some((match) => match === undefined)) {
+  const liveCounts = new Map<unknown, number>()
+  for (const input of live) {
+    liveCounts.set(input.name, (liveCounts.get(input.name) ?? 0) + 1)
+  }
+  const documentCounts = new Map<unknown, number>()
+  for (const slot of documentInputs) {
+    documentCounts.set(slot.name, (documentCounts.get(slot.name) ?? 0) + 1)
+  }
+  // Names, not just names-with-counts: a name the document asks for more
+  // often than live has it (litegraph does not enforce unique names) is
+  // also a name the document has that live does not.
+  const documentExceedsLive = [...documentCounts].some(
+    ([name, count]) => count > (liveCounts.get(name) ?? 0)
+  )
+  const documentNames = new Set(documentInputs.map((slot) => slot.name))
+  const liveOnlyIsLinked = live.some(
+    (input) => !documentNames.has(input.name) && input.link !== null
+  )
+  // The document names something this node does not have (including asking
+  // for more copies of a shared name than live has), or the node kept a
+  // live-only slot that still carries a link the document doesn't: either
+  // way the input set changed, so the document decides the list positionally.
+  if (documentExceedsLive || liveOnlyIsLinked) {
     return prepareInputSlots(documentInputs, live)
   }
   const merged = [...live]
+  // Litegraph does not enforce unique input names, so each merged slot is
+  // consumed at most once — otherwise two document inputs sharing a name
+  // would both resolve to the same merged index and one would be dropped.
+  const used = new Set<number>()
   for (const input of prepareInputSlots(documentInputs, liveByName)) {
-    const index = merged.findIndex((local) => local.name === input.name)
+    const index = merged.findIndex(
+      (local, i) => !used.has(i) && local.name === input.name
+    )
     if (index < 0) merged.push(input)
-    else merged[index] = input
+    else {
+      used.add(index)
+      merged[index] = input
+    }
   }
   return merged
 }
@@ -658,6 +719,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             existing &&
             existing.type === node.state.type
           ) {
+            if (existing.inputs.some((input) => !isSlotRecord(input))) {
+              return 'reconcile target inputs contain a malformed live slot'
+            }
             node.state.inputs = mergeInputSlotsByName(
               existing.inputs,
               mutation.payload.inputs
@@ -767,19 +831,42 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             if (target.inputs.some((input) => !isSlotRecord(input))) {
               return 'connect target inputs contain a malformed live slot'
             }
-            const name = mutation.link.targetInputs
-              .filter(isRecord)
-              .at(topology.targetSlot)?.name
+            // Index the raw payload, not a filtered copy of it: dropping
+            // malformed entries first would shift every later index and
+            // resolve the wrong slot's name.
+            const rawTarget = mutation.link.targetInputs[topology.targetSlot]
+            const name = isRecord(rawTarget) ? rawTarget.name : undefined
             if (typeof name !== 'string') {
               return `connect target slot ${topology.targetSlot} does not exist`
             }
+            // The payload's own slot names are not guaranteed unique, so the
+            // target slot is resolved by occurrence — the Nth slot named
+            // `name` up to `topology.targetSlot` in the raw payload maps to
+            // the Nth slot named `name` in the merged result — rather than
+            // by first match.
+            const occurrence = mutation.link.targetInputs
+              .slice(0, topology.targetSlot)
+              .filter(
+                (candidate) => isRecord(candidate) && candidate.name === name
+              ).length
             targetInputs = mergeInputSlotsByName(
               target.inputs,
               mutation.link.targetInputs
             )
-            topology.targetSlot = targetInputs.findIndex(
-              (input) => input.name === name
-            )
+            let seen = 0
+            let resolvedSlot = -1
+            for (const [index, input] of targetInputs.entries()) {
+              if (input.name !== name) continue
+              if (seen === occurrence) {
+                resolvedSlot = index
+                break
+              }
+              seen++
+            }
+            if (resolvedSlot < 0) {
+              return `connect target slot ${topology.targetSlot} does not exist`
+            }
+            topology.targetSlot = resolvedSlot
           }
           if (topology.originSlot >= originOutputs.length) {
             return `connect origin slot ${topology.originSlot} does not exist`
@@ -1243,12 +1330,16 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (origin && mutation.originOutputs) {
             const outputs = [...mutation.originOutputs]
             // Outputs keep their document positions, so each live slot is
-            // patched from the serialized slot sharing its index.
+            // patched from the serialized slot sharing its index. Outputs
+            // are never autogrown, so a live index past the document's own
+            // list is never reused — doing so would resurrect an output the
+            // document dropped, with no later reconcile to remove it again.
             for (const [index, output] of origin.outputs.entries()) {
+              if (index >= outputs.length) break
               if (isSlotRecord(output) && isSlotRecord(outputs[index])) {
                 patchLiveSlot(output, outputs[index])
+                outputs[index] = output
               }
-              outputs[index] = output
             }
             nodeStore.updateNodeSlots(
               scope,
@@ -1260,13 +1351,20 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (target && mutation.targetInputs) {
             const inputs = [...mutation.targetInputs]
             // Inputs may have been reordered locally, so each live slot is
-            // matched to its serialized slot by name.
+            // matched to its serialized slot by name. Litegraph does not
+            // enforce unique input names, so each document slot is consumed
+            // at most once — otherwise two live inputs sharing a name would
+            // both resolve to the same document index and one live identity
+            // would be silently dropped.
+            const consumed = new Set<number>()
             for (const input of target.inputs) {
               if (!isSlotRecord(input)) continue
               const index = inputs.findIndex(
-                (candidate) => candidate.name === input.name
+                (candidate, i) =>
+                  !consumed.has(i) && candidate.name === input.name
               )
               if (index < 0) continue
+              consumed.add(index)
               patchLiveSlot(input, inputs[index])
               inputs[index] = input
             }
