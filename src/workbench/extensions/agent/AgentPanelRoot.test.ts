@@ -200,6 +200,8 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
     (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
 }))
 
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     isLoggedIn: { value: true },
@@ -462,26 +464,34 @@ describe('AgentPanelRoot first-use experience', () => {
 })
 
 describe('AgentPanelRoot onboarding', () => {
-  it('defers the tour in App Mode without completing it or blocking the composer', async () => {
+  const SCOPED_KEY = 'Comfy.AgentPanel.onboarded.account-a.workspace-a'
+
+  beforeEach(() => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-a'
+    })
     localStorage.removeItem('Comfy.AgentPanel.onboarded')
+    localStorage.removeItem(SCOPED_KEY)
+  })
+
+  it('defers the tour in App Mode without completing it or blocking the composer', async () => {
     canvasStore.linearMode = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await userEvent.type(screen.getByRole('textbox'), 'Explain this app')
     expect(screen.getByRole('textbox')).toHaveTextContent('Explain this app')
-    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).not.toBe('true')
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
     expect(canvasStore.linearMode).toBe(true)
 
     canvasStore.linearMode = false
     expect(
       await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
     ).toBeInTheDocument()
-    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).not.toBe('true')
+    expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
   })
 
   it('walks through the four cards and leaves the composer usable after Done', async () => {
-    localStorage.removeItem('Comfy.AgentPanel.onboarded')
     render(
       defineComponent({
         setup: () => () =>
@@ -530,10 +540,26 @@ describe('AgentPanelRoot onboarding', () => {
     }
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBe('true')
+    expect(localStorage.getItem(SCOPED_KEY)).toBe('true')
     const composer = screen.getByRole('textbox')
     await userEvent.click(composer)
     expect(composer).toHaveFocus()
+  })
+
+  it('preserves legacy tour completion when the panel mounts again', async () => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(localStorage.getItem(SCOPED_KEY)).toBe('true')
+    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBeNull()
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
 
@@ -2584,11 +2610,21 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('restores an agent-minted draft target after reload and keeps its Cloud identity on send', async () => {
+    const draftGraphId = '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
     localStorage.setItem(
-      'Comfy.Agent.WorkflowTabBindings',
-      JSON.stringify({ 'wf-minted': 'workflows/minted.json' })
+      'Comfy.Agent.WorkflowTabBindings.v2',
+      JSON.stringify({
+        'wf-minted': {
+          tabPath: 'workflows/minted.json',
+          graphId: draftGraphId,
+          confirmedAt: Date.now()
+        }
+      })
     )
-    const restored = addTab('workflows/minted.json', { isTemporary: true })
+    const restored = addTab('workflows/minted.json', {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: draftGraphId })
+    })
     useAgentConversationStore().setThreadId('th-1')
     const bodies: unknown[] = []
     const history: AgentMessages = [
@@ -3595,6 +3631,101 @@ describe('AgentPanelRoot workflow binding', () => {
         target: 'active_tab_switch'
       })
     )
+  })
+
+  // A browser tab closed without the SPA's own unbind() left 'wf-abandoned'
+  // bound to the default unsaved path in localStorage, and the thread pointer
+  // survived beside it. On the next boot the thread hydrates and names that
+  // workflow; the panel must not resolve it to the brand-new tab that merely
+  // reuses the path, or the next turn posts as that workflow and the real CRDT
+  // follower pulls the abandoned document onto the empty canvas.
+  it('does not restore an abandoned tab binding onto a brand-new default-path tab', async () => {
+    const staleWorkflowId = 'wf-abandoned'
+    const defaultPath = 'workflows/Unsaved Workflow.json'
+    localStorage.setItem(
+      'Comfy.Agent.WorkflowTabBindings',
+      JSON.stringify({ [staleWorkflowId]: defaultPath })
+    )
+    localStorage.setItem('Comfy.Agent.ThreadId', 'th-stale')
+    const fresh = addTab(defaultPath, {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        id: '5c1c3a7e-2a44-4c8e-9a44-0f1e2d3c4b5a'
+      })
+    })
+    workflowStore.activeWorkflow = fresh
+    const history: AgentMessages = [
+      {
+        id: 'row',
+        thread_id: 'th-stale',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        workflow_id: staleWorkflowId,
+        content: { text: 'Earlier request' }
+      }
+    ]
+    const bodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init.body)))
+          return json(202, ack(staleWorkflowId))
+        }
+        if (url.includes('/messages')) return json(200, history)
+        if (url.includes('/workflows'))
+          return json(200, {
+            // Re-targeting the fresh tab saves it as a new cloud workflow.
+            data: fresh.isTemporary
+              ? []
+              : [{ id: 'wf-new', name: 'Unsaved Workflow' }],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(200, agentThreadList())
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().canRestoreWorkflow).toBe(false)
+    )
+
+    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor(staleWorkflowId)
+    ).toBeUndefined()
+    expect(
+      useAgentWorkflowTabBindingStore().workflowIdFor(defaultPath)
+    ).toBeUndefined()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'Unsaved Workflow' })
+    )
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    await sendFromComposer('continue here')
+
+    expect(bodies).toHaveLength(1)
+    expect(bodies[0]).not.toMatchObject({ workflow_id: staleWorkflowId })
+    expect(workflowStore.activeWorkflow.path).toBe(defaultPath)
+    const subscribedStaleDoc = socketSend.mock.calls.some(([frame]) => {
+      if (typeof frame !== 'string') return false
+      const parsed: unknown = JSON.parse(frame)
+      return (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        (parsed as { type?: unknown }).type === 'doc_subscribe' &&
+        (parsed as { data?: { workflow_id?: unknown } }).data?.workflow_id ===
+          staleWorkflowId
+      )
+    })
+    expect(subscribedStaleDoc).toBe(false)
   })
 
   it('agent_active_tab opens an unknown workflow as a blank named tab', async () => {
@@ -4727,7 +4858,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
       expect(bodies[0]).toMatchObject({
-        content: '@[Node: KSampler #12]  Keep this draft',
+        content: '@[Node: KSampler #12] Keep this draft',
         workflow_id: 'wf-cloud-current',
         selection: { node_ids: ['12'] },
         workflow_references: []
@@ -5479,12 +5610,7 @@ describe('AgentPanelRoot workflow binding', () => {
         })
       } else {
         expect(useAgentComposerStore().draft).toBe(
-          nextAction === 'new-draft'
-            ? 'New input'
-            : nextAction === 'removed-reference' ||
-                nextAction === 'removed-attachment'
-              ? ' '
-              : ''
+          nextAction === 'new-draft' ? 'New input' : ''
         )
         expect(composer.attachments).toEqual([])
         expect(

@@ -86,6 +86,12 @@ function createState(): EditorState {
   })
 }
 
+function deleteReference(state: EditorState, position: number, node: Node) {
+  const end = position + node.nodeSize
+  const padding = state.doc.nodeAt(end)?.text?.startsWith(' ') ? 1 : 0
+  return state.tr.delete(position, end + padding)
+}
+
 function referenceClipboardText(node: Node): string {
   const reference = promptNodeReference(node, 0)
   if (!reference) return ''
@@ -208,9 +214,7 @@ onMounted(() => {
           const start =
             event.key === 'Backspace' ? from - adjacent.nodeSize : from
           editor.dispatch(
-            editor.state.tr
-              .delete(start, start + adjacent.nodeSize)
-              .scrollIntoView()
+            deleteReference(editor.state, start, adjacent).scrollIntoView()
           )
           event.preventDefault()
         }
@@ -353,9 +357,7 @@ onMounted(() => {
         remove.onclick = () => {
           const position = getPos()
           if (position === undefined) return
-          editor.dispatch(
-            editor.state.tr.delete(position, position + node.nodeSize)
-          )
+          editor.dispatch(deleteReference(editor.state, position, node))
         }
         removeAnchor.append(remove)
         dom.append(open, removeAnchor)
