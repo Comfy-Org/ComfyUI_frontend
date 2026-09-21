@@ -6,16 +6,13 @@ import { createI18n } from 'vue-i18n'
 
 const sizeHolder = vi.hoisted(() => ({ width: 0, height: 0 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    useElementSize: () => ({
-      width: ref(sizeHolder.width),
-      height: ref(sizeHolder.height)
-    })
-  }
-})
+vi.mock<unknown>(import('@vueuse/core'), () => ({
+  reactiveOmit: (value: object) => value,
+  useElementSize: () => ({
+    width: ref(sizeHolder.width),
+    height: ref(sizeHolder.height)
+  })
+}))
 
 const painterHolder = vi.hoisted(() => ({
   state: null as Record<string, unknown> | null
@@ -45,7 +42,7 @@ function createDefaultPainterState() {
   }
 }
 
-vi.mock('@/composables/painter/usePainter', () => ({
+vi.mock<unknown>(import('@/composables/painter/usePainter'), () => ({
   PAINTER_TOOLS: { BRUSH: 'brush', ERASER: 'eraser' } as const,
   usePainter: () => {
     if (!painterHolder.state) painterHolder.state = createDefaultPainterState()
@@ -76,12 +73,6 @@ const i18n = createI18n({
   }
 })
 
-const ButtonStub = defineComponent({
-  name: 'Button',
-  inheritAttrs: false,
-  template: '<button v-bind="$attrs" type="button"><slot /></button>'
-})
-
 const SliderStub = defineComponent({
   name: 'Slider',
   props: {
@@ -109,7 +100,7 @@ function renderWidget(initialModel = '') {
   return render(Harness, {
     global: {
       plugins: [i18n],
-      stubs: { Button: ButtonStub, Slider: SliderStub }
+      stubs: { Slider: SliderStub }
     }
   })
 }

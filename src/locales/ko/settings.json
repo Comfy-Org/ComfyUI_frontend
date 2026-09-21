@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "워크플로에서 캔버스 위치 및 확대/축소 수준 저장 및 복원"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "문제 탭에 누락된 모델 표시",
+    "tooltip": "비활성화하면 찾을 수 없는 모델 파일이 문제 탭에 나열되지 않으며 해당 노드가 강조 표시되지 않습니다."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "라이브 미리보기 방식",
     "options": {
@@ -367,8 +371,8 @@
     "tooltip": "떠다니는 작업 큐 패널을 에셋 사이드 패널에 내장된 동등한 작업 큐로 대체합니다. 이 옵션을 비활성화하면 기존의 떠다니는 패널 레이아웃으로 돌아갈 수 있습니다."
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "오류 탭을 사이드 패널에 표시",
-    "tooltip": "활성화하면 오른쪽 사이드 패널에 오류 탭이 표시되어 워크플로 실행 오류를 한눈에 확인할 수 있습니다."
+    "name": "사이드 패널에 문제 탭 표시",
+    "tooltip": "활성화하면 설정이 필요한 차단 오류와 누락된 리소스를 표시하기 위해 오른쪽 사이드 패널에 문제 탭이 표시됩니다."
   },
   "Comfy_Sidebar_Location": {
     "name": "사이드바 위치",
@@ -461,8 +465,13 @@
   "Comfy_Workflow_Persist": {
     "name": "페이지 (재)로드시 워크플로우 상태를 유지하고 복원"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "누락된 모델 경고 표시"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "문제 탭에 누락된 미디어 표시",
+    "tooltip": "비활성화하면 찾을 수 없는 입력 이미지, 비디오 및 오디오가 문제 탭에 나열되지 않으며 해당 노드가 강조 표시되지 않습니다."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "문제 탭에 누락된 노드 표시",
+    "tooltip": "비활성화하면 누락된 노드 팩이 문제 탭에 나열되지 않으며 해당 노드가 강조 표시되지 않습니다. 설치될 때까지 워크플로를 실행할 수 없습니다."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "워크플로 저장 시 노드 ID 정렬"

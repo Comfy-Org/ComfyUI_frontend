@@ -1,7 +1,10 @@
+import PrimeVue from 'primevue/config'
+import Tooltip from 'primevue/tooltip'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -28,9 +31,15 @@ function createNumberInputWidget(
   })
 }
 
-function renderComponent(widget: SimplifiedWidget<number>, modelValue: number) {
+function renderComponent(
+  widget: SimplifiedWidget<number>,
+  modelValue: number | undefined
+) {
   return render(WidgetInputNumberInput, {
-    global: { plugins: [i18n] },
+    global: {
+      plugins: [PrimeVue, i18n],
+      directives: { tooltip: Tooltip }
+    },
     props: {
       widget,
       modelValue
@@ -165,23 +174,23 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
     expect(screen.queryAllByRole('button')).toHaveLength(0)
   })
 
-  it('shows tooltip for disabled buttons due to precision limits', (context) => {
-    context.skip('needs diagnosis')
+  it('shows tooltip for disabled buttons due to precision limits', async () => {
     renderComponent(
       createNumberInputWidget(UNSAFE_LARGE_INTEGER, 'int'),
       UNSAFE_LARGE_INTEGER
     )
+
+    await userEvent.hover(screen.getByRole('spinbutton'))
+
+    expect(screen.getByRole('tooltip')).toHaveTextContent(/precision limit/i)
   })
 
-  it('does not show tooltip for safe integer values', () => {
-    const { container } = renderComponent(
-      createNumberInputWidget(1000, 'int'),
-      1000
-    )
+  it('does not show tooltip for safe integer values', async () => {
+    renderComponent(createNumberInputWidget(1000, 'int'), 1000)
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- checking absence of v-tooltip attribute on wrapper div
-    const tooltipDiv = container.querySelector('div')
-    expect(tooltipDiv).not.toHaveAttribute('v-tooltip')
+    await userEvent.hover(screen.getByRole('spinbutton'))
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
   it('handles floating point values correctly', () => {
@@ -200,20 +209,12 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
 
 describe('WidgetInputNumberInput Edge Cases for Precision Handling', () => {
   it('handles null/undefined model values gracefully', () => {
-    const widget = createNumberInputWidget(0, 'int')
-    render(WidgetInputNumberInput, {
-      global: { plugins: [i18n] },
-      props: {
-        widget,
-        modelValue: undefined
-      } as { widget: SimplifiedWidget<number>; modelValue: number | undefined }
-    })
+    renderComponent(createNumberInputWidget(0, 'int'), undefined)
 
     expect(screen.getAllByRole('button')).toHaveLength(2)
   })
 
-  it('handles NaN values gracefully', (context) => {
-    context.skip('needs diagnosis')
+  it('handles NaN values gracefully', () => {
     renderComponent(createNumberInputWidget(NaN, 'int'), NaN)
 
     expect(screen.queryAllByRole('button')).toHaveLength(0)

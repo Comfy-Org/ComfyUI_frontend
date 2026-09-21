@@ -7,7 +7,7 @@ type Subscription = BillingContext['subscription']['value']
 /** The billing state a story wants the stub to report. */
 export interface BillingContextMockState {
   subscription: Subscription
-  isActiveSubscription: boolean
+  canAccessSubscriptionFeatures: boolean
   isTeamPlan: boolean
   billingStatus: BillingContext['billingStatus']['value']
   subscriptionStatus: BillingContext['subscriptionStatus']['value']
@@ -18,7 +18,7 @@ export interface BillingContextMockState {
 
 const defaultState: BillingContextMockState = {
   subscription: null,
-  isActiveSubscription: false,
+  canAccessSubscriptionFeatures: false,
   isTeamPlan: false,
   billingStatus: null,
   subscriptionStatus: null,
@@ -37,11 +37,12 @@ export function setBillingContextMock(next: Partial<BillingContextMockState>) {
 /**
  * Storybook mock for `useBillingContext`.
  *
- * The real facade lazily instantiates the legacy billing adapter, which pulls
- * in Firebase auth (`setPersistence`) and crashes in the Storybook environment
- * (no Firebase). This stub lets billing components — e.g. UnifiedPricingTable,
- * BillingStatusBanner — render without any network or auth. It defaults to the
- * unsubscribed state; call `setBillingContextMock` to drive a specific one.
+ * The real facade lazily instantiates the legacy billing adapter, which
+ * resolves the identity module's Firebase while remote config is unloaded and
+ * throws in Storybook. This stub lets billing components — e.g.
+ * UnifiedPricingTable, BillingStatusBanner — render without any network or
+ * auth. It defaults to the unsubscribed state; call `setBillingContextMock` to
+ * drive a specific one.
  *
  * Typed against `BillingContext` so the stub stays in lockstep with the real
  * composable's return shape: drifted or removed keys fail to compile.
@@ -60,13 +61,12 @@ export function useBillingContext(): BillingContext {
     occupiedSeats: computed(() => state.value.occupiedSeats),
     isLoading: ref(false),
     error: ref<string | null>(null),
-    isActiveSubscription: computed(() => state.value.isActiveSubscription),
-    canRunWorkflows: computed(() => state.value.isActiveSubscription),
-    showsSubscribeToRunPrompt: computed(
-      () => !state.value.isActiveSubscription
-    ),
     canAccessSubscriptionFeatures: computed(
-      () => state.value.isActiveSubscription
+      () => state.value.canAccessSubscriptionFeatures
+    ),
+    canRunWorkflows: computed(() => state.value.canAccessSubscriptionFeatures),
+    showsSubscribeToRunPrompt: computed(
+      () => !state.value.canAccessSubscriptionFeatures
     ),
     isFreeTier: computed(() => false),
     isLegacyTeamPlan: computed(() => false),

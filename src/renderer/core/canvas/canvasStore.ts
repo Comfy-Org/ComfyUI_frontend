@@ -15,9 +15,9 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { app } from '@/scripts/app'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/types/nodeId'
-import { isLGraphGroup, isLGraphNode, isReroute } from '@/utils/litegraphUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 export const useTitleEditorStore = defineStore('titleEditor', () => {
   const titleEditorTarget = shallowRef<LGraphNode | LGraphGroup | null>(null)
@@ -62,32 +62,26 @@ export const useCanvasStore = defineStore('canvas', () => {
   let originalOnChanged: ((scale: number, offset: Point) => void) | undefined =
     undefined
   const initScaleSync = () => {
-    if (app.canvas?.ds) {
-      // Initial sync
-      originalOnChanged = app.canvas.ds.onChanged
-      updateAppScalePercentage(app.canvas.ds.scale)
+    const ds = canvas.value?.ds
+    if (!ds) return
 
-      // Set up continuous sync
-      app.canvas.ds.onChanged = () => {
-        if (app.canvas?.ds?.scale) {
-          updateAppScalePercentage(app.canvas.ds.scale)
-        }
-        // Call original handler if exists
-        originalOnChanged?.(app.canvas.ds.scale, app.canvas.ds.offset)
+    originalOnChanged = ds.onChanged
+    updateAppScalePercentage(ds.scale)
+
+    ds.onChanged = () => {
+      if (ds.scale) {
+        updateAppScalePercentage(ds.scale)
       }
+      originalOnChanged?.(ds.scale, ds.offset)
     }
   }
 
   const cleanupScaleSync = () => {
-    if (app.canvas?.ds) {
-      app.canvas.ds.onChanged = originalOnChanged
-      originalOnChanged = undefined
-    }
+    const ds = canvas.value?.ds
+    if (!ds) return
+    ds.onChanged = originalOnChanged
+    originalOnChanged = undefined
   }
-
-  const nodeSelected = computed(() => selectedItems.value.some(isLGraphNode))
-  const groupSelected = computed(() => selectedItems.value.some(isLGraphGroup))
-  const rerouteSelected = computed(() => selectedItems.value.some(isReroute))
 
   const getCanvas = () => {
     if (!canvas.value) throw new Error('getCanvas: canvas is null')
@@ -99,23 +93,23 @@ export const useCanvasStore = defineStore('canvas', () => {
    * @param percentage - Zoom percentage value (1-1000, where 1000 = 1000% zoom)
    */
   const setAppZoomFromPercentage = (percentage: number) => {
-    if (!app.canvas?.ds || percentage <= 0) return
+    const currentCanvas = canvas.value
+    if (!currentCanvas || percentage <= 0) return
 
     // Convert percentage to scale (1000% = 10.0 scale)
     const newScale = percentage / 100
-    const ds = app.canvas.ds
+    const { ds } = currentCanvas
+    const { element } = ds
 
-    ds.changeScale(
-      newScale,
-      ds.element ? [ds.element.width / 2, ds.element.height / 2] : undefined
-    )
-    app.canvas.setDirty(true, true)
+    ds.changeScale(newScale, [element.width / 2, element.height / 2])
+    currentCanvas.setDirty(true, true)
 
     // Update reactive value immediately for UI consistency
     updateAppScalePercentage(newScale)
   }
 
   const currentGraph = shallowRef<LGraph | null>(null)
+  const rootGraphId = computed(() => currentGraph.value?.rootGraph.id)
   const isInSubgraph = ref(false)
   const isGhostPlacing = ref(false)
 
@@ -153,10 +147,10 @@ export const useCanvasStore = defineStore('canvas', () => {
       useEventListener(
         newCanvas.canvas,
         'litegraph:set-graph',
-        (event: CustomEvent<{ newGraph: LGraph; oldGraph: LGraph }>) => {
-          const newGraph = event.detail?.newGraph ?? app.canvas?.graph // TODO: Ambiguous Graph
+        (event: CustomEvent<{ newGraph?: LGraph; oldGraph: LGraph }>) => {
+          const newGraph = event.detail.newGraph ?? newCanvas.graph // TODO: Ambiguous Graph
           currentGraph.value = newGraph
-          isInSubgraph.value = Boolean(app.canvas?.subgraph)
+          isInSubgraph.value = Boolean(newCanvas.subgraph)
         }
       )
 
@@ -176,9 +170,10 @@ export const useCanvasStore = defineStore('canvas', () => {
         'litegraph:ghost-placement',
         (e: CustomEvent<{ active: boolean; nodeId: NodeId }>) => {
           isGhostPlacing.value = e.detail.active
-          if (e.detail.active) {
-            const mutations = useLayoutMutations()
-            mutations.bringNodeToFront(e.detail.nodeId)
+          const graph = currentGraph.value
+          if (e.detail.active && graph) {
+            const mutations = useLayoutMutations(LayoutSource.Canvas)
+            mutations.setNodeOrder(graph, e.detail.nodeId, 'front')
           }
         }
       )
@@ -190,9 +185,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     canvas,
     selectedItems,
     selectedNodeIds,
-    nodeSelected,
-    groupSelected,
-    rerouteSelected,
     appScalePercentage,
     linearMode,
     isReadOnly,
@@ -202,6 +194,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     initScaleSync,
     cleanupScaleSync,
     currentGraph,
+    rootGraphId,
     isInSubgraph,
     isGhostPlacing
   }

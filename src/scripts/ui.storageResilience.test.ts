@@ -19,7 +19,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 // Node >= 25's unconfigured Web Storage stub, installed before the import below
 // so the module-scope `new ComfyApp()` restores against it.
-vi.stubGlobal('localStorage', {} as Storage)
+// oxlint-disable-next-line comfy/no-module-scope-vitest-mocks -- must precede import-time ComfyApp construction
+vi.stubGlobal('localStorage', {})
 
 // Imported once here rather than per test behind `vi.resetModules()`, which
 // would pay this graph's transform cost again for every test.
@@ -36,7 +37,7 @@ function installThrowingLocalStorage() {
     setItem() {
       throw new Error('Access to storage is not allowed from this context.')
     }
-  } as unknown as Storage)
+  })
 }
 
 describe('menu position restore is resilient to unusable localStorage', () => {
@@ -56,7 +57,7 @@ describe('menu position restore is resilient to unusable localStorage', () => {
     vi.stubGlobal('localStorage', {
       getItem: vi.fn(() => '{not valid json'),
       setItem: vi.fn()
-    } as unknown as Storage)
+    })
 
     expect(() => app.ui.restoreMenuPosition()).not.toThrow()
   })
@@ -70,7 +71,7 @@ describe('menu position restore is resilient to unusable localStorage', () => {
     vi.stubGlobal('localStorage', {
       getItem: vi.fn(() => JSON.stringify({ x: 12, y: 34 })),
       setItem
-    } as unknown as Storage)
+    })
     // `positionElement()` bails out while the menu is hidden, and setup() hides
     // it by default.
     const { menuContainer } = app.ui

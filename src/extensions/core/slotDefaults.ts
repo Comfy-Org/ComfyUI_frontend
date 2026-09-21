@@ -1,5 +1,6 @@
-import type { ComfyExtension } from '@/types/comfy'
+import type { SlotTypeDefaultNodeOpts } from '@/lib/litegraph/src/LiteGraphGlobal'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyExtension } from '@/types/comfy'
 
 import { app } from '../../scripts/app'
 import { ComfyWidgets } from '../../scripts/widgets'
@@ -8,8 +9,11 @@ import { ComfyWidgets } from '../../scripts/widgets'
 
 interface SlotDefaultsExtension extends ComfyExtension {
   suggestionsNumber: { value: number } | null
-  slot_types_default_out: Record<string, string[]>
-  slot_types_default_in: Record<string, string[]>
+  slot_types_default_out: Record<
+    string,
+    Array<string | SlotTypeDefaultNodeOpts>
+  >
+  slot_types_default_in: Record<string, Array<string | SlotTypeDefaultNodeOpts>>
   setDefaults(maxNum?: number | null): void
 }
 
@@ -31,22 +35,22 @@ app.registerExtension({
       },
       defaultValue: 5,
       onChange: (newVal) => {
-        this.setDefaults(newVal as number)
+        this.setDefaults(newVal)
       }
     })
   },
   slot_types_default_out: {},
   slot_types_default_in: {},
   async beforeRegisterNodeDef(this: SlotDefaultsExtension, nodeType, nodeData) {
-    var nodeId = nodeData.name
+    const nodeId = nodeData.name
     const inputs = nodeData['input']?.['required'] //only show required inputs to reduce the mess also not logical to create node with optional inputs
     for (const inputKey in inputs) {
-      var input = inputs[inputKey]
+      const input = inputs[inputKey]
       if (typeof input[0] !== 'string') continue
 
-      var type = input[0]
+      const type = input[0]
       if (type in ComfyWidgets) {
-        var customProperties = input[1]
+        const customProperties = input[1]
         if (!customProperties?.forceInput) continue //ignore widgets that don't force input
       }
 
@@ -68,7 +72,7 @@ app.registerExtension({
       )
     }
 
-    var outputs = nodeData['output'] ?? []
+    const outputs = nodeData['output'] ?? []
     for (const el of outputs) {
       const type = el as string
       if (!(type in this.slot_types_default_in)) {
@@ -90,7 +94,7 @@ app.registerExtension({
       }
     }
 
-    var maxNum = this.suggestionsNumber?.value
+    const maxNum = this.suggestionsNumber?.value
     this.setDefaults(maxNum)
   },
   setDefaults(this: SlotDefaultsExtension, maxNum?: number | null) {

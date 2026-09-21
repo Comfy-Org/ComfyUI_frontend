@@ -16,9 +16,9 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 interface RunMissingMediaPipelineOptions {
-  /** Must be the root graph: candidates are keyed by root-relative execution id. */
   rootGraph: LGraph
   silent?: boolean
+  onVerified?: (candidates: MissingMediaCandidate[]) => void
 }
 
 function cacheMediaCandidates(
@@ -33,7 +33,8 @@ function cacheMediaCandidates(
 
 export async function runMissingMediaPipeline({
   rootGraph,
-  silent = false
+  silent = false,
+  onVerified
 }: RunMissingMediaPipelineOptions): Promise<void> {
   const missingMediaStore = useMissingMediaStore()
   const activeWf = useWorkspaceStore().workflow.activeWorkflow
@@ -45,6 +46,7 @@ export async function runMissingMediaPipeline({
 
   if (!candidates.length) {
     cacheMediaCandidates(activeWf, [])
+    onVerified?.([])
     return
   }
 
@@ -65,6 +67,11 @@ export async function runMissingMediaPipeline({
           useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
         }
         cacheMediaCandidates(activeWf, confirmed)
+        onVerified?.(
+          candidates.filter((candidate) =>
+            isMissingMediaCandidateScopeActive(rootGraph, candidate)
+          )
+        )
       })
       .catch((err) => {
         console.warn('[Missing Media Pipeline] Asset verification failed:', err)
@@ -72,7 +79,7 @@ export async function runMissingMediaPipeline({
           severity: 'warn',
           summary: st(
             'toastMessages.missingMediaVerificationFailed',
-            'Failed to verify missing media. Some inputs may not be shown in the Errors tab.'
+            'Failed to verify missing media. Some inputs may not be shown in the Issues tab.'
           ),
           life: 5000
         })
@@ -83,5 +90,6 @@ export async function runMissingMediaPipeline({
       useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
     }
     cacheMediaCandidates(activeWf, confirmed)
+    onVerified?.(candidates)
   }
 }

@@ -1,4 +1,5 @@
 import type { CompositorBBox } from '@/renderer/extensions/compositor/composables/compositorLayerState'
+import type { ImageFileRef } from '@/renderer/extensions/compositor/composables/compositorPaths'
 import { resetCompositorStateWidgets } from '@/renderer/extensions/compositor/composables/compositorWidgets'
 import {
   clearCompositorLayers,
@@ -6,13 +7,14 @@ import {
   setCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeOutputWith } from '@/schemas/apiSchema'
+import type { NodeOutputWith } from '@/platform/remote/comfyui/execution/types'
 import { useExtensionService } from '@/services/extensionService'
 
 type ImageCompositorOutput = NodeOutputWith<{
-  compositor_layers?: Record<string, string>[]
+  compositor_layers?: Partial<ImageFileRef>[]
   compositor_inputs?: string[]
   compositor_bboxes?: (CompositorBBox | null)[]
+  compositor_canvas?: { w: number; h: number }[]
   compositor_state_stale?: boolean[]
 }>
 
@@ -31,20 +33,23 @@ useExtensionService().registerExtension({
     node.onExecuted = function (output: ImageCompositorOutput) {
       onExecuted?.call(this, output)
 
-      const kept = (output.compositor_layers ?? [])
-        .map((layer, index) => [layer, index] as const)
-        .filter(([layer]) => layer?.filename)
-      const layers = kept.map(([layer]) => ({
-        filename: layer.filename,
-        subfolder: layer.subfolder ?? '',
-        type: layer.type ?? 'temp'
-      }))
+      const kept = (output.compositor_layers ?? []).flatMap(
+        ({ filename, subfolder = '', type = 'temp' }, index) =>
+          filename ? [{ layer: { filename, subfolder, type }, index }] : []
+      )
+      const layers = kept.map(({ layer }) => layer)
       const rawBboxes = output.compositor_bboxes
       const bboxes = rawBboxes
-        ? kept.map(([, index]) => rawBboxes[index] ?? null)
+        ? kept.map(({ index }) => rawBboxes[index] ?? null)
         : undefined
       if (layers.length)
-        setCompositorLayers(node, layers, output.compositor_inputs, bboxes)
+        setCompositorLayers(
+          node,
+          layers,
+          output.compositor_inputs,
+          bboxes,
+          output.compositor_canvas?.[0]
+        )
       clearCompositorPreviewOverride(node)
 
       if (output.compositor_state_stale?.[0]) {

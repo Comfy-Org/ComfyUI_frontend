@@ -4,8 +4,11 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Node search box V2', { tag: '@node' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.searchBoxV2.setup()
+  test.use({
+    initialSettings: {
+      'Comfy.LinkRelease.Action': 'search box',
+      'Comfy.LinkRelease.ActionShift': 'search box'
+    }
   })
 
   test('Can open search and add node', async ({ comfyPage }) => {
@@ -60,7 +63,8 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       const { searchBoxV2 } = comfyPage
 
       await searchBoxV2.open()
-      await searchBoxV2.categoryButton('sampling').click()
+      await searchBoxV2.categoryButton('model').click()
+      await searchBoxV2.categoryButton('model/sampling').click()
 
       await expect(searchBoxV2.results.first()).toBeVisible()
     })
@@ -133,8 +137,8 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       const { searchBoxV2 } = comfyPage
       await searchBoxV2.open()
 
-      const samplingCategory = searchBoxV2.categoryButton('sampling')
-      await expect(samplingCategory).toBeVisible()
+      const modelCategory = searchBoxV2.categoryButton('model')
+      await expect(modelCategory).toBeVisible()
       await expect(searchBoxV2.sidebarToggle).toHaveAttribute(
         'aria-expanded',
         'true'
@@ -145,14 +149,14 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
         'aria-expanded',
         'false'
       )
-      await expect(samplingCategory).toBeHidden()
+      await expect(modelCategory).toBeHidden()
 
       await searchBoxV2.sidebarToggle.click()
       await expect(searchBoxV2.sidebarToggle).toHaveAttribute(
         'aria-expanded',
         'true'
       )
-      await expect(samplingCategory).toBeVisible()
+      await expect(modelCategory).toBeVisible()
     })
 
     test('Filter bar scrolls horizontally while the sidebar toggle stays pinned', async ({
@@ -189,7 +193,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
         'aria-expanded',
         'false'
       )
-      await expect(searchBoxV2.categoryButton('sampling')).toBeHidden()
+      await expect(searchBoxV2.categoryButton('model')).toBeHidden()
     })
 
     test('@mobile Clicking outside the sidebar closes it', async ({
@@ -203,7 +207,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
         'aria-expanded',
         'true'
       )
-      await expect(searchBoxV2.categoryButton('sampling')).toBeVisible()
+      await expect(searchBoxV2.categoryButton('model')).toBeVisible()
       await expect(searchBoxV2.sidebarBackdrop).toBeVisible()
 
       // The backdrop spans the full content area, but the sidebar (z-20)
@@ -215,7 +219,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
         'aria-expanded',
         'false'
       )
-      await expect(searchBoxV2.categoryButton('sampling')).toBeHidden()
+      await expect(searchBoxV2.categoryButton('model')).toBeHidden()
       await expect(searchBoxV2.sidebarBackdrop).toBeHidden()
     })
 

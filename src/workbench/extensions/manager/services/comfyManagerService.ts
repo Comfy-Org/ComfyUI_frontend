@@ -80,7 +80,7 @@ export const useComfyManagerService = () => {
         message = 'Could not connect to ComfyUI-Manager'
       } else {
         message =
-          axiosError.response?.data?.message ??
+          axiosError.response?.data.message ??
           `${context} failed with status ${status}`
       }
     }
@@ -93,10 +93,9 @@ export const useComfyManagerService = () => {
     options: {
       errorContext: string
       routeSpecificErrors?: Record<number, string>
-      isQueueOperation?: boolean
     }
   ): Promise<T | null> => {
-    const { errorContext, routeSpecificErrors, isQueueOperation } = options
+    const { errorContext, routeSpecificErrors } = options
 
     // Block service calls if not in NEW_UI state
     if (!isManagerServiceAvailable()) {
@@ -109,7 +108,6 @@ export const useComfyManagerService = () => {
 
     try {
       const response = await requestCall()
-      if (isQueueOperation) await startQueue()
       return response.data
     } catch (err) {
       handleRequestError(err, errorContext, routeSpecificErrors)
@@ -122,10 +120,10 @@ export const useComfyManagerService = () => {
   const startQueue = async (signal?: AbortSignal) => {
     const errorContext = 'Starting ComfyUI-Manager job queue'
     const routeSpecificErrors = {
-      201: 'Created: ComfyUI-Manager job queue is already running'
+      403: GENERIC_SECURITY_ERR_MSG
     }
 
-    return executeRequest<null>(
+    return executeRequest<string>(
       () => managerApiClient.post(ManagerRoute.START_QUEUE, null, { signal }),
       { errorContext, routeSpecificErrors }
     )
@@ -200,9 +198,9 @@ export const useComfyManagerService = () => {
       404: `Not Found: Task could not be queued`
     }
 
-    return executeRequest<null>(
+    return executeRequest<string>(
       () => managerApiClient.post(ManagerRoute.QUEUE_TASK, task, { signal }),
-      { errorContext, routeSpecificErrors, isQueueOperation: true }
+      { errorContext, routeSpecificErrors }
     )
   }
 
@@ -226,7 +224,7 @@ export const useComfyManagerService = () => {
     params: components['schemas']['DisablePackParams'],
     ui_id?: string,
     signal?: AbortSignal
-  ): Promise<null> => {
+  ) => {
     return queueTask('disable', params, ui_id, signal)
   }
 
@@ -234,7 +232,7 @@ export const useComfyManagerService = () => {
     params: components['schemas']['EnablePackParams'],
     ui_id?: string,
     signal?: AbortSignal
-  ): Promise<null> => {
+  ) => {
     return queueTask('enable', params, ui_id, signal)
   }
 
@@ -242,7 +240,7 @@ export const useComfyManagerService = () => {
     params: components['schemas']['UpdatePackParams'],
     ui_id?: string,
     signal?: AbortSignal
-  ): Promise<null> => {
+  ) => {
     return queueTask('update', params, ui_id, signal)
   }
 
@@ -263,13 +261,13 @@ export const useComfyManagerService = () => {
       ui_id: ui_id || uuidv4()
     }
 
-    return executeRequest<null>(
+    return executeRequest<string>(
       () =>
         managerApiClient.post(ManagerRoute.UPDATE_ALL, null, {
           params: queryParams,
           signal
         }),
-      { errorContext, routeSpecificErrors, isQueueOperation: true }
+      { errorContext, routeSpecificErrors }
     )
   }
 
@@ -290,13 +288,13 @@ export const useComfyManagerService = () => {
       ...params
     }
 
-    return executeRequest<null>(
+    return executeRequest<string>(
       () =>
         managerApiClient.post(ManagerRoute.UPDATE_COMFYUI, null, {
           params: queryParams,
           signal
         }),
-      { errorContext, routeSpecificErrors, isQueueOperation: true }
+      { errorContext, routeSpecificErrors }
     )
   }
 

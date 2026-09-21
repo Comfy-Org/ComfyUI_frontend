@@ -2,18 +2,55 @@
   "name": "@comfyorg/ingest-types",
   "version": "1.0.0",
   "description": "Comfy Cloud Ingest API TypeScript types and Zod schemas",
+  "homepage": "https://comfy.org",
+  "license": "MIT",
+  "author": {
+    "name": "Comfy Org",
+    "email": "support@comfy.org",
+    "url": "https://www.comfy.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
+    "directory": "packages/ingest-types"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./zod": "./src/zod.gen.ts"
+    "./zod": "./src/zod.gen.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./zod": {
+        "types": "./dist/zod.gen.d.ts",
+        "import": "./dist/zod.gen.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
   },
   "scripts": {
-    "generate": "openapi-ts && node -e \"const fs=require('fs'); ['src/zod.gen.ts'].forEach(f => fs.writeFileSync(f, fs.readFileSync(f,'utf8').replaceAll(\\\"from 'zod/v3'\\\", \\\"from 'zod'\\\")));\""
-  },
-  "dependencies": {
-    "zod": "catalog:"
+    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
+    "prepack": "pnpm run build",
+    "generate": "openapi-ts && node -e \"const fs=require('fs'); ['src/zod.gen.ts'].forEach(f => fs.writeFileSync(f, fs.readFileSync(f,'utf8').replaceAll(\\\"from 'zod/v3'\\\", \\\"from 'zod'\\\")));\"",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@hey-api/openapi-ts": "0.93.0"
+    "@hey-api/openapi-ts": "0.97.3",
+    "typescript": "catalog:",
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "zod": "catalog:"
   }
 }

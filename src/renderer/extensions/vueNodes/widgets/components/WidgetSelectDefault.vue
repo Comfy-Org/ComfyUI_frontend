@@ -165,6 +165,7 @@ import {
 import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
@@ -326,7 +327,7 @@ const viewportStyle = computed<CSSProperties>(() => ({
 }))
 
 const normalizedModelValue = computed(() =>
-  modelValue.value === undefined ? undefined : String(modelValue.value)
+  modelValue.value == null ? undefined : String(modelValue.value)
 )
 
 const selectedOption = computed(() =>
@@ -339,7 +340,8 @@ const comboboxValue = computed(() => selectedOption.value?.comboboxValue ?? '')
 
 const isInvalid = computed(
   () =>
-    modelValue.value !== undefined &&
+    widgetOptions.value?.values !== undefined &&
+    modelValue.value != null &&
     modelValue.value !== '' &&
     !selectedOption.value
 )
@@ -358,6 +360,7 @@ function selectOption(rekaValue: string | undefined) {
   if (!option) return
 
   modelValue.value = option.rawValue
+  useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   searchQuery.value = ''
   isOpen.value = false
 }

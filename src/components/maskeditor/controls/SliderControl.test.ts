@@ -49,7 +49,7 @@ describe('SliderControl', () => {
   it('should default step to 1 when not provided', () => {
     renderComponent({ min: 0, max: 10, modelValue: 5 })
 
-    expect((screen.getByRole('slider') as HTMLInputElement).step).toBe('1')
+    expect(screen.getByRole<HTMLInputElement>('slider').step).toBe('1')
   })
 
   it('should emit update:modelValue with a number when input changes', () => {

@@ -2,9 +2,9 @@ import type { WebSocketRoute } from '@playwright/test'
 
 import type {
   NodeError,
-  NodeProgressState,
-  PromptResponse
-} from '@/schemas/apiSchema'
+  PromptFailureResponse
+} from '@/platform/remote/comfyui/types'
+import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
@@ -14,6 +14,7 @@ const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 type RunOptions = {
   nodeErrors?: Record<string, NodeError>
   onPromptRequest?: (requestBody: unknown) => void | Promise<void>
+  beforePromptResponse?: (jobId: string) => void | Promise<void>
 }
 
 /**
@@ -77,7 +78,7 @@ export class ExecutionHelper {
    */
   async run(options: RunOptions = {}): Promise<string> {
     const jobId = `test-job-${++this.jobCounter}`
-    const { nodeErrors = {}, onPromptRequest } = options
+    const { nodeErrors = {}, onPromptRequest, beforePromptResponse } = options
 
     let fulfilled!: () => void
     const prompted = new Promise<void>((r) => {
@@ -88,6 +89,7 @@ export class ExecutionHelper {
       PROMPT_ROUTE_PATTERN,
       async (route) => {
         await onPromptRequest?.(route.request().postDataJSON())
+        await beforePromptResponse?.(jobId)
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -110,7 +112,7 @@ export class ExecutionHelper {
   async mockValidationFailure(
     nodeErrors: Record<string, NodeError>
   ): Promise<void> {
-    const response: PromptResponse = {
+    const response: PromptFailureResponse = {
       node_errors: nodeErrors,
       error: {
         type: 'prompt_outputs_failed_validation',
@@ -188,7 +190,7 @@ export class ExecutionHelper {
   executed(
     jobId: string,
     nodeId: string,
-    output: Record<string, unknown>
+    output: Record<string, unknown> | null | undefined
   ): void {
     this.requireWs().send(
       JSON.stringify({

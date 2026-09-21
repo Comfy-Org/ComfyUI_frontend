@@ -1,13 +1,12 @@
-import { datadogRum } from '@datadog/browser-rum'
-import { captureException } from '@sentry/vue'
 import { until, useAsyncState } from '@vueuse/core'
 import axios from 'axios'
 import { defineStore, storeToRefs } from 'pinia'
 
 import { isCloud } from '@/platform/distribution/types'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { CustomNodesI18n } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useUserStore } from '@/stores/userStore'
@@ -16,7 +15,7 @@ import { useUserStore } from '@/stores/userStore'
  * Backends that vendor no custom-node locale files do not implement
  * `/api/i18n`, so a 404 means "no custom-node translations", not a failure.
  */
-async function fetchCustomNodesI18n(): Promise<CustomNodesI18n | undefined> {
+async function fetchCustomNodesI18n() {
   try {
     return await api.getCustomNodesI18n()
   } catch (error) {
@@ -36,13 +35,13 @@ const AUTH_WAIT_RETRY_DELAY_MS = 3_000
  * token or a broken auth response can never hang bootstrap forever.
  *
  * Only isInitialized is awaited — onAuthStateChanged fires with null for
- * signed-out users, which sets isInitialized but not isAuthenticated.
- * Awaiting isAuthenticated here would make every signed-out page load wait
- * 35s and fire a false Sentry timeout. The router guard handles the
- * login redirect for unauthenticated users separately.
+ * signed-out users, so a signed-out load resolves this wait immediately
+ * instead of burning the timeout and firing a false Sentry report. Waiting
+ * for an actual user is a separate, unbounded wait in the caller.
  *
  * Retries once after a short delay; if auth is still unresolved, reports it
- * to Sentry and lets bootstrap continue rather than leaving the caller stuck.
+ * to every observability sink and lets bootstrap continue rather than leaving
+ * the caller stuck.
  */
 async function waitForCloudAuth(): Promise<void> {
   const { isInitialized } = storeToRefs(useAuthStore())
@@ -65,18 +64,7 @@ async function waitForCloudAuth(): Promise<void> {
     try {
       await waitForResolution()
     } catch (retryError) {
-      console.error(
-        '[bootstrapStore] Auth still unresolved after retry; continuing bootstrap without confirmed auth',
-        retryError
-      )
-      const err =
-        retryError instanceof Error ? retryError : new Error(String(retryError))
-      // Report to both Datadog RUM and Sentry so the error surfaces in
-      // whichever observability platform is being monitored.
-      datadogRum.addError(err, { error_type: 'bootstrap_auth_wait_timeout' })
-      captureException(err, {
-        tags: { error_type: 'bootstrap_auth_wait_timeout' }
-      })
+      reportError(retryError, { errorType: 'bootstrap_auth_wait_timeout' })
     }
   }
 }
@@ -101,26 +89,45 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
 
   let storesLoaded = false
 
-  function loadAuthenticatedStores() {
-    if (storesLoaded) return
+  function loadAuthenticatedStores(): Promise<void>[] {
+    if (storesLoaded) return []
     storesLoaded = true
-    void settingStore.load()
-    void workflowStore.loadWorkflows()
+
+    return [
+      bootstrapTracer.settle('bootstrap/settings', () => settingStore.load()),
+      bootstrapTracer.settle('bootstrap/workflows', () =>
+        workflowStore.loadWorkflows()
+      )
+    ]
   }
 
   async function startStoreBootstrap() {
+    void loadI18n()
+
     if (isCloud) {
-      await waitForCloudAuth()
+      await bootstrapTracer.settle('auth-gate/initialized', waitForCloudAuth)
+
+      // Signed-out cloud pages (/cloud/login) must issue no authenticated
+      // request, so bootstrap parks here until the user signs in rather than
+      // loading stores that can only answer 401.
+      const { isAuthenticated } = storeToRefs(useAuthStore())
+      await until(isAuthenticated).toBe(true)
     }
 
     const userStore = useUserStore()
-    await userStore.initialize()
+    await bootstrapTracer.settle('auth-gate/user-store', () =>
+      userStore.initialize()
+    )
 
     const { needsLogin } = storeToRefs(userStore)
-    await until(needsLogin).toBe(false)
+    await bootstrapTracer.settle('auth-gate/needs-login', () =>
+      until(needsLogin).toBe(false)
+    )
 
-    void loadI18n()
-    loadAuthenticatedStores()
+    const storeLoads = loadAuthenticatedStores()
+    void Promise.allSettled(storeLoads).then(() => {
+      bootstrapTracer.milestone('stores-ready')
+    })
   }
 
   return {

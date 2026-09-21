@@ -1,5 +1,9 @@
 import { groupBy } from 'es-toolkit'
-import { hasActivePromotedWidgetConsumer } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import {
+  buildPromotedWidgetExecutionSources,
+  hasActivePromotedWidgetConsumer,
+  resolveActivePromotedWidgetConsumers
+} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -41,11 +45,7 @@ function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
 }
 
-/**
- * The widget a user can actually edit. A linked slot means the value comes
- * from upstream; a promoted host owns the value only while some interior
- * consumer is still live.
- */
+/** The widget a user can actually edit. */
 function isEditableValueOwner(node: LGraphNode, widget: IBaseWidget): boolean {
   const input = node.getSlotFromWidget(widget)
   if (input?.link != null) return false
@@ -74,8 +74,6 @@ export function scanAllMediaCandidates(
   rootGraph: LGraph,
   isCloud: boolean
 ): MissingMediaCandidate[] {
-  if (!rootGraph) return []
-
   const allNodes = collectAllNodes(rootGraph)
   const candidates: MissingMediaCandidate[] = []
 
@@ -91,6 +89,21 @@ export function scanAllMediaCandidates(
   }
 
   return candidates
+}
+
+function resolveMediaMissingState(
+  widget: IComboWidget,
+  value: string,
+  isCloud: boolean
+): boolean | undefined {
+  if (isCloud) return undefined
+  const options = resolveComboValues(widget)
+  if (getAnnotatedMediaPathTypeForDetection(value) === 'output') {
+    return options.includes(value) ? false : undefined
+  }
+  return !getMediaPathDetectionNames(value).some((name) =>
+    options.includes(name)
+  )
 }
 
 /** Scan a single node for missing media candidates (OSS immediate resolution). */
@@ -111,10 +124,6 @@ export function scanNodeMediaCandidates(
   for (const widget of node.widgets) {
     if (!isComboWidget(widget)) continue
 
-    // getInputSpecForWidget projects a promoted host input to its interior
-    // spec itself, so the scan reads schema through the store rather than
-    // walking the subgraph. Media-ness is the cheaper question, so it runs
-    // before the ownership walk.
     const mediaType = mediaTypeFromSpec(
       nodeDefStore.getInputSpecForWidget(node, widget.name)
     )
@@ -124,36 +133,29 @@ export function scanNodeMediaCandidates(
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
 
-    let isMissing: boolean | undefined
-    if (isCloud) {
-      isMissing = undefined
-    } else {
-      const type = getAnnotatedMediaPathTypeForDetection(value)
-      if (type === 'output') {
-        isMissing = undefined
-      } else {
-        const options = resolveComboValues(widget)
-        const detectionNames = getMediaPathDetectionNames(value)
-        const existsInOptions = detectionNames.some((name) =>
-          options.includes(name)
-        )
-        isMissing = !existsInOptions
-      }
-    }
+    const isMissing = resolveMediaMissingState(widget, value, isCloud)
 
     // Label only, and leaf-derived to match missingModelScan: the overlay
     // formats nodeType directly and a SubgraphNode's own type is a UUID.
-    const labelNode =
-      resolvePromotedWidgetSource(rootGraph, node, widget)?.sourceNode ?? node
+    const promotedSource = resolvePromotedWidgetSource(rootGraph, node, widget)
+    const labelNode = promotedSource?.sourceNode ?? node
 
-    candidates.push({
+    const candidate: MissingMediaCandidate = {
       nodeId: executionId,
       nodeType: labelNode.type,
       widgetName: widget.name,
       mediaType,
       name: value,
       isMissing
-    })
+    }
+    if (node.isSubgraphNode()) {
+      const consumers = resolveActivePromotedWidgetConsumers(node, widget.name)
+      candidate.promotedSources = buildPromotedWidgetExecutionSources(
+        executionId,
+        consumers
+      )
+    }
+    candidates.push(candidate)
   }
 
   return candidates
@@ -173,7 +175,6 @@ export function isMissingMediaCandidateScopeActive(
   const widget = node.widgets?.find(
     (candidateWidget) => candidateWidget.name === candidate.widgetName
   )
-  // Removed or renamed while verification was pending: nothing owns the value.
   if (!widget) return false
 
   return widget.value === candidate.name && isEditableValueOwner(node, widget)
@@ -234,8 +235,8 @@ export async function verifyMediaCandidates(
     pathOptions
   )
 
-  let inputAssets: AssetItem[]
-  let generatedAssets: AssetItem[]
+  let inputAssets: readonly AssetItem[]
+  let generatedAssets: readonly AssetItem[]
   try {
     const assetSources = await resolveAssetSources({
       signal,
@@ -351,7 +352,7 @@ function getMediaPathBasename(value: string): string {
 
 function addAssetIdentifiers(
   identifiers: Set<string>,
-  assets: AssetItem[],
+  assets: readonly AssetItem[],
   pathOptions: { allowCompactSuffix: boolean }
 ) {
   for (const asset of assets) {
@@ -363,7 +364,7 @@ function addAssetIdentifiers(
 
 function addAssetHashIdentifiers(
   identifiers: Set<string>,
-  assets: AssetItem[],
+  assets: readonly AssetItem[],
   pathOptions: { allowCompactSuffix: boolean }
 ) {
   for (const asset of assets) {

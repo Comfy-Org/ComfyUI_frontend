@@ -1,19 +1,14 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
+import {
+  captureMcpConnectionTabClick,
+  captureMcpClientTabClick
+} from '../../scripts/posthog'
 import SetupSection from './SetupSection.vue'
 
-const { connectionSpy, clientSpy } = vi.hoisted(() => ({
-  connectionSpy: vi.fn(),
-  clientSpy: vi.fn()
-}))
-
-vi.mock('../../scripts/posthog', () => ({
-  captureMcpConnectionTabClick: connectionSpy,
-  captureMcpClientTabClick: clientSpy
-}))
+vi.mock(import('../../scripts/posthog'))
 
 const MCP_ENDPOINT = 'https://cloud.comfy.org/mcp'
 
@@ -33,11 +28,6 @@ async function selectTab(name: RegExp | string) {
 }
 
 describe('SetupSection', () => {
-  beforeEach(() => {
-    connectionSpy.mockClear()
-    clientSpy.mockClear()
-  })
-
   it('defaults to the cloud connection with the endpoint URL and subscription note', () => {
     renderSetup()
 
@@ -105,10 +95,10 @@ describe('SetupSection', () => {
 
     await selectTab(/Local ComfyUI/)
     await selectTab(/Local ComfyUI/)
-    expect(connectionSpy).toHaveBeenCalledTimes(1)
-    expect(connectionSpy).toHaveBeenCalledWith('local')
+    expect(captureMcpConnectionTabClick).toHaveBeenCalledTimes(1)
+    expect(captureMcpConnectionTabClick).toHaveBeenCalledWith('local')
 
     await selectTab('Cursor')
-    expect(clientSpy).toHaveBeenCalledWith('local-cursor')
+    expect(captureMcpClientTabClick).toHaveBeenCalledWith('local-cursor')
   })
 })

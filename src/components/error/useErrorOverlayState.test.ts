@@ -1,4 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
@@ -7,7 +7,8 @@ import { createI18n } from 'vue-i18n'
 import { useErrorOverlayState } from './useErrorOverlayState'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   MissingPackGroup,
   SwapNodeGroup
@@ -26,15 +27,18 @@ const mockErrorGroups = vi.hoisted(() => ({
 
 const mockAllErrorGroups = mockErrorGroups.allErrorGroups
 
-vi.mock('@/components/rightSidePanel/errors/useErrorGroups', () => ({
-  useErrorGroups: () => mockErrorGroups
-}))
+vi.mock<unknown>(
+  import('@/components/rightSidePanel/errors/useErrorGroups'),
+  () => ({
+    useErrorGroups: () => mockErrorGroups
+  })
+)
 
-vi.mock('@/composables/graph/useNodeErrorFlagSync', () => ({
+vi.mock(import('@/composables/graph/useNodeErrorFlagSync'), () => ({
   useNodeErrorFlagSync: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     isGraphReady: false,
     rootGraph: {
@@ -44,7 +48,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((id: string) => id),
   getActiveGraphNodeIds: vi.fn(() => new Set()),
   getExecutionIdByNode: vi.fn(),
@@ -79,8 +83,7 @@ function makeNodeError(messages: string[]): NodeError {
 }
 
 function mountOverlayState() {
-  const pinia = createPinia()
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   const Harness = defineComponent({
     setup() {
@@ -115,10 +118,12 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -146,10 +151,12 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Required input is missing',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -186,10 +193,12 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Friendly validation title',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -225,10 +234,12 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Generation failed',
         count: 1,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -297,13 +308,15 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'missing_media',
+        severity: 'missing',
         groupKey: 'missing_media',
         displayTitle: 'Media input missing',
         displayMessage: 'A required media input has no file selected.',
         toastTitle: 'Media input missing',
         toastMessage: 'Load Image is missing a required media file.',
         count: 1,
-        priority: 3
+        priority: 3,
+        blockedLastRun: false
       }
     ]
     mountOverlayState()
@@ -357,13 +370,15 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'missing_model',
+        severity: 'missing',
         groupKey: 'missing_model',
         displayTitle: 'Missing Models',
         displayMessage: 'Import a model, or open the node to replace it.',
         toastTitle: 'Model missing',
         toastMessage: 'CheckpointLoaderSimple is missing missing.safetensors.',
         count: 1,
-        priority: 2
+        priority: 2,
+        blockedLastRun: false
       }
     ]
     mountOverlayState()
@@ -382,11 +397,13 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:required_input_missing',
         displayTitle: 'Missing connection',
         displayMessage: 'Required input slots have no connection feeding them.',
         count: 2,
         priority: 1,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -449,13 +466,15 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'missing_model',
+        severity: 'missing',
         groupKey: 'missing_model',
         displayTitle: 'Missing Models',
         displayMessage: 'Import a model, or open the node to replace it.',
         toastTitle: 'Missing models',
         toastMessage: '2 model files are missing.',
         count: 2,
-        priority: 2
+        priority: 2,
+        blockedLastRun: false
       }
     ]
     mountOverlayState()
@@ -468,6 +487,53 @@ describe('useErrorOverlayState', () => {
     expect(screen.getByTestId('message')).toHaveTextContent(
       'Resolve them before running the workflow.'
     )
+  })
+
+  it('hides an open overlay while the issues tab setting is off', async () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'execution',
+        severity: 'error',
+        groupKey: 'execution:KSampler',
+        displayTitle: 'Required input is missing',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false,
+        cards: [
+          {
+            id: '1',
+            title: 'KSampler',
+            errors: [
+              {
+                message: 'Required input is missing',
+                toastTitle: 'Required input missing',
+                toastMessage: 'KSampler is missing a required input: model'
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordNodeErrors({
+      '1': makeNodeError(['Required input is missing'])
+    })
+    executionErrorStore.showErrorOverlay()
+    await nextTick()
+    expect(screen.getByTestId('visible')).toHaveTextContent('true')
+
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+      false
+    await nextTick()
+
+    expect(screen.getByTestId('visible')).toHaveTextContent('false')
+
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    await nextTick()
+
+    expect(screen.getByTestId('visible')).toHaveTextContent('true')
   })
 
   it('does not show when a raw error has no resolved overlay message', async () => {
@@ -488,11 +554,13 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
         displayMessage: 'First group message',
         count: 2,
         priority: 0,
+        blockedLastRun: false,
         cards: [
           {
             id: '1',
@@ -503,11 +571,13 @@ describe('useErrorOverlayState', () => {
       },
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:CLIPTextEncode',
         displayTitle: 'Invalid CLIP input',
         displayMessage: 'Second group message',
         count: 3,
         priority: 1,
+        blockedLastRun: false,
         cards: [
           {
             id: '2',

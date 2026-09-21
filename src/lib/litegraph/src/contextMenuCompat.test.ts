@@ -18,7 +18,7 @@ describe('contextMenuCompat', () => {
       constructor: {
         prototype: LGraphCanvas.prototype
       } as typeof LGraphCanvas
-    } as Partial<LGraphCanvas>)
+    })
 
     // Clear console warnings
     vi.spyOn(console, 'warn').mockImplementation(() => {})

@@ -345,7 +345,7 @@ function onOpacity(percent: number): void {
 }
 
 function isBlendFn(value: unknown): value is BlendFn {
-  return typeof value === 'string' && value in LAYER_MODES
+  return typeof value === 'string' && Object.hasOwn(LAYER_MODES, value)
 }
 
 function onBlendChange(value: AcceptableValue): void {

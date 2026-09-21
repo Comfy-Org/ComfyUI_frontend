@@ -66,12 +66,28 @@ export class Load3DHelper {
     return this.node.getByRole('button', { name: 'Export', exact: true })
   }
 
+  get playAnimationButton(): Locator {
+    return this.node.getByRole('button', { name: 'Play', exact: true })
+  }
+
+  get pauseAnimationButton(): Locator {
+    return this.node.getByRole('button', { name: 'Pause', exact: true })
+  }
+
+  get animationClipButton(): Locator {
+    return this.node.getByRole('button', { name: 'Animation clip' })
+  }
+
   get openViewerButton(): Locator {
     return this.node.getByRole('button', { name: /open in 3d viewer/i })
   }
 
   getUploadButton(label: string): Locator {
     return this.node.getByText(label)
+  }
+
+  getAnimationClipMenuItem(name: string): Locator {
+    return this.menuPanel.getByRole('button', { name, exact: true })
   }
 
   getMenuCategory(name: string): Locator {
@@ -86,20 +102,13 @@ export class Load3DHelper {
       .and(this.node.locator('[aria-pressed]'))
   }
 
-  get gizmoTranslateButton(): Locator {
-    return this.node.getByRole('button', { name: 'Translate' })
+  get gizmoModeMenuButton(): Locator {
+    return this.node.getByTestId(TestIds.load3d.gizmoModeMenu)
   }
 
-  get gizmoRotateButton(): Locator {
-    return this.node.getByRole('button', { name: 'Rotate' })
-  }
-
-  get gizmoScaleButton(): Locator {
-    return this.node.getByRole('button', { name: 'Scale' })
-  }
-
-  get gizmoResetButton(): Locator {
-    return this.node.getByRole('button', { name: 'Reset', exact: true })
+  async selectGizmoMode(name: string): Promise<void> {
+    await this.gizmoModeMenuButton.click()
+    await this.menuPanel.getByRole('button', { name, exact: true }).click()
   }
 
   async openMenu(): Promise<void> {

@@ -525,7 +525,7 @@ describe('SceneModelManager', () => {
       await manager.setupModel(model)
 
       manager.originalModel = new THREE.BufferGeometry()
-      ;(manager.originalModel as THREE.BufferGeometry).setAttribute(
+      manager.originalModel.setAttribute(
         'position',
         new THREE.Float32BufferAttribute([0, 0, 0, 1, 1, 1, 2, 2, 2], 3)
       )

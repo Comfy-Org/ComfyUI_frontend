@@ -12,12 +12,22 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import {
+  AUTH_TELEMETRY_EVENT,
+  SESSION_TELEMETRY_EVENT
+} from '@comfyorg/account-core/telemetry'
+import type {
+  AuthErrorMetadata,
+  AuthFlowAction,
+  AuthMethod
+} from '@comfyorg/account-core/telemetry'
+import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
+
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import type { AuditLog } from '@/services/customerEventsService'
 import type { AppMode } from '@/utils/appMode'
 
-export type AuthMethod = 'email' | 'google' | 'github'
+export type { AuthMethod }
 
 export type PaymentIntentSource =
   | 'subscription_required'
@@ -53,22 +63,7 @@ export interface AuthMetadata {
   utm_campaign?: string
 }
 
-export type AuthFlowAction =
-  | 'email_sign_in'
-  | 'email_sign_up'
-  | 'google_sign_in'
-  | 'google_sign_up'
-  | 'github_sign_in'
-  | 'github_sign_up'
-  | 'password_reset'
-
-/**
- * Metadata for failed authentication attempts
- */
-export interface AuthErrorMetadata {
-  error_code: string
-  auth_action: AuthFlowAction
-}
+export type { AuthErrorMetadata, AuthFlowAction }
 
 export type UnifiedAuthRetryFailureReason =
   | 'missing_bearer'
@@ -76,12 +71,56 @@ export type UnifiedAuthRetryFailureReason =
   | 'remint_failed'
   | 'retry_rejected'
   | 'retry_request_failed'
+  | 'token_unavailable'
 
 export interface UnifiedAuthRetryMetadata {
-  transport: 'axios' | 'fetch'
+  transport: 'axios' | 'fetch' | 'ws'
   outcome: 'succeeded' | 'failed'
   final_status?: number
   failure_reason?: UnifiedAuthRetryFailureReason
+}
+
+export type UnifiedAuthRefreshOutcome = SessionRefreshOutcome
+
+/**
+ * Outcome of one proactive unified Cloud-JWT refresh attempt. This lifecycle
+ * drives session-cookie rotation, so a dead refresh chain breaks every
+ * cookie-authenticated <img>/media load (FE-1595).
+ */
+export interface UnifiedAuthRefreshMetadata {
+  outcome: UnifiedAuthRefreshOutcome
+  retry_count?: number
+}
+
+export interface ImageLoadFailureMetadata {
+  source: 'node_image_preview'
+}
+
+/**
+ * One row per session describing how long startup took and where the time
+ * went. `total_ms` is measured from navigation start, so it is directly
+ * comparable to what a user experiences and can be percentiled across sessions
+ * without joining per-phase events.
+ *
+ * `outcome` keeps the bad sessions in the data:
+ * - `completed` — the loading screen came down normally.
+ * - `failed` — startup threw; the loading screen came down anyway.
+ * - `timed_out` — startup was still running at the watchdog deadline. Emitted
+ *   *in addition to* whichever terminal row eventually follows, so a load that
+ *   hangs is counted even when it never finishes. `pending` names the phases
+ *   still open, which is where the session is stuck.
+ *
+ * Without the `timed_out` row the sessions users complain about are precisely
+ * the ones absent from the data.
+ */
+export interface BootstrapCompleteMetadata {
+  total_ms: number
+  outcome: 'completed' | 'failed' | 'timed_out'
+  phase_count: number
+  /** Per-phase durations, keyed `<namespace>/<phase>` (e.g. `bootstrap/object-info`). */
+  phases: Record<string, number>
+  /** Phases still running when this row was emitted. Only set for `timed_out`. */
+  pending?: string[]
 }
 
 /**
@@ -524,6 +563,45 @@ export interface UiButtonClickMetadata {
 }
 
 /**
+ * In-App Agent message rating metadata (PM-98). `vote` is null when the user retracts a
+ * prior thumb, which the eval pipeline records as a retraction rather than dropping.
+ */
+export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
+  message_id: string
+  vote: 'up' | 'down' | null
+  workflow_id: string | null
+}
+
+export type AgentPanelCloseSource =
+  | 'close_button'
+  | 'workflow_switch'
+  | 'topbar_button'
+export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
+  source: 'restored' | 'topbar_button' | 'automatic_consent'
+}
+export interface AgentPanelClosedMetadata extends Record<string, unknown> {
+  source: AgentPanelCloseSource
+  open_duration_ms: number | null
+}
+export interface AgentEntryButtonClickedMetadata extends Record<
+  string,
+  unknown
+> {
+  resulting_state: 'opened' | 'closed'
+}
+export interface AgentMessageSentMetadata extends Record<string, unknown> {
+  attachment_count: number
+  node_tag_count: number
+}
+export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
+  source: 'mention_picker'
+}
+export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
+  workflow_id: string
+  target: 'active_tab_switch' | 'active_tab_open'
+}
+
+/**
  * Widget (input/parameter) favorite toggle tracking metadata.
  * Used to measure discoverability of the right side panel favoriting feature.
  */
@@ -533,6 +611,22 @@ export interface WidgetFavoriteToggledMetadata {
   widget_type: string
   is_favorited: boolean
   source: 'right_side_panel'
+}
+
+/**
+ * Fired once per duplicate link dropped during workflow load, when the loser
+ * has a *different origin* from the survivor — i.e. a connection the file
+ * recorded is silently discarded, not merely a redundant same-origin copy.
+ * Cloud cannot see the accompanying `console.warn`, so this is the only
+ * signal that a load lost a link. The survivor follows an authoritative
+ * serialized reference: `input.link` for node inputs, `linkIds` priority
+ * order for subgraph boundaries, and document order otherwise. `target`
+ * names the contested input slot.
+ */
+export interface LinkDedupDropMetadata {
+  droppedLinkId: number
+  survivorLinkId: number
+  target: string
 }
 
 /**
@@ -734,6 +828,7 @@ type BillingFailureCategory =
   | 'provider_decline'
   | 'redirect'
   | 'poll_timeout'
+  | 'reconciliation_needed'
   | 'stale_operation'
   | 'rendering'
   | 'unknown'
@@ -896,16 +991,200 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
 }
 
 /**
+ * Checkout-journey lifecycle events for the embedded-checkout rollout.
+ *
+ * These intermediate stages are kept deliberately separate from the terminal
+ * billing taxonomy above (`billing.<operation>.<stage>`): entry, preview, and
+ * Payment Element observations are client observations of progress, never
+ * business success/failure/timeout. They share one frozen journey context so
+ * the two rollout arms can be compared on the same denominator.
+ */
+export const CHECKOUT_JOURNEY_SCHEMA_VERSION = 1
+
+export type CheckoutJourneyArm = 'control' | 'treatment'
+export type CheckoutAssignmentStatus = 'resolved' | 'unavailable'
+export type CheckoutUiMode = 'embedded' | 'hosted' | 'unknown'
+export type CheckoutEntryFlow =
+  | 'initial_subscription'
+  | 'paid_upgrade'
+  | 'topup'
+  | 'other'
+  | 'unknown'
+export type CheckoutEntrySource =
+  | 'pricing'
+  | 'deep_link'
+  | 'recovery'
+  | 'settings_billing'
+  | 'other'
+  | 'unknown'
+type CheckoutElementPhase = 'init' | 'mount' | 'update'
+/** Which Stripe element in the shared group the observation came from. */
+type CheckoutElementKind = 'payment' | 'address'
+type CheckoutSubmitPhase = 'validation' | 'token_creation'
+
+/**
+ * The frozen arm assignment. A resolved assignment always carries an arm; an
+ * unavailable one never does, so an unknown assignment cannot masquerade as a
+ * resolved `control`. Encoded as a discriminated union so the invariant is a
+ * compile-time guarantee rather than a convention.
+ */
+type CheckoutJourneyAssignment =
+  | { assignment_status: 'resolved'; assigned_arm: CheckoutJourneyArm }
+  | { assignment_status: 'unavailable'; assigned_arm?: never }
+
+/**
+ * Non-sensitive entry context frozen at journey creation and replayed on every
+ * journey event.
+ */
+export type CheckoutJourneyContext = {
+  checkout_journey_id: string
+  /** UTC ISO-8601 timestamp captured at common intent, preserved across reload. */
+  checkout_entered_at: string
+  ui_mode?: CheckoutUiMode
+  entry_flow: CheckoutEntryFlow
+  entry_source: CheckoutEntrySource
+  billing_op_id?: string
+} & CheckoutJourneyAssignment
+
+type CheckoutJourneyEntered = { phase: 'entered' }
+type CheckoutJourneyPreviewReady = {
+  phase: 'preview_ready'
+  preview_revision?: string
+}
+type CheckoutJourneyPreviewFailed = {
+  phase: 'preview_failed'
+  failure_category: BillingFailureCategory
+  error_code?: BillingErrorCode
+  preview_revision?: string
+}
+type CheckoutJourneyPaymentElementReady = {
+  phase: 'payment_element_ready'
+  element: CheckoutElementKind
+}
+type CheckoutJourneyPaymentElementFailed = {
+  phase: 'payment_element_failed'
+  element: CheckoutElementKind
+  element_phase: CheckoutElementPhase
+  error_code?: string
+}
+type CheckoutJourneyPaymentSubmitAttempted = {
+  phase: 'payment_submit_attempted'
+}
+type CheckoutJourneyPaymentSubmitFailed = {
+  phase: 'payment_submit_failed'
+  submit_phase: CheckoutSubmitPhase
+  error_code?: string
+}
+type CheckoutJourneySubmitted = { phase: 'submitted' }
+type CheckoutJourneyOperationLinked = {
+  phase: 'operation_linked'
+  billing_op_id: string
+}
+
+export type CheckoutJourneyPhaseEvent =
+  | CheckoutJourneyEntered
+  | CheckoutJourneyPreviewReady
+  | CheckoutJourneyPreviewFailed
+  | CheckoutJourneyPaymentElementReady
+  | CheckoutJourneyPaymentElementFailed
+  | CheckoutJourneyPaymentSubmitAttempted
+  | CheckoutJourneyPaymentSubmitFailed
+  | CheckoutJourneySubmitted
+  | CheckoutJourneyOperationLinked
+
+type CheckoutJourneyPhase = CheckoutJourneyPhaseEvent['phase']
+
+export type CheckoutJourneyTelemetryEvent = CheckoutJourneyContext &
+  CheckoutJourneyPhaseEvent
+
+export type CheckoutJourneyTelemetryEventName =
+  `billing.checkout.${CheckoutJourneyPhase}`
+
+/**
+ * The wire name for every phase. Typed as a total `Record` over the phase
+ * union, so a phase added to the union without a name here fails to compile —
+ * and so the runtime list below can never drift from the emitted names.
+ */
+export const CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE: Record<
+  CheckoutJourneyPhase,
+  CheckoutJourneyTelemetryEventName
+> = {
+  entered: 'billing.checkout.entered',
+  preview_ready: 'billing.checkout.preview_ready',
+  preview_failed: 'billing.checkout.preview_failed',
+  payment_element_ready: 'billing.checkout.payment_element_ready',
+  payment_element_failed: 'billing.checkout.payment_element_failed',
+  payment_submit_attempted: 'billing.checkout.payment_submit_attempted',
+  payment_submit_failed: 'billing.checkout.payment_submit_failed',
+  submitted: 'billing.checkout.submitted',
+  operation_linked: 'billing.checkout.operation_linked'
+}
+
+export function getCheckoutJourneyTelemetryEventName(
+  event: CheckoutJourneyTelemetryEvent
+): CheckoutJourneyTelemetryEventName {
+  return CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE[event.phase]
+}
+
+export function getCheckoutJourneyTelemetryEventPayload(
+  event: CheckoutJourneyTelemetryEvent
+) {
+  return {
+    schema_version: CHECKOUT_JOURNEY_SCHEMA_VERSION,
+    phase: event.phase,
+    checkout_journey_id: event.checkout_journey_id,
+    checkout_entered_at: event.checkout_entered_at,
+    assignment_status: event.assignment_status,
+    entry_flow: event.entry_flow,
+    entry_source: event.entry_source,
+    ...(event.assigned_arm !== undefined && {
+      assigned_arm: event.assigned_arm
+    }),
+    ...(event.ui_mode !== undefined && { ui_mode: event.ui_mode }),
+    ...(event.billing_op_id !== undefined && {
+      billing_op_id: event.billing_op_id
+    }),
+    ...('preview_revision' in event &&
+      event.preview_revision !== undefined && {
+        preview_revision: event.preview_revision
+      }),
+    ...('failure_category' in event && {
+      failure_category: event.failure_category
+    }),
+    ...('error_code' in event &&
+      event.error_code !== undefined && { error_code: event.error_code }),
+    ...('element' in event && { element: event.element }),
+    ...('element_phase' in event && { element_phase: event.element_phase }),
+    ...('submit_phase' in event && { submit_phase: event.submit_phase })
+  }
+}
+
+type CheckoutJourneyTelemetryEventPayload = ReturnType<
+  typeof getCheckoutJourneyTelemetryEventPayload
+>
+
+export interface FetchTimeoutMetadata {
+  route: string
+  method: string
+  timeout_ms: number
+}
+
+/**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
  */
 export interface TelemetryProvider {
+  trackFeatureFlagEvaluation?(key: string, value: unknown): void
+
   // Authentication flow events
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
   trackAuthFailed?(metadata: AuthErrorMetadata): void
   trackUnifiedAuthRetry?(metadata: UnifiedAuthRetryMetadata): void
+  trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
+  trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
   trackUserLoggedIn?(): void
+  trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
 
   // Subscription flow events
   trackSubscription?(
@@ -931,10 +1210,8 @@ export interface TelemetryProvider {
 
   trackBillingEvent?(event: BillingTelemetryEvent): void
 
-  // Credit top-up tracking (composition with internal utilities)
-  startTopupTracking?(): void
-  checkForCompletedTopup?(events: AuditLog[] | undefined | null): boolean
-  clearTopupTracking?(): void
+  /** Emit a checkout-journey lifecycle event to this provider. */
+  trackCheckoutJourneyEvent?(event: CheckoutJourneyTelemetryEvent): void
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
@@ -1009,6 +1286,17 @@ export interface TelemetryProvider {
   // Generic UI button click events
   trackUiButtonClicked?(metadata: UiButtonClickMetadata): void
 
+  // In-App Agent message rating (PM-98)
+  trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
+  trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
+  trackAgentPanelClosed?(metadata: AgentPanelClosedMetadata): void
+  trackAgentEntryButtonClicked?(metadata: AgentEntryButtonClickedMetadata): void
+  trackAgentCloseButtonClicked?(): void
+  trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
+  trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
+  trackAgentAttachButtonClicked?(): void
+  trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
 
@@ -1020,8 +1308,14 @@ export interface TelemetryProvider {
     metadata: NamedValuesShadowDiffSummaryMetadata
   ): void
 
+  // Link deduplication diagnostics
+  trackLinkDedupDrop?(metadata: LinkDedupDropMetadata): void
+
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
+
+  // Network error events
+  trackFetchTimeout?(metadata: FetchTimeoutMetadata): void
 }
 
 /**
@@ -1040,12 +1334,16 @@ export type TelemetryDispatcher = Required<TelemetryProvider>
  */
 export const TelemetryEvents = {
   // Authentication Flow
-  USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
-  USER_AUTH_COMPLETED: 'app:user_auth_completed',
-  USER_AUTH_FAILED: 'app:user_auth_failed',
+  USER_SIGN_UP_OPENED: AUTH_TELEMETRY_EVENT.signUpOpened,
+  USER_AUTH_COMPLETED: AUTH_TELEMETRY_EVENT.authCompleted,
+  USER_AUTH_FAILED: AUTH_TELEMETRY_EVENT.authFailed,
   USER_LOGGED_IN: 'app:user_logged_in',
   UNIFIED_AUTH_RETRY_SUCCEEDED: 'auth.unified.request_retry.succeeded',
   UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
+  UNIFIED_AUTH_REFRESH_SUCCEEDED: SESSION_TELEMETRY_EVENT.refreshSucceeded,
+  UNIFIED_AUTH_REFRESH_FAILED: SESSION_TELEMETRY_EVENT.refreshFailed,
+  IMAGE_LOAD_FAILED: 'app:image_load_failed',
+  BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
@@ -1158,6 +1456,17 @@ export const TelemetryEvents = {
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
+  // In-App Agent
+  AGENT_MESSAGE_FEEDBACK: 'app:agent_message_feedback',
+  AGENT_PANEL_OPENED: 'app:agent_panel_opened',
+  AGENT_PANEL_CLOSED: 'app:agent_panel_closed',
+  AGENT_ENTRY_BUTTON_CLICKED: 'app:agent_entry_button_clicked',
+  AGENT_CLOSE_BUTTON_CLICKED: 'app:agent_close_button_clicked',
+  AGENT_MESSAGE_SENT: 'app:agent_message_sent',
+  AGENT_NODE_TAGGED: 'app:agent_node_tagged',
+  AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
+  AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
 
@@ -1165,12 +1474,19 @@ export const TelemetryEvents = {
   NAMED_VALUES_SHADOW_DIFF_MISMATCH: 'app:named_values_shadow_diff_mismatch',
   NAMED_VALUES_SHADOW_DIFF_SUMMARY: 'app:named_values_shadow_diff_summary',
 
+  // Link deduplication diagnostics
+  LINK_DEDUP_DROP: 'app:link_dedup_drop',
+
   // Page View
-  PAGE_VIEW: 'app:page_view'
+  PAGE_VIEW: 'app:page_view',
+
+  // Network
+  FETCH_TIMEOUT: 'app:fetch_timeout'
 } as const
 
 export type TelemetryEventName =
-  (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+  | (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+  | CheckoutJourneyTelemetryEventName
 
 export const OnboardingTourEvents: Record<
   OnboardingTourStage,
@@ -1221,6 +1537,9 @@ export type TelemetryEventProperties =
   | OnboardingTourMetadata
   | AuthErrorMetadata
   | UnifiedAuthRetryMetadata
+  | UnifiedAuthRefreshMetadata
+  | ImageLoadFailureMetadata
+  | BootstrapCompleteMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
@@ -1244,6 +1563,7 @@ export type TelemetryEventProperties =
   | WidgetFavoriteToggledMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata
+  | LinkDedupDropMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata
@@ -1257,3 +1577,5 @@ export type TelemetryEventProperties =
   | SubscriptionSuccessMetadata
   | WorkspaceInviteFailedMetadata
   | BillingTelemetryEvent
+  | CheckoutJourneyTelemetryEventPayload
+  | FetchTimeoutMetadata

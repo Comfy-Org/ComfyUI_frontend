@@ -1,6 +1,6 @@
 <template>
   <div class="server-config-panel flex flex-col gap-2">
-    <Message v-if="modifiedConfigs.length > 0" severity="info" pt:text="w-full">
+    <Message v-if="modifiedConfigs.length > 0" severity="info">
       <p>
         {{ $t('serverConfig.modifiedConfigs') }}
       </p>
@@ -18,7 +18,7 @@
         </Button>
       </div>
     </Message>
-    <Message v-if="commandLineArgs" severity="secondary" pt:text="w-full">
+    <Message v-if="commandLineArgs" severity="secondary">
       <template #icon>
         <i class="icon-[lucide--terminal] text-xl font-bold" />
       </template>
@@ -38,7 +38,7 @@
       v-for="([label, items], i) in Object.entries(serverConfigsByCategory)"
       :key="label"
     >
-      <Divider v-if="i > 0" />
+      <div v-if="i > 0" class="my-4 border-t border-interface-stroke" />
       <h3>{{ $t(`serverConfigCategories.${label}`, label) }}</h3>
       <div v-for="item in items" :key="item.name" class="mb-4">
         <FormItem
@@ -56,13 +56,12 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Divider from 'primevue/divider'
-import Message from 'primevue/message'
 import { onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'

@@ -23,6 +23,7 @@
     :counted-step-idx="tour.countedStepIdx"
     :counted-steps-total="tour.countedStepsTotal"
     :waiting-for-target="tour.waitingForTarget"
+    :step-settled="tour.stepSettled"
     @advance="tour.next"
     @back="tour.back"
     @skip="tour.skip"

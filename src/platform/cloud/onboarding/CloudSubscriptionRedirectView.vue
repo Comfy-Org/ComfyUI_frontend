@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
-import { performTeamSubscriptionCheckout } from '@/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { getPricingCheckoutSelection } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
+import type { CheckoutTierKey } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
 
@@ -19,18 +20,31 @@ function isBillingCycle(value: string): value is BillingCycle {
 }
 
 // Only paid personal tiers can be checked out via this redirect.
-function isCheckoutTierKey(value: string): value is TierKey {
-  return ['standard', 'creator', 'pro', 'founder'].includes(value)
+function isCheckoutTierKey(value: string): value is CheckoutTierKey {
+  return ['standard', 'creator', 'pro'].includes(value)
+}
+
+function isPaidPersonalTierKey(
+  value: string
+): value is Exclude<TierKey, 'free'> {
+  return isCheckoutTierKey(value) || value === 'founder'
 }
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { reportError, accessBillingPortal } = useAuthActions()
+const { reportError } = useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const { showPricingTable } = useSubscriptionDialog()
 
-const { canAccessSubscriptionFeatures, isInitialized, initialize } =
-  useBillingContext()
+const {
+  canAccessSubscriptionFeatures,
+  isInitialized,
+  teamCreditStops,
+  initialize,
+  fetchPlans,
+  manageSubscription
+} = useBillingContext()
 
 const selectedTierKey = ref<TierKey | null>(null)
 
@@ -79,12 +93,10 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     ? cycleParam
     : 'monthly'
 
-  // Team is a per-credit plan picked on a slider, so it carries a `stop` (the
-  // chosen credit commitment) instead of a tier and checks out through the
-  // workspace billing endpoint rather than the personal one.
+  let stopId: string | null = null
   if (tierKeyParam === 'team') {
     const rawStop = route.query.stop
-    const stopId =
+    stopId =
       typeof rawStop === 'string'
         ? rawStop
         : Array.isArray(rawStop)
@@ -95,34 +107,57 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
       return
     }
     isTeamCheckout.value = true
-    await performTeamSubscriptionCheckout(stopId, billingCycle, {
-      paymentIntentSource: 'deep_link'
-    })
-    return
-  }
-
-  if (!isCheckoutTierKey(tierKeyParam)) {
+  } else if (!isPaidPersonalTierKey(tierKeyParam)) {
     await router.push('/')
     return
+  } else {
+    selectedTierKey.value = tierKeyParam
   }
-
-  selectedTierKey.value = tierKeyParam
 
   if (!isInitialized.value) {
     await initialize()
   }
 
   if (canAccessSubscriptionFeatures.value) {
-    await accessBillingPortal(undefined, false)
-  } else {
-    await performSubscriptionCheckout(tierKeyParam, billingCycle, {
-      openInNewTab: false,
-      paymentIntentSource: 'deep_link'
-    })
+    await manageSubscription()
+    return
   }
+
+  if (isPaidPersonalTierKey(tierKeyParam)) {
+    if (!isCheckoutTierKey(tierKeyParam)) {
+      showPricingTable({ reason: 'deep_link', planMode: 'personal' })
+      return
+    }
+    showPricingTable({
+      reason: 'deep_link',
+      planMode: 'personal',
+      initialCheckout: {
+        planMode: 'personal',
+        tierKey: tierKeyParam,
+        billingCycle
+      }
+    })
+    return
+  }
+
+  if (!teamCreditStops.value) {
+    await fetchPlans().catch(reportError)
+  }
+  const initialCheckout = getPricingCheckoutSelection(
+    tierKeyParam,
+    stopId,
+    billingCycle,
+    teamCreditStops.value
+  )
+  showPricingTable({
+    reason: 'deep_link',
+    planMode: 'team',
+    initialCheckout
+  })
 }, reportError)
 
 onMounted(() => {
+  document.getElementById('splash-loader')?.remove()
   void runRedirect()
 })
 </script>
@@ -147,7 +182,7 @@ onMounted(() => {
           })
         }}
       </p>
-      <ProgressSpinner v-if="planLabel" class="size-8" stroke-width="4" />
+      <Spinner v-if="planLabel" class="size-8" />
       <Button
         v-if="planLabel"
         as="a"
