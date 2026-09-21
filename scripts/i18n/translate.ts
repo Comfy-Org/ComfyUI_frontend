@@ -152,15 +152,22 @@ export function createOpenAiTranslator(
       .strict()
     let deferralReason = 'the request was not attempted'
     for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
-      const response = await client.responses.create({
-        model: options.model,
-        reasoning: { effort: options.reasoningEffort },
-        store: false,
-        text: { format: zodTextFormat(schema, 'translations') },
-        instructions: buildSystemPrompt(locale, options.glossary),
-        input: JSON.stringify({ items })
-      })
-      options.onUsage?.(response.usage)
+      const response = await client.responses
+        .create({
+          model: options.model,
+          reasoning: { effort: options.reasoningEffort },
+          store: false,
+          text: { format: zodTextFormat(schema, 'translations') },
+          instructions: buildSystemPrompt(locale, options.glossary),
+          input: JSON.stringify({ items })
+        })
+        .catch((error: unknown) => {
+          if (!(error instanceof SyntaxError)) throw error
+          deferralReason = error.message
+          return undefined
+        })
+      options.onUsage?.(response?.usage)
+      if (!response) continue
       if (
         response.status === 'incomplete' &&
         response.incomplete_details?.reason === 'max_output_tokens'

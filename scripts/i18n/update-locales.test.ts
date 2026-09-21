@@ -731,6 +731,46 @@ describe('createOpenAiTranslator', () => {
     }
   )
 
+  it('recovers from malformed HTTP JSON and reports unavailable usage', async () => {
+    const usages: OpenAiResponse['usage'][] = []
+    const usage = {
+      input_tokens: 10,
+      output_tokens: 4,
+      total_tokens: 14,
+      input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 },
+      output_tokens_details: { reasoning_tokens: 2 }
+    }
+    const { translate, callCount } = translatorFor(
+      [
+        new Response('{', {
+          headers: { 'content-type': 'application/json' }
+        }),
+        response('{"1":"Bonjour {name}","2":"Au revoir {name}"}', { usage })
+      ],
+      { onUsage: (usage) => usages.push(usage) }
+    )
+    await expect(translate(locale, items)).resolves.toEqual({
+      '1': 'Bonjour {name}',
+      '2': 'Au revoir {name}'
+    })
+    expect(usages).toEqual([undefined, usage])
+    expect(callCount()).toBe(2)
+  })
+
+  it('defers malformed HTTP JSON after one retry', async () => {
+    const { translate, callCount } = translatorFor(
+      () =>
+        new Response('{', {
+          headers: { 'content-type': 'application/json' }
+        })
+    )
+    await expect(translate(locale, items)).resolves.toEqual({})
+    expect(callCount()).toBe(2)
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('deferring 2 strings for retry')
+    )
+  })
+
   it.for([
     {
       name: 'content filtering',
