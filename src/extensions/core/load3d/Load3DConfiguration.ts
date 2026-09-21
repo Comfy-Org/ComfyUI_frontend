@@ -21,6 +21,7 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 
 type Load3DConfigurationSettings = {
   loadFolder: string
@@ -38,20 +39,6 @@ type Load3DConfigurationSettings = {
    * re-renders at the new state.
    */
   onSceneInvalidated?: () => void
-}
-
-const ANNOTATED_FILENAME_PATTERN = / \[(input|output|temp)\]$/
-
-export function parseAnnotatedFilename(
-  rawValue: string,
-  fallbackFolder: string
-): { filename: string; folder: string } {
-  const match = ANNOTATED_FILENAME_PATTERN.exec(rawValue)
-  if (!match) return { filename: rawValue, folder: fallbackFolder }
-  return {
-    filename: rawValue.slice(0, match.index),
-    folder: match[1]
-  }
 }
 
 const DEFAULT_GIZMO: GizmoConfig = {
@@ -131,7 +118,7 @@ class Load3DConfiguration {
 
   private setupModelHandlingForSaveMesh(
     filePath: string,
-    loadFolder: string,
+    loadFolder: 'input' | 'output' | 'temp',
     silentOnNotFound: boolean
   ) {
     const onModelWidgetUpdate = this.createModelUpdateHandler(
@@ -293,7 +280,7 @@ class Load3DConfiguration {
         return
       }
 
-      const { filename, folder } = parseAnnotatedFilename(
+      const { filepath: filename, rootFolder: folder } = parseAnnotatedPath(
         value as string,
         loadFolder
       )

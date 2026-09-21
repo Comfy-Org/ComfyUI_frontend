@@ -42,18 +42,14 @@ const createOutputs = (
   type: ResultItemType,
   isAnimated: boolean
 ): ExecutedWsMessage['output'] => {
-  const parsedFilenames = filenames.map((filename) =>
-    parseAnnotatedPath(filename, type)
-  )
   return {
-    images: parsedFilenames.map(({ filepath, rootFolder }) => ({
-      type: rootFolder,
-      ...parseFilePath(filepath)
-    })),
-    animated: parsedFilenames.map(
-      ({ filepath }) =>
+    images: filenames.map((image) => ({ type, ...parseFilePath(image) })),
+    animated: filenames.map((image) => {
+      const { filepath } = parseAnnotatedPath(image, type)
+      return (
         isAnimated && (filepath.endsWith('.webp') || filepath.endsWith('.png'))
-    )
+      )
+    })
   }
 }
 
@@ -144,7 +140,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const previewParam = getPreviewParam(node, outputs)
 
     return outputs.images.map((image) => {
-      const params = new URLSearchParams(image)
+      const filename = image.filename ?? ''
+      const { filepath, rootFolder } = parseAnnotatedPath(filename, image.type)
+      const params = new URLSearchParams({
+        ...image,
+        filename: node.comfyClass === 'LoadImageOutput' ? filename : filepath,
+        type: rootFolder
+      })
       return api.apiURL(`/view?${params}${previewParam}${rand}`)
     })
   }

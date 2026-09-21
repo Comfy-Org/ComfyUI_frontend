@@ -3,12 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
-import Load3DConfiguration, {
-  parseAnnotatedFilename
-} from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { ComfyApi } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import type {
   CameraConfig,
   GizmoConfig,
@@ -383,46 +382,46 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   })
 })
 
-describe('parseAnnotatedFilename', () => {
+describe('parseAnnotatedPath', () => {
   it('strips a [output] suffix and switches to the output folder', () => {
-    expect(parseAnnotatedFilename('foo.glb [output]', 'input')).toEqual({
-      filename: 'foo.glb',
-      folder: 'output'
+    expect(parseAnnotatedPath('foo.glb [output]', 'input')).toEqual({
+      filepath: 'foo.glb',
+      rootFolder: 'output'
     })
   })
 
   it('strips a [input] suffix and switches to the input folder', () => {
-    expect(parseAnnotatedFilename('sub/foo.glb [input]', 'output')).toEqual({
-      filename: 'sub/foo.glb',
-      folder: 'input'
+    expect(parseAnnotatedPath('sub/foo.glb [input]', 'output')).toEqual({
+      filepath: 'sub/foo.glb',
+      rootFolder: 'input'
     })
   })
 
   it('strips a [temp] suffix and switches to the temp folder', () => {
-    expect(parseAnnotatedFilename('foo.glb [temp]', 'input')).toEqual({
-      filename: 'foo.glb',
-      folder: 'temp'
+    expect(parseAnnotatedPath('foo.glb [temp]', 'input')).toEqual({
+      filepath: 'foo.glb',
+      rootFolder: 'temp'
     })
   })
 
   it('returns the value unchanged with the fallback folder when unannotated', () => {
-    expect(parseAnnotatedFilename('foo.glb', 'input')).toEqual({
-      filename: 'foo.glb',
-      folder: 'input'
+    expect(parseAnnotatedPath('foo.glb', 'input')).toEqual({
+      filepath: 'foo.glb',
+      rootFolder: 'input'
     })
   })
 
   it('does not strip a non-folder annotation', () => {
-    expect(parseAnnotatedFilename('foo.glb [draft]', 'input')).toEqual({
-      filename: 'foo.glb [draft]',
-      folder: 'input'
+    expect(parseAnnotatedPath('foo.glb [draft]', 'input')).toEqual({
+      filepath: 'foo.glb [draft]',
+      rootFolder: 'input'
     })
   })
 
   it('only matches a trailing annotation, not one in the middle', () => {
-    expect(parseAnnotatedFilename('foo [output] bar.glb', 'input')).toEqual({
-      filename: 'foo [output] bar.glb',
-      folder: 'input'
+    expect(parseAnnotatedPath('foo [output] bar.glb', 'input')).toEqual({
+      filepath: 'foo [output] bar.glb',
+      rootFolder: 'input'
     })
   })
 })

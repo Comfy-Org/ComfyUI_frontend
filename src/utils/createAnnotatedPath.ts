@@ -25,8 +25,8 @@ type AnnotatedPathOptions = {
 
 export function parseAnnotatedPath(
   filepath: string,
-  fallbackRoot: ResultItemType = IMPLICIT_ASSET_ROOT
-): { filepath: string; rootFolder: ResultItemType } {
+  fallbackRoot: string = IMPLICIT_ASSET_ROOT
+): { filepath: string; rootFolder: string } {
   const match = ANNOTATION_SUFFIX.exec(filepath)
   if (!match) return { filepath, rootFolder: fallbackRoot }
 
