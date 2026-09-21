@@ -35,7 +35,7 @@ import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { createOpCoalescer } from './opCoalescer'
-import type { BatchOutcome, OpsResultView } from './opSender'
+import type { BatchOutcome, OpSender, OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
@@ -103,6 +103,20 @@ function updateNodeIds(update: Uint8Array): NodeId[] {
 }
 
 /**
+ * How long a retained 'unconfirmed'/'unacknowledged' delete keeps suppressing
+ * its node from the reconcile even while the doc still shows it. There is no
+ * event in this doc-sync system that certifies "the host's answer to this
+ * specific op is now settled one way or the other" - a resubscribe's catch-up
+ * frame resyncs the whole doc, not that one op, and a busy channel may never
+ * resubscribe at all. Absent that signal, this reuses `STALE_AFTER_MS`, the
+ * same recency budget the lifecycle module already trusts a live channel to
+ * reflect real state within, rather than inventing an unrelated bound: once
+ * it elapses since settle, the reconcile stops trusting an unresolved intent
+ * over the doc's own view, accepting the small resurrect risk that reopens.
+ */
+const PENDING_DELETE_EXPIRY_MS = STALE_AFTER_MS
+
+/**
  * Whether a settled delete_node op (by its wire `opId`) must keep
  * suppressing its node from the reconcile: 'acknowledged' only if the
  * host's own result named it as applied (not skipped - a host rejection
@@ -110,12 +124,49 @@ function updateNodeIds(update: Uint8Array): NodeId[] {
  * 'unacknowledged' unconditionally, since the batch left the transport at
  * least once and the host may have applied it without a confirming result.
  * 'undeliverable' never carried the batch at all, so nothing here says
- * otherwise - see ADR CRDT-WRITE-0035.
+ * otherwise - see ADR CRDT-WRITE-0035. Retention is bounded by
+ * `PENDING_DELETE_EXPIRY_MS`, not indefinite.
  */
 function retainsDeleteIntent(outcome: BatchOutcome, opId: string): boolean {
   if (outcome.state === 'acknowledged')
     return outcome.result.applied.includes(opId)
   return outcome.state === 'unconfirmed' || outcome.state === 'unacknowledged'
+}
+
+/**
+ * Drops a workflow's retained deletes that the doc now agrees are gone or
+ * whose expiry has passed, then drops the workflow's own entry once nothing
+ * is left - so an idle workflow does not keep an empty `Map` around forever.
+ * Returns the (possibly now-absent) remaining entry for the caller to read.
+ */
+function pruneConfirmedDeletes(
+  confirmedDeletes: Map<string, Map<string, number>>,
+  workflowId: string,
+  docNodeIds: ReadonlySet<string>
+): Map<string, number> | undefined {
+  const deletes = confirmedDeletes.get(workflowId)
+  if (!deletes) return undefined
+  const now = Date.now()
+  for (const [id, expiresAt] of deletes) {
+    if (!docNodeIds.has(id) || now >= expiresAt) deletes.delete(id)
+  }
+  if (deletes.size === 0) {
+    confirmedDeletes.delete(workflowId)
+    return undefined
+  }
+  return deletes
+}
+
+/** Node ids a delete_node op targets in every one of the sender's own unsettled batches for `workflowId` - these have no settled outcome yet, so they are not in `confirmedDeletes` at all. */
+function pendingSenderDeletes(sender: OpSender, workflowId: string): string[] {
+  const nodeIds: string[] = []
+  for (const batch of sender.pendingOps()) {
+    if (batch.workflowId !== workflowId) continue
+    for (const op of batch.ops) {
+      if (op.op === 'delete_node') nodeIds.push(String(op.node_id))
+    }
+  }
+  return nodeIds
 }
 
 function emitPendingMaterializations(
@@ -309,28 +360,19 @@ function startAgentCrdtFollower(
   )
   const tabId = createUuidv4()
   // Per-workflow doc node ids whose human delete is pending or of unknown
-  // outcome: applied but its effect frame has not yet removed them from the
-  // doc ('acknowledged'), or transmitted at least once with a host outcome
-  // that is itself unresolved ('unconfirmed' / 'unacknowledged'). Kept
-  // pending for that workflow's reconcile so neither the result-to-effect
-  // window nor an outcome the sender could not confirm can resurrect them.
-  // Node ids are graph-local, not global, so a set shared across workflows
-  // would let workflow A's delete of node `1` suppress workflow B's own
-  // unrelated node `1` the moment the follower retargets - each workflow
-  // gets its own set. Two outcomes are deliberately excluded: a host
-  // rejection ('acknowledged' with the op in `skipped`, not `applied`),
-  // since the node legitimately still exists there, and 'undeliverable',
-  // since the transport never carried it at all - the host is certain to
-  // still have the node, with no later frame that could ever say otherwise,
-  // so retaining it would hide the node indefinitely rather than for the
-  // bounded window a real, unconfirmed delivery resolves on its own (ADR
-  // CRDT-WRITE-0035). Self-cleans in `pendingHumanDeletes` once that
-  // workflow's own document agrees the node is gone.
-  const confirmedDeletes = new Map<string, Set<string>>()
-  const confirmedDeletesFor = (workflowId: string): Set<string> => {
+  // outcome (see `retainsDeleteIntent`), each mapped to the absolute time its
+  // retention expires. Scoped per workflow because node ids are graph-local,
+  // not global - a set shared across workflows would let workflow A's delete
+  // of node `1` suppress workflow B's own unrelated node `1` the moment the
+  // follower retargets. Retention ends the earlier of the doc agreeing the
+  // node is gone, or `PENDING_DELETE_EXPIRY_MS` elapsing - see that constant
+  // and ADR CRDT-WRITE-0035 for why an unconfirmed delete cannot rely on the
+  // doc alone. Both exits are applied together in `pruneConfirmedDeletes`.
+  const confirmedDeletes = new Map<string, Map<string, number>>()
+  const confirmedDeletesFor = (workflowId: string): Map<string, number> => {
     let deletes = confirmedDeletes.get(workflowId)
     if (!deletes) {
-      deletes = new Set()
+      deletes = new Map()
       confirmedDeletes.set(workflowId, deletes)
     }
     return deletes
@@ -362,30 +404,29 @@ function startAgentCrdtFollower(
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: (outcome) => {
       if (outcome.workflowId !== null) {
-        const deletes = confirmedDeletesFor(outcome.workflowId)
+        const retainedNodeIds: string[] = []
         for (const op of outcome.ops) {
           if (op.op === 'delete_node' && retainsDeleteIntent(outcome, op.op_id))
-            deletes.add(String(op.node_id))
+            retainedNodeIds.push(String(op.node_id))
+        }
+        if (retainedNodeIds.length > 0) {
+          const deletes = confirmedDeletesFor(outcome.workflowId)
+          const expiresAt = Date.now() + PENDING_DELETE_EXPIRY_MS
+          for (const nodeId of retainedNodeIds) deletes.set(nodeId, expiresAt)
         }
       }
       recordDevEvent('human_ops_settled', outcome)
     }
   })
   const pendingHumanDeletes = (workflowId: string): ReadonlySet<string> => {
-    const docNodeIds = currentDocNodeIds()
-    const deletes = confirmedDeletes.get(workflowId)
-    if (deletes) {
-      for (const id of deletes) {
-        if (!docNodeIds.has(id)) deletes.delete(id)
-      }
-    }
-    const pending = new Set(deletes)
-    for (const batch of sender.pendingOps()) {
-      if (batch.workflowId !== workflowId) continue
-      for (const op of batch.ops) {
-        if (op.op === 'delete_node') pending.add(String(op.node_id))
-      }
-    }
+    const deletes = pruneConfirmedDeletes(
+      confirmedDeletes,
+      workflowId,
+      currentDocNodeIds()
+    )
+    const pending = new Set(deletes?.keys())
+    for (const nodeId of pendingSenderDeletes(sender, workflowId))
+      pending.add(nodeId)
     return pending
   }
   const projection = new AgentCrdtProjection(
