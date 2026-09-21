@@ -150,15 +150,19 @@ describe('usePricingTableUrlLoader', () => {
 
   it('rechecks permission after capabilities initialize', async () => {
     mockRouteQuery.value = { pricing: 'team' }
-    mockInitializeCapabilities.mockImplementation(async () => {
-      mockPermissions.value = { canManageSubscription: false }
-    })
+    vi.mocked(useBillingCapabilities().initialize).mockImplementation(
+      async () => {
+        mockPermissions.value = { canManageSubscription: false }
+      }
+    )
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockInitializeCapabilities).toHaveBeenCalledOnce()
-    expect(mockFetchPlans).not.toHaveBeenCalled()
+    expect(
+      vi.mocked(useBillingCapabilities().initialize)
+    ).toHaveBeenCalledOnce()
+    expect(vi.mocked(useBillingContext().fetchPlans)).not.toHaveBeenCalled()
     expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
 
@@ -169,14 +173,14 @@ describe('usePricingTableUrlLoader', () => {
       cycle: 'monthly'
     }
     mockTeamCreditStops.value = null
-    mockFetchPlans.mockImplementation(async () => {
+    vi.mocked(useBillingContext().fetchPlans).mockImplementation(async () => {
       mockCanOpenPricingSurface.value = false
     })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockFetchPlans).toHaveBeenCalledOnce()
+    expect(vi.mocked(useBillingContext().fetchPlans)).toHaveBeenCalledOnce()
     expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
 
@@ -187,7 +191,7 @@ describe('usePricingTableUrlLoader', () => {
       cycle: 'monthly'
     }
     mockTeamCreditStops.value = null
-    mockFetchPlans.mockImplementation(async () => {
+    vi.mocked(useBillingContext().fetchPlans).mockImplementation(async () => {
       mockCanOpenPricingSurface.value = false
       mockTeamCreditStops.value = TEAM_CREDIT_STOPS
     })
