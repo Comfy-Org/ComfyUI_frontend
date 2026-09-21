@@ -79,15 +79,26 @@ describe('stRaw', () => {
   })
 })
 
-// Guards patches/@intlify__shared: without it, a long word run overflows Firefox's
-// regex engine in vue-i18n's HTML sanitizer. Fails here if the patch stops applying.
-describe('translating a long string stays linear', () => {
-  it('does not blow up on a long attribute-name run', () => {
+// Guards patches/@intlify__shared: its unbounded attribute-name regex overflows
+// Firefox's regex engine on a long word run. The payloads carry `=` and quotes so
+// vue-i18n's HTML sanitizer actually runs; without the patch the first hangs.
+describe('the HTML sanitizer stays linear and correct', () => {
+  const translate = (message: string) => {
     i18n.global.mergeLocaleMessage('en', {
-      safeTranslationTest: { long: 'x'.repeat(500_000) }
+      safeTranslationTest: { sanitize: message }
     })
+    return i18n.global.t('safeTranslationTest.sanitize')
+  }
+
+  it('does not blow up on a long attribute-name run', () => {
     const start = performance.now()
-    expect(() => i18n.global.t('safeTranslationTest.long')).not.toThrow()
-    expect(performance.now() - start).toBeLessThan(500)
+    expect(() => translate(`<a ${'x'.repeat(500_000)}="y">`)).not.toThrow()
+    expect(performance.now() - start).toBeLessThan(5_000)
+  })
+
+  it('still neutralizes a javascript: url after a long name', () => {
+    expect(
+      translate(`<a ${'x'.repeat(200)}="1" href="javascript:alert(1)">`)
+    ).toContain('href="about:blank"')
   })
 })
