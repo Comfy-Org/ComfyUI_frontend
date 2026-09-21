@@ -1082,10 +1082,11 @@ let inputAssetRefresh: Promise<unknown> = Promise.resolve()
 const attachment = useAttachment({
   upload: async (file, signal) => {
     const uploaded = await rest.uploadImage(file, file.name, signal)
+    const filename = uploaded.name ?? file.name
     return {
-      ref: uploaded.name,
+      ref: filename,
       url: api.apiURL(
-        `/view?filename=${encodeURIComponent(uploaded.name)}&type=input`
+        `/view?filename=${encodeURIComponent(filename)}&type=input`
       )
     }
   },

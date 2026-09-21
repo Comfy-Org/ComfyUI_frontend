@@ -27,7 +27,7 @@ it('keeps a 4 MiB upload alive past 60 seconds and aborts it at 94 seconds', asy
   const { addFiles } = useAttachment({
     upload: async (file, uploadSignal) => {
       const result = await client.uploadImage(file, file.name, uploadSignal)
-      return { ref: result.name }
+      return { ref: result.name ?? file.name }
     },
     stage: (chip) => chips.set(chip.id, chip),
     update: (id, patch) => {

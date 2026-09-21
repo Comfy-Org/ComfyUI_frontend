@@ -1077,6 +1077,40 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
   })
 
+  it('uses the submitted filename when the upload response omits a name', async () => {
+    const messageBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/upload/image')) {
+          return json(200, { subfolder: '', type: 'input' })
+        }
+        messageBodies.push(JSON.parse(String(init?.body)))
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+      })
+    )
+
+    renderWithSelectedTarget()
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.attachFiles')
+      })
+    )
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['x'], 'cat.png', { type: 'image/png' })
+    )
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('describe it')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(messageBodies).toHaveLength(1)
+    expect(messageBodies[0]).toMatchObject({ attachments: ['cat.png'] })
+  })
+
   it('uploads a picked video above 20MB when the server permits it', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
