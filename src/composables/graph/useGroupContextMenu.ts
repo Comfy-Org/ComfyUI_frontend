@@ -1,7 +1,7 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { selectableKeyOf } from '@/lib/litegraph/src/utils/selectableItems'
+import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 

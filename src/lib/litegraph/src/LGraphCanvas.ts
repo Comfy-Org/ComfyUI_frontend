@@ -23,10 +23,10 @@ import {
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { selectableKeyOf } from '@/lib/litegraph/src/utils/selectableItems'
 import {
   applyCanvasSelection,
   ownsSelectable,
+  selectableKeyOf,
   setCanvasItemSelected
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'

@@ -1,11 +1,16 @@
+import { z } from 'zod'
+
 import type { GroupId } from '@/types/groupId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 
-export type SelectableKind = 'node' | 'group' | 'reroute' | 'io'
+const selectableKindSchema = z.enum(['node', 'group', 'reroute', 'io'])
+export type SelectableKind = z.infer<typeof selectableKindSchema>
 
 /** `kind:id` identity of one selectable canvas item within a graph scope. */
-export type SelectableKey = string & { readonly __brand: 'SelectableKey' }
+export type SelectableKey = `${SelectableKind}:${string}` & {
+  readonly __brand: 'SelectableKey'
+}
 
 export function toSelectableKey(
   ...[kind, id]:
@@ -20,11 +25,8 @@ export function parseSelectableKey(key: SelectableKey): {
   kind: SelectableKind
   id: string
 } {
-  const separator = key.indexOf(':')
-  return {
-    kind: key.slice(0, separator) as SelectableKind,
-    id: key.slice(separator + 1)
-  }
+  const [kind, id] = key.split(/:(.*)/s, 2)
+  return { kind: selectableKindSchema.parse(kind), id }
 }
 
 export type SelectionCommand =

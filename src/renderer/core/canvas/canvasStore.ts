@@ -12,7 +12,7 @@ import type {
   LGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { resolveSelectable } from '@/lib/litegraph/src/utils/selectableItems'
+import { resolveSelectable } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'

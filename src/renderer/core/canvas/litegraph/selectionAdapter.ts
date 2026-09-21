@@ -1,12 +1,63 @@
-import type { SelectionCommand } from '@/core/selection/selectionState'
+import type {
+  SelectableKey,
+  SelectionCommand
+} from '@/core/selection/selectionState'
+import {
+  parseSelectableKey,
+  toSelectableKey
+} from '@/core/selection/selectionState'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import {
-  resolveSelectable,
-  selectableKeyOf
-} from '@/lib/litegraph/src/utils/selectableItems'
+  LGraphGroup,
+  LGraphNode,
+  Reroute,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
+import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
+import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
+
+export function selectableKeyOf(
+  item:
+    | LGraphNode
+    | LGraphGroup
+    | Reroute
+    | SubgraphInputNode
+    | SubgraphOutputNode
+): SelectableKey
+export function selectableKeyOf(item: Positionable): SelectableKey | undefined
+export function selectableKeyOf(item: Positionable): SelectableKey | undefined {
+  if (item instanceof LGraphNode) return toSelectableKey('node', item.id)
+  if (item instanceof LGraphGroup) return toSelectableKey('group', item.id)
+  if (item instanceof Reroute) return toSelectableKey('reroute', item.id)
+  if (item instanceof SubgraphIONodeBase) return toSelectableKey('io', item.id)
+}
+
+export function resolveSelectable(
+  graph: LGraph,
+  key: SelectableKey
+): Positionable | undefined {
+  const { kind, id } = parseSelectableKey(key)
+  switch (kind) {
+    case 'node':
+      return graph.getNodeById(toNodeId(id)) ?? undefined
+    case 'group':
+      return graph._groups.find((group) => String(group.id) === id)
+    case 'reroute':
+      return graph.getReroute(toRerouteId(Number(id)))
+    case 'io':
+      if (!(graph instanceof Subgraph)) return undefined
+      return [graph.inputNode, graph.outputNode].find(
+        (ioNode) => String(ioNode.id) === id
+      )
+  }
+}
 
 export function setCanvasItemSelected(
   canvas: LGraphCanvas,

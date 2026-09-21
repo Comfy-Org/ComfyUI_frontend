@@ -13,7 +13,7 @@ import {
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { selectableKeyOf } from '@/lib/litegraph/src/utils/selectableItems'
+import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'

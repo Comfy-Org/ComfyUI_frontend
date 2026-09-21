@@ -13,7 +13,7 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 import {
   resolveSelectable,
   selectableKeyOf
-} from '@/lib/litegraph/src/utils/selectableItems'
+} from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
