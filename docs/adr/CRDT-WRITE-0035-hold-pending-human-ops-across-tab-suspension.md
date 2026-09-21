@@ -99,10 +99,19 @@ Alternatives considered:
 - The incremental frame path still upserts a pending-deleted node when another
   actor edits it before the delete lands; only the full reconcile consults
   local intent.
-- Terminal `unacknowledged` or `unconfirmed` deletes leave local intent. A later
-  full reconcile converges to the host document and can restore a node whose
-  delete never applied. Immediate catch-up and lost-write feedback remain
-  follow-up work; unknown outcomes are not hidden indefinitely.
+- Terminal `unacknowledged` or `unconfirmed` deletes keep local intent
+  (`useAgentCrdtFollower`'s per-workflow `confirmedDeletes`) until the
+  document's own state agrees the node is gone, rather than dropping it the
+  moment the batch settles: the transport carried the batch at least once, so
+  the host may have applied it even without a confirming result, and the
+  reconcile must not resurrect it in that window. This is bounded, not
+  indefinite - it resolves the moment the document catches up either way.
+  `undeliverable` deletes are excluded from this: the transport never carried
+  them, so the host is certain to still hold the node and no later frame will
+  ever say otherwise on its own; keeping one would hide its node forever
+  rather than for a bounded window. Immediate catch-up and lost-write feedback
+  for a genuinely lost `undeliverable` delete remain follow-up work; unknown
+  outcomes are not hidden indefinitely.
 
 ## Notes
 

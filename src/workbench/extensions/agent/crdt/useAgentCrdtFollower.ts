@@ -292,16 +292,33 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
-  // Doc node ids whose human delete is pending or of unknown outcome: applied
-  // but its effect frame has not yet removed them from the doc
-  // ('acknowledged'), or its delivery to the host is itself unresolved
-  // ('unconfirmed' / 'undeliverable' / 'unacknowledged'). Kept pending for the
-  // reconcile so neither the result-to-effect window nor a delivery the sender
-  // could not confirm can resurrect them; a host-side rejection ('acknowledged'
-  // with the op in `skipped`, not `applied`) is the one outcome that does NOT
-  // add here, since the node legitimately still exists there. Self-cleans in
-  // `pendingHumanDeletes` once the host's own document agrees the node is gone.
-  const confirmedDeletes = new Set<string>()
+  // Per-workflow doc node ids whose human delete is pending or of unknown
+  // outcome: applied but its effect frame has not yet removed them from the
+  // doc ('acknowledged'), or transmitted at least once with a host outcome
+  // that is itself unresolved ('unconfirmed' / 'unacknowledged'). Kept
+  // pending for that workflow's reconcile so neither the result-to-effect
+  // window nor an outcome the sender could not confirm can resurrect them.
+  // Node ids are graph-local, not global, so a set shared across workflows
+  // would let workflow A's delete of node `1` suppress workflow B's own
+  // unrelated node `1` the moment the follower retargets - each workflow
+  // gets its own set. Two outcomes are deliberately excluded: a host
+  // rejection ('acknowledged' with the op in `skipped`, not `applied`),
+  // since the node legitimately still exists there, and 'undeliverable',
+  // since the transport never carried it at all - the host is certain to
+  // still have the node, with no later frame that could ever say otherwise,
+  // so retaining it would hide the node indefinitely rather than for the
+  // bounded window a real, unconfirmed delivery resolves on its own (ADR
+  // CRDT-WRITE-0035). Self-cleans in `pendingHumanDeletes` once that
+  // workflow's own document agrees the node is gone.
+  const confirmedDeletes = new Map<string, Set<string>>()
+  const confirmedDeletesFor = (workflowId: string): Set<string> => {
+    let deletes = confirmedDeletes.get(workflowId)
+    if (!deletes) {
+      deletes = new Set()
+      confirmedDeletes.set(workflowId, deletes)
+    }
+    return deletes
+  }
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
@@ -328,21 +345,21 @@ function startAgentCrdtFollower(
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: (outcome) => {
-      if (outcome.state === 'acknowledged') {
-        const applied = new Set(outcome.result.applied)
-        for (const op of outcome.ops) {
-          if (op.op === 'delete_node' && applied.has(op.op_id))
-            confirmedDeletes.add(String(op.node_id))
-        }
-      } else {
-        // 'unconfirmed' / 'undeliverable' / 'unacknowledged': the host's
-        // outcome for this delete is unknown, not negative - unlike a host
-        // rejection ('acknowledged' with the op in `skipped`), nothing here
-        // says the node still exists there. Treat it like an acknowledged
-        // delete so a reconcile run before redelivery or confirmation cannot
-        // resurrect the node the human just removed.
-        for (const op of outcome.ops) {
-          if (op.op === 'delete_node') confirmedDeletes.add(String(op.node_id))
+      if (outcome.workflowId !== null) {
+        const deletes = confirmedDeletesFor(outcome.workflowId)
+        if (outcome.state === 'acknowledged') {
+          const applied = new Set(outcome.result.applied)
+          for (const op of outcome.ops) {
+            if (op.op === 'delete_node' && applied.has(op.op_id))
+              deletes.add(String(op.node_id))
+          }
+        } else if (
+          outcome.state === 'unconfirmed' ||
+          outcome.state === 'unacknowledged'
+        ) {
+          for (const op of outcome.ops) {
+            if (op.op === 'delete_node') deletes.add(String(op.node_id))
+          }
         }
       }
       recordDevEvent('human_ops_settled', outcome)
@@ -350,10 +367,13 @@ function startAgentCrdtFollower(
   })
   const pendingHumanDeletes = (workflowId: string): ReadonlySet<string> => {
     const docNodeIds = currentDocNodeIds()
-    for (const id of confirmedDeletes) {
-      if (!docNodeIds.has(id)) confirmedDeletes.delete(id)
+    const deletes = confirmedDeletes.get(workflowId)
+    if (deletes) {
+      for (const id of deletes) {
+        if (!docNodeIds.has(id)) deletes.delete(id)
+      }
     }
-    const pending = new Set(confirmedDeletes)
+    const pending = new Set(deletes)
     for (const batch of sender.pendingOps()) {
       if (batch.workflowId !== workflowId) continue
       for (const op of batch.ops) {
@@ -511,7 +531,7 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
     pendingLiveNodeIds.clear()
-    confirmedDeletes.clear()
+    confirmedDeletes.delete(detail.workflowId)
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -532,7 +552,7 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      confirmedDeletes.clear()
+      confirmedDeletes.delete(workflowId)
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
