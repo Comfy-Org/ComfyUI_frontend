@@ -64,6 +64,17 @@ test.fixme('real declaration', () => {})
     ])
   })
 
+  it.for([
+    { path: 'example.spec.jsx', declaration: 'test.skip' },
+    { path: 'example.test.tsx', declaration: 'test.fixme' }
+  ])('parses disabled calls inside $path JSX', ({ path, declaration }) => {
+    const source = `const element = <>{${declaration}('disabled', () => {})}</>`
+
+    expect(disabledDeclarations(source, path)).toEqual([
+      { line: 1, relevantLines: [1] }
+    ])
+  })
+
   it('finds newly disabled tests through a real Git diff', () => {
     const root = createRepository()
     write(

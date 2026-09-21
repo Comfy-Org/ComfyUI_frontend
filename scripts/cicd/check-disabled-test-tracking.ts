@@ -16,7 +16,6 @@ import {
   isNoSubstitutionTemplateLiteral,
   isPropertyAccessExpression,
   isStringLiteral,
-  ScriptKind,
   ScriptTarget,
   SyntaxKind
 } from 'typescript'
@@ -78,14 +77,11 @@ function isDisablingArgument(argument: Expression): boolean {
   )
 }
 
-export function disabledDeclarations(source: string): DisabledDeclaration[] {
-  const sourceFile = createSourceFile(
-    'test.ts',
-    source,
-    ScriptTarget.Latest,
-    true,
-    ScriptKind.TS
-  )
+export function disabledDeclarations(
+  source: string,
+  path = 'test.ts'
+): DisabledDeclaration[] {
+  const sourceFile = createSourceFile(path, source, ScriptTarget.Latest, true)
   const declarations: DisabledDeclaration[] = []
 
   function visit(node: Node): void {
@@ -166,7 +162,7 @@ export function findViolations(
     const sourceLines = source.split('\n')
     const addedLines = addedTargetLines(patch)
 
-    for (const declaration of disabledDeclarations(source)) {
+    for (const declaration of disabledDeclarations(source, path)) {
       if (declaration.relevantLines.some((line) => addedLines.has(line))) {
         const content = sourceLines[declaration.line - 1]?.trim() ?? ''
         violations.push(`  ${path}:${declaration.line}: ${content}`)
