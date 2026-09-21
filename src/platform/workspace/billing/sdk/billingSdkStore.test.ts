@@ -681,6 +681,44 @@ describe('useBillingSdkStore operation projections', () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
   })
 
+  describe('recoverPendingOperation', () => {
+    it('resolves with the operation once the lifecycle settles it', async () => {
+      const store = useBillingSdkStore()
+      vi.mocked(harness.sdk.lifecycle.recover).mockImplementation(async () => {
+        harness.publish(pendingSubscription())
+        return { status: 'ok', value: pendingSubscription() }
+      })
+
+      const settling = store.recoverPendingOperation('op-1')
+      harness.publish(settledTopup('succeeded'))
+
+      await expect(settling).resolves.toMatchObject({
+        opId: 'op-1',
+        status: 'succeeded'
+      })
+    })
+
+    it('adopts nothing when the server names a different operation', async () => {
+      const store = useBillingSdkStore()
+
+      await expect(
+        store.recoverPendingOperation('op-elsewhere')
+      ).resolves.toBeUndefined()
+    })
+
+    it('adopts nothing when the recovery read fails', async () => {
+      const store = useBillingSdkStore()
+      vi.mocked(harness.sdk.lifecycle.recover).mockResolvedValue({
+        status: 'error',
+        code: 'REQUEST_FAILED'
+      })
+
+      await expect(
+        store.recoverPendingOperation('op-1')
+      ).resolves.toBeUndefined()
+    })
+  })
+
   it('reports a pending operation, and stops once it settles', () => {
     const store = useBillingSdkStore()
     expect(store.hasPendingOperations).toBe(false)

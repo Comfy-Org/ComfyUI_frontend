@@ -1,17 +1,82 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
+import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
 
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import {
+  DOC_PROTOCOL_VERSION,
+  parseServerDocFrame
+} from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import type { HostDoc, HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
+import type { ParsedWireBatch } from '@e2e/fixtures/agentWireFrame'
 
 const SUBSCRIBE_TIMEOUT = 15_000
 
+/**
+ * How the fake host treats a `doc_ops` batch the page mints for a human edit:
+ * `apply` runs it through the real applier and answers like the relay does;
+ * `hold` records it and never answers, so the batch stays in flight.
+ */
+export type HumanOpsHost = 'apply' | 'hold'
+
+/** One `doc_*` frame the page sent, as the test attaches it. */
+export interface ClientDocFrame {
+  /** Milliseconds since the socket was created. */
+  atMs: number
+  type: string
+  workflowId: string | null
+  /** `op:node_id` per op for a `doc_ops` frame; empty otherwise. */
+  ops: string[]
+  opIds: string[]
+}
+
+interface ParsedClientDocFrame {
+  type: string
+  workflowId: string | null
+  stateVector: string | null
+  opsResult: ParsedWireBatch
+}
+
+function docFrameEnvelope(
+  raw: string | Buffer
+): { type: string; data: Record<string, unknown> } | null {
+  const frame: unknown = JSON.parse(raw.toString())
+  if (typeof frame !== 'object' || frame === null) return null
+  const { type, data } = frame as { type?: unknown; data?: unknown }
+  if (typeof type !== 'string' || !type.startsWith('doc_')) return null
+  if (typeof data !== 'object' || data === null) return null
+  return { type, data: data as Record<string, unknown> }
+}
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === 'string' ? value : null
+}
+
+function parseClientDocFrame(
+  raw: string | Buffer
+): ParsedClientDocFrame | null {
+  const envelope = docFrameEnvelope(raw)
+  if (!envelope) return null
+  const { workflow_id, state_vector_b64, ops } = envelope.data
+  return {
+    type: envelope.type,
+    workflowId: stringOrNull(workflow_id),
+    stateVector: stringOrNull(state_vector_b64),
+    opsResult: parseWireOps(ops)
+  }
+}
+
 /** Routed `/ws` host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
+  private refuseReason: string | null = null
+
   private socket: WebSocketRoute | null = null
   private subscribes = 0
+  private readonly createdAt = Date.now()
+  private readonly clientFrames: ClientDocFrame[] = []
+  private readonly humanOutcomes: ApplyOutcome[] = []
   private resolveSubscribed: (() => void) | null = null
   private readonly subscribed = new Promise<void>((resolve) => {
     this.resolveSubscribed = resolve
@@ -21,7 +86,8 @@ export class AgentFollowerHostSocket {
     private readonly page: Page,
     private readonly workflowId: string,
     private readonly host: HostDoc,
-    private readonly socketSid: string
+    private readonly socketSid: string,
+    private readonly humanOpsHost: HumanOpsHost = 'hold'
   ) {}
 
   async install(): Promise<void> {
@@ -72,25 +138,92 @@ export class AgentFollowerHostSocket {
   }
 
   private onClientFrame(raw: string | Buffer): void {
-    const frame: unknown = JSON.parse(raw.toString())
-    if (typeof frame !== 'object' || frame === null) return
-    const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
+    const frame = parseClientDocFrame(raw)
+    if (!frame) return
+    const ops = frame.opsResult.ok ? frame.opsResult.ops : []
+    this.clientFrames.push({
+      atMs: Date.now() - this.createdAt,
+      type: frame.type,
+      workflowId: frame.workflowId,
+      ops: ops.map(
+        (op) => `${op.op}:${'node_id' in op ? String(op.node_id) : ''}`
+      ),
+      opIds: ops.map((op) => op.op_id)
+    })
+    if (frame.workflowId !== this.workflowId) return
+    if (frame.type === 'doc_subscribe' && frame.stateVector !== null)
+      this.answerSubscribe(frame.stateVector)
+    else if (frame.type === 'doc_ops' && this.humanOpsHost === 'apply')
+      this.judgeHumanOps(frame.opsResult)
+  }
+
+  /**
+   * Make the host REFUSE every subscribe, as it does when `docService` is nil,
+   * when it is overloaded, or at the per-session document cap. No catch-up
+   * follows a refusal, so the follower gets no canvas frame at all.
+   */
+  refuseSubscribes(reason = 'overloaded'): void {
+    this.refuseReason = reason
+  }
+
+  private answerSubscribe(stateVector: string): void {
+    if (this.refuseReason) {
+      this.send(this.host.subscribeRefused(this.refuseReason))
+      this.subscribes += 1
+      this.resolveSubscribed?.()
       return
-    const { workflow_id, state_vector_b64 } = data as {
-      workflow_id?: unknown
-      state_vector_b64?: unknown
     }
-    if (workflow_id !== this.workflowId || typeof state_vector_b64 !== 'string')
-      return
     this.send(this.host.subscribed())
-    this.send(this.host.catchUp(state_vector_b64))
+    this.send(this.host.catchUp(stateVector))
     this.subscribes += 1
     this.resolveSubscribed?.()
+  }
+
+  // The applier is the only judge of a structurally valid human batch; the
+  // wire ops reach it in place, exactly as the relay hands them to the host.
+  // A batch that failed the envelope check, or that cleared it but is empty
+  // or carries a duplicate `op_id`, never reaches the applier at all — the
+  // relay itself rejects that frame as `invalid_frame` earlier.
+  private judgeHumanOps(opsResult: ParsedWireBatch): void {
+    if (!opsResult.ok) {
+      this.send(this.invalidFrameResult())
+      return
+    }
+    if (!isValidDocOpsBatch(opsResult.ops)) {
+      this.send(this.invalidFrameResult())
+      return
+    }
+    const { result, update, outcomes } = this.host.applyWire(opsResult.ops)
+    this.humanOutcomes.push(...outcomes)
+    this.send(result)
+    if (update) this.send(update)
+  }
+
+  private invalidFrameResult(): HostFrame {
+    return {
+      type: 'doc_ops_result',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: this.workflowId,
+        ok: false,
+        code: 'invalid_frame',
+        message: 'doc_ops frame was not structurally valid'
+      }
+    }
   }
 
   /** Rises once per follower subscribe, after the catch-up frame was sent. */
   subscribeCount(): number {
     return this.subscribes
+  }
+
+  /** Every `doc_*` frame the page has sent so far, oldest first. */
+  clientDocFrames(): ClientDocFrame[] {
+    return [...this.clientFrames]
+  }
+
+  /** The applier's verdict on every human op the host has judged so far. */
+  humanOpOutcomes(): ApplyOutcome[] {
+    return [...this.humanOutcomes]
   }
 }
