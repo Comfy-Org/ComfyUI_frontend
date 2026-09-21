@@ -325,15 +325,11 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     }
   }
 
-  // A subscribe or cancel this tab reattached to after a reload has no
-  // checkout left to report it, so it settles the way the poller settled it.
+  // A subscribe this tab reattached to after a reload has no checkout left to
+  // report it, so it settles the way the poller settled it. Only a subscribe
+  // is ever reattached: the status names a pending subscription or top-up.
   async function settleResumedSubscription(state: BillingOperationState) {
     if (state.phase === 'succeeded') {
-      if (state.kind === 'cancel') {
-        await refreshAfterCancel()
-        workspaceStore.updateActiveWorkspace({ isSubscribed: false })
-        return
-      }
       await refreshAfterSubscriptionChange()
       toastStore.add({
         severity: 'success',
@@ -342,7 +338,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       })
       return
     }
-    if (state.phase === 'failed' && state.kind !== 'cancel') {
+    if (state.phase === 'failed') {
       toastStore.add({
         severity: 'error',
         summary: t('billingOperation.subscriptionFailed'),

@@ -516,11 +516,11 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
-  function reattached(operationType: 'subscription' | 'cancel') {
+  function reattachedSubscribe() {
     options.onTelemetry({
       name: 'billing.operation.started',
       billing_op_id: 'op-1',
-      operation_type: operationType,
+      operation_type: 'subscription',
       presentation: 'hosted',
       resumed: true
     })
@@ -529,7 +529,7 @@ describe('useBillingSdkStore subscription commands', () => {
   it('finishes a reattached subscribe the way the poller did', async () => {
     useBillingSdkStore()
 
-    reattached('subscription')
+    reattachedSubscribe()
     harness.publish(settledOperation('succeeded', 'subscription'))
 
     await vi.waitFor(() =>
@@ -544,27 +544,10 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
-  it('finishes a reattached cancel the way the poller did', async () => {
-    useBillingSdkStore()
-
-    reattached('cancel')
-    harness.publish(settledOperation('succeeded', 'cancel'))
-
-    await vi.waitFor(() =>
-      expect(
-        useTeamWorkspaceStore().updateActiveWorkspace
-      ).toHaveBeenCalledWith({ isSubscribed: false })
-    )
-    expect(mockFetchStatus).toHaveBeenCalledOnce()
-    expect(mockFetchBalance).toHaveBeenCalledOnce()
-    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
-    expect(useToastStore().messagesToAdd).toEqual([])
-  })
-
   it('reports the failure of a reattached subscribe', () => {
     useBillingSdkStore()
 
-    reattached('subscription')
+    reattachedSubscribe()
     harness.publish(failedOperation('subscription'))
 
     expect(useToastStore().messagesToAdd).toContainEqual(
@@ -573,15 +556,6 @@ describe('useBillingSdkStore subscription commands', () => {
         summary: 'Subscription update failed'
       })
     )
-  })
-
-  it('reports nothing for the failure of a reattached cancel', () => {
-    useBillingSdkStore()
-
-    reattached('cancel')
-    harness.publish(failedOperation('cancel'))
-
-    expect(useToastStore().messagesToAdd).toEqual([])
   })
 
   it('leaves a subscribe it issued to the checkout that issued it', async () => {
