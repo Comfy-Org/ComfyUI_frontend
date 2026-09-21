@@ -9,6 +9,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -34,7 +35,6 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 
 interface BootAgentAppOptions {
   nodeDefs?: Record<string, ComfyNodeDef>
-  turnAccepted?: AgentTurnAccepted
   /** Extra `/api/settings` entries layered over the panel defaults. */
   settings?: Record<string, unknown>
   /** Server definitions, optionally augmented with deterministic test entries. */
@@ -57,8 +57,7 @@ async function mockAgentBoot(
     settings,
     objectInfo,
     assets,
-    nodeDefs,
-    turnAccepted
+    nodeDefs
   }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
   await mockCloudBoot(page, {
@@ -96,38 +95,81 @@ async function mockAgentBoot(
       r.fulfill(jsonRoute(nodeDefs))
     )
   }
-  if (turnAccepted) {
-    const threads: AgentThreadListResponse = {
-      threads: [],
-      pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
-    }
-    const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
-    const workflows: WorkflowListResponse = {
-      data: [],
-      pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
-    }
-    await page.route('**/api/experiment/models', (r) =>
-      r.fulfill(jsonRoute([]))
-    )
-    await page.route('**/api/agent/threads', (r) =>
-      r.fulfill(jsonRoute(threads))
-    )
-    await page.route('**/api/agent/run-mode', (r) =>
-      r.fulfill(jsonRoute(runMode))
-    )
-    await page.route('**/api/workflows**', (r) =>
-      r.fulfill(jsonRoute(workflows))
-    )
-    await page.route('**/api/agent/threads/*/messages', (r) =>
-      r.fulfill(jsonRoute(turnAccepted))
-    )
-  }
   // The bootstrapped project token makes PostHogTelemetryProvider run a real
   // posthog.init(); route its ingest host so CI never emits live third-party
   // traffic under the fabricated token.
   await page.route('**://t.comfy.org/**', (r) =>
     r.fulfill(jsonRoute({ status: 1 }))
   )
+}
+
+export async function mockAgentTurnApi(
+  page: Page,
+  turnAccepted: AgentTurnAccepted
+): Promise<void> {
+  const threads: AgentThreadListResponse = {
+    threads: [],
+    pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
+  }
+  const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
+  await page.route('**/api/experiment/models', (route) =>
+    route.fulfill(jsonRoute([]))
+  )
+  await page.route('**/api/agent/threads', (route) =>
+    route.fulfill(jsonRoute(threads))
+  )
+  await page.route('**/api/agent/run-mode', (route) =>
+    route.fulfill(jsonRoute(runMode))
+  )
+  await page.route('**/api/agent/threads/*/messages', (route) =>
+    route.fulfill(jsonRoute(turnAccepted))
+  )
+}
+
+export async function mockWorkflowPersistence(
+  page: Page,
+  workflowId: string
+): Promise<void> {
+  let savedName: string | undefined
+  await page.route('**/api/userdata/*', (route) => {
+    const request = route.request()
+    const path = decodeURIComponent(
+      new URL(request.url()).pathname.split('/userdata/')[1]
+    )
+    if (request.method() !== 'POST' || !path.startsWith('workflows/'))
+      return route.fallback()
+    savedName = path.slice('workflows/'.length, -'.json'.length)
+    const saved: UserDataFullInfo = {
+      path,
+      modified: Date.now(),
+      size: request.postDataBuffer()?.length ?? 0
+    }
+    return route.fulfill(jsonRoute(saved))
+  })
+  await page.route('**/api/workflows?*', (route) => {
+    const workflows: WorkflowListResponse = {
+      data:
+        savedName === undefined
+          ? []
+          : [
+              {
+                id: workflowId,
+                name: savedName,
+                created_at: '2026-09-01T00:00:00Z',
+                updated_at: '2026-09-01T00:00:00Z',
+                created_by: 'test-user-e2e',
+                latest_version: 1
+              }
+            ],
+      pagination: {
+        has_more: false,
+        limit: 100,
+        offset: 0,
+        total: savedName === undefined ? 0 : 1
+      }
+    }
+    return route.fulfill(jsonRoute(workflows))
+  })
 }
 
 type AgentFixtures = {

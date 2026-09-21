@@ -1,12 +1,14 @@
 import { expect, mergeTests } from '@playwright/test'
-import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
-import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import {
+  agentTest,
+  bootAgentApp,
+  mockAgentTurnApi,
+  mockWorkflowPersistence
+} from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   AGENT_NESTED_SUBGRAPH_ID,
@@ -18,7 +20,6 @@ import {
   agentSubgraphNodeDefs,
   agentSubgraphFrames
 } from '@e2e/fixtures/data/agentSubgraphFollower'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
@@ -38,54 +39,15 @@ test.describe(
       await page.addInitScript(() => {
         localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
       })
+      await mockAgentTurnApi(page, {
+        message_id: '3818ba00-d772-4a3f-98c1-9312725b577d',
+        thread_id: 'd4c016c4-3b8c-44cf-97de-1ae27e43e718',
+        workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
+      })
+      await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
       await bootAgentApp(page, true, {
         settings: { 'Comfy.VueNodes.Enabled': true },
-        nodeDefs: agentSubgraphNodeDefs,
-        turnAccepted: {
-          message_id: '3818ba00-d772-4a3f-98c1-9312725b577d',
-          thread_id: 'd4c016c4-3b8c-44cf-97de-1ae27e43e718',
-          workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
-        }
-      })
-      let savedName: string | undefined
-      await page.route('**/api/userdata/*', (route) => {
-        const request = route.request()
-        const path = decodeURIComponent(
-          new URL(request.url()).pathname.split('/userdata/')[1]
-        )
-        if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-          return route.fallback()
-        savedName = path.slice('workflows/'.length, -'.json'.length)
-        const saved: UserDataFullInfo = {
-          path,
-          modified: Date.now(),
-          size: request.postDataBuffer()?.length ?? 0
-        }
-        return route.fulfill(jsonRoute(saved))
-      })
-      await page.route('**/api/workflows?*', (route) => {
-        const workflows: WorkflowListResponse = {
-          data:
-            savedName === undefined
-              ? []
-              : [
-                  {
-                    id: AGENT_SUBGRAPH_WORKFLOW_ID,
-                    name: savedName,
-                    created_at: '2026-09-01T00:00:00Z',
-                    updated_at: '2026-09-01T00:00:00Z',
-                    created_by: 'test-user-e2e',
-                    latest_version: 1
-                  }
-                ],
-          pagination: {
-            has_more: false,
-            limit: 100,
-            offset: 0,
-            total: savedName === undefined ? 0 : 1
-          }
-        }
-        return route.fulfill(jsonRoute(workflows))
+        nodeDefs: agentSubgraphNodeDefs
       })
 
       const socket = await getWebSocket()
