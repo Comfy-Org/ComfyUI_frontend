@@ -1037,6 +1037,27 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.selection).toEqual({ node_ids: ['5', '6'] })
   })
 
+  it('(h2b) identifies the workflow that owns the selected nodes', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    const tags: SelectedNode[] = [{ id: '5', title: 'KSampler' }]
+    session.start()
+
+    await session.sendMessage(
+      'explain',
+      undefined,
+      tags,
+      undefined,
+      () => 'wf-selected'
+    )
+
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(body.selection).toEqual({
+      node_ids: ['5'],
+      workflow_id: 'wf-selected'
+    })
+  })
+
   it('(h3) sends workflow references separately and keeps them in the local turn', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })
