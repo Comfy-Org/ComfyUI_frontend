@@ -950,7 +950,8 @@ describe('EcsFollowerAdapter integration', () => {
     const deleteLayouts = vi.fn()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      placement: inertPlacementPort
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
