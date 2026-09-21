@@ -523,6 +523,26 @@ describe('createOpSender', () => {
     expect(sender.pending()).toBe(0)
   })
 
+  it('an aborted batch whose resend never left the client reserves one late-result credit, not two', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = null
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(1)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+
+    boundWorkflow = WORKFLOW
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'acknowledged'
+    ])
+  })
+
   describe('suspension', () => {
     function parkSecondBatch(): string {
       sender.enqueue([addNode(1)])
