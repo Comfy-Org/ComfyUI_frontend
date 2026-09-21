@@ -5,62 +5,66 @@ import {
 
 const NODE_TYPE = 'DevToolsWASPause'
 
-test.describe('WAS Pause live disabled getter @widget', () => {
+test.describe('WAS Pause live disabled getter', { tag: '@widget' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.nodeOps.clearGraph()
     await comfyPage.nodeOps.addNode(NODE_TYPE, undefined, { x: 400, y: 200 })
     await comfyPage.nextFrame()
   })
 
-  test('Resume becomes clickable when execution pauses @canvas', async ({
-    comfyPage
-  }) => {
-    const node = await comfyPage.nodeOps.getNodeRefByType(NODE_TYPE)
-    const resume = await node.getWidgetByName('Resume')
-    await expect
-      .poll(() => node.getProperty('properties'))
-      .toMatchObject({ resumed: false })
+  test(
+    'Resume becomes clickable when execution pauses',
+    { tag: '@canvas' },
+    async ({ comfyPage }) => {
+      const node = await comfyPage.nodeOps.getNodeRefByType(NODE_TYPE)
+      const resume = await node.getWidgetByName('Resume')
+      await expect
+        .poll(() => node.getProperty('properties'))
+        .toMatchObject({ resumed: false })
 
-    await comfyPage.page.evaluate(
-      (id) =>
-        window.dispatchEvent(
-          new CustomEvent('devtools-was-pause', { detail: String(id) })
-        ),
-      node.id
-    )
-    await comfyPage.nextFrame()
+      await comfyPage.page.evaluate(
+        (id) =>
+          window.dispatchEvent(
+            new CustomEvent('devtools-was-pause', { detail: String(id) })
+          ),
+        node.id
+      )
+      await comfyPage.nextFrame()
 
-    await resume.click()
-    await expect
-      .poll(() => node.getProperty('properties'))
-      .toMatchObject({ resumed: true })
-  })
+      await resume.click()
+      await expect
+        .poll(() => node.getProperty('properties'))
+        .toMatchObject({ resumed: true })
+    }
+  )
 
-  test('Resume becomes enabled when execution pauses @vue-nodes', async ({
-    comfyPage
-  }) => {
-    const node = await comfyPage.nodeOps.getNodeRefByType(NODE_TYPE)
-    const button = comfyPage.vueNodes
-      .getNodeLocator(node.id)
-      .getByRole('button', { name: 'Resume', exact: true })
-    await expect
-      .poll(() => node.getProperty('properties'))
-      .toMatchObject({ resumed: false })
+  test(
+    'Resume becomes enabled when execution pauses',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      const node = await comfyPage.nodeOps.getNodeRefByType(NODE_TYPE)
+      const button = comfyPage.vueNodes
+        .getNodeLocator(node.id)
+        .getByRole('button', { name: 'Resume', exact: true })
+      await expect
+        .poll(() => node.getProperty('properties'))
+        .toMatchObject({ resumed: false })
 
-    await comfyPage.page.evaluate(
-      (id) =>
-        window.dispatchEvent(
-          new CustomEvent('devtools-was-pause', { detail: String(id) })
-        ),
-      node.id
-    )
-    await comfyPage.nextFrame()
+      await comfyPage.page.evaluate(
+        (id) =>
+          window.dispatchEvent(
+            new CustomEvent('devtools-was-pause', { detail: String(id) })
+          ),
+        node.id
+      )
+      await comfyPage.nextFrame()
 
-    await expect(button).toBeVisible()
-    await expect(button).toBeEnabled()
-    await button.click()
-    await expect
-      .poll(() => node.getProperty('properties'))
-      .toMatchObject({ resumed: true })
-  })
+      await expect(button).toBeVisible()
+      await expect(button).toBeEnabled()
+      await button.click()
+      await expect
+        .poll(() => node.getProperty('properties'))
+        .toMatchObject({ resumed: true })
+    }
+  )
 })
