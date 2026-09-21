@@ -251,25 +251,6 @@ describe('agentNodeSelectionStore', () => {
     expect(store.nodeIds('workflows/renamed.json')).toEqual(['9', '12'])
   })
 
-  // Every rejected move must be a no-op on the WHOLE map, not just on the two
-  // paths named. The implementation rebuilds `nodeIdsByWorkflow` by spreading
-  // the rest around the moved entry, so a mishandled early return is exactly
-  // the shape of bug that drops an unrelated workflow's selection. The
-  // bystander assertion is the point of these cases.
-  //
-  // Which of `moveNodeIds`' three early returns these actually pin, checked by
-  // deleting each one:
-  //   - `!oldWorkflowPath || !newWorkflowPath` IS pinned; the
-  //     undefined-destination case goes red without it.
-  //   - `oldWorkflowPath === newWorkflowPath` is not pinnable. The rebuild
-  //     deletes and re-adds the same key, so removing it changes nothing
-  //     observable.
-  //   - the presence check is not pinnable either. Without it the map gains
-  //     `{ [destination]: undefined }`, and `nodeIds()` coalesces that to `[]`,
-  //     so the reader hides it.
-  // Both unpinnable guards are still worth keeping: they stop `undefined` and
-  // redundant rewrites entering the map. Stated here so nobody later reads a
-  // green suite as proof that all three are covered.
   describe('moveNodeIds rejects a move it cannot make', () => {
     const BYSTANDER = 'workflows/untouched.json'
 
@@ -301,13 +282,14 @@ describe('agentNodeSelectionStore', () => {
       expect(store.nodeIds(BYSTANDER)).toEqual(['3'])
     })
 
-    it('leaves the destination empty when the source has no saved selection', () => {
+    it('preserves the destination when the source has no saved selection', () => {
       const store = useAgentNodeSelectionStore()
       store.saveNodeIds(BYSTANDER, ['3'])
+      store.saveNodeIds('workflows/renamed.json', ['20'])
 
       store.moveNodeIds('workflows/never-saved.json', 'workflows/renamed.json')
 
-      expect(store.nodeIds('workflows/renamed.json')).toEqual([])
+      expect(store.nodeIds('workflows/renamed.json')).toEqual(['20'])
       expect(store.nodeIds(BYSTANDER)).toEqual(['3'])
     })
   })
