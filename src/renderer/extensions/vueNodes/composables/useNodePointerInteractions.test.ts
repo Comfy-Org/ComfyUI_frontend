@@ -5,7 +5,9 @@ import { nextTick, ref } from 'vue'
 
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
@@ -118,6 +120,67 @@ const createMouseEvent = (
 }
 
 describe('useNodePointerInteractions', () => {
+  it('forwards root hover events to the current host node', () => {
+    const canvas = fromAny<LGraphCanvas, unknown>({
+      graph_mouse: [0, 0],
+      adjustMouseEvent: (event: PointerEvent) => {
+        fromAny<{ canvasX: number; canvasY: number }, unknown>(event).canvasX =
+          80
+        fromAny<{ canvasX: number; canvasY: number }, unknown>(event).canvasY =
+          90
+      }
+    })
+    useCanvasStore().canvas = canvas
+    const firstEnter = vi.fn()
+    const firstLeave = vi.fn()
+    const secondEnter = vi.fn()
+    const secondLeave = vi.fn()
+    let host = fromAny<LGraphNode, unknown>({
+      pos: [10, 20],
+      onMouseEnter: firstEnter,
+      onMouseLeave: firstLeave
+    })
+    const { pointerHandlers } = useNodePointerInteractions(
+      testNodeState,
+      () => host
+    )
+    const enterEvent = createPointerEvent('pointerenter')
+
+    pointerHandlers.onPointerenter(enterEvent)
+    expect(firstEnter).toHaveBeenCalledWith(enterEvent)
+
+    host = fromAny<LGraphNode, unknown>({
+      pos: [30, 40],
+      onMouseEnter: secondEnter,
+      onMouseLeave: secondLeave
+    })
+    const leaveEvent = createPointerEvent('pointerleave')
+    pointerHandlers.onPointerenter(createPointerEvent('pointerenter'))
+    pointerHandlers.onPointerleave(leaveEvent)
+
+    expect(secondEnter).toHaveBeenCalledOnce()
+    expect(secondLeave).toHaveBeenCalledWith(leaveEvent)
+    expect(firstLeave).not.toHaveBeenCalled()
+  })
+
+  it('ignores hover events when the host or callback is missing', () => {
+    const { pointerHandlers } = useNodePointerInteractions(
+      testNodeState,
+      () => undefined
+    )
+
+    expect(() =>
+      pointerHandlers.onPointerenter(createPointerEvent('pointerenter'))
+    ).not.toThrow()
+    const callbacklessHost = fromAny<LGraphNode, unknown>({ pos: [0, 0] })
+    expect(() =>
+      useNodePointerInteractions(
+        testNodeState,
+        callbacklessHost
+      ).pointerHandlers.onPointerleave(createPointerEvent('pointerleave'))
+    ).not.toThrow()
+  })
+
   it('should only start drag on left-click', async () => {
     const { handleNodeSelect } = useNodeEventHandlers()
     const { startDrag } = useNodeDrag()

@@ -157,5 +157,47 @@
       "Text Dictionary Convert",
       "Text to Number"
     ]
+  },
+  {
+    "pack": "ComfyUI-Easy-Use",
+    "repo": "https://github.com/yolain/ComfyUI-Easy-Use.git",
+    "pin": "450b1ce4ce43b2280521c87f5fa388a898fb2ad2",
+    "pinnedAt": "2026-09-16",
+    "tiers": ["load", "connectivity"],
+    "workflow": "",
+    "expectedNodes": ["easy XYPlot", "easy fullLoader"],
+    "expectedNodeCount": 210,
+    "expectedExtensions": ["Comfy.EasyUse.XYPlot"],
+    "requiresGpu": false,
+    "requiresModels": [],
+    "timeoutMs": 30000
+  },
+  {
+    "pack": "ComfyUI-PromptChain",
+    "repo": "https://github.com/mobcat40/ComfyUI-PromptChain.git",
+    "pin": "dcc31e4eaec61633a736d62a6099251ab6f7e7b7",
+    "pinnedAt": "2026-09-16",
+    "tiers": ["load", "connectivity"],
+    "workflow": "",
+    "expectedNodes": ["PromptChain_PromptChain", "PromptChain_RegionBox"],
+    "expectedNodeCount": 11,
+    "expectedExtensions": ["PromptChain"],
+    "requiresGpu": false,
+    "requiresModels": [],
+    "timeoutMs": 30000
+  },
+  {
+    "pack": "rgthree-comfy",
+    "repo": "https://github.com/rgthree/rgthree-comfy.git",
+    "pin": "683836c46e898668936c433502504cc0627482c5",
+    "pinnedAt": "2026-09-16",
+    "tiers": ["load", "connectivity"],
+    "workflow": "",
+    "expectedNodes": ["Image Comparer (rgthree)", "Power Primitive (rgthree)"],
+    "expectedNodeCount": 24,
+    "expectedExtensions": ["Comfy.RgthreeComfy"],
+    "requiresGpu": false,
+    "requiresModels": [],
+    "timeoutMs": 30000
   }
 ]
