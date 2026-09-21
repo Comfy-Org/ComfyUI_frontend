@@ -293,7 +293,6 @@ test.describe(
             }
           )
 
-        // Host promoted widgets should reflect the agent write.
         await expect
           .poll(async () => {
             const s = await readState()
