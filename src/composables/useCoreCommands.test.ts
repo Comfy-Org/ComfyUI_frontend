@@ -23,6 +23,8 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/promotionUtils'
@@ -604,6 +606,27 @@ describe('useCoreCommands', () => {
         await findCommand(id).function()
 
         expect(spies[spy]).toHaveBeenCalledTimes(calls)
+      }
+    )
+
+    it.for([
+      { id: 'Comfy.Undo', history: 'undo' },
+      { id: 'Comfy.Redo', history: 'redo' }
+    ] as const)(
+      '$id while select-only still runs the open mask editor history $history',
+      async ({ id, history }) => {
+        vi.mocked(useDialogStore().isDialogOpen).mockImplementation(
+          (key) => key === 'global-mask-editor'
+        )
+        const historySpy = vi
+          .spyOn(useMaskEditorStore().canvasHistory, history)
+          .mockImplementation(() => {})
+        app.canvas.selectOnly = true
+
+        await findCommand(id).function()
+
+        expect(historySpy).toHaveBeenCalledOnce()
+        expect(mockChangeTracker[history]).not.toHaveBeenCalled()
       }
     )
 

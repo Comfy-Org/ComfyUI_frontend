@@ -263,13 +263,13 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Undo',
       category: 'essentials' as const,
       function: async () => {
-        if (isSelectOnly(app.canvas)) return
         // If Mask Editor is open, use its history instead of the graph
         if (dialogStore.isDialogOpen('global-mask-editor')) {
           maskEditorStore.canvasHistory.undo()
-        } else {
-          await getTracker()?.undo()
+          return
         }
+        if (isSelectOnly(app.canvas)) return
+        await getTracker()?.undo()
       }
     },
     {
@@ -278,12 +278,12 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Redo',
       category: 'essentials' as const,
       function: async () => {
-        if (isSelectOnly(app.canvas)) return
         if (dialogStore.isDialogOpen('global-mask-editor')) {
           maskEditorStore.canvasHistory.redo()
-        } else {
-          await getTracker()?.redo()
+          return
         }
+        if (isSelectOnly(app.canvas)) return
+        await getTracker()?.redo()
       }
     },
     {
