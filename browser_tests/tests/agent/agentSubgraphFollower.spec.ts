@@ -46,6 +46,7 @@ test.describe(
       })
       await mockWorkflowPersistence(page, AGENT_SUBGRAPH_WORKFLOW_ID)
       await bootAgentApp(page, true, {
+        onboardingCompleted: true,
         settings: { 'Comfy.VueNodes.Enabled': true },
         nodeDefs: agentSubgraphNodeDefs
       })

@@ -191,12 +191,13 @@ export async function bootAgentApp(
   agentFlag: boolean,
   options: BootAgentAppOptions = {}
 ): Promise<void> {
-  const { onboardingCompleted = true } = options
-  await page.addInitScript((completed) => {
-    if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
-      localStorage.setItem('Comfy.AgentPanel.onboarded', String(completed))
-    }
-  }, onboardingCompleted)
+  const { onboardingCompleted } = options
+  if (onboardingCompleted !== undefined)
+    await page.addInitScript((completed) => {
+      if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
+        localStorage.setItem('Comfy.AgentPanel.onboarded', String(completed))
+      }
+    }, onboardingCompleted)
   await mockAgentBoot(page, { agentFlag, ...options })
   await bootCloud(page)
   await page.goto(APP_URL)
