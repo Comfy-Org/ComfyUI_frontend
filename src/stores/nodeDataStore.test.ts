@@ -24,6 +24,7 @@ import type { UUID } from '@/utils/uuid'
 import { useNodeDataStore } from './nodeDataStore'
 
 const rootA: UUID = 'root-a'
+type NodeSlots = Pick<NodeState, 'inputs' | 'outputs'>
 
 function node(id: number, graphId: UUID = rootA): NodeState {
   return createNodeState({ id: toNodeId(id), graphId, title: `Node ${id}` })
@@ -200,11 +201,11 @@ describe('useNodeDataStore', () => {
   it.for([
     {
       slotKind: 'input',
-      existing: (): Pick<NodeState, 'inputs' | 'outputs'> => ({
+      existing: (): NodeSlots => ({
         inputs: [createMockNodeInputSlot({ name: 'a', link: toLinkId(1) })],
         outputs: []
       }),
-      incoming: (): Pick<NodeState, 'inputs' | 'outputs'> => ({
+      incoming: (): NodeSlots => ({
         inputs: [createMockNodeInputSlot({ name: 'a', link: toLinkId(2) })],
         outputs: []
       }),
@@ -213,11 +214,11 @@ describe('useNodeDataStore', () => {
     },
     {
       slotKind: 'output',
-      existing: (): Pick<NodeState, 'inputs' | 'outputs'> => ({
+      existing: (): NodeSlots => ({
         inputs: [],
         outputs: [createMockNodeOutputSlot({ name: 'a', links: [toLinkId(1)] })]
       }),
-      incoming: (): Pick<NodeState, 'inputs' | 'outputs'> => ({
+      incoming: (): NodeSlots => ({
         inputs: [],
         outputs: [
           createMockNodeOutputSlot({
@@ -560,9 +561,6 @@ describe('nodeDataStore registration via LGraph', () => {
     const scope = graphScope(graph.id, graph.id)
     const store = useNodeDataStore()
 
-    // Mirrors graphMutations.ts's `connect` case: the untouched side's own
-    // live array is passed back as both the existing state and the
-    // incoming payload, so every slot matches itself by identity.
     store.updateNodeSlots(scope, node.id, {
       inputs: node.inputs,
       outputs: [...node.outputs]

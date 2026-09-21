@@ -12,15 +12,7 @@ import type { NodeId } from '@/types/nodeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { UUID } from '@/utils/uuid'
 
-/**
- * Whether `key` resolves through a getter somewhere in `obj`'s prototype
- * chain, as opposed to a plain own data property. `NodeInputSlot` and
- * `NodeOutputSlot` define `link`/`links` this way once a slot is upgraded
- * from a plain descriptor to a live class instance; a slot this store tracks
- * before that upgrade (e.g. in a headless CRDT-only test) has no such
- * accessor, and `link`/`links` are its only record of connectivity.
- */
-function hasAccessor(obj: object, key: PropertyKey): boolean {
+function hasGetterInPrototypeChain(obj: object, key: PropertyKey): boolean {
   for (
     let proto: object | null = obj;
     proto;
@@ -32,22 +24,6 @@ function hasAccessor(obj: object, key: PropertyKey): boolean {
   return false
 }
 
-/**
- * Merges `incoming` slot descriptors into `existing` by name: a matched
- * slot's fields are updated in place, preserving its object identity and
- * its position in `existing`; a slot present only in `incoming` is
- * appended; a slot present only in `existing` is left untouched. `existing`
- * is never reordered or shortened.
- *
- * `linkKey` (`link` for inputs, `links` for outputs) is `linkStore`'s
- * connectivity for a slot already upgraded to a class instance, so it's
- * excluded from the assignment there and never read off `incomingSlot`
- * either — reading it invokes a deprecated accessor with its own side
- * effect. For a matched slot that is still a plain descriptor, `linkKey`
- * is its only record of connectivity and is copied like any other field.
- * Every field is assigned through the reactive slot object itself (never
- * `toRaw`), so Vue's dependents (e.g. the node renderer) invalidate.
- */
 function mergeSlotsByName<Slot extends { name: string }>(
   existing: Slot[],
   incoming: readonly Slot[],
@@ -61,7 +37,7 @@ function mergeSlotsByName<Slot extends { name: string }>(
       continue
     }
     const target = existing[index]
-    if (hasAccessor(toRaw(target), linkKey)) {
+    if (hasGetterInPrototypeChain(toRaw(target), linkKey)) {
       for (const key of Object.keys(incomingSlot) as (keyof Slot)[]) {
         if (key !== linkKey) target[key] = incomingSlot[key]
       }
