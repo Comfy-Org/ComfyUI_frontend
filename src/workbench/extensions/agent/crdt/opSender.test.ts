@@ -1,9 +1,19 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
+
+const telemetryState = vi.hoisted(() => ({
+  reportError: vi.fn<typeof reportErrorFn>()
+}))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: telemetryState.reportError
+}))
 
 const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
@@ -24,6 +34,7 @@ describe('createOpSender', () => {
   let settled: BatchOutcome[]
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
+  let transportThrows: boolean
   let boundWorkflow: string | null
   let sender: ReturnType<typeof createOpSender>
 
@@ -42,9 +53,11 @@ describe('createOpSender', () => {
     settled = []
     resultListener = null
     transportUp = true
+    transportThrows = false
     boundWorkflow = WORKFLOW
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
+        if (transportThrows) throw new Error('frame serialization failed')
         if (!transportUp) return false
         sent.push({ workflowId, tab, ops })
         return true
@@ -560,6 +573,22 @@ describe('createOpSender', () => {
       'unconfirmed',
       'acknowledged'
     ])
+  })
+
+  it('a transport that throws is reported and retried like a refused send, never a stalled queue', () => {
+    transportThrows = true
+
+    expect(() => sender.enqueue([addNode(1)])).not.toThrow()
+
+    expect(sent).toHaveLength(0)
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+    transportThrows = false
+    vi.advanceTimersByTime(500)
+    expect(sent).toHaveLength(1)
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
   })
 
   describe('suspension', () => {
