@@ -13,6 +13,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 /**
@@ -367,6 +368,7 @@ test.describe(
         canvas.ds.fitToBounds(node.boundingRect, { zoom: 0.5 })
         canvas.setDirty(true, true)
       }, toNodeId(GPT_NODE_ID))
+      await nextFrame(page)
       await expect(vueNodes.getNodeLocator(gptNodeId)).toBeInViewport({
         ratio: 1
       })
