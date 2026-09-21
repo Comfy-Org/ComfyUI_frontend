@@ -570,7 +570,9 @@ function failRun(error: unknown, attempt: ActiveRun): void {
   const failure =
     error instanceof WorkshopRouterError
       ? error
-      : new WorkshopRouterError('client')
+      : new WorkshopRouterError('client', null, {}, undefined, undefined, {
+          cause: error
+        })
   if (!workshopRunMayStillSettle(failure)) pendingRequest = undefined
   requestId.value = failure.requestId
   runState.value = transition(runState.value, {

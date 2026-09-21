@@ -6,6 +6,8 @@ export type WorkshopFailureStage =
   | 'upload_grant'
   | 'upload_put'
   | 'example_download'
+  | 'input_preparation'
+  | 'file_read'
   | 'request'
   | 'response'
 

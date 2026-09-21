@@ -25,7 +25,7 @@ function health(event: WorkshopAnalyticsEvent): ServiceHealth {
   if (event.properties.status === 'succeeded') return 'pending'
   if (event.properties.status === 'cancelled') return 'excluded'
   if (isAccountRefusal(event.properties)) return 'excluded'
-  return ['noCredits', 'policy', 'validation', 'concurrency'].includes(
+  return ['noCredits', 'policy', 'concurrency'].includes(
     event.properties.reason
   )
     ? 'excluded'
@@ -44,6 +44,8 @@ const HEALTH_FIELDS = new Set([
   'http_status',
   'router_error_type',
   'field_error_codes',
+  'exception_name',
+  'exception_frames',
   'output_count',
   'output_kind'
 ])

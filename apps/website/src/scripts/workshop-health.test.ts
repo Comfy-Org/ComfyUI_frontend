@@ -10,6 +10,8 @@ import {
   workshopDatadogEnvironment
 } from './workshop-datadog'
 import type { LogsEvent } from '@datadog/browser-logs'
+import { WorkshopRouterError } from '../config/workshop-router-errors'
+import { workshopFailureAnalytics } from './workshop-analytics'
 
 const run: WorkshopRunAnalytics = {
   model_slug: 'vertexai--gemini-nano-banana-2--generate-images',
@@ -26,7 +28,7 @@ describe('Workshop health', () => {
     { reason: 'response' as const, expected: 'failure' },
     { reason: 'upload' as const, expected: 'failure' },
     { reason: 'provider' as const, expected: 'failure' },
-    { reason: 'validation' as const, expected: 'excluded' },
+    { reason: 'validation' as const, expected: 'failure' },
     { reason: 'policy' as const, expected: 'excluded' },
     { reason: 'noCredits' as const, expected: 'excluded' },
     { reason: 'concurrency' as const, expected: 'excluded' }
@@ -119,6 +121,43 @@ describe('Workshop health', () => {
       request_id: 'router-request'
     })
     expect(JSON.stringify(record)).not.toMatch(/private-user|private-workspace/)
+  })
+
+  it('retains sanitized client diagnostics without private exception text', () => {
+    const cause = new DOMException('private filename.png', 'NotReadableError')
+    Object.defineProperty(cause, 'stack', {
+      value: [
+        cause.toString(),
+        '    at read (https://comfy.org/_website/ModelDetail.abc.js?token=private:12:34)',
+        '    at https://storage.example/private.png:1:2'
+      ].join('\n')
+    })
+    const failure = new WorkshopRouterError(
+      'client',
+      null,
+      { private_field: 'fileUnreadable' },
+      undefined,
+      'file_read',
+      { cause }
+    )
+    const record = workshopHealthLog({
+      name: 'run_finished',
+      properties: {
+        ...run,
+        status: 'failed',
+        duration_ms: 10,
+        ...workshopFailureAnalytics(failure)
+      }
+    })
+
+    expect(record).toMatchObject({
+      service_health: 'failure',
+      failure_stage: 'file_read',
+      field_error_codes: ['fileUnreadable'],
+      exception_name: 'NotReadableError',
+      exception_frames: ['/_website/ModelDetail.abc.js:12:34']
+    })
+    expect(JSON.stringify(record)).not.toContain('private')
   })
 
   it.for([

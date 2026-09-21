@@ -101,6 +101,16 @@ export interface RouterRunOptions {
   readonly rasterizeSvg?: WorkshopSvgRasterizer
 }
 
+export function workshopAttributionHeaders(
+  clientAttemptId: string | undefined
+): Record<string, string> {
+  if (!clientAttemptId) return {}
+  return {
+    'X-Comfy-Traffic-Source': 'models',
+    'X-Comfy-Client-Attempt-Id': clientAttemptId
+  }
+}
+
 interface RunProgress {
   readonly requestId: string | null
   readonly deadlineCollections: number
@@ -283,12 +293,7 @@ async function attempt(
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
           'Idempotency-Key': options.idempotencyKey,
-          ...(options.clientAttemptId
-            ? {
-                'X-Comfy-Traffic-Source': 'models',
-                'X-Comfy-Client-Attempt-Id': options.clientAttemptId
-              }
-            : {})
+          ...workshopAttributionHeaders(options.clientAttemptId)
         },
         body: context.body,
         signal

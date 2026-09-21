@@ -5,6 +5,8 @@ import type {
   WorkshopFailureStage,
   WorkshopRouterError
 } from '../config/workshop-router-errors'
+import type { WorkshopExceptionAnalytics } from './workshop-exception'
+import { workshopExceptionAnalytics } from './workshop-exception'
 
 interface WorkshopModelAnalytics {
   model_slug: string
@@ -97,14 +99,14 @@ export type WorkshopAnalyticsEvent =
         request_id?: string
       } & (
           | { status: 'succeeded'; output_count: number }
-          | {
+          | ({
               status: 'failed'
               reason: RunFailure
               http_status?: number
               router_error_type?: WorkshopRouterErrorType
               failure_stage?: WorkshopFailureStage
               field_error_codes?: FieldErrorCode[]
-            }
+            } & WorkshopExceptionAnalytics)
           | { status: 'cancelled' }
         )
     }
@@ -168,6 +170,7 @@ export function workshopFailureAnalytics(failure: WorkshopRouterError) {
       ? {}
       : { router_error_type: routerErrorType }),
     ...(failure.stage ? { failure_stage: failure.stage } : {}),
+    ...('cause' in failure ? workshopExceptionAnalytics(failure.cause) : {}),
     ...(fieldErrorCodes.length ? { field_error_codes: fieldErrorCodes } : {})
   }
 }

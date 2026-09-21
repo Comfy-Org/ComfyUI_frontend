@@ -20,7 +20,9 @@ A parsed response remains pending for health until the primary media element loa
 
 Account and authentication refusals are excluded from service health using the credential stage or Router refusal metadata. Missing endpoints and storage upload failures remain service failures.
 
-Each browser attempt sends an UUID and Models source header to Router. Recovery preserves the attempt ID and idempotency behavior; a fresh Run click starts a new attempt. These labels are diagnostic and self-reported, never billing or authorization inputs. Private infrastructure owns metrics, dashboard, thresholds and notification routing. IDs stay in logs, not metric dimensions.
+Validation failures during a run count as service failures because the website owns the submitted parameters. Preflight form validation events remain separate from completed runs. Sanitized exception names and application bundle locations are retained for diagnosing browser preparation failures; raw exception messages and stacks are excluded.
+
+Each browser attempt sends a UUID and Models source header to Router, including queue submit, result collection, cancellation and synchronous fallback. Recovery preserves the attempt ID and idempotency behavior; a fresh Run click starts a new attempt. These labels are diagnostic and self-reported, never billing or authorization inputs. Private infrastructure owns metrics, dashboard, thresholds and notification routing. IDs stay in logs, not metric dimensions.
 
 ## Consequences
 

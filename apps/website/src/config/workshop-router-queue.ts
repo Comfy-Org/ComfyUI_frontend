@@ -11,7 +11,8 @@ import {
   settleRouterResponse,
   throwRunFailure,
   waitFor,
-  withRunDeadline
+  withRunDeadline,
+  workshopAttributionHeaders
 } from './workshop-router'
 import { WorkshopRouterError } from './workshop-router-errors'
 import type { RunOutput } from './workshop-run'
@@ -123,6 +124,7 @@ async function routerFetch(
     redirect: 'error',
     headers: {
       Authorization: `Bearer ${token}`,
+      ...workshopAttributionHeaders(options.clientAttemptId),
       ...(init.body === undefined
         ? {}
         : {
@@ -345,7 +347,10 @@ function requestCancellation(context: QueueContext, requestId: string): void {
     credentials: 'omit',
     redirect: 'error',
     keepalive: true,
-    headers: { Authorization: `Bearer ${context.latestToken}` }
+    headers: {
+      Authorization: `Bearer ${context.latestToken}`,
+      ...workshopAttributionHeaders(context.options.clientAttemptId)
+    }
   }).catch(() => {})
 }
 
