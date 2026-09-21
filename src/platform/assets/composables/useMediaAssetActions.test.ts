@@ -18,9 +18,12 @@ import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
+import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
 import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
 import { useMediaAssetActions as createMediaAssetActions } from './useMediaAssetActions'
 
@@ -185,10 +188,11 @@ const mockClearNodePreviewCache = vi.mocked(clearNodePreviewCacheForValues)
 vi.mock(import('../utils/clearDeletedAssetWidgetValues'), { spy: true })
 const mockClearWidgetValues = vi.mocked(clearDeletedAssetWidgetValues)
 
-const mockMarkMissingMedia = vi.hoisted(() => vi.fn())
-vi.mock(import('../utils/markDeletedAssetsAsMissingMedia'), () => ({
-  markDeletedAssetsAsMissingMedia: mockMarkMissingMedia
-}))
+vi.mock(import('@/platform/missingMedia/missingMediaScan'), { spy: true })
+const mockScanNodeMediaCandidates = vi.mocked(scanNodeMediaCandidates)
+
+vi.mock(import('../utils/markDeletedAssetsAsMissingMedia'), { spy: true })
+const mockMarkMissingMedia = vi.mocked(markDeletedAssetsAsMissingMedia)
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return fromPartial({
@@ -1531,6 +1535,16 @@ describe('useMediaAssetActions', () => {
         _nodes: [...successfulNodes, failedNode],
         nodes: [...successfulNodes, failedNode]
       }
+      mockScanNodeMediaCandidates.mockImplementation((_graph, node) => [
+        {
+          nodeId: String(node.id),
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: String(node.widgets?.[0].value),
+          isMissing: undefined
+        }
+      ])
       const actions = useMediaAssetActions()
 
       await actions.deleteAssets([
@@ -1541,6 +1555,19 @@ describe('useMediaAssetActions', () => {
       expect(mockMarkMissingMedia).toHaveBeenCalledWith(
         mockAppGraph.value,
         new Set(['shared.png', 'shared.png [input]'])
+      )
+      expect(useMissingMediaStore().missingMediaCandidates).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'shared.png',
+            isMissing: true
+          })
+        ])
+      )
+      expect(useMissingMediaStore().missingMediaCandidates).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: 'failed.png' })
+        ])
       )
       for (const [index, node] of successfulNodes.entries()) {
         expect(mockRemoveNodeOutputsForNode).toHaveBeenCalledWith(node)
