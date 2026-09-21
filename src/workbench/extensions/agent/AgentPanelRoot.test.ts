@@ -249,7 +249,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 })
 
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
-import { zAgentWsEvent } from './schemas/agentApiSchema'
+import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
@@ -581,7 +581,7 @@ describe('AgentPanelRoot paywall actions', () => {
   it('routes the subscribed owner actions through account preconditions', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -606,7 +606,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canTopUp = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -628,7 +628,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -652,7 +652,7 @@ describe('AgentPanelRoot paywall actions', () => {
       paywallBilling.tier = tier
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       useAgentConversationStore().messages.push({
-        id: 'msg-paywall' as TurnId,
+        id: toTurnId('msg-paywall'),
         role: 'assistant',
         parts: [{ type: 'paywall' }],
         streaming: false,
@@ -672,7 +672,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -691,7 +691,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canTopUp = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -711,7 +711,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -731,32 +731,45 @@ describe('AgentPanelRoot paywall actions', () => {
     ).not.toBeInTheDocument()
   })
 
-  it.for(['pending', 'denied', 'unresolved-role'] as const)(
-    'withholds purchase actions for %s without inventing a sales-managed plan',
-    async (state) => {
-      paywallCapabilities.canTopUp = false
-      paywallCapabilities.canSubscribeSelfServe = false
-      paywallCapabilities.isReady = state !== 'pending'
-      paywallCapabilities.hasResolvedCapabilities = state === 'unresolved-role'
-      if (state === 'unresolved-role') paywallWorkspace.role = undefined
-      render(AgentPanelRoot, { global: { plugins: [i18n] } })
-      useAgentConversationStore().messages.push({
-        id: 'msg-paywall' as TurnId,
-        role: 'assistant',
-        parts: [{ type: 'paywall' }],
-        streaming: false,
-        thinking: false
-      })
+  // Each unresolved input is its own wiring test: the panel reads
+  // `hasResolvedCapabilities` and `workspaceRole`, so a table varying both at
+  // once would need a conditional body. Pending-versus-denied capability
+  // policy belongs to useBillingCapabilities.test.ts, which owns that split;
+  // the panel cannot tell the two apart because it never reads `isReady`.
+  async function expectWithheldPurchaseActions() {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: toTurnId('msg-paywall'),
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
 
-      expect(await screen.findByText('Out of credits')).toBeInTheDocument()
-      expect(
-        screen.queryByRole('button', { name: /add credits|upgrade|subscribe/i })
-      ).not.toBeInTheDocument()
-      expect(
-        screen.queryByText(/billed through your Comfy account team/i)
-      ).not.toBeInTheDocument()
-    }
-  )
+    expect(await screen.findByText('Out of credits')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /add credits|upgrade|subscribe/i })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(/billed through your Comfy account team/i)
+    ).not.toBeInTheDocument()
+  }
+
+  it('withholds purchase actions while capabilities are unresolved, without inventing a sales-managed plan', async () => {
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
+    paywallCapabilities.hasResolvedCapabilities = false
+
+    await expectWithheldPurchaseActions()
+  })
+
+  it('withholds purchase actions while the workspace role is unresolved, without inventing a sales-managed plan', async () => {
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
+    paywallWorkspace.role = undefined
+
+    await expectWithheldPurchaseActions()
+  })
 })
 
 describe('AgentPanelRoot session notices', () => {
