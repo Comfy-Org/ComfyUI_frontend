@@ -395,11 +395,21 @@ export class PromptExecutionError extends Error {
 
   override toString() {
     let message = ''
-    if (typeof this.response.error === 'string') {
-      message += this.response.error
-    } else {
-      message +=
-        this.response.error.message + ': ' + this.response.error.details
+    const error = this.response.error
+    if (typeof error === 'string') {
+      message += error
+    } else if (typeof error === 'object' && error !== null) {
+      const errorMessage = 'message' in error ? error.message : undefined
+      const errorDetails = 'details' in error ? error.details : undefined
+      if (typeof errorMessage === 'string') {
+        message += errorMessage
+        if (typeof errorDetails === 'string') {
+          message += ': ' + errorDetails
+        }
+      }
+    }
+    if (!message && typeof this.response.message === 'string') {
+      message += this.response.message
     }
 
     for (const [_, nodeError] of Object.entries(
@@ -1616,8 +1626,14 @@ export class ComfyApi extends EventTarget {
         `Failed to fetch global subgraph '${id}': ${resp.status} ${resp.statusText}`
       )
     }
-    const subgraph: GlobalSubgraphData = await resp.json()
-    if (!subgraph.data) {
+    const subgraph: unknown = await resp.json()
+    if (
+      typeof subgraph !== 'object' ||
+      subgraph === null ||
+      !('data' in subgraph) ||
+      typeof subgraph.data !== 'string' ||
+      !subgraph.data
+    ) {
       throw new Error(`Global subgraph '${id}' returned empty data`)
     }
     return subgraph.data

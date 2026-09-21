@@ -4,7 +4,11 @@ import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import {
+  TaskItemImpl,
+  useQueuePendingTaskCountStore,
+  useQueueStore
+} from '@/stores/queueStore'
 import {
   isAudioResult,
   isImageResult,
@@ -73,6 +77,17 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     removeEventListener: vi.fn()
   }
 }))
+
+describe('useQueuePendingTaskCountStore', () => {
+  it('preserves the count when a status has no queue count', () => {
+    const store = useQueuePendingTaskCountStore()
+    store.count = 3
+
+    store.update(new CustomEvent('status', { detail: null }))
+
+    expect(store.count).toBe(3)
+  })
+})
 
 describe('TaskItemImpl', () => {
   it('should exclude animated from flatOutputs', () => {
