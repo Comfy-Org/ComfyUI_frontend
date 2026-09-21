@@ -1805,11 +1805,28 @@ export class ComfyApp {
     const executionWorkspaceId = teamWorkspaceStore.activeWorkspaceId
     const executionWorkspaceGeneration =
       teamWorkspaceStore.workspaceTransitionGeneration
+    const executionUserId = useAuthStore().currentUser?.uid ?? null
     const workspaceChangedWhileAuthenticating =
       (workspaceIdBeforeAuthentication !== executionWorkspaceId ||
         workspaceGenerationBeforeAuthentication !==
           executionWorkspaceGeneration) &&
       (isCloud || workspaceIdBeforeAuthentication !== null)
+    // Every await between resolving a prompt's credential and submitting it is
+    // a window for the account or workspace to change underneath it, so the
+    // fence is re-read after each one rather than checked once.
+    const executionIdentityIsCurrent = () =>
+      executionUserId === (useAuthStore().currentUser?.uid ?? null) &&
+      executionWorkspaceId === teamWorkspaceStore.activeWorkspaceId &&
+      executionWorkspaceGeneration ===
+        teamWorkspaceStore.workspaceTransitionGeneration
+    const reportExecutionIdentityChanged = () =>
+      useDialogService().showErrorDialog(
+        new Error(t('errorDialog.workspaceChangedDuringExecution')),
+        {
+          title: t('errorDialog.promptExecutionError'),
+          reportType: 'promptExecutionError'
+        }
+      )
     // An API-key session mints no workspace JWT: the key itself is the
     // execution credential and the server resolves its bound workspace. Only a
     // key-authenticated session may pass without a token — a Firebase session
@@ -1907,17 +1924,9 @@ export class ComfyApp {
           }
           if (
             workspaceChangedWhileAuthenticating ||
-            executionWorkspaceId !== teamWorkspaceStore.activeWorkspaceId ||
-            executionWorkspaceGeneration !==
-              teamWorkspaceStore.workspaceTransitionGeneration
+            !executionIdentityIsCurrent()
           ) {
-            useDialogService().showErrorDialog(
-              new Error(t('errorDialog.workspaceChangedDuringExecution')),
-              {
-                title: t('errorDialog.promptExecutionError'),
-                reportType: 'promptExecutionError'
-              }
-            )
+            reportExecutionIdentityChanged()
             queueResultOverride = false
             break
           }
@@ -1940,24 +1949,19 @@ export class ComfyApp {
               queueResultOverride = false
               break
             }
-            if (
-              executionWorkspaceId !== teamWorkspaceStore.activeWorkspaceId ||
-              executionWorkspaceGeneration !==
-                teamWorkspaceStore.workspaceTransitionGeneration
-            ) {
-              useDialogService().showErrorDialog(
-                new Error(t('errorDialog.workspaceChangedDuringExecution')),
-                {
-                  title: t('errorDialog.promptExecutionError'),
-                  reportType: 'promptExecutionError'
-                }
-              )
+            if (!executionIdentityIsCurrent()) {
+              reportExecutionIdentityChanged()
               queueResultOverride = false
               break
             }
 
             if (comfyOrgAuthToken) {
               await api.syncApiNodeCredential(comfyOrgAuthToken)
+              if (!executionIdentityIsCurrent()) {
+                reportExecutionIdentityChanged()
+                queueResultOverride = false
+                break
+              }
             }
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined

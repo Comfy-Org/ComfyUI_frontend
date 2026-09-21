@@ -890,6 +890,31 @@ describe('ComfyApp', () => {
       expect(showDialog).toHaveBeenCalledOnce()
     })
 
+    it('does not submit a prompt when the account changes while the credential synchronizes', async () => {
+      prepareEmptyPromptQueue()
+      useAuthStore().currentUser = fromPartial({ uid: 'account-a' })
+      let finishCredentialSync: () => void = () => {}
+      vi.mocked(api.syncApiNodeCredential).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishCredentialSync = () => resolve(false)
+          })
+      )
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      const submission = app.queuePrompt(0)
+      await vi.waitFor(() =>
+        expect(api.syncApiNodeCredential).toHaveBeenCalledOnce()
+      )
+      useAuthStore().currentUser = fromPartial({ uid: 'account-b' })
+      finishCredentialSync()
+
+      await expect(submission).resolves.toBe(false)
+      expect(queuePrompt).not.toHaveBeenCalled()
+      expect(showDialog).toHaveBeenCalledOnce()
+    })
+
     it('does not fall back to an API key when workspace authentication fails', async () => {
       prepareEmptyPromptQueue()
       vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValueOnce(

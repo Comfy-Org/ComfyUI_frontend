@@ -1,14 +1,11 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { ComfyApi } from '@/scripts/api'
 
 const promptData = {
-  output: {},
+  output: fromPartial<ComfyApiWorkflow>({}),
   workflow: {
     last_node_id: 0,
     last_link_id: 0,
@@ -19,9 +16,6 @@ const promptData = {
     extra: {},
     version: 0.4
   }
-} as {
-  output: ComfyApiWorkflow
-  workflow: ComfyWorkflowJSON
 }
 
 describe('ComfyApi local API-node credentials', () => {
@@ -175,7 +169,7 @@ describe('ComfyApi local API-node credentials', () => {
 
     await expect(api.syncApiNodeCredential('fresh-token')).resolves.toBe(false)
     api.authToken = 'fresh-token'
-    await api.queuePrompt(0, fromPartial(promptData))
+    await api.queuePrompt(0, promptData)
 
     const promptRequest = fetchMock.mock.calls[1][1]
     expect(promptRequest?.headers).not.toHaveProperty('X-Comfy-Client-Id')
