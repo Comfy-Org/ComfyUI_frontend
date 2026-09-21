@@ -19,7 +19,10 @@ function isScalarValue(value: WidgetValue): boolean {
   )
 }
 
-function owningGraph(rootGraph: LGraph, scope: GraphScope): LGraph | null {
+export function owningGraph(
+  rootGraph: LGraph,
+  scope: GraphScope
+): LGraph | null {
   if (rootGraph.id !== scope.rootGraphId) return null
   return String(scope.owningGraphId) === String(scope.rootGraphId)
     ? rootGraph

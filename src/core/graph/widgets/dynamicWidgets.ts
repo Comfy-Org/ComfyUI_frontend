@@ -547,6 +547,34 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   addAutogrowGroup(ordinal + 1, groupName, node)
 }
 
+function hasAutogrowGroups(node: LGraphNode): node is AutogrowNode {
+  return !!node.comfyDynamic?.autogrow
+}
+
+/**
+ * The live autogrow group `name` belongs to, from the node's own
+ * `comfyDynamic.autogrow` registration -- real provenance from
+ * `applyAutogrow`/`addAutogrowGroup`, rather than inferred from the name's
+ * shape. Confirms membership with `resolveAutogrowOrdinal`, the same check
+ * growth and shrink use, so a name that merely starts with a group's prefix
+ * without resolving to one of its members doesn't false-match. Undefined
+ * when the node has no autogrow groups, or `name` isn't a member of any of
+ * them.
+ */
+export function liveAutogrowGroupOf(
+  node: LGraphNode,
+  name: string
+): string | undefined {
+  if (!hasAutogrowGroups(node)) return undefined
+  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
+    if (!name.startsWith(`${groupName}.`)) continue
+    if (resolveAutogrowOrdinal(name, groupName, node) !== undefined) {
+      return groupName
+    }
+  }
+  return undefined
+}
+
 export function reconcileAutogrowInputs(node: LGraphNode): void {
   if (!node.comfyDynamic?.autogrow) return
   withComfyAutogrow(node)
