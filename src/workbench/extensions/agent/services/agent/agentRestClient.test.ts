@@ -498,6 +498,50 @@ describe('parseRetryAfter contract', () => {
     expect(parseRetryAfter(header)).toBe(expected)
   })
 
+  // RFC 9110 defines HTTP-date as exactly three formats, and a recipient must
+  // accept all three. The obsolete two carry no numeric zone, so a parser that
+  // only recognized IMF-fixdate would silently drop a legitimate deadline.
+  it.for([
+    { label: 'IMF-fixdate', header: 'Wed, 21 Oct 2026 07:28:00 GMT' },
+    { label: 'obsolete RFC 850', header: 'Wednesday, 21-Oct-26 07:28:00 GMT' },
+    { label: 'obsolete asctime', header: 'Wed Oct 21 07:28:00 2026' }
+  ])('accepts the $label form of HTTP-date', ({ header }) => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+    expect(parseRetryAfter(header)).toBe(30)
+  })
+
+  it('reads a space-padded asctime day as UTC, not as local time', () => {
+    vi.setSystemTime(new Date('1994-11-06T08:49:07Z'))
+
+    expect(parseRetryAfter('Sun Nov  6 08:49:37 1994')).toBe(30)
+  })
+
+  // FE-2461 follow-up: `Date.parse` accepts far more than HTTP-date, so an
+  // ISO-8601 timestamp used to be honoured as a deadline. It is not one of the
+  // three permitted formats, so it has to read as no deadline at all.
+  it.for([
+    { label: 'zoneless ISO-8601 timestamp', header: '2099-12-31T00:00:00' },
+    { label: 'ISO-8601 timestamp in UTC', header: '2099-12-31T00:00:00Z' },
+    { label: 'ISO-8601 calendar date', header: '2099-12-31' },
+    { label: 'US-style date', header: 'December 31, 2099' },
+    {
+      label: 'IMF-fixdate missing its zone',
+      header: 'Wed, 21 Oct 2026 07:28:00'
+    },
+    {
+      label: 'IMF-fixdate with an out-of-range day',
+      header: 'Wed, 32 Oct 2026 07:28:00 GMT'
+    }
+  ])(
+    'returns undefined for a $label, which is not an HTTP-date',
+    ({ header }) => {
+      vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+      expect(parseRetryAfter(header)).toBeUndefined()
+    }
+  )
+
   it('never returns NaN, so the caller needs no safe-integer repair', () => {
     const headers = [
       null,
@@ -507,7 +551,8 @@ describe('parseRetryAfter contract', () => {
       '1.5',
       '-1',
       '9007199254740993',
-      'Wed, 21 Oct 2026 07:28:00 GMT'
+      'Wed, 21 Oct 2026 07:28:00 GMT',
+      '2099-12-31T00:00:00'
     ]
 
     for (const header of headers) {

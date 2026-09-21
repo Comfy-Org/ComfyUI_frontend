@@ -100,6 +100,47 @@ function getErrorMessage(body: unknown, fallback: string): string {
   return isIngestErrorBody(body) ? body.error.message : fallback
 }
 
+const DAY_NAME = 'Mon|Tue|Wed|Thu|Fri|Sat|Sun'
+const DAY_NAME_LONG = 'Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday'
+const MONTH = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec'
+const TIME_OF_DAY = '\\d{2}:\\d{2}:\\d{2}'
+
+/** `Sun, 06 Nov 1994 08:49:37 GMT` - the preferred RFC 9110 IMF-fixdate. */
+const IMF_FIXDATE = new RegExp(
+  `^(?:${DAY_NAME}), \\d{2} (?:${MONTH}) \\d{4} ${TIME_OF_DAY} GMT$`
+)
+/** `Sunday, 06-Nov-94 08:49:37 GMT` - the obsolete RFC 850 format. */
+const RFC850_DATE = new RegExp(
+  `^(?:${DAY_NAME_LONG}), \\d{2}-(?:${MONTH})-\\d{2} ${TIME_OF_DAY} GMT$`
+)
+/** `Sun Nov  6 08:49:37 1994` - the obsolete asctime format, day space-padded. */
+const ASCTIME_DATE = new RegExp(
+  `^(?:${DAY_NAME}) (${MONTH}) (\\d{2}| \\d) (${TIME_OF_DAY}) (\\d{4})$`
+)
+
+/**
+ * The instant an RFC 9110 `HTTP-date` names, or `undefined` when the value is
+ * not one of the three formats that grammar allows (IMF-fixdate, RFC 850,
+ * asctime). `Date.parse` accepts far more than those - an ISO-8601 local
+ * timestamp such as `2099-12-31T00:00:00` among them - so the shape is checked
+ * before it is consulted, and a server sending one of those is treated as
+ * having sent no usable deadline at all.
+ */
+function parseHttpDate(value: string): number | undefined {
+  const asctime = ASCTIME_DATE.exec(value)
+  // asctime carries no zone but is defined as UTC, so restate it as GMT rather
+  // than let `Date.parse` read it in the host's local zone.
+  const normalized = asctime
+    ? `${asctime[2].trim().padStart(2, '0')} ${asctime[1]} ${asctime[4]} ${asctime[3]} GMT`
+    : IMF_FIXDATE.test(value) || RFC850_DATE.test(value)
+      ? value
+      : undefined
+  if (normalized === undefined) return undefined
+  // A well-shaped date can still name no instant (`Wed, 32 Oct 2026 ...`).
+  const parsed = Date.parse(normalized)
+  return Number.isNaN(parsed) ? undefined : parsed
+}
+
 /**
  * A `Retry-After` delay in whole seconds, or `undefined` when the header is
  * absent or cannot be read as one. Every return honours that contract, so a
@@ -113,10 +154,10 @@ export function parseRetryAfter(header: string | null): number | undefined {
   if (header === null) return undefined
   if (/^\d+$/.test(header)) return asDelaySeconds(Number(header))
   // A finite non-integer number (fractional, negative, exponent form) is a
-  // malformed delta-seconds, not a date, so it never reaches Date.parse.
+  // malformed delta-seconds, not a date, so it never reaches the date branch.
   if (Number.isFinite(Number(header))) return undefined
-  const deadline = Date.parse(header)
-  if (Number.isNaN(deadline)) return undefined
+  const deadline = parseHttpDate(header)
+  if (deadline === undefined) return undefined
   return asDelaySeconds(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)))
 }
 
