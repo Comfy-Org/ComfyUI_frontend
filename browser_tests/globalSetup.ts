@@ -1,7 +1,7 @@
 import { config as dotenvConfig } from 'dotenv'
 
 import { backupPath } from '@e2e/utils/backupUtils'
-import { isLocalUrl, resolveSetupBackendUrl } from '@e2e/utils/e2eConfig'
+import { resolveLocalSetupApiUrl } from '@e2e/utils/e2eConfig'
 
 dotenvConfig()
 
@@ -30,8 +30,8 @@ async function assertLocalDevtoolsInstalled(
   env: NodeJS.ProcessEnv,
   fetchRequest: typeof fetch
 ): Promise<void> {
-  const apiUrl = resolveSetupBackendUrl(env)
-  if (!isLocalUrl(apiUrl)) return
+  const apiUrl = resolveLocalSetupApiUrl(env)
+  if (!apiUrl) return
 
   const endpoint = `${apiUrl}/api/devtools/fake_model.safetensors`
 
@@ -48,9 +48,10 @@ async function assertLocalDevtoolsInstalled(
       '',
       'Most often the devtools directory is unreadable inside the container:',
       'the image runs as pwuser (uid 1001) and a checkout made under a 0007',
-      'umask is mode 0660. scripts/start-comfyui-e2e.sh stages a world-readable',
-      'copy for this reason; a hand-rolled `docker run` that bind-mounts',
-      'tools/devtools directly will hit it.'
+      'umask lacks world read/traverse permissions.',
+      'scripts/start-comfyui-e2e.sh stages a world-readable copy for this',
+      'reason; a hand-rolled `docker run` that bind-mounts tools/devtools',
+      'directly will hit it.'
     ].join('\n')
   )
 }

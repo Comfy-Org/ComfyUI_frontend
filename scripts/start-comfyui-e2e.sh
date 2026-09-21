@@ -28,14 +28,15 @@ elif ! docker info >/dev/null 2>&1; then
   fi
 fi
 
-docker_config="$(mktemp -d)"
-devtools_stage=""
+runtime_root="$(mktemp -d)"
+docker_config="$runtime_root/docker-config"
+devtools_stage="$runtime_root/devtools"
 cleanup() {
   "${docker[@]}" rm -f "$container" >/dev/null 2>&1 || true
-  rm -rf "$docker_config" "$devtools_stage"
+  rm -rf "$runtime_root"
 }
 trap cleanup EXIT
-devtools_stage="$(mktemp -d)"
+mkdir -p "$docker_config" "$devtools_stage"
 
 cp -R "$repo_root/tools/devtools/." "$devtools_stage/"
 chmod -R a+rX "$devtools_stage"

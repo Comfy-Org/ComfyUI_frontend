@@ -9,17 +9,11 @@ export function resolveSetupApiUrl(env: E2EEnvironment = process.env): string {
   )
 }
 
-export function resolveSetupBackendUrl(
+export function resolveLocalSetupApiUrl(
   env: E2EEnvironment = process.env
-): string {
+): string | undefined {
   const setupApiUrl = resolveSetupApiUrl(env)
-  if (env.PLAYWRIGHT_SETUP_API_URL) return setupApiUrl
-
-  return isLocalUrl(setupApiUrl) && env.DEV_SERVER_COMFYUI_URL
-    ? env.DEV_SERVER_COMFYUI_URL
-    : setupApiUrl
-}
-
-export function isLocalUrl(url: string): boolean {
-  return localHostname.test(new URL(url).hostname)
+  return localHostname.test(new URL(setupApiUrl).hostname)
+    ? setupApiUrl
+    : undefined
 }

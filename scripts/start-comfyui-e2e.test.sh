@@ -53,6 +53,7 @@ run_launcher() {
     SOURCE_DEVTOOLS="$fixture/tools/devtools" \
     CAPTURE_MOUNT="$test_root/mount" \
     DOCKER_RUN_STATUS="$status" \
+    AMP_ORB= \
     bash "$fixture/scripts/start-comfyui-e2e.sh"
 }
 
@@ -67,35 +68,5 @@ set -e
 [[ $status == 23 ]]
 [[ ! -e "$(cat "$test_root/mount")" ]]
 [[ -z "$(find "$test_root/failure" -mindepth 1 -print -quit)" ]]
-
-real_mktemp="$(command -v mktemp)"
-mkdir -p "$test_root/mktemp-failure-bin" "$test_root/allocation-failure"
-cat > "$test_root/mktemp-failure-bin/mktemp" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-count=0
-[[ ! -f "$MKTEMP_COUNT" ]] || count="$(cat "$MKTEMP_COUNT")"
-count=$((count + 1))
-printf '%s\n' "$count" > "$MKTEMP_COUNT"
-if ((count == 2)); then
-  exit 1
-fi
-directory="$("$REAL_MKTEMP" "$@")"
-printf '%s\n' "$directory" > "$FIRST_ALLOCATION"
-printf '%s\n' "$directory"
-EOF
-chmod +x "$test_root/mktemp-failure-bin/mktemp"
-
-set +e
-PATH="$test_root/mktemp-failure-bin:$test_root/bin:$PATH" \
-  TMPDIR="$test_root/allocation-failure" \
-  REAL_MKTEMP="$real_mktemp" \
-  MKTEMP_COUNT="$test_root/mktemp-count" \
-  FIRST_ALLOCATION="$test_root/first-allocation" \
-  bash "$fixture/scripts/start-comfyui-e2e.sh" >/dev/null 2>&1
-status=$?
-set -e
-[[ $status == 1 ]]
-[[ ! -e "$(cat "$test_root/first-allocation")" ]]
 
 echo 'start-comfyui-e2e regression: passed'

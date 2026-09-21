@@ -63,11 +63,11 @@ describe('browser test global setup', () => {
       env: { CI: '1', PLAYWRIGHT_TEST_URL: 'https://testcloud.comfy.org' }
     },
     {
-      name: 'local Vite proxy to a remote backend',
+      name: 'local Vite proxy with an explicit remote setup API',
       env: {
         CI: '1',
         PLAYWRIGHT_TEST_URL: 'http://localhost:5173',
-        DEV_SERVER_COMFYUI_URL: 'https://testcloud.comfy.org'
+        PLAYWRIGHT_SETUP_API_URL: 'https://testcloud.comfy.org'
       }
     }
   ])('skips the probe for $name', async ({ env }) => {
@@ -76,6 +76,27 @@ describe('browser test global setup', () => {
     await runGlobalSetup({ env, fetch: fetchRequest, backup: vi.fn() })
 
     expect(fetchRequest).not.toHaveBeenCalled()
+  })
+
+  it('probes a direct local backend despite a stale remote dev-server URL', async () => {
+    const fetchRequest = vi.fn<typeof fetch>(() =>
+      Promise.resolve(response(200))
+    )
+
+    await runGlobalSetup({
+      env: {
+        CI: '1',
+        PLAYWRIGHT_TEST_URL: 'http://localhost:8188',
+        DEV_SERVER_COMFYUI_URL: 'https://testcloud.comfy.org'
+      },
+      fetch: fetchRequest,
+      backup: vi.fn()
+    })
+
+    expect(fetchRequest).toHaveBeenCalledWith(
+      'http://localhost:8188/api/devtools/fake_model.safetensors',
+      expect.any(Object)
+    )
   })
 
   it('honors an explicit local setup API despite a remote Vite backend', async () => {
