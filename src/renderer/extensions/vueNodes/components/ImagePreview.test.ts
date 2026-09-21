@@ -407,6 +407,17 @@ describe('ImagePreview', () => {
       expect(galleryStore.activeIndex).toBe(0)
     })
 
+    it('opens the lightbox when the action button is activated by keyboard', async () => {
+      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
+      const user = userEvent.setup()
+      const galleryStore = useMediaGalleryStore()
+
+      screen.getByRole('button', { name: 'Open in lightbox' }).focus()
+      await user.keyboard('{Enter}')
+
+      expect(galleryStore.activeIndex).toBe(0)
+    })
+
     it('does not open the lightbox when a control is double-clicked', async () => {
       renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
       const user = userEvent.setup()

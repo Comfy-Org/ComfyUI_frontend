@@ -459,13 +459,13 @@ function openInLightbox(index: number) {
 }
 
 function handleRepeatedClick(event: MouseEvent) {
-  if (event.detail === 1) {
-    gestureStartedOnControl.value =
-      event.target instanceof Element &&
-      Boolean(event.target.closest('[data-preview-control]'))
+  if (event.detail >= 2) {
+    event.stopPropagation()
     return
   }
-  event.stopPropagation()
+  gestureStartedOnControl.value =
+    event.target instanceof Element &&
+    Boolean(event.target.closest('[data-preview-control]'))
 }
 
 function handleGalleryDoubleClick() {
