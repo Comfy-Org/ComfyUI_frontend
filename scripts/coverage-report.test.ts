@@ -15,12 +15,16 @@ const TRACEFILE = Array.from(
     `SF:src/components/Component${index}.vue\nDA:1,1\nDA:2,0\nLF:2\nLH:1\nend_of_record\n`
 ).join('')
 
-function render(metadata: Record<string, unknown> | null): string {
+/** A string is written verbatim, so cases can supply unparseable metadata. */
+function render(metadata: Record<string, unknown> | string | null): string {
   const dir = mkdtempSync(join(tmpdir(), 'coverage-report-'))
   const lcov = join(dir, 'coverage.lcov')
   writeFileSync(lcov, TRACEFILE)
-  if (metadata) {
-    writeFileSync(join(dir, 'coverage-metadata.json'), JSON.stringify(metadata))
+  if (metadata !== null) {
+    writeFileSync(
+      join(dir, 'coverage-metadata.json'),
+      typeof metadata === 'string' ? metadata : JSON.stringify(metadata)
+    )
   }
   try {
     return spawnSync(TSX, [SCRIPT, lcov], { encoding: 'utf8' }).stdout
@@ -55,8 +59,18 @@ describe('coverage-report shard banner', () => {
     expect(output).toContain('could not be verified')
   })
 
+  // A sidecar that exists but cannot be parsed proves nothing, so it has to
+  // read as unknown rather than throwing and taking the PR comment with it.
+  it('notes that completeness is unknown when metadata is malformed', () => {
+    const output = render('{ truncated')
+
+    expect(output).toContain('[!NOTE]')
+    expect(output).toContain('could not be verified')
+  })
+
   it.for([
     ['absent metadata', null],
+    ['malformed metadata', '{ truncated'],
     ['an unverified merge', { complete: false }]
   ] as const)('still reports the totals with %s', ([, metadata]) => {
     expect(render(metadata)).toContain('| Lines | 3 | 6 | 50.0%')
