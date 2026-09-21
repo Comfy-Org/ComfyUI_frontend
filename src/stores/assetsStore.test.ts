@@ -648,7 +648,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(cached.user_metadata).toEqual({ note: 'server-confirmed' })
     })
 
-    it('rolls back to the original metadata when the server rejects', async () => {
+    it('rolls back cached metadata when the update request fails', async () => {
       const store = useAssetsStore()
       const original = {
         ...createMockAsset('opt-2'),
@@ -671,9 +671,69 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'CheckpointLoaderSimple'
       )
 
+      expect(
+        store.getAssets('CheckpointLoaderSimple')[0].user_metadata
+      ).toEqual({ note: 'before' })
+      consoleSpy.mockRestore()
+    })
+
+    it.fails('rolls back cached metadata when the server outcome is unknown', async () => {
+      const store = useAssetsStore()
+      const original = {
+        ...createMockAsset('opt-unknown'),
+        user_metadata: { note: 'before' } as Record<string, unknown>
+      }
+
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([original])
+      )
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+      Object.defineProperty(assetService, 'updateAsset', {
+        configurable: true,
+        value: vi.fn().mockResolvedValue({
+          kind: 'failed',
+          serverState: 'unknown'
+        })
+      })
+
+      await store.updateAssetMetadata(
+        original,
+        { note: 'optimistic' },
+        'CheckpointLoaderSimple'
+      )
+
       const cached = store.getAssets('CheckpointLoaderSimple')[0]
       expect(cached.user_metadata).toEqual({ note: 'before' })
-      consoleSpy.mockRestore()
+    })
+
+    it.fails('rolls back when the server confirms the update was rejected', async () => {
+      const store = useAssetsStore()
+      const original = {
+        ...createMockAsset('opt-3'),
+        user_metadata: { note: 'before' } as Record<string, unknown>
+      }
+
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([original])
+      )
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+      Object.defineProperty(assetService, 'updateAsset', {
+        configurable: true,
+        value: vi.fn().mockResolvedValue({
+          kind: 'failed',
+          serverState: 'unchanged'
+        })
+      })
+
+      await store.updateAssetMetadata(
+        original,
+        { note: 'will be reverted' },
+        'CheckpointLoaderSimple'
+      )
+
+      expect(
+        store.getAssets('CheckpointLoaderSimple')[0].user_metadata
+      ).toEqual({ note: 'before' })
     })
   })
 

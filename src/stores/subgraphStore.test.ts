@@ -51,7 +51,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     canvas: {
       _deserializeItems: vi.fn((i) => i),
       ds: { visible_area: [0, 0, 0, 0] },
-      selected_nodes: null
+      selected_nodes: null,
+      setGraph: vi.fn()
     },
     loadGraphData: vi.fn()
   }
@@ -144,6 +145,16 @@ describe('useSubgraphStore', () => {
     //check active graph
     expect(comfyApp.loadGraphData).toHaveBeenCalled()
   })
+  it.fails('should not access the canvas when a blueprint fails to open', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    vi.mocked(comfyApp.loadGraphData).mockResolvedValueOnce(false)
+    vi.mocked(useCanvasStore().getCanvas).mockClear()
+
+    expect(await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')).toBe(
+      false
+    )
+    expect(comfyApp.canvas.setGraph).not.toHaveBeenCalled()
+  })
   it.fails('should reject stale edit and delete requests without mutating', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -165,6 +176,19 @@ describe('useSubgraphStore', () => {
       name: 'SubgraphBlueprint.test'
     } as ComfyNodeDefV1)
     expect(res).toBeTruthy()
+  })
+  it.fails('should reject blueprints with multiple root nodes before registration', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await mockFetch({
+      'invalid.json': {
+        nodes: [{ type: '123' }, { type: '123' }],
+        definitions: { subgraphs: [{ id: '123' }] }
+      }
+    })
+
+    expect(store.subgraphBlueprints).toHaveLength(0)
+    expect(error).toHaveBeenCalledWith(expect.any(Error))
   })
   it('should return a deep copy from getBlueprint so mutations do not corrupt the cache', async () => {
     await mockFetch({ 'test.json': mockGraph })

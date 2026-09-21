@@ -209,6 +209,20 @@ describe('BaseWorkflowsSidebarTab', () => {
     expect(getLeafPaths(getSearchRoot())).toEqual(['workflows/test-alpha.json'])
   })
 
+  it.fails('propagates failed workflow deletion to the tree', async () => {
+    const workflow = createMockWorkflow('workflows/test.json')
+    Object.assign(useWorkflowStore(), { workflows: [workflow] })
+    mockWorkflowService.deleteWorkflow.mockResolvedValueOnce(false)
+
+    renderComponent()
+    setSearchQuery('test')
+    await nextTick()
+    const leaf = getSearchRoot()?.children?.[0]
+
+    expect(leaf).toBeDefined()
+    expect(await leaf?.handleDelete?.()).toBe(false)
+  })
+
   it('refreshes when idle and exposes busy state while workflows are syncing', async () => {
     const user = userEvent.setup()
 
