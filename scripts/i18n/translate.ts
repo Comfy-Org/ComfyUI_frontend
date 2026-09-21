@@ -152,7 +152,7 @@ export function createOpenAiTranslator(
       .strict()
     let deferralReason = 'the request was not attempted'
     for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
-      const request = client.responses.parse({
+      const response = await client.responses.create({
         model: options.model,
         reasoning: { effort: options.reasoningEffort },
         store: false,
@@ -160,21 +160,7 @@ export function createOpenAiTranslator(
         instructions: buildSystemPrompt(locale, options.glossary),
         input: JSON.stringify({ items })
       })
-      if (options.onUsage) {
-        const httpResponse = await request.asResponse()
-        const { usage }: { usage?: ResponseUsage } = await httpResponse
-          .clone()
-          .json()
-        options.onUsage(usage)
-      }
-      const response = await request.catch((error: unknown) => {
-        if (!(error instanceof SyntaxError || error instanceof z.ZodError)) {
-          throw error
-        }
-        deferralReason = error.message
-        return undefined
-      })
-      if (!response) continue
+      options.onUsage?.(response.usage)
       if (
         response.status === 'incomplete' &&
         response.incomplete_details?.reason === 'max_output_tokens'
@@ -213,8 +199,17 @@ export function createOpenAiTranslator(
         deferralReason = 'the model refused the translation'
         break
       }
-      if (response.output_parsed !== null) return response.output_parsed
-      deferralReason = 'the response has no parsed translation'
+      let output: unknown
+      try {
+        output = JSON.parse(response.output_text)
+      } catch (error) {
+        if (!(error instanceof SyntaxError)) throw error
+        deferralReason = error.message
+        continue
+      }
+      const parsed = schema.safeParse(output)
+      if (parsed.success) return parsed.data
+      deferralReason = parsed.error.message
     }
     console.warn(
       `${locale.code}: deferring ${items.length} strings for retry: ${deferralReason}`

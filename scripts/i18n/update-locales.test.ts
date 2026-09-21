@@ -782,13 +782,30 @@ describe('createOpenAiTranslator', () => {
           }
         ]
       }
+    },
+    {
+      name: 'a refusal alongside malformed JSON',
+      overrides: {
+        output: [
+          {
+            id: 'refusal',
+            type: 'message',
+            role: 'assistant',
+            status: 'completed',
+            content: [
+              { type: 'refusal', refusal: 'Cannot translate this input' },
+              { type: 'output_text', text: 'not json', annotations: [] }
+            ]
+          }
+        ]
+      }
     }
   ] satisfies { name: string; overrides: Partial<OpenAiResponse> }[])(
     'defers $name without accepting output text',
     async ({ overrides }) => {
-      const { translate, callCount } = translatorFor([
+      const { translate, callCount } = translatorFor(() =>
         response('{"1":"Bonjour {name}","2":"Au revoir {name}"}', overrides)
-      ])
+      )
       await expect(translate(locale, items)).resolves.toEqual({})
       expect(callCount()).toBe(1)
     }
@@ -878,6 +895,20 @@ describe('createOpenAiTranslator', () => {
     await expect(translate(locale, items)).rejects.toMatchObject({
       status: 401
     })
+    expect(callCount()).toBe(1)
+  })
+
+  it('propagates usage callback errors without retrying', async () => {
+    const error = new SyntaxError('invalid usage data')
+    const { translate, callCount } = translatorFor(
+      () => response('{"1":"Bonjour {name}","2":"Au revoir {name}"}'),
+      {
+        onUsage: () => {
+          throw error
+        }
+      }
+    )
+    await expect(translate(locale, items)).rejects.toBe(error)
     expect(callCount()).toBe(1)
   })
 })
