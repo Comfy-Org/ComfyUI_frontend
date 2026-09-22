@@ -120,9 +120,41 @@ describe('Workshop snippets', () => {
     })
   })
 
-  it.for(['typescript', 'python', 'http'] as const)(
-    'builds the %s snippet from the current values',
-    (language) => {
+  it.for([
+    {
+      language: 'typescript' as const,
+      expected: `import { comfy } from '@comfyorg/sdk'
+
+comfy.config({ credentials: 'YOUR_API_KEY' })
+const { data } = await comfy.models.run("bfl/flux-3", {
+  "prompt": "A red fox",
+  "enhance": true
+})`
+    },
+    {
+      language: 'python' as const,
+      expected: `from comfy_sdk import Comfy
+
+comfy = Comfy(api_key="YOUR_API_KEY")
+result = comfy.models.run("bfl/flux-3", {
+    "prompt": "A red fox",
+    "enhance": True
+})`
+    },
+    {
+      language: 'http' as const,
+      expected: `curl --request POST 'https://api.comfy.org/v2/models/bfl/flux-3' \\
+  --header 'Authorization: Bearer YOUR_API_KEY' \\
+  --header 'Content-Type: application/json' \\
+  --header 'Idempotency-Key: 11111111-2222-4333-8444-555555555555' \\
+  --data '{
+  "prompt": "A red fox",
+  "enhance": true
+}'`
+    }
+  ])(
+    'builds the $language snippet from the current values',
+    ({ language, expected }) => {
       expect(
         buildWorkshopSnippet(
           language,
@@ -131,7 +163,7 @@ describe('Workshop snippets', () => {
           { prompt: 'A red fox', enhance: true },
           TEST_KEY
         )
-      ).toMatchSnapshot()
+      ).toBe(expected)
     }
   )
 
