@@ -22,7 +22,7 @@ test.describe('API-keys onboarding links @smoke', () => {
     })
   }
 
-  test('model page API tab names the model in the models onboarding link', async ({
+  test('model page API tab names the model in the models onboarding link @models', async ({
     page
   }) => {
     await page.goto(MODEL_PATH)

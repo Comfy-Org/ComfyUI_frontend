@@ -74,6 +74,8 @@ runs:
           app_website:
             - 'apps/website/**'
             - '.github/workflows/ci-website-e2e.yaml'
+            - '.github/workflows/ci-models.yaml'
+            - '.github/filters/models.yaml'
             - 'scripts/cicd/prepare-website-e2e-report.sh'
             - 'scripts/cicd/check-website-e2e-result.sh'
           app_billing_web:

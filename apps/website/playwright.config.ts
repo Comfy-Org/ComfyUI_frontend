@@ -1,6 +1,14 @@
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { defineConfig, devices } from '@playwright/test'
 
+import {
+  modelsBrowserTests,
+  scopedBrowserTests,
+  websiteTestScope
+} from './testing/models-test-scope'
+
+const scope = websiteTestScope(process.env.WEBSITE_TEST_SCOPE)
+
 const port = Number(process.env.WEBSITE_E2E_PORT ?? 4321)
 if (!Number.isInteger(port) || port < 1 || port > 65535)
   throw new Error('WEBSITE_E2E_PORT must be an integer from 1 to 65535')
@@ -48,17 +56,21 @@ export default defineConfig({
     {
       name: 'desktop',
       use: { ...devices['Desktop Chrome'] },
-      grepInvert: /@mobile|@visual/
+      ...scopedBrowserTests(scope),
+      grepInvert:
+        scope === 'website'
+          ? [/@mobile|@visual/, modelsBrowserTests]
+          : /@mobile|@visual/
     },
     {
       name: 'mobile',
       use: { ...devices['Pixel 5'] },
-      grep: /@mobile/
+      ...scopedBrowserTests(scope, /@mobile/)
     },
     {
       name: 'visual',
       use: { ...devices['Desktop Chrome'] },
-      grep: /@visual/,
+      ...scopedBrowserTests(scope, /@visual/),
       fullyParallel: false
     }
   ]

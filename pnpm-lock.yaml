@@ -1223,6 +1223,9 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.11(typescript@6.0.3)
+      yaml:
+        specifier: ^2.8.3
+        version: 2.9.0
 
   packages/account-core:
     dependencies:

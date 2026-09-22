@@ -32,7 +32,7 @@ test.describe('Homepage @smoke', () => {
     ).toBeVisible()
   })
 
-  test('ModelReleaseSection carousel shows the active slide', async ({
+  test('ModelReleaseSection carousel shows the active slide @models', async ({
     page
   }) => {
     const activeSlide = page.locator('article[aria-hidden="false"]', {
@@ -48,7 +48,7 @@ test.describe('Homepage @smoke', () => {
     )
   })
 
-  test('ModelDiscoverySection links providers to the Workshop', async ({
+  test('ModelDiscoverySection links providers to the Workshop @models', async ({
     page
   }) => {
     const section = page.getByTestId('model-discovery')

@@ -13,6 +13,8 @@
     "typecheck": "astro check && vue-tsc --noEmit -p tsconfig.json",
     "test:unit": "vitest run",
     "test:router-models": "tsx ./scripts/test-router-models.ts",
+    "test:models": "cross-env WEBSITE_TEST_SCOPE=models vitest run",
+    "test:models:browser": "cross-env WEBSITE_TEST_SCOPE=models playwright test",
     "test:workshop-upload": "tsx ./scripts/test-workshop-upload.ts",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
@@ -96,6 +98,7 @@
     "undici": "catalog:",
     "vitest": "catalog:",
     "vue-component-type-helpers": "catalog:",
-    "vue-tsc": "catalog:"
+    "vue-tsc": "catalog:",
+    "yaml": "catalog:"
   }
 }

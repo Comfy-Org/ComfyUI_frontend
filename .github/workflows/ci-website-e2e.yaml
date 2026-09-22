@@ -24,6 +24,14 @@ jobs:
       - id: changes
         uses: ./.github/actions/changes-filter
 
+  models:
+    uses: ./.github/workflows/ci-models.yaml
+    permissions:
+      contents: read
+      pull-requests: read
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   website-e2e-shard:
     needs: changes
     if: ${{ needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
@@ -63,6 +71,7 @@ jobs:
         run: pnpm --filter @comfyorg/website test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ${{ github.workspace }}/apps/website/blob-report
+          WEBSITE_TEST_SCOPE: website
 
       - name: Upload blob report
         uses: actions/upload-artifact@v6
@@ -237,13 +246,19 @@ jobs:
 
   website-e2e:
     if: ${{ always() }}
-    needs: [changes, website-e2e-shard, website-e2e-report]
+    needs: [changes, models, website-e2e-shard, website-e2e-report]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v7
+
+      - name: Check MODELS gate result
+        if: ${{ needs.changes.result != 'success' || needs.models.result != 'success' }}
+        run: |
+          echo '::error::MODELS checks did not pass'
+          exit 1
 
       - name: Check website E2E result
         env:
