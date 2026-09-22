@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reportError } from '@/platform/telemetry/reportError'
 
 import type { GraphOperation } from './graphOperations'
+import { WIRE_MAX_OPS_PER_BATCH } from './opEnvelope'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 
@@ -171,7 +172,7 @@ describe('createOpSender', () => {
         state: 'unconfirmed',
         ops: expect.any(Array),
         workflowId: WORKFLOW,
-        deletedItemIds: new Map()
+        admissionMetadata: new Map()
       }
     ])
   })
@@ -187,7 +188,7 @@ describe('createOpSender', () => {
         state: 'unconfirmed',
         ops: expect.any(Array),
         workflowId: WORKFLOW,
-        deletedItemIds: new Map()
+        admissionMetadata: new Map()
       }
     ])
     // No resend was burned reaching this outcome.
@@ -280,7 +281,7 @@ describe('createOpSender', () => {
         state: 'undeliverable',
         ops: expect.any(Array),
         workflowId: WORKFLOW,
-        deletedItemIds: new Map()
+        admissionMetadata: new Map()
       }
     ])
   })
@@ -309,7 +310,7 @@ describe('createOpSender', () => {
         state: 'unacknowledged',
         ops: expect.any(Array),
         workflowId: WORKFLOW,
-        deletedItemIds: new Map()
+        admissionMetadata: new Map()
       }
     ])
   })
@@ -334,6 +335,71 @@ describe('createOpSender', () => {
 
     ackInFlight()
     expect(sent[1].ops).toHaveLength(44)
+  })
+
+  it('carries each identity-bearing delete exactly into its own chunk when a batch splits at the wire cap', () => {
+    // Regression: a chunking bug could copy the whole admission-time
+    // metadata map into every chunk, or drop everything but the first
+    // chunk's share of it. Only `add_node` exercised the wire cap before
+    // this test; none of those carry metadata, so neither failure mode
+    // would have shown up.
+    const identities = Array.from(
+      { length: WIRE_MAX_OPS_PER_BATCH + 1 },
+      (_, index) => `identity-${index}`
+    )
+    let nextIdentity = 0
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return () => {
+          resultListener = null
+        }
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      admissionMetadata: (op) =>
+        op.op === 'delete_node' ? identities[nextIdentity++] : null,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+
+    localSender.enqueue(
+      Array.from({ length: WIRE_MAX_OPS_PER_BATCH + 1 }, (_, index) =>
+        deleteNode(String(index))
+      )
+    )
+
+    const firstBatch = sent[sent.length - 1]
+    expect(firstBatch.ops).toHaveLength(WIRE_MAX_OPS_PER_BATCH)
+    const firstOpIds = firstBatch.ops.map((op) => op.op_id)
+    resultListener?.({ ok: true, applied: firstOpIds, skipped: [] })
+
+    const secondBatch = sent[sent.length - 1]
+    expect(secondBatch.ops).toHaveLength(1)
+    const secondOpIds = secondBatch.ops.map((op) => op.op_id)
+    resultListener?.({ ok: true, applied: secondOpIds, skipped: [] })
+
+    expect(localSettled).toHaveLength(2)
+    // Each chunk's own outcome carries exactly its own ops' identities -
+    // none copied from the other chunk, none missing.
+    expect([...localSettled[0].admissionMetadata.keys()].sort()).toEqual(
+      [...firstOpIds].sort()
+    )
+    expect([...localSettled[1].admissionMetadata.keys()].sort()).toEqual(
+      [...secondOpIds].sort()
+    )
+    expect(new Set(localSettled[0].admissionMetadata.values())).toEqual(
+      new Set(identities.slice(0, WIRE_MAX_OPS_PER_BATCH))
+    )
+    expect(localSettled[1].admissionMetadata.get(secondOpIds[0])).toBe(
+      identities[WIRE_MAX_OPS_PER_BATCH]
+    )
   })
 
   it('ignores a result for other ops while a batch is in flight', () => {
@@ -406,7 +472,7 @@ describe('createOpSender', () => {
         state: 'unacknowledged',
         ops: expect.any(Array),
         workflowId: WORKFLOW,
-        deletedItemIds: new Map()
+        admissionMetadata: new Map()
       }
     ])
 
@@ -486,7 +552,7 @@ describe('createOpSender', () => {
         state: 'undeliverable',
         ops: expect.any(Array),
         workflowId: WORKFLOW,
-        deletedItemIds: new Map()
+        admissionMetadata: new Map()
       }
     ])
   })
@@ -503,7 +569,7 @@ describe('createOpSender', () => {
         state: 'undeliverable',
         ops: expect.any(Array),
         workflowId: null,
-        deletedItemIds: new Map()
+        admissionMetadata: new Map()
       }
     ])
   })
@@ -724,7 +790,8 @@ describe('createOpSender', () => {
       tab: TAB,
       actor: () => ACTOR,
       baseVersion: () => 41,
-      deletedItemId: () => currentIdentity,
+      admissionMetadata: (op) =>
+        op.op === 'delete_node' ? currentIdentity : null,
       onBatchSettled: (outcome) => localSettled.push(outcome)
     })
 
@@ -748,8 +815,12 @@ describe('createOpSender', () => {
     resultListener?.({ ok: true, applied: [secondOpId], skipped: [] })
 
     expect(localSettled).toHaveLength(2)
-    expect(localSettled[0].deletedItemIds).toEqual(new Map([[firstOpId, 'A']]))
-    expect(localSettled[1].deletedItemIds).toEqual(new Map([[secondOpId, 'B']]))
+    expect(localSettled[0].admissionMetadata).toEqual(
+      new Map([[firstOpId, 'A']])
+    )
+    expect(localSettled[1].admissionMetadata).toEqual(
+      new Map([[secondOpId, 'B']])
+    )
   })
 
   describe('suspension', () => {

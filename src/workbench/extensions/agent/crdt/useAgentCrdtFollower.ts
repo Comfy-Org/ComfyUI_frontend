@@ -200,7 +200,7 @@ function retentionCandidatesFromBatch(
       workflowId,
       nodeId: String(op.node_id),
       reason,
-      identity: outcome.deletedItemIds.get(op.op_id) ?? null
+      identity: outcome.admissionMetadata.get(op.op_id) ?? null
     })
   }
   return candidates
@@ -409,20 +409,28 @@ function startAgentCrdtFollower(
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
-    // See ADR CRDT-WRITE-0035.
-    deletedItemId: boundNodeItemId,
+    // The sender carries this opaque per-op; only this callback (retention's
+    // own policy) knows a `delete_node`'s target identity is worth capturing
+    // at all. See ADR CRDT-WRITE-0035.
+    admissionMetadata: (op) =>
+      op.op === 'delete_node' ? boundNodeItemId(String(op.node_id)) : null,
     onBatchSettled: (outcome) => {
       retentionStore.settleBatch(retentionCandidatesFromBatch(outcome))
       recordDevEvent('human_ops_settled', outcome)
     }
   })
   const pendingHumanDeletes = (workflowId: string): ReadonlySet<string> => {
+    // An unreadable snapshot (`readable: false`) is no more trustworthy than
+    // a not-yet-caught-up one: either way this read proves nothing about
+    // which nodes the host still has, so it must not authorize
+    // `retainedNodeIds` to prune on absence (see `readDocNodeIds`).
+    const { ids: docNodeIds, readable } = readDocNodeIds()
     const pending = new Set(
       retentionStore.retainedNodeIds(
         workflowId,
-        currentDocNodeIds(),
+        docNodeIds,
         boundNodeItemId,
-        docCaughtUp
+        docCaughtUp && readable
       )
     )
     for (const batch of sender.pendingOps()) {
@@ -446,16 +454,28 @@ function startAgentCrdtFollower(
   // doc_reset (remint) because the lineage broke.
   let knownDocNodeIds: Set<string> = new Set()
   const pendingLiveNodeIds = new Set<NodeId>()
-  const currentDocNodeIds = (): Set<string> => {
+  /**
+   * The doc's current node-id set, and whether that read actually succeeded.
+   * A caught exception (an internal Yjs-shape break, or no doc bound yet)
+   * returns an empty set that must never be mistaken for the document
+   * genuinely holding no nodes — callers that treat absence as authoritative
+   * (see `pendingHumanDeletes`) must gate on `readable`, not just on the set
+   * being empty.
+   */
+  const readDocNodeIds = (): { ids: Set<string>; readable: boolean } => {
     try {
       const doc = bridge.follower.doc as unknown as {
         getMap: (k: string) => { toJSON: () => Record<string, unknown> }
       }
-      return new Set(Object.keys(doc.getMap('nodes').toJSON()))
+      return {
+        ids: new Set(Object.keys(doc.getMap('nodes').toJSON())),
+        readable: true
+      }
     } catch {
-      return new Set()
+      return { ids: new Set(), readable: false }
     }
   }
+  const currentDocNodeIds = (): Set<string> => readDocNodeIds().ids
   const reconcileAndReportPending = (workflowId: string): void => {
     const materialized = projection.reconcileLiveGraph(workflowId)
     emitPendingMaterializations(

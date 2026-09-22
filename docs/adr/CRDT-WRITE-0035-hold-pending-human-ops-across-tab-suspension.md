@@ -66,25 +66,39 @@ Distinguish a paused subscription from a lost one, and hold rather than drop.
   `AgentPanelRoot.vue` creates, so a delete retained by a disposed follower
   still suppresses resurrection on a freshly mounted one's very first
   reconcile; tests inject a fresh store per case instead.
-- `opSender` reads each `delete_node`'s target identity (the Yjs
-  `client:clock` occupying that node id) at admission time, when the op's
-  `op_id` is minted - before the op reaches the wire, and therefore before
-  any `doc_update` can react to it. A doc-diff-based capture (observing the
-  id disappear from the document) cannot do this safely: a delete and a
-  same-id recreate arriving in one atomic Yjs transaction never shows up as a
-  removal in that diff, so a doc-diff capture has nothing to attribute a
-  later settle to and falls back to reading whatever identity is current -
-  the newly recreated one, not the deleted one. The identity is stored keyed
-  by that exact `op_id` and handed back on the batch's `BatchOutcome`
-  (`deletedItemIds`), so a settling batch binds each `delete_node` op to the
-  identity captured for THAT op, never to a position in a shared queue.
+- `opSender` captures opaque per-op `admissionMetadata` at admission time,
+  when the op's `op_id` is minted - before the op reaches the wire, and
+  therefore before any `doc_update` can react to it - but the sender itself
+  neither recognizes `delete_node` nor knows what the metadata means; only
+  the retention coordinator's own callback does, reading a `delete_node`'s
+  target identity (the Yjs `client:clock` occupying that node id) and
+  returning null for every other op. This keeps transport batching and retry
+  independent of Yjs/delete policy: a future caller can carry its own
+  opaque value through the same seam without opSender changing. A doc-diff-
+  based capture (observing the id disappear from the document) cannot do
+  this safely: a delete and a same-id recreate arriving in one atomic Yjs
+  transaction never shows up as a removal in that diff, so a doc-diff
+  capture has nothing to attribute a later settle to and falls back to
+  reading whatever identity is current - the newly recreated one, not the
+  deleted one. The metadata is stored keyed by that exact `op_id` and handed
+  back on the batch's `BatchOutcome` (`admissionMetadata`), so a settling
+  batch binds each `delete_node` op to the identity captured for THAT op,
+  never to a position in a shared queue.
 - The retention policy is a state machine keyed by how a `delete_node` op
   settled and whether an identity was captured for it, not something to read
-  off the Consequences section below:
+  off the Consequences section below. A `docNodeIds` read is `authoritative`
+  only once the follower's bound document has produced its own frame since
+  last being (re)bound and that read itself succeeded; the transient empty
+  snapshot between a lineage replacement and that document's own catch-up
+  frame is not, an unreadable snapshot (an internal Yjs-shape break) is not
+  either, and neither may release a retention on the strength of the
+  document appearing to no longer hold the node (see `useAgentCrdtFollower.ts`'s
+  `docCaughtUp` and `readDocNodeIds`). Every rule below that turns on the
+  document's own contents applies only to an authoritative read:
   - `confirmed-applied`, with a captured identity (`acknowledged`, the op id
-    is in `applied`): retained until the document no longer holds the node,
-    or a different Yjs item identity now occupies that node id. No expiry -
-    the outcome is already certain.
+    is in `applied`): retained until an authoritative read shows the
+    document no longer holds the node, or a different Yjs item identity now
+    occupies that node id. No expiry - the outcome is already certain.
   - `confirmed-applied`, with no captured identity: the op's target did not
     yet exist in the follower's own doc at admission time (typically a
     locally-added node whose `add_node` had not yet reached this doc), so

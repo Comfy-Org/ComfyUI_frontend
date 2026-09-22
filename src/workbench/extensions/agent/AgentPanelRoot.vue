@@ -117,6 +117,7 @@ import {
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { createLiveWidgetProjection } from './crdt/liveWidgetProjection'
+import { sharedPendingDeleteRetentionStore } from './crdt/pendingDeleteRetentionStore'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -267,6 +268,17 @@ watch(
   },
   { immediate: true }
 )
+// The shared retention store (ADR CRDT-WRITE-0035) is scoped to this panel's
+// own lifetime, not to a principal or workspace: it must not carry an
+// identified confirmed delete from one signed-in user or workspace into the
+// next one's session. `onboardingKey` already resolves to null-vs-a-real-
+// scope on exactly the identity/workspace change this store needs to react
+// to, so this reuses it rather than tracking a second copy of the same
+// scope key. No `immediate`: the store starts empty, so the very first
+// resolved key has nothing to clear.
+watch(onboardingKey, () => {
+  sharedPendingDeleteRetentionStore.clearAll()
+})
 const { activeTour } = storeToRefs(useOnboardingTourStore())
 const graphMutationsByWorkflow = new Map<
   string,

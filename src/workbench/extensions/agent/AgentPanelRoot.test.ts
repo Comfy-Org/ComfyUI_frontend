@@ -264,6 +264,7 @@ import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
+import { sharedPendingDeleteRetentionStore } from './crdt/pendingDeleteRetentionStore'
 
 const mintPortWiringDeps = vi.hoisted(() => ({
   current: null as MintPortWiringDeps | null
@@ -523,6 +524,20 @@ describe('AgentPanelRoot onboarding', () => {
       await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
     ).toBeInTheDocument()
     expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
+  })
+
+  it('clears the shared pending-delete retention store when the active workspace changes', async () => {
+    const clearAll = vi.spyOn(sharedPendingDeleteRetentionStore, 'clearAll')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+    clearAll.mockClear()
+
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-b'
+    })
+    await nextTick()
+
+    expect(clearAll).toHaveBeenCalled()
   })
 
   it('walks through the four cards and leaves the composer usable after Done', async () => {
