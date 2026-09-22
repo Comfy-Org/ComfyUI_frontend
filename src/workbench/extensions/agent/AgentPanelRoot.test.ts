@@ -28,7 +28,10 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
+import {
+  isRootGraphDocBound,
+  registerDocBoundRootGraphProbe
+} from '@/lib/litegraph/src/docBoundGraphs'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -278,10 +281,24 @@ const mintPortWiringDeps = vi.hoisted(() => ({
   current: null as MintPortWiringDeps | null
 }))
 vi.mock(import('./crdt/mintPortWiring'), { spy: true })
-vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
+
+// The mock replaces the real `attachMintPortWiring` body entirely, so it must
+// also register the doc-bound probe itself (mirroring the production wiring
+// in `mintPortWiring.ts`) — otherwise `isRootGraphDocBound` can never see a
+// probe and always reports false, regardless of `deps`.
+function stubAttachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   mintPortWiringDeps.current = deps
-  return fromPartial<MintPortWiring>({ detach: vi.fn() })
-})
+  const unregisterDocBoundProbe = registerDocBoundRootGraphProbe(() => {
+    if (!deps.isEnabled() || !deps.isDocBound()) return null
+    const graph = deps.getGraph()
+    if (!graph) return null
+    return graph.rootGraph?.id ?? graph.id
+  })
+  return fromPartial<MintPortWiring>({
+    detach: vi.fn(unregisterDocBoundProbe)
+  })
+}
+vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
@@ -357,10 +374,7 @@ beforeEach(() => {
   appMock.isGraphReady = false
   appMock.canvas = undefined
   mintPortWiringDeps.current = null
-  vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
-    mintPortWiringDeps.current = deps
-    return fromPartial<MintPortWiring>({ detach: vi.fn() })
-  })
+  vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
   workflowService.saveWorkflow.mockClear()
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
