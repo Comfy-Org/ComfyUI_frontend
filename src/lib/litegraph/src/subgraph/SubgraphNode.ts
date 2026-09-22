@@ -26,7 +26,10 @@ import type {
   ExportedSubgraphInstance,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import {
+  LGraphEventMode,
+  NodeSlotType
+} from '@/lib/litegraph/src/types/globalEnums'
 import type {
   IBaseWidget,
   TWidgetValue
@@ -870,6 +873,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       parentSubgraphNode
     )
     executableNodes.set(subgraphNodeDto.id, subgraphNodeDto)
+
+    if (
+      this.mode === LGraphEventMode.NEVER ||
+      this.mode === LGraphEventMode.BYPASS
+    ) {
+      return nodes
+    }
 
     for (const node of this.subgraph.nodes) {
       if ('getInnerNodes' in node && node.getInnerNodes) {
