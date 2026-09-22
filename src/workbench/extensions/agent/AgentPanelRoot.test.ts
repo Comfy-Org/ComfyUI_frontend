@@ -5047,6 +5047,30 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
   })
 
+  it('sends the serialized empty graph when a new tab has not finished loading', async () => {
+    const initialContent = fromPartial<ComfyWorkflowJSON>({
+      id: 'fresh-local-graph',
+      nodes: [],
+      links: []
+    })
+    const tab = makeTab()
+    Object.assign(tab, {
+      isTemporary: true,
+      changeTracker: null,
+      activeState: null,
+      content: JSON.stringify(initialContent)
+    })
+    const bodies = mockMessagesEndpoint('wf-fresh')
+
+    await renderAndSend('add one text input node')
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).toMatchObject({
+      current_tab_unbound: true,
+      draft: { content: initialContent }
+    })
+  })
+
   // A restored/existing thread (no turn of THIS session has bound anything
   // yet - `New Chat` is what puts the session into that state here) whose
   // target tab is still unbound must flag it AND still send its draft -

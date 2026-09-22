@@ -484,9 +484,27 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (!target) return undefined
   if (target.path === workflowStore.activeWorkflow?.path)
     target.changeTracker?.prepareForSave()
-  const content = target.activeState
+  const content = target.activeState ?? temporaryWorkflowContent(target)
   if (!content) return undefined
   return { content }
+}
+
+/**
+ * A newly-created temporary tab is visible before its async load installs a
+ * change tracker. During that window activeState is null, but createTemporary
+ * has already stored the canonical empty graph in content. Sending without
+ * that graph makes current_tab_unbound indistinguishable from no selected
+ * workflow to the server (PM-1596).
+ */
+function temporaryWorkflowContent(
+  workflow: ComfyWorkflow
+): ComfyWorkflowJSON | undefined {
+  if (!workflow.isTemporary || workflow.content === null) return undefined
+  try {
+    return JSON.parse(workflow.content) as ComfyWorkflowJSON
+  } catch {
+    return undefined
+  }
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {
