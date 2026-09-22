@@ -24,7 +24,14 @@ const { key } = Astro.params
 const page = key ? getModelGroupPage(key) : undefined
 if (!page) return Astro.redirect('/hub/')
 
-const { name, provider, operations, uses, operationsFromWorkflows } = page
+const {
+  name,
+  displayName,
+  provider,
+  operations,
+  uses,
+  operationsFromWorkflows
+} = page
 
 const operationRows = await pricedOperations(operations, (model) =>
   estimateWorkshopNodePrice(model, useCaseFor(model))
@@ -57,8 +64,8 @@ const sectionTitle =
 
 <BaseLayout
   inHub
-  title={`${name} - Comfy`}
-  description={`${name} and the workflows built on it.`}
+  title={`${displayName} - Comfy`}
+  description={`${displayName} and the workflows built on it.`}
   noindex
 >
   <main class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-16">
@@ -71,7 +78,7 @@ const sectionTitle =
 
     <header class="mb-12 flex flex-col gap-3">
       <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
-        {name}
+        {displayName}
       </h1>
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <ul class="flex flex-wrap items-center gap-2" data-testid="model-kind">

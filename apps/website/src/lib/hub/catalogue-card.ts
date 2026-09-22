@@ -3,7 +3,7 @@ import type { Locale } from '../../i18n/translations'
 import { taskLabelFor } from '../workshop/task-label'
 import type { CatalogueEntry, EntryKind } from './catalogue-entries'
 import { hubWorkflowPath, modelGroupPath } from './catalogue-entries'
-import { modelName } from './model-identity'
+import { displayModelName } from './model-identity'
 import { getLogoPath } from './model-logos'
 import { usefulTags } from './tag-aliases'
 import { workflowDisplayTitle } from './workflow-title'
@@ -54,7 +54,7 @@ function modelCard(
     href: modelGroupPath(entry.key),
     // One card per model, so it goes by the model's name: the operation is a
     // choice inside the page, not part of what the model is called.
-    title: entry.name,
+    title: displayModelName(model, entry.operations),
     media: model.thumbnail,
     hoverMedia: undefined,
     maker: { label: provider, logo },
@@ -84,7 +84,7 @@ function workflowCard(
     // The registry names a row for its operation, so `Seedream 5.0 Lite
     // Text-to-Image` is the model plus a verb the card has already said.
     mark: {
-      label: runsOn ? modelName(runsOn, [...models, runsOn]) : '',
+      label: runsOn ? displayModelName(runsOn, [...models, runsOn]) : '',
       logo: runsOn ? markFor(runsOn) : undefined
     },
     badges: usefulTags(template.tags),

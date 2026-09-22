@@ -8,12 +8,18 @@ import {
   ownerOf
 } from './catalogue-entries'
 import type { FacetedTemplate } from './facet-fields'
+import { displayModelName } from './model-identity'
 import { withFacetFields } from './facet-fields'
 import { hubTemplatesSchema } from './types'
 
 export interface ModelGroupPage {
   readonly key: string
   readonly name: string
+  /**
+   * What the heading says. The catalogue still matches on `name`, which is how
+   * the registry wrote it, so a link narrowing to this model keeps working.
+   */
+  readonly displayName: string
   readonly provider: string | undefined
   /** The registry's rows for this name, one per operation. */
   readonly operations: readonly WorkshopModel[]
@@ -53,6 +59,7 @@ export function modelGroupFrom(
   return {
     key: entry.key,
     name: entry.name,
+    displayName: displayModelName(entry.model, entry.operations),
     provider: entry.model.provider,
     operations: entry.operations,
     uses: entry.workflows.filter((template) => !ownedNames.has(template.name)),

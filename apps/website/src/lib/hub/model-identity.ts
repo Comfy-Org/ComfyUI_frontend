@@ -45,3 +45,27 @@ export function modelName(
     )
   )
 }
+
+/**
+ * How the registry writes an operation at the end of a name: a crossing
+ * (`Text-to-Image`, `Reference-to-Video`) or a medium and a verb (`Image
+ * Edit`). Twelve makers end a name in `Text-to-Image` and nine in `Image
+ * Edit`, which is the registry's vocabulary rather than any one product's
+ * name; `FLUX Tools Erase` fits neither and keeps its word.
+ */
+const OPERATION_TAIL =
+  /\s+(?:\S+-to-\S+|(?:image|video|audio|text|3d)\s+edit)$/i
+
+/**
+ * The name to show. Grouping decides what a model *is*, and it leaves a lone
+ * operation's name whole, so `HappyHorse Reference-to-Video` keeps a verb the
+ * card has already said. Only what is shown loses it: what the catalogue
+ * matches on stays as the registry wrote it.
+ */
+export function displayModelName(
+  model: WorkshopModel,
+  models: readonly WorkshopModel[]
+): string {
+  const grouped = modelName(model, models)
+  return grouped.replace(OPERATION_TAIL, '') || grouped
+}
