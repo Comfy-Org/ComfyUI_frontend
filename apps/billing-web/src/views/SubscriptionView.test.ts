@@ -18,9 +18,11 @@ import {
 } from '@/test/fakeBillingClient'
 import SubscriptionView from '@/views/SubscriptionView.vue'
 
-/** The two values this surface reads; a test-family key stands in for a deployment's. */
+/** The values this surface and the session it sits under read; a test-family key stands in for a deployment's. */
 vi.mock(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test' as const,
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org',
+  FIREBASE_OPTIONS: undefined,
   STRIPE_PUBLISHABLE_KEY: 'pk_test_example'
 }))
 

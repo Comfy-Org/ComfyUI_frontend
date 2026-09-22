@@ -122,21 +122,51 @@ describe('useBillingWebSession', () => {
     ]
   ] as const)('projects %s', async ([, user, makeFetch, expected]) => {
     vi.stubGlobal('fetch', makeFetch())
-    const { projection } = await freshSession()
+    const { client, projection } = await freshSession()
 
     h.deliver?.(user)
+    // The client no longer auto-mints on identity delivery (see
+    // `billingWebSession.ts`); production drives this through
+    // `useSignInController`, so a test asking for a minted or in-flight
+    // result asks for it the same explicit way.
+    if (user) void client.ensureFresh(user)
 
     await vi.waitFor(() => expect(projection()).toEqual(expected))
   })
 
   it('reports the same phase to the router guard', async () => {
     vi.stubGlobal('fetch', mintedFetch())
-    const { phase, projection } = await freshSession()
+    const { client, phase, projection } = await freshSession()
+    const user = signedInUser()
 
-    h.deliver?.(signedInUser())
+    h.deliver?.(user)
+    void client.ensureFresh(user)
 
     await vi.waitFor(() => expect(phase()).toBe('authenticated'))
     expect(projection().phase).toBe('authenticated')
+  })
+})
+
+describe('a refused mint', () => {
+  it('surfaces the failure instead of falling back to a personal session', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(
+        async () =>
+          new Response(JSON.stringify({ error: 'not a member' }), {
+            status: 403
+          })
+      )
+    )
+    const { client, session } = await freshSession()
+    const user = signedInUser()
+
+    h.deliver?.(user)
+    void client.ensureFresh(user, { workspaceId: 'ws-team' })
+
+    await vi.waitFor(() => expect(session.phase.value).toBe('error'))
+    expect(session.session.value).toBeUndefined()
+    expect(session.failure.value?.code).toBe('ACCESS_DENIED')
   })
 })
 
@@ -145,7 +175,9 @@ describe('the credential cache', () => {
     const mint = mintedFetch()
     vi.stubGlobal('fetch', mint)
     const { client, projection } = await freshSession()
-    h.deliver?.(signedInUser())
+    const user = signedInUser()
+    h.deliver?.(user)
+    void client.ensureFresh(user)
     await vi.waitFor(() => expect(projection().phase).toBe('authenticated'))
 
     expect(sessionStorage.getItem(STORAGE_KEY)).not.toBeNull()

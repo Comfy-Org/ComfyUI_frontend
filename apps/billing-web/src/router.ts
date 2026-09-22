@@ -11,7 +11,11 @@ import {
 } from '@comfyorg/billing-contract'
 
 import { recordBillingEntry } from '@/entry/billingEntry'
-import { billingWebSessionPhase } from '@/session/billingWebSession'
+import { bindEntryWorkspace } from '@/entry/workspaceBinding'
+import {
+  billingWebSessionClient,
+  billingWebSessionPhase
+} from '@/session/billingWebSession'
 import BillingHomeView from '@/views/BillingHomeView.vue'
 import CheckoutView from '@/views/CheckoutView.vue'
 import EntryErrorView from '@/views/EntryErrorView.vue'
@@ -65,6 +69,18 @@ const routes: RouteRecordRaw[] = [
 export type BillingWebSessionPhase = SessionSnapshot['phase']
 
 /**
+ * Rebinds the tab to a newly-arrived entry's workspace and, only when that
+ * actually changes the binding, mints for it right away — so a credential
+ * for the workspace this tab is leaving is never left to answer a request
+ * meant for the new one. A signed-out tab's call is a no-op: `ensureFresh`
+ * with no user to mint for resolves immediately.
+ */
+function defaultOnEntryWorkspace(workspaceId: string): void {
+  if (!bindEntryWorkspace(workspaceId)) return
+  void billingWebSessionClient().ensureFresh(undefined, { workspaceId })
+}
+
+/**
  * Billing is never public: every route but the sign-in page needs a live
  * workspace session, and `pending` is not one — a restored identity that
  * mints afterwards is carried back by the sign-in page's own redirect.
@@ -78,7 +94,8 @@ export type BillingWebSessionPhase = SessionSnapshot['phase']
  */
 export function createBillingRouter(
   history: RouterHistory = createWebHistory(import.meta.env.BASE_URL),
-  readPhase: () => BillingWebSessionPhase = billingWebSessionPhase
+  readPhase: () => BillingWebSessionPhase = billingWebSessionPhase,
+  onEntryWorkspace: (workspaceId: string) => void = defaultOnEntryWorkspace
 ) {
   const router = createRouter({ history, routes })
 
@@ -86,7 +103,11 @@ export function createBillingRouter(
     if (to.path === APP_ENTRY_PATH) {
       recordBillingEntry(undefined)
     } else if (to.path !== SIGN_IN_PATH) {
-      recordBillingEntry(parseBillingEntry(to.fullPath))
+      const result = parseBillingEntry(to.fullPath)
+      recordBillingEntry(result)
+      if (result.status === 'ok' && result.entry.workspaceId !== undefined) {
+        onEntryWorkspace(result.entry.workspaceId)
+      }
     }
     if (to.path === SIGN_IN_PATH || readPhase() === 'authenticated') return true
     return { path: SIGN_IN_PATH, query: { returnTo: to.fullPath } }
