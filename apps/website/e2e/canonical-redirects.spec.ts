@@ -60,7 +60,7 @@ test.describe('canonical redirects', () => {
     // validated separately in src/config/redirects.test.ts.
     for (const { source, destination, heading } of enterpriseCases) {
       await page.goto(source)
-      await expect(page).toHaveURL(new RegExp(`${destination}$`))
+      await expect(page).toHaveURL((url) => url.pathname === destination)
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading)
     }
   })

@@ -2,7 +2,9 @@ import type { Hreflang, Locale } from '../config/locales'
 import {
   LOCALE_CODES,
   LOCALES,
-  NON_DEFAULT_LOCALE_PREFIXES
+  NON_DEFAULT_LOCALE_PREFIXES,
+  normalizeRoute,
+  withRouteSlash
 } from '../config/locales'
 import { supportsLocaleRoute } from '../config/routes'
 
@@ -11,19 +13,8 @@ export interface Alternate {
   href: string
 }
 
-function trimSlash(pathname: string): string {
-  const trimmed = pathname.replace(/\/+$/, '')
-  return trimmed === '' ? '/' : trimmed
-}
-
-function withSlash(pathname: string): string {
-  return pathname === '/' || pathname.endsWith('.html')
-    ? pathname
-    : `${pathname}/`
-}
-
 function englishPath(pathname: string): string {
-  const path = trimSlash(pathname)
+  const path = normalizeRoute(pathname)
   for (const prefix of NON_DEFAULT_LOCALE_PREFIXES) {
     if (path === prefix) return '/'
     if (path.startsWith(`${prefix}/`)) return path.slice(prefix.length)
@@ -41,11 +32,11 @@ export function hreflangAlternates(
   )
   if (locales.length === 0) return []
 
-  const enHref = new URL(withSlash(en), origin).href
+  const enHref = new URL(withRouteSlash(en), origin).href
   const alternates: Alternate[] = locales.map((locale) => ({
     hreflang: LOCALES[locale].hreflang,
     href: new URL(
-      withSlash(`${LOCALES[locale].prefix}${en === '/' ? '' : en}`),
+      withRouteSlash(`${LOCALES[locale].prefix}${en === '/' ? '' : en}`),
       origin
     ).href
   }))

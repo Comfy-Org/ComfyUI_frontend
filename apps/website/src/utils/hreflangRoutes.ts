@@ -6,7 +6,7 @@
  * Kept free of `import.meta.glob` so a plain Node script can import it.
  */
 
-import { NON_DEFAULT_LOCALE_PREFIXES } from '../config/locales'
+import { NON_DEFAULT_LOCALE_PREFIXES, withRouteSlash } from '../config/locales'
 
 /**
  * `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory.
@@ -25,11 +25,6 @@ export function routeOf(file: string): string {
 export interface Alternate {
   hreflang: string
   href: string
-}
-
-function withRouteSlash(path: string): string {
-  const trimmed = path.replace(/\/+$/, '') || '/'
-  return trimmed === '/' || trimmed.endsWith('.html') ? trimmed : `${trimmed}/`
 }
 
 /**

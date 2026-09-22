@@ -41,8 +41,13 @@ export const NON_DEFAULT_LOCALE_PREFIXES = LOCALE_CODES.filter(
   (code) => code !== DEFAULT_LOCALE
 ).map((code) => LOCALES[code].prefix)
 
-function normalizeRoute(route: string): string {
+export function normalizeRoute(route: string): string {
   return route.replace(/\/+$/, '') || '/'
+}
+
+export function withRouteSlash(route: string): string {
+  const trimmed = normalizeRoute(route)
+  return trimmed === '/' || trimmed.endsWith('.html') ? trimmed : `${trimmed}/`
 }
 
 const PARTIAL_LOCALE_ROUTES: Partial<Record<Locale, ReadonlySet<string>>> = {

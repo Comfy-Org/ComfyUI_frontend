@@ -1,4 +1,9 @@
-import { DEFAULT_LOCALE, LOCALES, localeHasRoute } from './locales'
+import {
+  DEFAULT_LOCALE,
+  LOCALES,
+  localeHasRoute,
+  normalizeRoute
+} from './locales'
 import type { Locale } from './locales'
 
 const baseRoutes = {
@@ -58,10 +63,9 @@ type RouteKey = keyof typeof baseRoutes
 
 type Routes = Readonly<Record<RouteKey, string>>
 
-// Navigation and language metadata keep these routes on the English path.
-// A blind locale prefix would create dead links on English-only routes.
-// Translated variants enter navigation and language metadata when this policy
-// is updated.
+// English-only routes: navigation and language metadata keep them on the
+// English path, because a locale prefix would link to a page that does not
+// exist. Remove a route from this list once its translation ships.
 //
 // affiliateTerms: legal-reviewed English-only document. See the comment
 // header in src/pages/affiliates/terms.astro and the affiliate-terms i18n
@@ -136,7 +140,7 @@ const NOT_FOUND_PATHS = new Set(['/404', '/404.html'])
 
 export function supportsLocaleRoute(locale: Locale, pathname: string): boolean {
   return (
-    !NOT_FOUND_PATHS.has(pathname.replace(/\/+$/, '')) &&
+    !NOT_FOUND_PATHS.has(normalizeRoute(pathname)) &&
     !isLocaleInvariantPath(pathname) &&
     localeHasRoute(locale, pathname)
   )

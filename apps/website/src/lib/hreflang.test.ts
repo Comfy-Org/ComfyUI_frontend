@@ -48,8 +48,6 @@ describe('hreflangAlternates', () => {
     expect(hreflangAlternates('/zh-CN', ORIGIN)).toEqual(home)
   })
 
-  // BE-11285. Previously `/ja/` was read as the English route `/ja`, so it was
-  // labelled `en` and its cluster pointed at `/zh-CN/ja/`, which 404s.
   it('labels the Japanese home page ja and clusters it with the others', () => {
     expect(hreflangAlternates('/ja/', ORIGIN)).toEqual(
       hreflangAlternates('/', ORIGIN)
