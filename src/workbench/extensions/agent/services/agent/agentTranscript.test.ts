@@ -232,6 +232,50 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
+  it('prefers tool_call_id over id when deriving callId, matching what live frames key on', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: 'provider-call-1',
+          tool_name: 'search_nodes',
+          status: 'ok'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'provider-call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('falls back to id for callId when a row was recorded before tool_call_id existed', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [
+        { id: 'audit-row-uuid-1', tool_name: 'search_nodes', status: 'ok' }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toContainEqual(
+      expect.objectContaining({ callId: 'audit-row-uuid-1' })
+    )
+  })
+
   it('omits tool parts entirely when a message carries no tool_calls', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
 

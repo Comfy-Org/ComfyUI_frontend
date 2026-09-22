@@ -113,6 +113,13 @@ export type AgentRunModeValue = AgentRunModePreference['mode']
 export const zPersistedToolCallSummary = z
   .object({
     id: z.string(),
+    // The provider tool-use id a LIVE `agent_tool_call` frame carries as
+    // `tool_call_id` (see `zAgentToolCallData` above). `parseToolCallEntry`
+    // prefers this over `id` when building `callId` so a restored `ToolPart`
+    // is keyed the same way a live frame for the same call will be, and can
+    // be updated in place rather than rendered as an unmatched duplicate.
+    // Optional: rows recorded before `tool_call_id` existed have none.
+    tool_call_id: z.string().optional(),
     tool_name: z.string(),
     status: z.string().optional(),
     duration_ms: z.unknown().optional()

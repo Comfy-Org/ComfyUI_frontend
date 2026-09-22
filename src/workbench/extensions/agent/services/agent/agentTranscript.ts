@@ -153,6 +153,7 @@ function parseToolCallEntry(
   if (!parsed.success) return undefined
   const {
     id,
+    tool_call_id: toolCallId,
     tool_name: toolName,
     status,
     duration_ms: rawDuration
@@ -167,7 +168,11 @@ function parseToolCallEntry(
       : undefined
   return {
     type: 'tool',
-    callId: id,
+    // A live `agent_tool_call` frame keys its update on `tool_call_id`, not
+    // this row's own `id` — prefer it so a restored part matches a live
+    // frame that arrives for it later. Falls back to `id` only for rows
+    // recorded before `tool_call_id` existed.
+    callId: toolCallId ?? id,
     name: toolName,
     state,
     ...(ok !== undefined ? { ok } : {}),
