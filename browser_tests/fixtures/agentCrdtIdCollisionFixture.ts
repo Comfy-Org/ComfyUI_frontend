@@ -529,12 +529,12 @@ export class IdCollisionHarness {
  * broadcast frame's actor.
  */
 function baseVersionOf(op: WireOpEnvelope): number {
-  const { base_version } = op as { base_version?: unknown }
-  if (!Number.isInteger(base_version))
+  const baseVersion = 'base_version' in op ? op.base_version : undefined
+  if (typeof baseVersion !== 'number' || !Number.isInteger(baseVersion))
     throw new Error(
-      `captured op ${op.op_id} carries no integer base_version: ${String(base_version)}`
+      `captured op ${op.op_id} carries no integer base_version: ${String(baseVersion)}`
     )
-  return base_version as number
+  return baseVersion
 }
 
 /**

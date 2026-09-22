@@ -72,13 +72,9 @@ function isExactIntegerLiteral(text: string): boolean {
     text
   )
   if (!match) return false
-  // Indexed dynamically so the (possibly-unmatched) alternation groups keep
-  // their `string | undefined` type instead of TS narrowing each literal
-  // group index to always-present.
-  const group = (index: number): string => match[index] ?? ''
-  const intPart = group(1)
-  const fracPart = group(2) || group(3)
-  const expPart = match[4]
+  const intPart = match.at(1) ?? ''
+  const fracPart = match.at(2) || match.at(3) || ''
+  const expPart = match.at(4)
   const pointIndex = intPart.length + (expPart ? Number(expPart) : 0)
   return /^0*$/.test((intPart + fracPart).slice(Math.max(0, pointIndex)))
 }

@@ -1569,6 +1569,11 @@ describe('reserved-bit mint-convention guard', () => {
       bound: true,
       id: `${VIOLATING_ID}.0001`,
       name: 'a fractional id that only coerces to the violating floor'
+    },
+    {
+      bound: true,
+      id: (BigInt(Number.MAX_SAFE_INTEGER) + 2n).toString(),
+      name: 'an unsafe integer past Number.MAX_SAFE_INTEGER, even though its rounded value falls in the violating range'
     }
   ])('stays silent for $name', ({ bound, id }) => {
     const graph = new LGraph()

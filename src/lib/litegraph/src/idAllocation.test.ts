@@ -92,6 +92,10 @@ describe('idAllocation', () => {
       {
         id: toNodeId('20000000000000e-1'),
         name: 'a negative-exponent literal above the floor'
+      },
+      {
+        id: toNodeId(Number.MAX_SAFE_INTEGER.toString()),
+        name: 'Number.MAX_SAFE_INTEGER, the last safe integer'
       }
     ])('is true for $name', ({ id }) => {
       expect(isReservedBitRangeNodeId(id)).toBe(true)
@@ -103,6 +107,10 @@ describe('idAllocation', () => {
       {
         id: toNodeId(`${AGENT_RESERVED_BIT.toString()}.0001`),
         name: 'a fractional numeral that only coerces to the floor'
+      },
+      {
+        id: toNodeId((BigInt(Number.MAX_SAFE_INTEGER) + 2n).toString()),
+        name: 'an unsafe integer one past Number.MAX_SAFE_INTEGER, even though its rounded value falls in the violating range'
       }
     ])('is false for $name', ({ id }) => {
       expect(isReservedBitRangeNodeId(id)).toBe(false)

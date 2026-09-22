@@ -2042,11 +2042,10 @@ describe('Subgraph Unpacking', () => {
       )!
       const mintedId = BigInt(unpacked.id)
 
-      // Preassigning the unpacked node's id (rather than leaving it
-      // unassigned for `graph.add` to mint) means `graph.add`'s own
-      // disjoint-mode selection never runs for it — so the mint that DOES
-      // assign it must itself land in the disjoint range, or unpacking into
-      // a doc-bound root would silently mint inside the agent's range.
+      // `unpackSubgraph` leaves the interior node's id unassigned and
+      // delegates minting to `graph.add`, which selects 'crdt-disjoint' mode
+      // for a doc-bound root — so the id it assigns must land in the
+      // disjoint range, not the agent's own reserved range.
       expect((mintedId >> 40n) & 1n).toBe(0n)
       expect((mintedId >> 41n) & 1n).toBe(1n)
       // 'crdt-disjoint' mode never touches the plain sequential counter.
