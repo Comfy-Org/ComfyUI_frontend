@@ -140,18 +140,24 @@ const resolvedErrors = computed(() =>
     }
   })
 )
-const title = computed(
-  () =>
+const title = computed(() => {
+  const displayTitle =
     (errorSources[0]?.kind === 'execution' ? error.nodeType : undefined) ??
     resolvedErrors.value[0]?.title ??
     error.nodeType ??
     error.exceptionType ??
     t('errorDialog.defaultTitle')
-)
+
+  return errorSources[0]?.kind === 'execution' && error.nodeId
+    ? `${displayTitle} (#${error.nodeId})`
+    : displayTitle
+})
 const message = computed(
   () =>
-    resolvedErrors.value.map((resolved) => resolved.message).join('\n\n') ||
-    error.exceptionMessage
+    resolvedErrors.value
+      .map((resolved) => resolved.message)
+      .filter(Boolean)
+      .join('\n\n') || error.exceptionMessage
 )
 
 /**
