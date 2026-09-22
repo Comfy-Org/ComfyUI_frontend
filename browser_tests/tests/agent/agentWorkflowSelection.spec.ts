@@ -103,9 +103,6 @@ test.describe(
       ).toBeVisible()
 
       await page.reload()
-      await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
-        .click()
       const reloadedPanel = page.locator('#agent-panel-root')
       const reloadedComposer = reloadedPanel.getByRole('textbox', {
         includeHidden: true
