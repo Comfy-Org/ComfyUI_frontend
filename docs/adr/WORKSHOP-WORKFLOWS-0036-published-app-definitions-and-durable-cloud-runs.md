@@ -53,6 +53,18 @@ browser tokens and service credentials out of persisted run identity and public
 definitions. comfy-api stays build-isolated and calls ingest over a generated
 HTTP client.
 
+Use dedicated Ed25519 capabilities so ingest holds only verification keys,
+separate from the M2M service secret. Bound each token to one operation and at
+most five minutes; overlapping key IDs permit rotation. API-key provenance must
+retain a stable verified credential ID for revocation checks.
+
+Prepare policy outside the receipt transaction, then recheck current access
+using its connection. Holding a receipt lock while borrowing another database
+connection can deadlock under concurrent retries that fill the connection pool.
+The transaction owns job creation, allowance consumption and the receipt;
+definitive rejection rolls back admission side effects before recording its
+receipt. Per-caller/workspace serialization protects the shared queue limit.
+
 Reuse storage grants and direct PUT, adding workflow ownership, authoritative
 expiry, create-only upload constraints and immutable finalization. Convert
 authorized URLs to Cloud assets internally. Store stable asset references;

@@ -325,6 +325,23 @@ removal; that does not authorize new compute or exposing results to that user.
 Public operations always recheck current access. No admin read bypass is
 inherited by public Workshop handlers.
 
+The first Cloud boundary is implemented in Cloud commit `1b6c5abdaa`.
+Its dedicated Ed25519 capabilities have a five-minute maximum lifetime, a key
+ID for rotation, and exactly one submit/observe/cancel operation. Ingest holds
+verification keys only. API-key verification now exposes the stable Cloud key
+ID, and new compute rechecks that key and current membership. Capability issuance
+from comfy-api's durable run record remains part of the worker implementation.
+
+Policy preparation happens before opening the receipt transaction. An integration
+test reproduced connection-pool exhaustion when same-key waiters held every
+connection while the active transaction performed another billing lookup.
+The transaction rechecks access on its own connection, serializes queue admission
+per caller/workspace, and creates the job, allowance debit and receipt together.
+Definitive rejection rolls admission changes back to a savepoint before recording
+the rejection. Receipt tombstones survive job deletion. Both internal auth factors
+default to unconfigured, so the new routes remain unavailable until deployed
+with the worker and reviewed definitions.
+
 Partner API nodes require a supported execution-time credential path in the
 caller's workspace. Today's submit-time JWT refresh is conditional on an
 existing browser token and excludes API-key callers. It is insufficient for
