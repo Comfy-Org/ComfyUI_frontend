@@ -4,9 +4,7 @@
   </div>
   <WidgetGrid
     v-else
-    :processed-widgets="resolvedProcessedWidgetModel.processedWidgets"
-    :node-type="resolvedProcessedWidgetModel.nodeType"
-    :can-select-inputs="resolvedProcessedWidgetModel.canSelectInputs"
+    v-bind="widgetModel"
     :node-id="nodeData?.id"
     :class="
       shouldHandleNodePointerEvents
@@ -43,11 +41,8 @@ interface NodeWidgetsProps {
   }
 }
 
-const {
-  nodeData,
-  widgetIds,
-  processedWidgetModel: suppliedProcessedWidgetModel
-} = defineProps<NodeWidgetsProps>()
+const { nodeData, widgetIds, processedWidgetModel } =
+  defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
@@ -76,20 +71,16 @@ onErrorCaptured((error) => {
   return false
 })
 
-const {
-  canSelectInputs: computedCanSelectInputs,
-  nodeType: computedNodeType,
-  processedWidgets: computedProcessedWidgets
-} = useProcessedWidgets(
+const fallbackWidgetModel = useProcessedWidgets(
   () => nodeData,
   () => widgetIds
 )
-const resolvedProcessedWidgetModel = computed(
+const widgetModel = computed(
   () =>
-    suppliedProcessedWidgetModel ?? {
-      processedWidgets: computedProcessedWidgets.value,
-      nodeType: computedNodeType.value,
-      canSelectInputs: computedCanSelectInputs.value
+    processedWidgetModel ?? {
+      processedWidgets: fallbackWidgetModel.processedWidgets.value,
+      nodeType: fallbackWidgetModel.nodeType.value,
+      canSelectInputs: fallbackWidgetModel.canSelectInputs.value
     }
 )
 </script>
