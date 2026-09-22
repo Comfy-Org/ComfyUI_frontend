@@ -45,21 +45,21 @@ describe('useSettingsUrlLoader', () => {
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
-  it('does nothing when no settings param present', () => {
+  it('does nothing when no settings param present', async () => {
     mockRouteQuery.value = {}
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
-    loadSettingsFromUrl()
+    await loadSettingsFromUrl()
 
     expect(mockShowSettings).not.toHaveBeenCalled()
     expect(mockRouterReplace).not.toHaveBeenCalled()
   })
 
-  it('opens the Plans & Credits panel and strips the param', () => {
+  it('opens the Plans & Credits panel and strips the param', async () => {
     mockRouteQuery.value = { settings: 'plan-credits' }
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
-    loadSettingsFromUrl()
+    await loadSettingsFromUrl()
 
     expect(mockShowSettings).toHaveBeenCalledExactlyOnceWith('workspace')
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
@@ -68,22 +68,22 @@ describe('useSettingsUrlLoader', () => {
     )
   })
 
-  it('preserves unrelated params when stripping', () => {
+  it('preserves unrelated params when stripping', async () => {
     mockRouteQuery.value = { settings: 'plan-credits', other: 'param' }
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
-    loadSettingsFromUrl()
+    await loadSettingsFromUrl()
 
     expect(mockRouterReplace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
   })
 
-  it('strips but does not open for an unrecognized panel value', () => {
+  it('strips but does not open for an unrecognized panel value', async () => {
     mockRouteQuery.value = { settings: 'garbage' }
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
-    loadSettingsFromUrl()
+    await loadSettingsFromUrl()
 
     expect(mockShowSettings).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
@@ -92,34 +92,34 @@ describe('useSettingsUrlLoader', () => {
     )
   })
 
-  it('strips but does not open for an empty param', () => {
+  it('strips but does not open for an empty param', async () => {
     mockRouteQuery.value = { settings: '' }
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
-    loadSettingsFromUrl()
+    await loadSettingsFromUrl()
 
     expect(mockShowSettings).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
-  it('strips but does not open for a non-string param', () => {
+  it('strips but does not open for a non-string param', async () => {
     mockRouteQuery.value = { settings: fromAny<string, unknown>(['array']) }
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
-    loadSettingsFromUrl()
+    await loadSettingsFromUrl()
 
     expect(mockShowSettings).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
-  it('restores preserved query and opens the panel', () => {
+  it('restores preserved query and opens the panel', async () => {
     mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
       settings: 'plan-credits'
     })
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
-    loadSettingsFromUrl()
+    await loadSettingsFromUrl()
 
     expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
       'settings'
