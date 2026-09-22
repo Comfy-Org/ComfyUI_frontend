@@ -8,7 +8,6 @@ import type {
   AgentNodeTaggedMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
-  AgentWorkflowAppliedMetadata,
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent,
   TelemetryProvider
@@ -293,10 +292,6 @@ describe('TelemetryRegistry', () => {
     const nodeTaggedMetadata = {
       source: 'mention_picker'
     } satisfies AgentNodeTaggedMetadata
-    const workflowAppliedMetadata = {
-      workflow_id: 'w1',
-      target: 'active_tab_open'
-    } satisfies AgentWorkflowAppliedMetadata
 
     const cases: Array<{
       method: keyof TelemetryProvider & `trackAgent${string}`
