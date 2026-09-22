@@ -211,7 +211,6 @@ export function useAgentCrdtFollower(
    */
   getGraph: () => MaterializableGraph | null = () => null,
   events: AgentCrdtFollowerEvents = {},
-  /** `layoutStore.withActor`, injected by the composition root. */
   withLayoutActor: WithLayoutActor = (_actor, fn) => fn()
 ) {
   const productGate = useAgentPanelStore()
@@ -326,9 +325,6 @@ function startAgentCrdtFollower(
       life: 5000
     })
   })
-  // s3-opt-6: every minted human op is registered here before it flies and
-  // leaves only on its authoritative doc_update effect, on revert, or — for
-  // a skipped duplicate — on a projection at/after its ack seq (s3-opt-2).
   const pendingOps = createPendingOpTracker({
     // Applied seq only, never the ack fallback: between doc_subscribed(seq=N)
     // and the catch-up doc_update(seq=N) the canvas still shows pre-subscribe
@@ -601,8 +597,7 @@ function startAgentCrdtFollower(
         : null
     if (detail?.workflowId !== undefined)
       projection.discardPending(detail.workflowId)
-    // The read path is closed, so no doc_update effect can ever retire what
-    // is pending; drop the correlation instead of leaving it stranded.
+    // No later doc update can retire entries after the read path closes.
     resetPendingCorrelation()
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
@@ -668,7 +663,6 @@ function startAgentCrdtFollower(
     pendingOps.reset()
   }
 
-  /** Watermark and settlement only - callers own the live-graph reconcile. */
   function onProjected(update: DocUpdate): void {
     lastProjectedSequence = update.seq
     if (update.opIds) pendingOps.onDocEffect(update.opIds)

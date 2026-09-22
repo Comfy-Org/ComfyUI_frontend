@@ -278,7 +278,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     return identified
   }
 
-  /** An identified result that names no in-flight op: settle or drain late state. */
   function settleIdentifiedLateResult(
     identified: string[],
     result: OpsResultView

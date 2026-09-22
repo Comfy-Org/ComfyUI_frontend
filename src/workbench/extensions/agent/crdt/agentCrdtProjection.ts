@@ -62,10 +62,6 @@ export class AgentCrdtProjection {
     this.adapter.discardPending(workflowId)
   }
 
-  /**
-   * Re-attempts the last frame whose ECS batch did not commit (s3-opt-6).
-   * Returns the frame on success so the caller can publish its projection.
-   */
   retryPending(workflowId: string): DocUpdate | null {
     return this.adapter.retryPending(workflowId)
   }

@@ -1374,7 +1374,6 @@ describe('useAgentCrdtFollower', () => {
       }
     })
     const { unmount } = render(host)
-    // wf-a projects a high sequence, moving the watermark to 9.
     dispatchFrame('doc_update', { workflowId: 'wf-a', seq: 9 })
 
     workflowId.value = 'wf-b'
@@ -1385,8 +1384,6 @@ describe('useAgentCrdtFollower', () => {
     const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
     expect(opId).toBeDefined()
     if (!opId) throw new Error('Expected a sent operation')
-    // wf-b acks the op as a skipped duplicate at seq 5. wf-a's stale
-    // watermark (9) must not count as coverage for wf-b's lineage.
     dispatchFrame('doc_ops_result', {
       ok: true,
       applied: [],
@@ -1428,8 +1425,6 @@ describe('useAgentCrdtFollower', () => {
     expect(opId).toBeDefined()
     if (!opId) throw new Error('Expected a sent operation')
 
-    // The read gate closed this doc: no doc_update effect can ever retire the
-    // pending entry, so the correlation is dropped rather than stranded.
     dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
 
     expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {

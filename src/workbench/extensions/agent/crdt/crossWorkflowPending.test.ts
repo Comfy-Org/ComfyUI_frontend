@@ -275,8 +275,6 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       skipped: []
     })
 
-    // A's late result settles A's retained delivery-unknown state without
-    // touching B's in-flight batch.
     const settlements = devLogState.recordDevEvent.mock.calls.filter(
       ([event]) => event === 'human_ops_settled'
     )
@@ -318,7 +316,6 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     await enqueue([deleteNode('b-pending')])
     const operationBId = clientState.sent[1].ops[0].op_id
 
-    // A's identified late result settles A without settling B.
     dispatchOpsResult({
       workflowId: 'wf-a',
       ok: true,

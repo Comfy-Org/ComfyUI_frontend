@@ -63,8 +63,6 @@ describe('createPendingOpTracker', () => {
       true
     )
 
-    // A resend of the same ops stays in flight; the later result must name
-    // the second attempt or the ledger ignores it.
     tracker.onBatchTransmitted(ops)
     tracker.onBatchSettled(
       acknowledged(ops, {
@@ -98,7 +96,6 @@ describe('createPendingOpTracker', () => {
     ])
     expect(events).toEqual([{ type: 'cleared', opIds: ['op-2'] }])
 
-    // Foreign ids in an update touch nothing.
     tracker.onDocEffect(['someone-else'])
     expect(events).toHaveLength(1)
   })
@@ -119,7 +116,6 @@ describe('createPendingOpTracker', () => {
     )
     tracker.onDocEffect(['op-1', 'op-2', 'op-3'])
     expect(tracker.entries()).toEqual([])
-    // Nothing left awaiting: a later projection has nothing to resolve.
     tracker.onAuthoritativeState(50)
     expect(events.map((e) => e.type)).toEqual(['skipped_awaiting', 'cleared'])
   })
@@ -140,8 +136,6 @@ describe('createPendingOpTracker', () => {
           seq: 42
         })
       )
-      // All-skipped batch: no broadcast will ever carry these ids, yet the
-      // projection is already at the ack seq, so nothing lingers.
       expect(tracker.entries()).toEqual([])
       expect(events).toEqual([
         { type: 'skipped_cleared', seq: 42, opIds: ['op-1', 'op-2', 'op-3'] }
@@ -164,13 +158,11 @@ describe('createPendingOpTracker', () => {
         { type: 'skipped_awaiting', seq: 45, opIds: ['op-2', 'op-3'] }
       ])
 
-      // A projection below the ack seq proves nothing about the duplicate.
       tracker.onAuthoritativeState(44)
       expect(tracker.entries()).toHaveLength(3)
       expect(events).toHaveLength(1)
 
       tracker.onAuthoritativeState(45)
-      // The applied op still waits for its own effect (KEEP-ALIVE #9).
       expect(tracker.entries().map((e) => e.opId)).toEqual(['op-1'])
       expect(events[1]).toEqual({
         type: 'skipped_cleared',
@@ -419,7 +411,6 @@ describe('createPendingOpTracker', () => {
 
     expect(tracker.entries()).toEqual([])
     expect(events).toEqual([{ type: 'reset', opIds: ['op-1', 'op-2', 'op-3'] }])
-    // Idempotent: a second reset with nothing held is silent.
     tracker.reset()
     expect(events).toHaveLength(1)
   })
