@@ -218,15 +218,14 @@ function reportInvalidHostTarget(
 }
 
 function resolveLinkId(raw: unknown): number | null {
-  const linkId =
-    typeof raw === 'number'
-      ? raw
-      : typeof raw === 'string'
-        ? parseLinkId(raw)
-        : undefined
-  return linkId !== undefined && linkId >= 0 && Number.isSafeInteger(linkId)
-    ? linkId
+  return typeof raw === 'number' && raw >= 0 && Number.isSafeInteger(raw)
+    ? raw
     : null
+}
+
+function resolveLinkMapKey(id: string): number | null {
+  const linkId = parseLinkId(id)
+  return linkId !== undefined && linkId >= 0 ? linkId : null
 }
 
 function readSemanticLink(
@@ -238,11 +237,13 @@ function readSemanticLink(
   const raw = linksMap(doc).get(id)
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
   if (!Array.isArray(tuple) || tuple.length < 5) return null
-  const linkId = resolveLinkId(tuple[0] ?? id)
+  const linkId = resolveLinkId(tuple[0])
+  const mapLinkId = resolveLinkMapKey(id)
   const originSlot = Number(tuple[2])
   const targetSlot = Number(tuple[4])
   if (
     linkId === null ||
+    mapLinkId !== linkId ||
     tuple[1] == null ||
     tuple[3] == null ||
     !Number.isInteger(originSlot) ||
@@ -526,7 +527,7 @@ export class EcsFollowerAdapter {
     )
     const removedLinkIds = [...changedLinks].flatMap(([id, link]) => {
       if (link && !isIncompatibleLinkType(link)) return []
-      const linkId = resolveLinkId(id)
+      const linkId = resolveLinkMapKey(id)
       return linkId === null ? [] : [linkId]
     })
     const committed = session.mutations.batch(frameContext(update), (batch) => {

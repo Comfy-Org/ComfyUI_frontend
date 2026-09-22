@@ -1,10 +1,17 @@
 import { applyOps, linksMap, mint, project } from '@comfyorg/comfy-multi-player'
 import type {
-  DeleteNodeOp,
+  DisconnectOp,
   InsertWorkflowOp,
   WidgetCatalog
 } from '@comfyorg/comfy-multi-player'
-import { assert, beforeEach, describe, expect, it } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished
+} from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -79,6 +86,10 @@ function bindProjection(workflowId: string, graph: LGraph) {
     () => follower.doc
   )
   projection.bind(workflowId, follower)
+  onTestFinished(() => {
+    projection.destroy()
+    follower.destroy()
+  })
 
   let seq = 0
   const deliver = (update: Uint8Array, opIds: string[]): boolean => {
@@ -107,6 +118,10 @@ function docLinkIds(doc: Y.Doc): unknown[] {
   return [...linksMap(doc).values()].map((link) =>
     link instanceof Y.Array ? link.get(0) : Array.isArray(link) ? link[0] : null
   )
+}
+
+function liveLinkIds(graph: LGraph) {
+  return graph.serialize().links.map(([id]) => id)
 }
 
 function expectSafeNumericLinkIds(doc: Y.Doc, count: number): void {
@@ -161,11 +176,13 @@ describe('a plain insert_workflow batch materializes its links', () => {
     }
 
     const host = mint({ nodes: [], links: [] }, CATALOG)
+    onTestFinished(() => host.destroy())
     const op = insertOp(workflow)
     expect(applyOps(host, [op], CATALOG).outcomes).toEqual([
       { op_id: op.op_id, outcome: 'applied' }
     ])
     expectSafeNumericLinkIds(host, 2)
+    const expectedLinkIds = docLinkIds(host)
 
     const deliver = bindProjection(WORKFLOW_ID, graph)
     expect(deliver(Y.encodeStateAsUpdate(host), [op.op_id])).toBe(true)
@@ -180,19 +197,18 @@ describe('a plain insert_workflow batch materializes its links', () => {
     expect(readInputOrigins(saveVideo)).toEqual([
       { name: 'images', origin: reference.id }
     ])
-    expect(graph.serialize().links).toHaveLength(2)
+    expect(liveLinkIds(graph)).toEqual(expectedLinkIds)
 
     const reloadedGraph = new LGraph()
     const reload = bindProjection('wf-reloaded', reloadedGraph)
     expect(reload(Y.encodeStateAsUpdate(host), [op.op_id])).toBe(true)
-    expect(reloadedGraph.serialize().links.map(([id]) => id)).toEqual(
-      graph.serialize().links.map(([id]) => id)
-    )
+    expect(liveLinkIds(reloadedGraph)).toEqual(expectedLinkIds)
   })
 
   it('wires a link inserted after the graph is already open, on the incremental path', () => {
     const graph = new LGraph()
     const host = mint({ nodes: [], links: [] }, CATALOG)
+    onTestFinished(() => host.destroy())
 
     const seedOp = insertOp(
       { nodes: [{ id: 999, type: 'TestSaveVideo' }] },
@@ -229,6 +245,7 @@ describe('a plain insert_workflow batch materializes its links', () => {
       { op_id: secondOp.op_id, outcome: 'applied' }
     ])
     expectSafeNumericLinkIds(host, 1)
+    const expectedLinkIds = docLinkIds(host)
     expect(deliver(Y.encodeStateAsUpdate(host, before), [secondOp.op_id])).toBe(
       true
     )
@@ -238,7 +255,7 @@ describe('a plain insert_workflow batch materializes its links', () => {
     expect(readInputOrigins(reference)).toEqual([
       { name: 'image', origin: loadImage.id }
     ])
-    expect(graph.serialize().links).toHaveLength(1)
+    expect(liveLinkIds(graph)).toEqual(expectedLinkIds)
   })
 
   it('keeps formerly colliding insertions distinct from a persisted id', () => {
@@ -264,6 +281,7 @@ describe('a plain insert_workflow batch materializes its links', () => {
       },
       CATALOG
     )
+    onTestFinished(() => host.destroy())
     const workflow = {
       nodes: [
         {
@@ -287,74 +305,128 @@ describe('a plain insert_workflow batch materializes its links', () => {
     ])
 
     expectSafeNumericLinkIds(host, 3)
-    expect(new Set(docLinkIds(host)).size).toBe(3)
+    const expectedLinkIds = docLinkIds(host)
+    expect(new Set(expectedLinkIds).size).toBe(3)
+    expect(expectedLinkIds).toContain(persistedLinkId)
     const deliver = bindProjection('wf-colliding-links', graph)
     expect(
       deliver(Y.encodeStateAsUpdate(host), [firstOp.op_id, secondOp.op_id])
     ).toBe(true)
-    expect(graph.serialize().links).toHaveLength(3)
+    expect(new Set(liveLinkIds(graph))).toEqual(new Set(expectedLinkIds))
+    expect(
+      graph.serialize().links.find(([id]) => id === persistedLinkId)
+    ).toEqual([persistedLinkId, 1, 0, 2, 0, 'IMAGE'])
   })
 
-  it.for(['-1', '1.5', '9007199254740992'])(
-    'rejects malformed link id %s',
-    (linkId) => {
-      const graph = new LGraph()
-      const host = mint(
-        {
-          nodes: [
-            {
-              id: 1,
-              type: 'TestLoadImage',
-              outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [linkId] }]
-            },
-            {
-              id: 2,
-              type: 'TestSaveVideo',
-              inputs: [{ name: 'images', type: 'IMAGE', link: linkId }]
-            }
-          ],
-          links: []
-        },
-        CATALOG
-      )
-      linksMap(host).set(linkId, [linkId, 1, 0, 2, 0, 'IMAGE'])
+  it.for([
+    { name: 'canonical numeric string', mapKey: '1', linkId: '1' },
+    { name: 'negative string', mapKey: '-1', linkId: '-1' },
+    { name: 'fractional string', mapKey: '1.5', linkId: '1.5' },
+    {
+      name: 'unsafe integer string',
+      mapKey: '9007199254740992',
+      linkId: '9007199254740992'
+    },
+    { name: 'negative number', mapKey: '-1', linkId: -1 },
+    { name: 'fractional number', mapKey: '1.5', linkId: 1.5 },
+    {
+      name: 'unsafe integer number',
+      mapKey: '9007199254740992',
+      linkId: 9_007_199_254_740_992
+    },
+    { name: 'NaN', mapKey: 'NaN', linkId: Number.NaN },
+    { name: 'infinity', mapKey: 'Infinity', linkId: Number.POSITIVE_INFINITY },
+    { name: 'missing tuple id', mapKey: '1', linkId: null }
+  ])('rejects a $name link id', ({ mapKey, linkId }) => {
+    const graph = new LGraph()
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'TestLoadImage',
+            outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [linkId] }]
+          },
+          {
+            id: 2,
+            type: 'TestSaveVideo',
+            inputs: [{ name: 'images', type: 'IMAGE', link: linkId }]
+          }
+        ],
+        links: []
+      },
+      CATALOG
+    )
+    onTestFinished(() => host.destroy())
+    linksMap(host).set(mapKey, [linkId, 1, 0, 2, 0, 'IMAGE'])
 
-      const deliver = bindProjection('wf-malformed-link', graph)
-      expect(deliver(Y.encodeStateAsUpdate(host), [])).toBe(true)
-      expect(graph._nodes).toHaveLength(2)
-      expect(graph.serialize().links).toHaveLength(0)
-    }
-  )
+    const deliver = bindProjection('wf-malformed-link', graph)
+    expect(deliver(Y.encodeStateAsUpdate(host), [])).toBe(true)
+    expect(graph._nodes).toHaveLength(2)
+    expect(graph.serialize().links).toHaveLength(0)
+  })
+
+  it('retires a live link when its map key and tuple id diverge', () => {
+    const graph = new LGraph()
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'TestLoadImage',
+            outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [9] }]
+          },
+          {
+            id: 2,
+            type: 'TestSaveVideo',
+            inputs: [{ name: 'images', type: 'IMAGE', link: 9 }]
+          }
+        ],
+        links: [[9, 1, 0, 2, 0, 'IMAGE']]
+      },
+      CATALOG
+    )
+    onTestFinished(() => host.destroy())
+    const deliver = bindProjection('wf-divergent-link-id', graph)
+    expect(deliver(Y.encodeStateAsUpdate(host), [])).toBe(true)
+    expect(liveLinkIds(graph)).toEqual([9])
+
+    const before = Y.encodeStateVector(host)
+    linksMap(host).set('9', [10, 1, 0, 2, 0, 'IMAGE'])
+    expect(deliver(Y.encodeStateAsUpdate(host, before), [])).toBe(true)
+    expect(liveLinkIds(graph)).toEqual([])
+  })
 
   it('removes then reinserts a numeric-id link', () => {
     const graph = new LGraph()
     const host = mint({ nodes: [], links: [] }, CATALOG)
+    onTestFinished(() => host.destroy())
 
-    const firstOp = insertOp(
-      {
-        nodes: [
-          {
-            id: 121,
-            type: 'TestLoadImage',
-            outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [401] }]
-          },
-          {
-            id: 122,
-            type: 'TestReferenceNode',
-            inputs: [{ name: 'image', type: 'IMAGE', link: 401 }]
-          }
-        ],
-        links: [[401, 121, 0, 122, 0, 'IMAGE']]
-      },
-      'insert-replay-first-op'
-    )
+    const workflow = {
+      nodes: [
+        {
+          id: 121,
+          type: 'TestLoadImage',
+          outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [401] }]
+        },
+        {
+          id: 122,
+          type: 'TestReferenceNode',
+          inputs: [{ name: 'image', type: 'IMAGE', link: 401 }]
+        }
+      ],
+      links: [[401, 121, 0, 122, 0, 'IMAGE']]
+    }
+
+    const firstOp = insertOp(workflow, 'insert-reinsertion-first-op')
     expect(applyOps(host, [firstOp], CATALOG).outcomes).toEqual([
       { op_id: firstOp.op_id, outcome: 'applied' }
     ])
     const firstLinkId = docLinkIds(host)[0]
     expectSafeNumericLinkIds(host, 1)
+    assert(typeof firstLinkId === 'number')
 
-    const deliver = bindProjection('wf-replay', graph)
+    const deliver = bindProjection('wf-reinsertion', graph)
     expect(deliver(Y.encodeStateAsUpdate(host), [firstOp.op_id])).toBe(true)
 
     const loadImage = findByType(graph, 'TestLoadImage')
@@ -368,72 +440,42 @@ describe('a plain insert_workflow batch materializes its links', () => {
     const refNode = projected.nodes.find((n) => n.type === 'TestReferenceNode')
     assert.exists(loadNode)
     assert.exists(refNode)
-    const beforeDelete = Y.encodeStateVector(host)
-    const deleteLoad = {
-      op_id: 'insert-replay-delete-load-op'.padEnd(32, '0'),
+    const beforeDisconnect = Y.encodeStateVector(host)
+    const disconnect = {
+      op_id: 'insert-reinsertion-disconnect-op'.padEnd(32, '0'),
       actor: 'agent:test',
       base_version: 1,
       stamp: [2, 'agent:test'],
-      op: 'delete_node',
-      node_id: loadNode.id,
-      removed_links: []
-    } satisfies DeleteNodeOp
-    const deleteRef = {
-      op_id: 'insert-replay-delete-ref-op'.padEnd(32, '0'),
-      actor: 'agent:test',
-      base_version: 1,
-      stamp: [2, 'agent:test'],
-      op: 'delete_node',
-      node_id: refNode.id,
-      removed_links: []
-    } satisfies DeleteNodeOp
-    expect(applyOps(host, [deleteLoad, deleteRef], CATALOG).outcomes).toEqual([
-      { op_id: deleteLoad.op_id, outcome: 'applied' },
-      { op_id: deleteRef.op_id, outcome: 'applied' }
+      op: 'disconnect',
+      link_id: firstLinkId,
+      to_node: refNode.id,
+      to_slot: 0
+    } satisfies DisconnectOp
+    expect(applyOps(host, [disconnect], CATALOG).outcomes).toEqual([
+      { op_id: disconnect.op_id, outcome: 'applied' }
     ])
     expect(
-      deliver(Y.encodeStateAsUpdate(host, beforeDelete), [
-        deleteLoad.op_id,
-        deleteRef.op_id
+      deliver(Y.encodeStateAsUpdate(host, beforeDisconnect), [disconnect.op_id])
+    ).toBe(true)
+    expect(graph._nodes).toHaveLength(2)
+    expect(docLinkIds(host)).toEqual([])
+    expect(liveLinkIds(graph)).toEqual([])
+
+    const beforeReinsertion = Y.encodeStateVector(host)
+    const reinsertionOp = insertOp(workflow, 'insert-reinsertion-second-op')
+    expect(applyOps(host, [reinsertionOp], CATALOG).outcomes).toEqual([
+      { op_id: reinsertionOp.op_id, outcome: 'applied' }
+    ])
+    const reinsertedLinkId = docLinkIds(host)[0]
+    expectSafeNumericLinkIds(host, 1)
+    expect(reinsertedLinkId).not.toBe(firstLinkId)
+    expect(
+      deliver(Y.encodeStateAsUpdate(host, beforeReinsertion), [
+        reinsertionOp.op_id
       ])
     ).toBe(true)
-    expect(graph._nodes).toHaveLength(0)
-    expect(docLinkIds(host)).toEqual([])
 
-    const beforeReplay = Y.encodeStateVector(host)
-    const replayOp = insertOp(
-      {
-        nodes: [
-          {
-            id: 121,
-            type: 'TestLoadImage',
-            outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [401] }]
-          },
-          {
-            id: 122,
-            type: 'TestReferenceNode',
-            inputs: [{ name: 'image', type: 'IMAGE', link: 401 }]
-          }
-        ],
-        links: [[401, 121, 0, 122, 0, 'IMAGE']]
-      },
-      'insert-replay-second-op'
-    )
-    expect(applyOps(host, [replayOp], CATALOG).outcomes).toEqual([
-      { op_id: replayOp.op_id, outcome: 'applied' }
-    ])
-    const replayedLinkId = docLinkIds(host)[0]
-    expectSafeNumericLinkIds(host, 1)
-    expect(replayedLinkId).not.toBe(firstLinkId)
-    expect(
-      deliver(Y.encodeStateAsUpdate(host, beforeReplay), [replayOp.op_id])
-    ).toBe(true)
-
-    const replayedLoadImage = findByType(graph, 'TestLoadImage')
-    const replayedReference = findByType(graph, 'TestReferenceNode')
-    expect(readInputOrigins(replayedReference)).toEqual([
-      { name: 'image', origin: replayedLoadImage.id }
-    ])
-    expect(graph.serialize().links).toHaveLength(1)
+    expect(graph._nodes).toHaveLength(4)
+    expect(liveLinkIds(graph)).toEqual([reinsertedLinkId])
   })
 })
