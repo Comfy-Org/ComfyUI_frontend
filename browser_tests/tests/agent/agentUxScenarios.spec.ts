@@ -8,16 +8,10 @@ import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
   test('shows fewer suggestions below the compact panel breakpoint', async ({
-    comfyPage,
     agentPanel
   }) => {
-    const page = comfyPage.page
     await agentPanel.open()
-
-    const dock = page.getByTestId('docked-agent-panel')
-    const suggestions = enMessages.agent.suggestedPrompts.map((name) =>
-      dock.getByRole('button', { name, exact: true, includeHidden: true })
-    )
+    const suggestions = agentPanel.suggestedPrompts
 
     await agentPanel.resizeTo(459)
     await expect.soft(suggestions[0]).toBeVisible()

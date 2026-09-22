@@ -18,6 +18,8 @@ export class AgentPanel {
   public readonly attachmentChips: Locator
   public readonly composer: Locator
   public readonly sendButton: Locator
+  public readonly resizeHandle: Locator
+  public readonly suggestedPrompts: Locator[]
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -47,6 +49,10 @@ export class AgentPanel {
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send
     })
+    this.resizeHandle = page.getByTestId('agent-panel-resize-handle')
+    this.suggestedPrompts = enMessages.agent.suggestedPrompts.map((name) =>
+      this.root.getByRole('button', { name, exact: true, includeHidden: true })
+    )
   }
 
   /**
@@ -78,10 +84,9 @@ export class AgentPanel {
   }
 
   async resizeTo(width: number): Promise<void> {
-    const resizeHandle = this.page.getByTestId('agent-panel-resize-handle')
     const [panelBox, handleBox] = await Promise.all([
       this.root.boundingBox(),
-      resizeHandle.boundingBox()
+      this.resizeHandle.boundingBox()
     ])
     if (!panelBox || !handleBox) {
       throw new Error('Agent panel and resize handle must be visible')
