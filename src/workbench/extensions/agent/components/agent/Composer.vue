@@ -233,7 +233,9 @@ function openReferenceMenu(): void {
   const editor = editorRef.value
   if (!editor) return
   const { start, end } = editor.selection()
-  editor.replaceText(start, end, '@')
+  const needsSeparator =
+    start > 0 && !/\s/.test(composer.draft.value[start - 1] ?? '')
+  editor.replaceText(start, end, needsSeparator ? ' @' : '@')
   editor.focus()
   syncMention()
 }

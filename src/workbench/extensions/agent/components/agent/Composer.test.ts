@@ -204,6 +204,18 @@ describe('Composer', () => {
     expect(getMentionNodes).toHaveBeenCalled()
   })
 
+  it('separates a Reference trigger from existing text', async () => {
+    mount({ getMentionNodes: () => [{ id: '7', title: 'KSampler' }] })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('edit this')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }))
+
+    expect(textbox).toHaveTextContent('edit this @')
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
+  })
+
   it('retains the draft on Enter while a workflow selection is saving', async () => {
     useAgentComposerStore().setText('keep this draft')
     const { emitted, rerender } = mount({ workflowSelecting: true })
