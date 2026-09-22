@@ -676,19 +676,15 @@ describe('PackVersionSelectorPopover', () => {
       // precisely the break that had flagged versions rendering the green
       // verified checkmark, telling users that code nobody had reviewed had
       // passed review.
-      mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+      mockGetPackVersions.mockResolvedValueOnce([
+        {
+          ...defaultMockVersions[0],
+          status: 'NodeVersionStatusFlagged'
+        },
+        ...defaultMockVersions.slice(1)
+      ])
 
-      renderComponent({
-        props: {
-          nodePack: {
-            ...mockNodePack,
-            latest_version: {
-              ...mockNodePack.latest_version,
-              status: 'NodeVersionStatusFlagged'
-            }
-          }
-        }
-      })
+      renderComponent()
       await waitForPromises()
 
       expect(mockCheckNodeCompatibility).toHaveBeenCalledWith(
