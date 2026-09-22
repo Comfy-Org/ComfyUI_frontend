@@ -403,7 +403,7 @@ export function useAgentCrdtFollower(
     return true
   }
 
-  const acceptSubscription = (): void => {
+  function acceptSubscription(): void {
     clearSubscribeRetry()
     subscription.value = { status: 'connected', refusalCode: null }
     armStaleProbe()
@@ -413,7 +413,7 @@ export function useAgentCrdtFollower(
       persistConfirmedDocId(subscribedWorkflowId.value)
   }
 
-  const refuseSubscription = (code: unknown): void => {
+  function refuseSubscription(code: unknown): void {
     clearStaleProbe()
     subscription.value = refusedSubscriptionState(code)
     if (subscription.value.status !== 'retrying') {

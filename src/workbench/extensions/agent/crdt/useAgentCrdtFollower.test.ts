@@ -259,9 +259,9 @@ describe('useAgentCrdtFollower', () => {
     vi.useFakeTimers()
     const { unmount, status } = mountFollower('wf-1')
 
-    dispatchFrame('doc_subscribed', { ok: false, code: 'overloaded' })
+    dispatchFrame('doc_subscribed', { ok: true })
     dispatchFrame('doc_error', { workflowId: 'wf-1', code: 'fatal_doc' })
-    vi.runAllTimers()
+    vi.advanceTimersByTime(STALE_AFTER_MS + 1)
     apiState.target.dispatchEvent(new Event('status'))
     apiState.target.dispatchEvent(new Event('reconnected'))
 
@@ -269,6 +269,23 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().reconcile).not.toHaveBeenCalled()
     expect(status().subscriptionStatus).toBe('fatal_doc')
     expect(status().refusalCode).toBe('fatal_doc')
+    unmount()
+  })
+
+  it.each<[string, { workflowId: string; code: string }]>([
+    ['a stale workflow', { workflowId: 'wf-old', code: 'fatal_doc' }],
+    ['a nonfatal code', { workflowId: 'wf-1', code: 'not_found' }]
+  ])('keeps a pending retry after a doc error for %s', (_label, error) => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: false, code: 'overloaded' })
+    dispatchFrame('doc_error', error)
+
+    expect(status().subscriptionStatus).toBe('retrying')
+    expect(status().refusalCode).toBe('overloaded')
+    vi.advanceTimersByTime(500)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
     unmount()
   })
 

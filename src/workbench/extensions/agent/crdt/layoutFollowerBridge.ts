@@ -372,7 +372,10 @@ export class LayoutFollowerBridge extends EventTarget {
   private readonly onDocError: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const error = event.detail as DocError
-    if (error.workflowId !== this.sentWorkflowId) return
+    // A refusal clears send reality before a queued fatal error can arrive.
+    // Match intent so that error still closes the desired workflow, while an
+    // error from a workflow we have since left remains stale and is ignored.
+    if (error.workflowId !== this.desiredWorkflowId) return
     this.terminalWorkflowId = error.workflowId
     this.sentWorkflowId = null
     this.dispatchEvent(new CustomEvent(event.type, { detail: error }))
