@@ -24049,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "モデルのチャットテンプレート内のシステムプロンプトを置き換えます。デフォルトテンプレートが使用されていない場合は無視されます。"
+      },
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
@@ -24065,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "生成テキスト",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -24115,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "モデルのチャットテンプレート内のシステムプロンプトを置き換えます。デフォルトテンプレートが使用されていない場合は無視されます。"
+      },
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
@@ -24131,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "生成テキスト",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }

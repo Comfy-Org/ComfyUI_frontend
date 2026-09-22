@@ -24049,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Modelin sohbet şablonundaki sistem istemini değiştirir. Varsayılan şablon kullanılmadığında yok sayılır."
+      },
       "thinking": {
         "name": "düşünme",
         "tooltip": "Model destekliyorsa düşünme modunda çalış."
@@ -24065,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "oluşturulan_metin",
+        "tooltip": null
+      },
+      "1": {
+        "name": "düşünme",
         "tooltip": null
       }
     }
@@ -24115,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Modelin sohbet şablonundaki sistem istemini değiştirir. Varsayılan şablon kullanılmadığında yok sayılır."
+      },
       "thinking": {
         "name": "düşünme",
         "tooltip": "Model destekliyorsa düşünme modunda çalış."
@@ -24131,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "üretilen_metin",
+        "tooltip": null
+      },
+      "1": {
+        "name": "düşünme",
         "tooltip": null
       }
     }

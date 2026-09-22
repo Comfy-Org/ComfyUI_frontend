@@ -24049,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Reemplaza el prompt del sistema en la plantilla de chat del modelo. Se ignora cuando no se utiliza la plantilla predeterminada."
+      },
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar en modo de pensamiento si el modelo lo permite."
@@ -24065,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "texto_generado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "razonamiento",
         "tooltip": null
       }
     }
@@ -24115,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Reemplaza el prompt del sistema en la plantilla de chat del modelo. Se ignora cuando no se utiliza la plantilla predeterminada."
+      },
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar en modo de pensamiento si el modelo lo permite."
@@ -24131,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "texto_generado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "razonamiento",
         "tooltip": null
       }
     }

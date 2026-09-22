@@ -24049,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 채팅 템플릿에서 시스템 프롬프트를 대체합니다. 기본 템플릿을 사용하지 않으면 무시됩니다."
+      },
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
@@ -24065,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "생성된 텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "사고",
         "tooltip": null
       }
     }
@@ -24115,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 채팅 템플릿에서 시스템 프롬프트를 대체합니다. 기본 템플릿을 사용하지 않으면 무시됩니다."
+      },
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
@@ -24131,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "생성된 텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "사고",
         "tooltip": null
       }
     }

@@ -24049,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Remplace le prompt système dans le modèle de discussion du modèle. Ignoré lorsque le modèle par défaut n’est pas utilisé."
+      },
       "thinking": {
         "name": "réflexion",
         "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
@@ -24065,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "texte_généré",
+        "tooltip": null
+      },
+      "1": {
+        "name": "raisonnement",
         "tooltip": null
       }
     }
@@ -24115,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Remplace le prompt système dans le modèle de discussion du modèle. Ignoré lorsque le modèle par défaut n’est pas utilisé."
+      },
       "thinking": {
         "name": "réflexion",
         "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
@@ -24131,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "texte_généré",
+        "tooltip": null
+      },
+      "1": {
+        "name": "raisonnement",
         "tooltip": null
       }
     }

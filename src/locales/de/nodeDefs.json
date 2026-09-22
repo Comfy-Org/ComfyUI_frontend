@@ -24049,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "Top P"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Ersetzt den System-Prompt in der Chat-Vorlage des Modells. Wird ignoriert, wenn die Standardvorlage nicht verwendet wird."
+      },
       "thinking": {
         "name": "Thinking",
         "tooltip": "Im Thinking-Modus arbeiten, falls das Modell diesen unterstützt."
@@ -24065,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "Generierter Text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "thinking",
         "tooltip": null
       }
     }
@@ -24115,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Ersetzt den System-Prompt in der Chat-Vorlage des Modells. Wird ignoriert, wenn die Standardvorlage nicht verwendet wird."
+      },
       "thinking": {
         "name": "thinking",
         "tooltip": "Verwenden Sie den Denkmodus, wenn das Modell ihn unterstützt."
@@ -24131,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "generated_text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "thinking",
         "tooltip": null
       }
     }

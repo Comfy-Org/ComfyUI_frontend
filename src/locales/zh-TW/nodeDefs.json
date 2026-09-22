@@ -24049,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "取代模型聊天範本中的系統提示詞。未使用預設範本時會忽略。"
+      },
       "thinking": {
         "name": "思考模式",
         "tooltip": "若模型支援，則以思考模式運作。"
@@ -24065,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "生成文字",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -24115,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "Top-P"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "取代模型聊天範本中的系統提示詞。未使用預設範本時會忽略。"
+      },
       "thinking": {
         "name": "思考模式",
         "tooltip": "若模型支援，則以思考模式運作。"
@@ -24131,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "生成文字",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
