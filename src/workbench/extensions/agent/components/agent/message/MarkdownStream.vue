@@ -45,6 +45,10 @@ const segments = computed<Segment[]>(() => {
   let prose = ''
   const flushProse = () => {
     if (!prose) return
+    if (out.at(-1)?.type === 'assets' && !prose.trim()) {
+      prose = ''
+      return
+    }
     out.push({
       type: 'prose',
       html: renderMarkdownToHtml(prose, apiBaseUrl)
@@ -71,10 +75,6 @@ const segments = computed<Segment[]>(() => {
       const prev = out.at(-1)
       if (prev?.type === 'assets') prev.assets.push(...resolved)
       else out.push({ type: 'assets', assets: resolved })
-    } else if (token.type === 'space' && out.at(-1)?.type === 'assets') {
-      // Blank lines between generated output blocks are layout whitespace,
-      // not prose; keep the blocks adjacent so they share one reply grid.
-      continue
     } else {
       prose += token.raw
     }

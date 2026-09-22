@@ -415,7 +415,8 @@ describe('AgentMessage thinking narration', () => {
 
     const images = screen.getAllByTestId('reply-image-preview')
     expect(images).toHaveLength(2)
-    expect(screen.getByTestId('reply-asset-grid')).toHaveClass('grid-cols-2')
+    expect(images[0]).toHaveClass('size-full', 'object-cover')
+    expect(images[1]).toHaveClass('size-full', 'object-cover')
   })
 
   it('sums the whole turn into one accordion labelled with its duration', async () => {
