@@ -36,6 +36,18 @@ function glyphOf(row: ActivityRow): string {
     : toolGlyph(row.name, row.state, row.ok)
 }
 
+function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
+  if (row.name === 'load_skill' && row.skill) {
+    return t(
+      row.state === 'streaming'
+        ? 'agent.toolLoadingSkill'
+        : 'agent.toolLoadedSkill',
+      { skill: row.skill }
+    )
+  }
+  return toolLabel(row.name, row.state, t)
+}
+
 // Every part object is rebuilt on each token, so a settled row is only
 // recognisable as unchanged by its contents.
 function rowSignature(row: ActivityRow): string {
@@ -74,9 +86,7 @@ function rowSignature(row: ActivityRow): string {
           >{{ row.text || t('agent.thinking') }}</span
         >
         <template v-else>
-          <span :class="labelClass(row.state)">{{
-            toolLabel(row.name, row.state, t)
-          }}</span>
+          <span :class="labelClass(row.state)">{{ labelOf(row) }}</span>
           <span
             v-if="row.count > 1"
             class="mt-0.5 shrink-0 text-xs text-muted-foreground"

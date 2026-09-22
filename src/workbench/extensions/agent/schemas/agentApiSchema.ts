@@ -140,6 +140,7 @@ const zAgentToolCallData = z
     tool_call_id: z.string(),
     tool_name: z.string(),
     status: z.enum(['running', 'success', 'error']),
+    skill: z.string().optional(),
     args: z.never().optional(),
     duration_ms: z.number().optional(),
     message_id: z.string(),

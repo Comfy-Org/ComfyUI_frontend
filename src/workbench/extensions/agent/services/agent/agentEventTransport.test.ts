@@ -61,7 +61,8 @@ function thinking(delta: string): AgentChatEvent {
 function toolCall(
   tool_name: string,
   status: 'running' | 'success' | 'error',
-  tool_call_id = `call-${tool_name}`
+  tool_call_id = `call-${tool_name}`,
+  skill?: string
 ): AgentChatEvent {
   return {
     type: 'agent_tool_call',
@@ -69,6 +70,7 @@ function toolCall(
       tool_call_id,
       tool_name,
       status,
+      skill,
       message_id: 'm',
       thread_id: 't'
     }
@@ -370,6 +372,19 @@ describe('agentEventTransport text and tool parts', () => {
         durationMs: undefined
       }
     ])
+  })
+
+  it('preserves the skill name across the load lifecycle', () => {
+    const message = drive([
+      toolCall('load_skill', 'running', 'call-1', 'comfy-director'),
+      toolCall('load_skill', 'success', 'call-1', 'comfy-director')
+    ])
+
+    expect(toolParts(message)[0]).toMatchObject({
+      name: 'load_skill',
+      skill: 'comfy-director',
+      state: 'done'
+    })
   })
 })
 

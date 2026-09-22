@@ -94,12 +94,14 @@ export function createAgentEventTransport(
             type: 'tool',
             callId: event.data.tool_call_id,
             name: event.data.tool_name,
+            ...(event.data.skill ? { skill: event.data.skill } : {}),
             state: 'streaming'
           }
           tools.set(event.data.tool_call_id, part)
           message.parts.push(part)
         }
         part.name = event.data.tool_name
+        if (event.data.skill) part.skill = event.data.skill
         if (event.data.status !== 'running') {
           part.state = 'done'
           part.ok = event.data.status === 'success'
