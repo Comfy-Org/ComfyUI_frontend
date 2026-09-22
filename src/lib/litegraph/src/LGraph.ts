@@ -55,9 +55,9 @@ import {
   observeRerouteId
 } from './idAllocation'
 import type { LGraphState, NodeIdMintMode } from './idAllocation'
+import { isRootGraphDocBound } from './docBoundGraphs'
 import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
 import { normalizeWidgetsView } from './node/widgetsView'
-import { useAgentCrdtGraphBindingStore } from '@/stores/agentCrdtGraphBindingStore'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
@@ -268,14 +268,13 @@ function runtimeOptional<T>(value: T): T | undefined {
 
 /**
  * `idAllocation.ts` stays pure and context-free, so the mode is decided here:
- * `'crdt-disjoint'` only for a mint landing directly on a root graph the
- * agent panel has bound to its collaborative doc (PM-1251) — subgraph-owned
+ * `'crdt-disjoint'` only for a mint landing directly on a root graph that
+ * shares its id space with the agent's collaborative doc — subgraph-owned
  * nodes are outside the doc's scope (see `agentNodeMaterializer.ts`) and keep
  * plain sequential ids.
  */
 function nodeIdMintModeFor(graph: LGraph): NodeIdMintMode {
-  return graph.isRootGraph &&
-    useAgentCrdtGraphBindingStore().isBound(toRootGraphId(graph.id))
+  return graph.isRootGraph && isRootGraphDocBound(graph.id)
     ? 'crdt-disjoint'
     : 'sequential'
 }

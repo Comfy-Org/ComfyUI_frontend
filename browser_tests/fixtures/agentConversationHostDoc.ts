@@ -87,54 +87,67 @@ export class HostDoc {
     return this.updateFrame(update, HOST_ACTOR, [])
   }
 
+  /**
+   * The one place enveloped ops reach the document: applies them through the
+   * production applier, advances the sequence if anything landed, and builds
+   * the broadcast update frame for exactly the applied ids. Every public
+   * application path goes through here so applied-id selection, sequence
+   * advancement, and frame construction cannot drift between them; callers
+   * add only their own wire semantics on top (a relay `doc_ops_result`, an
+   * all-or-nothing replay invariant, or a bare outcome read).
+   */
+  private applyEnveloped(ops: Op[]): {
+    outcomes: ApplyOutcome[]
+    applied: string[]
+    frame: HostFrame
+  } {
+    const before = Y.encodeStateVector(this.doc)
+    const { outcomes } = applyOps(this.doc, ops, this.catalog)
+    const applied = outcomes
+      .filter((o) => o.outcome === 'applied')
+      .map((o) => o.op_id)
+    if (applied.length > 0) this.seq += 1
+    return {
+      outcomes,
+      applied,
+      frame: this.updateFrame(
+        Y.encodeStateAsUpdate(this.doc, before),
+        ops[0]?.actor ?? HOST_ACTOR,
+        applied
+      )
+    }
+  }
+
   // The applier below is the only judge of a recorded op; the cast hands it
   // the structural record and nothing reads the ops as typed before it runs.
   apply(operations: RecordedGraphOperation[]): HostFrame {
-    const before = Y.encodeStateVector(this.doc)
     const ops = mintWireOps(operations as GraphOperation[], {
       actor: HOST_ACTOR,
       baseVersion: this.seq
     })
-    const result = applyOps(this.doc, ops, this.catalog)
-    const rejected = result.outcomes.filter((o) => o.outcome !== 'applied')
+    const { outcomes, frame } = this.applyEnveloped(ops)
+    const rejected = outcomes.filter((o) => o.outcome !== 'applied')
     if (rejected.length > 0)
       throw new Error(
         `conversation graph_ops did not apply: ${JSON.stringify(rejected)}`
       )
-    this.seq += 1
-    return this.updateFrame(
-      Y.encodeStateAsUpdate(this.doc, before),
-      HOST_ACTOR,
-      ops.map((op) => op.op_id)
-    )
+    return frame
   }
 
   /**
    * Applies ops that already carry wire identity (`op_id`/`actor`/
    * `base_version`/`stamp`) — e.g. an `Op[]` captured straight off an app's
-   * own outbound `doc_ops` frame — through the same production applier
-   * {@link apply} uses, without its all-or-nothing invariant. A losing write
-   * is not an error here: its outcome (`lww-dropped`) is returned instead of
-   * thrown, so a test can assert on the applier's real conflict resolution
-   * (see PM-1251 — two actors independently minting a wire op for the same
-   * node id, resolved by last-write-wins over `(base_version, actor, op_id)`
-   * with the loser silently dropped).
+   * own outbound `doc_ops` frame — through {@link applyEnveloped}, without
+   * {@link apply}'s all-or-nothing invariant and without
+   * {@link applyClient}'s relay ack. A losing write is not an error here:
+   * its outcome (`lww-dropped`) is returned instead of thrown, so a test can
+   * assert on the applier's real conflict resolution — two writes landing on
+   * the same node id, resolved by last-write-wins over
+   * `(base_version, actor, op_id)` with the loser silently dropped.
    */
   applyWireOps(ops: Op[]): { frame: HostFrame; outcomes: ApplyOutcome[] } {
-    const before = Y.encodeStateVector(this.doc)
-    const result = applyOps(this.doc, ops, this.catalog)
-    const applied = result.outcomes
-      .filter((o) => o.outcome === 'applied')
-      .map((o) => o.op_id)
-    if (applied.length > 0) this.seq += 1
-    return {
-      frame: this.updateFrame(
-        Y.encodeStateAsUpdate(this.doc, before),
-        ops[0]?.actor ?? HOST_ACTOR,
-        applied
-      ),
-      outcomes: result.outcomes
-    }
+    const { outcomes, frame } = this.applyEnveloped(ops)
+    return { frame, outcomes }
   }
 
   replaceLink(link: HostLinkTuple): HostFrame {
@@ -158,12 +171,8 @@ export class HostDoc {
   // A human tab's batch arrives already enveloped. It is applied as sent and
   // answered the way the relay answers, then broadcast like any host write.
   applyClient(ops: Op[]): HostFrame[] {
-    const before = Y.encodeStateVector(this.doc)
-    const { outcomes } = applyOps(this.doc, ops, this.catalog)
+    const { outcomes, applied, frame } = this.applyEnveloped(ops)
     const rejected = outcomes.find((o) => o.outcome === 'rejected')
-    const applied = outcomes
-      .filter((o) => o.outcome === 'applied')
-      .map((o) => o.op_id)
     const skipped = outcomes
       .filter((o) => o.outcome === 'no-op' || o.outcome === 'lww-dropped')
       .map((o) => o.op_id)
@@ -185,16 +194,7 @@ export class HostDoc {
         })
       }
     }
-    if (applied.length === 0) return [result]
-    this.seq += 1
-    return [
-      result,
-      this.updateFrame(
-        Y.encodeStateAsUpdate(this.doc, before),
-        ops[0].actor,
-        applied
-      )
-    ]
+    return applied.length === 0 ? [result] : [result, frame]
   }
 
   private updateFrame(

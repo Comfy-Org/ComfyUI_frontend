@@ -1,6 +1,7 @@
 import { reconcileAutogrowInputs } from '@/core/graph/widgets/dynamicWidgets'
+import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
 import {
-  AGENT_RESERVED_BIT,
+  isReservedBitRangeNodeId,
   matchesReservedBitConvention
 } from '@/lib/litegraph/src/idAllocation'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -14,7 +15,6 @@ import type {
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-import { useAgentCrdtGraphBindingStore } from '@/stores/agentCrdtGraphBindingStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -372,24 +372,29 @@ function materialize(
 }
 
 /**
- * PM-1251's disjoint-mint partition (`idAllocation.ts`'s `AGENT_RESERVED_BIT`)
+ * The disjoint-mint partition (`idAllocation.ts`'s `AGENT_RESERVED_BIT`)
  * rests on comfy-cli's `mint_id()` always setting bit 40 — a premise this
  * repo cannot verify and comfy-cli could change without notice. Surface a
- * remote id that violates it (on a CRDT-bound graph, at the size only a
- * modern mint produces) as telemetry instead of leaving the partition to
- * silently stop holding.
+ * remote id that carries NEITHER reserved bit (on a doc-bound graph, at the
+ * size only a modern mint produces) as telemetry instead of leaving the
+ * partition to silently stop holding.
+ *
+ * Only a numeric integer id says anything here: string ids are legal
+ * (`NodeId` is `string | number`, and a bound doc can carry a legacy
+ * `"named"` node or a `"57:3"` subgraph address), predate both mints, and
+ * are not `BigInt`-convertible — reconciliation must not abort on one.
  */
 function reportReservedBitViolation(
   graph: MaterializableGraph,
   scope: GraphScope,
   nodeId: NodeId
 ): void {
-  if (!useAgentCrdtGraphBindingStore().isBound(scope.rootGraphId)) return
-  if (BigInt(nodeId) < AGENT_RESERVED_BIT) return
+  if (!isRootGraphDocBound(scope.rootGraphId)) return
+  if (!isReservedBitRangeNodeId(nodeId)) return
   if (matchesReservedBitConvention(nodeId)) return
   reportError(
     new Error(
-      `Remote node id ${String(nodeId)} on a CRDT-bound graph matches neither the agent's nor this app's reserved-bit mint convention`
+      `Remote node id ${String(nodeId)} on a CRDT-bound graph carries neither reserved mint bit (the agent's nor this app's)`
     ),
     {
       errorType: 'agent_node_id_reserved_bit_violation',

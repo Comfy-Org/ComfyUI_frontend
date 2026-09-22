@@ -1,27 +1,36 @@
 /**
- * Repro harness for PM-1251: the frontend (`idAllocation.ts`'s local
- * `++lastNodeId` counter) and the server-side agent independently mint node
- * ids for the SAME bound doc, with no shared reservation. When both mint
- * before observing the other's write, their ops collide on the applier's
- * `["node", id]` register and the production last-write-wins rule
- * (`comfy-multi-player`'s `compareStampKeys`) silently drops one — with no
- * error surfaced to either actor.
+ * Repro harness for the silent last-write-wins drop: when two writes land on
+ * the SAME node id, `comfy-multi-player`'s applier resolves the shared
+ * `["node", id]` register as pure last-write-wins over
+ * `(base_version, actor, op_id)` and drops the loser with no error surfaced
+ * to either actor.
  *
- * This is deliberately NOT `agentConversationFixture`: that fixture replays
- * a recording captured against a real backend and only ever calls
+ * It is NOT a repro of an id-allocation race, and it does not race two
+ * independently chosen ids. A root graph bound to the agent's doc now mints
+ * from a disjoint range (`idAllocation.ts`'s `'crdt-disjoint'` mode), so a
+ * frontend-minted id can no longer collide with an agent mint by accident.
+ * This harness therefore FORCES the collision: it drives the real duplicate
+ * action, captures the disjoint id the frontend actually minted off its own
+ * outbound `doc_ops` frame, and mints the agent's competing write AT THAT
+ * SAME ID so both writes reach the one register. What is under test is what
+ * the applier and the two actors do next — which remains unfixed.
+ *
+ * It is deliberately not built on `agentConversationFixture`: that fixture
+ * replays a recording captured against a real backend and only ever calls
  * `HostDoc.apply()` for the agent's own ops (never the frontend's), so it
- * cannot exercise two actors writing the same node id. This harness drives
- * the real Ctrl+D/duplicate-menu path so the frontend mints and sends a real
- * `doc_ops` frame, captures it off the mocked socket, and replays it through
- * the SAME production applier (`HostDoc.applyWireOps`, added for this
- * repro) that a real backend would use — no hand-rolled conflict logic.
+ * cannot exercise two actors writing one node id. Transport is nonetheless
+ * the shared `AgentFollowerHostSocket`, with its `captureClientOps` seam
+ * holding the frontend's batch back; only the collision orchestration below
+ * is specific to this repro, and both writes go through the production
+ * applier (`HostDoc.applyWireOps`), never a hand-rolled conflict rule.
  */
-import type { Locator, Page, WebSocketRoute } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { createI18n } from 'vue-i18n'
 
 import type {
   AgentRunMode,
+  AgentThreadListResponse,
   AgentTurnAccepted,
   JobsListResponse,
   WorkflowListResponse
@@ -36,30 +45,26 @@ import type {
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import {
-  DOC_PROTOCOL_VERSION,
-  parseServerDocFrame
-} from '@/workbench/extensions/agent/crdt/docFrameClient'
+import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { mockEmptyAgentThreadsList } from '@e2e/fixtures/utils/mockAgentThreadsList'
 
-const WORKFLOW_ID = 'a2f6e9c4-9b7d-4a3d-9e12-pm1251-repro'
+const WORKFLOW_ID = 'a2f6e9c4-9b7d-4a3d-9e12-idcollision01'
 /** The one node the doc starts with — duplicating it triggers the collision. */
 const SEED_NODE_ID = '1'
 const SUBSCRIBE_TIMEOUT = 15_000
-const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-pm1251-repro'
-const MESSAGE_ID = 'pm-1251-repro-message-0'
+const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-idcollision01'
+const MESSAGE_ID = 'id-collision-repro-message-0'
 const SEND_LABEL = enMessages.agent.send
 // The composer names itself with the rendered message, escapes resolved; the
 // app's own i18n module is a Vite build, so this mirrors it over the same
@@ -142,7 +147,7 @@ const SEED: WorkflowJSON = {
   links: []
 }
 
-/** The competing write the agent independently mints for the same id. */
+/** The competing write, minted at an id the frontend already claimed. */
 function agentCollisionOp(nodeId: string | number): GraphOperation {
   return {
     op: 'add_node',
@@ -167,7 +172,7 @@ function agentCollisionOp(nodeId: string | number): GraphOperation {
   }
 }
 
-const AGENT_ACTOR = 'agent:comfy:pm-1251-repro'
+const AGENT_ACTOR = 'agent:comfy:id-collision-repro'
 
 export class IdCollisionHarness {
   readonly panel: Locator
@@ -177,7 +182,7 @@ export class IdCollisionHarness {
   readonly host: HostDoc
 
   private readonly capturedOps: Op[] = []
-  private subscribes = 0
+  private readonly hostSocket: AgentFollowerHostSocket
 
   constructor(readonly page: Page) {
     this.panel = page.locator('#agent-panel-root')
@@ -185,6 +190,23 @@ export class IdCollisionHarness {
     this.contextMenu = new ContextMenu(page)
     this.topbar = new Topbar(page)
     this.host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
+    this.hostSocket = new AgentFollowerHostSocket(
+      page,
+      WORKFLOW_ID,
+      this.host,
+      'id-collision-repro-sid',
+      {
+        // What this scenario needs from the transport is only different
+        // `doc_ops` timing: the frontend's own batch is held here, unapplied
+        // and unacked, so the agent's competing write can reach the shared
+        // register first and `applyWireOps` below can then report the real
+        // outcome of each. A real backend never acks sooner than that either.
+        captureClientOps: (ops) => {
+          this.capturedOps.push(...ops)
+          return true
+        }
+      }
+    )
   }
 
   async boot(): Promise<void> {
@@ -194,19 +216,7 @@ export class IdCollisionHarness {
     await this.page.route('**/api/object_info', (route) =>
       route.fulfill(jsonRoute(OBJECT_INFO))
     )
-    await this.page.routeWebSocket(/\/ws/, (socket) => {
-      this.socket = socket
-      socket.onMessage((raw) => this.onClientFrame(raw))
-      socket.send(
-        JSON.stringify({
-          type: 'status',
-          data: {
-            status: { exec_info: { queue_remaining: 0 } },
-            sid: 'pm-1251-repro-sid'
-          }
-        })
-      )
-    })
+    await this.hostSocket.install()
     await bootAgentApp(this.page, true, {
       settings: {
         'Comfy.VueNodes.Enabled': true,
@@ -231,7 +241,9 @@ export class IdCollisionHarness {
 
   private async waitForSubscribe(count: number): Promise<void> {
     await expect
-      .poll(() => this.subscribes, { timeout: SUBSCRIBE_TIMEOUT })
+      .poll(() => this.hostSocket.subscribeCount(), {
+        timeout: SUBSCRIBE_TIMEOUT
+      })
       .toBeGreaterThanOrEqual(count)
   }
 
@@ -255,7 +267,7 @@ export class IdCollisionHarness {
    * which is what actually waits out any remaining latency.
    */
   async forceReconcile(): Promise<void> {
-    const before = this.subscribes
+    const before = this.hostSocket.subscribeCount()
     await this.topbar.newWorkflowButton.click()
     await expect(this.vueNodes.nodes).toHaveCount(0)
     await this.topbar.getTab(0).click()
@@ -263,7 +275,7 @@ export class IdCollisionHarness {
   }
 
   private async sendMinimalPrompt(): Promise<void> {
-    const content = 'pm-1251 repro: bind the doc'
+    const content = 'id-collision repro: bind the doc'
     const composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
     await composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
@@ -295,12 +307,7 @@ export class IdCollisionHarness {
       throw new Error(
         `${event.type} frame is not a valid agent event: ${parsed.error.message}`
       )
-    this.send(parsed.data)
-  }
-
-  private send(frame: AgentWsEvent): void {
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
-    this.socket.send(JSON.stringify(frame))
+    this.hostSocket.send(parsed.data)
   }
 
   private async selectWorkflowTarget(): Promise<void> {
@@ -357,8 +364,11 @@ export class IdCollisionHarness {
   /**
    * Duplicates the seed node through the real "Duplicate" context-menu
    * action (the same path `Ctrl+D`/`LGraphCanvas.pasteFromClipboard` takes),
-   * so the id it gets is genuinely minted by `idAllocation.ts`'s local
-   * counter, not asserted a priori.
+   * so the id it returns is the one `idAllocation.ts` genuinely minted for a
+   * doc-bound graph — a `'crdt-disjoint'` id, read back off the app's own
+   * outbound `doc_ops` frame rather than assumed a priori. That id is what
+   * the agent's write is then aimed at, which is how the same-id collision
+   * is forced without inventing an id neither actor would have produced.
    */
   async duplicateSeedNode(): Promise<{ nodeId: string; op: Op }> {
     const header = this.page.locator(
@@ -384,7 +394,7 @@ export class IdCollisionHarness {
       // `'crdt-disjoint'` mint ids are unordered random values, not a
       // sequential counter, so the new node can't be found by numeric
       // magnitude (the highest id may be a stale orphan from a prior
-      // attempt) - only by which id wasn't there before.
+      // attempt) — only by which id wasn't there before.
       const nodeId = await this.page.evaluate(
         (idsBeforeArray) => {
           const before = new Set(idsBeforeArray)
@@ -442,16 +452,14 @@ export class IdCollisionHarness {
    * the human write leg — so it carries the SAME shape a real backend would
    * put on the wire for the agent's write.
    *
-   * This FORCES the collision (reuses the id the frontend already minted,
-   * with a `baseVersion` chosen to make the agent's write win) rather than
-   * racing two independently-chosen ids into a natural collision. That is
-   * deliberate and out of scope to change here: `LGraph.add`'s
-   * `'crdt-disjoint'` mint (see `idAllocation.ts`) already makes a natural
-   * collision on a frontend-minted id impossible by construction, so this
-   * fixture instead pins the OTHER, still-open half of PM-1251 — that two
-   * writes to the SAME node id, however that id was arrived at, resolve via
-   * silent last-write-wins with no error to either side. `driveCollision`
-   * below is where both specs share this forced setup.
+   * `nodeId` is deliberately the id the frontend ALREADY minted, with a
+   * `baseVersion` chosen so the agent's write wins the register. Nothing
+   * about it models an allocation race: disjoint-range minting means the two
+   * actors no longer arrive at one id on their own, so the same-id write
+   * that remains worth testing has to be forced. What it pins is the
+   * unfixed behavior downstream of that write — two writes to one node id
+   * resolving via silent last-write-wins, with no error to either side.
+   * `driveCollision` below is where both specs share this forced setup.
    */
   mintAgentCollision(nodeId: string | number, baseVersion: number): Op {
     return mintWireOps([agentCollisionOp(nodeId)], {
@@ -464,9 +472,9 @@ export class IdCollisionHarness {
    * Runs `ops` through the real production applier bound to this repro's
    * doc and returns each op's outcome (`applied`, `lww-dropped`, ...)
    * verbatim — see {@link HostDoc.applyWireOps}. Any of `ops` the client
-   * itself sent (i.e. already in `capturedOps`) gets its real outcome
-   * acked back now, in place of `handleDocOps`'s receipt-only ack — a real
-   * backend only reports an op applied once it actually has been.
+   * itself sent (i.e. held back by `captureClientOps`) is acked here with
+   * its real outcome — a real backend only reports an op applied once it
+   * actually has been.
    */
   applyWireOps(ops: Op[]): { frame: HostFrame; outcomes: ApplyOutcome[] } {
     const result = this.host.applyWireOps(ops)
@@ -502,20 +510,18 @@ export class IdCollisionHarness {
    * desync repro withholds the correction the frontend never asked for.
    */
   deliver(frame: HostFrame): void {
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
-    if (
-      (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-      parseServerDocFrame(frame) === null
-    )
-      throw new Error(`host frame ${frame.type} is not a valid doc frame`)
-    this.socket.send(JSON.stringify(frame))
+    this.hostSocket.send(frame)
   }
-
-  private socket: WebSocketRoute | null = null
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    await mockEmptyAgentThreadsList(page)
+    const threads: AgentThreadListResponse = {
+      threads: [],
+      pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
+    }
+    await page.route('**/api/agent/threads', (route) =>
+      route.fulfill(jsonRoute(threads))
+    )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() !== 'POST')
         return route.fulfill(jsonRoute([]))
@@ -563,48 +569,15 @@ export class IdCollisionHarness {
       route.fulfill(jsonRoute([]))
     )
   }
-
-  private onClientFrame(raw: string | Buffer): void {
-    const frame: unknown = JSON.parse(raw.toString())
-    if (typeof frame !== 'object' || frame === null) return
-    const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (typeof data !== 'object' || data === null) return
-    if (type === 'doc_subscribe') return this.handleDocSubscribe(data)
-    if (type === 'doc_ops') return this.handleDocOps(data)
-  }
-
-  private handleDocSubscribe(data: object): void {
-    const { workflow_id, state_vector_b64 } = data as {
-      workflow_id?: unknown
-      state_vector_b64?: unknown
-    }
-    if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
-      return
-    this.deliver(this.host.subscribed())
-    this.deliver(this.host.catchUp(state_vector_b64))
-    this.subscribes += 1
-  }
-
-  private handleDocOps(data: object): void {
-    const { workflow_id, ops } = data as {
-      workflow_id?: unknown
-      ops?: unknown
-    }
-    if (workflow_id !== WORKFLOW_ID || !Array.isArray(ops)) return
-    this.capturedOps.push(...(ops as Op[]))
-    // No ack here: this repro decides collision outcomes later, itself,
-    // via `HostDoc.applyWireOps` (see `applyWireOps`/`ackCapturedOutcomes`
-    // above), which acks each captured op with its real outcome once it
-    // has actually reached `HostDoc` — a real backend never acks sooner.
-  }
 }
 
 /**
- * Drives the real duplicate action, then mints and applies the agent's
- * forced-collision write (see `mintAgentCollision`'s doc) through the
- * production applier — the setup both `agentNodeIdCollision.spec.ts` tests
- * need before diverging into their own bug-specific assertion. Its `expect`s
- * run here, before either caller reaches its own `test.fail()`: Playwright's
+ * Drives the real duplicate action, then aims the agent's write at the id
+ * that duplicate minted and applies both through the production applier (see
+ * `mintAgentCollision`'s doc for why the same-id write is forced rather than
+ * raced) — the setup both `agentNodeIdCollision.spec.ts` tests need before
+ * diverging into their own bug-specific assertion. Its `expect`s run here,
+ * before either caller reaches its own `test.fail()`: Playwright's
  * `test.fail()` only reclassifies an error thrown AFTER it is called, not
  * one thrown before, so a genuine setup or fixture regression in this
  * shared step still fails the run rather than being swallowed by the
@@ -614,10 +587,10 @@ export async function driveCollision(idCollision: IdCollisionHarness) {
   const { nodeId, op: humanOp } = await idCollision.duplicateSeedNode()
   expect(nodeId).not.toBe(SEED_NODE_ID)
 
-  // The agent independently mints a competing `add_node` at the SAME id
-  // the frontend just chose, with a higher base_version so it
-  // deterministically wins the LWW register regardless of arrival order —
-  // the real race gives no ordering guarantee either way.
+  // The agent's competing `add_node` is minted at the SAME id the frontend
+  // just minted, with a higher base_version so it deterministically wins the
+  // LWW register regardless of arrival order — in production the two writes
+  // reach the register in no guaranteed order either way.
   const agentOp = idCollision.mintAgentCollision(
     nodeId,
     humanOp.base_version + 1
@@ -628,9 +601,9 @@ export async function driveCollision(idCollision: IdCollisionHarness) {
   ])
 
   // The human's own write reaches the SAME production applier second and
-  // loses the register it shares with the agent's write — PM-1251's root
-  // cause, reproduced against the real conflict-resolution code, not
-  // asserted by narration.
+  // loses the register it shares with the agent's write, silently — the
+  // behavior under test, reproduced against the real conflict-resolution
+  // code rather than asserted by narration.
   const humanApply = idCollision.applyWireOps([humanOp])
   expect(humanApply.outcomes).toEqual([
     { op_id: humanOp.op_id, outcome: 'lww-dropped' }

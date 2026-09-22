@@ -6,59 +6,57 @@ import {
 } from '@e2e/fixtures/agentCrdtIdCollisionFixture'
 
 /**
- * PM-1251 repro. Root cause (full RCA in the linked Slack thread / Linear
- * ticket): the frontend (`idAllocation.ts`'s local `++lastNodeId` counter,
- * used by both `LGraph.add` and the duplicate/paste path in
- * `LGraphCanvas.ts`) and the server-side agent independently minted node ids
- * for the SAME bound CRDT doc, with no shared reservation between them. When
- * both minted before observing the other's write, their `add_node` ops
- * collided on the applier's `["node", id]` register in `comfy-multi-player`,
- * which resolves the collision as pure last-write-wins over
- * `(base_version, actor, op_id)` and drops the loser as `"lww-dropped"` —
- * without surfacing an error to either actor. One mechanism, three symptoms:
+ * Two node-id failure modes, one fixed here and one NOT.
  *
- *   1. a duplicated node is repeatedly wiped
+ * FIXED (covered by unit tests, not these specs): the frontend
+ * (`idAllocation.ts`) and the server-side agent used to mint node ids for the
+ * same bound CRDT doc from ranges that could overlap, so both could
+ * independently choose one id. A doc-bound root graph now mints from a
+ * disjoint range (`'crdt-disjoint'` mode), which makes that overlap
+ * impossible by construction — see `idAllocation.property.test.ts`,
+ * `LGraph.test.ts` and `AgentPanelRoot.test.ts`.
+ *
+ * NOT FIXED, and what these two `test.fail()` specs pin: when two writes do
+ * land on the same node id — by any route, including a user and the agent
+ * editing concurrently after a reconnect, an id replayed from an older
+ * document, or any future mint path that stops respecting the range split —
+ * `comfy-multi-player`'s applier resolves the shared `["node", id]` register
+ * as pure last-write-wins over `(base_version, actor, op_id)` and DROPS the
+ * loser silently (`"lww-dropped"`), surfacing no error to either actor.
+ * Symptoms:
+ *
+ *   1. the write that lost is wiped from the canvas on the next full
+ *      reconcile
  *   2. a phantom node (here a blank Save Image) appears in its place
  *   3. the agent's own canonical graph read disagrees with the still-visible
  *      canvas, because the drop is never surfaced or reconciled
  *
- * This PR fixes the id-allocation half: a graph bound to the agent's CRDT
- * doc now mints in `'crdt-disjoint'` mode (`idAllocation.ts`), which makes a
- * NATURAL collision on a frontend-minted id impossible by construction — see
- * `AgentPanelRoot.vue`'s CRDT-binding watch and `LGraph.test.ts`. What these
- * two specs pin is the REMAINING half of the same PM-1251 ticket: two writes
- * that land on the same node id — however that id was arrived at — still
- * resolve via silent last-write-wins with no error surfaced to either actor
- * (see `mintAgentCollision`'s doc comment in the fixture, which forces that
- * collision deliberately now that a natural one can't happen).
+ * Nothing in this PR addresses that silent drop, so do not read a closed
+ * tracking item, or the disjoint-mint fix shipping, as covering it: these
+ * specs stay `test.fail()` until the applier (or the actors around it)
+ * surface a same-id conflict instead of swallowing one write. Flip
+ * `test.fail()` away then; the assertions below should not otherwise change.
  *
  * `agentCrdtIdCollisionFixture` drives the real duplicate-via-context-menu
  * path so the id is genuinely minted by `idAllocation.ts` and the outbound
- * `doc_ops` frame is genuinely produced by `opSender`/`layoutMintPort`; the
- * competing "agent" write and the collision resolution both run through the
+ * `doc_ops` frame is genuinely produced by `opSender`/`layoutMintPort`, then
+ * aims the agent's competing write at that same id (a collision now has to
+ * be forced — see the fixture's module doc). Both writes resolve through the
  * unmodified production applier (`@comfyorg/comfy-multi-player`'s
- * `applyOps`), not a hand-rolled stand-in for it. See the fixture's module
- * doc for why this repro cannot be built on `agentConversationFixture`.
+ * `applyOps`), not a hand-rolled stand-in for it.
  *
- * Both tests are `test.fail()`: they assert the CORRECT/fixed behavior,
- * which the still-open silent-LWW-drop half of PM-1251 currently breaks.
- * Flip `test.fail()` away once PM-1251's remaining half ships a fix — the
- * assertions below should not otherwise change.
- *
- * Both share `driveCollision` (in the fixture) for setup: duplicate the
- * seed node for real, then force the agent's write to collide on that same
- * id and resolve via the production applier. Its own assertions run before
- * either test's `test.fail()`, so a setup regression there still fails the
- * run — see its doc comment for why that ordering is what makes the guard
- * effective, not the `test.fail()` call itself.
+ * Both share `driveCollision` (in the fixture) for setup. Its own assertions
+ * run before either test's `test.fail()`, so a setup regression there still
+ * fails the run — see its doc comment for why that ordering is what makes
+ * the guard effective, not the `test.fail()` call itself.
  */
 test.describe(
-  'Agent/frontend node id collision (PM-1251)',
+  'Agent/frontend node id collision: silent last-write-wins drop',
   { tag: ['@cloud', '@agent'] },
   () => {
     test(
       'wipes a duplicated node and replaces it with a phantom node when ' +
-        'the agent independently mints the same id',
+        "the agent's write lands on the same id",
       async ({ idCollision }, testInfo) => {
         const { nodeId, agentApply } = await driveCollision(idCollision)
 
@@ -71,7 +69,7 @@ test.describe(
         // `doc_update` broadcast would.
         idCollision.deliver(agentApply.frame)
 
-        // PR #17963 (merged the day before this RCA) fixed the incremental
+        // PR #17963 fixed the incremental
         // live-update path to patch a still-live node in place instead of
         // rebuilding it from the doc, so the wipe/phantom symptom now needs
         // the SAME whole-document reconcile a tab switch (or reconnect)

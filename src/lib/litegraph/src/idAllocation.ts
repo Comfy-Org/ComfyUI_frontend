@@ -28,7 +28,7 @@ export function createLGraphState(): LGraphState {
  * `'sequential'` (default) is the plain-local `++lastNodeId` counter.
  * `'crdt-disjoint'` is for a graph bound to the in-app agent's collaborative
  * doc, where a local mint can otherwise land on an id the agent independently
- * mints for the same doc (PM-1251) — see {@link mintCrdtDisjointNodeId}.
+ * mints for the same doc — see {@link mintCrdtDisjointNodeId}.
  */
 export type NodeIdMintMode = 'sequential' | 'crdt-disjoint'
 
@@ -42,9 +42,12 @@ export type NodeIdMintMode = 'sequential' | 'crdt-disjoint'
  * https://github.com/Comfy-Org/comfy-cli/blob/aec5220c4573fdc3ea89794572305d12a4d24e70/comfy_cli/workflow_ops.py#L65-L72
  * (`Comfy-Org/comfy-cli`'s `comfy_cli/workflow_ops.py:65-72`: `_ID_FLOOR = 1 << 40`,
  * `mint_id() -> _ID_FLOOR | random.getrandbits(52)`). If that reservation bit
- * ever changes there, this partition silently stops holding — see the
- * runtime guard in `agentNodeMaterializer.ts`, which surfaces a bit-40-clear
- * remote id via `reportError()` instead of failing silently.
+ * ever changes there, this partition silently stops holding, and the runtime
+ * guard in `agentNodeMaterializer.ts` catches only part of that: it reports a
+ * remote id with BOTH reserved bits clear (see
+ * {@link matchesReservedBitConvention}). An agent mint that stopped setting
+ * bit 40 but happened to set bit 41 would still pass it silently — and would
+ * then be inside this app's own range.
  */
 export const AGENT_RESERVED_BIT = 1n << 40n
 const CRDT_DISJOINT_FLOOR = 1n << 41n
@@ -57,15 +60,29 @@ function mintCrdtDisjointNodeId(): NodeId {
 }
 
 /**
- * Whether `id` is shaped like one of the two valid mints for a CRDT-bound
- * graph: the agent's (`AGENT_RESERVED_BIT` set) or this app's own disjoint
- * mint (`CRDT_DISJOINT_FLOOR` set). A remote id matching neither means the
- * reserved-bit premise this partition rests on (see `AGENT_RESERVED_BIT`'s
- * doc comment) no longer holds for whatever minted it.
+ * Whether `id` carries EITHER reserved bit: the agent's
+ * (`AGENT_RESERVED_BIT`) or this app's own disjoint floor
+ * (`CRDT_DISJOINT_FLOOR`). It is deliberately this weak — it cannot tell the
+ * two mints apart, and it accepts any id with bit 41 set whatever minted it.
+ * So its exact guarantee is only that an id failing it has BOTH reserved bits
+ * clear, i.e. it came from neither convention. Callers must narrow to a
+ * numeric integer first ({@link isReservedBitRangeNodeId}): the bit test is
+ * meaningless for a nonnumeric legacy id.
  */
 export function matchesReservedBitConvention(id: NodeId): boolean {
   const big = BigInt(id)
   return (big & AGENT_RESERVED_BIT) !== 0n || (big & CRDT_DISJOINT_FLOOR) !== 0n
+}
+
+/**
+ * Whether the reserved-bit convention says anything about `id` at all: a
+ * numeric integer at or above the agent's mint floor. A nonnumeric id — a
+ * legacy `"named"` node, a `"57:3"` subgraph-scoped address — predates both
+ * mints and carries no reservation to check (and is not a `BigInt`).
+ */
+export function isReservedBitRangeNodeId(id: NodeId): boolean {
+  const numeric = Number(id)
+  return Number.isSafeInteger(numeric) && BigInt(numeric) >= AGENT_RESERVED_BIT
 }
 
 export function mintNodeId(

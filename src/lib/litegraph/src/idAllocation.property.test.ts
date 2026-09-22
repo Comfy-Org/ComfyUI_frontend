@@ -8,14 +8,14 @@ import {
 } from '@/lib/litegraph/src/idAllocation'
 
 /**
- * PM-1251's root cause at the unit level: `idAllocation.ts`'s node-id
+ * The id-collision root cause at the unit level: `idAllocation.ts`'s node-id
  * counter is minted purely from LOCAL state (`++state.lastNodeId`), with no
  * reservation against, or awareness of, an id a DIFFERENT actor (the
  * server-side agent) is independently minting for the same shared doc.
  * `observeNodeId` only ever raises this graph's own counter to match an id
  * it has already SEEN materialize — it cannot close the window before that
- * frame arrives, which is exactly the race PM-1251 reports: a local
- * duplicate mints before the agent's own concurrent add_node is observed.
+ * frame arrives, which is exactly the reported race: a local duplicate
+ * mints before the agent's own concurrent add_node is observed.
  *
  * This property pins that gap directly, independent of the CRDT/materializer
  * plumbing the Playwright repro (`agentNodeIdCollision.spec.ts`) exercises
@@ -28,7 +28,7 @@ import {
  * instead (see the property below), which is where this gap is actually
  * closed for the real production path.
  */
-describe('idAllocation has no collision avoidance against a concurrent external mint (PM-1251)', () => {
+describe('idAllocation has no collision avoidance against a concurrent external mint', () => {
   // Two states seeded to the same baseline, both minted by the SAME
   // `mintNodeId` call, model "two actors independently running this
   // naive counter" as closely as a single frontend module can: neither

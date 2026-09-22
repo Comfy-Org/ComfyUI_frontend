@@ -36,10 +36,12 @@ import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
+import type { NodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
@@ -1526,6 +1528,82 @@ describe('reconcileAgentAdapters', () => {
         }),
         context: { graphId: graph.id, definitionId: 'legacy-subgraph' }
       })
+    })
+  })
+})
+
+describe('reserved-bit mint-convention guard', () => {
+  /** Bit 40 set: comfy-cli's `mint_id()` shape. */
+  const AGENT_MINTED_ID = 2 ** 40 + 7
+  /** Large enough for the guard to look, but carrying neither bit 40 nor 41. */
+  const VIOLATING_ID = 2 ** 42
+
+  function seedRemoteNode(graph: LGraph, id: NodeId): GraphScope {
+    const scope = graphScopeOf(graph)
+    remoteMutations(scope).addNode(
+      { ...nodePayload(1), id },
+      { ...REMOTE, opId: `op-${String(id)}` }
+    )
+    return scope
+  }
+
+  function bindGraph(graph: LGraph): () => void {
+    return registerDocBoundRootGraphProbe(() => graph.id)
+  }
+
+  it.for([
+    { bound: true, id: AGENT_MINTED_ID, name: 'an agent-minted id' },
+    {
+      bound: false,
+      id: VIOLATING_ID,
+      name: 'an off-convention id on a graph no doc is bound to'
+    }
+  ])('stays silent for $name', ({ bound, id }) => {
+    const graph = new LGraph()
+    const unbind = bound ? bindGraph(graph) : () => {}
+    seedRemoteNode(graph, toNodeId(id))
+
+    expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(id)])
+    unbind()
+
+    expect(graph.getNodeById(toNodeId(id))).toBeTruthy()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  // A bound doc may legally carry a string id (`NodeId` is `string | number`):
+  // a legacy `"named"` node, or a subgraph-scoped `"57:3"` address. Converting
+  // one for the bit test threw and aborted reconciliation before the node was
+  // ever materialized.
+  it('materializes a nonnumeric remote id without reporting a violation', () => {
+    const graph = new LGraph()
+    const unbind = bindGraph(graph)
+    const id = toNodeId('named')
+    seedRemoteNode(graph, id)
+
+    expect(reconcileAgentAdapters(graph)).toEqual([id])
+    unbind()
+
+    expect(graph.getNodeById(id)).toBeTruthy()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports a large remote id carrying neither reserved bit', () => {
+    const graph = new LGraph()
+    const unbind = bindGraph(graph)
+    const id = toNodeId(VIOLATING_ID)
+    seedRemoteNode(graph, id)
+
+    expect(reconcileAgentAdapters(graph)).toEqual([id])
+    unbind()
+
+    expect(graph.getNodeById(id)).toBeTruthy()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+      errorType: 'agent_node_id_reserved_bit_violation',
+      tags: expect.objectContaining({
+        feature_area: 'agent',
+        outcome: 'degraded'
+      }),
+      context: { graphId: graph.id, nodeId: String(VIOLATING_ID) }
     })
   })
 })

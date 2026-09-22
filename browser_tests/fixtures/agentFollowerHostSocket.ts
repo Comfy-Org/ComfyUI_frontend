@@ -7,8 +7,24 @@ import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import type { HostDoc, HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { parseClientDocFrame } from '@e2e/fixtures/utils/clientDocFrames'
 
 const SUBSCRIBE_TIMEOUT = 15_000
+
+export interface AgentFollowerHostSocketOptions {
+  /**
+   * Called with each validated client `doc_ops` batch before the host
+   * applies it. Return `true` to take the batch over: the host neither
+   * applies nor acks it, leaving the caller to decide when, in what order,
+   * and against which competing writes it reaches the document. Anything
+   * else keeps the default apply-and-broadcast path.
+   *
+   * This is the seam for scenarios that need different `doc_ops` TIMING
+   * (e.g. holding a write back so another can land on the same register
+   * first) without a second socket host to keep in step with this one.
+   */
+  captureClientOps?: (ops: Op[]) => boolean | void
+}
 
 /** Routed `/ws` host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
@@ -23,7 +39,8 @@ export class AgentFollowerHostSocket {
     private readonly page: Page,
     private readonly workflowId: string,
     private readonly host: HostDoc,
-    private readonly socketSid: string
+    private readonly socketSid: string,
+    private readonly options: AgentFollowerHostSocketOptions = {}
   ) {}
 
   async install(): Promise<void> {
@@ -74,29 +91,19 @@ export class AgentFollowerHostSocket {
   }
 
   private onClientFrame(raw: string | Buffer): void {
-    const frame: unknown = JSON.parse(raw.toString())
-    if (typeof frame !== 'object' || frame === null) return
-    const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (typeof data !== 'object' || data === null) return
-    const { workflow_id, state_vector_b64, ops } = data as {
-      workflow_id?: unknown
-      state_vector_b64?: unknown
-      ops?: unknown
-    }
-    if (workflow_id !== this.workflowId) return
-    if (type === 'doc_ops') this.onClientOps(ops)
-    else if (type === 'doc_subscribe') this.onClientSubscribe(state_vector_b64)
+    const frame = parseClientDocFrame(raw)
+    if (frame === null || frame.workflowId !== this.workflowId) return
+    if (frame.type === 'doc_ops') this.onClientOps(frame.ops)
+    else this.onClientSubscribe(frame.stateVectorB64)
   }
 
-  // The wire batch is already enveloped; the applier is its only judge.
-  private onClientOps(ops: unknown): void {
-    if (!Array.isArray(ops)) return
-    for (const hostFrame of this.host.applyClient(ops as Op[]))
-      this.send(hostFrame)
+  // The batch arrives structurally validated; the applier judges the rest.
+  private onClientOps(ops: Op[]): void {
+    if (this.options.captureClientOps?.(ops) === true) return
+    for (const hostFrame of this.host.applyClient(ops)) this.send(hostFrame)
   }
 
-  private onClientSubscribe(stateVectorB64: unknown): void {
-    if (typeof stateVectorB64 !== 'string') return
+  private onClientSubscribe(stateVectorB64: string): void {
     this.send(this.host.subscribed())
     this.send(this.host.catchUp(stateVectorB64))
     this.subscribes += 1

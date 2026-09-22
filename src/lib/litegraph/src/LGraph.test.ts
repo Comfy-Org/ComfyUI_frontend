@@ -1,5 +1,5 @@
 import { toGroupId } from '@/types/groupId'
-import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
@@ -23,9 +23,9 @@ import type {
   SerialisableLLink,
   SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
+import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
-import { useAgentCrdtGraphBindingStore } from '@/stores/agentCrdtGraphBindingStore'
 import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
@@ -483,8 +483,13 @@ describe('LGraph', () => {
   })
 })
 
-describe('CRDT-bound node id minting (PM-1251)', () => {
-  it('mints a plain sequential id when the root graph is not agent-bound', () => {
+describe('node id minting for a graph that shares its id space', () => {
+  /** Stands in for the agent panel's probe (`mintPortWiring.ts`). */
+  function bindRootGraph(rootGraphId: string): () => void {
+    return registerDocBoundRootGraphProbe(() => rootGraphId)
+  }
+
+  it('mints a plain sequential id when no collaborator shares the root graph', () => {
     const graph = new LGraph()
     const node = new DummyNode()
 
@@ -493,15 +498,13 @@ describe('CRDT-bound node id minting (PM-1251)', () => {
     expect(node.id).toBe(toNodeId(1))
   })
 
-  it('mints a disjoint id, never advancing lastNodeId, once the root graph is agent-bound', () => {
+  it('mints a disjoint id, never advancing lastNodeId, while the root graph is doc-bound', () => {
     const graph = new LGraph()
-    const bindingStore = useAgentCrdtGraphBindingStore()
-    const rootGraphId = toRootGraphId(graph.id)
-    bindingStore.setBound(rootGraphId, true)
+    const unbind = bindRootGraph(graph.id)
 
     const node = new DummyNode()
     graph.add(node)
-    bindingStore.setBound(rootGraphId, false)
+    unbind()
 
     const mintedId = BigInt(node.id)
     expect((mintedId >> 40n) & 1n).toBe(0n)
@@ -509,15 +512,25 @@ describe('CRDT-bound node id minting (PM-1251)', () => {
     expect(graph.state.lastNodeId).toBe(0)
   })
 
-  it('leaves a subgraph-interior mint sequential even when its root graph is agent-bound', () => {
+  it('returns to sequential mints once the graph is no longer doc-bound', () => {
+    const graph = new LGraph()
+    const unbind = bindRootGraph(graph.id)
+    graph.add(new DummyNode())
+    unbind()
+
+    const node = new DummyNode()
+    graph.add(node)
+
+    expect(node.id).toBe(toNodeId(1))
+  })
+
+  it('leaves a subgraph-interior mint sequential even when its root graph is doc-bound', () => {
     const subgraph = createTestSubgraph()
-    const bindingStore = useAgentCrdtGraphBindingStore()
-    const rootGraphId = toRootGraphId(subgraph.rootGraph.id)
-    bindingStore.setBound(rootGraphId, true)
+    const unbind = bindRootGraph(subgraph.rootGraph.id)
 
     const node = new DummyNode()
     subgraph.add(node)
-    bindingStore.setBound(rootGraphId, false)
+    unbind()
 
     expect(node.id).toBe(toNodeId(1))
   })

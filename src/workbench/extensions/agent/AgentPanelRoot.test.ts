@@ -23,7 +23,12 @@ setupInlinePromptEditorDom()
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
+import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -100,8 +105,8 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 const appMock = vi.hoisted(() => {
   const graph = {
     nodes: [] as unknown[],
-    _nodes: [] as unknown[],
-    _nodes_by_id: {} as Record<string, unknown>,
+    _nodes: [] as LGraph['_nodes'],
+    _nodes_by_id: {} as LGraph['_nodes_by_id'],
     arrange: vi.fn(),
     add: vi.fn(),
     remove: vi.fn(),
@@ -265,7 +270,6 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { useAgentCrdtGraphBindingStore } from '@/stores/agentCrdtGraphBindingStore'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
@@ -330,7 +334,6 @@ beforeEach(() => {
   workflowStore.activeWorkflow = null
   canvasStore.selectedItems = []
   canvasStore.currentGraph = null
-  canvasStore.canvas = null
   appMock.graph.nodes = []
   appMock.isGraphReady = false
   appMock.graph.arrange.mockClear()
@@ -6601,28 +6604,32 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it('rebinds CRDT mint eligibility to the current root graph when the graph itself changes, not only when panel/workflow flags do (PM-1251)', async () => {
+  it('reports the live root graph as sharing its id space with the agent doc, following a graph swap', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     await renderAndSend('hello')
 
-    const bindingStore = useAgentCrdtGraphBindingStore()
     appMock.isGraphReady = true
     Object.assign(appMock.rootGraph, { id: 'graph-a' })
-    canvasStore.canvas = fromPartial({})
-    await nextTick()
-    expect(bindingStore.isBound(toRootGraphId('graph-a'))).toBe(true)
+    expect(isRootGraphDocBound('graph-a')).toBe(true)
 
-    // A workflow switch tears the canvas down and rebuilds it against a new
-    // root graph, without ever touching agentPanelStore.enabled or
-    // isBoundWorkflowActive - the two deps the pre-fix getter relied on.
+    // A workflow switch rebuilds the canvas against a new root graph without
+    // touching agentPanelStore.enabled or isBoundWorkflowActive, so the
+    // answer has to come from the live graph, read at mint time.
     Object.assign(appMock.rootGraph, { id: 'graph-b' })
-    canvasStore.canvas = null
-    await nextTick()
-    canvasStore.canvas = fromPartial({})
-    await nextTick()
 
-    expect(bindingStore.isBound(toRootGraphId('graph-a'))).toBe(false)
-    expect(bindingStore.isBound(toRootGraphId('graph-b'))).toBe(true)
+    expect(isRootGraphDocBound('graph-a')).toBe(false)
+    expect(isRootGraphDocBound('graph-b')).toBe(true)
+  })
+
+  it('reports no doc-bound graph before the graph is ready', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('hello')
+
+    Object.assign(appMock.rootGraph, { id: 'graph-a' })
+    appMock.isGraphReady = false
+
+    expect(isRootGraphDocBound('graph-a')).toBe(false)
   })
 })
