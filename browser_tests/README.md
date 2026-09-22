@@ -568,6 +568,7 @@ where its tags place it:
 | `@perf`       | Runs in the perf project                               |
 | `@audit`      | Runs in the audit project                              |
 | `@cloud`      | Runs in the cloud project                              |
+| `@desktop`    | Runs against the desktop build                         |
 | `@oss`        | Excluded from the cloud project                        |
 
 Use `@mobile-ios` sparingly — only for regressions that reproduce under
@@ -576,6 +577,10 @@ WebKit engine does not expose embedded-WKWebView globals such as
 `window.webkit.messageHandlers`; inject them via `page.addInitScript()` and set the
 context `userAgent`. See `browser_tests/tests/cloudLoginIosWebview.spec.ts` for the
 reference pattern.
+
+The `@desktop` tag only selects the desktop project. Tests that need Electron
+APIs must import `desktopFixture` from `@e2e/fixtures/desktopFixture` to install
+the mocked bridge before the app starts.
 
 Organizational tags are used for manual `--grep` filtering (not project
 routing). Common ones in the suite: `@smoke`, `@slow`, `@screenshot`, `@canvas`,
@@ -740,6 +745,23 @@ PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud 
 ```
 
 Watch one: add `--headed -g <case id>`. Recorded gaps: `AGENT_REPLAY_TIMING=recorded`.
+
+The dev server above is fine for the replay cases, but it cannot run the two
+agent cases that assert the panel stays **hidden** while the product flag is off
+(`agentPanel.spec.ts` "does not expose the Ask Comfy Agent button" and
+`agentPanelLifecycle.spec.ts` "preserves the stored preference while the flag is
+off"). `setupFlagGate()` in `src/extensions/core/agentPanel.ts` force-enables the
+panel whenever `import.meta.env.MODE === 'development'`, so against `pnpm dev`
+both cases see the button and fail no matter what the flag mock says. CI does not
+hit this because it serves a built `frontend-dist-cloud` artifact. To run them
+locally, serve a production build instead:
+
+```bash
+DISTRIBUTION=cloud pnpm build:cloud
+# serve dist/ (e.g. ComfyUI --front-end-root <repo>/dist) and point the run at it
+PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:8188 DISTRIBUTION=cloud \
+  pnpm exec playwright test browser_tests/tests/agent/ --project=cloud
+```
 
 When a fix changes how the agent's turns affect the app (graph edits,
 CRDT frames, panel state), add a conversation replay case alongside the

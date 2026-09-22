@@ -79,6 +79,11 @@ const {
   class?: HTMLAttributes['class']
 }>()
 
+const emit = defineEmits<{
+  loaded: [src: string]
+  failed: [src: string]
+}>()
+
 const playerEl = useTemplateRef<HTMLDivElement>('playerEl')
 const videoEl = useTemplateRef<HTMLVideoElement>('videoEl')
 const scrubberEl = useTemplateRef<HTMLDivElement>('scrubberEl')
@@ -305,6 +310,8 @@ function toggleFullscreen() {
       :autoplay="autoplay && !lazyAutoplay"
       :loop
       :muted="autoplay"
+      @loadeddata="emit('loaded', src)"
+      @error="emit('failed', src)"
       @click="hideControls || muteOnly ? undefined : (playing = !playing)"
     >
       <track

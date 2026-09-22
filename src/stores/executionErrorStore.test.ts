@@ -11,6 +11,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -50,9 +51,8 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { toNodeId } from '@/types/nodeId'
 import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 
-function mockGraphReady(rootGraph: typeof app.rootGraph) {
-  vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
-  vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+function mockGraphReady(rootGraph: LGraph) {
+  vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
 }
 
 describe('executionErrorStore — node error operations', () => {
@@ -895,6 +895,16 @@ it('opens the runtime error dialog with details when the Issues tab is disabled'
       key: 'global-execution-error',
       visible: true,
       contentProps: {
+        errorSources: [
+          {
+            kind: 'execution',
+            nodeDisplayName: 'KSampler',
+            error: expect.objectContaining({
+              exception_type: 'RuntimeError',
+              exception_message: 'Not enough memory'
+            })
+          }
+        ],
         error: {
           exceptionType: 'RuntimeError',
           exceptionMessage: 'Not enough memory',
@@ -906,6 +916,27 @@ it('opens the runtime error dialog with details when the Issues tab is disabled'
       }
     })
   ])
+})
+
+describe('before the root graph exists', () => {
+  it('resolves the execution error locator without touching app.rootGraph', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const store = useExecutionErrorStore()
+    store.recordExecutionError({
+      prompt_id: 'test',
+      timestamp: 0,
+      node_id: '7',
+      node_type: 'KSampler',
+      executed: [],
+      exception_message: 'fail',
+      exception_type: 'RuntimeError',
+      traceback: []
+    })
+
+    expect(store.lastExecutionErrorNodeId).toBe(toNodeId('7'))
+    expect(store.activeGraphErrorNodeIds).toEqual(new Set())
+    expect(consoleError).not.toHaveBeenCalled()
+  })
 })
 
 describe('clearRunErrors', () => {
