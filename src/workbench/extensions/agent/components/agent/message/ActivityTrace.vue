@@ -51,7 +51,7 @@ function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
 // recognisable as unchanged by its contents.
 function rowSignature(row: ActivityRow): string {
   return row.kind === 'tool'
-    ? `tool:${row.name}:${row.state}:${row.ok}:${row.count}`
+    ? `tool:${row.name}:${row.skill}:${row.state}:${row.ok}:${row.count}`
     : `think:${row.state}:${row.text}`
 }
 </script>

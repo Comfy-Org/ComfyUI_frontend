@@ -166,6 +166,26 @@ describe('ActivityTrace', () => {
 
     expect(screen.getByText('Loaded comfy-director')).toBeInTheDocument()
   })
+
+  it('updates a generic loading label when the skill name arrives', async () => {
+    const { rerender } = render(ActivityTrace, {
+      props: { parts: [tool('c1', 'load_skill', 'streaming')] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Load skill')).toBeInTheDocument()
+
+    await rerender({
+      parts: [
+        {
+          ...tool('c1', 'load_skill', 'streaming'),
+          skill: 'comfy-director'
+        }
+      ]
+    })
+
+    expect(screen.getByText('Loading comfy-director')).toBeInTheDocument()
+  })
 })
 
 describe('WorkSummary', () => {
