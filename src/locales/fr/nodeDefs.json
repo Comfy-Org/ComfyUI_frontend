@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Modifie ou combine jusqu’à 5 images de référence en suivant une invite textuelle à l’aide du modèle Hunyuan Image de Tencent.",
+    "display_name": "Tencent HY Image : Modifier",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_aspect_ratio": {
+        "name": "ratio d’aspect"
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_reference_detail": {
+        "name": "détail de référence"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_watermark": {
+        "name": "filigrane"
+      },
+      "model_width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Génère des images à partir d’une invite textuelle à l’aide du modèle Hunyuan Image de Tencent.",
+    "display_name": "Tencent HY Image : Texte vers image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_aspect_ratio": {
+        "name": "ratio d’aspect"
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_watermark": {
+        "name": "filigrane"
+      },
+      "model_width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -23968,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Remplace le prompt système dans le modèle de discussion du modèle. Ignoré lorsque le modèle par défaut n’est pas utilisé."
+      },
       "thinking": {
         "name": "réflexion",
         "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
@@ -23984,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "texte_généré",
+        "tooltip": null
+      },
+      "1": {
+        "name": "raisonnement",
         "tooltip": null
       }
     }
@@ -24034,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Remplace le prompt système dans le modèle de discussion du modèle. Ignoré lorsque le modèle par défaut n’est pas utilisé."
+      },
       "thinking": {
         "name": "réflexion",
         "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
@@ -24050,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "texte_généré",
+        "tooltip": null
+      },
+      "1": {
+        "name": "raisonnement",
         "tooltip": null
       }
     }

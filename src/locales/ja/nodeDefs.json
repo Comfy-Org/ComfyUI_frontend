@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "TencentのHunyuan Imageモデルを使用して、テキストプロンプトに基づき最大5枚の参照画像を編集または組み合わせます。",
+    "display_name": "Tencent HY Image: 編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_reference_detail": {
+        "name": "参照の詳細"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_watermark": {
+        "name": "透かし"
+      },
+      "model_width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "TencentのHunyuan Imageモデルを使用して、テキストプロンプトから画像を生成します。",
+    "display_name": "Tencent HY Image: テキストから画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_watermark": {
+        "name": "透かし"
+      },
+      "model_width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -23968,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "モデルのチャットテンプレート内のシステムプロンプトを置き換えます。デフォルトテンプレートが使用されていない場合は無視されます。"
+      },
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
@@ -23984,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "生成テキスト",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -24034,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "モデルのチャットテンプレート内のシステムプロンプトを置き換えます。デフォルトテンプレートが使用されていない場合は無視されます。"
+      },
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
@@ -24050,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "生成テキスト",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
