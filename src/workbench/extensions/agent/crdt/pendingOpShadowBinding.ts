@@ -28,10 +28,7 @@
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
-import type {
-  PendingOpShadowSurface,
-  ShadowTarget
-} from './pendingOpShadow'
+import type { PendingOpShadowSurface, ShadowTarget } from './pendingOpShadow'
 import type { PendingOpTrackerEvent } from './pendingOpTracker'
 
 export type ShadowTargetsForOp = (op: Op) => readonly ShadowTarget[]

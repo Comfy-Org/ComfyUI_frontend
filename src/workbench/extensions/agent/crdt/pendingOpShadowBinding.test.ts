@@ -159,7 +159,9 @@ describe('createPendingOpShadowBinding (s3-opt-3 clear-on-effect)', () => {
     tracker.onBatchMinted(ops)
     tracker.onBatchTransmitted(ops)
     const changes: string[] = []
-    surface.subscribe((change) => changes.push(`${change.type}:${'opId' in change ? change.opId : ''}`))
+    surface.subscribe((change) =>
+      changes.push(`${change.type}:${'opId' in change ? change.opId : ''}`)
+    )
 
     tracker.onBatchSettled(
       acknowledged(ops, {
@@ -249,14 +251,14 @@ describe('rootGraphTargetsForOp', () => {
         link_id: 9,
         to_node: 2,
         to_slot: 0
-      } as Op)
+      })
     ).toEqual([{ kind: 'link', graphId: ROOT, linkId: '9' }, nodeTarget(2)])
     expect(
       resolve({
         ...envelope('x'),
         op: 'clear',
         removed_nodes: [1, 2]
-      } as Op)
+      })
     ).toEqual([nodeTarget(1), nodeTarget(2)])
   })
 
