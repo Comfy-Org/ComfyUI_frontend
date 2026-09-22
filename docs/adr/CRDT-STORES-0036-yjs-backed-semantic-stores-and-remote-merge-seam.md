@@ -91,10 +91,13 @@ instead of by the document. This translation boundary is the defect this ADR rem
 
 6. **The end state is enforced by an architecture guard test**,
    `src/workbench/extensions/agent/crdt/semanticStoreArchitecture.guard.test.ts`. It asserts that
-   the three semantic stores import `yjs` and that a remote update applied through the follower
-   binding never reaches `GraphMutations.batch`. Both assertions ship marked `it.fails` (the vitest
-   "known bug" convention already used in this repository) so CI stays green while the slices
-   below land; the last slice removes the marker. The guard also asserts today, and keeps
+   the three semantic stores import `yjs`, that a remote update applied through the follower
+   binding never reaches `GraphMutations.batch`, and, as the result assertion that keeps the
+   first two honest, that the delivered content (node ids `1` and `2`, link `9`) is readable from
+   the per-root semantic document afterwards. Bypassing `batch` while dropping the update fails
+   this guard. These assertions ship marked `it.fails` (the vitest "known bug" convention already
+   used in this repository) so CI stays green while the slices below land; the last slice removes
+   the marker. The guard also asserts today, and keeps
    asserting, that `layoutStore` owns its own Yjs document and that a follower document filled
    from a minted host carries the schema v1 semantic roots and no layout root.
 
