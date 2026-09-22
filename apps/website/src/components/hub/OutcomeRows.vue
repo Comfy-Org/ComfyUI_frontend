@@ -70,6 +70,7 @@ const cardClass = 'peek-card shrink-0 snap-start'
 
         <template #actions>
           <button
+            v-if="row.total > row.shown.length"
             type="button"
             class="cursor-pointer rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
             :data-testid="`outcome-${row.outcome.key}-see-all`"

@@ -133,7 +133,7 @@ describe('CatalogueBrowse', () => {
 
   it('opens a shelf into the list for that use case', async () => {
     await at('?type=workflow')
-    await userEvent.click(screen.getByTestId('shelf-generate-images-see-all'))
+    await userEvent.click(screen.getByTestId('shelf-generate-images-open'))
     expect(shown()).toEqual(['Movie poster'])
     expect(screen.getByTestId('catalogue-heading').textContent).toMatch(
       /image/i
@@ -259,13 +259,30 @@ describe('CatalogueBrowse', () => {
     expect(shown()).toEqual(['Flux Kontext', 'SeedVR2'])
   })
 
-  it('narrows the listing to a row a reader asks to see in full', async () => {
+  // A row already showing everything it has is a row with nothing behind it,
+  // so it offers no way in: opening it would draw the same cards again.
+  it('offers no way into a row that is holding nothing back', async () => {
     await at('?type=workflow', [...ENTRIES, ...EDITING])
+    await userEvent.click(screen.getByTestId('shelf-edit-images-open'))
+
+    expect(screen.queryByTestId('outcome-upscale-restore-see-all')).toBeNull()
+  })
+
+  it('narrows the listing to a row a reader asks to see in full', async () => {
+    const crowded = Array.from({ length: 12 }, (_, index) =>
+      workflow({
+        key: `upscale-${index}`,
+        title: `Upscale ${index}`,
+        useCases: ['edit-images'],
+        tags: ['Image Upscale']
+      })
+    )
+    await at('?type=workflow', [...ENTRIES, ...EDITING, ...crowded])
     await userEvent.click(screen.getByTestId('shelf-edit-images-open'))
 
     await userEvent.click(screen.getByTestId('outcome-upscale-restore-see-all'))
 
-    expect(shown()).toEqual(['Restore a scan', 'Upscale a photo'])
+    expect(shown()).toContain('Upscale a photo')
     expect(screen.queryByTestId('outcome-rows')).toBeNull()
     expect(screen.getByTestId('catalogue-chips').textContent).toContain(
       'Upscale & restore'

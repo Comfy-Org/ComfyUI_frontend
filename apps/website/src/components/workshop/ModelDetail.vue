@@ -140,6 +140,10 @@ const examples = initialPageState.examples
 // A workflow page describes one workflow, so the model's other examples would
 // be beside the point there.
 const showsExamples = computed(() => !slots.details && examples.length > 0)
+
+// The docs describe the model. A workflow page borrows this shell but is not
+// one, so the link would send its reader somewhere they did not ask to go.
+const showsDocs = computed(() => !slots.details && docsHref)
 const firstExample = initialPageState.firstExample
 const activeExample = ref<PlaygroundExample | undefined>(
   initialPageState.activeExample
@@ -727,7 +731,7 @@ function useInCode() {
         </button>
       </div>
       <a
-        v-if="docsHref"
+        v-if="showsDocs"
         :href="docsHref"
         target="_blank"
         rel="noopener noreferrer"

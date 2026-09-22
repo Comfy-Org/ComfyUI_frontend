@@ -126,13 +126,13 @@ const bandHeading =
 
     <section :class="band" data-testid="workflow-details">
       <dl class="flex flex-col gap-2.5 text-sm">
-        <div v-for="fact in facts" :key="fact.label" class="flex gap-4">
-          <dt class="shrink-0 text-primary-warm-gray">
-            {{ t(fact.label, locale) }}
-          </dt>
-          <dd
-            class="min-w-0 flex-1 text-right text-primary-comfy-canvas tabular-nums"
-          >
+        <div
+          v-for="fact in facts"
+          :key="fact.label"
+          class="grid grid-cols-[7rem_1fr] gap-4"
+        >
+          <dt class="text-primary-warm-gray">{{ t(fact.label, locale) }}</dt>
+          <dd class="min-w-0 text-primary-comfy-canvas tabular-nums">
             {{ fact.value }}
           </dd>
         </div>

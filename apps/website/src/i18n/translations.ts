@@ -10548,6 +10548,7 @@ Enterprise`
   },
   'workshop.v2.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
   'workshop.v2.back': { en: 'Back to hub', 'zh-CN': '返回 Hub' },
+  'workshop.v2.searchShort': { en: 'Search', 'zh-CN': '搜索' },
   'workshop.v2.allOf': { en: 'All {kind}', 'zh-CN': '全部{kind}' },
   'workshop.v2.browseAll': {
     en: 'Browse all {n} {kind}',

@@ -89,6 +89,7 @@ const browseAllLabel = computed(() =>
 
         <template #actions>
           <button
+            v-if="shelf.total > shelf.shown.length"
             type="button"
             :class="seeAllClass"
             :data-testid="`shelf-${shelf.useCase}-see-all`"

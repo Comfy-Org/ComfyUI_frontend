@@ -331,7 +331,7 @@ const heading = computed(() =>
 
       <!-- The type says what is in the list; the search and the order narrow
         and rank what it chose, so they group together away from it. -->
-      <div class="flex flex-1 items-center gap-3 sm:ms-auto sm:flex-none">
+      <div class="flex min-w-0 flex-1 items-center gap-3">
         <CatalogueSearch
           v-model="query"
           :placeholder="searchPlaceholder"
