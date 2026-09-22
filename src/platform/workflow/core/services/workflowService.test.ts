@@ -4,6 +4,7 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { DocumentId } from '@/types/documentId'
 import type {
   LoadedComfyWorkflow,
   PendingWarnings
@@ -18,6 +19,9 @@ import {
   resetWorkflowLoadQueueForTests,
   useWorkflowService
 } from '@/platform/workflow/core/services/workflowService'
+import { useDocumentActivationStore } from '@/stores/documentActivationStore'
+import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -1939,6 +1943,102 @@ describe('useWorkflowService', () => {
       expect(isValidUuid(resetArg?.id)).toBe(true)
       expect(resetArg?.id).not.toBe('different-legacy-name')
       expect(resetArg?.id).not.toBe('legacy-workflow-name')
+    })
+
+    describe('document activation', () => {
+      const canvasGraphId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
+      let documents: ReturnType<typeof useGraphDocumentStore>
+      let activation: ReturnType<typeof useDocumentActivationStore>
+
+      beforeEach(() => {
+        documents = useGraphDocumentStore()
+        activation = useDocumentActivationStore()
+        Reflect.set(app, 'isGraphReady', true)
+        app.rootGraph.id = canvasGraphId
+      })
+
+      afterEach(() => {
+        Reflect.deleteProperty(app, 'isGraphReady')
+        Reflect.deleteProperty(app.rootGraph, 'id')
+      })
+
+      function openDocument(): DocumentId {
+        const documentId = documents.createDocument()
+        if (documentId === null) throw new Error('registry refused a document')
+        return documentId
+      }
+
+      it('hands the canvas to the loaded workflow\u2019s document', async () => {
+        const documentId = openDocument()
+        existingWorkflow.documentId = documentId
+        workflowStore.activeWorkflow = existingWorkflow
+
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          makeWorkflowData()
+        )
+
+        expect(activation.activeDocumentId()).toBe(documentId)
+        expect(activation.activeRootGraphId()).toBe(
+          toRootGraphId(canvasGraphId)
+        )
+        expect(documents.getDocument(documentId)?.scope).toEqual({
+          rootGraphId: toRootGraphId(canvasGraphId),
+          owningGraphId: toOwningGraphId(canvasGraphId)
+        })
+      })
+
+      it('reports a load that ends with no document holding the canvas', async () => {
+        existingWorkflow.documentId = null
+        workflowStore.activeWorkflow = existingWorkflow
+
+        await useWorkflowService().afterLoadNewGraph(
+          'repeat',
+          makeWorkflowData()
+        )
+
+        expect(activation.activeRootGraphId()).toBeNull()
+        expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+          errorType: 'document_activation_unavailable'
+        })
+      })
+
+      it('retracts the outgoing binding before the shared graph is touched', async () => {
+        const documentId = openDocument()
+        documents.markLoaded(documentId)
+        await activation.activate(documentId, {
+          rootGraphId: toRootGraphId(canvasGraphId),
+          owningGraphId: toOwningGraphId(canvasGraphId)
+        })
+        workflowStore.activeWorkflow = existingWorkflow
+
+        useWorkflowService().beforeLoadNewGraph()
+
+        expect(activation.activeRootGraphId()).toBeNull()
+      })
+
+      it('keeps the outgoing binding when the pre-load capture throws', async () => {
+        const documentId = openDocument()
+        documents.markLoaded(documentId)
+        await activation.activate(documentId, {
+          rootGraphId: toRootGraphId(canvasGraphId),
+          owningGraphId: toOwningGraphId(canvasGraphId)
+        })
+        existingWorkflow.changeTracker.deactivate = vi.fn(() => {
+          throw new Error('capture failed')
+        })
+        workflowStore.activeWorkflow = existingWorkflow
+
+        expect(() => useWorkflowService().beforeLoadNewGraph()).toThrow(
+          'capture failed'
+        )
+
+        // The load aborts with the outgoing graph still on the canvas, so its
+        // binding is still the honest one.
+        expect(activation.activeRootGraphId()).toBe(
+          toRootGraphId(canvasGraphId)
+        )
+      })
     })
 
     describe('root graph id adoption', () => {

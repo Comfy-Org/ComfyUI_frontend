@@ -57,6 +57,7 @@ describe('attachMintPortWiring', () => {
   let wiring: MintPortWiring
   let enabled: boolean
   let bound: boolean
+  let activeRootGraphId: string | null
   let layoutListeners: Set<(change: LayoutChangeView) => void>
   let graphNodes: Map<string, FakeGraphNode>
 
@@ -78,12 +79,14 @@ describe('attachMintPortWiring', () => {
     minted = []
     enabled = true
     bound = true
+    activeRootGraphId = ROOT_ID
     layoutListeners = new Set()
     graphNodes = new Map()
     wiring = attachMintPortWiring({
       isEnabled: () => enabled,
       isDocBound: () => bound,
-      activeRootGraphId: () => null,
+      activeRootGraphId: () =>
+        activeRootGraphId === null ? null : toRootGraphId(activeRootGraphId),
       enqueue: (operations) => minted.push(...operations),
       layoutChanges: (listener) => {
         layoutListeners.add(listener)
@@ -102,7 +105,7 @@ describe('attachMintPortWiring', () => {
 
     runMintPortsIntentionalClear(() => {
       deliverLayoutChange({
-        operation: { type: 'clearGraph', actor: 'user-abc' }
+        operation: { type: 'clearGraph', actor: 'user-abc', graphId: ROOT_ID }
       })
     })
 
@@ -157,7 +160,13 @@ describe('attachMintPortWiring', () => {
 
     linkStore.deleteLink(ROOT_SCOPE, severed)
     deliverLayoutChange({
-      operation: { type: 'deleteNode', actor: 'user-abc', nodeId: toNodeId(2) }
+      operation: {
+        type: 'deleteNode',
+        actor: 'user-abc',
+        graphId: ROOT_ID,
+        ownerGraphId: ROOT_ID,
+        nodeId: toNodeId(2)
+      }
     })
     await afterSweep()
 
@@ -291,6 +300,8 @@ describe('attachMintPortWiring', () => {
       operation: {
         type: 'createNode',
         actor: 'user-abc',
+        graphId: ROOT_ID,
+        ownerGraphId: ROOT_ID,
         nodeId: toNodeId(5),
         layout: { position: { x: 10, y: 20 } }
       }
@@ -326,6 +337,38 @@ describe('attachMintPortWiring', () => {
     expect(placed).toBeDefined()
     expect(applied).toBe(true)
     expect(widgetStore.getWidget(id)?.value).toBe(42)
+  })
+
+  it('every port targets the activated document, not the live canvas graph', () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    // The load handoff: the shared graph on screen is still ROOT_ID, but no
+    // document holds the canvas yet. A node create already failed closed
+    // here; a connect and a widget set must not keep minting into the
+    // outgoing document, naming nodes it has never seen.
+    activeRootGraphId = null
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+    widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
+      typeof widgetStore.registerWidget
+    >[1])
+
+    useLinkStore().registerLink(ROOT_SCOPE, topology(41))
+    widgetStore.setValue(id, 42)
+    deliverLayoutChange({
+      operation: {
+        type: 'createNode',
+        actor: 'user-abc',
+        graphId: ROOT_ID,
+        ownerGraphId: ROOT_ID,
+        nodeId: toNodeId(5),
+        layout: { position: { x: 10, y: 20 } }
+      }
+    })
+
+    expect(minted).toEqual([])
+    consoleError.mockRestore()
   })
 
   it('stops observing both stores after detach', () => {

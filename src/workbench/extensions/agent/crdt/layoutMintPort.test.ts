@@ -18,6 +18,8 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 const LOCAL_PREFIX = 'user-'
 const LOCAL_ACTOR = 'user-abc123def'
+/** The root graph of the document these tests keep activated. */
+const ROOT = 'root'
 
 function createNodeChange(
   id: string,
@@ -27,6 +29,8 @@ function createNodeChange(
     operation: {
       type: 'createNode',
       actor,
+      graphId: ROOT,
+      ownerGraphId: ROOT,
       nodeId: id,
       layout: { position: { x: 128, y: 96 } }
     }
@@ -34,14 +38,22 @@ function createNodeChange(
 }
 
 function clearChange(actor: string = LOCAL_ACTOR): LayoutChangeView {
-  return { operation: { type: 'clearGraph', actor } }
+  return { operation: { type: 'clearGraph', actor, graphId: ROOT } }
 }
 
 function deleteChange(
   id: string,
   actor: string = LOCAL_ACTOR
 ): LayoutChangeView {
-  return { operation: { type: 'deleteNode', actor, nodeId: id } }
+  return {
+    operation: {
+      type: 'deleteNode',
+      actor,
+      graphId: ROOT,
+      ownerGraphId: ROOT,
+      nodeId: id
+    }
+  }
 }
 
 describe('attachLayoutMintPort', () => {
@@ -63,7 +75,7 @@ describe('attachLayoutMintPort', () => {
     minted = []
     enabled = true
     bound = true
-    activeRootGraphId = null
+    activeRootGraphId = toRootGraphId(ROOT)
     listeners = new Set()
     session = createMintSession()
     severed = new Map()
@@ -191,12 +203,13 @@ describe('attachLayoutMintPort', () => {
   })
 
   it('fails closed on a graphId with no ownerGraphId instead of minting as root', () => {
-    deliver({
-      operation: { ...createNodeChange('1').operation, graphId: 'root' }
-    })
-    deliver({
-      operation: { ...deleteChange('1').operation, graphId: 'root' }
-    })
+    const withoutOwner = (change: LayoutChangeView): LayoutChangeView => {
+      const { ownerGraphId: _ownerGraphId, ...operation } = change.operation
+      return { operation }
+    }
+
+    deliver(withoutOwner(createNodeChange('1')))
+    deliver(withoutOwner(deleteChange('1')))
 
     expect(minted).toEqual([])
     expect(reportError).toHaveBeenNthCalledWith(
@@ -222,12 +235,11 @@ describe('attachLayoutMintPort', () => {
   })
 
   it('mints a root createNode when ownerGraphId equals graphId', () => {
-    activeRootGraphId = toRootGraphId('root')
     deliver({
       operation: {
         ...createNodeChange('1').operation,
-        graphId: 'root',
-        ownerGraphId: 'root'
+        graphId: ROOT,
+        ownerGraphId: ROOT
       }
     })
 
@@ -371,6 +383,7 @@ describe('attachLayoutMintPort', () => {
       operation: {
         type,
         actor: LOCAL_ACTOR,
+        graphId: ROOT,
         nodeId: '1',
         layout: { position: { x: 1, y: 2 } }
       }
@@ -456,20 +469,44 @@ describe('attachLayoutMintPort', () => {
       expect(minted).toHaveLength(1)
     })
 
+    it('a foreign clear never consumes the intentional-clear capture', () => {
+      port.runIntentionalClear(() => {
+        // The outgoing tab's clear drains into the window opened for the
+        // genuine one; borrowing the capture would leave the real clear
+        // looking like teardown and minting nothing.
+        deliver(rootScoped('clearGraph', OTHER))
+        deliver(clearChange())
+      })
+
+      expect(minted).toEqual([{ op: 'clear', removed_nodes: ['1'] }])
+    })
+
+    it('mints the clear that reminted the root graph id under it', () => {
+      port.runIntentionalClear(() => {
+        // What `app.clean()` does: `LGraph.clear()` mints a fresh root id and
+        // the host rebinds the same document onto it, all before the store's
+        // queued clearGraph - which still names the pre-clear id - drains.
+        activeRootGraphId = OTHER
+        deliver(clearChange())
+      })
+
+      expect(minted).toEqual([{ op: 'clear', removed_nodes: ['1'] }])
+    })
+
+    it('drops an intentional clear captured while nothing was activated', () => {
+      activeRootGraphId = null
+
+      port.runIntentionalClear(() => deliver(clearChange()))
+
+      expect(minted).toEqual([])
+    })
+
     it('drops a root-scoped change while no document is activated', () => {
       activeRootGraphId = null
 
       deliver(rootScoped('createNode', ACTIVATED))
 
       expect(minted).toEqual([])
-    })
-
-    it('leaves a change with no graph id to the root-vs-subgraph classifier', () => {
-      activeRootGraphId = ACTIVATED
-
-      deliver(createNodeChange('1'))
-
-      expect(minted).toHaveLength(1)
     })
   })
 })

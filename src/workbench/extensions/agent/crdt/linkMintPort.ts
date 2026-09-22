@@ -9,6 +9,8 @@
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
 
+import type { RootGraphId } from '@/types/graphScopeId'
+
 import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
@@ -63,6 +65,14 @@ export interface LinkMintPortDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /**
+   * Root graph id of the document the activation coordinator has activated,
+   * or null while no document holds the canvas. Same targeting rule as the
+   * layout port: the shared `LGraph` is reconfigured in place on a tab
+   * switch, so a scope naming another graph is a link on a graph this
+   * document does not own and must never reach the wire.
+   */
+  activeRootGraphId(): RootGraphId | null
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
 }
@@ -104,8 +114,25 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     )
   }
 
+  /**
+   * The link's graph is the one the activated document owns. A mismatch is
+   * the load-handoff window, where the canvas already holds another tab's
+   * graph while this document is still the bound one: minting then would
+   * reference nodes the document has never seen.
+   */
+  function isForActivatedDocument(scope: LinkScopeView): boolean {
+    return scope.rootGraphId === deps.activeRootGraphId()
+  }
+
   function onPlaced(scope: LinkScopeView, topology: LinkTopologyView): void {
     if (!gateOpen()) return
+    if (!isForActivatedDocument(scope)) {
+      surfaceUnrepresentable(
+        'connect on a graph the activated document does not own',
+        topology.id
+      )
+      return
+    }
     if (!isRootScope(scope)) {
       surfaceUnrepresentable('subgraph-interior connect', topology.id)
       return
@@ -158,7 +185,8 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   function onDeleted(scope: LinkScopeView, topology: LinkTopologyView): void {
     const entry: SeveranceEntry = {
       linkId: topology.id,
-      mintable: gateOpen() && isRootScope(scope)
+      mintable:
+        gateOpen() && isForActivatedDocument(scope) && isRootScope(scope)
     }
     capture(topology.originNodeId, entry)
     capture(topology.targetNodeId, entry)

@@ -22,7 +22,7 @@ function scopeOf(rootGraphId: string): GraphScope {
 describe('createDocumentActivationHost', () => {
   let host: DocumentActivationHost
   let loaded: Set<DocumentId>
-  let boundScopes: { documentId: DocumentId; scope: GraphScope }[]
+  let committedScopes: { documentId: DocumentId; scope: GraphScope }[]
   let tabA: DocumentId
   let tabB: DocumentId
 
@@ -30,10 +30,11 @@ describe('createDocumentActivationHost', () => {
     tabA = createDocumentId()
     tabB = createDocumentId()
     loaded = new Set([tabA, tabB])
-    boundScopes = []
+    committedScopes = []
     host = createDocumentActivationHost({
       isLoaded: (documentId) => loaded.has(documentId),
-      bindScope: (documentId, scope) => boundScopes.push({ documentId, scope })
+      commitScope: (documentId, scope) =>
+        committedScopes.push({ documentId, scope })
     })
   })
 
@@ -49,11 +50,31 @@ describe('createDocumentActivationHost', () => {
     expect(host.activeRootGraphId()).toBe(toRootGraphId('graph-a'))
   })
 
-  it('records the scope in the registry before the handoff', async () => {
+  it('records the scope in the registry for the handoff it completed', async () => {
     await host.activate(tabA, scopeOf('graph-a'))
 
-    expect(boundScopes).toEqual([
+    expect(committedScopes).toEqual([
       { documentId: tabA, scope: scopeOf('graph-a') }
+    ])
+  })
+
+  it('never records the scope of an activation it rejected', async () => {
+    loaded.delete(tabB)
+
+    await host.activate(tabB, scopeOf('graph-b'))
+
+    expect(committedScopes).toEqual([])
+  })
+
+  it('never records the scope of a superseded activation', async () => {
+    // The loser read the shared graph's id before the winner reconfigured it,
+    // so committing its scope would point its document at another one's graph.
+    const stale = host.activate(tabA, scopeOf('graph-a'))
+    const winner = host.activate(tabB, scopeOf('graph-b'))
+    await Promise.all([stale, winner])
+
+    expect(committedScopes).toEqual([
+      { documentId: tabB, scope: scopeOf('graph-b') }
     ])
   })
 
@@ -100,6 +121,38 @@ describe('createDocumentActivationHost', () => {
       reason: 'not-loaded'
     })
     expect(host.activeRootGraphId()).toBeNull()
+  })
+
+  describe('an in-place root graph remint', () => {
+    it('republishes the activated document on the reminted graph', async () => {
+      await host.activate(tabA, scopeOf('graph-a'))
+
+      expect(host.rebindActiveScope(scopeOf('graph-a-cleared'))).toBe(true)
+
+      expect(host.activeDocumentId()).toBe(tabA)
+      expect(host.activeRootGraphId()).toBe(toRootGraphId('graph-a-cleared'))
+      expect(committedScopes.at(-1)).toEqual({
+        documentId: tabA,
+        scope: scopeOf('graph-a-cleared')
+      })
+    })
+
+    it('still retracts on the next load after a rebind', async () => {
+      await host.activate(tabA, scopeOf('graph-a'))
+      host.rebindActiveScope(scopeOf('graph-a-cleared'))
+
+      host.deactivate()
+
+      expect(host.activeDocumentId()).toBeNull()
+      expect(host.activeRootGraphId()).toBeNull()
+    })
+
+    it('is inert while no document holds the canvas', () => {
+      expect(host.rebindActiveScope(scopeOf('graph-a'))).toBe(false)
+
+      expect(host.activeRootGraphId()).toBeNull()
+      expect(committedScopes).toEqual([])
+    })
   })
 
   it('deactivate is inert when no document holds the canvas', () => {

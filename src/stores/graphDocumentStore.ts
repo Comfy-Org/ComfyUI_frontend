@@ -183,6 +183,20 @@ export const useGraphDocumentStore = defineStore('graphDocument', () => {
     return true
   }
 
+  /**
+   * Transition `created → loaded` without touching scope. The load path calls
+   * this when it has the document's graph on the canvas; the scope is bound
+   * separately, by whichever activation wins the canvas.
+   */
+  function markLoaded(documentId: DocumentId): boolean {
+    const entry = documents.get(documentId)
+    if (!entry) return false
+    const state = reduceDocument(entry.state, { type: 'hydrated' })
+    if (state === entry.state) return false
+    patch(documentId, { state })
+    return true
+  }
+
   /** Transition `created → loaded` and early-bind the document's ECS scope. */
   function hydrateDocument(documentId: DocumentId, scope: GraphScope): boolean {
     const entry = documents.get(documentId)
@@ -305,6 +319,7 @@ export const useGraphDocumentStore = defineStore('graphDocument', () => {
     completeGraphHydration,
     disposeGraphLease,
     assignWorkflowId,
+    markLoaded,
     hydrateDocument,
     rebindScope,
     markMutated,

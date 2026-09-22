@@ -14,7 +14,7 @@ export const useDocumentActivationStore = defineStore(
     return createDocumentActivationHost({
       isLoaded: (documentId) =>
         documents.getDocument(documentId)?.state.phase === 'loaded',
-      bindScope: (documentId, scope) => {
+      commitScope: (documentId, scope) => {
         if (!documents.hydrateDocument(documentId, scope))
           documents.rebindScope(documentId, scope)
       }

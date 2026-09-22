@@ -83,6 +83,9 @@ describe('tab-switch activation handoff', () => {
     activation.deactivate()
     sharedGraph.id = tab.rootGraphId
     sharedGraph.rootGraph = { id: tab.rootGraphId }
+    // The load path loads the document before asking for the canvas; the
+    // activation request does not promote it on its own.
+    documents.markLoaded(tab.documentId)
     await activation.activate(tab.documentId, {
       rootGraphId: tab.rootGraphId,
       owningGraphId: toOwningGraphId(tab.rootGraphId)
@@ -185,6 +188,7 @@ describe('tab-switch activation handoff', () => {
   it('rapid switching leaves exactly the last tab holding the canvas', async () => {
     await switchTo(tabA)
 
+    documents.markLoaded(tabB.documentId)
     const races = [
       activation.activate(tabA.documentId, {
         rootGraphId: tabA.rootGraphId,
@@ -207,6 +211,45 @@ describe('tab-switch activation handoff', () => {
     await realDelivery()
 
     expect(minted).toEqual([])
+  })
+
+  it('refuses the canvas to a document no load path ever loaded', async () => {
+    const outcome = await activation.activate(tabA.documentId, {
+      rootGraphId: tabA.rootGraphId,
+      owningGraphId: toOwningGraphId(tabA.rootGraphId)
+    })
+
+    expect(outcome).toEqual({
+      status: 'rejected',
+      documentId: tabA.documentId,
+      reason: 'not-loaded'
+    })
+    expect(activation.activeRootGraphId()).toBeNull()
+    expect(documents.getDocument(tabA.documentId)?.scope).toBeNull()
+  })
+
+  it('keeps minting after a clear reminted the root graph id in place', async () => {
+    await switchTo(tabA)
+    // `app.clean()`: `LGraph.clear()` remints the root id under the same
+    // document and the host rebinds onto it. Without that rebind every later
+    // edit names a graph the activated document no longer owns.
+    const reminted = toRootGraphId(createUuidv4())
+    sharedGraph.id = reminted
+    sharedGraph.rootGraph = { id: reminted }
+    activation.rebindActiveScope({
+      rootGraphId: reminted,
+      owningGraphId: toOwningGraphId(reminted)
+    })
+    addNode('13')
+
+    layoutStore.applyOperation(createNodeOp(reminted, '13'))
+    await realDelivery()
+
+    expect(minted).toHaveLength(1)
+    expect(documents.getDocument(tabA.documentId)?.scope).toEqual({
+      rootGraphId: reminted,
+      owningGraphId: toOwningGraphId(reminted)
+    })
   })
 
   it('the registry learns each tab’s scope from the activation, not from a later write', async () => {

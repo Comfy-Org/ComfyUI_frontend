@@ -157,6 +157,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     session,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
+    activeRootGraphId: deps.activeRootGraphId,
     enqueue: deps.enqueue
   })
 
@@ -190,11 +191,10 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     session,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
-    rootGraphId() {
-      const graph = deps.getGraph()
-      if (!graph) return null
-      return graph.rootGraph?.id ?? graph.id
-    },
+    // The activation host, not a second derivation off the live canvas graph:
+    // the shared `LGraph` already carries the incoming tab's id while the
+    // outgoing document is still the bound one.
+    rootGraphId: deps.activeRootGraphId,
     resolveInteriorPath(owningGraphId) {
       const graph = deps.getGraph()
       if (!graph) return null

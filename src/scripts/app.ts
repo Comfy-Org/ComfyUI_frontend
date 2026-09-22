@@ -90,6 +90,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useDocumentActivationStore } from '@/stores/documentActivationStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -113,6 +114,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
@@ -2644,6 +2646,14 @@ export class ComfyApp {
     if (this.rootGraph && !this.canvas.subgraph) {
       this.rootGraph.clear()
       ensureNonZeroUuid(this.rootGraph)
+      // `clear()` remints the root graph id under the document the canvas is
+      // still showing (Clear Workflow reaches no load path), so republish the
+      // binding on the new id. Without this the activated document keeps
+      // naming the pre-clear graph and every later agent op is dropped as
+      // foreign. Inert during a load, which retracted the binding first.
+      useDocumentActivationStore().rebindActiveScope(
+        graphScopeOf(this.rootGraph)
+      )
     }
 
     executionErrorStore.setActiveGraph(this.rootGraph?.id ?? null)

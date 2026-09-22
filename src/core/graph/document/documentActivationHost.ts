@@ -23,18 +23,30 @@ import type {
 interface ActiveDocumentView {
   readonly documentId: DocumentId
   readonly rootGraphId: RootGraphId
+  /**
+   * The binding that published this view. Only it may retract the view: the
+   * coordinator's contract lets it detach a binding it no longer holds, and a
+   * document re-activated with a rotated graph id has a newer binding whose
+   * view a stale detach must not nullify.
+   */
+  readonly binding: DocumentViewBinding
 }
 
 export interface DocumentActivationHostDeps {
-  /** The registry's loaded check, gating the handoff. */
+  /**
+   * The registry's loaded check, gating the handoff. Loading a document is the
+   * load path's own step, taken before it asks for the canvas (see
+   * `workflowService.activateLoadedDocument`), so this rejects a document no
+   * path has loaded — an unknown or closed one — rather than promoting it.
+   */
   isLoaded(documentId: DocumentId): boolean
   /**
-   * Record the document's ECS scope in the registry. The host is the first
-   * caller that knows the root graph id — it reads it off the canvas graph at
-   * bind time — so the registry learns the scope here rather than lazily at
-   * the document's first agent write.
+   * Record the document's ECS scope in the registry. Called from the winning
+   * handoff only: a rejected or superseded activation must not leave its root
+   * graph id on the document, because the shared `LGraph` may already carry
+   * the winner's id by the time the loser resolves.
    */
-  bindScope(documentId: DocumentId, scope: GraphScope): void
+  commitScope(documentId: DocumentId, scope: GraphScope): void
 }
 
 export interface DocumentActivationHost {
@@ -46,6 +58,14 @@ export interface DocumentActivationHost {
     documentId: DocumentId,
     scope: GraphScope
   ): Promise<ActivationOutcome>
+  /**
+   * Republish the activated document's binding after its root graph id was
+   * reminted in place. `LGraph.clear()` mints a fresh root id under the same
+   * canvas and the same document (Clear Workflow), so this is a rebind, not a
+   * handoff: no detach, no attach, no generation race. Returns false when no
+   * document holds the canvas.
+   */
+  rebindActiveScope(scope: GraphScope): boolean
   /**
    * Detach whichever document the canvas holds, synchronously. Callers invoke
    * this before the shared graph is reconfigured, so no consumer observes a
@@ -69,21 +89,33 @@ export function createDocumentActivationHost(
    * ordering, so this only has to be honest about what is published.
    */
   function bindingFor(rootGraphId: RootGraphId): DocumentViewBinding {
-    return {
+    const binding: DocumentViewBinding = {
       attach(documentId) {
-        view = { documentId, rootGraphId }
+        view = { documentId, rootGraphId, binding }
       },
       detach(documentId) {
-        if (view?.documentId === documentId) view = null
+        if (view?.documentId === documentId && view.binding === binding)
+          view = null
       }
     }
+    return binding
   }
 
   return {
-    activate(documentId, scope) {
+    async activate(documentId, scope) {
       requested = documentId
-      deps.bindScope(documentId, scope)
-      return coordinator.activate(documentId, bindingFor(scope.rootGraphId))
+      const outcome = await coordinator.activate(
+        documentId,
+        bindingFor(scope.rootGraphId)
+      )
+      if (outcome.status === 'activated') deps.commitScope(documentId, scope)
+      return outcome
+    },
+    rebindActiveScope(scope) {
+      if (view === null) return false
+      view = { ...view, rootGraphId: scope.rootGraphId }
+      deps.commitScope(view.documentId, scope)
+      return true
     },
     deactivate() {
       // Retract the in-flight request as well as the published binding. A

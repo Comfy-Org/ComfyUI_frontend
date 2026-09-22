@@ -38,6 +38,7 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useDocumentActivationStore } from '@/stores/documentActivationStore'
+import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import {
@@ -614,11 +615,6 @@ export const useWorkflowService = () => {
    * a new graph.
    */
   const beforeLoadNewGraph = (suppressWorkflowReset = true) => {
-    // Retract the outgoing document's canvas binding before anything touches
-    // the shared root graph (ADR-GRAPH-DOCUMENT-0024). Synchronous on
-    // purpose: from here until the incoming document is activated, no
-    // consumer can observe a binding naming a graph this load overwrites.
-    useDocumentActivationStore().deactivate()
     // Use workspaceStore here as it is patched in unit tests.
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
@@ -647,6 +643,14 @@ export const useWorkflowService = () => {
       // Save subgraph viewport before the canvas gets overwritten
       useSubgraphNavigationStore().saveCurrentViewport(suppressWorkflowReset)
     }
+    // Retract the outgoing document's canvas binding, synchronously, as the
+    // last step before the caller touches the shared root graph
+    // (ADR-GRAPH-DOCUMENT-0024): from here until the incoming document is
+    // activated, no consumer can observe a binding naming a graph this load
+    // overwrites. Last, not first, because a throw above aborts the load with
+    // the outgoing graph still on the canvas — its binding is still the true
+    // one, and retracting it would strand op targeting until the next load.
+    useDocumentActivationStore().deactivate()
   }
 
   /**
@@ -674,19 +678,56 @@ export const useWorkflowService = () => {
 
   /**
    * Hand the canvas to the document the load just made active, through the
-   * GraphDocument registry (ADR-GRAPH-DOCUMENT-0024). This is the one place
-   * activation happens: all three graph-load paths funnel through
-   * {@link afterLoadNewGraph}. The scope is read off the live root graph
-   * rather than the workflow's serialized `activeState`, because that is the
-   * graph every layout change will name.
+   * GraphDocument registry (ADR-GRAPH-DOCUMENT-0024). Every graph LOAD
+   * funnels through {@link afterLoadNewGraph} (loadGraphData, loadApiJson,
+   * importA1111) and lands here. Clear Workflow is the one graph swap that
+   * reaches no load path: it remints the root id in place, and `app.clean()`
+   * republishes the same document on the new id instead. The scope is read
+   * off the live root graph rather than the workflow's serialized
+   * `activeState`, because that is the graph every layout change will name.
+   *
+   * A load that ends without an activation leaves op targeting fail-closed
+   * until the next load, so every such ending is reported: silence there
+   * reads as "the agent quietly stopped seeing my edits".
    */
   const activateLoadedDocument = async (): Promise<void> => {
+    if (!app.isGraphReady) return
     const documentId = useWorkspaceStore().workflow.activeWorkflow?.documentId
-    if (!documentId || !app.isGraphReady) return
-    await useDocumentActivationStore().activate(documentId, {
+    if (!documentId) {
+      reportError(
+        new Error(
+          'Graph loaded with no document to activate; root-scoped agent ops stay dropped until the next load'
+        ),
+        { errorType: 'document_activation_unavailable' }
+      )
+      return
+    }
+    const scope = {
       rootGraphId: toRootGraphId(app.rootGraph.id),
       owningGraphId: toOwningGraphId(app.rootGraph.id)
-    })
+    }
+    // The load path is what loads a document: the graph is on the canvas by
+    // now. Declaring it here, rather than as a side effect of asking for the
+    // canvas, keeps the coordinator's precondition a real check — it rejects
+    // a document no load ever produced (unknown or closed).
+    useGraphDocumentStore().markLoaded(documentId)
+    const outcome = await useDocumentActivationStore().activate(
+      documentId,
+      scope
+    )
+    if (outcome.status === 'rejected') {
+      reportError(
+        new Error(`Document activation rejected (${outcome.reason})`),
+        {
+          errorType: 'document_activation_rejected',
+          context: {
+            documentId,
+            reason: outcome.reason,
+            rootGraphId: scope.rootGraphId
+          }
+        }
+      )
+    }
   }
 
   const activateLoadedWorkflow = async (

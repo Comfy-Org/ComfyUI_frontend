@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { RootGraphId } from '@/types/graphScopeId'
+import { toRootGraphId } from '@/types/graphScopeId'
+
 import type { GraphOperation } from './graphOperations'
 import { attachLinkMintPort } from './linkMintPort'
 import type {
@@ -10,9 +13,15 @@ import type {
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
 
+const ROOT_ID = 'root-uuid'
 const ROOT_SCOPE: LinkScopeView = {
-  rootGraphId: 'root-uuid',
-  owningGraphId: 'root-uuid'
+  rootGraphId: ROOT_ID,
+  owningGraphId: ROOT_ID
+}
+/** Another tab's graph: the shared LGraph already carries it after a switch. */
+const FOREIGN_SCOPE: LinkScopeView = {
+  rootGraphId: 'other-uuid',
+  owningGraphId: 'other-uuid'
 }
 const SUBGRAPH_SCOPE: LinkScopeView = {
   rootGraphId: 'root-uuid',
@@ -41,6 +50,7 @@ describe('attachLinkMintPort', () => {
   let port: LinkMintPort
   let enabled: boolean
   let bound: boolean
+  let activeRootGraphId: RootGraphId | null
   let session: MintSession
   let placedListeners: Set<
     (scope: LinkScopeView, topology: LinkTopologyView) => void
@@ -61,6 +71,7 @@ describe('attachLinkMintPort', () => {
     minted = []
     enabled = true
     bound = true
+    activeRootGraphId = toRootGraphId(ROOT_ID)
     session = createMintSession()
     placedListeners = new Set()
     deletedListeners = new Set()
@@ -78,6 +89,7 @@ describe('attachLinkMintPort', () => {
       session,
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      activeRootGraphId: () => activeRootGraphId,
       enqueue: (operations) => minted.push(...operations)
     })
   })
@@ -128,6 +140,46 @@ describe('attachLinkMintPort', () => {
 
     expect(minted).toEqual([])
     expect(consoleError).toHaveBeenCalledOnce()
+    consoleError.mockRestore()
+  })
+
+  it('surfaces instead of minting a connect on a graph the activated document does not own', () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+
+    place(FOREIGN_SCOPE, topology(41))
+
+    expect(minted).toEqual([])
+    expect(consoleError).toHaveBeenCalledOnce()
+    consoleError.mockRestore()
+  })
+
+  it('never mints a connect while no document is activated', () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    activeRootGraphId = null
+
+    place(ROOT_SCOPE, topology(41))
+
+    expect(minted).toEqual([])
+    expect(consoleError).toHaveBeenCalledOnce()
+    consoleError.mockRestore()
+  })
+
+  it('never carries a foreign severance into a delete_node mint', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+
+    remove(FOREIGN_SCOPE, topology(41))
+    await afterSweep()
+
+    // Captured for the delete that may follow, but not mintable: it belongs
+    // to a graph this document does not own, so it is neither handed to a
+    // mint nor surfaced as this document's divergence.
+    expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()
   })
 

@@ -51,6 +51,9 @@ import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionC
 import { isCloud } from '@/platform/distribution/types'
 
 import { PromptExecutionError, api } from '@/scripts/api'
+import { useDocumentActivationStore } from '@/stores/documentActivationStore'
+import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
+import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -1852,6 +1855,26 @@ describe('ComfyApp', () => {
 
       expect(missingNodesStore.missingNodesError).toBeNull()
       expect(executionErrorStore.lastExecutionError).toBeNull()
+    })
+
+    it('republishes the activated document on the reminted root graph id', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const documents = useGraphDocumentStore()
+      const activation = useDocumentActivationStore()
+      const documentId = documents.createDocument()
+      if (documentId === null) throw new Error('registry refused a document')
+      documents.markLoaded(documentId)
+      await activation.activate(documentId, graphScopeOf(graph))
+      const preClearGraphId = graph.id
+
+      app.clean()
+
+      // `clear()` mints a fresh root id under the same document, and Clear
+      // Workflow reaches no load path to re-activate it.
+      expect(graph.id).not.toBe(preClearGraphId)
+      expect(activation.activeDocumentId()).toBe(documentId)
+      expect(activation.activeRootGraphId()).toBe(toRootGraphId(graph.id))
     })
 
     it('records run errors after clearing the current workflow', () => {
