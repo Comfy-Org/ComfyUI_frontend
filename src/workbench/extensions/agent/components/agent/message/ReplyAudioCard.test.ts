@@ -8,8 +8,6 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
-vi.mock(import('@/components/ui/slider/Slider.vue'))
-
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
@@ -108,8 +106,8 @@ describe('ReplyAudioCard', () => {
     })
 
     const slider = await screen.findByRole('slider')
-    ;(slider as HTMLInputElement).value = '50'
-    slider.dispatchEvent(new Event('input', { bubbles: true }))
+    slider.focus()
+    await userEvent.keyboard('{PageUp>50}')
 
     expect(await screen.findByText('1:00 / 2:00')).toBeInTheDocument()
   })
