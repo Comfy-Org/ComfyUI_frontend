@@ -329,6 +329,39 @@ describe('graphMutations', () => {
     )
   })
 
+  it('keeps runtime-only fields out of prepared slots', () => {
+    const graph = mutations()
+    const payload = {
+      ...node(7),
+      inputs: [
+        {
+          name: 'in',
+          type: 'IMAGE',
+          label: 'Input',
+          link: null,
+          _node: { corrupt: true }
+        }
+      ],
+      outputs: [
+        {
+          name: 'out',
+          type: 'IMAGE',
+          label: 'Output',
+          links: [],
+          _data: { corrupt: true }
+        }
+      ]
+    }
+
+    expect(graph.addNode(payload, context)).toBe(true)
+
+    const state = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(7))
+    expect(state?.inputs[0]).toMatchObject({ name: 'in', label: 'Input' })
+    expect(state?.outputs[0]).toMatchObject({ name: 'out', label: 'Output' })
+    expect(state?.inputs[0]).not.toHaveProperty('_node')
+    expect(state?.outputs[0]).not.toHaveProperty('_data')
+  })
+
   it('repositions a template node placed far from an existing node', () => {
     const graph = mutations()
     graph.addNode({ ...node(1), pos: [0, 0] }, context)
@@ -909,6 +942,52 @@ describe('graphMutations', () => {
     ).toBe(2)
     expect(deleteLayouts).toHaveBeenCalledOnce()
     expect(createLayout).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a document-only input at the prepared link target after replacing the input set', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(
+      {
+        ...node(2),
+        inputs: [
+          { name: 'in', type: 'IMAGE', link: null },
+          { name: 'spare', type: 'IMAGE', link: null }
+        ]
+      },
+      context
+    )
+
+    expect(
+      graph.connect(
+        {
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 1,
+          type: 'IMAGE',
+          targetInputs: [
+            { name: 'in', type: 'IMAGE', link: null },
+            { name: 'new_from_doc', type: 'IMAGE', link: toLinkId(9) }
+          ]
+        },
+        context
+      )
+    ).toBe(true)
+
+    const target = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(2))
+    const topology = useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    assert.exists(target)
+    assert.exists(topology)
+    expect(target.inputs.map(({ name }) => name)).toEqual([
+      'in',
+      'new_from_doc'
+    ])
+    expect(target.inputs[topology.targetSlot]).toMatchObject({
+      name: 'new_from_doc',
+      link: toLinkId(9)
+    })
   })
 
   it('updates endpoint slot records while retaining the supplied link id', () => {

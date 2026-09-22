@@ -2,6 +2,11 @@ import { isPlainObject } from 'es-toolkit'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlot
+} from '@/lib/litegraph/src/interfaces'
+import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
   ISerialisedNode
@@ -247,6 +252,32 @@ function cloneRecord(value: unknown): Record<string, unknown> {
   return isRecord(value) ? structuredClone(value) : {}
 }
 
+const SERIALISABLE_SLOT_FIELDS = [
+  'name',
+  'localized_name',
+  'label',
+  'type',
+  'dir',
+  'removable',
+  'shape',
+  'color_off',
+  'color_on',
+  'locked',
+  'nameLocked',
+  'pos'
+] as const satisfies readonly (keyof INodeSlot)[]
+
+function serialisableSlotFields(
+  raw: Record<string, unknown>,
+  additional: readonly string[]
+): Record<string, unknown> {
+  return Object.fromEntries(
+    [...SERIALISABLE_SLOT_FIELDS, ...additional].flatMap((field) =>
+      Object.hasOwn(raw, field) ? [[field, structuredClone(raw[field])]] : []
+    )
+  )
+}
+
 /**
  * `ghost` marks a node still following the cursor during search-box placement.
  * The placement click clears it locally and mints no op, so a document that
@@ -265,7 +296,7 @@ function cloneNodeFlags(value: unknown): Record<string, unknown> {
  * node has no slot there yet.
  */
 function applySlotLink(
-  slot: Record<string, unknown>,
+  slot: INodeInputSlot,
   index: number,
   existing?: readonly (NodeState['inputs'][number] | undefined)[]
 ): void {
@@ -283,7 +314,7 @@ function applySlotLink(
  * metadata instead of losing it to the thin payload.
  */
 function preserveSlotDisplayMetadata(
-  slot: Record<string, unknown>,
+  slot: INodeInputSlot,
   priorSlot?: NodeState['inputs'][number]
 ): void {
   if (!priorSlot || priorSlot.name !== slot.name) return
@@ -296,14 +327,25 @@ function prepareInputSlot(
   raw: Record<string, unknown>,
   index: number,
   existing?: readonly (NodeState['inputs'][number] | undefined)[]
-): NodeState['inputs'][number] {
-  const slot = structuredClone(raw)
+): INodeInputSlot | undefined {
+  if (
+    typeof raw.name !== 'string' ||
+    (typeof raw.type !== 'string' && typeof raw.type !== 'number')
+  ) {
+    return undefined
+  }
+  const slot: INodeInputSlot = {
+    name: raw.name,
+    type: raw.type,
+    boundingRect: [0, 0, 0, 0]
+  }
+  Object.assign(slot, serialisableSlotFields(raw, ['widget']))
+  if (raw.link === null || typeof raw.link === 'number') {
+    slot.link = raw.link === null ? null : toLinkId(raw.link)
+  }
   applySlotLink(slot, index, existing)
   preserveSlotDisplayMetadata(slot, existing?.[index])
-  return {
-    ...slot,
-    boundingRect: [0, 0, 0, 0]
-  } as unknown as NodeState['inputs'][number]
+  return slot
 }
 
 function prepareInputSlots(
@@ -311,22 +353,34 @@ function prepareInputSlots(
   existing?: readonly (NodeState['inputs'][number] | undefined)[]
 ): NodeState['inputs'] {
   if (!Array.isArray(value)) return []
-  return value
-    .filter(isRecord)
-    .map((raw, index) => prepareInputSlot(raw, index, existing))
+  return value.flatMap((raw, index) => {
+    if (!isRecord(raw)) return []
+    const slot = prepareInputSlot(raw, index, existing)
+    return slot ? [slot] : []
+  })
 }
 
 function prepareOutputSlots(value: unknown): NodeState['outputs'] {
   if (!Array.isArray(value)) return []
-  return value.filter(isRecord).map((raw) => {
-    const slot = structuredClone(raw)
-    if (Array.isArray(slot.links)) {
-      slot.links = slot.links.map((id) => toLinkId(Number(id)))
+  return value.flatMap((raw) => {
+    if (
+      !isRecord(raw) ||
+      typeof raw.name !== 'string' ||
+      (typeof raw.type !== 'string' && typeof raw.type !== 'number')
+    ) {
+      return []
     }
-    return {
-      ...slot,
+    const slot: INodeOutputSlot = {
+      name: raw.name,
+      type: raw.type,
       boundingRect: [0, 0, 0, 0]
-    } as unknown as NodeState['outputs'][number]
+    }
+    Object.assign(slot, serialisableSlotFields(raw, ['slot_index', 'widget']))
+    if (raw.links === null) slot.links = null
+    else if (Array.isArray(raw.links)) {
+      slot.links = raw.links.map((id) => toLinkId(Number(id)))
+    }
+    return [slot]
   })
 }
 
@@ -1250,10 +1304,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               }
               outputs[index] = output
             }
-            nodeStore.updateNodeSlots(
+            nodeStore.updateNode(
               scope,
               origin.id,
-              { inputs: origin.inputs, outputs },
+              { ...origin, outputs },
               context
             )
           }
@@ -1270,10 +1324,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               patchLiveSlot(input, inputs[index])
               inputs[index] = input
             }
-            nodeStore.updateNodeSlots(
+            nodeStore.updateNode(
               scope,
               target.id,
-              { inputs, outputs: target.outputs },
+              { ...target, inputs },
               context
             )
           }
