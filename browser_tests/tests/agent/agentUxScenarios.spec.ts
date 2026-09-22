@@ -9,6 +9,42 @@ import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 
 test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
+  test('shows fewer suggestions below the compact panel breakpoint', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await page
+      .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+      .click()
+
+    const dock = page.getByTestId('docked-agent-panel')
+    const suggestions = enMessages.agent.suggestedPrompts.map((name) =>
+      dock.getByRole('button', { name, exact: true, includeHidden: true })
+    )
+
+    await expect(dock).toHaveCSS('width', '420px')
+    for (const suggestion of suggestions.slice(0, 3)) {
+      await expect(suggestion).toBeVisible()
+    }
+    for (const suggestion of suggestions.slice(3)) {
+      await expect(suggestion).toBeHidden()
+    }
+
+    const resizeHandle = page.getByTestId('agent-panel-resize-handle')
+    const handleBox = await resizeHandle.boundingBox()
+    if (!handleBox) throw new Error('Agent panel resize handle is not visible')
+    const handleCenterX = handleBox.x + handleBox.width / 2
+    await page.mouse.move(handleCenterX, handleBox.y + 20)
+    await page.mouse.down()
+    await page.mouse.move(handleCenterX - 60, handleBox.y + 20)
+    await page.mouse.up()
+
+    await expect(dock).toHaveCSS('width', '480px')
+    for (const suggestion of suggestions) {
+      await expect(suggestion).toBeVisible()
+    }
+  })
+
   for (const width of [480, 640]) {
     test(`X-01 / PM-672 keeps controls usable at ${width}px panel width`, async ({
       comfyPage
