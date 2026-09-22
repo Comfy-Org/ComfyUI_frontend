@@ -367,6 +367,7 @@ describe('agentEventTransport text and tool parts', () => {
         type: 'tool',
         callId: 'call-1',
         name: 'run',
+        skill: undefined,
         state: 'done',
         ok: true,
         durationMs: undefined
