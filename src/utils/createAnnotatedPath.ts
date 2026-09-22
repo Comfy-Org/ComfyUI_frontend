@@ -2,9 +2,10 @@ import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 
 const IMPLICIT_ASSET_ROOT = 'input'
+const ANNOTATION_SUFFIX = /\s*\[(input|output|temp)\]\s*$/i
 
 const hasAnnotation = (filepath: string): boolean =>
-  /\[(input|output|temp)\]/i.test(filepath)
+  ANNOTATION_SUFFIX.test(filepath)
 
 const createAnnotation = (
   filepath: string,
@@ -20,6 +21,30 @@ const createPath = (filename: string, subfolder = ''): string =>
 type AnnotatedPathOptions = {
   rootFolder?: ResultItemType
   subfolder?: string
+}
+
+/**
+ * Parses the annotation suffix emitted by {@link createAnnotatedPath} into its
+ * path and normalized root folder.
+ *
+ * Input roots are omitted by the formatter, so unannotated paths resolve to
+ * `fallbackRoot`. Accepted annotation case and whitespace are normalized.
+ */
+export function parseAnnotatedPath(
+  filepath: string,
+  fallbackRoot: ResultItemType = IMPLICIT_ASSET_ROOT
+): { filepath: string; rootFolder: ResultItemType } {
+  const match = ANNOTATION_SUFFIX.exec(filepath)
+  if (!match) return { filepath, rootFolder: fallbackRoot }
+  const annotation = match[1].toLowerCase()
+  const rootFolder =
+    annotation === 'output' || annotation === 'temp'
+      ? annotation
+      : IMPLICIT_ASSET_ROOT
+  return {
+    filepath: filepath.slice(0, match.index),
+    rootFolder
+  }
 }
 
 /** Creates annotated filepath in format used by folder_paths.py */

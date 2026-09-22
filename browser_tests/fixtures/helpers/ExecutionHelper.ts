@@ -15,6 +15,7 @@ type RunOptions = {
   nodeErrors?: Record<string, NodeError>
   onPromptRequest?: (requestBody: unknown) => void | Promise<void>
   beforePromptResponse?: (jobId: string) => void | Promise<void>
+  triggerPrompt?: () => Promise<void>
 }
 
 /**
@@ -70,15 +71,20 @@ export class ExecutionHelper {
   }
 
   /**
-   * Intercept POST /api/prompt, execute Comfy.QueuePrompt, and return
-   * the synthetic job ID.
+   * Intercept POST /api/prompt, trigger prompt execution, and return the
+   * synthetic job ID.
    *
    * The app receives a valid PromptResponse so storeJob() fires
    * and registers the job against the active workflow path.
    */
   async run(options: RunOptions = {}): Promise<string> {
     const jobId = `test-job-${++this.jobCounter}`
-    const { nodeErrors = {}, onPromptRequest, beforePromptResponse } = options
+    const {
+      nodeErrors = {},
+      onPromptRequest,
+      beforePromptResponse,
+      triggerPrompt = () => this.command.executeCommand('Comfy.QueuePrompt')
+    } = options
 
     let fulfilled!: () => void
     const prompted = new Promise<void>((r) => {
@@ -103,7 +109,7 @@ export class ExecutionHelper {
       { times: 1 }
     )
 
-    await this.command.executeCommand('Comfy.QueuePrompt')
+    await triggerPrompt()
     await prompted
 
     return jobId

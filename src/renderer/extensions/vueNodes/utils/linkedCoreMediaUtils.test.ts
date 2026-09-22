@@ -150,7 +150,6 @@ describe(shouldHideLinkedCoreMediaInputPreview, () => {
   it.for([
     { nodeClass: 'LoadImage', selector: 'image' },
     { nodeClass: 'LoadImageMask', selector: 'image' },
-    { nodeClass: 'LoadImageOutput', selector: 'image' },
     { nodeClass: 'LoadVideo', selector: 'file' }
   ] as const)(
     'hides only an input preview on core $nodeClass',
@@ -189,5 +188,18 @@ describe(shouldHideLinkedCoreMediaInputPreview, () => {
         images: [{ type: 'input' }]
       })
     ).toBe(false)
+  })
+
+  it('hides an output-rooted widget preview for linked LoadImageOutput', () => {
+    const node = mediaNode({
+      linkedInputName: 'image',
+      nodeClass: 'LoadImageOutput'
+    })
+
+    expect(
+      shouldHideLinkedCoreMediaInputPreview(node, {
+        images: [{ type: 'output' }]
+      })
+    ).toBe(true)
   })
 })

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import {
+  createAnnotatedPath,
+  parseAnnotatedPath
+} from '@/utils/createAnnotatedPath'
 
 const resultItemCases = [
   {
@@ -103,5 +106,62 @@ describe('createAnnotatedPath', () => {
     // @ts-expect-error ResultItem paths intentionally reject caller options.
     const actual = createAnnotatedPath(item, callerOptions)
     expect(actual).toBe('asset/result.png [output]')
+  })
+})
+
+const roundTripCases = [
+  {
+    path: 'nested/result.png [output]',
+    filepath: 'nested/result.png',
+    rootFolder: 'output'
+  },
+  {
+    path: 'nested/preview.png [temp]',
+    filepath: 'nested/preview.png',
+    rootFolder: 'temp'
+  },
+  {
+    path: 'nested/input.png',
+    filepath: 'nested/input.png',
+    rootFolder: 'input'
+  },
+  {
+    path: 'a [output]/photo.png [temp]',
+    filepath: 'a [output]/photo.png',
+    rootFolder: 'temp'
+  }
+] as const
+
+describe('parseAnnotatedPath', () => {
+  it.for(['', 'photo.png [output]x', 'photo.png [other]'])(
+    'preserves non-annotated input %j and the fallback root',
+    (filepath) => {
+      expect(parseAnnotatedPath(filepath, 'temp')).toEqual({
+        filepath,
+        rootFolder: 'temp'
+      })
+    }
+  )
+
+  it.for(roundTripCases)(
+    'parses paths formatted by createAnnotatedPath for $path',
+    ({ path, filepath, rootFolder }) => {
+      expect(parseAnnotatedPath(path)).toEqual({ filepath, rootFolder })
+      expect(createAnnotatedPath(filepath, { rootFolder })).toBe(path)
+    }
+  )
+
+  it('resolves an unannotated path to the fallback root', () => {
+    expect(parseAnnotatedPath('photo.png', 'temp')).toEqual({
+      filepath: 'photo.png',
+      rootFolder: 'temp'
+    })
+  })
+
+  it('lets the annotation win over the fallback root', () => {
+    expect(parseAnnotatedPath('generated.png [output]', 'input')).toEqual({
+      filepath: 'generated.png',
+      rootFolder: 'output'
+    })
   })
 })

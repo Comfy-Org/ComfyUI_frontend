@@ -851,9 +851,6 @@ describe('nodeOutputStore merge mode interactions', () => {
       inputOutput
     )
 
-    // Merge with empty images — the input-preview guard (lines 166-177)
-    // copies existing input images into the incoming outputs before the
-    // merge concat runs, resulting in duplication.
     const emptyOutput = createMockOutputs([])
     store.setNodeOutputsByExecutionId(
       createNodeExecutionId([toNodeId(3)]),
@@ -863,9 +860,8 @@ describe('nodeOutputStore merge mode interactions', () => {
       }
     )
 
-    expect(store.nodeOutputs['3']?.images).toHaveLength(2)
+    expect(store.nodeOutputs['3']?.images).toHaveLength(1)
     expect(store.nodeOutputs['3']?.images?.[0]?.filename).toBe('uploaded.png')
-    expect(store.nodeOutputs['3']?.images?.[1]?.filename).toBe('uploaded.png')
   })
 })
 
@@ -875,14 +871,19 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     app.nodePreviewImages = {}
   })
 
-  it('should return early for empty string filename', () => {
+  it('removes existing output for an empty string filename', () => {
     const store = useNodeOutputStore()
-    const node = createMockNode({ id: 5 })
+    const node = createMockNode({
+      id: 5,
+      images: [{ filename: 'previous.png', type: 'input' }]
+    })
 
+    store.setNodeOutputs(node, 'test.png')
     store.setNodeOutputs(node, '')
 
     expect(store.nodeOutputs['5']).toBeUndefined()
     expect(app.nodeOutputs['5']).toBeUndefined()
+    expect(node.images).toBeUndefined()
   })
 
   it('should return early for null node', () => {
@@ -916,14 +917,61 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(node.images).not.toBe(store.nodeOutputs['5']?.images)
   })
 
-  it('should skip empty array of filenames after createOutputs', () => {
+  it('removes existing output for an empty filename array', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })
 
+    store.setNodeOutputs(node, 'test.png')
     store.setNodeOutputs(node, [])
 
     expect(store.nodeOutputs['5']).toBeUndefined()
     expect(app.nodeOutputs['5']).toBeUndefined()
+  })
+
+  it('keeps the subfolder of an annotated widget value', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'runs/2026/generated.png [output]')
+
+    expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
+      filename: 'generated.png',
+      subfolder: 'runs/2026',
+      type: 'output'
+    })
+  })
+
+  it('routes a [temp]-annotated widget value to the temp directory', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'preview.png [temp]')
+
+    expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
+      filename: 'preview.png',
+      type: 'temp'
+    })
+  })
+
+  it('detects animation after stripping the directory annotation', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'preview.webp [output]', { isAnimated: true })
+
+    expect(store.nodeOutputs['5']?.animated).toEqual([true])
+  })
+
+  it('builds a view URL free of the annotation for an output asset', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'runs/2026/generated.png [output]')
+    const [url] = store.getNodeImageUrls(node) ?? []
+
+    expect(url).toContain('type=output')
+    expect(url).toContain('filename=generated.png')
+    expect(url).not.toContain('%5Boutput%5D')
   })
 })
 
