@@ -16,6 +16,7 @@ import {
   isCallExpression,
   isIdentifier,
   isNoSubstitutionTemplateLiteral,
+  isParenthesizedExpression,
   isPropertyAccessExpression,
   isStringLiteral,
   isTemplateExpression,
@@ -104,6 +105,9 @@ function isTestReceiver(expression: LeftHandSideExpression): boolean {
 }
 
 function isDisablingArgument(argument: Expression): boolean {
+  if (isParenthesizedExpression(argument)) {
+    return isDisablingArgument(argument.expression)
+  }
   return (
     isStringLiteral(argument) ||
     isNoSubstitutionTemplateLiteral(argument) ||

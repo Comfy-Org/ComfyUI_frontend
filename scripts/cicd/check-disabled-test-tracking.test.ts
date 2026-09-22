@@ -84,6 +84,14 @@ test.fixme('real declaration', () => {})
     ])
   })
 
+  it('parses a parenthesized literal true condition as disabled', () => {
+    const source = `test.skip((true), 'disabled', () => {})`
+
+    expect(disabledDeclarations(source)).toEqual([
+      { line: 1, relevantLines: [1] }
+    ])
+  })
+
   it('finds newly disabled tests through a real Git diff', () => {
     const root = createRepository()
     write(
