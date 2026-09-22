@@ -30,10 +30,6 @@ export interface ResolveMissingMediaAssetSourcesOptions {
   allowCompactSuffix: boolean
 }
 
-export type MissingMediaAssetResolver = (
-  options: ResolveMissingMediaAssetSourcesOptions
-) => Promise<MissingMediaAssetSources>
-
 export async function resolveMissingMediaAssetSources({
   signal,
   isCloud,
