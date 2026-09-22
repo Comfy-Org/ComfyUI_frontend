@@ -7,7 +7,9 @@ import GoogleTagManager from '../components/common/GoogleTagManager.astro'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
+import { getRoutes } from '../config/routes'
 import { isNoindexPathname } from '../config/indexing'
+import { isWorkshopInBuild } from '../config/workshop-release'
 import {
   hreflangAlternates,
   ogLocale,
@@ -36,6 +38,7 @@ interface Props {
   breadcrumbs?: Crumb[]
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
+  minimal?: boolean
 }
 
 const {
@@ -48,14 +51,16 @@ const {
   breadcrumbs,
   mainEntityId,
   extraJsonLd,
+  minimal = false
 } = Astro.props
 
-const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
+const keywordsContent =
+  keywords && keywords.length > 0 ? keywords.join(', ') : undefined
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const canonicalURL = new URL(url)
 const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
@@ -76,7 +81,7 @@ const bannerVisible =
   evaluateBannerVisibility(bannerConfig, {
     currentLocale: locale,
     currentSection: 'sitewide',
-    now: new Date(),
+    now: new Date()
   }) && !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
 
@@ -91,19 +96,17 @@ const structuredData = shouldNoindex
         imageUrl: ogImageURL.href,
         type: pageType,
         crumbs: breadcrumbs,
-        mainEntityId,
+        mainEntityId
       },
-      ...(extraJsonLd ?? []),
+      ...(extraJsonLd ?? [])
     )
 ---
 
 <!doctype html>
-{
-  /* <html> must stay overflow: visible — body's overflow (incl. reka-ui's
+{/* <html> must stay overflow: visible — body's overflow (incl. reka-ui's
      dialog scroll lock) only propagates to the viewport when the root is
-     visible. The horizontal clip lives on <body>. */
-}
-<html lang={locale}>
+     visible. The horizontal clip lives on <body>. */}
+<html lang={locale} class="ppformula-metric-fallback">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -112,6 +115,19 @@ const structuredData = shouldNoindex
     {shouldNoindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
 
+    <!-- Safari through 26.6 ignores @font-face metric overrides. Keep the
+         component-level fallback only where the browser cannot apply them. -->
+    <script is:inline>
+      try {
+        const probe = new FontFace('__ppformula_metric_probe', 'local(Arial)', {
+          ascentOverride: '50%'
+        })
+        if (probe.ascentOverride === '50%')
+          document.documentElement.classList.remove('ppformula-metric-fallback')
+      } catch {
+        // The class already present on <html> supplies the legacy fallback.
+      }
+    </script>
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" sizes="48x48" />
@@ -144,24 +160,20 @@ const structuredData = shouldNoindex
       href="/fonts/PPFormula-NarrowSemibold.woff2"
       crossorigin
     />
-    {
-      !shouldNoindex && (
-        <link
-          rel="alternate"
-          type="text/markdown"
-          href={markdownTwinPath(canonicalURL.pathname)}
-        />
-      )
-    }
-    {
-      alternates.map((alternate) => (
-        <link
-          rel="alternate"
-          hreflang={alternate.hreflang}
-          href={alternate.href}
-        />
-      ))
-    }
+    {!shouldNoindex && (
+      <link
+        rel="alternate"
+        type="text/markdown"
+        href={markdownTwinPath(canonicalURL.pathname)}
+      />
+    )}
+    {alternates.map((alternate) => (
+      <link
+        rel="alternate"
+        hreflang={alternate.hreflang}
+        href={alternate.href}
+      />
+    ))}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -178,11 +190,9 @@ const structuredData = shouldNoindex
     <meta property="og:image:height" content="630" />
     <meta property="og:url" content={canonicalURL.href} />
     <meta property="og:locale" content={openGraphLocale} />
-    {
-      openGraphLocaleAlternate && (
-        <meta property="og:locale:alternate" content={openGraphLocaleAlternate} />
-      )
-    }
+    {openGraphLocaleAlternate && (
+      <meta property="og:locale:alternate" content={openGraphLocaleAlternate} />
+    )}
     <meta property="og:site_name" content="Comfy" />
 
     <!-- Twitter -->
@@ -211,30 +221,29 @@ const structuredData = shouldNoindex
         })
       })
     </script>
-
     <!-- Hide an already-dismissed announcement banner before first paint (no flash/shift). -->
-    {bannerVisible && (
-      <script
-        is:inline
-        define:vars={{
-          bannerVersion,
-          storageKey: BANNER_STORAGE_KEY,
-          dismissAttr: BANNER_DISMISS_ATTR
-        }}
-      >
-        try {
-          const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
-          if (dismissed && dismissed[bannerVersion] === true) {
-            document.documentElement.setAttribute(dismissAttr, '')
-          }
-        } catch (e) {}
-      </script>
-    )}
+    {bannerVisible && <script
+      is:inline
+      define:vars={{
+        bannerVersion,
+        storageKey: BANNER_STORAGE_KEY,
+        dismissAttr: BANNER_DISMISS_ATTR
+      }}
+    >
+      try {
+        const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
+        if (dismissed && dismissed[bannerVersion] === true) {
+          document.documentElement.setAttribute(dismissAttr, '')
+        }
+      } catch (e) {}
+    </script>}
   </head>
-  <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
+  <body
+    class="overflow-x-clip bg-primary-comfy-ink font-formula text-white antialiased"
+  >
     <GoogleTagManager part="noscript" />
 
-    {bannerVisible && (
+    {bannerVisible && !minimal && (
       <AnnouncementBanner
         data={bannerData}
         version={bannerVersion}
@@ -242,7 +251,24 @@ const structuredData = shouldNoindex
         client:load
       />
     )}
-    <HeaderMain locale={locale} github-stars={githubStars} client:load />
+    {minimal ? (
+      <div class="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+        <a
+          href={getRoutes(locale).home}
+          class="inline-block"
+          aria-label="Comfy"
+        >
+          <img src="/icons/logo.svg" alt="Comfy" class="h-9 w-auto" />
+        </a>
+      </div>
+    ) : (
+      <HeaderMain
+        locale={locale}
+        github-stars={githubStars}
+        workshop-in-build={isWorkshopInBuild()}
+        client:load
+      />
+    )}
     <!-- Horizontal clip lives here (not on <html>, which must stay overflow:
          visible for reka-ui's dialog scroll lock). <body>'s clip does not
          contain overflow once <html> is visible, because the root propagates
@@ -251,7 +277,7 @@ const structuredData = shouldNoindex
     <main class="overflow-x-clip">
       <slot />
     </main>
-    <SiteFooter locale={locale} client:load />
+    {!minimal && <SiteFooter locale={locale} client:load />}
 
     <Analytics />
 

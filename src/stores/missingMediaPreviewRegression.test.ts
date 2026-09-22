@@ -5,7 +5,7 @@ import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 const mockApp = vi.hoisted(() => ({
   isGraphReady: true,
@@ -15,16 +15,8 @@ const mockApp = vi.hoisted(() => ({
 }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
 
-const mockGetNodeByExecutionId = vi.hoisted(() => vi.fn())
-vi.mock(import('@/utils/graphTraversalUtil'), async () => {
-  const actual = await vi.importActual<typeof GraphTraversalUtil>(
-    '@/utils/graphTraversalUtil'
-  )
-  return {
-    ...actual,
-    getNodeByExecutionId: mockGetNodeByExecutionId
-  }
-})
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+const mockGetNodeByExecutionId = vi.mocked(getNodeByExecutionId)
 
 vi.mock(import('@/i18n'), () => ({
   st: vi.fn((_key: string, fallback: string) => fallback)

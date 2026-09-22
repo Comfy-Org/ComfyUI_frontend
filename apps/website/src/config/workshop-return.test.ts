@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkshopField } from './workshop-detail'
@@ -35,7 +34,7 @@ describe('safeReturnPath', () => {
     expect(
       safeReturnPath(raw),
       'the browser strips C0 control chars before parsing, so /<TAB>//evil.com resolves cross-origin'
-    ).toBe('/workshop/')
+    ).toBe('/models/')
   })
 })
 
@@ -205,7 +204,7 @@ describe('requestedReturnPath', () => {
       requestedReturnPath('?returnTo=%2Fworkshop%2Fmodels%2Fflux%2F')
     ).toBe('/workshop/models/flux/')
     expect(requestedReturnPath('?returnTo=https%3A%2F%2Fevil.com')).toBe(
-      '/workshop/'
+      '/models/'
     )
   })
 })

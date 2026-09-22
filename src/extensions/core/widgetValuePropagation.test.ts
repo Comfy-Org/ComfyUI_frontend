@@ -4,18 +4,19 @@ import { describe, expect, it, vi } from 'vitest'
 import type { INodeInputSlot } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ComfyApp } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-vi.mock('@/scripts/app', () => ({
-  app: {
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
     canvas: {
       graph_mouse: [0, 0]
     }
-  }
+  })
 }))
 
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'

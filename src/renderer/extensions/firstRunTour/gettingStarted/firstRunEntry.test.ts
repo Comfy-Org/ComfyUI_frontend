@@ -1,17 +1,25 @@
-import type * as VueUse from '@vueuse/core'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { fromAny } from '@total-typescript/shoehorn'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 
-const mocks = vi.hoisted(() => ({
+const mocks = vi.hoisted<{
+  isCloud: boolean
+  isDesktopWidth: boolean
+  subscriptionEnabled: boolean
+  isNewUser: boolean | null
+  beginTour: ReturnType<typeof vi.fn>
+}>(() => ({
   isCloud: true,
   isDesktopWidth: true,
   subscriptionEnabled: true,
-  isNewUser: true as boolean | null,
-  tourFlag: true,
+  isNewUser: true,
 
   beginTour: vi.fn()
 }))
@@ -36,18 +44,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
-  breakpointsTailwind: {},
-  createSharedComposable: sharedComposable.create,
-  useBreakpoints: () => ({
-    greaterOrEqual: () => ({
-      get value() {
-        return mocks.isDesktopWidth
-      }
-    })
-  })
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(VueUse.createSharedComposable).mockImplementation(
+  sharedComposable.create
+)
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscription'),
@@ -62,25 +62,21 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => ({ isNewUser: () => mocks.isNewUser })
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get onboardingTourEnabled() {
-        return mocks.tourFlag
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
 }))
 
-import { useFirstRunEntry } from './firstRunEntry'
+const { useFirstRunEntry } = await import('./firstRunEntry')
 
 type FirstRunEntry = ReturnType<typeof useFirstRunEntry>
 
 beforeEach(() => {
+  vi.mocked(VueUse.useBreakpoints).mockReturnValue(
+    fromAny<ReturnType<typeof VueUse.useBreakpoints>, unknown>({
+      greaterOrEqual: () => computed(() => mocks.isDesktopWidth)
+    })
+  )
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
 })
 
@@ -90,10 +86,10 @@ describe('useFirstRunEntry', () => {
     mocks.isDesktopWidth = true
     mocks.subscriptionEnabled = true
     mocks.isNewUser = true
-    mocks.tourFlag = true
+    vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = true
     useSettingStore().settingValues = {}
     vi.mocked(useSettingStore().set).mockImplementation(async (key, value) => {
-      useSettingStore().settingValues[key] = value
+      Object.assign(useSettingStore().settingValues, { [key]: value })
     })
     sharedComposable.reset()
     // beginTour reports whether a tour actually started; default to the
@@ -110,7 +106,12 @@ describe('useFirstRunEntry', () => {
     ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
     ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
     ['new-user state undetermined', () => void (mocks.isNewUser = null)],
-    ['the tour flag off', () => void (mocks.tourFlag = false)]
+    [
+      'the tour flag off',
+      () => {
+        vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = false
+      }
+    ]
   ] as const
 
   describe('what a fresh user sees', () => {
@@ -461,7 +462,6 @@ describe('useFirstRunEntry', () => {
     await entry.handleStartupOutcome('fresh')
 
     mocks.isDesktopWidth = false
-    mocks.tourFlag = false
     mocks.subscriptionEnabled = false
 
     expect(

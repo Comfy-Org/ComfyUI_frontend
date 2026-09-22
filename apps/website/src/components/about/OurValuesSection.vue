@@ -33,7 +33,7 @@ const values: {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-24 lg:px-20 lg:py-32">
+  <section class="mx-auto max-w-9xl px-6 py-24 lg:px-20 lg:py-32">
     <div class="mx-auto max-w-5xl text-center">
       <SectionLabel>
         {{ t('about.values.label', locale) }}
@@ -55,7 +55,7 @@ const values: {
         <!-- Row 1: SHIP IT + SHARE IT -->
         <div class="flex items-center gap-0">
           <div
-            class="border-primary-comfy-yellow flex-1 rounded-3xl border p-8"
+            class="flex-1 rounded-3xl border border-primary-comfy-yellow p-8"
           >
             <NodeBadge
               :segments="values[0].segments"
@@ -73,7 +73,7 @@ const values: {
             aria-hidden="true"
           />
           <div
-            class="border-primary-comfy-yellow flex-1 rounded-3xl border p-8"
+            class="flex-1 rounded-3xl border border-primary-comfy-yellow p-8"
           >
             <NodeBadge
               :segments="values[1].segments"
@@ -97,7 +97,7 @@ const values: {
         </div>
 
         <!-- Row 2: OPEN-SOURCE IT -->
-        <div class="border-primary-comfy-yellow rounded-3xl border p-8">
+        <div class="rounded-3xl border border-primary-comfy-yellow p-8">
           <NodeBadge
             :segments="values[2].segments"
             size-class="h-9 lg:h-12"
@@ -119,7 +119,7 @@ const values: {
         </div>
 
         <!-- Row 3: RESPECT THE CRAFT -->
-        <div class="border-primary-comfy-yellow rounded-3xl border p-8">
+        <div class="rounded-3xl border border-primary-comfy-yellow p-8">
           <NodeBadge
             :segments="values[3].segments"
             size-class="h-9 lg:h-12"
@@ -147,7 +147,7 @@ const values: {
             />
           </div>
           <div
-            class="border-primary-comfy-yellow w-full rounded-3xl border p-8"
+            class="w-full rounded-3xl border border-primary-comfy-yellow p-8"
           >
             <NodeBadge
               :segments="value.segments"

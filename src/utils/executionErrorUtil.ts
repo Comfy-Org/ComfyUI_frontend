@@ -1,4 +1,4 @@
-import type { NodeError, PromptError } from '@/schemas/apiSchema'
+import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
 import type { SerializedNodeId } from '@/types/nodeId'
 
 type RawPromptError =
@@ -56,7 +56,7 @@ type CloudValidationResult =
   | { kind: 'promptError'; promptError: PromptError }
 
 export function normalizePromptError(
-  error: RawPromptError | undefined
+  error: RawPromptError | null | undefined
 ): PromptError | null {
   if (error && typeof error === 'object') {
     return {
@@ -69,6 +69,12 @@ export function normalizePromptError(
   return typeof error === 'string'
     ? { type: 'error', message: error, details: '' }
     : null
+}
+
+export function isMissingNodePromptError(
+  promptError: PromptError | null | undefined
+): boolean {
+  return promptError?.type === 'missing_node_type'
 }
 
 /**

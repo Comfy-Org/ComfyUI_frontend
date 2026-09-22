@@ -2,47 +2,40 @@
  * Shiki highlighting for the code blocks on the model pages, matching the
  * treatment the workflow pages use.
  *
- * `kanagawa-wave` is the closest bundled theme to the Comfy palette: its
- * background sits nearest `--color-primary-comfy-ink` of any dark theme, its
- * warm beige foreground tracks `--color-primary-comfy-canvas`, and its accent
- * lands 15° off `--color-primary-comfy-yellow` at a muted chroma.
- *
- * Runs at build time for the static snippets and in the browser for the live
- * payload, so it loads through dynamic imports and the JavaScript regex engine
- * — no Oniguruma wasm, and nothing reaches the page chunk until a block is
- * actually highlighted. Grammars load per language too.
+ * `everforest-dark` keeps the palette earthy and restrained against Comfy ink,
+ * while every token color meets normal-text contrast on that background.
  */
-import type { HighlighterCore } from 'shiki/core'
+import { createHighlighterCoreSync } from 'shiki/core'
+import { createJavaScriptRegexEngine } from 'shiki/engine/javascript'
+import javascript from 'shiki/langs/javascript.mjs'
+import json from 'shiki/langs/json.mjs'
+import python from 'shiki/langs/python.mjs'
+import shell from 'shiki/langs/shellscript.mjs'
+import typescript from 'shiki/langs/typescript.mjs'
+import everforestDark from 'shiki/themes/everforest-dark.mjs'
 
-const CODE_THEME = 'kanagawa-wave'
+const CODE_THEME = 'everforest-dark'
 
-export type CodeLang = 'javascript' | 'json' | 'python' | 'shell'
+export type CodeLang = 'javascript' | 'json' | 'python' | 'shell' | 'typescript'
+
+export interface HighlightToken {
+  readonly content: string
+  readonly color?: string
+}
 
 // Markup grows ~7x the source and the cost is linear. The payloads these blocks
 // render are a few hundred bytes; anything past this keeps its plain rendering.
 const MAX_HIGHLIGHT_BYTES = 128 * 1024
+const textEncoder = new TextEncoder()
 
-const GRAMMARS = {
-  javascript: () => import('shiki/langs/javascript.mjs'),
-  json: () => import('shiki/langs/json.mjs'),
-  python: () => import('shiki/langs/python.mjs'),
-  shell: () => import('shiki/langs/shellscript.mjs')
-} satisfies Record<CodeLang, () => Promise<unknown>>
+const highlighter = createHighlighterCoreSync({
+  themes: [everforestDark],
+  langs: [javascript, json, python, shell, typescript],
+  engine: createJavaScriptRegexEngine()
+})
 
-let pending: Promise<HighlighterCore> | null = null
-
-function highlighter(): Promise<HighlighterCore> {
-  pending ??= Promise.all([
-    import('shiki/core'),
-    import('shiki/engine/javascript')
-  ]).then(([{ createHighlighterCore }, { createJavaScriptRegexEngine }]) =>
-    createHighlighterCore({
-      themes: [import('shiki/themes/kanagawa-wave.mjs')],
-      langs: [],
-      engine: createJavaScriptRegexEngine()
-    })
-  )
-  return pending
+function exceedsHighlightLimit(code: string): boolean {
+  return textEncoder.encode(code).byteLength > MAX_HIGHLIGHT_BYTES
 }
 
 /**
@@ -50,17 +43,32 @@ function highlighter(): Promise<HighlighterCore> {
  * drops Shiki's own wrapper, so the element and its classes survive. Null when
  * the code is too large or highlighting fails, leaving callers on raw text.
  */
-export async function highlightInline(
+export function highlightInline(code: string, lang: CodeLang): string | null {
+  if (exceedsHighlightLimit(code)) return null
+  try {
+    return highlighter.codeToHtml(code, {
+      lang,
+      theme: CODE_THEME,
+      structure: 'inline'
+    })
+  } catch {
+    return null
+  }
+}
+
+export function highlightTokens(
   code: string,
   lang: CodeLang
-): Promise<string | null> {
-  if (code.length > MAX_HIGHLIGHT_BYTES) return null
+): readonly HighlightToken[] | null {
+  if (exceedsHighlightLimit(code)) return null
   try {
-    const hl = await highlighter()
-    if (!hl.getLoadedLanguages().includes(lang)) {
-      await hl.loadLanguage(await GRAMMARS[lang]())
-    }
-    return hl.codeToHtml(code, { lang, theme: CODE_THEME, structure: 'inline' })
+    const { tokens } = highlighter.codeToTokens(code, {
+      lang,
+      theme: CODE_THEME
+    })
+    return tokens.flatMap((line, index) =>
+      index === tokens.length - 1 ? line : [...line, { content: '\n' }]
+    )
   } catch {
     return null
   }

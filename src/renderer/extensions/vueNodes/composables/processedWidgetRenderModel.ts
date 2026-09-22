@@ -135,15 +135,10 @@ function createSlotMetadata(
   }
 }
 
-function getSlotWidgetName(
-  input: INodeInputSlot,
-  linked: boolean
-): string | undefined {
+function getSlotWidgetName(input: INodeInputSlot): string | undefined {
   return (
     input.widget?.name ||
-    ((input.widgetId !== undefined || linked) && input.name
-      ? input.name
-      : undefined)
+    (input.widgetId !== undefined && input.name ? input.name : undefined)
   )
 }
 
@@ -159,7 +154,7 @@ function buildSlotMetadata(
     const link = scope
       ? linkStore.getInputSlotLink(scope, nodeId, index)
       : undefined
-    const widgetName = getSlotWidgetName(input, link !== undefined)
+    const widgetName = getSlotWidgetName(input)
     if (!widgetName || metadata.has(widgetName)) continue
     metadata.set(widgetName, createSlotMetadata(input, index, link, graphRef))
   }

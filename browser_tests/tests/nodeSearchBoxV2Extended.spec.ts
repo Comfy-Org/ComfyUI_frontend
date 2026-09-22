@@ -5,8 +5,11 @@ import {
 import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 
 test.describe('Node search box V2 extended', { tag: '@node' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.searchBoxV2.setup()
+  test.use({
+    initialSettings: {
+      'Comfy.LinkRelease.Action': 'search box',
+      'Comfy.LinkRelease.ActionShift': 'search box'
+    }
   })
 
   test('Double-click on empty canvas opens search', async ({ comfyPage }) => {
@@ -140,7 +143,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const newNode = refsAfter.find((n) => !idsBefore.has(n.id))
       expect(newNode, 'expected a new CLIPTextEncode node').toBeDefined()
       const clipInput = await newNode!.getInput(0)
-      await expect.poll(() => clipInput.getLinkCount()).toBe(1)
+      await clipInput.expectLinkCount(1)
     })
   })
 

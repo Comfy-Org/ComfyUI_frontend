@@ -6,9 +6,6 @@ import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockShouldUseWorkspaceBilling = ref(true)
-const mockCanReactivate = ref(false)
-const mockCanSubscribeSelfServe = ref(true)
-const mockSnapshotAuthoritative = ref(true)
 const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
 const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
@@ -28,16 +25,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canReactivate: computed(() => mockCanReactivate.value),
-      canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
-      snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -105,9 +93,6 @@ function resetStore() {
   mockBillingControlEnabled.value = false
   mockIsCloud.value = true
   mockShouldUseWorkspaceBilling.value = true
-  mockCanReactivate.value = false
-  mockCanSubscribeSelfServe.value = true
-  mockSnapshotAuthoritative.value = true
 }
 
 beforeEach(() => {
@@ -117,9 +102,13 @@ beforeEach(() => {
 })
 
 describe('useWorkspaceUI', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetModules()
     resetStore()
+    const { useBillingCapabilities } =
+      await import('@/platform/workspace/composables/useBillingCapabilities')
+
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
   })
 
   afterEach(() => {
@@ -527,20 +516,22 @@ describe('useWorkspaceUI', () => {
 
     it('uses the server capability on the consolidated rail', async () => {
       mockShouldUseWorkspaceBilling.value = true
-      mockCanReactivate.value = false
 
       const denied = await loadComposable()
       expect(denied.canReactivatePlan.value).toBe(false)
 
       vi.resetModules()
-      mockCanReactivate.value = true
+      const { useBillingCapabilities } =
+        await import('@/platform/workspace/composables/useBillingCapabilities')
+
+      useBillingCapabilities().canReactivate = computed(() => true)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
       const allowed = await loadComposable()
       expect(allowed.canReactivatePlan.value).toBe(true)
     })
 
     it('falls back to membership on the legacy rail, where no capability row exists', async () => {
       mockShouldUseWorkspaceBilling.value = false
-      mockCanReactivate.value = false
 
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(true)
@@ -550,7 +541,6 @@ describe('useWorkspaceUI', () => {
     it('falls back to membership off Cloud, where the endpoint is never called', async () => {
       mockIsCloud.value = false
       mockShouldUseWorkspaceBilling.value = true
-      mockCanReactivate.value = false
 
       const ui = await loadComposable()
       expect(ui.canReactivatePlan.value).toBe(true)
@@ -565,8 +555,11 @@ describe('useWorkspaceUI', () => {
     })
 
     it('closes the catalog when the server resolves a sales-managed plan', async () => {
+      const { useBillingCapabilities } =
+        await import('@/platform/workspace/composables/useBillingCapabilities')
+
       mockShouldUseWorkspaceBilling.value = true
-      mockCanSubscribeSelfServe.value = false
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
       const ui = await loadComposable()
       expect(ui.canOpenPricingSurface.value).toBe(false)
@@ -574,15 +567,17 @@ describe('useWorkspaceUI', () => {
 
     it('opens the catalog when the server allows self-serve subscribing', async () => {
       mockShouldUseWorkspaceBilling.value = true
-      mockCanSubscribeSelfServe.value = true
 
       const ui = await loadComposable()
       expect(ui.canOpenPricingSurface.value).toBe(true)
     })
 
     it('falls back to membership on the legacy rail, where no capability row exists', async () => {
+      const { useBillingCapabilities } =
+        await import('@/platform/workspace/composables/useBillingCapabilities')
+
       mockShouldUseWorkspaceBilling.value = false
-      mockCanSubscribeSelfServe.value = false
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscription).toBe(true)
@@ -590,28 +585,37 @@ describe('useWorkspaceUI', () => {
     })
 
     it('falls back to membership off Cloud, where the endpoint is never called', async () => {
+      const { useBillingCapabilities } =
+        await import('@/platform/workspace/composables/useBillingCapabilities')
+
       mockIsCloud.value = false
       mockShouldUseWorkspaceBilling.value = true
-      mockCanSubscribeSelfServe.value = false
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
       const ui = await loadComposable()
       expect(ui.canOpenPricingSurface.value).toBe(true)
     })
 
     it('falls back to membership when the snapshot is not authoritative', async () => {
-      mockSnapshotAuthoritative.value = false
-      mockCanSubscribeSelfServe.value = false
+      const { useBillingCapabilities } =
+        await import('@/platform/workspace/composables/useBillingCapabilities')
+
+      useBillingCapabilities().snapshotAuthoritative = computed(() => false)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
       const ui = await loadComposable()
       expect(ui.canOpenPricingSurface.value).toBe(true)
     })
 
     it('keeps the catalog closed for a non-owner with no readable snapshot', async () => {
+      const { useBillingCapabilities } =
+        await import('@/platform/workspace/composables/useBillingCapabilities')
+
       Object.assign(useTeamWorkspaceStore(), {
         activeWorkspace: teamMemberWorkspace
       })
-      mockSnapshotAuthoritative.value = false
-      mockCanSubscribeSelfServe.value = false
+      useBillingCapabilities().snapshotAuthoritative = computed(() => false)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscription).toBe(false)
@@ -620,9 +624,4 @@ describe('useWorkspaceUI', () => {
   })
 })
 
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(() => vi.fn()),
-  onIdTokenChanged: vi.fn(() => vi.fn())
-}))
+vi.mock(import('firebase/auth'), { spy: true })

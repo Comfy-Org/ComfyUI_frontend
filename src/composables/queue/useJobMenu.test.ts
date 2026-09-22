@@ -1,3 +1,4 @@
+import { useDialogService } from '@/services/dialogService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -10,6 +11,7 @@ import type { Ref } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
@@ -34,12 +36,7 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   })
 }))
 
-const stMock = vi.fn((_: string, fallback?: string) => fallback ?? _)
-const tMock = vi.fn((key: string) => `i18n:${key}`)
-vi.mock(import('@/i18n'), () => ({
-  st: (...args: Parameters<typeof stMock>) => stMock(...args),
-  t: (...args: Parameters<typeof tMock>) => tMock(...args)
-}))
+vi.mock(import('@/i18n'))
 
 const mapTaskOutputToAssetItemMock = vi.fn()
 vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
@@ -49,15 +46,7 @@ vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
   ) => mapTaskOutputToAssetItemMock(taskItem, output)
 }))
 
-const mediaAssetActionsMock = {
-  deleteAssets: vi.fn()
-}
-vi.mock<unknown>(
-  import('@/platform/assets/composables/useMediaAssetActions'),
-  () => ({
-    useMediaAssetActions: () => mediaAssetActionsMock
-  })
-)
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 let settingStoreMock: ReturnType<typeof useSettingStore>
 
@@ -83,14 +72,8 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 }))
 
 const downloadBlobMock = vi.fn()
-const dialogServiceMock = {
-  showErrorDialog: vi.fn(),
-  showExecutionErrorDialog: vi.fn(),
-  prompt: vi.fn()
-}
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => dialogServiceMock
-}))
+
+vi.mock(import('@/services/dialogService'))
 
 const litegraphServiceMock = {
   addNodeOnGraph: vi.fn(),
@@ -156,7 +139,6 @@ describe('useJobMenu', () => {
     queueStoreMock = useQueueStore()
     currentItem = ref<JobListItem | null>(null)
     vi.mocked(settingStoreMock.get).mockReturnValue(false)
-    dialogServiceMock.prompt.mockResolvedValue(undefined)
     litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 200])
     litegraphServiceMock.addNodeOnGraph.mockReturnValue(null)
     vi.mocked(workflowStoreMock.createTemporary).mockImplementation(
@@ -169,7 +151,7 @@ describe('useJobMenu', () => {
     vi.mocked(queueStoreMock.update).mockResolvedValue(undefined)
     vi.mocked(queueStoreMock.delete).mockResolvedValue(undefined)
     cancelJobMock.mockResolvedValue(undefined)
-    mediaAssetActionsMock.deleteAssets.mockResolvedValue(false)
+    vi.mocked(useMediaAssetActions().deleteAssets).mockResolvedValue(false)
     mapTaskOutputToAssetItemMock.mockImplementation((task, output) => ({
       task,
       output
@@ -227,7 +209,7 @@ describe('useJobMenu', () => {
 
     await expect(openJobWorkflow()).resolves.toBeUndefined()
 
-    expect(dialogServiceMock.showErrorDialog).toHaveBeenCalledWith(
+    expect(useDialogService().showErrorDialog).toHaveBeenCalledWith(
       loadError,
       expect.objectContaining({
         reportType: 'queueOpenWorkflowError'
@@ -334,11 +316,11 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'report-error')
     await entry?.onClick?.()
 
-    expect(dialogServiceMock.showExecutionErrorDialog).toHaveBeenCalledTimes(1)
-    expect(dialogServiceMock.showExecutionErrorDialog).toHaveBeenCalledWith(
+    expect(useDialogService().showExecutionErrorDialog).toHaveBeenCalledTimes(1)
+    expect(useDialogService().showExecutionErrorDialog).toHaveBeenCalledWith(
       executionError
     )
-    expect(dialogServiceMock.showErrorDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showErrorDialog).not.toHaveBeenCalled()
   })
 
   it('falls back to simple error dialog when no execution_error', async () => {
@@ -356,13 +338,11 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'report-error')
     await entry?.onClick?.()
 
-    expect(dialogServiceMock.showExecutionErrorDialog).not.toHaveBeenCalled()
-    expect(dialogServiceMock.showErrorDialog).toHaveBeenCalledTimes(1)
-    const [errorArg, optionsArg] =
-      dialogServiceMock.showErrorDialog.mock.calls[0]
-    expect(errorArg).toBeInstanceOf(Error)
-    expect(errorArg.message).toBe('Job failed with error')
-    expect(optionsArg).toEqual({ reportType: 'queueJobError' })
+    expect(useDialogService().showExecutionErrorDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showErrorDialog).toHaveBeenCalledExactlyOnceWith(
+      new Error('Job failed with error'),
+      { reportType: 'queueJobError' }
+    )
   })
 
   it('ignores error actions when message missing', async () => {
@@ -381,8 +361,8 @@ describe('useJobMenu', () => {
     await reportEntry?.onClick?.()
 
     expect(copyToClipboardMock).not.toHaveBeenCalled()
-    expect(dialogServiceMock.showErrorDialog).not.toHaveBeenCalled()
-    expect(dialogServiceMock.showExecutionErrorDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showErrorDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showExecutionErrorDialog).not.toHaveBeenCalled()
   })
 
   const previewCases = [
@@ -614,7 +594,7 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'export-workflow')
     await entry?.onClick?.()
 
-    expect(dialogServiceMock.prompt).not.toHaveBeenCalled()
+    expect(useDialogService().prompt).not.toHaveBeenCalled()
     expect(downloadBlobMock).toHaveBeenCalledTimes(1)
     const [filename, blob] = downloadBlobMock.mock.calls[0]
     expect(filename).toBe('Job 7.json')
@@ -625,7 +605,7 @@ describe('useJobMenu', () => {
 
   it('prompts for filename when setting enabled', async () => {
     vi.mocked(settingStoreMock.get).mockReturnValue(true)
-    dialogServiceMock.prompt.mockResolvedValue('custom-name')
+    vi.mocked(useDialogService().prompt).mockResolvedValue('custom-name')
     getJobWorkflowMock.mockResolvedValue({})
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
@@ -638,18 +618,20 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'export-workflow')
     await entry?.onClick?.()
 
-    expect(dialogServiceMock.prompt).toHaveBeenCalledWith({
+    expect(useDialogService().prompt).toHaveBeenCalledWith({
       title: expect.stringContaining('workflowService.exportWorkflow'),
       message: expect.stringContaining('workflowService.enterFilename'),
       defaultValue: 'Job job-1.json'
     })
-    const [filename] = downloadBlobMock.mock.calls[0]
-    expect(filename).toBe('custom-name.json')
+    expect(downloadBlobMock).toHaveBeenCalledExactlyOnceWith(
+      'custom-name.json',
+      expect.any(Blob)
+    )
   })
 
   it('keeps existing json extension when exporting workflow', async () => {
     vi.mocked(settingStoreMock.get).mockReturnValue(true)
-    dialogServiceMock.prompt.mockResolvedValue('existing.json')
+    vi.mocked(useDialogService().prompt).mockResolvedValue('existing.json')
     getJobWorkflowMock.mockResolvedValue({ foo: 'bar' })
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
@@ -663,13 +645,15 @@ describe('useJobMenu', () => {
     const entry = findActionEntry(jobMenuEntries.value, 'export-workflow')
     await entry?.onClick?.()
 
-    const [filename] = downloadBlobMock.mock.calls[0]
-    expect(filename).toBe('existing.json')
+    expect(downloadBlobMock).toHaveBeenCalledExactlyOnceWith(
+      'existing.json',
+      expect.any(Blob)
+    )
   })
 
   it('abandons export when prompt cancelled', async () => {
     vi.mocked(settingStoreMock.get).mockReturnValue(true)
-    dialogServiceMock.prompt.mockResolvedValue('')
+    vi.mocked(useDialogService().prompt).mockResolvedValue('')
     getJobWorkflowMock.mockResolvedValue({})
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
@@ -686,7 +670,7 @@ describe('useJobMenu', () => {
   })
 
   it('does not refresh queue when delete cancelled', async () => {
-    mediaAssetActionsMock.deleteAssets.mockResolvedValue(false)
+    vi.mocked(useMediaAssetActions().deleteAssets).mockResolvedValue(false)
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({

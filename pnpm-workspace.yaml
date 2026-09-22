@@ -18,6 +18,7 @@ catalog:
   '@astrojs/vue': ^7.0.2
   '@comfyorg/comfyui-desktop-bridge-types': 0.2.0
   '@comfyorg/comfyui-electron-types': 0.6.2
+  '@comfyorg/sdk': 0.2.0
   '@customerio/cdp-analytics-browser': ^0.5.3
   '@datadog/browser-rum': ^6.33.0
   '@eslint/js': ^10.0.1
@@ -54,8 +55,10 @@ catalog:
   '@tiptap/pm': 3.31.0
   '@tiptap/starter-kit': 3.31.0
   '@total-typescript/shoehorn': ^0.1.2
+  '@typescript-eslint/utils': ^8.69.0
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
+  '@types/leaflet': ^1.9.20
   '@types/node': ^25.9.5
   '@types/semver': ^7.8.0
   '@types/three': ^0.184.1
@@ -68,6 +71,7 @@ catalog:
   '@vueuse/integrations': ^14.4.0
   '@webgpu/types': ^0.1.66
   ajv: ^8.20.0
+  ajv-formats: ^3.0.1
   ag-psd: ^31.0.2
   algoliasearch: ^5.21.0
   astro: ^7.2.1
@@ -80,6 +84,7 @@ catalog:
   eslint: ^10.10.0
   eslint-config-prettier: ^10.1.8
   eslint-import-resolver-typescript: ^4.4.5
+  eslint-plugin-astro: ^1.7.0
   eslint-plugin-better-tailwindcss: ^4.7.0
   eslint-plugin-import-x: ^4.17.1
   eslint-plugin-oxlint: 1.81.0
@@ -88,24 +93,27 @@ catalog:
   eslint-plugin-testing-library: ^7.16.2
   eslint-plugin-unused-imports: ^4.4.1
   eslint-plugin-vue: ^10.10.0
-  fallow: ^2.102.0
+  fake-indexeddb: 6.2.5
+  fallow: 3.24.1
   fast-check: ^4.5.3
   firebase: ^11.6.0
   glob: ^13.0.6
   globals: ^17.7.0
   gsap: ^3.14.2
-  happy-dom: 20.9.0
+  happy-dom: 20.14.5
   husky: ^9.1.7
   jsdom: ^29.1.1
   jsonata: ^2.1.0
   jsonc-parser: 3.3.1
   knip: ^6.27.0
+  leaflet: ^1.9.4
   lenis: ^1.3.21
   lint-staged: ^16.2.7
   lottie-web: ^5.13.0
   markdown-table: ^3.0.4
   mediabunny: ^1.53.1
   minisearch: ^7.2.0
+  mime-types: 3.0.2
   mixpanel-browser: ^2.71.0
   monocart-coverage-reports: ^2.12.9
   openai: ^7.4.0
@@ -117,6 +125,8 @@ catalog:
   pinia: ^4.0.2
   postcss-html: ^1.8.0
   posthog-js: ^1.358.1
+  prettier: 3.9.5
+  prettier-plugin-astro: ^1.0.0
   pretty-bytes: ^7.1.0
   primeicons: ^7.0.0
   primevue: 4.2.5
@@ -135,6 +145,7 @@ catalog:
   typegpu: ^0.8.2
   typescript: ^6.0.3
   typescript-eslint: ^8.69.0
+  undici: ^7.29.0
   unplugin-icons: ^23.0.1
   unplugin-typegpu: 0.8.0
   unplugin-vue-components: ^32.1.0
@@ -151,12 +162,13 @@ catalog:
   vue-i18n: ^11.4.8
   vue-router: ^5.2.0
   vue-tsc: ^3.3.11
-  vuefire: ^3.2.1
   wwobjloader2: ^6.2.1
+  yaml: ^2.8.3
   yjs: ^13.6.27
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
+  '@datadog/browser-logs': 6.33.0
 
 cleanupUnusedCatalogs: true
 
@@ -176,9 +188,10 @@ allowBuilds:
 overrides:
   vite: 'catalog:'
   '@tiptap/pm': 3.31.0
+  prettier: 3.9.5
   # Security overrides
   lodash: ^4.18.0
-  yaml: ^2.8.3
+  yaml: 'catalog:'
   minimatch@^9.0.0: ^9.0.7
   minimatch@^10.0.0: ^10.2.3
   ajv@^8.0.0: ^8.18.0
@@ -197,4 +210,4 @@ overrides:
 # Transitional - drop once 0.2.0 is older than the release-age gate.
 minimumReleaseAgeExclude:
   - '@comfyorg/comfyui-desktop-bridge-types@0.2.0'
-  - '@comfyorg/comfy-multi-player@0.2.0 || 0.2.1'
+  - '@comfyorg/comfy-multi-player@0.2.0 || 0.2.1 || 0.3.0 || 0.3.2'
