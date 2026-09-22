@@ -67,22 +67,28 @@ export function parseAgentResponseFixture(
       'Invalid agent response fixture: frames must be non-empty'
     )
   }
-  const frames: DraftPatchFrame[] = []
-  for (const frame of value.frames) {
-    if (!isRecord(frame) || frame.type !== 'draft_patch') continue
-    if (!isDraftPatchFrame(frame)) {
-      throw new AgentFixtureError(
-        'Invalid agent response fixture: malformed draft_patch frame'
-      )
-    }
-    frames.push(frame)
+  const frames = collectDraftPatchFrames(value.frames)
+
+  assertContiguousDraftPatches(frames)
+  return structuredClone({ scenario: value.scenario, frames })
+}
+
+function collectDraftPatchFrames(values: readonly unknown[]): DraftPatchFrame[] {
+  const frames = values.filter(isDraftPatchCandidate)
+  if (!frames.every(isDraftPatchFrame)) {
+    throw new AgentFixtureError(
+      'Invalid agent response fixture: malformed draft_patch frame'
+    )
   }
   if (frames.length === 0) {
     throw new AgentFixtureError(
       'Invalid agent response fixture: no draft_patch frames'
     )
   }
+  return frames
+}
 
+function assertContiguousDraftPatches(frames: readonly DraftPatchFrame[]): void {
   const workflowId = frames[0].data.workflow_id
   for (let index = 1; index < frames.length; index++) {
     const previous = frames[index - 1].data
@@ -98,8 +104,12 @@ export function parseAgentResponseFixture(
       )
     }
   }
+}
 
-  return structuredClone({ scenario: value.scenario, frames })
+function isDraftPatchCandidate(
+  value: unknown
+): value is Record<string, unknown> & { type: 'draft_patch' } {
+  return isRecord(value) && value.type === 'draft_patch'
 }
 
 function isDraftPatchFrame(value: unknown): value is DraftPatchFrame {
@@ -137,12 +147,22 @@ function isFixtureNode(value: unknown): value is FixtureNode {
     isRecord(value) &&
     (typeof value.id === 'number' || typeof value.id === 'string') &&
     typeof value.type === 'string' &&
-    (value.inputs === undefined || Array.isArray(value.inputs)) &&
-    (value.outputs === undefined || Array.isArray(value.outputs)) &&
-    (value.widgets_values === undefined ||
-      Array.isArray(value.widgets_values) ||
-      isRecord(value.widgets_values))
+    isOptionalArray(value.inputs) &&
+    isOptionalArray(value.outputs) &&
+    isOptionalWidgetValues(value.widgets_values)
   )
+}
+
+function isOptionalArray(
+  value: unknown
+): value is readonly unknown[] | undefined {
+  return value === undefined || Array.isArray(value)
+}
+
+function isOptionalWidgetValues(
+  value: unknown
+): value is FixtureNode['widgets_values'] {
+  return value === undefined || Array.isArray(value) || isRecord(value)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
