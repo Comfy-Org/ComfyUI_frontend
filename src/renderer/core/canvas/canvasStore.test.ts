@@ -137,7 +137,7 @@ describe('useCanvasStore', () => {
     store.setHighlightedNodeIds([toNodeId(7)])
 
     expect(store.highlightedNodeIds).toEqual(new Set([toNodeId(7)]))
-    expect(canvas.highlighted_node_ids).toEqual(new Set(['7']))
+    expect(canvas.highlighted_node_ids).toEqual(new Set([7]))
     expect(canvas.selectedItems).toEqual(new Set())
     expect(canvas.setDirty).toHaveBeenCalledWith(true, false)
   })
