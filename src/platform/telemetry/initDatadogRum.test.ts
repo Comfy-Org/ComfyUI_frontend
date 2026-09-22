@@ -5,6 +5,7 @@ const hoisted = vi.hoisted(() => {
 
   return {
     context,
+    addError: vi.fn(),
     fetch: vi.fn<typeof fetch>(),
     getInitConfiguration: vi.fn(),
     init: vi.fn(),

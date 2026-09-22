@@ -238,6 +238,18 @@ const CONNECTIVITY_ERROR_ALLOWLIST: Record<string, ConnectivityRule[]> = {
       restore:
         'guard removed links during VHS file refresh and remove this entry'
     }
+  ],
+  'ComfyUI_Fill-Nodes': [
+    {
+      id: 'fill-code-node-removeinput-oob-assert',
+      pattern:
+        /\[Assertion failed\]: LGraphNode\.removeInput: slot \d+ is out of bounds for node "FL_CodeNode" \(id: \d+\) with \d+ inputs/,
+      reason:
+        'the already-ledgered dynamic-slot cleanup stall (fill-code-node-dynamic-cleanup-hang) removes its fixed use_file/run_always index on every 25ms tick; the removeInput invariant now logs each out-of-bounds attempt instead of the prior silent no-op',
+      requiredConnectivityId: 'fill-code-node-removeinput-oob-assert',
+      restore:
+        'advance or remove the current dynamic slot during cleanup (same fix as fill-code-node-dynamic-cleanup-hang) and remove this entry when it does'
+    }
   ]
 }
 
