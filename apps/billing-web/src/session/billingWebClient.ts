@@ -34,7 +34,8 @@ import {
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 
-import { CLOUD_BASE_URL, STRIPE_PUBLISHABLE_KEY } from '@/config/env'
+import { CLOUD_BASE_URL } from '@/config/env'
+import { billingWebStripeKey } from '@/config/stripeKey'
 
 /** Tab-local, like the credential cache: a pointer must not outlive the tab. */
 const pointerStorage: BillingOperationPointerStorage = {
@@ -69,7 +70,7 @@ export function createBillingWebClient(session: BillingSession): BillingClient {
     scopeSource,
     statusReader: status,
     pointerStorage,
-    embeddedCheckoutAvailable: () => STRIPE_PUBLISHABLE_KEY !== undefined
+    embeddedCheckoutAvailable: () => billingWebStripeKey() !== undefined
   })
 
   return {

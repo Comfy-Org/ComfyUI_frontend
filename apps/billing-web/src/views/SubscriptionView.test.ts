@@ -20,8 +20,11 @@ import SubscriptionView from '@/views/SubscriptionView.vue'
 
 /** The two values this surface reads; a test-family key stands in for a deployment's. */
 vi.mock(import('@/config/env'), () => ({
-  BILLING_WEB_ENV: 'test' as const,
-  STRIPE_PUBLISHABLE_KEY: 'pk_test_example'
+  BILLING_WEB_ENV: 'test' as const
+}))
+
+vi.mock(import('@/config/stripeKey'), () => ({
+  billingWebStripeKey: () => 'pk_test_example'
 }))
 
 const challengeMocks = vi.hoisted(() => ({

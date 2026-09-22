@@ -9,18 +9,21 @@
  * The fallback exists because this origin's own outage tolerance must not
  * depend on the Cloud app being up: a Cloud outage should not also take down
  * billing-web's sign-in screen.
+ *
+ * The runtime fetch behind this module is shared: `resolveBillingWebFeatures`
+ * also carries the Stripe publishable key `@/config/stripeKey` reads, so this
+ * origin fetches `/api/features` once, not once per field.
  */
 import type { FirebaseOptions } from 'firebase/app'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
-import { fetchFirebaseConfig } from '@comfyorg/account-core/firebaseConfigSource'
 
-import { CLOUD_BASE_URL, FIREBASE_OPTIONS } from '@/config/env'
+import { resolveBillingWebFeatures } from '@/config/cloudFeatures'
+import { FIREBASE_OPTIONS } from '@/config/env'
 
 const RUNTIME_APP_NAME = 'billing-web-runtime'
 const FALLBACK_APP_NAME = 'billing-web-fallback'
-const CONFIG_FETCH_TIMEOUT_MS = 4000
 
 let resolution: Promise<FirebaseIdentity | undefined> | undefined
 
@@ -59,11 +62,9 @@ function tryCreateIdentity(
 export function resolveBillingWebIdentity(): Promise<
   FirebaseIdentity | undefined
 > {
-  resolution ??= fetchFirebaseConfig(CLOUD_BASE_URL, {
-    timeoutMs: CONFIG_FETCH_TIMEOUT_MS
-  }).then((runtimeOptions) => {
+  resolution ??= resolveBillingWebFeatures().then(({ firebaseConfig }) => {
     const runtimeIdentity =
-      runtimeOptions && tryCreateIdentity(runtimeOptions, RUNTIME_APP_NAME)
+      firebaseConfig && tryCreateIdentity(firebaseConfig, RUNTIME_APP_NAME)
     return (
       runtimeIdentity ??
       (FIREBASE_OPTIONS &&

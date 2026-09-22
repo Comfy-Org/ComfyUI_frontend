@@ -31,7 +31,8 @@ import CheckoutSubmit from '@/components/CheckoutSubmit.vue'
 import EmbeddedCheckout from '@/components/EmbeddedCheckout.vue'
 import HostedSurface from '@/components/HostedSurface.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
-import { BILLING_WEB_ENV, STRIPE_PUBLISHABLE_KEY } from '@/config/env'
+import { BILLING_WEB_ENV } from '@/config/env'
+import { billingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { createStripeChallengePort } from '@/session/stripeChallengePort'
 
@@ -51,10 +52,10 @@ const {
   reset: resetQuote
 } = usePreviewSubscribe()
 
+const stripeKey = billingWebStripeKey()
+
 const challengePort =
-  STRIPE_PUBLISHABLE_KEY === undefined
-    ? undefined
-    : createStripeChallengePort(STRIPE_PUBLISHABLE_KEY)
+  stripeKey === undefined ? undefined : createStripeChallengePort(stripeKey)
 
 const checkout = useCheckout({
   openUrl: (url) => window.location.assign(url),
@@ -148,7 +149,7 @@ const paymentMethodConfigurationId = computed(
   () => preview.value?.payment_method_configuration_id ?? ''
 )
 
-const publishableKey = STRIPE_PUBLISHABLE_KEY ?? ''
+const publishableKey = stripeKey ?? ''
 
 const quoting = computed(() => loading.value && summary.value === undefined)
 

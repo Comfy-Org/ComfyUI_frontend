@@ -27,8 +27,11 @@ const CHECKOUT_PATH = `${ENTRY_QUERY_PATH}&plan=creator_monthly`
 
 /** The two values the view and its surface read; a test-family key stands in for a deployment's. */
 vi.mock<unknown>(import('@/config/env'), () => ({
-  BILLING_WEB_ENV: 'test',
-  STRIPE_PUBLISHABLE_KEY: 'pk_test_example'
+  BILLING_WEB_ENV: 'test'
+}))
+
+vi.mock(import('@/config/stripeKey'), () => ({
+  billingWebStripeKey: () => 'pk_test_example'
 }))
 
 const challengeMocks = vi.hoisted(() => ({

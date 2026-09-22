@@ -16,7 +16,7 @@ import type {
 import { useBillingClient, useCheckout } from '@comfyorg/account-ui/billing'
 
 import { useHostedCopy } from '@/composables/useHostedCopy'
-import { STRIPE_PUBLISHABLE_KEY } from '@/config/env'
+import { billingWebStripeKey } from '@/config/stripeKey'
 import { createStripeChallengePort } from '@/session/stripeChallengePort'
 
 const emit = defineEmits<{
@@ -30,13 +30,13 @@ const { capabilities, commands } = useBillingClient<
   'capabilities' | 'commands'
 >(undefined)
 
+const stripeKey = billingWebStripeKey()
+
 const checkout = useCheckout({
   openUrl: (url) => window.location.assign(url),
   navigationMode: 'redirect',
   challengePort:
-    STRIPE_PUBLISHABLE_KEY === undefined
-      ? undefined
-      : createStripeChallengePort(STRIPE_PUBLISHABLE_KEY)
+    stripeKey === undefined ? undefined : createStripeChallengePort(stripeKey)
 })
 
 const allowed = ref<BillingCapabilities | undefined>()
