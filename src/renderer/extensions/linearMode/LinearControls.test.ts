@@ -113,9 +113,7 @@ function renderControls({
 } = {}) {
   const billing = useBillingContext()
   billing.canRunWorkflows = computed(() => canRunWorkflows)
-  billing.showsSubscribeToRunPrompt = computed(
-    () => showsSubscribeToRunPrompt
-  )
+  billing.showsSubscribeToRunPrompt = computed(() => showsSubscribeToRunPrompt)
   vi.mocked(useBillingContext).mockReturnValue(billing)
 
   const pinia = getActivePinia()!
