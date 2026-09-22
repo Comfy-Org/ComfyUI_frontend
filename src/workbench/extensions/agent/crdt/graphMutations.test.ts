@@ -1,4 +1,12 @@
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -146,6 +154,17 @@ describe('graphMutations', () => {
     return useWidgetValueStore()
       .getNodeWidgets('root', toNodeId(id))
       .map(({ name, type, options, value }) => [name, type, options, value])
+  }
+
+  function semanticStateJson() {
+    const nodes = useNodeDataStore().getGraphNodesFor('root', 'root')
+    return JSON.stringify({
+      nodes,
+      links: [...useLinkStore().graphTopologies(scope)],
+      widgets: nodes.flatMap(({ id }) =>
+        useWidgetValueStore().getNodeWidgets('root', id)
+      )
+    })
   }
 
   describe('doc widget payload applied to a live node', () => {
@@ -609,6 +628,68 @@ describe('graphMutations', () => {
     expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
     expect(createLayout).not.toHaveBeenCalled()
     error.mockRestore()
+  })
+
+  it.fails('rolls back without publishing when a widget store write is rejected', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(1, { seed: 'before' }), context)).toBe(true)
+    const before = semanticStateJson()
+    createLayout.mockClear()
+    deleteLayouts.mockClear()
+    const publications: string[] = []
+    const stop = useNodeDataStore().$onAction(({ name, after }) => {
+      if (name === 'registerNode') {
+        after(() => publications.push(semanticStateJson()))
+      }
+    })
+    onTestFinished(stop)
+    vi.spyOn(useWidgetValueStore(), 'registerWidget').mockReturnValueOnce(
+      undefined
+    )
+
+    const applied = graph.batch(context, (batch) => {
+      batch.addNode(node(2, { seed: 'rejected' }))
+    })
+
+    expect.soft(applied).toBe(false)
+    expect.soft(semanticStateJson()).toBe(before)
+    expect.soft(publications).toEqual([])
+    expect.soft(createLayout).not.toHaveBeenCalled()
+    const deletedNodeIds = deleteLayouts.mock.calls.flatMap(
+      ([, nodeIds]) => nodeIds
+    )
+    expect.soft(deletedNodeIds).not.toContain(toNodeId(1))
+  })
+
+  it.fails('rolls back the whole batch when link publication is rejected', () => {
+    const graph = mutations()
+    const before = semanticStateJson()
+    const publications: string[] = []
+    const stop = useNodeDataStore().$onAction(({ name, after }) => {
+      if (name === 'registerNode') {
+        after(() => publications.push(semanticStateJson()))
+      }
+    })
+    onTestFinished(stop)
+    vi.spyOn(useLinkStore(), 'replaceLink').mockReturnValueOnce(undefined)
+
+    const applied = graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode(node(2))
+      batch.connect({
+        id: 9,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'IMAGE'
+      })
+    })
+
+    expect.soft(applied).toBe(false)
+    expect.soft(semanticStateJson()).toBe(before)
+    expect.soft(publications).toEqual([])
+    expect.soft(createLayout).not.toHaveBeenCalled()
   })
 
   // The agent's connect tool used to wire an IMAGE output straight into a
