@@ -287,7 +287,6 @@ export const useAgentConversationStore = defineStore(
       clearActive()
       const transcript = normalizeAgentTranscript(history)
       messages.value = transcript.messages
-      if (paywallsResolved) resolvePaywalls()
       userTexts.value = transcript.userTexts
       userTags.value = new Map()
       userWorkflowReferences.value = transcript.userWorkflowReferences
