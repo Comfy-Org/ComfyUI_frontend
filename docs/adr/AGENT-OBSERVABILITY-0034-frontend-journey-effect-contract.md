@@ -42,11 +42,36 @@ flowchart LR
   F -. does not prove .-> G[Reload recovery]
 ```
 
-The contract does not require a particular implementation path. The current follower reaches that
-effect through a store-first projection followed by live-graph reconciliation; the intended
-architecture routes it through the unified frontend command path. Either seam conforms only when
-it attests the operation-specific semantic mutation. Replacing the transitional path therefore
-does not change the event's durable meaning.
+The event contract is implementation-independent, but the implementations are not equally
+acceptable. The current follower uses a store-first projection followed by live-graph
+reconciliation. This is known temporary debt: it separates canonical store state from live graph
+state and requires compensating materialization and reconciliation.
+
+[FE-2504](https://linear.app/comfyorg/issue/FE-2504/agentcrdt-remove-store-first-remote-apply-and-every-reconciliation)
+tracks migration to the unified frontend command path used by human and extension mutations. Until
+that migration lands, an emitter may observe the operation-specific semantic effect on the current
+path, but it must not make reconciliation, materialization, or store callbacks part of the event
+meaning or add new dependencies on them.
+
+The migration is complete when remote Agent mutations use the shared semantic command APIs with
+provenance and the compensating store-first materialization and reconciliation layers are deleted.
+That replacement does not change the event contract.
+
+```mermaid
+flowchart LR
+  subgraph Current[Current: temporary debt]
+    A[Authoritative delta] --> B[Store-first projection]
+    B --> C[Compensating reconciliation]
+  end
+
+  subgraph Target[Target: FE-2504]
+    D[Authoritative delta] --> E[Shared semantic command with provenance]
+  end
+
+  C --> F[Operation-specific semantic mutation complete]
+  E --> F
+  E --> G[Delete materialization and reconciliation layers]
+```
 
 Host-side `applied`, `skipped`, and `failed` results retain their generated `DocOpsResultData`
 meaning. Follower-side inactive-target and projection results are not remapped onto those names.
@@ -90,6 +115,8 @@ Alternatives rejected:
 - The emitter PR must define the legacy frame case where operation IDs are unavailable and include
   the mandatory black-box Agent harness case for visible behavior. Persistence and reload recovery
   remain separate later proof planes and require their own harness evidence.
+- New observability work must not add reconciliation variants or depend on reconciliation-specific
+  completion signals. Any temporary bridge must name its deletion owner and exit criterion.
 
 ## Delivery sequence
 
