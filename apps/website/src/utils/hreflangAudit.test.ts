@@ -95,6 +95,8 @@ describe('auditBuiltSite', () => {
     const pages = new Map<string, Alternate[]>([['/article.html', []]])
 
     expect(auditBuiltSite({ origin: ORIGIN, pages, sitemap: new Map() })).toEqual([
+      '/article.html: page expects en -> https://comfy.org/article.html/, but does not declare it',
+      '/article.html: page expects zh-CN -> https://comfy.org/zh-CN/article.html/, but does not declare it',
       '/article.html: page expects x-default -> https://comfy.org/article.html/, but does not declare it',
       '/article.html: language cluster missing from sitemap'
     ])
