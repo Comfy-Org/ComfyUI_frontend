@@ -41,26 +41,14 @@ const mockData = vi.hoisted(() => ({
   resizeCallback: null as ResizeCallback | null
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+vi.mock(import('@/utils/graphTraversalUtil'))
 vi.mocked(getNodeByLocatorId).mockImplementation(() =>
   fromAny<LiteGraphNode, unknown>(
     mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
   )
 )
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  () => {
-    return {
-      useTransformState: () => ({
-        screenToCanvas: vi.fn(),
-        canvasToScreen: vi.fn(),
-        camera: { z: 1 },
-        isNodeInViewport: vi.fn()
-      })
-    }
-  }
-)
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
