@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import {
   addAutogrow,
   addDynamicCombo
@@ -358,6 +359,63 @@ describe('Autogrow', () => {
       )
 
       connectInput(node, 1, graph)
+      await nextTick()
+
+      expect(node.inputs.map((i) => i.name)).toEqual([
+        '0.image_1',
+        '0.image_2',
+        '0.image_3'
+      ])
+    }
+  )
+  test(
+    'A genuine occupied-slot replacement via connectSlots does not drop a ' +
+      'concurrent connect on a different slot (PM-1496)',
+    async () => {
+      const graph = new LGraph()
+      const node = testNode()
+      graph.add(node)
+      addAutogrow(node, {
+        min: 0,
+        input: inputsSpec,
+        names: ['image_1', 'image_2', 'image_3', 'image_4']
+      })
+
+      connectInput(node, 0, graph)
+      await nextTick()
+      expect(node.inputs.map((i) => i.name)).toEqual(['0.image_1', '0.image_2'])
+
+      const oldLink = node.getInputLink(0)
+      if (!oldLink) throw new Error('slot 0 should be connected')
+      const oldSource = graph.getNodeById(oldLink.origin_id)
+
+      //connectSlots (LGraphNode.ts) fires slot 0's disconnect (the swap's
+      //tail) and its matching connect synchronously, back to back, while
+      //replacing slot 0's link below. Chaining onto onConnectionsChange -
+      //the same public extension point real custom nodes use - lets a
+      //second, genuine connect land on a different slot in that exact
+      //window, without faking either connection.
+      let sawSwapTail = false
+      node.onConnectionsChange = useChainCallback(
+        node.onConnectionsChange,
+        (contype, slot, iscon) => {
+          if (contype !== LiteGraph.INPUT || slot !== 0 || iscon) return
+          sawSwapTail = true
+          connectInput(node, 1, graph)
+        }
+      )
+
+      const replacement = testNode()
+      replacement.addOutput('out', '*')
+      graph.add(replacement)
+      const newLink = replacement.connect(0, node, 0)
+      if (!newLink) throw new Error('failed to install replacement link')
+
+      expect(sawSwapTail).toBe(true)
+      expect(node.getInputLink(0)).toBe(newLink)
+      expect(oldSource?.isOutputConnected(0)).toBe(false)
+
+      await nextTick()
       await nextTick()
 
       expect(node.inputs.map((i) => i.name)).toEqual([
