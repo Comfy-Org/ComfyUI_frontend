@@ -1,8 +1,10 @@
 ---
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import CatalogueBackLink from '../../components/workshop/CatalogueBackLink.vue'
+import ModelHero from '../../components/workshop/ModelHero.astro'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
-import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import RelatedModels from '../../components/workshop/RelatedModels.vue'
 import { routerWorkshopModelPaths } from '../../config/workshop-browse-content'
 import { t } from '../../i18n/translations'
 import { prepareModelPage } from './model-page'
@@ -18,6 +20,9 @@ if (page.kind === 'redirect') return Astro.redirect(page.href, 301)
 const { model } = page
 ---
 
+{/* The model is public content: its hero and related models are built into
+    the HTML for every visitor. The playground is the only island, and the
+    Workshop flag decides nothing here beyond whether its Run button works. */}
 <BaseLayout
   title={`${model.name} · ${t('workshop.title')} - Comfy`}
   description={t('workshop.model.meta.description').replace(
@@ -27,10 +32,19 @@ const { model } = page
   ogImage={model.thumbnailUrl}
   noindex
 >
-  <ModelsPage slug={model.slug} client:load>
-    <ModelsShowcase slot="fallback" />
-  </ModelsPage>
-  <noscript>
-    <ModelsShowcase />
-  </noscript>
+  <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
+    <div class="mb-8 sm:px-8 lg:px-10">
+      <CatalogueBackLink client:load />
+    </div>
+    <ModelHero page={page} />
+    <div class="sm:px-8 lg:px-10">
+      <ModelsPage slug={model.slug} client:load />
+      <RelatedModels
+        client:visible
+        related={page.related}
+        heading={page.relatedHeading}
+        headingShort={page.relatedHeadingShort}
+      />
+    </div>
+  </div>
 </BaseLayout>

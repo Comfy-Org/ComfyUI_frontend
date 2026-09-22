@@ -1,0 +1,89 @@
+---
+import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
+import { getRoutes } from '../../config/routes'
+import { t } from '../../i18n/translations'
+import type { prepareModelPage } from '../../routes/models/model-page'
+import ModelPrice from './ModelPrice.vue'
+import ModelStatus from './ModelStatus.vue'
+import ModelSupport from './ModelSupport.vue'
+import SplitReveal from './SplitReveal.vue'
+import TagOverflow from './TagOverflow.vue'
+
+// The hero is public catalogue data, so it is rendered here at build time and
+// shipped as plain HTML. Only the pieces a pointer can interact with hydrate:
+// the heading animation, the price note and the overflow tags.
+type ModelPage = Extract<
+  Awaited<ReturnType<typeof prepareModelPage>>,
+  { kind: 'page' }
+>
+
+interface Props {
+  page: ModelPage
+}
+
+const { page } = Astro.props
+const routes = getRoutes()
+const modelUseCase = useCaseFor(page.model)
+const pillClass =
+  'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
+const restTags = page.restTags.map((tag) => ({
+  label: tag.label,
+  href: `${routes.workshop}${tag.search}`
+}))
+---
+
+<header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
+  <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+    <div class="flex max-w-2xl flex-col gap-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <p
+          class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase"
+        >
+          {page.model.provider ?? t('workshop.card.partnerNode')}
+        </p>
+        {page.model.incompleteReason && (
+          <ModelSupport reason={page.model.incompleteReason} />
+        )}
+        {modelUseCase && page.useCaseLabel && <a
+          href={`${routes.workshop}${catalogSearch({ useCase: modelUseCase })}`}
+          class={pillClass}
+        >
+          {page.useCaseLabel}
+        </a>}
+      </div>
+
+      <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-4xl">
+        <SplitReveal client:load text={page.model.name} />
+      </h1>
+      {page.model.summary && <p class="text-sm/relaxed text-primary-warm-gray">
+        {page.model.summary}
+      </p>}
+    </div>
+
+    <div class="flex flex-col gap-4 lg:items-end">
+      <ModelPrice client:idle estimate={page.priceEstimate} />
+      {page.shownTags.length > 0 && <ul
+        class="scrollbar-hide flex items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
+        data-testid="model-tags"
+      >
+        {page.shownTags.map((tag) => <li>
+          <a
+            href={`${routes.workshop}${tag.search}`}
+            class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs/none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
+          >
+            {tag.label}
+          </a>
+        </li>)}
+        {page.restTagCount > 0 && <li>
+          <TagOverflow client:idle tags={restTags} />
+        </li>}
+      </ul>}
+    </div>
+  </div>
+
+  <ModelStatus
+    variant="banner"
+    status={page.model.status}
+    successor={page.successor}
+  />
+</header>

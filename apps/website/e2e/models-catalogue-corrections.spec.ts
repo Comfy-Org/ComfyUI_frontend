@@ -57,7 +57,7 @@ test('GPT Image generation pages remain discoverable while disabled edit pages a
     await page.goto('/models/?useCase=generate-images', { waitUntil: 'commit' })
     await moduleRequested
     await expect(page.getByTestId('workshop-search')).toHaveCount(0)
-    await expect(page.getByTestId('models-loading')).toBeVisible()
+    await expect(page.getByTestId('models-directory')).toBeVisible()
     await expect(
       page.getByRole('heading', { level: 1, name: /Grok Imagine/ })
     ).toHaveCount(0)

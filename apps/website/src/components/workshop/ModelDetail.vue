@@ -39,10 +39,8 @@ import {
 } from '../../config/workshop-page-state'
 import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
 import { IDLE, transition } from '../../config/workshop-run'
-import {
-  refreshWorkshopCredits,
-  useWorkshopCredits
-} from '../../config/workshop-credits'
+import { refreshWorkshopCredits } from '../../config/workshop-credits'
+import { useWorkshopAccountWhen } from '../../composables/useWorkshopAccount'
 import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import type { RouterRenderResult } from '../../config/router-render'
 import { router_render } from '../../config/router-render'
@@ -57,7 +55,6 @@ import { reportWorkshopRun } from '../../config/workshop-run-state'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { linkLeavingPage } from '../../lib/workshop/leaving-link'
 import type { WorkshopSession } from '../../config/workshop-session-state'
-import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -211,10 +208,12 @@ const attachments = computed(() =>
 )
 const revealed = ref(false)
 
-const { user, session, sessionFailure, settled, ensureFresh, remint } =
-  useWorkshopSession()
-const { balance } = useWorkshopCredits()
 const workshopEnabled = useWorkshopEnabled()
+// The page is public: the playground mounts for everyone, and only the Run
+// gate depends on Workshop being on. Auth and credits start on that flag,
+// never on mount, so a disabled visitor makes no Firebase traffic.
+const { user, session, sessionFailure, settled, ensureFresh, remint, balance } =
+  useWorkshopAccountWhen(workshopEnabled)
 const authEnabled = useWorkshopAuthFlag()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
