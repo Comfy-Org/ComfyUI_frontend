@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "從文字中第一個有效的 JSON 物件擷取鍵的值，包括 Markdown 程式碼區塊。",
     "display_name": "從 JSON 擷取字串",
     "inputs": {
       "json_string": {

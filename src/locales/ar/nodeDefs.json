@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "استخرج قيمة مفتاح من أول كائن JSON صالح في النص، بما في ذلك كتل الشيفرة البرمجية في Markdown.",
     "display_name": "استخراج سلسلة من JSON",
     "inputs": {
       "json_string": {

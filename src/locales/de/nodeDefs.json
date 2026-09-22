@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Extrahiert den Wert eines Schlüssels aus dem ersten gültigen JSON-Objekt im Text, einschließlich Markdown-Codeblöcken.",
     "display_name": "Text aus JSON extrahieren",
     "inputs": {
       "json_string": {

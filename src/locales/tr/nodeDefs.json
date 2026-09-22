@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Markdown kod blokları da dahil olmak üzere, metindeki ilk geçerli JSON nesnesinden bir anahtarın değerini çıkarın.",
     "display_name": "JSON'dan Dize Çıkar",
     "inputs": {
       "json_string": {
