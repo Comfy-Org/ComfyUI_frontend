@@ -996,10 +996,9 @@ Fork PRs can't auto-commit screenshots — a maintainer commits them for you.
 
 If a canvas screenshot diff is only a viewport translation (same image size,
 the whole graph shifted), the baseline is not stale: pin the pan/zoom in the
-test before the shot rather than regenerating. A screenshot that depends on
-undetermined pan/zoom is a flake waiting for a slower machine. Regenerate only
-when the product changed, and open the diff to confirm the change is the one
-you made rather than a viewport shift.
+test before the shot rather than regenerating. Regenerate only when the
+product changed, and open the diff to confirm the change is the one you made
+rather than a viewport shift.
 
 ## Debugging in CI
 
