@@ -15,20 +15,48 @@ function cluster(path: string): Alternate[] {
   ]
 }
 
+function canonicalsFor(pages: ReadonlyMap<string, Alternate[]>) {
+  return new Map<string, string>(
+    [...pages.keys()].map((route): [string, string] => [
+      route,
+      `${ORIGIN}${route}`
+    ])
+  )
+}
+
 /** A built site with one clustered page pair and one English-only page. */
 function healthySite() {
+  const pages = new Map<string, Alternate[]>([
+    ['/about/', cluster('/about/')],
+    ['/zh-CN/about/', cluster('/about/')],
+    ['/affiliates/', []]
+  ])
   return {
     origin: ORIGIN,
-    pages: new Map<string, Alternate[]>([
-      ['/about/', cluster('/about/')],
-      ['/zh-CN/about/', cluster('/about/')],
-      ['/affiliates/', []]
+    pages,
+    canonicals: canonicalsFor(pages),
+    sitemap: new Map(pages)
+  }
+}
+
+function encodedSite() {
+  const alternates: Alternate[] = [
+    { hreflang: 'en', href: 'https://comfy.org/caf%C3%A9/' },
+    { hreflang: 'zh-CN', href: 'https://comfy.org/zh-CN/caf%C3%A9/' },
+    { hreflang: 'x-default', href: 'https://comfy.org/caf%C3%A9/' }
+  ]
+  const pages = new Map<string, Alternate[]>([
+    ['/café/', alternates],
+    ['/zh-CN/café/', alternates]
+  ])
+  return {
+    origin: ORIGIN,
+    pages,
+    canonicals: new Map([
+      ['/café/', 'https://comfy.org/caf%C3%A9/'],
+      ['/zh-CN/café/', 'https://comfy.org/zh-CN/caf%C3%A9/']
     ]),
-    sitemap: new Map<string, Alternate[]>([
-      ['/about/', cluster('/about/')],
-      ['/zh-CN/about/', cluster('/about/')],
-      ['/affiliates/', []]
-    ])
+    sitemap: new Map(pages)
   }
 }
 
@@ -45,6 +73,7 @@ describe('auditBuiltSite', () => {
     const errors = auditBuiltSite({
       origin: ORIGIN,
       pages,
+      canonicals: canonicalsFor(pages),
       sitemap: new Map(pages)
     })
 
@@ -65,7 +94,12 @@ describe('auditBuiltSite', () => {
     const pages = new Map<string, Alternate[]>([['/about/', []]])
 
     expect(
-      auditBuiltSite({ origin: ORIGIN, pages, sitemap: new Map() })
+      auditBuiltSite({
+        origin: ORIGIN,
+        pages,
+        canonicals: canonicalsFor(pages),
+        sitemap: new Map()
+      })
     ).toEqual([
       '/about/: page expects en -> https://comfy.org/about/, but does not declare it',
       '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
@@ -85,6 +119,7 @@ describe('auditBuiltSite', () => {
       auditBuiltSite({
         origin: ORIGIN,
         pages: new Map<string, Alternate[]>([[route, []]]),
+        canonicals: new Map(),
         sitemap: new Map()
       })
     ).toEqual([])
@@ -94,7 +129,12 @@ describe('auditBuiltSite', () => {
     const pages = new Map<string, Alternate[]>([['/article.html', []]])
 
     expect(
-      auditBuiltSite({ origin: ORIGIN, pages, sitemap: new Map() })
+      auditBuiltSite({
+        origin: ORIGIN,
+        pages,
+        canonicals: new Map(),
+        sitemap: new Map()
+      })
     ).toEqual([
       '/article.html: page expects en -> https://comfy.org/article.html/, but does not declare it',
       '/article.html: page expects zh-CN -> https://comfy.org/zh-CN/article.html/, but does not declare it',
@@ -276,6 +316,86 @@ describe('auditBuiltSite', () => {
   })
 })
 
+describe('canonical URLs', () => {
+  it.for([
+    {
+      name: 'another origin',
+      canonical: 'https://other.example/zh-CN/about/'
+    },
+    {
+      name: 'query string',
+      canonical: 'https://comfy.org/zh-CN/about/?preview=true'
+    },
+    {
+      name: 'fragment',
+      canonical: 'https://comfy.org/zh-CN/about/#section'
+    }
+  ])('rejects $name on a clustered page', ({ canonical }) => {
+    const site = healthySite()
+    site.canonicals.set('/zh-CN/about/', canonical)
+
+    expect(auditBuiltSite(site)).toEqual([
+      '/zh-CN/about/: canonical must be https://comfy.org/zh-CN/about/'
+    ])
+  })
+
+  it('rejects a missing canonical link on a clustered page', () => {
+    const site = healthySite()
+    site.canonicals.delete('/zh-CN/about/')
+
+    expect(auditBuiltSite(site)).toEqual([
+      '/zh-CN/about/: canonical must be https://comfy.org/zh-CN/about/'
+    ])
+  })
+
+  it('checks the full canonical URL on the root route', () => {
+    const alternates = [
+      ...cluster('/'),
+      { hreflang: 'ja', href: 'https://comfy.org/ja/' }
+    ]
+    const pages = new Map<string, Alternate[]>([
+      ['/', alternates],
+      ['/zh-CN/', alternates],
+      ['/ja/', alternates]
+    ])
+    const canonicals = canonicalsFor(pages)
+    canonicals.set('/', 'https://other.example/')
+
+    expect(
+      auditBuiltSite({
+        origin: ORIGIN,
+        pages,
+        canonicals,
+        sitemap: new Map(pages)
+      })
+    ).toEqual(['/: canonical must be https://comfy.org/'])
+  })
+
+  it('accepts percent-encoded canonicals and alternates for raw non-ASCII routes', () => {
+    expect(auditBuiltSite(encodedSite())).toEqual([])
+  })
+
+  it('rejects an encoded alternate pointing at the wrong locale', () => {
+    const site = encodedSite()
+    site.pages.set('/café/', [
+      { hreflang: 'en', href: 'https://comfy.org/caf%C3%A9/' },
+      { hreflang: 'zh-CN', href: 'https://comfy.org/caf%C3%A9/' },
+      { hreflang: 'x-default', href: 'https://comfy.org/caf%C3%A9/' }
+    ])
+
+    expect(auditBuiltSite(site)).toContain(
+      '/café/: page expects zh-CN -> https://comfy.org/zh-CN/caf%C3%A9/, but does not declare it'
+    )
+  })
+
+  it('does not require a canonical URL for a standalone page', () => {
+    const site = healthySite()
+    site.canonicals.delete('/affiliates/')
+
+    expect(auditBuiltSite(site)).toEqual([])
+  })
+})
+
 describe('sitemapChunkNames', () => {
   const index = (locs: string[]) =>
     `<?xml version="1.0" encoding="UTF-8"?><sitemapindex>${locs
@@ -347,7 +467,12 @@ describe('Japanese publication', () => {
     ])
 
     expect(
-      auditBuiltSite({ origin: ORIGIN, pages, sitemap: new Map(pages) })
+      auditBuiltSite({
+        origin: ORIGIN,
+        pages,
+        canonicals: canonicalsFor(pages),
+        sitemap: new Map(pages)
+      })
     ).toEqual([])
   })
 })

@@ -18,9 +18,17 @@ import { redirects } from '../config/redirects'
 import { isLocaleInvariantPath } from '../config/routes'
 import { unprefixed } from './hreflangRoutes'
 
+const STANDALONE_ROUTES = new Set([
+  '/404/',
+  '/404.html/',
+  '/baidu_verify_codeva-SdpTW0h62C.html/'
+])
+
 export interface BuiltSite {
   /** Every built route, mapped to the alternates its HTML emits. */
   pages: Map<string, Alternate[]>
+  /** Missing route keys mean no canonical link was extracted. */
+  canonicals: ReadonlyMap<string, string>
   /**
    * Sitemap URL -> the alternates it advertises, in document order. `null` when
    * the sitemap is absent.
@@ -52,19 +60,20 @@ function expectedAlternates(
   const expected = new Map<string, string>(
     publishedLocales.map((locale): [string, string] => [
       LOCALES[locale].hreflang,
-      `${origin}${LOCALES[locale].prefix}${path}`
+      new URL(`${LOCALES[locale].prefix}${path}`, origin).href
     ])
   )
-  expected.set('x-default', `${origin}${LOCALES[DEFAULT_LOCALE].prefix}${path}`)
+  expected.set(
+    'x-default',
+    new URL(`${LOCALES[DEFAULT_LOCALE].prefix}${path}`, origin).href
+  )
   return expected
 }
 
 function requiresCluster(route: string, origin: string): boolean {
   const path = unprefixed(route)
   return (
-    path !== '/404/' &&
-    path !== '/404.html/' &&
-    path !== '/baidu_verify_codeva-SdpTW0h62C.html/' &&
+    !STANDALONE_ROUTES.has(path) &&
     !isLocaleInvariantPath(path) &&
     !isExcludedFromSitemap(`${origin}${route}`) &&
     !Object.hasOwn(redirects, route.replace(/\/$/, ''))
@@ -128,16 +137,28 @@ function clusterErrors(
   return errors
 }
 
-function routeOfHref(href: string, origin: string): string {
-  return href.slice(origin.length) || '/'
+export function routeOfHref(href: string, origin: string): string {
+  const route = href.slice(origin.length) || '/'
+  try {
+    return decodeURI(route)
+  } catch {
+    return route
+  }
 }
 
 function pageErrors(
   pages: ReadonlyMap<string, Alternate[]>,
+  canonicals: ReadonlyMap<string, string>,
   origin: string
 ): string[] {
   const errors: string[] = []
   for (const [route, alternates] of pages) {
+    if (alternates.length > 0) {
+      const expectedCanonical = new URL(route, origin).href
+      if (canonicals.get(route) !== expectedCanonical) {
+        errors.push(`${route}: canonical must be ${expectedCanonical}`)
+      }
+    }
     errors.push(...clusterErrors(route, alternates, origin, 'page', pages))
 
     // Only the pages can be checked against what was actually built.
@@ -238,11 +259,12 @@ function sitemapEntryErrors(
 
 export function auditBuiltSite({
   pages,
+  canonicals,
   sitemap,
   origin
 }: BuiltSite): string[] {
   const errors = [
-    ...pageErrors(pages, origin),
+    ...pageErrors(pages, canonicals, origin),
     ...reciprocityErrors(pages, origin)
   ]
   if (!sitemap) {

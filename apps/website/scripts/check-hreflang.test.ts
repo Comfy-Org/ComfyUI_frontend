@@ -8,70 +8,62 @@ import { expect, it, onTestFinished } from 'vitest'
 
 const script = join(import.meta.dirname, 'check-hreflang.ts')
 const loader = pathToFileURL(createRequire(import.meta.url).resolve('tsx')).href
+
 it.for([
-  [
-    '/about/',
-    '/ja/about/',
-    'https://comfy.org/ja/about/',
-    0,
-    'every cluster is reciprocal'
-  ],
-  [
-    '/about/',
-    '/ja/about/',
-    'https://other.example/ja/about/',
-    1,
-    '/ja/about/: canonical must be'
-  ],
-  [
-    '/about/',
-    '/ja/about/',
-    'https://comfy.org/ja/about/?preview=true',
-    1,
-    '/ja/about/: canonical must be'
-  ],
-  [
-    '/about/',
-    '/ja/about/',
-    'https://comfy.org/ja/about/#section',
-    1,
-    '/ja/about/: canonical must be'
-  ],
-  ['/', '/', 'https://other.example/', 1, '/: canonical must be']
-] as const)(
-  'audits the complete canonical %s for %s on %s',
-  async ([path, canonicalRoute, canonical, status, diagnostic]) => {
+  {
+    name: 'valid encoded links',
+    canonical: 'https://comfy.org/zh-CN/caf%C3%A9/',
+    status: 0,
+    diagnostic: 'every cluster is reciprocal'
+  },
+  {
+    name: 'wrong-origin canonical',
+    canonical: 'https://other.example/zh-CN/caf%C3%A9/',
+    status: 1,
+    diagnostic:
+      '/zh-CN/café/: canonical must be https://comfy.org/zh-CN/caf%C3%A9/'
+  }
+])(
+  'audits $name from the built site',
+  async ({ canonical, status, diagnostic }) => {
     const directory = await mkdtemp(join(tmpdir(), 'hreflang-canonical-'))
     onTestFinished(() => rm(directory, { recursive: true, force: true }))
-    const routes = [path, `/zh-CN${path}`, `/ja${path}`]
-    const alternates = [
-      ['en', routes[0]],
-      ['zh-CN', routes[1]],
-      ['ja', routes[2]],
-      ['x-default', routes[0]]
+    const pages = [
+      {
+        route: '/café/',
+        loc: 'https://comfy.org/caf%C3%A9/',
+        canonical: 'https://comfy.org/caf%C3%A9/'
+      },
+      {
+        route: '/zh-CN/café/',
+        loc: 'https://comfy.org/zh-CN/caf%C3%A9/',
+        canonical
+      }
     ]
-    const links = alternates
+    const links = [
+      ['en', 'https://comfy.org/caf%C3%A9/'],
+      ['zh-CN', 'https://comfy.org/zh-CN/caf%C3%A9/'],
+      ['x-default', 'https://comfy.org/caf%C3%A9/']
+    ]
       .map(
-        ([locale, route]) =>
-          `<link rel="alternate" hreflang="${locale}" href="https://comfy.org${route}">`
+        ([locale, href]) =>
+          `<link rel="alternate" hreflang="${locale}" href="${href}">`
       )
       .join('')
     await Promise.all(
-      routes.map(async (route) => {
+      pages.map(async ({ route, canonical }) => {
         const target = join(directory, 'dist', route)
         await mkdir(target, { recursive: true })
         await writeFile(
           join(target, 'index.html'),
-          `<link rel="canonical" href="${route === canonicalRoute ? canonical : `https://comfy.org${route}`}">${links}`
+          `<link  rel="canonical"\n href="${canonical}">${links}`
         )
       })
     )
     await writeFile(
       join(directory, 'dist', 'sitemap-0.xml'),
-      `<urlset>${routes
-        .map(
-          (route) => `<url><loc>https://comfy.org${route}</loc>${links}</url>`
-        )
+      `<urlset>${pages
+        .map(({ loc }) => `<url><loc>${loc}</loc>${links}</url>`)
         .join('')}</urlset>`
     )
 
