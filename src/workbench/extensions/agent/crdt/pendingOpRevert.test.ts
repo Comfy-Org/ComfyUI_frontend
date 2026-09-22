@@ -1,16 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { Op, OpBase } from '@comfyorg/comfy-multi-player'
+import type { NodeId, Op, OpBase } from '@comfyorg/comfy-multi-player'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { reportError } from '@/platform/telemetry/reportError'
 import { toNodeId } from '@/types/nodeId'
 
-import type { PendingRevertRemoval, RevertableGraph } from './pendingOpRevert'
+import type {
+  PendingRevertNodeRegistry,
+  PendingRevertRemoval,
+  RevertableGraph
+} from './pendingOpRevert'
 import {
   PENDING_REVERT_ACTOR,
   applyPendingOpRevert,
-  createPendingRevertRemoveNode,
+  createPendingRevertNodeRegistry,
   createRevertNotifier
 } from './pendingOpRevert'
 import type { PendingOpTrackerEvent } from './pendingOpTracker'
@@ -54,6 +58,16 @@ function reverted(ops: Op[]): PendingOpTrackerEvent {
   }
 }
 
+function registry(
+  removeNode: (id: NodeId) => PendingRevertRemoval
+): PendingRevertNodeRegistry {
+  return {
+    onBatchMinted: vi.fn(),
+    removeNode: (_opId, nodeId) => removeNode(nodeId),
+    release: vi.fn()
+  }
+}
+
 describe('applyPendingOpRevert', () => {
   beforeEach(() => {
     vi.mocked(reportError).mockClear()
@@ -66,7 +80,7 @@ describe('applyPendingOpRevert', () => {
 
     const removedNodeIds = applyPendingOpRevert(
       reverted([addNode('op-1', 1), deleteNode('op-2', 2), addNode('op-3', 3)]),
-      removeNode
+      registry(removeNode)
     )
 
     expect(removeNode.mock.calls).toEqual([[1], [3]])
@@ -81,11 +95,22 @@ describe('applyPendingOpRevert', () => {
 
     const removedNodeIds = applyPendingOpRevert(
       { type: 'cleared', opIds: ['op-1'] },
-      removeNode
+      registry(removeNode)
     )
 
     expect(removeNode).not.toHaveBeenCalled()
     expect(removedNodeIds).toEqual([])
+  })
+
+  it('retains node identity while delivery remains unknown', () => {
+    const pendingNodes = registry(() => 'removed')
+
+    applyPendingOpRevert(
+      { type: 'delivery_unknown', opIds: ['op-1'] },
+      pendingNodes
+    )
+
+    expect(pendingNodes.release).not.toHaveBeenCalled()
   })
 
   it('a throwing removal is reported and does not strand later ops', () => {
@@ -97,7 +122,7 @@ describe('applyPendingOpRevert', () => {
 
     const removedNodeIds = applyPendingOpRevert(
       reverted([addNode('op-1', 1), addNode('op-2', 2)]),
-      removeNode
+      registry(removeNode)
     )
 
     expect(removedNodeIds).toEqual([2])
@@ -110,7 +135,7 @@ describe('applyPendingOpRevert', () => {
   it('a refused removal is reported and never counted as undone', () => {
     const removedNodeIds = applyPendingOpRevert(
       reverted([addNode('op-1', 1)]),
-      () => 'refused'
+      registry(() => 'refused')
     )
 
     expect(removedNodeIds).toEqual([])
@@ -123,7 +148,7 @@ describe('applyPendingOpRevert', () => {
   it('a missing target is already the desired end state', () => {
     const removedNodeIds = applyPendingOpRevert(
       reverted([addNode('op-1', 1)]),
-      () => 'missing'
+      registry(() => 'missing')
     )
 
     expect(removedNodeIds).toEqual([])
@@ -137,7 +162,7 @@ describe('applyPendingOpRevert', () => {
 
     const removedNodeIds = applyPendingOpRevert(
       reverted([addNode('op-1', 1), addNode('op-2', 2)]),
-      removeNode
+      registry(removeNode)
     )
 
     expect(removedNodeIds).toEqual([])
@@ -149,7 +174,7 @@ describe('applyPendingOpRevert', () => {
   })
 })
 
-describe('createPendingRevertRemoveNode', () => {
+describe('createPendingRevertNodeRegistry', () => {
   function fakeGraph(nodes: Map<string, { id: unknown }>): RevertableGraph {
     return {
       get _nodes_by_id() {
@@ -162,27 +187,27 @@ describe('createPendingRevertRemoveNode', () => {
   }
 
   it('reports unavailable when no graph is live', () => {
-    const removeNode = createPendingRevertRemoveNode({
+    const pendingNodes = createPendingRevertNodeRegistry({
       getGraph: () => null,
       withLayoutActor: (_actor, fn) => fn()
     })
 
-    expect(removeNode(1)).toBe('unavailable')
+    expect(pendingNodes.removeNode('op-1', 1)).toBe('unavailable')
   })
 
   it('reports missing when the target already left the graph', () => {
-    const removeNode = createPendingRevertRemoveNode({
+    const pendingNodes = createPendingRevertNodeRegistry({
       getGraph: () => fakeGraph(new Map()),
       withLayoutActor: (_actor, fn) => fn()
     })
 
-    expect(removeNode(1)).toBe('missing')
+    expect(pendingNodes.removeNode('op-1', 1)).toBe('missing')
   })
 
   it('removes the live target under the pending-revert layout actor', () => {
     const nodes = new Map([['1', { id: toNodeId(1) }]])
     const actors: string[] = []
-    const removeNode = createPendingRevertRemoveNode({
+    const pendingNodes = createPendingRevertNodeRegistry({
       getGraph: () => fakeGraph(nodes),
       withLayoutActor: (actor, fn) => {
         actors.push(actor)
@@ -190,14 +215,30 @@ describe('createPendingRevertRemoveNode', () => {
       }
     })
 
-    expect(removeNode(1)).toBe('removed')
+    pendingNodes.onBatchMinted([addNode('op-1', 1)])
+    expect(pendingNodes.removeNode('op-1', 1)).toBe('removed')
     expect(nodes.size).toBe(0)
     expect(actors).toEqual([PENDING_REVERT_ACTOR])
   })
 
+  it('does not remove a newer node that reused the rejected add node id', () => {
+    const original = { id: toNodeId(1) }
+    const nodes = new Map([['1', original]])
+    const pendingNodes = createPendingRevertNodeRegistry({
+      getGraph: () => fakeGraph(nodes),
+      withLayoutActor: (_actor, fn) => fn()
+    })
+    pendingNodes.onBatchMinted([addNode('op-1', 1)])
+    const replacement = { id: toNodeId(1) }
+    nodes.set('1', replacement)
+
+    expect(pendingNodes.removeNode('op-1', 1)).toBe('missing')
+    expect(nodes.get('1')).toBe(replacement)
+  })
+
   it('reports refused when the graph declines the removal', () => {
     const node = { id: toNodeId(1) } as unknown as LGraphNode
-    const removeNode = createPendingRevertRemoveNode({
+    const pendingNodes = createPendingRevertNodeRegistry({
       getGraph: () => ({
         _nodes_by_id: { [toNodeId(1)]: node },
         remove: () => undefined
@@ -205,7 +246,8 @@ describe('createPendingRevertRemoveNode', () => {
       withLayoutActor: (_actor, fn) => fn()
     })
 
-    expect(removeNode(1)).toBe('refused')
+    pendingNodes.onBatchMinted([addNode('op-1', 1)])
+    expect(pendingNodes.removeNode('op-1', 1)).toBe('refused')
   })
 })
 

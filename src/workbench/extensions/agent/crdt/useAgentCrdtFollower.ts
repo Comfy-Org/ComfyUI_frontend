@@ -47,7 +47,7 @@ import { createOpSender } from './opSender'
 import type { WithLayoutActor } from './pendingOpRevert'
 import {
   applyPendingOpRevert,
-  createPendingRevertRemoveNode,
+  createPendingRevertNodeRegistry,
   createRevertNotifier
 } from './pendingOpRevert'
 import { createPendingCorrelation } from './pendingCorrelation'
@@ -400,7 +400,7 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
-  const removeRevertedNode = createPendingRevertRemoveNode({
+  const pendingRevertNodes = createPendingRevertNodeRegistry({
     getGraph,
     withLayoutActor
   })
@@ -433,7 +433,7 @@ function startAgentCrdtFollower(
     // state, so a skipped result must park there rather than clear on the ack.
     currentSeq: () => projectedSeq ?? 0,
     onEvent: (event) => {
-      notifyReverted(event, applyPendingOpRevert(event, removeRevertedNode))
+      notifyReverted(event, applyPendingOpRevert(event, pendingRevertNodes))
       recordDevEvent('pending_ops', event)
     }
   })
@@ -467,7 +467,10 @@ function startAgentCrdtFollower(
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
-    onBatchMinted: (ops) => pendingOps.onBatchMinted(ops),
+    onBatchMinted: (ops) => {
+      pendingRevertNodes.onBatchMinted(ops)
+      pendingOps.onBatchMinted(ops)
+    },
     onBatchTransmitted: (ops) => pendingOps.onBatchTransmitted(ops),
     onBatchSettled: (outcome) => {
       if (outcome.state === 'acknowledged') {

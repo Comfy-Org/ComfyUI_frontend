@@ -11,6 +11,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import type { Op } from '@comfyorg/comfy-multi-player'
+
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import type {
@@ -18,7 +20,7 @@ import type {
   MintableGraph
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import type {
-  PendingRevertRemoveNode,
+  PendingRevertNodeRegistry,
   WithLayoutActor
 } from '@/workbench/extensions/agent/crdt/pendingOpRevert'
 
@@ -27,7 +29,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { attachMintPortWiring } from '@/workbench/extensions/agent/crdt/mintPortWiring'
-import { createPendingRevertRemoveNode } from '@/workbench/extensions/agent/crdt/pendingOpRevert'
+import { createPendingRevertNodeRegistry } from '@/workbench/extensions/agent/crdt/pendingOpRevert'
 import { toRootGraphId } from '@/types/graphScopeId'
 
 function createNodeOp(graphId: string, id: string) {
@@ -61,8 +63,8 @@ describe('pending revert removal against the real layout store', () => {
 
   function buildRemoveNode(
     withLayoutActor: WithLayoutActor
-  ): PendingRevertRemoveNode {
-    return createPendingRevertRemoveNode({
+  ): PendingRevertNodeRegistry {
+    return createPendingRevertNodeRegistry({
       getGraph: () => ({
         get _nodes_by_id() {
           return Object.fromEntries(graphNodes) as Partial<
@@ -86,6 +88,21 @@ describe('pending revert removal against the real layout store', () => {
       }),
       withLayoutActor
     })
+  }
+
+  function captureNode(pendingNodes: PendingRevertNodeRegistry): void {
+    const op: Op = {
+      op: 'add_node',
+      op_id: 'op-7',
+      actor: 'human:test:tab',
+      base_version: 1,
+      stamp: [1, 'human:test:tab'],
+      node_id: 7,
+      class_type: 'TestNode',
+      pos: [0, 0],
+      node: { id: 7, type: 'TestNode' }
+    }
+    pendingNodes.onBatchMinted([op])
   }
 
   beforeEach(async () => {
@@ -121,9 +138,10 @@ describe('pending revert removal against the real layout store', () => {
   })
 
   it('control: the same removal without withActor re-mints a delete_node', async () => {
-    const removeNode = buildRemoveNode((_actor, fn) => fn())
+    const pendingNodes = buildRemoveNode((_actor, fn) => fn())
+    captureNode(pendingNodes)
 
-    expect(removeNode('7')).toBe('removed')
+    expect(pendingNodes.removeNode('op-7', 7)).toBe('removed')
     await realDelivery()
 
     expect(minted).toEqual([
@@ -132,11 +150,12 @@ describe('pending revert removal against the real layout store', () => {
   })
 
   it('the revert removal under the real withActor mints nothing', async () => {
-    const removeNode = buildRemoveNode((actor, fn) =>
+    const pendingNodes = buildRemoveNode((actor, fn) =>
       layoutStore.withActor(actor, fn)
     )
+    captureNode(pendingNodes)
 
-    expect(removeNode('7')).toBe('removed')
+    expect(pendingNodes.removeNode('op-7', 7)).toBe('removed')
     await realDelivery()
 
     expect(minted).toEqual([])

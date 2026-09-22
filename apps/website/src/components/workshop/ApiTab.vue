@@ -5,7 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import { externalLinks } from '../../config/routes'
+import { apiKeysLink, externalLinks } from '../../config/routes'
 import type { FileValue, FormValues } from '../../config/workshop-playground'
 import { schemaForModel } from '../../config/workshop-playground'
 import { formForContract } from '../../config/workshop-contract'
@@ -30,11 +30,13 @@ import HighlightedCode from './HighlightedCode.vue'
 const {
   contract,
   values,
-  locale = 'en'
+  locale = 'en',
+  modelSlug
 } = defineProps<{
   contract?: WorkshopContract
   values: FormValues
   locale?: Locale
+  modelSlug?: string
 }>()
 
 const language = ref<SnippetLanguage>('python')
@@ -279,7 +281,7 @@ const highlightLanguage = {
     <div class="flex flex-wrap gap-3">
       <Button
         as="a"
-        :href="externalLinks.apiKeys"
+        :href="apiKeysLink({ onboarding: 'models', model: modelSlug })"
         target="_blank"
         rel="noopener noreferrer"
         data-testid="api-get-key"

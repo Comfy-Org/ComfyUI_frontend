@@ -216,3 +216,18 @@ export const externalLinks = {
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const
+
+/**
+ * The platform creates a key on arrival and shows this product's onboarding.
+ * `model` is the website's model page id (`/models/<slug>`), not the Router id.
+ */
+type ApiKeysOnboarding =
+  | { onboarding: 'router' | 'comfy_api' }
+  | { onboarding: 'models'; model?: string }
+
+export function apiKeysLink(from: ApiKeysOnboarding): string {
+  const url = new URL(externalLinks.apiKeys)
+  url.searchParams.set('onboarding', from.onboarding)
+  if ('model' in from && from.model) url.searchParams.set('model', from.model)
+  return url.href
+}

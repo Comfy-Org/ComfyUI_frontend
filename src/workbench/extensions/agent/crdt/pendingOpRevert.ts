@@ -8,9 +8,10 @@
  * apply-time actor stamping) keeps that deferred delivery from re-minting a
  * `delete_node` for a node the host never had.
  */
-import type { NodeId } from '@comfyorg/comfy-multi-player'
+import type { NodeId, Op } from '@comfyorg/comfy-multi-player'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { reportError } from '@/platform/telemetry/reportError'
 import { toNodeId } from '@/types/nodeId'
 
@@ -25,8 +26,6 @@ export type PendingRevertRemoval =
   | 'refused'
   | 'unavailable'
 
-export type PendingRevertRemoveNode = (nodeId: NodeId) => PendingRevertRemoval
-
 export type WithLayoutActor = <T>(actor: string, fn: () => T) => T
 
 export type RevertableGraph = Pick<LGraph, '_nodes_by_id' | 'remove'>
@@ -38,19 +37,40 @@ export interface PendingRevertRemovalSeams {
   withLayoutActor: WithLayoutActor
 }
 
-export function createPendingRevertRemoveNode(
+export interface PendingRevertNodeRegistry {
+  onBatchMinted(ops: Op[]): void
+  removeNode(opId: string, nodeId: NodeId): PendingRevertRemoval
+  release(opIds: readonly string[]): void
+}
+
+export function createPendingRevertNodeRegistry(
   seams: PendingRevertRemovalSeams
-): PendingRevertRemoveNode {
-  return (nodeId) => {
-    const graph = seams.getGraph()
-    if (!graph) return 'unavailable'
-    const id = toNodeId(nodeId)
-    const node = graph._nodes_by_id[id]
-    if (!node) return 'missing'
-    seams.withLayoutActor(PENDING_REVERT_ACTOR, () =>
-      runMintPortsSuppressed(() => graph.remove(node))
-    )
-    return graph._nodes_by_id[id] === node ? 'refused' : 'removed'
+): PendingRevertNodeRegistry {
+  const targets = new Map<string, LGraphNode>()
+  return {
+    onBatchMinted(ops) {
+      const graph = seams.getGraph()
+      if (!graph) return
+      for (const op of ops) {
+        if (op.op !== 'add_node') continue
+        const node = graph._nodes_by_id[toNodeId(op.node_id)]
+        if (node) targets.set(op.op_id, node)
+      }
+    },
+    removeNode(opId, nodeId) {
+      const graph = seams.getGraph()
+      if (!graph) return 'unavailable'
+      const id = toNodeId(nodeId)
+      const node = graph._nodes_by_id[id]
+      if (!node || node !== targets.get(opId)) return 'missing'
+      seams.withLayoutActor(PENDING_REVERT_ACTOR, () =>
+        runMintPortsSuppressed(() => graph.remove(node))
+      )
+      return graph._nodes_by_id[id] === node ? 'refused' : 'removed'
+    },
+    release(opIds) {
+      for (const opId of opIds) targets.delete(opId)
+    }
   }
 }
 
@@ -60,16 +80,24 @@ export function createPendingRevertRemoveNode(
  */
 export function applyPendingOpRevert(
   event: PendingOpTrackerEvent,
-  removeNode: PendingRevertRemoveNode
+  registry: PendingRevertNodeRegistry
 ): NodeId[] {
   const removedNodeIds: NodeId[] = []
-  if (event.type !== 'reverted') return removedNodeIds
+  if (event.type !== 'reverted') {
+    if (
+      event.type === 'cleared' ||
+      event.type === 'skipped_cleared' ||
+      event.type === 'reset'
+    )
+      registry.release(event.opIds)
+    return removedNodeIds
+  }
   for (const op of event.ops) {
     if (op.op !== 'add_node') continue
     const context = { opId: op.op_id, nodeId: String(op.node_id) }
     let removal: PendingRevertRemoval
     try {
-      removal = removeNode(op.node_id)
+      removal = registry.removeNode(op.op_id, op.node_id)
     } catch (error) {
       reportError(error, {
         errorType: 'agent_crdt_pending_revert_remove_failed',
@@ -89,9 +117,11 @@ export function applyPendingOpRevert(
         errorType: 'agent_crdt_pending_revert_graph_unavailable',
         context
       })
+      registry.release(event.opIds)
       return removedNodeIds
     }
   }
+  registry.release(event.opIds)
   return removedNodeIds
 }
 

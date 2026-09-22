@@ -160,15 +160,15 @@ interface InFlight {
   timer: ReturnType<typeof setTimeout> | null
 }
 
+interface LateBatch {
+  ops: Op[]
+  remainingResults: number
+  acknowledged: boolean
+}
+
 export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: Array<{ workflowId: string; ops: Op[] }> = []
-  const unacknowledged = new Map<string, Op[]>()
-  // Op ids of a late-settled batch, kept so the SECOND identified result of a
-  // resent batch (send + resend can each produce one) still consumes a stale
-  // credit instead of leaving it armed to swallow a newer batch's anonymous
-  // result. One repeat is possible per resent batch, so the id set is dropped
-  // as soon as that repeat is seen.
-  const settledLate = new Set<string>()
+  const lateBatches = new Map<string, LateBatch>()
   let open: { workflowId: string; ops: Op[] } | null = null
   let inFlight: InFlight | null = null
   let detached = false
@@ -222,7 +222,16 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function settleUnbound(batch: InFlight): void {
     if (inFlight !== batch) return
-    if (batch.transmitted) staleAnonymousBudget += batch.resent ? 2 : 1
+    if (batch.transmitted) {
+      const remainingResults = batch.resent ? 2 : 1
+      const lateBatch = {
+        ops: batch.ops,
+        remainingResults,
+        acknowledged: false
+      }
+      for (const op of batch.ops) lateBatches.set(op.op_id, lateBatch)
+      staleAnonymousBudget += remainingResults
+    }
     settle({
       state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
       ops: batch.ops
@@ -234,7 +243,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     batch.timer = setTimeout(() => {
       if (inFlight !== batch) return
       if (batch.resent) {
-        for (const op of batch.ops) unacknowledged.set(op.op_id, batch.ops)
+        const lateBatch = {
+          ops: batch.ops,
+          remainingResults: 2,
+          acknowledged: false
+        }
+        for (const op of batch.ops) lateBatches.set(op.op_id, lateBatch)
         staleAnonymousBudget += 2
         settle({ state: 'unacknowledged', ops: batch.ops })
         return
@@ -277,20 +291,21 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     identified: string[],
     result: OpsResultView
   ): void {
-    const lateOps = identified
-      .map((opId) => unacknowledged.get(opId))
+    const lateBatch = identified
+      .map((opId) => lateBatches.get(opId))
       .find(Boolean)
-    if (lateOps) {
-      for (const op of lateOps) {
-        unacknowledged.delete(op.op_id)
-        settledLate.add(op.op_id)
+    if (lateBatch) {
+      if (!lateBatch.acknowledged) {
+        lateBatch.acknowledged = true
+        deps.onBatchSettled({
+          state: 'acknowledged',
+          ops: lateBatch.ops,
+          result
+        })
       }
-      drainStaleCredit()
-      deps.onBatchSettled({ state: 'acknowledged', ops: lateOps, result })
-      return
-    }
-    if (identified.some((opId) => settledLate.has(opId))) {
-      for (const opId of identified) settledLate.delete(opId)
+      lateBatch.remainingResults--
+      if (lateBatch.remainingResults === 0)
+        for (const op of lateBatch.ops) lateBatches.delete(op.op_id)
       drainStaleCredit()
       return
     }

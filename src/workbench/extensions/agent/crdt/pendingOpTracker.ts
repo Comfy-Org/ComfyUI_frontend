@@ -10,7 +10,6 @@ type PendingOpRevertReason =
   | 'failed'
   | 'unprocessed'
   | 'unattributed'
-  | 'unconfirmed'
   | 'undeliverable'
   /**
    * A `delivery_unknown` entry's per-kind effect check found no trace of it

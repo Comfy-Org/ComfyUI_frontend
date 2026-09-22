@@ -646,13 +646,17 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
 
     resultListener?.({ ok: true, applied: abortedOpIds, skipped: [] })
-    expect(settled).toHaveLength(1)
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'acknowledged'
+    ])
     expect(sender.pending()).toBe(1)
 
     resultListener?.({ ok: false, applied: [], skipped: [] })
 
     expect(settled.map((outcome) => outcome.state)).toEqual([
       'unconfirmed',
+      'acknowledged',
       'acknowledged'
     ])
     expect(sender.pending()).toBe(0)
