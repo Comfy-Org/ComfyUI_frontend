@@ -61,7 +61,7 @@ function opLabel(op: WireOpEnvelope): string {
   return `${op.op}:${'node_id' in op ? String(op.node_id) : ''}`
 }
 
-export function parseClientDocFrame(
+function parseClientDocFrame(
   raw: string | Buffer
 ): ParsedClientDocFrame | null {
   const envelope = docFrameEnvelope(raw)
