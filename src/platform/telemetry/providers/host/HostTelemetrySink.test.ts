@@ -203,6 +203,82 @@ describe('HostTelemetrySink', () => {
     )
   })
 
+  it.for([
+    {
+      name: TelemetryEvents.AGENT_MESSAGE_FEEDBACK,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentMessageFeedback({
+          message_id: 'message-1',
+          vote: 'up',
+          workflow_id: 'workflow-1'
+        }),
+      properties: {
+        message_id: 'message-1',
+        vote: 'up',
+        workflow_id: 'workflow-1'
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_PANEL_OPENED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentPanelOpened({ source: 'topbar_button' }),
+      properties: { source: 'topbar_button' }
+    },
+    {
+      name: TelemetryEvents.AGENT_PANEL_CLOSED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentPanelClosed({
+          source: 'close_button',
+          open_duration_ms: 1234
+        }),
+      properties: { source: 'close_button', open_duration_ms: 1234 }
+    },
+    {
+      name: TelemetryEvents.AGENT_ENTRY_BUTTON_CLICKED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentEntryButtonClicked({ resulting_state: 'opened' }),
+      properties: { resulting_state: 'opened' }
+    },
+    {
+      name: TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED,
+      track: (sink: HostTelemetrySink) => sink.trackAgentCloseButtonClicked(),
+      properties: undefined
+    },
+    {
+      name: TelemetryEvents.AGENT_MESSAGE_SENT,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentMessageSent({ attachment_count: 2, node_tag_count: 1 }),
+      properties: { attachment_count: 2, node_tag_count: 1 }
+    },
+    {
+      name: TelemetryEvents.AGENT_NODE_TAGGED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentNodeTagged({ source: 'mention_picker' }),
+      properties: { source: 'mention_picker' }
+    },
+    {
+      name: TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED,
+      track: (sink: HostTelemetrySink) => sink.trackAgentAttachButtonClicked(),
+      properties: undefined
+    },
+    {
+      name: TelemetryEvents.AGENT_WORKFLOW_APPLIED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentWorkflowApplied({
+          workflow_id: 'workflow-1',
+          target: 'active_tab_switch'
+        }),
+      properties: {
+        workflow_id: 'workflow-1',
+        target: 'active_tab_switch'
+      }
+    }
+  ])('forwards $name to the host bridge', ({ name, track, properties }) => {
+    track(new HostTelemetrySink())
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(name, properties)
+  })
+
   it('forwards link dedup drops to the host bridge', () => {
     new HostTelemetrySink().trackLinkDedupDrop({
       droppedLinkId: 7,
