@@ -1,9 +1,10 @@
 /**
- * The fragment that opens a model's API panel. A workflow page's endpoint
- * action and the playground live in separate islands, so the address bar
- * carries the request between them and the endpoint becomes linkable.
+ * The fragment a link can use to open a model's API panel. Nothing in the site
+ * writes it any more — the panel is a tab the reader can see — but an address
+ * carrying it still lands there, so a link someone saved or shared keeps
+ * working.
  */
-export const WORKSHOP_API_HASH = '#api'
+const WORKSHOP_API_HASH = '#api'
 
 export function apiPanelRequested(): boolean {
   return (
@@ -12,9 +13,8 @@ export function apiPanelRequested(): boolean {
 }
 
 /**
- * A panel the reader has left goes back to no fragment. Holding one the page
- * is no longer showing would make the next click on the endpoint action a
- * no-op, since the address would already say what the click asks for.
+ * A panel the reader has left goes back to no fragment, so the address stops
+ * claiming a view the page is no longer showing.
  */
 export function releaseApiPanelHash(): void {
   if (!apiPanelRequested()) return
