@@ -60,7 +60,10 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
   test.describe('with Vue nodes', { tag: '@vue-nodes' }, () => {
     test.use({ objectInfo: 'server' })
 
-    test.afterEach(async ({ comfyPage }) => {
+    test.afterEach(async ({ agentPanel, comfyPage }) => {
+      if (await agentPanel.nodeSelectionBanner.isVisible()) {
+        await agentPanel.exitNodeSelectionMode()
+      }
       await comfyPage.canvasOps.resetView()
     })
 

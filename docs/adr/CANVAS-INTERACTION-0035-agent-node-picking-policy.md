@@ -9,16 +9,17 @@ Proposed
 ## Context
 
 The agent panel's node selection mode turns the canvas into a picking
-surface: clicking a node adds it to the prompt, and no graph mutation should
-happen. Before this decision the mode was entered from `AgentPanelRoot.vue`,
-which wrote `canvas.selectOnly`, `canvas.allow_dragnodes` and
-`canvas.multi_select` directly, saved the previous values in module-level
-variables, then called `agentNodeSelectionStore.enter()`. The store's
-`watch(isActive)` hid the action bars, sidebar, toasts, minimap and
-`canvas.show_info`, each with its own restore slot. Exit ran from four
-watchers and had to reset every variable in order. "Picking is on" had two
-writers (`isActive` and `selectOnly`) and no derivation between them, the
-"duplicated authority" pattern `.agents/checks/adr-compliance.md` flags.
+surface: clicking a node adds it to the prompt, and none of the product's own
+edit paths should mutate the graph. Before this decision the mode was entered
+from `AgentPanelRoot.vue`, which wrote `canvas.selectOnly`,
+`canvas.allow_dragnodes` and `canvas.multi_select` directly, saved the
+previous values in module-level variables, then called
+`agentNodeSelectionStore.enter()`. The store's `watch(isActive)` hid the
+action bars, sidebar, toasts, minimap and `canvas.show_info`, each with its
+own restore slot. Exit ran from four watchers and had to reset every variable
+in order. "Picking is on" had two writers (`isActive` and `selectOnly`) and
+no derivation between them, the "duplicated authority" pattern
+`.agents/checks/adr-compliance.md` flags.
 
 `selectOnly` was only read by the classic canvas: `_processNodeClick`
 returned before widget, collapse, slot and resize handling, `processSelect`
@@ -31,14 +32,15 @@ could still type into a Vue text widget, rename a node from its header,
 collapse it, resize it, drag a link from a slot, Ctrl+Alt-click a slot to
 disconnect it (`useSlotLinkInteraction`) and right-click it for the options
 menu (`LGraphNode.vue`); classic DOM widgets read `read_only`
-(`DomWidgets.vue`) and stayed editable too. The e2e case dropped in
-`f58339a` dragged a canvas-drawn widget in classic mode, which
+(`DomWidgets.vue`) and stayed editable too. The e2e case in this PR's first
+revision dragged a canvas-drawn widget in classic mode, which
 `_processNodeClick` does block, so it never exercised the Vue or DOM path.
 
-Pinning `canvas.read_only` (`bf70f9c`) closed those gaps and broke the one
-interaction the mode needs: `_processPrimaryButton` turns every press into a
-pan and `LGraphNode.vue` makes the whole node `pointer-events-none`, so
-click-to-select died and the pin was reverted in `5ff9afc`.
+An intermediate revision of this PR pinned `canvas.read_only`, which closed
+those gaps and broke the one interaction the mode needs:
+`_processPrimaryButton` turns every press into a pan and `LGraphNode.vue`
+makes the whole node `pointer-events-none`, so click-to-select died and the
+next revision reverted the pin (alternative C below).
 
 Keyboard paths were a third gap. `Comfy.Canvas.DeleteSelectedItems` checked
 `selectOnly` but the bypass, mute, pin, collapse, resize, nudge, paste, group
@@ -88,8 +90,9 @@ agent store owns the fact; everything else is a projection of it.
    write `read_only` synchronously and `canvasStore.isReadOnly` mirrors it,
    so `readOnly` may narrow `canSelectNodes` but never changes what is
    projected onto `selectOnly` or `show_info`. The module has no Vue or store
-   imports (`docs/guidance/state-and-effects.md` §2: a transition is a pure
-   function in its own module).
+   imports (`docs/guidance/state-and-effects.md` §4, "Derive everything
+   derivable": the policy is computed from its two inputs, never stored and
+   synced by hand).
 
 3. **Vue surfaces read the policy through `useCanvasInteractions`.** It keeps
    `shouldHandleNodePointerEvents` (`canSelectNodes`) for selection paths and
@@ -176,24 +179,28 @@ agent store owns the fact; everything else is a projection of it.
    without the capability, which today means every extension command, is
    not gated.
 
-   Guards outside the command store read the store or the policy;
-   `isSelectOnly()` remains for existing call sites and is equivalent once
-   `selectOnly` is a pure projection of `isActive`. The two non-command
-   keyboard paths get the same guard: the `usePaste.ts` handler returns, and
-   the `ChangeTracker` keydown listener snapshots `selectOnly` before
-   deferring to the animation frame so `undoRedo` decides with the value at
-   keypress and returns `true` so the event is consumed. In the classic
-   canvas `_processPrimaryButton` adds `!this.selectOnly` to the alt-click
-   clone condition and skips the subgraph IO node, reroute and link-segment
-   handling, the group and empty-canvas double-click actions, the group
-   title-bar drag callbacks (`_processDraggedItems` snaps `selectedItems` on
-   shift or `alwaysSnapToGrid`, which would move the picked nodes) and
-   `_processNodeClick`'s `bringToFront` while select-only, and `processKey`
-   skips the selected-node `onKeyDown` and `onKeyUp` dispatch (the
-   first-party handler steps preview images and extension handlers are
-   unrestricted) while keeping its Space and Escape handling; node clicks,
-   empty-canvas clicks, panning and the selection rectangle are unchanged.
-   The two file-drop paths return while select-only: the document
+   Guards outside the command store read the policy or `canvas.selectOnly`
+   through `isSelectOnly()`. `selectOnly` is `true` whenever picking is
+   active, but not only then: the pin restores a pre-existing or mid-pick
+   `true`, so `isSelectOnly()` can stay `true` after `isActive` turns
+   `false`. The guards therefore enforce select-only, of which picking is one
+   cause, and they block the classified core commands and the paths listed in
+   this decision; an extension command or an unguarded path is not blocked.
+   The two non-command keyboard paths get the same guard: the `usePaste.ts`
+   handler returns, and the `ChangeTracker` keydown listener snapshots
+   `selectOnly` before deferring to the animation frame so `undoRedo` decides
+   with the value at keypress and returns `true` so the event is consumed. In
+   the classic canvas `_processPrimaryButton` adds `!this.selectOnly` to the
+   alt-click clone condition and skips the subgraph IO node, reroute and
+   link-segment handling, the group and empty-canvas double-click actions,
+   the group title-bar drag callbacks (`_processDraggedItems` snaps
+   `selectedItems` on shift or `alwaysSnapToGrid`, which would move the
+   picked nodes) and `_processNodeClick`'s `bringToFront` while select-only,
+   and `processKey` skips the selected-node `onKeyDown` and `onKeyUp`
+   dispatch (the first-party handler steps preview images and extension
+   handlers are unrestricted) while keeping its Space and Escape handling;
+   node clicks, empty-canvas clicks, panning and the selection rectangle are
+   unchanged. The two file-drop paths return while select-only: the document
    `drop` listener in `app.ts` after `preventDefault()` (the browser must not
    navigate to the file) and `useCanvasDrop.ts` `onDrop` for sidebar node,
    model and workflow drags. These are condition edits, not new members.
@@ -233,12 +240,16 @@ agent store owns the fact; everything else is a projection of it.
   a second source. Its deferred `InteractionPolicy` item stays with 0029.
 - Vue node DOM structure and `data-*` attributes used by e2e tests do not
   change. `shouldHandleNodePointerEvents` keeps its name and meaning.
-- `litegraph:set-graph` keeps its detail and still fires once per
-  `setGraph()` with the new graph attached; it now fires before the outgoing
-  selection is cleared rather than after, so a listener sees the old
-  selection for the duration of the event. The clear that follows drops the
-  outgoing graph's selection-store scope and resets the outgoing items'
-  `selected` flags, even when a listener deselected during the event.
+- `litegraph:set-graph` keeps its detail and fires exactly once per graph
+  replacement, from `setGraph()` with the new graph attached; `openSubgraph()`
+  delegates to it and `canvas.subgraph` is a plain field that emits nothing,
+  where its setter used to dispatch a second event naming the same subgraph
+  as both `oldGraph` and `newGraph` while the outgoing graph was still
+  attached. The event now fires before the outgoing selection is cleared
+  rather than after, so a listener sees the old selection for the duration
+  of the event. The clear that follows drops the outgoing graph's
+  selection-store scope and resets the outgoing items' `selected` flags, even
+  when a listener deselected during the event.
 
 ### Deferred decisions
 
@@ -292,9 +303,11 @@ agent store owns the fact; everything else is a projection of it.
 
 ### Positive
 
-- One fact, one pure derivation, one projection. Exit has nothing to restore
-  on the canvas (the sidebar tab and minimap slots remain in the store) and a
-  mid-mode setting change is respected.
+- One fact, one pure derivation, one projection. Exit recomputes `show_info`
+  from the current setting instead of restoring a saved copy, so a mid-mode
+  setting change is respected; the one value exit hands back is
+  `selectOnly`, which the pin restores to its recorded value exactly once (the
+  sidebar tab and minimap slots remain in the store).
 - Widgets (Vue, DOM, canvas-drawn), titles, collapse, resize, link drags,
   slot disconnects, context menus, paste, undo and the mutation commands are
   blocked while picking in both renderers; click-to-select, space-bar pan,
