@@ -68,19 +68,19 @@ test.describe('V2 catalogue', () => {
     await expect(page.getByTestId('catalogue-heading')).toContainText(/image/i)
   })
 
-  test('the type is a mark on the card until the reader asks for it', async ({
+  test('who answers for a card is a mark until the reader asks', async ({
     page
   }) => {
     await page.goto(CATALOGUE)
     await openShelf(page, 'generate-images')
 
     const card = grid(page).getByTestId('catalogue-card').first()
-    const badge = card.getByTestId('hub-type-badge')
-    const width = async () => (await badge.boundingBox())?.width ?? 0
+    const mark = card.getByTestId('hub-card-mark')
+    const width = async () => (await mark.boundingBox())?.width ?? 0
 
-    // The word is there for a screen reader the whole time; what hovering
+    // The name is there for a screen reader the whole time; what hovering
     // changes is whether it takes any room.
-    await expect(badge).toHaveText(/model|workflow/i)
+    await expect(mark).not.toBeEmpty()
     const closed = await width()
 
     await card.hover()

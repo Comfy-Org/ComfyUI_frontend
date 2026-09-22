@@ -14,13 +14,13 @@ function modelEntry(
   return {
     key: entry.key,
     kind: 'model',
-    title: model.name,
+    title: entry.name,
     useCases: entryUseCases(entry, models),
     models: [],
     tags: model.capabilities,
     standing: model.recommendedRank ?? Number.POSITIVE_INFINITY,
     date: undefined,
-    card: cardViewFor(entry, new Set())
+    card: cardViewFor(entry, new Set(), models)
   }
 }
 
@@ -39,7 +39,7 @@ function workflowEntry(
     tags: template.tags,
     standing: template.usage,
     date: template.date,
-    card: cardViewFor(entry, needsCustomNodes)
+    card: cardViewFor(entry, needsCustomNodes, models)
   }
 }
 

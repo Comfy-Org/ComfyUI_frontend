@@ -7,7 +7,6 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { CardView } from '../../lib/hub/catalogue-card'
 import HubCardMark from './HubCardMark.vue'
-import HubTypeBadge from './HubTypeBadge.vue'
 import TagRow from './TagRow.vue'
 
 const { view, locale = 'en' } = defineProps<{
@@ -23,7 +22,7 @@ const previewSrc = usePreviewVideo(video, () =>
 
 <template>
   <div
-    class="group relative flex flex-col gap-3 rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 hover:bg-hub-surface-hover"
+    class="group relative flex h-full flex-col gap-3 rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 hover:bg-hub-surface-hover"
     data-testid="catalogue-card"
     :data-kind="view.kind"
   >
@@ -37,8 +36,6 @@ const previewSrc = usePreviewVideo(video, () =>
     <div
       class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface-hover"
     >
-      <HubTypeBadge :kind="view.kind" :locale />
-
       <HubCardMark
         v-if="view.mark.label"
         :label="view.mark.label"
@@ -102,7 +99,7 @@ const previewSrc = usePreviewVideo(video, () =>
 
     <div class="flex flex-col gap-2 px-3">
       <h3
-        class="line-clamp-2 text-sm font-medium text-content-bright lg:text-base"
+        class="line-clamp-2 min-h-10 text-sm font-medium text-content-bright lg:min-h-12 lg:text-base"
         data-testid="catalogue-card-title"
       >
         {{ view.title }}

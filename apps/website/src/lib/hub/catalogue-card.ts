@@ -1,7 +1,9 @@
+import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { taskLabelFor } from '../workshop/task-label'
 import type { CatalogueEntry, EntryKind } from './catalogue-entries'
 import { hubWorkflowPath, modelGroupPath } from './catalogue-entries'
+import { modelName } from './model-identity'
 import { getLogoPath } from './model-logos'
 import { usefulTags } from './tag-aliases'
 import { workflowDisplayTitle } from './workflow-title'
@@ -46,7 +48,9 @@ function modelCard(
     // One card per name, so it opens the name rather than one of the rows the
     // registry happens to list under it.
     href: modelGroupPath(entry.key),
-    title: model.name,
+    // One card per model, so it goes by the model's name: the operation is a
+    // choice inside the page, not part of what the model is called.
+    title: entry.name,
     media: model.thumbnail,
     hoverMedia: undefined,
     maker: { label: provider, logo },
@@ -58,9 +62,10 @@ function modelCard(
 
 function workflowCard(
   entry: Extract<CatalogueEntry, { kind: 'workflow' }>,
-  needsCustomNodes: ReadonlySet<string>
+  needsCustomNodes: ReadonlySet<string>,
+  models: readonly WorkshopModel[]
 ): CardView {
-  const { template } = entry
+  const { template, runsOn } = entry
   return {
     kind: entry.kind,
     // The card opens the workflow, never the model behind it. Sending a
@@ -72,7 +77,12 @@ function workflowCard(
       : undefined,
     hoverMedia: template.thumbnails[1],
     maker: { label: template.username || 'ComfyUI', logo: undefined },
-    mark: { label: entry.runsOn?.name ?? '', logo: undefined },
+    // The registry names a row for its operation, so `Seedream 5.0 Lite
+    // Text-to-Image` is the model plus a verb the card has already said.
+    mark: {
+      label: runsOn ? modelName(runsOn, [...models, runsOn]) : '',
+      logo: undefined
+    },
     badges: usefulTags(template.tags),
     needsCustomNodes: needsCustomNodes.has(template.name)
   }
@@ -81,9 +91,10 @@ function workflowCard(
 export function cardViewFor(
   entry: CatalogueEntry,
   needsCustomNodes: ReadonlySet<string>,
+  models: readonly WorkshopModel[] = [],
   locale: Locale = 'en'
 ): CardView {
   return entry.kind === 'model'
     ? modelCard(entry, locale)
-    : workflowCard(entry, needsCustomNodes)
+    : workflowCard(entry, needsCustomNodes, models)
 }

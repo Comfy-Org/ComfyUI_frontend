@@ -26,9 +26,12 @@ const { label, logo } = defineProps<{
     <IconModel v-else class="size-3.5 shrink-0" aria-hidden="true" />
     <!-- The name opens to its own width rather than to a guessed one. -->
     <span
-      class="grid grid-cols-closed overflow-hidden group-focus-within:grid-cols-open group-hover:grid-cols-open motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out"
+      class="grid grid-cols-closed items-center overflow-hidden group-focus-within:grid-cols-open group-hover:grid-cols-open motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out"
     >
-      <span class="min-w-0 ps-1.5 whitespace-nowrap">{{ label }}</span>
+      <span
+        class="flex min-w-0 items-center ps-1.5 leading-none whitespace-nowrap"
+        >{{ label }}</span
+      >
     </span>
   </span>
 </template>
