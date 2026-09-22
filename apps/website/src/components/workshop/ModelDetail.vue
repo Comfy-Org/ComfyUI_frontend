@@ -78,7 +78,7 @@ import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
 import ModelSupport from './ModelSupport.vue'
-import GenerationHistory from './GenerationHistory.vue'
+import SavedAssetsStrip from './SavedAssetsStrip.vue'
 import { WORKSHOP_USER_CANCEL } from '../../config/workshop-router-queue'
 
 const {
@@ -999,6 +999,15 @@ function useInCode() {
           </div>
         </div>
 
+        <SavedAssetsStrip
+          v-if="savesAssets && session"
+          :key="JSON.stringify([session.uid, session.workspace.id])"
+          :model-id="model.routerId"
+          :active-request-id="requestId"
+          :token="historyToken"
+          :locale
+        />
+
         <!-- Once the result is in view, taking the workflow home is the other
           thing to do with it, and it should not shout over the run's own
           buttons. -->
@@ -1046,15 +1055,6 @@ function useInCode() {
     >
       <ApiTab :contract="model.execution" :values :locale />
     </section>
-
-    <GenerationHistory
-      v-if="savesAssets && session"
-      :key="JSON.stringify([session.uid, session.workspace.id])"
-      :model-id="model.routerId"
-      :active-request-id="requestId"
-      :token="historyToken"
-      :locale
-    />
 
     <RunLeaveDialog
       :open="leavingTo !== undefined"

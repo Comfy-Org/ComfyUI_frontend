@@ -91,8 +91,10 @@ test('a paid generation remains discoverable after leaving and returning @smoke'
   await page.getByTestId('run-button').click()
   await expect(page).toHaveURL(new RegExp(`request_id=${requestId}`))
   await expect(
-    page.getByRole('region', { name: 'Your generations' })
-  ).toContainText('Generating')
+    page.getByRole('region', { name: 'Your assets' }).getByRole('button', {
+      name: 'Generating…'
+    })
+  ).toBeVisible()
   await page
     .getByRole('navigation', { name: 'Main navigation', exact: true })
     .getByRole('link', { name: 'Models', exact: true })
@@ -101,9 +103,11 @@ test('a paid generation remains discoverable after leaving and returning @smoke'
   expect(cancelled).toBe(0)
   finished = true
   await page.goto(MODEL_PATH)
-  const history = page.getByRole('region', { name: 'Your generations' })
-  await expect(history).toContainText(`Asset ID: ${assetId}`)
-  const image = history.getByRole('img', { name: 'Generated image' })
+  const assets = page.getByRole('region', { name: 'Your assets' })
+  await assets.getByTestId('saved-asset-0').click()
+  const image = page
+    .getByTestId('saved-asset-preview')
+    .getByRole('img', { name: 'Your assets' })
   await expect(image).toBeVisible()
   await expect
     .poll(() =>
