@@ -393,7 +393,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
     await expect
       .poll(() => openedUrl(page))
       .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=standard-yearly&workspace_id=ws-personal`
+        `${BILLING_WEB_ORIGIN}/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=standard-yearly&workspace=ws-personal`
       )
     expect(previewRequests).toHaveLength(0)
     await expect(pricingDialog(page)).toHaveCount(0)
