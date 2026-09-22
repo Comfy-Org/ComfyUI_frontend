@@ -15,9 +15,12 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 let agentStore: Mocked<ReturnType<typeof useAgentPanelStore>>
 let canvasStore: Mocked<ReturnType<typeof useCanvasStore>>
@@ -530,6 +533,79 @@ describe('AgentPanel extension flag gate', () => {
     extension!.afterConfigureGraph!([], {} as never)
 
     expect(mocks.notifyAfterGraphConfigure).toHaveBeenCalledOnce()
+  })
+
+  it('resumes local-dirty tracking after failed and successful loads', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )!
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId('graph-a', toNodeId(1), 'value')
+    const registered = widgetStore.registerWidget<number>(id, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })!
+
+    await extension.beforeLoadGraph!({} as never)
+    await extension.onGraphLoadError!(new Error('bad workflow'), {} as never)
+    await extension.beforeLoadGraph!({} as never)
+    await extension.afterConfigureGraph!([], {} as never)
+
+    registered.value = 2
+    expect(widgetStore.isLocallyDirty(id)).toBe(true)
+  })
+
+  it('keeps overlapping loads suppressed until both finish', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )!
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId('graph-a', toNodeId(1), 'value')
+    const registered = widgetStore.registerWidget<number>(id, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })!
+
+    await extension.beforeLoadGraph!({} as never)
+    await extension.beforeLoadGraph!({} as never)
+    await extension.afterConfigureGraph!([], {} as never)
+    registered.value = 2
+    expect(widgetStore.isLocallyDirty(id)).toBe(false)
+
+    await extension.afterConfigureGraph!([], {} as never)
+    registered.value = 3
+    expect(widgetStore.isLocallyDirty(id)).toBe(true)
+  })
+
+  it('closes overlapping suppression in mixed completion order', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )!
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId('graph-a', toNodeId(1), 'value')
+    const registered = widgetStore.registerWidget<number>(id, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })!
+
+    await extension.beforeLoadGraph!({} as never)
+    await extension.beforeLoadGraph!({} as never)
+    await extension.onGraphLoadError!(new Error('second failed'), {} as never)
+    registered.value = 2
+    expect(widgetStore.isLocallyDirty(id)).toBe(false)
+
+    await extension.afterConfigureGraph!([], {} as never)
+    registered.value = 3
+    expect(widgetStore.isLocallyDirty(id)).toBe(true)
   })
 
   it('restores a subgraph reference by its locator after graph load', async () => {
