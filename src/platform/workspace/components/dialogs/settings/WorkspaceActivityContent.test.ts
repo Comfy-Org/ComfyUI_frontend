@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json'
 import type { ActivityEvent } from '@/platform/workspace/composables/useWorkspaceActivity'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceActivityContent from './WorkspaceActivityContent.vue'
 
@@ -76,11 +77,12 @@ describe('WorkspaceActivityContent', () => {
     expect(screen.getByText('No activity yet.')).toBeTruthy()
   })
 
-  it('shows the per-user footer actions to an owner', () => {
+  it('links the full activity to platform in the active workspace', () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-team-1' })
     renderContent([])
     const link = screen.getByRole('link', { name: /full activity/i })
     expect(link.getAttribute('href')).toBe(
-      'https://platform.test/profile/usage'
+      'https://platform.test/profile/usage?workspace=ws-team-1'
     )
   })
 
