@@ -195,6 +195,26 @@ describe('doc frame client', () => {
     })
     expect(
       parseServerDocFrame({
+        type: 'doc_error',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          code: 'fatal_doc',
+          message: 'document frame handling failed',
+          request_type: 'doc_subscribe'
+        }
+      })
+    ).toEqual({
+      type: 'doc_error',
+      data: {
+        workflowId: 'wf-1',
+        code: 'fatal_doc',
+        message: 'document frame handling failed',
+        requestType: 'doc_subscribe'
+      }
+    })
+    expect(
+      parseServerDocFrame({
         type: 'doc_reset',
         data: { v: 1, workflow_id: 'wf-1', seq: 43, actor: 'agent:th-1:turn-2' }
       })
@@ -222,5 +242,139 @@ describe('doc frame client', () => {
         expiresAt: 123
       }
     })
+  })
+
+  it.for([
+    { name: 'a nonfatal code', overrides: { code: 'not_found' } },
+    { name: 'a missing message', overrides: { message: undefined } },
+    { name: 'a non-string message', overrides: { message: 42 } },
+    {
+      name: 'a missing request type',
+      overrides: { request_type: undefined }
+    },
+    { name: 'a non-string request type', overrides: { request_type: 42 } }
+  ])('rejects a doc_error envelope with $name', ({ overrides }) => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_error',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          code: 'fatal_doc',
+          message: 'document frame handling failed',
+          request_type: 'doc_subscribe',
+          ...overrides
+        }
+      })
+    ).toBeNull()
+  })
+
+  it('keeps a fatal workflow terminal without replacing its Y.Doc', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    const bridge = new LayoutFollowerBridge(client)
+    const errors: unknown[] = []
+    bridge.addEventListener('doc_error', (event) => {
+      if (event instanceof CustomEvent) errors.push(event.detail)
+    })
+    bridge.subscribe('wf-1')
+    const doc = bridge.follower.doc
+    doc.getMap('nodes').set('one', { x: 10 })
+
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: false,
+      code: 'not_found'
+    })
+    transport.receive('doc_error', {
+      v: 1,
+      workflow_id: 'wf-1',
+      code: 'fatal_doc',
+      message: 'document frame handling failed',
+      request_type: 'doc_subscribe'
+    })
+    bridge.resubscribe()
+    bridge.reconcile()
+
+    expect(errors).toEqual([
+      {
+        workflowId: 'wf-1',
+        code: 'fatal_doc',
+        message: 'document frame handling failed',
+        requestType: 'doc_subscribe'
+      }
+    ])
+    expect(transport.sent).toHaveLength(1)
+    expect(bridge.follower.doc).toBe(doc)
+    expect(doc.getMap('nodes').toJSON()).toEqual({ one: { x: 10 } })
+  })
+
+  it('ignores a stale fatal error after switching workflows', () => {
+    const transport = new TestTransport()
+    const bridge = new LayoutFollowerBridge(new DocFrameClient(transport))
+    const errors: unknown[] = []
+    bridge.addEventListener('doc_error', (event) => {
+      if (event instanceof CustomEvent) errors.push(event.detail)
+    })
+    bridge.subscribe('wf-a')
+    bridge.subscribe('wf-b')
+
+    transport.receive('doc_error', {
+      v: 1,
+      workflow_id: 'wf-a',
+      code: 'fatal_doc',
+      message: 'stale workflow failed',
+      request_type: 'doc_subscribe'
+    })
+    bridge.resubscribe()
+
+    expect(errors).toEqual([])
+    expect(
+      transport.sent.map((frame) => {
+        const parsed = JSON.parse(frame)
+        return [parsed.type, parsed.data.workflow_id]
+      })
+    ).toEqual([
+      ['doc_subscribe', 'wf-a'],
+      ['doc_unsubscribe', 'wf-a'],
+      ['doc_subscribe', 'wf-b'],
+      ['doc_subscribe', 'wf-b']
+    ])
+  })
+
+  it('allows a new workflow after the previous workflow becomes fatal', () => {
+    const transport = new TestTransport()
+    const bridge = new LayoutFollowerBridge(new DocFrameClient(transport))
+    bridge.subscribe('wf-a')
+
+    transport.receive('doc_error', {
+      v: 1,
+      workflow_id: 'wf-a',
+      code: 'fatal_doc',
+      message: 'workflow failed',
+      request_type: 'doc_subscribe'
+    })
+    bridge.subscribe('wf-b')
+
+    expect(
+      transport.sent
+        .map((frame) => JSON.parse(frame))
+        .filter((frame) => frame.type === 'doc_subscribe')
+        .map((frame) => frame.data.workflow_id)
+    ).toEqual(['wf-a', 'wf-b'])
+  })
+
+  it('keeps ordinary reconnect resubscription transient', () => {
+    const transport = new TestTransport()
+    const bridge = new LayoutFollowerBridge(new DocFrameClient(transport))
+    bridge.subscribe('wf-1')
+
+    bridge.resubscribe()
+
+    expect(transport.sent.map((frame) => JSON.parse(frame).type)).toEqual([
+      'doc_subscribe',
+      'doc_subscribe'
+    ])
   })
 })

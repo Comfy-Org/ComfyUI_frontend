@@ -161,6 +161,7 @@ type AgentCrdtSubscriptionStatus =
   | 'retrying'
   | 'retry_exhausted'
   | 'too_large'
+  | 'fatal_doc'
   | 'permanent_failure'
 
 export interface AgentCrdtStatus {
@@ -184,6 +185,7 @@ type AgentCrdtSubscriptionState =
   | { status: 'idle' | 'connected'; refusalCode: null }
   | { status: 'retrying' | 'retry_exhausted'; refusalCode: string | null }
   | { status: 'too_large'; refusalCode: 'too_large' }
+  | { status: 'fatal_doc'; refusalCode: 'fatal_doc' }
   | {
       status: 'permanent_failure'
       refusalCode: 'unsupported' | 'invalid_frame'
@@ -204,7 +206,11 @@ function refusedSubscriptionState(code: unknown): AgentCrdtSubscriptionState {
 }
 
 function isTerminalSubscription(state: AgentCrdtSubscriptionState): boolean {
-  return state.status === 'too_large' || state.status === 'permanent_failure'
+  return (
+    state.status === 'too_large' ||
+    state.status === 'fatal_doc' ||
+    state.status === 'permanent_failure'
+  )
 }
 
 export const apiTransport: DocFrameTransport = {
@@ -397,6 +403,33 @@ export function useAgentCrdtFollower(
     return true
   }
 
+  function acceptSubscription(): void {
+    clearSubscribeRetry()
+    subscription.value = { status: 'connected', refusalCode: null }
+    armStaleProbe()
+    // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
+    // a remount — persist on ok, not on intent.
+    if (subscribedWorkflowId.value !== null)
+      persistConfirmedDocId(subscribedWorkflowId.value)
+  }
+
+  function refuseSubscription(code: unknown): void {
+    clearStaleProbe()
+    subscription.value = refusedSubscriptionState(code)
+    if (subscription.value.status !== 'retrying') {
+      clearSubscribeRetry()
+    } else if (!scheduleSubscribeRetry()) {
+      subscription.value = {
+        status: 'retry_exhausted',
+        refusalCode: subscription.value.refusalCode
+      }
+    }
+    // FE #16637 residual: a refusal is the earliest signal the sender can
+    // get that its in-flight batch's doc is gone — don't make it wait out
+    // the 10 s result-silence window to notice on its own.
+    sender.abortIfUnbound()
+  }
+
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
@@ -405,34 +438,9 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
-      clearSubscribeRetry()
-      subscription.value = { status: 'connected', refusalCode: null }
-      armStaleProbe()
-      // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
-      // a remount — persist on ok, not on intent.
-      if (subscribedWorkflowId.value !== null)
-        persistConfirmedDocId(subscribedWorkflowId.value)
+      acceptSubscription()
     } else {
-      clearStaleProbe()
-      subscription.value = refusedSubscriptionState(event.detail?.code)
-      switch (subscription.value.status) {
-        case 'too_large':
-        case 'permanent_failure':
-          clearSubscribeRetry()
-          break
-        case 'retrying':
-          if (!scheduleSubscribeRetry()) {
-            subscription.value = {
-              status: 'retry_exhausted',
-              refusalCode: subscription.value.refusalCode
-            }
-          }
-          break
-      }
-      // FE #16637 residual: a refusal is the earliest signal the sender can
-      // get that its in-flight batch's doc is gone — don't make it wait out
-      // the 10 s result-silence window to notice on its own.
-      sender.abortIfUnbound()
+      refuseSubscription(event.detail?.code)
     }
   }
   const onUpdate: EventListener = (event) => {
@@ -560,6 +568,22 @@ export function useAgentCrdtFollower(
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
+  const onDocError: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as { workflowId?: unknown; code?: unknown }
+    if (
+      detail.workflowId !== subscribedWorkflowId.value ||
+      detail.code !== 'fatal_doc'
+    )
+      return
+    connected.value = false
+    lastFrameType.value = event.type
+    clearSubscribeRetry()
+    clearStaleProbe()
+    subscription.value = { status: 'fatal_doc', refusalCode: 'fatal_doc' }
+    sender.abortIfUnbound()
+    recordDevEvent('doc_error', event.detail)
+  }
   // s5-metrics-1: the bridge withholds a frame and forces a resubscribe when
   // it detects a seq jump (FEB-2) — that frame never becomes a `doc_update`
   // event, so `gap` can only be counted from the bridge's own `doc_gap`
@@ -621,6 +645,7 @@ export function useAgentCrdtFollower(
   bridge.addEventListener('doc_reset', onDocReset)
   bridge.addEventListener('follower_replaced', onFollowerReplaced)
   bridge.addEventListener('schema_error', onSchemaError)
+  bridge.addEventListener('doc_error', onDocError)
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
   api.addEventListener('reconnected', onReconnected)
@@ -707,6 +732,7 @@ export function useAgentCrdtFollower(
       bridge.removeEventListener('doc_reset', onDocReset)
       bridge.removeEventListener('follower_replaced', onFollowerReplaced)
       bridge.removeEventListener('schema_error', onSchemaError)
+      bridge.removeEventListener('doc_error', onDocError)
       bridge.removeEventListener('doc_gap', onGap)
       bridge.removeEventListener('doc_stale', onStale)
       sender.detach()
