@@ -11,7 +11,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 const mocks = vi.hoisted(() => ({
   reportError: vi.fn(),
-  loadWorkspace: vi.fn(async () => undefined),
+  loadWorkspace: vi.fn(async (): Promise<boolean | undefined> => undefined),
   loadInvite: vi.fn(async () => undefined),
   loadCreateWorkspace: vi.fn(async () => undefined),
   loadPricingTable: vi.fn(async () => undefined),
@@ -182,6 +182,20 @@ describe('useUrlActionLoaders', () => {
 
     expect(mocks.loadInvite).toHaveBeenCalledOnce()
     expect(mocks.loadSettings).toHaveBeenCalledOnce()
+  })
+
+  it('stops the loop when the workspace loader reports a reload in flight', async () => {
+    mocks.loadWorkspace.mockResolvedValueOnce(true)
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(mocks.loadInvite).not.toHaveBeenCalled()
+    expect(mocks.loadCreateWorkspace).not.toHaveBeenCalled()
+    expect(mocks.loadPricingTable).not.toHaveBeenCalled()
+    expect(mocks.loadTopUp).not.toHaveBeenCalled()
+    expect(mocks.loadSettings).not.toHaveBeenCalled()
+    expect(mocks.loadPaymentReturn).not.toHaveBeenCalled()
   })
 
   it('recovers an interrupted checkout after handling the payment return', async () => {

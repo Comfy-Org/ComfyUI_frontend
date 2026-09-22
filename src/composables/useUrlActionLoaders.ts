@@ -12,7 +12,10 @@ import { useWorkspaceUrlLoader } from '@/platform/workspace/composables/useWorks
 interface UrlActionStep {
   /** What the loader does, for the failure log — not shown to the customer. */
   readonly failureMessage: string
-  readonly run: () => Promise<void> | void
+  /** `true` means a reload is already in flight: the loop must stop, since
+   * `location.reload()` doesn't halt the current script and a later step's
+   * own URL cleanup could otherwise land on the still-live page. */
+  readonly run: () => Promise<boolean | void> | boolean | void
 }
 
 type UrlActionLoaders = {
@@ -93,11 +96,15 @@ function buildUrlActionSteps(loaders: UrlActionLoaders): UrlActionStep[] {
   return steps
 }
 
-/** Runs each step in order; one loader's failure never blocks the rest. */
+/**
+ * Runs each step in order; one loader's failure never blocks the rest. Stops
+ * immediately when a step reports a reload already in flight — no further
+ * step's URL cleanup should run on a page that's about to be torn down.
+ */
 async function runUrlActionSteps(steps: UrlActionStep[]) {
   for (const step of steps) {
     try {
-      await step.run()
+      if (await step.run()) return
     } catch (error) {
       console.error(`[UrlActionLoaders] ${step.failureMessage}`, error)
     }

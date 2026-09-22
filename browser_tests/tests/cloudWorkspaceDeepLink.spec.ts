@@ -19,18 +19,19 @@ import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFi
  * (once the graph bootstraps), so waiting on the overlay alone can resolve
  * on the pre-switch boot. Driving the deep link through `comfyPage`'s
  * `initialUrl` also races the fixture's own post-boot step for `@cloud`
- * tests (`setServerFlagsPersistent`) against that reload. Switching
- * scenarios instead let the fixture finish its normal, non-deep-linked boot
- * first, then drive the deep link with a plain `page.goto` and explicitly
- * wait for the second `load` event the reload fires, before checking
- * app-ready.
+ * tests (`setServerFlagsPersistent`) against that reload. Every scenario
+ * here instead lets the fixture finish its normal, non-deep-linked boot
+ * first, then drives the deep link with a plain `page.goto` and explicitly
+ * waits for that navigation's own `load` event before checking app-ready —
+ * so a scenario that switches (and so reloads a second time) is covered the
+ * same way as one that doesn't.
  */
-async function gotoAndWaitThroughSwitch(comfyPage: ComfyPage, path: string) {
+async function gotoAndWaitReady(comfyPage: ComfyPage, path: string) {
   const page = comfyPage.page
   await page.goto(new URL(path, comfyPage.url).toString())
-  // The reload may already have fired (and 'load' already resolved) by the
-  // time this listener attaches; either way window.app reflects the final
-  // boot once this settles, so a timeout here is not fatal.
+  // A workspace switch reloads again after this navigation's own `load`
+  // already fired; either way window.app reflects the final boot once this
+  // settles, so a timeout here (no second reload) is not fatal.
   await page.waitForEvent('load', { timeout: 30_000 }).catch(() => undefined)
   await comfyPage.waitForAppReady()
 }
@@ -39,7 +40,7 @@ test.describe('Cloud workspace deep link', { tag: '@cloud' }, () => {
   test('switches into the workspace the link names', async ({ comfyPage }) => {
     const page = comfyPage.page
 
-    await gotoAndWaitThroughSwitch(comfyPage, '/?workspace=ws-team')
+    await gotoAndWaitReady(comfyPage, '/?workspace=ws-team')
 
     await page.getByRole('button', { name: 'Current user' }).click()
     await expect(page.getByTestId('workspace-switcher-trigger')).toContainText(
@@ -73,15 +74,10 @@ test.describe('Cloud workspace deep link', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
 
-    // No switch happens for an invalid link, so no further reload to wait
-    // through — the fixture's own initial boot already settled.
-    await page.goto(
-      new URL(
-        '/?workspace=ws-team&workspace=ws-personal',
-        comfyPage.url
-      ).toString()
+    await gotoAndWaitReady(
+      comfyPage,
+      '/?workspace=ws-team&workspace=ws-personal'
     )
-    await comfyPage.waitForAppReady()
 
     await expect(
       page.getByText(`You're still in ${PERSONAL_WORKSPACE_NAME}`)
@@ -104,13 +100,15 @@ test.describe('Cloud workspace deep link', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
 
-    await gotoAndWaitThroughSwitch(
+    await gotoAndWaitReady(
       comfyPage,
       '/?workspace=ws-team&settings=plan-credits'
     )
 
     const dialog = page.getByTestId(TestIds.dialogs.settings)
-    await expect(dialog).toBeVisible()
+    // Extra margin over the default 5s: this dialog opens from the *second*
+    // boot after a full page reload, not a plain in-app state change.
+    await expect(dialog).toBeVisible({ timeout: 15_000 })
     const url = new URL(page.url())
     expect(url.searchParams.has('workspace')).toBe(false)
     expect(url.searchParams.has('settings')).toBe(false)

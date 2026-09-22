@@ -21,13 +21,31 @@ vi.mock(
 )
 
 const mockRouteQuery = vi.hoisted(() => ({
-  value: {} as Record<string, string>
+  value: {} as Record<string, unknown>
 }))
 const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
+/** Mirrors vue-router's own fullPath serialization closely enough for
+ * readWorkspaceLink to parse: a repeated array value becomes a repeated
+ * query key. */
+function fullPathOf(query: Record<string, unknown>): string {
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(query)) {
+    const values = Array.isArray(value) ? value : [value]
+    for (const entry of values) {
+      if (typeof entry === 'string') params.append(key, entry)
+    }
+  }
+  const search = params.toString()
+  return search ? `/?${search}` : '/'
+}
+
 vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
-    query: mockRouteQuery.value
+    query: mockRouteQuery.value,
+    get fullPath() {
+      return fullPathOf(mockRouteQuery.value)
+    }
   }),
   useRouter: () => ({
     replace: mockRouterReplace

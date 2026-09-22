@@ -80,43 +80,55 @@ export function useWorkspaceUrlLoader() {
     clearPreservedQuery(NAMESPACE)
   }
 
-  /** Reads `?workspace=`, strips it, and switches (or explains why not). */
-  async function loadWorkspaceFromUrl() {
+  /**
+   * Reads `?workspace=`, strips it, and switches (or explains why not).
+   * Returns `true` when it triggered a switch that will reload the page —
+   * the caller must stop running further loaders immediately: `location.reload()`
+   * doesn't halt the current script, so a later loader's own URL cleanup
+   * (e.g. settings unconditionally strips `?settings=`) can otherwise land
+   * on the still-live page and get baked into the URL the reload re-fetches.
+   */
+  async function loadWorkspaceFromUrl(): Promise<boolean> {
     hydratePreservedQuery(NAMESPACE)
+    const live = hasWorkspaceParam(route.query)
     // Prefer the live URL: mergePreservedQueryIntoQuery collapses a repeated
     // value to one stashed string (right for single-value params, wrong for
     // detecting `invalid` here), so only consult it once the param is gone.
-    const query = hasWorkspaceParam(route.query)
+    const query = live
       ? route.query
       : (mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query)
-    if (query.workspace === undefined) return
+    if (query.workspace === undefined) return false
 
-    const link = readWorkspaceLink(workspaceSearchParams(query))
+    // Classify from the raw URL when live: the exact form readWorkspaceLink
+    // parses itself, avoiding any array/string shape mismatch in route.query.
+    const link = live
+      ? readWorkspaceLink(route.fullPath)
+      : readWorkspaceLink(workspaceSearchParams(query))
 
     if (link.status === 'absent') {
       await stripParam(query)
-      return
+      return false
     }
 
     if (link.status === 'invalid') {
       await stripParam(query)
       notifyStayed()
-      return
+      return false
     }
 
     // Already there: strip and say nothing, nothing changed.
     if (link.workspaceId === activeWorkspace.value?.id) {
       await stripParam(query)
-      return
+      return false
     }
 
-    // Strip before switching: a successful switch reloads the page
-    // synchronously, so nothing after that call runs.
     await stripParam(query)
     const switched = await switchWorkspace(link.workspaceId)
     if (!switched) {
       notifyStayed()
+      return false
     }
+    return true
   }
 
   return {
