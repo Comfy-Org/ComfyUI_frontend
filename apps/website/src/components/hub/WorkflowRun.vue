@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import type { WorkshopModel,WorkshopModelDetail } from '../../config/models-catalogue'
+import type {
+  WorkshopModel,
+  WorkshopModelDetail
+} from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import type { HubPortSummary } from '../../lib/hub/workflow-detail'
 import ModelDetail from '../workshop/ModelDetail.vue'
