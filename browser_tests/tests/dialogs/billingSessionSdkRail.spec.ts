@@ -250,7 +250,17 @@ function totalCreditStates(page: Page): Promise<string[]> {
   ])
 }
 
+// Sign-out is a full navigation to /cloud/login. The static CI backend has no
+// SPA fallback for that path, so it is answered with the app shell, which
+// boots the router on the login page the way the cloud host does.
 async function signOut(page: Page) {
+  const appShell = await page.request.get(APP_URL)
+  const html = await appShell.text()
+  await page.route('**/cloud/login', (route) =>
+    route.request().resourceType() === 'document'
+      ? route.fulfill({ status: 200, contentType: 'text/html', body: html })
+      : route.fallback()
+  )
   await page.getByTestId(TestIds.user.currentUserButton).click()
   await page.getByTestId('logout-menu-item').click()
   await expect(page).toHaveURL(/\/cloud\/login/)
