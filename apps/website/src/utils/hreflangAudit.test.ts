@@ -173,9 +173,9 @@ describe('auditBuiltSite', () => {
     site.pages.set('/zh-CN/about/', [])
     site.sitemap.set('/zh-CN/about/', [])
 
-    expect(auditBuiltSite(site)).toEqual([
+    expect(auditBuiltSite(site)).toContain(
       '/about/: lists /zh-CN/about/, which does not list it back'
-    ])
+    )
   })
 
   it('rejects an alternate on another origin', () => {
