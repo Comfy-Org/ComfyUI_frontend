@@ -157,6 +157,15 @@ export const zUploadImageResult = z.object({
 })
 export type UploadImageResult = z.infer<typeof zUploadImageResult>
 
+/**
+ * The 403 body the agent service returns when it will not serve the turn's
+ * `workflow_id` to the caller's workspace, whether the row is gone or belongs
+ * elsewhere. The message is the only discriminator on the wire: a 403 refusing
+ * the thread or the message carries the same shape with a different subject.
+ */
+export const zDisownedWorkflowError = z.object({
+  error: z.literal('workflow not found or access denied')
+})
 const zAgentThinkingData = z
   .object({
     delta: z.string(),
