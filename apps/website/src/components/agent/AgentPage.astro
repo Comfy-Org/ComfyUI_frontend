@@ -16,71 +16,252 @@ const { noindex = false } = Astro.props
 const routes = getRoutes('en')
 const imageRoot = 'https://media.comfy.org/website/comfy-agent'
 const capabilities = [
-  { title: 'Creative Knowledge', image: `${imageRoot}/knowledge.png`, alt: 'A collection of creative images and community workflows', body: 'Knowing the latest models, ComfyUI extensions, and workflows, it can build, fix errors, and handle technical terms.' },
-  { title: 'Real-time Collaboration', image: `${imageRoot}/multiplayer.png`, alt: 'A user and Comfy Agent editing a shared node workflow', body: 'Two of you can work on the canvas at the same time. Keep working. No waiting. It sees what you see.' },
-  { title: 'Vibe Crafting', image: '/images/comfy-agent/vibe-crafting-workflow.png', alt: 'Headphone workflow with connected 3D camera and color controls', body: 'On local Comfy, the agent can build any editing tool for you. Take your time back for composition, camera angles, masks, and viewing.' }
+  {
+    title: 'Creative Knowledge',
+    image: `${imageRoot}/knowledge.png`,
+    alt: 'A collection of creative images and community workflows',
+    body: 'Knowing the latest models, ComfyUI extensions, and workflows, it can build, fix errors, and handle technical terms.'
+  },
+  {
+    title: 'Real-time Collaboration',
+    image: `${imageRoot}/multiplayer.png`,
+    alt: 'A user and Comfy Agent editing a shared node workflow',
+    body: 'Two of you can work on the canvas at the same time. Keep working. No waiting. It sees what you see.'
+  },
+  {
+    title: 'Vibe Crafting',
+    image: '/images/comfy-agent/vibe-crafting-workflow.png',
+    alt: 'Headphone workflow with connected 3D camera and color controls',
+    body: 'On local Comfy, the agent can build any editing tool for you. Take your time back for composition, camera angles, masks, and viewing.'
+  }
 ]
 const comparisons = [
-  { label: 'What is it', agent: ['The agent built into the Comfy app.', 'Chat and build on the canvas together.', 'Curated knowledge and native tools to operate ComfyUI.'], mcp: ['Your own agent, connected to ComfyUI.'] },
-  { label: 'Best for', agent: ['Beginners to advanced builders.', "Anyone who wants to see the graph as it’s built."], mcp: ['People who already work in another agent.'] },
-  { label: 'Requires', agent: ['Ready-to-go agent integration.', 'Try for free. Uses your existing Comfy Credits.'], mcp: ['Your own agent.', 'Comfy Cloud or a local ComfyUI setup.'] },
-  { label: 'Runs on', agent: ['Comfy Cloud GPUs, or your local GPU'], mcp: ['Comfy Cloud GPUs, or your local GPU'] },
-  { label: 'Custom nodes', agent: ['Cloud-supported nodes on Cloud.', 'Any node on local.'], mcp: ['Cloud-supported on Cloud.', 'Any node on local.'] }
+  {
+    label: 'What is it',
+    agent: [
+      'The agent built into the Comfy app.',
+      'Chat and build on the canvas together.',
+      'Curated knowledge and native tools to operate ComfyUI.'
+    ],
+    mcp: ['Your own agent, connected to ComfyUI.']
+  },
+  {
+    label: 'Best for',
+    agent: [
+      'Beginners to advanced builders.',
+      'Anyone who wants to see the graph as it’s built.'
+    ],
+    mcp: ['People who already work in another agent.']
+  },
+  {
+    label: 'Requires',
+    agent: [
+      'Ready-to-go agent integration.',
+      'Try for free. Uses your existing Comfy Credits.'
+    ],
+    mcp: ['Your own agent.', 'Comfy Cloud or a local ComfyUI setup.']
+  },
+  {
+    label: 'Runs on',
+    agent: ['Comfy Cloud GPUs, or your local GPU'],
+    mcp: ['Comfy Cloud GPUs, or your local GPU']
+  },
+  {
+    label: 'Custom nodes',
+    agent: ['Cloud-supported nodes on Cloud.', 'Any node on local.'],
+    mcp: ['Cloud-supported on Cloud.', 'Any node on local.']
+  }
 ]
 const faqs = [
-  { question: 'What model powers it?', answer: 'Frontier models by Anthropic. We always provide the strongest we can offer for the job. Choices for switching LLMs is on the way. What they lack alone, the agent adds: full context of your workflow, your errors, and Comfy itself.' },
-  { question: 'Does it work with my existing workflows?', answer: 'Yes. Open any workflow and the agent reads the whole graph. Describe what you want to change, or point at an error, and keep editing together. You can also reference another workflow in the chat.' },
-  { question: 'Will it run generations without asking?', answer: 'You decide. By default the agent will ask your confirmation to run any generations. In auto mode it runs and iterates on its own until the result is ready.' },
-  { question: 'What does it cost?', answer: 'Today, we provide some free tokens for new users to try the chat.\n\nNormally, Comfy Agent consumes the Comfy Credits for LLM tokens. Your existing credits can apply to it already. See the pricing page for plans and usage details.', link: { label: 'See pricing', href: routes.pricing } },
-  { question: 'Can it run locally?', answer: 'Yes. The same agent runs in your local ComfyUI, working on workflows based on your GPU, your models, and your custom nodes. It walks you through setup, picks models that fit your hardware, and builds the tools you need.' },
-  { question: 'Does the agent replace the canvas?', answer: 'No. The canvas stays at the center. The agent builds with you on it, every control stays where it is, and you keep the editable workflow behind every result.' },
-  { question: 'How is this different from asking ChatGPT?', answer: 'ChatGPT only gives you instructions to follow. Comfy Agent works directly on your canvas. It sees your workflow and your errors, answers your questions, and also builds and runs the graph, and reviews the output. It doesn’t just see the entire setup, but also execute tasks for you.' }
+  {
+    question: 'What model powers it?',
+    answer:
+      'Frontier models by Anthropic. We always provide the strongest we can offer for the job. Choices for switching LLMs is on the way. What they lack alone, the agent adds: full context of your workflow, your errors, and Comfy itself.'
+  },
+  {
+    question: 'Does it work with my existing workflows?',
+    answer:
+      'Yes. Open any workflow and the agent reads the whole graph. Describe what you want to change, or point at an error, and keep editing together. You can also reference another workflow in the chat.'
+  },
+  {
+    question: 'Will it run generations without asking?',
+    answer:
+      'You decide. By default the agent will ask your confirmation to run any generations. In auto mode it runs and iterates on its own until the result is ready.'
+  },
+  {
+    question: 'What does it cost?',
+    answer:
+      'Today, we provide some free tokens for new users to try the chat.\n\nNormally, Comfy Agent consumes the Comfy Credits for LLM tokens. Your existing credits can apply to it already. See the pricing page for plans and usage details.',
+    link: { label: 'See pricing', href: routes.pricing }
+  },
+  {
+    question: 'Can it run locally?',
+    answer:
+      'Yes. The same agent runs in your local ComfyUI, working on workflows based on your GPU, your models, and your custom nodes. It walks you through setup, picks models that fit your hardware, and builds the tools you need.'
+  },
+  {
+    question: 'Does the agent replace the canvas?',
+    answer:
+      'No. The canvas stays at the center. The agent builds with you on it, every control stays where it is, and you keep the editable workflow behind every result.'
+  },
+  {
+    question: 'How is this different from asking ChatGPT?',
+    answer:
+      'ChatGPT only gives you instructions to follow. Comfy Agent works directly on your canvas. It sees your workflow and your errors, answers your questions, and also builds and runs the graph, and reviews the output. It doesn’t just see the entire setup, but also execute tasks for you.'
+  }
 ]
 const briefs = [
-  { creator: 'Doug Hogan', title: 'VFX: isolate, mask, and refine', description: 'Take a shot from image to compositing passes. Isolate the subject, generate masks, and work with depth and normals in one workflow.', video: `${imageRoot}/bigfoot-vfx.mp4`, poster: `${imageRoot}/bigfoot-vfx-poster.webp`, tag: 'VFX' },
-  { creator: 'shanef3d', title: 'Product imagery, from brief to campaign', description: 'Build a product scene with precision in Blender. Explore rendering, lighting, materials, and composition, then refine the details on the canvas.', video: `${imageRoot}/product-imagery-demo.mp4`, poster: `${imageRoot}/product-imagery-demo-poster.webp`, tag: 'Marketing' }
+  {
+    creator: 'Doug Hogan',
+    title: 'VFX: isolate, mask, and refine',
+    description:
+      'Take a shot from image to compositing passes. Isolate the subject, generate masks, and work with depth and normals in one workflow.',
+    video: `${imageRoot}/bigfoot-vfx.mp4`,
+    poster: `${imageRoot}/bigfoot-vfx-poster.webp`,
+    tag: 'VFX'
+  },
+  {
+    creator: 'shanef3d',
+    title: 'Product imagery, from brief to campaign',
+    description:
+      'Build a product scene with precision in Blender. Explore rendering, lighting, materials, and composition, then refine the details on the canvas.',
+    video: `${imageRoot}/product-imagery-demo.mp4`,
+    poster: `${imageRoot}/product-imagery-demo-poster.webp`,
+    tag: 'Marketing'
+  }
 ]
 ---
 
-<BaseLayout title="Comfy Agent — The first agent for craft" description="Comfy Agent lives inside ComfyUI, local and cloud. It builds, runs, and reviews the workflow while you edit the canvas. You and your agent craft side by side." noindex={noindex} hideAnnouncementBanner>
-  <BreadcrumbBar crumbs={[{ label: 'Home', href: routes.home }, { label: 'Products', href: '#products' }, { label: 'Comfy Agent' }]} />
+<BaseLayout
+  title="Comfy Agent — The first agent for craft"
+  description="Comfy Agent lives inside ComfyUI, local and cloud. It builds, runs, and reviews the workflow while you edit the canvas. You and your agent craft side by side."
+  noindex={noindex}
+  hideAnnouncementBanner
+>
+  <BreadcrumbBar
+    crumbs={[
+      { label: 'Home', href: routes.home },
+      { label: 'Products', href: '#products' },
+      { label: 'Comfy Agent' }
+    ]}
+  />
 
-  <section class="mx-auto w-full max-w-400 px-6 pt-12 text-center lg:px-20 lg:pt-16" aria-labelledby="agent-title">
+  <section
+    class="mx-auto w-full max-w-10xl px-6 pt-12 text-center lg:px-20 lg:pt-16"
+    aria-labelledby="agent-title"
+  >
     <div class="mx-auto w-fit max-w-full sm:max-w-[83.333333%]">
-      <h1 id="agent-title" class="text-4xl/[1.3] font-light tracking-[-0.03em] text-primary-warm-white lg:text-5xl/[1.3]">Comfy Agent: <span class="block text-primary-comfy-canvas">The first agent for craft</span></h1>
-      <p class="mt-6 w-0 min-w-full text-[17px]/[1.6] font-light text-primary-comfy-canvas sm:-ml-[10%] sm:min-w-[120%] lg:mt-8">It lives right inside ComfyUI, local and cloud. Describe what you want. It builds, runs, and reviews the workflow. Editing the canvas while you work, it crafts side by side with you.</p>
+      <h1
+        id="agent-title"
+        class="text-4xl/[1.3] font-light tracking-[-0.03em] text-primary-warm-white lg:text-5xl/[1.3]"
+      >
+        Comfy Agent:
+        <span class="block text-primary-comfy-canvas"
+          >The first agent for craft</span
+        >
+      </h1>
+      <p
+        class="mt-6 w-0 min-w-full text-[17px]/[1.6] font-light text-primary-comfy-canvas sm:ml-[-10%] sm:min-w-[120%] lg:mt-8"
+      >
+        It lives right inside ComfyUI, local and cloud. Describe what you want.
+        It builds, runs, and reviews the workflow. Editing the canvas while you
+        work, it crafts side by side with you.
+      </p>
     </div>
-    <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
-      <BrandButton href={externalLinks.cloud} size="lg" class="min-h-12 w-full rounded-2xl px-6 text-sm tracking-normal uppercase sm:w-auto">Try Comfy Agent</BrandButton>
+    <div
+      class="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap"
+    >
+      <BrandButton
+        href={externalLinks.cloud}
+        size="lg"
+        class="min-h-12 w-full rounded-2xl px-6 text-sm tracking-normal uppercase sm:w-auto"
+        >Try Comfy Agent</BrandButton
+      >
     </div>
   </section>
 
   <WorkflowCanvas />
 
-  <section class="mx-auto max-w-400 px-6 pt-[4.2rem] sm:pt-14 lg:px-20 lg:pt-15" aria-labelledby="capabilities-title">
+  <section
+    class="mx-auto max-w-10xl px-6 pt-[4.2rem] sm:pt-14 lg:px-20 lg:pt-15"
+    aria-labelledby="capabilities-title"
+  >
     <div class="text-center">
-      <p class="text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase">The agent</p>
-      <h2 id="capabilities-title" class="mt-4 text-4xl/[1.25] font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl">A real creative teammate, and beyond</h2>
+      <p
+        class="text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
+      >
+        The agent
+      </p>
+      <h2
+        id="capabilities-title"
+        class="mt-4 text-4xl/tight font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl"
+      >
+        A real creative teammate, and beyond
+      </h2>
     </div>
     <div class="mt-7 grid gap-4 sm:mt-14 md:grid-cols-3">
-      {capabilities.map(card => (
-        <article class="overflow-hidden rounded-[40px] bg-transparency-white-t4 p-2">
-          <img src={card.image} alt={card.alt} width="454" height="324" loading="lazy" class="aspect-[454/324] w-full rounded-[36px] object-cover" />
-          <div class="px-6 pt-7 pb-6">
-            <h3 class="text-lg/[1.4] font-medium text-primary-warm-white uppercase xl:text-[22px]">{card.title}</h3>
-            <p class="mt-6 text-[15.5px]/[1.6] font-light text-primary-comfy-canvas">{card.body}</p>
-          </div>
-        </article>
-      ))}
+      {capabilities.map((card) => <article
+        class="overflow-hidden rounded-[40px] bg-transparency-white-t4 p-2"
+      >
+        <img
+          src={card.image}
+          alt={card.alt}
+          width="454"
+          height="324"
+          loading="lazy"
+          class="aspect-454/324 w-full rounded-[36px] object-cover"
+        />
+        <div class="px-6 pt-7 pb-6">
+          <h3
+            class="text-lg/[1.4] font-medium text-primary-warm-white uppercase xl:text-[22px]"
+          >
+            {card.title}
+          </h3>
+          <p
+            class="mt-6 text-[15.5px]/[1.6] font-light text-primary-comfy-canvas"
+          >
+            {card.body}
+          </p>
+        </div>
+      </article>)}
     </div>
-    <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
-      <BrandButton href={externalLinks.cloud} size="lg" class="min-h-12 w-full rounded-2xl px-6 text-sm uppercase sm:min-h-16 sm:w-auto sm:rounded-3xl">Try Comfy Agent</BrandButton>
+    <div
+      class="mt-10 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap"
+    >
+      <BrandButton
+        href={externalLinks.cloud}
+        size="lg"
+        class="min-h-12 w-full rounded-2xl px-6 text-sm uppercase sm:min-h-16 sm:w-auto sm:rounded-3xl"
+        >Try Comfy Agent</BrandButton
+      >
     </div>
   </section>
 
-  <section class="mx-auto max-w-400 px-6 pt-28 lg:px-20 lg:pt-44" aria-labelledby="briefs-title">
-    <div class="text-center"><p class="mb-6 text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase">Use cases</p><h2 id="briefs-title" class="scroll-mt-40 text-4xl/[1.25] font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl">One canvas, every industry</h2><p class="mx-auto mt-6 max-w-160 text-[17px]/[1.6] font-light text-primary-comfy-canvas">Studios run these workflows in production today, on Comfy.</p></div>
-    <article class="mt-8 grid gap-4 rounded-[40px] bg-transparency-white-t4 p-2 sm:mt-16 lg:grid-cols-[1008fr_400fr]">
+  <section
+    class="mx-auto max-w-10xl px-6 pt-28 lg:px-20 lg:pt-44"
+    aria-labelledby="briefs-title"
+  >
+    <div class="text-center">
+      <p
+        class="mb-6 text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
+      >
+        Use cases
+      </p>
+      <h2
+        id="briefs-title"
+        class="scroll-mt-40 text-4xl/tight font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl"
+      >
+        One canvas, every industry
+      </h2>
+      <p
+        class="mx-auto mt-6 max-w-160 text-[17px]/[1.6] font-light text-primary-comfy-canvas"
+      >
+        Studios run these workflows in production today, on Comfy.
+      </p>
+    </div>
+    <article
+      class="mt-8 grid gap-4 rounded-[40px] bg-transparency-white-t4 p-2 sm:mt-16 lg:grid-cols-[1008fr_400fr]"
+    >
       <div class="relative self-start overflow-hidden rounded-[36px]">
         <VideoPlayer
           client:visible
@@ -96,83 +277,260 @@ const briefs = [
         />
       </div>
       <div class="flex min-w-0 flex-col items-start px-6 py-8 lg:px-8 lg:py-12">
-        <p class="text-xs font-extrabold tracking-wider text-primary-comfy-yellow uppercase">By 852話 | Andidea</p>
-        <h3 class="mt-3 text-2xl/[1.2] font-medium text-primary-comfy-canvas">Animation, from story to screen</h3>
-        <p class="mt-4 text-sm/[1.5] font-light text-primary-warm-gray">Bring characters and imagined worlds into the same creative workflow. The agent helps shape the look, explore a scene, and compare generation results. Made by one artist in 100 hours with Comfy Agent.</p>
-        <p class="mt-8"><span class="rounded-full bg-transparency-white-t4 px-5 py-2 text-xs font-light text-primary-warm-gray uppercase">Animation</span></p>
+        <p
+          class="text-xs font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
+        >
+          By 852話 | Andidea
+        </p>
+        <h3 class="mt-3 text-2xl/[1.2] font-medium text-primary-comfy-canvas">
+          Animation, from story to screen
+        </h3>
+        <p class="mt-4 text-sm/normal font-light text-primary-warm-gray">
+          Bring characters and imagined worlds into the same creative workflow.
+          The agent helps shape the look, explore a scene, and compare
+          generation results. Made by one artist in 100 hours with Comfy Agent.
+        </p>
+        <p class="mt-8">
+          <span
+            class="rounded-full bg-transparency-white-t4 px-5 py-2 text-xs font-light text-primary-warm-gray uppercase"
+            >Animation</span
+          >
+        </p>
       </div>
     </article>
     <div class="mt-4 grid gap-4 md:grid-cols-2">
-      {briefs.map(brief => (
-        <article class="rounded-[40px] bg-transparency-white-t4 p-2">
-          <div class="relative overflow-hidden rounded-[36px]">
-            <VideoPlayer
-              client:visible
-              src={brief.video}
-              poster={brief.poster}
-              autoplay
-              lazyAutoplay
-              loop
-              persistentControls
-              fit="contain"
-              ariaLabel={`${brief.title} — by ${brief.creator}`}
-              class="w-full rounded-[36px] border-0"
-            />
-          </div>
-          <div class="px-6 pt-6 pb-7 lg:px-8">
-            <p class="text-xs font-extrabold tracking-wider text-primary-comfy-yellow uppercase">By {brief.creator}</p>
-            <h3 class="mt-3 text-2xl/[1.2] font-medium text-primary-comfy-canvas">{brief.title}</h3>
-            <p class="mt-3 text-sm/[1.5] font-light text-primary-warm-gray">{brief.description}</p>
-            <p class="mt-6"><span class="rounded-full bg-transparency-white-t4 px-5 py-2 text-xs font-light text-primary-warm-gray uppercase">{brief.tag}</span></p>
-          </div>
-        </article>
-      ))}
+      {briefs.map((brief) => <article
+        class="rounded-[40px] bg-transparency-white-t4 p-2"
+      >
+        <div class="relative overflow-hidden rounded-[36px]">
+          <VideoPlayer
+            client:visible
+            src={brief.video}
+            poster={brief.poster}
+            autoplay
+            lazyAutoplay
+            loop
+            persistentControls
+            fit="contain"
+            ariaLabel={`${brief.title} — by ${brief.creator}`}
+            class="w-full rounded-[36px] border-0"
+          />
+        </div>
+        <div class="px-6 pt-6 pb-7 lg:px-8">
+          <p
+            class="text-xs font-extrabold tracking-wider text-primary-comfy-yellow uppercase"
+          >
+            By {brief.creator}
+          </p>
+          <h3 class="mt-3 text-2xl/[1.2] font-medium text-primary-comfy-canvas">
+            {brief.title}
+          </h3>
+          <p class="mt-3 text-sm/normal font-light text-primary-warm-gray">
+            {brief.description}
+          </p>
+          <p class="mt-6">
+            <span
+              class="rounded-full bg-transparency-white-t4 px-5 py-2 text-xs font-light text-primary-warm-gray uppercase"
+              >{brief.tag}</span
+            >
+          </p>
+        </div>
+      </article>)}
     </div>
   </section>
 
   <section class="pt-16 lg:pt-20" aria-labelledby="difference-title">
-    <div class="mx-auto max-w-400 px-6 text-center lg:px-20">
-      <h2 id="difference-title" class="mx-auto max-w-220 text-4xl/[1.25] font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl">Every result is a workflow, not <br class="hidden sm:block" />just an asset.</h2>
-      <p class="mx-auto mt-8 max-w-[337.5px] text-[17px]/[1.6] font-light text-primary-comfy-canvas sm:max-w-[405px] lg:mt-10 lg:max-w-135">Everywhere else, you get the output file. With ComfyUI, Comfy Agent hands you the pipeline that made it: every node, seed, sampler, and model. Reuse it at any time.</p>
+    <div class="mx-auto max-w-10xl px-6 text-center lg:px-20">
+      <h2
+        id="difference-title"
+        class="mx-auto max-w-220 text-4xl/tight font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl"
+      >
+        Every result is a workflow, not <br class="hidden sm:block" />just an
+        asset.
+      </h2>
+      <p
+        class="mx-auto mt-8 max-w-[337.5px] text-[17px]/[1.6] font-light text-primary-comfy-canvas sm:max-w-[405px] lg:mt-10 lg:max-w-135"
+      >
+        Everywhere else, you get the output file. With ComfyUI, Comfy Agent
+        hands you the pipeline that made it: every node, seed, sampler, and
+        model. Reuse it at any time.
+      </p>
     </div>
   </section>
 
-  <section class="mx-auto grid max-w-400 gap-12 px-6 pt-[4.76rem] lg:grid-cols-[440fr_880fr] lg:gap-30 lg:px-20 lg:pt-[8.16rem]" aria-labelledby="start-title">
-    <div class="max-sm:text-center"><h2 id="start-title" class="max-w-100 text-4xl/[1.25] font-light tracking-[-0.03em] text-primary-comfy-canvas max-sm:mx-auto lg:text-5xl">Where to start from</h2><p class="mt-12 hidden text-[17px]/[1.6] font-light text-primary-warm-white sm:block">Local or cloud, it lives wherever you build.</p></div>
+  <section
+    class="mx-auto grid max-w-10xl gap-12 px-6 pt-[4.76rem] lg:grid-cols-[440fr_880fr] lg:gap-30 lg:px-20 lg:pt-[8.16rem]"
+    aria-labelledby="start-title"
+  >
+    <div class="max-sm:text-center">
+      <h2
+        id="start-title"
+        class="max-w-100 text-4xl/tight font-light tracking-[-0.03em] text-primary-comfy-canvas max-sm:mx-auto lg:text-5xl"
+      >
+        Where to start from
+      </h2>
+      <p
+        class="mt-12 hidden text-[17px]/[1.6] font-light text-primary-warm-white sm:block"
+      >
+        Local or cloud, it lives wherever you build.
+      </p>
+    </div>
     <div class="space-y-16">
-      <div class="grid gap-6 border-b border-primary-comfy-canvas/40 pb-16 md:grid-cols-[280fr_568fr] md:gap-8">
-        <h3 class="text-2xl/[1.4] font-medium text-primary-comfy-canvas">Running ComfyUI locally</h3>
-        <div class="text-[17px]/[1.6] font-light text-primary-comfy-canvas"><p>Local Comfy is now fully agentic. Your GPU, your models, your custom nodes. The agent walks you through setup, picks models that fit your hardware, customizes your environment, and vibe codes all the tools you need.</p><p class="mt-6">New to Comfy? <a href={routes.download} class="text-primary-comfy-yellow underline underline-offset-4 hover:opacity-80">Download desktop</a></p></div>
+      <div
+        class="grid gap-6 border-b border-primary-comfy-canvas/40 pb-16 md:grid-cols-[280fr_568fr] md:gap-8"
+      >
+        <h3 class="text-2xl/[1.4] font-medium text-primary-comfy-canvas">
+          Running ComfyUI locally
+        </h3>
+        <div class="text-[17px]/[1.6] font-light text-primary-comfy-canvas">
+          <p>
+            Local Comfy is now fully agentic. Your GPU, your models, your custom
+            nodes. The agent walks you through setup, picks models that fit your
+            hardware, customizes your environment, and vibe codes all the tools
+            you need.
+          </p>
+          <p class="mt-6">
+            New to Comfy?
+            <a
+              href={routes.download}
+              class="text-primary-comfy-yellow underline underline-offset-4 hover:opacity-80"
+              >Download desktop</a
+            >
+          </p>
+        </div>
       </div>
       <div class="grid gap-6 md:grid-cols-[280fr_568fr] md:gap-8">
-        <h3 class="text-2xl/[1.4] font-medium text-primary-comfy-canvas">Already on Comfy Cloud</h3>
-        <div class="text-[17px]/[1.6] font-light text-primary-comfy-canvas"><p>Already on Comfy Cloud. No GPU to own and no setup. The agent is there when you log in, with the full model catalog and pre-installed extensions behind it.</p><p class="mt-6">No account yet? <a href={externalLinks.cloud} class="text-primary-comfy-yellow underline underline-offset-4 hover:opacity-80">Sign up for free</a></p></div>
+        <h3 class="text-2xl/[1.4] font-medium text-primary-comfy-canvas">
+          Already on Comfy Cloud
+        </h3>
+        <div class="text-[17px]/[1.6] font-light text-primary-comfy-canvas">
+          <p>
+            Already on Comfy Cloud. No GPU to own and no setup. The agent is
+            there when you log in, with the full model catalog and pre-installed
+            extensions behind it.
+          </p>
+          <p class="mt-6">
+            No account yet?
+            <a
+              href={externalLinks.cloud}
+              class="text-primary-comfy-yellow underline underline-offset-4 hover:opacity-80"
+              >Sign up for free</a
+            >
+          </p>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="mx-auto max-w-400 px-6 pt-28 lg:px-20 lg:pt-44" aria-labelledby="comparison-title">
-    <h2 id="comparison-title" class="text-center text-4xl/[1.25] font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl">Which one should I use?</h2>
-    <div class="mt-16 overflow-x-auto rounded-[40px] bg-transparency-white-t4 p-3 md:p-4 lg:px-10 lg:py-6" role="region" aria-labelledby="comparison-title" tabindex="0">
-      <table class="w-full table-fixed border-collapse text-left text-[13px]/[1.5] font-light wrap-break-word text-primary-comfy-canvas/80 sm:text-sm lg:text-base">
-        <thead><tr><td class="w-[24%] md:w-1/5"><span class="sr-only">Feature</span></td><th scope="col" class="w-[38%] px-2 pb-3 text-[11px] font-bold tracking-wider text-primary-comfy-yellow uppercase sm:px-3 sm:text-xs md:w-2/5 md:px-6 md:pb-4">Comfy Agent</th><th scope="col" class="w-[38%] px-2 pb-3 text-[11px] font-bold tracking-wider text-primary-comfy-yellow uppercase sm:px-3 sm:text-xs md:w-2/5 md:px-6 md:pb-4">Comfy MCP</th></tr></thead>
-        <tbody>{comparisons.map(row => (<tr class="border-b border-white/10 last:border-0"><th scope="row" class="py-3 pr-2 align-top font-normal text-primary-warm-white md:py-4 md:pr-4">{row.label}</th><td class="px-2 py-3 align-top sm:px-3 md:px-6 md:py-4">{row.agent.map(line => <p class="mb-1">{line}</p>)}</td><td class="px-2 py-3 align-top sm:px-3 md:px-6 md:py-4">{row.mcp.map(line => <p class="mb-1">{line}</p>)}</td></tr>))}</tbody>
+  <section
+    class="mx-auto max-w-10xl px-6 pt-28 lg:px-20 lg:pt-44"
+    aria-labelledby="comparison-title"
+  >
+    <h2
+      id="comparison-title"
+      class="text-center text-4xl/tight font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl"
+    >
+      Which one should I use?
+    </h2>
+    <div
+      class="mt-16 overflow-x-auto rounded-[40px] bg-transparency-white-t4 p-3 md:p-4 lg:px-10 lg:py-6"
+      role="region"
+      aria-labelledby="comparison-title"
+      tabindex="0"
+    >
+      <table
+        class="w-full table-fixed border-collapse text-left text-[13px]/[1.5] font-light wrap-break-word text-primary-comfy-canvas/80 sm:text-sm lg:text-base"
+      >
+        <thead>
+          <tr>
+            <td class="w-[24%] md:w-1/5">
+              <span class="sr-only">Feature</span>
+            </td>
+            <th
+              scope="col"
+              class="w-[38%] px-2 pb-3 text-[11px] font-bold tracking-wider text-primary-comfy-yellow uppercase sm:px-3 sm:text-xs md:w-2/5 md:px-6 md:pb-4"
+            >
+              Comfy Agent
+            </th>
+            <th
+              scope="col"
+              class="w-[38%] px-2 pb-3 text-[11px] font-bold tracking-wider text-primary-comfy-yellow uppercase sm:px-3 sm:text-xs md:w-2/5 md:px-6 md:pb-4"
+            >
+              Comfy MCP
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {comparisons.map((row) => <tr
+            class="border-b border-white/10 last:border-0"
+          >
+            <th
+              scope="row"
+              class="py-3 pr-2 align-top font-normal text-primary-warm-white md:py-4 md:pr-4"
+            >
+              {row.label}
+            </th>
+            <td class="px-2 py-3 align-top sm:px-3 md:px-6 md:py-4">
+              {row.agent.map((line) => <p class="mb-1">{line}</p>)}
+            </td>
+            <td class="px-2 py-3 align-top sm:px-3 md:px-6 md:py-4">
+              {row.mcp.map((line) => <p class="mb-1">{line}</p>)}
+            </td>
+          </tr>)}
+        </tbody>
       </table>
     </div>
   </section>
 
-  <section class="mx-auto grid max-w-400 gap-12 px-6 pt-28 pb-20 lg:grid-cols-[440fr_880fr] lg:gap-30 lg:px-20 lg:pt-44 lg:pb-28" aria-labelledby="faq-title">
-    <h2 id="faq-title" class="text-4xl/[1.25] font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl">Q&A</h2>
+  <section
+    class="mx-auto grid max-w-10xl gap-12 px-6 pt-28 pb-20 lg:grid-cols-[440fr_880fr] lg:gap-30 lg:px-20 lg:pt-44 lg:pb-28"
+    aria-labelledby="faq-title"
+  >
+    <h2
+      id="faq-title"
+      class="text-4xl/tight font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl"
+    >
+      Q&A
+    </h2>
     <div class="space-y-12">
-      {faqs.map((faq, index) => (
-        <details open={index === 0} class="group border-b border-primary-comfy-canvas/40 pb-8">
-          <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-8 text-xl/[1.4] font-medium text-primary-comfy-canvas group-open:text-primary-comfy-yellow hover:text-primary-comfy-yellow lg:text-2xl [&::-webkit-details-marker]:hidden">
-            {faq.question}<span class="size-6 shrink-0"><img src={`${imageRoot}/plus.svg`} alt="" width="24" height="24" class="size-6 group-open:hidden" /><img src={`${imageRoot}/minus.svg`} alt="" width="24" height="24" class="hidden size-6 group-open:block" /></span>
-          </summary>
-          <p class="mt-10 text-sm/[1.6] font-light whitespace-pre-line text-primary-comfy-canvas">{faq.answer}{faq.link && <a href={faq.link.href} class="ml-1 text-primary-comfy-yellow underline underline-offset-4 hover:opacity-80">{faq.link.label}</a>}</p>
-        </details>
-      ))}
+      {faqs.map((faq, index) => <details
+        open={index === 0}
+        class="group border-b border-primary-comfy-canvas/40 pb-8"
+      >
+        <summary
+          class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-8 text-xl/[1.4] font-medium text-primary-comfy-canvas group-open:text-primary-comfy-yellow hover:text-primary-comfy-yellow lg:text-2xl [&::-webkit-details-marker]:hidden"
+        >
+          {faq.question}<span class="size-6 shrink-0"
+            ><img
+              src={`${imageRoot}/plus.svg`}
+              alt=""
+              width="24"
+              height="24"
+              class="size-6 group-open:hidden"
+            /><img
+              src={`${imageRoot}/minus.svg`}
+              alt=""
+              width="24"
+              height="24"
+              class="hidden size-6 group-open:block"
+          /></span>
+        </summary>
+        <p
+          class="mt-10 text-sm/[1.6] font-light whitespace-pre-line text-primary-comfy-canvas"
+        >
+          {faq.answer}{faq.link && <a
+            href={faq.link.href}
+            class="ml-1 text-primary-comfy-yellow underline underline-offset-4 hover:opacity-80"
+            >{faq.link.label}</a
+          >}
+        </p>
+      </details>)}
     </div>
   </section>
-  <div id="products"><ProductCardsSection labelKey="products.labelProducts" ctaKey="products.ctaShort" /></div>
+  <div id="products">
+    <ProductCardsSection
+      labelKey="products.labelProducts"
+      ctaKey="products.ctaShort"
+    />
+  </div>
 </BaseLayout>
