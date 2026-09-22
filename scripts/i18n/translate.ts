@@ -1,6 +1,9 @@
 import OpenAI from 'openai'
 import { zodTextFormat } from 'openai/helpers/zod'
-import type { ResponseUsage } from 'openai/resources/responses/responses'
+import type {
+  Response,
+  ResponseUsage
+} from 'openai/resources/responses/responses'
 import { z } from 'zod'
 
 import type { OutputLocale, TranslationPipelineConfig } from './config'
@@ -36,10 +39,55 @@ const responseUsageSchema = z.object({
 }) satisfies z.ZodType<ResponseUsage, z.ZodTypeDef, unknown>
 
 const usageEnvelopeSchema = z.object({ usage: responseUsageSchema.nullish() })
-const responseEnvelopeSchema = z.object({
-  status: z.string().optional(),
-  error: z.object({ code: z.string(), message: z.string() }).nullish(),
-  incomplete_details: z.object({ reason: z.string().optional() }).nullish(),
+const responseMetadataSchema = z.object({
+  status: z
+    .enum([
+      'completed',
+      'failed',
+      'in_progress',
+      'cancelled',
+      'queued',
+      'incomplete'
+    ])
+    .optional(),
+  error: z
+    .object({
+      code: z.enum([
+        'server_error',
+        'rate_limit_exceeded',
+        'invalid_prompt',
+        'data_residency_mismatch',
+        'bio_policy',
+        'vector_store_timeout',
+        'invalid_image',
+        'invalid_image_format',
+        'invalid_base64_image',
+        'invalid_image_url',
+        'image_too_large',
+        'image_too_small',
+        'image_parse_error',
+        'image_content_policy_violation',
+        'invalid_image_mode',
+        'image_file_too_large',
+        'unsupported_image_media_type',
+        'empty_image_file',
+        'failed_to_download_image',
+        'image_file_not_found'
+      ]),
+      message: z.string()
+    })
+    .nullable(),
+  incomplete_details: z
+    .object({
+      reason: z.enum(['max_output_tokens', 'content_filter']).optional()
+    })
+    .nullable()
+}) satisfies z.ZodType<
+  Pick<Response, 'status' | 'error' | 'incomplete_details'>,
+  z.ZodTypeDef,
+  unknown
+>
+const responseEnvelopeSchema = responseMetadataSchema.extend({
   output: z.array(
     z.discriminatedUnion('type', [
       z.object({ type: z.literal('reasoning') }),

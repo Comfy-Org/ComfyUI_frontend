@@ -553,6 +553,8 @@ describe('createOpenAiTranslator', () => {
     const body = {
       object: 'response',
       status: 'completed',
+      error: null,
+      incomplete_details: null,
       output: [
         { id: 'reasoning', type: 'reasoning', summary: [] },
         {
