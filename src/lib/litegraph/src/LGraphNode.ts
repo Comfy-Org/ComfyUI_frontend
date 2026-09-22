@@ -325,6 +325,7 @@ interface DrawTitleOptions {
 
 interface DrawTitleTextOptions extends DrawTitleOptions {
   default_title_color: string
+  selected?: boolean
 }
 
 export interface DrawTitleBoxOptions extends DrawTitleOptions {
@@ -4054,12 +4055,11 @@ export class LGraphNode
       scale,
       default_title_color,
       low_quality = false,
+      selected = this.selected,
       title_height = LiteGraph.NODE_TITLE_HEIGHT
     }: DrawTitleTextOptions
   ): void {
     const size = this.renderingSize
-    const selected = this.selected
-
     if (this.onDrawTitleText) {
       this.onDrawTitleText(
         ctx,
