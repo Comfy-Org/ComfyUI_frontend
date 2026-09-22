@@ -785,7 +785,6 @@ function startAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
-    acknowledgedWorkflowId: readonly(acknowledgedWorkflowId),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       coalescer.enqueue(operations)
   }

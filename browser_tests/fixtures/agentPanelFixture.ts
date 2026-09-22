@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
 import type {
@@ -19,6 +20,7 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -199,6 +201,24 @@ export async function getAgentActiveWorkflowPath(
       (window.app!.extensionManager as WorkspaceStore).workflow.activeWorkflow
         ?.path
   )
+}
+
+export async function switchToAgentWorkflowTab(
+  page: Page,
+  tabPath: string
+): Promise<void> {
+  const tabIndex = await page.evaluate(
+    (path) =>
+      (
+        window.app!.extensionManager as WorkspaceStore
+      ).workflow.openWorkflows.findIndex((workflow) => workflow.path === path),
+    tabPath
+  )
+  if (tabIndex < 0) throw new Error(`Workflow tab is not open: ${tabPath}`)
+  const tab = new Topbar(page).getTab(tabIndex)
+  await tab.click()
+  await expect(tab).toHaveClass(/p-togglebutton-checked/)
+  await expect.poll(() => getAgentActiveWorkflowPath(page)).toBe(tabPath)
 }
 
 export async function readPersistedAgentDocIdentity(page: Page) {

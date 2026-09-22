@@ -1,25 +1,6 @@
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import type { WebSocketRoute } from '@playwright/test'
 
-import type { ClientDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
-
-type SubscriptionFrame = Extract<
-  ClientDocFrame,
-  { type: 'doc_subscribe' | 'doc_unsubscribe' }
->
-
-export function countDocFrames(
-  messagesBySocket: Map<WebSocketRoute, string[]>,
-  ws: WebSocketRoute,
-  type: SubscriptionFrame['type'],
-  workflowId: string
-): number {
-  return (messagesBySocket.get(ws) ?? []).filter((message) => {
-    const frame = JSON.parse(message) as ClientDocFrame
-    return frame.type === type && frame.data.workflow_id === workflowId
-  }).length
-}
-
 /**
  * The `/ws` connections the page opens, in order. A reconnect routes a second
  * time, so a test that drops the socket needs the route the client opened

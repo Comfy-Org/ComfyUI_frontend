@@ -1,5 +1,6 @@
 import { createUuidv4 } from '@/utils/uuid'
 import { AGENT_CRDT_DOC_ID_SESSION_KEY } from '@/platform/workflow/persistence/base/storageKeyConstants'
+import { MAX_AGENT_STORAGE_CLOCK_SKEW_MS } from '@/workbench/extensions/agent/persistenceTime'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount or reload loses the binding until the next turn ack. Persist it
@@ -96,7 +97,7 @@ export function reconcilePersistedDocId(): string | null {
     const now = Date.now()
     if (
       now >= record.expiresAt ||
-      record.expiresAt > now + DOC_ID_TTL_MS
+      record.expiresAt > now + DOC_ID_TTL_MS + MAX_AGENT_STORAGE_CLOCK_SKEW_MS
     ) {
       clearPersistedDocId()
       return null

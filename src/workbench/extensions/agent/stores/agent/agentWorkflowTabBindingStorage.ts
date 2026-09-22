@@ -1,3 +1,5 @@
+import { MAX_AGENT_STORAGE_CLOCK_SKEW_MS } from '@/workbench/extensions/agent/persistenceTime'
+
 export const AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY =
   'Comfy.Agent.WorkflowTabBindings.v2'
 
@@ -39,7 +41,7 @@ export function liveAgentWorkflowTabBindings(
     Object.entries(bindings).filter(
       (entry): entry is [string, PersistedAgentWorkflowTabBinding] =>
         isPersistedBinding(entry[1]) &&
-        entry[1].confirmedAt <= now &&
+        entry[1].confirmedAt <= now + MAX_AGENT_STORAGE_CLOCK_SKEW_MS &&
         entry[1].confirmedAt + BINDING_TTL_MS >= now
     )
   )

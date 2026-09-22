@@ -10,14 +10,15 @@ import {
   bootAgentApp,
   getAgentActiveWorkflowPath,
   pushAgentEvent,
-  readPersistedAgentDocIdentity
+  readPersistedAgentDocIdentity,
+  switchToAgentWorkflowTab
 } from '@e2e/fixtures/agentPanelFixture'
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
+import { countDocFrames } from '@e2e/fixtures/utils/countDocFrames'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { countDocFrames, webSocketFixture } from '@e2e/fixtures/ws'
+import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
@@ -35,7 +36,6 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     const workflowId = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
     const agentPanel = new AgentPanel(page)
     const command = new CommandHelper(page)
-    const topbar = new Topbar(page)
 
     await page.route('**/api/internal/cloud_analytics', (route) =>
       route.fulfill(jsonRoute({}))
@@ -96,7 +96,7 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
       AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY
     )
     const boundPath = readPersistedAgentWorkflowTabPath(rawBindings, workflowId)
-    expect(boundPath).toBeTruthy()
+    if (!boundPath) throw new Error('Persisted workflow tab binding is missing')
     await expect.poll(() => getAgentActiveWorkflowPath(page)).toBe(boundPath)
     expect(
       await page.evaluate(() => localStorage.getItem('Comfy.Agent.ThreadId'))
@@ -147,15 +147,25 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
       await expect.poll(() => getAgentActiveWorkflowPath(page)).toBe(boundPath)
 
       await expect.poll(() => countAfterReload('doc_subscribe')).toBe(1)
+
+      reloadedWs.send(
+        JSON.stringify({
+          type: 'doc_subscribed',
+          data: { v: 1, workflow_id: workflowId, ok: true, seq: 0 }
+        })
+      )
     })
 
-    await test.step('Opening a blank workflow suspends the restored follower', async () => {
+    await test.step('Switching away suspends the follower and returning resumes it', async () => {
       expect(countAfterReload('doc_unsubscribe')).toBe(0)
       await command.executeCommand('Comfy.NewBlankWorkflow')
       await expect.poll(() => countAfterReload('doc_unsubscribe')).toBe(1)
+      const subscribeCountBeforeResume = countAfterReload('doc_subscribe')
 
-      await topbar.getTab(0).click()
-      await expect.poll(() => countAfterReload('doc_subscribe')).toBe(2)
+      await switchToAgentWorkflowTab(page, boundPath)
+      await expect
+        .poll(() => countAfterReload('doc_subscribe'))
+        .toBe(subscribeCountBeforeResume + 1)
     })
   })
 })
