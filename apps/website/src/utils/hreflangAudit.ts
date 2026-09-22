@@ -7,7 +7,12 @@
  */
 import type { Alternate } from './hreflangRoutes'
 
-import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
+import {
+  DEFAULT_LOCALE,
+  LOCALE_CODES,
+  LOCALES,
+  localeHasRoute
+} from '../config/locales'
 import { unprefixed } from './hreflangRoutes'
 
 export interface BuiltSite {
@@ -28,7 +33,7 @@ export interface BuiltSite {
 /**
  * The exact locale-to-URL mapping a clustered route must emit.
  *
- * Publication is determined by the pages that were actually built.
+ * Required locales come from policy; built pages also expose extra publication.
  */
 function expectedAlternates(
   route: string,
@@ -36,12 +41,16 @@ function expectedAlternates(
   pages: ReadonlyMap<string, Alternate[]>
 ): Map<string, string> {
   const path = unprefixed(route)
+  const publishedLocales = LOCALE_CODES.filter(
+    (locale) =>
+      localeHasRoute(locale, path) ||
+      pages.has(`${LOCALES[locale].prefix}${path}`)
+  )
   const expected = new Map<string, string>(
-    LOCALE_CODES.filter((locale) => pages.has(`${LOCALES[locale].prefix}${path}`))
-      .map((locale): [string, string] => [
-        LOCALES[locale].hreflang,
-        `${origin}${LOCALES[locale].prefix}${path}`
-      ])
+    publishedLocales.map((locale): [string, string] => [
+      LOCALES[locale].hreflang,
+      `${origin}${LOCALES[locale].prefix}${path}`
+    ])
   )
   expected.set('x-default', `${origin}${LOCALES[DEFAULT_LOCALE].prefix}${path}`)
   return expected
@@ -73,10 +82,6 @@ function clusterErrors(
     }
     seen.add(hreflang)
 
-    // Checking only that the expected pairs are present accepts extras beside
-    // them. A locale this site does not publish still resolves and can still be
-    // reciprocal, so nothing downstream catches it. The set stays closed: `ja`
-    // is admitted above only for a route whose page was actually built.
     if (!expected.has(hreflang)) {
       errors.push(
         `${route}: ${source} declares hreflang="${hreflang}", which is not one of ${[...expected.keys()].join(', ')}`

@@ -11,7 +11,7 @@ import type { Alternate } from './hreflang'
 import {
   hreflangAlternates,
   ogLocale,
-  ogLocaleAlternate,
+  ogLocaleAlternates,
   sitemapAlternates
 } from './hreflang'
 
@@ -128,23 +128,22 @@ describe('og locale', () => {
     expect(ogLocale('ja')).toBe('ja_JP')
   })
 
-  it('names the other language only when the page has a twin', () => {
+  it('names other languages only when the page has a twin', () => {
     const clustered = hreflangAlternates('/cli/', ORIGIN)
-    expect(ogLocaleAlternate('en', clustered)).toBe('zh_CN')
-    expect(ogLocaleAlternate('zh-CN', clustered)).toBe('en_US')
-    expect(ogLocaleAlternate('en', [])).toBeNull()
+    expect(ogLocaleAlternates('en', clustered)).toEqual(['zh_CN'])
+    expect(ogLocaleAlternates('zh-CN', clustered)).toEqual(['en_US'])
+    expect(ogLocaleAlternates('en', [])).toEqual([])
   })
 
-  it('pairs a Japanese page with English, not with Chinese', () => {
-    // OG takes one alternate. Testing for `zh-CN` rather than `en` sent every
-    // localized page to zh_CN, so a Japanese page named a language it has
-    // nothing to do with.
+  it('names both other published locales on the homepage', () => {
     const clustered = hreflangAlternates('/ja/', ORIGIN)
-    expect(ogLocaleAlternate('ja', clustered)).toBe('en_US')
+    expect(ogLocaleAlternates('ja', clustered)).toEqual(['en_US', 'zh_CN'])
+    expect(ogLocaleAlternates('en', clustered)).toEqual(['zh_CN', 'ja_JP'])
+    expect(ogLocaleAlternates('zh-CN', clustered)).toEqual(['en_US', 'ja_JP'])
   })
 })
 
-describe('ogLocaleAlternate', () => {
+describe('ogLocaleAlternates', () => {
   function alt(...codes: Alternate['hreflang'][]): Alternate[] {
     return codes.map((hreflang) => ({
       hreflang,
@@ -153,9 +152,9 @@ describe('ogLocaleAlternate', () => {
   }
 
   it('names the Chinese twin when the page has one', () => {
-    expect(ogLocaleAlternate('en', alt('en', 'zh-CN', 'x-default'))).toBe(
+    expect(ogLocaleAlternates('en', alt('en', 'zh-CN', 'x-default'))).toEqual([
       'zh_CN'
-    )
+    ])
   })
 
   /**
@@ -163,17 +162,17 @@ describe('ogLocaleAlternate', () => {
    * cluster was never evidence that a Chinese page exists.
    */
   it('names nothing when the target locale is not published', () => {
-    expect(ogLocaleAlternate('en', alt('en', 'x-default'))).toBeNull()
+    expect(ogLocaleAlternates('en', alt('en', 'x-default'))).toEqual([])
   })
 
   it('names nothing for a page outside any cluster', () => {
-    expect(ogLocaleAlternate('en', [])).toBeNull()
+    expect(ogLocaleAlternates('en', [])).toEqual([])
   })
 
   it('points a localized page back at English', () => {
-    expect(ogLocaleAlternate('zh-CN', alt('en', 'zh-CN', 'x-default'))).toBe(
-      'en_US'
-    )
+    expect(
+      ogLocaleAlternates('zh-CN', alt('en', 'zh-CN', 'x-default'))
+    ).toEqual(['en_US'])
   })
 })
 

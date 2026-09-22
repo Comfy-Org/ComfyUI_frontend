@@ -73,13 +73,14 @@ export function ogLocale(locale: string): string {
     : LOCALES[DEFAULT_LOCALE].ogLocale
 }
 
-export function ogLocaleAlternate(
+export function ogLocaleAlternates(
   locale: string,
   alternates: Alternate[]
-): string | null {
-  const target = locale === DEFAULT_LOCALE ? 'zh-CN' : DEFAULT_LOCALE
-  if (!alternates.some((alternate) => alternate.hreflang === target)) {
-    return null
-  }
-  return LOCALES[target].ogLocale
+): string[] {
+  const currentLocale = isLocale(locale) ? locale : DEFAULT_LOCALE
+  return LOCALE_CODES.filter(
+    (code) =>
+      code !== currentLocale &&
+      alternates.some((alternate) => alternate.hreflang === code)
+  ).map((code) => LOCALES[code].ogLocale)
 }

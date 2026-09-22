@@ -74,6 +74,22 @@ describe('auditBuiltSite', () => {
     ])
   })
 
+  it('rejects a required locale omitted from the build and both clusters', () => {
+    const site = healthySite()
+    site.pages.delete('/zh-CN/about/')
+    site.sitemap.delete('/zh-CN/about/')
+    const english = cluster('/about/').filter(
+      ({ hreflang }) => hreflang !== 'zh-CN'
+    )
+    site.pages.set('/about/', english)
+    site.sitemap.set('/about/', english)
+
+    expect(auditBuiltSite(site)).toEqual([
+      '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
+      '/about/: sitemap expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it'
+    ])
+  })
+
   it('rejects the same hreflang emitted twice on one page', () => {
     const site = healthySite()
     site.pages.set('/about/', [
