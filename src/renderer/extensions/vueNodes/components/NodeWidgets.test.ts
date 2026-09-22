@@ -5,6 +5,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import type { NodeState } from '@/types/nodeState'
@@ -77,14 +78,7 @@ function renderComponent({
   widgetIds,
   processedWidgetModel,
   setupStores
-}: {
-  nodeData?: NodeState
-  widgetIds?: readonly WidgetId[]
-  processedWidgetModel?: {
-    processedWidgets: ProcessedWidget[]
-    nodeType: string
-    canSelectInputs: boolean
-  }
+}: ComponentProps<typeof NodeWidgets> & {
   setupStores?: () => void
 }) {
   const pinia = getActivePinia()!

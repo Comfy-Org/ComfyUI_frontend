@@ -22,7 +22,7 @@ import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeState } from '@/types/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -168,15 +168,17 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
         NodeWidgets: {
           props: {
             nodeData: Object as PropType<NodeState>,
-            processedWidgets: {
-              type: Array as PropType<ProcessedWidget[]>,
+            processedWidgetModel: {
+              type: Object as PropType<
+                NonNullable<
+                  ComponentProps<typeof NodeWidgets>['processedWidgetModel']
+                >
+              >,
               required: true
-            },
-            nodeType: { type: String, required: true },
-            canSelectInputs: { type: Boolean, required: true }
+            }
           },
           template:
-            '<div data-testid="node-widgets">{{ processedWidgets.map((widget) => widget.widgetId).join(",") }}</div>'
+            '<div data-testid="node-widgets">{{ processedWidgetModel.processedWidgets.map((widget) => widget.widgetId).join(",") }}</div>'
         },
         NodeContent: {
           template: '<div data-testid="node-content" />'
