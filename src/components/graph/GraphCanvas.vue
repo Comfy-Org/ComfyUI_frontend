@@ -7,15 +7,9 @@
       <div
         v-if="workflowTabsPosition === 'Topbar'"
         data-testid="topbar-workflow-tabs"
-        class="workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full"
+        class="workflow-tabs-container pointer-events-auto relative flex h-(--workflow-tabs-height) w-full items-center border-b border-interface-stroke/50 bg-comfy-menu-bg shadow-interface"
       >
-        <div
-          class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
-        >
-          <WorkflowTabs />
-          <TopbarBadges />
-          <TopbarSubscribeButton />
-        </div>
+        <WorkflowTabs />
       </div>
     </template>
     <template #side-toolbar>
@@ -40,8 +34,12 @@
       <AppBuilder v-if="isBuilderMode" />
       <NodePropertiesPanel v-else />
     </template>
-    <template v-if="showUI" #agent-panel>
-      <component :is="DockedAgentPanel" v-if="agentDocked && !linearMode" />
+    <template v-if="showUI" #agent-panel="{ hasOpaqueNeighbor }">
+      <component
+        :is="DockedAgentPanel"
+        v-if="agentDocked && !linearMode"
+        :has-opaque-neighbor="hasOpaqueNeighbor"
+      />
     </template>
     <template #graph-canvas-panel>
       <div
@@ -160,10 +158,7 @@ import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
-import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
-import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { NodeState } from '@/types/nodeState'
@@ -202,7 +197,10 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
-import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+import {
+  collapseOutsideSelectionOnPrimaryPointerDown,
+  shouldIgnoreCopyPaste
+} from '@/workbench/eventHelpers'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -304,6 +302,7 @@ watch(
         forEachNode(graph.rootGraph, (node) => {
           for (const widget of node.widgets ?? []) {
             widget.syncLiveVisibilityOptions?.()
+            widget.syncLiveDisabled?.()
           }
         })
       }
@@ -595,11 +594,6 @@ onMounted(async () => {
   const sharedStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
-  comfyApp.canvas.onSelectionChange = useChainCallback(
-    comfyApp.canvas.onSelectionChange,
-    () => canvasStore.updateSelectedItems()
-  )
-
   // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing, ?topup)
   await runUrlActionLoaders()
 
@@ -628,7 +622,16 @@ onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
 })
+
+useEventListener(
+  canvasRef,
+  'pointerdown',
+  collapseOutsideSelectionOnPrimaryPointerDown,
+  { capture: true }
+)
+
 function forwardPointerDownPanEvent(e: PointerEvent) {
+  collapseOutsideSelectionOnPrimaryPointerDown(e)
   forwardPanEvent(e, isMiddlePointerInput)
 }
 

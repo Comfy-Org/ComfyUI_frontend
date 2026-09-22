@@ -150,6 +150,40 @@ describe('readSubgraphDefinitions', () => {
     expect(projected.nodes?.[1]).not.toHaveProperty('widgets_values_named')
   })
 
+  it('sanitizes named widgets recursively without changing stored values', () => {
+    const definition = createTestSubgraphData({
+      nodes: [interiorNode(1, 'widget-node', { widgets_values: [42, 20] })]
+    })
+    const doc = seed(definition)
+    const stored = storedDefinition(doc, definition.id)
+    const widgets = storedNode(stored, 1).get('widgets')
+    assert.instanceOf(widgets, Y.Map)
+    const nested: Record<string, unknown> = { safe: 'kept' }
+    Object.defineProperty(nested, '__proto__', {
+      value: { polluted: 'nested' },
+      enumerable: true
+    })
+    widgets.set('seed', { values: [nested] })
+    widgets.set('__proto__', { polluted: 'named-widget' })
+    widgets.set('__custom_widget', 'public-widget-value')
+    const before = Y.encodeStateAsUpdate(doc)
+
+    const [projected] = readSubgraphDefinitions(doc)
+    const named = projected.nodes?.[0]?.widgets_values_named
+
+    expect(named).toEqual({
+      seed: { values: [{ safe: 'kept' }] },
+      steps: 20,
+      __custom_widget: 'public-widget-value'
+    })
+    expect(Object.getPrototypeOf(named)).toBe(Object.prototype)
+    expect(named).not.toHaveProperty('polluted')
+    expect(Object.keys(named ?? {})).not.toContain('__proto__')
+    expect(Object.keys(nested)).toContain('__proto__')
+    expect(widgets.get('__proto__')).toEqual({ polluted: 'named-widget' })
+    expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
+  })
+
   it('drops the op layer incarnation stamp from interior nodes', () => {
     const definition = createTestSubgraphData({
       nodes: [interiorNode(1)]
@@ -282,6 +316,45 @@ describe('readSubgraphDefinitions', () => {
     expect(projected.definitions).toEqual({ subgraphs: [inner] })
   })
 
+  it('preserves nested order and sanitizes digests after snapshot decode without writing', () => {
+    const first = createTestSubgraphData({
+      id: '00000000-0000-4000-8000-000000000002'
+    })
+    const second = createTestSubgraphData({
+      id: '00000000-0000-4000-8000-000000000001'
+    })
+    const outer = createTestSubgraphData({
+      id: '00000000-0000-4000-8000-000000000003',
+      definitions: { subgraphs: [first, second] }
+    })
+    const doc = seed(outer)
+    const storedOuter = storedDefinition(doc, outer.id)
+    storedOuter.set('__definition_digest', 'outer-digest')
+    const nested = seed(second, first).getMap<Y.Map<unknown>>('definitions')
+    const storedFirst = nested.get(first.id)
+    assert.exists(storedFirst)
+    storedFirst.set('__definition_digest', 'first-digest')
+    storedFirst.set('__future_cmp_register', 'first-private')
+    storedOuter.set(
+      'definitions',
+      new Y.Map<unknown>([
+        ['subgraphs', nested.clone()],
+        ['subgraph_order', [first.id, second.id]]
+      ])
+    )
+    const follower = new Y.Doc()
+    Y.applyUpdate(follower, Y.encodeStateAsUpdate(doc))
+    const before = Y.encodeStateAsUpdate(follower)
+
+    expect(readSubgraphDefinitions(follower)).toEqual([outer])
+    expect(readSubgraphDefinitionIds(follower)).toEqual([
+      outer.id,
+      first.id,
+      second.id
+    ])
+    expect(Y.encodeStateAsUpdate(follower)).toEqual(before)
+  })
+
   it('projects top-level and nested definition ids without reading bodies', () => {
     const inner = createTestSubgraphData({ nodes: [interiorNode(1)] })
     const outer = createTestSubgraphData({
@@ -329,6 +402,17 @@ describe('readSubgraphDefinitions', () => {
     ['links', (stored) => stored.set('links', 'invalid')],
     ['definitions', (stored) => stored.set('definitions', 'invalid')],
     [
+      'nested map definition',
+      (stored) => {
+        const definitions = new Y.Map<unknown>()
+        const subgraphs = new Y.Map<unknown>()
+        stored.set('definitions', definitions)
+        definitions.set('subgraphs', subgraphs)
+        definitions.set('subgraph_order', ['invalid'])
+        subgraphs.set('invalid', null)
+      }
+    ],
+    [
       'nested definition',
       (stored) => {
         const definitions = new Y.Map<unknown>()
@@ -348,16 +432,18 @@ describe('readSubgraphDefinitions', () => {
   })
 
   it('reads a node named twice in the order register once', () => {
-    // mintDefinition pushes one register entry per input node, so two interior
-    // nodes sharing an id leave a two-entry register over a one-key map.
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1), interiorNode(1), interiorNode(2)],
-      links: [interiorLink(5, 1, 2), interiorLink(5, 1, 2)]
+      nodes: [interiorNode(1), interiorNode(2)],
+      links: [interiorLink(5, 1, 2)]
     })
+    const doc = seed(definition)
+    const stored = storedDefinition(doc, definition.id)
+    stored.set('node_order', ['2', '1', '2', '1'])
+    stored.set('link_order', ['5', '5'])
 
-    const [projected] = readSubgraphDefinitions(seed(definition))
+    const [projected] = readSubgraphDefinitions(doc)
 
-    expect(projected.nodes?.map((node) => node.id)).toEqual([1, 2])
+    expect(projected.nodes?.map((node) => node.id)).toEqual([2, 1])
     expect(projected.links?.map((link) => link.id)).toEqual([5])
   })
 

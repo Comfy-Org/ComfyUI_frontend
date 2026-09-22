@@ -115,7 +115,11 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   source.forEach((value, key) => {
     if (key === NODE_INCARNATION || !isReadableKey(key)) return
     if (key === 'widgets' && value instanceof Y.Map) {
-      node.widgets_values_named = value.toJSON()
+      node.widgets_values_named = Object.fromEntries(
+        [...value.entries()].flatMap(([name, widgetValue]) =>
+          isReadableKey(name) ? [[name, plain(widgetValue)]] : []
+        )
+      )
     } else if (key === OPAQUE_WIDGETS_KEY) {
       node.widgets_values = plain(value)
     } else {
@@ -166,6 +170,9 @@ function projectDefinitionEntry(
     return [[key, projectDefinitionLinks(source, value)]]
   }
   if (key === 'definitions') {
+    if (value instanceof Y.Map) {
+      return [[key, readNestedDefinitions(value)]]
+    }
     return [[key, withoutNestedDefinitionBookkeeping(plain(value))]]
   }
   return [[key, plain(value)]]
@@ -234,6 +241,27 @@ function isSafeDefinition(value: unknown): boolean {
   )
 }
 
+function readNestedDefinitions(
+  source: Y.Map<unknown>
+): Record<string, unknown> {
+  const definitions: Record<string, unknown> = {}
+  source.forEach((value, key) => {
+    if (key === 'subgraph_order' || !isReadableKey(key)) return
+    if (key === 'subgraphs' && value instanceof Y.Map) {
+      definitions.subgraphs = orderedKeys(
+        source.get('subgraph_order'),
+        value
+      ).map((id) => {
+        const definition = value.get(id)
+        return definition instanceof Y.Map ? readDefinition(definition) : null
+      })
+    } else {
+      definitions[key] = plain(value)
+    }
+  })
+  return definitions
+}
+
 function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
   const definition = projectSubgraphDefinition(source)
   return isSafeDefinition(definition) ? definition : null
@@ -255,8 +283,15 @@ function readList(source: unknown): unknown[] {
 function collectDefinitionIds(source: unknown, ids: string[]): void {
   const id = readField(source, 'id')
   if (typeof id === 'string') ids.push(id)
-  const nested = readField(readField(source, 'definitions'), 'subgraphs')
-  for (const definition of readList(nested)) {
+  const container = readField(source, 'definitions')
+  const nested = readField(container, 'subgraphs')
+  const definitions =
+    nested instanceof Y.Map
+      ? orderedKeys(readField(container, 'subgraph_order'), nested).map((key) =>
+          nested.get(key)
+        )
+      : readList(nested)
+  for (const definition of definitions) {
     collectDefinitionIds(definition, ids)
   }
 }

@@ -59,7 +59,7 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
             return Object.fromEntries(
               node.widgets
                 .filter(
-                  (widget) => widget?.name && !inputNames.includes(widget.name)
+                  (widget) => widget.name && !inputNames.includes(widget.name)
                 )
                 .map((widget) => [widget.name, widget.label])
             )
