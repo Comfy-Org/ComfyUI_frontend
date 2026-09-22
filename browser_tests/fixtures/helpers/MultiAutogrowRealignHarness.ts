@@ -260,8 +260,10 @@ export class MultiAutogrowRealignHarness {
   }
 
   /** `[targetNodeId, inputName]` per expected link, as a saved graph holds it. */
-  expectedSavedLinkTargets(): unknown[] {
-    return EXPECTED_TARGETS.map(({ name }) => [TARGET_NODE_ID, name])
+  expectedSavedLinkTargets(): readonly SavedLinkTarget[] {
+    return EXPECTED_TARGETS.map(
+      ({ name }) => [TARGET_NODE_ID, name] as const satisfies SavedLinkTarget
+    )
   }
 
   /** Opens the panel and points the chat at the currently active workflow. */

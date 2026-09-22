@@ -45,26 +45,18 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     // Each test below boots its own app and submits a real Run; only the
-    // second and third also reload the page. CI's default `workers: 2`
-    // would otherwise put them in concurrent Chromium instances, and that
-    // contention -- not a logic bug -- is what first pushed them past their
-    // budget
-    // (https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/35656959584/job/106524115146).
-    //
-    // `mode: 'serial'` also means Playwright skips the remaining tests in
-    // this file after the first failure, which is the wrong contract for
-    // three tests that share no state -- see review comment
-    // https://github.com/Comfy-Org/ComfyUI_frontend/pull/18275#discussion_r4067888620.
-    // Kept as-is this round: this file's `@cloud` project inherits this
-    // repo's top-level `fullyParallel: true` (unlike the dedicated
-    // `custom-nodes`/`performance`/`audit` projects, which opt out of it
-    // for exactly this reason), so removing `serial` here risks reproducing
-    // the worker-contention timeout `serial` was added to fix, and this
-    // environment has no way to run the real, video-recording CI job to
-    // confirm a replacement doesn't regress it. Splitting this file into
-    // its own `fullyParallel: false` project with a dedicated `--workers=1`
-    // CI job, matching that existing pattern, is the real fix and needs a
-    // CI workflow change to verify.
+    // second and third also reload the page. This project inherits the
+    // repo's top-level `fullyParallel: true`, so without `serial` CI's
+    // default `workers: 2` puts these three heavy Chromium instances in
+    // concurrent workers; that contention, not a logic bug, is what pushes
+    // them past budget. `serial` trades that for a different cost: these
+    // three tests share no state, so Playwright skipping the rest of the
+    // file after one failure is the wrong contract for them. The real fix
+    // is a dedicated `fullyParallel: false`, `--workers=1` project for this
+    // file, matching the existing `custom-nodes`/`performance`/`audit`
+    // projects; that needs a CI workflow change this environment can't
+    // verify against the real video-recording job, so `serial` stays for
+    // now.
     test.describe.configure({ mode: 'serial' })
 
     test('keeps every link and scalar under its named slot across a reconcile and a resubscribe', async ({

@@ -538,8 +538,9 @@ function resolveAutogrowOrdinal(
   //TODO preslice groupname?
   const name = inputName.slice(groupName.length + 1)
   const { names } = node.comfyDynamic.autogrow[groupName]
-  if (!isAutogrowGroupMember(name, names)) return undefined
-  return names ? names.indexOf(name) : parseInt(name.match(ORDINAL_REGEX)![0])
+  if (names) return names.includes(name) ? names.indexOf(name) : undefined
+  const match = name.match(ORDINAL_REGEX)
+  return match ? parseInt(match[0]) : undefined
 }
 function autogrowInputConnected(index: number, node: AutogrowNode) {
   const input = node.inputs.at(index)

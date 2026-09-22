@@ -107,32 +107,54 @@ const OPTIONAL_SLOT_FIELD_ASSIGNERS: ReadonlyArray<
 
 /**
  * Copies a serialized slot's presentation fields -- `name`, `type`, and the
- * ten optional fields `OPTIONAL_SLOT_FIELD_ASSIGNERS` lists -- onto the
- * live slot object, plus `link`/`links` (handled separately below), so the
- * node keeps its slot identity; an omitted field keeps the live value.
+ * ten optional fields `OPTIONAL_SLOT_FIELD_ASSIGNERS` lists -- onto the live
+ * slot object, so the node keeps its slot identity; an omitted field keeps
+ * the live value. `link`/`links` are handled separately, by
+ * `patchLiveInputSlot`/`patchLiveOutputSlot` below: keeping them out of this
+ * shared helper (rather than narrowing `live` at runtime with an `in` check,
+ * which a live slot missing that own key -- e.g. an output never assigned
+ * `links` -- would wrongly fail) means each caller's static type, not a
+ * runtime probe, decides which field applies.
  *
  * `boundingRect` is deliberately excluded: on a real slot instance it is a
  * `Rectangle` (a `Float64Array` subclass) that the renderer measures, and
  * `prepareInputSlot`/`prepareOutputSlots` always stub the serialized side to
  * `[0, 0, 0, 0]`, so copying it would clobber the live measurement with that
- * stub. A plain store record takes `link`/`links` as data, while a node's
- * slot instance derives them from the link store and must not have them
- * assigned.
+ * stub.
  */
-function patchLiveSlot<T extends PatchableSlot>(live: T, serialized: T): void {
+function patchSlotFields<T extends PatchableSlot>(
+  live: T,
+  serialized: T
+): void {
   // `name` and `type` are required on `INodeSlot`, so they are always
   // present and copied unconditionally; every field `OPTIONAL_SLOT_FIELD_
   // ASSIGNERS` handles is optional, and an omitted one keeps the live value.
   live.name = serialized.name
   live.type = serialized.type
   for (const assign of OPTIONAL_SLOT_FIELD_ASSIGNERS) assign(live, serialized)
+}
+
+/**
+ * A plain store record takes `link` as data, while a node's slot instance
+ * derives it from the link store and must not have it assigned.
+ */
+function patchLiveInputSlot(
+  live: INodeInputSlot,
+  serialized: INodeInputSlot
+): void {
+  patchSlotFields(live, serialized)
   if (!isPlainObject(live)) return
-  if ('link' in serialized && serialized.link !== undefined) {
-    ;(live as INodeInputSlot).link = serialized.link
-  }
-  if ('links' in serialized && serialized.links !== undefined) {
-    ;(live as INodeOutputSlot).links = serialized.links
-  }
+  if (serialized.link !== undefined) live.link = serialized.link
+}
+
+/** As {@link patchLiveInputSlot}, for `links` rather than `link`. */
+function patchLiveOutputSlot(
+  live: INodeOutputSlot,
+  serialized: INodeOutputSlot
+): void {
+  patchSlotFields(live, serialized)
+  if (!isPlainObject(live)) return
+  if (serialized.links !== undefined) live.links = serialized.links
 }
 
 /**
@@ -152,7 +174,7 @@ function patchLiveOutputSlots(
   for (const [index, output] of liveOutputs.entries()) {
     if (index >= outputs.length) break
     if (isSlotRecord(output) && isSlotRecord(outputs[index])) {
-      patchLiveSlot(output, outputs[index])
+      patchLiveOutputSlot(output, outputs[index])
       outputs[index] = output
     }
   }
@@ -180,7 +202,7 @@ function patchLiveInputSlots(
     )
     if (index < 0) continue
     consumed.add(index)
-    patchLiveSlot(input, inputs[index])
+    patchLiveInputSlot(input, inputs[index])
     inputs[index] = input
   }
   return inputs
@@ -1303,6 +1325,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         return undefined
       case 'unavailable':
         return fallback()
+      default: {
+        const unhandled: never = answer
+        return unhandled
+      }
     }
   }
 
@@ -2057,10 +2083,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           nodeStore.clearOwner(scope, context)
           break
       }
-      // Commits this mutation's own staged autogrow-memory writes now that
-      // its graph effects have landed, so a later mutation in the same
-      // batch throwing keeps every earlier mutation's writes instead of
-      // losing them to one all-or-nothing apply at the end of the batch.
+      // See `AutogrowMemoryDraft` for why this applies per mutation.
       memory.applyMutation(index)
     }
   }

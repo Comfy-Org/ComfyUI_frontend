@@ -365,8 +365,10 @@ const graphMutations = (workflowId: string) => {
           ? owningGraph(rootGraph, scope)?.getNodeById(nodeId)
           : undefined
         // Unmounted / background workflow: the node itself can't be asked,
-        // so this carries no opinion -- callers fall back to the name-shape
-        // heuristic instead of treating it as "not a member".
+        // so this carries no opinion -- `resolveAutogrowGroup` falls back to
+        // remembered provenance, then the node type's own static definition,
+        // and only then the name-shape heuristic, instead of treating this
+        // as "not a member".
         if (!node) return { kind: 'unavailable' }
         const group = liveAutogrowGroupOf(node, name)
         return group === undefined
