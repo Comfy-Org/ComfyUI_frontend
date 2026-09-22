@@ -13,10 +13,12 @@ import {
 import type { SavedGeneration } from '../../config/workshop-generation-assets'
 import { WORKSHOP_ASSETS_URL } from '../../config/workshop-env'
 import {
+  accessAfterFailure,
   mergeGenerations,
   savedAssetTiles
 } from '../../lib/workshop/saved-assets'
 import type {
+  AssetAccess,
   SavedAsset,
   SavedAssetTile as SavedAssetTileData
 } from '../../lib/workshop/saved-assets'
@@ -44,9 +46,7 @@ const ACCESS_RETRY_MS = 15_000
 const ACCESS_PASSES = 8
 
 const generations = ref<SavedGeneration[]>([])
-const access = ref(
-  new Map<string, { url?: string; expiresAt: number; renewAt: number }>()
-)
+const access = ref(new Map<string, AssetAccess>())
 const unavailable = ref(new Set<string>())
 const failed = ref(false)
 const viewingKey = ref<string>()
@@ -186,16 +186,14 @@ async function grantAccess(tile: SavedAsset) {
       access.value.delete(tile.assetId)
       return
     }
-    // A failed renewal must not take away a grant that still has time on it:
-    // the headroom is there so the old URL covers the retry, and dropping it
-    // unmounts the player mid-playback. Without a deadline nothing asks again.
-    const held = access.value.get(tile.assetId)
-    const kept = held && held.expiresAt > Date.now() ? held : undefined
-    access.value.set(tile.assetId, {
-      url: kept?.url,
-      expiresAt: kept?.expiresAt ?? 0,
-      renewAt: Date.now() + ACCESS_RETRY_MS
-    })
+    access.value.set(
+      tile.assetId,
+      accessAfterFailure(
+        access.value.get(tile.assetId),
+        Date.now(),
+        ACCESS_RETRY_MS
+      )
+    )
   }
 }
 

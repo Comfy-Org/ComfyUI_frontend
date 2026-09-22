@@ -94,3 +94,28 @@ export function savedAssetFileName(
   const name = url && new URL(url).pathname.split('/').pop()
   return name?.includes('.') ? name : `comfy-${assetId}.${EXTENSIONS[kind]}`
 }
+
+/** What a tile holds while its signed URL is current. */
+export interface AssetAccess {
+  readonly url?: string
+  readonly expiresAt: number
+  readonly renewAt: number
+}
+
+/**
+ * What a tile is left with when a grant request fails. The renewal deadline
+ * sits inside the grant's expiry, so a URL with time still on it outlives the
+ * attempt to replace it rather than unmounting the player mid-playback. One
+ * that has lapsed is let go, and either way a deadline of its own is what
+ * makes the tile ask again.
+ */
+export function accessAfterFailure(
+  held: AssetAccess | undefined,
+  now: number,
+  retryMs: number
+): AssetAccess {
+  const renewAt = now + retryMs
+  return held && held.expiresAt > now
+    ? { ...held, renewAt }
+    : { expiresAt: 0, renewAt }
+}

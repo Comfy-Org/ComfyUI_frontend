@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { SavedGeneration } from '../../config/workshop-generation-assets'
 import {
+  accessAfterFailure,
   mergeGenerations,
   savedAssetFileName,
   savedAssetTiles
@@ -116,6 +117,32 @@ describe('savedAssetFileName', () => {
     'downloads %s as %s, so the file is openable and named after the work',
     ([url, expected]) => {
       expect(savedAssetFileName('932cad6b', 'image', url)).toBe(expected)
+    }
+  )
+})
+
+describe('accessAfterFailure', () => {
+  const now = 1_000_000
+  const url = 'https://assets.example/saved.png'
+
+  it.for([
+    ['nothing granted yet', undefined, undefined],
+    ['a grant with time left', { url, expiresAt: now + 30_000 }, url],
+    ['a grant that has lapsed', { url, expiresAt: now - 1 }, undefined]
+  ] as const)(
+    'serves %s as %s while it schedules the retry',
+    ([, held, expected]) => {
+      const next = accessAfterFailure(
+        held && { ...held, renewAt: now - 1 },
+        now,
+        15_000
+      )
+
+      expect(
+        next.url,
+        'a URL still inside its expiry outlives the attempt to replace it'
+      ).toBe(expected)
+      expect(next.renewAt, 'nothing else would ask again').toBe(now + 15_000)
     }
   )
 })
