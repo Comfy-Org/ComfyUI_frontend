@@ -8,7 +8,7 @@ const NEW_TITLE = 'Renamed By Human'
 
 test.describe(
   'A human canvas rename mints a set_node_field op',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: CASE, humanOpsHost: 'apply' })
 
