@@ -142,6 +142,22 @@ describe('useCanvasStore', () => {
     expect(canvas.setDirty).toHaveBeenCalledWith(true, false)
   })
 
+  it('applies stored highlights when the canvas becomes available', async () => {
+    store.setHighlightedNodeIds([toNodeId(7)])
+    const canvas = fromPartial<LGraphCanvas>({
+      graph: new LGraph(),
+      highlighted_node_ids: new Set(),
+      setDirty: vi.fn(),
+      canvas: document.createElement('canvas')
+    })
+
+    store.canvas = canvas
+    await nextTick()
+
+    expect(canvas.highlighted_node_ids).toEqual(new Set([7]))
+    expect(canvas.setDirty).toHaveBeenCalledWith(true, false)
+  })
+
   describe('node:before-removed selection cleanup', () => {
     it.for(['direct', 'materialized'] as const)(
       'clears selection before onRemoved during %s replacement',

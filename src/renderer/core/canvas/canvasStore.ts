@@ -139,6 +139,10 @@ export const useCanvasStore = defineStore('canvas', () => {
     () => canvas.value,
     (newCanvas) => {
       currentGraph.value = newCanvas.graph
+      newCanvas.highlighted_node_ids = new Set(
+        [...highlightedNodeIds.value].map(serializeNodeId)
+      )
+      if (highlightedNodeIds.value.size > 0) newCanvas.setDirty(true, false)
       // Scoped to the on-screen graph: selection only holds items from it,
       // so removals in other graphs can't affect the live selection.
       useEventListener(
