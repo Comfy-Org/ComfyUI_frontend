@@ -255,15 +255,16 @@ describe('Composer', () => {
   })
 
   it('opens the node and workflow reference picker from the @ control', async () => {
-    const getMentionNodes = vi.fn(() => [{ id: '7', title: 'KSampler' }])
-    mount({ getMentionNodes })
+    mount({ getMentionNodes: () => [{ id: '7', title: 'KSampler' }] })
+    const textbox = screen.getByRole('textbox')
 
     await userEvent.click(screen.getByRole('button', { name: 'Reference' }))
 
-    expect(useAgentComposerStore().draft).toBe('@')
+    expect(textbox).toHaveTextContent('@')
     expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
     expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
-    expect(getMentionNodes).toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
+    expect(screen.getByRole('menuitem', { name: 'KSampler' })).toBeVisible()
   })
 
   it('enters graph selection mode from a click in Add to prompt', async () => {
