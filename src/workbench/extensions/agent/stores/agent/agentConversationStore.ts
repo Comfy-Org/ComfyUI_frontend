@@ -50,6 +50,12 @@ export const useAgentConversationStore = defineStore(
 
     let transport: AgentEventTransport | null = null
     let liveMessage: AssistantMessage | null = null
+    // PM-1575: whether a newly-created transport should hold a tool-call's
+    // chat "done" state back until canvas catch-up is confirmed (see
+    // agentEventTransport.ts). Defaults to never deferring, so a caller that
+    // never registers a gate (e.g. a headless/non-canvas conversation) keeps
+    // the pre-fix, immediate-done behavior.
+    let canvasSyncGate: () => boolean = () => false
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedMessageIds = new Set<string>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
@@ -118,7 +124,11 @@ export const useAgentConversationStore = defineStore(
       liveMessage = message
       activeTurnId.value = turnId
       activeIndex.value = messages.value.push(message) - 1
-      transport = createAgentEventTransport(message, replaceActive)
+      transport = createAgentEventTransport(
+        message,
+        replaceActive,
+        canvasSyncGate
+      )
     }
 
     function ingest(event: AgentChatEvent): void {
@@ -152,6 +162,23 @@ export const useAgentConversationStore = defineStore(
         return
       }
       entry.transport.ingest(event)
+    }
+
+    function setCanvasSyncGate(gate: () => boolean): void {
+      canvasSyncGate = gate
+    }
+
+    /**
+     * PM-1575: forwarded to every live transport (the active turn and any
+     * stashed background ones) whenever the bound workflow's CRDT follower
+     * applies a fresh doc update, so tool-call parts held back pending canvas
+     * catch-up can settle to 'done'. A no-op on a transport with nothing
+     * pending.
+     */
+    function notifyCanvasCaughtUp(): void {
+      transport?.notifyCanvasCaughtUp()
+      for (const entry of backgroundTurns.values())
+        entry.transport.notifyCanvasCaughtUp()
     }
 
     function abortActiveTurn(): void {
@@ -285,7 +312,8 @@ export const useAgentConversationStore = defineStore(
         activeIndex.value = messages.value.indexOf(transcript.pending.message)
         transport = createAgentEventTransport(
           transcript.pending.message,
-          replaceActive
+          replaceActive,
+          canvasSyncGate
         )
       }
     }
@@ -333,6 +361,8 @@ export const useAgentConversationStore = defineStore(
       recordPaywall,
       startTurn,
       ingest,
+      setCanvasSyncGate,
+      notifyCanvasCaughtUp,
       abortActiveTurn,
       stashActiveTurn,
       resumeBackgroundTurn,

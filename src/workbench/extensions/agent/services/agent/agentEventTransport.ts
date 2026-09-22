@@ -1,5 +1,6 @@
 import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 
+import { STALE_AFTER_MS } from '../../crdt/agentCrdtDocLifecycle'
 import type {
   AssistantMessage,
   RunApprovalPart,
@@ -26,11 +27,32 @@ export type AgentChatEvent = Extract<
 export interface AgentEventTransport {
   ingest: (event: AgentChatEvent) => void
   settle: () => void
+  /**
+   * PM-1575: called whenever the bound workflow's CRDT follower applies a
+   * fresh doc update, so any tool-call parts this transport held back
+   * pending canvas catch-up (see `shouldAwaitCanvasSync` below) can settle to
+   * `done`. A no-op when nothing is pending.
+   */
+  notifyCanvasCaughtUp: () => void
 }
 
 export function createAgentEventTransport(
   message: AssistantMessage,
-  emit: (m: AssistantMessage) => void
+  emit: (m: AssistantMessage) => void,
+  /**
+   * PM-1575: an `agent_tool_call` frame's own `status` says nothing about
+   * whether the effect it describes has actually reached the canvas -- that
+   * travels a separate, unrelated CRDT doc_update. When this returns `true`
+   * at the moment a tool call reports done, its part's chat-visible `state`
+   * is held at `'streaming'` (matching the in-progress icon/label) instead of
+   * flipping straight to `'done'`, until `notifyCanvasCaughtUp` is called or
+   * `STALE_AFTER_MS` elapses, whichever comes first -- reusing the same
+   * bound the CRDT follower's own passive heartbeat uses
+   * (`agentCrdtDocLifecycle.ts`), rather than inventing a new one. Defaults
+   * to never deferring, so a caller with no canvas to catch up on (or that
+   * never wires this up) keeps the immediate-done behavior.
+   */
+  shouldAwaitCanvasSync: () => boolean = () => false
 ): AgentEventTransport {
   let openText: TextPart | null = null
   let openThinking: ThinkingPart | null = null
@@ -38,6 +60,24 @@ export function createAgentEventTransport(
   const tools = new Map<string, ToolPart>()
   let settled = false
   let lastTabTargetKey: string | undefined
+  // Tool parts whose frame reported done but whose displayed state is held at
+  // 'streaming' pending canvas catch-up. Each has its own bounded timer so a
+  // part that never gets a `notifyCanvasCaughtUp` call still settles.
+  const pendingCanvasSync = new Map<ToolPart, ReturnType<typeof setTimeout>>()
+
+  function settlePendingCanvasSync(part: ToolPart): void {
+    const timer = pendingCanvasSync.get(part)
+    if (timer !== undefined) clearTimeout(timer)
+    pendingCanvasSync.delete(part)
+    part.state = 'done'
+  }
+
+  function notifyCanvasCaughtUp(): void {
+    if (pendingCanvasSync.size === 0) return
+    for (const part of [...pendingCanvasSync.keys()])
+      settlePendingCanvasSync(part)
+    emit(snapshotMessage(message))
+  }
 
   function closeOpenText(): void {
     if (openText) {
@@ -101,9 +141,19 @@ export function createAgentEventTransport(
         }
         part.name = event.data.tool_name
         if (event.data.status !== 'running') {
-          part.state = 'done'
           part.ok = event.data.status === 'success'
           part.durationMs = event.data.duration_ms
+          if (shouldAwaitCanvasSync()) {
+            pendingCanvasSync.set(
+              part,
+              setTimeout(() => {
+                settlePendingCanvasSync(part)
+                emit(snapshotMessage(message))
+              }, STALE_AFTER_MS)
+            )
+          } else {
+            part.state = 'done'
+          }
         }
         break
       }
@@ -171,5 +221,5 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
-  return { ingest, settle }
+  return { ingest, settle, notifyCanvasCaughtUp }
 }

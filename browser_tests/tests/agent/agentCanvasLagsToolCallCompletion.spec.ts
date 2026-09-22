@@ -63,6 +63,20 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
  * service, so this spec pins the OBSERVABLE client-side gap (completion
  * affordance fires; canvas does not reflect it for a long, but bounded,
  * interval) rather than claiming a specific backend root cause.
+ *
+ * The fix (client-side decoupling only -- the backend propagation delay
+ * itself is out of scope): `createAgentEventTransport` now takes an optional
+ * `shouldAwaitCanvasSync` gate. While it returns true, a tool call's `state`
+ * is held at `'streaming'` when its frame reports done, instead of flipping
+ * straight to `'done'`, until either `notifyCanvasCaughtUp()` is called or
+ * `STALE_AFTER_MS` elapses (the same bound `agentCrdtDocLifecycle.ts`'s own
+ * passive heartbeat uses). `AgentPanelRoot.vue` wires the gate to
+ * `agentPanelStore.enabled` and calls `notifyCanvasCaughtUp()` whenever
+ * `useAgentCrdtFollower`'s `outcomes.applied` counter increases for the bound
+ * workflow -- mirroring, not reusing, PM-1355's own catch-up-confirmation
+ * primitive, since that one lives inside `AgentCrdtDocLifecycle` and answers
+ * "is THIS subscribe's own catch-up frame overdue", not "has some later
+ * update since landed", which is the question this bug needed answered.
  */
 
 const WORKFLOW_ID = 'c1d2e3f4-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
@@ -318,20 +332,45 @@ test.describe(
   () => {
     test.describe.configure({ timeout: 60_000 })
 
-    test('the added node is still missing shortly after the agent reports the turn done', async ({
+    test('the tool call stays visibly syncing -- not done -- until the canvas actually catches up', async ({
       page
     }) => {
-      const { vueNodes } = await driveThroughToolCallDone(page)
+      const { vueNodes, sendDelayedDocUpdate } =
+        await driveThroughToolCallDone(page)
 
-      // The known defect: every affordance the user can see -- the tool call's
-      // own completion and the turn's "Worked for Xs" summary -- has already
-      // settled, but the node it added is not on the canvas yet, and nothing
-      // client-side is waiting to notice that (see file header). A real user
-      // would not wait the full reported ~10 s to conclude something is wrong.
-      test.fail()
-      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible({
-        timeout: 2_000
-      })
+      // The turn's own summary settled instantly (asserted inside the arrange
+      // step above), matching the report's "every working affordance" -- but
+      // the fix under test lives one level down, on the tool call's OWN
+      // displayed state inside that summary: expand it to look.
+      const panel = page.locator('#agent-panel-root')
+      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      await workSummary.click()
+      await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
+
+      const addNodeRow = panel
+        .getByRole('listitem')
+        .filter({ hasText: 'Add node' })
+      await expect(addNodeRow).toBeVisible()
+
+      // The fix: an `agent_tool_call` frame's own `status: 'success'` is no
+      // longer enough on its own to flip this row to "done" -- it stays on the
+      // same spinning glyph it showed while the tool was still running,
+      // because the canvas has not caught up to it yet (zero nodes, asserted
+      // below). Pre-fix, `ingest()` flipped this straight to the settled
+      // wrench glyph the instant the frame arrived, regardless of the canvas.
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toBeVisible()
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toHaveCount(
+        0
+      )
+
+      // Once the doc host's delayed broadcast actually lands, the tool call's
+      // own displayed state catches up in the same moment its node does -- the
+      // "done" affordance and canvas reality are no longer decoupled.
+      sendDelayedDocUpdate()
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toHaveCount(
+        0
+      )
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
     })
 
     test('the node does eventually land once the delayed doc_update actually arrives', async ({

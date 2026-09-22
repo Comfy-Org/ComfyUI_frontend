@@ -645,8 +645,19 @@ const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
   isCrdtDebugEnabled()
 )
-const { activeTurnId: conversationTurnId } = storeToRefs(
-  useAgentConversationStore()
+const agentConversationStore = useAgentConversationStore()
+const { activeTurnId: conversationTurnId } = storeToRefs(agentConversationStore)
+
+// PM-1575: a chat tool-call's own `status` says nothing about whether its
+// effect has actually reached the canvas -- the CRDT doc_update travels a
+// separate, unrelated listener (see agentEventTransport.ts's file header).
+// Gate the transport's tool-call "done" affordance on canvas catch-up only
+// while the CRDT follower is actually active, and re-check any parts it held
+// back every time the bound workflow applies a fresh update.
+agentConversationStore.setCanvasSyncGate(() => agentPanelStore.enabled)
+watch(
+  () => crdtStatus.value.outcomes.applied,
+  () => agentConversationStore.notifyCanvasCaughtUp()
 )
 
 // The resumed turn's own workflow outlives a panel remount (the session
