@@ -1863,6 +1863,36 @@ describe('graphMutations', () => {
     expect(widgetContexts).toEqual([context])
   })
 
+  it('notifies once after a valid batch commits', () => {
+    const onCommitted = vi.fn()
+    const tracked = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      placement,
+      onCommitted
+    })
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(tracked.addNode(node(1), context)).toBe(true)
+    expect(onCommitted).toHaveBeenCalledOnce()
+
+    expect(
+      tracked.batch(context, (batch) => {
+        batch.addNode(node(2))
+        batch.connect({
+          id: 2,
+          originNodeId: 2,
+          originSlot: 0,
+          targetNodeId: 99,
+          targetSlot: 0,
+          type: 'IMAGE'
+        })
+      })
+    ).toBe(false)
+    expect(onCommitted).toHaveBeenCalledOnce()
+    error.mockRestore()
+  })
+
   function graphWithStoreOnlyNode() {
     const graph = new LGraph()
     createGraphMutations({

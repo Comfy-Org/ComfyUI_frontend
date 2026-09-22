@@ -10,6 +10,7 @@ import {
 import type { Ref } from 'vue'
 import * as Y from 'yjs'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
@@ -272,6 +273,12 @@ function startAgentCrdtFollower(
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
+  let lastActivityAt: number | null = null
+  let reconnectAttempt = 0
+  let confirmedWorkflowId: string | null = null
+  const markActivity = (): void => {
+    lastActivityAt = performance.now()
+  }
   const outcomes = ref<AgentCrdtOutcomeCounters>({
     received: 0,
     applied: 0,
@@ -289,6 +296,14 @@ function startAgentCrdtFollower(
     () => bridge.resubscribe(),
     () => {
       connected.value = false
+    },
+    ({ attempt, durationMs }) => {
+      useTelemetry()?.trackAgentReconnectFailed({
+        attempt,
+        error_class: 'subscription_refused',
+        retryable: true,
+        reconnect_duration_ms: durationMs
+      })
     }
   )
   const tabId = createUuidv4()
@@ -414,8 +429,12 @@ function startAgentCrdtFollower(
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
       lifecycle.onSubscribeConfirmed()
+      reconnectAttempt = 0
+      confirmedWorkflowId = subscribedWorkflowId.value
+      markActivity()
       resumeHeldOpsIfSubscribed()
     } else {
+      confirmedWorkflowId = null
       lifecycle.onSubscribeRefused()
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
@@ -433,6 +452,7 @@ function startAgentCrdtFollower(
       return
     }
     lifecycle.onDocumentUpdate()
+    markActivity()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     const materialized = applyAndReconcile(update)
@@ -467,6 +487,7 @@ function startAgentCrdtFollower(
     )
       return
     lifecycle.onDocumentResult()
+    markActivity()
     lastFrameType.value = event.type
     recordDevEvent('doc_ops_result', event.detail ?? null)
   }
@@ -481,6 +502,7 @@ function startAgentCrdtFollower(
         : undefined
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return
+    markActivity()
     const context: RemoteMutationContext = {
       source: 'agent-remote',
       actor: detail.actor ?? 'agent-reset',
@@ -565,6 +587,18 @@ function startAgentCrdtFollower(
     lifecycle.onSubscribeSent(detail.workflowId)
   }
   const onReconnected: EventListener = () => {
+    if (confirmedWorkflowId !== null) {
+      reconnectAttempt += 1
+      useTelemetry()?.trackAgentReconnectStarted({
+        disconnect_class: 'socket_reconnect',
+        attempt: reconnectAttempt,
+        last_seen_version: bridge.lastSequence,
+        offline_duration_ms:
+          lastActivityAt === null
+            ? null
+            : Math.max(0, Math.round(performance.now() - lastActivityAt))
+      })
+    }
     connected.value = false
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
@@ -722,6 +756,7 @@ function startAgentCrdtFollower(
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
       connected.value = false
+      confirmedWorkflowId = null
       knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
       if (!active) {

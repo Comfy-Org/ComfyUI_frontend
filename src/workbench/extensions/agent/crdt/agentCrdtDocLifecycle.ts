@@ -167,6 +167,8 @@ export class AgentCrdtDocLifecycle {
   // no more often than DOC_ID_REFRESH_INTERVAL_MS, so a doc that keeps
   // delivering frames keeps its rebind window instead of lapsing mid-session.
   private lastPersistedAt = 0
+  private subscribeRetryStartedAt: number | null = null
+  private subscribeRetryFailureReported = false
   // PM-1405: caps the fast catch-up probe to one shot per gap episode. Set on
   // the first confirmed subscribe of an episode, cleared when real content
   // arrives (the episode is over) or the episode restarts (bind/reconnect).
@@ -175,7 +177,11 @@ export class AgentCrdtDocLifecycle {
   constructor(
     private readonly workflowId: () => string | null,
     private readonly resubscribe: () => void,
-    private readonly onGaveUp: () => void
+    private readonly onGaveUp: () => void,
+    private readonly onRefusalExhausted?: (event: {
+      attempt: number
+      durationMs: number
+    }) => void
   ) {}
 
   readPersistedDocId(): string | null {
@@ -331,13 +337,31 @@ export class AgentCrdtDocLifecycle {
     }
     this.subscribeRetryAttempt = 0
     this.ackTimeouts = 0
+    this.subscribeRetryStartedAt = null
+    this.subscribeRetryFailureReported = false
   }
 
   private scheduleSubscribeRetry(): void {
     if (this.shouldDeferSubscribe()) return
-    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
+    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      if (!this.subscribeRetryFailureReported) {
+        this.subscribeRetryFailureReported = true
+        this.onRefusalExhausted?.({
+          attempt: this.subscribeRetryAttempt,
+          durationMs: Math.max(
+            0,
+            Math.round(
+              performance.now() -
+                (this.subscribeRetryStartedAt ?? performance.now())
+            )
+          )
+        })
+      }
+      return
+    }
     const target = this.workflowId()
     if (target === null) return
+    this.subscribeRetryStartedAt ??= performance.now()
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** this.subscribeRetryAttempt
     this.subscribeRetryAttempt += 1
     this.subscribeRetryTimer = setTimeout(() => {

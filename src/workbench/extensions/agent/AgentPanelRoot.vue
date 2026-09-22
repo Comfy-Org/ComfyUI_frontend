@@ -47,8 +47,10 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import type { DocumentId } from '@/types/documentId'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
@@ -268,9 +270,13 @@ watch(
   { immediate: true }
 )
 const { activeTour } = storeToRefs(useOnboardingTourStore())
+const graphDocumentStore = useGraphDocumentStore()
 const graphMutationsByWorkflow = new Map<
   string,
-  ReturnType<typeof createGraphMutations>
+  {
+    documentId: DocumentId | null
+    mutations: ReturnType<typeof createGraphMutations>
+  }
 >()
 const liveWidgets = createLiveWidgetProjection({
   getRootGraph: () => app.rootGraphOrUndefined,
@@ -278,17 +284,31 @@ const liveWidgets = createLiveWidgetProjection({
   markDirty: () => app.canvas?.setDirty(true)
 })
 const graphMutations = (workflowId: string) => {
+  const documentId =
+    graphDocumentStore.resolveWorkflowTarget(workflowId)?.documentId ??
+    graphDocumentStore.createDocument({ workflowId })
   const existing = graphMutationsByWorkflow.get(workflowId)
-  if (existing) return existing
+  if (existing && existing.documentId === documentId) return existing.mutations
   const mutations = createGraphMutations({
+    onCommitted() {
+      if (documentId) graphDocumentStore.markMutated(documentId)
+    },
     getScope() {
-      const rootGraphId = boundOrOpenWorkflowFor(workflowId)?.activeState?.id
-      return rootGraphId
-        ? {
-            rootGraphId: toRootGraphId(rootGraphId),
-            owningGraphId: toOwningGraphId(rootGraphId)
-          }
+      const registered = documentId
+        ? (graphDocumentStore.getDocument(documentId)?.scope ?? null)
         : null
+      const rootGraphId = boundOrOpenWorkflowFor(workflowId)?.activeState?.id
+      if (!rootGraphId) return registered
+      const scope = {
+        rootGraphId: toRootGraphId(rootGraphId),
+        owningGraphId: toOwningGraphId(rootGraphId)
+      }
+      if (documentId) {
+        if (!registered) graphDocumentStore.hydrateDocument(documentId, scope)
+        else if (registered.rootGraphId !== scope.rootGraphId)
+          graphDocumentStore.rebindScope(documentId, scope)
+      }
+      return scope
     },
     layout: {
       createNode(scope, nodeId, layout, context) {
@@ -354,7 +374,7 @@ const graphMutations = (workflowId: string) => {
     },
     liveWidgets
   })
-  graphMutationsByWorkflow.set(workflowId, mutations)
+  graphMutationsByWorkflow.set(workflowId, { documentId, mutations })
   return mutations
 }
 

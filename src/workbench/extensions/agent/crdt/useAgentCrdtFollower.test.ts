@@ -86,7 +86,9 @@ const definitionsState = vi.hoisted(() => ({
 }))
 
 const telemetryState = vi.hoisted(() => ({
-  reportError: vi.fn<typeof reportErrorFn>()
+  reportError: vi.fn<typeof reportErrorFn>(),
+  trackAgentReconnectFailed: vi.fn(),
+  trackAgentReconnectStarted: vi.fn()
 }))
 
 const apiState = vi.hoisted(() => {
@@ -162,6 +164,9 @@ vi.mock(import('./devPanelLog'), () => ({
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: telemetryState.reportError
+}))
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => telemetryState
 }))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
@@ -422,6 +427,12 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: false })
     vi.advanceTimersByTime(60_000)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+    expect(telemetryState.trackAgentReconnectFailed).toHaveBeenCalledWith({
+      attempt: 6,
+      error_class: 'subscription_refused',
+      retryable: true,
+      reconnect_duration_ms: 31_500
+    })
     unmount()
   })
 
@@ -681,6 +692,42 @@ describe('useAgentCrdtFollower', () => {
     expect(status().connected).toBe(false)
     expect(bridge().resubscribe).toHaveBeenCalled()
     expect(adapterState.clearForReset).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('reports reconnect attempts only after a confirmed subscription', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    const { unmount } = mountFollower('wf-1')
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(telemetryState.trackAgentReconnectStarted).not.toHaveBeenCalled()
+
+    dispatchFrame('doc_subscribed', { ok: true })
+    vi.advanceTimersByTime(5_000)
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenCalledWith({
+      disconnect_class: 'socket_reconnect',
+      attempt: 1,
+      last_seen_version: 41,
+      offline_duration_ms: 5_000
+    })
+    unmount()
+  })
+
+  it('uses an accepted reset as the latest reconnect activity', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    vi.advanceTimersByTime(5_000)
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 7 })
+    vi.advanceTimersByTime(2_000)
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenCalledWith(
+      expect.objectContaining({ offline_duration_ms: 2_000 })
+    )
     unmount()
   })
 

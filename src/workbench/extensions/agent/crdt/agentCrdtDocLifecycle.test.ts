@@ -29,18 +29,21 @@ const GAVE_UP_REPORT = {
 function wire() {
   let workflowId: string | null = WORKFLOW_ID
   const onGaveUp = vi.fn()
+  const onRefusalExhausted = vi.fn()
   const resubscribe = vi.fn(() => {
     if (workflowId !== null) lifecycle.onSubscribeSent(workflowId)
   })
   const lifecycle = new AgentCrdtDocLifecycle(
     () => workflowId,
     resubscribe,
-    onGaveUp
+    onGaveUp,
+    onRefusalExhausted
   )
   return {
     lifecycle,
     resubscribe,
     onGaveUp,
+    onRefusalExhausted,
     retarget(next: string | null) {
       workflowId = next
     }
@@ -367,8 +370,8 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
     })
   })
 
-  it('six consecutive refusals stop retrying with no further subscribe, event, or report', () => {
-    const { lifecycle, resubscribe, onGaveUp } = wire()
+  it('reports when six consecutive refusals exhaust the retry budget', () => {
+    const { lifecycle, resubscribe, onGaveUp, onRefusalExhausted } = wire()
     lifecycle.onSubscribeSent(WORKFLOW_ID)
 
     // Advance to each backoff boundary in two steps so both sides are
@@ -417,6 +420,10 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
     expect(resubscribe).toHaveBeenCalledTimes(6)
     expect(lifecycle.shouldDeferSubscribe()).toBe(false)
     expect(onGaveUp).not.toHaveBeenCalled()
+    expect(onRefusalExhausted).toHaveBeenCalledExactlyOnceWith({
+      attempt: 6,
+      durationMs: 31_500
+    })
     expect(reportError).not.toHaveBeenCalled()
     expect(devEvents().map(({ kind }) => kind)).toEqual([
       'subscribe_retry',

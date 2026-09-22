@@ -185,6 +185,7 @@ export interface GraphMutationsDeps {
   layout: SemanticLayoutMutationPort
   placement: SemanticPlacementPort
   liveWidgets?: SemanticLiveWidgetMutationPort
+  onCommitted?: () => void
 }
 
 type QueuedMutation =
@@ -1509,6 +1510,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       if (typeof prepared === 'string') return fail(prepared)
       offsetInsertedBatch(scope, existingIds, prepared)
       commit(scope, prepared, context)
+      deps.onCommitted?.()
       return true
     },
     addNode(payload, context) {
