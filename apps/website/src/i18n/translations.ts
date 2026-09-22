@@ -10720,17 +10720,34 @@ Enterprise`
     'zh-CN': '在 Comfy Cloud 中打开'
   },
   'workshop.v2.workflow.openCloudNote': {
-    en: 'Opens in your own Cloud account, ready to run.',
-    'zh-CN': '在你自己的 Cloud 账户中打开该图，随时可运行。'
+    en: 'Opens in your own Cloud account, ready to run and to edit.',
+    'zh-CN': '在你自己的 Cloud 账户中打开，可直接运行和编辑。'
+  },
+  'workshop.v2.workflow.downloadNote': {
+    en: 'The graph as a file, to open in ComfyUI on your own machine.',
+    'zh-CN': '以文件形式下载该图，可在本机的 ComfyUI 中打开。'
   },
   'workshop.v2.workflow.endpoint': {
     en: 'Take the endpoint',
     'zh-CN': '获取该端点'
   },
   'workshop.v2.workflow.endpointNote': {
-    en: 'The call this workflow makes, ready to copy into your own workspace. Or open the graph in your Cloud account.',
-    'zh-CN':
-      '此工作流发起的调用，可直接复制到你的工作区。也可以在你的 Cloud 账户中打开该图。'
+    en: 'The call this workflow makes, ready to copy into your own code.',
+    'zh-CN': '此工作流发起的调用，可直接复制到你自己的代码中。'
+  },
+  'workshop.v2.workflow.tutorialNote': {
+    en: 'A written walkthrough of what this graph does, step by step.',
+    'zh-CN': '这张图的逐步图文讲解。'
+  },
+  'workshop.v2.workflow.takeaways': {
+    en: 'Take it with you',
+    'zh-CN': '带走这个工作流'
+  },
+  'workshop.v2.workflow.tabRun': { en: 'Playground', 'zh-CN': '演练场' },
+  'workshop.v2.workflow.tabAbout': { en: 'Details', 'zh-CN': '详情' },
+  'workshop.v2.workflow.tabs': {
+    en: 'Run this workflow, or look at how it is built',
+    'zh-CN': '运行此工作流，或查看它的构成'
   },
   'workshop.v2.workflow.tags': { en: 'Good for', 'zh-CN': '适用于' },
   'workshop.v2.workflow.related': {

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import WorkflowActions from './WorkflowActions.vue'
@@ -10,6 +10,11 @@ const props = (overrides = {}) => ({
   tutorialUrl: undefined,
   ...overrides
 })
+
+const routes = () =>
+  within(screen.getByTestId('workflow-actions'))
+    .getAllByRole('link')
+    .map((link) => link.getAttribute('data-testid'))
 
 describe('WorkflowActions', () => {
   // The PRD's confirmed path: the graph opens in the reader's own Cloud
@@ -23,47 +28,41 @@ describe('WorkflowActions', () => {
     expect(
       screen.getByRole('link', { name: /Download the JSON/ })
     ).toHaveProperty('href', 'https://example.test/graph.json')
-    expect(screen.queryByRole('link', { name: /tutorial/i })).toBeNull()
   })
 
-  // One filled action per page: where the model runs above, the Cloud link is
-  // the way out rather than the thing to do.
-  it.for([
-    [false, true],
-    [true, false]
-  ] as const)(
-    'fills the Cloud action only when nothing runs here',
-    ([runsHere, filled]) => {
-      render(WorkflowActions, { props: props({ runsHere }) })
+  // Each route says what it gives you rather than only where it goes, because
+  // three verbs side by side read as three versions of the same offer.
+  it('says what each route gives the reader', () => {
+    render(WorkflowActions, { props: props() })
 
-      expect(
-        screen
-          .getByTestId('workflow-open-cloud')
-          .classList.contains('bg-primary-comfy-yellow')
-      ).toBe(filled)
-    }
-  )
-
-  // A workflow that is one call to a model we carry has an endpoint to hand
-  // over; one that needs local weights has nothing to hand over. It stays an
-  // outline, because the run above it is the page's one filled action.
-  it('offers the endpoint only where the workflow runs here', () => {
-    render(WorkflowActions, { props: props({ runsHere: true }) })
-
-    const endpoint = screen.getByRole('link', { name: /Take the endpoint/ })
-    expect(endpoint.getAttribute('href')).toBe('#api')
-    expect(endpoint.classList.contains('bg-primary-comfy-yellow')).toBe(false)
-    expect(screen.getByTestId('workflow-save-note')).toHaveTextContent(
-      /ready to copy into your own workspace/
+    expect(screen.getByTestId('workflow-open-cloud')).toHaveTextContent(
+      /ready to run and to edit/
+    )
+    expect(screen.getByTestId('workflow-download')).toHaveTextContent(
+      /on your own machine/
     )
   })
 
-  it('says nothing about an endpoint a local workflow does not have', () => {
-    render(WorkflowActions, { props: props({ runsHere: false }) })
+  // A workflow that is one call to a model we carry has an endpoint to hand
+  // over; one that needs local weights has nothing to hand over.
+  it.for([
+    [true, ['workflow-open-cloud', 'workflow-download', 'workflow-endpoint']],
+    [false, ['workflow-open-cloud', 'workflow-download']]
+  ] as const)(
+    'offers the endpoint only where it runs here',
+    ([runsHere, ids]) => {
+      render(WorkflowActions, { props: props({ runsHere }) })
 
-    expect(screen.queryByTestId('workflow-endpoint')).toBeNull()
-    expect(screen.getByTestId('workflow-save-note')).toHaveTextContent(
-      /Opens in your own Cloud account/
+      expect(routes()).toEqual([...ids])
+    }
+  )
+
+  it('points the endpoint at the playground that answers it', () => {
+    render(WorkflowActions, { props: props({ runsHere: true }) })
+
+    expect(screen.getByTestId('workflow-endpoint')).toHaveAttribute(
+      'href',
+      '#api'
     )
   })
 

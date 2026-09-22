@@ -34,17 +34,16 @@ import HubSections from './HubSections.vue'
 const {
   entries,
   locale = 'en',
-  narrowing = false
+  modelFilter = false
 } = defineProps<{
   entries: readonly BrowseEntry[]
   locale?: Locale
   /**
-   * The filter by model and the order. Both are off while the catalogue is
-   * small enough to read whole: a menu of models longer than the list it
-   * narrows is a control that costs more than it gives, and opening it moves
-   * the page. They still answer to a link, and come back with the inventory.
+   * The filter by model. Off while the catalogue is small enough to read
+   * whole: a menu of models longer than the list it narrows costs more than it
+   * gives, and opening it moves the page. A link naming a model still answers.
    */
-  narrowing?: boolean
+  modelFilter?: boolean
 }>()
 
 const PAGE = 30
@@ -276,18 +275,13 @@ const heading = computed(() =>
         </div>
 
         <CatalogueModelFilter
-          v-if="narrowing && type === 'workflow'"
+          v-if="modelFilter && type === 'workflow'"
           v-model="usesModel"
           :models="modelsInTab"
           :locale
         />
 
-        <CatalogueSort
-          v-if="narrowing"
-          v-model:order="order"
-          :orders="ORDERS"
-          :locale
-        />
+        <CatalogueSort v-model:order="order" :orders="ORDERS" :locale />
       </div>
     </div>
 

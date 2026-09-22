@@ -135,10 +135,20 @@ test.describe('V2 catalogue', () => {
     await expect(page.getByTestId('model-run')).toBeVisible()
   })
 
-  test('a workflow page names the model it runs on', async ({ page }) => {
+  // The page opens on the thing to do. How the workflow is built is a second
+  // question, so it waits behind its own tab rather than sitting under the
+  // form where a reader meets it on the way past.
+  test('opens on the playground and keeps the graph behind its tab', async ({
+    page
+  }) => {
     await page.goto('/hub/workflow/api_google_nano_banana2_image_edit/')
 
     await expect(page.getByTestId('workflow-kind')).toContainText(/Workflow/i)
+    await expect(page.getByTestId('workflow-panel-run')).toBeVisible()
+    await expect(page.getByTestId('workflow-panel-about')).toBeHidden()
+
+    await page.getByTestId('workflow-tab-about').click()
+    await expect(page.getByTestId('workflow-panel-run')).toBeHidden()
     // The form says what goes in and the output says what comes back, so the
     // model it calls is the one thing left for the page to name.
     await expect(page.getByTestId('workflow-runs-on')).toBeVisible()
@@ -150,18 +160,15 @@ test.describe('V2 catalogue', () => {
     ).toBeVisible()
   })
 
-  // The way out and the way to keep it are both offered, and the graph opens
-  // in the reader's own Cloud rather than downloading.
+  // The way out and the way to keep it are both offered, beside the graph
+  // that decides whether to take the workflow anywhere at all.
   test('a workflow page opens its graph in the Cloud and offers the file', async ({
     page
   }) => {
     await page.goto('/hub/workflow/api_google_nano_banana2_image_edit/')
+    await page.getByTestId('workflow-tab-about').click()
 
-    // The graph is what decides whether to take the workflow anywhere, so the
-    // two ways of taking it live with it rather than in the sidebar.
-    const actions = page
-      .getByTestId('workflow-graph-section')
-      .getByTestId('workflow-actions')
+    const actions = page.getByTestId('workflow-actions')
     await expect(actions.getByTestId('workflow-open-cloud')).toHaveAttribute(
       'href',
       /cloud\.comfy\.org\/\?template=api_google_nano_banana2_image_edit/
@@ -169,6 +176,20 @@ test.describe('V2 catalogue', () => {
     await expect(
       actions.getByRole('link', { name: /Download the JSON/ })
     ).toHaveAttribute('href', /workflow_templates/)
+  })
+
+  // The endpoint is offered beside the graph but answers on the playground,
+  // so asking for it has to open the tab that holds the answer.
+  test('the endpoint route opens the playground it points into', async ({
+    page
+  }) => {
+    await page.goto('/hub/workflow/api_nano_banana_pro/')
+    await page.getByTestId('workflow-tab-about').click()
+
+    await page.getByTestId('workflow-endpoint').click()
+
+    await expect(page.getByTestId('workflow-panel-run')).toBeVisible()
+    await expect(page.getByTestId('workflow-panel-about')).toBeHidden()
   })
 
   // A workflow that is one call to a model the catalogue carries is that

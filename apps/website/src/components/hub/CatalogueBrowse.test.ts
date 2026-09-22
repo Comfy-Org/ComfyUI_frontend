@@ -87,10 +87,10 @@ const onShelf = (useCase: string) =>
 async function at(
   search: string,
   entries: readonly BrowseEntry[] = ENTRIES,
-  narrowing = false
+  modelFilter = false
 ) {
   window.history.replaceState({}, '', `/hub/${search}`)
-  render(CatalogueBrowse, { props: { entries, narrowing } })
+  render(CatalogueBrowse, { props: { entries, modelFilter } })
   await nextTick()
 }
 
@@ -150,12 +150,13 @@ describe('CatalogueBrowse', () => {
   })
 
   // A menu of models longer than the list it narrows costs more than it gives
-  // while the catalogue is small, and opening it moves the page.
-  it('keeps the narrowing controls out of the way until asked', async () => {
+  // while the catalogue is small, and opening it moves the page. The order is
+  // a short fixed list, so it stays.
+  it('keeps the model filter out of the way until asked', async () => {
     await at('?type=workflow')
 
     expect(screen.queryByTestId('catalogue-model-filter')).toBeNull()
-    expect(screen.queryByTestId('catalogue-sort')).toBeNull()
+    expect(screen.getByTestId('catalogue-sort')).toBeTruthy()
   })
 
   // A link that already names a model still lands on its workflows, whether or
@@ -308,7 +309,7 @@ describe('CatalogueBrowse', () => {
   // Newest over models that carry no date is a ranking over nothing, so the
   // order follows the tab it was chosen for or gives way.
   it('drops a dated order when the reader leaves the workflows behind', async () => {
-    await at('?useCase=generate-images', ENTRIES, true)
+    await at('?useCase=generate-images')
     await userEvent.click(screen.getByTestId('catalogue-sort'))
     await userEvent.click(await screen.findByTestId('catalogue-sort-newest'))
     expect(shown()).toEqual(['Movie poster'])

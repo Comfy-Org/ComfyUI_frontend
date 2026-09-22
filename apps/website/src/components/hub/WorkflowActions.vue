@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { WORKSHOP_API_HASH } from '../../config/workshop-api-anchor'
+import { ChevronRight } from '@lucide/vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
+import { WORKSHOP_API_HASH } from '../../config/workshop-api-anchor'
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 
 const {
   cloudUrl,
@@ -15,84 +15,88 @@ const {
   /** Comfy Cloud, opened on this template. */
   cloudUrl: string
   downloadUrl: string
-  /** Whether the model above already runs on the page, which then owns the
-    page's one filled action and also has an endpoint to hand over. */
+  /** Whether the model runs on this page, which then has an endpoint to hand
+    over. A workflow that needs local weights has nothing to hand over. */
   runsHere: boolean
   tutorialUrl: string | undefined
   locale?: Locale
 }>()
 
-const action =
-  'inline-flex h-11 w-full items-center justify-center rounded-2xl px-5 text-sm font-bold tracking-wider uppercase transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 sm:w-auto'
+interface Route {
+  readonly id: string
+  readonly href: string
+  readonly label: TranslationKey
+  readonly note: TranslationKey
+  readonly download?: boolean
+  readonly external?: boolean
+}
+
+// Three ways to leave with this workflow, each reading as what it gives you.
+// None of them is the page's action: that is Run, and it is on the other tab.
+const routes: readonly Route[] = [
+  {
+    id: 'workflow-open-cloud',
+    href: cloudUrl,
+    label: 'workshop.v2.workflow.openCloud',
+    note: 'workshop.v2.workflow.openCloudNote',
+    external: true
+  },
+  {
+    id: 'workflow-download',
+    href: downloadUrl,
+    label: 'workshop.v2.workflow.download',
+    note: 'workshop.v2.workflow.downloadNote',
+    download: true
+  },
+  ...(runsHere
+    ? ([
+        {
+          id: 'workflow-endpoint',
+          href: WORKSHOP_API_HASH,
+          label: 'workshop.v2.workflow.endpoint',
+          note: 'workshop.v2.workflow.endpointNote'
+        }
+      ] as const)
+    : []),
+  ...(tutorialUrl
+    ? ([
+        {
+          id: 'workflow-tutorial',
+          href: tutorialUrl,
+          label: 'workshop.v2.workflow.tutorial',
+          note: 'workshop.v2.workflow.tutorialNote',
+          external: true
+        }
+      ] as const)
+    : [])
+]
 </script>
 
 <template>
-  <div class="flex flex-col gap-3" data-testid="workflow-actions">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+  <ul class="flex flex-col gap-2" data-testid="workflow-actions">
+    <li v-for="route in routes" :key="route.id">
       <a
-        v-if="runsHere"
-        :href="WORKSHOP_API_HASH"
-        :class="
-          cn(
-            action,
-            'border border-transparency-white-t20 text-primary-warm-white hover:bg-transparency-white-t8'
-          )
-        "
-        data-testid="workflow-endpoint"
+        :href="route.href"
+        :download="route.download ? '' : undefined"
+        :target="route.external ? '_blank' : undefined"
+        :rel="route.external ? 'noopener' : undefined"
+        :data-testid="route.id"
+        class="group flex items-center gap-4 rounded-2xl border border-transparency-white-t8 px-5 py-4 transition-colors outline-none hover:border-transparency-white-t20 hover:bg-transparency-white-t4 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
       >
-        {{ t('workshop.v2.workflow.endpoint', locale) }}
+        <span class="min-w-0 flex-1">
+          <span
+            class="block text-sm font-bold tracking-wider text-primary-warm-white uppercase"
+          >
+            {{ t(route.label, locale) }}
+          </span>
+          <span class="mt-1 block text-sm text-content-muted">
+            {{ t(route.note, locale) }}
+          </span>
+        </span>
+        <ChevronRight
+          class="size-5 shrink-0 text-primary-warm-gray transition-colors group-hover:text-primary-comfy-yellow"
+        />
       </a>
-      <a
-        :href="cloudUrl"
-        target="_blank"
-        rel="noopener"
-        :class="
-          cn(
-            action,
-            runsHere
-              ? 'border border-transparency-white-t20 text-primary-warm-white hover:bg-transparency-white-t8'
-              : 'bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90'
-          )
-        "
-        data-testid="workflow-open-cloud"
-      >
-        {{ t('workshop.v2.workflow.openCloud', locale) }}
-      </a>
-      <a
-        :href="downloadUrl"
-        download
-        :class="
-          cn(
-            action,
-            'border border-transparency-white-t20 text-primary-warm-white hover:bg-transparency-white-t8'
-          )
-        "
-        data-testid="workflow-download"
-      >
-        {{ t('workshop.v2.workflow.download', locale) }}
-      </a>
-      <a
-        v-if="tutorialUrl"
-        :href="tutorialUrl"
-        target="_blank"
-        rel="noopener"
-        class="inline-flex h-11 items-center rounded-lg px-2 text-sm text-primary-warm-gray transition-colors outline-none hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-      >
-        {{ t('workshop.v2.workflow.tutorial', locale) }}
-      </a>
-    </div>
-
-    <!-- The PRD's confirmed path for a 1P workflow: the user's own Cloud
-      account runs it, and Desktop is not the first stop. -->
-    <p class="text-xs text-content-muted" data-testid="workflow-save-note">
-      {{
-        t(
-          runsHere
-            ? 'workshop.v2.workflow.endpointNote'
-            : 'workshop.v2.workflow.openCloudNote',
-          locale
-        )
-      }}
-    </p>
-  </div>
+    </li>
+  </ul>
 </template>
