@@ -17,9 +17,7 @@ describe('ModelsApiGallery', () => {
       'cloud.aiModels.card.seedance25',
       'cloud.aiModels.card.minimaxH3',
       'cloud.aiModels.card.nanoBananaPro',
-      'cloud.aiModels.card.chatgptImages25',
-      'cloud.aiModels.card.klingAi30',
-      'cloud.aiModels.card.flux3'
+      'cloud.aiModels.card.gptImage2'
     ] as const) {
       expect(screen.getByText(t(titleKey, 'en'))).toBeTruthy()
     }

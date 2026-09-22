@@ -42,9 +42,7 @@ const {
     >
       {{ title }}
     </h3>
-    <p
-      class="mt-2 text-xs/relaxed font-light text-pretty text-primary-comfy-canvas"
-    >
+    <p class="mt-2 text-xs/relaxed font-light text-primary-comfy-canvas">
       {{ description
       }}<template v-if="link"
         ><a
