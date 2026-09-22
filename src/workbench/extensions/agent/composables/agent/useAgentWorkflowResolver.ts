@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { cloudWorkflowName } from '@/platform/workflow/management/utils/cloudWorkflowName'
 
 import type {
   AgentRestClient,
@@ -60,12 +61,6 @@ export function useAgentWorkflowResolver({
       })
       return false
     }
-  }
-
-  function cloudWorkflowName(workflow: ComfyWorkflow): string {
-    return workflow.suffix === 'app.json'
-      ? `${workflow.filename}.app`
-      : workflow.filename
   }
 
   function savedMatches(

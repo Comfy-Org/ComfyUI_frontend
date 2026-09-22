@@ -78,6 +78,7 @@
             size="lg"
             class="w-full @xl:w-auto"
             data-testid="deploy-to-comfy-api-platform"
+            :disabled="pending"
             @click="deployOnPlatform"
           >
             {{ $t('deployToComfyApi.deployOnPlatform') }}
@@ -112,11 +113,16 @@ const { buildDocsUrl } = useExternalLink()
 const { open: openPlatformBuild } = usePlatformBuildHandoff()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
 const videoFailed = ref(false)
+const pending = ref(false)
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
 
 async function deployOnPlatform() {
-  await openPlatformBuild()
-  emit('done')
+  pending.value = true
+  try {
+    if (await openPlatformBuild()) emit('done')
+  } finally {
+    pending.value = false
+  }
 }
 </script>

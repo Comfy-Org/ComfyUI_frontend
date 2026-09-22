@@ -1,18 +1,25 @@
+import { zWorkflowListResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { cloudWorkflowName } from '@/platform/workflow/management/utils/cloudWorkflowName'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
-const zCloudWorkflowList = z.object({
-  data: z.array(z.object({ id: z.string(), name: z.string().optional() }))
-})
+const zCloudWorkflowPage = zWorkflowListResponse
+  .pick({ pagination: true })
+  .extend({
+    data: z.array(z.object({ id: z.string(), name: z.string().optional() }))
+  })
+const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
 const HANDOFF_READY = 'comfy-build-handoff:ready'
 const HANDOFF_WORKFLOW = 'comfy-build-handoff:workflow'
@@ -39,19 +46,31 @@ function platformBuildImportUrl(arrival: PlatformBuildArrival): string {
   return url.href
 }
 
-/** The name Cloud gives a workflow saved as `workflows/<name>.json`. */
-function cloudWorkflowName(workflow: ComfyWorkflow): string {
-  return workflow.path.replace(/^workflows\//, '').replace(/\.json$/i, '')
-}
-
+/**
+ * The id of the one Cloud workflow with exactly this name. The server's name
+ * filter is a partial match, so pages are read until the exact match is found;
+ * a name shared by two workflows is treated as no match, because the wizard
+ * could otherwise preselect the wrong one.
+ */
 async function findCloudWorkflowId(name: string): Promise<string | undefined> {
-  const response = await api.fetchApi(
-    `/workflows?name=${encodeURIComponent(name)}&limit=50`
-  )
-  if (!response.ok) return undefined
-  const parsed = zCloudWorkflowList.safeParse(await response.json())
-  if (!parsed.success) return undefined
-  return parsed.data.data.find((entry) => entry.name === name)?.id
+  const matches: string[] = []
+  let cursor: string | undefined
+  do {
+    const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
+    const response = await api.fetchApi(
+      `/workflows?name=${encodeURIComponent(name)}&limit=${CLOUD_WORKFLOW_PAGE_SIZE}${after}`
+    )
+    if (!response.ok) return undefined
+    const page = zCloudWorkflowPage.safeParse(await response.json())
+    if (!page.success) return undefined
+    for (const entry of page.data.data)
+      if (entry.name === name) matches.push(entry.id)
+    const next = page.data.pagination.has_more
+      ? page.data.pagination.next_cursor
+      : undefined
+    cursor = next === cursor ? undefined : next
+  } while (cursor && matches.length < 2)
+  return matches.length === 1 ? matches[0] : undefined
 }
 
 function handoffNonce(): string {
@@ -100,6 +119,10 @@ function showOpeningNotice(tab: Window): void {
   )
 }
 
+function reportHandoffError(error: unknown): void {
+  reportError(error, { errorType: 'error_preparing_platform_build_handoff' })
+}
+
 /**
  * Opens the platform's build wizard on its import step with the open
  * workflow already picked. On Cloud the saved workflow is in the workspace
@@ -112,50 +135,76 @@ function showOpeningNotice(tab: Window): void {
 export function usePlatformBuildHandoff() {
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
+  const toastStore = useToastStore()
 
-  async function findSavedCloudWorkflowId(
+  async function savedCloudWorkflowId(
     workflow: ComfyWorkflow
   ): Promise<string | undefined> {
-    const needsSave = workflow.isTemporary || workflow.isModified
-    if (needsSave && !(await workflowService.saveWorkflow(workflow))) {
+    if (workflow.isTemporary) return undefined
+    if (workflow.isModified && !(await workflowService.saveWorkflow(workflow)))
+      return undefined
+    try {
+      return await findCloudWorkflowId(cloudWorkflowName(workflow))
+    } catch (error) {
+      reportHandoffError(error)
       return undefined
     }
-    return findCloudWorkflowId(cloudWorkflowName(workflow))
   }
 
   async function resolveUrl(tab: Window | null): Promise<string> {
     const workflow = workflowStore.activeWorkflow
     if (!workflow) return platformBuildImportUrl({ kind: 'bare' })
-    const name = cloudWorkflowName(workflow)
 
     const workflowId = isCloud
-      ? await findSavedCloudWorkflowId(workflow)
+      ? await savedCloudWorkflowId(workflow)
       : undefined
     if (workflowId) return platformBuildImportUrl({ kind: 'cloud', workflowId })
 
     if (!tab) {
-      await workflowService.exportWorkflow(name, 'workflow')
+      await workflowService.exportWorkflow(workflow.filename, 'workflow')
       return platformBuildImportUrl({ kind: 'bare' })
     }
 
     const nonce = handoffNonce()
     const { workflow: graph } = await app.graphToPrompt()
-    armHandoff(tab, nonce, `${name}.json`, graph)
+    armHandoff(tab, nonce, `${cloudWorkflowName(workflow)}.json`, graph)
     return platformBuildImportUrl({ kind: 'handoff', nonce })
   }
 
   /**
-   * Call from the click handler: in a browser the tab opens on the gesture
-   * itself, then lands where the workflow is once the save and lookup have
-   * finished. Desktop hands every new window to the system browser, so it
-   * gets the resolved link in one go.
+   * Call from the click handler. A temporary workflow is saved first, because
+   * its save prompt has to be answered on this tab. Then in a browser the tab
+   * opens on the gesture and lands where the workflow is once the lookup has
+   * finished. Desktop hands every new window to the system browser, so it gets
+   * the resolved link in one go. Resolves to whether a tab was opened.
    */
-  async function open(): Promise<void> {
+  async function open(): Promise<boolean> {
+    const workflow = workflowStore.activeWorkflow
+    if (isCloud && workflow?.isTemporary)
+      await workflowService.saveWorkflow(workflow).catch(reportHandoffError)
+
     const tab = isDesktop ? null : window.open('', '_blank')
     if (tab) showOpeningNotice(tab)
-    const url = await resolveUrl(tab)
-    if (tab) tab.location.href = url
-    else window.open(url, '_blank', 'noopener')
+    const url = await resolveUrl(tab).catch((error: unknown) => {
+      reportHandoffError(error)
+      return platformBuildImportUrl({ kind: 'bare' })
+    })
+    if (tab) {
+      tab.location.href = url
+      return true
+    }
+    if (isDesktop) {
+      window.open(url, '_blank', 'noopener')
+      return true
+    }
+    if (window.open(url, '_blank')) return true
+    toastStore.add({
+      severity: 'error',
+      summary: t('deployToComfyApi.popupBlocked'),
+      detail: url,
+      life: 8000
+    })
+    return false
   }
 
   return { open }
