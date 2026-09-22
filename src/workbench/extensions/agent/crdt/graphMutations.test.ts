@@ -17,6 +17,7 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import type { SemanticPlacementPort } from './graphMutations'
 import { createGraphMutations } from './graphMutations'
 
@@ -903,6 +904,52 @@ describe('graphMutations', () => {
     expect(createLayout).toHaveBeenCalledOnce()
   })
 
+  it('keeps a document-only input at the prepared link target after replacing the input set', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(
+      {
+        ...node(2),
+        inputs: [
+          { name: 'in', type: 'IMAGE', link: null },
+          { name: 'spare', type: 'IMAGE', link: null }
+        ]
+      },
+      context
+    )
+
+    expect(
+      graph.connect(
+        {
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 1,
+          type: 'IMAGE',
+          targetInputs: [
+            { name: 'in', type: 'IMAGE', link: null },
+            { name: 'new_from_doc', type: 'IMAGE', link: toLinkId(9) }
+          ]
+        },
+        context
+      )
+    ).toBe(true)
+
+    const target = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(2))
+    const topology = useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    assert.exists(target)
+    assert.exists(topology)
+    expect(target.inputs.map(({ name }) => name)).toEqual([
+      'in',
+      'new_from_doc'
+    ])
+    expect(target.inputs[topology.targetSlot]).toMatchObject({
+      name: 'new_from_doc',
+      link: toLinkId(9)
+    })
+  })
+
   it('updates endpoint slot records while retaining the supplied link id', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
@@ -984,11 +1031,25 @@ describe('graphMutations', () => {
 
   it('lets two connects on one target within a batch both keep their links', () => {
     const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(
+      {
+        ...node(2),
+        inputs: [
+          { name: 'in', type: 'IMAGE', link: null },
+          { name: 'grown', type: 'IMAGE', link: null }
+        ]
+      },
+      context
+    )
+    graph.addNode(node(3), context)
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    const [firstInput, grownInput] = target.inputs
+    Object.assign(firstInput, { label: 'live input' })
+    Object.assign(grownInput, { label: 'live grown input' })
+
     expect(
       graph.batch(context, (batch) => {
-        batch.addNode(node(1))
-        batch.addNode(node(2))
-        batch.addNode(node(3))
         batch.connect({
           id: 5,
           originNodeId: 1,
@@ -1016,12 +1077,15 @@ describe('graphMutations', () => {
       })
     ).toBe(true)
 
-    const target = useNodeDataStore()
-      .getGraphNodesFor('root', 'root')
-      .find(({ id }) => id === toNodeId(2))
-    expect(target?.inputs.map(({ link }) => link)).toEqual([
+    expect(target.inputs.map(({ link }) => link)).toEqual([
       toLinkId(5),
       toLinkId(9)
+    ])
+    expect(target.inputs[0]).toBe(firstInput)
+    expect(target.inputs[1]).toBe(grownInput)
+    expect(target.inputs.map(({ label }) => label)).toEqual([
+      'live input',
+      'live grown input'
     ])
   })
 
@@ -1155,6 +1219,273 @@ describe('graphMutations', () => {
 
     expect(find(1)?.title).toBe('Reconciled')
     expect(find(1)?.inputs.map(({ link }) => link)).toEqual([toLinkId(5), null])
+  })
+
+  it('preserves live slots through remote connect, reconnect, and removal', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.id = toNodeId(1)
+    source.addOutput('out', 'IMAGE', { label: 'Current output' })
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.id = toNodeId(2)
+    target.addInput('in', 'IMAGE', { label: 'Current input' })
+    graph.add(target)
+    const output = source.outputs[0]
+    const input = target.inputs[0]
+    const remote = createGraphMutations({
+      getScope: () => graphScopeOf(graph),
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      placement: inertPlacementPort
+    })
+    const link = {
+      id: 9,
+      originNodeId: 1,
+      originSlot: 0,
+      targetNodeId: 2,
+      targetSlot: 0,
+      type: 'IMAGE',
+      originOutputs: [{ name: 'out', type: 'IMAGE', links: [9] }],
+      targetInputs: [{ name: 'in', type: 'IMAGE', link: 9 }]
+    }
+    const store = useNodeDataStore()
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      expect(remote.connect(link, context)).toBe(true)
+      expect(store.getNode(graph.id, source.id)?.outputs).toBe(source.outputs)
+      expect(store.getNode(graph.id, target.id)?.inputs).toBe(target.inputs)
+      expect(source.outputs[0]).toBe(output)
+      expect(target.inputs[0]).toBe(input)
+      expect(output.label).toBe('Current output')
+      expect(input.label).toBe('Current input')
+      expect(source.isOutputConnected(0)).toBe(true)
+      expect(target.isInputConnected(0)).toBe(true)
+    }
+
+    expect(remote.batch(context, (batch) => batch.removeLinks([9]))).toBe(true)
+    expect(source.outputs[0]).toBe(output)
+    expect(target.inputs[0]).toBe(input)
+    expect(source.isOutputConnected(0)).toBe(false)
+    expect(target.isInputConnected(0)).toBe(false)
+  })
+
+  it('preserves grown live inputs when reconciliation precedes a named connect', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(
+      {
+        ...node(2),
+        inputs: [
+          { name: 'image_1', type: 'IMAGE', link: null },
+          { name: 'image_0', type: 'IMAGE', link: null },
+          { name: 'width', type: 'INT', link: null },
+          { name: 'height', type: 'INT', link: null }
+        ]
+      },
+      context
+    )
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    const liveInputs = target.inputs
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [
+            { name: 'image_0', type: 'IMAGE', link: 9 },
+            { name: 'width', type: 'INT', link: null },
+            { name: 'height', type: 'INT', link: null }
+          ]
+        })
+        // Document slot 0 is `image_0`; growth put it at live index 1, so a
+        // correct resolution retargets by name rather than trusting the index.
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          targetInputs: [
+            { name: 'image_0', type: 'IMAGE', link: 9 },
+            { name: 'width', type: 'INT', link: null },
+            { name: 'height', type: 'INT', link: null }
+          ]
+        })
+      })
+    ).toBe(true)
+    expect(target.inputs).toBe(liveInputs)
+    expect(target.inputs.map(({ name }) => name)).toEqual([
+      'image_1',
+      'image_0',
+      'width',
+      'height'
+    ])
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))?.targetSlot
+    ).toBe(1)
+  })
+
+  it('rejects a missing document target without changing endpoint slots', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(node(2), context)
+    const source = useNodeDataStore().getNode('root', toNodeId(1))!
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    const sourceOutputs = source.outputs.map(({ links }) => [...(links ?? [])])
+    const targetInputs = target.inputs.map(({ link }) => link)
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 2,
+          type: 'IMAGE',
+          targetInputs: [{ name: 'in', type: 'IMAGE', link: null }]
+        })
+      })
+    ).toBe(false)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    expect(source.outputs.map(({ links }) => [...(links ?? [])])).toEqual(
+      sourceOutputs
+    )
+    expect(target.inputs.map(({ link }) => link)).toEqual(targetInputs)
+    error.mockRestore()
+  })
+
+  it('rejects a document target removed by slot validation without mutating the graph', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(node(2), context)
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    const input = target.inputs[0]
+    const targetInputs = [{ name: 'invalid', type: 'IMAGE', link: null }]
+    Reflect.set(targetInputs[0], 'type', null)
+
+    expect(
+      graph.connect(
+        {
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          targetInputs
+        },
+        context
+      )
+    ).toBe(false)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    expect(target.inputs).toEqual([input])
+    expect(target.inputs[0]).toBe(input)
+  })
+
+  it('does not mutate endpoint metadata when a later batch mutation fails', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(node(2), context)
+    const source = useNodeDataStore().getNode('root', toNodeId(1))!
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    Object.assign(source.outputs[0], { label: 'live output', links: null })
+    Object.assign(target.inputs[0], { label: 'live input', link: null })
+    const sourceOutput = { ...source.outputs[0] }
+    const targetInput = { ...target.inputs[0] }
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          originOutputs: [{ name: 'out', type: 'IMAGE', links: [toLinkId(9)] }],
+          targetInputs: [{ name: 'in', type: 'IMAGE', link: toLinkId(9) }]
+        })
+        batch.setWidget(toNodeId(99), 'missing', 1)
+      })
+    ).toBe(false)
+    expect(source.outputs[0]).toEqual(sourceOutput)
+    expect(target.inputs[0]).toEqual(targetInput)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    error.mockRestore()
+  })
+
+  it.for([null, 7])(
+    'rejects malformed live input %p during connect preparation',
+    (malformed) => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      graph.addNode(node(2), context)
+      const target = useNodeDataStore().getNode('root', toNodeId(2))!
+      Reflect.set(target, 'inputs', [malformed])
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      expect(
+        graph.connect(
+          {
+            id: 9,
+            originNodeId: 1,
+            originSlot: 0,
+            targetNodeId: 2,
+            targetSlot: 0,
+            type: 'IMAGE',
+            targetInputs: [{ name: 'in', type: 'IMAGE', link: 9 }]
+          },
+          context
+        )
+      ).toBe(false)
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+      ).toBeUndefined()
+      error.mockRestore()
+    }
+  )
+
+  it('updates serialized slots whose optional link mirrors were absent', () => {
+    const graph = mutations()
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode({
+          ...node(1),
+          outputs: [{ name: 'out', type: 'IMAGE' }]
+        })
+        batch.addNode({
+          ...node(2),
+          inputs: [{ name: 'in', type: 'IMAGE' }]
+        })
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          originOutputs: [{ name: 'out', type: 'IMAGE', links: [9] }],
+          targetInputs: [{ name: 'in', type: 'IMAGE', link: 9 }]
+        })
+      })
+    ).toBe(true)
+
+    const store = useNodeDataStore()
+    expect(store.getNode('root', toNodeId(1))?.outputs[0].links).toEqual([9])
+    expect(store.getNode('root', toNodeId(2))?.inputs[0].link).toBe(9)
+    expect(graph.batch(context, (batch) => batch.removeLinks([9]))).toBe(true)
+    expect(store.getNode('root', toNodeId(1))?.outputs[0].links).toEqual([])
+    expect(store.getNode('root', toNodeId(2))?.inputs[0].link).toBeNull()
   })
 
   it('re-adds a normalized node id as a fresh widget incarnation', () => {
