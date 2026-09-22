@@ -4,7 +4,12 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import { app } from '@/scripts/app'
-import { DOMWidgetImpl, isDOMWidget } from '@/scripts/domWidget'
+import {
+  ComponentWidgetImpl,
+  DOMWidgetImpl,
+  isComponentWidget,
+  isDOMWidget
+} from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -108,7 +113,7 @@ export function bindMultilineTextareaWidget(
   })
 }
 
-interface PromotedMultilineWidgetContext {
+export interface PromotedMultilineWidgetContext {
   subgraphNode: LGraphNode
   input: INodeInputSlot
   widgetId: WidgetId
@@ -162,6 +167,85 @@ export function createPromotedMultilineWidget(
   })
 
   bindMultilineTextareaWidget(widget, element)
+  useDomWidgetStore().registerWidget(widget)
+
+  return widget
+}
+
+/**
+ * Builds the host widget for a promoted DOM-backed source widget. Textareas
+ * keep the store-backed host-owned element; any other DOM widget reuses the
+ * interior element and any component widget reuses the interior component, so
+ * the live content renders on the host node instead of staying hidden in the
+ * interior node's overlay. The widget is registered with the DOM widget store
+ * so the canvas-mode overlay positions it on the host row; in Vue-nodes mode
+ * the overlay is not mounted and the row owns the element instead. Returns
+ * undefined to fall back to the store-backed projection.
+ */
+export function createPromotedDomWidget(
+  context: PromotedMultilineWidgetContext
+): IBaseWidget | undefined {
+  const { subgraphNode, input, widgetId, sourceWidget } = context
+
+  if (
+    isDOMWidget(sourceWidget) &&
+    sourceWidget.element instanceof HTMLTextAreaElement
+  ) {
+    return createPromotedMultilineWidget(context)
+  }
+
+  if (!isDOMWidget(sourceWidget) && !isComponentWidget(sourceWidget))
+    return undefined
+
+  // Only materialize once the host node is settled in its graph; clone/configure
+  // run with a transient id and would detach the shared element from its
+  // owner.
+  const graph = subgraphNode.graph
+  if (!graph || graph.getNodeById(subgraphNode.id) !== subgraphNode)
+    return undefined
+
+  const widgetStore = useWidgetValueStore()
+  if (isComponentWidget(sourceWidget)) {
+    const widget = new ComponentWidgetImpl<string | object>({
+      node: subgraphNode,
+      name: input.name,
+      component: sourceWidget.component,
+      inputSpec: sourceWidget.inputSpec,
+      props: sourceWidget.props,
+      type: sourceWidget.type,
+      options: {
+        hideOnZoom: sourceWidget.options.hideOnZoom,
+        getMinHeight: sourceWidget.options.getMinHeight,
+        getValue: () => {
+          const stored = widgetStore.getWidget(widgetId)?.value
+          return typeof stored === 'string' ||
+            (stored != null && typeof stored === 'object')
+            ? stored
+            : ''
+        },
+        setValue: (value: string | object) => {
+          widgetStore.setValue(widgetId, value)
+        }
+      }
+    })
+    useDomWidgetStore().registerWidget(widget)
+    return widget
+  }
+
+  const widget = new DOMWidgetImpl<HTMLElement, string>({
+    node: subgraphNode,
+    name: input.name,
+    type: sourceWidget.type,
+    element: sourceWidget.element,
+    options: {
+      hideOnZoom: sourceWidget.options.hideOnZoom ?? true,
+      getValue: () => sourceWidget.value as string,
+      setValue: (value: string) => {
+        sourceWidget.value = value
+      },
+      getHeight: () => sourceWidget.computedHeight ?? ''
+    }
+  })
   useDomWidgetStore().registerWidget(widget)
 
   return widget

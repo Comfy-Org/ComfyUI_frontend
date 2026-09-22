@@ -285,8 +285,14 @@ export function promoteValueWidgetViaSubgraphInput(
     return { ok: true }
   }
 
-  const sourceSlot = sourceNode.getSlotFromWidget(sourceWidget)
-  if (!sourceSlot) return { ok: false, reason: 'missingSourceSlot' }
+  let sourceSlot = sourceNode.getSlotFromWidget(sourceWidget)
+  if (!sourceSlot) {
+    sourceSlot = sourceNode.addInput(
+      sourceWidgetName,
+      String(sourceWidget.type ?? '*'),
+      { widget: { name: sourceWidgetName } }
+    )
+  }
 
   const existingNames = subgraphNode.subgraph.inputs.map((input) => input.name)
   const inputName = nextUniqueName(sourceWidgetName, existingNames)

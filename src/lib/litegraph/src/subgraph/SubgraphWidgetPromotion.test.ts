@@ -540,6 +540,50 @@ describe('SubgraphWidgetPromotion', () => {
     })
   })
 
+  describe('Display widget value sync', () => {
+    it('syncs the interior value into the host store for display-only widgets', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'text' }]
+      })
+      const { node, widget } = createNodeWithWidget(
+        'Preview',
+        'text',
+        'initial',
+        'text'
+      )
+      widget.serialize = false
+      const host = setupPromotedWidget(subgraph, node)
+
+      expect(promotedWidgetStateByName(host, 'value').value).toBe('initial')
+
+      widget.value = 'executed prompt text'
+      host.arrange()
+
+      expect(promotedWidgetStateByName(host, 'value').value).toBe(
+        'executed prompt text'
+      )
+    })
+
+    it('keeps the host store authoritative for serialized widgets', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'text' }]
+      })
+      const { node, widget } = createNodeWithWidget(
+        'Input',
+        'text',
+        'interior',
+        'text'
+      )
+      const host = setupPromotedWidget(subgraph, node)
+
+      writePromotedWidgetValue(host, 0, 'host edited')
+      widget.value = 'interior changed'
+      host.arrange()
+
+      expect(promotedWidgetStateByName(host, 'value').value).toBe('host edited')
+    })
+  })
+
   describe('Nested Subgraph Widget Promotion', () => {
     it('should hydrate legacy -1 proxyWidgets to a concrete promoted widget with preserved options', () => {
       const subgraph = createTestSubgraph({

@@ -2063,6 +2063,7 @@ export class ComfyApp {
           })
           for (const node of queuedNodes) {
             applyPromotedWidgetControl(node, 'afterQueued')
+            if (node.isSubgraphNode()) node.syncPromotedWidgetState()
           }
           useFreeTierQuota().trackRun()
           this.canvas.draw(true, true)
