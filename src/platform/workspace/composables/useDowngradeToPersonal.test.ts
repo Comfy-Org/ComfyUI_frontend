@@ -55,7 +55,9 @@ const mockMembers = {
         subscriptionPlan: null,
         subscriptionTier: 'PRO',
         members,
-        pendingInvites: []
+        pendingInvites: [],
+        membersLoaded: true,
+        pendingInvitesLoaded: true
       }
     ]
     workspaceStore.activeWorkspaceId = 'workspace-one'

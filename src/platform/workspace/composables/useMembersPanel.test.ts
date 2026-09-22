@@ -337,7 +337,9 @@ function updateWorkspaceStore() {
       subscriptionPlan: null,
       subscriptionTier: workspaceType === 'team' ? 'PRO' : 'FREE',
       members: workspaceMembers,
-      pendingInvites: workspacePendingInvites
+      pendingInvites: workspacePendingInvites,
+      membersLoaded: true,
+      pendingInvitesLoaded: true
     }
   ]
   workspaceStore.activeWorkspaceId = 'workspace-one'
