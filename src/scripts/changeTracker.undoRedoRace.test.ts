@@ -81,17 +81,22 @@ function putOnCanvas(state: ComfyWorkflowJSON) {
 }
 
 /**
- * Model of one `app.loadGraphData` call, matching the order production runs
- * it in: raise `ChangeTracker.isLoadingGraph` (`app.ts`), reach
- * `rootGraph.configure` so the canvas already holds the restored graph, then
- * keep awaiting (`afterConfigureGraph` hooks, asset scans, navigation hash)
- * and lower the flag in the per-call `finally` just before settling. Both
- * guards `captureCanvasState` consults are therefore driven the way the real
- * load drives them, including their per-call `finally` clears.
+ * Model of one `app.loadGraphData` call, in the order production runs it:
+ * raise `ChangeTracker.isLoadingGraph`, reach `rootGraph.configure` so the
+ * canvas already holds the restored graph, then keep awaiting
+ * (`afterConfigureGraph` hooks, asset scans, navigation hash) and lower the
+ * flag in the per-call `finally` just before settling. Both guards
+ * `captureCanvasState` consults are therefore driven the way the real load
+ * drives them, including their per-call `finally` clears.
  *
- * Not modelled: the pre-`configure` awaits, and the `deactivate()`/`reset()`
- * calls `beforeLoadNewGraph`/`afterLoadNewGraph` make on the tracker. Neither
- * runs on the undo path these tests exercise, which passes `clean: false`.
+ * Not modelled: the awaits before `configure`, and the
+ * `deactivate()`/`reset()`/`restore()` calls that `beforeLoadNewGraph` and
+ * `afterLoadNewGraph` make on this very tracker. Those do run on the undo
+ * path, and they are inert only because `_restoringState` is true when they
+ * are reached — the same flag whose premature clearing these tests are about.
+ * In the re-entrant window `reset()` can therefore find it already cleared and
+ * overwrite `activeState`/`initialState`: a second corruption channel this
+ * double deliberately leaves out, so the cases below isolate the redo queue.
  */
 function beginLoad(state: ComfyWorkflowJSON) {
   ChangeTracker.isLoadingGraph = true
@@ -101,26 +106,48 @@ function beginLoad(state: ComfyWorkflowJSON) {
   }
 }
 
-/** Loads whose promise settles only once the test releases it. */
-function holdLoadsUntilReleased() {
-  const releases: (() => void)[] = []
-  vi.mocked(app.loadGraphData).mockImplementation((graphData) => {
-    const finishLoad = beginLoad(graphData as ComfyWorkflowJSON)
-    return new Promise((resolve) =>
-      releases.push(() => {
-        finishLoad()
-        resolve(true)
-      })
-    )
-  })
-  return releases
-}
-
 function settleLoadsImmediately() {
   vi.mocked(app.loadGraphData).mockImplementation((graphData) => {
     beginLoad(graphData as ComfyWorkflowJSON)()
     return Promise.resolve(true)
   })
+}
+
+/**
+ * Loads whose promise settles only when the test releases it. Releasing is
+ * count-independent on purpose: a fix that serialises the restores, or drops
+ * the re-entrant one, issues fewer loads, and a harness that indexed them
+ * would throw instead of letting the expected-failure cases reach their
+ * assertions — which `it.fails` would then absorb, reporting a fixed bug as
+ * still broken.
+ */
+function holdLoadsUntilReleased() {
+  const outstanding: (() => void)[] = []
+  vi.mocked(app.loadGraphData).mockImplementation((graphData) => {
+    const finishLoad = beginLoad(graphData as ComfyWorkflowJSON)
+    return new Promise((resolve) =>
+      outstanding.push(() => {
+        finishLoad()
+        resolve(true)
+      })
+    )
+  })
+  return {
+    get heldCount() {
+      return outstanding.length
+    },
+    /** Waits, so a fix that defers a restore reaches its assertions. */
+    releaseOldest: async () => {
+      await vi.waitUntil(() => outstanding.length > 0)
+      outstanding.shift()?.()
+    },
+    /** Release everything outstanding, and let any later load settle at once. */
+    settleRest: () => {
+      const release = outstanding.splice(0)
+      settleLoadsImmediately()
+      release.forEach((releaseLoad) => releaseLoad())
+    }
+  }
 }
 
 function trackerEditing(
@@ -154,7 +181,9 @@ function trackerEditing(
  * `finally` clears each shared flag while the second restore is still in
  * flight. A `captureCanvasState` landing in that window compares a canvas the
  * second restore has already moved against the state the first one recorded,
- * treats the difference as an edit, and empties the redo queue.
+ * treats the difference as an edit, and empties the redo queue. `Comfy.Undo`
+ * in the Edit menu reaches `updateState` the same way, so the corruption is
+ * not specific to the keyboard.
  *
  * Autosave is one way into that window and the one the report names, via
  * `workflowService.saveWorkflow` -> `prepareForSave`. It is not the cheapest:
@@ -162,19 +191,25 @@ function trackerEditing(
  * with no delay, so a single click between the two restores does the same
  * damage.
  *
+ * Only the second half of the report is reproduced here — redo failing to
+ * restore. Undo removing the partner nodes in the first place is ordinary
+ * semantics against this history, and what made it feel unexpected to the
+ * reporter is not recoverable from the report.
+ *
  * Partner nodes carry no special graph representation — they are ordinary
  * nodes whose *definition* sets `api_node: true`, see `usePartnerNodesInGraph`
  * — so what makes them vanish is damage to the undo history itself. The
  * workflows below stand in for the reported one: a checkpoint loader plus the
  * two partner nodes the user watched disappear.
  *
- * Pre-flight: `updateState` is byte-identical between `v1.53.7` (the release
- * line on Comfy Cloud prod) and `main`, so this is not fixed in 1.53 and is
- * not a regression introduced after it.
+ * Pre-flight: `updateState`, `_restoringState`, `captureCanvasState`'s guards
+ * and `loadGraphData`'s `isLoadingGraph` lifecycle are all unchanged between
+ * `v1.53.7` (the release line on Comfy Cloud prod) and `main`, so this is not
+ * fixed in 1.53 and is not a regression introduced after it.
  *
- * The two `it.fails` cases pin different halves and can flip independently:
- * the first covers the emptied redo queue the report describes, the second
- * covers the duplicate redo entry that loses the intermediate workflow.
+ * The two `it.fails` cases pin different defects and can flip independently:
+ * the first covers the emptied redo queue the report describes, the second the
+ * duplicate redo entry that loses the intermediate workflow.
  */
 describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
   const beforePartnerNodes = () => workflowOf([checkpointLoader])
@@ -217,11 +252,14 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
     ])
   })
 
-  // Drives the same arrange as the two expected-failure cases below, unmarked,
-  // so a broken fixture reddens here instead of being absorbed by `it.fails`.
-  // Both assertions hold whether or not the re-entrancy is fixed.
-  it('lands on the workflow from before the partner nodes when a second undo starts mid-restore', async () => {
-    const releaseLoad = holdLoadsUntilReleased()
+  // Unmarked on purpose: it drives the same arrange as the two expected
+  // failures below, so a broken fixture reddens here with a readable diff
+  // instead of being absorbed by `it.fails`. `heldCount` states the
+  // precondition those cases rest on — that both restores really are in
+  // flight together — so a fix that serialises or drops the second undo
+  // reddens here too, which is the signal to revisit this whole file.
+  it('holds both restores in flight and lands on the workflow from before the partner nodes', async () => {
+    const loads = holdLoadsUntilReleased()
     const tracker = trackerEditing(withBothPartnerNodes(), [
       beforePartnerNodes(),
       withOnePartnerNode()
@@ -229,17 +267,18 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
 
     const firstUndo = tracker.undo()
     const secondUndo = tracker.undo()
-    releaseLoad[0]()
-    releaseLoad[1]()
+
+    expect(loads.heldCount).toBe(2)
+
+    loads.settleRest()
     await firstUndo
     await secondUndo
 
-    expect(app.loadGraphData).toHaveBeenCalledTimes(2)
     expect(nodeTypesOf(tracker.activeState)).toEqual([CHECKPOINT_LOADER])
   })
 
-  it.fails('KNOWN BUG (ING-198): redo restores the partner nodes that a re-entrant undo removed while autosave is on', async () => {
-    const releaseLoad = holdLoadsUntilReleased()
+  it.fails('KNOWN BUG (ING-198): an autosave during a re-entrant undo empties the redo queue, stranding the partner nodes', async () => {
+    const loads = holdLoadsUntilReleased()
     const tracker = trackerEditing(withBothPartnerNodes(), [
       beforePartnerNodes(),
       withOnePartnerNode()
@@ -252,14 +291,13 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
     // both shared flags in its `finally` while the second is still loading.
     // `prepareForSave` is the entry point every autosave takes through
     // `workflowService.saveWorkflow`.
-    releaseLoad[0]()
+    await loads.releaseOldest()
     await firstUndo
     tracker.prepareForSave()
 
-    releaseLoad[1]()
+    loads.settleRest()
     await secondUndo
 
-    settleLoadsImmediately()
     await tracker.redo()
     await tracker.redo()
 
@@ -270,8 +308,8 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
     ])
   })
 
-  it.fails('KNOWN BUG (ING-198): one redo after a re-entrant undo steps back to the intermediate workflow', async () => {
-    const releaseLoad = holdLoadsUntilReleased()
+  it.fails('KNOWN BUG (ING-198): a re-entrant undo records the same redo entry twice, so redo skips the intermediate workflow', async () => {
+    const loads = holdLoadsUntilReleased()
     const tracker = trackerEditing(withBothPartnerNodes(), [
       beforePartnerNodes(),
       withOnePartnerNode()
@@ -279,12 +317,15 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
 
     const firstUndo = tracker.undo()
     const secondUndo = tracker.undo()
-    releaseLoad[0]()
-    releaseLoad[1]()
+    loads.settleRest()
     await firstUndo
     await secondUndo
 
-    settleLoadsImmediately()
+    expect(tracker.redoQueue.map(nodeTypesOf)).toEqual([
+      [CHECKPOINT_LOADER, OPENAI_PARTNER_NODE, LUMA_PARTNER_NODE],
+      [CHECKPOINT_LOADER, OPENAI_PARTNER_NODE]
+    ])
+
     await tracker.redo()
 
     expect(nodeTypesOf(tracker.activeState)).toEqual([
