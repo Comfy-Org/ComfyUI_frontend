@@ -205,6 +205,8 @@ import type { BillingErrorCode } from '@comfyorg/account-core/billing'
 import { createSessionBillingTransport } from '@comfyorg/account-core/billing'
 import type { FirebaseIdentityAppConfig } from '@comfyorg/account-core/firebase'
 import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
+import type { RuntimeFirebaseOptions } from '@comfyorg/account-core/firebaseConfigSource'
+import { fetchFirebaseConfig } from '@comfyorg/account-core/firebaseConfigSource'
 import { createWebCrossTabRefreshPort } from '@comfyorg/account-core/web'
 import type { IdentityPort } from '@comfyorg/account-core/testing'
 import { createTestIdentity } from '@comfyorg/account-core/testing'
@@ -248,6 +250,7 @@ export const values = {
   createSessionClient,
   createSessionBillingTransport,
   createFirebaseIdentity,
+  fetchFirebaseConfig,
   createWebCrossTabRefreshPort,
   createTestIdentity,
   MISSING_CUSTOMER_MESSAGE,
@@ -279,6 +282,7 @@ export interface Types {
   session: SessionSnapshot
   billing: BillingErrorCode
   firebase: FirebaseIdentityAppConfig
+  firebaseConfigSource: RuntimeFirebaseOptions
   web: ReturnType<typeof createWebCrossTabRefreshPort>
   testing: IdentityPort<AccountUser>
   customerRecovery: CustomerRecoveryDeps
