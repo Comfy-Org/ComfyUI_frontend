@@ -1,5 +1,9 @@
 import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type {
+  Op,
+  WidgetCatalog,
+  WorkflowJSON
+} from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -19,6 +23,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
+import type { GraphOperation } from './graphOperations'
 import { createGraphMutations } from './graphMutations'
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 
@@ -266,7 +271,7 @@ describe('ADR-CRDT-RECONCILE-0035 (c): AgentCrdtProjection forwards the id-colli
     types: { Source: { widget_order: [] }, Sink: { widget_order: [] } }
   }
 
-  function op(id: string, baseVersion: number, payload: object) {
+  function op(id: string, baseVersion: number, payload: GraphOperation): Op {
     return {
       op_id: id,
       actor: 'agent:test',
@@ -277,7 +282,11 @@ describe('ADR-CRDT-RECONCILE-0035 (c): AgentCrdtProjection forwards the id-colli
   }
 
   it('reports a genuine node id collision when constructed without an explicit pendingAddType', () => {
-    const host = mint({ nodes: [], links: [] }, catalog)
+    // Mutates the follower's own doc directly via the library's applier,
+    // rather than a separate host doc diffed and replayed through
+    // `applyRemoteUpdate`: this test is only about which `pendingAddType`
+    // reaches the adapter, not about wire delivery (already covered by
+    // ecsFollowerAdapter.integration.test.ts's harness).
     const follower = new FollowerDoc()
     const mutations = createGraphMutations({
       getScope: () => scope,
@@ -293,31 +302,27 @@ describe('ADR-CRDT-RECONCILE-0035 (c): AgentCrdtProjection forwards the id-colli
     )
     projection.bind('wf', follower)
 
-    let seq = 0
-    let first = true
-    const deliver = (operation: object): boolean => {
-      const before = Y.encodeStateVector(host)
-      const operationId = `op-${++seq}`
-      applyOps(
-        host,
-        [op(operationId, seq, operation)] as Parameters<typeof applyOps>[1],
-        catalog
-      )
-      const update = first
-        ? Y.encodeStateAsUpdate(host)
-        : Y.encodeStateAsUpdate(host, before)
-      first = false
-      follower.applyRemoteUpdate(update)
-      return projection.applyFrame({ workflowId: 'wf', seq, update })
-    }
-
+    // An unrelated first frame flips the session's initial full-graph
+    // reconcile into the incremental per-change path the collision check
+    // below depends on.
+    applyOps(
+      follower.doc,
+      [
+        op('op-0', 1, {
+          op: 'add_node',
+          node_id: 99,
+          class_type: 'Sink',
+          pos: [0, 0],
+          node: { id: 99, type: 'Sink', inputs: [], outputs: [] }
+        })
+      ],
+      catalog
+    )
     expect(
-      deliver({
-        op: 'add_node',
-        node_id: 99,
-        class_type: 'Sink',
-        pos: [0, 0],
-        node: { id: 99, type: 'Sink', inputs: [], outputs: [] }
+      projection.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: new Uint8Array()
       })
     ).toBe(true)
 
@@ -327,13 +332,25 @@ describe('ADR-CRDT-RECONCILE-0035 (c): AgentCrdtProjection forwards the id-colli
       { source: 'agent-remote', actor: 'local-hydration', opId: 'local-seed' }
     )
 
+    applyOps(
+      follower.doc,
+      [
+        op('op-1', 2, {
+          op: 'add_node',
+          node_id: 1,
+          class_type: 'Source',
+          pos: [5, 5],
+          node: { id: 1, type: 'Source', pos: [5, 5], inputs: [], outputs: [] }
+        })
+      ],
+      catalog
+    )
+
     expect(
-      deliver({
-        op: 'add_node',
-        node_id: 1,
-        class_type: 'Source',
-        pos: [5, 5],
-        node: { id: 1, type: 'Source', pos: [5, 5], inputs: [], outputs: [] }
+      projection.applyFrame({
+        workflowId: 'wf',
+        seq: 2,
+        update: new Uint8Array()
       })
     ).toBe(true)
 
@@ -344,6 +361,5 @@ describe('ADR-CRDT-RECONCILE-0035 (c): AgentCrdtProjection forwards the id-colli
 
     projection.destroy()
     follower.destroy()
-    host.destroy()
   })
 })

@@ -17,6 +17,7 @@
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import type { DocOpFailure } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import { chunkWireOps, mintWireOps } from './opEnvelope'
 
@@ -38,12 +39,13 @@ export interface OpsResultView {
   seq?: number
   /**
    * Failed-batch diagnostics when the host provides them; `op_id` correlates
-   * an otherwise empty-list failure to its batch. `code` is the host's
-   * stable failure classifier (`DocOpFailure.code`); `message` is free-form
-   * and MUST NOT be forwarded to telemetry (ADR-CRDT-PENDING-0030 / F5) —
-   * that bound lives in the consumer, not in this type.
+   * an otherwise empty-list failure to its batch. Derived from the parsed
+   * `DocOpFailure` docFrameClient.ts owns, so a parser change can't leave
+   * this view stale. `message` is free-form and MUST NOT be forwarded to
+   * telemetry (ADR-CRDT-PENDING-0030 / F5) — that bound lives in the
+   * consumer, not in this type.
    */
-  failure?: { op_id?: string; code?: string; message?: string }
+  failure?: Partial<Pick<DocOpFailure, 'op_id' | 'code' | 'message'>>
 }
 
 export interface OpSenderDeps {

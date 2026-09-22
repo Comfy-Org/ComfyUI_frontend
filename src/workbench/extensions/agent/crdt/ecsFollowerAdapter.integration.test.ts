@@ -24,6 +24,7 @@ import { widgetId } from '@/types/widgetId'
 import type { DocUpdate } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
+import type { GraphOperation } from './graphOperations'
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -1453,7 +1454,7 @@ describe('EcsFollowerAdapter integration', () => {
       })
     ]
 
-    const runScenario = (deliverAsSingleFrame: boolean) => {
+    const setupScenario = (prefix: string) => {
       useNodeDataStore().clearGraph(scope.rootGraphId)
       useLinkStore().clearGraph(scope.rootGraphId)
       const host = mint({ nodes: [], links: [] }, catalog)
@@ -1465,54 +1466,15 @@ describe('EcsFollowerAdapter integration', () => {
       })
       const adapter = new EcsFollowerAdapter(mutations)
       adapter.bind('wf', follower)
+      const ops = buildOps(prefix) as Parameters<typeof applyOps>[1]
+      return { host, follower, adapter, ops }
+    }
 
-      const ops = buildOps(
-        deliverAsSingleFrame ? 'combined' : 'singleton'
-      ) as Parameters<typeof applyOps>[1]
-
-      if (deliverAsSingleFrame) {
-        const result = applyOps(host, ops, catalog)
-        expect(result.outcomes.map(({ outcome }) => outcome)).toEqual([
-          'applied',
-          'applied',
-          'applied'
-        ])
-        const update = Y.encodeStateAsUpdate(host)
-        follower.applyRemoteUpdate(update)
-        expect(
-          adapter.applyFrame({
-            workflowId: 'wf',
-            seq: 1,
-            update,
-            actor: 'agent:test',
-            opIds: ops.map(({ op_id }) => op_id)
-          })
-        ).toBe(true)
-      } else {
-        let before = Y.encodeStateVector(host)
-        let first = true
-        let seq = 0
-        for (const singleOp of ops) {
-          const result = applyOps(host, [singleOp], catalog)
-          expect(result.outcomes[0]?.outcome).toBe('applied')
-          const update = first
-            ? Y.encodeStateAsUpdate(host)
-            : Y.encodeStateAsUpdate(host, before)
-          first = false
-          before = Y.encodeStateVector(host)
-          follower.applyRemoteUpdate(update)
-          expect(
-            adapter.applyFrame({
-              workflowId: 'wf',
-              seq: ++seq,
-              update,
-              actor: 'agent:test',
-              opIds: [singleOp.op_id]
-            })
-          ).toBe(true)
-        }
-      }
-
+    const readScenarioResult = (
+      adapter: EcsFollowerAdapter,
+      follower: FollowerDoc,
+      host: Y.Doc
+    ) => {
       const nodes = useNodeDataStore().getGraphNodesFor('root', 'root')
       const origin = nodes.find(({ id }) => id === toNodeId(1))
       const target = nodes.find(({ id }) => id === toNodeId(2))
@@ -1532,8 +1494,61 @@ describe('EcsFollowerAdapter integration', () => {
       }
     }
 
-    const singleton = runScenario(false)
-    const combined = runScenario(true)
+    const deliverAsCombinedFrame = () => {
+      const { host, follower, adapter, ops } = setupScenario('combined')
+
+      const result = applyOps(host, ops, catalog)
+      expect(result.outcomes.map(({ outcome }) => outcome)).toEqual([
+        'applied',
+        'applied',
+        'applied'
+      ])
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 1,
+          update,
+          actor: 'agent:test',
+          opIds: ops.map(({ op_id }) => op_id)
+        })
+      ).toBe(true)
+
+      return readScenarioResult(adapter, follower, host)
+    }
+
+    const deliverAsSingletonFrames = () => {
+      const { host, follower, adapter, ops } = setupScenario('singleton')
+
+      let before = Y.encodeStateVector(host)
+      let first = true
+      let seq = 0
+      for (const singleOp of ops) {
+        const result = applyOps(host, [singleOp], catalog)
+        expect(result.outcomes[0]?.outcome).toBe('applied')
+        const update = first
+          ? Y.encodeStateAsUpdate(host)
+          : Y.encodeStateAsUpdate(host, before)
+        first = false
+        before = Y.encodeStateVector(host)
+        follower.applyRemoteUpdate(update)
+        expect(
+          adapter.applyFrame({
+            workflowId: 'wf',
+            seq: ++seq,
+            update,
+            actor: 'agent:test',
+            opIds: [singleOp.op_id]
+          })
+        ).toBe(true)
+      }
+
+      return readScenarioResult(adapter, follower, host)
+    }
+
+    const singleton = deliverAsSingletonFrames()
+    const combined = deliverAsCombinedFrame()
 
     // The link store converges identically either way...
     expect(combined.topologyDefined).toBe(true)
@@ -1562,14 +1577,17 @@ describe('EcsFollowerAdapter integration', () => {
       adapter.bind('wf', follower)
       let seq = 0
       let first = true
-      const deliver = (operation: object): boolean => {
+      const deliver = (operation: GraphOperation): boolean => {
         const before = Y.encodeStateVector(host)
         const operationId = `op-${++seq}`
-        applyOps(
-          host,
-          [op(operationId, seq, operation)] as Parameters<typeof applyOps>[1],
-          catalog
-        )
+        const wireOp: Op = {
+          op_id: operationId,
+          actor: 'agent:test',
+          base_version: seq,
+          stamp: [seq, 'agent:test'],
+          ...operation
+        }
+        applyOps(host, [wireOp], catalog)
         const update = first
           ? Y.encodeStateAsUpdate(host)
           : Y.encodeStateAsUpdate(host, before)
@@ -1580,14 +1598,14 @@ describe('EcsFollowerAdapter integration', () => {
       return { host, follower, mutations, adapter, deliver }
     }
 
-    const seedNode99 = {
+    const seedNode99: GraphOperation = {
       op: 'add_node',
       node_id: 99,
       class_type: 'Sink',
       pos: [0, 0],
       node: { id: 99, type: 'Sink', inputs: [], outputs: [] }
     }
-    const echoNode1 = {
+    const echoNode1: GraphOperation = {
       op: 'add_node',
       node_id: 1,
       class_type: 'Source',

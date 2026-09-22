@@ -35,7 +35,6 @@ import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
-import type { DocUpdate } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
@@ -243,13 +242,21 @@ function connectEffectPresent(
 ): boolean {
   const raw = linksMap(doc).get(String(op.link_id))
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
-  if (!Array.isArray(tuple) || tuple.length < 5) return false
+  // Element 5 (the wire type) must be present: `readSemanticLink` treats it
+  // as authoritative, so a link tuple that hasn't landed it yet cannot prove
+  // this connect's effect is present.
+  if (!Array.isArray(tuple) || tuple.length < 6) return false
   const originMatches =
     String(tuple[1]) === String(op.from_node) &&
     Number(tuple[2]) === op.from_slot
   const targetMatches = String(tuple[3]) === String(op.to_node)
   const slotMatches = op.to_slot == null || Number(tuple[4]) === op.to_slot
-  return originMatches && targetMatches && slotMatches
+  const wireType =
+    typeof tuple[5] === 'string' || typeof tuple[5] === 'number'
+      ? String(tuple[5])
+      : '*'
+  const typeMatches = wireType === op.link_type
+  return originMatches && targetMatches && slotMatches && typeMatches
 }
 
 export function useAgentCrdtFollower(
@@ -366,35 +373,28 @@ function startAgentCrdtFollower(
   // NOT reset there, only on a lineage break (doc_reset, follower_replaced,
   // or a bind to a workflow other than this one), so it needs its own memory
   // of "what lineage is this" that a deactivation does not touch.
+  //
+  // A lineage break for THIS id is handled the moment it is received —
+  // `resetLineageIfTracked` below — active or not, so this id itself is the
+  // only bookkeeping the ledger's lineage needs; no separate generation
+  // counter is required to notice a break that landed while inactive.
   let pendingOpsLineageId: string | null = null
-  // Bumped on every doc_reset/follower_replaced for `pendingOpsLineageId`,
-  // active or not: a lineage break received while the tab is inactive still
-  // invalidates the pending correlation, even though `pendingOpsLineageId`
-  // itself (the workflow id) does not change across it.
-  let pendingOpsLineageGeneration = 0
-  // The generation the pending correlation currently reflects; compared
-  // against `pendingOpsLineageGeneration` at (re)activation.
-  let consumedLineageGeneration = 0
-  function bumpLineageGeneration(workflowId: unknown): void {
-    if (typeof workflowId === 'string' && workflowId === pendingOpsLineageId)
-      pendingOpsLineageGeneration += 1
-  }
   /**
-   * Whether the pending correlation needs resetting for `next`: either it
-   * belongs to a different workflow, or a lineage break landed for THIS
-   * workflow while the tab was inactive (F4) — `pendingOpsLineageId` alone
-   * cannot see that, since it does not change across it.
+   * A lineage break (`doc_reset` / `follower_replaced`) for the currently
+   * tracked workflow invalidates the pending correlation immediately,
+   * whether or not this tab is active: `pendingOps.reset()` is safe either
+   * way, so there is nothing to defer to reactivation.
    */
+  function resetLineageIfTracked(workflowId: unknown): void {
+    if (typeof workflowId === 'string' && workflowId === pendingOpsLineageId)
+      resetPendingCorrelation()
+  }
   function lineageChanged(next: string | null): boolean {
-    return (
-      pendingOpsLineageId !== next ||
-      consumedLineageGeneration !== pendingOpsLineageGeneration
-    )
+    return pendingOpsLineageId !== next
   }
   function adoptLineage(next: string | null): void {
     resetPendingCorrelation()
     pendingOpsLineageId = next
-    consumedLineageGeneration = pendingOpsLineageGeneration
   }
   const removeRevertedNode = createPendingRevertRemoveNode({
     getGraph,
@@ -431,13 +431,6 @@ function startAgentCrdtFollower(
       recordDevEvent('pending_ops', event)
     }
   })
-  // ADR-CRDT-RECONCILE-0035 (c): an incoming `add` for a node id already
-  // registered locally is the page's own accepted-add echo, never a fresh
-  // add, exactly when the ledger still holds an `add_node` for that id, of
-  // the SAME type, in a state the host can have reflected back already. An
-  // indexed lookup, not a scan/clone of every pending entry.
-  const pendingAddType = (nodeId: string): string | undefined =>
-    pendingOps.pendingAddType(nodeId)
   // Doc node ids whose human delete the host has applied but whose effect
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
@@ -496,11 +489,16 @@ function startAgentCrdtFollower(
     }
     return pending
   }
-  const projection = new AgentCrdtProjection(
+  const projection = new AgentCrdtProjection<ClassifiedDocUpdate>(
     graphMutations,
     getGraph,
     () => bridge.follower.doc,
-    pendingAddType,
+    // ADR-CRDT-RECONCILE-0035 (c): an incoming `add` for a node id already
+    // registered locally is the page's own accepted-add echo, never a fresh
+    // add, exactly when the ledger still holds an `add_node` for that id, of
+    // the SAME type, in a state the host can have reflected back already. An
+    // indexed lookup, not a scan/clone of every pending entry.
+    pendingOps.pendingAddType,
     { pendingDeletes: pendingHumanDeletes }
   )
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
@@ -640,16 +638,6 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_ops_result', event.detail ?? null)
   }
-  const bumpLineageForResetEvent = (
-    event: Event
-  ): DocResetDetail | undefined => {
-    const detail =
-      event instanceof CustomEvent
-        ? (event.detail as DocResetDetail)
-        : undefined
-    bumpLineageGeneration(detail?.workflowId)
-    return detail
-  }
   const performDocResetBookkeeping = (
     workflowId: string,
     detail: DocResetDetail,
@@ -668,7 +656,6 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
-    adoptLineage(workflowId)
     pendingLiveNodeIds.clear()
     confirmedDeletes.clear()
     recordDevEvent(
@@ -677,8 +664,12 @@ function startAgentCrdtFollower(
     )
   }
   const onDocReset: EventListener = (event) => {
-    const detail = bumpLineageForResetEvent(event)
+    const detail =
+      event instanceof CustomEvent
+        ? (event.detail as DocResetDetail)
+        : undefined
     incrementOutcome('reset')
+    resetLineageIfTracked(detail?.workflowId)
     if (!isCurrentWorkflow(detail?.workflowId)) return
     performDocResetBookkeeping(detail.workflowId, detail, event)
   }
@@ -691,7 +682,7 @@ function startAgentCrdtFollower(
     if (!(event instanceof CustomEvent)) return
     const detail = event.detail as { workflowId?: unknown } | null
     const workflowId = detail?.workflowId
-    bumpLineageGeneration(workflowId)
+    resetLineageIfTracked(workflowId)
     if (
       isTargetActive.value &&
       typeof workflowId === 'string' &&
@@ -705,7 +696,6 @@ function startAgentCrdtFollower(
         opId: `follower-replaced:${workflowId}`
       })
       projection.bind(workflowId, bridge.follower)
-      adoptLineage(workflowId)
     }
   }
   const onSchemaError: EventListener = (event) => {
@@ -802,13 +792,28 @@ function startAgentCrdtFollower(
         return deleteNodeEffectPresent(doc, op)
       case 'connect':
         return connectEffectPresent(doc, op)
-      default:
+      case 'set_widget':
+        // Last-writer-wins: a doc value differing from the shadow does not
+        // prove non-delivery (pendingOpTracker.ts resolves it present).
         return null
+      case 'clear':
+        // Never parked as delivery_unknown, so this check never runs for it.
+        return null
+      case 'disconnect':
+      case 'define_subgraph':
+      case 'insert_workflow':
+        // No effect-presence check implemented for these kinds yet: `null`
+        // leaves a parked entry parked rather than guessing.
+        return null
+      default: {
+        const exhaustive: never = op
+        return exhaustive
+      }
     }
   }
 
   /** Watermark and settlement only - callers own the live-graph reconcile. */
-  function onProjected(update: DocUpdate): void {
+  function onProjected(update: ClassifiedDocUpdate): void {
     lastProjectedSequence = update.seq
     if (update.opIds) pendingOps.onDocEffect(update.opIds)
     pendingOps.onAuthoritativeState(update.seq)
@@ -816,8 +821,7 @@ function startAgentCrdtFollower(
     // rebind, so whatever the doc holds now is the best evidence available
     // for a parked entry. An unrelated live delta must not resolve one —
     // its absence there would prove nothing about a delivery that raced it.
-    if ((update as Partial<ClassifiedDocUpdate>).catchUp)
-      pendingOps.resolveDeliveryUnknown(docEffectPresent)
+    if (update.catchUp) pendingOps.resolveDeliveryUnknown(docEffectPresent)
   }
 
   function retryPendingProjection(workflowId: string): boolean {

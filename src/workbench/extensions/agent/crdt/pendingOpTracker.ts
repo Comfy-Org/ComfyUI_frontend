@@ -121,8 +121,8 @@ export function createPendingOpTracker(
   // add_node node id → its op id, maintained alongside the ledger so
   // `pendingAddType` is an index lookup rather than a scan of every entry.
   const addNodeIndex = new Map<string, string>()
-  // (failure code, op kind) pairs already reported this session, so a
-  // repeated host rejection of the same failure shape reports once.
+  // Rejected op ids already reported this session, so a retried settle of
+  // the same ledger entry (e.g. a duplicate `revert`) reports it only once.
   const reportedHumanOpFailures = new Set<string>()
 
   function emit(event: PendingOpTrackerEvent): void {
@@ -240,11 +240,10 @@ export function createPendingOpTracker(
   }
 
   function reportHumanOpRejected(entry: PendingOpEntry<Op>): void {
+    if (reportedHumanOpFailures.has(entry.opId)) return
+    reportedHumanOpFailures.add(entry.opId)
     const op = entry.shadow
     const code = failureCode(entry.failure)
-    const key = `${code ?? 'unknown'}:${op.op}`
-    if (reportedHumanOpFailures.has(key)) return
-    reportedHumanOpFailures.add(key)
     reportError(new Error('Agent host rejected a human operation'), {
       errorType: 'agent_crdt_human_op_rejected',
       context: {

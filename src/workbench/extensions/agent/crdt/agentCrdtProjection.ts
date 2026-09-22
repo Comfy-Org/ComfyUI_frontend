@@ -15,8 +15,8 @@ import type { LocalIntent, MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { FollowerDoc } from './followerDoc'
 
-export class AgentCrdtProjection {
-  private readonly adapter: EcsFollowerAdapter
+export class AgentCrdtProjection<TUpdate extends DocUpdate = DocUpdate> {
+  private readonly adapter: EcsFollowerAdapter<TUpdate>
 
   constructor(
     mutations: MutationsForTarget,
@@ -32,7 +32,11 @@ export class AgentCrdtProjection {
     pendingAddType: (nodeId: string) => string | undefined = () => undefined,
     intent?: LocalIntent
   ) {
-    this.adapter = new EcsFollowerAdapter(mutations, pendingAddType, intent)
+    this.adapter = new EcsFollowerAdapter<TUpdate>(
+      mutations,
+      pendingAddType,
+      intent
+    )
   }
 
   bind(workflowId: string, follower: FollowerDoc): void {
@@ -50,7 +54,7 @@ export class AgentCrdtProjection {
    * would let a third-party hook leave a frame counted in `received` and in
    * neither `applied` nor `skipped`.
    */
-  applyFrame(update: DocUpdate): boolean {
+  applyFrame(update: TUpdate): boolean {
     return this.adapter.applyFrame(update)
   }
 
@@ -74,7 +78,7 @@ export class AgentCrdtProjection {
    * Re-attempts the last frame whose ECS batch did not commit (s3-opt-6).
    * Returns the frame on success so the caller can publish its projection.
    */
-  retryPending(workflowId: string): DocUpdate | null {
+  retryPending(workflowId: string): TUpdate | null {
     return this.adapter.retryPending(workflowId)
   }
 

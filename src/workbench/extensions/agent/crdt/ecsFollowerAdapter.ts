@@ -338,7 +338,7 @@ function frameContext(update: DocUpdate): RemoteMutationContext {
   }
 }
 
-interface TargetSession {
+interface TargetSession<TUpdate extends DocUpdate = DocUpdate> {
   readonly workflowId: string
   readonly follower: FollowerDoc
   readonly nodes: Y.Map<Y.Map<unknown>>
@@ -352,8 +352,8 @@ interface TargetSession {
   readonly changedLinks: Set<string>
   /** Drift keys already surfaced via `reportError` for this session. */
   readonly reportedErrors: Set<string>
-  readonly frameQueue: DocUpdate[]
-  pendingProjection: DocUpdate | null
+  readonly frameQueue: TUpdate[]
+  pendingProjection: TUpdate | null
   onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
@@ -379,8 +379,8 @@ interface FrameApplyContext {
  * one workflow can therefore never consume or overwrite another workflow's
  * follower state.
  */
-export class EcsFollowerAdapter {
-  private readonly targets = new Map<string, TargetSession>()
+export class EcsFollowerAdapter<TUpdate extends DocUpdate = DocUpdate> {
+  private readonly targets = new Map<string, TargetSession<TUpdate>>()
 
   constructor(
     private readonly mutations: MutationsForTarget,
@@ -407,8 +407,13 @@ export class EcsFollowerAdapter {
     this.targets.delete(workflowId)
   }
 
-  /** Queue and drain only the target addressed by this frame. */
-  applyFrame(update: DocUpdate): boolean {
+  /**
+   * Queue and drain only the target addressed by this frame. `EcsFollowerAdapter`
+   * is generic over the caller's update shape (e.g. `ClassifiedDocUpdate`) so
+   * a subtype fed in here comes back out of {@link retryPending} as that same
+   * subtype, with no assertion needed at either end to recover it.
+   */
+  applyFrame(update: TUpdate): boolean {
     const session = this.targets.get(update.workflowId)
     if (!session) return false
 
@@ -430,7 +435,7 @@ export class EcsFollowerAdapter {
     return updateCommitted
   }
 
-  retryPending(workflowId: string): DocUpdate | null {
+  retryPending(workflowId: string): TUpdate | null {
     const session = this.targets.get(workflowId)
     const update = session?.pendingProjection
     if (!session || !update || session.applying) return null
@@ -465,8 +470,8 @@ export class EcsFollowerAdapter {
   private createSession(
     workflowId: string,
     follower: FollowerDoc
-  ): TargetSession {
-    const session: TargetSession = {
+  ): TargetSession<TUpdate> {
+    const session: TargetSession<TUpdate> = {
       workflowId,
       follower,
       nodes: nodesMap(follower.doc),
@@ -495,7 +500,10 @@ export class EcsFollowerAdapter {
     return session
   }
 
-  private applyQueuedFrame(session: TargetSession, update: DocUpdate): boolean {
+  private applyQueuedFrame(
+    session: TargetSession<TUpdate>,
+    update: DocUpdate
+  ): boolean {
     const nodeActions = new Map(session.nodeActions)
     const changedWidgets = new Map(
       [...session.changedWidgets].map(([id, names]) => [id, new Set(names)])

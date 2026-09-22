@@ -39,7 +39,7 @@ export interface DocSubscribed {
   message?: string
 }
 
-interface DocOpFailure {
+export interface DocOpFailure {
   index: number
   /** Absent when the relay cannot map the failing index to an op id. */
   op_id?: string

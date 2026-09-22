@@ -751,7 +751,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('F4: a lineage break for the bound workflow received while inactive still resets the pending correlation on reactivation', async () => {
+  it('F4: a lineage break for the bound workflow received while inactive resets the pending correlation immediately', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
     const isTargetActive = ref(true)
@@ -783,19 +783,19 @@ describe('useAgentCrdtFollower', () => {
 
     isTargetActive.value = false
     await nextTick()
-    // The lineage breaks for the still-bound workflow while inactive:
-    // `pendingOpsLineageId` itself does not change across a tab switch, so
-    // only a generation bump can make this visible.
-    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 3 })
-
     vi.mocked(recordDevEvent).mockClear()
-    isTargetActive.value = true
-    await nextTick()
+    // The lineage breaks for the still-bound workflow while inactive: the
+    // pending correlation resets right away rather than waiting for
+    // reactivation to notice.
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 3 })
 
     expect(recordDevEvent).toHaveBeenCalledWith(
       'pending_ops',
       expect.objectContaining({ type: 'reset' })
     )
+
+    isTargetActive.value = true
+    await nextTick()
     unmount()
   })
 
@@ -1601,6 +1601,65 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it("ADR-CRDT-RECONCILE-0035 (c): an add_node's echo classification survives tab deactivation and reactivation of the same workflow", async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    const isTargetActive = ref(true)
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          () => null,
+          isTargetActive
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: '7',
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 7, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+    await Promise.resolve()
+
+    const pendingAddType = adapterState.pendingAddType
+    expect(pendingAddType).toBeDefined()
+    if (!pendingAddType) throw new Error('expected a captured predicate')
+    expect(pendingAddType('7')).toBe('Test')
+
+    // Tab switch away, then back to the SAME workflow: not a lineage break.
+    isTargetActive.value = false
+    await nextTick()
+    isTargetActive.value = true
+    await nextTick()
+
+    const resetEvents = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(
+        ([event, detail]) =>
+          event === 'pending_ops' &&
+          (detail as { type?: string }).type === 'reset'
+      )
+    expect(resetEvents).toEqual([])
+
+    // Still tracked after the round trip: the real ledger-backed predicate
+    // the (real) adapter consults for echo classification still reports
+    // this node's pending add_node, proving deactivation did not drop it.
+    expect(pendingAddType('7')).toBe('Test')
+    unmount()
+  })
+
   it("ADR-CRDT-RECONCILE-0035 (c): pendingAddType reports the class_type only while the ledger holds that node's add_node", async () => {
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
@@ -1677,9 +1736,7 @@ describe('useAgentCrdtFollower', () => {
       { op: 'delete_node', node_id: '6', removed_links: [] }
     ])
     await Promise.resolve()
-    const sentOps = clientState.sendOps.mock.lastCall?.[2] as Array<{
-      op_id: string
-    }>
+    const sentOps = clientState.sendOps.mock.lastCall?.[2] ?? []
     expect(sentOps).toHaveLength(3)
     const opIds = sentOps.map((sentOp) => sentOp.op_id)
 
@@ -1914,6 +1971,61 @@ describe('useAgentCrdtFollower', () => {
     // Link id 9 exists, but between an unrelated pair of nodes/slots.
     const doc = new Y.Doc()
     doc.getMap('links').set('9', Y.Array.from([9, 2, 1, 6, 1, 'IMAGE']))
+    bridge().follower.doc = doc
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
+
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'reverted',
+      reason: 'diverged',
+      opIds: [opId],
+      ops: expect.anything(),
+      undone: false
+    })
+    unmount()
+  })
+
+  it('F9: a connect whose link id resolves to the same endpoints but a different semantic type is not treated as delivered', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([
+      {
+        op: 'connect',
+        link_id: 9,
+        from_node: 1,
+        from_slot: 0,
+        to_node: 5,
+        to_slot: 0,
+        link_type: 'IMAGE'
+      }
+    ])
+    await Promise.resolve()
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    // Same link id and endpoints, but a different semantic wire type.
+    const doc = new Y.Doc()
+    doc.getMap('links').set('9', Y.Array.from([9, 1, 0, 5, 0, 'MASK']))
     bridge().follower.doc = doc
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
 

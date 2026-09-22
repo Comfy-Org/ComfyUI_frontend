@@ -477,7 +477,7 @@ describe('createPendingOpTracker', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
-    it('rate-limits repeats of the same (failure code, op kind) to once per session', () => {
+    it('reports every rejected op id even when the failure code and op kind repeat', () => {
       const first = [addNode('op-1', 1)]
       tracker.onBatchMinted(first)
       tracker.onBatchTransmitted(first)
@@ -502,7 +502,25 @@ describe('createPendingOpTracker', () => {
         })
       )
 
-      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).toHaveBeenCalledTimes(2)
+      expect(reportError).toHaveBeenNthCalledWith(1, expect.any(Error), {
+        errorType: 'agent_crdt_human_op_rejected',
+        context: {
+          opId: 'op-1',
+          opKind: 'add_node',
+          nodeId: '1',
+          failureCode: 'refused'
+        }
+      })
+      expect(reportError).toHaveBeenNthCalledWith(2, expect.any(Error), {
+        errorType: 'agent_crdt_human_op_rejected',
+        context: {
+          opId: 'op-2',
+          opKind: 'add_node',
+          nodeId: '2',
+          failureCode: 'refused'
+        }
+      })
     })
 
     it('reports again for a different failure code or a different op kind', () => {
