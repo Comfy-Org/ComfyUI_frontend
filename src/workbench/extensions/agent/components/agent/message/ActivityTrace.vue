@@ -11,7 +11,6 @@ import type {
   PartState
 } from '../../../services/agent/agentMessageParts'
 import { toolGlyph, toolLabel } from '../../../services/agent/agentToolGlyph'
-import { formatDurationCompact } from '../../../utils/formatDuration'
 
 const { parts, live = false } = defineProps<{
   parts: readonly ActivityPart[]
@@ -40,8 +39,8 @@ function glyphOf(row: ActivityRow): string {
 // recognisable as unchanged by its contents.
 function rowSignature(row: ActivityRow): string {
   return row.kind === 'tool'
-    ? `tool:${row.name}:${row.state}:${row.ok}:${row.count}:${row.durationMs}`
-    : `think:${row.state}:${row.durationMs}:${row.text}`
+    ? `tool:${row.name}:${row.state}:${row.ok}:${row.count}`
+    : `think:${row.state}:${row.text}`
 }
 </script>
 
@@ -83,11 +82,6 @@ function rowSignature(row: ActivityRow): string {
             >×{{ row.count }}</span
           >
         </template>
-        <span
-          v-if="row.durationMs !== undefined"
-          class="mt-0.5 ml-auto shrink-0 font-mono text-xs/4 text-muted-foreground"
-          >{{ formatDurationCompact(row.durationMs) }}</span
-        >
       </div>
     </div>
   </div>
