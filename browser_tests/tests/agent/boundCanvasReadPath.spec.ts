@@ -27,9 +27,43 @@ interface PostedMessageBody {
   draft?: { content?: { nodes?: unknown[] } }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isPostedMessageBody(value: unknown): value is PostedMessageBody {
+  if (!isRecord(value)) return false
+
+  const { workflow_id, current_tab, open_tabs, draft } = value
+  if (workflow_id !== undefined && typeof workflow_id !== 'string') return false
+  if (current_tab !== undefined && typeof current_tab !== 'string') return false
+  if (
+    open_tabs !== undefined &&
+    (!Array.isArray(open_tabs) ||
+      !open_tabs.every(
+        (tab) =>
+          isRecord(tab) &&
+          typeof tab.workflow_id === 'string' &&
+          typeof tab.name === 'string'
+      ))
+  ) {
+    return false
+  }
+  if (draft === undefined) return true
+  if (!isRecord(draft) || !isRecord(draft.content)) return false
+  return Array.isArray(draft.content.nodes)
+}
+
 function parsePosted(raw: string | undefined): PostedMessageBody {
   expect(raw, 'a message body must have been POSTed').toBeTruthy()
-  return JSON.parse(raw ?? '{}') as PostedMessageBody
+  const parsed: unknown = JSON.parse(raw ?? '{}')
+  expect(
+    isPostedMessageBody(parsed),
+    'posted message body must match the expected serialized shape'
+  ).toBe(true)
+  if (!isPostedMessageBody(parsed))
+    throw new Error('Invalid posted message body')
+  return parsed
 }
 
 /**
@@ -154,6 +188,9 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
 
     expect(second.workflow_id).toBe(BOUND_WORKFLOW_ID)
     expect(second.current_tab).toBe(BOUND_WORKFLOW_ID)
+    expect(second.open_tabs?.map((tab) => tab.workflow_id)).toContain(
+      BOUND_WORKFLOW_ID
+    )
     expect(
       second.draft?.content?.nodes?.length,
       'draft after tab switch must reflect the bound populated tab'
