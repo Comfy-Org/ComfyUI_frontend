@@ -817,13 +817,90 @@ export function isIncompatibleLinkType(link: {
   return !LiteGraph.isValidConnection(originType, targetType)
 }
 
+type ChangedNodeSlots = Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>>
+
+/**
+ * True when `replacement` is the same link still occupying this link's
+ * origin slot, so that slot's outgoing link list should be left untouched.
+ */
+function keepsOriginSlot(
+  topology: LinkTopology,
+  replacement: LinkTopology | undefined
+): boolean {
+  return (
+    replacement?.id === topology.id &&
+    replacement.originNodeId === topology.originNodeId &&
+    replacement.originSlot === topology.originSlot
+  )
+}
+
+/**
+ * True when `replacement` is the same link still occupying this link's
+ * target slot, so that slot's incoming link should be left untouched.
+ */
+function keepsTargetSlot(
+  topology: LinkTopology,
+  replacement: LinkTopology | undefined
+): boolean {
+  return (
+    replacement?.id === topology.id &&
+    replacement.targetNodeId === topology.targetNodeId &&
+    replacement.targetSlot === topology.targetSlot
+  )
+}
+
+function detachOriginSlot(
+  nodesById: Map<string, NodeState>,
+  topology: LinkTopology,
+  replacement: LinkTopology | undefined,
+  slotsFor: (node: NodeState) => Pick<NodeState, 'inputs' | 'outputs'>
+): void {
+  const origin = nodesById.get(nodeKey(topology.originNodeId))
+  if (
+    keepsOriginSlot(topology, replacement) ||
+    !origin?.outputs[topology.originSlot]
+  ) {
+    return
+  }
+  const slots = slotsFor(origin)
+  slots.outputs = slots.outputs.map((output, index) =>
+    index === topology.originSlot && isPlainObject(output)
+      ? {
+          ...output,
+          links: output.links?.filter((id) => id !== topology.id) ?? null
+        }
+      : output
+  )
+}
+
+function detachTargetSlot(
+  nodesById: Map<string, NodeState>,
+  topology: LinkTopology,
+  replacement: LinkTopology | undefined,
+  slotsFor: (node: NodeState) => Pick<NodeState, 'inputs' | 'outputs'>
+): void {
+  const target = nodesById.get(nodeKey(topology.targetNodeId))
+  if (
+    keepsTargetSlot(topology, replacement) ||
+    target?.inputs[topology.targetSlot]?.link !== topology.id
+  ) {
+    return
+  }
+  const slots = slotsFor(target)
+  slots.inputs = slots.inputs.map((input, index) =>
+    index === topology.targetSlot && isPlainObject(input)
+      ? { ...input, link: null }
+      : input
+  )
+}
+
 function detachedLinkSlots(
   nodes: Iterable<NodeState>,
   topology: LinkTopology,
   replacement?: LinkTopology
-): Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>> {
+): ChangedNodeSlots {
   const nodesById = new Map([...nodes].map((node) => [nodeKey(node.id), node]))
-  const changed = new Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>>()
+  const changed: ChangedNodeSlots = new Map()
   const slotsFor = (node: NodeState) => {
     const prior = changed.get(node.id)
     if (prior) return prior
@@ -832,39 +909,8 @@ function detachedLinkSlots(
     return slots
   }
 
-  const origin = nodesById.get(nodeKey(topology.originNodeId))
-  const keepsOrigin =
-    replacement?.id === topology.id &&
-    replacement.originNodeId === topology.originNodeId &&
-    replacement.originSlot === topology.originSlot
-  if (!keepsOrigin && origin?.outputs[topology.originSlot]) {
-    const slots = slotsFor(origin)
-    slots.outputs = slots.outputs.map((output, index) =>
-      index === topology.originSlot && isPlainObject(output)
-        ? {
-            ...output,
-            links: output.links?.filter((id) => id !== topology.id) ?? null
-          }
-        : output
-    )
-  }
-
-  const target = nodesById.get(nodeKey(topology.targetNodeId))
-  const keepsTarget =
-    replacement?.id === topology.id &&
-    replacement.targetNodeId === topology.targetNodeId &&
-    replacement.targetSlot === topology.targetSlot
-  if (
-    !keepsTarget &&
-    target?.inputs[topology.targetSlot]?.link === topology.id
-  ) {
-    const slots = slotsFor(target)
-    slots.inputs = slots.inputs.map((input, index) =>
-      index === topology.targetSlot && isPlainObject(input)
-        ? { ...input, link: null }
-        : input
-    )
-  }
+  detachOriginSlot(nodesById, topology, replacement, slotsFor)
+  detachTargetSlot(nodesById, topology, replacement, slotsFor)
 
   return changed
 }

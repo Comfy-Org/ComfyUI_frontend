@@ -212,6 +212,63 @@ export const useLinkStore = defineStore('link', () => {
     return replaceLink(scope, undefined, topology, undefined, context)
   }
 
+  /**
+   * Rejects a `replacement` whose id would collide with an unrelated
+   * incumbent link, or whose declared `replaced` link is not actually owned
+   * by this scope's placement.
+   */
+  function canPlaceReplacement(
+    scope: GraphScope,
+    bucket: RootTopologyBucket | undefined,
+    replacement: LinkTopology,
+    replaced: LinkTopology | undefined
+  ): boolean {
+    const incumbent = bucket?.byId.get(replacement.id)
+    if (incumbent && (!replaced || toRaw(incumbent) !== toRaw(replaced))) {
+      console.error(
+        `Link ${replacement.id} belongs to graph ${incumbent.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
+      )
+      return false
+    }
+    if (replaced && (!bucket || !ownsPlacement(scope, bucket, replaced))) {
+      return false
+    }
+    return true
+  }
+
+  /** Rejects a `replacement` whose target slot is occupied by anything other than `expected`. */
+  function targetSlotIsAvailable(
+    bucket: RootTopologyBucket | undefined,
+    scope: GraphScope,
+    replacement: LinkTopology,
+    expected: LinkTopology | undefined
+  ): boolean {
+    if (!hasUniqueTarget(replacement)) return true
+    const key = targetKey(
+      scope.owningGraphId,
+      replacement.targetNodeId,
+      replacement.targetSlot
+    )
+    const existing = bucket?.targetIndex.get(key)
+    if (toRaw(existing) !== toRaw(expected)) {
+      console.error(`Link target slot ${key} is already occupied`)
+      return false
+    }
+    return true
+  }
+
+  /** Displaces both the expected occupant and, if distinct, the caller's own prior placement being replaced. */
+  function displaceForReplacement(
+    targetBucket: RootTopologyBucket,
+    expected: LinkTopology | undefined,
+    replaced: LinkTopology | undefined
+  ): void {
+    if (expected) displace(targetBucket, expected)
+    if (replaced && toRaw(replaced) !== toRaw(expected)) {
+      displace(targetBucket, replaced)
+    }
+  }
+
   /** Atomically replaces an expected target occupant with a new link. */
   function replaceLink(
     scope: GraphScope,
@@ -224,35 +281,15 @@ export const useLinkStore = defineStore('link', () => {
     if (expected && (!bucket || !ownsPlacement(scope, bucket, expected))) {
       return undefined
     }
-
-    const incumbent = bucket?.byId.get(replacement.id)
-    if (incumbent && (!replaced || toRaw(incumbent) !== toRaw(replaced))) {
-      console.error(
-        `Link ${replacement.id} belongs to graph ${incumbent.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
-      )
+    if (!canPlaceReplacement(scope, bucket, replacement, replaced)) {
       return undefined
     }
-    if (replaced && (!bucket || !ownsPlacement(scope, bucket, replaced))) {
+    if (!targetSlotIsAvailable(bucket, scope, replacement, expected)) {
       return undefined
-    }
-    if (hasUniqueTarget(replacement)) {
-      const key = targetKey(
-        scope.owningGraphId,
-        replacement.targetNodeId,
-        replacement.targetSlot
-      )
-      const existing = bucket?.targetIndex.get(key)
-      if (toRaw(existing) !== toRaw(expected)) {
-        console.error(`Link target slot ${key} is already occupied`)
-        return undefined
-      }
     }
 
     const targetBucket = bucket ?? rootBucket(scope.rootGraphId)
-    if (expected) displace(targetBucket, expected)
-    if (replaced && toRaw(replaced) !== toRaw(expected)) {
-      displace(targetBucket, replaced)
-    }
+    displaceForReplacement(targetBucket, expected, replaced)
     const owned = Object.assign(replacement, { graphId: scope.owningGraphId })
     const placed = placeValidated(targetBucket, owned)
     revision.value++
