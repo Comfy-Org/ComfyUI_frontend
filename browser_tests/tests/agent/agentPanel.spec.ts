@@ -90,7 +90,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText(THINKING_TEXT)).toBeVisible()
 
     pushEvent(ws, TOOL_CALL_EVENT)
-    const summary = panel.getByRole('button', { name: /^Worked for / })
+    const summary = panel.getByRole('button', {
+      name: enMessages.agent.worked,
+      exact: true
+    })
     await expect(summary).toHaveCount(0)
     await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText(THINKING_TEXT, { exact: true })).toBeVisible()
