@@ -82,7 +82,7 @@ describe('node bookmark folder commands', () => {
     )
   })
 
-  it.fails('does not persist a non-folder deletion', async () => {
+  it('does not persist a non-folder deletion', async () => {
     const settingStore = useSettingStore()
     const originalBookmarks = [
       ...(settingStore.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] ?? [])
