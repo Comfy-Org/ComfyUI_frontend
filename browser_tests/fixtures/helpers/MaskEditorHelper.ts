@@ -55,6 +55,7 @@ class MaskEditorHelper {
     const canvasContainer = dialog.locator('#maskEditorCanvasContainer')
     await expect(canvasContainer).toBeVisible()
     await expect(canvasContainer.locator('canvas')).toHaveCount(4)
+    await expect(dialog.getByTestId('pointer-zone')).toBeVisible()
 
     return dialog
   }
@@ -66,6 +67,7 @@ class MaskEditorHelper {
 
     const dialog = this.page.locator('.mask-editor-dialog')
     await expect(dialog).toBeVisible()
+    await expect(dialog.getByTestId('pointer-zone')).toBeVisible()
 
     return dialog
   }
