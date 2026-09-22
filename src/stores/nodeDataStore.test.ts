@@ -291,6 +291,44 @@ describe('nodeDataStore registration via LGraph', () => {
     expect(state?.outputs.map((o) => o.name)).toEqual(['latent'])
   })
 
+  it('keeps live slot edits visible after remote slot replacement', () => {
+    const graph = new LGraph()
+    const lgraphNode = new LGraphNode('test')
+    lgraphNode.addInput('old', 'INT')
+    lgraphNode.addOutput('old', 'INT')
+    graph.add(lgraphNode)
+    const state = registeredState(graph, lgraphNode)
+    assert.exists(state)
+    const inputNames = computed(() => state.inputs.map((input) => input.name))
+    const outputNames = computed(() =>
+      state.outputs.map((output) => output.name)
+    )
+    expect(inputNames.value).toEqual(['old'])
+    expect(outputNames.value).toEqual(['old'])
+
+    useNodeDataStore().updateNodeSlots(
+      graphScope(graph.rootGraph.id, graph.id),
+      lgraphNode.id,
+      {
+        inputs: [createMockNodeInputSlot({ name: 'image_1', type: 'IMAGE' })],
+        outputs: [createMockNodeOutputSlot({ name: 'image', type: 'IMAGE' })]
+      }
+    )
+    lgraphNode.addInput('image_2', 'IMAGE')
+    lgraphNode.addOutput('mask', 'MASK')
+
+    expect(inputNames.value).toEqual(['image_1', 'image_2'])
+    expect(outputNames.value).toEqual(['image', 'mask'])
+    expect(lgraphNode.inputs.map((input) => input.name)).toEqual([
+      'image_1',
+      'image_2'
+    ])
+    expect(lgraphNode.outputs.map((output) => output.name)).toEqual([
+      'image',
+      'mask'
+    ])
+  })
+
   it('reflects adds, reorders and removes without re-registration', () => {
     const graph = new LGraph()
     const lgraphNode = new LGraphNode('test')

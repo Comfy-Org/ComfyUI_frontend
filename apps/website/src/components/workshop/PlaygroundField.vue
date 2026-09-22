@@ -28,12 +28,19 @@ import DialogueInput from './DialogueInput.vue'
 const {
   field,
   errors,
+  attention,
   locale = 'en',
   disabled = false,
   fileUploadsDisabled = false
 } = defineProps<{
   field: FieldSchema
   errors: FieldErrors
+  /**
+   * The id of a notice about this field's upload. Deliberately not an error:
+   * errors abort the run, and this marks something the reader may well decide
+   * to leave as it is.
+   */
+  attention?: string
   locale?: Locale
   disabled?: boolean
   fileUploadsDisabled?: boolean
@@ -49,6 +56,7 @@ const errorKey: Record<FieldErrorCode, TranslationKey> = {
   outOfRange: 'workshop.form.outOfRange',
   badOption: 'workshop.form.badOption',
   uploadFailed: 'workshop.form.uploadFailed',
+  fileUnreadable: 'workshop.form.fileUnreadable',
   rejected: 'workshop.form.rejected'
 }
 
@@ -85,7 +93,8 @@ const describedBy = computed(
     [
       ...(field.hint ? [`help-${field.name}`] : []),
       ...(declaredDefault.value !== undefined ? [`default-${field.name}`] : []),
-      ...(invalid() ? [`error-${field.name}`] : [])
+      ...(invalid() ? [`error-${field.name}`] : []),
+      ...(attention ? [attention] : [])
     ].join(' ') || undefined
 )
 
@@ -353,6 +362,7 @@ function booleanValue(fallback = false): boolean {
       :locale
       :disabled="disabled || fileUploadsDisabled"
       :invalid="invalid()"
+      :attention="attention !== undefined"
       :described-by="describedBy"
     />
     <DialogueInput
@@ -544,6 +554,7 @@ function booleanValue(fallback = false): boolean {
       :locale
       :disabled="disabled || fileUploadsDisabled"
       :invalid="invalid()"
+      :attention="attention !== undefined"
       :described-by="describedBy"
     />
     <datalist

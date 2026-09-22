@@ -65,6 +65,7 @@
     "dismiss": "סגור",
     "downloadAssets": "הורדת נכסים",
     "dragAndDropAssets": "גרור ושחרר נכסים כאן",
+    "editWhileWorking": "אפשר להמשיך לערוך בזמן שהוא פועל",
     "entryButton": "סוכן",
     "feedbackCaption": "שיתוף משוב",
     "focusNode": "הצג בקנבס",
@@ -99,6 +100,7 @@
       "selectNode": "בחר צומת"
     },
     "nodes": "צמתים",
+    "nodesAdded": "הסוכן הוסיף צומת אחד לגרף | הסוכן הוסיף {count} צמתים לגרף",
     "notHelpful": "לא מועיל",
     "openWorkflowTab": "פתיחת {name}",
     "otherOpenWorkflows": "תהליכי עבודה פתוחים אחרים",
@@ -183,7 +185,9 @@
     "unavailableWorkflowReference": "{name} (לא זמין)",
     "unsavedWorkflow": "לא נשמר",
     "untitledChat": "ללא כותרת",
+    "updatingGraph": "הסוכן מעדכן את הגרף",
     "uploading": "מעלה",
+    "viewAddedNodes": "הצג צומת | הצג צמתים",
     "worked": "בוצע",
     "workedForMinutes": "עבד במשך {minutes}m {seconds}s",
     "workedForSeconds": "עבד במשך {seconds} שניות",
@@ -2461,7 +2465,9 @@
     "cancelThisRun": "ביטול הרצה זו",
     "deleteAllAssets": "מחיקת כל הנכסים מהרצה זו",
     "downloadAll": "הורדת {count} נכסים מהרצה זו",
+    "dragAndDropAudio": "לחצו לעיון או גררו קובץ שמע",
     "dragAndDropImage": "לחץ לעיון או גרור תמונה",
+    "dragAndDropVideo": "לחצו לעיון או גררו סרטון",
     "emptyWorkflowExplanation": "תהליך העבודה שלך ריק. אתה זקוק תחילה לכמה צמתים כדי להתחיל לבנות יישום.",
     "enterNodeGraph": "כניסה לגרף הצמתים",
     "error": {
@@ -3103,6 +3109,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "צמתים מודגשים: {count}",
+    "label": "מפה ממוזערת",
     "nodeColors": "צבעי הצמתים",
     "renderBypassState": "הצגת מצב העקיפה",
     "renderErrorState": "הצגת מצב השגיאה",
@@ -4827,6 +4835,7 @@
   "toastMessages": {
     "a1111CoreNodesUnavailable": "לא ניתן לטעון את תהליך העבודה כי התקנת ComfyUI זו חסרה צמתים חיוניים. בדוק שהשרת האחורי הופעל כראוי.",
     "a1111EmbeddingsUnavailable": "לא ניתן היה לטעון Embeddings מהשרת. תהליך העבודה יובא, אך שמות ה-embeddings נותרו כטקסט פשוט.",
+    "assetDropFailed": "לא ניתן לטעון את הנכס שנגרר",
     "cannotCreateSubgraph": "לא ניתן ליצור תת-גרף",
     "couldNotDetermineFileType": "לא ניתן היה לקבוע את סוג הקובץ",
     "dropFileError": "לא ניתן לעבד את הפריט שנגרר: {error}",
