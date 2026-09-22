@@ -4302,6 +4302,13 @@ Enterprise`
   'nav.ctaDesktopCore': { en: 'DESKTOP', 'zh-CN': '桌面版' },
   'nav.ctaCloudCore': { en: 'TRY FREE', 'zh-CN': '免费试用' },
   'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
+  'nav.copyLogoSvg': { en: 'Copy logo as SVG', 'zh-CN': '复制 SVG 标志' },
+  'nav.copyLogomarkSvg': {
+    en: 'Copy logomark as SVG',
+    'zh-CN': '复制 SVG 标志符号'
+  },
+  'nav.brandAssets': { en: 'Brand assets', 'zh-CN': '品牌素材' },
+  'nav.copied': { en: 'Copied', 'zh-CN': '已复制' },
   'breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
   'breadcrumb.about': { en: 'About Us', 'zh-CN': '关于我们' },
   'breadcrumb.contact': { en: 'Contact', 'zh-CN': '联系我们' },
