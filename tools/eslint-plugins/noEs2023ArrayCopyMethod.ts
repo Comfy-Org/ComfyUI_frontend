@@ -36,18 +36,6 @@ function isArrayType(checker: ts.TypeChecker, type: ts.Type): boolean {
   )
 }
 
-function hasTypeInformation(
-  services: unknown
-): services is ParserServicesWithTypeInformation {
-  return (
-    typeof services === 'object' &&
-    services !== null &&
-    'program' in services &&
-    services.program !== null &&
-    'esTreeNodeToTSNodeMap' in services
-  )
-}
-
 function getIdentifierName(
   member: TSESTree.MemberExpression
 ): string | undefined {
@@ -70,7 +58,23 @@ function getTemplateName(
   if (!member.computed) return
   if (member.property.type !== 'TemplateLiteral') return
   if (member.property.expressions.length !== 0) return
-  return member.property.quasis[0].value.cooked ?? undefined
+  return normalizeCooked(member.property.quasis[0].value.cooked)
+}
+
+function normalizeCooked(cooked: string | null): string | undefined {
+  return cooked ?? undefined
+}
+
+function getStaticMethodName(member: TSESTree.MemberExpression) {
+  return (
+    getIdentifierName(member) ??
+    getLiteralName(member) ??
+    getTemplateName(member)
+  )
+}
+
+function isArrayCopyMethod(methodName: string | undefined): boolean {
+  return methodName !== undefined && es2023ArrayCopyMethods.has(methodName)
 }
 
 const noEs2023ArrayCopyMethod: Rule.RuleModule = {
@@ -83,13 +87,8 @@ const noEs2023ArrayCopyMethod: Rule.RuleModule = {
     }
   },
   create(context) {
-    const parserServices: unknown = context.sourceCode.parserServices
-    if (!hasTypeInformation(parserServices)) {
-      throw new TypeError(
-        'es2022-compat/no-array-copy-method requires type-aware parser services'
-      )
-    }
-    const services = parserServices
+    const services = context.sourceCode
+      .parserServices as unknown as ParserServicesWithTypeInformation
     const checker = services.program.getTypeChecker()
 
     function getComputedIdentifierName(
@@ -101,24 +100,30 @@ const noEs2023ArrayCopyMethod: Rule.RuleModule = {
       return propertyType.isStringLiteral() ? propertyType.value : undefined
     }
 
-    function reportArrayCopyMethod(node: Rule.Node) {
-      if (node.type !== 'CallExpression') return
-      if (node.callee.type !== 'MemberExpression') return
-      const member = node.callee as TSESTree.MemberExpression
-      const methodName =
-        getIdentifierName(member) ??
-        getLiteralName(member) ??
-        getTemplateName(member) ??
-        getComputedIdentifierName(member)
-      if (methodName === undefined || !es2023ArrayCopyMethods.has(methodName))
-        return
+    function getMethodName(member: TSESTree.MemberExpression) {
+      return getStaticMethodName(member) ?? getComputedIdentifierName(member)
+    }
+
+    function hasArrayReceiver(member: TSESTree.MemberExpression): boolean {
       const receiver = services.esTreeNodeToTSNodeMap.get(member.object)
-      if (!isArrayType(checker, checker.getTypeAtLocation(receiver))) return
-      context.report({ node, messageId: 'unsupported' })
+      return isArrayType(checker, checker.getTypeAtLocation(receiver))
+    }
+
+    function reportArrayCopyMethod(node: TSESTree.CallExpression) {
+      if (node.callee.type !== 'MemberExpression') return
+      const member = node.callee
+      if (!isArrayCopyMethod(getMethodName(member))) return
+      if (!hasArrayReceiver(member)) return
+      context.report({
+        node: node as unknown as Rule.Node,
+        messageId: 'unsupported'
+      })
     }
 
     return {
-      CallExpression: reportArrayCopyMethod
+      CallExpression(node) {
+        reportArrayCopyMethod(node as unknown as TSESTree.CallExpression)
+      }
     }
   }
 }
