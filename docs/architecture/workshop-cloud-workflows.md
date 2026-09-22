@@ -468,6 +468,20 @@ Generate the internal Cloud client separately. Validate remote input at service
 boundaries and use strict output projection. Do not hand-maintain parallel API
 response types in website code.
 
+The initial public contract is authored in Cloud commit `4d1c96f1ed`.
+Admission returns a run summary containing its ID, state and status URL. Status
+and command observations wrap that summary as `run`, alongside `runtime`,
+ordered `outputs` and `retryOutputDeliveryUrl`. History returns compact summaries
+and a continuation cursor; clients load selected outputs through the status link
+and refresh grants only when visible. Numeric APP scalars explicitly use double
+precision, with a generated-client regression for the largest safe integer.
+
+This contract is not served. A code-generation overlay removes draft paths and
+their response roots before generating routes and the embedded API document.
+Operation-ID exclusion alone retains empty path metadata in the current
+generator. Contract tests cover actual generated route absence; runtime wiring,
+internal Cloud contracts and boundary proofs remain separate implementation work.
+
 | Route                                                                | Contract                                                                                                                                                                                                        |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `POST /v1/workshop/workflow-runs`                                    | Required `Idempotency-Key`; only `workflowId`, `definitionVersion`, `appInputs`. `202` after durable intent, with public ID, state and status URL. Identical replay returns the same ID; changed intent is 409. |

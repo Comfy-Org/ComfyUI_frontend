@@ -1,9 +1,15 @@
 # Cloud workflow test strategy
 
-Status: proposed corpus for FE-2736. These tests have not been implemented or
-run as part of the architecture review. This is the verification contract for
-the [architecture](../architecture/workshop-cloud-workflows.md), not a report of
-passing coverage.
+Status: proposed runtime corpus for FE-2736. Initial public wire-contract tests
+and portable examples are implemented in Cloud commit `4d1c96f1ed`, under
+`services/comfy-api/workshop/`. They cover scalar preservation, request/result
+shapes, required idempotency headers, declared auth/cache policy, and withholding
+unimplemented routes from registration and API publication.
+
+Those checks do not prove runtime authorization, publication/default parity,
+media transfer, recovery, cancellation or billing. The matrix below is still the
+verification contract for the [architecture](../architecture/workshop-cloud-workflows.md),
+not a report of completed runtime or staging coverage.
 
 ## Test ownership
 
