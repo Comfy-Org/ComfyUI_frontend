@@ -93,8 +93,6 @@ describe('LGraphNode.configure onConfigure hook isolation', () => {
 
 describe('LGraphNode extension field serialization', () => {
   it('does not throw when an extension value is a Proxy over plain JSON', () => {
-    // Regression: Proxy objects pass the JSON-shape check but cannot be
-    // structuredClone'd (DataCloneError), which aborted workflow load.
     const node = new LGraphNode('TestNode')
     const extensionValue = new Proxy({ tags: ['a', 'b'], count: 2 }, {})
     node.onSerialize = (data) => {
@@ -142,6 +140,25 @@ describe('LGraphNode extension field serialization', () => {
     expect(serialized.extensions).toEqual({
       thirdPartyData: { settings: { enabled: true } }
     })
+  })
+})
+
+describe('LGraphNode legacy extension field fallbacks', () => {
+  it('keeps sibling extension fields when one getter throws', () => {
+    const node = new LGraphNode('TestNode')
+    node.onSerialize = (data) => {
+      Object.defineProperty(data, 'brokenExt', {
+        enumerable: true,
+        get(): never {
+          throw new Error('accessor failed')
+        }
+      })
+      Reflect.set(data, 'healthyExt', { note: 'kept' })
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toEqual({ healthyExt: { note: 'kept' } })
   })
 })
 

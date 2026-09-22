@@ -34,10 +34,6 @@ function safeCloneExtensionValue(value: unknown): JsonValue | undefined {
   return isJsonValue(clonedValue) ? clonedValue : undefined
 }
 
-/**
- * Reads and clones one extension entry inside its own failure boundary, so a
- * throwing accessor (top-level or nested) omits only that entry.
- */
 function readClonedEntry(source: object, key: string): JsonValue | undefined {
   try {
     return safeCloneExtensionValue(Reflect.get(source, key))
@@ -140,9 +136,6 @@ const readPayload = (value: unknown): ExtensionPayload => {
     console.warn('LiteGraph: ignoring non-serializable extension payload')
     return {}
   }
-  // Enumerate keys without reading values, then read and clone each entry on
-  // its own so one throwing or uncloneable extension does not discard the
-  // payloads of every sibling extension.
   let keys: string[]
   try {
     keys = Object.keys(value)
@@ -165,7 +158,7 @@ const readPayload = (value: unknown): ExtensionPayload => {
 
 function copyExtensionFields(
   target: ExtensionPayload,
-  source: Record<string, unknown>,
+  source: object,
   canonicalFields: ReadonlySet<string>
 ): void {
   for (const key of Object.keys(source)) {
@@ -231,10 +224,15 @@ export const runExtensionSerializeHook = <T extends object>(
     }
   }
 
-  const viewRecord = Object.fromEntries(Object.entries(view))
-  const namespaced = readPayload(viewRecord.extensions)
+  let namespaced: ExtensionPayload
+  try {
+    namespaced = readPayload(Reflect.get(view, 'extensions'))
+  } catch {
+    console.warn('LiteGraph: ignoring non-serializable extension payload')
+    namespaced = {}
+  }
   const legacy: ExtensionPayload = {}
-  copyExtensionFields(legacy, viewRecord, canonicalFields)
+  copyExtensionFields(legacy, view, canonicalFields)
   for (const key of Object.keys(legacy)) delete namespaced[key]
   payloads.set(owner, { legacy, namespaced })
 
