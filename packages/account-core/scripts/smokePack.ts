@@ -220,6 +220,8 @@ import type { FirebaseAuthErrorLike } from '@comfyorg/account-core/firebaseAuthE
 import { isFirebaseAuthErrorLike } from '@comfyorg/account-core/firebaseAuthError'
 import { signUpWithProvisioning } from '@comfyorg/account-core/provisioning'
 import { safeInternalPath } from '@comfyorg/account-core/redirect'
+import type { WorkspaceLinkRead } from '@comfyorg/account-core/workspaceLink'
+import { readWorkspaceLink } from '@comfyorg/account-core/workspaceLink'
 import type { AuthMethod } from '@comfyorg/account-core/telemetry'
 import { SESSION_TELEMETRY_EVENT } from '@comfyorg/account-core/telemetry'
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
@@ -257,6 +259,7 @@ export const values = {
   isFirebaseAuthErrorLike,
   signUpWithProvisioning,
   safeInternalPath,
+  readWorkspaceLink,
   SESSION_TELEMETRY_EVENT,
   isEmbeddedWebView,
   buildBillingEntryUrl,
@@ -288,6 +291,7 @@ export interface Types {
   firebaseAuthError: FirebaseAuthErrorLike
   provisioning: Parameters<typeof signUpWithProvisioning>[0]
   redirect: ReturnType<typeof safeInternalPath>
+  workspaceLink: WorkspaceLinkRead
   telemetry: AuthMethod
   webviewDetection: ReturnType<typeof isEmbeddedWebView>
   billingContract: BillingEntry

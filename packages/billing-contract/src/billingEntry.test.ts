@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
+import { WORKSPACE_LINK_PARAM } from '@comfyorg/account-core/workspaceLink'
+
 import { BILLING_INTENTS, BILLING_PRODUCTS } from './contract'
+import { OPTIONAL_ENTRY_FIELDS } from './entryFields'
 import { parseBillingEntry } from './entryParser'
 import type { BillingEntryInput, BillingEntryUrlErrorCode } from './entryUrl'
 import { buildBillingEntryUrl } from './entryUrl'
@@ -159,10 +162,19 @@ describe('parseBillingEntry', () => {
       'INVALID_CORRELATION_ID'
     ],
     [
-      '/v1/checkout?product=platform&return_to=platform_account&workspace_id=',
+      '/v1/checkout?product=platform&return_to=platform_account&workspace=',
       'INVALID_WORKSPACE_ID'
     ]
   ] as const)('refuses %s with %s', ([url, expected]) => {
     expect(parseBillingEntry(url)).toEqual({ status: 'error', code: expected })
+  })
+})
+
+describe('the workspace query parameter', () => {
+  it('is the same name the auth SDK reads and writes', () => {
+    const workspaceField = OPTIONAL_ENTRY_FIELDS.find(
+      (field) => field.key === 'workspaceId'
+    )
+    expect(workspaceField?.param).toBe(WORKSPACE_LINK_PARAM)
   })
 })

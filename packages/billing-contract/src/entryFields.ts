@@ -28,7 +28,7 @@ export const OPTIONAL_ENTRY_FIELDS: readonly OptionalEntryField[] = [
     param: 'correlation_id',
     code: 'INVALID_CORRELATION_ID'
   },
-  { key: 'workspaceId', param: 'workspace_id', code: 'INVALID_WORKSPACE_ID' }
+  { key: 'workspaceId', param: 'workspace', code: 'INVALID_WORKSPACE_ID' }
 ]
 
 export type OptionalEntryValues = {

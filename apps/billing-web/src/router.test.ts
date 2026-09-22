@@ -168,7 +168,7 @@ describe('hosted billing entry routing', () => {
     },
     {
       code: 'INVALID_WORKSPACE_ID',
-      path: `/v1/subscription?${ENTRY_QUERY}&workspace_id=ws/1`,
+      path: `/v1/subscription?${ENTRY_QUERY}&workspace=ws/1`,
       message: "That link names a workspace we can't read."
     }
   ])('explains $code in our own words', async ({ path, message }) => {
