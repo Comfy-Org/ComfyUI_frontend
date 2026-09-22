@@ -28,6 +28,10 @@ export interface AgentEventTransport {
   settle: () => void
 }
 
+function updateSkill(part: ToolPart, skill: string | undefined): void {
+  if (skill !== undefined) part.skill = skill
+}
+
 export function createAgentEventTransport(
   message: AssistantMessage,
   emit: (m: AssistantMessage) => void
@@ -101,7 +105,7 @@ export function createAgentEventTransport(
           message.parts.push(part)
         }
         part.name = event.data.tool_name
-        if (event.data.skill !== undefined) part.skill = event.data.skill
+        updateSkill(part, event.data.skill)
         if (event.data.status !== 'running') {
           part.state = 'done'
           part.ok = event.data.status === 'success'
