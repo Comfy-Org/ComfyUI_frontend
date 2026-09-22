@@ -50,9 +50,7 @@ test.describe(
         true,
         'FE-2040 / time-based promotion moves the group after 150 ms and 1 px of drift'
       )
-      await expect
-        .poll(() => groupBounds(comfyPage, 'Pair'), { timeout: 1500 })
-        .toEqual(before)
+      await expect.poll(() => groupBounds(comfyPage, 'Pair')).toEqual(before)
     })
 
     test('slow empty-canvas click clears selection without panning', async ({
@@ -90,9 +88,7 @@ test.describe(
         true,
         'FE-2040 / Vue nodes drag at 3 px instead of the configured 6 px ClickDrift'
       )
-      await expect
-        .poll(() => a.boundingBox(), { timeout: 1500 })
-        .toEqual(before)
+      await expect.poll(() => a.boundingBox()).toEqual(before)
     })
 
     test('group-title movement below ClickDrift is a click', async ({
@@ -113,9 +109,7 @@ test.describe(
 
       await expect(comfyPage.selectionToolbox).toBeVisible()
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
-      await expect
-        .poll(() => groupBounds(comfyPage, 'Pair'), { timeout: 1500 })
-        .toEqual(before)
+      await expect.poll(() => groupBounds(comfyPage, 'Pair')).toEqual(before)
     })
 
     test('node-title movement above ClickDrift drags the node', async ({
@@ -176,9 +170,7 @@ test.describe(
         true,
         'FE-2040 / Vue nodes are brought to front on release, not on press'
       )
-      await expect
-        .poll(() => nodeZIndex(a.root), { timeout: 1500 })
-        .toBeGreaterThan(front)
+      await expect.poll(() => nodeZIndex(a.root)).toBeGreaterThan(front)
       await press.disposeAsync()
     })
 
