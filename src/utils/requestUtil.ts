@@ -7,7 +7,7 @@ function sortedParams(params: Params = {}): Params {
   const obj: Params = {}
   for (const k of keys) {
     const v = params[k]
-    obj[k] = Array.isArray(v) ? v.toSorted((a, b) => a.localeCompare(b)) : v
+    obj[k] = Array.isArray(v) ? [...v].sort((a, b) => a.localeCompare(b)) : v
   }
   return obj
 }

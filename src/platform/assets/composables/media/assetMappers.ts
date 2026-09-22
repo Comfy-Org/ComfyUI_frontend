@@ -128,8 +128,8 @@ export function unflattenOutputAssets(
   const grouped = [...assetsByJob.entries()].map(([job_id, assets]) => {
     const ordered = [...assets].sort(byCreatedAtAsc)
     const representative =
-      ordered
-        .toSorted(byIsTemp)
+      [...ordered]
+        .sort(byIsTemp)
         .findLast((asset) =>
           isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
         ) ?? ordered.at(-1)!

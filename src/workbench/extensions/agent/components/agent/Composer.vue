@@ -74,14 +74,14 @@ const mentionNodes = computed(() => {
 })
 const mentionAssets = ref<AssetItem[]>([])
 function loadMentionNodes(): void {
-  graphNodes.value = getMentionNodes().toSorted((a, b) =>
+  graphNodes.value = [...getMentionNodes()].sort((a, b) =>
     a.title.localeCompare(b.title)
   )
 }
 
 async function loadMentionAssets(): Promise<void> {
   try {
-    mentionAssets.value = (await getMentionAssets()).toSorted((a, b) =>
+    mentionAssets.value = [...(await getMentionAssets())].sort((a, b) =>
       getAssetDisplayName(a).localeCompare(getAssetDisplayName(b))
     )
   } catch {
@@ -142,7 +142,7 @@ const mentionMatches = computed<MentionMatch[]>(() => {
           asset
         })
       )
-  ].toSorted((a, b) => a.label.localeCompare(b.label))
+  ].sort((a, b) => a.label.localeCompare(b.label))
 })
 
 const mentionVisible = computed(() => mentionMatches.value.length > 0)

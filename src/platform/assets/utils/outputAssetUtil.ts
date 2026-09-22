@@ -315,7 +315,7 @@ export async function resolveOutputAssetItems(
   // Reverse so the most recent outputs appear first
   const items = mapOutputsToAssetItems({
     jobId: metadata.jobId,
-    outputs: outputsToDisplay.toReversed(),
+    outputs: [...outputsToDisplay].reverse(),
     createdAt,
     executionTimeInSeconds: metadata.executionTimeInSeconds,
     workflow: metadata.workflow,

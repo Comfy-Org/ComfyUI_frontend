@@ -1994,10 +1994,12 @@ export class LGraphNode
 
     if (graph) {
       const previous = captureInputLayout(this)
+      const nextInputs = [...previous.inputs]
+      nextInputs.splice(slot, 1)
       const result = replaceNodeInputs(
         this,
         previous,
-        previous.inputs.toSpliced(slot, 1),
+        nextInputs,
         previous.links,
         true
       )

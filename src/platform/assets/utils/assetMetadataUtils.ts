@@ -191,7 +191,7 @@ function getModelTypeTagValues(asset: AssetItem): string[] {
  * re-type replaces and the value the edit dropdown / browser title reflect.
  */
 function getPrimaryModelType(asset: AssetItem): string | undefined {
-  return getModelTypeTagValues(asset).toSorted()[0]
+  return [...getModelTypeTagValues(asset)].sort()[0]
 }
 
 /**
@@ -396,7 +396,7 @@ export function getAssetNodeCategoryCandidates(
   const byDepthDesc = (a: string, b: string) => pathDepth(b) - pathDepth(a)
 
   const modelTypes = getModelTypeTagValues(asset)
-  if (modelTypes.length === 0) return bareTags.toSorted(byDepthDesc)
+  if (modelTypes.length === 0) return [...bareTags].sort(byDepthDesc)
 
   const isRelated = (tag: string) =>
     modelTypes.some((type) => tag === type || tag.startsWith(`${type}/`))
