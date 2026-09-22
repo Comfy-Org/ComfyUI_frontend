@@ -58,24 +58,38 @@ const clientState = vi.hoisted(() => ({
   transport: null as DocFrameTransport | null
 }))
 
-const adapterState = vi.hoisted(() => ({
-  intent: null as {
-    pendingDeletes(workflowId: string): ReadonlySet<string>
-  } | null,
-  bind: vi.fn(),
-  unbind: vi.fn(),
-  applyFrame: vi.fn(() => true),
-  retryPending: vi.fn((_workflowId: string): DocUpdate | null => null),
-  clearForReset: vi.fn(),
-  discardPending: vi.fn(),
-  destroy: vi.fn(),
-  // Captured from the constructor so a test can exercise the composable's
-  // real `pendingAddType` closure directly (the mocked adapter itself never
-  // calls it).
-  pendingAddType: undefined as
-    | ((nodeId: string) => string | undefined)
-    | undefined
-}))
+interface AdapterState {
+  intent: { pendingDeletes(workflowId: string): ReadonlySet<string> } | null
+  bind: ReturnType<typeof vi.fn>
+  unbind: ReturnType<typeof vi.fn>
+  applyFrame: ReturnType<typeof vi.fn>
+  retryPending: ReturnType<typeof vi.fn>
+  reconcileFromDoc: ReturnType<typeof vi.fn>
+  clearForReset: ReturnType<typeof vi.fn>
+  discardPending: ReturnType<typeof vi.fn>
+  destroy: ReturnType<typeof vi.fn>
+  /**
+   * Captured from the constructor so a test can exercise the composable's
+   * real `pendingAddType` closure directly (the mocked adapter itself never
+   * calls it).
+   */
+  pendingAddType: ((nodeId: string) => string | undefined) | undefined
+}
+
+const adapterState = vi.hoisted(
+  (): AdapterState => ({
+    intent: null,
+    bind: vi.fn(),
+    unbind: vi.fn(),
+    applyFrame: vi.fn(() => true),
+    retryPending: vi.fn((_workflowId: string): DocUpdate | null => null),
+    reconcileFromDoc: vi.fn(() => true),
+    clearForReset: vi.fn(),
+    discardPending: vi.fn(),
+    destroy: vi.fn(),
+    pendingAddType: undefined
+  })
+)
 
 const materializerState = vi.hoisted(() => ({
   reconcileAgentAdapters: vi.fn(() => [] as NodeId[])
@@ -151,6 +165,7 @@ vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
     unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
     retryPending = adapterState.retryPending
+    reconcileFromDoc = adapterState.reconcileFromDoc
     clearForReset = adapterState.clearForReset
     discardPending = adapterState.discardPending
     destroy = adapterState.destroy
@@ -268,6 +283,19 @@ function dispatchFrame(type: string, detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent(type, { detail }))
 }
 
+/** True if any `pending_ops` dev-event call in `calls` carries a `reset`. */
+function isPendingOpsReset(calls: readonly (readonly unknown[])[]): boolean {
+  return calls.some(([event, detail]) => {
+    if (event !== 'pending_ops') return false
+    return (
+      typeof detail === 'object' &&
+      detail !== null &&
+      'type' in detail &&
+      detail.type === 'reset'
+    )
+  })
+}
+
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
@@ -275,6 +303,7 @@ describe('useAgentCrdtFollower', () => {
     bridgeState.current = null
     adapterState.applyFrame.mockReset().mockReturnValue(true)
     adapterState.retryPending.mockReset().mockReturnValue(null)
+    adapterState.reconcileFromDoc.mockReset().mockReturnValue(true)
     adapterState.pendingAddType = undefined
     clientState.transport = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
@@ -751,7 +780,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('F4: a lineage break for the bound workflow received while inactive resets the pending correlation immediately', async () => {
+  it('F4: IF a doc_reset for the bound workflow reaches this composable while inactive, the pending correlation resets immediately (unit-level: the bridge is mocked, so this does not prove the frame reaches here — see useAgentCrdtFollowerLineageBoundary.test.ts for that boundary)', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
     const isTargetActive = ref(true)
@@ -784,9 +813,13 @@ describe('useAgentCrdtFollower', () => {
     isTargetActive.value = false
     await nextTick()
     vi.mocked(recordDevEvent).mockClear()
-    // The lineage breaks for the still-bound workflow while inactive: the
-    // pending correlation resets right away rather than waiting for
-    // reactivation to notice.
+    // This dispatches straight onto the MOCKED bridge's EventTarget, which
+    // has none of the real `LayoutFollowerBridge.onDocReset` filtering
+    // (`workflowId !== sentWorkflowId`) that makes this frame unreachable in
+    // production while inactive. This only proves the composable's own
+    // `pendingCorrelation.resetIfTracked` wiring reacts correctly to a
+    // `doc_reset` event IF one arrives, independent of whether the real
+    // bridge would ever deliver it here.
     dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 3 })
 
     expect(recordDevEvent).toHaveBeenCalledWith(
@@ -1546,23 +1579,7 @@ describe('useAgentCrdtFollower', () => {
 
   it('ADR-CRDT-RECONCILE-0035 (a): pending ops survive tab deactivation and reactivation of the same workflow', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
-    const workflowId = ref<string | null>('wf-1')
-    const isTargetActive = ref(true)
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        enqueue = useAgentCrdtFollower(
-          workflowId,
-          graphMutations,
-          () => null,
-          isTargetActive
-        ).enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
+    const { enqueue, isTargetActive, unmount } = mountWithHumanOps()
     dispatchFrame('doc_subscribed', { ok: true })
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
@@ -1577,14 +1594,7 @@ describe('useAgentCrdtFollower', () => {
     isTargetActive.value = true
     await nextTick()
 
-    const resetEvents = vi
-      .mocked(recordDevEvent)
-      .mock.calls.filter(
-        ([event, detail]) =>
-          event === 'pending_ops' &&
-          (detail as { type?: string }).type === 'reset'
-      )
-    expect(resetEvents).toEqual([])
+    expect(isPendingOpsReset(vi.mocked(recordDevEvent).mock.calls)).toBe(false)
 
     // Still tracked: the authoritative effect for this exact op id clears it
     // normally, which could not happen had deactivation dropped it.
@@ -1603,23 +1613,8 @@ describe('useAgentCrdtFollower', () => {
 
   it("ADR-CRDT-RECONCILE-0035 (c): an add_node's echo classification survives tab deactivation and reactivation of the same workflow", async () => {
     const { recordDevEvent } = await import('./devPanelLog')
-    const workflowId = ref<string | null>('wf-1')
-    const isTargetActive = ref(true)
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        enqueue = useAgentCrdtFollower(
-          workflowId,
-          graphMutations,
-          () => null,
-          isTargetActive
-        ).enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
+    const { enqueue, isTargetActive, pendingAddType, unmount } =
+      mountWithHumanOps()
     dispatchFrame('doc_subscribed', { ok: true })
 
     enqueue([
@@ -1633,10 +1628,10 @@ describe('useAgentCrdtFollower', () => {
     ])
     await Promise.resolve()
 
-    const pendingAddType = adapterState.pendingAddType
-    expect(pendingAddType).toBeDefined()
-    if (!pendingAddType) throw new Error('expected a captured predicate')
-    expect(pendingAddType('7')).toBe('Test')
+    const predicate = pendingAddType()
+    expect(predicate).toBeDefined()
+    if (!predicate) throw new Error('expected a captured predicate')
+    expect(predicate('7')).toBe('Test')
 
     // Tab switch away, then back to the SAME workflow: not a lineage break.
     isTargetActive.value = false
@@ -1644,19 +1639,13 @@ describe('useAgentCrdtFollower', () => {
     isTargetActive.value = true
     await nextTick()
 
-    const resetEvents = vi
-      .mocked(recordDevEvent)
-      .mock.calls.filter(
-        ([event, detail]) =>
-          event === 'pending_ops' &&
-          (detail as { type?: string }).type === 'reset'
-      )
-    expect(resetEvents).toEqual([])
+    expect(isPendingOpsReset(vi.mocked(recordDevEvent).mock.calls)).toBe(false)
 
     // Still tracked after the round trip: the real ledger-backed predicate
-    // the (real) adapter consults for echo classification still reports
-    // this node's pending add_node, proving deactivation did not drop it.
-    expect(pendingAddType('7')).toBe('Test')
+    // captured at the mocked-adapter constructor seam (the adapter itself
+    // is mocked in this file and never calls it) still reports this node's
+    // pending add_node, proving deactivation did not drop it.
+    expect(predicate('7')).toBe('Test')
     unmount()
   })
 
@@ -1865,6 +1854,11 @@ describe('useAgentCrdtFollower', () => {
     // watermark is the only signal that a resubscribe completed.
     dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 2 })
 
+    // ADR-CRDT-RECONCILE-0035 (a): the adapter's authoritative full
+    // reconcile runs BEFORE settlement, so a delete_node/connect whose
+    // effect silently never landed still gets repaired even though no
+    // catch-up frame is coming to drive it.
+    expect(adapterState.reconcileFromDoc).toHaveBeenCalledWith('wf-1', 2)
     expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
       type: 'cleared',
       opIds: [opId]
@@ -2176,9 +2170,11 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  function mountWithHumanOps(): {
+  function mountWithHumanOps(isTargetActive: Ref<boolean> = ref(true)): {
     enqueue: ReturnType<typeof useAgentCrdtFollower>['enqueueHumanOperations']
     workflowId: Ref<string | null>
+    isTargetActive: Ref<boolean>
+    pendingAddType: () => ((nodeId: string) => string | undefined) | undefined
     unmount: () => void
   } {
     const workflowId = ref<string | null>('wf-1')
@@ -2189,14 +2185,22 @@ describe('useAgentCrdtFollower', () => {
       setup() {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
-          graphMutations
+          graphMutations,
+          () => null,
+          isTargetActive
         )
         enqueue = enqueueHumanOperations
         return () => null
       }
     })
     const { unmount } = render(host)
-    return { enqueue, workflowId, unmount }
+    return {
+      enqueue,
+      workflowId,
+      isTargetActive,
+      pendingAddType: () => adapterState.pendingAddType,
+      unmount
+    }
   }
 
   async function settledHumanOpStates(): Promise<string[]> {
@@ -2285,14 +2289,17 @@ describe('useAgentCrdtFollower', () => {
       typeof useAgentCrdtFollower
     >['enqueueHumanOperations']
 
-    function mountWriter(initial: string): {
+    function mountWriter(
+      initial: string,
+      isTargetActive: Ref<boolean> = ref(true)
+    ): {
       unmount: () => void
       workflowId: Ref<string | null>
       isTargetActive: Ref<boolean>
       enqueue: Enqueue
+      pendingAddType: () => ((nodeId: string) => string | undefined) | undefined
     } {
       const workflowId = ref<string | null>(initial)
-      const isTargetActive = ref(true)
       let enqueue!: Enqueue
       const host = defineComponent({
         setup() {
@@ -2315,7 +2322,13 @@ describe('useAgentCrdtFollower', () => {
       bridge().unsubscribe.mockImplementation(() => {
         bridge().subscribedWorkflowId = null
       })
-      return { unmount, workflowId, isTargetActive, enqueue }
+      return {
+        unmount,
+        workflowId,
+        isTargetActive,
+        enqueue,
+        pendingAddType: () => adapterState.pendingAddType
+      }
     }
 
     function deleteNode(nodeId: string) {
