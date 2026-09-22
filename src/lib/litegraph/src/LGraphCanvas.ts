@@ -6010,7 +6010,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.drawTitleText(ctx, {
         scale: this.ds.scale,
         default_title_color: this.node_title_color,
-        low_quality
+        low_quality,
+        selected: _selected
       })
 
       // custom title render
