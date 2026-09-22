@@ -82,12 +82,22 @@ describe('DockedAgentPanel', () => {
 
     const container = screen.getByTestId('docked-agent-panel')
     expect(container.style.width).toBe(`${store.width}px`)
-    expect(container).toHaveClass('docked-agent-panel')
+    expect(container).toHaveClass('docked-agent-panel', 'max-w-dvw')
     expect(
       await screen.findByTestId('agent-panel-root-stub', undefined, {
         timeout: 5000
       })
     ).toBeTruthy()
+  })
+
+  it('caps the maximized panel at the dynamic viewport width', () => {
+    const store = openPanel()
+    store.toggleMaximize()
+    renderPanel()
+
+    const container = screen.getByTestId('docked-agent-panel')
+    expect(container.style.width).toBe('960px')
+    expect(container).toHaveClass('max-w-dvw')
   })
 
   it('restores the server run mode when the panel initializes', async () => {
