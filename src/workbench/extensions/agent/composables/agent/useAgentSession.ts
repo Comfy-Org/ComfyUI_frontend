@@ -297,6 +297,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     selectionWorkflowId?: () => string | undefined
   ): PostMessageInput {
     const draft = workflow?.draft?.(origin)
+    const unboundTarget = isUnboundTarget(wfContext, boundWorkflowId.value)
     // Resolved here rather than at the call site: `buildPostInput` runs after
     // `prepareWorkflow()`, so a tab whose cloud id was still unresolved on
     // mount has one by now (QAF-19).
@@ -310,7 +311,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       ),
       selection: selectedNodes(tags, selectedWorkflowId),
       attachments: attachments?.map((attachment) => attachment.ref),
-      ...(canSendDraft(threadId, wfContext, draft) ? { draft } : {})
+      ...buildTargetFields(threadId, wfContext, draft, unboundTarget)
     }
   }
 
@@ -342,10 +343,57 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function canSendDraft(
     threadId: string,
     wfContext: WorkflowTurnContext | undefined,
-    draft: DraftSnapshot | undefined
+    draft: DraftSnapshot | undefined,
+    unboundTarget: boolean
   ): boolean {
     if (draft === undefined) return false
-    return threadId === 'new' || wfContext?.id !== undefined
+    return threadId === 'new' || wfContext?.id !== undefined || unboundTarget
+  }
+
+  // current_tab_unbound's own contract (see its generated doc comment) is
+  // a tab-level fact: this tab has no cloud id yet. wfContext with no id
+  // is exactly that (a saved tab whose cloud id failed to resolve makes
+  // wfContext undefined entirely instead - see targetWorkflowTurnContext).
+  //
+  // boundWorkflowId === null narrows WHEN we assert that fact, and is a
+  // client-side policy choice, not part of the field's own meaning: the
+  // server has no way yet to tell "this thread's remembered workflow is
+  // itself my own prior unbound mint for this same tab" apart from "an
+  // unrelated workflow from a different tab" (see
+  // TestPostMessageUnboundCurrentTabMintsInsteadOfReusingTheThreadWorkflow
+  // in the agent service), so asserting the flag on every turn a still-
+  // unbound tab is asked about would mint a fresh, contentless workflow
+  // each time. Once any turn this session has bound a workflow, that
+  // binding (or the thread's own remembered workflow) is a safer target
+  // than minting again. Telling the server this is a selected-but-unbound
+  // tab, not "nothing selected", is what keeps the seed from telling the
+  // model no workflow is selected - see PM-1429/PM-1430.
+  function isUnboundTarget(
+    wfContext: WorkflowTurnContext | undefined,
+    boundWorkflowId: string | null
+  ): boolean {
+    return (
+      wfContext !== undefined &&
+      wfContext.id === undefined &&
+      boundWorkflowId === null
+    )
+  }
+
+  function buildTargetFields(
+    threadId: string,
+    wfContext: WorkflowTurnContext | undefined,
+    draft: DraftSnapshot | undefined,
+    unboundTarget: boolean
+  ): Pick<PostMessageInput, 'currentTabUnbound' | 'draft'> {
+    return {
+      ...(unboundTarget ? { currentTabUnbound: true } : {}),
+      // unboundTarget must carry its draft alongside it: the server mints a
+      // workflow for it, and without the draft that mint starts empty,
+      // dropping whatever is already on the tab's canvas.
+      ...(canSendDraft(threadId, wfContext, draft, unboundTarget)
+        ? { draft }
+        : {})
+    }
   }
 
   function acceptTurn(

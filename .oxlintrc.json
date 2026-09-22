@@ -185,12 +185,6 @@
       }
     },
     {
-      "files": ["src/scripts/app.test.ts", "src/scripts/app.ts"],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["browser_tests/fixtures/data/**/*.ts"],
       "rules": {
         "comfy/no-playwright-imports-in-fixture-data": "error"

@@ -27,6 +27,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [CRDT-AUTHORITY-0035](CRDT-AUTHORITY-0035-human-canvas-authority-and-draft-reconciliation.md)                    | Human Canvas Authority and Draft Reconciliation                                    | Proposed   | 2026-09-19 |
 | [CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md)      | In-App Agent CRDT Follower and Distribution-Resolved Boundaries                    | Proposed   | 2026-08-21 |
 | [CRDT-FOLLOWER-0035](CRDT-FOLLOWER-0035-bounded-ack-timeout-retry-for-unacknowledged-doc-subscribe.md)           | Bounded Ack-Timeout Retry for Unacknowledged CRDT Doc Subscribe                    | Proposed   | 2026-09-19 |
+| [CRDT-INPUTS-0030](CRDT-INPUTS-0030-preserve-named-input-targets.md)                                             | Project Document Inputs onto Reordered Live Nodes by Name                          | Proposed   | 2026-09-09 |
 | [CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)                                 | CRDT Layout Intent and Local Measurement                                           | Proposed   | 2025-08-27 |
 | [CRDT-MINT-0018](CRDT-MINT-0018-merge-identity-for-node-transfers.md)                                            | Merge Identity for Node Transfers                                                  | Proposed   | 2026-08-25 |
 | [CRDT-PLACEMENT-0035](CRDT-PLACEMENT-0035-agent-inserted-nodes-land-near-existing-content.md)                    | Agent-Inserted Nodes Land Near Existing Content                                    | Proposed   | 2026-09-19 |
@@ -61,6 +62,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [WEBSITE-REQUESTS-0030](WEBSITE-REQUESTS-0030-creator-widgets-and-router-request-composition.md)                 | Creator widgets and Router request composition                                     | Deprecated | 2026-09-09 |
 | [WIDGET-SERIALIZATION-0006](WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) | PrimitiveNode Widget Restoration Lifecycle                                         | Accepted   | 2026-02-22 |
 | [WORKSHOP-TELEMETRY-0034](WORKSHOP-TELEMETRY-0034-browser-delivery-health.md)                                    | Browser delivery health for Models                                                 | Proposed   | 2026-09-18 |
+| [WORKSHOP-VALIDATION-0036](WORKSHOP-VALIDATION-0036-declarative-input-constraints.md)                            | Declarative input constraints                                                      | Proposed   | 2026-09-22 |
 
 ## Creating a New ADR
 

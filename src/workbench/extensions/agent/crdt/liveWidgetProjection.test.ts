@@ -55,7 +55,8 @@ function withMintWiring(
     enqueue: (operations) => minted.push(...operations),
     layoutChanges: () => () => undefined,
     localActorPrefix: 'user-',
-    getGraph: () => graph
+    getGraph: () => graph,
+    boundRootGraphId: () => toRootGraphId(graph.id)
   })
   try {
     run(minted)
