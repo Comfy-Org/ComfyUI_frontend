@@ -23,6 +23,7 @@ import {
   createTestNode,
   createTestWidgetNode
 } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import type { reportError } from '@/platform/telemetry/reportError'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -39,7 +40,7 @@ import {
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
-const mockReportError = vi.hoisted(() => vi.fn())
+const mockReportError = vi.hoisted(() => vi.fn<typeof reportError>())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
