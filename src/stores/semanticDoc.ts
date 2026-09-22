@@ -102,21 +102,21 @@ function rootCollection(doc: Y.Doc, collection: OwnedCollection) {
  * otherwise `definitions.<owner>.<collection>`. With `create: false` an
  * absent definition path reads as `undefined` instead of being materialised.
  */
-export function ownerMap(
+function ownerMap(
   doc: Y.Doc,
   rootGraphId: RootGraphId,
   owningGraphId: OwningGraphId,
   collection: OwnedCollection,
   create: true
 ): Y.Map<unknown>
-export function ownerMap(
+function ownerMap(
   doc: Y.Doc,
   rootGraphId: RootGraphId,
   owningGraphId: OwningGraphId,
   collection: OwnedCollection,
   create: false
 ): Y.Map<unknown> | undefined
-export function ownerMap(
+function ownerMap(
   doc: Y.Doc,
   rootGraphId: RootGraphId,
   owningGraphId: OwningGraphId,
