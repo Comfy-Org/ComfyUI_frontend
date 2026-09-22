@@ -418,11 +418,6 @@ describe('attachMintPortWiring', () => {
     expect(minted).toEqual([])
   })
 
-  // This exercises the REAL `attachMintPortWiring` (constructed in
-  // `beforeEach` above, not a component-level mock of it) against the real
-  // `isRootGraphDocBound`: it is the seam AgentPanelRoot.test.ts's own
-  // component mock cannot prove, since that mock reimplements this same
-  // registration predicate rather than calling through to it.
   describe('doc-bound root graph probe', () => {
     it('registers the probe on attach and answers only while enabled and doc-bound', () => {
       expect(isRootGraphDocBound(ROOT_ID)).toBe(true)

@@ -1558,7 +1558,13 @@ describe('reserved-bit mint-convention guard', () => {
       bound: false,
       id: VIOLATING_ID,
       name: 'an off-convention id on a graph no doc is bound to'
-    }
+    },
+    // `parseNodeId` accepts any nonempty string, so a remote id can legally
+    // arrive as exponent-form numeric text. `Number('2e12')` is a safe
+    // integer in the agent-minted range, but `BigInt('2e12')` throws — the
+    // guard must convert the already-validated `Number` instead of
+    // re-parsing the original string as a `BigInt`.
+    { bound: true, id: '2e12', name: 'an agent-minted id in exponent form' }
   ])('stays silent for $name', ({ bound, id }) => {
     const graph = new LGraph()
     const unbind = bound ? bindGraph(graph) : () => {}

@@ -307,9 +307,6 @@ export class IdCollisionHarness {
   }
 
   private async selectWorkflowTarget(): Promise<void> {
-    // Shared with `agentPanelFixture`'s own workflow-save flows, rather than
-    // a third hand-rolled copy of the same userdata-save + workflow-list
-    // route pair.
     await mockWorkflowPersistence(this.page, WORKFLOW_ID)
     const picker = this.panel.getByRole('button', {
       name: enMessages.agent.switchWorkflow

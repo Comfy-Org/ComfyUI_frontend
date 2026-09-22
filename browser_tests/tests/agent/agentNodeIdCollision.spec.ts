@@ -36,8 +36,10 @@ import {
  * specs stay `test.fail()` until the applier (or the actors around it)
  * surface a same-id conflict instead of swallowing one write. Tracked in
  * https://github.com/Comfy-Org/ComfyUI_frontend/issues/18414 — flip
- * `test.fail()` away once that closes; the assertions below should not
- * otherwise change.
+ * `test.fail()` away once the underlying behavior is fixed and these
+ * assertions start passing (issue closure alone is not that signal: it could
+ * close as stale, a duplicate, or out of scope while the behavior below is
+ * still broken); the assertions below should not otherwise change.
  *
  * `agentCrdtIdCollisionFixture` drives the real duplicate-via-context-menu
  * path so the id is genuinely minted by `idAllocation.ts` and the outbound
@@ -71,8 +73,6 @@ test.describe(
         // `doc_update` broadcast would.
         idCollision.deliver(agentUpdate)
 
-        // Forces the whole-document reconcile this symptom needs — see
-        // `forceReconcile()`'s own doc comment for why.
         await idCollision.forceReconcile()
 
         await expect(idCollision.vueNodes.getNodeLocator(nodeId)).toBeVisible()

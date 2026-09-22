@@ -60,14 +60,27 @@ function mintCrdtDisjointNodeId(): NodeId {
 }
 
 /**
+ * `id`'s numeric value if it is a safe-integer `NodeId`, or `undefined` for
+ * a nonnumeric legacy id (`"named"`, `"57:3"`). Callers convert THIS value
+ * to a `BigInt`, rather than parsing `id` itself with `BigInt(id)`: `Number`
+ * accepts exponent-form numeric strings (`Number('2e12')` is a safe
+ * integer) but `BigInt`'s string parsing does not, so `BigInt(id)` throws on
+ * exactly the ids this already validated as in range.
+ */
+function safeIntegerValueOf(id: NodeId): number | undefined {
+  const numeric = Number(id)
+  return Number.isSafeInteger(numeric) ? numeric : undefined
+}
+
+/**
  * Whether the reserved-bit convention says anything about `id` at all: a
  * numeric integer at or above the agent's mint floor. A nonnumeric id — a
  * legacy `"named"` node, a `"57:3"` subgraph-scoped address — predates both
  * mints and carries no reservation to check (and is not a `BigInt`).
  */
 export function isReservedBitRangeNodeId(id: NodeId): boolean {
-  const numeric = Number(id)
-  return Number.isSafeInteger(numeric) && BigInt(numeric) >= AGENT_RESERVED_BIT
+  const numeric = safeIntegerValueOf(id)
+  return numeric !== undefined && BigInt(numeric) >= AGENT_RESERVED_BIT
 }
 
 /**
@@ -86,8 +99,10 @@ export function isReservedBitRangeNodeId(id: NodeId): boolean {
  * {@link isReservedBitRangeNodeId} themselves.
  */
 export function matchesReservedBitConvention(id: NodeId): boolean {
-  if (!isReservedBitRangeNodeId(id)) return false
-  const big = BigInt(id)
+  const numeric = safeIntegerValueOf(id)
+  if (numeric === undefined) return false
+  const big = BigInt(numeric)
+  if (big < AGENT_RESERVED_BIT) return false
   return (big & AGENT_RESERVED_BIT) !== 0n || (big & CRDT_DISJOINT_FLOOR) !== 0n
 }
 

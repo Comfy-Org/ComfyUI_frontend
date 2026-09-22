@@ -55,8 +55,8 @@ import {
   observeNodeId,
   observeRerouteId
 } from './idAllocation'
-import type { LGraphState } from './idAllocation'
-import { nodeIdMintModeFor } from './nodeIdMintMode'
+import type { LGraphState, NodeIdMintMode } from './idAllocation'
+import { isRootGraphDocBound } from './docBoundGraphs'
 import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
 import { normalizeWidgetsView } from './node/widgetsView'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
@@ -453,6 +453,22 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
 
 function serialiseStoredGroups(owner: LGraph) {
   return owner._groups.map((group) => group.serialize())
+}
+
+/**
+ * `idAllocation.ts` stays pure and context-free, so the mode is decided here:
+ * `'crdt-disjoint'` only for a mint landing directly on a root graph that
+ * shares its id space with the agent's collaborative doc — subgraph-owned
+ * nodes are outside the doc's scope (see `agentNodeMaterializer.ts`) and keep
+ * plain sequential ids.
+ */
+function nodeIdMintModeFor(graph: {
+  isRootGraph: boolean
+  id: string
+}): NodeIdMintMode {
+  return graph.isRootGraph && isRootGraphDocBound(graph.id)
+    ? 'crdt-disjoint'
+    : 'sequential'
 }
 
 export class LGraph
