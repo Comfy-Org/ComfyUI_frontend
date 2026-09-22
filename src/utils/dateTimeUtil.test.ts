@@ -209,13 +209,17 @@ describe('formatClockTime', () => {
     const { hourCycle: systemHourCycle } = new Intl.DateTimeFormat(undefined, {
       hour: 'numeric'
     }).resolvedOptions()
-    const expected = new Intl.DateTimeFormat('de-DE', {
+    const applicationLocale =
+      systemHourCycle === 'h11' || systemHourCycle === 'h12'
+        ? 'de-DE'
+        : 'en-US'
+    const expected = new Intl.DateTimeFormat(applicationLocale, {
       hour: 'numeric',
       minute: '2-digit',
       second: '2-digit',
       hourCycle: systemHourCycle
     }).format(ts)
 
-    expect(formatClockTime(ts, 'de-DE')).toBe(expected)
+    expect(formatClockTime(ts, applicationLocale)).toBe(expected)
   })
 })
