@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
+import * as Y from 'yjs'
 
+import { ownerNodesMap, semanticDocs } from '@/stores/semanticDoc'
+import type { LocalUpdateOrigin } from '@/stores/semanticDoc'
+import { toOwningGraphId } from '@/types/graphScopeId'
 import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
@@ -76,6 +80,52 @@ export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
   return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
 }
 
+const WIDGETS_KEY = 'widgets'
+
+function localOrigin(context?: RemoteMutationContext): LocalUpdateOrigin {
+  return context
+    ? { source: 'local', actor: context.actor, opId: context.opId }
+    : { source: 'local' }
+}
+
+/**
+ * Writes one widget value through to the semantic Yjs document at
+ * `nodes.<nodeId>.widgets.<name>` (root owner) or
+ * `definitions.<owner>.nodes.<nodeId>.widgets.<name>`, as one local
+ * transaction carrying `context`'s provenance. The store keys widgets by the
+ * owning graph alone, so the root is resolved with
+ * {@link SemanticDocRegistry.rootFor}; a graph with no document, or a node
+ * `nodeDataStore` has not projected yet, is left untouched - node membership
+ * is that store's write, this one only follows values.
+ */
+function projectValue(
+  graphId: UUID,
+  nodeId: NodeId,
+  name: string,
+  value: WidgetValue,
+  context?: RemoteMutationContext
+): void {
+  const owningGraphId = toOwningGraphId(graphId)
+  const rootGraphId = semanticDocs.rootFor(owningGraphId)
+  if (!rootGraphId) return
+  semanticDocs.transactLocal(rootGraphId, localOrigin(context), (doc) => {
+    const node = ownerNodesMap(doc, rootGraphId, owningGraphId, false)?.get(
+      nodeId
+    )
+    if (!(node instanceof Y.Map)) return
+    let widgets = node.get(WIDGETS_KEY)
+    if (widgets === undefined) {
+      widgets = new Y.Map<unknown>()
+      node.set(WIDGETS_KEY, widgets)
+    }
+    // A non-map `widgets` is a malformed node another writer owns; never
+    // clobber it from here.
+    if (!(widgets instanceof Y.Map)) return
+    if (widgets.has(name) && Object.is(widgets.get(name), value)) return
+    widgets.set(name, value)
+  })
+}
+
 export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgets = ref(new Map<UUID, Map<WidgetId, WidgetEntity>>())
   const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
@@ -136,6 +186,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         if (!context && dirtyTrackingSuppressed === 0) {
           locallyDirtyWidgets.add(widgetId)
         }
+        projectValue(graphId, state.nodeId, state.name, value, context)
         for (const listener of valueChangeListeners) {
           listener({ widgetId, value, oldValue, context })
         }
@@ -285,7 +336,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       type: init.type,
       options: init.options
     }),
-    _context?: RemoteMutationContext
+    context?: RemoteMutationContext
   ): WidgetState | undefined {
     if (!isWidgetId(widgetId)) {
       console.warn(
@@ -336,7 +387,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     })
     appendNodeWidgetOrder(widgetId)
     const registered = widgets.get(widgetId)?.state
-    if (registered) observeValue(registered, graphId)
+    if (registered) {
+      observeValue(registered, graphId)
+      projectValue(graphId, nodeId, registered.name, registered.value, context)
+    }
     return registered
   }
 
