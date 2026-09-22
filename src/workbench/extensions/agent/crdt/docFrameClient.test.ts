@@ -244,13 +244,16 @@ describe('doc frame client', () => {
     })
   })
 
-  it.each<[string, Record<string, unknown>]>([
-    ['a nonfatal code', { code: 'not_found' }],
-    ['a missing message', { message: undefined }],
-    ['a non-string message', { message: 42 }],
-    ['a missing request type', { request_type: undefined }],
-    ['a non-string request type', { request_type: 42 }]
-  ])('rejects a doc_error envelope with %s', (_label, overrides) => {
+  it.for([
+    { name: 'a nonfatal code', overrides: { code: 'not_found' } },
+    { name: 'a missing message', overrides: { message: undefined } },
+    { name: 'a non-string message', overrides: { message: 42 } },
+    {
+      name: 'a missing request type',
+      overrides: { request_type: undefined }
+    },
+    { name: 'a non-string request type', overrides: { request_type: 42 } }
+  ])('rejects a doc_error envelope with $name', ({ overrides }) => {
     expect(
       parseServerDocFrame({
         type: 'doc_error',

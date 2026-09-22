@@ -272,10 +272,16 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it.each<[string, { workflowId: string; code: string }]>([
-    ['a stale workflow', { workflowId: 'wf-old', code: 'fatal_doc' }],
-    ['a nonfatal code', { workflowId: 'wf-1', code: 'not_found' }]
-  ])('keeps a pending retry after a doc error for %s', (_label, error) => {
+  it.for([
+    {
+      name: 'a stale workflow',
+      error: { workflowId: 'wf-old', code: 'fatal_doc' }
+    },
+    {
+      name: 'a nonfatal code',
+      error: { workflowId: 'wf-1', code: 'not_found' }
+    }
+  ])('keeps a pending retry after a doc error for $name', ({ error }) => {
     vi.useFakeTimers()
     const { unmount, status } = mountFollower('wf-1')
 
