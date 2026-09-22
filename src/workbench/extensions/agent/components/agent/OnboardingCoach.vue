@@ -27,12 +27,13 @@ const { active, index, step, isLast, next, finish } = useOnboarding(
   storageKey
 )
 
-// Let surfaces like the What's New popup defer while these coach marks run.
-// The store drops the source with this component's scope on unmount.
-useOnboardingOverlayStore().registerSource(() => active.value)
 const titleId = useId()
 const bodyId = useId()
 const target = ref<HTMLElement | null>(null)
+const visible = computed(() => active.value && target.value !== null)
+// Let surfaces like the What's New popup defer while a coach card is on
+// screen. The store drops the source with this component's scope on unmount.
+useOnboardingOverlayStore().registerSource(() => visible.value)
 const toolbar = ref<HTMLElement | null>(null)
 const card = ref<HTMLElement | null>(null)
 const bounds = useElementBounding(target)
@@ -149,11 +150,7 @@ useEventListener(
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="active && target"
-      v-reka-z-index
-      class="agent-scope fixed inset-0"
-    >
+    <div v-if="visible" v-reka-z-index class="agent-scope fixed inset-0">
       <div class="absolute inset-0" />
       <div
         aria-hidden="true"
