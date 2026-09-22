@@ -379,6 +379,75 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('proactively reconciles once scope becomes available again, without waiting for a new frame', () => {
+    vi.useFakeTimers()
+    try {
+      const deleteLayouts = vi.fn()
+      let scopeAvailable = false
+      const mutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => (scopeAvailable ? scope : null),
+        layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      })
+      const context = {
+        source: 'agent-remote' as const,
+        actor: 'local-hydration',
+        opId: 'local-seed'
+      }
+      scopeAvailable = true
+      mutations.addNode(
+        {
+          id: 99,
+          type: 'Sink',
+          widgets_values: { stale: 9 },
+          inputs: [],
+          outputs: []
+        },
+        context
+      )
+
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      // First frame: the batch is rejected (no scope available yet), so the
+      // reconciliation is dropped and local-only node 99 survives.
+      scopeAvailable = false
+      deleteLayouts.mockClear()
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        false
+      )
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99)])
+
+      // Scope becomes available again, but no new frame ever arrives (e.g.
+      // the user never sends another agent message). The adapter must retry
+      // on its own instead of leaving the stale node stuck until some
+      // unrelated later frame happens to land.
+      scopeAvailable = true
+      vi.advanceTimersByTime(5_000)
+
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+      expect(deleteLayouts).toHaveBeenCalledWith(
+        scope,
+        [toNodeId(99)],
+        expect.objectContaining({ opId: 'replay' })
+      )
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('replays authoritative state through real mutations after a batch throws', () => {
     const mutations = createGraphMutations({
       placement: inertPlacementPort,
