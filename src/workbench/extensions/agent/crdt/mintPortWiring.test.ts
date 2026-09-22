@@ -113,7 +113,8 @@ describe('attachMintPortWiring', () => {
         return () => layoutListeners.delete(listener)
       },
       localActorPrefix: 'user-',
-      getGraph: () => graph
+      getGraph: () => graph,
+      boundRootGraphId: () => toRootGraphId(ROOT_ID)
     })
   })
 
@@ -334,7 +335,8 @@ describe('attachMintPortWiring', () => {
       enqueue: (operations) => minted.push(...operations),
       layoutChanges: () => () => undefined,
       localActorPrefix: 'user-',
-      getGraph: () => lateGraph
+      getGraph: () => lateGraph,
+      boundRootGraphId: () => toRootGraphId(ROOT_ID)
     })
 
     lateEvents.dispatchEvent(

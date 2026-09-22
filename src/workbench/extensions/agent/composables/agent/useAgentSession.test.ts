@@ -1,4 +1,7 @@
-import type { AgentAdmissionError } from '@comfyorg/ingest-types'
+import type {
+  AgentAdmissionError,
+  UploadImageResponse
+} from '@comfyorg/ingest-types'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -13,8 +16,7 @@ import type {
   AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
-  TurnId,
-  UploadImageResult
+  TurnId
 } from '../../schemas/agentApiSchema'
 import {
   zAgentAdmissionError,
@@ -66,7 +68,7 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
       async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
     ),
     uploadImage: vi.fn(
-      async (): Promise<UploadImageResult> => ({
+      async (): Promise<UploadImageResponse> => ({
         name: 'n',
         subfolder: '',
         type: 'input'
@@ -1187,6 +1189,82 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('what is on my canvas')
 
     expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
+  })
+
+  // PM-1429/PM-1430: an unbound target (a tab with no cloud id yet) must be
+  // flagged as such - and carry its draft, since the server mints a
+  // workflow for it and an empty mint would drop whatever is already on
+  // the tab's canvas. This must hold even once the thread already exists
+  // (started elsewhere, or an earlier turn already exists), not only on the
+  // very first "new" turn - canSendDraft's own threadId==='new' clause would
+  // otherwise drop the draft here.
+  it('(h9) an unbound target on an existing thread is flagged unbound and keeps its draft', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-9',
+      message_id: 'msg-1',
+      workflow_id: 'wf-fresh'
+    }))
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const conversation = useAgentConversationStore()
+    const draftSnapshot = {
+      content: { nodes: [{ id: 1, type: 'TextInput' }], links: [] }
+    }
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        adopted: vi.fn(),
+        draft: () => draftSnapshot
+      }
+    })
+    session.start()
+    conversation.setThreadId('th-9')
+
+    await session.sendMessage('add a text input node')
+
+    const body = postMessage.mock.calls[0][1]
+    expect(body).not.toHaveProperty('workflowId')
+    expect(body.currentTabUnbound).toBe(true)
+    expect(body.draft).toEqual(draftSnapshot)
+  })
+
+  // Once a workflow has been bound this session (turn 1's ack), a still-
+  // unbound tab must NOT keep re-minting: the second turn falls back to
+  // today's pre-existing behaviour (no signal at all) rather than asking
+  // the server to mint yet another empty workflow every turn.
+  it('(h10) a second turn on a still-unbound tab does not re-flag it as unbound', async () => {
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockResolvedValueOnce({
+        thread_id: 'th-9',
+        message_id: 'msg-1',
+        workflow_id: 'wf-fresh'
+      })
+      .mockResolvedValueOnce({
+        thread_id: 'th-9',
+        message_id: 'msg-2',
+        workflow_id: 'wf-fresh'
+      })
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        adopted: vi.fn(),
+        draft: () => ({ content: { nodes: [], links: [] } })
+      }
+    })
+    session.start()
+
+    await session.sendMessage('add a text input node')
+    await session.sendMessage('and a load image node')
+
+    expect(postMessage.mock.calls[0][1].currentTabUnbound).toBe(true)
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
   })
 
   it.for(['new-chat', 'history'])(
