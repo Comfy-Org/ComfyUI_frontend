@@ -391,10 +391,6 @@ type AgentFixtures = {
   agentConsentAccepted: boolean
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWrites: boolean[]
-  /**
-   * Boot as a new cloud user who is owed the general onboarding: tutorial not
-   * completed, tour flag on, subscription mode on. Default is a returning user.
-   */
   agentFirstSession: boolean
   agentFlagEnabled: boolean
   agentPanel: AgentPanel

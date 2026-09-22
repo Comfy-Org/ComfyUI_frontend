@@ -546,11 +546,10 @@ test.describe(
       })
 
       await test.step('The automatic offer runs and stays silent', async () => {
-        // The offer only fires once the flag gate settles; wait for that so an
-        // unsettled gate cannot make the absence below pass vacuously.
-        await expect(page.locator('[data-agent-gate-settled]')).toBeAttached({
-          timeout: 15_000
-        })
+        await expect(
+          page.locator('[data-agent-gate-settled]'),
+          'the automatic offer only runs once the flag gate settles; asserting absence before that would pass vacuously'
+        ).toBeAttached({ timeout: 15_000 })
         await expect(consent).toHaveCount(0)
         await expect(agentPanel.root).toHaveCount(0)
         expect(
