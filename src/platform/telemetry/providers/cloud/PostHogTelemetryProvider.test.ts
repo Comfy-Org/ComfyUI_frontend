@@ -11,7 +11,8 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   BillingTelemetryEvent,
   BootstrapCompleteMetadata,
-  OnboardingTourStage
+  OnboardingTourStage,
+  RunButtonProperties
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 
@@ -84,6 +85,30 @@ vi.mock(import('@/platform/telemetry/utils/getAgentPanelOpen'), () => ({
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
+
+/** A complete run-button payload; override only what a test cares about. */
+function runButtonProperties(
+  overrides: Partial<RunButtonProperties> = {}
+): RunButtonProperties {
+  return {
+    subscribe_to_run: false,
+    workflow_type: 'template',
+    workflow_name: 'image_qwen_image_edit_2509',
+    custom_node_count: 2,
+    total_node_count: 4,
+    subgraph_count: 0,
+    has_api_nodes: true,
+    api_node_names: ['OpenAIImageNode'],
+    has_toolkit_nodes: true,
+    toolkit_node_names: ['LoadImage'],
+    trigger_source: 'keybinding',
+    view_mode: 'graph',
+    is_app_mode: false,
+    dock_state: 'docked',
+    agent_panel_open: false,
+    ...overrides
+  }
+}
 
 function createProvider(
   config: Partial<typeof window.__CONFIG__> = {}
@@ -551,23 +576,7 @@ describe('PostHogTelemetryProvider', () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
 
-      provider.trackRunButton({
-        subscribe_to_run: false,
-        workflow_type: 'template',
-        workflow_name: 'image_qwen_image_edit_2509',
-        custom_node_count: 2,
-        total_node_count: 4,
-        subgraph_count: 0,
-        has_api_nodes: true,
-        api_node_names: ['OpenAIImageNode'],
-        has_toolkit_nodes: true,
-        toolkit_node_names: ['LoadImage'],
-        trigger_source: 'keybinding',
-        view_mode: 'graph',
-        is_app_mode: false,
-        dock_state: 'docked',
-        agent_panel_open: false
-      })
+      provider.trackRunButton(runButtonProperties())
       provider.trackWorkflowExecution()
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
@@ -593,7 +602,7 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
-    it('captures the agent panel state on execution start', async () => {
+    it('reads the agent panel state for a run the button did not start', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
       hoisted.agentPanelOpen = true
@@ -608,6 +617,31 @@ describe('PostHogTelemetryProvider', () => {
       } finally {
         hoisted.agentPanelOpen = false
       }
+    })
+
+    // The two events one run produces must agree. Closing the panel between
+    // submitting the run and execution starting would otherwise split the pair.
+    it('carries the run button panel state onto execution start', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      hoisted.agentPanelOpen = true
+      provider.trackRunButton(runButtonProperties({ agent_panel_open: true }))
+
+      // The user closes the panel while the run is being submitted.
+      hoisted.agentPanelOpen = false
+      provider.trackWorkflowExecution()
+
+      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+        TelemetryEvents.EXECUTION_START,
+        expect.objectContaining({ agent_panel_open: true })
+      )
+
+      // The carry-over is consumed, so an unattributed run reads fresh state.
+      provider.trackWorkflowExecution()
+      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+        TelemetryEvents.EXECUTION_START,
+        expect.objectContaining({ agent_panel_open: false })
+      )
     })
 
     it('captures execution outcomes with client attribution', async () => {

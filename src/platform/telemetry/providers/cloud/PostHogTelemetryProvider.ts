@@ -154,6 +154,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private pendingFirstAuthAt = new Map<string, string>()
   private isInitialized = false
   private lastTriggerSource: ExecutionTriggerSource | undefined
+  /**
+   * Carried from the run button to execution_start, like lastTriggerSource, so
+   * the two events a single run produces agree. Reading the panel state again
+   * at execution_start would let a user who closed the panel while the run was
+   * being submitted report `true` on the click and `false` on the start.
+   */
+  private lastAgentPanelOpen: boolean | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
   private desktopEntryProps: DesktopEntryProps | null = null
   private stopSubscriptionTierWatch: WatchStopHandle | null = null
@@ -518,6 +525,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackRunButton(properties: RunButtonProperties): void {
     this.lastTriggerSource = properties.trigger_source
+    this.lastAgentPanelOpen = properties.agent_panel_open
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
   }
 
@@ -672,10 +680,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.captureRaw(TelemetryEvents.EXECUTION_START, {
       ...getExecutionContext(),
       trigger_source: this.lastTriggerSource ?? 'unknown',
-      agent_panel_open: getAgentPanelOpen(),
+      // Falls back to a fresh read for a run the button did not start.
+      agent_panel_open: this.lastAgentPanelOpen ?? getAgentPanelOpen(),
       event_source: EXECUTION_EVENT_SOURCE
     })
     this.lastTriggerSource = undefined
+    this.lastAgentPanelOpen = undefined
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
