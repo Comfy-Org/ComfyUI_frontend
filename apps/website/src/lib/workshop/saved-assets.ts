@@ -5,7 +5,7 @@ import type {
 } from '../../config/workshop-generation-assets'
 
 /** How many tiles the strip keeps. Anything older lives in Cloud. */
-export const SAVED_ASSETS_SHOWN = 8
+const SAVED_ASSETS_SHOWN = 8
 
 export type SavedAssetKind = SavedGenerationOutput['kind']
 
@@ -67,28 +67,22 @@ export function savedAssetTiles(
   return tiles.slice(0, limit)
 }
 
-export function sortGenerations(
-  generations: readonly SavedGeneration[]
-): SavedGeneration[] {
-  return [...generations].sort(
-    (a, b) =>
-      b.created_at.localeCompare(a.created_at) ||
-      b.request_id.localeCompare(a.request_id)
-  )
-}
-
 export function mergeGenerations(
   known: readonly SavedGeneration[],
   incoming: readonly SavedGeneration[]
 ): SavedGeneration[] {
-  return sortGenerations([
+  return [
     ...new Map(
       [...known, ...incoming].map((generation) => [
         generation.request_id,
         generation
       ])
     ).values()
-  ])
+  ].sort(
+    (a, b) =>
+      b.created_at.localeCompare(a.created_at) ||
+      b.request_id.localeCompare(a.request_id)
+  )
 }
 
 /** The signed URL names the stored object, which is friendlier than the id. */
