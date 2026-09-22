@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import type {
   AgentCancelAccepted,
@@ -51,6 +51,7 @@ const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
+const VUE_NODES_TAG = '@vue-nodes'
 const PANEL_MOUNT_TIMEOUT = 30_000
 const CANCEL_TIMEOUT = 10_000
 
@@ -172,6 +173,7 @@ export class AgentConversationHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
   readonly topbar: Topbar
+  readonly composer: Locator
 
   private readonly host: HostDoc
   private readonly hostSocket: AgentFollowerHostSocket
@@ -181,6 +183,7 @@ export class AgentConversationHarness {
   private readonly seenIds: Set<string>
   private readonly expectations: ExpectedTurn[]
   private postedTurns = 0
+  private lastAddGhosted = false
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
@@ -190,6 +193,7 @@ export class AgentConversationHarness {
     readonly conversation: AgentConversation,
     readonly replayTiming: ReplayTiming,
     caseId: string,
+    private readonly extraNodeDefs: Record<string, ComfyNodeDef> = {},
     humanOpsHost: HumanOpsHost = 'hold'
   ) {
     const { workflow } = conversation
@@ -211,6 +215,7 @@ export class AgentConversationHarness {
     this.expectations = expectations ?? []
     this.panel = page.locator('#agent-panel-root')
     this.streams = this.panel.getByTestId('markdown-stream')
+    this.composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
     this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
     this.topbar = new Topbar(page)
@@ -250,24 +255,34 @@ export class AgentConversationHarness {
       .sort()
   }
 
-  async boot(agentFlag: boolean): Promise<void> {
+  async boot(agentFlag: boolean, vueNodes: boolean): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
     const objectInfo = this.page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith('/api/object_info')
     )
     await bootAgentApp(this.page, agentFlag, {
-      // Only the Vue node renderer projects follower edits onto the canvas.
+      vueNodes,
       settings: {
-        'Comfy.VueNodes.Enabled': true,
-        'Comfy.Graph.CanvasInfo': false
+        'Comfy.Graph.CanvasInfo': false,
+        'Comfy.NodeSearchBoxImpl': 'default',
+        'Comfy.NodeSearchBoxImpl.FollowCursor': true
       },
-      // Replayed nodes materialize from registered node types; the recordings use core nodes only.
-      objectInfo: agentReplayNodeDefs
+      // Replayed nodes materialize from registered node types; the recordings use
+      // core nodes only, so a case needing another node supplies its definition
+      // here rather than routing /object_info a second time behind this one.
+      objectInfo: { ...agentReplayNodeDefs, ...this.extraNodeDefs }
     })
     const definitions = (await (await objectInfo).json()) as ObjectInfoResponse
     for (const [type, definition] of Object.entries(definitions))
       this.displayNames.set(type, definition.display_name || definition.name)
+    const unregistered = Object.keys(
+      this.conversation.workflow.catalog.types
+    ).filter((type) => !this.displayNames.has(type))
+    if (unregistered.length > 0)
+      throw new Error(
+        `${this.page.url()} serves no node definitions for ${unregistered.join(', ')}; the replay needs a ComfyUI backend behind the dev server (browser_tests/README.md, "Replay coverage for agent bug fixes")`
+      )
 
     await this.page
       .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
@@ -331,8 +346,7 @@ export class AgentConversationHarness {
 
   async sendPrompt(turn = 0): Promise<void> {
     const { content } = this.conversation.turns[turn].request
-    const composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
-    await composer.fill(content)
+    await this.composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
     // Replay frames are dropped until the page has applied the ack's thread id.
     // useAgentSession records the user turn straight after storing that id, so
@@ -390,6 +404,23 @@ export class AgentConversationHarness {
       await this.expectTurnRendered(turn, before)
       await this.expectCanvasReplayed(turn)
     }
+  }
+
+  async applyGraphOps(ops: RecordedGraphOperation[]): Promise<void> {
+    await this.hostSocket.waitForSubscribe()
+    this.hostSocket.send(this.host.apply(ops))
+    const addedNodeIds = ops.flatMap((op) =>
+      op.op === 'add_node' && op.node_id != null ? [String(op.node_id)] : []
+    )
+    await expect
+      .poll(() =>
+        this.page.evaluate((ids) => {
+          const graph = window.app!.graph
+          const renderedIds = new Set(graph._nodes.map(({ id }) => String(id)))
+          return ids.filter((id) => !renderedIds.has(id))
+        }, addedNodeIds)
+      )
+      .toEqual([])
   }
 
   private async panelCounts(): Promise<PanelCounts> {
@@ -770,11 +801,28 @@ export class AgentConversationHarness {
     await expect(results.first()).toContainText('Note')
     await this.page.keyboard.press('Enter')
     await expect(dialog).toBeHidden()
+
+    this.lastAddGhosted = await this.page.evaluate(() => {
+      const app = window.app!
+      const ghostNodeId = app.canvas.state.ghostNodeId
+      const ghostNode =
+        ghostNodeId === null
+          ? null
+          : app.graph.nodes.find(
+              (node) => String(node.id) === String(ghostNodeId)
+            )
+      return Boolean(ghostNode?.flags.ghost)
+    })
+
     await this.page.mouse.click(position.x, position.y)
     const after = await this.graphNodeIds()
     const [added] = after.filter((id) => !before.has(id))
     if (!added) throw new Error('the search box add produced no node')
     return added
+  }
+
+  get placementWasGhosted(): boolean {
+    return this.lastAddGhosted
   }
 
   // Records the live node set the moment a tab's canvas finishes rebuilding,
@@ -918,6 +966,8 @@ interface ConversationFixtures {
   conversationCase: string
   // 'recorded' replays the fixture's at_ms gaps; the default follows AGENT_REPLAY_TIMING.
   replayTiming: ReplayTiming
+  // Node definitions this case needs beyond the recorded core subset.
+  extraNodeDefs: Record<string, ComfyNodeDef>
   humanOpsHost: HumanOpsHost
   agentConversation: AgentConversationHarness
 }
@@ -928,6 +978,7 @@ const VIEWPORT = { width: 2560, height: 1440 }
 export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   conversationCase: ['', { option: true }],
   replayTiming: [defaultReplayTiming(), { option: true }],
+  extraNodeDefs: [{}, { option: true }],
   humanOpsHost: ['hold', { option: true }],
   viewport: VIEWPORT,
   video: {
@@ -938,19 +989,33 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
     size: VIEWPORT
   },
   agentConversation: async (
-    { page, agentFlagEnabled, conversationCase, replayTiming, humanOpsHost },
-    use
+    {
+      page,
+      agentFlagEnabled,
+      conversationCase,
+      replayTiming,
+      extraNodeDefs,
+      humanOpsHost
+    },
+    use,
+    testInfo
   ) => {
     if (conversationCase.length === 0)
       throw new Error('test.use({ conversationCase }) names the conversation')
+    const vueNodes = testInfo.tags.includes(VUE_NODES_TAG)
+    if (!vueNodes)
+      throw new Error(
+        `a conversation replay is judged on Vue nodes; tag the test ${VUE_NODES_TAG}`
+      )
     const harness = new AgentConversationHarness(
       page,
       loadAgentConversation(conversationCase),
       replayTiming,
       conversationCase,
+      extraNodeDefs,
       humanOpsHost
     )
-    await harness.boot(agentFlagEnabled)
+    await harness.boot(agentFlagEnabled, vueNodes)
     await use(harness)
   }
 })

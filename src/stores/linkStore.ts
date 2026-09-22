@@ -107,6 +107,25 @@ export const useLinkStore = defineStore('link', () => {
     return revision.value
   }
 
+  /**
+   * Invalidates {@link LinkMap}'s revision-keyed cache without registering,
+   * replacing, or removing any topology.
+   *
+   * A topology can be registered here (bumping `revision` itself) before it
+   * has a live LiteGraph facade: `materializeLinkAdapter` adopts a facade
+   * lazily, on a later reconcile pass, and that adoption does not itself
+   * change any store state. If something reads `graph.links` in the gap
+   * between those two steps — e.g. a CRDT `connect` mutation's own commit,
+   * checking whether the slot it just displaced still names the old link —
+   * `LinkMap` caches "no facade yet" against the CURRENT revision, and
+   * nothing tells it to recompute once the facade actually lands, because
+   * adoption alone never touches `revision`. Call this right after adoption
+   * so the next `graph.links` read is guaranteed to see it.
+   */
+  function notifyAdapterAdopted(): void {
+    revision.value++
+  }
+
   function rootBucket(rootGraphId: RootGraphId): RootTopologyBucket {
     const existing = roots.get(rootGraphId)
     if (existing) return existing
@@ -462,6 +481,7 @@ export const useLinkStore = defineStore('link', () => {
     getTopology,
     graphTopologies,
     getRevision,
+    notifyAdapterAdopted,
     clearOwner,
     clearGraph
   }

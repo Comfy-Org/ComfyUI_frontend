@@ -4290,6 +4290,13 @@ Enterprise`
   'nav.ctaDesktopCore': { en: 'DESKTOP', 'zh-CN': '桌面版' },
   'nav.ctaCloudCore': { en: 'TRY FREE', 'zh-CN': '免费试用' },
   'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
+  'nav.copyLogoSvg': { en: 'Copy logo as SVG', 'zh-CN': '复制 SVG 标志' },
+  'nav.copyLogomarkSvg': {
+    en: 'Copy logomark as SVG',
+    'zh-CN': '复制 SVG 标志符号'
+  },
+  'nav.brandAssets': { en: 'Brand assets', 'zh-CN': '品牌素材' },
+  'nav.copied': { en: 'Copied', 'zh-CN': '已复制' },
   'breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
   'breadcrumb.about': { en: 'About Us', 'zh-CN': '关于我们' },
   'breadcrumb.contact': { en: 'Contact', 'zh-CN': '联系我们' },
@@ -8973,6 +8980,10 @@ Enterprise`
     en: 'Use state-of-the-art models for image, video, 3D, and audio. Ready for production.',
     'zh-CN': '使用最先进的图像、视频、3D 和音频模型。生产环境就绪。'
   },
+  'platform.modelsHero.getApiKey': {
+    en: 'Get your API key',
+    'zh-CN': '获取 API 密钥'
+  },
   'platform.builderHero.heading': {
     en: 'Package ComfyUI Builds for your team',
     'zh-CN': '为团队打包 ComfyUI Builds'
@@ -10057,6 +10068,10 @@ Enterprise`
     en: 'Upload failed. Try again, or paste a public link instead.',
     'zh-CN': '上传失败。请重试或粘贴可访问的网址。'
   },
+  'workshop.form.fileUnreadable': {
+    en: 'This file can no longer be read. Select it again.',
+    'zh-CN': '无法再读取此文件。请重新选择。'
+  },
   'workshop.form.draftRestoreFailed': {
     en: 'We could not restore all of your saved inputs. Check the form and pick your files again.',
     'zh-CN': '部分已保存的输入无法恢复。请检查输入并重新选择文件。'
@@ -10276,6 +10291,10 @@ Enterprise`
   'workshop.error.client': {
     en: 'The page could not complete this request. Keep your inputs unchanged and contact support if this persists.',
     'zh-CN': '页面未能完成此请求。请保持输入不变，若问题持续请联系支持。'
+  },
+  'workshop.error.fileUnreadable': {
+    en: 'The page could not read a selected file. Select it again in the highlighted field. The model has not run.',
+    'zh-CN': '页面无法读取所选文件。请在高亮字段中重新选择。模型尚未运行。'
   },
   'workshop.error.concurrency': {
     en: 'This workspace has reached its simultaneous run limit. Wait for an active run to finish, then retry.',

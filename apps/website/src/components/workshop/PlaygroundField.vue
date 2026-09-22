@@ -56,6 +56,7 @@ const errorKey: Record<FieldErrorCode, TranslationKey> = {
   outOfRange: 'workshop.form.outOfRange',
   badOption: 'workshop.form.badOption',
   uploadFailed: 'workshop.form.uploadFailed',
+  fileUnreadable: 'workshop.form.fileUnreadable',
   rejected: 'workshop.form.rejected'
 }
 

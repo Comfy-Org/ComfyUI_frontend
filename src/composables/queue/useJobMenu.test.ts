@@ -11,6 +11,7 @@ import type { Ref } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
@@ -35,12 +36,7 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   })
 }))
 
-const stMock = vi.fn((_: string, fallback?: string) => fallback ?? _)
-const tMock = vi.fn((key: string) => `i18n:${key}`)
-vi.mock(import('@/i18n'), () => ({
-  st: (...args: Parameters<typeof stMock>) => stMock(...args),
-  t: (...args: Parameters<typeof tMock>) => tMock(...args)
-}))
+vi.mock(import('@/i18n'))
 
 const mapTaskOutputToAssetItemMock = vi.fn()
 vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
@@ -50,15 +46,7 @@ vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
   ) => mapTaskOutputToAssetItemMock(taskItem, output)
 }))
 
-const mediaAssetActionsMock = {
-  deleteAssets: vi.fn()
-}
-vi.mock<unknown>(
-  import('@/platform/assets/composables/useMediaAssetActions'),
-  () => ({
-    useMediaAssetActions: () => mediaAssetActionsMock
-  })
-)
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 let settingStoreMock: ReturnType<typeof useSettingStore>
 
@@ -163,7 +151,7 @@ describe('useJobMenu', () => {
     vi.mocked(queueStoreMock.update).mockResolvedValue(undefined)
     vi.mocked(queueStoreMock.delete).mockResolvedValue(undefined)
     cancelJobMock.mockResolvedValue(undefined)
-    mediaAssetActionsMock.deleteAssets.mockResolvedValue(false)
+    vi.mocked(useMediaAssetActions().deleteAssets).mockResolvedValue(false)
     mapTaskOutputToAssetItemMock.mockImplementation((task, output) => ({
       task,
       output
@@ -682,7 +670,7 @@ describe('useJobMenu', () => {
   })
 
   it('does not refresh queue when delete cancelled', async () => {
-    mediaAssetActionsMock.deleteAssets.mockResolvedValue(false)
+    vi.mocked(useMediaAssetActions().deleteAssets).mockResolvedValue(false)
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({

@@ -2199,9 +2199,11 @@
     "errorNotSupported": "Clipboard API not supported in your browser"
   },
   "imageCompare": {
-    "noImages": "No images to compare",
+    "afterAlt": "After image",
     "batchLabelA": "A:",
-    "batchLabelB": "B:"
+    "batchLabelB": "B:",
+    "beforeAlt": "Before image",
+    "noImages": "No images to compare"
   },
   "batch": {
     "index": "{current} / {total}"
