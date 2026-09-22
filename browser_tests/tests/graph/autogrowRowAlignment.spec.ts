@@ -55,7 +55,7 @@ test.describe(
       const image5Source = await comfyPage.nodeOps.addNode(
         'LoadImage',
         undefined,
-        { x: 100, y: image4Bounds.y + image4Bounds.height + 80 }
+        { x: image4Bounds.x + image4Bounds.width + 80, y: 700 }
       )
 
       const connectionsBefore = await getConnectedInputs(
@@ -167,6 +167,16 @@ test.describe(
         })
       )
       expect(alignment).toEqual(names.map((name) => ({ name, aligned: true })))
+
+      const source4Box = await comfyPage.vueNodes
+        .getNodeLocator(String(image4Source.id))
+        .boundingBox()
+      const source5Box = await comfyPage.vueNodes
+        .getNodeLocator(String(image5Source.id))
+        .boundingBox()
+      if (!source4Box || !source5Box)
+        throw new Error('reference source has no bounding box')
+      expect(source4Box.x + source4Box.width).toBeLessThan(source5Box.x)
 
       await testInfo.attach('workflow-after-five-connects', {
         body: await comfyPage.page.screenshot({
