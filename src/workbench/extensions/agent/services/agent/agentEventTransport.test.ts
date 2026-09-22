@@ -549,3 +549,45 @@ describe('agentEventTransport settle lifecycle', () => {
     ).toEqual(['wf-1', 'wf-2', 'wf-1'])
   })
 })
+
+describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
+  it('holds a successful tool call at streaming until the canvas catches up', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(toolCall('add_node', 'success'))
+    expect(toolParts(message)[0]).toMatchObject({
+      ok: true,
+      state: 'streaming'
+    })
+
+    transport.notifyCanvasCaughtUp()
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  // A failed tool call never mutates anything, so there is no forthcoming
+  // doc_update for it to wait on -- gating it the same as a success would
+  // strand it at the spinner glyph until STALE_AFTER_MS (30s), and, for a
+  // turn whose other tool calls also never touch the canvas,
+  // notifyCanvasCaughtUp may never fire at all to rescue it early.
+  it('settles an errored tool call immediately, even while the gate is open', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(toolCall('validate', 'error'))
+
+    expect(toolParts(message)[0]).toMatchObject({ ok: false, state: 'done' })
+  })
+
+  it('does not defer when the gate is closed', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => false)
+
+    transport.ingest(toolCall('add_node', 'success'))
+
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+})

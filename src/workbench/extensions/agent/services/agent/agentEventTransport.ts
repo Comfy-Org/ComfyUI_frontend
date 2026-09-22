@@ -98,6 +98,15 @@ export function createAgentEventTransport(
    * `'done'` or must be held at `'streaming'` pending canvas catch-up (see
    * `shouldAwaitCanvasSync` above). Pulled out of `ingest` so that switch's
    * `agent_tool_call` branch stays a simple call instead of an inline gate.
+   *
+   * Only a `'success'` outcome can be waited on: it is the only case where a
+   * matching `doc_update` might still be in flight. An `'error'` outcome
+   * means the tool never mutated anything, so there is no forthcoming canvas
+   * change to catch up to -- deferring it anyway just strands the part at the
+   * spinner glyph for up to `STALE_AFTER_MS` (30s) instead of showing the
+   * failure immediately, and, for a turn whose other tool calls also never
+   * touch the canvas, `notifyCanvasCaughtUp` may never fire at all to rescue
+   * it early.
    */
   function resolveToolCallState(
     part: ToolPart,
@@ -106,7 +115,7 @@ export function createAgentEventTransport(
   ): void {
     part.ok = status === 'success'
     part.durationMs = durationMs
-    if (shouldAwaitCanvasSync()) {
+    if (status === 'success' && shouldAwaitCanvasSync()) {
       pendingCanvasSync.set(
         part,
         setTimeout(() => {
