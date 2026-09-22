@@ -48,6 +48,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
     return 'getting-started'
   }
 
+  /** Decided once per boot; it does not flip when Getting Started is dismissed. */
   function isFirstRunCandidate(): boolean {
     return decideFirstRun() === 'getting-started'
   }

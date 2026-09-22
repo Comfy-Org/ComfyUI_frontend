@@ -120,7 +120,7 @@ describe('useFirstRunEntry', () => {
     })
 
     it.for([...permanentDisqualifiers, ...transientDisqualifiers])(
-      'is not %s',
+      'is not a candidate: %s',
       ([, disqualify]) => {
         disqualify()
 

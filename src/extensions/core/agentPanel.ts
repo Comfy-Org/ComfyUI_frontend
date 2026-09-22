@@ -168,8 +168,8 @@ export function registerAgentPanelExtension(): void {
         if (autoShowInFlight) return
         if (!agentPanelStore.enabled || !isLoggedIn.value) return
         if (consentStore.isChecking || consentStore.accepted) return
-        // Getting Started and coachmark tours own the screen; returning before
-        // prepareAutoShow leaves the one-shot key untouched so the next boot offers.
+        // Before prepareAutoShow: the one-shot key stays untouched, so the
+        // next boot offers.
         if (isFirstRunCandidate() || onboardingTourStore.activeTour !== null)
           return
 

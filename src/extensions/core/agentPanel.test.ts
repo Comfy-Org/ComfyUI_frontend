@@ -322,22 +322,18 @@ describe('AgentPanel extension flag gate', () => {
     }
   )
 
-  it('keeps deferring when consent reloads for a new scope while Getting Started is still owed', async () => {
+  it('offers when neither Getting Started is owed nor a tour is active', async () => {
     mocks.flagEnabled = true
-    mocks.firstRunCandidate = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
 
     await loadEntryAndSetup()
-    mocks.flagListener?.()
-    await flush()
-    Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
-    Object.assign(consentStore, { identity: 'account-a/workspace-b' })
-    await flush()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
 
-    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
     expect(
-      localStorage.getItem('Comfy.AgentConsent.AutoShown.account-a.workspace-b')
-    ).toBeNull()
+      localStorage.getItem('Comfy.AgentConsent.AutoShown.account-a.workspace-a')
+    ).toBe('true')
   })
 
   it('stays silent when the account already accepted', async () => {
