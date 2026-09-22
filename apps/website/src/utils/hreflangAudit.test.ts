@@ -91,6 +91,15 @@ describe('auditBuiltSite', () => {
     }
   )
 
+  it('still rejects an unlisted HTML page with no cluster', () => {
+    const pages = new Map<string, Alternate[]>([['/article.html', []]])
+
+    expect(auditBuiltSite({ origin: ORIGIN, pages, sitemap: new Map() })).toEqual([
+      '/article.html: page expects x-default -> https://comfy.org/article.html/, but does not declare it',
+      '/article.html: language cluster missing from sitemap'
+    ])
+  })
+
   it('rejects a cluster whose two locales are swapped', () => {
     // Every link still resolves and each page lists the other, so reciprocity
     // is satisfied; only the labels are wrong. Google would be told the English
