@@ -1352,9 +1352,12 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
   }
 }
 
+const threadSummaries = ref<AgentThreadSummary[]>([])
+
 async function refreshHistory(): Promise<void> {
   try {
-    history.replaceAll((await listThreads()).map(toChatSession))
+    threadSummaries.value = await listThreads()
+    history.replaceAll(threadSummaries.value.map(toChatSession))
   } catch (error) {
     reportError(error, {
       surface: 'agent',
@@ -1409,6 +1412,21 @@ async function onSelectHistory(
   void refreshHistory()
   return opened
 }
+
+watch(
+  [() => workflowStore.activeWorkflow, threadSummaries],
+  ([workflow, threads]) => {
+    if (workflow === null) return
+    const workflowId = cloudIdFor(workflow)
+    if (workflowId === undefined) return
+    const matchingThread = threads.find(
+      (thread) => thread.workflow_id === workflowId
+    )
+    if (matchingThread === undefined || matchingThread.id === threadId.value)
+      return
+    void onSelectHistory(matchingThread.id)
+  }
+)
 
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
   return entries
