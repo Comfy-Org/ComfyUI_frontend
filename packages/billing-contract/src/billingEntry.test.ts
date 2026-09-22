@@ -71,7 +71,8 @@ describe('buildBillingEntryUrl', () => {
     [{ returnTo: 'attacker_site' }, 'UNKNOWN_RETURN_TARGET'],
     [{ plan: 'pro plan' }, 'INVALID_PLAN'],
     [{ correlationId: '../escape' }, 'INVALID_CORRELATION_ID'],
-    [{ workspaceId: '' }, 'INVALID_WORKSPACE_ID']
+    [{ workspaceId: '' }, 'INVALID_WORKSPACE_ID'],
+    [{ teamCreditStopId: '../escape' }, 'INVALID_TEAM_CREDIT_STOP_ID']
   ] as const)('refuses %o with %s', ([overrides, expected]) => {
     expect(errorCode({ ...BASE_INPUT, ...overrides })).toBe(expected)
   })
@@ -84,7 +85,8 @@ describe('parseBillingEntry', () => {
       intent,
       plan: 'pro_monthly',
       correlationId: 'corr-1',
-      workspaceId: 'ws_1'
+      workspaceId: 'ws_1',
+      teamCreditStopId: 'stop_1'
     })
 
     expect(parseBillingEntry(url)).toEqual({
@@ -96,7 +98,8 @@ describe('parseBillingEntry', () => {
         returnTo: 'platform_account',
         plan: 'pro_monthly',
         correlationId: 'corr-1',
-        workspaceId: 'ws_1'
+        workspaceId: 'ws_1',
+        teamCreditStopId: 'stop_1'
       }
     })
   })
@@ -167,6 +170,10 @@ describe('parseBillingEntry', () => {
     [
       '/v1/checkout?product=platform&return_to=platform_account&workspace=',
       'INVALID_WORKSPACE_ID'
+    ],
+    [
+      '/v1/checkout?product=platform&return_to=platform_account&team_credit_stop_id=a/b',
+      'INVALID_TEAM_CREDIT_STOP_ID'
     ]
   ] as const)('refuses %s with %s', ([url, expected]) => {
     expect(parseBillingEntry(url)).toEqual({ status: 'error', code: expected })

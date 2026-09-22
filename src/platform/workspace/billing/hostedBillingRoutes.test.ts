@@ -103,6 +103,23 @@ describe('hostedBillingRoute', () => {
     })
   })
 
+  it('mints team_credit_stop_id alongside the plan', () => {
+    expect(
+      hostedBillingRoute(
+        'billing_web',
+        'checkout',
+        { plan: 'team_per_credit_annual', teamCreditStopId: 'stop_700' },
+        BILLING_WEB,
+        'production'
+      )
+    ).toEqual({
+      kind: 'billing_web',
+      url: new URL(
+        'https://billing.comfy.org/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=team_per_credit_annual&team_credit_stop_id=stop_700'
+      )
+    })
+  })
+
   it.for([
     'https://cloud.comfy.org',
     'https://stagingcloud.comfy.org',

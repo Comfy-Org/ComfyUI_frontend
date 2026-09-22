@@ -75,7 +75,7 @@ describe('openHostedBillingTab', () => {
     expect(mockHostedBillingRoute).toHaveBeenCalledWith(
       'billing_web',
       'pricing',
-      { plan: undefined, workspaceId: 'ws-123' }
+      { plan: undefined, teamCreditStopId: undefined, workspaceId: 'ws-123' }
     )
   })
 
@@ -87,7 +87,30 @@ describe('openHostedBillingTab', () => {
     expect(mockHostedBillingRoute).toHaveBeenCalledWith(
       'billing_web',
       'checkout',
-      { plan: 'pro-monthly', workspaceId: 'ws-123' }
+      {
+        plan: 'pro-monthly',
+        teamCreditStopId: undefined,
+        workspaceId: 'ws-123'
+      }
+    )
+  })
+
+  it('passes an optional team credit stop through to the route', () => {
+    mockHostedBillingRoute.mockReturnValue({ kind: 'provider' })
+
+    openHostedBillingTab('checkout', {
+      plan: 'team_per_credit_annual',
+      teamCreditStopId: 'stop_700'
+    })
+
+    expect(mockHostedBillingRoute).toHaveBeenCalledWith(
+      'billing_web',
+      'checkout',
+      {
+        plan: 'team_per_credit_annual',
+        teamCreditStopId: 'stop_700',
+        workspaceId: 'ws-123'
+      }
     )
   })
 

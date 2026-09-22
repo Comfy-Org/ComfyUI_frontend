@@ -134,6 +134,29 @@ describe('CheckoutView', () => {
     expect(screen.getByText('$69.00')).toBeInTheDocument()
   })
 
+  it('quotes and subscribes with the team credit stop the link names', async () => {
+    const path = `${ENTRY_QUERY_PATH}&plan=team_per_credit_annual&team_credit_stop_id=stop_700`
+    const fake = await renderCheckout(path)
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    expect(fake.previewSubscribe).toHaveBeenCalledWith(
+      { planSlug: 'team_per_credit_annual', teamCreditStopId: 'stop_700' },
+      expect.anything()
+    )
+
+    reportConfirm('ctoken_1')
+
+    await waitFor(() =>
+      expect(fake.subscribe).toHaveBeenCalledWith(
+        expect.objectContaining({
+          plan_slug: 'team_per_credit_annual',
+          team_credit_stop_id: 'stop_700',
+          return_url: expect.stringContaining('team_credit_stop_id=stop_700')
+        })
+      )
+    )
+  })
+
   it('re-quotes when the entry names a different plan and never submits a stale quote', async () => {
     const fake = await renderCheckout()
     await screen.findByRole('button', { name: 'Pay and subscribe' })

@@ -40,6 +40,7 @@ export type HostedBillingRoute =
 export interface HostedBillingRouteFields {
   readonly plan?: string
   readonly workspaceId?: string
+  readonly teamCreditStopId?: string
 }
 
 const PROVIDER: HostedBillingRoute = { kind: 'provider' }
@@ -113,7 +114,10 @@ export function hostedBillingRoute(
     ...(fields.plan === undefined ? {} : { plan: fields.plan }),
     ...(fields.workspaceId === undefined
       ? {}
-      : { workspaceId: fields.workspaceId })
+      : { workspaceId: fields.workspaceId }),
+    ...(fields.teamCreditStopId === undefined
+      ? {}
+      : { teamCreditStopId: fields.teamCreditStopId })
   })
   return entry.status === 'ok'
     ? { kind: 'billing_web', url: underBase(billingWebBase, entry.url) }
