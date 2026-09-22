@@ -41,6 +41,30 @@ function prepareAutoShow(key: string): boolean {
 
 let registered = false
 
+/**
+ * Owns the one local-dirty-tracking suppression window a graph load opens in
+ * `beforeLoadGraph`. `open`/`close` are idempotent, so no matter which of
+ * `afterConfigureGraph` (success) or `onGraphLoadError` (a caught configure
+ * failure) fires - or neither does, because the load was abandoned for an
+ * overlapping one, or failed before either hook runs - at most one
+ * suppression is ever left open, and whichever hook closes it first fully
+ * releases it. A leaked open call here would misread every later
+ * context-less user edit as structural and never mark it dirty again.
+ */
+let widgetDirtySuppressionOpen = false
+
+function openWidgetDirtySuppression(): void {
+  if (widgetDirtySuppressionOpen) return
+  widgetDirtySuppressionOpen = true
+  useWidgetValueStore().beginLocalDirtyTrackingSuppression()
+}
+
+function closeWidgetDirtySuppression(): void {
+  if (!widgetDirtySuppressionOpen) return
+  widgetDirtySuppressionOpen = false
+  useWidgetValueStore().endLocalDirtyTrackingSuppression()
+}
+
 export function registerAgentPanelExtension(): void {
   if (registered) return
   registered = true
@@ -49,7 +73,7 @@ export function registerAgentPanelExtension(): void {
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
       notifyMintPortsBeforeGraphLoad()
-      useWidgetValueStore().beginLocalDirtyTrackingSuppression()
+      openWidgetDirtySuppression()
       const agentPanelStore = useAgentPanelStore()
       if (!agentPanelStore.isVisible) return
 
@@ -83,6 +107,7 @@ export function registerAgentPanelExtension(): void {
       }
     },
     onGraphLoadError() {
+      closeWidgetDirtySuppression()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (nodeSelectionStore.isLoadingWorkflow) {
         nodeSelectionStore.finishWorkflowLoad()
@@ -90,7 +115,7 @@ export function registerAgentPanelExtension(): void {
     },
     afterConfigureGraph() {
       notifyMintPortsAfterGraphConfigure()
-      useWidgetValueStore().endLocalDirtyTrackingSuppression()
+      closeWidgetDirtySuppression()
     },
     setup() {
       const agentPanelStore = useAgentPanelStore()

@@ -394,17 +394,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return locallyDirtyWidgets.has(widgetId)
   }
 
-  /**
-   * Clears `widgetId`'s dirty mark without writing a value. A reconcile that
-   * skips this id because {@link isLocallyDirty} caught it calls this once
-   * it has skipped: that one skip is the edit's protection against the
-   * snapshot that predated it, and it must not also block every later,
-   * possibly genuinely newer, reconcile forever.
-   */
-  function clearLocallyDirty(widgetId: WidgetId): void {
-    locallyDirtyWidgets.delete(widgetId)
-  }
-
   function setLabel(widgetId: WidgetId, label: string): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
@@ -608,7 +597,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     onValueChange,
     setValue,
     isLocallyDirty,
-    clearLocallyDirty,
     withLocalDirtyTrackingSuppressed,
     beginLocalDirtyTrackingSuppression,
     endLocalDirtyTrackingSuppression,

@@ -280,7 +280,7 @@ describe('graphMutations', () => {
   })
 
   describe('reconcileNode does not clobber a locally dirty widget', () => {
-    it('skips the doc snapshot once, then trusts the next reconcile again', () => {
+    it('keeps skipping every stale full reconcile until one matches the local value', () => {
       const graph = mutations()
       graph.addNode(node(1), context)
       registerLiveWidgets(1, samplerWidgets)
@@ -290,22 +290,57 @@ describe('graphMutations', () => {
       // RemoteMutationContext, so the store marks it locally dirty.
       useWidgetValueStore().setValue(id, 99)
 
+      // Two stale full reconciles in a row - e.g. an unbound local edit that
+      // never minted, followed by a rejected duplicate-add echo re-arming
+      // full reconciliation before the genuinely newer value lands - must
+      // not clobber the edit just because the first one was already
+      // skipped: the guard is not one-shot.
+      for (const stale of [21, 22]) {
+        expect(
+          graph.batch(context, (batch) => {
+            batch.reconcileNode({
+              ...node(1),
+              widgets_values: { steps: stale }
+            })
+          })
+        ).toBe(true)
+        expect(useWidgetValueStore().getWidget(id)?.value).toBe(99)
+        expect(useWidgetValueStore().isLocallyDirty(id)).toBe(true)
+      }
+
+      // Once a reconcile's own candidate value already matches the local
+      // edit, the document has caught up: the write lands (and, carrying a
+      // context, clears the mark itself).
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({ ...node(1), widgets_values: { steps: 99 } })
+        })
+      ).toBe(true)
+      expect(useWidgetValueStore().getWidget(id)?.value).toBe(99)
+      expect(useWidgetValueStore().isLocallyDirty(id)).toBe(false)
+    })
+
+    it('also resolves via an explicit single-widget setWidget op regardless of value', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, samplerWidgets)
+      const id = widgetId('root', toNodeId(1), 'steps')
+      useWidgetValueStore().setValue(id, 99)
+
       expect(
         graph.batch(context, (batch) => {
           batch.reconcileNode({ ...node(1), widgets_values: { steps: 21 } })
         })
       ).toBe(true)
-      // The stale doc snapshot (21) does not clobber the fresher local edit.
-      expect(useWidgetValueStore().getWidget(id)?.value).toBe(99)
+      expect(useWidgetValueStore().isLocallyDirty(id)).toBe(true)
 
-      // The guard is one-shot: it protected against the snapshot that
-      // predated the edit, not every reconcile from now on.
-      expect(
-        graph.batch(context, (batch) => {
-          batch.reconcileNode({ ...node(1), widgets_values: { steps: 22 } })
-        })
-      ).toBe(true)
-      expect(useWidgetValueStore().getWidget(id)?.value).toBe(22)
+      // An intentional remote write for this exact widget bypasses the
+      // guard entirely (it never goes through `applyWidgetValues`), so it
+      // resolves the mark even though its value differs from both the local
+      // edit and the stale snapshot.
+      expect(graph.setWidget(toNodeId(1), 'steps', 30, context)).toBe(true)
+      expect(useWidgetValueStore().getWidget(id)?.value).toBe(30)
+      expect(useWidgetValueStore().isLocallyDirty(id)).toBe(false)
     })
   })
 
@@ -346,7 +381,7 @@ describe('graphMutations', () => {
       expect(widgetStore.getWidget(id)?.value).toBe(30)
     })
 
-    it('regression: without suppression, the same replay would strand the widget', () => {
+    it('regression: without suppression, the same replay would strand the widget until the real value matches', () => {
       const graph = mutations()
       graph.addNode(node(1), context)
       registerLiveWidgets(1, samplerWidgets)
@@ -359,22 +394,24 @@ describe('graphMutations', () => {
       widgetStore.setValue(id, 20)
       expect(widgetStore.isLocallyDirty(id)).toBe(true)
 
-      // The one-shot guard skips the real catch-up value once, stranding the
-      // widget at the load's stale snapshot instead of the agent's edit.
-      expect(
-        graph.batch(context, (batch) => {
-          batch.reconcileNode({ ...node(1), widgets_values: { steps: 30 } })
-        })
-      ).toBe(true)
-      expect(widgetStore.getWidget(id)?.value).toBe(20)
+      // The guard keeps skipping every catch-up reconcile that still
+      // doesn't match, stranding the widget at the load's stale snapshot
+      // instead of the agent's edit - not just for the first one.
+      for (let i = 0; i < 2; i++) {
+        expect(
+          graph.batch(context, (batch) => {
+            batch.reconcileNode({ ...node(1), widgets_values: { steps: 30 } })
+          })
+        ).toBe(true)
+        expect(widgetStore.getWidget(id)?.value).toBe(20)
+        expect(widgetStore.isLocallyDirty(id)).toBe(true)
+      }
 
-      // One-shot: the guard trusts the reconcile after that.
-      expect(
-        graph.batch(context, (batch) => {
-          batch.reconcileNode({ ...node(1), widgets_values: { steps: 31 } })
-        })
-      ).toBe(true)
-      expect(widgetStore.getWidget(id)?.value).toBe(31)
+      // Only an explicit single-widget op, or a reconcile that finally
+      // carries the value already sitting on the widget, resolves it.
+      expect(graph.setWidget(toNodeId(1), 'steps', 30, context)).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toBe(30)
+      expect(widgetStore.isLocallyDirty(id)).toBe(false)
     })
   })
 

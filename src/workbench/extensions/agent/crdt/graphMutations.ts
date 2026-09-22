@@ -1059,21 +1059,25 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
    * single-widget `setWidget` op is unaffected, since it calls
    * `setWidgetValue` directly rather than through this function.
    *
-   * The mark is one-shot: a hit here clears it. This one skip is the local
-   * edit's whole protection against the snapshot that predated it - not a
-   * standing "never reconcile this widget again", which would leave a widget
-   * a human once touched unable to ever pick up a genuinely newer remote
-   * value.
+   * Protection lasts until the document actually reflects the local value,
+   * not for a single skipped reconcile: the follower has no invariant that
+   * only one stale full reconcile can happen before a genuinely newer value
+   * lands (an unbound local edit that never minted, followed by a rejected
+   * duplicate-add echo re-arming full reconciliation, can deliver the same
+   * stale snapshot a second time). So this only lets a reconcile through
+   * once its own candidate value already matches the widget's current one -
+   * the document has caught up, and that write clears the mark itself, since
+   * it carries a context. Anything else keeps skipping and keeps the mark.
    */
   function skipStaleReconcile(
     scope: GraphScope,
     nodeId: NodeId,
-    name: string
+    name: string,
+    value: WidgetValue
   ): boolean {
     const id = widgetId(scope.rootGraphId, nodeId, name)
     if (!isWidgetId(id) || !widgetStore.isLocallyDirty(id)) return false
-    widgetStore.clearLocallyDirty(id)
-    return true
+    return !Object.is(widgetStore.getWidget(id)?.value, value)
   }
 
   /**
@@ -1088,7 +1092,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     guardLocalEdits: boolean
   ): void {
     for (const [name, value] of values) {
-      if (guardLocalEdits && skipStaleReconcile(scope, nodeId, name)) continue
+      if (guardLocalEdits && skipStaleReconcile(scope, nodeId, name, value)) {
+        continue
+      }
       setWidgetValue(scope, nodeId, name, value, context)
     }
   }
@@ -1110,7 +1116,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       .filter((widget) => widget.serialize !== false)
       .slice(0, values.length)
     for (const [index, widget] of serialized.entries()) {
-      if (guardLocalEdits && skipStaleReconcile(scope, nodeId, widget.name)) {
+      if (
+        guardLocalEdits &&
+        skipStaleReconcile(scope, nodeId, widget.name, values[index])
+      ) {
         continue
       }
       setWidgetValue(scope, nodeId, widget.name, values[index], context)
