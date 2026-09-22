@@ -126,6 +126,18 @@ function sameTuple(value: unknown, tuple: LinkTuple): boolean {
   )
 }
 
+/**
+ * Recovers the `byId` key of a link from its semantic-document key. Links
+ * minted by LiteGraph carry numeric ids and are stored under
+ * `String(id)`; links pasted through the CRDT `insert_workflow` op keep the
+ * namespaced string id the host assigned (`insert:<op>:<path>:link:<n>`),
+ * which LiteGraph and this store carry verbatim. Both must round-trip, or
+ * membership silently drops the pasted links while `byId` still holds them.
+ */
+function linkIdFromDocKey(key: string): LinkId {
+  return parseLinkId(key) ?? (key as unknown as LinkId)
+}
+
 function addOwnerId(
   index: Map<OwningGraphId, Set<LinkId>>,
   owningGraphId: OwningGraphId,
@@ -208,15 +220,14 @@ export const useLinkStore = defineStore('link', () => {
     unobserveByRoot.set(
       rootGraphId,
       semanticDocs.projectMembership(rootGraphId, 'links', {
-        add: (owningGraphId, key) => {
-          const id = parseLinkId(key)
-          if (id !== undefined) addOwnerId(bucket.idsByOwner, owningGraphId, id)
-        },
-        remove: (owningGraphId, key) => {
-          const id = parseLinkId(key)
-          if (id !== undefined)
-            removeOwnerId(bucket.idsByOwner, owningGraphId, id)
-        },
+        add: (owningGraphId, key) =>
+          addOwnerId(bucket.idsByOwner, owningGraphId, linkIdFromDocKey(key)),
+        remove: (owningGraphId, key) =>
+          removeOwnerId(
+            bucket.idsByOwner,
+            owningGraphId,
+            linkIdFromDocKey(key)
+          ),
         resetDefinitionOwners: () => {
           for (const owningGraphId of [...bucket.idsByOwner.keys()]) {
             if ((owningGraphId as string) !== (rootGraphId as string))

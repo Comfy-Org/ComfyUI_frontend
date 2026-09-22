@@ -676,4 +676,29 @@ describe('useLinkStore semantic document projection', () => {
 
     expect(owned.value).toEqual([])
   })
+
+  it('keeps membership for a host-namespaced string link id', () => {
+    // CMP `insert_workflow` mints `insert:<op>:<path>:link:<n>` ids that
+    // LiteGraph carries verbatim; membership must not require a numeric key.
+    const store = useLinkStore()
+    const namespaced = {
+      ...link(1, 5, 0, 9, 2),
+      id: 'insert:op0:root/definition:%22d%22:link:1' as unknown as LinkTopology['id'],
+      graphId: graphASibling.owningGraphId
+    }
+    const numeric = link(2, 5, 0, 9, 3)
+
+    expect(store.registerLink(graphASibling, namespaced)).toEqual(namespaced)
+    store.registerLink(graphA, numeric)
+
+    expect([...store.graphTopologies(graphASibling)]).toEqual([namespaced])
+    expect([...store.graphTopologies(graphA)]).toEqual([numeric])
+    expect(store.getInputSlotLink(graphASibling, toNodeId(9), 2)).toEqual(
+      namespaced
+    )
+
+    expect(store.deleteLink(graphASibling, namespaced)).toBe(true)
+    expect([...store.graphTopologies(graphASibling)]).toEqual([])
+    expect([...store.graphTopologies(graphA)]).toEqual([numeric])
+  })
 })
