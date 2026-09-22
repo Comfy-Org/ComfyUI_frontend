@@ -101,6 +101,9 @@ const noteWidgets: readonly LiveWidget[] = [
     options: { multiline: true }
   }
 ]
+const objectWidgets: readonly LiveWidget[] = [
+  { name: 'config', type: 'legacy', value: { mode: 'auto' }, options: {} }
+]
 
 describe('graphMutations', () => {
   const createLayout = vi.fn()
@@ -308,6 +311,234 @@ describe('graphMutations', () => {
         }
       }
     )
+  })
+
+  describe('reconcileNode does not clobber a locally dirty widget', () => {
+    it('keeps skipping every stale full reconcile until one matches the local value', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, samplerWidgets)
+      const id = widgetId('root', toNodeId(1), 'steps')
+      // A local edit that bypassed this module's commit (a human typing, or
+      // the litegraph widget's own `.value` setter) carries no
+      // RemoteMutationContext, so the store marks it locally dirty.
+      useWidgetValueStore().setValue(id, 99)
+
+      // Two stale full reconciles in a row - e.g. an unbound local edit that
+      // never minted, followed by a rejected duplicate-add echo re-arming
+      // full reconciliation before the genuinely newer value lands - must
+      // not clobber the edit just because the first one was already
+      // skipped: the guard is not one-shot.
+      for (const stale of [21, 22]) {
+        expect(
+          graph.batch(context, (batch) => {
+            batch.reconcileNode({
+              ...node(1),
+              widgets_values: { steps: stale }
+            })
+          })
+        ).toBe(true)
+        expect(useWidgetValueStore().getWidget(id)?.value).toBe(99)
+        expect(useWidgetValueStore().isLocallyDirty(id)).toBe(true)
+      }
+
+      // Once a reconcile's own candidate value already matches the local
+      // edit, the document has caught up: the write lands (and, carrying a
+      // context, clears the mark itself).
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({ ...node(1), widgets_values: { steps: 99 } })
+        })
+      ).toBe(true)
+      expect(useWidgetValueStore().getWidget(id)?.value).toBe(99)
+      expect(useWidgetValueStore().isLocallyDirty(id)).toBe(false)
+    })
+
+    it('also resolves via an explicit single-widget setWidget op regardless of value', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, samplerWidgets)
+      const id = widgetId('root', toNodeId(1), 'steps')
+      useWidgetValueStore().setValue(id, 99)
+
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({ ...node(1), widgets_values: { steps: 21 } })
+        })
+      ).toBe(true)
+      expect(useWidgetValueStore().isLocallyDirty(id)).toBe(true)
+
+      // An intentional remote write for this exact widget bypasses the
+      // guard entirely (it never goes through `applyWidgetValues`), so it
+      // resolves the mark even though its value differs from both the local
+      // edit and the stale snapshot.
+      expect(graph.setWidget(toNodeId(1), 'steps', 30, context)).toBe(true)
+      expect(useWidgetValueStore().getWidget(id)?.value).toBe(30)
+      expect(useWidgetValueStore().isLocallyDirty(id)).toBe(false)
+    })
+
+    it('releases an object-valued named widget by deep equality, not reference equality', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, objectWidgets)
+      const id = widgetId('root', toNodeId(1), 'config')
+      const widgetStore = useWidgetValueStore()
+      widgetStore.setValue(id, { mode: 'manual' })
+
+      // A stale reconcile whose candidate is structurally different keeps
+      // skipping, same as the primitive case.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values: { config: { mode: 'auto' } }
+          })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toEqual({ mode: 'manual' })
+      expect(widgetStore.isLocallyDirty(id)).toBe(true)
+
+      // `parseWidgetValues` clones every object candidate, so the reconcile
+      // that finally "matches" the local edit never delivers the *same*
+      // object instance - only one that is structurally identical. The
+      // guard must compare by value: an Object.is/=== comparison would see
+      // two distinct clones as unequal forever and the mark would never
+      // clear.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values: { config: { mode: 'manual' } }
+          })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toEqual({ mode: 'manual' })
+      expect(widgetStore.isLocallyDirty(id)).toBe(false)
+    })
+
+    it('releases an object-valued positional widget by deep equality, not reference equality', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, objectWidgets)
+      const id = widgetId('root', toNodeId(1), 'config')
+      const widgetStore = useWidgetValueStore()
+      widgetStore.setValue(id, { mode: 'manual' })
+
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values: [{ mode: 'auto' }]
+          })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toEqual({ mode: 'manual' })
+      expect(widgetStore.isLocallyDirty(id)).toBe(true)
+
+      // Same catch-up case as the named path, but through the positional
+      // branch (`applyPositionalWidgetValues`), which shares the same
+      // `skipStaleReconcile` guard.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values: [{ mode: 'manual' }]
+          })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toEqual({ mode: 'manual' })
+      expect(widgetStore.isLocallyDirty(id)).toBe(false)
+    })
+  })
+
+  describe('a suppressed structural replay does not arm the guard', () => {
+    // A workflow load (e.g. switching back to a tab) reconfigures the live
+    // node from that tab's own locally-saved snapshot, which can predate a
+    // background CRDT edit made while the tab was unbound. That replay is a
+    // context-less write, indistinguishable from a human edit to the guard
+    // unless the caller (agentPanel's beforeLoadGraph/afterConfigureGraph)
+    // brackets it with local-dirty-tracking suppression.
+    it('lets the next catch-up reconcile land the real value', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, samplerWidgets)
+      const id = widgetId('root', toNodeId(1), 'steps')
+      const widgetStore = useWidgetValueStore()
+      // The agent's edit already landed on canonical state (steps: 20 -> 30)
+      // while this tab was backgrounded.
+      widgetStore.setValue(id, 30, context)
+
+      // The load's own configure() re-applies the tab's stale, pre-edit
+      // snapshot (steps: 20) onto the already-canonical widget, bracketed
+      // the way agentPanel.ts brackets it.
+      widgetStore.beginLocalDirtyTrackingSuppression()
+      widgetStore.setValue(id, 20)
+      widgetStore.endLocalDirtyTrackingSuppression()
+
+      expect(widgetStore.isLocallyDirty(id)).toBe(false)
+
+      // The CRDT rebind's catch-up reconcile, re-delivering the value the
+      // agent set while this tab was backgrounded, is not mistaken for
+      // clobbering a local edit.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({ ...node(1), widgets_values: { steps: 30 } })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toBe(30)
+    })
+
+    it('regression: without suppression, the same replay would strand the widget until the real value matches', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, samplerWidgets)
+      const id = widgetId('root', toNodeId(1), 'steps')
+      const widgetStore = useWidgetValueStore()
+      widgetStore.setValue(id, 30, context)
+
+      // Same stale replay, but unsuppressed: it is indistinguishable from a
+      // human edit, so it arms the guard.
+      widgetStore.setValue(id, 20)
+      expect(widgetStore.isLocallyDirty(id)).toBe(true)
+
+      // The guard keeps skipping every catch-up reconcile that still
+      // doesn't match, stranding the widget at the load's stale snapshot
+      // instead of the agent's edit - not just for the first one.
+      for (let i = 0; i < 2; i++) {
+        expect(
+          graph.batch(context, (batch) => {
+            batch.reconcileNode({ ...node(1), widgets_values: { steps: 30 } })
+          })
+        ).toBe(true)
+        expect(widgetStore.getWidget(id)?.value).toBe(20)
+        expect(widgetStore.isLocallyDirty(id)).toBe(true)
+      }
+
+      // Only an explicit single-widget op, or a reconcile that finally
+      // carries the value already sitting on the widget, resolves it.
+      expect(graph.setWidget(toNodeId(1), 'steps', 30, context)).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toBe(30)
+      expect(widgetStore.isLocallyDirty(id)).toBe(false)
+    })
+  })
+
+  it('reconcileNodeFields does not guard a subgraph host widget the same way', () => {
+    // A host's promoted widgets are wired by SubgraphNode's own projection,
+    // which writes them directly (no RemoteMutationContext) as a routine,
+    // structural part of attaching the host, not a human edit; guarding here
+    // too would leave a host widget stuck at a stale value forever.
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    registerLiveWidgets(1, samplerWidgets)
+    const id = widgetId('root', toNodeId(1), 'steps')
+    useWidgetValueStore().setValue(id, 99)
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNodeFields({ ...node(1), widgets_values: { steps: 21 } })
+      })
+    ).toBe(true)
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe(21)
   })
 
   it.for([
