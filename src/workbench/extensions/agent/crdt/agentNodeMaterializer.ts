@@ -54,10 +54,12 @@ export function reconcileAgentAdapters(
   graph: MaterializableGraph,
   subgraphDefinitions: ExportedSubgraph[] = []
 ): NodeId[] {
-  return runMintPortsSuppressed(() => {
-    const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
-    return reconcile(graph, pending)
-  })
+  return runMintPortsSuppressed(() =>
+    useWidgetValueStore().withLocalDirtyTrackingSuppressed(() => {
+      const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
+      return reconcile(graph, pending)
+    })
+  )
 }
 
 /**
