@@ -20,6 +20,10 @@ export class AgentPanel {
   public readonly sendButton: Locator
   public readonly permissionAllowButton: Locator
   public readonly permissionDenyButton: Locator
+  public readonly askSubmitButton: Locator
+  public readonly askOtherInput: Locator
+  public readonly askCheckboxes: Locator
+  public readonly askRadios: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -58,6 +62,26 @@ export class AgentPanel {
       name: enMessages.agent.permissionAsk.deny,
       exact: true
     })
+    this.askSubmitButton = this.root.getByRole('button', {
+      name: enMessages.agent.askUser.submit,
+      exact: true
+    })
+    this.askOtherInput = this.root.getByRole('textbox', {
+      name: enMessages.agent.askUser.other,
+      exact: true
+    })
+    this.askCheckboxes = this.root.getByRole('checkbox')
+    this.askRadios = this.root.getByRole('radio')
+  }
+
+  /** The ask_user checkbox for the option labelled `label`. */
+  askCheckbox(label: string): Locator {
+    return this.root.getByRole('checkbox', { name: label, exact: true })
+  }
+
+  /** The ask_user radio for the option labelled `label`. */
+  askRadio(label: string): Locator {
+    return this.root.getByRole('radio', { name: label, exact: true })
   }
 
   /**

@@ -137,6 +137,14 @@ export const PERMISSION_ASK_OPTIONS = [
   { id: 'deny', label: 'Deny' }
 ]
 
+/** Four `ask_user` options, each with a description. */
+export const ASK_USER_ANIMAL_OPTIONS = [
+  { id: 'fox', label: 'Red fox', description: 'Warm fur against the snow' },
+  { id: 'owl', label: 'Snowy owl', description: 'Pale feathers, low contrast' },
+  { id: 'hare', label: 'Arctic hare', description: 'Mid-leap across a drift' },
+  { id: 'wolf', label: 'Grey wolf', description: 'A lone silhouette at dusk' }
+]
+
 type AgentAskData = Extract<AgentWsEvent, { type: 'agent_ask' }>['data']
 
 /** An `agent_ask` frame for the first turn, with the ask fields to vary. */
