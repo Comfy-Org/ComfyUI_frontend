@@ -17,6 +17,7 @@ import type {
 import { signInTransition } from '@/auth/signInState'
 import en from '@/locales/en/main.json' with { type: 'json' }
 import { billingWebIdentity } from '@/config/firebase'
+import { boundWorkspaceId } from '@/entry/workspaceBinding'
 import {
   billingWebSessionClient,
   useBillingWebSession
@@ -63,8 +64,17 @@ export function useSignInController(onSignedIn: () => void) {
     return next
   }
 
+  /**
+   * The client no longer auto-mints (see `billingWebSession.ts`), so every
+   * mint this app issues goes through here — the one place that reads the
+   * entry binding at the moment it actually mints, not at construction, so a
+   * rebind that lands while the tab is signed out is not lost to a stale
+   * default.
+   */
   async function mint(requestedUser?: User): Promise<void> {
-    const result = await billingWebSessionClient().ensureFresh(requestedUser)
+    const result = await billingWebSessionClient().ensureFresh(requestedUser, {
+      workspaceId: boundWorkspaceId()
+    })
     dispatch(
       result?.status === 'ok'
         ? { type: 'mintSucceeded' }

@@ -160,7 +160,11 @@ describe('SignInView', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(message)
   })
 
-  it.for(['INVALID_FIREBASE_TOKEN', 'TOKEN_EXCHANGE_FAILED'] as const)(
+  it.for([
+    'NOT_AUTHENTICATED',
+    'INVALID_FIREBASE_TOKEN',
+    'TOKEN_EXCHANGE_FAILED'
+  ] as const)(
     'keeps the generic retry prompt for %s, not the catch-all "something went wrong"',
     async (code) => {
       h.initialState = {

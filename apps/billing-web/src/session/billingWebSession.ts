@@ -13,13 +13,15 @@
  * from a signed-out `null`. A caller that needs a token still awaits
  * `ensureFresh()` immediately before use.
  *
- * `workspaceId` is read once, at construction, from the entry binding: the
- * default every mint that does not name its own target falls back to (the
- * identity port's warm-up mint, and the sign-in flow's own `ensureFresh`
- * call), so this origin never resolves the personal workspace first and
- * switches afterwards. A later entry link that rebinds the tab reaches
- * requests through the live `workspaceId` getter the transport passes per
- * call instead (see `billingWebClient.ts`).
+ * `autoMint: false`: the identity port's own warm-up mint would target
+ * whatever `workspaceId` the client was constructed with, frozen at that
+ * moment — but the entry binding can change before anyone has signed in (a
+ * later link rebinding the tab while it is signed out), and a frozen default
+ * would then mint the workspace the tab is leaving instead of the one it was
+ * rebound to. The sign-in flow (`useSignInController`) is the sole mint
+ * driver instead, reading the binding live at the moment it actually mints.
+ * A later rebind after that reaches requests through the live `workspaceId`
+ * getter the transport passes per call (see `billingWebClient.ts`).
  */
 import type { User } from 'firebase/auth'
 import { computed, shallowRef } from 'vue'
@@ -32,7 +34,6 @@ import { createSessionClient } from '@comfyorg/account-core/session'
 
 import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebIdentity } from '@/config/firebase'
-import { boundWorkspaceId } from '@/entry/workspaceBinding'
 
 /**
  * Script-readable by design: an injected script on this origin could read the
@@ -75,7 +76,7 @@ export function billingWebSessionClient(): SessionClient<User> {
     {
       exchangeUrl: `${CLOUD_BASE_URL}/api/auth/token`,
       storage,
-      workspaceId: boundWorkspaceId()
+      autoMint: false
     },
     billingWebIdentity
   )
