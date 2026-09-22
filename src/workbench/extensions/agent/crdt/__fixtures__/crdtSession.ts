@@ -65,7 +65,8 @@ export const crdtTest = baseTest.extend<CrdtFixtures>({
         enqueue: (operations) => minted.push(...operations),
         layoutChanges: () => () => {},
         localActorPrefix: 'user-',
-        getGraph: () => graph
+        getGraph: () => graph,
+        boundRootGraphId: () => graphScopeOf(graph).rootGraphId
       })
       cleanups.push(() => wiring.detach())
       let sequence = 0
