@@ -37,6 +37,9 @@ const IMAGE_ASSET: Asset = {
   updated_at: new Date().toISOString()
 }
 const IMAGE_ROW_NAME = 'output_list-001'
+// ADR-ASSETS-DRAG-DROP-0035: the drag URI names the asset's file, never its
+// preview, so it resolves through the assets-API content endpoint.
+const ASSET_CONTENT_PATH = `/api/assets/${IMAGE_ASSET.id}/content`
 
 function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
   return { assets, total: assets.length, has_more: false }
@@ -143,6 +146,6 @@ test.describe('Assets list view thumbnail drag', { tag: '@cloud' }, () => {
     expect(dragStartPayload).not.toBeNull()
     expect(dragStartPayload?.types).toContain('application/x-comfy-asset-info')
     expect(dragStartPayload?.types).toContain('text/uri-list')
-    expect(dragStartPayload?.uriList).toContain(PREVIEW_FILENAME)
+    expect(dragStartPayload?.uriList).toContain(ASSET_CONTENT_PATH)
   })
 })
