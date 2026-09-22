@@ -74,6 +74,26 @@ test.describe('WAS Pause live disabled getter', { tag: '@widget' }, () => {
         await expect
           .poll(() => node.getProperty('properties'))
           .toMatchObject({ resumed: true })
+        await expect(button).toBeDisabled()
+      })
+
+      await test.step('Pause and resume a second execution', async () => {
+        await comfyPage.page.evaluate(
+          (id) =>
+            window.dispatchEvent(
+              new CustomEvent('devtools-was-pause', { detail: String(id) })
+            ),
+          node.id
+        )
+        await expect
+          .poll(() => node.getProperty('properties'))
+          .toMatchObject({ resumed: false })
+        await expect(button).toBeEnabled()
+        await button.click()
+        await expect
+          .poll(() => node.getProperty('properties'))
+          .toMatchObject({ resumed: true })
+        await expect(button).toBeDisabled()
       })
     }
   )

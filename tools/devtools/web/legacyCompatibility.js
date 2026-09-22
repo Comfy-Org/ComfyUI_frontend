@@ -60,7 +60,9 @@ function addPauseButton(node) {
     y: 0,
     callback() {
       if (button.disabled) return
+      held.delete(String(node.id))
       node.properties.resumed = true
+      node.setDirtyCanvas(true, true)
     }
   }
   Object.defineProperty(button, 'disabled', {
@@ -74,6 +76,7 @@ function addPauseButton(node) {
 
   function pause(event) {
     if (event.detail !== String(node.id)) return
+    node.properties.resumed = false
     held.add(String(node.id))
     node.color = '#7a5a1e'
     node.setDirtyCanvas(true, true)
