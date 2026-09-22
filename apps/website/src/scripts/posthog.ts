@@ -19,6 +19,7 @@ import type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
 import type { WorkshopAnalyticsEvent } from './workshop-analytics'
+import { captureWorkshopHealth } from './workshop-datadog'
 
 const POSTHOG_KEY =
   import.meta.env.PUBLIC_POSTHOG_KEY ??
@@ -309,6 +310,7 @@ export function capturePageview(): void {
 }
 
 export function captureWorkshopEvent(event: WorkshopAnalyticsEvent): void {
+  captureWorkshopHealth(event)
   captureEvent({
     name: `website:workshop_${event.name}`,
     properties: event.properties
