@@ -90,8 +90,8 @@ describe('ReplyAssetGroup', () => {
     expect(screen.getByTestId('reply-video-preview')).toBeInTheDocument()
   })
 
-  it('marks video previews with a play affordance but leaves images unmarked', () => {
-    renderGroup([image(1), video])
+  it('marks video previews with a play affordance but leaves other tiles unmarked', () => {
+    renderGroup([image(1), video, model])
 
     expect(screen.getAllByTestId('reply-video-affordance')).toHaveLength(1)
     expect(
@@ -101,6 +101,11 @@ describe('ReplyAssetGroup', () => {
     ).toBeInTheDocument()
     expect(
       within(screen.getByRole('button', { name: 'i1.png' })).queryByTestId(
+        'reply-video-affordance'
+      )
+    ).toBeNull()
+    expect(
+      within(screen.getByRole('button', { name: 'mesh.glb' })).queryByTestId(
         'reply-video-affordance'
       )
     ).toBeNull()
