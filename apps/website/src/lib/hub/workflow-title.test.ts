@@ -13,23 +13,23 @@ describe('workflowDisplayTitle', () => {
     )
   })
 
-  // A graph that is one partner node between a load and a save is the model,
-  // and `Text to Image` was the registry talking to itself. The model leads
-  // because it is what tells one of these from the next.
+  // A graph that is one partner node between a load and a save still does a
+  // job, and the job is what the reader came for. `Text to Image` was the
+  // registry talking to itself, and the model rides on its own line.
   it.for([
-    ['api_bytedance_seedream_5_0_pro_t2i', 'Seedream 5.0 Pro from a prompt'],
-    ['api_google_nano_banana2_image_edit', 'Nano Banana 2 on your photo'],
-    ['api_seedance2_5_r2v', 'Seedance 2.5 from reference shots']
-  ] as const)('names %s after its model and its input', ([name, expected]) => {
+    ['api_bytedance_seedream_5_0_pro_t2i', 'Create an image from a prompt'],
+    ['api_google_nano_banana2_image_edit', 'Edit an image with a prompt'],
+    ['api_seedance2_5_r2v', 'Create a video from references']
+  ] as const)('names %s after the job, not the model', ([name, expected]) => {
     expect(titleOf(name)).toBe(expected)
   })
 
-  // A card the reader cannot tell from its neighbour is a card they have to
-  // open to find out, and every one of these is meant to be chosen at a
-  // glance.
-  it('gives every workflow in the Hub a name of its own', () => {
-    const titles = listHubWorkflows().map(workflowDisplayTitle)
+  // A name the registry wrote for itself is a name nobody asked for.
+  it('leaves no workflow in the Hub with a name nobody wrote', () => {
+    const unwritten = listHubWorkflows().filter(
+      (template) => workflowDisplayTitle(template) === template.title
+    )
 
-    expect(new Set(titles).size).toBe(titles.length)
+    expect(unwritten).toEqual([])
   })
 })

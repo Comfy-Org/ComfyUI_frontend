@@ -4,37 +4,35 @@
  * written here in the same voice — what you get, in the words you would use
  * asking for it.
  *
- * A workflow that does a job of its own is named after the job. A graph that
- * is one partner node between a load and a save is the model, so it is named
- * after the model and then after what you hand it: the model is what tells
- * one of those from the next, and `Text to Image` was the registry talking to
- * itself.
+ * Every one of them is named after the job, never after the model that does
+ * it: the reader arrives knowing what they want done, not which model does
+ * it, and the card says the model on its own line. `Text to Image` was the
+ * registry talking to itself.
  */
 const curatedWorkflowTitles: Readonly<Record<string, string>> = {
   api_beeble_switchx_image_edit: 'Relight a photo',
   api_beeble_switchx_video_edit: 'Relight a video',
   api_bria_eraser: 'Remove an object',
   api_bytedance_seedream_5_0_layer_separation: 'Separate an image into layers',
-  api_bytedance_seedream_5_0_lite_image_edit: 'Seedream 5.0 Lite on your photo',
-  api_bytedance_seedream_5_0_lite_t2i: 'Seedream 5.0 Lite from a prompt',
-  api_bytedance_seedream_5_0_pro_image_edit: 'Seedream 5.0 Pro on your photo',
-  api_bytedance_seedream_5_0_pro_t2i: 'Seedream 5.0 Pro from a prompt',
+  api_bytedance_seedream_5_0_lite_image_edit: 'Edit an image with a prompt',
+  api_bytedance_seedream_5_0_lite_t2i: 'Create an image from a prompt',
+  api_bytedance_seedream_5_0_pro_image_edit: 'Edit an image with a prompt',
+  api_bytedance_seedream_5_0_pro_t2i: 'Create an image from a prompt',
   api_from_photo_2_miniature: 'Turn a photo into a 3D miniature',
-  api_google_gemini_omni_flash_1_1_edit: 'Gemini Omni 1.1 Flash on your video',
-  api_google_gemini_omni_flash_1_1_i2v: 'Gemini Omni 1.1 Flash from a photo',
-  api_google_gemini_omni_flash_1_1_r2v:
-    'Gemini Omni 1.1 Flash from reference shots',
-  api_google_gemini_omni_flash_1_1_t2v: 'Gemini Omni 1.1 Flash from a prompt',
-  api_google_nano_banana2_image_edit: 'Nano Banana 2 on your photo',
+  api_google_gemini_omni_flash_1_1_edit: 'Edit a video with a prompt',
+  api_google_gemini_omni_flash_1_1_i2v: 'Turn an image into a video',
+  api_google_gemini_omni_flash_1_1_r2v: 'Create a video from references',
+  api_google_gemini_omni_flash_1_1_t2v: 'Create a video from a prompt',
+  api_google_nano_banana2_image_edit: 'Edit an image with a prompt',
   api_google_nano_banana2_image_edit_continuation: 'Edit an image step by step',
-  api_google_nano_banana2_text_to_image: 'Nano Banana 2 from a prompt',
-  api_happyhorse1_0_video_edit: 'HappyHorse on your video',
-  api_happyhorse1_1_r2v: 'HappyHorse 1.1 from reference shots',
-  api_happyhorse1_1_t2v: 'HappyHorse 1.1 from a prompt',
-  api_nano_banana_2_lite_image_edit: 'Nano Banana 2 Lite on your photo',
-  api_nano_banana_2_lite_t2i: 'Nano Banana 2 Lite from a prompt',
-  api_nano_banana_pro: 'Nano Banana Pro on your photos',
-  api_seedance2_5_r2v: 'Seedance 2.5 from reference shots',
+  api_google_nano_banana2_text_to_image: 'Create an image from a prompt',
+  api_happyhorse1_0_video_edit: 'Edit a video with a prompt',
+  api_happyhorse1_1_r2v: 'Create a video from references',
+  api_happyhorse1_1_t2v: 'Create a video from a prompt',
+  api_nano_banana_2_lite_image_edit: 'Edit an image with a prompt',
+  api_nano_banana_2_lite_t2i: 'Create an image from a prompt',
+  api_nano_banana_pro: 'Blend several photos into one',
+  api_seedance2_5_r2v: 'Create a video from references',
   api_wavespeed_flshvsr_video_upscale: 'Upscale a video',
   flux_fill_inpaint_example: 'Edit a selected region',
   flux_fill_outpaint_example: 'Extend an image’s borders',

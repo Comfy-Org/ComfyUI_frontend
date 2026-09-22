@@ -92,7 +92,7 @@ const previewSrc = usePreviewVideo(video, () =>
       </div>
     </div>
 
-    <div class="flex flex-col gap-1 px-3">
+    <div class="flex flex-col gap-2 px-3">
       <h3
         class="line-clamp-2 text-sm font-medium text-content-bright lg:text-base"
         data-testid="catalogue-card-title"
@@ -100,7 +100,18 @@ const previewSrc = usePreviewVideo(video, () =>
         {{ view.title }}
       </h3>
 
-      <div class="flex items-center gap-3 text-content-secondary">
+      <!-- The title names the job, so the model is what tells one card from
+        the next. It stands where the maker would, which on a workflow reads
+        `ComfyUI` on every card and so marks none of them. -->
+      <span
+        v-if="view.model"
+        class="inline-flex h-6 w-fit max-w-full items-center rounded-lg bg-transparency-white-t8 px-2 text-xs text-content-secondary"
+        data-testid="catalogue-card-model"
+      >
+        <span class="truncate">{{ view.model }}</span>
+      </span>
+
+      <div v-else class="flex items-center gap-3 text-content-secondary">
         <span
           class="flex min-w-0 items-center gap-2"
           data-testid="catalogue-card-maker"

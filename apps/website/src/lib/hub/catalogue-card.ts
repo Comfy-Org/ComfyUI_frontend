@@ -20,6 +20,8 @@ export interface CardView {
   readonly media: CardMedia | undefined
   readonly hoverMedia: string | undefined
   readonly maker: { readonly label: string; readonly logo: string | undefined }
+  /** The model a workflow runs on. A model card is already the model. */
+  readonly model: string | undefined
   readonly needsCustomNodes: boolean
 }
 
@@ -40,6 +42,7 @@ function modelCard(
       label: provider,
       logo: getLogoPath(provider) ?? getLogoPath(model.name) ?? undefined
     },
+    model: undefined,
     needsCustomNodes: false
   }
 }
@@ -60,6 +63,7 @@ function workflowCard(
       : undefined,
     hoverMedia: template.thumbnails[1],
     maker: { label: template.username || 'ComfyUI', logo: undefined },
+    model: entry.runsOn?.name,
     needsCustomNodes: needsCustomNodes.has(template.name)
   }
 }
