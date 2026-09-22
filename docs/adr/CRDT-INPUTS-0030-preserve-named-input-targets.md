@@ -9,6 +9,13 @@ Proposed
 Rescoped 2026-09-19: covers the document-to-live projection direction only; the
 durable destination question stays with blocked-on-christian #448 (see Context).
 
+The store-first implementation described below is interim.
+[FE-2504](https://linear.app/comfyorg/issue/FE-2504/agentcrdt-remove-store-first-remote-apply-and-every-reconciliation)
+tracks its replacement with semantic `LGraph`/`LGraphNode` operations carrying
+provenance, followed by removal of `graphMutations`, the materializer and their
+reconciliation layers. That Backlog migration does not supersede this focused
+fix or need to be implemented by this PR.
+
 ## Context
 
 The shared agent document addresses connections by numeric input slot. The
@@ -26,8 +33,11 @@ and is deliberately out of scope here.
 
 ## Decision
 
-Project document inputs onto live nodes by **name**, at the two boundaries where
-document order and live order can disagree:
+The durable rule is to resolve document input targets onto live nodes by
+**name** when their input orders differ. This rule does not require store-first
+application or a separate reconciliation layer.
+
+The current interim implementation applies it at two boundaries:
 
 - Initial materialization reuses ordinary loading's link realignment
   (`realignInputLinkSlots`), so a freshly materialized node's adapters follow the
@@ -70,6 +80,9 @@ Outputs remain index-based because their names need not be unique.
 
 ## Consequences
 
+- FE-2504 must preserve named input targeting when replacing the current
+  implementation. This ADR does not require retaining the store-first apply,
+  materializer or reconciliation machinery that migration intends to delete.
 - Existing document nodes preserve named targets through loading, growth, remote
   updates and save/reopen without rewriting the document.
 - Reconcile semantics change for **every** node whose live inputs differ from the
