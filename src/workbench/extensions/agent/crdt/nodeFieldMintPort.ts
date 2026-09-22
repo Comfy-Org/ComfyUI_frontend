@@ -74,7 +74,20 @@ export function attachNodeFieldMintPort(
     })
     if (!mintable) return
 
-    deps.enqueue([toOperation(change)])
+    // Deferred one microtask tick to land after the layout store's own
+    // queued flush (`queueChange`'s `queueMicrotask` in layoutStore.ts).
+    // `LGraphCanvas._deserializeItems` calls `graph.add(node)` (which queues
+    // that node's `add_node` mint onto a microtask) then, still
+    // synchronously, `node.configure(info)` (which fires this port's
+    // title/mode change for a renamed/bypassed pasted node) in the same
+    // tick. Minting `set_node_field` synchronously here would reach the doc
+    // for a node it has not seen `add_node` for yet. Queuing this port's own
+    // microtask - scheduled after the layout store's, since that one is
+    // always queued first in this sequence - lands this mint after the
+    // node's own placement.
+    queueMicrotask(() => {
+      deps.enqueue([toOperation(change)])
+    })
   }
 
   const detach = deps.events.onChange(onChange)

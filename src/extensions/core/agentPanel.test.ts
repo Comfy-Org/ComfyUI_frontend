@@ -63,6 +63,7 @@ const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
   notifyAfterGraphConfigure: vi.fn(),
   notifyBeforeGraphLoad: vi.fn(),
+  notifyGraphLoadFailed: vi.fn(),
   getNodeByLocatorId: vi.fn(),
   flagEnabled: undefined as boolean | undefined,
   flagListener: null as (() => void) | null,
@@ -80,7 +81,8 @@ vi.mock(import('@/services/extensionService'), () => ({
 
 vi.mock(import('@/workbench/extensions/agent/crdt/mintPortWiring'), () => ({
   notifyMintPortsAfterGraphConfigure: mocks.notifyAfterGraphConfigure,
-  notifyMintPortsBeforeGraphLoad: mocks.notifyBeforeGraphLoad
+  notifyMintPortsBeforeGraphLoad: mocks.notifyBeforeGraphLoad,
+  notifyMintPortsGraphLoadFailed: mocks.notifyGraphLoadFailed
 }))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
@@ -149,6 +151,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.capturedExtensions.length = 0
     mocks.notifyAfterGraphConfigure.mockClear()
     mocks.notifyBeforeGraphLoad.mockClear()
+    mocks.notifyGraphLoadFailed.mockClear()
     agentStore.close.mockClear()
     agentStore.enabled = false
     agentStore.isOpen = true
@@ -730,6 +733,21 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+  })
+
+  it('retries late mint-port graph-event attachment when graph configuration fails', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+
+    await extension!.onGraphLoadError!(
+      new Error('bad workflow json'),
+      {} as never
+    )
+
+    expect(mocks.notifyGraphLoadFailed).toHaveBeenCalledOnce()
   })
 
   it('finishes restoration when selection restoration throws', async () => {

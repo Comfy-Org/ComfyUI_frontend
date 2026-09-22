@@ -64,12 +64,19 @@ describe('attachNodeFieldMintPort', () => {
     }
   ])(
     'mints a top-level set_node_field from a root-graph $name change',
-    ({ change, operation }) => {
+    async ({ change, operation }) => {
       deliver(change)
+      await Promise.resolve()
 
       expect(minted).toEqual([operation])
     }
   )
+
+  it('defers the mint past the current microtask (lands after a queued layout flush)', () => {
+    deliver({ nodeId: '7', field: 'title', value: 'Renamed Node' })
+
+    expect(minted).toEqual([])
+  })
 
   it('never mints with the product flag off', () => {
     enabled = false
@@ -98,5 +105,28 @@ describe('attachNodeFieldMintPort', () => {
     deliver({ nodeId: '7', field: 'title', value: 'Renamed Node' })
 
     expect(minted).toEqual([])
+  })
+
+  it('lands after a microtask already queued before the change (matches the layout store queuing add_node first)', async () => {
+    const order: string[] = []
+    const orderedPort = attachNodeFieldMintPort({
+      events: {
+        onChange: (listener) => {
+          listeners.add(listener)
+          return () => listeners.delete(listener)
+        }
+      },
+      session,
+      isEnabled: () => enabled,
+      isDocBound: () => bound,
+      enqueue: () => order.push('set_node_field')
+    })
+    queueMicrotask(() => order.push('add_node'))
+    deliver({ nodeId: '7', field: 'title', value: 'Renamed Node' })
+
+    await Promise.resolve()
+
+    expect(order).toEqual(['add_node', 'set_node_field'])
+    orderedPort.detach()
   })
 })

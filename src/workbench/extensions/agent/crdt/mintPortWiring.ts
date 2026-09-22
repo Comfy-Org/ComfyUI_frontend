@@ -27,6 +27,7 @@ import { isFloatingTopology } from '@/types/linkTopology'
 import { isRemoteMutationContext } from '@/types/graphMutationContext'
 import { parseWidgetId } from '@/types/widgetId'
 import { findSubgraphNodePathById } from '@/utils/graphTraversalUtil'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 
 import type { GraphOperation } from './graphOperations'
@@ -91,8 +92,27 @@ export interface MintPortWiring {
   onBeforeGraphLoad(): void
   /** Forward from the app extension's `afterConfigureGraph` hook. */
   onAfterGraphConfigure(): void
+  /** Forward from the app extension's `onGraphLoadError` hook. */
+  onGraphLoadFailed(): void
   detach(): void
 }
+
+/**
+ * A pasted node's title comes straight from JSON-parsed clipboard data, so
+ * nothing bounds it before it reaches the wire. Truncate rather than drop
+ * the mint entirely - the rename itself is still real even when its text is
+ * pathological.
+ */
+const MAX_MINTED_TITLE_LENGTH = 1000
+
+/** `LGraphEventMode`'s finite members; NaN/Infinity/fractions/out-of-range never mint. */
+const MINTABLE_NODE_MODES = new Set<number>([
+  LGraphEventMode.ALWAYS,
+  LGraphEventMode.ON_EVENT,
+  LGraphEventMode.NEVER,
+  LGraphEventMode.ON_TRIGGER,
+  LGraphEventMode.BYPASS
+])
 
 const activeWirings = new Set<MintPortWiring>()
 const bufferedEnqueues: Array<Array<() => void>> = []
@@ -117,6 +137,19 @@ export function notifyMintPortsBeforeGraphLoad(): void {
 
 export function notifyMintPortsAfterGraphConfigure(): void {
   for (const wiring of activeWirings) wiring.onAfterGraphConfigure()
+}
+
+/**
+ * Forward from the app extension's `onGraphLoadError` hook. `afterConfigure
+ * Graph`'s own late-attachment retry never runs when a load fails, so a
+ * wiring constructed before `getGraph()` first returned non-null would
+ * otherwise stay unattached until some later load succeeds. This retries the
+ * attach only; it deliberately leaves the load bracket's teardown
+ * suppression exactly as `onGraphLoadError`'s failure already left it
+ * (fail-closed, per this file's header comment).
+ */
+export function notifyMintPortsGraphLoadFailed(): void {
+  for (const wiring of activeWirings) wiring.onGraphLoadFailed()
 }
 
 /**
@@ -286,12 +319,44 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     enqueue
   })
 
+  /**
+   * Whether the root graph currently firing `node:property:changed` (the
+   * one this port is attached to) is the bound document's own root graph.
+   * `app.rootGraph` is a shared instance re-configured per tab: a title/mode
+   * write can land after a load's `afterConfigureGraph` re-attaches this
+   * port to the newly-configured graph but before `boundRootGraphId()`
+   * itself flips to match, which would otherwise mint into the still-bound
+   * (outgoing) document against a same-id node in the new one. No stored
+   * bound id, or no live graph, cannot be judged foreign - `isDocBound()`
+   * gates those cases downstream instead.
+   */
+  function firedByBoundRootGraph(): boolean {
+    const boundRootGraphId = deps.boundRootGraphId()
+    if (boundRootGraphId === null) return true
+    const graph = deps.getGraph()
+    if (!graph) return true
+    return (graph.rootGraph?.id ?? graph.id) === boundRootGraphId
+  }
+
   function handlePropertyChanged(event: PropertyChangedEvent): void {
-    const { property, nodeId, newValue } = event.detail
+    const { property, nodeId, oldValue, newValue } = event.detail
+    // `LGraphNode.configure` falls back to re-assigning the constructor's
+    // default title/mode even when nothing actually changed, and
+    // `useNodeReplacement`/`SubgraphBreadcrumb` reassign both on an
+    // already-attached node as routine upkeep, not a human edit.
+    if (oldValue === newValue) return
+
     if (property === 'title' && typeof newValue === 'string') {
+      if (!firedByBoundRootGraph()) return
+      const title = newValue.slice(0, MAX_MINTED_TITLE_LENGTH)
       for (const listener of nodeFieldListeners)
-        listener({ nodeId, field: 'title', value: newValue })
-    } else if (property === 'mode' && typeof newValue === 'number') {
+        listener({ nodeId, field: 'title', value: title })
+    } else if (
+      property === 'mode' &&
+      typeof newValue === 'number' &&
+      MINTABLE_NODE_MODES.has(newValue)
+    ) {
+      if (!firedByBoundRootGraph()) return
       for (const listener of nodeFieldListeners)
         listener({ nodeId, field: 'mode', value: newValue })
     }
@@ -301,6 +366,12 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   function tryAttachGraphEvents(): void {
     const graph = deps.getGraph()
     if (!graph || attachedGraphEvents === graph.events) return
+    if (attachedGraphEvents) {
+      attachedGraphEvents.removeEventListener(
+        'node:property:changed',
+        handlePropertyChanged
+      )
+    }
     graph.events.addEventListener(
       'node:property:changed',
       handlePropertyChanged
@@ -366,6 +437,9 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       if (!loadBracketOpen) return
       loadBracketOpen = false
       session.endGraphTeardown()
+    },
+    onGraphLoadFailed() {
+      tryAttachGraphEvents()
     },
     detach() {
       activeWirings.delete(wiring)
