@@ -64,7 +64,9 @@ describe('auditBuiltSite', () => {
   it('rejects an omitted sitemap entry even when the page has no alternates', () => {
     const pages = new Map<string, Alternate[]>([['/about/', []]])
 
-    expect(auditBuiltSite({ origin: ORIGIN, pages, sitemap: new Map() })).toEqual([
+    expect(
+      auditBuiltSite({ origin: ORIGIN, pages, sitemap: new Map() })
+    ).toEqual([
       '/about/: page expects en -> https://comfy.org/about/, but does not declare it',
       '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
       '/about/: page expects x-default -> https://comfy.org/about/, but does not declare it',
@@ -78,23 +80,22 @@ describe('auditBuiltSite', () => {
     '/affiliates/',
     '/privacy-policy/',
     '/cloud/enterprise/'
-  ])(
-    'allows an empty cluster on standalone route %s',
-    (route) => {
-      expect(
-        auditBuiltSite({
-          origin: ORIGIN,
-          pages: new Map<string, Alternate[]>([[route, []]]),
-          sitemap: new Map()
-        })
-      ).toEqual([])
-    }
-  )
+  ])('allows an empty cluster on standalone route %s', (route) => {
+    expect(
+      auditBuiltSite({
+        origin: ORIGIN,
+        pages: new Map<string, Alternate[]>([[route, []]]),
+        sitemap: new Map()
+      })
+    ).toEqual([])
+  })
 
   it('still rejects an unlisted HTML page with no cluster', () => {
     const pages = new Map<string, Alternate[]>([['/article.html', []]])
 
-    expect(auditBuiltSite({ origin: ORIGIN, pages, sitemap: new Map() })).toEqual([
+    expect(
+      auditBuiltSite({ origin: ORIGIN, pages, sitemap: new Map() })
+    ).toEqual([
       '/article.html: page expects en -> https://comfy.org/article.html/, but does not declare it',
       '/article.html: page expects zh-CN -> https://comfy.org/zh-CN/article.html/, but does not declare it',
       '/article.html: page expects x-default -> https://comfy.org/article.html/, but does not declare it',
