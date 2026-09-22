@@ -272,6 +272,7 @@ function onClose(): void {
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
+const runNoticeEngaged = ref(false)
 const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
 
 function onWorkflowTargetRequired(): void {
@@ -513,6 +514,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
             :context="targetNotice"
             @show-target="emit('showTarget')"
+            :engaged="runNoticeEngaged"
           />
           <FreeUseNotice
             v-if="freeUsePlacement === 'near-composer'"
@@ -533,6 +535,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :has-workflow-target="!workflowDetached"
             :workflow-selecting="selectingTabPath !== null || savingReference"
             :get-mention-nodes
+            @focusin="runNoticeEngaged = true"
             @send="onComposerSend"
             @stop="emit('stop', $event)"
             @attach="emit('attach')"

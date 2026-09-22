@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 
@@ -10,10 +10,11 @@ const STORAGE_KEY = 'Comfy.AgentPanel.runNoticeDismissed'
 
 function mount(
   workflowName: string | undefined = '3d_hunyuan-v2.1',
-  expanded = false
+  expanded = false,
+  engaged = false
 ) {
   return render(RunNoticeBanner, {
-    props: { expanded, workflowName },
+    props: { expanded, workflowName, engaged },
     global: { plugins: [i18n] }
   })
 }
@@ -31,9 +32,17 @@ describe('RunNoticeBanner', () => {
   })
 
   it.for([false, true])(
-    'shows the targetless notice for expanded=%s',
-    (expanded) => {
-      mount('', expanded)
+    'defers the targetless notice until shortly after engagement for expanded=%s',
+    async (expanded) => {
+      vi.useFakeTimers()
+      const { rerender } = mount('', expanded)
+      expect(screen.queryByRole('note')).toBeNull()
+
+      await rerender({ expanded, workflowName: '', engaged: true })
+      await vi.advanceTimersByTimeAsync(499)
+      expect(screen.queryByRole('note')).toBeNull()
+
+      await vi.advanceTimersByTimeAsync(1)
       expect(screen.getByRole('note')).toHaveTextContent(
         i18n.global.t(expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice')
       )
