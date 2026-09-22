@@ -76,7 +76,7 @@ describe('replayAgentFixture', () => {
     ).toThrow(
       'Agent response fixture batch rejected: fixture-message-add-node:11'
     )
-    expect(adapter.nodes).toHaveLength(0)
+    expect(adapter.nodes.size).toBe(0)
   })
 
   it('rejects a fixture with no scenario name', () => {
