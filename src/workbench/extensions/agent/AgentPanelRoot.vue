@@ -170,6 +170,7 @@ const workflowResolver = useAgentWorkflowResolver({
 })
 const {
   refreshCloudWorkflowIds,
+  forgetCloudWorkflowId,
   cloudIdFor,
   boundOrOpenWorkflowFor,
   storedWorkflowFor,
@@ -518,6 +519,7 @@ const {
     prepare: async () => {
       await refreshCloudWorkflowIds()
     },
+    disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
     draft: targetWorkflowDraft
