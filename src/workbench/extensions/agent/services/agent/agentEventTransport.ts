@@ -284,6 +284,7 @@ export function createAgentEventTransport(
       canvasSyncBaseline.set(part, canvasSyncOutcomeWatermark)
     }
     part.name = data.tool_name
+    if (data.skill) part.skill = data.skill
     if (data.status !== 'running') {
       resolveToolCallState(part, data.status, data.duration_ms)
     }
