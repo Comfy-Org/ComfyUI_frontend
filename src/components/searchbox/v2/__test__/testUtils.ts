@@ -1,10 +1,9 @@
-import { fromAny } from '@total-typescript/shoehorn'
-import type { DetachedWindowAPI } from 'happy-dom'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { setHappyDomViewport } from '@/utils/__tests__/happyDomTestUtils'
 
 export function createMockNodeDef(
   overrides: Partial<ComfyNodeDef> = {}
@@ -34,11 +33,5 @@ export const testI18n = createI18n({
 })
 
 export function setViewport(viewport: { width: number; height: number }) {
-  const happyDOM = fromAny<{ happyDOM?: DetachedWindowAPI }, unknown>(
-    window
-  ).happyDOM
-  if (!happyDOM) {
-    throw new Error('window.happyDOM is unavailable to set viewport')
-  }
-  happyDOM.setViewport(viewport)
+  setHappyDomViewport(viewport)
 }

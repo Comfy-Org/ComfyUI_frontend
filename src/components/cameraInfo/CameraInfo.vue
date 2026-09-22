@@ -96,7 +96,6 @@
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -154,7 +153,7 @@ const {
   setTransformGizmoMode,
   setLookThrough,
   mode
-} = useCameraInfo(node as Ref<LGraphNode | null>)
+} = useCameraInfo(node)
 
 const gizmosLabel = computed(() =>
   gizmosOn.value ? t('load3d.hideGizmos') : t('load3d.showGizmos')

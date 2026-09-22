@@ -1,11 +1,8 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
@@ -47,6 +44,16 @@ vi.mock<unknown>(import('vue-router'), () => ({
 
 import { useFocusNode } from './useFocusNode'
 
+function createNode(bounds: readonly [number, number, number, number]) {
+  const graph = new LGraph()
+  const node = new LGraphNode('Test')
+  node.pos = [bounds[0], bounds[1]]
+  node.size = [bounds[2], bounds[3]]
+  node.updateArea()
+  graph.add(node)
+  return { graph, node }
+}
+
 describe('useFocusNode', () => {
   let animationFrames: FrameRequestCallback[]
 
@@ -76,10 +83,7 @@ describe('useFocusNode', () => {
   }
 
   it('opens the node graph and frames it inside the visible canvas', async () => {
-    const graph = fromAny<LGraph, unknown>({ isRootGraph: false, nodes: [] })
-    const bounds = [10, 20, 30, 40] as const
-    const node = fromAny<LGraphNode, unknown>({ graph, boundingRect: bounds })
-    graph.nodes.push(node)
+    const { graph, node } = createNode([10, 20, 30, 40])
     const focusPromise = useFocusNode().focusNodeInstance(node)
 
     await vi.waitFor(() => expect(animationFrames).toHaveLength(1))
@@ -88,18 +92,14 @@ describe('useFocusNode', () => {
 
     expect(navigationStore.navigateToGraph).toHaveBeenCalledWith(graph)
     expect(canvasStore.canvas!.setGraph).not.toHaveBeenCalled()
-    expect(canvasStore.canvas!.animateToBounds).toHaveBeenCalledWith(bounds, {
-      viewport
-    })
+    expect(canvasStore.canvas!.animateToBounds).toHaveBeenCalledWith(
+      node.boundingRect,
+      { viewport }
+    )
   })
 
   it('does not animate a canvas replaced during navigation', async () => {
-    const graph = fromAny<LGraph, unknown>({ isRootGraph: false, nodes: [] })
-    const node = fromAny<LGraphNode, unknown>({
-      graph,
-      boundingRect: [10, 20, 30, 40]
-    })
-    graph.nodes.push(node)
+    const { graph, node } = createNode([10, 20, 30, 40])
     const staleCanvas = canvasStore.canvas!
     const focusPromise = useFocusNode().focusNodeInstance(node)
 
@@ -118,12 +118,7 @@ describe('useFocusNode', () => {
   })
 
   it('does not animate when the canvas becomes unavailable', async () => {
-    const graph = fromAny<LGraph, unknown>({ isRootGraph: false, nodes: [] })
-    const node = fromAny<LGraphNode, unknown>({
-      graph,
-      boundingRect: [10, 20, 30, 40]
-    })
-    graph.nodes.push(node)
+    const { node } = createNode([10, 20, 30, 40])
     const staleCanvas = canvasStore.canvas!
     const focusPromise = useFocusNode().focusNodeInstance(node)
 
@@ -136,13 +131,8 @@ describe('useFocusNode', () => {
   })
 
   it('does not animate when a competing navigation changes the graph', async () => {
-    const graph = fromAny<LGraph, unknown>({ isRootGraph: false, nodes: [] })
-    const competingGraph = { isRootGraph: true } as LGraph
-    const node = fromAny<LGraphNode, unknown>({
-      graph,
-      boundingRect: [10, 20, 30, 40]
-    })
-    graph.nodes.push(node)
+    const { node } = createNode([10, 20, 30, 40])
+    const competingGraph = new LGraph()
     const focusPromise = useFocusNode().focusNodeInstance(node)
 
     await vi.waitFor(() => expect(animationFrames).toHaveLength(1))
@@ -154,12 +144,7 @@ describe('useFocusNode', () => {
   })
 
   it('uses the same viewport-aware path for an execution-id lookup', async () => {
-    const graph = fromAny<LGraph, unknown>({ isRootGraph: true, nodes: [] })
-    const node = fromAny<LGraphNode, unknown>({
-      graph,
-      boundingRect: [1, 2, 3, 4]
-    })
-    graph.nodes.push(node)
+    const { graph, node } = createNode([1, 2, 3, 4])
     canvasStore.canvas!.graph = graph
 
     await useFocusNode().focusNode('node-1', new Map([['node-1', node]]))
@@ -172,12 +157,7 @@ describe('useFocusNode', () => {
   })
 
   it('does not frame when navigation is superseded', async () => {
-    const graph = fromAny<LGraph, unknown>({ isRootGraph: false, nodes: [] })
-    const node = fromAny<LGraphNode, unknown>({
-      graph,
-      boundingRect: [1, 2, 3, 4]
-    })
-    graph.nodes.push(node)
+    const { graph, node } = createNode([1, 2, 3, 4])
     vi.mocked(navigationStore.navigateToGraph).mockImplementation(async () => {
       canvasStore.canvas!.graph = graph
       return false
@@ -189,12 +169,7 @@ describe('useFocusNode', () => {
   })
 
   it('does not wait for animation frames when the graph is already active', async () => {
-    const graph = fromAny<LGraph, unknown>({ isRootGraph: true, nodes: [] })
-    const node = fromAny<LGraphNode, unknown>({
-      graph,
-      boundingRect: [1, 2, 3, 4]
-    })
-    graph.nodes.push(node)
+    const { graph, node } = createNode([1, 2, 3, 4])
     canvasStore.canvas!.graph = graph
     await useFocusNode().focusNodeInstance(node)
 
@@ -203,15 +178,10 @@ describe('useFocusNode', () => {
   })
 
   it('does not frame a node removed while navigation settles', async () => {
-    const graph = fromAny<LGraph, unknown>({ isRootGraph: false, nodes: [] })
-    const node = fromAny<LGraphNode, unknown>({
-      graph,
-      boundingRect: [1, 2, 3, 4]
-    })
-    graph.nodes.push(node)
+    const { graph, node } = createNode([1, 2, 3, 4])
     vi.mocked(navigationStore.navigateToGraph).mockImplementation(async () => {
       canvasStore.canvas!.graph = graph
-      graph.nodes.length = 0
+      graph.remove(node)
       return true
     })
 
@@ -221,12 +191,7 @@ describe('useFocusNode', () => {
   })
 
   it('does not frame when the canvas is torn down during navigation', async () => {
-    const graph = fromAny<LGraph, unknown>({ isRootGraph: false, nodes: [] })
-    const node = fromAny<LGraphNode, unknown>({
-      graph,
-      boundingRect: [1, 2, 3, 4]
-    })
-    graph.nodes.push(node)
+    const { node } = createNode([1, 2, 3, 4])
     const staleCanvas = canvasStore.canvas!
     vi.mocked(navigationStore.navigateToGraph).mockImplementation(async () => {
       canvasStore.canvas = null
@@ -242,16 +207,8 @@ describe('useFocusNode', () => {
   })
 
   it('does not frame when navigation settles on another graph', async () => {
-    const graph = fromAny<LGraph, unknown>({ isRootGraph: false, nodes: [] })
-    const otherGraph = fromAny<LGraph, unknown>({
-      isRootGraph: false,
-      nodes: []
-    })
-    const node = fromAny<LGraphNode, unknown>({
-      graph,
-      boundingRect: [1, 2, 3, 4]
-    })
-    graph.nodes.push(node)
+    const { node } = createNode([1, 2, 3, 4])
+    const otherGraph = new LGraph()
     vi.mocked(navigationStore.navigateToGraph).mockImplementation(async () => {
       canvasStore.canvas!.graph = otherGraph
       return true

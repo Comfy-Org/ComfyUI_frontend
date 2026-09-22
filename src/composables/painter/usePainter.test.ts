@@ -1,4 +1,4 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { useElementSize } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,6 +12,7 @@ import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 import { usePainter } from './usePainter'
 
@@ -84,6 +85,16 @@ function storedValue(name: string): unknown {
   return id ? useWidgetValueStore().getWidget(id)?.value : undefined
 }
 
+function stub2dContext(
+  canvas: HTMLCanvasElement,
+  context: CanvasRenderingContext2D
+): void {
+  Object.defineProperty(canvas, 'getContext', {
+    configurable: true,
+    value: vi.fn(() => context)
+  })
+}
+
 type PainterResult = ReturnType<typeof usePainter>
 
 /**
@@ -153,27 +164,21 @@ describe('usePainter', () => {
 
     it('resizes the canvas and preserves its content on external store writes', async () => {
       makePaintNode([{ name: 'width', type: 'number', value: 512 }])
-      const mainCtx = fromPartial<CanvasRenderingContext2D>({
+      const mainCtx = createMockCanvasRenderingContext2D({
         drawImage: vi.fn()
       })
-      const fakeCanvas = fromPartial<HTMLCanvasElement>({
-        width: 4,
-        height: 4,
-        getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(
-          () => mainCtx
-        )
-      })
+      const fakeCanvas = document.createElement('canvas')
+      fakeCanvas.width = 4
+      fakeCanvas.height = 4
+      stub2dContext(fakeCanvas, mainCtx)
       const { painter, canvasEl } = mountPainter()
       canvasEl.value = fakeCanvas
 
-      const tmpCtx = fromPartial<CanvasRenderingContext2D>({
+      const tmpCtx = createMockCanvasRenderingContext2D({
         drawImage: vi.fn()
       })
-      const tmpCanvas = fromPartial<HTMLCanvasElement>({
-        getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(
-          () => tmpCtx
-        )
-      })
+      const tmpCanvas = document.createElement('canvas')
+      stub2dContext(tmpCanvas, tmpCtx)
       const createElement = vi
         .spyOn(document, 'createElement')
         .mockReturnValue(tmpCanvas)
@@ -337,14 +342,13 @@ describe('usePainter', () => {
 
       const { painter } = mountPainter()
 
-      const fakeEvent = fromAny<Event, unknown>({
-        target: {
-          naturalWidth: 1920,
-          naturalHeight: 1080
-        }
+      const image = document.createElement('img')
+      Object.defineProperties(image, {
+        naturalWidth: { value: 1920 },
+        naturalHeight: { value: 1080 }
       })
-
-      painter.handleInputImageLoad(fakeEvent)
+      image.addEventListener('load', painter.handleInputImageLoad)
+      image.dispatchEvent(new Event('load'))
 
       expect(painter.canvasWidth.value).toBe(1920)
       expect(painter.canvasHeight.value).toBe(1080)
@@ -492,12 +496,7 @@ describe('usePainter', () => {
       makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
       vi.mocked(api.fetchApi).mockResolvedValueOnce(
-        fromAny<Response, unknown>({
-          status: 200,
-          json: async () => {
-            throw new SyntaxError('Unexpected token')
-          }
-        })
+        new Response('not valid JSON', { status: 200 })
       )
 
       const fakeCanvas = fromPartial<HTMLCanvasElement>({
@@ -527,13 +526,13 @@ describe('usePainter', () => {
     it('clears the cached upload reference when the user clears the canvas', () => {
       makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
-      const fakeCanvas = fromPartial<HTMLCanvasElement>({
-        width: 4,
-        height: 4,
-        getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(() =>
-          fromPartial<CanvasRenderingContext2D>({ clearRect: vi.fn() })
-        )
-      })
+      const fakeCanvas = document.createElement('canvas')
+      fakeCanvas.width = 4
+      fakeCanvas.height = 4
+      stub2dContext(
+        fakeCanvas,
+        createMockCanvasRenderingContext2D({ clearRect: vi.fn() })
+      )
 
       const { painter, canvasEl, modelValue } = mountPainter(
         toNodeId('test-node'),
@@ -619,14 +618,10 @@ describe('usePainter', () => {
       const { painter } = mountPainter()
 
       const mockReleasePointerCapture = vi.fn()
-      const event = fromAny<PointerEvent, unknown>({
-        button: 2,
-        target: {
-          releasePointerCapture: mockReleasePointerCapture
-        }
-      })
-
-      painter.handlePointerUp(event)
+      const target = document.createElement('canvas')
+      target.releasePointerCapture = mockReleasePointerCapture
+      target.addEventListener('pointerup', painter.handlePointerUp)
+      target.dispatchEvent(new PointerEvent('pointerup', { button: 2 }))
 
       expect(mockReleasePointerCapture).not.toHaveBeenCalled()
     })
@@ -634,17 +629,17 @@ describe('usePainter', () => {
     it('tolerates releasePointerCapture throwing for synthetic events', () => {
       const { painter } = mountPainter()
 
-      const event = fromAny<PointerEvent, unknown>({
-        button: 0,
-        pointerId: 1,
-        target: {
-          releasePointerCapture: vi.fn(() => {
-            throw new DOMException('NotFoundError')
-          })
-        }
+      const target = document.createElement('canvas')
+      target.releasePointerCapture = vi.fn(() => {
+        throw new DOMException('NotFoundError')
       })
+      target.addEventListener('pointerup', painter.handlePointerUp)
 
-      expect(() => painter.handlePointerUp(event)).not.toThrow()
+      expect(() =>
+        target.dispatchEvent(
+          new PointerEvent('pointerup', { button: 0, pointerId: 1 })
+        )
+      ).not.toThrow()
     })
   })
 })

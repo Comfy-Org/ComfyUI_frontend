@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '../LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { useTelemetry } from '@/platform/telemetry'
 import type { NamedValuesShadowDiffResult } from './namedValuesShadowDiff'
@@ -19,9 +19,9 @@ vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
 type NodeHooks = Partial<Pick<LGraphNode, 'onSerialize' | 'onConfigure'>>
 
 function fakeNode(className: string, hooks: NodeHooks = {}): LGraphNode {
-  class FakeNode {}
+  class FakeNode extends LGraphNode {}
   Object.defineProperty(FakeNode, 'name', { value: className })
-  return Object.assign(new FakeNode(), hooks) as unknown as LGraphNode
+  return Object.assign(new FakeNode('Test'), hooks)
 }
 
 describe('reportNamedValuesShadowDiff', () => {

@@ -1,6 +1,4 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen, within } from '@testing-library/vue'
-import type { DetachedWindowAPI } from 'happy-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -8,6 +6,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { setHappyDomViewport } from '@/utils/__tests__/happyDomTestUtils'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import LinearView from './LinearView.vue'
@@ -44,13 +43,7 @@ vi.mock(import('@/composables/useStablePrimeVueSplitterSizer'), () => ({
 }))
 
 function setViewport(width: number) {
-  const happyDOM = fromAny<{ happyDOM?: DetachedWindowAPI }, unknown>(
-    window
-  ).happyDOM
-  if (!happyDOM) {
-    throw new Error('window.happyDOM is unavailable to set viewport')
-  }
-  happyDOM.setViewport({ width, height: 800 })
+  setHappyDomViewport({ width, height: 800 })
 }
 
 const DESKTOP_WIDTH = 1280

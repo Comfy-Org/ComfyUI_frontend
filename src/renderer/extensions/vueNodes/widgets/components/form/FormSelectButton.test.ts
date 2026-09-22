@@ -1,4 +1,3 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -507,12 +506,12 @@ describe('FormSelectButton Core Component', () => {
     })
 
     it('handles mixed type options safely', () => {
-      const mixedOptions: unknown[] = [
+      const mixedOptions: SelectOption[] = [
         'string',
         123,
         { label: 'Object', value: 'obj' }
       ]
-      renderComponent('123', fromAny<SelectOption[], unknown>(mixedOptions))
+      renderComponent('123', mixedOptions)
 
       const buttons = screen.getAllByRole('button')
       expect(buttons).toHaveLength(3)

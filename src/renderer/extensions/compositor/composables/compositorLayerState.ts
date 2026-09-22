@@ -46,7 +46,7 @@ export interface CompositorBBox {
   y: number
   width: number
   height: number
-  name?: string | null
+  name?: unknown
   rotation?: number
   visible?: boolean
   opacity?: number

@@ -1,15 +1,17 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, toRaw, watch } from 'vue'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
-import type { CameraState } from '@/extensions/core/load3d/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type {
+  CameraState,
+  CameraType,
+  Model3DTransform
+} from '@/extensions/core/load3d/interfaces'
+import type { NodeProperty } from '@/types/nodeState'
 
-function makeNode(props: Record<string, unknown> = {}): LGraphNode {
-  return fromAny<LGraphNode, unknown>({ properties: { ...props } })
+function makeNode(props: Record<string, NodeProperty | undefined> = {}) {
+  return { properties: { ...props } }
 }
 
 const baseCameraState: CameraState = {
@@ -22,19 +24,27 @@ const baseCameraState: CameraState = {
 function makeLoad3d({
   cameraType = 'perspective',
   fov = 35,
-  modelInfo = { transform: { position: [0, 0, 0] } }
+  modelInfo = makeModelInfo()
 }: {
-  cameraType?: string
+  cameraType?: CameraType
   fov?: number
-  modelInfo?: unknown
+  modelInfo?: Model3DTransform | null
 } = {}) {
-  return fromAny<Load3d, unknown>({
+  return {
     getCurrentCameraType: vi.fn(() => cameraType),
     cameraManager: { perspectiveCamera: { fov } },
     getCameraState: vi.fn(() => baseCameraState),
     stopRecording: vi.fn(),
     getModelInfo: vi.fn(() => modelInfo)
-  })
+  }
+}
+
+function makeModelInfo(position = { x: 0, y: 0, z: 0 }): Model3DTransform {
+  return {
+    position,
+    quaternion: { x: 0, y: 0, z: 0, w: 1 },
+    scale: { x: 1, y: 1, z: 1 }
+  }
 }
 
 describe('snapshotLoad3dState', () => {
@@ -72,7 +82,7 @@ describe('snapshotLoad3dState', () => {
   })
 
   it('returns model_3d_info as a single-element list when a model is loaded', () => {
-    const info = { transform: { position: [1, 2, 3] } }
+    const info = makeModelInfo({ x: 1, y: 2, z: 3 })
     const result = snapshotLoad3dState(
       makeNode(),
       makeLoad3d({ modelInfo: info })

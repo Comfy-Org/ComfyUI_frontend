@@ -101,13 +101,15 @@ class MockOffscreenCanvas {
 }
 
 function createMockCanvas(context: unknown = { drawImage: vi.fn() }) {
-  return fromAny<HTMLCanvasElement, unknown>({
-    width: 0,
-    height: 0,
-    getContext: () => context,
-    toBlob: (callback: BlobCallback) =>
-      callback(new Blob(['thumb'], { type: 'image/jpeg' }))
-  })
+  const canvas = document.createElementNS(
+    'http://www.w3.org/1999/xhtml',
+    'canvas'
+  )
+  if (!(canvas instanceof HTMLCanvasElement)) throw new Error('Expected canvas')
+  canvas.getContext = vi.fn().mockReturnValue(context)
+  canvas.toBlob = (callback) =>
+    callback(new Blob(['thumb'], { type: 'image/jpeg' }))
+  return canvas
 }
 
 function installVideoMocks({

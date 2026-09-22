@@ -1,20 +1,19 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { mergeCustomNodesI18n, resolveNodeDefText } from '@/i18n'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { api } from '@/scripts/api'
-import type { ComfyApi } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 
-vi.mock(import('@/scripts/api'), () => ({
-  api: fromPartial<ComfyApi>({
-    getNodeDefs: vi.fn(),
+const getNodeDefs = vi.hoisted(() => vi.fn<() => Promise<unknown>>())
+
+vi.mock<unknown>(import('@/scripts/api'), () => ({
+  api: {
+    getNodeDefs,
     apiURL: vi.fn((path: string) => path),
     addEventListener: vi.fn(),
     getUserData: vi.fn(),
     storeUserData: vi.fn()
-  })
+  }
 }))
 
 function nodeDef(overrides: Partial<ComfyNodeDefV1>): ComfyNodeDefV1 {
@@ -33,7 +32,7 @@ function nodeDef(overrides: Partial<ComfyNodeDefV1>): ComfyNodeDefV1 {
 
 function mockDefs(...defs: ComfyNodeDefV1[]) {
   const record = Object.fromEntries(defs.map((def) => [def.name, def]))
-  vi.mocked(api.getNodeDefs).mockResolvedValue(record)
+  getNodeDefs.mockResolvedValue(record)
   return record
 }
 
@@ -96,9 +95,7 @@ describe('ComfyApp.getNodeDefs', () => {
   test.for([[null], [undefined], ['a string'], [['x']], [42], [true]])(
     'tolerates a node-def response of %j',
     async ([response]) => {
-      vi.mocked(api.getNodeDefs).mockResolvedValue(
-        fromAny<Record<string, ComfyNodeDefV1>, unknown>(response)
-      )
+      getNodeDefs.mockResolvedValue(response)
 
       await expect(comfyApp.getNodeDefs()).resolves.toEqual({})
     }
@@ -128,15 +125,13 @@ describe('ComfyApp.getNodeDefs', () => {
   })
 
   test('discards malformed entries inside an otherwise valid response', async () => {
-    vi.mocked(api.getNodeDefs).mockResolvedValue(
-      fromAny<Record<string, ComfyNodeDefV1>, unknown>({
-        TestNode: nodeDef({ display_name: 'Good Node' }),
-        NullEntry: null,
-        NumericCategory: { name: 'NumericCategory', category: 1 },
-        NamelessEntry: { category: 'test' },
-        StringEntry: 'nope'
-      })
-    )
+    getNodeDefs.mockResolvedValue({
+      TestNode: nodeDef({ display_name: 'Good Node' }),
+      NullEntry: null,
+      NumericCategory: { name: 'NumericCategory', category: 1 },
+      NamelessEntry: { category: 'test' },
+      StringEntry: 'nope'
+    })
 
     const result = await comfyApp.getNodeDefs()
 

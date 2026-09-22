@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { toNodeId } from '@/types/nodeId'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 vi.mock(import('@/scripts/app'))
@@ -23,12 +24,14 @@ vi.mock<unknown>(
 import { useExecutionErrorStore } from './executionErrorStore'
 
 function makeNodeWithPreview(id: number): LGraphNode {
-  return {
-    id,
-    imgs: [{ src: 'blob:mask-edited' }],
-    videoContainer: undefined,
-    graph: { setDirtyCanvas: vi.fn() }
-  } as unknown as LGraphNode
+  const graph = new LGraph()
+  const node = new LGraphNode('Test')
+  node.id = toNodeId(id)
+  const preview = document.createElement('img')
+  preview.src = 'blob:mask-edited'
+  node.imgs = [preview]
+  graph.add(node)
+  return node
 }
 
 describe('FE-230 regression — workflow-load missing-media flagging must not wipe node previews', () => {
@@ -57,7 +60,7 @@ describe('FE-230 regression — workflow-load missing-media flagging must not wi
     await nextTick()
     await nextTick()
 
-    expect(node.imgs).toEqual([{ src: 'blob:mask-edited' }])
+    expect(node.imgs?.map((image) => image.src)).toEqual(['blob:mask-edited'])
     expect(useNodeOutputStore().removeNodeOutputs).not.toHaveBeenCalled()
   })
 })

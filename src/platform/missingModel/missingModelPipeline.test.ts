@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import type { ComfyApp } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from './missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -6,8 +7,12 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LGraphEventMode
+} from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type {
@@ -120,8 +125,10 @@ vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
   fetchModelMetadata: (url: string) => mockHandles.fetchModelMetadata(url)
 }))
 
-function createWorkflowGraphData(): ComfyWorkflowJSON {
+function createWorkflowGraphData() {
   return {
+    id: 'test-graph',
+    revision: 0,
     last_node_id: 0,
     last_link_id: 0,
     nodes: [],
@@ -130,13 +137,13 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
     config: {},
     extra: {},
     version: 0.4
-  }
+  } satisfies ComfyWorkflowJSON & ISerialisedGraph
 }
 
 function createGraph(graphData = createWorkflowGraphData()): LGraph {
-  return {
-    serialize: vi.fn(() => graphData)
-  } as unknown as LGraph
+  const graph = new LGraph()
+  vi.spyOn(graph, 'serialize').mockReturnValue(graphData)
+  return graph
 }
 
 function deferModelVerification() {
@@ -647,10 +654,14 @@ describe('missingModelPipeline', () => {
         isAssetSupported: false
       } satisfies MissingModelCandidate
       mockHandles.state.enrichedCandidates = [confirmedCandidate]
-      const widget = { name: 'ckpt_name', value: 'missing.safetensors' }
-      vi.mocked(graphTraversal.getNodeByExecutionId).mockReturnValue({
-        widgets: [widget]
-      } as unknown as LGraphNode)
+      const node = new LGraphNode('Checkpoint loader')
+      const widget = node.addWidget(
+        'text',
+        'ckpt_name',
+        'missing.safetensors',
+        () => undefined
+      )
+      vi.mocked(graphTraversal.getNodeByExecutionId).mockReturnValue(node)
       let resolveFolderPaths: (paths: Record<string, string[]>) => void = () =>
         undefined
       mockHandles.api.getFolderPaths.mockReturnValueOnce(

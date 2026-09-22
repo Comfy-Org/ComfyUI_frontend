@@ -55,6 +55,16 @@ type ConvertibleWidget = IBaseWidget & {
   origComputeSize?: IBaseWidget['computeSize']
 }
 
+type ExtensionNode = Omit<
+  LGraphNode,
+  'flags' | 'inputs' | 'outputs' | 'widgets'
+> & {
+  flags?: LGraphNode['flags'] | null
+  inputs?: LGraphNode['inputs'] | null
+  outputs?: LGraphNode['outputs'] | null
+  widgets?: LGraphNode['widgets'] | null
+}
+
 interface SigNode {
   id: unknown
   type: unknown
@@ -175,7 +185,8 @@ async function installGlobals() {
 }
 
 function signature(graph: LGraph, store: WidgetValueStore | undefined) {
-  const nodes = [...graph._nodes]
+  const extensionNodes: ExtensionNode[] = graph._nodes
+  const nodes = [...extensionNodes]
     .sort((a, b) => Number(a.id) - Number(b.id))
     .map((n) => {
       // Vue-renderer observable: the widget rows the store would draw, beside
@@ -199,19 +210,19 @@ function signature(graph: LGraph, store: WidgetValueStore | undefined) {
         id: n.id,
         type: n.type,
         mode: n.mode,
-        collapsed: !!n.flags.collapsed,
+        collapsed: !!n.flags?.collapsed,
         widgets: n.widgets?.length ?? 0,
         wn: (n.widgets ?? []).map((w) => `${w.name}=${w.type}`).join(','),
         r,
         st,
-        in: n.inputs.map((_, i: number) => {
+        in: (n.inputs ?? []).map((_, i: number) => {
           try {
             return n.isInputConnected(i) ? 1 : 0
           } catch {
             return 'e'
           }
         }),
-        out: n.outputs.map((_, i: number) => {
+        out: (n.outputs ?? []).map((_, i: number) => {
           try {
             return n.isOutputConnected(i) ? 1 : 0
           } catch {
@@ -622,13 +633,14 @@ export async function runPack(
       }
       n.pos = [1200, 100]
       graph.add(n)
+      const extensionNode: ExtensionNode = n
       const parts = [
-        `in=${n.inputs.length}`,
-        `out=${n.outputs.length}`,
-        `w=${n.widgets?.length ?? 0}`
+        `in=${extensionNode.inputs?.length ?? 0}`,
+        `out=${extensionNode.outputs?.length ?? 0}`,
+        `w=${extensionNode.widgets?.length ?? 0}`
       ]
       // try a wildcard-friendly connection into its first input
-      if (n.inputs.length) {
+      if (extensionNode.inputs?.length) {
         const ck = byType('CheckpointLoaderSimple')
         try {
           const r = ck?.connect(0, n, 0)
@@ -664,7 +676,8 @@ export async function runPack(
   })
   await op('graphToPrompt', async () => {
     const p = await app.graphToPrompt(graph)
-    row.prompt = S(p.output)
+    const output: unknown = p.output
+    row.prompt = S(output ?? {})
   })
 
   row.ops = ops

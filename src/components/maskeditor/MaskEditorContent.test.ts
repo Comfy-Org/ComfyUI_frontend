@@ -1,9 +1,8 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import MaskEditorContent from '@/components/maskeditor/MaskEditorContent.vue'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
@@ -103,9 +102,7 @@ class MockResizeObserver {
   }
 }
 
-// `node` only flows into mocked `loader.loadFromNode`, so a typed sentinel
-// with a stable identity is enough — we never read its fields.
-const fakeNode = fromAny<LGraphNode, unknown>({ id: 1, title: 'test-node' })
+const fakeNode = new LGraphNode('test-node')
 
 const renderContent = () =>
   render(MaskEditorContent, { props: { node: fakeNode } })
