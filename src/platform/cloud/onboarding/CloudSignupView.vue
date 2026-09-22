@@ -18,7 +18,7 @@
       </RouterLink>
     </p>
 
-    <Message v-if="!isSecureContext" severity="warn" class="mt-4 w-full">
+    <Message v-if="!isSecureContext" severity="warning" class="mt-4 w-full">
       {{ t('auth.login.insecureContextWarning') }}
     </Message>
 
@@ -42,7 +42,7 @@
       </template>
 
       <template v-else>
-        <Message v-if="isFreeTierEnabled" severity="warn" class="w-full">
+        <Message v-if="isFreeTierEnabled" severity="warning" class="w-full">
           {{ t('auth.signup.emailNotEligibleForFreeTier') }}
         </Message>
 
@@ -57,7 +57,7 @@
         </div>
         <Message
           v-else-if="regionStatus === 'blocked'"
-          severity="warn"
+          severity="warning"
           class="w-full"
         >
           {{ t('auth.signup.regionRestrictionChina') }}
@@ -86,7 +86,6 @@
 </template>
 
 <script setup lang="ts">
-import Message from 'primevue/message'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
@@ -94,6 +93,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
+import Message from '@/components/ui/message/Message.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'

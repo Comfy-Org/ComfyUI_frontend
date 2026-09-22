@@ -28,6 +28,7 @@ import { toNodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { attachMintPortWiring } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { createPendingRevertRemoveNode } from '@/workbench/extensions/agent/crdt/pendingOpRevert'
+import { toRootGraphId } from '@/types/graphScopeId'
 
 function createNodeOp(graphId: string, id: string) {
   return {
@@ -104,7 +105,7 @@ describe('pending revert removal against the real layout store', () => {
     wiring = attachMintPortWiring({
       isEnabled: () => true,
       isDocBound: () => true,
-      boundRootGraphId: () => graphId,
+      boundRootGraphId: () => toRootGraphId(graphId),
       enqueue: (operations) => minted.push(...operations),
       layoutChanges: (listener) => layoutStore.onChange(listener),
       localActorPrefix: 'user-',

@@ -41,7 +41,7 @@ const WORKFLOW_ID = 'wf-1'
 // node from a custom-node pack) or a blueprint host with a promoted widget:
 // the class is absent from the pinned catalog, so its named widget values
 // cannot be projected and the add is rejected.
-it('surfaces a human add_node the doc host rejected instead of swallowing the result', () => {
+it('surfaces a human add_node the doc host rejected instead of swallowing the result', async () => {
   const previousSocket = api.socket
   const send = vi.fn<(frame: string) => void>()
   api.socket = fromPartial<WebSocket>({ readyState: WebSocket.OPEN, send })
@@ -87,6 +87,7 @@ it('surfaces a human add_node the doc host rejected instead of swallowing the re
       }
     }
   ])
+  await Promise.resolve()
   const { type, op_id } = sentOp(send.mock.calls[1][0])
   expect(type).toBe('doc_ops')
 

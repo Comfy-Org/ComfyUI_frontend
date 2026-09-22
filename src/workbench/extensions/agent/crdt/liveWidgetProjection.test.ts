@@ -52,11 +52,11 @@ function withMintWiring(
   const wiring = attachMintPortWiring({
     isEnabled: () => true,
     isDocBound: () => true,
-    boundRootGraphId: () => 'root',
     enqueue: (operations) => minted.push(...operations),
     layoutChanges: () => () => undefined,
     localActorPrefix: 'user-',
-    getGraph: () => graph
+    getGraph: () => graph,
+    boundRootGraphId: () => toRootGraphId(graph.id)
   })
   try {
     run(minted)

@@ -356,14 +356,15 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       linf: LLink | null | undefined
     ) {
       const input = this.inputs.at(slot)
-      if (contype !== LiteGraph.INPUT || !this.graph || !input) return
+      const { graph } = this
+      if (contype !== LiteGraph.INPUT || !graph || !input) return
       if (app.configuringGraph) return
       const [matchKey, matchGroup] = Object.entries(
         this.comfyDynamic.matchType
       ).find(([, group]) => input.name in group) ?? ['', undefined]
       if (!matchGroup) return
       if (iscon && linf) {
-        const { output, subgraphInput } = linf.resolve(this.graph)
+        const { output, subgraphInput } = linf.resolve(graph)
         const connectingType = (output ?? subgraphInput)?.type
         if (connectingType) linf.type = connectingType
       }
@@ -374,7 +375,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       const connectedTypes = groupInputs.map((inp) => {
         const link = this.getInputLink(this.inputs.indexOf(inp))
         if (!link) return '*'
-        const { output, subgraphInput } = link.resolve(this.graph!)
+        const { output, subgraphInput } = link.resolve(graph)
         return (output ?? subgraphInput)?.type ?? '*'
       })
       //An input slot can accept a connection that is
@@ -400,7 +401,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
         if (!(outputGroups?.[idx] == matchKey)) return
         changeOutputType(this, idx, outputType)
       })
-      this.graph.setDirtyCanvas(true, true)
+      graph.setDirtyCanvas(true, true)
     }
   )
 }

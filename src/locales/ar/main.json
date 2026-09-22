@@ -65,6 +65,7 @@
     "dismiss": "تجاهل",
     "downloadAssets": "تنزيل الأصول",
     "dragAndDropAssets": "اسحب الأصول وأفلتها هنا",
+    "editWhileWorking": "يمكنك متابعة التحرير أثناء عمله",
     "entryButton": "الوكيل",
     "feedbackCaption": "مشاركة الملاحظات",
     "focusNode": "إظهار على اللوحة",
@@ -99,6 +100,7 @@
       "selectNode": "تحديد عقدة"
     },
     "nodes": "العُقد",
+    "nodesAdded": "أضاف الوكيل عقدة واحدة إلى الرسم البياني | أضاف الوكيل {count} عُقد إلى الرسم البياني",
     "notHelpful": "غير مفيد",
     "openWorkflowTab": "فتح {name}",
     "otherOpenWorkflows": "مهام سير العمل المفتوحة الأخرى",
@@ -183,7 +185,9 @@
     "unavailableWorkflowReference": "{name} (غير متاح)",
     "unsavedWorkflow": "غير محفوظ",
     "untitledChat": "بلا عنوان",
+    "updatingGraph": "يقوم الوكيل بتحديث الرسم البياني",
     "uploading": "جارٍ الرفع",
+    "viewAddedNodes": "عرض العقدة | عرض العُقد",
     "worked": "اكتمل",
     "workedForMinutes": "عمل لمدة {minutes} د {seconds} ث",
     "workedForSeconds": "عمل لمدة {seconds} ثوانٍ",
@@ -2461,7 +2465,9 @@
     "cancelThisRun": "إلغاء هذا التشغيل",
     "deleteAllAssets": "حذف جميع الأصول من هذه الجلسة",
     "downloadAll": "تنزيل {count} من الأصول من عملية التشغيل هذه",
+    "dragAndDropAudio": "انقر للتصفح أو اسحب ملفًا صوتيًا",
     "dragAndDropImage": "اسحب وأسقط صورة",
+    "dragAndDropVideo": "انقر للتصفح أو اسحب مقطع فيديو",
     "emptyWorkflowExplanation": "سير العمل الخاص بك فارغ. تحتاج إلى بعض العقد أولاً لبدء بناء التطبيق.",
     "enterNodeGraph": "دخول مخطط العقد",
     "error": {
@@ -3103,6 +3109,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "العُقد المميّزة: {count}",
+    "label": "الخريطة المصغّرة",
     "nodeColors": "ألوان العقد",
     "renderBypassState": "عرض حالة التجاوز",
     "renderErrorState": "عرض حالة الخطأ",
@@ -4827,6 +4835,7 @@
   "toastMessages": {
     "a1111CoreNodesUnavailable": "تعذر تحميل سير العمل لأن تثبيت ComfyUI هذا يفتقد إلى العقد الأساسية. تحقق من أن الواجهة الخلفية بدأت بشكل صحيح.",
     "a1111EmbeddingsUnavailable": "تعذر تحميل التضمينات من الخادم. تم استيراد سير العمل، لكن تُركت أسماء التضمينات كنص عادي.",
+    "assetDropFailed": "تعذر تحميل الأصل المُفلت",
     "cannotCreateSubgraph": "لا يمكن إنشاء مخطط فرعي",
     "couldNotDetermineFileType": "تعذر تحديد نوع الملف",
     "dropFileError": "غير قادر على معالجة العنصر المسقط: {error}",
