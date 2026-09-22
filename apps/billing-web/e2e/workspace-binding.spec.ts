@@ -1,7 +1,7 @@
 import { E2E_USER } from './fixtures/env'
 import { entryPath, expect, test } from './fixtures/test'
 
-test('an entry link naming a workspace mints for it and names it in the shell', async ({
+test('an entry link naming a workspace mints for it, names it in the shell, and returns into it', async ({
   page,
   cloud,
   signIn
@@ -22,6 +22,12 @@ test('an entry link naming a workspace mints for it and names it in the shell', 
   await signIn(subscription)
 
   await expect(page.getByText('Billing for Acme Team')).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: 'Return to ComfyUI' })
+  ).toHaveAttribute(
+    'href',
+    'https://testcloud.comfy.org/?workspace=ws_team_e2e'
+  )
   const mint = cloud.requests.find((request) => request.path === '/auth/token')
   expect(mint?.body).toStrictEqual({ workspace_id: 'ws_team_e2e' })
 })
