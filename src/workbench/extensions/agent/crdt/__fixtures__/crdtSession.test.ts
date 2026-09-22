@@ -79,6 +79,8 @@ describe('runCleanupsInReverse', () => {
     const cleanups = [vi.fn(), vi.fn(), vi.fn()]
 
     expect(() => runCleanupsInReverse(cleanups)).not.toThrow()
-    for (const cleanup of cleanups) expect(cleanup).toHaveBeenCalledOnce()
+    expect(cleanups.map((cleanup) => cleanup.mock.calls.length)).toEqual([
+      1, 1, 1
+    ])
   })
 })

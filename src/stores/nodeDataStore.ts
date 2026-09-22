@@ -132,6 +132,39 @@ function mergeSlotsByName<Slot extends { name: string }>(
 }
 
 /**
+ * Rewrites `existing` in place to hold exactly `incoming`, in `incoming`'s
+ * own order: a slot `incoming` still names by name keeps its live identity
+ * (patched with `incoming`'s fields), and one it drops is removed outright.
+ * Unlike {@link mergeSlotsByName}'s incremental, append-only merge -- which
+ * must never drop a slot a live node still has just because one particular
+ * sync payload omitted it -- this is for a caller whose own `incoming` list
+ * is already the authoritative final shape, e.g. a document reconcile that
+ * has already decided the exact slot set the live node should end up with.
+ */
+function replaceSlotsByName<Slot extends { name: string }>(
+  existing: Slot[],
+  incoming: readonly Slot[],
+  patch: (target: Slot, incoming: Slot) => void,
+  copy: (incoming: Slot) => Slot
+): void {
+  const used = new Set<number>()
+  const next = incoming.map((incomingSlot) => {
+    const index = existing.findIndex(
+      (slot, candidate) =>
+        !used.has(candidate) && slot.name === incomingSlot.name
+    )
+    if (index === -1) return copy(incomingSlot)
+    used.add(index)
+    const target = existing[index]
+    patch(target, incomingSlot)
+    return target
+  })
+  const length = next.length
+  for (let i = 0; i < length; i++) existing[i] = next[i]
+  existing.length = length
+}
+
+/**
  * One {@link NodeState} per node in a root-flat, owner-indexed bucket.
  * See docs/architecture/node-data-store.md.
  */
@@ -260,6 +293,37 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     return true
   }
 
+  /**
+   * As {@link updateNodeSlots}, but `slots` replaces the node's input and
+   * output lists exactly -- in `slots`' own order, dropping any slot it
+   * does not name -- rather than merging into them additively. For a
+   * caller (e.g. an agent CRDT reconcile) whose own `slots` is already the
+   * document-authoritative final shape, so a slot it drops is a real
+   * removal, not a live edit this store must not clobber.
+   */
+  function replaceNodeSlots(
+    graphScope: GraphScope,
+    nodeId: NodeId,
+    slots: Pick<NodeState, 'inputs' | 'outputs'>,
+    _context?: RemoteMutationContext
+  ): boolean {
+    const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
+    if (!state || state.graphId !== graphScope.owningGraphId) return false
+    replaceSlotsByName(
+      state.inputs,
+      slots.inputs,
+      patchInputSlot,
+      copyInputSlot
+    )
+    replaceSlotsByName(
+      state.outputs,
+      slots.outputs,
+      patchOutputSlot,
+      copyOutputSlot
+    )
+    return true
+  }
+
   function updateNode(
     graphScope: GraphScope,
     nodeId: NodeId,
@@ -364,6 +428,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     getNode,
     ownsNode,
     registerNode,
+    replaceNodeSlots,
     updateNode,
     updateNodeFields,
     updateNodeSlots

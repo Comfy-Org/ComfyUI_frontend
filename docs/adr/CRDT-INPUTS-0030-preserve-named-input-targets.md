@@ -44,7 +44,10 @@ The current interim implementation applies it at two boundaries:
   names the document named rather than the indexes it used.
 - Incoming reconcile and connect resolve the document input name against current
   live inputs. A live-only input (one no document occurrence matches) is
-  tolerated, and the live list otherwise wins, only when it classifies as an
+  tolerated, and the live list otherwise wins, in two cases: it is a
+  widget-promoted input slot (`input.widget` is set), since the wire format
+  carries that value in `widgets_values` and never as a named input, so no
+  document snapshot can list or drop one either way; or it classifies as an
   autogrow group member — via a live query answer, this follower's own
   remembered answer, the node type's static `COMFY_AUTOGROW_V3` definition, or
   the name-shape heuristic, in that order — and, unless the caller opts into
@@ -110,10 +113,10 @@ cannot resurrect it.
   back. That corruption is tracked and reproduced separately at #18332.
 - Reconcile semantics change for **every** node whose live inputs differ from the
   document's, not only autogrow nodes. A live-only slot persists only when it
-  classifies as an autogrow group member (see Decision); this condition does
-  not prove that autogrow caused the difference, and the presence of every
-  document name in the live list is not on its own enough to retain a
-  live-only slot that fails classification. Otherwise, the document's list and
+  is widget-promoted or classifies as an autogrow group member (see
+  Decision); neither condition proves the document omitted it on purpose,
+  and the presence of every document name in the live list is not on its own
+  enough to retain a live-only slot that fails both. Otherwise, the document's list and
   order replace the live list, so local-only slots are removed rather than
   preserved alongside appended document inputs.
 - A connect naming an input that cannot be placed is rejected with a diagnostic

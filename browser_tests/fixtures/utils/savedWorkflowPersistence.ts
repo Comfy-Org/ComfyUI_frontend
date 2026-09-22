@@ -9,12 +9,13 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
  * Captures every workflow save under `**\/api/userdata/*`, replays the exact
  * saved bytes back on a matching GET, reports the saved file in the
  * `**\/api/userdata?dir=workflows*` listing, and lists the most recently saved
- * workflow under `**\/api/workflows?*` -- the save/reopen round trip
- * `AgentConversationHarness.persistSavedWorkflow` and
- * `agentWorkflowSelectionFixture` already own. Shared here instead of a third
- * hand-rolled copy, so a spec that needs a real "reopen and see the persisted
- * content, not a draft" round trip composes this rather than re-implementing
- * it.
+ * workflow under `**\/api/workflows?*`, for the save/reopen round trip
+ * `AgentConversationHarness.persistSavedWorkflow` needs. This is a separate
+ * fake from `agentWorkflowSelectionFixture`'s own userdata mocking (which
+ * keeps its own listing, GET/POST maps and lifecycle, and differs from this
+ * one on missing-GET and deferred-save behavior) rather than a shared core
+ * the two compose -- use this one for a spec that needs a real "reopen and
+ * see the persisted content, not a draft" round trip.
  *
  * The listing is not optional. `workflowStore`'s `syncEntities` pass treats it
  * as the authority on which workflows exist: a saved path missing from it is

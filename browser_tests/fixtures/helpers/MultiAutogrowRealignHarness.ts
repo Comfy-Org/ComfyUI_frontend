@@ -315,7 +315,9 @@ export class MultiAutogrowRealignHarness {
   private readLinkTargets() {
     return this.page.evaluate(
       (linkIds) => {
-        const graph = window.app!.graph
+        const app = window.app
+        if (!app) throw new Error('window.app is not available')
+        const graph = app.graph
         return linkIds.map((id) => {
           const link = graph.links.get(id)
           if (!link) return undefined
@@ -334,8 +336,11 @@ export class MultiAutogrowRealignHarness {
    */
   private resolveInputSlotIndex(name: string) {
     return this.page.evaluate(
-      ({ nodeId, name }) =>
-        window.app!.graph.getNodeById(nodeId)?.findInputSlot(name) ?? -1,
+      ({ nodeId, name }) => {
+        const app = window.app
+        if (!app) throw new Error('window.app is not available')
+        return app.graph.getNodeById(nodeId)?.findInputSlot(name) ?? -1
+      },
       { nodeId: toNodeId(TARGET_NODE_ID), name }
     )
   }
@@ -449,9 +454,9 @@ export class MultiAutogrowRealignHarness {
   }
 
   /**
-   * Saves through the same round trip a user's Ctrl+S takes and returns the
-   * exact bytes POSTed, so a caller can assert the serializer named every
-   * scalar and link correctly independent of what the reopen reads back.
+   * Saves through the real Save As UI and returns the exact bytes POSTed, so
+   * a caller can assert the serializer named every scalar and link correctly
+   * independent of what the reopen reads back.
    */
   async saveAndReadPostedGraph(): Promise<{
     widgetValues: ParsedSavedNode['widgets_values'] | undefined
