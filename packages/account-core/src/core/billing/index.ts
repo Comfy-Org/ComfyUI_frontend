@@ -54,6 +54,16 @@ export type {
 } from './credits.js'
 export { CREDITS_ROUTE, createCreditsReader } from './credits.js'
 export type {
+  BillingEvent,
+  BillingEventsData,
+  BillingEventsReader,
+  BillingEventsReaderOptions,
+  BillingEventsReadOptions,
+  BillingEventsScope,
+  BillingEventsSnapshot
+} from './events.js'
+export { BILLING_EVENTS_ROUTE, createBillingEventsReader } from './events.js'
+export type {
   BillingPlansData,
   PlansReadOptions,
   PlansReader,
@@ -94,12 +104,15 @@ export type {
   BillingOperationServerPhase,
   BillingOperationState,
   BillingPresentation,
+  BillingPresentationState,
   BillingRecoveryAction,
   EmbeddedChallenge,
   FailedBillingOperation,
+  HostedBillingDestination,
   PendingBillingOperation
 } from './operationState.js'
 export {
+  isBlockedOnCustomerPhase,
   isTerminal,
   reduceBillingOperation,
   validateActionUrl

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ResultItem } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import type { api } from '@/scripts/api'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'

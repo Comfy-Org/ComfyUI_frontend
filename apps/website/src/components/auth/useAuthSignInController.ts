@@ -5,7 +5,6 @@
  * state and calls the returned commands; it holds no flow logic of its own.
  */
 import {
-  AUTH_TOAST_SUMMARIES,
   isFirebaseAuthErrorLike,
   severityForAuthError
 } from '@comfyorg/account-core/firebaseAuthError'
@@ -37,6 +36,7 @@ import {
 import type { WorkshopSessionUser } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import {
   captureAuthCompleted,
   captureAuthFailed,
@@ -212,7 +212,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     const severity = severityForAuthError(classification)
     addToast({
       severity,
-      summary: AUTH_TOAST_SUMMARIES[locale][severity],
+      summary: t(severity === 'warn' ? 'g.warning' : 'g.error', locale),
       detail: signInErrorMessage(classification, locale, hostname)
     })
   }

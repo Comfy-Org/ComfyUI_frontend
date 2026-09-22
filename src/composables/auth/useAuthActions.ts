@@ -36,7 +36,7 @@ import { usdToMicros } from '@/utils/formatUtil'
  * The key set is the app's, so a code added to main.json renders without the
  * package having to know it.
  */
-const localizedAuthErrorCopy = (): AuthErrorCopy => ({
+export const localizedAuthErrorCopy = (): AuthErrorCopy => ({
   ...Object.fromEntries(
     Object.keys(enMessages.auth.errors).map((key) => [
       key,

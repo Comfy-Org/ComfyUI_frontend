@@ -16,7 +16,6 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { flattenTree } from '@/utils/treeUtil'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 beforeEach(() => {
   useSettingStore().settingValues['Comfy.Workflow.WorkflowTabsPosition'] =
@@ -170,10 +169,6 @@ vi.mock<unknown>(
     default: { name: 'WorkflowTreeLeaf', template: '<div />', props: ['node'] }
   })
 )
-
-vi.mock<unknown>(import('@/components/ui/button/Button.vue'), () => ({
-  default: { name: 'Button', template: '<button><slot /></button>' }
-}))
 
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({

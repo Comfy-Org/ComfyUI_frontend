@@ -66,6 +66,7 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         label: t('footer.chatgptImage25', locale),
         href: routes.chatgptImage25
       },
+      { label: t('footer.qwenImage21', locale), href: routes.qwenImage21 },
       { label: t('footer.flux3', locale), href: routes.flux3 }
     ]
   },
@@ -129,25 +130,27 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         href: routes.affiliates
       }
     ]
+  },
+  {
+    title: t('footer.company', locale),
+    links: [
+      { label: t('footer.about', locale), href: routes.about },
+      { label: t('nav.careers', locale), href: routes.careers },
+      { label: t('nav.brand', locale), href: routes.brand },
+      {
+        label: t('footer.termsOfService', locale),
+        href: routes.termsOfService
+      },
+      { label: t('footer.enterpriseMsa', locale), href: routes.enterpriseMsa },
+      { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy },
+      {
+        label: t('footer.trustSafety', locale),
+        href: externalLinks.trustCenter,
+        external: true
+      }
+    ]
   }
 ]
-
-const companyColumn: { title: string; links: FooterLink[] } = {
-  title: t('footer.company', locale),
-  links: [
-    { label: t('footer.about', locale), href: routes.about },
-    { label: t('nav.careers', locale), href: routes.careers },
-    { label: t('nav.brand', locale), href: routes.brand },
-    { label: t('footer.termsOfService', locale), href: routes.termsOfService },
-    { label: t('footer.enterpriseMsa', locale), href: routes.enterpriseMsa },
-    { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy },
-    {
-      label: t('footer.trustSafety', locale),
-      href: externalLinks.trustCenter,
-      external: true
-    }
-  ]
-}
 
 const contactColumn: { title: string; links: FooterLink[] } = {
   title: t('footer.contact', locale),
@@ -183,9 +186,8 @@ const contactColumn: { title: string; links: FooterLink[] } = {
 
       <!-- Link columns -->
       <div class="flex flex-col gap-12 lg:row-span-2 lg:justify-between">
-        <!-- Mobile: 2×2 grid -->
-        <div class="flex flex-col gap-12 lg:hidden">
-          <div class="grid grid-cols-2 gap-12">
+        <div class="flex flex-col gap-12">
+          <div class="grid grid-cols-1 gap-12 lg:grid-cols-4">
             <FooterLinkColumn
               v-for="column in topColumns"
               :key="column.title"
@@ -193,31 +195,8 @@ const contactColumn: { title: string; links: FooterLink[] } = {
               :links="column.links"
             />
           </div>
-          <div class="grid grid-cols-2 gap-12">
-            <FooterLinkColumn
-              :title="companyColumn.title"
-              :links="companyColumn.links"
-            />
-            <FooterLinkColumn
-              :title="contactColumn.title"
-              :links="contactColumn.links"
-            />
-          </div>
-        </div>
 
-        <!-- Desktop: 4-col, Company+Contact merged -->
-        <div class="hidden grid-cols-4 gap-12 lg:grid">
-          <FooterLinkColumn
-            v-for="column in topColumns"
-            :key="column.title"
-            :title="column.title"
-            :links="column.links"
-          />
-          <div class="flex flex-col gap-10">
-            <FooterLinkColumn
-              :title="companyColumn.title"
-              :links="companyColumn.links"
-            />
+          <div class="grid grid-cols-1 gap-12">
             <FooterLinkColumn
               :title="contactColumn.title"
               :links="contactColumn.links"

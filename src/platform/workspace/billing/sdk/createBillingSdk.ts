@@ -1,11 +1,13 @@
 /**
  * The app's one composition of `@comfyorg/account-core/billing`: the session-backed
- * transport, the readers, the operation lifecycle, and the top-up command,
+ * transport, the readers, the operation lifecycle, and the payment commands,
  * wired once over ports the host supplies. Everything browser-bound (storage,
  * the payment-provider script, the document listeners) stays with the caller;
  * this module only assembles.
  */
 import type {
+  BillingCommands,
+  BillingEventsReader,
   BillingOperationLifecycle,
   BillingOperationPointerStorage,
   BillingOperationTelemetryEvent,
@@ -15,11 +17,14 @@ import type {
   CreditsReader,
   EmbeddedChallengeOutcome,
   EmbeddedChallengePort,
+  HostedBillingDestination,
   PaymentMethodsReader,
   PlansReader,
   TopupCommand
 } from '@comfyorg/account-core/billing'
 import {
+  createBillingCommands,
+  createBillingEventsReader,
   createBillingOperationLifecycle,
   createBillingStatusReader,
   createCapabilitiesReader,
@@ -39,6 +44,8 @@ export interface BillingSdkOptions {
   readonly workspaceId: () => string | undefined
   readonly pointerStorage?: BillingOperationPointerStorage
   readonly embeddedCheckoutAvailable: () => boolean
+  /** Which origin serves a hosted page. */
+  readonly hostedDestination: () => HostedBillingDestination
   readonly onTelemetry: (event: BillingOperationTelemetryEvent) => void
   /** The payment-provider port, loaded on first use; undefined or a rejection when it cannot load. */
   readonly challengePort: () => Promise<EmbeddedChallengePort | undefined>
@@ -52,7 +59,9 @@ export interface BillingSdk {
   readonly capabilities: CapabilitiesReader
   readonly plans: PlansReader
   readonly paymentMethods: PaymentMethodsReader
+  readonly events: BillingEventsReader
   readonly topup: TopupCommand
+  readonly commands: BillingCommands
   readonly driveChallenge: (
     operationId: string
   ) => Promise<EmbeddedChallengeOutcome>
@@ -71,6 +80,7 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     workspaceId,
     pointerStorage,
     embeddedCheckoutAvailable,
+    hostedDestination,
     onTelemetry,
     challengePort,
     fetchImpl
@@ -88,17 +98,26 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
   const capabilities = createCapabilitiesReader({ transport, scopeSource })
   const plans = createPlansReader({ transport, scopeSource })
   const paymentMethods = createPaymentMethodsReader({ transport, scopeSource })
+  const events = createBillingEventsReader({ transport, scopeSource })
   const lifecycle = createBillingOperationLifecycle({
     transport,
     scopeSource,
     statusReader: status,
     ...(pointerStorage === undefined ? {} : { pointerStorage }),
     embeddedCheckoutAvailable,
+    hostedDestination,
     onTelemetry
   })
   const topup = createTopupCommand({
     transport,
     lifecycle,
+    capabilities,
+    credits
+  })
+  const commands = createBillingCommands({
+    transport,
+    lifecycle,
+    statusReader: status,
     capabilities,
     credits
   })
@@ -110,7 +129,9 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
     capabilities,
     plans,
     paymentMethods,
+    events,
     topup,
+    commands,
     driveChallenge: async (operationId) =>
       driveEmbeddedChallenge(
         lifecycle,
@@ -127,6 +148,7 @@ export function createBillingSdk(options: BillingSdkOptions): BillingSdk {
       capabilities.dispose()
       plans.dispose()
       paymentMethods.dispose()
+      events.dispose()
     }
   }
 }

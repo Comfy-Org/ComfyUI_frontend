@@ -1,5 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
@@ -17,12 +19,7 @@ vi.mock(import('@/platform/surveys/openTypeformDialog'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-const userEmail = vi.hoisted((): { value: string | undefined } => ({
-  value: undefined
-}))
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({ userEmail })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true,
@@ -30,10 +27,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 describe('openFeedbackDialog', () => {
-  beforeEach(() => {
-    userEmail.value = undefined
-  })
-
   it('opens the feedback form tagged with distribution and source', () => {
     openFeedbackDialog('action-bar')
 
@@ -46,7 +39,7 @@ describe('openFeedbackDialog', () => {
   })
 
   it('includes the logged-in user email as a hidden field', () => {
-    userEmail.value = 'user@example.com'
+    useCurrentUser().userEmail = computed(() => 'user@example.com')
 
     openFeedbackDialog('action-bar')
 
