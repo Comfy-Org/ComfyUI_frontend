@@ -126,6 +126,22 @@ describe('LGraph Serialisation', () => {
     expect(mockReportError).not.toHaveBeenCalled()
   })
 
+  test('serialises stored state when a default adapter has a duplicate id', ({
+    expect
+  }) => {
+    const graph = new LGraph()
+    const registered = new LGraphNode('Registered')
+    graph.add(registered)
+    const impostor = new LGraphNode('Impostor')
+    impostor.id = registered.id
+    graph._nodes.push(impostor)
+
+    expect(graph.serialize().nodes.map(({ title }) => title)).toEqual([
+      'Registered'
+    ])
+    expect(mockReportError).not.toHaveBeenCalled()
+  })
+
   test('serialises a duplicated live node once through the fallback', ({
     expect
   }) => {

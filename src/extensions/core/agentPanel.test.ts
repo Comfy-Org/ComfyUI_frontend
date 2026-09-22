@@ -15,7 +15,6 @@ import type { useExtensionService } from '@/services/extensionService'
 import type { PostHog } from 'posthog-js'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -24,7 +23,6 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
 let agentStore: Mocked<ReturnType<typeof useAgentPanelStore>>
-let canvasStore: Mocked<ReturnType<typeof useCanvasStore>>
 let nodeSelectionStore: Mocked<ReturnType<typeof useAgentNodeSelectionStore>>
 let workflowStore: ReturnType<typeof useWorkflowStore>
 let consentStore: ReturnType<typeof useAgentConsentStore>
@@ -142,10 +140,8 @@ describe('AgentPanel extension flag gate', () => {
     vi.mocked(getNodeByLocatorId).mockImplementation(mocks.getNodeByLocatorId)
     agentStore = vi.mocked(useAgentPanelStore())
     agentStore.consentAccepted = false
-    canvasStore = vi.mocked(useCanvasStore())
     nodeSelectionStore = vi.mocked(useAgentNodeSelectionStore())
     workflowStore = useWorkflowStore()
-    canvasStore.updateSelectedItems.mockImplementation(() => {})
     nodeSelectionStore.restoreNodeIds.mockImplementation(() => {})
     mocks.capturedExtensions.length = 0
     mocks.notifyAfterGraphConfigure.mockClear()
@@ -157,7 +153,6 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
     localStorage.clear()
-    canvasStore.updateSelectedItems.mockClear()
     mocks.getNodeByLocatorId.mockReset()
     nodeSelectionStore.beginWorkflowLoad.mockClear()
     nodeSelectionStore.finishWorkflowLoad.mockClear()
@@ -519,8 +514,36 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, '12')
     expect(selectItems).toHaveBeenCalledWith([secondNode])
     expect(nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith(['12'])
-    expect(canvasStore.updateSelectedItems).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.finishWorkflowLoad).not.toHaveBeenCalled()
+  })
+
+  it('disarms the restore guard on an empty restore instead of leaving it armed', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    const rootGraph = {}
+    const selectItems = vi.fn()
+    agentStore.enabled = true
+    agentStore.consentAccepted = true
+    nodeSelectionStore.isLoadingWorkflow = true
+    nodeSelectionStore.nodeIds.mockReturnValue([])
+    workflowStore.activeWorkflow = createMockLoadedWorkflow({
+      path: 'workflows/brand-new-unsaved.json'
+    })
+
+    await extension!.afterLoadGraph!({
+      rootGraph,
+      canvas: { selectItems }
+    } as never)
+
+    // The guard is disarmed directly, rather than armed with an empty
+    // selection, so a later unrelated selection change (e.g. manually adding
+    // a node) can't be misattributed as "the restored selection".
+    expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+    expect(nodeSelectionStore.restoreNodeIds).not.toHaveBeenCalled()
+    expect(selectItems).not.toHaveBeenCalled()
   })
 
   it('closes the mint suppression bracket after graph configuration', async () => {
@@ -592,7 +615,6 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
     expect(mocks.getNodeByLocatorId).not.toHaveBeenCalled()
-    expect(canvasStore.updateSelectedItems).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when graph configuration fails', async () => {

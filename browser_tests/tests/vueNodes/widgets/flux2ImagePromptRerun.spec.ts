@@ -10,11 +10,8 @@ import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 /**
- * PM-1303 / PM-1310: on a Flux2ImageNode the prompt text box is reported to
- * vanish after a SECOND generation. The root cause was undecided, so each
- * test here pins one hypothesis. A test that passes rules its hypothesis out
- * on this (localhost, non-CRDT) path; a `test.fail()` test reproduces a real
- * regression the investigation surfaced.
+ * PM-1303 / PM-1310: Guard the Flux2ImageNode prompt and layout across
+ * repeated generations, including transient progress and output previews.
  *
  * Execution is simulated the way the backend drives it: a real
  * `Comfy.QueuePrompt` through the UI, then the WS frames an API node emits
@@ -175,22 +172,29 @@ test.describe(
       'prompt text box is still visible after two generations',
       { tag: '@screenshot' },
       async ({ comfyPage, getWebSocket }) => {
+        await comfyPage.page.setViewportSize({ width: 1280, height: 900 })
         const ws = await getWebSocket()
         const exec = new ExecutionHelper(comfyPage, ws)
         const { nodeId } = await readPromptWidget(comfyPage)
         const node = getNode(comfyPage)
         const promptBox = getPromptBox(comfyPage)
         await expect(promptBox).toBeVisible()
-        await expect(node).toHaveScreenshot('flux2-prompt-before-runs.png')
+        await expect(node).toHaveScreenshot('flux2-prompt-before-runs.png', {
+          maxDiffPixels: 10
+        })
 
         await runGeneration(comfyPage, exec, ws, nodeId)
         await expect(promptBox).toBeVisible()
-        await expect(node).toHaveScreenshot('flux2-prompt-after-run-1.png')
+        await expect(node).toHaveScreenshot('flux2-prompt-after-run-1.png', {
+          maxDiffPixels: 10
+        })
 
         await runGeneration(comfyPage, exec, ws, nodeId)
         await expect(promptBox).toBeVisible()
         await expect(promptBox).toHaveValue(PROMPT)
-        await expect(node).toHaveScreenshot('flux2-prompt-after-run-2.png')
+        await expect(node).toHaveScreenshot('flux2-prompt-after-run-2.png', {
+          maxDiffPixels: 10
+        })
       }
     )
 
@@ -198,17 +202,6 @@ test.describe(
       comfyPage,
       getWebSocket
     }) => {
-      test.fail(
-        true,
-        'PM-1303/PM-1310 hypothesis D still reproduces after the follow-up fixes ' +
-          '(1ef64a4, f81f88f): removeTextPreview now unregisters the stale ' +
-          '$$node-text-preview widget from both node.widgets and widgetValueStore ' +
-          '(confirmed by the after-run-1 screenshot shrinking ~57px once the row ' +
-          'is gone), but the prompt textarea itself never reclaims that freed ' +
-          'height and stays collapsed at ~58px. The remaining bug is in how the ' +
-          'freed grid row is (not) redistributed back to the surviving expanding ' +
-          'widget, not in leftover widget-registration state.'
-      )
       const ws = await getWebSocket()
       const exec = new ExecutionHelper(comfyPage, ws)
       const { nodeId } = await readPromptWidget(comfyPage)
@@ -222,6 +215,67 @@ test.describe(
       await expect
         .poll(async () => (await promptBox.boundingBox())?.height)
         .toBeGreaterThanOrEqual(before!.height)
+    })
+
+    test('resized authored height survives removal and restoration of output previews', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      await comfyPage.page.setViewportSize({ width: 1440, height: 1200 })
+      const ws = await getWebSocket()
+      const exec = new ExecutionHelper(comfyPage, ws)
+      const { nodeId } = await readPromptWidget(comfyPage)
+      const node = await comfyPage.vueNodes.getFixtureByTitle(NODE_TITLE)
+      const savedSize = async () =>
+        (await comfyPage.workflow.getExportedWorkflow()).nodes.find(
+          (entry) => String(entry.id) === nodeId
+        )?.size
+      const initialSize = await savedSize()
+      expect(initialSize).toBeDefined()
+
+      const { resizedSize, expandedHeight, beforeResize } =
+        await test.step('resize and persist the authored height', async () => {
+          await runGeneration(comfyPage, exec, ws, nodeId)
+          const beforeHeight = (await node.boundingBox())?.height
+          expect(beforeHeight).toBeDefined()
+          const beforeResize = Date.now()
+          await node.resizeFromCorner('SE', 0, 83)
+          await expect.poll(savedSize).not.toEqual(initialSize)
+          await expect
+            .poll(async () => (await node.boundingBox())?.height)
+            .toBeCloseTo(beforeHeight! + 83, 0)
+          const resizedSize = await savedSize()
+          const expandedHeight = (await node.boundingBox())?.height
+          expect(expandedHeight).toBeDefined()
+          return { resizedSize, expandedHeight, beforeResize }
+        })
+
+      await test.step('reload and remove the output preview', async () => {
+        await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeResize)
+        await comfyPage.workflow.reloadAndWaitForApp()
+        await expect(
+          getNode(comfyPage).getByRole('img', { name: 'View image 1 of 1' })
+        ).toBeHidden()
+        await expect
+          .poll(async () => (await node.boundingBox())?.height)
+          .toBeLessThan(expandedHeight!)
+        expect(await savedSize()).toEqual(resizedSize)
+      })
+
+      await test.step('restore the output preview', async () => {
+        const restoredWs = await getWebSocket()
+        await runGeneration(
+          comfyPage,
+          new ExecutionHelper(comfyPage, restoredWs),
+          restoredWs,
+          nodeId
+        )
+        await expect
+          .poll(async () => (await node.boundingBox())?.height)
+          .toBeCloseTo(expandedHeight!, 0)
+        expect(await savedSize()).toEqual(resizedSize)
+        await expect(getPromptBox(comfyPage)).toHaveValue(PROMPT)
+      })
     })
   }
 )

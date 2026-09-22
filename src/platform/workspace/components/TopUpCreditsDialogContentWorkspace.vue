@@ -311,7 +311,6 @@ import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerA
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   bindOperationToCheckoutJourney,
@@ -340,7 +339,6 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 const { fetchBalance, fetchStatus, manageSubscription } = useBillingContext()
 const { canTopUp } = useBillingCapabilities()
 
-const billingOperationStore = useBillingOperationStore()
 const workspaceStore = useTeamWorkspaceStore()
 
 function emitTopupJourneyPhase(
@@ -376,7 +374,8 @@ const {
   topupOperation,
   topup,
   retryPaymentAuthentication,
-  dismissOperation
+  dismissOperation,
+  adoptPendingOperation
 } = useTopupOperation()
 // Start over invalidates the attempt in flight: on the SDK rail the purchase
 // call resolves only at settlement, so a superseded attempt must not unlock
@@ -674,11 +673,7 @@ async function handleBuy() {
       handleClose(false)
       settingsDialog.show(isCloud ? 'workspace' : 'credits')
     } else if (response.status === 'pending') {
-      void billingOperationStore
-        .startOperation(response.billing_op_id, 'topup', {
-          attemptStartedAt,
-          autoHandleRequiresAction: true
-        })
+      void adoptPendingOperation(response.billing_op_id, { attemptStartedAt })
         .then(() => {
           if (isCurrentAttempt()) paymentSubmitted.value = false
         })
