@@ -11,6 +11,7 @@ import type {
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import { AGENT_CRDT_DOC_ID_SESSION_KEY } from '@/platform/workflow/persistence/base/storageKeyConstants'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type {
   AgentTurnAccepted,
@@ -198,6 +199,26 @@ export async function getAgentActiveWorkflowPath(
       (window.app!.extensionManager as WorkspaceStore).workflow.activeWorkflow
         ?.path
   )
+}
+
+export async function readPersistedAgentDocIdentity(page: Page) {
+  const raw = await page.evaluate(
+    (key) => sessionStorage.getItem(key),
+    AGENT_CRDT_DOC_ID_SESSION_KEY
+  )
+  if (raw === null) throw new Error('Persisted CRDT document record is missing')
+  const parsed: unknown = JSON.parse(raw)
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    !('docId' in parsed) ||
+    typeof parsed.docId !== 'string' ||
+    !('nonce' in parsed) ||
+    typeof parsed.nonce !== 'string'
+  ) {
+    throw new Error('Persisted CRDT document record is malformed')
+  }
+  return { docId: parsed.docId, nonce: parsed.nonce }
 }
 
 export async function bootAgentApp(

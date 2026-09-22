@@ -93,7 +93,11 @@ export function reconcilePersistedDocId(): string | null {
       nonce: parsed.nonce,
       expiresAt: parsed.expiresAt
     }
-    if (Date.now() >= record.expiresAt) {
+    const now = Date.now()
+    if (
+      now >= record.expiresAt ||
+      record.expiresAt > now + DOC_ID_TTL_MS
+    ) {
       clearPersistedDocId()
       return null
     }
@@ -102,10 +106,8 @@ export function reconcilePersistedDocId(): string | null {
         clearPersistedDocId()
         return null
       }
-      // Adoption renews the owner, never the lifetime. Re-stamping a full TTL
-      // here would let a tab reloaded inside the window keep an arbitrarily old
-      // doc id rebindable forever, removing the only bound the TTL places on
-      // the same-page-load workflow-switch case.
+      // Adoption preserves the original expiry, so reloads cannot extend the
+      // fallback window.
       writeRecord({
         docId: record.docId,
         nonce: currentPageSessionNonce(),

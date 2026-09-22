@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -347,17 +348,6 @@ describe('AgentCrdtDocLifecycle ack timeout', () => {
   })
 })
 
-/**
- * FE-1969 regression. This file used to carry its OWN copy of the persisted
- * doc-id record — same `Comfy.Agent.CrdtDocId` key, but a second module-scope
- * page-load nonce. Two owners on one key can never agree: whichever module
- * wrote last left the other's reader looking at a foreign nonce, so
- * `readPersistedDocId()` answered "nothing persisted" for the rest of the page
- * load. On a reload that is exactly the failing path — `useAgentDockMount`
- * reconciles the record through `persistedDocId.ts` and re-stamps it with that
- * module's nonce, then the follower's initial bind asks the lifecycle, gets
- * `null`, clears the record and never resubscribes.
- */
 describe('AgentCrdtDocLifecycle persisted doc id', () => {
   beforeEach(() => {
     sessionStorage.clear()
@@ -382,7 +372,7 @@ describe('AgentCrdtDocLifecycle persisted doc id', () => {
       })
     )
     vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
-      { type: 'reload' } as PerformanceNavigationTiming
+      fromPartial<PerformanceNavigationTiming>({ type: 'reload' })
     ])
     // What useAgentDockMount does before the follower ever binds.
     expect(reconcilePersistedDocId()).toBe(WORKFLOW_ID)
