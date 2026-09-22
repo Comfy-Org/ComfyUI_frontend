@@ -116,13 +116,20 @@ describe('fetchFirebaseConfig', () => {
   })
 
   it('offers no configuration when the fetch outruns the timeout', async () => {
-    const fetchImpl = neverSettlingFetch()
-
-    await expect(
-      fetchFirebaseConfig('https://cloud.comfy.org', {
+    vi.useFakeTimers()
+    try {
+      const fetchImpl = neverSettlingFetch()
+      const result = fetchFirebaseConfig('https://cloud.comfy.org', {
         fetchImpl,
         timeoutMs: 5
       })
-    ).resolves.toBeUndefined()
+
+      await vi.advanceTimersByTimeAsync(5)
+
+      await expect(result).resolves.toBeUndefined()
+      expect(fetchImpl).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
