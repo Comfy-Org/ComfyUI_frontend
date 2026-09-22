@@ -21,7 +21,12 @@ function messageFrom(value: unknown): string | undefined {
 }
 
 export function isThirdPartyErrorNoise(message?: string): boolean {
-  return message?.includes(EXTENSION_TAB_NOT_FOUND_MESSAGE) ?? false
+  return (
+    message === EXTENSION_TAB_NOT_FOUND_MESSAGE ||
+    message === `Error: ${EXTENSION_TAB_NOT_FOUND_MESSAGE}` ||
+    message ===
+      `Unhandled promise rejection: ${EXTENSION_TAB_NOT_FOUND_MESSAGE}`
+  )
 }
 
 /** Drops a browser-extension messaging failure that the app never emits. */

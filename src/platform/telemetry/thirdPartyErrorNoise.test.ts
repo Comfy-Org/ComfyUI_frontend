@@ -16,12 +16,11 @@ describe('third-party error noise', () => {
     expect(isThirdPartyErrorNoise(message)).toBe(true)
   })
 
-  it('does not suppress other messaging failures', () => {
-    expect(
-      isThirdPartyErrorNoise(
-        'Invalid call to runtime.sendMessage(). Receiving end does not exist.'
-      )
-    ).toBe(false)
+  it.for([
+    'Invalid call to runtime.sendMessage(). Receiving end does not exist.',
+    `Application failed: ${EXTENSION_ERROR}`
+  ])('does not suppress %s', (message) => {
+    expect(isThirdPartyErrorNoise(message)).toBe(false)
   })
 
   it.for([
