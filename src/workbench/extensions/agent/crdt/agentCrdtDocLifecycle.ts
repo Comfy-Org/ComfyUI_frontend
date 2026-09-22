@@ -37,7 +37,18 @@ const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
 // delivered, so intent already equals reality. Retry the subscribe itself
 // with bounded exponential backoff while the desired doc is unchanged.
 const SUBSCRIBE_RETRY_BASE_MS = 500
-const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
+export const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
+
+/**
+ * What a refusal leaves behind. `retrying` means a retry is scheduled (or
+ * already was); `exhausted` means the budget is spent, or there is nothing
+ * bound to retry, so this refusal is the last word until the next confirmed
+ * subscribe or retarget restores the budget. The composable needs the
+ * distinction because its intent (`status.workflowId`) is what the panel
+ * withholds the draft seed on, and an intent nothing will ever satisfy must
+ * be visible as such.
+ */
+export type SubscribeRefusalOutcome = 'retrying' | 'exhausted'
 
 /**
  * A `doc_subscribe` that left the transport and was never answered is retried
@@ -200,10 +211,11 @@ export class AgentCrdtDocLifecycle {
     if (workflowId !== null) this.persistConfirmedDocId(workflowId)
   }
 
-  onSubscribeRefused(): void {
+  onSubscribeRefused(): SubscribeRefusalOutcome {
     this.clearAckTimer()
     this.clearStaleProbe()
     this.scheduleSubscribeRetry()
+    return this.subscribeRetryTimer !== null ? 'retrying' : 'exhausted'
   }
 
   onSubscribeSent(workflowId: string): void {

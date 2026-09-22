@@ -218,6 +218,17 @@ if (process.env.VITE_AGENT_STANDALONE === 'true' && !DEV_AGENT_URL) {
   )
 }
 
+// VITE_AGENT_STANDALONE forces the agent panel on for every user of the bundle
+// it is baked into (src/extensions/core/agentPanel.ts), independent of the
+// distribution. The standalone harness is never a cloud distribution, so a
+// cloud bundle carrying the flag could only be a misconfigured build about to
+// ship the panel to everyone; refuse it here rather than at runtime.
+if (process.env.VITE_AGENT_STANDALONE === 'true' && DISTRIBUTION === 'cloud') {
+  throw new Error(
+    'VITE_AGENT_STANDALONE cannot be combined with DISTRIBUTION=cloud: the standalone agent harness is never a cloud distribution.'
+  )
+}
+
 // The proxy attaches DEV_AGENT_SESSION_TOKEN as a bearer token, so cleartext
 // is only acceptable when the target never leaves the machine.
 if (DEV_AGENT_URL) {

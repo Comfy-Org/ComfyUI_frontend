@@ -38,10 +38,17 @@ function traceableFrame(frame: string): Record<string, unknown> | null {
   }
 }
 
-export function createLoggedTransport(): DocFrameTransport {
+/**
+ * Wraps `base` with the dev-panel tap (poc-4): every outbound frame is logged
+ * with its delivery result. `base` defaults to ComfyUI's same-origin socket;
+ * a standalone agent passes its own transport instead.
+ */
+export function createLoggedTransport(
+  base: DocFrameTransport = apiTransport
+): DocFrameTransport {
   return {
     send(frame) {
-      const delivered = apiTransport.send(frame)
+      const delivered = base.send(frame)
       const parsed = traceableFrame(frame)
       wireLog.trace('ws_out', 'outbound frame', {
         delivered,
@@ -51,10 +58,10 @@ export function createLoggedTransport(): DocFrameTransport {
       return delivered
     },
     addEventListener(type, listener) {
-      apiTransport.addEventListener(type, listener)
+      base.addEventListener(type, listener)
     },
     removeEventListener(type, listener) {
-      apiTransport.removeEventListener(type, listener)
+      base.removeEventListener(type, listener)
     }
   }
 }

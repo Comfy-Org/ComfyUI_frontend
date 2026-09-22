@@ -292,6 +292,34 @@ describe('Agent workflow resolution', () => {
     ])
   })
 
+  // cloudIdFor reads the name-derived index ahead of the binding store, so
+  // releasing the binding alone still leaves a refused id resolvable here -
+  // and refreshCloudWorkflowIds cannot be relied on to drop it, since it
+  // swallows its errors and the caller races it against a timeout.
+  it('stops resolving a refused cloud id once it is forgotten', async () => {
+    const portrait = workflow('workflows/portrait.json', 'Portrait')
+    const { resolver, bindings } = setup(
+      [portrait],
+      [
+        { id: 'cloud-portrait', name: 'Portrait' },
+        { id: 'cloud-other', name: 'Other' }
+      ]
+    )
+    await resolver.refreshCloudWorkflowIds()
+    expect(resolver.cloudIdFor(portrait)).toBe('cloud-portrait')
+
+    bindings.unbindWorkflow('cloud-portrait')
+    expect(resolver.cloudIdFor(portrait)).toBe('cloud-portrait')
+
+    resolver.forgetCloudWorkflowId('cloud-portrait')
+
+    expect(resolver.cloudIdFor(portrait)).toBeUndefined()
+    expect(resolver.openTabsSnapshot()).toBeUndefined()
+    expect(resolver.availableWorkflowReferences.value).toEqual([
+      { id: 'cloud-other', name: 'Other' }
+    ])
+  })
+
   it('rejects a stale binding that points a cloud id at a differently named saved tab', async () => {
     const portrait = workflow('workflows/portrait.json', 'Portrait')
     const { resolver, bindings, workflows } = setup(
