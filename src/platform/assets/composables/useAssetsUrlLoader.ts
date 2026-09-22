@@ -25,8 +25,10 @@ export function useAssetsUrlLoader() {
   const router = useRouter()
   const sidebarTabStore = useSidebarTabStore()
 
-  /** Reads `?assets=`, strips it, and opens the Assets panel. */
-  function loadAssetsFromUrl() {
+  /** Reads `?assets=`, strips it, and opens the Assets panel. Resolves once
+   * the strip has landed, so the loader that runs next reads a query this one
+   * has already cleaned rather than restoring the param. */
+  async function loadAssetsFromUrl() {
     hydratePreservedQuery(NAMESPACE)
     const query =
       mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query
@@ -37,16 +39,16 @@ export function useAssetsUrlLoader() {
     // a single replace, so the URL is clean even if the replace rejects.
     const cleanQuery = { ...query }
     delete cleanQuery.assets
-    router.replace({ query: cleanQuery }).catch((error) => {
+    const stripped = router.replace({ query: cleanQuery }).catch((error) => {
       console.warn('[useAssetsUrlLoader] Failed to clean URL params:', error)
     })
     clearPreservedQuery(NAMESPACE)
 
-    if (param !== '1') return
-
     // Assigned rather than toggled: a deep link must leave the panel open,
     // including for a visitor who already had it open.
-    sidebarTabStore.activeSidebarTabId = ASSETS_TAB_ID
+    if (param === '1') sidebarTabStore.activeSidebarTabId = ASSETS_TAB_ID
+
+    await stripped
   }
 
   return {

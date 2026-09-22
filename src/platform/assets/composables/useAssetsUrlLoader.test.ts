@@ -1,5 +1,5 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { LocationQuery } from 'vue-router'
 
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
@@ -16,8 +16,8 @@ vi.mock(
   () => preservedQueryMocks
 )
 
-const mockRouteQuery = vi.hoisted(() => ({
-  value: {} as Record<string, string>
+const mockRouteQuery = vi.hoisted<{ value: LocationQuery }>(() => ({
+  value: {}
 }))
 const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
@@ -40,17 +40,17 @@ describe('useAssetsUrlLoader', () => {
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
-  it('leaves the workspace alone when no assets param is present', () => {
-    useAssetsUrlLoader().loadAssetsFromUrl()
+  it('leaves the workspace alone when no assets param is present', async () => {
+    await useAssetsUrlLoader().loadAssetsFromUrl()
 
     expect(sidebar.activeSidebarTabId).toBeNull()
     expect(mockRouterReplace).not.toHaveBeenCalled()
   })
 
-  it('opens the Assets panel and strips the param', () => {
+  it('opens the Assets panel and strips the param', async () => {
     mockRouteQuery.value = { assets: '1' }
 
-    useAssetsUrlLoader().loadAssetsFromUrl()
+    await useAssetsUrlLoader().loadAssetsFromUrl()
 
     expect(sidebar.activeSidebarTabId).toBe('assets')
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
@@ -59,11 +59,11 @@ describe('useAssetsUrlLoader', () => {
     )
   })
 
-  it('leaves the panel open for a visitor who already had it open', () => {
+  it('leaves the panel open for a visitor who already had it open', async () => {
     sidebar.activeSidebarTabId = 'assets'
     mockRouteQuery.value = { assets: '1' }
 
-    useAssetsUrlLoader().loadAssetsFromUrl()
+    await useAssetsUrlLoader().loadAssetsFromUrl()
 
     expect(
       sidebar.activeSidebarTabId,
@@ -71,34 +71,50 @@ describe('useAssetsUrlLoader', () => {
     ).toBe('assets')
   })
 
-  it('preserves unrelated params when stripping', () => {
+  it('preserves unrelated params when stripping', async () => {
     mockRouteQuery.value = { assets: '1', other: 'param' }
 
-    useAssetsUrlLoader().loadAssetsFromUrl()
+    await useAssetsUrlLoader().loadAssetsFromUrl()
 
     expect(mockRouterReplace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
   })
 
-  it.for([['garbage'], [''], [fromAny<string, unknown>(['array'])]] as const)(
+  it.for([['garbage'], [''], [['array']]])(
     'strips %j without opening a panel',
-    ([assets]) => {
+    async ([assets]) => {
       mockRouteQuery.value = { assets }
 
-      useAssetsUrlLoader().loadAssetsFromUrl()
+      await useAssetsUrlLoader().loadAssetsFromUrl()
 
       expect(sidebar.activeSidebarTabId).toBeNull()
       expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     }
   )
 
-  it('restores the preserved query across a sign-in and opens the panel', () => {
+  it('settles only once the param is gone from the URL', async () => {
+    let stripped = false
+    mockRouterReplace.mockImplementation(async () => {
+      await Promise.resolve()
+      stripped = true
+    })
+    mockRouteQuery.value = { assets: '1' }
+
+    await useAssetsUrlLoader().loadAssetsFromUrl()
+
+    expect(
+      stripped,
+      'a loader that returns before its own strip lands lets the next one read the stale query and put the param back'
+    ).toBe(true)
+  })
+
+  it('restores the preserved query across a sign-in and opens the panel', async () => {
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
       assets: '1'
     })
 
-    useAssetsUrlLoader().loadAssetsFromUrl()
+    await useAssetsUrlLoader().loadAssetsFromUrl()
 
     expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
       'assets'
