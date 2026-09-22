@@ -28,10 +28,6 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import {
-  isRootGraphDocBound,
-  registerDocBoundRootGraphProbe
-} from '@/lib/litegraph/src/docBoundGraphs'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -282,20 +278,16 @@ const mintPortWiringDeps = vi.hoisted(() => ({
 }))
 vi.mock(import('./crdt/mintPortWiring'), { spy: true })
 
-// The mock replaces the real `attachMintPortWiring` body entirely, so it must
-// also register the doc-bound probe itself (mirroring the production wiring
-// in `mintPortWiring.ts`) — otherwise `isRootGraphDocBound` can never see a
-// probe and always reports false, regardless of `deps`.
+// The mock replaces the real `attachMintPortWiring` body entirely. It only
+// captures `deps` for assertions below — it must NOT reproduce any of that
+// body's own behaviour (e.g. the doc-bound probe registration), or a test
+// against the reimplementation could stay green while the real one breaks.
+// The doc-bound probe's registration/disposal is covered directly against
+// the real `attachMintPortWiring` in `mintPortWiring.test.ts`.
 function stubAttachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   mintPortWiringDeps.current = deps
-  const unregisterDocBoundProbe = registerDocBoundRootGraphProbe(() => {
-    if (!deps.isEnabled() || !deps.isDocBound()) return null
-    const graph = deps.getGraph()
-    if (!graph) return null
-    return graph.rootGraph?.id ?? graph.id
-  })
   return fromPartial<MintPortWiring>({
-    detach: vi.fn(unregisterDocBoundProbe)
+    detach: vi.fn()
   })
 }
 vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
@@ -7217,25 +7209,26 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it('reports the live root graph as sharing its id space with the agent doc, following a graph swap', async () => {
+  it('wires getGraph() to the live root graph, following a graph swap', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     await renderAndSend('hello')
 
     appMock.isGraphReady = true
     Object.assign(appMock.rootGraph, { id: 'graph-a' })
-    expect(isRootGraphDocBound('graph-a')).toBe(true)
+    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-a')
 
     // A workflow switch rebuilds the canvas against a new root graph without
-    // touching agentPanelStore.enabled or isBoundWorkflowActive, so the
-    // answer has to come from the live graph, read at mint time.
+    // touching agentPanelStore.enabled or isBoundWorkflowActive, so the mint
+    // port wiring's own doc-bound predicate (covered directly against the
+    // real `attachMintPortWiring` in `mintPortWiring.test.ts`) has to read
+    // this live graph at mint time to follow the swap.
     Object.assign(appMock.rootGraph, { id: 'graph-b' })
 
-    expect(isRootGraphDocBound('graph-a')).toBe(false)
-    expect(isRootGraphDocBound('graph-b')).toBe(true)
+    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-b')
   })
 
-  it('reports no doc-bound graph before the graph is ready', async () => {
+  it('wires getGraph() to null before the graph is ready', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
     await renderAndSend('hello')
@@ -7243,7 +7236,7 @@ describe('AgentPanelRoot workflow binding', () => {
     Object.assign(appMock.rootGraph, { id: 'graph-a' })
     appMock.isGraphReady = false
 
-    expect(isRootGraphDocBound('graph-a')).toBe(false)
+    expect(mintPortWiringDeps.current?.getGraph()).toBeNull()
   })
 
   it("reports the bound workflow's own stored root graph id once bound", async () => {

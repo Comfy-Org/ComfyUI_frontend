@@ -34,8 +34,10 @@ import {
  * Nothing in this PR addresses that silent drop, so do not read a closed
  * tracking item, or the disjoint-mint fix shipping, as covering it: these
  * specs stay `test.fail()` until the applier (or the actors around it)
- * surface a same-id conflict instead of swallowing one write. Flip
- * `test.fail()` away then; the assertions below should not otherwise change.
+ * surface a same-id conflict instead of swallowing one write. Tracked in
+ * https://github.com/Comfy-Org/ComfyUI_frontend/issues/18414 — flip
+ * `test.fail()` away once that closes; the assertions below should not
+ * otherwise change.
  *
  * `agentCrdtIdCollisionFixture` drives the real duplicate-via-context-menu
  * path so the id is genuinely minted by `idAllocation.ts` and the outbound
@@ -69,12 +71,8 @@ test.describe(
         // `doc_update` broadcast would.
         idCollision.deliver(agentUpdate)
 
-        // PR #17963 fixed the incremental
-        // live-update path to patch a still-live node in place instead of
-        // rebuilding it from the doc, so the wipe/phantom symptom now needs
-        // the SAME whole-document reconcile a tab switch (or reconnect)
-        // drives, against a doc that disagrees with the still-live orphan
-        // at the collided id — see `forceReconcile()`'s doc comment.
+        // Forces the whole-document reconcile this symptom needs — see
+        // `forceReconcile()`'s own doc comment for why.
         await idCollision.forceReconcile()
 
         await expect(idCollision.vueNodes.getNodeLocator(nodeId)).toBeVisible()

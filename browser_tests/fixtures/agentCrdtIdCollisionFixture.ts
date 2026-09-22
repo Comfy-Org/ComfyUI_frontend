@@ -39,13 +39,16 @@ import type {
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
-import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import {
+  agentTest,
+  bootAgentApp,
+  mockWorkflowPersistence
+} from '@e2e/fixtures/agentPanelFixture'
 import type {
   HostFrame,
   WireApplyResult
@@ -304,46 +307,10 @@ export class IdCollisionHarness {
   }
 
   private async selectWorkflowTarget(): Promise<void> {
-    let savedName: string | undefined
-    await this.page.route('**/api/userdata/*', (route) => {
-      const request = route.request()
-      const path = decodeURIComponent(
-        new URL(request.url()).pathname.split('/userdata/')[1]
-      )
-      if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-        return route.fallback()
-      savedName = path.slice('workflows/'.length, -'.json'.length)
-      const saved: UserDataFullInfo = {
-        path,
-        modified: Date.now(),
-        size: request.postDataBuffer()?.length ?? 0
-      }
-      return route.fulfill(jsonRoute(saved))
-    })
-    await this.page.route('**/api/workflows?*', (route) => {
-      const workflows: WorkflowListResponse = {
-        data:
-          savedName === undefined
-            ? []
-            : [
-                {
-                  id: WORKFLOW_ID,
-                  name: savedName,
-                  created_at: '2026-09-01T00:00:00Z',
-                  updated_at: '2026-09-01T00:00:00Z',
-                  created_by: 'test-user-e2e',
-                  latest_version: 1
-                }
-              ],
-        pagination: {
-          has_more: false,
-          limit: 100,
-          offset: 0,
-          total: savedName === undefined ? 0 : 1
-        }
-      }
-      return route.fulfill(jsonRoute(workflows))
-    })
+    // Shared with `agentPanelFixture`'s own workflow-save flows, rather than
+    // a third hand-rolled copy of the same userdata-save + workflow-list
+    // route pair.
+    await mockWorkflowPersistence(this.page, WORKFLOW_ID)
     const picker = this.panel.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })

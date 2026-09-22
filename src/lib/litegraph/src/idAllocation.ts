@@ -50,28 +50,13 @@ export type NodeIdMintMode = 'sequential' | 'crdt-disjoint'
  * then be inside this app's own range.
  */
 export const AGENT_RESERVED_BIT = 1n << 40n
-const CRDT_DISJOINT_FLOOR = 1n << 41n
+export const CRDT_DISJOINT_FLOOR = 1n << 41n
 const CRDT_RANDOM_BIT_COUNT = 52
 
 function mintCrdtDisjointNodeId(): NodeId {
   const random = BigInt(Math.floor(Math.random() * 2 ** CRDT_RANDOM_BIT_COUNT))
   const id = (random & ~AGENT_RESERVED_BIT) | CRDT_DISJOINT_FLOOR
   return toNodeId(Number(id))
-}
-
-/**
- * Whether `id` carries EITHER reserved bit: the agent's
- * (`AGENT_RESERVED_BIT`) or this app's own disjoint floor
- * (`CRDT_DISJOINT_FLOOR`). It is deliberately this weak — it cannot tell the
- * two mints apart, and it accepts any id with bit 41 set whatever minted it.
- * So its exact guarantee is only that an id failing it has BOTH reserved bits
- * clear, i.e. it came from neither convention. Callers must narrow to a
- * numeric integer first ({@link isReservedBitRangeNodeId}): the bit test is
- * meaningless for a nonnumeric legacy id.
- */
-export function matchesReservedBitConvention(id: NodeId): boolean {
-  const big = BigInt(id)
-  return (big & AGENT_RESERVED_BIT) !== 0n || (big & CRDT_DISJOINT_FLOOR) !== 0n
 }
 
 /**
@@ -83,6 +68,27 @@ export function matchesReservedBitConvention(id: NodeId): boolean {
 export function isReservedBitRangeNodeId(id: NodeId): boolean {
   const numeric = Number(id)
   return Number.isSafeInteger(numeric) && BigInt(numeric) >= AGENT_RESERVED_BIT
+}
+
+/**
+ * Whether `id` carries EITHER reserved bit: the agent's
+ * (`AGENT_RESERVED_BIT`) or this app's own disjoint floor
+ * (`CRDT_DISJOINT_FLOOR`). It is deliberately this weak — it cannot tell the
+ * two mints apart, and it accepts any id with bit 41 set whatever minted it.
+ * So its exact guarantee is only that an id failing it has BOTH reserved bits
+ * clear, i.e. it came from neither convention.
+ *
+ * Safe to call with any legal `NodeId`, including a nonnumeric legacy id
+ * (`"named"`, `"57:3"`): those predate both mint conventions and carry no
+ * reservation, so they return `false` here rather than throwing. Callers
+ * that need to distinguish "carries no reservation because it's legacy"
+ * from "carries no reservation despite being eligible" should check
+ * {@link isReservedBitRangeNodeId} themselves.
+ */
+export function matchesReservedBitConvention(id: NodeId): boolean {
+  if (!isReservedBitRangeNodeId(id)) return false
+  const big = BigInt(id)
+  return (big & AGENT_RESERVED_BIT) !== 0n || (big & CRDT_DISJOINT_FLOOR) !== 0n
 }
 
 export function mintNodeId(

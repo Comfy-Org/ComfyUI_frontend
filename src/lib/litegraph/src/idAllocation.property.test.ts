@@ -3,6 +3,7 @@ import { describe, it } from 'vitest'
 
 import {
   AGENT_RESERVED_BIT,
+  CRDT_DISJOINT_FLOOR,
   createLGraphState,
   mintNodeId
 } from '@/lib/litegraph/src/idAllocation'
@@ -118,6 +119,50 @@ describe("mintNodeId's 'crdt-disjoint' mode never collides with a simulated agen
           return frontendIds.every((id) => !agentIdSet.has(id))
         }
       )
+    )
+  })
+
+  /**
+   * The two properties above only ever check a minted id against
+   * INDEPENDENTLY RANDOM agent-style ids, by equality or set membership. A
+   * wrong allocator that mints a single hardcoded id passes both trivially:
+   * exact equality with any one of a handful of random 52-bit samples is
+   * astronomically unlikely whether or not that constant actually sits in
+   * the disjoint partition. So does an allocator that mints the SAME id on
+   * every call within a run — nothing above ever mints twice and compares
+   * the two results. These two properties assert the partition invariant
+   * and cross-call uniqueness directly, so a constant or repeating
+   * allocator fails them even though it would slip past the properties
+   * above.
+   */
+  it('every crdt-disjoint mint has bit 40 clear, bit 41 set, and is a safe integer', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 50 }), (mintCount) => {
+        const frontend = createLGraphState()
+        const ids = Array.from({ length: mintCount }, () =>
+          BigInt(mintNodeId(frontend, 'crdt-disjoint'))
+        )
+
+        return ids.every(
+          (id) =>
+            Number.isSafeInteger(Number(id)) &&
+            (id & AGENT_RESERVED_BIT) === 0n &&
+            (id & CRDT_DISJOINT_FLOOR) !== 0n
+        )
+      })
+    )
+  })
+
+  it('never repeats an id across a run of local crdt-disjoint mints', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 2, max: 50 }), (mintCount) => {
+        const frontend = createLGraphState()
+        const ids = Array.from({ length: mintCount }, () =>
+          BigInt(mintNodeId(frontend, 'crdt-disjoint'))
+        )
+
+        return new Set(ids).size === ids.length
+      })
     )
   })
 })

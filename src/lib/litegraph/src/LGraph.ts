@@ -55,8 +55,8 @@ import {
   observeNodeId,
   observeRerouteId
 } from './idAllocation'
-import type { LGraphState, NodeIdMintMode } from './idAllocation'
-import { isRootGraphDocBound } from './docBoundGraphs'
+import type { LGraphState } from './idAllocation'
+import { nodeIdMintModeFor } from './nodeIdMintMode'
 import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
 import { normalizeWidgetsView } from './node/widgetsView'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
@@ -265,19 +265,6 @@ function getRuntimeRootGraph(graph: LGraph): LGraph | undefined {
 
 function runtimeOptional<T>(value: T): T | undefined {
   return value
-}
-
-/**
- * `idAllocation.ts` stays pure and context-free, so the mode is decided here:
- * `'crdt-disjoint'` only for a mint landing directly on a root graph that
- * shares its id space with the agent's collaborative doc — subgraph-owned
- * nodes are outside the doc's scope (see `agentNodeMaterializer.ts`) and keep
- * plain sequential ids.
- */
-function nodeIdMintModeFor(graph: LGraph): NodeIdMintMode {
-  return graph.isRootGraph && isRootGraphDocBound(graph.id)
-    ? 'crdt-disjoint'
-    : 'sequential'
 }
 
 function fireNodeRemovalLifecycle(node: LGraphNode): void {
