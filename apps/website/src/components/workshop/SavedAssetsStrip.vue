@@ -42,7 +42,7 @@ const FAILED_POLL_MS = 15_000
 const ACCESS_HEADROOM_MS = 30_000
 
 const generations = ref<SavedGeneration[]>([])
-const access = ref(new Map<string, { url: string; expiresAt: number }>())
+const access = ref(new Map<string, { url: string; renewAt: number }>())
 const unavailable = ref(new Set<string>())
 const failed = ref(false)
 const viewingKey = ref<string>()
@@ -159,7 +159,7 @@ async function grantAccess(tile: SavedAsset) {
     if (controller.signal.aborted) return
     access.value.set(tile.assetId, {
       url: granted.content_url,
-      expiresAt: Date.parse(granted.expires_at)
+      renewAt: renewAt(Date.parse(granted.expires_at))
     })
   } catch (error) {
     if (controller.signal.aborted || !gone(error)) return
@@ -168,25 +168,31 @@ async function grantAccess(tile: SavedAsset) {
   }
 }
 
+/** A signed URL that lapses while the reader is looking at it breaks the
+ * picture, so the next grant is fetched before the current one runs out. A
+ * grant shorter than the headroom would otherwise renew on every tick, so a
+ * short one is renewed halfway through instead. */
+function renewAt(expiresAt: number): number {
+  return expiresAt - Math.min(ACCESS_HEADROOM_MS, (expiresAt - Date.now()) / 2)
+}
+
 async function resolveAccess() {
   const now = Date.now()
   await Promise.all(
     savedTiles.value
-      .filter((tile) => (access.value.get(tile.assetId)?.expiresAt ?? 0) <= now)
+      .filter((tile) => (access.value.get(tile.assetId)?.renewAt ?? 0) <= now)
       .map(grantAccess)
   )
   scheduleRenewal()
 }
 
-/** A signed URL that lapses while the reader is looking at it breaks the
- * picture, so the next grant is fetched before the current one runs out. */
 function scheduleRenewal() {
   clearTimeout(accessTimer)
-  const expiries = [...access.value.values()].map((entry) => entry.expiresAt)
-  if (!expiries.length || controller.signal.aborted) return
+  const due = [...access.value.values()].map((entry) => entry.renewAt)
+  if (!due.length || controller.signal.aborted) return
   accessTimer = setTimeout(
     () => void resolveAccess(),
-    Math.max(1_000, Math.min(...expiries) - ACCESS_HEADROOM_MS - Date.now())
+    Math.max(1_000, Math.min(...due) - Date.now())
   )
 }
 

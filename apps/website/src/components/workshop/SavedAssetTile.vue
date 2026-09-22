@@ -25,6 +25,7 @@ const media = computed(() =>
     :kind="media.kind"
     :url="media.url"
     class="size-full object-cover"
+    data-testid="saved-asset-media"
     @media-error="emit('mediaError')"
   />
   <Loader2

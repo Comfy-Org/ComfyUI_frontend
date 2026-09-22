@@ -1,10 +1,12 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   accessWorkshopAsset,
   cancelWorkshopGeneration,
+  GenerationAccessError,
+  getWorkshopGeneration,
   listWorkshopGenerations
 } from '../../config/workshop-generation-assets'
 import type { SavedGeneration } from '../../config/workshop-generation-assets'
@@ -112,6 +114,122 @@ describe('SavedAssetsStrip', () => {
     expect(
       (await screen.findByTestId('saved-assets-see-all')).getAttribute('href')
     ).toBe(WORKSHOP_ASSETS_URL)
+  })
+
+  it('drops an asset the account can no longer reach instead of a broken tile', async () => {
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [saved] })
+    vi.mocked(accessWorkshopAsset).mockRejectedValue(
+      new GenerationAccessError(410)
+    )
+    render(SavedAssetsStrip, { props })
+
+    await waitFor(() => expect(accessWorkshopAsset).toHaveBeenCalled())
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('saved-asset-0'),
+        'a tile whose asset is gone is a dead thumbnail the reader cannot open'
+      ).toBeNull()
+    )
+  })
+
+  it('asks for a fresh URL once when the browser rejects the one it has', async () => {
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [saved] })
+    render(SavedAssetsStrip, { props })
+    const image = await screen.findByTestId('saved-asset-media')
+
+    await fireEvent.error(image)
+    await fireEvent.error(image)
+
+    await waitFor(() =>
+      expect(
+        vi.mocked(accessWorkshopAsset),
+        'a signed URL the browser refuses is worth one retry, not a loop'
+      ).toHaveBeenCalledTimes(2)
+    )
+  })
+
+  it('cancels a running generation from its preview', async () => {
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({
+      requests: [running]
+    })
+    vi.mocked(cancelWorkshopGeneration).mockResolvedValue(undefined)
+    render(SavedAssetsStrip, { props })
+
+    await openFirstTile()
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(cancelWorkshopGeneration).toHaveBeenCalledWith(
+      running,
+      'workspace-token',
+      expect.anything()
+    )
+  })
+
+  it('says a cancellation did not go through, because the run keeps spending', async () => {
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({
+      requests: [running]
+    })
+    vi.mocked(cancelWorkshopGeneration).mockRejectedValue(new Error('offline'))
+    render(SavedAssetsStrip, { props })
+
+    await openFirstTile()
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Could not request cancellation.'
+    )
+  })
+
+  it('renews a signed URL before it lapses under the reader', async () => {
+    vi.useFakeTimers()
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [saved] })
+    vi.mocked(accessWorkshopAsset).mockResolvedValue({
+      content_url: 'https://assets.example/saved.png',
+      expires_at: new Date(Date.now() + 60_000).toISOString()
+    })
+    render(SavedAssetsStrip, { props })
+    await vi.waitFor(() => expect(accessWorkshopAsset).toHaveBeenCalledTimes(1))
+
+    await vi.advanceTimersByTimeAsync(31_000)
+
+    expect(
+      vi.mocked(accessWorkshopAsset),
+      'an expired URL turns the strip into broken images while the reader is looking at it'
+    ).toHaveBeenCalledTimes(2)
+    vi.useRealTimers()
+  })
+
+  it('keeps polling while a generation is still running', async () => {
+    vi.useFakeTimers()
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({
+      requests: [running]
+    })
+    render(SavedAssetsStrip, { props })
+    await vi.waitFor(() =>
+      expect(listWorkshopGenerations).toHaveBeenCalledTimes(1)
+    )
+
+    await vi.advanceTimersByTimeAsync(3_100)
+
+    expect(
+      vi.mocked(listWorkshopGenerations),
+      'a run that finishes while the reader waits must appear without a reload'
+    ).toHaveBeenCalledTimes(2)
+    vi.useRealTimers()
+  })
+
+  it('shows the run just started before the listing has caught up with it', async () => {
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
+    vi.mocked(getWorkshopGeneration).mockResolvedValue(running)
+    render(SavedAssetsStrip, {
+      props: { ...props, activeRequestId: running.request_id }
+    })
+
+    expect(
+      await screen.findByTestId('saved-asset-0'),
+      'the run the reader is waiting on must not vanish while the listing lags'
+    ).toBeVisible()
   })
 
   it('reports a listing it could not load instead of looking empty', async () => {
