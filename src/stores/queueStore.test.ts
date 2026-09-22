@@ -79,11 +79,15 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 }))
 
 describe('useQueuePendingTaskCountStore', () => {
-  it('preserves the count when a status has no queue count', () => {
+  it.for([
+    { name: 'null status', status: null },
+    { name: 'missing execution info', status: {} },
+    { name: 'missing queue count', status: { exec_info: {} } }
+  ])('preserves the count for $name', ({ status }) => {
     const store = useQueuePendingTaskCountStore()
     store.count = 3
 
-    store.update(new CustomEvent('status', { detail: null }))
+    store.update(new CustomEvent('status', { detail: status }))
 
     expect(store.count).toBe(3)
   })
