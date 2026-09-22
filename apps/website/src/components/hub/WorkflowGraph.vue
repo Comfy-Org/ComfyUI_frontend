@@ -89,6 +89,31 @@ const control =
       preserveAspectRatio="xMidYMid meet"
     >
       <g :transform="transform">
+        <!-- Whoever built the graph framed and named parts of it, and that
+          framing is most of what makes it readable on the canvas. -->
+        <g v-for="group in picture.groups" :key="group.id">
+          <rect
+            :x="group.x"
+            :y="group.y"
+            :width="group.width"
+            :height="group.height"
+            rx="12"
+            :fill="group.color"
+            fill-opacity="0.16"
+            :stroke="group.color"
+            stroke-opacity="0.5"
+          />
+          <text
+            :x="group.x + 14"
+            :y="group.y + 22"
+            :fill="group.color"
+            font-size="14"
+            font-weight="600"
+          >
+            {{ group.title }}
+          </text>
+        </g>
+
         <path
           v-for="link in picture.links"
           :key="link.id"

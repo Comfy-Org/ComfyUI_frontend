@@ -190,6 +190,145 @@ describe('readGraphPicture', () => {
   })
 })
 
+describe('the values a node carries', () => {
+  // A node sized for its settings and drawn without them is the blank box the
+  // graph was criticised for: the canvas reserves that space for the prompt,
+  // the file and the numbers, which are what say what this graph will do.
+  it('reads the saved values onto the node', () => {
+    const [node] = readGraphPicture({
+      nodes: [{ ...loader, size: [240, 220], widgets_values: ['dog.png', 7] }]
+    }).nodes
+
+    expect(node.widgets.map((widget) => widget.lines.join(' '))).toEqual([
+      'dog.png',
+      '7'
+    ])
+  })
+
+  // Litegraph saves whatever the widget held, and a nested shape was never
+  // something the canvas printed on the node's face.
+  it('leaves out a value that was never a face value', () => {
+    const [node] = readGraphPicture({
+      nodes: [
+        {
+          ...loader,
+          size: [240, 220],
+          widgets_values: ['keep', { nested: true }, [1, 2], null, 2.5]
+        }
+      ]
+    }).nodes
+
+    expect(node.widgets.map((widget) => widget.lines.join(' '))).toEqual([
+      'keep',
+      '2.5'
+    ])
+  })
+
+  it('stops at the bottom edge the graph gave the node', () => {
+    const many = Array.from({ length: 30 }, (_, index) => `v${index}`)
+    const [node] = readGraphPicture({
+      nodes: [{ ...loader, size: [240, 140], widgets_values: many }]
+    }).nodes
+
+    expect(node.widgets.length).toBeLessThan(many.length)
+    for (const widget of node.widgets)
+      expect(widget.y + widget.height).toBeLessThanOrEqual(node.height)
+  })
+
+  // A note is a wall of text the canvas shows in full, and one clipped line of
+  // it inside a tall empty box is the blank node all over again.
+  it('fills the room a long value was given', () => {
+    const prose = 'word '.repeat(200).trim()
+    const [node] = readGraphPicture({
+      nodes: [{ ...loader, size: [300, 400], widgets_values: [prose] }]
+    }).nodes
+    const [widget] = node.widgets
+
+    expect(widget.lines.length).toBeGreaterThan(10)
+    expect(widget.y + widget.height).toBeLessThanOrEqual(node.height)
+    expect(widget.lines.at(-1)).toMatch(/…$/)
+  })
+
+  it('breaks mid-word only when a word cannot fit a line', () => {
+    const [node] = readGraphPicture({
+      nodes: [
+        {
+          ...loader,
+          size: [200, 400],
+          widgets_values: ['alpha beta gamma delta epsilon zeta eta theta']
+        }
+      ]
+    }).nodes
+    const [widget] = node.widgets
+
+    expect(widget.lines.length).toBeGreaterThan(1)
+    for (const line of widget.lines) expect(line).not.toMatch(/^\s|\s$/)
+    expect(widget.lines.join(' ')).toBe(
+      'alpha beta gamma delta epsilon zeta eta theta'
+    )
+  })
+
+  it('grows a node the graph saved no room for', () => {
+    const [node] = readGraphPicture({
+      nodes: [{ ...loader, size: undefined, widgets_values: ['a', 'b', 'c'] }]
+    }).nodes
+
+    expect(node.widgets).toHaveLength(3)
+  })
+})
+
+describe('what the graph chose for itself', () => {
+  // Litegraph writes a colour either in full or in the three-digit short form,
+  // and a node the author coloured is one they meant to stand apart.
+  it.for([
+    ['#432', '#443322'],
+    ['#8b5cf6', '#8b5cf6'],
+    ['nonsense', undefined],
+    [undefined, undefined]
+  ] as const)('reads %s as its header', ([saved, expected]) => {
+    const [node] = readGraphPicture({
+      nodes: [{ ...loader, color: saved }]
+    }).nodes
+
+    expect(node.header).toBe(expected)
+  })
+
+  // A node left in place without letting it run is still part of the picture.
+  it.for([
+    [0, false],
+    [2, true],
+    [4, true]
+  ] as const)('dims a node in mode %s', ([mode, dimmed]) => {
+    const [node] = readGraphPicture({ nodes: [{ ...loader, mode }] }).nodes
+
+    expect(node.dimmed).toBe(dimmed)
+  })
+
+  it('reads the frames somebody drew around the graph', () => {
+    const { groups, viewBox } = readGraphPicture({
+      nodes: [loader],
+      groups: [
+        { title: 'Load', bounding: [-40, -60, 300, 240], color: '#3f6' },
+        { bounding: 'not a box' }
+      ]
+    })
+
+    expect(groups).toEqual([
+      {
+        id: 'g0',
+        title: 'Load',
+        x: -40,
+        y: -60,
+        width: 300,
+        height: 240,
+        color: '#33ff66'
+      }
+    ])
+    // The frame reaches past the node it holds, so the picture makes room.
+    expect(Number(viewBox.split(' ')[1])).toBeLessThan(-60)
+  })
+})
+
 describe('viewBoxFor', () => {
   it('frames every node with room around them', () => {
     const { nodes, viewBox } = readGraphPicture({ nodes: [loader, sampler] })

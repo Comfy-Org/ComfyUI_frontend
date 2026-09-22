@@ -26,11 +26,14 @@ const {
   locale = 'en',
   githubStars = '',
   workshopInBuild = false,
-  pageOwnsPrimaryAction = false
+  pageOwnsPrimaryAction = false,
+  inHub = false
 } = defineProps<{
   locale?: Locale
   githubStars?: string
   workshopInBuild?: boolean
+  /** This page is the V2 catalogue, which the nav names after itself. */
+  inHub?: boolean
   /** The page below has its own primary action, so the nav drops its own
     rather than competing with it. */
   pageOwnsPrimaryAction?: boolean
@@ -119,6 +122,7 @@ const ctaButtons = computed(() =>
     <HeaderMainDesktop
       :locale
       :workshop-in-build="showWorkshop"
+      :in-hub
       :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
     />
     <div
@@ -127,7 +131,7 @@ const ctaButtons = computed(() =>
       :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
       <HeaderAccount v-if="showAccount" :locale="locale" />
-      <HeaderMainMobile :locale :workshop-in-build="showWorkshop" />
+      <HeaderMainMobile :locale :workshop-in-build="showWorkshop" :in-hub />
     </div>
 
     <!-- Desktop CTA buttons -->

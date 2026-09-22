@@ -5,6 +5,9 @@ const { node } = defineProps<{ node: GraphNode }>()
 
 const TITLE_BAR = 24
 const CORNER = 10
+const WIDGET_INSET = 8
+const WIDGET_PAD = 9
+const LINE_HEIGHT = 14
 
 /** The header, drawn as a rounded top rather than a clipped rectangle. */
 const header = (n: GraphNode) =>
@@ -12,17 +15,21 @@ const header = (n: GraphNode) =>
 </script>
 
 <template>
-  <g>
+  <g :opacity="node.dimmed ? 0.4 : 1">
     <rect
       :x="node.x"
       :y="node.y"
       :width="node.width"
       :height="node.height"
       rx="10"
-      fill="#1e1e22"
+      :fill="node.body ?? '#1e1e22'"
       stroke="#ffffff1f"
     />
-    <path :d="header(node)" :fill="node.accent" fill-opacity="0.28" />
+    <path
+      :d="header(node)"
+      :fill="node.header ?? node.accent"
+      :fill-opacity="node.header ? 1 : 0.28"
+    />
     <text
       :x="node.x + 12"
       :y="node.y + 22"
@@ -60,6 +67,30 @@ const header = (n: GraphNode) =>
         text-anchor="end"
       >
         {{ slot.name }}
+      </text>
+    </g>
+
+    <!-- The prompt, the file, the settings: what the node is actually set to,
+      which is the difference between a diagram and a picture of this graph. -->
+    <g v-for="widget in node.widgets" :key="widget.id">
+      <rect
+        :x="node.x + WIDGET_INSET"
+        :y="node.y + widget.y"
+        :width="node.width - WIDGET_INSET * 2"
+        :height="widget.height"
+        rx="9"
+        fill="#00000040"
+        stroke="#ffffff14"
+      />
+      <text
+        v-for="(line, index) in widget.lines"
+        :key="index"
+        :x="node.x + WIDGET_INSET + WIDGET_PAD"
+        :y="node.y + widget.y + WIDGET_PAD + 11 + index * LINE_HEIGHT"
+        fill="#d4d4d4"
+        font-size="11"
+      >
+        {{ line }}
       </text>
     </g>
   </g>

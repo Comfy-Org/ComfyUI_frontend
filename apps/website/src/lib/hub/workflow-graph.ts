@@ -33,6 +33,18 @@ interface GraphSlot {
   readonly y: number
 }
 
+/**
+ * A value the node carries on its face: a prompt, a file, a setting. A long
+ * one is wrapped rather than cut, because the canvas gave it the room and a
+ * node showing one clipped line of a note is the blank box over again.
+ */
+export interface GraphWidget {
+  readonly id: string
+  readonly lines: readonly string[]
+  readonly y: number
+  readonly height: number
+}
+
 export interface GraphNode {
   readonly id: string
   readonly title: string
@@ -41,8 +53,25 @@ export interface GraphNode {
   readonly width: number
   readonly height: number
   readonly accent: string
+  /** The colours the graph itself chose, where it chose any. */
+  readonly header: string | undefined
+  readonly body: string | undefined
+  /** Muted or bypassed, which the canvas draws faded rather than hiding. */
+  readonly dimmed: boolean
   readonly inputs: readonly GraphSlot[]
   readonly outputs: readonly GraphSlot[]
+  readonly widgets: readonly GraphWidget[]
+}
+
+/** A frame somebody drew around part of the graph, and what they called it. */
+export interface GraphGroup {
+  readonly id: string
+  readonly title: string
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+  readonly color: string
 }
 
 export interface GraphLink {
@@ -55,6 +84,7 @@ export interface GraphLink {
 }
 
 export interface GraphPicture {
+  readonly groups: readonly GraphGroup[]
   readonly nodes: readonly GraphNode[]
   readonly links: readonly GraphLink[]
   readonly viewBox: string
@@ -63,8 +93,26 @@ export interface GraphPicture {
 const TITLE_HEIGHT = 34
 const SLOT_HEIGHT = 22
 const SLOT_TOP = TITLE_HEIGHT + 16
+const WIDGET_GAP = 8
+const WIDGET_INSET = 8
+const WIDGET_PAD = 9
+const LINE_HEIGHT = 14
+const WIDGET_HEIGHT = LINE_HEIGHT + WIDGET_PAD * 2
+/** Close enough for the 11px face the node draws its values in. */
+const CHARACTER_WIDTH = 6.2
 const MIN_WIDTH = 180
 const PADDING = 60
+const GROUP_COLOR = '#3f3f46'
+
+/** Litegraph writes a colour either in full or in the three-digit short form. */
+function readColor(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const hex = value.trim()
+  if (/^#[0-9a-f]{6}$/i.test(hex)) return hex
+  if (!/^#[0-9a-f]{3}$/i.test(hex)) return undefined
+  const [, r, g, b] = hex
+  return `#${r}${r}${g}${g}${b}${b}`
+}
 
 function readPair(value: unknown): readonly [number, number] | undefined {
   if (Array.isArray(value) && value.length >= 2) {
@@ -116,14 +164,102 @@ function drawnSlots(
   }))
 }
 
-/** Wide enough to read, and tall enough for whichever side has more rows. */
+/**
+ * What a saved value reads as on the node's face. Anything structured was
+ * never a face value to begin with, so it is left out rather than printed as
+ * a shape nobody put there.
+ */
+function widgetText(value: unknown): string | undefined {
+  if (typeof value === 'string') return value.trim() || undefined
+  if (typeof value === 'boolean') return value ? 'true' : 'false'
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined
+  return Number.isInteger(value)
+    ? String(value)
+    : String(Number(value.toFixed(3)))
+}
+
+function readWidgetValues(value: unknown): readonly string[] {
+  const saved = Array.isArray(value)
+    ? value
+    : value && typeof value === 'object'
+      ? Object.values(value)
+      : []
+  return saved.flatMap((entry) => widgetText(entry) ?? [])
+}
+
+/** Breaks on spaces where it can, and mid-word only when a word cannot fit. */
+function wrap(text: string, perLine: number): string[] {
+  const lines: string[] = []
+  let line = ''
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const candidate = line ? `${line} ${word}` : word
+    if (candidate.length <= perLine) {
+      line = candidate
+      continue
+    }
+    if (line) lines.push(line)
+    line = word
+    while (line.length > perLine) {
+      lines.push(line.slice(0, perLine))
+      line = line.slice(perLine)
+    }
+  }
+  if (line) lines.push(line)
+  return lines.length > 0 ? lines : ['']
+}
+
+/**
+ * The values sit under the slots and fill the room the canvas left for them.
+ * Each takes the lines it needs until the node's bottom edge, and the one that
+ * runs into it ends in an ellipsis rather than spilling out of the box.
+ */
+function drawnWidgets(
+  values: readonly string[],
+  rows: number,
+  width: number,
+  height: number
+): GraphWidget[] {
+  const perLine = Math.max(
+    4,
+    Math.floor((width - WIDGET_INSET * 2 - WIDGET_PAD * 2) / CHARACTER_WIDTH)
+  )
+  const bottom = height - 6
+  const drawn: GraphWidget[] = []
+  let y = slotY(rows) + WIDGET_GAP
+
+  for (const [index, value] of values.entries()) {
+    const room = Math.floor((bottom - y - WIDGET_PAD * 2) / LINE_HEIGHT)
+    if (room < 1) break
+    const wrapped = wrap(value, perLine)
+    const lines =
+      wrapped.length <= room
+        ? wrapped
+        : [...wrapped.slice(0, room - 1), `${wrapped[room - 1]}…`]
+    const box = lines.length * LINE_HEIGHT + WIDGET_PAD * 2
+    drawn.push({ id: `w${index}`, lines, y, height: box })
+    y += box + 4
+  }
+  return drawn
+}
+
+/**
+ * Wide enough to read, and as tall as the canvas made it: a saved height was
+ * chosen around these very values, so it decides how many of them show. Only
+ * a node saved without a size is grown to hold them.
+ */
 function boxFor(
   size: readonly [number, number] | undefined,
-  rows: number
+  rows: number,
+  values: number
 ): { width: number; height: number } {
+  const forValues =
+    slotY(rows) +
+    (values > 0 ? WIDGET_GAP + values * (WIDGET_HEIGHT + 4) : 0) +
+    8
+  const saved = size?.[1]
   return {
     width: Math.max(size?.[0] ?? MIN_WIDTH, MIN_WIDTH),
-    height: Math.max(size?.[1] ?? 0, slotY(rows) + 8)
+    height: saved === undefined ? forValues : Math.max(saved, slotY(rows) + 8)
   }
 }
 
@@ -143,16 +279,44 @@ function nodeFrom(value: unknown): GraphNode | undefined {
 
   const inputs = readSlots(record.inputs)
   const outputs = readSlots(record.outputs)
+  const rows = Math.max(inputs.length, outputs.length)
+  const values = readWidgetValues(record.widgets_values)
+  const box = boxFor(readPair(record.size), rows, values.length)
 
   return {
     id,
     title: readTitle(record),
     x: position[0],
     y: position[1],
-    ...boxFor(readPair(record.size), Math.max(inputs.length, outputs.length)),
+    ...box,
     accent: colorForType(outputs.at(0)?.type),
+    header: readColor(record.color),
+    body: readColor(record.bgcolor),
+    // 0 runs. Anything else is a node the author left in place without letting
+    // it run, and the canvas keeps it visible rather than removing it.
+    dimmed: typeof record.mode === 'number' && record.mode !== 0,
     inputs: drawnSlots(inputs),
-    outputs: drawnSlots(outputs)
+    outputs: drawnSlots(outputs),
+    widgets: drawnWidgets(values, rows, box.width, box.height)
+  }
+}
+
+function groupFrom(value: unknown, index: number): GraphGroup | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const record = value as Record<string, unknown>
+  const bounds = record.bounding
+  if (!Array.isArray(bounds) || bounds.length < 4) return undefined
+  const [x, y, width, height] = bounds
+  if ([x, y, width, height].some((part) => typeof part !== 'number'))
+    return undefined
+  return {
+    id: `g${index}`,
+    title: typeof record.title === 'string' ? record.title : '',
+    x: x as number,
+    y: y as number,
+    width: width as number,
+    height: height as number,
+    color: readColor(record.color) ?? GROUP_COLOR
   }
 }
 
@@ -250,23 +414,39 @@ export function readGraphPicture(source: unknown): GraphPicture {
     ? record.nodes.flatMap((entry) => nodeFrom(entry) ?? [])
     : []
 
+  const groups = Array.isArray(record.groups)
+    ? record.groups.flatMap((entry, index) => groupFrom(entry, index) ?? [])
+    : []
+
   return {
+    groups,
     nodes,
     links: drawnLinks(
       Array.isArray(record.links) ? record.links : [],
       new Map(nodes.map((node) => [node.id, node]))
     ),
-    viewBox: viewBoxFor(nodes)
+    viewBox: viewBoxFor(nodes, groups)
   }
 }
 
-export function viewBoxFor(nodes: readonly GraphNode[]): string {
-  if (nodes.length === 0) return '0 0 800 450'
-  const left = Math.min(...nodes.map((node) => node.x)) - PADDING
-  const top = Math.min(...nodes.map((node) => node.y)) - PADDING
-  const right = Math.max(...nodes.map((node) => node.x + node.width)) + PADDING
-  const bottom =
-    Math.max(...nodes.map((node) => node.y + node.height)) + PADDING
+interface Box {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+}
+
+/** A group reaches past the nodes it frames, so the frame is measured too. */
+export function viewBoxFor(
+  nodes: readonly GraphNode[],
+  groups: readonly GraphGroup[] = []
+): string {
+  const boxes: readonly Box[] = [...nodes, ...groups]
+  if (boxes.length === 0) return '0 0 800 450'
+  const left = Math.min(...boxes.map((box) => box.x)) - PADDING
+  const top = Math.min(...boxes.map((box) => box.y)) - PADDING
+  const right = Math.max(...boxes.map((box) => box.x + box.width)) + PADDING
+  const bottom = Math.max(...boxes.map((box) => box.y + box.height)) + PADDING
   return `${left} ${top} ${right - left} ${bottom - top}`
 }
 

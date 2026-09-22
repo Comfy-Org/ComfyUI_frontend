@@ -95,7 +95,10 @@ describe('buildCatalogue', () => {
     ])
   })
 
-  it('folds a workflow titled after a model it names onto that model', () => {
+  // A model card and a workflow card never share a list, so a workflow named
+  // after the model it runs cannot read as a second product with that name.
+  // It browses with the other workflows and still counts on the model's page.
+  it('browses a workflow titled after a model, and counts it on the model', () => {
     const entries = buildCatalogue(
       [
         template({ name: 'flux_t2i', title: 'Flux: Text to Image' }),
@@ -104,7 +107,11 @@ describe('buildCatalogue', () => {
       [model()]
     )
 
-    expect(titles(entries)).toEqual(['Flux', 'Make a movie poster'])
+    expect(titles(entries)).toEqual([
+      'Flux',
+      'Flux: Text to Image',
+      'Make a movie poster'
+    ])
     const flux = entries[0]
     expect(flux.kind === 'model' && flux.workflows.map((w) => w.name)).toEqual([
       'flux_t2i',

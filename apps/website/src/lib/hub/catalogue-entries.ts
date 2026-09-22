@@ -92,9 +92,10 @@ const titleOpensWith = (title: string, key: string) => {
 }
 
 /**
- * A workflow titled after a model it runs is that model's own operation, not a
- * competitor to it: "Seedance 2.5: Image to Video" beside "Seedance 2.5" reads
- * as two products with one name. It browses on the model's page instead.
+ * The model a workflow is named after, where it is named after one at all:
+ * "Seedance 2.5: Image to Video" is Seedance 2.5's own operation rather than
+ * somebody's graph that happens to call it. The model page reads this to tell
+ * the two apart.
  *
  * The title has to open with the whole name and stop at a word, and where a
  * longer name also matches it wins: "Flux Pro: Generate" belongs to Flux Pro,
@@ -130,12 +131,9 @@ export function buildCatalogue(
   const groups = groupByModel(models)
   const known = catalogueNameIndex(models)
   const naming = new Map<string, FacetedTemplate[]>()
-  const standalone: FacetedTemplate[] = []
-  for (const template of templates) {
+  for (const template of templates)
     for (const key of keysInCatalogue(template, known))
       naming.set(key, [...(naming.get(key) ?? []), template])
-    if (!ownerOf(template, known)) standalone.push(template)
-  }
   const modelEntries = [...groups].map(
     ([key, operations]): ModelEntry => ({
       kind: 'model',
@@ -146,7 +144,10 @@ export function buildCatalogue(
       workflows: naming.get(key) ?? []
     })
   )
-  const workflowEntries = standalone.map(
+  // Every workflow browses on the workflows tab. A model card and a workflow
+  // card are never in the same list, so a workflow named after the model it
+  // runs cannot read as a second product with that name.
+  const workflowEntries = templates.map(
     (template): WorkflowEntry => ({
       kind: 'workflow',
       key: template.name,
