@@ -81,7 +81,7 @@ describe('useAssetsUrlLoader', () => {
     })
   })
 
-  it.for([['garbage'], [''], [['array']]])(
+  it.for([['garbage'], [''], [null], [['array']], [['1']]])(
     'strips %j without opening a panel',
     async ([assets]) => {
       mockRouteQuery.value = { assets }
