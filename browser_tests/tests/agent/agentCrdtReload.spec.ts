@@ -1,5 +1,10 @@
 import { expect, mergeTests } from '@playwright/test'
 
+import type {
+  AgentThreadListResponse,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
+
 import { AGENT_CRDT_DOC_ID_SESSION_KEY } from '@/platform/workflow/persistence/base/storageKeyConstants'
 import {
   AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY,
@@ -24,6 +29,31 @@ const test = mergeTests(agentTest, webSocketFixture)
 
 test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
+  const workflowId = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
+
+  test.beforeEach(async ({ page }) => {
+    const workflows: WorkflowListResponse = {
+      data: [],
+      pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
+    }
+    const threads: AgentThreadListResponse = {
+      threads: [],
+      pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
+    }
+
+    await page.route('**/api/internal/cloud_analytics', (route) =>
+      route.fulfill(jsonRoute({}))
+    )
+    await page.route('**/api/experiment/models', (route) =>
+      route.fulfill(jsonRoute([]))
+    )
+    await page.route(/\/api\/workflows\?limit=100$/, (route) =>
+      route.fulfill(jsonRoute(workflows))
+    )
+    await page.route('**/api/agent/threads', (route) =>
+      route.fulfill(jsonRoute(threads))
+    )
+  })
 
   test('FE-1969 restores the subscription after reload and suspends it in the background', async ({
     page,
@@ -33,27 +63,9 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     webSocketMessages
   }) => {
     test.setTimeout(90_000)
-    const workflowId = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
     const agentPanel = new AgentPanel(page)
     const command = new CommandHelper(page)
 
-    await page.route('**/api/internal/cloud_analytics', (route) =>
-      route.fulfill(jsonRoute({}))
-    )
-    await page.route('**/api/experiment/models', (route) =>
-      route.fulfill(jsonRoute([]))
-    )
-    await page.route(/\/api\/workflows\?limit=100$/, (route) =>
-      route.fulfill(
-        jsonRoute({
-          data: [],
-          pagination: { has_more: false, next_cursor: null }
-        })
-      )
-    )
-    await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
-    )
     await bootAgentApp(page, agentFlagEnabled)
 
     const ws =

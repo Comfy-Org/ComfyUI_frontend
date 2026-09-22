@@ -8,14 +8,8 @@ import {
   reconcilePersistedDocId
 } from './persistedDocId'
 
-// FE-1902 / FEC-5: the persisted doc-id record is owned entirely by
-// `persistedDocId.ts` - key, shape, page-load nonce, TTL, and every read and
-// write, including the FE-1969 reload adoption. This file is a CONSUMER, not a
-// second owner. Two owners cannot coexist on one sessionStorage key: each
-// module mints its own page-load nonce, so whichever writes last leaves the
-// other's reader looking at a foreign nonce and reporting "nothing persisted"
-// for the rest of the page load. The rationale for the nonce and the expiry
-// lives with the owner.
+// `persistedDocId.ts` is the single owner of the persisted doc-id key, shape,
+// page-load nonce, TTL, and reload adoption. This lifecycle only consumes it.
 
 // Re-stamp the expiry on doc traffic at most this often, so a busy channel
 // does not turn every frame into a sessionStorage write.
