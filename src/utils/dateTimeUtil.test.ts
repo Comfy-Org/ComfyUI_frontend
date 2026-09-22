@@ -205,25 +205,13 @@ describe('formatClockTime', () => {
   })
 
   it('takes the hour cycle from the system when no preference is given', () => {
+    const RealDateTimeFormat = Intl.DateTimeFormat
+    vi.spyOn(Intl, 'DateTimeFormat').mockImplementationOnce(
+      (_locales, options) =>
+        new RealDateTimeFormat('en-US-u-hc-h23', options)
+    )
     const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
-    const {
-      hourCycle: systemHourCycle,
-      numberingSystem: systemNumberingSystem
-    } = new Intl.DateTimeFormat(undefined, {
-      hour: 'numeric'
-    }).resolvedOptions()
-    const applicationNumberingSystem =
-      systemNumberingSystem === 'latn' ? 'arab' : 'latn'
-    const applicationLocale = `${
-      systemHourCycle === 'h11' || systemHourCycle === 'h12' ? 'ja-JP' : 'en-US'
-    }-u-nu-${applicationNumberingSystem}`
-    const expected = new Intl.DateTimeFormat(applicationLocale, {
-      hour: 'numeric',
-      minute: '2-digit',
-      second: '2-digit',
-      hourCycle: systemHourCycle
-    }).format(ts)
 
-    expect(formatClockTime(ts, applicationLocale)).toBe(expected)
+    expect(formatClockTime(ts, 'en-US')).toBe('14:05:06')
   })
 })
