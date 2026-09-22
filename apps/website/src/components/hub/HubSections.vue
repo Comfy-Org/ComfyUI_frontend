@@ -93,7 +93,7 @@ const cardClass = 'peek-card shrink-0 snap-start'
           v-for="entry in shelf.shown"
           :key="entry.key"
           :class="cardClass"
-          @click="rememberShelfOnClick($event, shelf.useCase, entry.card.href)"
+          @click="rememberShelfOnClick($event, 'all', entry.card.href)"
         >
           <CatalogueCard :view="entry.card" :locale />
         </li>

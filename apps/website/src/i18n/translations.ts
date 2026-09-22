@@ -10645,8 +10645,8 @@ Enterprise`
   },
   'workshop.v2.clear': { en: 'Clear', 'zh-CN': '清除' },
   'workshop.v2.workflow.back': {
-    en: 'Back to Playground',
-    'zh-CN': '返回 Playground'
+    en: 'Back to the Hub',
+    'zh-CN': '返回 Hub'
   },
   'workshop.v2.workflow.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
   'workshop.v2.workflow.runsOnNote': {

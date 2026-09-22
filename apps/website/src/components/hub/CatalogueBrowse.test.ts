@@ -258,6 +258,28 @@ describe('CatalogueBrowse', () => {
     expect(lastShelf('/hub/model/flux/')).toBe('generate-images')
   })
 
+  // A reader on the shelves has not opened any one shelf, so the way back is
+  // the catalogue. Sending them to a filtered list would land them somewhere
+  // they have never been, and a stale intent from an earlier list must not be
+  // the one that answers.
+  it('leaves the catalogue behind for a card opened from a shelf', async () => {
+    await at('?type=model&useCase=generate-images')
+    await userEvent.click(
+      within(screen.getByTestId('catalogue-grid')).getAllByTestId(
+        'catalogue-card'
+      )[0]
+    )
+
+    await at('')
+    await userEvent.click(
+      within(screen.getByTestId('shelf-generate-images')).getAllByTestId(
+        'catalogue-card'
+      )[0]
+    )
+
+    expect(lastShelf('/hub/model/flux/')).toBe('all')
+  })
+
   // Newest over models that carry no date is a ranking over nothing, so the
   // order follows the tab it was chosen for or gives way.
   it('drops a dated order when the reader leaves the workflows behind', async () => {
