@@ -18,11 +18,15 @@ class TestGraphAdapter implements AgentFixtureAdapter {
   readonly emitLocalOp = vi.fn()
   private activeContext: RemoteMutationContext | undefined
 
+  constructor(private readonly acceptsBatch = true) {}
+
   readonly graphMutations = {
-    batch: (context: RemoteMutationContext, apply: () => void): void => {
+    batch: (context: RemoteMutationContext, apply: () => void): boolean => {
+      if (!this.acceptsBatch) return false
       this.activeContext = context
       try {
         apply()
+        return true
       } finally {
         this.activeContext = undefined
       }
@@ -67,6 +71,15 @@ describe('replayAgentFixture', () => {
     // replay a local context, which is a change to `agentFixtureHarness.ts`
     // rather than to this file.
     expect(adapter.emitLocalOp).not.toHaveBeenCalled()
+  })
+
+  it('rejects a fixture batch that cannot be applied', () => {
+    const adapter = new TestGraphAdapter(false)
+
+    expect(() =>
+      replayAgentFixture(parseAgentResponseFixture(addNodeFixture), adapter)
+    ).toThrow('Agent response fixture batch rejected: msg-add-node')
+    expect(adapter.nodes).toHaveLength(0)
   })
 
   it('rejects a fixture with no scenario name', () => {

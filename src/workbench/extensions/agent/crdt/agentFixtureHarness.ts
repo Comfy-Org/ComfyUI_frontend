@@ -107,7 +107,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export interface AgentFixtureAdapter {
   readonly graphMutations: {
-    batch(context: RemoteMutationContext, apply: () => void): void
+    batch(context: RemoteMutationContext, apply: () => void): boolean
   }
   applyDraftPatch(
     workflow: FixtureWorkflow,
@@ -127,8 +127,13 @@ export function replayAgentFixture(
       opId: frame.data.message_id
     }
 
-    adapter.graphMutations.batch(context, () => {
+    const applied = adapter.graphMutations.batch(context, () => {
       adapter.applyDraftPatch(frame.data.content, context)
     })
+    if (!applied) {
+      throw new AgentFixtureError(
+        `Agent response fixture batch rejected: ${context.opId}`
+      )
+    }
   }
 }
