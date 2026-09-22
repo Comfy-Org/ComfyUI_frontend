@@ -155,8 +155,7 @@ test.describe(
       // saved workflow alone.
       await test.step('both survive reload and reopen without host replay', async () => {
         agentConversation.refuseHostSubscribes()
-        await page.reload({ waitUntil: 'domcontentloaded' })
-        await expect(agentConversation.panel).toBeVisible({ timeout: 30_000 })
+        await agentConversation.reloadWithoutLocalWorkflow()
         const picker = agentConversation.panel.getByRole('button', {
           name: enMessages.agent.switchWorkflow
         })
