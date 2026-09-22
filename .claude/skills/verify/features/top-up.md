@@ -30,7 +30,7 @@ Preconditions:
 - Baseline credits total recorded from S0.
 
 - **Open from the popover.** Choose `Add credits`. A dialog with heading `Add more credits` appears. The page object is `browser_tests/fixtures/components/TopUpCreditsDialog.ts`; reuse its locators (`preset10`…`preset100`, `payAmountInput` = testid `top-up-pay-amount`).
-- **Buy on a saved card.** Choose `$50`, then `Pay $50.00`. The dialog settles and the credits total increases by exactly the amount purchased. On the SDK rail the `POST /api/billing/topup` shows resourceType `fetch` with an `Idempotency-Key`; on legacy, `xhr` with no such header.
+- **Buy on a saved card.** Choose `$50`, then `Pay $50.00`. The dialog settles and the credits total increases by exactly the credits the dialog quoted for that amount (its `Credits` field, e.g. `$50` → `10,550`), not by the dollar figure. The rate is workspace-specific, so read it from the dialog each run. On the SDK rail the `POST /api/billing/topup` shows resourceType `fetch` with an `Idempotency-Key`; on legacy, `xhr` with no such header.
 - **Buy with no saved card.** On an account without one, the provider's payment page opens. Pay, return to the app, and the balance updates **without a manual reload**.
 - **Decline.** Pay with a declining test card. A clear failure message appears and the credits total is **unchanged**. Re-read it after a reload, not just from the screen.
 - **Reload mid-purchase.** Start a purchase and reload while it is still pending. The app picks the operation back up and reports its outcome rather than losing it. Watch `/api/billing/ops/…` and confirm exactly one recovery: the same operation must not be polled on `fetch` and `xhr` at once.

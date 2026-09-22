@@ -30,7 +30,7 @@ Preconditions:
 - A fresh tab per scenario.
 
 - **Baseline capture (S0).** Load with no query string. Open `Settings` → `Plan & Credits`. Record credits total, plan name, renewal date. Open `Activity` and record the first three rows. Save to `temp/verify-evidence/S0/reads.md`. This is the control for every comparison below.
-- **Rail chosen before first read.** Open DevTools Network _before_ loading with a rail on, then load `?ff=billing_sdk_topup_enabled`. The very first `/api/billing/status` and `/api/billing/balance` must already be resourceType `fetch` with an `Idempotency-Key`. An `xhr` first read means the flags arrived after boot and the rail was not actually under test.
+- **Rail chosen before first read.** Open DevTools Network _before_ loading with a rail on, then load `?ff=billing_sdk_topup_enabled`. The very first `/api/billing/status` and `/api/billing/balance` must already be resourceType `fetch` on the `/api/billing/*` path. SDK reads carry no `Idempotency-Key`; the SDK sends it only on writes. An `xhr` first read means the flags arrived after boot and the rail was not actually under test.
 - **Six reads on the SDK.** With a rail on, walk every entry point above and confirm each of the six requests is `fetch`. `Settings` → `Plan & Credits` covers status, balance, plans, capabilities and payment methods; `Activity` covers events.
 - **Value parity.** Repeat the baseline capture under S1, S2 and S3. Credits total, plan name, renewal date and the first three usage-log rows must be identical to S0, with the same events, the same amounts, and the same order.
 - **Credits breakdown.** With a rail on, check the monthly vs prepaid split where shown adds up to the same total as S0.
@@ -40,7 +40,7 @@ Preconditions:
 - **Pagination.** In `Activity`, choose `Next Page`. Page 2 shows different rows than page 1, on both rails.
 - **Workspace scoping.** Switch from workspace A to B. Credits, plan and usage log all change to B and **no rows from A remain on screen**. Repeat while the usage log is still loading. A's rows must not appear under B's name. Switch to a workspace with no subscription and confirm the unsubscribed state renders rather than the previous workspace's plan.
 - **Session boundary.** Sign out and back in with a rail on; credits and plan reload under the correct account. Leave the tab idle a few minutes, interact again, and confirm billing state is still correct with no duplicate polling.
-- **Proof.** For each scenario save the request table (resourceType + `Idempotency-Key` per `/api/billing/*` call) and a screenshot of `Plan & Credits` to `temp/verify-evidence/<scenario>/`.
+- **Proof.** For each scenario save the request table (resourceType and path per `/api/billing/*` call, plus `Idempotency-Key` for writes) and a screenshot of `Plan & Credits` to `temp/verify-evidence/<scenario>/`.
 
 ## Gotchas
 

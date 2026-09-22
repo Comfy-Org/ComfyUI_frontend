@@ -131,10 +131,12 @@ Prefer page objects already in `browser_tests/fixtures/components/` (`TopUpCredi
 
 Both rails POST the same body to the same endpoint, so the body cannot separate them. The transport can:
 
-|              | resourceType  | `Idempotency-Key` header |
-| ------------ | ------------- | ------------------------ |
-| **SDK rail** | `fetch`       | present                  |
-| **Legacy**   | `xhr` (axios) | absent                   |
+|              | resourceType  | `Idempotency-Key` header           |
+| ------------ | ------------- | ---------------------------------- |
+| **SDK rail** | `fetch`       | present on writes, absent on reads |
+| **Legacy**   | `xhr` (axios) | absent                             |
+
+The SDK adds the header only when a request carries an idempotency key, and its readers never do. So a read is attributed by `fetch` plus the `/api/billing/*` path alone.
 
 In DevTools: Network, filter `/api/billing/`. In Playwright: `request.resourceType()` and `request.headerValue('idempotency-key')`. This is the discriminator `topUpSdkRail.spec.ts:26-31` uses.
 
@@ -183,7 +185,7 @@ Everything goes under `temp/verify-evidence/<scenario>/` (`/temp/` is gitignored
 
 Capture, per run:
 
-- **Rail attribution.** A HAR or a request table showing resourceType and `Idempotency-Key` for every `/api/billing/*` call, including the _first_ `status` and `balance` of the page load. The rail is decided before the first read, so a late check proves nothing.
+- **Rail attribution.** A HAR or a request table showing resourceType and path for every `/api/billing/*` call, and `Idempotency-Key` for every write, including the _first_ `status` and `balance` of the page load. The rail is decided before the first read, so a late check proves nothing.
 - **The numbers.** Credits total, plan name, renewal date, and the first three usage-log rows. These are the parity baseline; a migration is only correct if a customer cannot tell which rail they are on.
 - **Screenshots.** The action and the resulting state, not just the final screen.
 - **Console.** Error count with the rail off vs on. A new error that only appears on one rail is a finding.

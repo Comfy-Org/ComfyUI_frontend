@@ -7,7 +7,7 @@ The current focus is the **billing SDK rail migration** (Milestone 1): every bil
 ## Baseline preconditions
 
 - Launch at `http://localhost:5173` with `nvm use 26 && pnpm dev:cloud` (backend: `testcloud.comfy.org`).
-- Run all four Doctor checks. In particular, confirm `curl -s http://localhost:5173/src/composables/useFeatureFlags.ts | grep -c billing_sdk` is non-zero. An environment without the migration makes every result below meaningless.
+- Run all four Doctor checks. In particular, confirm both `curl -s http://localhost:5173/src/composables/useFeatureFlags.ts | grep -c billing_sdk_topup_enabled` and the same with `billing_sdk_subscription_enabled` are non-zero. A build that carries only one of them cannot run S2 or S3. An environment without the migration makes every result below meaningless.
 - Sign in with an **email-verified `@comfy.org`** account. Without it `?ff=` overrides are silently ignored. The human signs in; never type someone's password.
 - Have ready: an account with a saved card, one without, a declining card, a 3DS card, and both a personal and a team workspace.
 - Never drive an instance this run did not start.
@@ -37,7 +37,7 @@ Turning on _either_ write flag moves all six reads onto the SDK readers. Leave `
 
 - Capture the user action and the resulting state, not only the final screen.
 - UI proof: an ARIA snapshot plus a screenshot with the app identity visible.
-- Network proof: resourceType and `Idempotency-Key` for every `/api/billing/*` request, including the first read of the page load.
+- Network proof: resourceType and path for every `/api/billing/*` request, including the first read of the page load, and `Idempotency-Key` for every write.
 - Mutation proof: a second, read-only view of the stored value (reload and re-read the balance; open the usage log).
 - Record the scenario ID with every artifact, under `temp/verify-evidence/<scenario>/`.
 - Report an unreachable path with the attempted step and the unmet precondition. **Do not report a skipped entry point as verified through a different path.** If embedded checkout is not run, it is unvalidated, not covered.
