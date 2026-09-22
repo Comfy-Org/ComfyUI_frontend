@@ -204,7 +204,7 @@ describe('Flux2ImageNode prompt through a follower catch-up reconcile (PM-1303 /
     destroy()
   })
 
-  it.fails('hypothesis C: keeps the prompt the user typed when the doc snapshot predates it', () => {
+  it('hypothesis C: keeps the prompt the user typed when the doc snapshot predates it', () => {
     const { node, committed, destroy } = reconcileAfterUserTypedPrompt()
     expect(committed).toBe(true)
 
