@@ -75,6 +75,17 @@ export class AgentCrdtProjection<TUpdate extends DocUpdate = DocUpdate> {
   }
 
   /**
+   * Forces a same-lineage full reconcile of `workflowId`'s ECS state against
+   * the follower doc outside the frame pipeline — the same reconcile a
+   * session's first real frame after (re)bind takes. Used when a resubscribe
+   * ack proves the doc is already current: no catch-up `doc_update` will
+   * ever arrive to drive that reconcile through {@link applyFrame}.
+   */
+  reconcileFromDoc(workflowId: string, seq: number): boolean {
+    return this.adapter.reconcileFromDoc(workflowId, seq)
+  }
+
+  /**
    * Re-attempts the last frame whose ECS batch did not commit (s3-opt-6).
    * Returns the frame on success so the caller can publish its projection.
    */

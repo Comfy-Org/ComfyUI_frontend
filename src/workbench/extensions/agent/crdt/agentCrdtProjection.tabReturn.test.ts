@@ -107,7 +107,11 @@ function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
     remoteMutations(graphScopeOf(graph)),
     () => graph,
     () => follower.doc,
-    (id) => pendingOps.pendingAddType(id)
+    (id) => pendingOps.pendingAddType(id),
+    {
+      pendingDeletes: () => new Set(),
+      pendingAdds: () => pendingOps.pendingAddNodeIds()
+    }
   )
   let seq = 0
   /** Delivers one host frame; returns whether the adapter committed it. */
@@ -145,7 +149,16 @@ function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
     follower.destroy()
     host.destroy()
   }
-  return { hostApplies, tabReturn, destroy }
+  /**
+   * Registers a human add as sent-but-unresolved (queued, then in flight —
+   * never applied, never delivery-unknown): the sender transmitted it and no
+   * result has come back yet, so `pendingAddNodeIds()` still reports it.
+   */
+  const registerPendingAdd = (op: Op): void => {
+    pendingOps.onBatchMinted([op])
+    pendingOps.onBatchTransmitted([op])
+  }
+  return { hostApplies, tabReturn, destroy, registerPendingAdd }
 }
 
 function addNodeOp(node: LGraphNode, widgetsValues: unknown[]): Op {
@@ -180,17 +193,19 @@ beforeEach(() => {
 
 describe('AgentCrdtProjection after a tab return', () => {
   // The first frame after a rebind runs a full reconcile whose removeMissing
-  // deletes every store record the doc does not hold, and the orphan sweep
-  // then removes the live node.
-  it.fails('keeps a node the user added whose add_node never reached the doc', () => {
+  // would otherwise delete every store record the doc does not hold; a
+  // node whose `add_node` is still queued/in-flight is exempted via
+  // `LocalIntent.pendingAdds` (ADR-CRDT-RECONCILE-0035).
+  it('keeps a node the user added whose add_node never reached the doc', () => {
     const { graph, source } = buildLiveGraph()
-    const { tabReturn, destroy } = bindFollower(
+    const { tabReturn, destroy, registerPendingAdd } = bindFollower(
       graph,
       structuredClone(graph.serialize())
     )
     const added = createRegisteredNode('TestSource')
     graph.add(added)
     added.pos = [300, 20]
+    registerPendingAdd(addNodeOp(added, [20]))
     expect(nodeIds(graph).live).toEqual([String(source.id), String(added.id)])
 
     tabReturn()

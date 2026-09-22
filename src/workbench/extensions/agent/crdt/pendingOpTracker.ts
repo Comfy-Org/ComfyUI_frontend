@@ -26,11 +26,15 @@ export type PendingOpTrackerEvent =
       /** The dropped ledger entries' ops, so consumers can undo their effect. */
       ops: Op[]
       /**
-       * True only when every reverted op is `add_node` — the only kind whose
-       * canvas effect a revert can actually undo (remove the optimistic
-       * node). A `delete_node`/`connect`/`set_widget` revert leaves its
-       * optimistic effect in place, so consumers must not tell the user it
-       * was undone.
+       * True when the reverted batch includes an `add_node` — the only kind
+       * whose canvas effect a revert can actually undo (remove the
+       * optimistic node). A batch can mix kinds (e.g. an unprocessed
+       * add_node alongside a connect), so this says "undoing is possible",
+       * not "every op here was undone"; consumers pair it with their own
+       * count of nodes actually removed (`pendingOpRevert.ts`'s
+       * `removedNodeIds`) before telling the user anything was undone. A
+       * batch with no `add_node` at all leaves its optimistic effect in
+       * place, so this is false and no consumer may claim an undo.
        */
       undone: boolean
     }
@@ -98,6 +102,15 @@ export interface PendingOpTracker {
    * an incoming doc add under the same id cannot be its echo.
    */
   pendingAddType(nodeId: string): string | undefined
+  /**
+   * Every node id with an `add_node` this tracker still holds, in ANY state
+   * (`queued` through `delivery_unknown`) — unlike {@link pendingAddType},
+   * which only answers for the echo-visible subset. A full doc reconcile
+   * (`EcsFollowerAdapter`'s `LocalIntent.pendingAdds`) must not delete a live
+   * node whose add is merely queued or in flight — it was never given the
+   * chance to reach the doc yet, so its absence there proves nothing.
+   */
+  pendingAddNodeIds(): ReadonlySet<string>
 }
 
 /** States in which the host can have already reflected an op back to this follower. */
@@ -164,7 +177,12 @@ export function createPendingOpTracker(
         reason,
         opIds: reverted.map((entry) => entry.opId),
         ops: reverted.map((entry) => entry.shadow),
-        undone: reverted.every((entry) => entry.shadow.op === 'add_node')
+        // `some`, not `every`: a mixed-kind batch (e.g. an add_node reverted
+        // alongside a connect in the same unprocessed/failed sweep) still
+        // removed a real node, and the consumer's own `removedNodeIds` count
+        // is what actually gates the "undone" claim (pendingOpRevert.ts) —
+        // this only has to say whether removing one is possible at all.
+        undone: reverted.some((entry) => entry.shadow.op === 'add_node')
       })
     return reverted
   }
@@ -235,8 +253,8 @@ export function createPendingOpTracker(
 
   function failureCode(failure: unknown): string | undefined {
     if (typeof failure !== 'object' || failure === null) return undefined
-    const code = (failure as { code?: unknown }).code
-    return typeof code === 'string' ? code : undefined
+    if (!('code' in failure)) return undefined
+    return typeof failure.code === 'string' ? failure.code : undefined
   }
 
   function reportHumanOpRejected(entry: PendingOpEntry<Op>): void {
@@ -348,6 +366,9 @@ export function createPendingOpTracker(
       if (!entry || entry.shadow.op !== 'add_node') return undefined
       if (!ECHO_VISIBLE_STATES.has(entry.state)) return undefined
       return entry.shadow.class_type
+    },
+    pendingAddNodeIds() {
+      return new Set(addNodeIndex.keys())
     }
   }
 }

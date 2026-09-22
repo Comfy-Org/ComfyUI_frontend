@@ -327,6 +327,46 @@ describe('createPendingOpTracker', () => {
     ])
   })
 
+  it('claims undone for a mixed-kind unprocessed sweep that includes a reverted add_node', () => {
+    const mixed = [
+      setWidget('op-1', 9),
+      addNode('op-2', 1),
+      connect('op-3', 41)
+    ]
+    tracker.onBatchMinted(mixed)
+    tracker.onBatchTransmitted(mixed)
+    tracker.onBatchSettled(
+      acknowledged(mixed, {
+        ok: false,
+        applied: [],
+        skipped: [],
+        failure: { op_id: 'op-1' }
+      })
+    )
+
+    expect(tracker.entries()).toEqual([])
+    expect(events).toEqual([
+      {
+        type: 'reverted',
+        reason: 'failed',
+        opIds: ['op-1'],
+        ops: [mixed[0]],
+        undone: false
+      },
+      // A single sweep reverts BOTH the unreached add_node and the unreached
+      // connect together: `undone` must be true here so a consumer pairing
+      // it with `removedNodeIds` (pendingOpRevert.ts) can still report the
+      // add's removal, instead of the mixed kinds masking it as `false`.
+      {
+        type: 'reverted',
+        reason: 'unprocessed',
+        opIds: ['op-2', 'op-3'],
+        ops: [mixed[1], mixed[2]],
+        undone: true
+      }
+    ])
+  })
+
   it('an anonymous ok:false names nothing, so the whole in-flight batch is reverted', () => {
     tracker.onBatchMinted(ops)
     tracker.onBatchTransmitted(ops)

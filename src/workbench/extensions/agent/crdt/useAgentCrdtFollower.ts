@@ -49,7 +49,7 @@ import {
   createPendingRevertRemoveNode,
   createRevertNotifier
 } from './pendingOpRevert'
-import { createPendingOpTracker } from './pendingOpTracker'
+import { createPendingCorrelation } from './pendingCorrelation'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
@@ -371,36 +371,6 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
-  let lastProjectedSequence: number | null = null
-  // ADR-CRDT-RECONCILE-0035 (a): which workflow the pending-op ledger's
-  // contents belong to. Distinct from `boundWorkflowId` below, which the
-  // `!active` watch branch nulls on every tab deactivation — the ledger must
-  // NOT reset there, only on a lineage break (doc_reset, follower_replaced,
-  // or a bind to a workflow other than this one), so it needs its own memory
-  // of "what lineage is this" that a deactivation does not touch.
-  //
-  // A lineage break for THIS id is handled the moment it is received —
-  // `resetLineageIfTracked` below — active or not, so this id itself is the
-  // only bookkeeping the ledger's lineage needs; no separate generation
-  // counter is required to notice a break that landed while inactive.
-  let pendingOpsLineageId: string | null = null
-  /**
-   * A lineage break (`doc_reset` / `follower_replaced`) for the currently
-   * tracked workflow invalidates the pending correlation immediately,
-   * whether or not this tab is active: `pendingOps.reset()` is safe either
-   * way, so there is nothing to defer to reactivation.
-   */
-  function resetLineageIfTracked(workflowId: unknown): void {
-    if (typeof workflowId === 'string' && workflowId === pendingOpsLineageId)
-      resetPendingCorrelation()
-  }
-  function lineageChanged(next: string | null): boolean {
-    return pendingOpsLineageId !== next
-  }
-  function adoptLineage(next: string | null): void {
-    resetPendingCorrelation()
-    pendingOpsLineageId = next
-  }
   const removeRevertedNode = createPendingRevertRemoveNode({
     getGraph,
     withLayoutActor
@@ -420,22 +390,29 @@ function startAgentCrdtFollower(
       life: 5000
     })
   })
-  // s3-opt-6: every minted human op is registered here before it flies and
-  // leaves only on its authoritative doc_update effect, on revert, or — for
-  // a skipped duplicate — on a projection at/after its ack seq (s3-opt-2).
-  const pendingOps = createPendingOpTracker({
-    // Applied seq only, never the ack fallback: between doc_subscribed(seq=N)
-    // and the catch-up doc_update(seq=N) the canvas still shows pre-subscribe
-    // state, so a skipped result must park there rather than clear on the ack.
-    // An already-current follower (ack, no catch-up) therefore parks a skipped
-    // id until its next applied frame; a still-pending skipped entry means the
-    // effect frame never reached this follower, so one is coming.
-    currentSeq: () => lastProjectedSequence ?? 0,
+  // Forward reference: `pendingCorrelation.reconcileFromDoc` closes over
+  // `projectionRef.current`, set below once `projection` is constructed
+  // (itself built from `pendingCorrelation.pendingOps`) — assigned before
+  // either side is ever CALLED, only after both exist.
+  const projectionRef: {
+    current: AgentCrdtProjection<ClassifiedDocUpdate> | null
+  } = { current: null }
+  // ADR-CRDT-RECONCILE-0035 (a): owns the pending-op ledger's lineage and its
+  // catch-up settlement — see `pendingCorrelation.ts`. Distinct from
+  // `boundWorkflowId` below, which the `!active` watch branch nulls on every
+  // tab deactivation: the ledger must NOT reset there, only on a lineage
+  // break (doc_reset, follower_replaced, or a bind to a workflow other than
+  // this one), which `pendingCorrelation` tracks independently of activity.
+  const pendingCorrelation = createPendingCorrelation({
+    reconcileFromDoc: (id, seq) =>
+      projectionRef.current?.reconcileFromDoc(id, seq) ?? false,
+    effectPresent: (op) => docEffectPresent(op),
     onEvent: (event) => {
       notifyReverted(event, applyPendingOpRevert(event, removeRevertedNode))
       recordDevEvent('pending_ops', event)
     }
   })
+  const pendingOps = pendingCorrelation.pendingOps
   // Doc node ids whose human delete the host has applied but whose effect
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
@@ -494,6 +471,11 @@ function startAgentCrdtFollower(
     }
     return pending
   }
+  // A pending human `add_node` — queued through delivery-unknown — that a
+  // reactivation's full reconcile must not delete just because the doc does
+  // not have it yet; see `LocalIntent.pendingAdds`.
+  const pendingHumanAdds = (): ReadonlySet<string> =>
+    pendingOps.pendingAddNodeIds()
   const projection = new AgentCrdtProjection<ClassifiedDocUpdate>(
     graphMutations,
     getGraph,
@@ -504,8 +486,9 @@ function startAgentCrdtFollower(
     // the SAME type, in a state the host can have reflected back already. An
     // indexed lookup, not a scan/clone of every pending entry.
     pendingOps.pendingAddType,
-    { pendingDeletes: pendingHumanDeletes }
+    { pendingDeletes: pendingHumanDeletes, pendingAdds: pendingHumanAdds }
   )
+  projectionRef.current = projection
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
@@ -561,21 +544,18 @@ function startAgentCrdtFollower(
     return projection.reconcileLiveGraph(update.workflowId)
   }
 
-  // The host sends no catch-up `doc_update` at all when this follower's
-  // state vector is already current (layoutFollowerBridge's ackSeq comment)
-  // — the only sign a resubscribe completed with nothing to apply. Without
-  // this, a parked entry from before the tab went inactive would never see
-  // the catch-up barrier that resolves it.
-  const resolveParkedIfAlreadyCurrent = (ackSeq: number | undefined): void => {
-    if (ackSeq !== undefined && ackSeq === lastProjectedSequence)
-      pendingOps.resolveDeliveryUnknown(docEffectPresent)
-  }
   const onSubscribeConfirmed = (event: CustomEvent): void => {
     lifecycle.onSubscribeConfirmed()
     resumeHeldOpsIfSubscribed()
     if (subscribedWorkflowId.value !== null)
       retryPendingProjection(subscribedWorkflowId.value)
-    resolveParkedIfAlreadyCurrent(
+    // The host sends no catch-up `doc_update` at all when this follower's
+    // state vector is already current (layoutFollowerBridge's ackSeq
+    // comment) — the only sign a resubscribe completed with nothing to
+    // apply. Without this, a parked entry from before the tab went inactive
+    // would never see the catch-up barrier that resolves it.
+    pendingCorrelation.resolveIfAlreadyCurrent(
+      subscribedWorkflowId.value,
       (event.detail as { seq?: number } | null)?.seq
     )
   }
@@ -674,7 +654,7 @@ function startAgentCrdtFollower(
         ? (event.detail as DocResetDetail)
         : undefined
     incrementOutcome('reset')
-    resetLineageIfTracked(detail?.workflowId)
+    pendingCorrelation.resetIfTracked(detail?.workflowId)
     if (!isCurrentWorkflow(detail?.workflowId)) return
     performDocResetBookkeeping(detail.workflowId, detail, event)
   }
@@ -687,7 +667,7 @@ function startAgentCrdtFollower(
     if (!(event instanceof CustomEvent)) return
     const detail = event.detail as { workflowId?: unknown } | null
     const workflowId = detail?.workflowId
-    resetLineageIfTracked(workflowId)
+    pendingCorrelation.resetIfTracked(workflowId)
     if (
       isTargetActive.value &&
       typeof workflowId === 'string' &&
@@ -718,7 +698,7 @@ function startAgentCrdtFollower(
       projection.discardPending(detail.workflowId)
     // The read path is closed, so no doc_update effect can ever retire what
     // is pending; drop the correlation instead of leaving it stranded.
-    resetPendingCorrelation()
+    pendingCorrelation.reset()
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
       'schema_error',
@@ -772,18 +752,6 @@ function startAgentCrdtFollower(
   }
 
   /**
-   * Every binding or lineage break drops both halves of the pending
-   * correlation together: the tracker's entries AND the projected-seq
-   * watermark. Each subscription is its own sequence lineage, so a stale
-   * watermark from workflow A could otherwise clear workflow B's parked
-   * skipped duplicates before B ever projects (s3-opt-2).
-   */
-  function resetPendingCorrelation(): void {
-    lastProjectedSequence = null
-    pendingOps.reset()
-  }
-
-  /**
    * A same-lineage catch-up: whatever the doc holds right now is the best
    * evidence available for a `delivery_unknown` (parked) entry whose result
    * never arrived (ADR-CRDT-RECONCILE-0035 (a)).
@@ -819,14 +787,7 @@ function startAgentCrdtFollower(
 
   /** Watermark and settlement only - callers own the live-graph reconcile. */
   function onProjected(update: ClassifiedDocUpdate): void {
-    lastProjectedSequence = update.seq
-    if (update.opIds) pendingOps.onDocEffect(update.opIds)
-    pendingOps.onAuthoritativeState(update.seq)
-    // The catch-up barrier only: this is the first frame of a same-lineage
-    // rebind, so whatever the doc holds now is the best evidence available
-    // for a parked entry. An unrelated live delta must not resolve one —
-    // its absence there would prove nothing about a delivery that raced it.
-    if (update.catchUp) pendingOps.resolveDeliveryUnknown(docEffectPresent)
+    pendingCorrelation.onProjected(update)
   }
 
   function retryPendingProjection(workflowId: string): boolean {
@@ -917,8 +878,8 @@ function startAgentCrdtFollower(
     // Target deactivation (e.g. a tab switch away) unbinds the live
     // projection, but it is NOT a lineage break: the pending-op ledger
     // survives it untouched (ADR-CRDT-RECONCILE-0035 (a)), so a
-    // same-workflow reactivation below finds `pendingOpsLineageId`
-    // unchanged and does not reset it.
+    // same-workflow reactivation below finds `pendingCorrelation`'s tracked
+    // lineage unchanged and does not reset it.
     if (boundWorkflowId !== null) {
       projection.unbind(boundWorkflowId)
       boundWorkflowId = null
@@ -940,7 +901,7 @@ function startAgentCrdtFollower(
       boundWorkflowId = null
       // A real detach (no persisted id to rebind to): nothing is bound any
       // more, so the ledger's lineage ends too.
-      adoptLineage(null)
+      pendingCorrelation.adopt(null)
       subscribedWorkflowId.value = null
       retarget(null)
       return
@@ -953,7 +914,8 @@ function startAgentCrdtFollower(
       projection.bind(persisted, bridge.follower)
       boundWorkflowId = persisted
     }
-    if (lineageChanged(persisted)) adoptLineage(persisted)
+    if (pendingCorrelation.lineageChanged(persisted))
+      pendingCorrelation.adopt(persisted)
     subscribedWorkflowId.value = persisted
     retarget(persisted)
     if (justActivated) reconcileAndReportPending(persisted)
@@ -968,7 +930,7 @@ function startAgentCrdtFollower(
       projection.bind(next, bridge.follower)
       boundWorkflowId = next
     }
-    if (lineageChanged(next)) adoptLineage(next)
+    if (pendingCorrelation.lineageChanged(next)) pendingCorrelation.adopt(next)
     subscribedWorkflowId.value = next
     retarget(next)
     if (justActivated) reconcileAndReportPending(next)
@@ -1018,7 +980,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => sender.detach(),
-      () => resetPendingCorrelation(),
+      () => pendingCorrelation.reset(),
       () => coalescer.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),

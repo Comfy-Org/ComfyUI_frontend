@@ -246,6 +246,20 @@ describe('createRevertNotifier', () => {
     expect(notify).not.toHaveBeenCalled()
   })
 
+  it('claims undone for a mixed add_node + delete_node revert that actually removed the add', async () => {
+    const notify = vi.fn()
+    const onReverted = createRevertNotifier(notify)
+
+    // A single unprocessed sweep reverting both kinds together: `undone` is
+    // `true` (some(add_node)) per pendingOpTracker.ts, and the add really
+    // was removed, so the user must see the "undone" wording, not the
+    // generic "couldn't be synced" one a mixed batch used to fall back to.
+    onReverted(reverted([addNode('op-1', 1), deleteNode('op-2', 2)], true), [1])
+    await Promise.resolve()
+
+    expect(notify).toHaveBeenCalledExactlyOnceWith(true)
+  })
+
   it('never claims an undo for a non-add_node revert, even if a node id was somehow removed', async () => {
     const notify = vi.fn()
     const onReverted = createRevertNotifier(notify)

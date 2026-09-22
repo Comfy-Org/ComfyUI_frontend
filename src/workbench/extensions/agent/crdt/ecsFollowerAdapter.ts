@@ -59,9 +59,20 @@ export type MutationsForTarget =
 export interface LocalIntent {
   /** Doc node ids (string keys) with a pending human `delete_node`. */
   pendingDeletes(workflowId: string): ReadonlySet<string>
+  /**
+   * Live node ids (string keys) with a pending human `add_node` the doc does
+   * not hold yet. A full reconcile's `removeMissing` treats the doc as
+   * authoritative for everything else; without this seam it would delete a
+   * node whose add is still on its way, the same race `pendingDeletes` guards
+   * for a delete.
+   */
+  pendingAdds(workflowId: string): ReadonlySet<string>
 }
 
-const NO_LOCAL_INTENT: LocalIntent = { pendingDeletes: () => new Set() }
+const NO_LOCAL_INTENT: LocalIntent = {
+  pendingDeletes: () => new Set(),
+  pendingAdds: () => new Set()
+}
 
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
@@ -447,6 +458,44 @@ export class EcsFollowerAdapter<TUpdate extends DocUpdate = DocUpdate> {
     }
   }
 
+  /**
+   * Runs a full reconcile against the doc for `workflowId` outside the frame
+   * pipeline — the same `applyFullReconcile` batch a session's first frame
+   * takes after (re)bind (`createSession`'s `reconcileNextFrame: true`).
+   * Used when a resubscribe's ack proves the follower doc is already
+   * current, so no catch-up `doc_update` will ever arrive to drive that
+   * reconcile through {@link applyFrame}.
+   */
+  reconcileFromDoc(workflowId: string, seq: number): boolean {
+    const session = this.targets.get(workflowId)
+    if (!session || session.applying) return false
+    session.applying = true
+    try {
+      this.discardSessionPending(session)
+      const doc = session.follower.doc
+      let definitionIndex: SubgraphDefinitionIndex | undefined
+      const definitions = () => (definitionIndex ??= readDefinitions(doc))
+      const context: RemoteMutationContext = {
+        source: 'agent-remote',
+        actor: 'agent-catchup',
+        opId: `already-current:${seq}`
+      }
+      const committed = session.mutations.batch(context, (batch) => {
+        const { ctx } = this.buildFrameApplyContext(
+          session,
+          doc,
+          definitions,
+          batch
+        )
+        this.applyFullReconcile(ctx)
+      })
+      session.reconcileNextFrame = !committed
+      return committed
+    } finally {
+      session.applying = false
+    }
+  }
+
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
   clearForReset(workflowId: string, context: RemoteMutationContext): boolean {
     const session = this.targets.get(workflowId)
@@ -495,6 +544,35 @@ export class EcsFollowerAdapter<TUpdate extends DocUpdate = DocUpdate> {
     session.onNodesChanged = (events) => this.onNodesChanged(session, events)
     session.onLinksChanged = (event) => this.onLinksChanged(session, event)
     return session
+  }
+
+  /**
+   * A SubgraphNode host that is already live must never be rebuilt from its
+   * doc entry: `reconcileNode` (and delete + `addNode`) replaces the host's
+   * input list in place, which drops the `widgetId` / `_subgraphSlot`
+   * bindings its promoted widgets hang off, leaving the host with no widgets
+   * at all. Resync the host's scalar fields (title, mode, flags, properties,
+   * colors) and promoted values only; `readSemanticNode` has already keyed
+   * the values from the definition. Shared by the queued-frame pipeline and
+   * {@link reconcileFromDoc}, which runs the same reconcile outside it.
+   */
+  private buildFrameApplyContext(
+    session: TargetSession<TUpdate>,
+    doc: Y.Doc,
+    definitions: () => SubgraphDefinitionIndex,
+    batch: GraphMutationBatch
+  ): {
+    ctx: FrameApplyContext
+    isHost: (payload: SemanticNodePayload) => boolean
+  } {
+    const isHost = (payload: SemanticNodePayload) =>
+      definitions().has(payload.type)
+    const upsertNode: UpsertNode = (payload, mode) => {
+      if (mode === 'add') batch.addNode(payload)
+      else if (isHost(payload)) batch.reconcileNodeFields(payload)
+      else batch.reconcileNode(payload)
+    }
+    return { ctx: { session, batch, doc, definitions, upsertNode }, isHost }
   }
 
   private applyQueuedFrame(
@@ -556,31 +634,12 @@ export class EcsFollowerAdapter<TUpdate extends DocUpdate = DocUpdate> {
       link && !isIncompatibleLinkType(link) ? [] : [Number(id)]
     )
     const committed = session.mutations.batch(frameContext(update), (batch) => {
-      // A SubgraphNode host that is already live must never be rebuilt from
-      // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
-      // host's input list in place, which drops the `widgetId` /
-      // `_subgraphSlot` bindings its promoted widgets hang off, leaving the
-      // host with no widgets at all. Resync the host's scalar fields (title,
-      // mode, flags, properties, colors) and promoted values only;
-      // `readSemanticNode` has already keyed the values from the definition.
-      const isHost = (payload: SemanticNodePayload) =>
-        definitions().has(payload.type)
-      const upsertNode = (
-        payload: SemanticNodePayload,
-        mode: 'add' | 'reconcile'
-      ) => {
-        if (mode === 'add') batch.addNode(payload)
-        else if (isHost(payload)) batch.reconcileNodeFields(payload)
-        else batch.reconcileNode(payload)
-      }
-
-      const ctx: FrameApplyContext = {
+      const { ctx, isHost } = this.buildFrameApplyContext(
         session,
-        batch,
         doc,
         definitions,
-        upsertNode
-      }
+        batch
+      )
 
       if (reconcile) {
         this.applyFullReconcile(ctx)
@@ -639,8 +698,14 @@ export class EcsFollowerAdapter<TUpdate extends DocUpdate = DocUpdate> {
       }),
       session.reportedErrors
     )
+    // A pending add's node id is not in `nodes` (the doc does not have it
+    // yet), but it must still be RETAINED — never deleted by `removeMissing`
+    // as if the doc had authoritatively dropped it.
+    const retainedNodeIds = new Set(nodes.map(({ id }) => toNodeId(id)))
+    for (const id of this.intent.pendingAdds(session.workflowId))
+      retainedNodeIds.add(toNodeId(id))
     batch.removeMissing(
-      nodes.map(({ id }) => toNodeId(id)),
+      [...retainedNodeIds],
       links.map(({ id }) => id)
     )
     for (const payload of nodes) upsertNode(payload, 'reconcile')
