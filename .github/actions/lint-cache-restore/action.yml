@@ -1,0 +1,47 @@
+name: 'Restore lint caches'
+description: >
+  Restores the ESLint and Stylelint caches from the most recent run on the same configuration,
+  falling back to any run for the same lockfile. Every lint script runs with
+  --cache-strategy content so entries stay valid across checkouts with
+  different mtimes. Pair with lint-cache-save using the returned key.
+
+inputs:
+  scope:
+    description: Cache namespace; use one per job so jobs do not overwrite each other
+    required: true
+  path:
+    description: Newline-separated cache paths (same value for lint-cache-save)
+    required: true
+
+outputs:
+  cache-key:
+    description: Exact key to pass to lint-cache-save
+    value: ${{ steps.key.outputs.key }}
+
+runs:
+  using: composite
+  steps:
+    - name: Compute cache key
+      id: key
+      shell: bash
+      env:
+        SCOPE: ${{ inputs.scope }}
+        LOCK_HASH: ${{ hashFiles('pnpm-lock.yaml') }}
+        CONFIG_HASH: ${{ hashFiles('eslint.config.ts', 'tools/eslint-plugins/**', '.stylelintrc.json', 'tsconfig*.json') }}
+      run: |
+        lockfile_prefix="${SCOPE}-cache-${RUNNER_OS}-${LOCK_HASH}"
+        config_prefix="${lockfile_prefix}-${CONFIG_HASH}"
+        {
+          echo "lockfile-prefix=${lockfile_prefix}-"
+          echo "config-prefix=${config_prefix}-"
+          echo "key=${config_prefix}-${GITHUB_SHA}"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Restore caches
+      uses: actions/cache/restore@v5
+      with:
+        path: ${{ inputs.path }}
+        key: ${{ steps.key.outputs.key }}
+        restore-keys: |
+          ${{ steps.key.outputs.config-prefix }}
+          ${{ steps.key.outputs.lockfile-prefix }}

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { RuleTester } from 'oxlint/plugins-dev'
 import * as ts from 'typescript'
@@ -9,10 +9,19 @@ type Node = Parameters<Context['sourceCode']['getScope']>[0]
 
 const PINIA_MODULES = new Set(['pinia', '@pinia/testing'])
 const PINIA_FACTORIES = new Set(['createPinia', 'createTestingPinia'])
+const VITEST_MOCK_METHODS = new Set(['mock', 'doMock', 'spyOn', 'mocked'])
+const MAY_EXPORT_STORE =
+  /\bdefineStore\b|^\s*export\s*(?:\*|\{[^}]*\})\s*from\b/m
 const compilerOptions: ts.CompilerOptions = {
   moduleResolution: ts.ModuleResolutionKind.Bundler,
   paths: { '@/*': [resolve(import.meta.dirname, '../../src/*')] }
 }
+const resolutionCache = ts.createModuleResolutionCache(
+  process.cwd(),
+  (fileName) => fileName,
+  compilerOptions
+)
+const piniaModules = new Map<string, { mtimeMs: number; result: boolean }>()
 
 function literal(node: Node | undefined): string | undefined {
   if (node?.type === 'Literal' && typeof node.value === 'string') {
@@ -100,7 +109,6 @@ function importedReference(
 
 export const useGlobalPinia: Rule = {
   create(context) {
-    const modules = new Map<string, boolean>()
     function isPiniaModule(
       specifier: string,
       importer = context.filename
@@ -112,18 +120,17 @@ export const useGlobalPinia: Rule = {
         specifier,
         importer,
         compilerOptions,
-        ts.sys
+        ts.sys,
+        resolutionCache
       ).resolvedModule?.resolvedFileName
       if (!resolved) return false
-      const cached = modules.get(resolved)
-      if (cached !== undefined) return cached
-      modules.set(resolved, false)
-      const source = ts.createSourceFile(
-        resolved,
-        readFileSync(resolved, 'utf8'),
-        ts.ScriptTarget.Latest,
-        true
-      )
+      const mtimeMs = statSync(resolved).mtimeMs
+      const cached = piniaModules.get(resolved)
+      if (cached?.mtimeMs === mtimeMs) return cached.result
+      piniaModules.set(resolved, { mtimeMs, result: false })
+      const text = readFileSync(resolved, 'utf8')
+      if (!MAY_EXPORT_STORE.test(text)) return false
+      const source = ts.createSourceFile(resolved, text, ts.ScriptTarget.Latest)
       const factories = new Set<string>()
       const namespaces = new Set<string>()
       for (const statement of source.statements) {
@@ -172,7 +179,7 @@ export const useGlobalPinia: Rule = {
             ts.isStringLiteral(statement.moduleSpecifier) &&
             isPiniaModule(statement.moduleSpecifier.text, resolved)
         )
-      modules.set(resolved, result)
+      piniaModules.set(resolved, { mtimeMs, result })
       return result
     }
 
@@ -233,6 +240,11 @@ export const useGlobalPinia: Rule = {
         }
       },
       CallExpression(node) {
+        if (
+          node.callee.type === 'MemberExpression' &&
+          !VITEST_MOCK_METHODS.has(propertyName(node.callee.property) ?? '')
+        )
+          return
         const reference = importedReference(context, node.callee)
         if (
           reference?.source !== 'vitest' ||
