@@ -5380,6 +5380,100 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
+  // PM-1429/PM-1430: a brand-new tab plus a brand-new chat session displays
+  // the tab as bound (renderAndSend's target is the active workflow), but
+  // the turn used to go out with neither workflow_id NOR any signal that a
+  // tab was selected at all - indistinguishable, server-side, from no tab
+  // being selected. The agent then refused to edit: "I can't because you
+  // don't have a workflow selected to edit."
+  it('flags a freshly created, unsaved tab as unbound rather than unselected', async () => {
+    const tab = makeTab()
+    Object.assign(tab, {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        nodes: [{ id: 1, type: 'TextInput' }],
+        links: []
+      })
+    })
+    const bodies = mockMessagesEndpoint('wf-fresh')
+
+    await renderAndSend('add one text input node')
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
+  })
+
+  // A restored/existing thread (no turn of THIS session has bound anything
+  // yet - `New Chat` is what puts the session into that state here) whose
+  // target tab is still unbound must flag it AND still send its draft -
+  // dropping the draft here would hand the server's mint an empty canvas
+  // instead of the node already on the tab.
+  it('flags an unbound tab as unbound on a restored thread, with its draft attached', async () => {
+    const tab = makeTab()
+    Object.assign(tab, {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        nodes: [{ id: 1, type: 'TextInput' }],
+        links: []
+      })
+    })
+    const bodies = mockMessagesEndpoint('wf-fresh')
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    useAgentConversationStore().setThreadId('th-existing')
+
+    await sendFromComposer('add one text input node')
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
+    expect(bodies[0]).toHaveProperty('draft')
+  })
+
+  // Companion to the test above: this is the happy path a page reload
+  // relies on. boundWorkflowId (module state, the session's own memory of
+  // having bound something) resets on reload, but the tab-binding store
+  // persists to localStorage and survives it. As long as that persisted
+  // record's graphId still matches the tab's own graph id - guaranteed for
+  // any tab created through workflowStore.createTemporary/createNewWorkflow,
+  // which always mint one via ensureWorkflowId before the tab is ever open -
+  // cloudIdFor resolves the bound id from that persisted record alone, so
+  // the turn never re-flags the tab as unbound or re-mints a second
+  // workflow for it.
+  it('resolves a workflow bound before reload from persisted storage, without re-flagging the tab as unbound', async () => {
+    const tab = makeTab()
+    Object.assign(tab, {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        id: 'graph-abc',
+        nodes: [{ id: 1, type: 'TextInput' }],
+        links: []
+      })
+    })
+    localStorage.setItem(
+      'Comfy.Agent.WorkflowTabBindings.v2',
+      JSON.stringify({
+        'wf-from-before-reload': {
+          tabPath: tab.path,
+          graphId: 'graph-abc',
+          confirmedAt: Date.now()
+        }
+      })
+    )
+    const bodies = mockMessagesEndpoint('wf-from-before-reload')
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    useAgentConversationStore().setThreadId('th-existing')
+
+    await sendFromComposer('add one text input node')
+
+    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-from-before-reload' })
+    expect(bodies[0]).not.toHaveProperty('current_tab_unbound')
+  })
+
   it('disables target selection for an active turn and ignores agent tab changes for attribution', async () => {
     makeTab('wf-42')
     const other = addTab('workflows/other.json')
