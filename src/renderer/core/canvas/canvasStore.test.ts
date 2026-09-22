@@ -17,6 +17,7 @@ import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapt
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
@@ -119,6 +120,24 @@ describe('useCanvasStore', () => {
       expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
       expect(store.appScalePercentage).toBe(150)
     })
+  })
+
+  it('highlights nodes without changing graph selection', async () => {
+    const canvas = fromPartial<LGraphCanvas>({
+      highlighted_node_ids: new Set(),
+      selectedItems: new Set(),
+      setDirty: vi.fn(),
+      canvas: document.createElement('canvas')
+    })
+    store.canvas = canvas
+    await nextTick()
+
+    store.setHighlightedNodeIds([toNodeId(7)])
+
+    expect(store.highlightedNodeIds).toEqual(new Set([toNodeId(7)]))
+    expect(canvas.highlighted_node_ids).toEqual(new Set(['7']))
+    expect(canvas.selectedItems).toEqual(new Set())
+    expect(canvas.setDirty).toHaveBeenCalledWith(true, false)
   })
 
   describe('node:before-removed selection cleanup', () => {
