@@ -24,6 +24,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import type { BatchOutcome } from './opSender'
 import type { DocFrameTransport, DocUpdate } from './docFrameClient'
+import { recordDevEvent } from './devPanelLog'
 import type { GraphOperation } from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {
@@ -307,7 +308,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('records only the length of an outbound frame that is not a JSON object', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     const { unmount } = mountFollower('wf-1')
     const transport = clientState.transport
     if (!transport) throw new Error('Expected the client transport')
@@ -1243,7 +1243,6 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('records a dev event only when nodes were materialized', async () => {
-      const { recordDevEvent } = await import('./devPanelLog')
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
@@ -1444,7 +1443,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('a workflow switch resets the projected-seq watermark so a skipped duplicate parks', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-a')
     let enqueue!: ReturnType<
       typeof useAgentCrdtFollower
@@ -1489,7 +1487,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('a schema_error drops pending correlation instead of stranding it', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
       typeof useAgentCrdtFollower
@@ -1520,7 +1517,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('settles pending state only after a rejected projection retries', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     let enqueue!: ReturnType<
       typeof useAgentCrdtFollower
     >['enqueueHumanOperations']
@@ -1679,7 +1675,6 @@ describe('useAgentCrdtFollower', () => {
 
   it('ADR-CRDT-RECONCILE-0035 (a): a delivery-unknown batch resolves per op against the next same-lineage catch-up', async () => {
     vi.useFakeTimers()
-    const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
       typeof useAgentCrdtFollower
@@ -2017,7 +2012,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
@@ -2041,7 +2035,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('a doc switch settles the transmitted in-flight batch for the old doc unconfirmed immediately, without waiting the resend', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     const { unmount, enqueue, workflowId } = mountFollower('wf-1')
     // Mirror the real bridge's reconcile(): a changed desired doc clears send
     // reality synchronously inside subscribe()/unsubscribe().
@@ -2119,7 +2112,6 @@ describe('useAgentCrdtFollower', () => {
   }
 
   async function settledHumanOpStates(): Promise<string[]> {
-    const { recordDevEvent } = await import('./devPanelLog')
     return vi
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
@@ -2251,7 +2243,6 @@ describe('useAgentCrdtFollower', () => {
     }
 
     async function settledStates(): Promise<string[]> {
-      const { recordDevEvent } = await import('./devPanelLog')
       return vi
         .mocked(recordDevEvent)
         .mock.calls.filter(([event]) => event === 'human_ops_settled')
@@ -2271,7 +2262,6 @@ describe('useAgentCrdtFollower', () => {
     beforeEach(async () => {
       vi.useFakeTimers()
       clientState.sendOps.mockClear()
-      const { recordDevEvent } = await import('./devPanelLog')
       vi.mocked(recordDevEvent).mockClear()
     })
 
