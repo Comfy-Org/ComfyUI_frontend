@@ -8,6 +8,8 @@ import { useCommandPolicyStore } from '@/stores/commandPolicyStore'
 
 import { acquireSelectOnlyPin, releaseSelectOnlyPin } from './selectOnlyPin'
 
+const graphMutationLockOwners = new Set<symbol>()
+
 export function useCanvasPickingPolicySync() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
@@ -16,6 +18,12 @@ export function useCanvasPickingPolicySync() {
   const owner = Symbol('useCanvasPickingPolicySync')
 
   let pinnedCanvas: LGraphCanvas | undefined
+
+  function lockGraphMutations(locked: boolean) {
+    if (locked) graphMutationLockOwners.add(owner)
+    else graphMutationLockOwners.delete(owner)
+    commandPolicyStore.graphMutationsLocked = graphMutationLockOwners.size > 0
+  }
 
   function releasePin() {
     if (!pinnedCanvas) return
@@ -37,7 +45,7 @@ export function useCanvasPickingPolicySync() {
       () => agentNodeSelectionStore.isActive
     ],
     ([canvasInfoEnabled, canvas, picking]) => {
-      commandPolicyStore.graphMutationsLocked = picking
+      lockGraphMutations(picking)
       if (picking && canvas) pinSelectOnly(canvas)
       else releasePin()
       if (!canvas) return
@@ -47,5 +55,8 @@ export function useCanvasPickingPolicySync() {
     { immediate: true, flush: 'sync' }
   )
 
-  onScopeDispose(releasePin)
+  onScopeDispose(() => {
+    lockGraphMutations(false)
+    releasePin()
+  })
 }

@@ -256,4 +256,30 @@ describe('useCanvasPickingPolicySync', () => {
 
     expect(canvasStore.canvas.selectOnly).toBe(false)
   })
+
+  it('unlocks graph mutations when the scope stops mid-pick', () => {
+    useCanvasStore().canvas = createCanvas()
+    scope.run(useCanvasPickingPolicySync)
+    useAgentNodeSelectionStore().isActive = true
+
+    scope.stop()
+
+    expect(useCommandPolicyStore().graphMutationsLocked).toBe(false)
+  })
+
+  it('keeps graph mutations locked while another live instance still projects picking', () => {
+    useCanvasStore().canvas = createCanvas()
+    const secondScope = effectScope()
+    scope.run(useCanvasPickingPolicySync)
+    secondScope.run(useCanvasPickingPolicySync)
+    useAgentNodeSelectionStore().isActive = true
+
+    scope.stop()
+
+    expect(useCommandPolicyStore().graphMutationsLocked).toBe(true)
+
+    secondScope.stop()
+
+    expect(useCommandPolicyStore().graphMutationsLocked).toBe(false)
+  })
 })
