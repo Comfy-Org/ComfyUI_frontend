@@ -53,6 +53,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import type { RootGraphId } from '@/types/graphScopeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -556,13 +557,25 @@ const {
   // root graph exists.
   () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
 )
+// The bound document's serialized root graph id, independent of what is
+// currently on the canvas: `beforeLoadNewGraph` persists the outgoing
+// workflow's `activeState` before the shared renderer graph is rewritten, so
+// this stays the bound workflow's own root id through a tab switch instead of
+// tracking whichever graph the switch is loading.
+function boundRootGraphId(): RootGraphId | null {
+  const bound = boundWorkflowId.value
+  if (bound === null) return null
+  const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
+  return id === undefined ? null : toRootGraphId(id)
+}
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
-  getGraph: () => (app.isGraphReady ? app.rootGraph : null)
+  getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  boundRootGraphId
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,

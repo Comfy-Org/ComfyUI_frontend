@@ -91,7 +91,8 @@ describe('attachMintPortWiring', () => {
         return () => layoutListeners.delete(listener)
       },
       localActorPrefix: 'user-',
-      getGraph: () => graph
+      getGraph: () => graph,
+      boundRootGraphId: () => toRootGraphId(ROOT_ID)
     })
   })
 

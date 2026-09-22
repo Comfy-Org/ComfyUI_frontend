@@ -35,6 +35,7 @@ setupInlinePromptEditorDom()
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -120,6 +121,7 @@ const appMock = vi.hoisted(() => {
     loadGraphData: vi.fn(),
     graph,
     rootGraph: graph,
+    isGraphReady: false,
     canvas: undefined as
       | {
           graph: {
@@ -269,6 +271,17 @@ import { useAgentConversationStore } from './stores/agent/agentConversationStore
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import { attachMintPortWiring } from './crdt/mintPortWiring'
+import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
+
+const mintPortWiringDeps = vi.hoisted(() => ({
+  current: null as MintPortWiringDeps | null
+}))
+vi.mock(import('./crdt/mintPortWiring'), { spy: true })
+vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
+  mintPortWiringDeps.current = deps
+  return fromPartial<MintPortWiring>({ detach: vi.fn() })
+})
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
@@ -326,8 +339,14 @@ beforeEach(() => {
   canvasStore.currentGraph = null
   appMock.graph.nodes = []
   appMock.graph.arrange.mockClear()
-  Object.assign(appMock.rootGraph, { subgraphs: new Map() })
+  Object.assign(appMock.rootGraph, { subgraphs: new Map(), id: undefined })
+  appMock.isGraphReady = false
   appMock.canvas = undefined
+  mintPortWiringDeps.current = null
+  vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
+    mintPortWiringDeps.current = deps
+    return fromPartial<MintPortWiring>({ detach: vi.fn() })
+  })
   workflowService.saveWorkflow.mockClear()
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
@@ -6412,5 +6431,80 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it("reports the bound workflow's own stored root graph id once bound", async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add an upscaler')
+
+    await vi.waitFor(() =>
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+        toRootGraphId('wf-42')
+      )
+    )
+  })
+
+  it('leaves the bound root graph id null while no workflow is bound and active', () => {
+    renderWithSelectedTarget()
+
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBeNull()
+  })
+
+  it("reports the newly bound workflow's root graph id after an active-tab switch, even though the previously bound workflow stayed correct while its tab was inactive", async () => {
+    makeTab('wf-a')
+    const tabB = addTab('workflows/b.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-b' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-b', tabB.path)
+    mockMessagesEndpoint('wf-a')
+
+    await renderAndSend('start on A')
+
+    await vi.waitFor(() =>
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+        toRootGraphId('wf-a')
+      )
+    )
+
+    // A stays bound but leaves the screen; a write-once latch would also
+    // still report wf-a here, so this alone would not catch a regression.
+    workflowStore.activeWorkflow = addTab('workflows/elsewhere.json')
+    await nextTick()
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      toRootGraphId('wf-a')
+    )
+
+    // The agent moves the session onto B's own tab.
+    ws.emit('agent_active_tab', { workflow_id: 'wf-b', thread_id: 'th-1' })
+
+    await vi.waitFor(() =>
+      expect(workflowStore.activeWorkflow?.path).toBe(tabB.path)
+    )
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      toRootGraphId('wf-b')
+    )
+  })
+
+  it("reflects the bound workflow's own root graph id rotating without a rebind (regression)", async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add an upscaler')
+
+    await vi.waitFor(() =>
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+        toRootGraphId('wf-42')
+      )
+    )
+
+    // The same bound workflow's own graph id rotates in place (LGraph.clear
+    // mints a fresh uuid) without boundWorkflowId itself ever changing.
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42-rotated' })
+
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      toRootGraphId('wf-42-rotated')
+    )
   })
 })
