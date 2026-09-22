@@ -133,18 +133,21 @@ const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
 }
 
 describe('NodeHeader.vue', () => {
-  it.for([{ picking: false }, { picking: true }])(
-    'offers the collapse button as actionable and emits collapse only while picking=$picking is false',
-    async ({ picking }) => {
+  it.for([
+    { picking: false, disabled: false, collapseCalls: 1 },
+    { picking: true, disabled: true, collapseCalls: 0 }
+  ])(
+    'picking=$picking disables the collapse button: disabled=$disabled, collapse emitted $collapseCalls times',
+    async ({ picking, disabled, collapseCalls }) => {
       useAgentNodeSelectionStore().isActive = picking
       const { user, onCollapse } = renderHeader()
       const collapseButton = screen.getByTestId('node-collapse-button')
 
-      expect(collapseButton).toHaveProperty('disabled', picking)
+      expect(collapseButton).toHaveProperty('disabled', disabled)
 
       await user.click(collapseButton)
 
-      expect(onCollapse).toHaveBeenCalledTimes(picking ? 0 : 1)
+      expect(onCollapse).toHaveBeenCalledTimes(collapseCalls)
     }
   )
 
