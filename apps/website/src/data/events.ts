@@ -400,7 +400,8 @@ const events: readonly ComfyEvent[] = [
     coords: { lat: 37.7749, lng: -122.4194 },
     title: {
       en: 'SF Tech Week: ComfyUI Panel with TOOL ft. Yannik Marek',
-      'zh-CN': 'SF Tech Week：与 TOOL 共同举办的 ComfyUI 圆桌讨论（特邀 Yannik Marek）'
+      'zh-CN':
+        'SF Tech Week：与 TOOL 共同举办的 ComfyUI 圆桌讨论（特邀 Yannik Marek）'
     },
     description: {
       en: 'Comfy joins TOOL for a panel during San Francisco Tech Week, featuring Yannik Marek from the Comfy team.',
@@ -429,7 +430,8 @@ const events: readonly ComfyEvent[] = [
     coords: { lat: 34.0211, lng: -118.3965 },
     title: {
       en: 'LA Tech Week: ComfyUI Panel with TOOL ft. Justin Offermann',
-      'zh-CN': 'LA Tech Week：与 TOOL 共同举办的 ComfyUI 圆桌讨论（特邀 Justin Offermann）'
+      'zh-CN':
+        'LA Tech Week：与 TOOL 共同举办的 ComfyUI 圆桌讨论（特邀 Justin Offermann）'
     },
     description: {
       en: 'Comfy joins TOOL for a panel during LA Tech Week, featuring Justin Offermann from the Comfy team.',
