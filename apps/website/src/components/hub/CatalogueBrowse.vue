@@ -290,6 +290,36 @@ const heading = computed(() =>
       :locale
     />
 
+    <!-- Where you are and the way out of it, before the controls that act on
+      it: the tabs switch halves inside this list rather than announce it. -->
+    <div
+      v-if="inSection"
+      class="mb-4 flex flex-col items-start"
+      data-testid="catalogue-place"
+    >
+      <button
+        type="button"
+        class="-ms-1 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition outline-none hover:text-primary-comfy-yellow hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        data-testid="catalogue-back"
+        @click="backToShelves"
+      >
+        <ChevronLeft class="size-4" aria-hidden="true" />
+        {{ t('workshop.v2.back', locale) }}
+      </button>
+      <h2
+        class="mt-3 text-3xl font-bold text-primary-warm-white sm:text-4xl"
+        data-testid="catalogue-heading"
+      >
+        {{ heading }}
+        <span
+          class="text-base font-normal text-primary-warm-gray tabular-nums"
+          data-testid="catalogue-heading-count"
+        >
+          {{ matched.length }}
+        </span>
+      </h2>
+    </div>
+
     <!-- One field and one order read every kind, so they belong to the
       catalogue rather than to the list, and they are there before anything has
       been asked. -->
@@ -336,27 +366,6 @@ const heading = computed(() =>
     />
 
     <div v-else class="min-w-0">
-      <div
-        v-if="useCase !== 'all' || wholeList"
-        class="mb-6 flex flex-col items-start gap-1"
-      >
-        <button
-          type="button"
-          class="-ms-1 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm text-content-muted transition-colors outline-none hover:text-content-bright focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-          data-testid="catalogue-back"
-          @click="backToShelves"
-        >
-          <ChevronLeft class="size-4" aria-hidden="true" />
-          {{ t('workshop.v2.back', locale) }}
-        </button>
-        <h2
-          class="text-xl font-medium text-primary-warm-white"
-          data-testid="catalogue-heading"
-        >
-          {{ heading }}
-        </h2>
-      </div>
-
       <CatalogueToolbar
         v-model:uses-model="usesModel"
         :narrowed-by="narrowedBy"
