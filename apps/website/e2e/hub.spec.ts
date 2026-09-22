@@ -142,7 +142,11 @@ test.describe('V2 catalogue', () => {
   }) => {
     await page.goto('/hub/workflow/api_google_nano_banana2_image_edit/')
 
-    await expect(page.getByTestId('workflow-kind')).toContainText(/Workflow/i)
+    // The header names what answers for the workflow, the way a model page
+    // names its provider: the model the graph calls.
+    await expect(page.getByTestId('hub-header-eyebrow')).toContainText(
+      /Nano Banana/i
+    )
     await expect(page.getByTestId('playground-tab')).toBeVisible()
     await expect(page.getByTestId('workflow-about')).toHaveCount(0)
 

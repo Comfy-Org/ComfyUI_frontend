@@ -39,6 +39,15 @@ describe('getHubWorkflowPage', () => {
     expect(routed.runsOn.map((ref) => ref.name)).toContain('Nano Banana Pro')
   })
 
+  // Some registry rows list the maker beside the model it made, which reads on
+  // the page as a graph calling two models rather than one.
+  it('leaves the maker out of the models a workflow runs on', () => {
+    const page = getHubWorkflowPage('api_google_nano_banana2_image_edit')!
+
+    expect(page.runsOn.map((ref) => ref.name)).not.toContain('Google')
+    expect(page.runsOn.map((ref) => ref.name)).toContain('Nano Banana 2')
+  })
+
   // A graph the catalogue no longer holds has no page at all, whatever the
   // registry still ships under that name.
   it.for([

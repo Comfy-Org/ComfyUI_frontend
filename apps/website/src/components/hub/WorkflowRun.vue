@@ -22,12 +22,11 @@ const {
   cloudUrl: string
   runsHere: boolean
   tutorialUrl: string | undefined
-  description: string | undefined
   models: readonly { name: string; model: WorkshopModel | undefined }[]
-  tags: readonly { label: string; href: string }[]
   author: string
   usage: number
   produces: readonly HubPortSummary[]
+  openWeights: boolean
   added: string
   locale?: Locale
 }>()

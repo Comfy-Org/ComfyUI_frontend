@@ -1,8 +1,12 @@
 ---
 import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
 import CatalogueBackLink from '../../../components/workshop/CatalogueBackLink.vue'
+import HubPageHeader from '../../../components/hub/HubPageHeader.vue'
 import WorkflowRun from '../../../components/hub/WorkflowRun.vue'
-import { useCaseFor } from '../../../config/models-catalogue'
+import { catalogSearch, useCaseFor } from '../../../config/models-catalogue'
+import { useCaseForTemplate } from '../../../lib/hub/template-use-case'
+import { displayModelName } from '../../../lib/hub/model-identity'
+import { useCaseLabelKey } from '../../../lib/workshop/use-case-label'
 import { workshopModels } from '../../../config/workshop-browse-content'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../../config/workshop-env'
 import { estimateWorkshopNodePrice } from '../../../config/workshop-node-pricing'
@@ -33,15 +37,9 @@ const { name } = Astro.params
 const page = name ? getHubWorkflowPage(name) : undefined
 if (!page) return Astro.redirect('/hub/')
 
-const { template, mediaType, details, runsOn, related } = page
+const { template, details, runsOn, related } = page
 
 const author = template.username || 'ComfyUI'
-const mediaLabels: Record<string, string> = {
-  image: t('workshop.hub.io.image'),
-  video: t('workshop.hub.io.video'),
-  audio: t('workshop.hub.io.audio'),
-  '3d': t('workshop.hub.io.3d')
-}
 // A workflow that is one call to a model we carry is that model with a graph
 // around it, so the page hands the reader the playground rather than a file to
 // take elsewhere. Everything the graph adds stays below it.
@@ -61,13 +59,11 @@ const operations = runnable
     }))
   : []
 
-// Where it runs is a fact in the panel on the details tab, not a badge over
-// the form: every workflow here runs here, so the badge marked nothing.
-const pills = [
-  t('workshop.v2.kind.workflow'),
-  mediaLabels[mediaType],
-  details.openSource ? t('workshop.v2.workflow.openWeights') : undefined
-].filter((label): label is string => Boolean(label))
+// A model page is headed by the provider that answers for the model. The
+// thing that answers for a workflow is the model it runs on, which is also
+// the mark its card carries, so the two headers read the same way.
+const runsOnModel = runnable ?? runsOn.find((ref) => ref.model)?.model
+const useCase = useCaseForTemplate(template, workshopModels)
 
 const title = workflowDisplayTitle(template)
 
@@ -89,8 +85,6 @@ const tags = usefulTags(template.tags).map((tag) => ({
 
 const sectionTitle =
   'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
-const pill =
-  'inline-flex h-7 items-center rounded-full bg-transparency-white-t8 px-3 text-2xs/none font-bold tracking-wider text-primary-warm-white uppercase'
 ---
 
 <BaseLayout
@@ -108,29 +102,23 @@ const pill =
       client:load
     />
 
-    <header class="mb-12 flex flex-col gap-3">
-      <h1
-        class="max-w-3xl text-3xl font-bold text-primary-comfy-canvas lg:text-5xl"
-      >
-        {title}
-      </h1>
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <ul
-          class="flex flex-wrap items-center gap-2"
-          data-testid="workflow-kind"
-        >
-          {pills.map((label) => <li><span class={pill}>{label}</span></li>)}
-          {price && <li>
-            <span class={pill} data-testid="workflow-price">
-              {price}
-            </span>
-          </li>}
-        </ul>
-        <p class="text-sm text-content-secondary" data-testid="workflow-author">
-          {t('workshop.workflow.by').replace('{author}', author)}
-        </p>
-      </div>
-    </header>
+    <HubPageHeader
+      eyebrow={
+        runsOnModel ? displayModelName(runsOnModel, workshopModels) : author
+      }
+      eyebrowHref={
+        page.destination
+          ? `/hub/model/${page.destination.key}/`
+          : runsOnModel?.href
+      }
+      useCase={useCase ? t(useCaseLabelKey[useCase]) : undefined}
+      useCaseHref={useCase ? `/hub/${catalogSearch({ useCase })}` : undefined}
+      title={title}
+      summary={details.description}
+      price={price}
+      tags={tags}
+      client:load
+    />
 
     {runnable ? (
       <section id="api" class="mb-16" data-testid="workflow-run-section">
@@ -140,12 +128,11 @@ const pill =
           cloudUrl={cloudUrl}
           runsHere={operations.length > 0}
           tutorialUrl={details.tutorialUrl}
-          description={details.description}
           models={runsOn}
-          tags={tags}
           author={author}
           usage={template.usage}
           produces={summarisePorts(page.outputs)}
+          openWeights={details.openSource ?? false}
           added={template.date}
           client:load
         />

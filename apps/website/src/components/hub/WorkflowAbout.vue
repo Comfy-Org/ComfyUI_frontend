@@ -7,22 +7,16 @@ import WorkflowActions from './WorkflowActions.vue'
 import WorkflowFacts from './WorkflowFacts.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
 
-interface Tag {
-  readonly label: string
-  readonly href: string
-}
-
 const {
   graphUrl,
   cloudUrl,
   runsHere,
   tutorialUrl,
-  description,
   models,
-  tags,
   author,
   usage,
   produces,
+  openWeights,
   added,
   locale = 'en'
 } = defineProps<{
@@ -30,13 +24,12 @@ const {
   cloudUrl: string
   runsHere: boolean
   tutorialUrl: string | undefined
-  /** What the registry says this workflow is for. */
-  description: string | undefined
   models: readonly { name: string; model: WorkshopModel | undefined }[]
-  tags: readonly Tag[]
   author: string
   usage: number
   produces: readonly HubPortSummary[]
+  /** Whether the weights behind it can be downloaded and run anywhere. */
+  openWeights: boolean
   added: string
   locale?: Locale
 }>()
@@ -48,21 +41,24 @@ const sectionTitle =
 <template>
   <div class="grid gap-10 lg:grid-cols-12" data-testid="workflow-about">
     <div class="flex flex-col gap-12 lg:col-span-8">
-      <p
-        v-if="description"
-        class="max-w-2xl text-base/relaxed text-primary-comfy-canvas/80"
-        data-testid="workflow-summary"
-      >
-        {{ description }}
-      </p>
-
       <section data-testid="workflow-graph-section">
-        <h2 :class="sectionTitle">
-          {{ t('workshop.v2.workflow.graph', locale) }}
-        </h2>
-        <p class="mt-2 mb-4 text-sm text-content-muted">
-          {{ t('workshop.v2.workflow.graphNote', locale) }}
-        </p>
+        <div class="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 :class="sectionTitle">
+              {{ t('workshop.v2.workflow.graph', locale) }}
+            </h2>
+            <p class="mt-2 text-sm text-content-muted">
+              {{ t('workshop.v2.workflow.graphNote', locale) }}
+            </p>
+          </div>
+          <WorkflowActions
+            :cloud-url="cloudUrl"
+            :download-url="graphUrl"
+            :tutorial-url="tutorialUrl"
+            :only="['cloud']"
+            :locale
+          />
+        </div>
         <WorkflowGraph :source="graphUrl" :locale />
       </section>
     </div>
@@ -73,15 +69,16 @@ const sectionTitle =
           :cloud-url="cloudUrl"
           :download-url="graphUrl"
           :tutorial-url="tutorialUrl"
+          :only="['download', 'tutorial']"
           :locale
         />
         <WorkflowFacts
           :models
-          :tags
           :author
           :usage
           :produces
           :runs-here="runsHere"
+          :open-weights="openWeights"
           :added
           :locale
         />

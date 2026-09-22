@@ -1,8 +1,10 @@
 ---
 import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
 import CatalogueBackLink from '../../../components/workshop/CatalogueBackLink.vue'
+import HubPageHeader from '../../../components/hub/HubPageHeader.vue'
 import ModelRun from '../../../components/hub/ModelRun.vue'
-import { useCaseFor } from '../../../config/models-catalogue'
+import { catalogSearch, useCaseFor } from '../../../config/models-catalogue'
+import { useCaseLabelKey } from '../../../lib/workshop/use-case-label'
 import { workshopModels } from '../../../config/workshop-browse-content'
 import { estimateWorkshopNodePrice } from '../../../config/workshop-node-pricing'
 import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
@@ -56,8 +58,14 @@ const madeWithViews = relatedCardViews(
 
 const price = runnable.find((operation) => operation.price)?.price
 
-const pill =
-  'inline-flex h-7 items-center rounded-full bg-transparency-white-t8 px-3 text-2xs/none font-bold tracking-wider text-primary-warm-white uppercase'
+// The registry lists a model once per operation, and the page collapses them,
+// so what it is for and what it says about itself come from the first row.
+const lead = operations[0]
+const useCase = lead ? useCaseFor(lead) : undefined
+const tags = [...new Set(operations.flatMap((model) => model.capabilities))]
+  .slice(0, 8)
+  .map((tag) => ({ label: tag, href: `/hub/?q=${encodeURIComponent(tag)}` }))
+
 const sectionTitle =
   'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
 ---
@@ -76,27 +84,16 @@ const sectionTitle =
       client:load
     />
 
-    <header class="mb-12 flex flex-col gap-3">
-      <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-5xl">
-        {displayName}
-      </h1>
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <ul class="flex flex-wrap items-center gap-2" data-testid="model-kind">
-          <li><span class={pill}>{t('workshop.v2.kind.model')}</span></li>
-          {price && <li>
-            <span class={pill} data-testid="model-price">
-              {price}
-            </span>
-          </li>}
-        </ul>
-        {provider && <p
-          class="text-sm text-content-secondary"
-          data-testid="model-provider"
-        >
-          {t('workshop.workflow.by').replace('{author}', provider)}
-        </p>}
-      </div>
-    </header>
+    <HubPageHeader
+      eyebrow={provider ?? t('workshop.card.partnerNode')}
+      useCase={useCase ? t(useCaseLabelKey[useCase]) : undefined}
+      useCaseHref={useCase ? `/hub/${catalogSearch({ useCase })}` : undefined}
+      title={displayName}
+      summary={lead?.summary}
+      price={price}
+      tags={tags}
+      client:load
+    />
 
     {runnable.length > 0 ? (
       <section class="mb-16">

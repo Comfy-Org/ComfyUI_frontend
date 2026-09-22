@@ -1,24 +1,32 @@
 <script setup lang="ts">
 import { ArrowUpRight, BookOpen, Cloud, Download } from '@lucide/vue'
 import type { Component } from 'vue'
+import { computed } from 'vue'
 
+import Button from '../ui/button/Button.vue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+
+type RouteKey = 'cloud' | 'download' | 'tutorial'
 
 const {
   cloudUrl,
   downloadUrl,
   tutorialUrl,
+  only,
   locale = 'en'
 } = defineProps<{
   /** Comfy Cloud, opened on this template. */
   cloudUrl: string
   downloadUrl: string
   tutorialUrl: string | undefined
+  /** Which ways out this row offers. All of them when left unsaid. */
+  only?: readonly RouteKey[]
   locale?: Locale
 }>()
 
 interface Route {
+  readonly key: RouteKey
   readonly id: string
   readonly href: string
   readonly icon: Component
@@ -34,8 +42,9 @@ interface Route {
 // None of them is the page's action: that is Run, and it is on the other tab.
 // The endpoint is not among them: the API tab sits in the same row of tabs, so
 // a row that only opened it would be a second door onto the same room.
-const routes: readonly Route[] = [
+const allRoutes: readonly Route[] = [
   {
+    key: 'cloud',
     id: 'workflow-open-cloud',
     href: cloudUrl,
     icon: Cloud,
@@ -44,6 +53,7 @@ const routes: readonly Route[] = [
     external: true
   },
   {
+    key: 'download',
     id: 'workflow-download',
     href: downloadUrl,
     icon: Download,
@@ -54,6 +64,7 @@ const routes: readonly Route[] = [
   ...(tutorialUrl
     ? ([
         {
+          key: 'tutorial',
           id: 'workflow-tutorial',
           href: tutorialUrl,
           icon: BookOpen,
@@ -64,30 +75,29 @@ const routes: readonly Route[] = [
       ] as const)
     : [])
 ]
+
+const routes = computed(() =>
+  only ? allRoutes.filter((route) => only.includes(route.key)) : allRoutes
+)
 </script>
 
 <template>
   <ul class="flex flex-wrap items-center gap-2" data-testid="workflow-actions">
     <li v-for="route in routes" :key="route.id">
-      <a
+      <Button
+        variant="outline"
+        size="sm"
         :href="route.href"
+        :prepend-icon="route.icon"
+        :append-icon="ArrowUpRight"
         :download="route.download ? '' : undefined"
         :target="route.external ? '_blank' : undefined"
         :rel="route.external ? 'noopener' : undefined"
         :data-testid="route.id"
         :title="t(route.note, locale)"
-        class="group inline-flex h-9 items-center gap-2 rounded-xl border border-transparency-white-t20 bg-transparency-white-t4 ps-3 pe-2.5 text-xs font-bold tracking-wider text-primary-warm-white uppercase transition-colors outline-none hover:border-primary-comfy-yellow hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
       >
-        <component
-          :is="route.icon"
-          class="size-4 shrink-0 text-primary-comfy-yellow"
-          aria-hidden="true"
-        />
         {{ t(route.label, locale) }}
-        <ArrowUpRight
-          class="size-3.5 shrink-0 text-primary-warm-gray transition-colors group-hover:text-primary-comfy-yellow"
-        />
-      </a>
+      </Button>
     </li>
   </ul>
 </template>

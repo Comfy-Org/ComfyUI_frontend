@@ -89,10 +89,19 @@ function modelRefs(
   template: HubTemplate,
   models: readonly WorkshopModel[]
 ): HubWorkflowModelRef[] {
-  return [...new Set(template.models)].map((name) => ({
-    name,
-    model: models.find((model) => normalize(model.name) === normalize(name))
-  }))
+  // Some registry rows name the maker alongside the model, so `Runs on` reads
+  // `Google` and then `Nano Banana 2` as though the graph called two of them.
+  const makers = new Set(
+    models.flatMap((model) =>
+      model.provider ? [normalize(model.provider)] : []
+    )
+  )
+  return [...new Set(template.models)]
+    .map((name) => ({
+      name,
+      model: models.find((model) => normalize(model.name) === normalize(name))
+    }))
+    .filter((ref) => ref.model || !makers.has(normalize(ref.name)))
 }
 
 // Workflows sharing ground with this one: a tag or a model in common.

@@ -11,22 +11,23 @@ import { mediaLabel } from './mediaLabel'
 
 const {
   models,
-  tags,
   author,
   usage,
   produces,
   runsHere,
+  openWeights,
   added,
   locale = 'en'
 } = defineProps<{
   models: readonly { name: string; model: WorkshopModel | undefined }[]
-  tags: readonly { label: string; href: string }[]
   author: string
   /** How many times the registry has seen it run. */
   usage: number
   produces: readonly HubPortSummary[]
   /** Whether the model it calls runs on this page rather than on a machine. */
   runsHere: boolean
+  /** Whether the weights behind it can be downloaded and run anywhere. */
+  openWeights: boolean
   added: string
   locale?: Locale
 }>()
@@ -60,6 +61,11 @@ const facts = computed<{ label: TranslationKey; value: string }[]>(() => {
     rows.push({
       label: 'workshop.v2.workflow.factRuns',
       value: new Intl.NumberFormat(locale).format(usage)
+    })
+  if (openWeights)
+    rows.push({
+      label: 'workshop.v2.workflow.factWeights',
+      value: t('workshop.v2.workflow.openWeights', locale)
     })
   rows.push({ label: 'workshop.v2.workflow.factAuthor', value: author })
 
@@ -125,7 +131,7 @@ const bandHeading =
     </section>
 
     <section :class="band" data-testid="workflow-details">
-      <dl class="flex flex-col gap-2.5 text-sm">
+      <dl class="flex flex-col gap-1 text-sm">
         <div
           v-for="fact in facts"
           :key="fact.label"
@@ -137,22 +143,6 @@ const bandHeading =
           </dd>
         </div>
       </dl>
-    </section>
-
-    <section v-if="tags.length > 0" :class="band">
-      <h2 :class="bandHeading">
-        {{ t('workshop.v2.workflow.tags', locale) }}
-      </h2>
-      <ul class="mt-3 flex flex-wrap gap-2" data-testid="workflow-tags">
-        <li v-for="tag in tags" :key="tag.href">
-          <a
-            :href="tag.href"
-            class="inline-flex h-7 items-center rounded-full bg-transparency-white-t8 px-3 text-xs text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
-          >
-            {{ tag.label }}
-          </a>
-        </li>
-      </ul>
     </section>
   </div>
 </template>

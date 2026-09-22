@@ -18,11 +18,11 @@ const model = (overrides: Partial<WorkshopModel> = {}): WorkshopModel => ({
 
 const props = (overrides = {}) => ({
   models: [{ name: 'Nano Banana 2', model: model() }],
-  tags: [{ label: 'Text to Image', href: '/hub/?q=Text%20to%20Image' }],
   author: 'ComfyUI',
   usage: 294,
   produces: [{ media: 'image' as const, count: 1 }],
   runsHere: true,
+  openWeights: false,
   added: '2026-06-30',
   ...overrides
 })
@@ -72,6 +72,14 @@ describe('WorkflowFacts', () => {
     render(WorkflowFacts, { props: props({ usage: 0 }) })
 
     expect(facts()).not.toContain('Runs')
+  })
+
+  // Weights somebody can take away are a fact about this workflow, not about
+  // every workflow, so the row appears only where it is true.
+  it('states open weights only when the workflow has them', () => {
+    render(WorkflowFacts, { props: props({ openWeights: true }) })
+
+    expect(facts()).toContain('Weights')
   })
 
   it('says where a workflow that needs a machine runs', () => {
