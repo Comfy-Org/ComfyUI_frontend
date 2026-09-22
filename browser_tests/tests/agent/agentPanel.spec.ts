@@ -131,12 +131,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const activityRows = panel.getByRole('listitem')
     await expect(activityRows).toHaveCount(5)
     await expect(activityRows.filter({ hasText: 'Set widget' })).toBeVisible()
-    await expect(
-      activityRows.filter({ hasText: 'Opened a new tab' }).getByText('0.5s')
-    ).toBeVisible()
-    await expect(
-      activityRows.filter({ hasText: 'Resize image node' }).getByText('0.2s')
-    ).toBeVisible()
+    await expect(panel.getByText('0.5s', { exact: true })).toHaveCount(0)
+    await expect(panel.getByText('0.2s', { exact: true })).toHaveCount(0)
 
     pushEvent(ws, MESSAGE_DELTA_EVENT)
     await expect(
