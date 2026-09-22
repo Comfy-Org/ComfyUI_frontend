@@ -75,6 +75,14 @@ test.fixme('real declaration', () => {})
     ])
   })
 
+  it('parses chainable parameterized declarations once', () => {
+    const source = `it.skip.each([1, 2])('disabled %s', () => {})`
+
+    expect(disabledDeclarations(source)).toEqual([
+      { line: 1, relevantLines: [1] }
+    ])
+  })
+
   it('finds newly disabled tests through a real Git diff', () => {
     const root = createRepository()
     write(
@@ -126,6 +134,27 @@ const regex = /describe.fixme('not code')/
       "  tests/café.spec.ts:1: describe.fixme('new suite', () => {})",
       '  tests/example.spec.ts:3: test.skip(',
       '  tests/example.spec.ts:8: test.skip('
+    ])
+  })
+
+  it('finds a parameterized test changed to skip', () => {
+    const root = createRepository()
+    write(
+      root,
+      'tests/example.test.ts',
+      `it.each([1, 2])('case %s', () => {})\n`
+    )
+    const base = commit(root, 'base')
+
+    write(
+      root,
+      'tests/example.test.ts',
+      `it.skip.each([1, 2])('case %s', () => {})\n`
+    )
+    const head = commit(root, 'disable parameterized test')
+
+    expect(findViolations(root, base, head)).toEqual([
+      "  tests/example.test.ts:1: it.skip.each([1, 2])('case %s', () => {})"
     ])
   })
 

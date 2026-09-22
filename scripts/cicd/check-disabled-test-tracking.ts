@@ -5,6 +5,8 @@ import type {
   LeftHandSideExpression,
   MemberName,
   Node,
+  NoSubstitutionTemplateLiteral,
+  StringLiteral,
   SourceFile
 } from 'typescript'
 import {
@@ -35,6 +37,11 @@ type TestDeclaration = DisabledDeclaration & {
 type ChangedFile = {
   basePath?: string
   path: string
+}
+
+type TestCall = {
+  factory: boolean
+  modifier?: MemberName
 }
 
 const HUNK_PATTERN = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/
@@ -89,14 +96,6 @@ function isTestReceiver(expression: LeftHandSideExpression): boolean {
   )
 }
 
-function disablingModifier(
-  expression: LeftHandSideExpression
-): MemberName | undefined {
-  if (!isPropertyAccessExpression(expression)) return
-  if (!['skip', 'fixme'].includes(expression.name.text)) return
-  if (isTestReceiver(expression.expression)) return expression.name
-}
-
 function isDisablingArgument(argument: Expression): boolean {
   return (
     isStringLiteral(argument) ||
@@ -105,12 +104,92 @@ function isDisablingArgument(argument: Expression): boolean {
   )
 }
 
-function isTestCall(expression: LeftHandSideExpression): boolean {
-  return (
-    isTestReceiver(expression) ||
-    (isPropertyAccessExpression(expression) &&
-      isTestReceiver(expression.expression))
-  )
+function testCall(expression: LeftHandSideExpression): TestCall | undefined {
+  const modifiers: MemberName[] = []
+  let receiver: LeftHandSideExpression = expression
+  let parameterized = false
+
+  while (isPropertyAccessExpression(receiver)) {
+    modifiers.push(receiver.name)
+    receiver = receiver.expression
+  }
+  if (isCallExpression(receiver)) {
+    parameterized = true
+    receiver = receiver.expression
+    while (isPropertyAccessExpression(receiver)) {
+      modifiers.push(receiver.name)
+      receiver = receiver.expression
+    }
+  }
+  if (!isTestReceiver(receiver)) return
+
+  return {
+    factory:
+      !parameterized &&
+      modifiers.some(({ text }) => ['each', 'for'].includes(text)),
+    modifier: modifiers.find(({ text }) => ['skip', 'fixme'].includes(text))
+  }
+}
+
+function isTitle(
+  argument: Expression
+): argument is StringLiteral | NoSubstitutionTemplateLiteral {
+  return isStringLiteral(argument) || isNoSubstitutionTemplateLiteral(argument)
+}
+
+function declarationContext(
+  arguments_: readonly Expression[],
+  title: Expression | undefined,
+  modifier: MemberName | undefined,
+  sourceFile: SourceFile
+): string {
+  return arguments_
+    .filter(
+      (candidate) =>
+        candidate !== title && (!modifier || candidate !== arguments_[0])
+    )
+    .map((candidate) => candidate.getText(sourceFile).replace(/\s+/g, ' '))
+    .join('|')
+}
+
+function relevantLines(
+  expression: LeftHandSideExpression,
+  argument: Expression | undefined,
+  modifier: MemberName | undefined,
+  sourceFile: SourceFile
+): number[] {
+  if (!modifier || !argument) return [lineOf(expression, sourceFile)]
+  return [
+    ...new Set([lineOf(modifier, sourceFile), lineOf(argument, sourceFile)])
+  ]
+}
+
+function testDeclaration(
+  node: Node,
+  sourceFile: SourceFile
+): TestDeclaration | undefined {
+  if (!isCallExpression(node)) return
+  const call = testCall(node.expression)
+  if (!call || call.factory) return
+
+  const { modifier } = call
+  const argument = node.arguments[0]
+  const title = node.arguments.find(isTitle)
+
+  return {
+    context: declarationContext(node.arguments, title, modifier, sourceFile),
+    disabled: Boolean(
+      modifier && node.arguments.length > 0 && isDisablingArgument(argument)
+    ),
+    line: lineOf(node.expression, sourceFile),
+    relevantLines: relevantLines(
+      node.expression,
+      argument,
+      modifier,
+      sourceFile
+    ),
+    title: title?.text ?? ''
+  }
 }
 
 function testDeclarations(source: string, path: string): TestDeclaration[] {
@@ -118,41 +197,8 @@ function testDeclarations(source: string, path: string): TestDeclaration[] {
   const declarations: TestDeclaration[] = []
 
   function visit(node: Node): void {
-    if (isCallExpression(node) && isTestCall(node.expression)) {
-      const modifier = disablingModifier(node.expression)
-      const argument = node.arguments[0]
-      const title = node.arguments.find(
-        (candidate) =>
-          isStringLiteral(candidate) ||
-          isNoSubstitutionTemplateLiteral(candidate)
-      )
-
-      declarations.push({
-        context: node.arguments
-          .filter(
-            (candidate) =>
-              candidate !== title && (!modifier || candidate !== argument)
-          )
-          .map((candidate) =>
-            candidate.getText(sourceFile).replace(/\s+/g, ' ')
-          )
-          .join('|'),
-        disabled: Boolean(
-          modifier && node.arguments.length > 0 && isDisablingArgument(argument)
-        ),
-        line: lineOf(node.expression, sourceFile),
-        relevantLines:
-          modifier && node.arguments.length > 0
-            ? [
-                ...new Set([
-                  lineOf(modifier, sourceFile),
-                  lineOf(argument, sourceFile)
-                ])
-              ]
-            : [lineOf(node.expression, sourceFile)],
-        title: title?.text ?? ''
-      })
-    }
+    const declaration = testDeclaration(node, sourceFile)
+    if (declaration) declarations.push(declaration)
     forEachChild(node, visit)
   }
 
