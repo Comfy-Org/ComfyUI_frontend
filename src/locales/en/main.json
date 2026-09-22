@@ -4079,7 +4079,8 @@
     "copiedShort": "Copied",
     "summaryPacks": "{count} node pack | {count} node packs",
     "summaryModels": "{count} model | {count} models",
-    "summaryClasses": "{count} node class | {count} node classes"
+    "summaryClasses": "{count} node class | {count} node classes",
+    "briefFailed": "The brief for your agent could not be prepared. Try again."
   },
   "openSharedWorkflow": {
     "dialogTitle": "Open shared workflow",

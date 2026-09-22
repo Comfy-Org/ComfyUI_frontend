@@ -1,19 +1,45 @@
 import type { Distribution } from '@/platform/distribution/types'
-import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
+import type {
+  BuildInputs,
+  NodePack
+} from '@/platform/workflow/deploy/utils/buildInputs'
 
 // The handoff is a technical brief for a coding agent driving `comfy-cli`, so
 // it stays in English alongside the commands it explains and is not localized.
 
+function isControlCharacter(character: string): boolean {
+  const code = character.charCodeAt(0)
+  return code < 0x20 || code === 0x7f
+}
+
+/**
+ * Everything interpolated into the brief comes off a workflow file, which is
+ * routinely shared, so a value must not be able to add a line to the document:
+ * a newline in a node type would otherwise read as a new heading or command.
+ */
+function singleLine(value: string): string {
+  return Array.from(value, (character) =>
+    isControlCharacter(character) ? ' ' : character
+  )
+    .join('')
+    .replace(/ {2,}/g, ' ')
+    .trim()
+}
+
+function inlineCode(value: string): string {
+  return `\`${singleLine(value).replaceAll('`', '')}\``
+}
+
 function quoteForShell(name: string): string {
-  return name.replace(/["\\$`]/g, '')
+  return singleLine(name).replace(/["\\$`]/g, '\\$&')
 }
 
 function bulletList(items: string[]): string {
-  return items.map((item) => `- ${item}`).join('\n')
+  return items.map((item) => `- ${inlineCode(item)}`).join('\n')
 }
 
 function intro(inputs: BuildInputs): string {
-  return `# Turn "${inputs.workflowName}" into a Comfy API Build
+  return `# Turn "${singleLine(inputs.workflowName)}" into a Comfy API Build
 
 Create a **Build** on the Comfy developer platform from this ComfyUI workflow. A
 Build is a definition of everything needed to run the workflow on a serverless
@@ -42,8 +68,8 @@ function cloudSteps(inputs: BuildInputs): string {
 This workflow lives in Comfy Cloud, so you cannot scan the install. Build the
 definition from the exported workflow file instead.
 
-The browser downloaded the file as \`${inputs.workflowFileName}\`. Find it — the
-download directory is the first place to look:
+The browser downloaded the file as ${inlineCode(inputs.workflowFileName)}. Find
+it — the download directory is the first place to look:
 
 \`\`\`bash
 ls -t ~/Downloads/*.json | head -5
@@ -61,7 +87,8 @@ things need settling by hand:
 
 - Set the ComfyUI version: \`comfy build update . --comfy-version <ref>\`
 - Resolve every model the report lists: \`comfy build refs resolve <filename>\`
-- Pin any pack that arrived without a \`gitRef\` to a commit
+- Pin any pack that arrived without a \`gitRef\` to the version listed below, or
+  to a commit
 
 Then validate, preview and push:
 
@@ -102,7 +129,9 @@ function desktopSteps(inputs: BuildInputs): string {
   return `## Steps
 
 This is Comfy Desktop, so take the definition from its snapshot rather than
-scanning the install. Use the newest snapshot:
+scanning the install. \`<install>\` is the ComfyUI base path Desktop was set up
+with, \`~/Documents/ComfyUI\` unless the user chose another directory; ask when
+it is not there. Use the newest snapshot:
 
 \`\`\`bash
 ls -t <install>/.launcher/snapshots/*.json | head -1
@@ -130,6 +159,12 @@ const STEPS_BY_DISTRIBUTION: Record<
   desktop: desktopSteps
 }
 
+function nodePackItem(pack: NodePack): string {
+  return pack.version
+    ? `${inlineCode(pack.id)} at ${inlineCode(pack.version)}`
+    : inlineCode(pack.id)
+}
+
 function contents(inputs: BuildInputs): string {
   const nodeClasses = inputs.nodeClasses.length
     ? `Node classes (${inputs.nodeClasses.length}):
@@ -140,7 +175,7 @@ ${bulletList(inputs.nodeClasses)}`
   const nodePacks = inputs.nodePacks.length
     ? `Node packs the workflow records (${inputs.nodePacks.length}):
 
-${bulletList(inputs.nodePacks)}`
+${inputs.nodePacks.map((pack) => `- ${nodePackItem(pack)}`).join('\n')}`
     : `The workflow records no node packs. Any class it uses is core ComfyUI, or
 its pack was never written into the file.`
 

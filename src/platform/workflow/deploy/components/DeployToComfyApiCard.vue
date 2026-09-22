@@ -119,21 +119,11 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
+import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 
-const {
-  inputs,
-  handoff,
-  requiresExport,
-  videoSrc = ''
-} = defineProps<{
-  inputs: BuildInputs
-  handoff: string
-  requiresExport: boolean
+const { videoSrc = '' } = defineProps<{
   titleId?: string
   videoSrc?: string
 }>()
@@ -148,9 +138,8 @@ defineOptions({ inheritAttrs: false })
 const ICON_WITH_GAP_PX = 24
 
 const { t } = useI18n()
-const { copyToClipboard } = useCopyToClipboard()
 const { buildDocsUrl } = useExternalLink()
-const workflowService = useWorkflowService()
+const { currentInputs, copyBrief } = useAgentHandoff()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
 const agentButton = useTemplateRef('agentButton')
 const isCopying = ref(false)
@@ -159,6 +148,7 @@ const lockedWidth = ref<string>()
 const copiedLabel = ref<string>()
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
+const inputs = currentInputs()
 
 const summary = computed(() =>
   [
@@ -197,12 +187,7 @@ async function copyHandoff() {
     : t('deployToComfyApi.copiedShort')
   isCopying.value = true
   try {
-    if (requiresExport) {
-      await workflowService.exportWorkflow(inputs.workflowName, 'workflow')
-    }
-    if (await copyToClipboard(handoff, { toastOnSuccess: false })) {
-      copiedLabel.value = label
-    }
+    if (await copyBrief()) copiedLabel.value = label
   } finally {
     isCopying.value = false
   }

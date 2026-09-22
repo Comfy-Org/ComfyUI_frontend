@@ -10,16 +10,19 @@ import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
 
 import DeployToComfyApiCard from './DeployToComfyApiCard.vue'
 
-const copyToClipboard = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
-vi.mock(import('@/composables/useCopyToClipboard'), () => ({
-  useCopyToClipboard: () => ({ copyToClipboard })
-}))
+const inputs: BuildInputs = {
+  workflowName: 'portrait-upscale',
+  workflowFileName: 'portrait-upscale.json',
+  nodeClasses: ['CheckpointLoaderSimple', 'KSampler'],
+  nodePacks: [{ id: 'comfy-core' }],
+  models: ['sd_xl_base_1.0.safetensors']
+}
 
-const exportWorkflow = vi.hoisted(() => vi.fn(() => Promise.resolve()))
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
+const copyBrief = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
+vi.mock(
+  import('@/platform/workflow/deploy/composables/useAgentHandoff'),
   () => ({
-    useWorkflowService: () => ({ exportWorkflow })
+    useAgentHandoff: () => ({ currentInputs: () => inputs, copyBrief })
   })
 )
 
@@ -34,31 +37,17 @@ vi.mock(import('@/composables/useExternalLink'), () => ({
     })
 }))
 
-const inputs: BuildInputs = {
-  workflowName: 'portrait-upscale',
-  workflowFileName: 'portrait-upscale.json',
-  nodeClasses: ['CheckpointLoaderSimple', 'KSampler'],
-  nodePacks: ['comfy-core'],
-  models: ['sd_xl_base_1.0.safetensors']
-}
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: { en: enMessages }
 })
 
-function renderCard(requiresExport = false) {
+function renderCard() {
   const onDone = vi.fn()
   const onDismiss = vi.fn()
   render(DeployToComfyApiCard, {
-    props: {
-      inputs,
-      handoff: '# the brief',
-      requiresExport,
-      onDone,
-      onDismiss
-    },
+    props: { onDone, onDismiss },
     global: { plugins: [i18n] }
   })
   return { onDone, onDismiss, user: userEvent.setup() }
@@ -103,18 +92,15 @@ describe('DeployToComfyApiCard', () => {
 
     await user.click(screen.getByTestId('deploy-to-comfy-api-agent'))
 
-    expect(copyToClipboard).toHaveBeenCalledWith('# the brief', {
-      toastOnSuccess: false
-    })
-    expect(exportWorkflow).not.toHaveBeenCalled()
+    expect(copyBrief).toHaveBeenCalledOnce()
     expect(screen.getByTestId('deploy-to-comfy-api-agent')).toHaveTextContent(
       /^Copied/
     )
     expect(onDone).not.toHaveBeenCalled()
   })
 
-  it('keeps the original label when the copy fails', async () => {
-    copyToClipboard.mockResolvedValueOnce(false)
+  it('keeps the original label when the brief did not reach the clipboard', async () => {
+    copyBrief.mockResolvedValueOnce(false)
     const { user } = renderCard()
 
     await user.click(screen.getByTestId('deploy-to-comfy-api-agent'))
@@ -122,17 +108,6 @@ describe('DeployToComfyApiCard', () => {
     expect(screen.getByTestId('deploy-to-comfy-api-agent')).toHaveTextContent(
       'Deploy with your agent'
     )
-  })
-
-  it('exports the workflow before copying when the distribution needs it', async () => {
-    const { user } = renderCard(true)
-
-    await user.click(screen.getByTestId('deploy-to-comfy-api-agent'))
-
-    expect(exportWorkflow).toHaveBeenCalledWith('portrait-upscale', 'workflow')
-    expect(copyToClipboard).toHaveBeenCalledWith('# the brief', {
-      toastOnSuccess: false
-    })
   })
 
   it('opens the developer platform and reports done', async () => {
