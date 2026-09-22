@@ -372,23 +372,20 @@ describe('conditioner workflow', () => {
     const wireIds = productWorkflow.edges.map(
       (edge) => `${edge.from}:${edge.to}`
     )
-    const invalidEndpoints = productWorkflow.edges.filter((edge) => {
+    for (const edge of productWorkflow.edges) {
       const source = productWorkflow.nodes.find((node) => node.id === edge.from)
       const target = productWorkflow.nodes.find((node) => node.id === edge.to)
       const from = edge.curves?.[0].from
       const to = edge.curves?.at(-1)?.to
-      const inputs = [target?.input, ...(target?.extraPorts ?? [])]
-      return (
-        !from ||
-        !to ||
-        from.x !== source?.output?.x ||
-        from.y !== source.output.y ||
-        !inputs.some((input) => input?.x === to.x && input.y === to.y)
-      )
-    })
+      assert.exists(source?.output)
+      assert.exists(target)
+      assert.exists(from)
+      assert.exists(to)
+      expect(from).toEqual(source.output)
+      expect([target.input, ...(target.extraPorts ?? [])]).toContainEqual(to)
+    }
     expect(connectedWireIds.toSorted()).toEqual(wireIds.toSorted())
     expect(new Set(connectedWireIds).size).toBe(wireIds.length)
-    expect(invalidEndpoints).toEqual([])
   })
 
   it('connects right-side outputs to left-side inputs across the workflow', () => {

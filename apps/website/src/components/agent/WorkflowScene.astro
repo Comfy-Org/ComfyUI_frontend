@@ -1,5 +1,6 @@
 ---
-import type { WorkflowGraph, WorkflowGraphNode } from './workflowGraph'
+import type { WorkflowGraph } from './workflowGraph'
+import WorkflowNode from './WorkflowNode.astro'
 import type { Point } from './workflowMotion'
 import { createWorkflowMotion } from './workflowMotion'
 
@@ -25,16 +26,6 @@ const {
 const unit = width / 100
 
 const { nodes } = workflow
-const nodeKindClasses = {
-  reference: 'wf-kind-reference',
-  preview: 'wf-kind-preview',
-  prompt: 'wf-kind-prompt',
-  result: 'wf-kind-result',
-  landscape: 'wf-kind-landscape',
-  featured: 'wf-kind-featured',
-  products: 'wf-kind-products',
-  processor: 'wf-kind-processor'
-} satisfies Record<WorkflowGraphNode['kind'], string>
 const imageRoot = 'https://media.comfy.org/website/comfy-agent'
 const motion = createWorkflowMotion([workflow], {
   width,
@@ -44,8 +35,6 @@ const motion = createWorkflowMotion([workflow], {
   userRest
 })
 const scene = motion.scenes[0]
-const portStyle = (port: Point, node: WorkflowGraphNode) =>
-  `left:${(port.x - node.x) / unit}cqw;top:${(port.y - node.y) / unit}cqw`
 ---
 
 <style is:inline set:html={motionCss ?? motion.css}></style>
@@ -76,161 +65,15 @@ const portStyle = (port: Point, node: WorkflowGraphNode) =>
             />
           ))}
         </svg>
-        {nodes.map((node, index) => <div
-          data-step={index}
-          data-node={node.id}
-          class:list={['wf-node', nodeKindClasses[node.kind]]}
-          style={`left:${node.x / unit}cqw;top:${node.y / unit}cqw;width:${node.width / unit}cqw;height:${node.height / unit}cqw;animation-name:${scene.nodes[index].name}`}
-        >
-          <div class="wf-node-heading">
-            <span class="ppformula-text-center">{node.label}</span>
-          </div>
-          {node.input && (
-            <span
-              class="wf-port"
-              style={portStyle(node.input, node)}
-              aria-hidden="true"
-            />
-          )}
-          {node.output && (
-            <span
-              class="wf-port"
-              style={portStyle(node.output, node)}
-              aria-hidden="true"
-            />
-          )}
-          {node.extraPorts?.map((port) => (
-            <span
-              class="wf-port"
-              style={portStyle(port, node)}
-              aria-hidden="true"
-            />
-          ))}
-          {node.image && (
-            <>
-              <div class="wf-image-well" aria-hidden="true" />
-              <img
-                class:list={[
-                  'wf-node-image',
-                  { 'wf-generated-image': scene.nodes[index].imageName }
-                ]}
-                style={
-                  scene.nodes[index].imageName
-                    ? `animation-name:${scene.nodes[index].imageName}`
-                    : undefined
-                }
-                src={`${imageRoot}/${node.image}`}
-                alt={node.alt}
-                width={
-                  node.kind === 'landscape'
-                    ? 256
-                    : node.kind === 'reference'
-                      ? 227
-                      : node.kind === 'result'
-                        ? 264
-                        : 153
-                }
-                height={
-                  node.kind === 'landscape'
-                    ? 144
-                    : node.kind === 'reference'
-                      ? 226
-                      : node.kind === 'result'
-                        ? 268
-                        : 152
-                }
-              />
-            </>
-          )}
-          {node.images && <div class="wf-product-references">
-            {node.images.map((image) => (
-              <img
-                src={`${imageRoot}/${image.src}`}
-                alt={image.alt}
-                width="80"
-                height="80"
-              />
-            ))}
-          </div>}
-          {node.pending && <div
-            class:list={[
-              'wf-pending',
-              { 'wf-generated-image': scene.nodes[index].imageName }
-            ]}
-            style={
-              scene.nodes[index].imageName
-                ? `animation-name:${scene.nodes[index].imageName}`
-                : undefined
-            }
-          >
-            <span>{node.pending}</span>
-          </div>}
-          {node.video && (
-            <>
-              <div class="wf-image-well" aria-hidden="true" />
-              <video
-                class:list={[
-                  'wf-node-image',
-                  { 'wf-generated-image': scene.nodes[index].imageName }
-                ]}
-                style={
-                  scene.nodes[index].imageName
-                    ? `animation-name:${scene.nodes[index].imageName}`
-                    : undefined
-                }
-                data-src={`${imageRoot}/${node.video}`}
-                poster={node.poster ? `${imageRoot}/${node.poster}` : undefined}
-                muted
-                playsinline
-                loop={node.loopVideo}
-                preload="none"
-                aria-label={node.alt}
-                width="256"
-                height="144"
-              />
-              <span
-                class="wf-video-cue"
-                style={`animation-delay:${scene.nodes[index].mediaAt ?? 0}s`}
-                aria-hidden="true"
-              />
-            </>
-          )}
-          {scene.nodes[index].selectionName && (
-            <span
-              class="wf-selection"
-              style={`animation-name:${scene.nodes[index].selectionName}`}
-              aria-hidden="true"
-            />
-          )}
-          {node.text && <p class="wf-prompt-well">
-            {scene.nodes[index].characters ? (
-              <>
-                <span class="sr-only">{node.text}</span>
-                <span aria-hidden="true"
-                  >{Array.from(node.text).map(
-                    (character, characterIndex) => <span
-                      class="wf-typed-character"
-                      style={`animation-name:${scene.nodes[index].characters?.[characterIndex].name}`}
-                      >{character}</span
-                    >
-                  )}</span
-                >
-              </>
-            ) : (
-              <span
-                class:list={{
-                  'wf-generated-image': scene.nodes[index].promptName
-                }}
-                style={
-                  scene.nodes[index].promptName
-                    ? `animation-name:${scene.nodes[index].promptName}`
-                    : undefined
-                }
-                >{node.text}</span
-              >
-            )}
-          </p>}
-        </div>)}
+        {nodes.map((node, index) => (
+          <WorkflowNode
+            node={node}
+            motion={scene.nodes[index]}
+            index={index}
+            unit={unit}
+            imageRoot={imageRoot}
+          />
+        ))}
         <div
           style={`animation-name:${scene.userCursor.name};${userRest ? `left:${userRest.x / unit}cqw;top:${userRest.y / unit}cqw` : ''}`}
           class="wf-user"

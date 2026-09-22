@@ -12,6 +12,20 @@ export class WorkflowExamples extends HTMLElement {
       this.querySelector<HTMLInputElement>('input:checked')?.value ??
       this.querySelector<HTMLElement>('.wf-example')?.dataset.example
     const videos = () => this.querySelectorAll<HTMLVideoElement>('video')
+    function motionEnabled() {
+      return !reducedMotion.matches && desktop.matches
+    }
+    function isActive(video: HTMLVideoElement) {
+      return (
+        video.closest<HTMLElement>('.wf-example')?.dataset.example ===
+        selectedExample()
+      )
+    }
+    function reset(video: HTMLVideoElement) {
+      video.pause()
+      delete video.dataset.started
+      pendingReveals.delete(video)
+    }
     const play = (video: HTMLVideoElement) => {
       video.muted = true
       void video.play().catch(() => {
@@ -26,57 +40,43 @@ export class WorkflowExamples extends HTMLElement {
       video.dataset.started = 'true'
       play(video)
     }
-    const sync = () => {
-      const running =
-        inView && desktop.matches && !reducedMotion.matches && !document.hidden
-      this.toggleAttribute('data-paused', !running)
-      for (const video of videos()) {
-        const active =
-          video.closest<HTMLElement>('.wf-example')?.dataset.example ===
-          selectedExample()
-        if (!active || reducedMotion.matches || !desktop.matches) {
-          video.pause()
-          delete video.dataset.started
-          pendingReveals.delete(video)
-        } else if (running && pendingReveals.has(video)) {
-          start(video)
-        } else if (running && video.dataset.started) {
-          if (!video.ended) play(video)
-        } else {
-          video.pause()
-        }
+    function syncVideo(video: HTMLVideoElement, running: boolean) {
+      if (!isActive(video) || !motionEnabled()) {
+        reset(video)
+      } else if (running && pendingReveals.has(video)) {
+        start(video)
+      } else if (running && video.dataset.started) {
+        if (!video.ended) play(video)
+      } else {
+        video.pause()
       }
     }
-    const revealVideo = (event: AnimationEvent) => {
-      if (
-        event.type === 'animationiteration' &&
-        event.target instanceof HTMLElement &&
-        event.target.classList.contains('wf-scene')
-      ) {
-        for (const video of event.target.querySelectorAll('video')) {
-          video.pause()
-          delete video.dataset.started
-          pendingReveals.delete(video)
-        }
-        return
-      }
-      if (
-        !(event.target instanceof HTMLElement) ||
-        !event.target.classList.contains('wf-video-cue')
-      )
-        return
-      const video = event.target.parentElement?.querySelector('video')
-      if (!video || reducedMotion.matches || !desktop.matches) return
-      if (
-        video.closest<HTMLElement>('.wf-example')?.dataset.example !==
-        selectedExample()
-      )
-        return
+    const sync = () => {
+      const running = inView && motionEnabled() && !document.hidden
+      this.toggleAttribute('data-paused', !running)
+      for (const video of videos()) syncVideo(video, running)
+    }
+    const startOrQueue = (video: HTMLVideoElement) => {
       if (this.hasAttribute('data-paused')) {
         if (!video.dataset.started) pendingReveals.add(video)
         return
       }
       start(video)
+    }
+    const revealVideo = (event: AnimationEvent) => {
+      const target = event.target
+      if (!(target instanceof HTMLElement)) return
+      if (
+        event.type === 'animationiteration' &&
+        target.classList.contains('wf-scene')
+      ) {
+        target.querySelectorAll('video').forEach(reset)
+        return
+      }
+      if (!target.classList.contains('wf-video-cue')) return
+      const video = target.parentElement?.querySelector('video')
+      if (!video || !motionEnabled() || !isActive(video)) return
+      startOrQueue(video)
     }
     this.addEventListener('animationstart', revealVideo, options)
     this.addEventListener('animationiteration', revealVideo, options)

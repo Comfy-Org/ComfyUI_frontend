@@ -1,0 +1,150 @@
+---
+import type { WorkflowGraphNode } from './workflowGraph'
+import type { createWorkflowMotion, Point } from './workflowMotion'
+
+type NodeMotion = ReturnType<
+  typeof createWorkflowMotion
+>['scenes'][number]['nodes'][number]
+
+interface Props {
+  node: WorkflowGraphNode
+  motion: NodeMotion
+  index: number
+  unit: number
+  imageRoot: string
+}
+
+const { node, motion, index, unit, imageRoot } = Astro.props
+const nodeKindClasses = {
+  reference: 'wf-kind-reference',
+  preview: 'wf-kind-preview',
+  prompt: 'wf-kind-prompt',
+  result: 'wf-kind-result',
+  landscape: 'wf-kind-landscape',
+  featured: 'wf-kind-featured',
+  products: 'wf-kind-products',
+  processor: 'wf-kind-processor'
+} satisfies Record<WorkflowGraphNode['kind'], string>
+const imageSizes = {
+  reference: { width: 227, height: 226 },
+  result: { width: 264, height: 268 },
+  landscape: { width: 256, height: 144 },
+  preview: { width: 153, height: 152 },
+  prompt: { width: 153, height: 152 },
+  featured: { width: 153, height: 152 },
+  products: { width: 153, height: 152 },
+  processor: { width: 153, height: 152 }
+} satisfies Record<WorkflowGraphNode['kind'], { width: number; height: number }>
+const imageSize = imageSizes[node.kind]
+const imageStyle = motion.imageName
+  ? `animation-name:${motion.imageName}`
+  : undefined
+const ports = [node.input, node.output, ...(node.extraPorts ?? [])].filter(
+  (port): port is Point => port !== undefined
+)
+const portStyle = (port: Point) =>
+  `left:${(port.x - node.x) / unit}cqw;top:${(port.y - node.y) / unit}cqw`
+---
+
+<div
+  data-step={index}
+  data-node={node.id}
+  class:list={['wf-node', nodeKindClasses[node.kind]]}
+  style={`left:${node.x / unit}cqw;top:${node.y / unit}cqw;width:${node.width / unit}cqw;height:${node.height / unit}cqw;animation-name:${motion.name}`}
+>
+  <div class="wf-node-heading">
+    <span class="ppformula-text-center">{node.label}</span>
+  </div>
+  {ports.map((port) => (
+    <span class="wf-port" style={portStyle(port)} aria-hidden="true" />
+  ))}
+  {node.image && (
+    <>
+      <div class="wf-image-well" aria-hidden="true" />
+      <img
+        class:list={[
+          'wf-node-image',
+          { 'wf-generated-image': motion.imageName }
+        ]}
+        style={imageStyle}
+        src={`${imageRoot}/${node.image}`}
+        alt={node.alt}
+        width={imageSize.width}
+        height={imageSize.height}
+      />
+    </>
+  )}
+  {node.images && <div class="wf-product-references">
+    {node.images.map((image) => (
+      <img
+        src={`${imageRoot}/${image.src}`}
+        alt={image.alt}
+        width="80"
+        height="80"
+      />
+    ))}
+  </div>}
+  {node.pending && <div
+    class:list={['wf-pending', { 'wf-generated-image': motion.imageName }]}
+    style={imageStyle}
+  >
+    <span>{node.pending}</span>
+  </div>}
+  {node.video && (
+    <>
+      <div class="wf-image-well" aria-hidden="true" />
+      <video
+        class:list={[
+          'wf-node-image',
+          { 'wf-generated-image': motion.imageName }
+        ]}
+        style={imageStyle}
+        data-src={`${imageRoot}/${node.video}`}
+        poster={node.poster ? `${imageRoot}/${node.poster}` : undefined}
+        muted
+        playsinline
+        loop={node.loopVideo}
+        preload="none"
+        aria-label={node.alt}
+        width="256"
+        height="144"
+      />
+      <span
+        class="wf-video-cue"
+        style={`animation-delay:${motion.mediaAt ?? 0}s`}
+        aria-hidden="true"
+      />
+    </>
+  )}
+  {motion.selectionName && (
+    <span
+      class="wf-selection"
+      style={`animation-name:${motion.selectionName}`}
+      aria-hidden="true"
+    />
+  )}
+  {node.text && <p class="wf-prompt-well">
+    {motion.characters ? (
+      <>
+        <span class="sr-only">{node.text}</span>
+        <span aria-hidden="true"
+          >{Array.from(node.text).map((character, characterIndex) => <span
+            class="wf-typed-character"
+            style={`animation-name:${motion.characters?.[characterIndex].name}`}
+            >{character}</span
+          >)}</span
+        >
+      </>
+    ) : (
+      <span
+        class:list={{
+          'wf-generated-image': motion.promptName
+        }}
+        style={
+          motion.promptName ? `animation-name:${motion.promptName}` : undefined
+        }
+        >{node.text}</span
+      >
+    )}
+  </p>}
+</div>
