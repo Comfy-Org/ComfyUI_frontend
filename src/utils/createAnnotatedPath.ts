@@ -1,4 +1,5 @@
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 
 const IMPLICIT_ASSET_ROOT = 'input'
 

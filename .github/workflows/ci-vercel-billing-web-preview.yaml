@@ -1,0 +1,171 @@
+---
+name: 'CI: Vercel Billing Web Preview'
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches-ignore:
+      - 'core/**'
+      - 'cloud/**'
+    paths:
+      - 'apps/billing-web/**'
+      - 'packages/design-system/**'
+      - 'packages/tailwind-utils/**'
+      - 'public/fonts/**'
+      - 'pnpm-workspace.yaml'
+  workflow_dispatch:
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_BILLING_WEB_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BILLING_WEB_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_BILLING_WEB_TOKEN }}
+  VERCEL_SCOPE: comfyui
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - name: Check whether Vercel credentials are configured
+        id: check
+        run: |
+          if [[ -n "$VERCEL_ORG_ID" && -n "$VERCEL_PROJECT_ID" && -n "$VERCEL_TOKEN" ]]; then
+            echo 'configured=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'configured=false' >> "$GITHUB_OUTPUT"
+            echo "::notice title=Billing Web deploy skipped::Set VERCEL_BILLING_WEB_ORG_ID, VERCEL_BILLING_WEB_PROJECT_ID and VERCEL_BILLING_WEB_TOKEN to enable deploys. See apps/billing-web/README.md."
+          fi
+
+  deploy-preview:
+    needs: preflight
+    if: >
+      needs.preflight.outputs.configured == 'true' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.fork == false &&
+      contains(github.event.pull_request.labels.*.name, 'billing-preview')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      ALIAS_HOST: comfy-billing-web-preview-pr-${{ github.event.pull_request.number }}.vercel.app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment information
+        run: vercel pull --yes --environment=preview
+
+      - name: Build project artifacts
+        run: NODE_ENV=production VERCEL_ENV=preview vercel build
+
+      - name: Deploy project artifacts to Vercel
+        id: deploy
+        env:
+          GIT_COMMIT_REF: ${{ github.event.pull_request.head.ref }}
+          GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          GIT_PR_ID: ${{ github.event.pull_request.number }}
+          GIT_REPO: ${{ github.repository }}
+        run: |
+          URL=$(vercel deploy --prebuilt --archive=tgz \
+            --meta githubCommitRef="$GIT_COMMIT_REF" \
+            --meta githubCommitSha="$GIT_COMMIT_SHA" \
+            --meta githubPrId="$GIT_PR_ID" \
+            --meta githubRepo="$GIT_REPO")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Alias deployment to stable PR hostname
+        id: alias-set
+        continue-on-error: true
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          vercel alias set "$DEPLOY_URL" "$ALIAS_HOST" --scope="$VERCEL_SCOPE"
+
+      - name: Resolve stable preview URL
+        id: urls
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          ALIAS_OK: ${{ steps.alias-set.outcome == 'success' }}
+        run: |
+          if [[ "$ALIAS_OK" == "true" ]]; then
+            STABLE_URL="https://$ALIAS_HOST"
+          else
+            STABLE_URL="$DEPLOY_URL"
+          fi
+          echo "stable-url=$STABLE_URL" >> "$GITHUB_OUTPUT"
+          {
+            echo "**Preview:** $STABLE_URL"
+            echo "**This commit:** $DEPLOY_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post preview comment
+        uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ github.event.pull_request.number }}
+          section-name: billing-web-preview
+          token: ${{ secrets.GITHUB_TOKEN }}
+          section-content: |-
+            ## 💳 Billing Web Preview
+
+            **Billing Web Preview:** ${{ steps.urls.outputs.stable-url }}
+
+            <sub>This commit: ${{ steps.deploy.outputs.url }}</sub>
+
+  # Production never follows a merge. Someone dispatches this workflow against
+  # main when the hosted app should change for customers.
+  deploy-production:
+    needs: preflight
+    if: >
+      needs.preflight.outputs.configured == 'true' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment information
+        run: vercel pull --yes --environment=production
+
+      - name: Build project artifacts
+        run: NODE_ENV=production VERCEL_ENV=production vercel build --prod
+
+      - name: Deploy project artifacts to Vercel
+        id: deploy
+        run: |
+          URL=$(vercel deploy --prebuilt --prod --archive=tgz)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Add deployment URL to summary
+        run: echo "**Production:** ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"

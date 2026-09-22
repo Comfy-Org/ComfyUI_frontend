@@ -27,14 +27,10 @@ vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
   showConfirmDialog: mockShowConfirmDialog
 }))
 
-vi.mock(
-  import('@/platform/workspace/api/partnerNodePolicyApi'),
-  async (importOriginal) => ({
-    ...(await importOriginal()),
-    getPartnerNodePolicy: vi.fn(() => new Promise<never>(() => {})),
-    getPartnerProviders: vi.fn(() => new Promise<never>(() => {}))
-  })
-)
+vi.mock(import('@/platform/workspace/api/partnerNodePolicyApi'), () => ({
+  getPartnerNodePolicy: vi.fn(() => new Promise<never>(() => {})),
+  getPartnerProviders: vi.fn(() => new Promise<never>(() => {}))
+}))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -559,6 +555,28 @@ describe('PartnerNodeAccessPanel', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       "Partner model access couldn't be updated. Try again."
     )
+  })
+
+  it.fails('KNOWN BUG: leaves a provider on the server state when its save fails', async () => {
+    const user = userEvent.setup()
+    restrictPolicy()
+    vi.mocked(
+      usePartnerNodeGovernanceStore().isProviderEnabled
+    ).mockReturnValue(true)
+    vi.mocked(
+      usePartnerNodeGovernanceStore().setProviderEnabled
+    ).mockRejectedValueOnce(new Error('Save failed'))
+    renderComponent()
+    const providerSwitch = screen.getByRole('switch', {
+      name: 'Set access for OpenAI (inc. Sora)'
+    })
+
+    expect(providerSwitch.getAttribute('aria-checked')).toBe('true')
+
+    await user.click(providerSwitch)
+    await screen.findByRole('alert')
+
+    expect(providerSwitch.getAttribute('aria-checked')).toBe('true')
   })
 
   it('locks provider controls while saving', () => {

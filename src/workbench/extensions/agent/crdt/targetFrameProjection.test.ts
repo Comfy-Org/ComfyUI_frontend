@@ -3,10 +3,7 @@ import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
 import type { TargetFrame } from '@/core/graph/document/detachedTargetSession'
-import type {
-  GraphMutations,
-  SemanticLinkPayload
-} from '@/core/graph/graphMutations'
+import type { GraphMutations, SemanticLinkPayload } from './graphMutations'
 
 import { createTargetFrameApplyPort } from './targetFrameProjection'
 

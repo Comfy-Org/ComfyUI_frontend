@@ -13,7 +13,7 @@ import type {
   GraphMutations,
   SemanticLinkPayload,
   SemanticNodePayload
-} from '@/core/graph/graphMutations'
+} from './graphMutations'
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { compareNodeIds, toNodeId } from '@/types/nodeId'

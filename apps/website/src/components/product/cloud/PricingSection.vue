@@ -9,10 +9,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto mt-4 mb-24 px-4 lg:mt-8 lg:mb-40 lg:px-20">
-    <div class="bg-transparency-white-t4 rounded-5xl p-2">
+  <section class="mx-auto mt-4 mb-24 max-w-9xl px-4 lg:mt-8 lg:mb-40 lg:px-20">
+    <div class="rounded-5xl bg-transparency-white-t4 p-2">
       <div
-        class="bg-primary-comfy-yellow rounded-4.5xl flex flex-col gap-24 p-8 lg:flex-row lg:items-end lg:justify-between"
+        class="flex flex-col gap-24 rounded-4.5xl bg-primary-comfy-yellow p-8 lg:flex-row lg:items-end lg:justify-between"
       >
         <div class="max-w-2xl">
           <h2
@@ -35,7 +35,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
         <a
           :href="getRoutes(locale).pricing"
-          class="text-primary-comfy-yellow shrink-0 rounded-2xl bg-primary-comfy-ink px-6 py-3 text-center text-sm font-semibold transition-opacity hover:opacity-90"
+          class="shrink-0 rounded-2xl bg-primary-comfy-ink px-6 py-3 text-center text-sm font-semibold text-primary-comfy-yellow transition-opacity hover:opacity-90"
         >
           {{ t('cloud.pricing.cta', locale) }}
         </a>

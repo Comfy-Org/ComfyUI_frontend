@@ -3,14 +3,18 @@ import { mapKeys } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ExecutedWsMessage,
-  ResultItem,
-  ResultItemType
-} from '@/schemas/apiSchema'
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'
@@ -404,10 +408,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     app.nodePreviewImages = clone(nodePreviewImages.value)
   }
 
-  function revokeSubgraphPreviews(subgraphNode: SubgraphNode) {
-    const { graph } = subgraphNode
-    if (!graph) return
-
+  function revokeSubgraphPreviews(subgraphNode: SubgraphNode, graph: LGraph) {
     revokePreviewsByLocatorId(
       createNodeLocatorId(graph.isRootGraph ? null : graph.id, subgraphNode.id)
     )

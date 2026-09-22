@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createGraphMutations } from '@/core/graph/graphMutations'
-import type { GraphMutations } from '@/core/graph/graphMutations'
+import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
+import type { GraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
+import { inertPlacementPort } from '@/workbench/extensions/agent/crdt/__fixtures__/inertPlacementPort'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { GraphScope } from '@/types/graphScopeId'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
@@ -25,7 +26,8 @@ function scopeFor(graphId: string): GraphScope {
 function mutationsFor(scope: GraphScope): GraphMutations {
   return createGraphMutations({
     getScope: () => scope,
-    layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+    placement: inertPlacementPort
   })
 }
 

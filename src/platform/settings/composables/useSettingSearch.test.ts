@@ -1,4 +1,3 @@
-import type * as I18nModule from '@/i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -9,8 +8,7 @@ import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 
 // Mock dependencies
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
+vi.mock(import('@/i18n'), () => ({
   st: vi.fn((_: string, fallback: string) => fallback)
 }))
 

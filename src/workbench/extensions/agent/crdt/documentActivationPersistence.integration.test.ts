@@ -14,8 +14,9 @@ import type { DocumentViewBinding } from '@/core/graph/document/activationCoordi
 import { createDetachedTargetSession } from '@/core/graph/document/detachedTargetSession'
 import type { DetachedTargetSession } from '@/core/graph/document/detachedTargetSession'
 import { serializeDocumentScope } from '@/core/graph/document/documentSerializer'
-import { createGraphMutations } from '@/core/graph/graphMutations'
-import type { GraphMutations } from '@/core/graph/graphMutations'
+import type { GraphMutations } from './graphMutations'
+import { createGraphMutations } from './graphMutations'
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
 import type { DocumentId } from '@/types/documentId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -70,7 +71,8 @@ function scopeFor(graphId: string): GraphScope {
 function mutationsFor(scope: GraphScope): GraphMutations {
   return createGraphMutations({
     getScope: () => scope,
-    layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+    placement: inertPlacementPort
   })
 }
 

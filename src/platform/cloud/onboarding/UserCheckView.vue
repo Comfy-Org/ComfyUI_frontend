@@ -14,17 +14,17 @@
     </div>
   </div>
   <div v-else class="flex items-center justify-center">
-    <ProgressSpinner class="size-8" />
+    <Spinner class="size-8" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {

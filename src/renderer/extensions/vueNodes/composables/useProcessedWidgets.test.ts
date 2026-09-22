@@ -159,6 +159,53 @@ describe('widget slot ownership', () => {
     expect(processedWidget.slotMetadata).toBeUndefined()
   })
 
+  it.for(['none', 'widget', 'widgetId'] as const)(
+    'respects explicit widget ownership on linked same-name sockets (%s)',
+    (ownership) => {
+      const nodeId = toNodeId(1)
+      const { graph, node } = createGraphWithNode([], nodeId)
+      node.addInput('model', 'MODEL')
+      node.addWidget('custom', 'model', null, () => {})
+      if (ownership === 'widget') node.inputs[0].widget = { name: 'model' }
+      if (ownership === 'widgetId') {
+        node.inputs[0].widgetId = widgetId(GRAPH_ID, nodeId, 'model')
+      }
+      useLinkStore().registerLink(
+        {
+          rootGraphId: toRootGraphId(GRAPH_ID),
+          owningGraphId: toOwningGraphId(GRAPH_ID)
+        },
+        {
+          id: toLinkId(1),
+          graphId: toOwningGraphId(GRAPH_ID),
+          originNodeId: toNodeId(2),
+          originSlot: 0,
+          targetNodeId: nodeId,
+          targetSlot: 0,
+          type: 'MODEL'
+        }
+      )
+
+      const [processedWidget] = computeProcessedWidgets({
+        nodeData: node._state,
+        widgetIds: undefined,
+        graphId: GRAPH_ID,
+        showAdvanced: false,
+        isGraphReady: true,
+        rootGraph: graph,
+        ui: noopUi
+      })
+
+      if (ownership !== 'none') {
+        expect(processedWidget.slotMetadata?.linked).toBe(true)
+        expect(processedWidget.simplified.options?.disabled).toBe(true)
+      } else {
+        expect(processedWidget.slotMetadata).toBeUndefined()
+        expect(processedWidget.simplified.options?.disabled).not.toBe(true)
+      }
+    }
+  )
+
   it('uses the first same-named widget input slot', () => {
     const nodeId = toNodeId(1)
     const { graph, node } = createGraphWithNode([], nodeId)
@@ -239,6 +286,7 @@ describe('widget visibility', () => {
       {
         name: 'w',
         type: 'STRING',
+        widget: { name: 'w' },
         link: toLinkId(1),
         boundingRect: [0, 0, 0, 0]
       }

@@ -93,13 +93,7 @@ function renderBaseTerminal(props: Record<string, unknown> = {}) {
   return render(BaseTerminal, {
     props,
     global: {
-      plugins: [getActivePinia()!, i18n],
-      stubs: {
-        Button: {
-          template: '<button v-bind="$attrs"><slot /></button>',
-          props: ['icon', 'severity', 'size']
-        }
-      }
+      plugins: [getActivePinia()!, i18n]
     }
   })
 }

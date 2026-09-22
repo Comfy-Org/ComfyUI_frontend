@@ -1,7 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useTelemetry } from '@/platform/telemetry'
 
 import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
-import { useTelemetry } from '@/platform/telemetry'
 
 import { FEEDBACK_TYPEFORM_ID } from './config'
 import { openFeedbackDialog } from './feedbackDialog'
@@ -14,17 +17,9 @@ vi.mock(import('@/platform/surveys/openTypeformDialog'), () => ({
   openTypeformDialog: vi.fn()
 }))
 
-const trackUiButtonClicked = vi.fn()
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({ trackUiButtonClicked }))
-}))
+vi.mock(import('@/platform/telemetry'))
 
-const userEmail = vi.hoisted((): { value: string | undefined } => ({
-  value: undefined
-}))
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({ userEmail })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true,
@@ -32,10 +27,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 describe('openFeedbackDialog', () => {
-  beforeEach(() => {
-    userEmail.value = undefined
-  })
-
   it('opens the feedback form tagged with distribution and source', () => {
     openFeedbackDialog('action-bar')
 
@@ -48,7 +39,7 @@ describe('openFeedbackDialog', () => {
   })
 
   it('includes the logged-in user email as a hidden field', () => {
-    userEmail.value = 'user@example.com'
+    useCurrentUser().userEmail = computed(() => 'user@example.com')
 
     openFeedbackDialog('action-bar')
 
@@ -63,7 +54,7 @@ describe('openFeedbackDialog', () => {
   it('tracks the button click tagged with the opening source', () => {
     openFeedbackDialog('topbar')
 
-    expect(trackUiButtonClicked).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'feedback_button_clicked',
       element_group: 'topbar'
     })

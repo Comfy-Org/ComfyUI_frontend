@@ -1,21 +1,15 @@
 import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import SignInContent from '@/components/dialog/content/SignInContent.vue'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({
-    signInWithGoogle: vi.fn(),
-    signInWithGithub: vi.fn(),
-    signInWithEmail: vi.fn(),
-    signUpWithEmail: vi.fn(),
-    accessError: ref(false)
-  })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock(import('@/base/webviewDetection'), () => ({
+vi.mock(import('@comfyorg/account-core/webviewDetection'), () => ({
   isEmbeddedWebView: () => false
 }))
 vi.mock(import('@/utils/hostWhitelist'), () => ({
@@ -47,7 +41,7 @@ const inChina = vi.hoisted(() => ({
     this.pending = Promise.reject(error)
   }
 }))
-vi.mock(import('@/utils/networkUtil'), () => ({
+vi.mock(import('@comfyorg/account-ui/auth/regionProbe'), () => ({
   isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
 }))
 
@@ -79,7 +73,7 @@ const MESSAGES = {
     apiKey: { helpText: 'Help', generateKey: 'Generate key' },
     reauthRequired: { title: 'Reauth', message: 'Reauth' }
   },
-  g: { comfy: 'Comfy' },
+  g: { comfy: 'Comfy', close: 'Close' },
   toastMessages: { useApiKeyTip: 'Tip' }
 }
 
@@ -94,17 +88,14 @@ function renderSignInContent() {
         SignUpForm: { template: '<form data-testid="signup-form" />' },
         SignInForm: { template: '<form data-testid="signin-form" />' },
         ApiKeyForm: true,
-        Divider: true,
-        Message: { template: '<div><slot /></div>' }
+        Divider: true
       }
     }
   })
 }
 
 async function switchToSignUp(advanceTimers?: (ms: number) => void) {
-  const user = (await import('@testing-library/user-event')).default.setup(
-    advanceTimers ? { advanceTimers } : {}
-  )
+  const user = userEvent.setup(advanceTimers ? { advanceTimers } : {})
   await user.click(screen.getByText('Sign up'))
 }
 
@@ -114,6 +105,21 @@ beforeEach(() => {
 })
 
 describe('SignInContent', () => {
+  it('shows the access-error tip again after dismissal and another error', async () => {
+    const user = userEvent.setup()
+    const { accessError } = useAuthActions()
+    accessError.value = true
+    renderSignInContent()
+
+    expect(screen.getByText('Tip')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByText('Tip')).not.toBeInTheDocument()
+    expect(accessError.value).toBe(false)
+
+    accessError.value = true
+    expect(await screen.findByText('Tip')).toBeVisible()
+  })
+
   it('links legal terms directly to canonical Comfy pages', () => {
     renderSignInContent()
 

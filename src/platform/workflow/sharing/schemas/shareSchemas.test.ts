@@ -1,6 +1,49 @@
 import { describe, expect, it } from 'vitest'
 
-import { zSharedWorkflowResponse } from '@/platform/workflow/sharing/schemas/shareSchemas'
+import {
+  zHubProfileResponse,
+  zSharedWorkflowResponse
+} from '@/platform/workflow/sharing/schemas/shareSchemas'
+
+describe('Hub profile compatibility', () => {
+  it.for([
+    {
+      name: 'legacy snake-case images',
+      payload: {
+        name: 'Legacy creator',
+        cover_image_url: 'https://example.com/cover.png',
+        profile_picture_url: 'https://example.com/profile.png'
+      },
+      expected: {
+        name: 'Legacy creator',
+        coverImageUrl: 'https://example.com/cover.png',
+        profilePictureUrl: 'https://example.com/profile.png'
+      }
+    },
+    {
+      name: 'camel-case fields take precedence',
+      payload: {
+        name: 'Preferred name',
+        display_name: 'Fallback name',
+        profilePictureUrl: 'https://example.com/preferred.png',
+        avatar_url: 'https://example.com/fallback.png'
+      },
+      expected: {
+        name: 'Preferred name',
+        profilePictureUrl: 'https://example.com/preferred.png'
+      }
+    },
+    {
+      name: 'nullable images without optional profile details',
+      payload: { avatar_url: null, cover_image_url: null },
+      expected: { profilePictureUrl: null, coverImageUrl: null }
+    }
+  ])('accepts $name', ({ payload, expected }) => {
+    expect(
+      zHubProfileResponse.parse({ username: 'creator', ...payload })
+    ).toEqual({ username: 'creator', ...expected })
+  })
+})
 
 function makePayload(name: string) {
   return {
