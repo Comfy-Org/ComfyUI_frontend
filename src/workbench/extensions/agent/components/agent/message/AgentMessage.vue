@@ -23,13 +23,11 @@ import type {
 const {
   message,
   answeringAskIds = new Set<string>(),
-  paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
-  boundWorkflowId
+  paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION
 } = defineProps<{
   message: AssistantMessage
   answeringAskIds?: ReadonlySet<string>
   paywallPresentation?: AgentPaywallPresentation
-  boundWorkflowId?: string
 }>()
 const { t } = useI18n()
 
@@ -132,7 +130,6 @@ const status = computed(() => {
         :activity-parts="activityParts"
         :answering-ask-ids="answeringAskIds"
         :paywall-presentation="paywallPresentation"
-        :bound-workflow-id
         @answer="(askId, selection) => emit('answerAsk', askId, selection)"
         @open-workflow="
           (workflowId, workflowName) =>

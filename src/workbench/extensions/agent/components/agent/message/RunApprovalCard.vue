@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 
 import type { RunApprovalPart } from '../../../services/agent/agentMessageParts'
+import { agentBoundWorkflowIdKey } from '../agentBoundWorkflowId'
 
-const {
-  part,
-  answering = false,
-  hideWorkflowName = false
-} = defineProps<{
+const { part, answering = false } = defineProps<{
   part: RunApprovalPart
   answering?: boolean
-  hideWorkflowName?: boolean
 }>()
+const boundWorkflowId = inject(agentBoundWorkflowIdKey, ref(undefined))
+const hideWorkflowName = computed(
+  () => !!boundWorkflowId.value && part.workflowId === boundWorkflowId.value
+)
 const emit = defineEmits<{
   answer: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [workflowId: string, workflowName?: string]

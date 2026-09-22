@@ -351,7 +351,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :editable-turn-id
           :answering-ask-ids
           :paywall-presentation
-          :bound-workflow-id="editableWorkflowId"
           @edit-prompt="composerRef?.replaceDraft($event)"
           @feedback="(id, vote) => emit('feedback', id, vote)"
           @answer-ask="
