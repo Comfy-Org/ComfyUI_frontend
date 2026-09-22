@@ -104,7 +104,7 @@ test.describe(
   () => {
     // Real node definitions: the agent boot mocks stub object_info to {} by
     // default, and LiteGraph.createNode returns null for an unregistered type.
-    test.use({ agentObjectInfo: 'server', connectWebSocketToServer: false })
+    test.use({ objectInfo: 'server', connectWebSocketToServer: false })
 
     test('is removed from the canvas', async ({
       agentPanel,

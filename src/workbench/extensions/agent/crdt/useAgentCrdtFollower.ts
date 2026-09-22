@@ -43,7 +43,7 @@ import { createOpSender } from './opSender'
 import type { WithLayoutActor } from './pendingOpRevert'
 import {
   applyPendingOpRevert,
-  createPendingRevertRemoveNode,
+  createPendingRevertNodeRegistry,
   createRevertNotifier
 } from './pendingOpRevert'
 import { createPendingOpTracker } from './pendingOpTracker'
@@ -307,7 +307,7 @@ function startAgentCrdtFollower(
   )
   const tabId = createUuidv4()
   let lastProjectedSequence: number | null = null
-  const removeRevertedNode = createPendingRevertRemoveNode({
+  const pendingRevertNodes = createPendingRevertNodeRegistry({
     getGraph,
     withLayoutActor
   })
@@ -338,7 +338,7 @@ function startAgentCrdtFollower(
     // effect frame never reached this follower, so one is coming.
     currentSeq: () => lastProjectedSequence ?? 0,
     onEvent: (event) => {
-      notifyReverted(event, applyPendingOpRevert(event, removeRevertedNode))
+      notifyReverted(event, applyPendingOpRevert(event, pendingRevertNodes))
       recordDevEvent('pending_ops', event)
     }
   })
@@ -372,7 +372,10 @@ function startAgentCrdtFollower(
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
-    onBatchMinted: (ops) => pendingOps.onBatchMinted(ops),
+    onBatchMinted: (ops) => {
+      pendingRevertNodes.onBatchMinted(ops)
+      pendingOps.onBatchMinted(ops)
+    },
     onBatchTransmitted: (ops) => pendingOps.onBatchTransmitted(ops),
     onBatchSettled: (outcome) => {
       if (outcome.state === 'acknowledged') {

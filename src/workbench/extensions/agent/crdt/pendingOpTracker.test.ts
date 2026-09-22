@@ -341,6 +341,21 @@ describe('createPendingOpTracker', () => {
     ])
   })
 
+  it('keeps an unconfirmed transmitted batch pending because the host may have applied it', () => {
+    tracker.onBatchMinted(ops)
+    tracker.onBatchTransmitted(ops)
+
+    tracker.onBatchSettled({ state: 'unconfirmed', ops })
+
+    expect(tracker.entries()).toHaveLength(3)
+    expect(events).toEqual([
+      {
+        type: 'delivery_unknown',
+        opIds: ['op-1', 'op-2', 'op-3']
+      }
+    ])
+  })
+
   it('emits no delivery-unknown event when effects already settled the batch', () => {
     tracker.onBatchMinted(ops)
     tracker.onBatchTransmitted(ops)

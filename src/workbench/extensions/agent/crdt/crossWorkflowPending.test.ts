@@ -275,13 +275,16 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       skipped: []
     })
 
-    // A's late result names A's op_id, which is not in B's in-flight batch,
-    // so the sender ignores it: B stays in flight and nothing else settles.
-    expect(
-      devLogState.recordDevEvent.mock.calls.filter(
-        ([event]) => event === 'human_ops_settled'
-      )
-    ).toHaveLength(1)
+    // A's late result settles A's retained delivery-unknown state without
+    // touching B's in-flight batch.
+    const settlements = devLogState.recordDevEvent.mock.calls.filter(
+      ([event]) => event === 'human_ops_settled'
+    )
+    expect(settlements).toHaveLength(2)
+    expect(settlements[1][1]).toMatchObject({
+      state: 'acknowledged',
+      ops: [expect.objectContaining({ op_id: operationAId })]
+    })
 
     // R-73 regression guard: result frames carry workflowId, and the guard
     // added alongside this test (onOpsResult in useAgentCrdtFollower.ts)
@@ -315,7 +318,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     await enqueue([deleteNode('b-pending')])
     const operationBId = clientState.sent[1].ops[0].op_id
 
-    // A's identified late result is ignored: its op_id is not in B's batch.
+    // A's identified late result settles A without settling B.
     dispatchOpsResult({
       workflowId: 'wf-a',
       ok: true,
@@ -334,7 +337,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       devLogState.recordDevEvent.mock.calls.filter(
         ([event]) => event === 'human_ops_settled'
       )
-    ).toHaveLength(1)
+    ).toHaveLength(2)
 
     dispatchOpsResult({
       workflowId: 'wf-b',
@@ -346,8 +349,8 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     const settlements = devLogState.recordDevEvent.mock.calls.filter(
       ([event]) => event === 'human_ops_settled'
     )
-    expect(settlements).toHaveLength(2)
-    expect(settlements[1][1]).toMatchObject({
+    expect(settlements).toHaveLength(3)
+    expect(settlements[2][1]).toMatchObject({
       state: 'acknowledged',
       ops: [expect.objectContaining({ op_id: operationBId })],
       result: { workflowId: 'wf-b', ok: false, applied: [], skipped: [] }

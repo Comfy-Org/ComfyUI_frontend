@@ -10,7 +10,6 @@ type PendingOpRevertReason =
   | 'failed'
   | 'unprocessed'
   | 'unattributed'
-  | 'unconfirmed'
   | 'undeliverable'
 
 export type PendingOpTrackerEvent =
@@ -172,7 +171,10 @@ export function createPendingOpTracker(
     },
     onBatchSettled(outcome) {
       const batch = outcome.ops.map((op) => op.op_id)
-      if (outcome.state === 'unacknowledged') {
+      if (
+        outcome.state === 'unacknowledged' ||
+        outcome.state === 'unconfirmed'
+      ) {
         // A doc_update effect may already have retired part of the batch;
         // only what the ledger still tracks is genuinely delivery-unknown.
         const stillPending = batch.filter((opId) => ledger.get(opId))

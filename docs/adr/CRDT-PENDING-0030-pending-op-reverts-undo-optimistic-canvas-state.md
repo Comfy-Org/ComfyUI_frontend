@@ -47,6 +47,12 @@ already exists: `agentNodeMaterializer.ts`'s reconcile detaches doc-orphaned
 nodes via `graph.remove(...)` under `runMintPortsSuppressed`, with provenance
 keeping the deferred layout delivery unminted.
 
+FE-2504 identifies that store-first remote apply and its reconciliation passes
+violate the live `LGraph`/`LGraphNode` invariant. This ADR does not endorse that
+architecture. Pending transport correlation remains useful after FE-2504, but
+the canvas-specific compensating revert below is a migration bridge while
+local human edits still happen before host acceptance.
+
 ## Decision
 
 **1. Widen the tracker's `reverted` event to carry the ops it dropped.**
@@ -55,24 +61,26 @@ keeping the deferred layout delivery unminted.
 so existing consumers and assertions keyed on ids survive. The ledger entry
 already holds the `Op` on every revert path (failed, unprocessed,
 unattributed, undeliverable); emitting it keeps one source of truth and lets
-any consumer act without mirroring ledger lifecycle. The event surface has
+consumers act without duplicating the ledger's op state. The event surface has
 two consumers today (dev-panel log, and the new revert applier below), so the
 contract change is cheap now.
 
 **2. Add a revert applier as its own module,**
-`src/workbench/extensions/agent/crdt/pendingOpRevert.ts`: given a `reverted`
-event and a `removeNode` closure, it removes each reverted `add_node` op's
-node and reports each outcome. Every `removeNode` call is individually
-try/caught with `reportError` — `LGraph.remove` runs `node.onRemoved?.()`
+`src/workbench/extensions/agent/crdt/pendingOpRevert.ts`: its registry captures
+the live node object for each minted `add_node`, then removes that exact object
+when the op reverts. A newer node that reused the same id is left intact. The
+registry releases identities on every terminal tracker event. Every removal is
+individually try/caught with `reportError` — `LGraph.remove` runs
+`node.onRemoved?.()`
 uncaught, so one throwing extension callback must not strand the batch's
 other reverts. The composition root — `useAgentCrdtFollower.ts`'s `onEvent` —
 calls it before the existing `recordDevEvent`, and
 `rejectedHumanAddNodeRevert.test.ts` wires the same applier into its own
 tracker's `onEvent`, mirroring production composition exactly.
 
-**3. First pass covers `add_node` reverts only.** An `add_node` revert needs no
-captured before-state: the correct end state is simply "target absent". The
-other kinds each need before-state the ledger does not hold (a reverted
+**3. First pass covers `add_node` reverts only.** It captures only object
+identity, not general before-state. The other kinds each need before-state the
+ledger does not hold (a reverted
 `connect` must remove a specific link; a reverted `set_widget` must restore the
 old value; a reverted `delete_node` must re-materialize the node). The widened
 event already carries full ops, so later kinds extend the applier without
@@ -91,7 +99,7 @@ rejects it — the bracket alone cannot reach that deferred delivery.
 
 The layout store is a renderer module and the crdt modules deliberately do not
 import the renderer (`mintPortWiring.ts` takes the store's seams injected),
-so the closure builder `createPendingRevertRemoveNode` in `pendingOpRevert.ts`
+so `createPendingRevertNodeRegistry` in `pendingOpRevert.ts`
 takes `withActor` and `getGraph` injected, and `AgentPanelRoot.vue` — which
 already imports `layoutStore` to inject `layoutChanges` the same way —
 supplies them. Owning a renderer import inside crdt/ was rejected: it would
@@ -108,7 +116,7 @@ drive an actor-less `deleteNode` through the removal path, flush the real
 microtask delivery, and assert the sender received nothing — plus a control
 proving the same removal without `withActor` DOES mint, so the pin can fail.
 
-**5. Surface reverts to the user with one toast per settle** via
+**5. Surface reverts to the user with one toast per microtask turn** via
 `useToastStore().add(...)` from `useAgentCrdtFollower.ts` (the store is the
 established out-of-component toast seam, e.g. `missingMediaPipeline.ts`, with
 `st()` fallbacks), severity `warn`. One settle can emit two `reverted` events
@@ -118,6 +126,12 @@ actually removed it reads `toastMessages.agentSyncEditReverted` ("Your edit
 couldn't be synced and was undone."); otherwise — including an
 `ignore_remove` refusal — `toastMessages.agentSyncEditFailed` ("Your edit
 couldn't be synced."). The applier itself stays UI-free.
+
+**6. Treat `unconfirmed` as delivery unknown, never as rejection.** The sender
+uses this state after a transmitted batch loses its workflow binding, when the
+host may already have applied it. The tracker retains the pending entries, and
+the sender retains their identities so a late result can settle them. Only an
+explicit rejection can trigger the compensating canvas revert.
 
 ### Alternatives considered
 
@@ -173,6 +187,16 @@ couldn't be synced."). The applier itself stays UI-free.
   authoritatively, so nothing hung off it either. Batch coherence holds — a
   rejected add plus an unprocessed connect in one batch both revert, and
   `LGraph.remove` tears the optimistic link down with the node.
+
+### FE-2504 deletion boundary
+
+When remote and local Agent operations share one provenance-aware semantic
+`LGraph` path and no store-to-canvas reconciliation remains, delete
+`pendingOpRevert.ts`, its actor/suppression wiring, and the materializer-shaped
+tests. Keep the transport ledger only for delivery, acknowledgement, and
+effect correlation. A future implementation must not generalize this applier
+into compensating canvas logic for every operation kind; that would deepen the
+architecture FE-2504 is removing.
 
 ## Notes
 

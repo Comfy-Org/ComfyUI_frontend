@@ -6,7 +6,7 @@
  * `reverted` event now feeds `applyPendingOpRevert`, which removes the node.
  * This test composes the same real modules `useAgentCrdtFollower.ts`
  * composes - `attachMintPortWiring`, `createOpSender`,
- * `createPendingOpTracker`, `createPendingRevertRemoveNode` - over a fake
+ * `createPendingOpTracker`, `createPendingRevertNodeRegistry` - over a fake
  * graph, so the revert is pinned against production wiring rather than a
  * reimplementation of it.
  */
@@ -25,7 +25,7 @@ import { createOpSender } from './opSender'
 import type { RevertableGraph } from './pendingOpRevert'
 import {
   applyPendingOpRevert,
-  createPendingRevertRemoveNode
+  createPendingRevertNodeRegistry
 } from './pendingOpRevert'
 import { createPendingOpTracker } from './pendingOpTracker'
 import type { PendingOpTrackerEvent } from './pendingOpTracker'
@@ -74,7 +74,7 @@ describe('human add_node rejection regression pin', () => {
   })
 
   it('removes the node from the graph after the host rejects its sync', () => {
-    const removeNode = createPendingRevertRemoveNode({
+    const pendingNodes = createPendingRevertNodeRegistry({
       getGraph: () => graph,
       withLayoutActor: (_actor, fn) => fn()
     })
@@ -82,7 +82,7 @@ describe('human add_node rejection regression pin', () => {
     const tracker = createPendingOpTracker({
       onEvent: (event) => {
         trackerEvents.push(event)
-        applyPendingOpRevert(event, removeNode)
+        applyPendingOpRevert(event, pendingNodes)
       }
     })
 
@@ -101,7 +101,10 @@ describe('human add_node rejection regression pin', () => {
       tab: 'tab-1',
       actor: () => 'human:test-user:tab-1',
       baseVersion: () => 0,
-      onBatchMinted: (ops) => tracker.onBatchMinted(ops),
+      onBatchMinted: (ops) => {
+        pendingNodes.onBatchMinted(ops)
+        tracker.onBatchMinted(ops)
+      },
       onBatchTransmitted: (ops) => tracker.onBatchTransmitted(ops),
       onBatchSettled: (outcome) => tracker.onBatchSettled(outcome)
     })
