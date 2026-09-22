@@ -22,7 +22,7 @@ const NEXT_BACKOFF_MS = 32_000
 
 test.describe(
   'Agent follower subscribe refusal',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: CASE })
 

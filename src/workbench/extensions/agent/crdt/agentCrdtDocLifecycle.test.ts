@@ -448,7 +448,7 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
     })
   })
 
-  it('six consecutive refusals stop retrying with no further subscribe, event, or report', () => {
+  it('six consecutive refusals stop retrying and report terminal failure once', () => {
     const { lifecycle, resubscribe, onGaveUp } = wire()
     lifecycle.onSubscribeSent(WORKFLOW_ID)
 
@@ -496,16 +496,20 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
     vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
 
     expect(resubscribe).toHaveBeenCalledTimes(6)
-    expect(lifecycle.shouldDeferSubscribe()).toBe(false)
-    expect(onGaveUp).not.toHaveBeenCalled()
-    expect(reportError).not.toHaveBeenCalled()
+    expect(lifecycle.shouldDeferSubscribe()).toBe(true)
+    expect(onGaveUp).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      GAVE_UP_REPORT
+    )
     expect(devEvents().map(({ kind }) => kind)).toEqual([
       'subscribe_retry',
       'subscribe_retry',
       'subscribe_retry',
       'subscribe_retry',
       'subscribe_retry',
-      'subscribe_retry'
+      'subscribe_retry',
+      'subscribe_ack_timeout'
     ])
   })
 })
