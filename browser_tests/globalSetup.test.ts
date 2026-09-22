@@ -54,7 +54,6 @@ describe('browser test global setup', () => {
   })
 
   it('bounds an unresponsive probe and leaves the failure to the fixture', async () => {
-    vi.useFakeTimers()
     const timeout = vi
       .spyOn(AbortSignal, 'timeout')
       .mockImplementation((ms) => {
