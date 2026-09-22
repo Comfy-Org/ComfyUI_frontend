@@ -525,8 +525,8 @@ importers:
         specifier: workspace:*
         version: link:packages/design-system
       '@comfyorg/fbx-exporter-three':
-        specifier: ^1.0.1
-        version: 1.0.1(@types/three@0.184.1)(three@0.184.0)
+        specifier: ^1.0.2
+        version: 1.0.2(@types/three@0.184.1)(three@0.184.0)
       '@comfyorg/object-info-parser':
         specifier: workspace:*
         version: link:packages/object-info-parser
@@ -1973,8 +1973,8 @@ packages:
   '@comfyorg/comfyui-electron-types@0.6.2':
     resolution: {integrity: sha512-r3By5Wbizq8jagUrhtcym79HYUTinsvoBnYkFFWbUmrURBWIaC0HduFVkRkI1PNdI76piW+JSOJJnw00YCVXeg==}
 
-  '@comfyorg/fbx-exporter-three@1.0.1':
-    resolution: {integrity: sha512-fQ1zBsgmmwfio6iEi91hRiFCr946yEgqR2DGh/UMismaLyUohiKGOJL/OnJQnW3+yne/PXxVoYgcortyumsO5w==}
+  '@comfyorg/fbx-exporter-three@1.0.2':
+    resolution: {integrity: sha512-s2XOKXGB1IzNtyLbz7Ved5P8DKqAHUC97mQXCrf+08AKF+9ADCdcErFwZpjdMX+LLXu5lm51MbUCpMizFCJXCQ==}
     engines: {node: '>=18'}
     peerDependencies:
       '@types/three': '>=0.160.0'
@@ -10621,7 +10621,7 @@ snapshots:
 
   '@comfyorg/comfyui-electron-types@0.6.2': {}
 
-  '@comfyorg/fbx-exporter-three@1.0.1(@types/three@0.184.1)(three@0.184.0)':
+  '@comfyorg/fbx-exporter-three@1.0.2(@types/three@0.184.1)(three@0.184.0)':
     dependencies:
       fflate: 0.8.3
       three: 0.184.0

@@ -368,6 +368,28 @@ describe('ModelExporter', () => {
     })
   })
 
+  describe('fbxUnitScaleFor', () => {
+    it.for([
+      { source: 'model.glb', scale: 100 },
+      { source: 'model.gltf', scale: 100 },
+      { source: 'model.obj', scale: 100 },
+      { source: 'model.stl', scale: 100 },
+      { source: 'rigged.fbx', scale: 1 },
+      { source: 'RIGGED.FBX', scale: 1 }
+    ])('$source exports at unitScale $scale', ({ source, scale }) => {
+      expect(
+        ModelExporter.fbxUnitScaleFor(
+          `http://example.com/api/view?filename=${source}`
+        )
+      ).toBe(scale)
+    })
+
+    it('falls back to metres without a source URL', () => {
+      expect(ModelExporter.fbxUnitScaleFor(null)).toBe(100)
+      expect(ModelExporter.fbxUnitScaleFor()).toBe(100)
+    })
+  })
+
   describe('exportFBX', () => {
     it('uses the direct-URL fast path for matching .fbx URLs', async () => {
       const blob = new Blob(['x'])
@@ -399,6 +421,40 @@ describe('ModelExporter', () => {
 
       expect(fbxParseAsyncMock).toHaveBeenCalled()
       expect(downloadBlobMock).toHaveBeenCalledWith('out.fbx', expect.any(Blob))
+    })
+
+    it.for([
+      { source: 'model.glb' },
+      { source: 'model.obj' },
+      { source: 'model.stl' }
+    ])('scales $source to FBX centimetres', async ({ source }) => {
+      fbxParseAsyncMock.mockResolvedValue(new Uint8Array([1]))
+
+      const promise = ModelExporter.exportFBX(
+        new THREE.Object3D(),
+        'out.fbx',
+        `http://example.com/api/view?filename=${source}`
+      )
+      await vi.runAllTimersAsync()
+      await promise
+
+      expect(fbxParseAsyncMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ unitScale: 100 })
+      )
+    })
+
+    it('assumes metres when the source format is unknown', async () => {
+      fbxParseAsyncMock.mockResolvedValue(new Uint8Array([1]))
+
+      const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')
+      await vi.runAllTimersAsync()
+      await promise
+
+      expect(fbxParseAsyncMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ unitScale: 100 })
+      )
     })
 
     it('alerts and rethrows when FBXExporter throws', async () => {

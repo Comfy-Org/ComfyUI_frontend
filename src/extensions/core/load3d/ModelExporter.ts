@@ -24,6 +24,13 @@ export class ModelExporter {
     return null
   }
 
+  static fbxUnitScaleFor(originalURL?: string | null): number {
+    const sourceFormat = originalURL
+      ? ModelExporter.detectFormatFromURL(originalURL)
+      : null
+    return sourceFormat?.toLowerCase() === 'fbx' ? 1 : 100
+  }
+
   static canUseDirectURL(url: string | null, format: string): boolean {
     if (!url) return false
 
@@ -132,7 +139,9 @@ export class ModelExporter {
     try {
       await new Promise((resolve) => setTimeout(resolve, 50))
 
-      const bytes = await exporter.parseAsync(model)
+      const bytes = await exporter.parseAsync(model, {
+        unitScale: ModelExporter.fbxUnitScaleFor(originalURL)
+      })
 
       await new Promise((resolve) => setTimeout(resolve, 50))
 
