@@ -5,6 +5,12 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
+declare global {
+  interface Window {
+    __lastDragStartPayload?: { types: string[]; uriList: string } | null
+  }
+}
+
 // Regression test for a Sentry error in the assets panel's list view:
 // `NotSupportedError: Failed to execute 'add' on 'DataTransferItemList':
 // An item already exists for type 'text/uri-list'.`
@@ -91,6 +97,7 @@ test.describe('Assets list view thumbnail drag', { tag: '@cloud' }, () => {
 
     await tab.openSettingsMenu()
     await tab.listViewOption.click()
+    await tab.closeSettingsMenu()
 
     const row = tab.listRowByName(IMAGE_ROW_NAME)
     await expect(row).toBeVisible()
@@ -101,6 +108,23 @@ test.describe('Assets list view thumbnail drag', { tag: '@cloud' }, () => {
 
     using consoleErrors = collectConsoleErrors(comfyPage.page)
 
+    await comfyPage.page.evaluate(() => {
+      window.__lastDragStartPayload = null
+      document.addEventListener(
+        'dragstart',
+        (event) => {
+          const dt = event.dataTransfer
+          window.__lastDragStartPayload = dt
+            ? {
+                types: Array.from(dt.types),
+                uriList: dt.getData('text/uri-list')
+              }
+            : null
+        },
+        { once: true }
+      )
+    })
+
     await comfyPage.page.mouse.move(
       box.x + box.width / 2,
       box.y + box.height / 2
@@ -110,11 +134,15 @@ test.describe('Assets list view thumbnail drag', { tag: '@cloud' }, () => {
       steps: 10
     })
     await comfyPage.page.mouse.up()
-    await comfyPage.nextFrame()
 
-    const notSupportedErrors = consoleErrors.errors.filter((error) =>
-      error.includes('NotSupportedError')
+    await expect.poll(() => consoleErrors.errors).toEqual([])
+
+    const dragStartPayload = await comfyPage.page.evaluate(
+      () => window.__lastDragStartPayload
     )
-    expect(notSupportedErrors).toEqual([])
+    expect(dragStartPayload).not.toBeNull()
+    expect(dragStartPayload?.types).toContain('application/x-comfy-asset-info')
+    expect(dragStartPayload?.types).toContain('text/uri-list')
+    expect(dragStartPayload?.uriList).toContain(PREVIEW_FILENAME)
   })
 })
