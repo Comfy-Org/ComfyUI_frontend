@@ -8,6 +8,8 @@ import {
 } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
@@ -30,9 +32,19 @@ export interface FeaturedSlide {
 
 const AUTOPLAY_MS = 7000
 
-const { slides, locale = 'en' } = defineProps<{
+const {
+  slides,
+  locale = 'en',
+  compact = false
+} = defineProps<{
   slides: readonly FeaturedSlide[]
   locale?: Locale
+  /**
+   * Shorter, so more of the list below it shows without scrolling. The
+   * catalogue opens on shelves that are the point of the page; the models page
+   * opens on the banner itself and keeps its full height.
+   */
+  compact?: boolean
 }>()
 
 const activeIndex = ref(0)
@@ -106,7 +118,12 @@ const fill = computed(() =>
     data-testid="section-featured"
   >
     <div
-      class="group relative block h-84 short:h-57 sm:short:h-60"
+      :class="
+        cn(
+          'group relative block h-84 short:h-57 sm:short:h-60',
+          compact && 'h-68 short:h-46 sm:short:h-48'
+        )
+      "
       data-testid="featured-slide"
     >
       <a
@@ -143,7 +160,15 @@ const fill = computed(() =>
       />
 
       <div
-        class="pointer-events-none relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14"
+        :class="
+          cn(
+            'pointer-events-none relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14',
+            // The progress bar sits 1.25rem from the foot, so the copy clears
+            // it by the same measure it keeps from the top.
+            compact &&
+              'gap-3 p-7 pt-6 pb-12 max-sm:p-5 max-sm:pb-11 lg:p-9 lg:pt-7 lg:pb-12'
+          )
+        "
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge

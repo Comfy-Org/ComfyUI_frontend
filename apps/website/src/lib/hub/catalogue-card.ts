@@ -36,13 +36,17 @@ export interface CardView {
   readonly needsCustomNodes: boolean
 }
 
+/** A model is known by its maker's mark, wherever the model is named. */
+const markFor = (model: WorkshopModel) =>
+  getLogoPath(model.provider ?? '') ?? getLogoPath(model.name) ?? undefined
+
 function modelCard(
   entry: Extract<CatalogueEntry, { kind: 'model' }>,
   locale: Locale
 ): CardView {
   const { model } = entry
   const provider = model.provider ?? ''
-  const logo = getLogoPath(provider) ?? getLogoPath(model.name) ?? undefined
+  const logo = markFor(model)
   return {
     kind: 'model',
     // One card per name, so it opens the name rather than one of the rows the
@@ -81,7 +85,7 @@ function workflowCard(
     // Text-to-Image` is the model plus a verb the card has already said.
     mark: {
       label: runsOn ? modelName(runsOn, [...models, runsOn]) : '',
-      logo: undefined
+      logo: runsOn ? markFor(runsOn) : undefined
     },
     badges: usefulTags(template.tags),
     needsCustomNodes: needsCustomNodes.has(template.name)

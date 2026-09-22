@@ -256,11 +256,11 @@ function openOutcome(asked: WorkshopOutcome) {
   outcome.value = asked
 }
 
+// The tab says which half this is, so a heading repeating it would say the
+// same thing twice. Only a use case, which the tabs do not name, gets one.
 const heading = computed(() =>
   useCase.value === 'all'
-    ? wholeList.value
-      ? t(kindLabelKey[type.value], locale)
-      : undefined
+    ? undefined
     : t(useCaseLabelKey[useCase.value], locale)
 )
 </script>
@@ -317,6 +317,7 @@ const heading = computed(() =>
       v-if="!browsing && featured.length"
       :slides="featured"
       :locale
+      compact
       class="mb-10 short:mb-6"
     />
 
@@ -340,9 +341,10 @@ const heading = computed(() =>
           @click="backToShelves"
         >
           <ChevronLeft class="size-4" aria-hidden="true" />
-          {{ t('workshop.sections.back', locale) }}
+          {{ t('workshop.v2.back', locale) }}
         </button>
         <h2
+          v-if="heading"
           class="text-xl font-medium text-primary-warm-white"
           data-testid="catalogue-heading"
         >
