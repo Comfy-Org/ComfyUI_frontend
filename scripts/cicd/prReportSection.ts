@@ -15,16 +15,13 @@ export interface PrReportSection {
   status: string
   /** Markdown folded into the collapsed box. Omit for a status-only section. */
   body?: string
-  /** Text on the disclosure triangle. */
-  detailsSummary?: string
 }
 
 export function renderPrReportSection({
   icon,
   title,
   status,
-  body,
-  detailsSummary = 'Details'
+  body
 }: PrReportSection): string {
   const heading = `## ${icon} ${title}: ${status}`
   const trimmedBody = body?.trim()
@@ -36,7 +33,7 @@ export function renderPrReportSection({
     heading,
     '',
     '<details>',
-    `<summary>${detailsSummary}</summary>`,
+    '<summary>Details</summary>',
     '',
     trimmedBody,
     '',

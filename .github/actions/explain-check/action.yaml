@@ -104,6 +104,11 @@ runs:
         } > "$body"
 
         heading=$(printf '## %s %s: %s' "$INPUT_ICON" "$INPUT_TITLE" "$badge")
+        # Drop leading blank lines here and trailing ones via the substitution,
+        # so a check that supplies nothing but a verdict renders as a bare
+        # heading rather than an empty box. Mirrors renderPrReportSection.
+        body_text=$(sed -e '/[^[:space:]]/,$!d' "$body")
+        rm -f "$body"
 
         # Must live inside the workspace: read-and-upsert-comment-section guards
         # on hashFiles(), which only resolves paths under GITHUB_WORKSPACE and
@@ -112,10 +117,10 @@ runs:
         # Every section of the PR report reads as one status line with the rest
         # folded away, so the comment stays scannable as checks accumulate.
         {
-          printf '%s\n\n' "$heading"
-          printf '<details>\n<summary>Details</summary>\n\n'
-          cat "$body"
-          printf '\n</details>\n'
+          printf '%s\n' "$heading"
+          if [ -n "$body_text" ]; then
+            printf '\n<details>\n<summary>Details</summary>\n\n%s\n\n</details>\n' "$body_text"
+          fi
         } > "$out"
 
         echo "file=$out" >> "$GITHUB_OUTPUT"
@@ -125,11 +130,11 @@ runs:
         # stays expanded because for those runs it is the only place the
         # findings are readable at all.
         {
-          printf '%s\n\n' "$heading"
-          cat "$body"
+          printf '%s\n' "$heading"
+          if [ -n "$body_text" ]; then
+            printf '\n%s\n' "$body_text"
+          fi
         } >> "$GITHUB_STEP_SUMMARY"
-
-        rm -f "$body"
 
     - name: Upsert section into the PR report
       if: ${{ inputs.pr-number != '' && inputs.token != '' }}

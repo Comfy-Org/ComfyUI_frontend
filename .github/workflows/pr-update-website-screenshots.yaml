@@ -226,13 +226,11 @@ jobs:
                 ? '❌ Failed'
                 : !hasChanges
                   ? '✅ Already up to date'
-                  : `✅ Updated ${changedCount} screenshot${s}`
-
-            const pushed = outcome === 'success' && hasChanges ? ', pushed to the branch' : ''
+                  : `✅ Updated ${changedCount} screenshot${s}, pushed to the branch`
 
             core.setOutput(
               'section-content',
-              `## 📸 Screenshot Update: ${status}${pushed} — [View workflow run](${runUrl})`
+              `## 📸 Screenshot Update: ${status} — [View workflow run](${runUrl})`
             )
 
       - uses: ./.github/actions/upsert-comment-section

@@ -327,55 +327,49 @@ jobs:
 
             const status = [
               verdict,
-              breakdown.length > 0 ? breakdown.join(', ') : '',
-              reportUrl ? `[View Report](${reportUrl})` : ''
+              breakdown.join(', '),
+              reportUrl ? `[View Report](${reportUrl})` : '_report unavailable_'
             ]
               .filter(Boolean)
               .join(' — ')
 
-            // pr-update-website-screenshots keys its comment trigger off this
-            // marker, so it has to survive every reformat of this section.
-            const lines = [`## 🌐 Website E2E: ${status}`, '<!-- WEBSITE_E2E_STATUS -->', '']
-
-            const details = []
+            // A clean run has nothing the heading does not already say, so it
+            // gets no box to expand.
+            const blocks = []
 
             if (infrastructure) {
-              details.push(
+              blocks.push([
                 '> [!CAUTION]',
-                '> A shard failed before producing a report, so the suite did not fully run. No pass/fail counts are available.',
-                ''
-              )
+                '> A shard failed before producing a report, so the suite did not fully run. No pass/fail counts are available.'
+              ])
             }
-
-            const rows = [
-              ['Status', verdict],
-              ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
-            ]
-            if (!passed && !infrastructure) {
-              rows.push(
-                ['Screenshot diffs', String(screenshotFailures)],
-                ['Other failures', String(otherFailures)]
-              )
-            }
-            details.push(
-              '| | |',
-              '|---|---|',
-              ...rows.map(([k, v]) => `| **${k}** | ${v} |`)
-            )
 
             if (screenshotFailures > 0) {
               const s = screenshotFailures === 1 ? '' : 's'
-              details.push('', `- [ ] Update website screenshots (${screenshotFailures} screenshot diff${s})`)
-            }
-            if (otherFailures > 0) {
-              details.push(
-                '',
-                '> [!WARNING]',
-                `> ${otherFailures} non-screenshot failure${otherFailures === 1 ? '' : 's'} — these require manual review.`
-              )
+              blocks.push([`- [ ] Update website screenshots (${screenshotFailures} screenshot diff${s})`])
             }
 
-            lines.push('<details>', '<summary>Details</summary>', '', ...details, '', '</details>')
+            if (otherFailures > 0) {
+              blocks.push([
+                '> [!WARNING]',
+                `> ${otherFailures} non-screenshot failure${otherFailures === 1 ? '' : 's'} — these require manual review.`
+              ])
+            }
+
+            // pr-update-website-screenshots keys its comment trigger off this
+            // marker, so it has to survive every reformat of this section.
+            const lines = [`## 🌐 Website E2E: ${status}`, '<!-- WEBSITE_E2E_STATUS -->']
+            if (blocks.length > 0) {
+              lines.push(
+                '',
+                '<details>',
+                '<summary>Details</summary>',
+                '',
+                blocks.map((block) => block.join('\n')).join('\n\n'),
+                '',
+                '</details>'
+              )
+            }
 
             core.setOutput('section-content', lines.join('\n'))
 

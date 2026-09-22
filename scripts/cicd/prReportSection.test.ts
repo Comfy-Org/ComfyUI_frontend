@@ -50,18 +50,6 @@ describe('renderPrReportSection', () => {
     )
   })
 
-  it('labels the disclosure triangle when asked', () => {
-    expect(
-      renderPrReportSection({
-        icon: '🎭',
-        title: 'Playwright',
-        status: '✅ 2076 passed',
-        body: '- chromium',
-        detailsSummary: '📊 Browser Reports'
-      })
-    ).toContain('<summary>📊 Browser Reports</summary>')
-  })
-
   it('keeps a blank line between the tags and the body so GitHub parses it', () => {
     const lines = renderPrReportSection({
       icon: '📦',
