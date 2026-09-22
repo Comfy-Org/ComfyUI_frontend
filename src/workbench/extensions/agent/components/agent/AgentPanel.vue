@@ -143,6 +143,7 @@ function onSelectHistory(id: string): void {
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
+const runNoticeEngaged = ref(false)
 const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
 
 function onWorkflowTargetRequired(): void {
@@ -376,6 +377,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           <RunNoticeBanner
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
+            :engaged="runNoticeEngaged"
           />
           <Composer
             ref="composerRef"
@@ -391,6 +393,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :has-workflow-target="!workflowDetached"
             :workflow-selecting="selectingTabPath !== null || savingReference"
             :get-mention-nodes
+            @focusin="runNoticeEngaged = true"
             @send="onComposerSend"
             @stop="emit('stop')"
             @attach="emit('attach')"
