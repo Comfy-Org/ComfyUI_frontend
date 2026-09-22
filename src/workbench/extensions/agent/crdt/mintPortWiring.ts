@@ -9,6 +9,7 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
+import type { RootGraphId } from '@/types/graphScopeId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { useLinkStore } from '@/stores/linkStore'
@@ -39,6 +40,8 @@ export interface MintPortWiringDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /** The activation host's currently-activated root graph id. */
+  activeRootGraphId(): RootGraphId | null
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
   /** The layout store's `onChange`, injected by the composition root. */
@@ -164,6 +167,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     localActorPrefix: deps.localActorPrefix,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
+    activeRootGraphId: deps.activeRootGraphId,
     source: {
       serializeNode(id) {
         const node = deps.getGraph()?.getNodeById(id as NodeId)

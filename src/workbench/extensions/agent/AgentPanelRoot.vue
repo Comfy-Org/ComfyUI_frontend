@@ -50,6 +50,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useDocumentActivationStore } from '@/stores/documentActivationStore'
 import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -164,6 +165,7 @@ const CREATING_TAB_MIN_DURATION_MS = 500
 
 const canvasStore = useCanvasStore()
 const graphDocumentStore = useGraphDocumentStore()
+const documentActivationStore = useDocumentActivationStore()
 const graphMutationsByWorkflow = new Map<string, GraphMutations>()
 /**
  * Resolve the live document for a workflow id. The bound tab's workflow owns
@@ -529,6 +531,9 @@ const {
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
+  // Which graph a mint may target comes from the activation host, not from a
+  // second derivation of the bound workflow's id here.
+  activeRootGraphId: () => documentActivationStore.activeRootGraphId(),
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,

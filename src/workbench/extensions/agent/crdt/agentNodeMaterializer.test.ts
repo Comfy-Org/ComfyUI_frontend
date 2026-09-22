@@ -34,7 +34,7 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
@@ -718,6 +718,7 @@ describe('reconcileAgentAdapters', () => {
       wiring = attachMintPortWiring({
         isEnabled: () => true,
         isDocBound: () => true,
+        activeRootGraphId: () => toRootGraphId(graph.id),
         enqueue: (operations) => minted.push(...operations),
         layoutChanges: (listener) => layoutStore.onChange(listener),
         localActorPrefix: 'user-',

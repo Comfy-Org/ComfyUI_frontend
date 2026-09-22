@@ -83,6 +83,7 @@ describe('attachMintPortWiring', () => {
     wiring = attachMintPortWiring({
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      activeRootGraphId: () => null,
       enqueue: (operations) => minted.push(...operations),
       layoutChanges: (listener) => {
         layoutListeners.add(listener)

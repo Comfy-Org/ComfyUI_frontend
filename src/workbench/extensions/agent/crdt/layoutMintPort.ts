@@ -9,6 +9,7 @@
 import type { NodeId, WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import type { RootGraphId } from '@/types/graphScopeId'
 
 import type { GraphOperation } from './graphOperations'
 import type { SeveranceLog } from './linkMintPort'
@@ -56,6 +57,15 @@ export interface LayoutMintPortDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /**
+   * Root graph id of the document the activation coordinator currently has
+   * activated, or null while no document holds the canvas. Sourced from the
+   * activation host, never re-derived from the live canvas graph: the shared
+   * `LGraph` is reconfigured in place on a tab switch, so its own id already
+   * names the incoming tab while a previous tab's queued changes are still
+   * draining.
+   */
+  activeRootGraphId(): RootGraphId | null
   source: MintSnapshotSource
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
@@ -71,9 +81,27 @@ export interface LayoutMintPort {
   detach(): void
 }
 
+/**
+ * Collapses a burst of identical drops into one signal: a tab switch emits a
+ * change per node, and each would otherwise report separately.
+ */
+function createOncePerTickReporter(): (
+  key: string,
+  report: () => void
+) => void {
+  const reported = new Set<string>()
+  return (key, report) => {
+    if (reported.has(key)) return
+    reported.add(key)
+    queueMicrotask(() => reported.delete(key))
+    report()
+  }
+}
+
 export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   let intentionalClearNodes: NodeId[] | null = null
-  const reportedInteriorChanges = new Set<string>()
+  const reportInteriorChangeOnce = createOncePerTickReporter()
+  const reportInactiveChangeOnce = createOncePerTickReporter()
 
   function gate(change: LayoutChangeView, teardown: boolean): boolean {
     const actor = change.operation.actor
@@ -115,25 +143,64 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
 
     if (operation.ownerGraphId === operation.graphId) return false
 
-    const reportKey = `${action}:${operation.graphId}:${operation.ownerGraphId}`
-    if (reportedInteriorChanges.has(reportKey)) return true
-
-    reportedInteriorChanges.add(reportKey)
-    queueMicrotask(() => reportedInteriorChanges.delete(reportKey))
-    reportError(
-      new Error(
-        `Subgraph-interior node ${action} has no wire op; the bound doc diverges from the local graph`
-      ),
-      {
-        errorType: `agent_crdt_unrepresentable_subgraph_node_${action}`,
-        context: {
-          graphId: operation.graphId,
-          ownerGraphId: operation.ownerGraphId,
-          nodeId: operation.nodeId
-        }
-      }
+    reportInteriorChangeOnce(
+      `${action}:${operation.graphId}:${operation.ownerGraphId}`,
+      () =>
+        reportError(
+          new Error(
+            `Subgraph-interior node ${action} has no wire op; the bound doc diverges from the local graph`
+          ),
+          {
+            errorType: `agent_crdt_unrepresentable_subgraph_node_${action}`,
+            context: {
+              graphId: operation.graphId,
+              ownerGraphId: operation.ownerGraphId,
+              nodeId: operation.nodeId
+            }
+          }
+        )
     )
     return true
+  }
+
+  /**
+   * A root-scoped change belongs to the activated document only when it names
+   * that document's own root graph. Anything else is a change for a graph the
+   * canvas is no longer showing — the tab-switch race — and must never reach
+   * the wire.
+   *
+   * Fails closed while nothing is activated, because that window IS the
+   * handoff: the load path retracts the outgoing binding before the shared
+   * graph is reconfigured, so a change draining in between has no document
+   * to belong to. A change carrying no graphId at all is left to the existing
+   * root-vs-subgraph classification above.
+   */
+  function isForActivatedDocument(
+    operation: LayoutChangeView['operation'],
+    action: 'create' | 'delete' | 'clear'
+  ): boolean {
+    if (operation.graphId === undefined) return true
+    const activeRootGraphId = deps.activeRootGraphId()
+    if (operation.graphId === activeRootGraphId) return true
+
+    reportInactiveChangeOnce(
+      `${action}:${operation.graphId}:${activeRootGraphId}`,
+      () =>
+        reportError(
+          new Error(
+            `Root-scoped ${action} names a graph the activated document does not own; dropping instead of minting into the wrong document`
+          ),
+          {
+            errorType: 'agent_crdt_op_for_inactive_document',
+            context: {
+              graphId: operation.graphId,
+              activeRootGraphId,
+              nodeId: operation.nodeId
+            }
+          }
+        )
+    )
+    return false
   }
 
   function onChange(change: LayoutChangeView): void {
@@ -143,6 +210,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       case 'createNode': {
         if (!gate(change, inTeardown)) return
         if (reportUnrepresentableInteriorChange(operation, 'create')) return
+        if (!isForActivatedDocument(operation, 'create')) return
         if (operation.nodeId === undefined || !operation.layout) return
         const node = deps.source.serializeNode(String(operation.nodeId))
         if (!node) {
@@ -168,6 +236,7 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
       case 'deleteNode': {
         if (!gate(change, inTeardown)) return
         if (reportUnrepresentableInteriorChange(operation, 'delete')) return
+        if (!isForActivatedDocument(operation, 'delete')) return
         if (operation.nodeId === undefined) return
         deps.enqueue([
           {
@@ -182,6 +251,9 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         const captured = intentionalClearNodes
         intentionalClearNodes = null
         if (!gate(change, inTeardown || captured === null)) return
+        // clearGraph is root-scoped by construction (layoutStore.clearGraph
+        // takes a root graph id), so its own graphId classifies it.
+        if (!isForActivatedDocument(operation, 'clear')) return
         deps.enqueue([{ op: 'clear', removed_nodes: captured ?? [] }])
         return
       }

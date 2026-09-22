@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import type { RootGraphId } from '@/types/graphScopeId'
+import { toRootGraphId } from '@/types/graphScopeId'
 
 import type { GraphOperation } from './graphOperations'
 import { attachLayoutMintPort } from './layoutMintPort'
@@ -51,6 +53,7 @@ describe('attachLayoutMintPort', () => {
   let listeners: Set<(change: LayoutChangeView) => void>
   let session: MintSession
   let severed: Map<string, (string | number)[]>
+  let activeRootGraphId: RootGraphId | null
 
   function deliver(change: LayoutChangeView): void {
     for (const listener of listeners) listener(change)
@@ -60,6 +63,7 @@ describe('attachLayoutMintPort', () => {
     minted = []
     enabled = true
     bound = true
+    activeRootGraphId = null
     listeners = new Set()
     session = createMintSession()
     severed = new Map()
@@ -78,6 +82,7 @@ describe('attachLayoutMintPort', () => {
       localActorPrefix: LOCAL_PREFIX,
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      activeRootGraphId: () => activeRootGraphId,
       source: {
         serializeNode: (id) => graphNodes.get(id) ?? null,
         nodeIds: () => [...graphNodes.keys()]
@@ -217,6 +222,7 @@ describe('attachLayoutMintPort', () => {
   })
 
   it('mints a root createNode when ownerGraphId equals graphId', () => {
+    activeRootGraphId = toRootGraphId('root')
     deliver({
       operation: {
         ...createNodeChange('1').operation,
@@ -377,5 +383,93 @@ describe('attachLayoutMintPort', () => {
     deliver(createNodeChange('1'))
 
     expect(minted).toEqual([])
+  })
+
+  describe('activation-scoped targeting', () => {
+    const ACTIVATED = toRootGraphId('graph-activated')
+    const OTHER = toRootGraphId('graph-other')
+
+    function rootScoped(
+      type: 'createNode' | 'deleteNode' | 'clearGraph',
+      graphId: RootGraphId,
+      nodeId = '1'
+    ): LayoutChangeView {
+      return {
+        operation: {
+          type,
+          actor: LOCAL_ACTOR,
+          graphId,
+          ...(type === 'clearGraph'
+            ? {}
+            : {
+                ownerGraphId: graphId,
+                nodeId,
+                layout: { position: { x: 1, y: 2 } }
+              })
+        }
+      }
+    }
+
+    it('mints a root-scoped create for the activated document', () => {
+      activeRootGraphId = ACTIVATED
+
+      deliver(rootScoped('createNode', ACTIVATED))
+
+      expect(minted).toHaveLength(1)
+    })
+
+    it.for(['createNode', 'deleteNode', 'clearGraph'] as const)(
+      'drops a root-scoped %s naming a graph the activated document does not own',
+      (type) => {
+        activeRootGraphId = ACTIVATED
+
+        if (type === 'clearGraph') port.runIntentionalClear(() => {})
+        deliver(rootScoped(type, OTHER))
+
+        expect(minted).toEqual([])
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'agent_crdt_op_for_inactive_document'
+          })
+        )
+      }
+    )
+
+    it('reports a repeated foreign-graph drop once per tick', () => {
+      activeRootGraphId = ACTIVATED
+
+      deliver(rootScoped('createNode', OTHER, '1'))
+      deliver(rootScoped('createNode', OTHER, '2'))
+
+      expect(reportError).toHaveBeenCalledOnce()
+    })
+
+    it('mints again once the other graph becomes the activated one', () => {
+      activeRootGraphId = ACTIVATED
+      deliver(rootScoped('createNode', OTHER))
+      expect(minted).toEqual([])
+
+      activeRootGraphId = OTHER
+      deliver(rootScoped('createNode', OTHER))
+
+      expect(minted).toHaveLength(1)
+    })
+
+    it('drops a root-scoped change while no document is activated', () => {
+      activeRootGraphId = null
+
+      deliver(rootScoped('createNode', ACTIVATED))
+
+      expect(minted).toEqual([])
+    })
+
+    it('leaves a change with no graph id to the root-vs-subgraph classifier', () => {
+      activeRootGraphId = ACTIVATED
+
+      deliver(createNodeChange('1'))
+
+      expect(minted).toHaveLength(1)
+    })
   })
 })

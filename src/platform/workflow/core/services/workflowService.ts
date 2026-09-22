@@ -37,7 +37,9 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useDocumentActivationStore } from '@/stores/documentActivationStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import {
   appendJsonExt,
   appendWorkflowJsonExt,
@@ -612,6 +614,11 @@ export const useWorkflowService = () => {
    * a new graph.
    */
   const beforeLoadNewGraph = (suppressWorkflowReset = true) => {
+    // Retract the outgoing document's canvas binding before anything touches
+    // the shared root graph (ADR-GRAPH-DOCUMENT-0024). Synchronous on
+    // purpose: from here until the incoming document is activated, no
+    // consumer can observe a binding naming a graph this load overwrites.
+    useDocumentActivationStore().deactivate()
     // Use workspaceStore here as it is patched in unit tests.
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
@@ -659,9 +666,27 @@ export const useWorkflowService = () => {
     shareId?: string
   ) => {
     await activateLoadedWorkflow(value, workflowData, shareId)
+    await activateLoadedDocument()
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path
     )
+  }
+
+  /**
+   * Hand the canvas to the document the load just made active, through the
+   * GraphDocument registry (ADR-GRAPH-DOCUMENT-0024). This is the one place
+   * activation happens: all three graph-load paths funnel through
+   * {@link afterLoadNewGraph}. The scope is read off the live root graph
+   * rather than the workflow's serialized `activeState`, because that is the
+   * graph every layout change will name.
+   */
+  const activateLoadedDocument = async (): Promise<void> => {
+    const documentId = useWorkspaceStore().workflow.activeWorkflow?.documentId
+    if (!documentId || !app.isGraphReady) return
+    await useDocumentActivationStore().activate(documentId, {
+      rootGraphId: toRootGraphId(app.rootGraph.id),
+      owningGraphId: toOwningGraphId(app.rootGraph.id)
+    })
   }
 
   const activateLoadedWorkflow = async (
