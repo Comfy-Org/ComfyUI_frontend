@@ -79,10 +79,16 @@ export class AgentCrdtProjection<TUpdate extends DocUpdate = DocUpdate> {
    * the follower doc outside the frame pipeline — the same reconcile a
    * session's first real frame after (re)bind takes. Used when a resubscribe
    * ack proves the doc is already current: no catch-up `doc_update` will
-   * ever arrive to drive that reconcile through {@link applyFrame}.
+   * ever arrive to drive that reconcile through {@link applyFrame}. Also
+   * runs {@link reconcileLiveGraph} on a committed reconcile, exactly as the
+   * frame and retry paths do — otherwise the repaired store state is never
+   * materialized onto the live graph, since no later frame is coming to do
+   * it either.
    */
   reconcileFromDoc(workflowId: string, seq: number): boolean {
-    return this.adapter.reconcileFromDoc(workflowId, seq)
+    const committed = this.adapter.reconcileFromDoc(workflowId, seq)
+    if (committed) this.reconcileLiveGraph(workflowId)
+    return committed
   }
 
   /**

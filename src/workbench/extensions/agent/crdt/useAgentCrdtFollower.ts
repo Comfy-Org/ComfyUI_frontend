@@ -49,7 +49,11 @@ import {
   createPendingRevertRemoveNode,
   createRevertNotifier
 } from './pendingOpRevert'
-import { createPendingCorrelation } from './pendingCorrelation'
+import {
+  createPendingCorrelation,
+  createProjectedSequenceWatermark
+} from './pendingCorrelation'
+import { createPendingOpTracker } from './pendingOpTracker'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
@@ -390,29 +394,24 @@ function startAgentCrdtFollower(
       life: 5000
     })
   })
-  // Forward reference: `pendingCorrelation.reconcileFromDoc` closes over
-  // `projectionRef.current`, set below once `projection` is constructed
-  // (itself built from `pendingCorrelation.pendingOps`) — assigned before
-  // either side is ever CALLED, only after both exist.
-  const projectionRef: {
-    current: AgentCrdtProjection<ClassifiedDocUpdate> | null
-  } = { current: null }
-  // ADR-CRDT-RECONCILE-0035 (a): owns the pending-op ledger's lineage and its
-  // catch-up settlement — see `pendingCorrelation.ts`. Distinct from
-  // `boundWorkflowId` below, which the `!active` watch branch nulls on every
-  // tab deactivation: the ledger must NOT reset there, only on a lineage
-  // break (doc_reset, follower_replaced, or a bind to a workflow other than
-  // this one), which `pendingCorrelation` tracks independently of activity.
-  const pendingCorrelation = createPendingCorrelation({
-    reconcileFromDoc: (id, seq) =>
-      projectionRef.current?.reconcileFromDoc(id, seq) ?? false,
-    effectPresent: (op) => docEffectPresent(op),
+  // Construction order matters, and is now acyclic (s3-opt-6 review): the
+  // watermark and tracker exist before anything that reads them, the
+  // projection exists before `pendingCorrelation` (which needs its
+  // `reconcileFromDoc` as a plain, non-null function — no forward reference,
+  // no `projectionRef`), and `pendingCorrelation` closes over `sender`
+  // (needed for its reactivation-invalidation seam) rather than the other
+  // way around.
+  const projectedSequence = createProjectedSequenceWatermark()
+  const pendingOps = createPendingOpTracker({
+    // Applied seq only, never the ack fallback: between doc_subscribed(seq=N)
+    // and the catch-up doc_update(seq=N) the canvas still shows pre-subscribe
+    // state, so a skipped result must park there rather than clear on the ack.
+    currentSeq: () => projectedSequence.get() ?? 0,
     onEvent: (event) => {
       notifyReverted(event, applyPendingOpRevert(event, removeRevertedNode))
       recordDevEvent('pending_ops', event)
     }
   })
-  const pendingOps = pendingCorrelation.pendingOps
   // Doc node ids whose human delete the host has applied but whose effect
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
@@ -471,11 +470,6 @@ function startAgentCrdtFollower(
     }
     return pending
   }
-  // A pending human `add_node` — queued through delivery-unknown — that a
-  // reactivation's full reconcile must not delete just because the doc does
-  // not have it yet; see `LocalIntent.pendingAdds`.
-  const pendingHumanAdds = (): ReadonlySet<string> =>
-    pendingOps.pendingAddNodeIds()
   const projection = new AgentCrdtProjection<ClassifiedDocUpdate>(
     graphMutations,
     getGraph,
@@ -486,9 +480,46 @@ function startAgentCrdtFollower(
     // the SAME type, in a state the host can have reflected back already. An
     // indexed lookup, not a scan/clone of every pending entry.
     pendingOps.pendingAddType,
-    { pendingDeletes: pendingHumanDeletes, pendingAdds: pendingHumanAdds }
+    {
+      pendingDeletes: pendingHumanDeletes,
+      // A pending human `add_node`/`connect` — queued through
+      // delivery-unknown — that a reactivation's full reconcile must not
+      // delete/drop just because the doc does not have it yet.
+      //
+      // Empty while `awaitingReactivationContinuity` is still true: a
+      // catch-up (or any live) frame can reach this reconcile BEFORE the
+      // resume's own `doc_subscribed` ack is processed (the bridge already
+      // documents that a live frame can outrun its ack), so continuity with
+      // what this correlation last projected is not yet established either
+      // way. Retaining the ledger's ids against a doc this follower cannot
+      // yet vouch for is exactly the risk `pendingCorrelation.ts`'s
+      // reactivation invalidation exists to avoid; until the ack is
+      // consumed, "continuity unknown" is treated the same as "continuity
+      // failed" for THIS reconcile, and the ledger itself is left untouched
+      // for the ack to resolve normally once it arrives.
+      pendingAdds: () =>
+        awaitingReactivationContinuity
+          ? new Set<string>()
+          : pendingOps.pendingAddNodeIds(),
+      pendingConnects: () =>
+        awaitingReactivationContinuity
+          ? new Set<string>()
+          : pendingOps.pendingConnectLinkIds()
+    }
   )
-  projectionRef.current = projection
+  // ADR-CRDT-RECONCILE-0035 (a): owns the pending-op ledger's lineage and its
+  // catch-up settlement — see `pendingCorrelation.ts`. Distinct from
+  // `boundWorkflowId` below, which the `!active` watch branch nulls on every
+  // tab deactivation: the ledger must NOT reset there, only on a lineage
+  // break (doc_reset, follower_replaced, or a bind to a workflow other than
+  // this one), which `pendingCorrelation` tracks independently of activity.
+  const pendingCorrelation = createPendingCorrelation({
+    pendingOps,
+    watermark: projectedSequence,
+    reconcileFromDoc: (id, seq) => projection.reconcileFromDoc(id, seq),
+    effectPresent: (op) => docEffectPresent(op),
+    abortSender: () => sender.abortAll()
+  })
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
@@ -537,6 +568,13 @@ function startAgentCrdtFollower(
     return added
   }
   const applyAndReconcile = (update: ClassifiedDocUpdate): NodeId[] => {
+    // ADR-CRDT-RECONCILE-0035: per-frame order is fixed as resolve, apply,
+    // clear. Resolution reads the follower doc directly, which the bridge
+    // has already merged by the time this frame's event fires, so it needs
+    // neither this frame's ECS apply nor its seq-coverage clear to have run
+    // first; running it first also keeps a just-reverted entry's id out of
+    // the SAME frame's full-reconcile `pendingAdds`/`pendingConnects`.
+    if (update.catchUp) pendingOps.resolveDeliveryUnknown(docEffectPresent)
     const applied = projection.applyFrame(update)
     incrementOutcome(applied ? 'applied' : 'skipped')
     if (!applied) return []
@@ -549,14 +587,18 @@ function startAgentCrdtFollower(
     resumeHeldOpsIfSubscribed()
     if (subscribedWorkflowId.value !== null)
       retryPendingProjection(subscribedWorkflowId.value)
-    // The host sends no catch-up `doc_update` at all when this follower's
-    // state vector is already current (layoutFollowerBridge's ackSeq
-    // comment) — the only sign a resubscribe completed with nothing to
-    // apply. Without this, a parked entry from before the tab went inactive
-    // would never see the catch-up barrier that resolves it.
+    // Consumed once per ack: only the ack that follows a resume from a
+    // paused (tab-inactive) subscription is checked for continuity — see
+    // `pendingCorrelation.ts`'s `resolveIfAlreadyCurrent` doc comment.
+    const isReactivation = awaitingReactivationContinuity
+    awaitingReactivationContinuity = false
+    const detail = event.detail as { seq?: number; generation?: number } | null
+    // Rationale: `pendingCorrelation.ts`'s `resolveIfAlreadyCurrent` doc comment.
     pendingCorrelation.resolveIfAlreadyCurrent(
       subscribedWorkflowId.value,
-      (event.detail as { seq?: number } | null)?.seq
+      detail?.seq,
+      detail?.generation,
+      isReactivation
     )
   }
   // FE #16637 residual: a refusal is the earliest signal the sender can get
@@ -833,6 +875,13 @@ function startAgentCrdtFollower(
   // ADR-CRDT-WRITE-0035); anything else that moves the binding releases
   // them into the normal abort path.
   let heldForWorkflowId: string | null = null
+  // Set whenever the subscription is paused for a tab-away hold, consumed by
+  // the NEXT `onSubscribeConfirmed` (the resume's own ack): see
+  // `pendingCorrelation.ts`'s continuity rule. Left false for every other
+  // resubscribe (gap detection, reconnect), whose state vector was never
+  // stale, so a seq mismatch there is trusted to mean a genuine catch-up is
+  // coming rather than a lineage risk.
+  let awaitingReactivationContinuity = false
   const releaseHeldOps = (): void => {
     heldForWorkflowId = null
     sender.resume()
@@ -847,6 +896,7 @@ function startAgentCrdtFollower(
   }
   const holdOpsForInactiveTab = (workflowId: string): void => {
     heldForWorkflowId = workflowId
+    awaitingReactivationContinuity = true
     sender.suspend()
     bridge.unsubscribe()
   }
@@ -979,6 +1029,14 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
+      // abortAll() before detach(): a plain detach() drops queued, open and
+      // in-flight batches without settling them, so their ledger entries
+      // would outlive this scope in a non-terminal state with no outcome to
+      // resolve them. abortAll() settles every one of them first — revert
+      // (with toast) for queued/open, parked `unconfirmed` for an in-flight
+      // one — so `detach()` only has to stop the sender from admitting or
+      // transmitting anything new.
+      () => sender.abortAll(),
       () => sender.detach(),
       () => pendingCorrelation.reset(),
       () => coalescer.detach(),

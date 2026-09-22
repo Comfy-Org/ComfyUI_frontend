@@ -26,17 +26,16 @@ export type PendingOpTrackerEvent =
       /** The dropped ledger entries' ops, so consumers can undo their effect. */
       ops: Op[]
       /**
-       * True when the reverted batch includes an `add_node` — the only kind
-       * whose canvas effect a revert can actually undo (remove the
-       * optimistic node). A batch can mix kinds (e.g. an unprocessed
-       * add_node alongside a connect), so this says "undoing is possible",
-       * not "every op here was undone"; consumers pair it with their own
-       * count of nodes actually removed (`pendingOpRevert.ts`'s
-       * `removedNodeIds`) before telling the user anything was undone. A
-       * batch with no `add_node` at all leaves its optimistic effect in
-       * place, so this is false and no consumer may claim an undo.
+       * The dropped entries' shadow ops carry their own kind (`ops` above),
+       * so a consumer can already tell which of them were `add_node` — the
+       * only kind whose canvas effect a revert can actually undo. There is
+       * deliberately no `undone`-style boolean here: a batch can mix kinds
+       * (e.g. an unprocessed `add_node` alongside a `connect`), and only a
+       * consumer's own removal result (`pendingOpRevert.ts`'s
+       * `removedNodeIds`) can prove an add was actually undone, not this
+       * event alone. A type-level flag here could never enforce that
+       * pairing, so the fact stays where it can be proven.
        */
-      undone: boolean
     }
   | { type: 'delivery_unknown'; opIds: string[] }
   | { type: 'cleared'; opIds: string[] }
@@ -111,6 +110,14 @@ export interface PendingOpTracker {
    * chance to reach the doc yet, so its absence there proves nothing.
    */
   pendingAddNodeIds(): ReadonlySet<string>
+  /**
+   * Every link id with a `connect` this tracker still holds, in ANY state —
+   * the `connect` sibling of {@link pendingAddNodeIds}. A full doc reconcile
+   * (`EcsFollowerAdapter`'s `LocalIntent.pendingConnects`) must not drop a
+   * live edge whose `connect` is merely queued or in flight — the doc not
+   * holding the link yet proves nothing about it.
+   */
+  pendingConnectLinkIds(): ReadonlySet<string>
 }
 
 /** States in which the host can have already reflected an op back to this follower. */
@@ -134,6 +141,9 @@ export function createPendingOpTracker(
   // add_node node id → its op id, maintained alongside the ledger so
   // `pendingAddType` is an index lookup rather than a scan of every entry.
   const addNodeIndex = new Map<string, string>()
+  // connect link id → its op id; the `connect` sibling of `addNodeIndex`,
+  // backing `pendingConnectLinkIds`.
+  const connectLinkIndex = new Map<string, string>()
   // Rejected op ids already reported this session, so a retried settle of
   // the same ledger entry (e.g. a duplicate `revert`) reports it only once.
   const reportedHumanOpFailures = new Set<string>()
@@ -148,17 +158,22 @@ export function createPendingOpTracker(
     }
   }
 
-  function releaseAddNodeIndex(entry: PendingOpEntry<Op>): void {
-    if (entry.shadow.op !== 'add_node') return
-    const nodeId = String(entry.shadow.node_id)
-    if (addNodeIndex.get(nodeId) === entry.opId) addNodeIndex.delete(nodeId)
+  function releaseIndexes(entry: PendingOpEntry<Op>): void {
+    if (entry.shadow.op === 'add_node') {
+      const nodeId = String(entry.shadow.node_id)
+      if (addNodeIndex.get(nodeId) === entry.opId) addNodeIndex.delete(nodeId)
+    } else if (entry.shadow.op === 'connect') {
+      const linkId = String(entry.shadow.link_id)
+      if (connectLinkIndex.get(linkId) === entry.opId)
+        connectLinkIndex.delete(linkId)
+    }
   }
 
   function drop(opId: string): PendingOpEntry<Op> | undefined {
     attempts.delete(opId)
     awaitingSkipped.delete(opId)
     const entry = ledger.take(opId)
-    if (entry) releaseAddNodeIndex(entry)
+    if (entry) releaseIndexes(entry)
     return entry
   }
 
@@ -176,13 +191,7 @@ export function createPendingOpTracker(
         type: 'reverted',
         reason,
         opIds: reverted.map((entry) => entry.opId),
-        ops: reverted.map((entry) => entry.shadow),
-        // `some`, not `every`: a mixed-kind batch (e.g. an add_node reverted
-        // alongside a connect in the same unprocessed/failed sweep) still
-        // removed a real node, and the consumer's own `removedNodeIds` count
-        // is what actually gates the "undone" claim (pendingOpRevert.ts) —
-        // this only has to say whether removing one is possible at all.
-        undone: reverted.some((entry) => entry.shadow.op === 'add_node')
+        ops: reverted.map((entry) => entry.shadow)
       })
     return reverted
   }
@@ -232,10 +241,15 @@ export function createPendingOpTracker(
     if (result.ok) return
     // An anonymous `ok:false` (no lists, no failed op id) names nothing, so
     // the ledger leaves the batch in flight; nothing will ever clear it.
+    // ADR-CRDT-RECONCILE-0035 (a): every host rejection is reported, and an
+    // anonymous one is still a rejection at the BATCH level, so it reaches
+    // `reportHumanOpRejected` too, with the synthetic `unattributed` code
+    // standing in for the op-level `failure.code` this outcome never had.
     const unattributed = batch.filter(
       (id) => ledger.get(id)?.state === 'inflight'
     )
-    revert(unattributed, 'unattributed')
+    for (const entry of revert(unattributed, 'unattributed'))
+      reportHumanOpRejected(entry, 'unattributed')
   }
 
   /** Shared by `onDocEffect` and a resolved `delivery_unknown` entry. */
@@ -245,7 +259,7 @@ export function createPendingOpTracker(
     for (const entry of cleared) {
       attempts.delete(entry.opId)
       awaitingSkipped.delete(entry.opId)
-      releaseAddNodeIndex(entry)
+      releaseIndexes(entry)
     }
     if (cleared.length > 0)
       emit({ type: 'cleared', opIds: cleared.map((entry) => entry.opId) })
@@ -257,11 +271,14 @@ export function createPendingOpTracker(
     return typeof failure.code === 'string' ? failure.code : undefined
   }
 
-  function reportHumanOpRejected(entry: PendingOpEntry<Op>): void {
+  function reportHumanOpRejected(
+    entry: PendingOpEntry<Op>,
+    fallbackCode?: string
+  ): void {
     if (reportedHumanOpFailures.has(entry.opId)) return
     reportedHumanOpFailures.add(entry.opId)
     const op = entry.shadow
-    const code = failureCode(entry.failure)
+    const code = failureCode(entry.failure) ?? fallbackCode
     reportError(new Error('Agent host rejected a human operation'), {
       errorType: 'agent_crdt_human_op_rejected',
       context: {
@@ -278,6 +295,8 @@ export function createPendingOpTracker(
       for (const op of ops) {
         if (!ledger.enqueue(op.op_id, op)) continue
         if (op.op === 'add_node') addNodeIndex.set(String(op.node_id), op.op_id)
+        if (op.op === 'connect')
+          connectLinkIndex.set(String(op.link_id), op.op_id)
       }
     },
     onBatchTransmitted(ops) {
@@ -287,7 +306,15 @@ export function createPendingOpTracker(
     },
     onBatchSettled(outcome) {
       const batch = outcome.ops.map((op) => op.op_id)
-      if (outcome.state === 'unacknowledged') {
+      // ADR-CRDT-RECONCILE-0035 (a): `unconfirmed` joins `unacknowledged` in
+      // the parked set. Both mean the host may already have applied the
+      // batch — `unacknowledged` because a resend also drew silence,
+      // `unconfirmed` because the transport carried it once but the doc was
+      // unbound before any result arrived — so both park rather than revert.
+      if (
+        outcome.state === 'unacknowledged' ||
+        outcome.state === 'unconfirmed'
+      ) {
         // A doc_update effect may already have retired part of the batch;
         // only what the ledger still tracks is genuinely delivery-unknown.
         const stillPending = batch.filter((opId) => ledger.get(opId))
@@ -353,6 +380,7 @@ export function createPendingOpTracker(
       attempts.clear()
       awaitingSkipped.clear()
       addNodeIndex.clear()
+      connectLinkIndex.clear()
       if (dropped.length > 0)
         emit({ type: 'reset', opIds: dropped.map((entry) => entry.opId) })
     },
@@ -369,6 +397,9 @@ export function createPendingOpTracker(
     },
     pendingAddNodeIds() {
       return new Set(addNodeIndex.keys())
+    },
+    pendingConnectLinkIds() {
+      return new Set(connectLinkIndex.keys())
     }
   }
 }

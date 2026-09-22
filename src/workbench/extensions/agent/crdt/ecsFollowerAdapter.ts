@@ -67,11 +67,21 @@ export interface LocalIntent {
    * for a delete.
    */
   pendingAdds(workflowId: string): ReadonlySet<string>
+  /**
+   * Doc link ids (string keys, matching `connect`'s `link_id`) with a
+   * pending human `connect` the doc does not hold yet — the `connect`
+   * sibling of {@link pendingAdds}. A full reconcile's `removeMissing`
+   * treats the doc as authoritative for every other link; without this seam
+   * an add-plus-connect made just before a tab switch would return to find
+   * its optimistic edge removed, even though the node itself survives.
+   */
+  pendingConnects(workflowId: string): ReadonlySet<string>
 }
 
 const NO_LOCAL_INTENT: LocalIntent = {
   pendingDeletes: () => new Set(),
-  pendingAdds: () => new Set()
+  pendingAdds: () => new Set(),
+  pendingConnects: () => new Set()
 }
 
 function plain(value: unknown): unknown {
@@ -461,10 +471,8 @@ export class EcsFollowerAdapter<TUpdate extends DocUpdate = DocUpdate> {
   /**
    * Runs a full reconcile against the doc for `workflowId` outside the frame
    * pipeline — the same `applyFullReconcile` batch a session's first frame
-   * takes after (re)bind (`createSession`'s `reconcileNextFrame: true`).
-   * Used when a resubscribe's ack proves the follower doc is already
-   * current, so no catch-up `doc_update` will ever arrive to drive that
-   * reconcile through {@link applyFrame}.
+   * takes after (re)bind (`createSession`'s `reconcileNextFrame: true`). See
+   * `AgentCrdtProjection.reconcileFromDoc` for why this runs outside a frame.
    */
   reconcileFromDoc(workflowId: string, seq: number): boolean {
     const session = this.targets.get(workflowId)
@@ -704,10 +712,20 @@ export class EcsFollowerAdapter<TUpdate extends DocUpdate = DocUpdate> {
     const retainedNodeIds = new Set(nodes.map(({ id }) => toNodeId(id)))
     for (const id of this.intent.pendingAdds(session.workflowId))
       retainedNodeIds.add(toNodeId(id))
-    batch.removeMissing(
-      [...retainedNodeIds],
-      links.map(({ id }) => id)
-    )
+    // A pending connect's link id is the same story as a pending add's node
+    // id: the doc does not have it yet, but `removeMissing` must not treat
+    // that absence as authoritative and drop the optimistic edge.
+    const retainedLinkIds = new Set(links.map(({ id }) => id))
+    for (const id of this.intent.pendingConnects(session.workflowId))
+      retainedLinkIds.add(Number(id))
+    batch.removeMissing([...retainedNodeIds], [...retainedLinkIds])
+    // NOT running the incremental path's collision classification here
+    // (ADR-CRDT-RECONCILE-0035 (c), narrowed): `nodes` here is read live off
+    // the doc's own map on every reconcile, so `getNodeType` being defined
+    // is true for every ordinarily-synced node, not only a colliding
+    // local-only one — telling those apart needs (b)'s known-id set, which
+    // is not landed yet (PR B). See `reportNodeCollisionIfAny`'s incremental
+    // use in `applyAddedNode` for the check this path cannot yet run.
     for (const payload of nodes) upsertNode(payload, 'reconcile')
     for (const link of links) batch.connect(link)
   }
@@ -908,6 +926,34 @@ export class EcsFollowerAdapter<TUpdate extends DocUpdate = DocUpdate> {
    * `reconcile` (auto-upgraded to a `replaceNode` by `prepare()` when the
    * types differ); only the collision case is reported.
    */
+  /**
+   * ADR-CRDT-RECONCILE-0035 (c): reports (never blocks) when a doc node's id
+   * is already registered locally under a DIFFERENT type than
+   * {@link pendingAddType} can attribute to the page's own accepted add —
+   * shared by the incremental `add` action ({@link applyAddedNode}) and the
+   * full-reconcile rebind path, so a same-id, unrelated-type collision is
+   * classified identically whichever path first sees the doc's node.
+   */
+  private reportNodeCollisionIfAny(
+    session: TargetSession,
+    id: string | number,
+    localType: string,
+    docType: string
+  ): void {
+    if (this.pendingAddType(String(id)) === docType) return
+    reportOnce(
+      session.reportedErrors,
+      `collision:${id}`,
+      new Error(
+        `Node id ${id} is already registered locally as ${localType}, but an unrelated add_node for it arrived from the document as ${docType}`
+      ),
+      {
+        errorType: 'agent_crdt_node_id_collision',
+        context: { nodeId: id, localType, docType }
+      }
+    )
+  }
+
   private applyAddedNode(
     ctx: FrameApplyContext,
     id: string,
@@ -919,19 +965,7 @@ export class EcsFollowerAdapter<TUpdate extends DocUpdate = DocUpdate> {
       upsertNode(payload, 'add')
       return
     }
-    if (this.pendingAddType(id) !== payload.type) {
-      reportOnce(
-        session.reportedErrors,
-        `collision:${id}`,
-        new Error(
-          `Node id ${id} is already registered locally as ${localType}, but an unrelated add_node for it arrived from the document as ${payload.type}`
-        ),
-        {
-          errorType: 'agent_crdt_node_id_collision',
-          context: { nodeId: id, localType, docType: payload.type }
-        }
-      )
-    }
+    this.reportNodeCollisionIfAny(session, id, localType, payload.type)
     upsertNode(payload, 'reconcile')
   }
 

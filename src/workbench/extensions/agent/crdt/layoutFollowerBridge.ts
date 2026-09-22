@@ -119,6 +119,20 @@ export class LayoutFollowerBridge extends EventTarget {
    * harmless). It never moves {@link lastSeq} backwards.
    */
   private catchUpPending = false
+  /**
+   * Incremented once per subscribe frame this bridge actually sends
+   * ({@link reconcile}'s successful `client.subscribe` call) — never per
+   * ack. Forwarded on `doc_subscribed` so a consumer (`pendingCorrelation.ts`)
+   * can tell a fresh ack from a duplicate or delayed-retry ack of the SAME
+   * subscribe apart: both name this bridge's current `sentWorkflowId` and
+   * both pass its guard, so sequence equality with some prior state alone
+   * cannot distinguish them. This is a same-session counter, not a protocol
+   * generation token the host echoes back — that token does not exist yet
+   * (ADR-CRDT-RECONCILE-0035 (a)'s missing-generation-token gap), so it
+   * cannot prove the ack belongs to THIS bridge's history versus a doc the
+   * host silently reminted under the same workflow id.
+   */
+  private subscribeGeneration = 0
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -225,9 +239,10 @@ export class LayoutFollowerBridge extends EventTarget {
       this.lastSeq = null
       this.ackSeq = null
       this.catchUpPending = false
+      this.subscribeGeneration += 1
       this.dispatchEvent(
         new CustomEvent('doc_subscribe_sent', {
-          detail: { workflowId: desired }
+          detail: { workflowId: desired, generation: this.subscribeGeneration }
         })
       )
     }
@@ -413,7 +428,15 @@ export class LayoutFollowerBridge extends EventTarget {
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
     } else this.sentWorkflowId = null
-    this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+    // `generation` is tagged from THIS bridge's current counter, not from
+    // the send that produced it: a duplicate/delayed-retry ack for the same
+    // outstanding subscribe still carries the send's generation, since
+    // `subscribeGeneration` only advances on the NEXT successful send.
+    this.dispatchEvent(
+      new CustomEvent(event.type, {
+        detail: { ...event.detail, generation: this.subscribeGeneration }
+      })
+    )
   }
 
   private readonly forwardFrame: EventListener = (event) => {

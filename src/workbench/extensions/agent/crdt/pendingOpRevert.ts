@@ -113,6 +113,11 @@ export function createRevertNotifier(
         notify(flush.undone)
       })
     }
-    if (event.undone && removedNodeIds.length > 0) pending.undone = true
+    // `event.undone` was removed as a type that could not enforce its own
+    // pairing requirement (pendingOpTracker.ts); the same fact — could this
+    // batch possibly have undone an add — is derived here from `event.ops`
+    // directly, then paired with the caller's own removal result.
+    const couldHaveUndoneAnAdd = event.ops.some((op) => op.op === 'add_node')
+    if (couldHaveUndoneAnAdd && removedNodeIds.length > 0) pending.undone = true
   }
 }
