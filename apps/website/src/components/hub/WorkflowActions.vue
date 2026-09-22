@@ -29,6 +29,17 @@ interface Route {
   readonly note: TranslationKey
   readonly download?: boolean
   readonly external?: boolean
+  readonly fragment?: boolean
+}
+
+/**
+ * The playground listens for the fragment, but the site router answers a
+ * same-page link with a pushState, which fires no hashchange. Assigning the
+ * fragment is what makes the ask arrive.
+ */
+function askForPanel(event: MouseEvent) {
+  event.preventDefault()
+  window.location.hash = WORKSHOP_API_HASH
 }
 
 // Three ways to leave with this workflow, each reading as what it gives you.
@@ -54,7 +65,8 @@ const routes: readonly Route[] = [
           id: 'workflow-endpoint',
           href: WORKSHOP_API_HASH,
           label: 'workshop.v2.workflow.endpoint',
-          note: 'workshop.v2.workflow.endpointNote'
+          note: 'workshop.v2.workflow.endpointNote',
+          fragment: true
         }
       ] as const)
     : []),
@@ -82,6 +94,7 @@ const routes: readonly Route[] = [
         :rel="route.external ? 'noopener' : undefined"
         :data-testid="route.id"
         class="group flex items-center gap-4 rounded-2xl border border-transparency-white-t8 px-5 py-4 transition-colors outline-none hover:border-transparency-white-t20 hover:bg-transparency-white-t4 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        @click="route.fragment ? askForPanel($event) : undefined"
       >
         <span class="min-w-0 flex-1">
           <span
