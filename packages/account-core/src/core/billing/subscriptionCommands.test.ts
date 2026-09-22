@@ -1187,7 +1187,8 @@ describe('createBillingCommands', () => {
         status: 'error',
         code: 'REQUEST_FAILED',
         httpStatus: 502,
-        serverCode: 'ALREADY_CANCELED'
+        serverCode: 'ALREADY_CANCELED',
+        serverMessage: SERVER_TEXT
       })
       expect(h.invalidate).not.toHaveBeenCalled()
     })
@@ -1222,7 +1223,7 @@ describe('createBillingCommands', () => {
       })
     })
 
-    it('reports a 5xx as REQUEST_FAILED with the server code and never its message', async () => {
+    it('reports a 5xx as REQUEST_FAILED with the server code and message', async () => {
       const h = harness({
         status: PRO_CANCELED,
         script: { [POST_RESUBSCRIBE]: [serverError(500, 'INTERNAL')] }
@@ -1234,9 +1235,9 @@ describe('createBillingCommands', () => {
         status: 'error',
         code: 'REQUEST_FAILED',
         httpStatus: 500,
-        serverCode: 'INTERNAL'
+        serverCode: 'INTERNAL',
+        serverMessage: SERVER_TEXT
       })
-      expect(JSON.stringify(result)).not.toContain('Stripe')
     })
 
     it('does not issue when the eligibility read fails', async () => {

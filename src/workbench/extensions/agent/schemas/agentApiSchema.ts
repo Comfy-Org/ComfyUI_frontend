@@ -127,14 +127,6 @@ export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
 export const zDisownedWorkflowError = z.object({
   error: z.literal('workflow not found or access denied')
 })
-
-export const zUploadImageResult = z.object({
-  name: z.string(),
-  subfolder: z.string(),
-  type: z.string()
-})
-export type UploadImageResult = z.infer<typeof zUploadImageResult>
-
 const zAgentThinkingData = z
   .object({
     delta: z.string(),

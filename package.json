@@ -186,6 +186,7 @@
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "@types/three": "catalog:",
+    "@typescript-eslint/utils": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",

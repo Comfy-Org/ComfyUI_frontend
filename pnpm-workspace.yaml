@@ -55,6 +55,7 @@ catalog:
   '@tiptap/pm': 3.31.0
   '@tiptap/starter-kit': 3.31.0
   '@total-typescript/shoehorn': ^0.1.2
+  '@typescript-eslint/utils': ^8.69.0
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
   '@types/leaflet': ^1.9.20
@@ -167,6 +168,7 @@ catalog:
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
+  '@datadog/browser-logs': 6.33.0
 
 cleanupUnusedCatalogs: true
 

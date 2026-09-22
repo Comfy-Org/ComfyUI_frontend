@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h, ref } from 'vue'
+import { computed, defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -20,16 +20,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-
-// Mock the UserAvatar component
-vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
-  default: {
-    name: 'UserAvatarMock',
-    render() {
-      return h('div', 'Avatar')
-    }
-  }
-}))
 
 // Mock the WorkspaceProfilePic component
 vi.mock<unknown>(
@@ -106,21 +96,7 @@ describe('CurrentUserButton', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          CurrentUserPopoverWorkspace: CurrentUserPopoverWorkspaceStub,
-          Popover: defineComponent({
-            setup(_, { slots, expose }) {
-              const shown = ref(false)
-              expose({
-                toggle: () => {
-                  shown.value = !shown.value
-                },
-                hide: () => {
-                  shown.value = false
-                }
-              })
-              return () => (shown.value ? h('div', slots.default?.()) : null)
-            }
-          })
+          CurrentUserPopoverWorkspace: CurrentUserPopoverWorkspaceStub
         }
       }
     })
@@ -176,7 +152,10 @@ describe('CurrentUserButton', () => {
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
 
     renderComponent()
-    expect(screen.getByText('Avatar')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'User Avatar' })).toHaveAttribute(
+      'src',
+      'https://example.com/avatar.jpg'
+    )
     expect(screen.queryByText('WorkspaceProfilePic')).not.toBeInTheDocument()
   })
 

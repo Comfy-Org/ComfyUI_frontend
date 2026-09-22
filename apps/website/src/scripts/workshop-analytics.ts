@@ -82,6 +82,17 @@ export type WorkshopAnalyticsEvent =
     }
   | { name: 'run_started'; properties: WorkshopRunAnalytics }
   | {
+      name: 'delivery_finished'
+      properties: WorkshopRunAnalytics & {
+        request_id?: string
+        duration_ms: number
+        output_kind: RunOutput['kind']
+        status: 'succeeded' | 'failed' | 'cancelled' | 'unverified'
+        reason?: 'media_error' | 'media_timeout'
+        failure_stage?: 'delivery'
+      }
+    }
+  | {
       name: 'run_finished'
       properties: WorkshopRunAnalytics & {
         duration_ms: number
@@ -93,7 +104,7 @@ export type WorkshopAnalyticsEvent =
               reason: RunFailure
               http_status?: number
               router_error_type?: WorkshopRouterErrorType
-              failure_stage?: WorkshopFailureStage
+              failure_stage?: WorkshopFailureStage | 'credential'
               field_error_codes?: FieldErrorCode[]
             } & WorkshopExceptionAnalytics)
           | { status: 'cancelled' }
