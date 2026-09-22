@@ -5,16 +5,25 @@ export type { RemoteMutationContext } from '@/types/graphMutationContext'
 export interface FixtureNode {
   readonly id: number | string
   readonly type: string
-  readonly widgets_values: readonly unknown[]
+  readonly inputs?: readonly unknown[]
+  readonly outputs?: readonly unknown[]
+  readonly widgets_values?:
+    | readonly unknown[]
+    | Readonly<Record<string, unknown>>
 }
 
 export interface FixtureWorkflow {
+  readonly last_node_id: number
+  readonly links: readonly unknown[]
   readonly nodes: readonly FixtureNode[]
 }
 
 interface DraftPatchFrame {
   readonly type: 'draft_patch'
   readonly data: {
+    readonly base_version: number
+    readonly version: number
+    readonly workflow_id: string
     readonly message_id: string
     readonly thread_id: string
     readonly content: FixtureWorkflow
@@ -58,13 +67,39 @@ export function parseAgentResponseFixture(
       'Invalid agent response fixture: frames must be non-empty'
     )
   }
-  if (!value.frames.every(isDraftPatchFrame)) {
+  const frames: DraftPatchFrame[] = []
+  for (const frame of value.frames) {
+    if (!isRecord(frame) || frame.type !== 'draft_patch') continue
+    if (!isDraftPatchFrame(frame)) {
+      throw new AgentFixtureError(
+        'Invalid agent response fixture: malformed draft_patch frame'
+      )
+    }
+    frames.push(frame)
+  }
+  if (frames.length === 0) {
     throw new AgentFixtureError(
-      'Invalid agent response fixture: malformed draft_patch frame'
+      'Invalid agent response fixture: no draft_patch frames'
     )
   }
 
-  return { scenario: value.scenario, frames: value.frames }
+  const workflowId = frames[0].data.workflow_id
+  for (let index = 1; index < frames.length; index++) {
+    const previous = frames[index - 1].data
+    const current = frames[index].data
+    if (current.workflow_id !== workflowId) {
+      throw new AgentFixtureError(
+        'Invalid agent response fixture: workflow_id changed between draft patches'
+      )
+    }
+    if (current.base_version !== previous.version) {
+      throw new AgentFixtureError(
+        'Invalid agent response fixture: non-contiguous draft patch versions'
+      )
+    }
+  }
+
+  return structuredClone({ scenario: value.scenario, frames })
 }
 
 function isDraftPatchFrame(value: unknown): value is DraftPatchFrame {
@@ -78,6 +113,9 @@ function isDraftPatchFrame(value: unknown): value is DraftPatchFrame {
 
   const { data } = value
   return (
+    typeof data.base_version === 'number' &&
+    typeof data.version === 'number' &&
+    typeof data.workflow_id === 'string' &&
     typeof data.message_id === 'string' &&
     typeof data.thread_id === 'string' &&
     isFixtureWorkflow(data.content)
@@ -87,6 +125,8 @@ function isDraftPatchFrame(value: unknown): value is DraftPatchFrame {
 function isFixtureWorkflow(value: unknown): value is FixtureWorkflow {
   return (
     isRecord(value) &&
+    typeof value.last_node_id === 'number' &&
+    Array.isArray(value.links) &&
     Array.isArray(value.nodes) &&
     value.nodes.every(isFixtureNode)
   )
@@ -97,12 +137,16 @@ function isFixtureNode(value: unknown): value is FixtureNode {
     isRecord(value) &&
     (typeof value.id === 'number' || typeof value.id === 'string') &&
     typeof value.type === 'string' &&
-    Array.isArray(value.widgets_values)
+    (value.inputs === undefined || Array.isArray(value.inputs)) &&
+    (value.outputs === undefined || Array.isArray(value.outputs)) &&
+    (value.widgets_values === undefined ||
+      Array.isArray(value.widgets_values) ||
+      isRecord(value.widgets_values))
   )
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 export interface AgentFixtureAdapter {
@@ -124,7 +168,7 @@ export function replayAgentFixture(
     const context: RemoteMutationContext = {
       source: 'agent-remote',
       actor,
-      opId: frame.data.message_id
+      opId: `${frame.data.message_id}:${frame.data.version}`
     }
 
     const applied = adapter.graphMutations.batch(context, () => {
