@@ -41,7 +41,7 @@ export type NavItem =
       featured?: never
     }
 
-export const HUB_PATH = '/hub/'
+const HUB_PATH = '/hub/'
 
 export function getMainNavigation(
   locale: Locale,

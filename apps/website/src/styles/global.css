@@ -97,6 +97,7 @@
   --color-transparency-ink-t80: rgb(33 25 39 / 0.8);
   --font-formula: 'PP Formula', sans-serif;
   --font-formula-narrow: 'PP Formula Narrow', sans-serif;
+  --text-3xs: 0.625rem;
   --text-2xs: 0.6875rem;
   --text-3\.5xl: 2rem;
   --text-6\.5xl: 4.125rem;

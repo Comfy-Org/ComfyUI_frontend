@@ -84,9 +84,13 @@ const onShelf = (useCase: string) =>
     .map((card) => card.getAttribute('data-kind'))
 
 // The URL is read on mount, so the first paint is one tick behind it.
-async function at(search: string, entries: readonly BrowseEntry[] = ENTRIES) {
+async function at(
+  search: string,
+  entries: readonly BrowseEntry[] = ENTRIES,
+  narrowing = false
+) {
   window.history.replaceState({}, '', `/hub/${search}`)
-  render(CatalogueBrowse, { props: { entries } })
+  render(CatalogueBrowse, { props: { entries, narrowing } })
   await nextTick()
 }
 
@@ -138,18 +142,39 @@ describe('CatalogueBrowse', () => {
   // is most likely to be choosing between. The models tab needs no such
   // filter: a model there is the card itself.
   it('offers the model filter on the workflows tab only', async () => {
-    await at('')
+    await at('', ENTRIES, true)
     expect(screen.queryByTestId('catalogue-model-filter')).toBeNull()
 
     await userEvent.click(screen.getByTestId('catalogue-type-workflow'))
     expect(screen.getByTestId('catalogue-model-filter')).toBeTruthy()
   })
 
+  // A menu of models longer than the list it narrows costs more than it gives
+  // while the catalogue is small, and opening it moves the page.
+  it('keeps the narrowing controls out of the way until asked', async () => {
+    await at('?type=workflow')
+
+    expect(screen.queryByTestId('catalogue-model-filter')).toBeNull()
+    expect(screen.queryByTestId('catalogue-sort')).toBeNull()
+  })
+
+  // A link that already names a model still lands on its workflows, whether or
+  // not the control that would have chosen it is on the page.
+  it('still answers a link that names a model', async () => {
+    await at('?type=workflow&model=Flux')
+
+    expect(shown()).toEqual(['Movie poster'])
+  })
+
   it('narrows the workflows to the model a reader picks', async () => {
-    await at('?type=workflow', [
-      ...ENTRIES,
-      workflow({ key: 'cover', title: 'Album cover', models: ['Seedream'] })
-    ])
+    await at(
+      '?type=workflow',
+      [
+        ...ENTRIES,
+        workflow({ key: 'cover', title: 'Album cover', models: ['Seedream'] })
+      ],
+      true
+    )
 
     await userEvent.click(screen.getByTestId('catalogue-model-filter'))
     await userEvent.click(screen.getByRole('menuitemradio', { name: 'Flux' }))
@@ -283,7 +308,7 @@ describe('CatalogueBrowse', () => {
   // Newest over models that carry no date is a ranking over nothing, so the
   // order follows the tab it was chosen for or gives way.
   it('drops a dated order when the reader leaves the workflows behind', async () => {
-    await at('?useCase=generate-images')
+    await at('?useCase=generate-images', ENTRIES, true)
     await userEvent.click(screen.getByTestId('catalogue-sort'))
     await userEvent.click(await screen.findByTestId('catalogue-sort-newest'))
     expect(shown()).toEqual(['Movie poster'])

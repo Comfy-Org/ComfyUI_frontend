@@ -38,7 +38,7 @@ interface GraphSlot {
  * one is wrapped rather than cut, because the canvas gave it the room and a
  * node showing one clipped line of a note is the blank box over again.
  */
-export interface GraphWidget {
+interface GraphWidget {
   readonly id: string
   readonly lines: readonly string[]
   readonly y: number

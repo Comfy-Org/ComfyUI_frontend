@@ -139,7 +139,7 @@ const control =
     </p>
 
     <span
-      class="pointer-events-none absolute top-3 left-3 rounded-lg bg-black/50 px-2.5 py-1 text-2xs/4 text-content-secondary backdrop-blur-md"
+      class="pointer-events-none absolute top-3 left-3 rounded-full bg-black/50 px-2 py-0.5 text-3xs/4 font-bold tracking-wider text-content-secondary uppercase backdrop-blur-md"
     >
       {{ t('workshop.v2.workflow.graphHint', locale) }}
     </span>
