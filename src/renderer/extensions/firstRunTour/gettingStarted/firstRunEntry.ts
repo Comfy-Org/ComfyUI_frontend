@@ -61,6 +61,14 @@ export const useFirstRunEntry = createSharedComposable(() => {
   // `url-intent` defers to handleUrlWorkflow: we don't know yet whether
   // anything arrived to tour, and TutorialCompleted is write-once.
   async function handleStartupOutcome(outcome: StartupOutcome) {
+    try {
+      await showFirstRunScreen(outcome)
+    } finally {
+      if (outcome !== 'url-intent') startupDecided.value = true
+    }
+  }
+
+  async function showFirstRunScreen(outcome: StartupOutcome) {
     if (outcome === 'restored') return
     if (settingStore.get('Comfy.TutorialCompleted')) return
 
@@ -112,12 +120,15 @@ export const useFirstRunEntry = createSharedComposable(() => {
     }
   }
 
+  let startupDecision: Promise<boolean> | undefined
   /** True once this boot's first-run stages have run, false if the grace period passes first. */
   function whenStartupDecided(): Promise<boolean> {
-    return until(startupDecided).toBe(true, {
+    if (startupDecided.value) return Promise.resolve(true)
+    startupDecision ??= until(startupDecided).toBe(true, {
       timeout: STARTUP_DECISION_TIMEOUT_MS,
       throwOnTimeout: false
     })
+    return startupDecision
   }
 
   // Applied locally before the request, so a failed write is next launch's problem.

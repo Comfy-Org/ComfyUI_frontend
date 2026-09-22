@@ -161,19 +161,54 @@ describe('useFirstRunEntry', () => {
       expect(entry.firstRunTookScreen.value).toBe(false)
     })
 
-    it('settles the startup decision only once the url stage has run', async () => {
+    it('settles a url-intent boot only once the url stage has run', async () => {
       const entry = useFirstRunEntry()
       let decided: boolean | undefined
       void entry.whenStartupDecided().then((value) => {
         decided = value
       })
 
-      await entry.handleStartupOutcome('fresh')
+      await entry.handleStartupOutcome('url-intent')
       await new Promise((resolve) => setTimeout(resolve))
       expect(decided).toBeUndefined()
 
-      await entry.handleUrlWorkflow('fresh')
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
       await vi.waitFor(() => expect(decided).toBe(true))
+    })
+
+    it('settles a fresh boot as soon as the screen stage has run', async () => {
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      await expect(entry.whenStartupDecided()).resolves.toBe(true)
+    })
+
+    it('settles even when the screen stage throws', async () => {
+      const entry = useFirstRunEntry()
+      mocks.isDesktopWidth = false
+      vi.mocked(useCommandStore().execute).mockRejectedValue(
+        new Error('stale chunk')
+      )
+
+      await expect(entry.handleStartupOutcome('fresh')).rejects.toThrow(
+        'stale chunk'
+      )
+
+      await expect(entry.whenStartupDecided()).resolves.toBe(true)
+    })
+
+    it('shares one grace timer across every waiter', async () => {
+      const entry = useFirstRunEntry()
+      vi.mocked(VueUse.until).mockClear()
+
+      void entry.whenStartupDecided()
+      void entry.whenStartupDecided()
+      expect(VueUse.until).toHaveBeenCalledOnce()
+
+      await entry.handleStartupOutcome('fresh')
+      await expect(entry.whenStartupDecided()).resolves.toBe(true)
+      expect(VueUse.until).toHaveBeenCalledOnce()
     })
 
     it('resolves at once for a subscriber that arrives after the boot reported', async () => {
