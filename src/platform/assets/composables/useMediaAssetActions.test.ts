@@ -1398,7 +1398,7 @@ describe('useMediaAssetActions', () => {
       vi.mocked(api.deleteItem).mockResolvedValue(undefined)
       const actions = useMediaAssetActions()
       const asset = createMockAsset({
-        id: 'job-1',
+        id: 'asset-1',
         name: 'output.png',
         tags: ['output'],
         user_metadata: { jobId: 'job-1' }
