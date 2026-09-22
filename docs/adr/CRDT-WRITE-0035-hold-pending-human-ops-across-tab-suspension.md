@@ -104,8 +104,9 @@ Alternatives considered:
   just whether a node id is in the set. An `acknowledged` result naming the
   op `applied` is definitive: the host processed it, and only its own
   removal effect frame lagging behind is left, so this reason stays pending
-  until the document itself no longer holds the node - no other exit,
-  because the outcome is already known and the lag is not bounded. Terminal
+  until the document itself no longer holds the node, or a different Yjs
+  item identity now occupies that node id (a same-id recreation) - no other
+  exit, because the outcome is already known and the lag is not bounded. Terminal
   `unacknowledged` or `unconfirmed` deletes are the opposite: the transport
   carried the batch at least once, so the host may have applied it even
   without a confirming result, but nothing here certifies that it did.
