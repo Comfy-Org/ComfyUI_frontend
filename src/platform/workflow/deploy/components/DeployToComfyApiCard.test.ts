@@ -1,8 +1,10 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
 
 import DeployToComfyApiCard from './DeployToComfyApiCard.vue'
@@ -11,10 +13,11 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: () => ({
-    buildDocsUrl: (path: string) => `https://docs.comfy.org${path}`
-  })
+vi.mock(import('@/composables/useExternalLink'), () => ({
+  useExternalLink: () =>
+    fromPartial<ReturnType<typeof useExternalLink>>({
+      buildDocsUrl: (path: string) => `https://docs.comfy.org${path}`
+    })
 }))
 
 const i18n = createI18n({
@@ -25,11 +28,12 @@ const i18n = createI18n({
 
 function renderCard() {
   const onDone = vi.fn()
+  const onDismiss = vi.fn()
   render(DeployToComfyApiCard, {
-    props: { onDone },
+    props: { onDone, onDismiss },
     global: { plugins: [i18n] }
   })
-  return { onDone, user: userEvent.setup() }
+  return { onDone, onDismiss, user: userEvent.setup() }
 }
 
 describe('DeployToComfyApiCard', () => {
@@ -44,6 +48,15 @@ describe('DeployToComfyApiCard', () => {
         'https://docs.comfy.org/development/overview'
       )
     }
+  })
+
+  it('reports dismiss from the close control', async () => {
+    const { onDismiss, onDone, user } = renderCard()
+
+    await user.click(screen.getByRole('button', { name: /close/i }))
+
+    expect(onDismiss).toHaveBeenCalledOnce()
+    expect(onDone).not.toHaveBeenCalled()
   })
 
   it('opens the developer platform and reports done', async () => {

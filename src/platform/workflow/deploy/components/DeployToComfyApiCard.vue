@@ -112,7 +112,7 @@ const { buildDocsUrl } = useExternalLink()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
 const videoFailed = ref(false)
 
-const docsUrl = buildDocsUrl('/development/overview')
+const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
 
 function openPlatform() {
   window.open(getComfyPlatformBaseUrl(), '_blank', 'noopener')

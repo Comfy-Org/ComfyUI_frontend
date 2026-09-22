@@ -58,6 +58,7 @@ export function useWorkflowActionsMenu(
   const { flags } = useFeatureFlags()
   const appModeStore = useAppModeStore()
   const { enterBuilder, pruneLinearData } = appModeStore
+  const { toastErrorHandler } = useErrorHandling()
 
   const targetWorkflow = computed(
     () => workflow?.value ?? workflowStore.activeWorkflow
@@ -86,15 +87,13 @@ export function useWorkflowActionsMenu(
       disabled = false,
       prependSeparator = false,
       isNew = false,
-      badge = t('g.experimental')
+      badge = isNew ? t('g.experimental') : undefined
     }: AddItemOptions) => {
       if (prependSeparator && visible) items.push({ separator: true })
       const item: WorkflowMenuAction = { id, label, icon, command, disabled }
       if (!visible) item.visible = false
-      if (isNew) {
-        item.badge = badge
-        item.isNew = true
-      }
+      if (isNew) item.isNew = true
+      if (badge) item.badge = badge
       items.push(item)
     }
 
@@ -199,8 +198,7 @@ export function useWorkflowActionsMenu(
       id: 'share',
       label: t('breadcrumbsMenu.share'),
       icon: 'icon-[comfy--send]',
-      command: () =>
-        openShareDialog().catch(useErrorHandling().toastErrorHandler),
+      command: () => openShareDialog().catch(toastErrorHandler),
       visible: isCloud && flags.workflowSharingEnabled
     })
 
@@ -208,10 +206,7 @@ export function useWorkflowActionsMenu(
       id: 'deploy-as-api',
       label: t('deployToComfyApi.buttonLabel'),
       icon: 'icon-[lucide--rocket]',
-      command: () =>
-        openDeployToComfyApiDialog().catch(
-          useErrorHandling().toastErrorHandler
-        ),
+      command: () => openDeployToComfyApiDialog().catch(toastErrorHandler),
       visible: isRoot,
       isNew: true,
       badge: t('g.new')
