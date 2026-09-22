@@ -119,6 +119,22 @@ limits still apply; see [Comfy's concurrency documentation](https://docs.comfy.o
 
 ## Run images first, then audio and video
 
+Run the input-validation grid without credentials or provider calls:
+
+```sh
+pnpm --filter @comfyorg/website test:router-validation
+```
+
+It uses the same published-page selection as the live sweep. Every initial
+RUN form and runnable example must validate; invalid types, required inputs,
+numeric/text boundaries, choices and upload limits must stop before credentials,
+uploads or generation. Shared regressions cover conditional inputs and video
+metadata. Availability changes automatically update the selected pages.
+These results prove client validation, not provider acceptance or delivery.
+The live automation in [#18313](https://github.com/Comfy-Org/ComfyUI_frontend/pull/18313)
+can use this command before its scheduled generations without changing the
+six-hour smoke, daily image/audio or weekly video cadence.
+
 First validate all initial page inputs without network calls or charges:
 
 ```sh
