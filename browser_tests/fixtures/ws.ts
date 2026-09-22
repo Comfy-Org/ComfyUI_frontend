@@ -11,10 +11,7 @@ interface WebSocketTracker {
   waitForNext: () => Promise<WebSocketRoute>
 }
 
-export class CapturedWebSocketMessages extends Map<
-  WebSocketRoute,
-  string[]
-> {
+export class CapturedWebSocketMessages extends Map<WebSocketRoute, string[]> {
   countFor(
     socket: WebSocketRoute,
     matches: (message: string) => boolean

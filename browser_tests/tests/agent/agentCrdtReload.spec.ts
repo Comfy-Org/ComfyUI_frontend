@@ -69,9 +69,8 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     const workflowId = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
     const agentPanel = new AgentPanel(page)
     const command = new CommandHelper(page)
-    const matchesDocFrame = (
-      type: 'doc_subscribe' | 'doc_unsubscribe'
-    ) =>
+    const matchesDocFrame =
+      (type: 'doc_subscribe' | 'doc_unsubscribe') =>
       (message: string): boolean => {
         const frame = parseClientDocFrame(message)
         return frame?.type === type && frame.workflowId === workflowId
@@ -90,10 +89,7 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
 
         await expect
           .poll(() =>
-            webSocketMessages.countFor(
-              ws,
-              matchesDocFrame('doc_subscribe')
-            )
+            webSocketMessages.countFor(ws, matchesDocFrame('doc_subscribe'))
           )
           .toBe(1)
         return ws
