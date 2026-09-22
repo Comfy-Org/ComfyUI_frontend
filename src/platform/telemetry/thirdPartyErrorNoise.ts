@@ -4,15 +4,29 @@ const EXTENSION_TAB_NOT_FOUND_MESSAGE =
   'Invalid call to runtime.sendMessage(). Tab not found.'
 
 function messageFrom(value: unknown): string | undefined {
-  if (typeof value === 'string') return value
-  if (
-    typeof value === 'object' &&
-    value !== null &&
-    'message' in value &&
-    typeof value.message === 'string'
-  )
-    return value.message
-  return undefined
+  try {
+    if (typeof value === 'string') return value
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      'message' in value &&
+      typeof value.message === 'string'
+    )
+      return value.message
+    return undefined
+  } catch {
+    return undefined
+  }
+}
+
+function exceptionValueFrom(value: unknown): string[] {
+  try {
+    if (typeof value !== 'object' || value === null || !('value' in value))
+      return []
+    return typeof value.value === 'string' ? [value.value] : []
+  } catch {
+    return []
+  }
 }
 
 export function isThirdPartyErrorNoise(message?: string): boolean {
@@ -28,15 +42,21 @@ export function sentryThirdPartyErrorFilter(
   event: ErrorEvent,
   hint: EventHint
 ): ErrorEvent | null {
-  if (
-    isThirdPartyErrorNoise(messageFrom(hint.originalException)) ||
-    isThirdPartyErrorNoise(event.message)
-  )
-    return null
-  const exceptionMessages =
-    event.exception?.values?.map(({ value }) => value) ?? []
-  return exceptionMessages.length > 0 &&
-    exceptionMessages.every(isThirdPartyErrorNoise)
-    ? null
-    : event
+  try {
+    if (
+      isThirdPartyErrorNoise(messageFrom(hint.originalException)) ||
+      isThirdPartyErrorNoise(event.message)
+    )
+      return null
+    const exceptionMessages =
+      (event.exception?.values as unknown[] | undefined)?.flatMap(
+        exceptionValueFrom
+      ) ?? []
+    return exceptionMessages.length > 0 &&
+      exceptionMessages.every(isThirdPartyErrorNoise)
+      ? null
+      : event
+  } catch {
+    return event
+  }
 }

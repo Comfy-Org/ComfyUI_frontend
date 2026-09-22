@@ -71,4 +71,20 @@ describe('third-party error noise', () => {
 
     expect(sentryThirdPartyErrorFilter(event, {})).toBe(event)
   })
+
+  it('keeps the event when inspecting an exception throws', () => {
+    const event = { type: undefined } satisfies ErrorEvent
+    const originalException = new Proxy(
+      {},
+      {
+        has: () => {
+          throw new Error('blocked property access')
+        }
+      }
+    )
+
+    expect(sentryThirdPartyErrorFilter(event, { originalException })).toBe(
+      event
+    )
+  })
 })
