@@ -18,6 +18,7 @@ import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
@@ -121,11 +122,27 @@ export const useCanvasStore = defineStore('canvas', () => {
     () =>
       new Set(selectedItems.value.filter(isLGraphNode).map((item) => item.id))
   )
+  const highlightedNodeIds = ref<Set<NodeId>>(new Set())
+
+  /** Emphasizes nodes without mutating the user's graph selection. */
+  const setHighlightedNodeIds = (ids: Iterable<NodeId>) => {
+    highlightedNodeIds.value = new Set(ids)
+    const currentCanvas = canvas.value
+    if (!currentCanvas) return
+    currentCanvas.highlighted_node_ids = new Set(
+      [...highlightedNodeIds.value].map(serializeNodeId)
+    )
+    currentCanvas.setDirty(true, false)
+  }
 
   whenever(
     () => canvas.value,
     (newCanvas) => {
       currentGraph.value = newCanvas.graph
+      newCanvas.highlighted_node_ids = new Set(
+        [...highlightedNodeIds.value].map(serializeNodeId)
+      )
+      if (highlightedNodeIds.value.size > 0) newCanvas.setDirty(true, false)
       // Scoped to the on-screen graph: selection only holds items from it,
       // so removals in other graphs can't affect the live selection.
       useEventListener(
@@ -187,6 +204,8 @@ export const useCanvasStore = defineStore('canvas', () => {
     canvas,
     selectedItems,
     selectedNodeIds,
+    highlightedNodeIds,
+    setHighlightedNodeIds,
     appScalePercentage,
     linearMode,
     isReadOnly,

@@ -726,6 +726,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   selected_nodes: Dictionary<LGraphNode> = {}
   /** All selected nodes, groups, and reroutes */
   selectedItems: Set<Positionable> = new Set()
+  /** Nodes transiently emphasized by UI affordances without changing selection. */
+  highlighted_node_ids: Set<SerializedNodeId> = new Set()
   /** The group currently being resized. */
   resizingGroup: LGraphGroup | null = null
   /** @deprecated See {@link LGraphCanvas.selectedItems} */
@@ -5778,7 +5780,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // draw shape
-    this.drawNodeShape(node, ctx, size, color, bgcolor, !!node.selected)
+    this.drawNodeShape(
+      node,
+      ctx,
+      size,
+      color,
+      bgcolor,
+      !!node.selected || this.highlighted_node_ids.has(serializeNodeId(node.id))
+    )
 
     // Render title buttons (if not collapsed)
     if (!node.flags.collapsed) {
@@ -6001,7 +6010,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.drawTitleText(ctx, {
         scale: this.ds.scale,
         default_title_color: this.node_title_color,
-        low_quality
+        low_quality,
+        selected: _selected
       })
 
       // custom title render
