@@ -236,6 +236,36 @@ describe('useAgentConversationStore', () => {
     })
   })
 
+  // PM-1575 regression: a tool call held back pending canvas catch-up must
+  // still receive notifyCanvasCaughtUp() after its turn settles.
+  // agent_message_done drops the active-turn transport out of the `transport`
+  // slot (clearActive()) the instant it lands, which used to leave the held
+  // part with no reachable transport for notifyCanvasCaughtUp() to forward
+  // to -- stranding it until its own STALE_AFTER_MS fallback fired, tens of
+  // seconds later than the canvas actually caught up.
+  it('still settles a canvas-sync-pending tool call after its turn has settled', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(done('t1'))
+
+    // The turn is settled (message.streaming is false), but the tool part
+    // itself is held at 'streaming' -- the spinner -- pending canvas catch-up.
+    expect(store.messages[0].streaming).toBe(false)
+    expect(store.messages[0].parts[0]).toMatchObject({
+      type: 'tool',
+      state: 'streaming'
+    })
+
+    store.notifyCanvasCaughtUp()
+
+    expect(store.messages[0].parts[0]).toMatchObject({
+      type: 'tool',
+      state: 'done'
+    })
+  })
+
   it('restores a pending run approval as the live turn and continues after it resolves', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')

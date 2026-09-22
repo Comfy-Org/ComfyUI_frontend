@@ -56,15 +56,32 @@ export const useAgentConversationStore = defineStore(
     // never registers a gate (e.g. a headless/non-canvas conversation) keeps
     // the pre-fix, immediate-done behavior.
     let canvasSyncGate: () => boolean = () => false
+    // PM-1575: the active turn's transport when it settled (agent_message_done)
+    // while still holding a tool-call part back pending canvas catch-up.
+    // clearActive() drops the `transport` slot the moment the turn settles,
+    // same as it always has, so without this the settled transport becomes
+    // unreachable and notifyCanvasCaughtUp() below can never deliver the
+    // catch-up signal it is waiting for -- the part would then only ever
+    // settle via its own STALE_AFTER_MS fallback. A single slot is enough:
+    // it is only read by notifyCanvasCaughtUp, overwritten the next time a
+    // turn settles mid-pending, and a stale entry left over from a much
+    // earlier turn is just a no-op (its own pendingCanvasSync map is already
+    // empty by then).
+    let settledActiveTransport: AgentEventTransport | null = null
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedMessageIds = new Set<string>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
     const activeIndex = ref(-1)
 
     function replaceActive(message: AssistantMessage): void {
-      const index = activeIndex.value
-      if (index >= 0 && messages.value[index]?.id === message.id)
-        messages.value[index] = message
+      // PM-1575: looked up by id, not `activeIndex.value`. A turn's own
+      // transport keeps emitting after settle -- notifyCanvasCaughtUp() can
+      // still land on it while a tool-call part is held pending canvas
+      // catch-up (see settledActiveTransport below) -- and by then
+      // clearActive() has already reset activeIndex.value to -1, even though
+      // the settled message is still sitting in `messages` at its own slot.
+      const index = messages.value.findIndex((m) => m.id === message.id)
+      if (index >= 0) messages.value[index] = message
     }
 
     function recordUser(
@@ -135,6 +152,7 @@ export const useAgentConversationStore = defineStore(
       if (transport && event.data.message_id === activeTurnId.value) {
         if (event.type === 'agent_message_done') {
           transport.settle()
+          settledActiveTransport = transport
           clearActive()
           return
         }
@@ -177,6 +195,7 @@ export const useAgentConversationStore = defineStore(
      */
     function notifyCanvasCaughtUp(): void {
       transport?.notifyCanvasCaughtUp()
+      settledActiveTransport?.notifyCanvasCaughtUp()
       for (const entry of backgroundTurns.values())
         entry.transport.notifyCanvasCaughtUp()
     }
@@ -292,10 +311,12 @@ export const useAgentConversationStore = defineStore(
       hydratedMessageIds = new Set()
       hydratedAssistantTurnIds = new Set()
       clearActive()
+      settledActiveTransport = null
     }
 
     function hydrate(history: AgentMessages): void {
       clearActive()
+      settledActiveTransport = null
       const transcript = normalizeAgentTranscript(history)
       messages.value = transcript.messages
       userTexts.value = transcript.userTexts
