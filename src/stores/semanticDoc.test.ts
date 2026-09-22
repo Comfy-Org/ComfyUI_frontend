@@ -10,9 +10,10 @@ import {
   SemanticDocRegistry,
   isLocalUpdateOrigin,
   isRemoteUpdateOrigin,
+  ownerLinksMap,
   ownerNodesMap
 } from './semanticDoc'
-import type { RemoteUpdateOrigin } from './semanticDoc'
+import type { MembershipSink, RemoteUpdateOrigin } from './semanticDoc'
 
 const rootA = toRootGraphId('root-a')
 const rootB = toRootGraphId('root-b')
@@ -304,5 +305,131 @@ describe('SemanticDocRegistry', () => {
     })
     expect(onNodes).toHaveBeenCalledTimes(1)
     expect(onGraph).toHaveBeenCalledTimes(1)
+  })
+
+  it('ownerLinksMap resolves the root owner to the links share and gates definitions', () => {
+    const doc = registry.ensure(rootA)
+    const sub = toOwningGraphId('sub-1')
+    expect(ownerLinksMap(doc, rootA, toOwningGraphId('root-a'), false)).toBe(
+      doc.getMap('links')
+    )
+    expect(ownerLinksMap(doc, rootA, sub, false)).toBeUndefined()
+    expect(doc.share.has('definitions')).toBe(false)
+
+    ownerNodesMap(doc, rootA, sub, true)
+    expect(ownerLinksMap(doc, rootA, sub, false)).toBeUndefined()
+
+    const created = ownerLinksMap(doc, rootA, sub, true)
+    expect(ownerLinksMap(doc, rootA, sub, false)).toBe(created)
+    expect(registry.readDefinitions(rootA)).toEqual({
+      'sub-1': { nodes: {}, links: {} }
+    })
+  })
+
+  it('observeLinks sees root and definition-owned links, not nodes', () => {
+    const onLinks = vi.fn()
+    const stop = registry.observeLinks(rootA, onLinks)
+
+    registry.transactLocal(rootA, { source: 'local' }, (doc) => {
+      ownerNodesMap(doc, rootA, toOwningGraphId('root-a'), true).set(
+        '5',
+        new Y.Map([['type', 'Sink']])
+      )
+    })
+    expect(onLinks).not.toHaveBeenCalled()
+
+    registry.transactLocal(rootA, { source: 'local' }, (doc) => {
+      ownerLinksMap(doc, rootA, toOwningGraphId('root-a'), true).set('1', [
+        1,
+        '5',
+        0,
+        '9',
+        2,
+        'INT'
+      ])
+      ownerLinksMap(doc, rootA, toOwningGraphId('sub-1'), true).set('2', [
+        2,
+        '7',
+        0,
+        '8',
+        0,
+        'INT'
+      ])
+    })
+    expect(onLinks).toHaveBeenCalledTimes(2)
+
+    stop()
+    registry.transactLocal(rootA, { source: 'local' }, (doc) => {
+      ownerLinksMap(doc, rootA, toOwningGraphId('root-a'), true).delete('1')
+    })
+    expect(onLinks).toHaveBeenCalledTimes(2)
+  })
+
+  it('projectMembership seeds, forwards key changes and reseeds replaced definitions', () => {
+    const doc = registry.ensure(rootA)
+    const rootOwner = toOwningGraphId('root-a')
+    const sub = toOwningGraphId('sub-1')
+    ownerLinksMap(doc, rootA, rootOwner, true).set('1', [
+      1,
+      '5',
+      0,
+      '9',
+      2,
+      'X'
+    ])
+    ownerLinksMap(doc, rootA, sub, true).set('2', [2, '7', 0, '8', 0, 'X'])
+
+    const members = new Map<string, Set<string>>()
+    const sink: MembershipSink = {
+      add: (owner, id) => {
+        const ids = members.get(owner) ?? new Set()
+        ids.add(id)
+        members.set(owner, ids)
+      },
+      remove: (owner, id) => {
+        members.get(owner)?.delete(id)
+      },
+      resetDefinitionOwners: vi.fn(() => {
+        for (const owner of [...members.keys()])
+          if (owner !== 'root-a') members.delete(owner)
+      })
+    }
+    const stop = registry.projectMembership(rootA, 'links', sink)
+    expect([...members]).toEqual([
+      ['root-a', new Set(['1'])],
+      ['sub-1', new Set(['2'])]
+    ])
+
+    registry.transactLocal(rootA, { source: 'local' }, (d) => {
+      ownerLinksMap(d, rootA, rootOwner, true).delete('1')
+      ownerLinksMap(d, rootA, sub, true).set('3', [3, '7', 1, '8', 1, 'X'])
+    })
+    expect(members.get('root-a')).toEqual(new Set())
+    expect(members.get('sub-1')).toEqual(new Set(['2', '3']))
+    expect(sink.resetDefinitionOwners).not.toHaveBeenCalled()
+
+    // Replacing the whole definition entry cannot be expressed as key events
+    // on the old links map, so the projection resets and reseeds.
+    registry.transactLocal(rootA, { source: 'local' }, (d) => {
+      const definition = new Y.Map<unknown>()
+      const links = new Y.Map<unknown>([['4', [4, '1', 0, '2', 0, 'X']]])
+      definition.set('links', links)
+      d.getMap('definitions').set('sub-1', definition)
+    })
+    expect(sink.resetDefinitionOwners).toHaveBeenCalledTimes(1)
+    expect(members.get('sub-1')).toEqual(new Set(['4']))
+
+    stop()
+    registry.transactLocal(rootA, { source: 'local' }, (d) => {
+      ownerLinksMap(d, rootA, rootOwner, true).set('9', [
+        9,
+        '1',
+        0,
+        '2',
+        0,
+        'X'
+      ])
+    })
+    expect(members.get('root-a')).toEqual(new Set())
   })
 })

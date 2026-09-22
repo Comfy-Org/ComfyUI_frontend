@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
+import { ownerLinksMap, semanticDocs } from '@/stores/semanticDoc'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
@@ -39,6 +40,10 @@ function link(
     type: 'INT'
   }
 }
+
+afterEach(() => {
+  semanticDocs.destroyAll()
+})
 
 describe('useLinkStore', () => {
   it('keeps the first registration for a contested target slot', () => {
@@ -530,5 +535,170 @@ describe('useLinkStore', () => {
     expect([...store.getOutputSlotLinks(graphA, toNodeId(5), 0)]).toEqual([
       floating
     ])
+  })
+})
+
+describe('useLinkStore semantic document projection', () => {
+  function rootLinks() {
+    const doc = semanticDocs.ensure(graphA.rootGraphId)
+    return ownerLinksMap(doc, graphA.rootGraphId, graphA.owningGraphId, true)
+  }
+
+  it('writes a placed link as a LinkTuple under its owner', () => {
+    const store = useLinkStore()
+    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+    store.registerLink(graphASibling, link(2, 7, 1, 8, 0))
+
+    expect(rootLinks().get('1')).toEqual([1, '5', 0, '9', 2, 'INT'])
+    expect(rootLinks().has('2')).toBe(false)
+    const doc = semanticDocs.ensure(graphA.rootGraphId)
+    const sibling = ownerLinksMap(
+      doc,
+      graphA.rootGraphId,
+      graphASibling.owningGraphId,
+      false
+    )
+    expect(sibling?.get('2')).toEqual([2, '7', 1, '8', 0, 'INT'])
+    expect(semanticDocs.readDefinitions(graphA.rootGraphId)).toHaveProperty(
+      'graph-a-sibling'
+    )
+  })
+
+  it('never writes a floating topology to the document', () => {
+    const store = useLinkStore()
+    const floating: LinkTopology = {
+      ...link(1, 5, 0, 9, 2),
+      originNodeId: UNASSIGNED_NODE_ID,
+      originSlot: -1
+    }
+    store.registerLink(graphA, floating)
+
+    expect(rootLinks().size).toBe(0)
+    expect([...store.graphTopologies(graphA)]).toEqual([floating])
+
+    store.deleteLink(graphA, floating)
+    expect([...store.graphTopologies(graphA)]).toEqual([])
+  })
+
+  it('removes the key on delete and on clearOwner', () => {
+    const store = useLinkStore()
+    const first = link(1, 5, 0, 9, 2)
+    const second = link(2, 5, 1, 9, 3)
+    store.registerLink(graphA, first)
+    store.registerLink(graphA, second)
+    store.registerLink(graphASibling, link(3, 7, 1, 8, 0))
+
+    expect(store.deleteLink(graphA, first)).toBe(true)
+    expect([...rootLinks().keys()]).toEqual(['2'])
+
+    store.clearOwner(graphA)
+    expect(rootLinks().size).toBe(0)
+    expect([...store.graphTopologies(graphASibling)].map((t) => t.id)).toEqual([
+      toLinkId(3)
+    ])
+  })
+
+  it('rewrites the tuple when endpoints change', () => {
+    const store = useLinkStore()
+    const topology = link(1, 5, 0, 9, 2)
+    store.registerLink(graphA, topology)
+
+    expect(
+      store.updateEndpoint(graphA, topology, {
+        targetNodeId: toNodeId(11),
+        targetSlot: 4
+      })
+    ).toBeDefined()
+
+    expect(rootLinks().get('1')).toEqual([1, '5', 0, '11', 4, 'INT'])
+    expect(rootLinks().size).toBe(1)
+  })
+
+  it('clearGraph clears root and definition link membership', () => {
+    const store = useLinkStore()
+    store.registerLink(graphA, link(1, 5, 0, 9, 2))
+    store.registerLink(graphASibling, link(2, 7, 1, 8, 0))
+
+    store.clearGraph(graphA.rootGraphId)
+
+    expect(rootLinks().size).toBe(0)
+    const doc = semanticDocs.ensure(graphA.rootGraphId)
+    expect(
+      ownerLinksMap(doc, graphA.rootGraphId, graphASibling.owningGraphId, false)
+        ?.size
+    ).toBe(0)
+    expect([...useLinkStore().graphTopologies(graphASibling)]).toEqual([])
+  })
+
+  it('skips a document key with no registered topology until registration', () => {
+    const store = useLinkStore()
+    const owned = computed(() => [...store.graphTopologies(graphA)])
+    expect(owned.value).toEqual([])
+
+    const doc = semanticDocs.ensure(graphA.rootGraphId)
+    doc.transact(
+      () => {
+        ownerLinksMap(doc, graphA.rootGraphId, graphA.owningGraphId, true).set(
+          '1',
+          [1, '5', 0, '9', 2, 'INT']
+        )
+      },
+      { source: 'agent-remote', actor: 'host' }
+    )
+    expect(owned.value).toEqual([])
+    expect(store.isInputSlotConnected(graphA, toNodeId(9), 2)).toBe(false)
+
+    const topology = link(1, 5, 0, 9, 2)
+    expect(store.registerLink(graphA, topology)).toEqual(topology)
+    expect(owned.value).toEqual([topology])
+    expect(rootLinks().get('1')).toEqual([1, '5', 0, '9', 2, 'INT'])
+  })
+
+  it('drops membership when a remote update deletes the key', () => {
+    const store = useLinkStore()
+    const topology = link(1, 5, 0, 9, 2)
+    store.registerLink(graphA, topology)
+    const owned = computed(() => [...store.graphTopologies(graphA)])
+    expect(owned.value).toEqual([topology])
+
+    const doc = semanticDocs.ensure(graphA.rootGraphId)
+    doc.transact(
+      () => {
+        ownerLinksMap(
+          doc,
+          graphA.rootGraphId,
+          graphA.owningGraphId,
+          true
+        ).delete('1')
+      },
+      { source: 'agent-remote', actor: 'host' }
+    )
+
+    expect(owned.value).toEqual([])
+  })
+
+  it('keeps membership for a host-namespaced string link id', () => {
+    // CMP `insert_workflow` mints `insert:<op>:<path>:link:<n>` ids that
+    // LiteGraph carries verbatim; membership must not require a numeric key.
+    const store = useLinkStore()
+    const namespaced = {
+      ...link(1, 5, 0, 9, 2),
+      id: 'insert:op0:root/definition:%22d%22:link:1' as unknown as LinkTopology['id'],
+      graphId: graphASibling.owningGraphId
+    }
+    const numeric = link(2, 5, 0, 9, 3)
+
+    expect(store.registerLink(graphASibling, namespaced)).toEqual(namespaced)
+    store.registerLink(graphA, numeric)
+
+    expect([...store.graphTopologies(graphASibling)]).toEqual([namespaced])
+    expect([...store.graphTopologies(graphA)]).toEqual([numeric])
+    expect(store.getInputSlotLink(graphASibling, toNodeId(9), 2)).toEqual(
+      namespaced
+    )
+
+    expect(store.deleteLink(graphASibling, namespaced)).toBe(true)
+    expect([...store.graphTopologies(graphASibling)]).toEqual([])
+    expect([...store.graphTopologies(graphA)]).toEqual([numeric])
   })
 })

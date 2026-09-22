@@ -28,11 +28,18 @@ import {
 import type { GraphSnapshot } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
+import { toOwningGraphId } from '@/types/graphScopeId'
 import type { OwningGraphId, RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 
 const DEFINITIONS_ROOT = 'definitions'
-const DEFINITION_NODES_KEY = 'nodes'
+
+/**
+ * The two owner-partitioned collections of the semantic schema. The root graph
+ * owns the `nodes` and `links` root shares; a subgraph definition owns
+ * `definitions.<id>.nodes` and `definitions.<id>.links`.
+ */
+export type OwnedCollection = 'nodes' | 'links'
 
 /**
  * Provenance of a remote update, carried as the Yjs transaction origin so
@@ -76,12 +83,67 @@ export function isLocalUpdateOrigin(
   )
 }
 
+function isRootOwner(
+  rootGraphId: RootGraphId,
+  owningGraphId: OwningGraphId
+): boolean {
+  return (owningGraphId as string) === (rootGraphId as string)
+}
+
+function rootCollection(doc: Y.Doc, collection: OwnedCollection) {
+  return (
+    collection === 'nodes' ? nodesMap(doc) : linksMap(doc)
+  ) as Y.Map<unknown>
+}
+
 /**
- * The `nodes` map that owns nodes of `owningGraphId` inside the document of
- * `rootGraphId`: the root `nodes` share when the owner is the root graph,
- * otherwise `definitions.<owner>.nodes`. With `create: false` an absent
- * definition path reads as `undefined` instead of being materialised.
+ * The map that owns `collection` entries of `owningGraphId` inside the
+ * document of `rootGraphId`: the root share when the owner is the root graph,
+ * otherwise `definitions.<owner>.<collection>`. With `create: false` an
+ * absent definition path reads as `undefined` instead of being materialised.
  */
+function ownerMap(
+  doc: Y.Doc,
+  rootGraphId: RootGraphId,
+  owningGraphId: OwningGraphId,
+  collection: OwnedCollection,
+  create: true
+): Y.Map<unknown>
+function ownerMap(
+  doc: Y.Doc,
+  rootGraphId: RootGraphId,
+  owningGraphId: OwningGraphId,
+  collection: OwnedCollection,
+  create: false
+): Y.Map<unknown> | undefined
+function ownerMap(
+  doc: Y.Doc,
+  rootGraphId: RootGraphId,
+  owningGraphId: OwningGraphId,
+  collection: OwnedCollection,
+  create: boolean
+): Y.Map<unknown> | undefined {
+  if (isRootOwner(rootGraphId, owningGraphId)) {
+    return rootCollection(doc, collection)
+  }
+  if (!create && !doc.share.has(DEFINITIONS_ROOT)) return undefined
+  const definitions = doc.getMap<unknown>(DEFINITIONS_ROOT)
+  let definition = definitions.get(owningGraphId)
+  if (!(definition instanceof Y.Map)) {
+    if (!create) return undefined
+    definition = new Y.Map<unknown>()
+    definitions.set(owningGraphId, definition)
+  }
+  let owned = (definition as Y.Map<unknown>).get(collection)
+  if (!(owned instanceof Y.Map)) {
+    if (!create) return undefined
+    owned = new Y.Map<unknown>()
+    ;(definition as Y.Map<unknown>).set(collection, owned)
+  }
+  return owned as Y.Map<unknown>
+}
+
+/** {@link ownerMap} for the `nodes` collection. */
 export function ownerNodesMap(
   doc: Y.Doc,
   rootGraphId: RootGraphId,
@@ -100,24 +162,71 @@ export function ownerNodesMap(
   owningGraphId: OwningGraphId,
   create: boolean
 ): Y.Map<unknown> | undefined {
-  if ((owningGraphId as string) === (rootGraphId as string)) {
-    return nodesMap(doc) as Y.Map<unknown>
+  return create
+    ? ownerMap(doc, rootGraphId, owningGraphId, 'nodes', true)
+    : ownerMap(doc, rootGraphId, owningGraphId, 'nodes', false)
+}
+
+/**
+ * {@link ownerMap} for the `links` collection. Root links are the
+ * `LinkTuple` values the package's `linksMap` exposes; definition links live
+ * at `definitions.<owner>.links`, keyed by `String(linkId)` like the root.
+ */
+export function ownerLinksMap(
+  doc: Y.Doc,
+  rootGraphId: RootGraphId,
+  owningGraphId: OwningGraphId,
+  create: true
+): Y.Map<unknown>
+export function ownerLinksMap(
+  doc: Y.Doc,
+  rootGraphId: RootGraphId,
+  owningGraphId: OwningGraphId,
+  create: false
+): Y.Map<unknown> | undefined
+export function ownerLinksMap(
+  doc: Y.Doc,
+  rootGraphId: RootGraphId,
+  owningGraphId: OwningGraphId,
+  create: boolean
+): Y.Map<unknown> | undefined {
+  return create
+    ? ownerMap(doc, rootGraphId, owningGraphId, 'links', true)
+    : ownerMap(doc, rootGraphId, owningGraphId, 'links', false)
+}
+
+/**
+ * Every subgraph definition that currently owns a `collection` map, without
+ * materialising the `definitions` root or any missing path.
+ */
+export function definitionOwnerMaps(
+  doc: Y.Doc,
+  collection: OwnedCollection
+): [OwningGraphId, Y.Map<unknown>][] {
+  if (!doc.share.has(DEFINITIONS_ROOT)) return []
+  const owners: [OwningGraphId, Y.Map<unknown>][] = []
+  for (const [definitionId, definition] of doc.getMap(DEFINITIONS_ROOT)) {
+    if (!(definition instanceof Y.Map)) continue
+    const owned = definition.get(collection)
+    if (owned instanceof Y.Map)
+      owners.push([toOwningGraphId(definitionId), owned])
   }
-  if (!create && !doc.share.has(DEFINITIONS_ROOT)) return undefined
-  const definitions = doc.getMap<unknown>(DEFINITIONS_ROOT)
-  let definition = definitions.get(owningGraphId)
-  if (!(definition instanceof Y.Map)) {
-    if (!create) return undefined
-    definition = new Y.Map<unknown>()
-    definitions.set(owningGraphId, definition)
-  }
-  let nodes = (definition as Y.Map<unknown>).get(DEFINITION_NODES_KEY)
-  if (!(nodes instanceof Y.Map)) {
-    if (!create) return undefined
-    nodes = new Y.Map<unknown>()
-    ;(definition as Y.Map<unknown>).set(DEFINITION_NODES_KEY, nodes)
-  }
-  return nodes as Y.Map<unknown>
+  return owners
+}
+
+/**
+ * Receives owner membership projected from a semantic document by
+ * {@link SemanticDocRegistry.projectMembership}. Ids arrive as the document's
+ * string keys; the store brands them.
+ */
+export interface MembershipSink {
+  add(owningGraphId: OwningGraphId, id: string): void
+  remove(owningGraphId: OwningGraphId, id: string): void
+  /**
+   * Drops every non-root owner. Called before the definitions are re-seeded
+   * when a definition (or its owned map) is added, replaced or removed.
+   */
+  resetDefinitionOwners(): void
 }
 
 /** Deep change notification for the semantic roots of one root graph. */
@@ -239,12 +348,94 @@ export class SemanticDocRegistry {
     rootGraphId: RootGraphId,
     listener: SemanticDocListener
   ): () => void {
+    return this.observeOwners(rootGraphId, 'nodes', listener)
+  }
+
+  /**
+   * Observes deep changes under the `links` and `definitions` roots, i.e.
+   * every map that can own a link (see `ownerLinksMap`). Same root
+   * registration caveat as `observeNodes`. Returns an unsubscribe.
+   */
+  observeLinks(
+    rootGraphId: RootGraphId,
+    listener: SemanticDocListener
+  ): () => void {
+    return this.observeOwners(rootGraphId, 'links', listener)
+  }
+
+  private observeOwners(
+    rootGraphId: RootGraphId,
+    collection: OwnedCollection,
+    listener: SemanticDocListener
+  ): () => void {
     const doc = this.ensure(rootGraphId)
-    const roots = [nodesMap(doc), doc.getMap<unknown>(DEFINITIONS_ROOT)]
+    const roots = [
+      rootCollection(doc, collection),
+      doc.getMap<unknown>(DEFINITIONS_ROOT)
+    ]
     for (const root of roots) root.observeDeep(listener)
     return () => {
       for (const root of roots) root.unobserveDeep(listener)
     }
+  }
+
+  /**
+   * Projects owner membership of `collection` from the document of
+   * `rootGraphId` into `sink`: seeds the sink from the current document, then
+   * forwards key additions and deletions under the root share and every
+   * `definitions.<owner>.<collection>` map. A change to the `definitions`
+   * root itself, or to a definition entry, resets and re-seeds every
+   * non-root owner. Returns an unsubscribe; the sink is not cleared by it.
+   */
+  projectMembership(
+    rootGraphId: RootGraphId,
+    collection: OwnedCollection,
+    sink: MembershipSink
+  ): () => void {
+    const doc = this.ensure(rootGraphId)
+    const rootOwner = toOwningGraphId(rootGraphId)
+    const root = rootCollection(doc, collection)
+    const definitions = doc.getMap<unknown>(DEFINITIONS_ROOT)
+
+    const seed = (owningGraphId: OwningGraphId, owned: Y.Map<unknown>) => {
+      for (const id of owned.keys()) sink.add(owningGraphId, id)
+    }
+    const reseedDefinitions = () => {
+      sink.resetDefinitionOwners()
+      for (const [owningGraphId, owned] of definitionOwnerMaps(doc, collection))
+        seed(owningGraphId, owned)
+    }
+    const applyKeyChanges = (
+      owningGraphId: OwningGraphId,
+      event: Y.YEvent<Y.AbstractType<unknown>>
+    ) => {
+      for (const [id, change] of event.changes.keys) {
+        if (change.action === 'delete') sink.remove(owningGraphId, id)
+        else sink.add(owningGraphId, id)
+      }
+    }
+
+    seed(rootOwner, root)
+    for (const [owningGraphId, owned] of definitionOwnerMaps(doc, collection))
+      seed(owningGraphId, owned)
+
+    return this.observeOwners(rootGraphId, collection, (events) => {
+      for (const event of events) {
+        if (event.currentTarget === root) {
+          if (event.target === root) applyKeyChanges(rootOwner, event)
+          continue
+        }
+        if (event.currentTarget !== definitions) continue
+        const path = event.path
+        if (path.length <= 1) {
+          reseedDefinitions()
+          continue
+        }
+        if (path.length === 2 && path[1] === collection) {
+          applyKeyChanges(toOwningGraphId(String(path[0])), event)
+        }
+      }
+    })
   }
 }
 

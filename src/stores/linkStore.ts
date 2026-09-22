@@ -1,11 +1,27 @@
+import type { LinkTuple } from '@comfyorg/comfy-multi-player'
 import { defineStore } from 'pinia'
-import { reactive, shallowRef, toRaw } from 'vue'
+import {
+  getCurrentScope,
+  onScopeDispose,
+  reactive,
+  shallowRef,
+  toRaw
+} from 'vue'
+import type { Doc as YDoc } from 'yjs'
 
+import {
+  definitionOwnerMaps,
+  ownerLinksMap,
+  semanticDocs
+} from '@/stores/semanticDoc'
+import type { LocalUpdateOrigin } from '@/stores/semanticDoc'
+import { toOwningGraphId } from '@/types/graphScopeId'
 import type {
   GraphScope,
   OwningGraphId,
   RootGraphId
 } from '@/types/graphScopeId'
+import { parseLinkId } from '@/types/linkId'
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import { isFloatingTopology } from '@/types/linkTopology'
@@ -76,9 +92,71 @@ type OriginIndex = Map<OriginSlotKey, Set<LinkTopology>>
 
 interface RootTopologyBucket {
   byId: Map<LinkId, LinkTopology>
+  /** Non-floating link ids per owner, projected from the semantic document. */
   idsByOwner: Map<OwningGraphId, Set<LinkId>>
+  /** Floating link ids per owner; reroute-chain state that never enters the document. */
+  floatingIdsByOwner: Map<OwningGraphId, Set<LinkId>>
   targetIndex: Map<TargetSlotKey, LinkTopology>
   originIndex: OriginIndex
+}
+
+function localOrigin(context?: RemoteMutationContext): LocalUpdateOrigin {
+  return context
+    ? { source: 'local', actor: context.actor, opId: context.opId }
+    : { source: 'local' }
+}
+
+/** The document's `LinkTuple` for a non-floating topology. */
+function linkTuple(topology: LinkTopology): LinkTuple {
+  return [
+    topology.id,
+    topology.originNodeId,
+    topology.originSlot,
+    topology.targetNodeId,
+    topology.targetSlot,
+    topology.type
+  ]
+}
+
+function sameTuple(value: unknown, tuple: LinkTuple): boolean {
+  return (
+    Array.isArray(value) &&
+    value.length === tuple.length &&
+    tuple.every((part, index) => value[index] === part)
+  )
+}
+
+/**
+ * Recovers the `byId` key of a link from its semantic-document key. Links
+ * minted by LiteGraph carry numeric ids and are stored under
+ * `String(id)`; links pasted through the CRDT `insert_workflow` op keep the
+ * namespaced string id the host assigned (`insert:<op>:<path>:link:<n>`),
+ * which LiteGraph and this store carry verbatim. Both must round-trip, or
+ * membership silently drops the pasted links while `byId` still holds them.
+ */
+function linkIdFromDocKey(key: string): LinkId {
+  return parseLinkId(key) ?? (key as unknown as LinkId)
+}
+
+function addOwnerId(
+  index: Map<OwningGraphId, Set<LinkId>>,
+  owningGraphId: OwningGraphId,
+  id: LinkId
+): void {
+  const ownerIds = index.get(owningGraphId)
+  if (ownerIds) ownerIds.add(id)
+  else index.set(owningGraphId, reactive(new Set([id])))
+}
+
+function removeOwnerId(
+  index: Map<OwningGraphId, Set<LinkId>>,
+  owningGraphId: OwningGraphId,
+  id: LinkId
+): void {
+  const ownerIds = index.get(owningGraphId)
+  if (!ownerIds) return
+  ownerIds.delete(id)
+  if (ownerIds.size === 0) index.delete(owningGraphId)
 }
 
 const EMPTY_LINKS: ReadonlySet<LinkTopology> = new Set()
@@ -98,9 +176,18 @@ function hasUniqueTarget(topology: LinkTopology): boolean {
  * query ("is this input connected, and by what?") in one lookup. The root
  * bucket's link-id map is the identity authority; owner and slot maps are
  * derived indexes.
+ *
+ * Non-floating link membership is projected from the root graph's semantic
+ * Yjs document (`semanticDocs`): `idsByOwner` is derived by observing the
+ * `links` root and every `definitions.<owner>.links` map, and local
+ * placement/displacement writes the `LinkTuple` under those keys with a local
+ * origin. Floating topologies are reroute-chain state, not links; they stay in
+ * the store-local `floatingIdsByOwner` and never touch the document.
+ * See docs/architecture/link-topology-store.md.
  */
 export const useLinkStore = defineStore('link', () => {
   const roots = reactive(new Map<RootGraphId, RootTopologyBucket>())
+  const unobserveByRoot = new Map<RootGraphId, () => void>()
   const revision = shallowRef(0)
 
   function getRevision(): number {
@@ -126,17 +213,66 @@ export const useLinkStore = defineStore('link', () => {
     revision.value++
   }
 
+  function observeRoot(
+    rootGraphId: RootGraphId,
+    bucket: RootTopologyBucket
+  ): void {
+    unobserveByRoot.set(
+      rootGraphId,
+      semanticDocs.projectMembership(rootGraphId, 'links', {
+        add: (owningGraphId, key) =>
+          addOwnerId(bucket.idsByOwner, owningGraphId, linkIdFromDocKey(key)),
+        remove: (owningGraphId, key) =>
+          removeOwnerId(
+            bucket.idsByOwner,
+            owningGraphId,
+            linkIdFromDocKey(key)
+          ),
+        resetDefinitionOwners: () => {
+          for (const owningGraphId of [...bucket.idsByOwner.keys()]) {
+            if ((owningGraphId as string) !== (rootGraphId as string))
+              bucket.idsByOwner.delete(owningGraphId)
+          }
+        }
+      })
+    )
+  }
+
+  function dropRoot(rootGraphId: RootGraphId): boolean {
+    unobserveByRoot.get(rootGraphId)?.()
+    unobserveByRoot.delete(rootGraphId)
+    return roots.delete(rootGraphId)
+  }
+
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      for (const rootGraphId of [...unobserveByRoot.keys()])
+        dropRoot(rootGraphId)
+    })
+  }
+
   function rootBucket(rootGraphId: RootGraphId): RootTopologyBucket {
     const existing = roots.get(rootGraphId)
     if (existing) return existing
     const created = reactive<RootTopologyBucket>({
       byId: new Map(),
       idsByOwner: new Map(),
+      floatingIdsByOwner: new Map(),
       targetIndex: new Map(),
       originIndex: new Map()
     })
     roots.set(rootGraphId, created)
+    observeRoot(rootGraphId, created)
     return created
+  }
+
+  /** Runs `fn` as one local document transaction for `rootGraphId`. */
+  function transact(
+    rootGraphId: RootGraphId,
+    context: RemoteMutationContext | undefined,
+    fn: (doc: YDoc) => void
+  ): void {
+    semanticDocs.transactLocal(rootGraphId, localOrigin(context), fn)
   }
 
   function indexOrigin(
@@ -171,16 +307,28 @@ export const useLinkStore = defineStore('link', () => {
     if (!links.size) bucket.originIndex.delete(key)
   }
 
-  /** Places a link whose target availability has already been validated. */
+  /**
+   * Places a link whose target availability has already been validated. A
+   * non-floating topology is written to its owner's `links` map when the key
+   * is absent or names different endpoints, so registering a link that a
+   * merged remote frame already placed is a pure local materialisation.
+   */
   function placeValidated(
     bucket: RootTopologyBucket,
+    rootGraphId: RootGraphId,
+    doc: YDoc,
     topology: LinkTopology
   ): LinkTopology {
     const placed = reactive(topology)
     bucket.byId.set(placed.id, placed)
-    const ownerIds = bucket.idsByOwner.get(placed.graphId)
-    if (ownerIds) ownerIds.add(placed.id)
-    else bucket.idsByOwner.set(placed.graphId, reactive(new Set([placed.id])))
+    if (isFloatingTopology(topology)) {
+      addOwnerId(bucket.floatingIdsByOwner, placed.graphId, placed.id)
+    } else {
+      const links = ownerLinksMap(doc, rootGraphId, placed.graphId, true)
+      const key = String(placed.id)
+      const tuple = linkTuple(topology)
+      if (!sameTuple(links.get(key), tuple)) links.set(key, tuple)
+    }
     if (hasUniqueTarget(topology)) {
       const key = targetKey(
         topology.graphId,
@@ -217,7 +365,7 @@ export const useLinkStore = defineStore('link', () => {
     scope: GraphScope,
     expected: LinkTopology | undefined,
     replacement: LinkTopology,
-    _context?: RemoteMutationContext
+    context?: RemoteMutationContext
   ): LinkTopology | undefined {
     const bucket = roots.get(scope.rootGraphId)
     if (expected && (!bucket || !ownsPlacement(scope, bucket, expected))) {
@@ -245,15 +393,26 @@ export const useLinkStore = defineStore('link', () => {
     }
 
     const targetBucket = bucket ?? rootBucket(scope.rootGraphId)
-    if (expected) displace(targetBucket, expected)
     const owned = Object.assign(replacement, { graphId: scope.owningGraphId })
-    const placed = placeValidated(targetBucket, owned)
+    let placed: LinkTopology | undefined
+    transact(scope.rootGraphId, context, (doc) => {
+      if (expected) displace(targetBucket, scope.rootGraphId, doc, expected)
+      placed = placeValidated(targetBucket, scope.rootGraphId, doc, owned)
+    })
     revision.value++
     return placed
   }
 
-  /** Removes a link placement that has already been validated. */
-  function displace(bucket: RootTopologyBucket, topology: LinkTopology): void {
+  /**
+   * Removes a link placement that has already been validated, deleting a
+   * non-floating topology's key from its owner's `links` map.
+   */
+  function displace(
+    bucket: RootTopologyBucket,
+    rootGraphId: RootGraphId,
+    doc: YDoc,
+    topology: LinkTopology
+  ): void {
     if (hasUniqueTarget(topology)) {
       const key = targetKey(
         topology.graphId,
@@ -265,21 +424,27 @@ export const useLinkStore = defineStore('link', () => {
       }
     }
     bucket.byId.delete(topology.id)
-    const ownerIds = bucket.idsByOwner.get(topology.graphId)
-    ownerIds?.delete(topology.id)
-    if (ownerIds?.size === 0) bucket.idsByOwner.delete(topology.graphId)
+    if (isFloatingTopology(topology)) {
+      removeOwnerId(bucket.floatingIdsByOwner, topology.graphId, topology.id)
+    } else {
+      ownerLinksMap(doc, rootGraphId, topology.graphId, false)?.delete(
+        String(topology.id)
+      )
+    }
     unindexOrigin(bucket, topology)
   }
 
   function deleteLink(
     scope: GraphScope,
     topology: LinkTopology,
-    _context?: RemoteMutationContext
+    context?: RemoteMutationContext
   ): boolean {
     const bucket = roots.get(scope.rootGraphId)
     if (!bucket || !ownsPlacement(scope, bucket, topology)) return false
-    displace(bucket, topology)
-    if (bucket.byId.size === 0) roots.delete(scope.rootGraphId)
+    transact(scope.rootGraphId, context, (doc) =>
+      displace(bucket, scope.rootGraphId, doc, topology)
+    )
+    if (bucket.byId.size === 0) dropRoot(scope.rootGraphId)
     revision.value++
     return true
   }
@@ -354,20 +519,25 @@ export const useLinkStore = defineStore('link', () => {
     scope: GraphScope,
     updates: readonly EndpointUpdate[],
     removals: readonly LinkTopology[] = [],
-    _context?: RemoteMutationContext
+    context?: RemoteMutationContext
   ): EndpointUpdateResult<LinkTopology[]> {
     const error = validateEndpointUpdates(scope, updates, removals)
     if (error) return { ok: false, error }
 
     const bucket = rootBucket(scope.rootGraphId)
-    for (const { topology } of updates) displace(bucket, topology)
-    for (const topology of removals) displace(bucket, topology)
+    let value: LinkTopology[] = []
+    transact(scope.rootGraphId, context, (doc) => {
+      for (const { topology } of updates)
+        displace(bucket, scope.rootGraphId, doc, topology)
+      for (const topology of removals)
+        displace(bucket, scope.rootGraphId, doc, topology)
 
-    const value = updates.map(({ topology, patch }) => {
-      Object.assign(reactive(topology), patchedEndpoints(topology, patch))
-      return placeValidated(bucket, topology)
+      value = updates.map(({ topology, patch }) => {
+        Object.assign(reactive(topology), patchedEndpoints(topology, patch))
+        return placeValidated(bucket, scope.rootGraphId, doc, topology)
+      })
     })
-    if (bucket.byId.size === 0) roots.delete(scope.rootGraphId)
+    if (bucket.byId.size === 0) dropRoot(scope.rootGraphId)
     revision.value++
     return { ok: true, value }
   }
@@ -430,11 +600,19 @@ export const useLinkStore = defineStore('link', () => {
     )
   }
 
-  /** Iterates every registered topology owned by a graph. */
+  /**
+   * Iterates every registered topology owned by a graph: document-projected
+   * links first, then floating topologies. A document key without a
+   * registered topology (a merged remote frame the store has not
+   * materialised yet) is skipped.
+   */
   function* graphTopologies(scope: GraphScope): Generator<LinkTopology> {
     const bucket = roots.get(scope.rootGraphId)
-    const ids = bucket?.idsByOwner.get(scope.owningGraphId)
-    if (!bucket || !ids) return
+    if (!bucket) return
+    const ids = [
+      ...(bucket.idsByOwner.get(scope.owningGraphId) ?? []),
+      ...(bucket.floatingIdsByOwner.get(scope.owningGraphId) ?? [])
+    ]
     for (const id of ids) {
       const topology = bucket.byId.get(id)
       if (topology) yield topology
@@ -448,22 +626,38 @@ export const useLinkStore = defineStore('link', () => {
     return roots.get(rootGraphId)?.byId.get(id)
   }
 
+  /**
+   * Drops every link of the root graph, clearing link membership from the
+   * semantic document (root `links` and each definition's `links`) so a later
+   * bucket for the same root does not re-seed stale ids.
+   */
   function clearGraph(graphId: RootGraphId): void {
-    if (roots.delete(graphId)) revision.value++
+    if (!roots.has(graphId) && !semanticDocs.has(graphId)) return
+    transact(graphId, undefined, (doc) => {
+      ownerLinksMap(doc, graphId, toOwningGraphId(graphId), true).clear()
+      for (const [, links] of definitionOwnerMaps(doc, 'links')) links.clear()
+    })
+    if (dropRoot(graphId)) revision.value++
   }
 
   function clearOwner(
     scope: GraphScope,
-    _context?: RemoteMutationContext
+    context?: RemoteMutationContext
   ): void {
     const bucket = roots.get(scope.rootGraphId)
-    const ids = bucket?.idsByOwner.get(scope.owningGraphId)
-    if (!bucket || !ids) return
-    for (const id of [...ids]) {
-      const topology = bucket.byId.get(id)
-      if (topology) displace(bucket, topology)
-    }
-    if (bucket.byId.size === 0) roots.delete(scope.rootGraphId)
+    if (!bucket) return
+    const ids = [
+      ...(bucket.idsByOwner.get(scope.owningGraphId) ?? []),
+      ...(bucket.floatingIdsByOwner.get(scope.owningGraphId) ?? [])
+    ]
+    if (ids.length === 0) return
+    transact(scope.rootGraphId, context, (doc) => {
+      for (const id of ids) {
+        const topology = bucket.byId.get(id)
+        if (topology) displace(bucket, scope.rootGraphId, doc, topology)
+      }
+    })
+    if (bucket.byId.size === 0) dropRoot(scope.rootGraphId)
     revision.value++
   }
 

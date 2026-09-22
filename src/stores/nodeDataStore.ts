@@ -8,7 +8,11 @@ import type {
   INodeSlot
 } from '@/lib/litegraph/src/interfaces'
 import { NodeInputSlot, NodeOutputSlot } from '@/lib/litegraph/src/litegraph'
-import { ownerNodesMap, semanticDocs } from '@/stores/semanticDoc'
+import {
+  definitionOwnerMaps,
+  ownerNodesMap,
+  semanticDocs
+} from '@/stores/semanticDoc'
 import type { LocalUpdateOrigin } from '@/stores/semanticDoc'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type {
@@ -134,8 +138,6 @@ function mergeSlotsByName<Slot extends { name: string }>(
   }
 }
 
-const DEFINITIONS_ROOT = 'definitions'
-const DEFINITION_NODES_KEY = 'nodes'
 const NODE_TYPE_KEY = 'type'
 
 function localOrigin(context?: RemoteMutationContext): LocalUpdateOrigin {
@@ -190,89 +192,21 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     if (ownerIds.size === 0) bucket.idsByOwner.delete(owningGraphId)
   }
 
-  function definitionOwners(doc: Y.Doc): [OwningGraphId, Y.Map<unknown>][] {
-    if (!doc.share.has(DEFINITIONS_ROOT)) return []
-    const owners: [OwningGraphId, Y.Map<unknown>][] = []
-    for (const [definitionId, definition] of doc.getMap(DEFINITIONS_ROOT)) {
-      if (!(definition instanceof Y.Map)) continue
-      const nodes = definition.get(DEFINITION_NODES_KEY)
-      if (nodes instanceof Y.Map)
-        owners.push([toOwningGraphId(definitionId), nodes])
-    }
-    return owners
-  }
-
-  function seedOwner(
-    bucket: RootNodeBucket,
-    owningGraphId: OwningGraphId,
-    nodes: Y.Map<unknown>
-  ): void {
-    for (const id of nodes.keys())
-      addOwnerId(bucket, owningGraphId, id as NodeId)
-  }
-
-  function reseedDefinitionOwners(
-    bucket: RootNodeBucket,
-    rootGraphId: RootGraphId,
-    doc: Y.Doc
-  ): void {
-    for (const owningGraphId of [...bucket.idsByOwner.keys()]) {
-      if ((owningGraphId as string) !== (rootGraphId as string))
-        bucket.idsByOwner.delete(owningGraphId)
-    }
-    for (const [owningGraphId, nodes] of definitionOwners(doc))
-      seedOwner(bucket, owningGraphId, nodes)
-  }
-
-  function applyKeyChanges(
-    bucket: RootNodeBucket,
-    owningGraphId: OwningGraphId,
-    event: Y.YEvent<Y.AbstractType<unknown>>
-  ): void {
-    for (const [key, change] of event.changes.keys) {
-      const id = key as NodeId
-      if (change.action === 'delete') removeOwnerId(bucket, owningGraphId, id)
-      else addOwnerId(bucket, owningGraphId, id)
-    }
-  }
-
-  function projectMembership(
-    bucket: RootNodeBucket,
-    rootGraphId: RootGraphId,
-    doc: Y.Doc,
-    events: readonly Y.YEvent<Y.AbstractType<unknown>>[]
-  ): void {
-    const owner = rootOwner(rootGraphId)
-    const nodesRoot = ownerNodesMap(doc, rootGraphId, owner, true)
-    const definitionsRoot = doc.getMap(DEFINITIONS_ROOT)
-    for (const event of events) {
-      if (event.currentTarget === nodesRoot) {
-        if (event.target === nodesRoot) applyKeyChanges(bucket, owner, event)
-        continue
-      }
-      if (event.currentTarget !== definitionsRoot) continue
-      const path = event.path
-      if (path.length <= 1) {
-        reseedDefinitionOwners(bucket, rootGraphId, doc)
-        continue
-      }
-      if (path.length === 2 && path[1] === DEFINITION_NODES_KEY) {
-        applyKeyChanges(bucket, toOwningGraphId(String(path[0])), event)
-      }
-    }
-  }
-
   function observeRoot(rootGraphId: RootGraphId, bucket: RootNodeBucket): void {
-    const doc = semanticDocs.ensure(rootGraphId)
-    const owner = rootOwner(rootGraphId)
-    seedOwner(bucket, owner, ownerNodesMap(doc, rootGraphId, owner, true))
-    for (const [owningGraphId, nodes] of definitionOwners(doc))
-      seedOwner(bucket, owningGraphId, nodes)
     unobserveByRoot.set(
       rootGraphId,
-      semanticDocs.observeNodes(rootGraphId, (events) =>
-        projectMembership(bucket, rootGraphId, doc, events)
-      )
+      semanticDocs.projectMembership(rootGraphId, 'nodes', {
+        add: (owningGraphId, id) =>
+          addOwnerId(bucket, owningGraphId, id as NodeId),
+        remove: (owningGraphId, id) =>
+          removeOwnerId(bucket, owningGraphId, id as NodeId),
+        resetDefinitionOwners: () => {
+          for (const owningGraphId of [...bucket.idsByOwner.keys()]) {
+            if ((owningGraphId as string) !== (rootGraphId as string))
+              bucket.idsByOwner.delete(owningGraphId)
+          }
+        }
+      })
     )
   }
 
@@ -494,7 +428,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     if (!roots.has(root) && !semanticDocs.has(root)) return
     semanticDocs.transactLocal(root, localOrigin(), (doc) => {
       ownerNodesMap(doc, root, rootOwner(root), true).clear()
-      for (const [, nodes] of definitionOwners(doc)) nodes.clear()
+      for (const [, nodes] of definitionOwnerMaps(doc, 'nodes')) nodes.clear()
     })
     dropRoot(root)
   }
