@@ -347,12 +347,6 @@ describe('TelemetryRegistry', () => {
         method: 'trackAgentAttachButtonClicked',
         expected: undefined,
         invoke: (registry) => registry.trackAgentAttachButtonClicked()
-      },
-      {
-        method: 'trackAgentWorkflowApplied',
-        expected: { ...workflowAppliedMetadata },
-        invoke: (registry) =>
-          registry.trackAgentWorkflowApplied(workflowAppliedMetadata)
       }
     ]
 

@@ -596,10 +596,6 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
 }
-export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
-  workflow_id: string
-  target: 'active_tab_switch' | 'active_tab_open'
-}
 
 /**
  * Widget (input/parameter) favorite toggle tracking metadata.
@@ -1295,7 +1291,6 @@ export interface TelemetryProvider {
   trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(): void
-  trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
 
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
@@ -1465,7 +1460,6 @@ export const TelemetryEvents = {
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
-  AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
 
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',

@@ -205,7 +205,6 @@ vi.mock(import('@vueuse/core'), { spy: true })
 
 const telemetry = vi.hoisted(() => ({
   trackAgentMessageFeedback: vi.fn(),
-  trackAgentWorkflowApplied: vi.fn(),
   trackAgentMessageSent: vi.fn(),
   trackAgentNodeTagged: vi.fn(),
   trackAgentAttachButtonClicked: vi.fn(),
@@ -2807,7 +2806,6 @@ describe('AgentPanelRoot workflow binding', () => {
     vi.mocked(app.loadGraphData).mockClear()
     vi.mocked(validateComfyWorkflow).mockClear()
     telemetry.trackAgentNodeTagged.mockClear()
-    telemetry.trackAgentWorkflowApplied.mockClear()
     executionErrors.showErrorOverlay.mockClear()
   })
 
@@ -4220,12 +4218,6 @@ describe('AgentPanelRoot workflow binding', () => {
     // Content sync rides the CRDT follower; activation never reloads the
     // canvas itself.
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    await vi.waitFor(() =>
-      expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
-        workflow_id: 'wf-42',
-        target: 'active_tab_switch'
-      })
-    )
   })
 
   // A browser tab closed without the SPA's own unbind() left 'wf-abandoned'
@@ -4354,10 +4346,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-77')).toBe(
       'workflows/Video test.json'
     )
-    expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
-      workflow_id: 'wf-77',
-      target: 'active_tab_open'
-    })
   })
   it.for(['saved', 'new'] as const)(
     'does not apply an activation when opening a %s tab is refused',
@@ -4370,7 +4358,6 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       await renderAndSend('work here')
       workflowService.openWorkflow.mockResolvedValueOnce(false)
-      telemetry.trackAgentWorkflowApplied.mockClear()
 
       ws.emit('agent_active_tab', {
         workflow_id: 'wf-other',
@@ -4391,7 +4378,6 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(
         useAgentWorkflowTabBindingStore().tabPathFor('wf-other')
       ).toBeUndefined()
-      expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
       expect(useWorkflowTabActivityStore().editingTabPath).toBe(current.path)
       expect(useWorkflowTabActivityStore().creatingTab).toBe(false)
       expect(
@@ -4406,7 +4392,6 @@ describe('AgentPanelRoot workflow binding', () => {
     const { unmount } = renderWithSelectedTarget()
     await sendFromComposer('work here')
     vi.useFakeTimers()
-    telemetry.trackAgentWorkflowApplied.mockClear()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-late',
@@ -4424,7 +4409,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
     ).toBeUndefined()
-    expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
     expect(useWorkflowTabActivityStore().creatingTab).toBe(false)
   })
 
@@ -4440,7 +4424,6 @@ describe('AgentPanelRoot workflow binding', () => {
       const { unmount } = renderWithSelectedTarget()
       await sendFromComposer('work here')
       vi.useFakeTimers()
-      telemetry.trackAgentWorkflowApplied.mockClear()
       let finishOpen: ((opened: boolean) => void) | undefined
       workflowService.openWorkflow.mockImplementationOnce(async (tab) => {
         const opened = await new Promise<boolean>((resolve) => {
@@ -4465,7 +4448,6 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(
         useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
       ).toBeUndefined()
-      expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
       expect(useWorkflowTabActivityStore().editingTabPath).toBeNull()
       if (kind === 'new') expect(workflowStore.activeWorkflow).toEqual(current)
       expect(
@@ -4480,7 +4462,6 @@ describe('AgentPanelRoot workflow binding', () => {
     const { unmount } = renderWithSelectedTarget()
     await sendFromComposer('work here')
     vi.useFakeTimers()
-    telemetry.trackAgentWorkflowApplied.mockClear()
     let finishOpen: ((opened: boolean) => void) | undefined
     workflowService.openWorkflow.mockImplementationOnce(
       () =>
@@ -4508,7 +4489,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       useAgentWorkflowTabBindingStore().tabPathFor('wf-queued')
     ).toBeUndefined()
-    expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
     expect(useWorkflowTabActivityStore().creatingTab).toBe(false)
   })
 
@@ -4592,7 +4572,6 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       useAgentWorkflowTabBindingStore().tabPathFor('wf-77')
     ).toBeUndefined()
-    expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
   })
 
   it('agent_active_tab strips dotfile prefixes hidden behind whitespace', async () => {

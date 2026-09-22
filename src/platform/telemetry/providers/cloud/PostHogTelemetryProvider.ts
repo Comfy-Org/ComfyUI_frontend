@@ -19,7 +19,6 @@ import type {
   AgentNodeTaggedMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
-  AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
   ImageLoadFailureMetadata,
@@ -718,10 +717,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentAttachButtonClicked(): void {
     this.trackEvent(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED, {})
-  }
-
-  trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
-    this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {

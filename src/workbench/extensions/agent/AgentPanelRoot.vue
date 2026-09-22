@@ -785,10 +785,6 @@ async function onAgentActiveTab(
       bindingStore.bind(data.workflow_id, bound.path)
       if (status.value !== 'idle') tabActivity.setEditing(bound.path)
       bindWorkflow(data.workflow_id)
-      useTelemetry()?.trackAgentWorkflowApplied({
-        workflow_id: data.workflow_id,
-        target: 'active_tab_switch'
-      })
       return
     }
     const creatingStartedAt = Date.now()
@@ -818,10 +814,6 @@ async function onAgentActiveTab(
     if (status.value !== 'idle') tabActivity.setEditing(tab.path)
     bindingStore.bind(data.workflow_id, tab.path)
     bindWorkflow(data.workflow_id)
-    useTelemetry()?.trackAgentWorkflowApplied({
-      workflow_id: data.workflow_id,
-      target: 'active_tab_open'
-    })
   } catch (error) {
     if (stale()) return
     bindWorkflow(data.workflow_id)
