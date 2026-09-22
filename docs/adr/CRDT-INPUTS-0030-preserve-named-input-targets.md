@@ -72,20 +72,19 @@ fixed by the incoming-connect path.
 
 Outputs remain index-based: unlike inputs, they are never autogrown or
 otherwise reordered by growth, so a live index still tracks the same document
-occupant it always did. `patchLiveOutputSlots` also never reuses a live index
-past the document's own output list, so a document that dropped an output
-cannot resurrect it.
+occupant it always did. `nodeStore.replaceNodeSlots` prunes outputs absent from
+the prepared document list, so a document that dropped an output cannot
+resurrect it.
 
 ## Explicitly out of scope
 
 - **Producer-side translation of local indexes to document indexes before mint.**
-  Governed by #448 Option A. It is also the shape `ADR-031` rejected
-  ("document-state-dependent, races between concurrent producers, and breaks
-  opposite-order convergence"), and it is unsound under `RUL-156`, whose
-  canonical grow ordering permutes slot names and rewrites link-tuple target
-  indexes — so a producer-resolved index can be stale by the time it applies,
-  with no detector. Durable addressing belongs on the wire and in the applier;
-  see workspace `ADR-036` D2.
+  Governed by #448 Option A. Producer-side translation depends on document
+  state, races between concurrent producers, and breaks opposite-order
+  convergence. Canonical grow ordering can permute slot names and rewrite
+  link-tuple target indexes, so a producer-resolved index can be stale by the
+  time it applies, with no detector. Durable addressing belongs on the wire
+  and in the applier.
 - **Synchronizing genuinely new inputs, and recovery UX for a connect that names
   an input neither side can place.** Follow-ups.
 - **Migrating already-saved incorrect connections.** Private alpha; not migrated.
@@ -95,8 +94,8 @@ cannot resurrect it.
 - Restore document order after configure: later autogrow can move inputs again.
 - Realign only initial links: leaves subsequent incoming edits wrong.
 - Carry the input name on the wire and resolve in the applier: this is the right
-  long-term answer and is recorded as workspace `ADR-036` D2, folded into the
-  #448 Option A work rather than built separately here.
+  long-term answer, folded into the #448 Option A work rather than built
+  separately here.
 
 ## Consequences
 
@@ -127,4 +126,4 @@ cannot resurrect it.
   every time. Nothing enforces name uniqueness at node registration or
   document ingestion, so relying on more live occurrences of a name than the
   document supplies is an assumption, not a guarantee. Subgraph promoted
-  inputs are the plausible source; see workspace `ADR-036`.
+  inputs are the plausible source.

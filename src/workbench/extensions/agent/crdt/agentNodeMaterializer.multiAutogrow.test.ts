@@ -1,8 +1,11 @@
-import { expect, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { assert, expect, vi } from 'vitest'
 
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import type * as AppModule from '@/scripts/app'
+import type { ComfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -17,10 +20,16 @@ import {
 import { crdtTest } from './__fixtures__/crdtSession'
 import type { CreateCrdtSession } from './__fixtures__/crdtSession'
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { canvas: undefined, isGraphReady: false, configuringGraph: false },
-  ComfyApp: class {}
-}))
+vi.mock(import('@/scripts/app'), () =>
+  fromPartial<typeof AppModule>({
+    app: fromPartial<ComfyApp>({
+      canvas: undefined,
+      isGraphReady: false,
+      configuringGraph: false
+    }),
+    ComfyApp: class {}
+  })
+)
 
 const catalog = { types: {} }
 // Origin slots come from this array's order; target slots are resolved by
@@ -129,30 +138,34 @@ crdtTest(
     const { graph, deliver } = await setup(createCrdtSession)
     deliver()
 
-    const to = graph.getNodeById(toNodeId(2))!
+    const to = graph.getNodeById(toNodeId(2))
+    assert(to)
     const scope = graphScopeOf(graph)
     const linkStore = useLinkStore()
 
-    // A regression here would previously have been masked by a test that
-    // assumed a named input's live index matches its position in the saved
-    // document -- assert by name, resolving each input's actual live index
-    // the same way a `data-slot-key`-driven DOM query has to (see
-    // `resolveInputSlotIndex` in
-    // `agentCrdtMultiAutogrowRealign.spec.ts`), not by the document's slot
-    // order.
-    for (const input of savedNode.inputs) {
+    const connectedState = savedNode.inputs.map((input) => {
       const slot = to.findInputSlot(input.name)
-      expect(slot).toBeGreaterThanOrEqual(0)
-      expect(linkStore.isInputSlotConnected(scope, toNodeId(2), slot)).toBe(
-        input.link !== null
-      )
-    }
+      return {
+        name: input.name,
+        present: slot >= 0,
+        connected: linkStore.isInputSlotConnected(scope, toNodeId(2), slot)
+      }
+    })
+    expect(connectedState).toEqual(
+      savedNode.inputs.map((input) => ({
+        name: input.name,
+        present: true,
+        connected: input.link !== null
+      }))
+    )
   }
 )
 
 function growImages(graph: LGraph) {
-  const from = graph.getNodeById(toNodeId(1))!
-  const to = graph.getNodeById(toNodeId(2))!
+  const from = graph.getNodeById(toNodeId(1))
+  const to = graph.getNodeById(toNodeId(2))
+  assert(from)
+  assert(to)
   const widthSlot = to.findInputSlot('width')
   expect(
     from.connect(5, to, to.findInputSlot('ref_images.ref_image_0'))
@@ -174,7 +187,8 @@ crdtTest(
     // ref_videos is present (min-grown to one slot) but never touched by this
     // test: its mere presence between ref_images and the scalars is what a
     // single-autogrow-group fixture cannot reproduce.
-    const to = graph.getNodeById(toNodeId(2))!
+    const to = graph.getNodeById(toNodeId(2))
+    assert(to)
     expect(to.findInputSlot('ref_videos.ref_video_0')).toBeGreaterThanOrEqual(0)
 
     growImages(graph)

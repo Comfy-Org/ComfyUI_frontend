@@ -109,6 +109,12 @@ export class MultiAutogrowRealignHarness {
     | Awaited<ReturnType<typeof mockSavedWorkflowPersistence>>
     | undefined
 
+  private requireSubmittedPrompt(): ComfyApiWorkflow {
+    const prompt = this.submittedPrompt
+    if (!prompt) throw new Error('No prompt was submitted')
+    return prompt
+  }
+
   constructor(private readonly page: Page) {
     this.hostSocket = new AgentFollowerHostSocket(
       page,
@@ -369,11 +375,6 @@ export class MultiAutogrowRealignHarness {
     }
   }
 
-  /**
-   * Clicks the real Run button and waits for the resulting `/api/prompt`
-   * submission, rather than calling `app.queuePrompt()` directly (see
-   * `browser_tests/README.md`'s `page.evaluate` guidance).
-   */
   async submitAndReadTargetInputs(): Promise<
     ComfyApiWorkflow[string]['inputs']
   > {
@@ -382,13 +383,14 @@ export class MultiAutogrowRealignHarness {
       .getByRole('button', { name: enMessages.menu.run, exact: true })
       .click()
     await expect.poll(() => this.submittedPrompt !== undefined).toBe(true)
-    return this.submittedPrompt![TARGET_ID].inputs
+    const submittedPrompt = this.requireSubmittedPrompt()
+    if (!(TARGET_ID in submittedPrompt)) {
+      throw new Error(`Submitted prompt has no node ${TARGET_ID}`)
+    }
+    const target = submittedPrompt[TARGET_ID]
+    return target.inputs
   }
 
-  /**
-   * An implementation that keeps the canvas painted correctly but serializes a
-   * scalar or a link positionally would still fail this.
-   */
   async expectSubmittedValuesNamedCorrectly(
     expectedPrompt = SENTINEL_PROMPT
   ): Promise<void> {
@@ -470,10 +472,6 @@ export class MultiAutogrowRealignHarness {
         ) &&
         response.ok()
     )
-    // Goes through the real Save As UI rather than a bare page-level
-    // `Control+s`: the sentinel number inputs can still hold focus, and an
-    // unfocused shortcut is swallowed by that control instead of reaching
-    // the app.
     await this.topbar.saveWorkflowAs(SAVED_WORKFLOW_NAME)
     const response = await saveResponse
     const workflow = zComfyWorkflow.parse(

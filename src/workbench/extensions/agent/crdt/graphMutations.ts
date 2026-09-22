@@ -237,7 +237,12 @@ type PreparedMutation =
       node: PreparedNode
       queued: 'addNode' | 'reconcileNodeFields'
     }
-  | { kind: 'reconcileNode'; node: PreparedNode }
+  | {
+      kind: 'reconcileNode'
+      node: PreparedNode
+      documentInputs: unknown
+      preserveLinkedAutogrow: boolean
+    }
   | { kind: 'replaceNode'; node: PreparedNode }
   | {
       kind: 'reconcileNodeFields'
@@ -560,11 +565,6 @@ function mergeInputSlotsByName(
   const documentInputs = Array.isArray(supplied)
     ? supplied.filter(isRecord)
     : []
-  // Each live occurrence is consumed at most once, in document order: with
-  // two same-named live slots and two document entries sharing that name,
-  // the first document entry falls back to the first live slot and the
-  // second to the second, rather than both re-finding the same (first) live
-  // slot and losing whatever link/value only the second live slot carried.
   const consumedLive = new Set<number>()
   const liveByName = documentInputs.map((slot) => {
     const index = live.findIndex(
@@ -574,10 +574,6 @@ function mergeInputSlotsByName(
     consumedLive.add(index)
     return live[index]
   })
-  // The document names something this node does not have (including asking
-  // for more copies of a shared name than live has), or the node kept a
-  // live-only slot that still carries a link the document doesn't: either
-  // way the input set changed, so the document decides the list positionally.
   if (
     hasNonGrowthInputSetChange(
       live,
@@ -589,9 +585,6 @@ function mergeInputSlotsByName(
     return prepareInputSlots(documentInputs, live)
   }
   const merged = [...live]
-  // Litegraph does not enforce unique input names, so each merged slot is
-  // consumed at most once — otherwise two document inputs sharing a name
-  // would both resolve to the same merged index and one would be dropped.
   const used = new Set<number>()
   for (const input of prepareInputSlots(documentInputs, liveByName)) {
     const index = merged.findIndex(
@@ -613,13 +606,6 @@ type ConnectTargetSlotResolution =
       readonly targetSlot: number
     }
 
-/**
- * How many of `items` before `index` share `name` with the one at `index` --
- * its occurrence ordinal, so a duplicate name can be re-found after a merge
- * by "the Nth occurrence" rather than by first match. Shared by `prepare`'s
- * and `commit`'s own connect-target resolution so the two phases can't
- * drift on this calculation.
- */
 function occurrenceIndexOf<T>(
   items: readonly T[],
   index: number,
@@ -629,8 +615,6 @@ function occurrenceIndexOf<T>(
   return items.slice(0, index).filter((item) => nameOf(item) === name).length
 }
 
-/** The index within `items` of the `occurrence`-th (0-based) entry named
- * `name`, or -1 if `items` has fewer than that many. */
 function resolveOccurrenceIndex<T>(
   items: readonly T[],
   name: unknown,
@@ -646,12 +630,6 @@ function resolveOccurrenceIndex<T>(
   return -1
 }
 
-/**
- * Merges a `connect` payload's raw target inputs onto the live target node
- * and resolves which merged slot `rawTargetSlot` (the payload's own index,
- * pre-merge) now corresponds to, or an error string when that slot cannot
- * be identified.
- */
 function resolveConnectTargetInputs(
   liveInputs: NodeState['inputs'],
   rawTargetInputs: readonly ISerialisableNodeInput[],
@@ -841,7 +819,8 @@ export function isIncompatibleLinkType(link: {
 
 function detachedLinkSlots(
   nodes: Iterable<NodeState>,
-  topology: LinkTopology
+  topology: LinkTopology,
+  replacement?: LinkTopology
 ): Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>> {
   const nodesById = new Map([...nodes].map((node) => [nodeKey(node.id), node]))
   const changed = new Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>>()
@@ -854,7 +833,11 @@ function detachedLinkSlots(
   }
 
   const origin = nodesById.get(nodeKey(topology.originNodeId))
-  if (origin?.outputs[topology.originSlot]) {
+  const keepsOrigin =
+    replacement?.id === topology.id &&
+    replacement.originNodeId === topology.originNodeId &&
+    replacement.originSlot === topology.originSlot
+  if (!keepsOrigin && origin?.outputs[topology.originSlot]) {
     const slots = slotsFor(origin)
     slots.outputs = slots.outputs.map((output, index) =>
       index === topology.originSlot && isPlainObject(output)
@@ -867,7 +850,14 @@ function detachedLinkSlots(
   }
 
   const target = nodesById.get(nodeKey(topology.targetNodeId))
-  if (target?.inputs[topology.targetSlot]?.link === topology.id) {
+  const keepsTarget =
+    replacement?.id === topology.id &&
+    replacement.targetNodeId === topology.targetNodeId &&
+    replacement.targetSlot === topology.targetSlot
+  if (
+    !keepsTarget &&
+    target?.inputs[topology.targetSlot]?.link === topology.id
+  ) {
     const slots = slotsFor(target)
     slots.inputs = slots.inputs.map((input, index) =>
       index === topology.targetSlot && isPlainObject(input)
@@ -1080,18 +1070,10 @@ function createAutogrowMemory() {
 
   return {
     draft(): AutogrowMemoryDraft {
-      // The batch's confirmed shadow -- every write an already-applied
-      // mutation staged, merged in call order -- present (even as `null`,
-      // meaning "forgotten this batch") once a node has been touched, so
-      // `read` is one lookup instead of a backward replay.
       const shadow = new Map<
         string,
         Map<string, RememberedAutogrowGroup> | null
       >()
-      // Each in-flight mutation's own writes, kept out of `shadow` until
-      // `applyMutation` confirms them, so a mutation that never lands (and
-      // is instead rolled back) can be discarded without touching what any
-      // other mutation already sees.
       const pending = new Map<
         number,
         Map<string, Map<string, RememberedAutogrowGroup> | null>
@@ -1149,6 +1131,22 @@ function createAutogrowMemory() {
           pending.set(currentMutationIndex, forMutation)
         }
         forMutation.set(key, value)
+      }
+
+      function replayPending(write: StagedAutogrowWrite): void {
+        const key = shadowKey(write.scope, write.nodeId)
+        if (write.kind === 'forget') {
+          setPending(key, null)
+          return
+        }
+        const view = currentView(key)
+        const forNode = new Map(
+          view === undefined
+            ? nodeEntries(write.scope, write.nodeId)
+            : (view ?? undefined)
+        )
+        forNode.set(write.name, write.entry)
+        setPending(key, forNode)
       }
 
       return {
@@ -1212,6 +1210,16 @@ function createAutogrowMemory() {
         rollbackMutation(mutationIndex) {
           journal.delete(mutationIndex)
           pending.delete(mutationIndex)
+          for (const index of [...pending.keys()]) {
+            if (index > mutationIndex) pending.delete(index)
+          }
+          for (const [index, writes] of [...journal].sort(
+            ([left], [right]) => left - right
+          )) {
+            if (index <= mutationIndex) continue
+            currentMutationIndex = index
+            for (const write of writes) replayPending(write)
+          }
         }
       }
     }
@@ -1350,6 +1358,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             if (existing.inputs.some((input) => !isSlotRecord(input))) {
               return 'reconcile target inputs contain a malformed live slot'
             }
+            const preserveLinkedAutogrow = queued.some(
+              (queuedMutation) =>
+                queuedMutation.kind === 'connect' &&
+                queuedMutation.link.targetNodeId === node.state.id
+            )
             node.state.inputs = mergeInputSlotsByName(
               existing.inputs,
               mutation.payload.inputs,
@@ -1361,12 +1374,16 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                   node.state.type,
                   name
                 ),
-              queued.some(
-                (queuedMutation) =>
-                  queuedMutation.kind === 'connect' &&
-                  queuedMutation.link.targetNodeId === node.state.id
-              )
+              preserveLinkedAutogrow
             )
+            prepared.push({
+              kind: 'reconcileNode',
+              node,
+              documentInputs: mutation.payload.inputs,
+              preserveLinkedAutogrow
+            })
+            nodes.set(key, node.state)
+            break
           }
           nodes.set(key, node.state)
           if (mutation.kind === 'addNode') {
@@ -1374,10 +1391,15 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           } else {
             const replaced = existing && existing.type !== node.state.type
             if (replaced) memory.forget(scope, node.state.id)
-            prepared.push({
-              kind: replaced ? 'replaceNode' : 'reconcileNode',
-              node
-            })
+            if (replaced) prepared.push({ kind: 'replaceNode', node })
+            else {
+              prepared.push({
+                kind: 'reconcileNode',
+                node,
+                documentInputs: mutation.payload.inputs,
+                preserveLinkedAutogrow: false
+              })
+            }
           }
           break
         }
@@ -1677,13 +1699,18 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   function detachLinkSlots(
     scope: GraphScope,
     topology: LinkTopology,
-    context: RemoteMutationContext
+    context: RemoteMutationContext,
+    replacement?: LinkTopology
   ): void {
     const nodes = nodeStore.getGraphNodesFor(
       scope.rootGraphId,
       scope.owningGraphId
     )
-    for (const [nodeId, slots] of detachedLinkSlots(nodes, topology)) {
+    for (const [nodeId, slots] of detachedLinkSlots(
+      nodes,
+      topology,
+      replacement
+    )) {
       nodeStore.updateNodeSlots(scope, nodeId, slots, context)
     }
   }
@@ -1699,7 +1726,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     }
   }
 
-  function deleteNode(
+  function deleteNodeState(
     scope: GraphScope,
     nodeId: NodeId,
     removedLinkIds: readonly LinkId[],
@@ -1719,6 +1746,15 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     }
     widgetStore.clearNode(scope.rootGraphId, nodeId, context)
     if (node) nodeStore.deleteNode(scope, node, context)
+  }
+
+  function deleteNode(
+    scope: GraphScope,
+    nodeId: NodeId,
+    removedLinkIds: readonly LinkId[],
+    context: RemoteMutationContext
+  ): void {
+    deleteNodeState(scope, nodeId, removedLinkIds, context)
     deps.layout.deleteNodes(scope, [nodeId], context)
   }
 
@@ -1948,19 +1984,34 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       PreparedMutation,
       { kind: 'addNode' | 'reconcileNode' | 'replaceNode' }
     >,
-    context: RemoteMutationContext
+    context: RemoteMutationContext,
+    memory: AutogrowMemoryDraft,
+    revalidateInputs: boolean
   ): void {
     const existing = nodeStore.getNode(
       scope.rootGraphId,
       mutation.node.state.id
     )
     if (mutation.kind === 'reconcileNode' && existing) {
-      nodeStore.updateNode(
-        scope,
-        mutation.node.state.id,
-        mutation.node.state,
-        context
-      )
+      const state = revalidateInputs
+        ? {
+            ...mutation.node.state,
+            inputs: mergeInputSlotsByName(
+              existing.inputs,
+              mutation.documentInputs,
+              (name) =>
+                resolveAutogrowGroup(
+                  memory,
+                  scope,
+                  mutation.node.state.id,
+                  mutation.node.state.type,
+                  name
+                ),
+              mutation.preserveLinkedAutogrow
+            )
+          }
+        : mutation.node.state
+      nodeStore.updateNode(scope, state.id, state, context)
       applyWidgetValues(
         scope,
         mutation.node.state.id,
@@ -1983,7 +2034,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       context
     )
     if (mutation.kind === 'replaceNode' && existing) {
-      deleteNode(scope, existing.id, [], context)
+      deleteNodeState(scope, existing.id, [], context)
     }
     nodeStore.registerNode(scope, mutation.node.state, context)
     for (const widget of placeholderWidgets(mutation.node.widgets)) {
@@ -1997,6 +2048,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     context: RemoteMutationContext,
     memory: AutogrowMemoryDraft
   ): void {
+    let revalidatePreparedInputs = false
     for (const [index, mutation] of prepared.entries()) {
       memory.beginMutation(index)
       let committed = true
@@ -2004,7 +2056,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         case 'addNode':
         case 'reconcileNode':
         case 'replaceNode': {
-          commitUpsertNode(scope, mutation, context)
+          commitUpsertNode(
+            scope,
+            mutation,
+            context,
+            memory,
+            revalidatePreparedInputs
+          )
           break
         }
         case 'reconcileNodeFields': {
@@ -2081,7 +2139,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const presentation = existing
             ? linkPresentationStore.getPresentation(scope, existing.id)
             : undefined
-          if (existing) removeLink(scope, existing, context)
           const occupant = linkStore.getInputSlotLink(
             scope,
             mutation.topology.targetNodeId,
@@ -2091,15 +2148,20 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             scope,
             occupant,
             mutation.topology,
+            existing,
             context
           )
           if (!replacement) {
             committed = false
             break
           }
-          if (occupant) {
-            detachLinkSlots(scope, occupant, context)
-            linkPresentationStore.take(scope, occupant.id)
+          for (const displaced of new Set(
+            [existing, occupant].filter(
+              (topology): topology is LinkTopology => topology !== undefined
+            )
+          )) {
+            detachLinkSlots(scope, displaced, context, replacement)
+            linkPresentationStore.take(scope, displaced.id)
           }
           if (presentation) {
             linkPresentationStore.patch(scope, replacement.id, presentation)
@@ -2151,12 +2213,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           nodeStore.clearOwner(scope, context)
           break
       }
-      // See `AutogrowMemoryDraft` for why this applies per mutation, and
-      // only when that mutation's own graph effect actually landed; a
-      // mutation whose effect did not land rolls its shadow answer back
-      // instead, so a later mutation in this batch cannot read it.
       if (committed) memory.applyMutation(index)
-      else memory.rollbackMutation(index)
+      else {
+        memory.rollbackMutation(index)
+        revalidatePreparedInputs = true
+      }
     }
   }
 

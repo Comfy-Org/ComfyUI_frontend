@@ -1,5 +1,6 @@
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { toRaw } from 'vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -154,6 +155,9 @@ describe('graphMutations', () => {
       createdLayouts.set(String(nodeId), layout)
     })
     deleteLayouts.mockReset()
+    deleteLayouts.mockImplementation((_scope, nodeIds) => {
+      for (const nodeId of nodeIds) createdLayouts.delete(String(nodeId))
+    })
     setLiveWidgetValue.mockReset()
     mockReportError.mockReset()
     LiteGraph.registerNodeType('ContractSampler', ContractSampler)
@@ -1199,8 +1203,9 @@ describe('graphMutations', () => {
         widgetId(scope.rootGraphId, toNodeId(1), 'replacement')
       )?.value
     ).toBe(2)
-    expect(deleteLayouts).toHaveBeenCalledOnce()
+    expect(deleteLayouts).not.toHaveBeenCalled()
     expect(createLayout).toHaveBeenCalledOnce()
+    expect(createdLayouts.has('1')).toBe(true)
   })
 
   it('keeps a document-only input at the prepared link target after replacing the input set', () => {
@@ -1895,11 +1900,6 @@ describe('graphMutations', () => {
   })
 
   it('retains a widget-promoted input slot no document snapshot ever lists', () => {
-    // A widget promoted to an input slot carries its value in
-    // `widgets_values`, never as a named document input, so its absence from
-    // every document snapshot is never a real removal -- unlike an ordinary
-    // input, this must survive a plain reconcile with no paired connect and
-    // no autogrow classification at all.
     const graph = mutations()
     graph.batch(context, (batch) => {
       batch.addNode(node(1))
@@ -1911,13 +1911,14 @@ describe('graphMutations', () => {
 
     const state = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(2))
     assert(state)
-    state.inputs.push({
+    const promoted: (typeof state.inputs)[number] = {
       name: 'ref_image_size',
       type: 'COMBO',
       link: null,
       widget: { name: 'ref_image_size' },
       boundingRect: [0, 0, 0, 0]
-    })
+    }
+    state.inputs.push(promoted)
 
     expect(
       graph.batch(
@@ -1938,6 +1939,10 @@ describe('graphMutations', () => {
       'keep',
       'ref_image_size'
     ])
+    expect(toRaw(target?.inputs[1])).toBe(promoted)
+    expect(target?.inputs[1]?.widget).toEqual({ name: 'ref_image_size' })
+    expect(target?.inputs[1]?.type).toBe('COMBO')
+    expect(target?.inputs[1]?.link).toBeNull()
   })
 
   it('drops a removed, unlinked DynamicCombo input instead of mistaking it for a spare autogrow slot', () => {
@@ -2696,17 +2701,21 @@ describe('graphMutations', () => {
   })
 
   it('keeps the incumbent node fully intact when a type-changing replace throws creating its layout', () => {
-    // A type-changing `reconcileNode` becomes a `replaceNode`: litegraph
-    // cannot retype a live node in place, so the incumbent is torn down and
-    // a fresh one takes its id. `layout.createNode` for that replacement is
-    // fallible; if the incumbent were deleted first (the pre-fix ordering),
-    // a throw here would leave the id registered to nothing. The incumbent
-    // -- id, type, and its own inputs/widgets -- must instead still be
-    // exactly what it was before this batch ran.
     const graph = mutations()
     graph.batch(context, (batch) => {
-      batch.addNode({ ...node(2), widgets_values: { steps: 20 } })
+      batch.addNode({
+        ...node(2),
+        title: 'Incumbent',
+        properties: { preserved: true },
+        widgets_values: { steps: 20 }
+      })
     })
+    const before = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(2))
+    assert(before)
+    const snapshot = structuredClone(toRaw(before))
+    const inputs = before.inputs
+    const outputs = before.outputs
+    const layout = createdLayouts.get('2')
 
     createLayout.mockImplementationOnce(() => {
       throw new Error('layout port failed')
@@ -2721,29 +2730,19 @@ describe('graphMutations', () => {
       })
     ).toThrow('layout port failed')
 
-    const incumbent = useNodeDataStore()
-      .getGraphNodesFor('root', 'root')
-      .find(({ id }) => id === toNodeId(2))
+    const incumbent = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(2))
     assert(incumbent)
-    expect(incumbent.type).toBe('Type2')
-    expect(incumbent.inputs.map(({ name }) => name)).toEqual(
-      node(2).inputs.map(({ name }) => name)
-    )
+    expect(incumbent).toBe(before)
+    expect(incumbent).toEqual(snapshot)
+    expect(incumbent.inputs).toBe(inputs)
+    expect(incumbent.outputs).toBe(outputs)
+    expect(createdLayouts.get('2')).toBe(layout)
     expect(widgetTuples(2).map(([name, , , value]) => [name, value])).toEqual([
       ['steps', 20]
     ])
   })
 
   it("lets a mutation see an earlier mutation's still-pending autogrow answer from the same batch", () => {
-    // Both reconciles below run their `mergeInputSlotsByName` classification
-    // during `prepare()`, before either mutation has committed. `currentView`
-    // used to check only the current mutation's own pending overlay and the
-    // commit-confirmed shadow, so mutation 1 could not see mutation 0's
-    // still-pending 'member' answer for the same name and fell back to a
-    // heuristic that cannot classify a non-numeric name, dropping 'refs.b'
-    // instead of retaining it a second time. `Type2` (this node's default,
-    // unregistered type) has no static definition either, so only a live or
-    // remembered answer can keep it -- exactly DrJKL's reproduction.
     let refsBCalls = 0
     const graph = mutations({
       autogrowGroupOf: (_scope, _nodeId, name) => {
@@ -2769,17 +2768,10 @@ describe('graphMutations', () => {
       graph.batch(
         { ...context, opId: 'sequential-prepare-visibility' },
         (batch) => {
-          // Mutation 0: its document drops 'refs.b'. The live port's first
-          // call answers `member`, so the classification retains it.
           batch.reconcileNode({
             ...node(2),
             inputs: [{ name: 'refs.a', type: 'IMAGE' }]
           })
-          // Mutation 1, prepared right after mutation 0 in the same batch,
-          // before either commits: the same decision for the same name, but
-          // the live port's second call answers `unavailable`. It must
-          // still retain 'refs.b', from mutation 0's own not-yet-committed
-          // answer.
           batch.reconcileNode({
             ...node(2),
             inputs: [{ name: 'refs.a', type: 'IMAGE' }]
@@ -2795,16 +2787,6 @@ describe('graphMutations', () => {
   })
 
   it("journals a connect mutation's commit-time autogrow answer under its own index, not the batch's last-prepared one", () => {
-    // `beginMutation` used to run only in `prepare()`, so by the time
-    // `commit()` reached a resolver call the draft still pointed at
-    // whichever mutation `prepare()` visited last. `refs.b` doesn't end in a
-    // digit, so absent a live or remembered answer `nameShapeAutogrowGroupOf`
-    // can't classify it, and `Type2` (this node's default, unregistered
-    // type) has no static definition either -- only a live or remembered
-    // answer can keep it. The live port answers `unavailable` for the first
-    // (prepare-time) query and `member` for the second (this connect
-    // mutation's own commit-time re-resolution against the live target),
-    // exactly DrJKL's reproduction.
     let refsBCalls = 0
     const graph = mutations({
       autogrowGroupOf: (_scope, _nodeId, name) => {
@@ -2832,8 +2814,6 @@ describe('graphMutations', () => {
     })
     expect(() =>
       graph.batch({ ...context, opId: 'connect-then-throw' }, (batch) => {
-        // Mutation 0: the connect whose commit-time answer must journal
-        // under index 0, not under whatever mutation prepare() visited last.
         batch.connect({
           id: 90,
           originNodeId: 1,
@@ -2843,18 +2823,10 @@ describe('graphMutations', () => {
           type: 'IMAGE',
           targetInputs: [{ name: 'refs.a', type: 'IMAGE', link: toLinkId(90) }]
         })
-        // Mutation 1: throws mid-commit, so whatever the journal attached to
-        // THIS index is never applied.
         batch.addNode(node(3))
       })
     ).toThrow('layout port failed')
 
-    // A later reconcile, with the live node now unreachable, must trust the
-    // 'member' answer the connect mutation committed above instead of
-    // falling through to the name-shape heuristic (which cannot classify
-    // 'refs.b' and would drop it) -- proving that answer was actually
-    // persisted, not lost along with the throwing mutation it was
-    // misattributed to.
     expect(
       graph.batch({ ...context, opId: 'reconcile-after-throw' }, (batch) => {
         batch.reconcileNode({
@@ -2874,13 +2846,6 @@ describe('graphMutations', () => {
   })
 
   it("does not publish a connect mutation's staged autogrow answer when its own replaceLink fails to land", () => {
-    // `replaceLink` returns `undefined` for a stale expected occupant, an ID
-    // collision, or a newly-occupied target -- in every case the graph
-    // effect did not land. `refs.b` is unclassifiable without a live or
-    // remembered answer (see the test above), so whether the classification
-    // this failed commit staged became authoritative memory is directly
-    // observable: a later `unavailable` reconcile drops it if, and only if,
-    // that write was correctly never published.
     let live: 'member' | 'unavailable' = 'member'
     const graph = mutations({
       autogrowGroupOf: (_scope, _nodeId, name) => {
@@ -2951,23 +2916,102 @@ describe('graphMutations', () => {
     expect(reconciled?.inputs.map(({ name }) => name)).toEqual(['refs.a'])
   })
 
+  it('keeps an incumbent same-id link when its replacement fails', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode(node(2))
+      batch.connect({
+        id: 91,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'IMAGE'
+      })
+    })
+    const before = useLinkStore().getTopology(scope.rootGraphId, toLinkId(91))
+    assert(before)
+
+    const replaceLinkSpy = vi
+      .spyOn(useLinkStore(), 'replaceLink')
+      .mockReturnValueOnce(undefined)
+    graph.connect(
+      {
+        id: 91,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'IMAGE'
+      },
+      { ...context, opId: 'same-id-replacement-fails' }
+    )
+    replaceLinkSpy.mockRestore()
+
+    expect(useLinkStore().getTopology(scope.rootGraphId, toLinkId(91))).toEqual(
+      before
+    )
+  })
+
+  it('does not let a failed connect influence a later reconcile prepared in the same batch', () => {
+    let refsBCalls = 0
+    const graph = mutations({
+      autogrowGroupOf: (_scope, _nodeId, name) => {
+        if (name !== 'refs.b') return { kind: 'notMember' }
+        refsBCalls++
+        return refsBCalls === 1
+          ? { kind: 'member', group: 'refs' }
+          : { kind: 'unavailable' }
+      }
+    })
+
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'refs.a', type: 'IMAGE', link: null },
+          { name: 'refs.b', type: 'IMAGE', link: null }
+        ]
+      })
+    })
+
+    const replaceLinkSpy = vi
+      .spyOn(useLinkStore(), 'replaceLink')
+      .mockReturnValueOnce(undefined)
+    expect(
+      graph.batch(
+        { ...context, opId: 'same-batch-reconcile-leak' },
+        (batch) => {
+          batch.connect({
+            id: 91,
+            originNodeId: 1,
+            originSlot: 0,
+            targetNodeId: 2,
+            targetSlot: 0,
+            type: 'IMAGE',
+            targetInputs: [
+              { name: 'refs.a', type: 'IMAGE', link: toLinkId(91) }
+            ]
+          })
+          batch.reconcileNode({
+            ...node(2),
+            inputs: [{ name: 'refs.a', type: 'IMAGE' }]
+          })
+        }
+      )
+    ).toBe(true)
+    replaceLinkSpy.mockRestore()
+
+    const reconciled = useNodeDataStore().getNode(
+      scope.rootGraphId,
+      toNodeId(2)
+    )
+    expect(reconciled?.inputs.map(({ name }) => name)).toEqual(['refs.a'])
+  })
+
   it("does not leak a failed connect's staged autogrow answer to a later connect in the same batch", () => {
-    // 'refs.b' doesn't end in a digit and `Type2` (this node's default,
-    // unregistered type) has no static definition, so only a live or
-    // remembered answer can classify it. Call 1 (the first connect's own
-    // prepare-time resolution) answers 'notMember', dropping 'refs.b' from
-    // its prepared `targetInputs` -- and, since `prepare()` shares one
-    // simulated node across the batch, from the second connect's prepared
-    // `targetInputs` too, so neither needs a prepare-time call of its own.
-    // Both connects therefore re-resolve 'refs.b' again at commit time,
-    // against the still-unchanged live node. Call 2 (the first connect's
-    // commit-time resolution) answers 'member', staging that answer, but
-    // its own `replaceLink` then fails. Call 3 (the second connect's
-    // commit-time resolution) answers 'unavailable': if the first connect's
-    // staged answer were still in the batch's shadow, the second connect
-    // would wrongly inherit it and keep 'refs.b'; with the leak fixed, it
-    // finds no answer and correctly drops 'refs.b' as an unclassifiable
-    // input-set change.
     let refsBCalls = 0
     const graph = mutations({
       autogrowGroupOf: (_scope, _nodeId, name) => {

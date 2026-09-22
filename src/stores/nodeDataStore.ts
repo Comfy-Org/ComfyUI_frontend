@@ -96,14 +96,12 @@ function copyOutputSlot(incoming: INodeOutputSlot): INodeOutputSlot {
   return slot
 }
 
-function mergeSlotsByName<Slot extends { name: string }>(
-  existing: Slot[],
-  incoming: readonly Slot[],
-  patch: (target: Slot, incoming: Slot) => void,
-  copy: (incoming: Slot) => Slot
-): void {
+function matchSlotsByName<Slot extends { name: string }>(
+  existing: readonly Slot[],
+  incoming: readonly Slot[]
+): Array<{ index: number; slot: Slot } | undefined> {
   const used = new Set<number>()
-  const matches = incoming.map((incomingSlot) => {
+  return incoming.map((incomingSlot) => {
     const index = existing.findIndex(
       (slot, candidate) =>
         !used.has(candidate) && slot.name === incomingSlot.name
@@ -112,6 +110,15 @@ function mergeSlotsByName<Slot extends { name: string }>(
     used.add(index)
     return { index, slot: existing[index] }
   })
+}
+
+function mergeSlotsByName<Slot extends { name: string }>(
+  existing: Slot[],
+  incoming: readonly Slot[],
+  patch: (target: Slot, incoming: Slot) => void,
+  copy: (incoming: Slot) => Slot
+): void {
+  const matches = matchSlotsByName(existing, incoming)
   const insertions: number[] = []
 
   for (const [incomingIndex, incomingSlot] of incoming.entries()) {
@@ -147,15 +154,10 @@ function replaceSlotsByName<Slot extends { name: string }>(
   patch: (target: Slot, incoming: Slot) => void,
   copy: (incoming: Slot) => Slot
 ): void {
-  const used = new Set<number>()
-  const next = incoming.map((incomingSlot) => {
-    const index = existing.findIndex(
-      (slot, candidate) =>
-        !used.has(candidate) && slot.name === incomingSlot.name
-    )
-    if (index === -1) return copy(incomingSlot)
-    used.add(index)
-    const target = existing[index]
+  const matches = matchSlotsByName(existing, incoming)
+  const next = incoming.map((incomingSlot, index) => {
+    const target = matches[index]?.slot
+    if (!target) return copy(incomingSlot)
     patch(target, incomingSlot)
     return target
   })

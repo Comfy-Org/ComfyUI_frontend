@@ -535,10 +535,10 @@ function resolveAutogrowOrdinal(
   groupName: string,
   node: AutogrowNode
 ): number | undefined {
-  //TODO preslice groupname?
   const name = inputName.slice(groupName.length + 1)
   const { names } = node.comfyDynamic.autogrow[groupName]
-  if (names) return names.includes(name) ? names.indexOf(name) : undefined
+  if (!isAutogrowGroupMember(name, names)) return undefined
+  if (names) return names.indexOf(name)
   const match = name.match(ORDINAL_REGEX)
   return match ? parseInt(match[0]) : undefined
 }

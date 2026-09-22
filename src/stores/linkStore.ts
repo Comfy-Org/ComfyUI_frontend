@@ -209,7 +209,7 @@ export const useLinkStore = defineStore('link', () => {
       incumbent?.graphId === scope.owningGraphId
     )
       return incumbent
-    return replaceLink(scope, undefined, topology, context)
+    return replaceLink(scope, undefined, topology, undefined, context)
   }
 
   /** Atomically replaces an expected target occupant with a new link. */
@@ -217,6 +217,7 @@ export const useLinkStore = defineStore('link', () => {
     scope: GraphScope,
     expected: LinkTopology | undefined,
     replacement: LinkTopology,
+    replaced?: LinkTopology,
     _context?: RemoteMutationContext
   ): LinkTopology | undefined {
     const bucket = roots.get(scope.rootGraphId)
@@ -225,10 +226,13 @@ export const useLinkStore = defineStore('link', () => {
     }
 
     const incumbent = bucket?.byId.get(replacement.id)
-    if (incumbent) {
+    if (incumbent && (!replaced || toRaw(incumbent) !== toRaw(replaced))) {
       console.error(
         `Link ${replacement.id} belongs to graph ${incumbent.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
       )
+      return undefined
+    }
+    if (replaced && (!bucket || !ownsPlacement(scope, bucket, replaced))) {
       return undefined
     }
     if (hasUniqueTarget(replacement)) {
@@ -246,6 +250,9 @@ export const useLinkStore = defineStore('link', () => {
 
     const targetBucket = bucket ?? rootBucket(scope.rootGraphId)
     if (expected) displace(targetBucket, expected)
+    if (replaced && toRaw(replaced) !== toRaw(expected)) {
+      displace(targetBucket, replaced)
+    }
     const owned = Object.assign(replacement, { graphId: scope.owningGraphId })
     const placed = placeValidated(targetBucket, owned)
     revision.value++

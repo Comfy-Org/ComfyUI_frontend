@@ -391,6 +391,90 @@ describe('useNodeDataStore', () => {
       expect(read(registered)).toEqual(['new-1', 'new-2'])
     }
   )
+
+  it('replaces slots by name and occurrence without replacing shared arrays or matched slots', () => {
+    const store = useNodeDataStore()
+    const scope = graphScope(rootA, rootA)
+    const inputs = [
+      createMockNodeInputSlot({ name: 'same', label: 'old-1' }),
+      createMockNodeInputSlot({ name: 'drop' }),
+      createMockNodeInputSlot({ name: 'same', label: 'old-2' })
+    ]
+    const outputs = [
+      createMockNodeOutputSlot({ name: 'drop' }),
+      createMockNodeOutputSlot({ name: 'keep', label: 'old' })
+    ]
+    const registered = store.registerNode(
+      scope,
+      createNodeState({
+        id: toNodeId(1),
+        graphId: rootA,
+        inputs,
+        outputs
+      })
+    )
+    assert(registered)
+    const registeredInputs = registered.inputs
+    const registeredOutputs = registered.outputs
+    const [firstSame, , secondSame] = registeredInputs
+    const [, keptOutput] = registeredOutputs
+
+    expect(
+      store.replaceNodeSlots(scope, registered.id, {
+        inputs: [
+          createMockNodeInputSlot({ name: 'same', label: 'new-1' }),
+          createMockNodeInputSlot({ name: 'insert' }),
+          createMockNodeInputSlot({ name: 'same', label: 'new-2' })
+        ],
+        outputs: [
+          createMockNodeOutputSlot({ name: 'keep', label: 'new' }),
+          createMockNodeOutputSlot({ name: 'insert' })
+        ]
+      })
+    ).toBe(true)
+
+    expect(registered.inputs).toBe(registeredInputs)
+    expect(registered.outputs).toBe(registeredOutputs)
+    expect(registered.inputs.map(({ name }) => name)).toEqual([
+      'same',
+      'insert',
+      'same'
+    ])
+    expect(registered.outputs.map(({ name }) => name)).toEqual([
+      'keep',
+      'insert'
+    ])
+    expect(registered.inputs[0]).toBe(firstSame)
+    expect(registered.inputs[2]).toBe(secondSame)
+    expect(registered.outputs[0]).toBe(keptOutput)
+    expect(registered.inputs.map(({ label }) => label)).toEqual([
+      'new-1',
+      undefined,
+      'new-2'
+    ])
+    expect(registered.outputs[0]?.label).toBe('new')
+  })
+
+  it('does not replace slots through the wrong owner', () => {
+    const store = useNodeDataStore()
+    const registered = store.registerNode(
+      graphScope(rootA, rootA),
+      createNodeState({
+        id: toNodeId(1),
+        graphId: rootA,
+        inputs: [createMockNodeInputSlot({ name: 'keep' })]
+      })
+    )
+    assert(registered)
+
+    expect(
+      store.replaceNodeSlots(graphScope(rootA, 'sub-1'), registered.id, {
+        inputs: [],
+        outputs: []
+      })
+    ).toBe(false)
+    expect(registered.inputs.map(({ name }) => name)).toEqual(['keep'])
+  })
 })
 
 describe('nodeDataStore registration via LGraph', () => {
