@@ -5713,7 +5713,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       size,
       color,
       bgcolor,
-      !!node.selected || this.highlighted_node_ids.has(serializeNodeId(node.id))
+      node.selected || this.highlighted_node_ids.has(serializeNodeId(node.id))
     )
 
     // Render title buttons (if not collapsed)
