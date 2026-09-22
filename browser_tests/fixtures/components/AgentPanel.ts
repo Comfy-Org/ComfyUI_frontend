@@ -88,9 +88,13 @@ export class AgentPanel {
     body: unknown,
     retryAfterSeconds: number
   ): Promise<void> {
+    let rejected = false
     // Scoped to POST so the agent fixture's GET handler still serves history.
     await this.page.route('**/api/agent/threads/*/messages', async (route) => {
-      if (route.request().method() !== 'POST') return route.fallback()
+      if (route.request().method() !== 'POST' || rejected) {
+        return route.fallback()
+      }
+      rejected = true
       await route.fulfill({
         status,
         contentType: 'application/json',
