@@ -72,7 +72,13 @@ export default defineConfig({
           {
             name: 'cloud-live',
             testMatch: '**/tests/liveCloud/**/*.spec.ts',
-            testIgnore: ['**/liveCloud/disposable/**', '**/liveCloud/paid/**'],
+            testIgnore: [
+              '**/liveCloud/disposable/**',
+              '**/liveCloud/paid/**',
+              ...(process.env.PLAYWRIGHT_CLOUD_RELEASE_SMOKE === '1'
+                ? []
+                : ['**/liveCloud/releaseSmoke.spec.ts'])
+            ],
             fullyParallel: false,
             retries: 0,
             timeout: 120_000,

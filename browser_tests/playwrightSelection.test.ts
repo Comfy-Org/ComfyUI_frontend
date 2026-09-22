@@ -4,7 +4,11 @@ import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
-function collectLiveBilling(enabled: '0' | '1', args: string[]) {
+function collectLiveBilling(
+  enabled: '0' | '1',
+  args: string[],
+  releaseSmoke = '0'
+) {
   const result = spawnSync(
     'pnpm',
     ['exec', 'playwright', 'test', ...args, '--list', '--reporter=json'],
@@ -13,6 +17,7 @@ function collectLiveBilling(enabled: '0' | '1', args: string[]) {
       env: {
         ...process.env,
         PLAYWRIGHT_CLOUD_LIVE: enabled,
+        PLAYWRIGHT_CLOUD_RELEASE_SMOKE: releaseSmoke,
         DISTRIBUTION: 'cloud'
       },
       encoding: 'utf8',
@@ -52,6 +57,18 @@ function collectLiveBilling(enabled: '0' | '1', args: string[]) {
 }
 
 describe('Live billing opt-in', () => {
+  it(
+    'collects release checkout only with its opt-in',
+    { timeout: 90_000 },
+    () => {
+      const args = ['--project=cloud-live', 'releaseSmoke.spec.ts']
+      expect(collectLiveBilling('1', args).files).toEqual([])
+      expect(collectLiveBilling('1', args, '1').files).toEqual([
+        'tests/liveCloud/releaseSmoke.spec.ts'
+      ])
+    }
+  )
+
   it('excludes live billing when disabled', { timeout: 90_000 }, () => {
     const { status, config, files } = collectLiveBilling('0', [
       'tests/liveCloud'
@@ -100,7 +117,9 @@ describe('Live billing opt-in', () => {
       }
       const expectedFiles = globSync(
         'browser_tests/tests/liveCloud/**/*.spec.ts'
-      ).map((file) => file.replace('browser_tests/', '').replaceAll('\\', '/'))
+      )
+        .map((file) => file.replace('browser_tests/', '').replaceAll('\\', '/'))
+        .filter((file) => file !== 'tests/liveCloud/releaseSmoke.spec.ts')
       expect([...new Set(files)].sort()).toEqual(expectedFiles.sort())
       expect(config.globalSetup).toBeFalsy()
       expect(config.globalTeardown).toBeFalsy()

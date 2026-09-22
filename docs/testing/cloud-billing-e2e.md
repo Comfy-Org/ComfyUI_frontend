@@ -84,3 +84,21 @@ Automatic tracing stays disabled because authenticated traffic contains reusable
 credentials. Use screenshots for evidence.
 Completed-payment assertions verify saved cards through the real hosted billing
 portal, because sandbox environments may disable the embedded-checkout saved-card API.
+
+## Release smoke
+
+Run `Release: Cloud Smoke` from `main` with `testcloud` or `stagingcloud` and
+the expected full frontend SHA. Configure `CLOUD_ACCOUNT_EMAIL` and
+`CLOUD_ACCOUNT_PASSWORD` in the corresponding GitHub environment,
+`release-smoke-testcloud` or `release-smoke-stagingcloud`.
+
+Use a dedicated personal account with onboarding completed, hosted checkout
+enabled, no subscription and no saved cards. The saved-card API must be available
+for the account preflight. The test checks the deployed SHA before login and
+after checkout, and verifies the hosted card fields are editable. It does not
+enter payment details or submit payment; opening checkout can leave an incomplete
+billing operation. Reports are retained for seven days; tracing stays disabled.
+
+Local runs additionally require `PLAYWRIGHT_CLOUD_RELEASE_SMOKE=1` and
+`CLOUD_EXPECTED_FRONTEND_SHA`, with both URL variables pointing to the selected
+deployed sandbox. Ordinary live billing runs exclude this checkout scenario.
