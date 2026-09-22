@@ -4247,10 +4247,6 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
     await renderAndSend('work here')
     ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
-    const setWorkflowTarget = vi.spyOn(
-      useAgentPanelStore(),
-      'setWorkflowTarget'
-    )
     await screen.findByRole('button', { name: 'Send' })
 
     ws.emit('agent_active_tab', {
@@ -4259,11 +4255,14 @@ describe('AgentPanelRoot workflow binding', () => {
       thread_id: 'th-1'
     })
 
-    await vi.waitFor(() =>
-      expect(setWorkflowTarget).toHaveBeenCalledWith(
-        expect.objectContaining({ path: 'workflows/Video test.json' })
+    await vi.waitFor(() => {
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(
+        'workflows/Video test.json'
       )
-    )
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-77')).toBe(
+        'workflows/Video test.json'
+      )
+    })
   })
 
   // A browser tab closed without the SPA's own unbind() left 'wf-abandoned'
