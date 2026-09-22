@@ -138,12 +138,14 @@ export function createPendingOpTracker(
   // Skipped op id → the ack seq the follower must project before it resolves
   // (null: the ack carried no seq; any later projection resolves it).
   const awaitingSkipped = new Map<string, number | null>()
-  // add_node node id → its op id, maintained alongside the ledger so
-  // `pendingAddType` is an index lookup rather than a scan of every entry.
-  const addNodeIndex = new Map<string, string>()
-  // connect link id → its op id; the `connect` sibling of `addNodeIndex`,
-  // backing `pendingConnectLinkIds`.
-  const connectLinkIndex = new Map<string, string>()
+  // add_node node id → every op id still pending for it (usually one, but a
+  // second add_node for the same node id must not evict an older pending
+  // one), maintained alongside the ledger so `pendingAddType` is an index
+  // lookup rather than a scan of every entry.
+  const addNodeIndex = new Map<string, Set<string>>()
+  // connect link id → its pending op ids; the `connect` sibling of
+  // `addNodeIndex`, backing `pendingConnectLinkIds`.
+  const connectLinkIndex = new Map<string, Set<string>>()
   // Rejected op ids already reported this session, so a retried settle of
   // the same ledger entry (e.g. a duplicate `revert`) reports it only once.
   const reportedHumanOpFailures = new Set<string>()
@@ -158,14 +160,32 @@ export function createPendingOpTracker(
     }
   }
 
+  function indexAdd(
+    index: Map<string, Set<string>>,
+    key: string,
+    opId: string
+  ): void {
+    const opIds = index.get(key)
+    if (opIds) opIds.add(opId)
+    else index.set(key, new Set([opId]))
+  }
+
+  function indexRemove(
+    index: Map<string, Set<string>>,
+    key: string,
+    opId: string
+  ): void {
+    const opIds = index.get(key)
+    if (!opIds) return
+    opIds.delete(opId)
+    if (opIds.size === 0) index.delete(key)
+  }
+
   function releaseIndexes(entry: PendingOpEntry<Op>): void {
     if (entry.shadow.op === 'add_node') {
-      const nodeId = String(entry.shadow.node_id)
-      if (addNodeIndex.get(nodeId) === entry.opId) addNodeIndex.delete(nodeId)
+      indexRemove(addNodeIndex, String(entry.shadow.node_id), entry.opId)
     } else if (entry.shadow.op === 'connect') {
-      const linkId = String(entry.shadow.link_id)
-      if (connectLinkIndex.get(linkId) === entry.opId)
-        connectLinkIndex.delete(linkId)
+      indexRemove(connectLinkIndex, String(entry.shadow.link_id), entry.opId)
     }
   }
 
@@ -294,9 +314,10 @@ export function createPendingOpTracker(
     onBatchMinted(ops) {
       for (const op of ops) {
         if (!ledger.enqueue(op.op_id, op)) continue
-        if (op.op === 'add_node') addNodeIndex.set(String(op.node_id), op.op_id)
+        if (op.op === 'add_node')
+          indexAdd(addNodeIndex, String(op.node_id), op.op_id)
         if (op.op === 'connect')
-          connectLinkIndex.set(String(op.link_id), op.op_id)
+          indexAdd(connectLinkIndex, String(op.link_id), op.op_id)
       }
     },
     onBatchTransmitted(ops) {
@@ -388,12 +409,18 @@ export function createPendingOpTracker(
       return ledger.entries()
     },
     pendingAddType(nodeId) {
-      const opId = addNodeIndex.get(nodeId)
-      if (!opId) return undefined
-      const entry = ledger.get(opId)
-      if (!entry || entry.shadow.op !== 'add_node') return undefined
-      if (!ECHO_VISIBLE_STATES.has(entry.state)) return undefined
-      return entry.shadow.class_type
+      const opIds = addNodeIndex.get(nodeId)
+      if (!opIds) return undefined
+      for (const opId of opIds) {
+        const entry = ledger.get(opId)
+        if (
+          entry &&
+          entry.shadow.op === 'add_node' &&
+          ECHO_VISIBLE_STATES.has(entry.state)
+        )
+          return entry.shadow.class_type
+      }
+      return undefined
     },
     pendingAddNodeIds() {
       return new Set(addNodeIndex.keys())

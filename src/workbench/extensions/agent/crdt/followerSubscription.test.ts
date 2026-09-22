@@ -1273,6 +1273,36 @@ describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
   })
 
+  it('tags a late ack with the generation of the send it answers, not the generation current at receipt', () => {
+    const { transport, bridge } = wire()
+    const acks: unknown[] = []
+    bridge.addEventListener('doc_subscribed', (event) => {
+      if (event instanceof CustomEvent) acks.push(event.detail)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    // Generation 2 leaves before generation 1's ack is delivered below.
+    bridge.resubscribe()
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 2
+    })
+
+    expect(acks).toEqual([
+      expect.objectContaining({ generation: 1 }),
+      expect.objectContaining({ generation: 2 })
+    ])
+  })
+
   it('a slow first subscribe answered after the retry merges idempotently with no stale or gap signal', () => {
     const { transport, bridge } = wire()
     const stale: unknown[] = []

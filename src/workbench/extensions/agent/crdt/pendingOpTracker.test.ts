@@ -382,9 +382,8 @@ describe('createPendingOpTracker', () => {
     // ADR-CRDT-RECONCILE-0035 (a): every host rejection is reported, even an
     // anonymous batch-level one with no per-op failure detail to draw a code
     // from — `unattributed` stands in for it.
-    expect(reportError).toHaveBeenCalledTimes(ops.length)
-    for (const op of ops) {
-      expect(reportError).toHaveBeenCalledWith(
+    expect(vi.mocked(reportError).mock.calls).toEqual(
+      ops.map((op) => [
         new Error('Agent host rejected a human operation'),
         {
           errorType: 'agent_crdt_human_op_rejected',
@@ -395,8 +394,8 @@ describe('createPendingOpTracker', () => {
             failureCode: 'unattributed'
           }
         }
-      )
-    }
+      ])
+    )
   })
 
   it('reverts an undeliverable batch even though it never flew (no doc bound)', () => {
@@ -854,6 +853,35 @@ describe('createPendingOpTracker', () => {
       tracker.onBatchMinted([ops[0]])
       tracker.onBatchSettled({ state: 'undeliverable', ops: [ops[0]] })
       expect(tracker.pendingAddType('1')).toBeUndefined()
+    })
+
+    it('retains an older pending add_node for the same node id when a second one settles first', () => {
+      const opA = addNode('op-1', 1)
+      const opB = addNode('op-2', 1)
+      tracker.onBatchMinted([opA])
+      tracker.onBatchTransmitted([opA])
+      tracker.onBatchMinted([opB])
+      tracker.onBatchTransmitted([opB])
+
+      tracker.onBatchSettled({ state: 'undeliverable', ops: [opB] })
+
+      expect(tracker.pendingAddNodeIds()).toEqual(new Set(['1']))
+      expect(tracker.pendingAddType('1')).toBe('TestNode')
+      expect(tracker.entries().map((entry) => entry.opId)).toEqual(['op-1'])
+    })
+
+    it('retains an older pending connect for the same link id when a second one settles first', () => {
+      const connectA = connect('op-a', 1)
+      const connectB = connect('op-b', 1)
+      tracker.onBatchMinted([connectA])
+      tracker.onBatchTransmitted([connectA])
+      tracker.onBatchMinted([connectB])
+      tracker.onBatchTransmitted([connectB])
+
+      tracker.onBatchSettled({ state: 'undeliverable', ops: [connectB] })
+
+      expect(tracker.pendingConnectLinkIds()).toEqual(new Set(['1']))
+      expect(tracker.entries().map((entry) => entry.opId)).toEqual(['op-a'])
     })
   })
 

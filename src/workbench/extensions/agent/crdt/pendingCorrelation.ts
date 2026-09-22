@@ -3,30 +3,6 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import type { PendingOpTracker } from './pendingOpTracker'
 
 /**
- * The doc seq {@link PendingCorrelation} has last projected, shared with the
- * pending-op tracker's `currentSeq` dependency. Lifted out to a standalone
- * box, constructed before either side, so the tracker and the correlation
- * that wraps it can each read/write the same watermark without either one
- * needing a forward reference to the other (the nullable
- * `projectionRef.current` cycle this replaces — see
- * `useAgentCrdtFollower.ts`'s construction order).
- */
-export interface ProjectedSequenceWatermark {
-  get(): number | null
-  set(seq: number | null): void
-}
-
-export function createProjectedSequenceWatermark(): ProjectedSequenceWatermark {
-  let seq: number | null = null
-  return {
-    get: () => seq,
-    set(value) {
-      seq = value
-    }
-  }
-}
-
-/**
  * ADR-CRDT-RECONCILE-0035 (a): the single owner of the pending-op ledger's
  * LINEAGE — which workflow's doc history its entries belong to — and of the
  * CATCH-UP BARRIER that settles them against doc state. Split out of
@@ -45,8 +21,9 @@ export function createProjectedSequenceWatermark(): ProjectedSequenceWatermark {
 export interface PendingCorrelationDeps {
   /** The already-constructed tracker this correlation wraps (see the module doc above). */
   pendingOps: PendingOpTracker
-  /** The watermark this correlation reads/writes; also the tracker's `currentSeq` source. */
-  watermark: ProjectedSequenceWatermark
+  /** The doc seq last projected; also the tracker's `currentSeq` source. */
+  getWatermark(): number | null
+  setWatermark(seq: number | null): void
   /**
    * Runs the adapter's authoritative full reconcile against the follower doc
    * for `workflowId` — the same path the first frame after a (re)bind takes
@@ -72,6 +49,21 @@ export interface PendingCorrelationDeps {
    * every batch as addressed to a doc it can no longer vouch for.
    */
   abortSender(): void
+  /**
+   * A forced reconcile just deferred (missing/busy session): nothing else in
+   * this module is scheduled to try again, so the caller is told exactly
+   * once per NEW deferral and owns arming a bounded, lifecycle-owned retry
+   * (a quiet channel sends no further frame to piggyback on).
+   */
+  onRetryPending?(): void
+}
+
+/** The subscribe ack {@link PendingCorrelation.resolveIfAlreadyCurrent} classifies. */
+interface ReactivationAck {
+  workflowId: string | null
+  seq: number | undefined
+  generation: number | undefined
+  isReactivation: boolean
 }
 
 export interface PendingCorrelation {
@@ -105,51 +97,52 @@ export interface PendingCorrelation {
    * a `delete_node`/`connect` whose effect never landed would never get the
    * reconcile that could reveal it.
    *
-   * `generation` (when provided) is the bridge's outstanding-subscribe
-   * generation for the ack that produced this call: only its first
-   * successful ack is consumed as a barrier, so a duplicate or delayed-retry
-   * ack for a generation already consumed is a no-op here — sequence
-   * equality alone cannot tell a fresh resubscribe from a stale repeat of
-   * one already acted on.
+   * `ack.generation` (when provided) is the bridge's outstanding-subscribe
+   * generation for the ack: only its first successful ack is consumed as a
+   * barrier, so a duplicate or delayed-retry ack for a generation already
+   * consumed is a no-op here — sequence equality alone cannot tell a fresh
+   * resubscribe from a stale repeat of one already acted on.
    *
-   * `isReactivation` scopes the continuity rule to an ack that follows a
-   * resume from a paused (tab-inactive) subscription: `ackSeq` equal to what
-   * this correlation last projected means the document did not change while
-   * away (seq is monotonic across a same-workflow remint), so parked entries
-   * survive and the reconcile above runs as it always has. A DIFFERENT
-   * `ackSeq` there cannot be trusted to mean "a catch-up frame is coming and
-   * will resolve things normally" — a `doc_reset` missed while inactive
-   * remints the same workflow id with no lineage-break notice, and this
-   * frontend has no generation token yet to tell that apart from ordinary
-   * progress — so it conservatively invalidates instead (`deps.abortSender`
-   * plus reverting whatever was already parked). Outside a reactivation
-   * (the ordinary resubscribe-while-active case, e.g. a FEB-2 gap or a
-   * reconnect), a seq mismatch is left alone: the follower's state vector
-   * was never stale, so the natural catch-up frame is trusted to arrive and
-   * resolve things through {@link onProjected} instead.
+   * `ack.isReactivation` scopes the continuity rule to an ack that follows a
+   * resume from a paused (tab-inactive) subscription: `ack.seq` equal to
+   * what this correlation last projected means the document did not change
+   * while away (seq is monotonic across a same-workflow remint), so parked
+   * entries survive and the reconcile above runs as it always has. A
+   * DIFFERENT `ack.seq` there cannot be trusted to mean "a catch-up frame is
+   * coming and will resolve things normally" — a `doc_reset` missed while
+   * inactive remints the same workflow id with no lineage-break notice, and
+   * this frontend has no generation token yet to tell that apart from
+   * ordinary progress — so it conservatively invalidates instead
+   * (`deps.abortSender` plus reverting whatever was already parked). Outside
+   * a reactivation (the ordinary resubscribe-while-active case, e.g. a
+   * FEB-2 gap or a reconnect), a seq mismatch is left alone: the follower's
+   * state vector was never stale, so the natural catch-up frame is trusted
+   * to arrive and resolve things through {@link onProjected} instead.
+   *
+   * `resume` is called exactly when continuity is established (or the ack
+   * carries nothing to check): NEVER when a reactivation is invalidated. The
+   * caller's held ops must not reach the wire again until this decision is
+   * made — resuming first and invalidating after would let an in-flight
+   * held operation transmit into a doc this ack cannot vouch for.
    */
-  resolveIfAlreadyCurrent(
-    workflowId: string | null,
-    ackSeq: number | undefined,
-    generation: number | undefined,
-    isReactivation: boolean
-  ): void
+  resolveIfAlreadyCurrent(ack: ReactivationAck, resume: () => void): void
   /**
    * Re-attempts a forced reconcile that {@link resolveIfAlreadyCurrent}
    * deferred because {@link PendingCorrelationDeps.reconcileFromDoc}
    * returned false (a missing/busy session, or an uncommitted batch) — a
-   * no-op otherwise. Called opportunistically on every applied frame and on
-   * every retry pass, so a parked entry is never stranded on a single failed
-   * attempt.
+   * no-op otherwise. Called opportunistically on every applied frame and by
+   * the caller's own bounded retry timer, so a parked entry is never
+   * stranded on a single failed attempt. Returns true once nothing is left
+   * to retry (there was nothing pending, or this call just resolved it), so
+   * a bounded retry loop can stop early instead of running out its budget.
    */
-  retryAlreadyCurrent(): void
+  retryAlreadyCurrent(): boolean
 }
 
 export function createPendingCorrelation(
   deps: PendingCorrelationDeps
 ): PendingCorrelation {
   const pendingOps = deps.pendingOps
-  const watermark = deps.watermark
   let lineageId: string | null = null
   // The last subscribe generation whose ack this correlation has already
   // consumed as a catch-up barrier; a later ack naming the SAME generation
@@ -160,15 +153,16 @@ export function createPendingCorrelation(
   let pendingRetry: { workflowId: string; ackSeq: number } | null = null
 
   function reset(): void {
-    watermark.set(null)
+    deps.setWatermark(null)
     pendingRetry = null
     pendingOps.reset()
   }
 
+  /** True once nothing is left to retry for this attempt. */
   function tryResolveAlreadyCurrent(
     workflowId: string | null,
     ackSeq: number
-  ): void {
+  ): boolean {
     if (workflowId !== null) {
       // No catch-up frame is coming to run the adapter's full reconcile, so
       // force it here — the same path the first frame after a (re)bind
@@ -178,29 +172,35 @@ export function createPendingCorrelation(
       // canvas.
       const committed = deps.reconcileFromDoc(workflowId, ackSeq)
       if (!committed) {
+        const isNewDeferral = pendingRetry === null
         pendingRetry = { workflowId, ackSeq }
-        return
+        if (isNewDeferral) deps.onRetryPending?.()
+        return false
       }
     }
     pendingRetry = null
     pendingOps.resolveDeliveryUnknown(deps.effectPresent)
+    return true
   }
 
+  /**
+   * Aborts the sender FIRST, then sweeps every parked entry — including
+   * whatever `deps.abortSender` itself just parked as `unconfirmed` from an
+   * in-flight batch settling underneath it. Reversing that order would let
+   * such a settlement land AFTER the sweep, so it would survive invalidation
+   * as a stale-lineage entry the sweep never saw.
+   */
   function invalidateStaleReactivation(): void {
-    // Whatever is already parked belongs to a lineage this ack cannot vouch
-    // for continuity with (ADR-CRDT-RECONCILE-0035 (a)'s missing-generation-
-    // token gap): treat every one of those entries as though its effect is
-    // absent, reverting it with the existing toast, rather than let it be
-    // retained through the rebind's full reconcile (whose ledger-derived
+    deps.abortSender()
+    // Whatever is parked now — including anything `abortSender` itself just
+    // parked — belongs to a lineage this ack cannot vouch for continuity
+    // with (ADR-CRDT-RECONCILE-0035 (a)'s missing-generation-token gap):
+    // treat every one of those entries as though its effect is absent,
+    // reverting it with the existing toast, rather than let it be retained
+    // through the rebind's full reconcile (whose ledger-derived
     // `LocalIntent.pendingAdds`/`pendingConnects` would otherwise protect
     // stale, possibly wrong-lineage ids).
     pendingOps.resolveDeliveryUnknown(() => false)
-    // A batch the sender still holds is settled the same way, never
-    // re-addressed to a doc this ack cannot vouch for: queued/open ones
-    // revert `undeliverable` now; a transmitted-but-unacknowledged one parks
-    // `unconfirmed` and is left there, resolved only by the strict per-kind
-    // rules at whatever catch-up frame actually arrives.
-    deps.abortSender()
   }
 
   return {
@@ -217,27 +217,39 @@ export function createPendingCorrelation(
     },
     reset,
     onProjected(update) {
-      watermark.set(update.seq)
+      deps.setWatermark(update.seq)
       if (update.opIds) pendingOps.onDocEffect(update.opIds)
       pendingOps.onAuthoritativeState(update.seq)
       this.retryAlreadyCurrent()
     },
-    resolveIfAlreadyCurrent(workflowId, ackSeq, generation, isReactivation) {
-      if (ackSeq === undefined) return
+    resolveIfAlreadyCurrent(ack, resume) {
+      const { workflowId, seq: ackSeq, generation, isReactivation } = ack
+      if (ackSeq === undefined) {
+        resume()
+        return
+      }
       if (generation !== undefined) {
-        if (generation === consumedGeneration) return
+        if (generation === consumedGeneration) {
+          resume()
+          return
+        }
         consumedGeneration = generation
       }
-      if (ackSeq === watermark.get()) {
+      if (ackSeq === deps.getWatermark()) {
+        resume()
         tryResolveAlreadyCurrent(workflowId, ackSeq)
         return
       }
-      if (isReactivation) invalidateStaleReactivation()
+      if (isReactivation) {
+        invalidateStaleReactivation()
+        return
+      }
+      resume()
     },
     retryAlreadyCurrent() {
-      if (!pendingRetry) return
+      if (!pendingRetry) return true
       const { workflowId, ackSeq } = pendingRetry
-      tryResolveAlreadyCurrent(workflowId, ackSeq)
+      return tryResolveAlreadyCurrent(workflowId, ackSeq)
     }
   }
 }

@@ -259,26 +259,44 @@ describe('AgentCrdtProjection after a tab return', () => {
   // return with BOTH halves intact. Before this fix `removeMissing` only
   // exempted the pending node id (`LocalIntent.pendingAdds`); the pending
   // `connect`'s link id was not exempted, so `removeMissing` dropped the
-  // optimistic edge even though the node it wired survived.
-  it('keeps a node and its edge when both the add_node and the connect never reached the doc', () => {
-    const { graph, source } = buildLiveGraph()
-    const { tabReturn, registerPendingOps } = bindFollower(
-      graph,
-      structuredClone(graph.serialize())
-    )
-    const added = createRegisteredNode('TestSink')
-    graph.add(added)
-    added.pos = [300, 20]
-    const link = source.connect(0, added, 0)
-    if (!link) throw new Error('expected the optimistic connect to succeed')
-    registerPendingOps([addNodeOp(added, []), connectOp(link)])
+  // optimistic edge even though the node it wired survived. Each case
+  // leaves the connect in a DIFFERENT state than the add — including only
+  // `queued` (minted, never transmitted) — so an implementation that only
+  // retains a transmitted link fails one of them.
+  it.for([
+    {
+      name: 'the add_node inflight, the connect only queued',
+      addState: 'inflight',
+      connectState: 'queued'
+    },
+    {
+      name: 'the add_node only queued, the connect inflight',
+      addState: 'queued',
+      connectState: 'inflight'
+    }
+  ] as const)(
+    'keeps a node and its edge when both the add_node and the connect never reached the doc ($name)',
+    ({ addState, connectState }) => {
+      const { graph, source } = buildLiveGraph()
+      const { tabReturn, registerPendingOps } = bindFollower(
+        graph,
+        structuredClone(graph.serialize())
+      )
+      const added = createRegisteredNode('TestSink')
+      graph.add(added)
+      added.pos = [300, 20]
+      const link = source.connect(0, added, 0)
+      if (!link) throw new Error('expected the optimistic connect to succeed')
+      registerPendingOps([addNodeOp(added, [])], addState)
+      registerPendingOps([connectOp(link)], connectState)
 
-    tabReturn()
+      tabReturn()
 
-    expect(nodeIds(graph).live).toEqual([String(source.id), String(added.id)])
-    expect(added.getInputLink(0)?.id).toBe(link.id)
-    expect(layout.deleteNodes).not.toHaveBeenCalled()
-  })
+      expect(nodeIds(graph).live).toEqual([String(source.id), String(added.id)])
+      expect(added.getInputLink(0)?.id).toBe(link.id)
+      expect(layout.deleteNodes).not.toHaveBeenCalled()
+    }
+  )
 
   it.for([
     {

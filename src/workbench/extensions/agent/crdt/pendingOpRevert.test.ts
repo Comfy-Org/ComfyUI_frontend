@@ -246,11 +246,6 @@ describe('createRevertNotifier', () => {
     const notify = vi.fn()
     const onReverted = createRevertNotifier(notify)
 
-    // A single unprocessed sweep reverting both kinds together: the notifier
-    // derives "could this batch have undone an add" from `event.ops`
-    // (some(add_node)), and the add really was removed, so the user must
-    // see the "undone" wording, not the generic "couldn't be synced" one a
-    // mixed batch used to fall back to.
     onReverted(reverted([addNode('op-1', 1), deleteNode('op-2', 2)]), [1])
     await Promise.resolve()
 

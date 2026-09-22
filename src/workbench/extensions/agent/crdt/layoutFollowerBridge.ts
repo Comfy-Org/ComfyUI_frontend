@@ -133,6 +133,22 @@ export class LayoutFollowerBridge extends EventTarget {
    * host silently reminted under the same workflow id.
    */
   private subscribeGeneration = 0
+  /**
+   * Generations still awaiting their ack, oldest first — send-to-response
+   * identity, since the wire carries no request id the ack could echo back
+   * (ADR-CRDT-RECONCILE-0035 (a)'s missing-generation-token gap). The
+   * transport preserves order, so the OLDEST outstanding send is always the
+   * one the NEXT ack for this workflow answers; `onDocSubscribed` dequeues
+   * from the front rather than reading {@link subscribeGeneration} at
+   * receipt time, which would relabel a delayed generation-1 ack as
+   * generation 2 once a resubscribe has sent a second request. Cleared
+   * whenever the subscription for the current workflow is abandoned (a
+   * different workflow, or an explicit unsubscribe) — see {@link
+   * reconcile}'s switching-away branch — since a straggling ack for it would
+   * already fail the `sentWorkflowId` guard and must not be misattributed
+   * to whatever is subscribed next.
+   */
+  private pendingGenerations: number[] = []
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -229,6 +245,7 @@ export class LayoutFollowerBridge extends EventTarget {
       // record is cleared either way.
       const sent = this.sentWorkflowId
       this.sentWorkflowId = null
+      this.pendingGenerations = []
       trySend(() => this.client.unsubscribe(sent))
     }
     if (desired === null || this.sentWorkflowId === desired) return
@@ -240,6 +257,7 @@ export class LayoutFollowerBridge extends EventTarget {
       this.ackSeq = null
       this.catchUpPending = false
       this.subscribeGeneration += 1
+      this.pendingGenerations.push(this.subscribeGeneration)
       this.dispatchEvent(
         new CustomEvent('doc_subscribe_sent', {
           detail: { workflowId: desired, generation: this.subscribeGeneration }
@@ -428,13 +446,14 @@ export class LayoutFollowerBridge extends EventTarget {
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
     } else this.sentWorkflowId = null
-    // `generation` is tagged from THIS bridge's current counter, not from
-    // the send that produced it: a duplicate/delayed-retry ack for the same
-    // outstanding subscribe still carries the send's generation, since
-    // `subscribeGeneration` only advances on the NEXT successful send.
+    // Dequeue the oldest outstanding generation: see `pendingGenerations`'s
+    // doc comment for why this, not `subscribeGeneration` read here at
+    // receipt, is this ack's send-to-response identity.
+    const generation =
+      this.pendingGenerations.shift() ?? this.subscribeGeneration
     this.dispatchEvent(
       new CustomEvent(event.type, {
-        detail: { ...event.detail, generation: this.subscribeGeneration }
+        detail: { ...event.detail, generation }
       })
     )
   }

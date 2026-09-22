@@ -197,6 +197,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
 import {
+  ALREADY_CURRENT_RETRY_INTERVAL_MS,
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS,
   useAgentCrdtFollower
@@ -301,14 +302,8 @@ describe('useAgentCrdtFollower', () => {
     useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
-    adapterState.applyFrame.mockReset().mockReturnValue(true)
-    adapterState.retryPending.mockReset().mockReturnValue(null)
-    adapterState.reconcileFromDoc.mockReset().mockReturnValue(true)
     adapterState.pendingAddType = undefined
     clientState.transport = null
-    materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
-    definitionsState.readSubgraphDefinitionIds.mockClear()
-    definitionsState.readSubgraphDefinitions.mockClear()
   })
 
   it('records only the length of an outbound frame that is not a JSON object', async () => {
@@ -1805,14 +1800,13 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('F2: an already-current ack keeps a parked entry until the forced reconcile commits, then repairs the live graph before settling it', async () => {
-    vi.useFakeTimers()
+  it('F2: an already-current ack keeps a parked entry until the forced reconcile commits, then repairs the live graph before settling it, retried by its own timer on a quiet channel', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
-    const fakeGraph = {
+    const fakeGraph = fromPartial<MaterializableGraph>({
       rootGraph: { subgraphs: new Map() },
       _nodes_by_id: {},
       setDirtyCanvas: vi.fn()
-    } as unknown as MaterializableGraph
+    })
     const { unmount, enqueue } = mountFollower('wf-1', true, () => fakeGraph)
 
     const doc = new Y.Doc()
@@ -1860,7 +1854,8 @@ describe('useAgentCrdtFollower', () => {
       expect.objectContaining({ type: 'cleared' })
     )
 
-    // The reconcile now commits; the retry pass on the next applied frame
+    // The reconcile now commits; the bounded retry timer's own next attempt
+    // — with no further doc_update, catch-up or otherwise, ever dispatched —
     // must repair the live graph BEFORE the ledger settles the parked entry.
     committed = true
     const order: string[] = []
@@ -1875,14 +1870,13 @@ describe('useAgentCrdtFollower', () => {
       )
         order.push('cleared')
     })
-    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+    await vi.advanceTimersByTimeAsync(ALREADY_CURRENT_RETRY_INTERVAL_MS)
 
     expect(order).toEqual(['materialized', 'cleared'])
     unmount()
   })
 
   it('F8: an add_node whose parked id resolves to a different doc type is reported as a collision, not cleared', async () => {
-    vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
@@ -1938,7 +1932,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('F8: a connect whose link id resolves to different endpoints is not treated as delivered', async () => {
-    vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
@@ -1992,7 +1985,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('F9: a connect whose link id resolves to the same endpoints but a different semantic type is not treated as delivered', async () => {
-    vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
@@ -2046,7 +2038,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
-    vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
@@ -2084,7 +2075,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {
-    vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
@@ -2389,7 +2379,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('sends the held batch to the same workflow when its tab becomes active again', async () => {
+    it('sends the held batch to the same workflow once its resubscribe is acknowledged', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
       await Promise.resolve()
@@ -2400,6 +2390,10 @@ describe('useAgentCrdtFollower', () => {
 
       isTargetActive.value = true
       await nextTick()
+      // The resubscribe left the transport, but the held batch must wait
+      // for its ack to confirm continuity before it can resend.
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1' })
 
       expect(clientState.sendOps).toHaveBeenCalledTimes(2)
       expect(clientState.sendOps).toHaveBeenLastCalledWith(
@@ -2486,6 +2480,69 @@ describe('useAgentCrdtFollower', () => {
         expect.any(String),
         [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
       )
+      unmount()
+    })
+
+    it('P1: never resends a held batch into a reactivation ack that fails continuity', async () => {
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      enqueue([deleteNode('1')])
+      await Promise.resolve()
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+      bridge().subscribe.mockImplementation(() => {})
+      isTargetActive.value = true
+      await nextTick()
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+      bridge().subscribedWorkflowId = 'wf-1'
+      // Continuity fails: this correlation never projected anything (the
+      // watermark is still null), so any numbered ack seq mismatches it.
+      dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 5 })
+
+      // The held batch must never reach the wire once continuity has
+      // failed: resuming first and invalidating after would let it
+      // transmit into a doc this ack cannot vouch for.
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      unmount()
+    })
+
+    it('P1: reverts a transmitted add that its own abort settlement just re-parked during invalidation', async () => {
+      const { unmount, isTargetActive, enqueue, pendingAddType } =
+        mountWriter('wf-1')
+      enqueue([
+        {
+          op: 'add_node',
+          node_id: 5,
+          class_type: 'Test',
+          pos: [0, 0],
+          node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+        }
+      ])
+      await Promise.resolve()
+      // Transmitted, still unacknowledged: `abortAll()` will settle it
+      // `unconfirmed` (parked as delivery_unknown), not `undeliverable`.
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+      isTargetActive.value = false
+      await nextTick()
+
+      bridge().subscribe.mockImplementation(() => {})
+      isTargetActive.value = true
+      await nextTick()
+      bridge().subscribedWorkflowId = 'wf-1'
+      // Continuity fails: this correlation never projected anything, so any
+      // numbered ack seq mismatches the initial null watermark.
+      dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 5 })
+
+      // The abort settles the still-in-flight add as delivery_unknown from
+      // underneath the invalidation sweep; it must still be reverted, not
+      // survive as a stale-lineage parked entry.
+      expect(pendingAddType()?.('5')).toBeUndefined()
       unmount()
     })
 

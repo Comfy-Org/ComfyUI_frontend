@@ -4,7 +4,7 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { assert } from '@/base/assert'
@@ -288,6 +288,7 @@ describe('ADR-CRDT-RECONCILE-0035 (c): AgentCrdtProjection forwards the id-colli
     // reaches the adapter, not about wire delivery (already covered by
     // ecsFollowerAdapter.integration.test.ts's harness).
     const follower = new FollowerDoc()
+    onTestFinished(() => follower.destroy())
     const mutations = createGraphMutations({
       getScope: () => scope,
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
@@ -300,6 +301,7 @@ describe('ADR-CRDT-RECONCILE-0035 (c): AgentCrdtProjection forwards the id-colli
       () => null,
       () => follower.doc
     )
+    onTestFinished(() => projection.destroy())
     projection.bind('wf', follower)
 
     // An unrelated first frame flips the session's initial full-graph
@@ -358,8 +360,5 @@ describe('ADR-CRDT-RECONCILE-0035 (c): AgentCrdtProjection forwards the id-colli
       errorType: 'agent_crdt_node_id_collision',
       context: { nodeId: '1', localType: 'LocalOnlyType', docType: 'Source' }
     })
-
-    projection.destroy()
-    follower.destroy()
   })
 })

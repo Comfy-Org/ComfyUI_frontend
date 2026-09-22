@@ -916,23 +916,15 @@ export class EcsFollowerAdapter<TUpdate extends DocUpdate = DocUpdate> {
   }
 
   /**
-   * ADR-CRDT-RECONCILE-0035 (c): a node id already registered locally is
-   * never a fresh add. It is either the echo of this page's own accepted add
-   * (the ledger still holds an `add_node` for this id whose `class_type`
-   * matches the incoming payload, in any echo-visible state — the ledger
-   * survives deactivation) or a collision between a retained local-only node
-   * and a document node minted under the same graph-local integer, or under
-   * the same id but an unrelated type. Either way the document wins via
-   * `reconcile` (auto-upgraded to a `replaceNode` by `prepare()` when the
-   * types differ); only the collision case is reported.
-   */
-  /**
    * ADR-CRDT-RECONCILE-0035 (c): reports (never blocks) when a doc node's id
    * is already registered locally under a DIFFERENT type than
    * {@link pendingAddType} can attribute to the page's own accepted add —
    * shared by the incremental `add` action ({@link applyAddedNode}) and the
    * full-reconcile rebind path, so a same-id, unrelated-type collision is
-   * classified identically whichever path first sees the doc's node.
+   * classified identically whichever path first sees the doc's node. Either
+   * way the document wins via `reconcile` (auto-upgraded to a `replaceNode`
+   * by `prepare()` when the types differ); only the collision case is
+   * reported.
    */
   private reportNodeCollisionIfAny(
     session: TargetSession,

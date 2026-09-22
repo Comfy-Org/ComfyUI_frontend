@@ -28,23 +28,39 @@ import type { GraphMutations } from './graphMutations'
 import type { GraphOperation } from './graphOperations'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-const adapterState = vi.hoisted(() => ({
-  bind: vi.fn(),
-  unbind: vi.fn(),
-  applyFrame: vi.fn(() => true),
-  retryPending: vi.fn(() => null),
-  reconcileFromDoc: vi.fn(() => true),
-  clearForReset: vi.fn(),
-  discardPending: vi.fn(),
-  destroy: vi.fn(),
-  // Captured so a test can read `LocalIntent.pendingAdds`/`pendingConnects`
-  // at reconcile time — the coordination boundary's own guard against
-  // retaining old-lineage ids while continuity is still unknown.
-  intent: null as {
+interface AdapterState {
+  bind: ReturnType<typeof vi.fn>
+  unbind: ReturnType<typeof vi.fn>
+  applyFrame: ReturnType<typeof vi.fn>
+  retryPending: ReturnType<typeof vi.fn>
+  reconcileFromDoc: ReturnType<typeof vi.fn>
+  clearForReset: ReturnType<typeof vi.fn>
+  discardPending: ReturnType<typeof vi.fn>
+  destroy: ReturnType<typeof vi.fn>
+  /**
+   * Captured so a test can read `LocalIntent.pendingAdds`/`pendingConnects`
+   * at reconcile time — the coordination boundary's own guard against
+   * retaining old-lineage ids while continuity is still unknown.
+   */
+  intent: {
     pendingAdds(workflowId: string): ReadonlySet<string>
     pendingConnects(workflowId: string): ReadonlySet<string>
   } | null
-}))
+}
+
+const adapterState = vi.hoisted(
+  (): AdapterState => ({
+    bind: vi.fn(),
+    unbind: vi.fn(),
+    applyFrame: vi.fn(() => true),
+    retryPending: vi.fn(() => null),
+    reconcileFromDoc: vi.fn(() => true),
+    clearForReset: vi.fn(),
+    discardPending: vi.fn(),
+    destroy: vi.fn(),
+    intent: null
+  })
+)
 
 vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   EcsFollowerAdapter: class {
@@ -107,12 +123,14 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
  * always-open socket that records outbound frames and lets a test deliver an
  * inbound one by dispatching the wire event `DocFrameClient` listens for.
  */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
 function parseWireFrame(frame: string): { type: string; data: unknown } | null {
-  const parsed: unknown = JSON.parse(frame)
-  if (typeof parsed !== 'object' || parsed === null) return null
-  const { type } = parsed as { type?: unknown }
-  if (typeof type !== 'string') return null
-  return { type, data: (parsed as { data?: unknown }).data }
+  const parsed = JSON.parse(frame)
+  if (!isRecord(parsed) || typeof parsed.type !== 'string') return null
+  return { type: parsed.type, data: parsed.data }
 }
 
 const transportState = vi.hoisted(() => {
@@ -152,10 +170,6 @@ vi.mock<unknown>(import('./agentCrdtTransport'), () => ({
 
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
-// A complete typed fake, not `{} as GraphMutations`: the ECS adapter is
-// mocked away in this file (nothing here ever calls these), but a real
-// interface implementation still catches a newly exercised mutation at
-// compile time instead of as an indirect runtime property-access error.
 const graphMutations: GraphMutations = {
   batch: vi.fn(() => true),
   addNode: vi.fn(() => true),
@@ -190,7 +204,6 @@ function mountFollower(
   isTargetActive: Ref<boolean>
 ): {
   enqueue: (operations: GraphOperation[]) => void
-  unmount: () => void
 } {
   const workflowId = ref<string | null>(initial)
   let enqueue: ((operations: GraphOperation[]) => void) | undefined
@@ -209,7 +222,7 @@ function mountFollower(
   onTestFinished(unmount)
   if (!enqueue)
     throw new Error('useAgentCrdtFollower setup() did not run during render')
-  return { enqueue, unmount }
+  return { enqueue }
 }
 
 /** A real, schema-valid catch-up `doc_update` wire frame at `seq`. */
@@ -238,7 +251,7 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
   it('F4: a same-workflow doc_reset that lands while the tab is inactive never reaches the composable (unreachable via the real bridge)', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
     const isTargetActive = ref(true)
-    const { enqueue, unmount } = mountFollower('wf-1', isTargetActive)
+    const { enqueue } = mountFollower('wf-1', isTargetActive)
 
     transport().deliver('doc_subscribed', {
       v: 1,
@@ -279,7 +292,6 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
 
     isTargetActive.value = true
     await nextTick()
-    unmount()
   })
 
   it('C3(i)/(iii): a resubscribe ack matching the projected watermark establishes continuity, and a duplicate ack is not a second barrier', async () => {
@@ -377,6 +389,15 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
         class_type: 'Test',
         pos: [0, 0],
         node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      },
+      {
+        op: 'connect',
+        link_id: 7,
+        from_node: 1,
+        from_slot: 0,
+        to_node: 5,
+        to_slot: 0,
+        link_type: 'IMAGE'
       }
     ])
     await Promise.resolve()
@@ -385,6 +406,7 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
     const intent = adapterState.intent
     if (!intent) throw new Error('the adapter was never constructed')
     expect([...intent.pendingAdds('wf-1')]).toEqual(['5'])
+    expect([...intent.pendingConnects('wf-1')]).toEqual(['7'])
 
     isTargetActive.value = false
     await nextTick()
@@ -398,6 +420,7 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
     // race `layoutFollowerBridge.ts` already documents for its OWN ack —
     // must not see the ledger's real, possibly wrong-lineage ids.
     expect([...intent.pendingAdds('wf-1')]).toEqual([])
+    expect([...intent.pendingConnects('wf-1')]).toEqual([])
 
     // Continuity established once the ack lands (same seq as projected):
     // the real ids are retained again for every reconcile from here on.
@@ -408,5 +431,6 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
       seq: 1
     })
     expect([...intent.pendingAdds('wf-1')]).toEqual(['5'])
+    expect([...intent.pendingConnects('wf-1')]).toEqual(['7'])
   })
 })

@@ -39,7 +39,8 @@ import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
-import { linkWireType, readLinkTuple } from './linkTuple'
+import type { ValidatedLinkEndpoints } from './linkTuple'
+import { readLinkTuple, validateLinkEndpoints } from './linkTuple'
 import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
@@ -49,13 +50,19 @@ import {
   createPendingRevertRemoveNode,
   createRevertNotifier
 } from './pendingOpRevert'
-import {
-  createPendingCorrelation,
-  createProjectedSequenceWatermark
-} from './pendingCorrelation'
+import { createPendingCorrelation } from './pendingCorrelation'
 import { createPendingOpTracker } from './pendingOpTracker'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
+
+/**
+ * An already-current forced reconcile that deferred (missing/busy session)
+ * is retried this often, up to {@link ALREADY_CURRENT_RETRY_MAX_ATTEMPTS}
+ * times, independent of any doc frame — a quiet channel sends nothing else
+ * to piggyback the retry on.
+ */
+export const ALREADY_CURRENT_RETRY_INTERVAL_MS = 2_000
+const ALREADY_CURRENT_RETRY_MAX_ATTEMPTS = 5
 
 /**
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
@@ -234,6 +241,30 @@ function addNodeEffectPresent(
   return false
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function readNumberField(
+  record: Record<string, unknown>,
+  key: string
+): number | undefined {
+  const value = record[key]
+  return typeof value === 'number' ? value : undefined
+}
+
+/** Narrows a `doc_subscribed` event's `detail` without casting it. */
+function readSubscribedAckDetail(detail: unknown): {
+  seq: number | undefined
+  generation: number | undefined
+} {
+  if (!isRecord(detail)) return { seq: undefined, generation: undefined }
+  return {
+    seq: readNumberField(detail, 'seq'),
+    generation: readNumberField(detail, 'generation')
+  }
+}
+
 function deleteNodeEffectPresent(
   doc: Y.Doc,
   op: Extract<Op, { op: 'delete_node' }>
@@ -242,14 +273,13 @@ function deleteNodeEffectPresent(
 }
 
 function connectEndpointsMatch(
-  tuple: readonly unknown[],
+  link: ValidatedLinkEndpoints,
   op: Extract<Op, { op: 'connect' }>
 ): boolean {
   const originMatches =
-    String(tuple[1]) === String(op.from_node) &&
-    Number(tuple[2]) === op.from_slot
-  const targetMatches = String(tuple[3]) === String(op.to_node)
-  const slotMatches = op.to_slot == null || Number(tuple[4]) === op.to_slot
+    link.originId === String(op.from_node) && link.originSlot === op.from_slot
+  const targetMatches = link.targetId === String(op.to_node)
+  const slotMatches = op.to_slot == null || link.targetSlot === op.to_slot
   return originMatches && targetMatches && slotMatches
 }
 
@@ -258,14 +288,9 @@ function connectEffectPresent(
   op: Extract<Op, { op: 'connect' }>
 ): boolean {
   const tuple = readLinkTuple(doc, String(op.link_id))
-  // Element 5 (the wire type) must be present: `readSemanticLink` treats it
-  // as authoritative, so a link tuple that hasn't landed it yet cannot prove
-  // this connect's effect is present.
-  if (!tuple || tuple.length < 6) return false
-  return (
-    connectEndpointsMatch(tuple, op) &&
-    String(linkWireType(tuple)) === op.link_type
-  )
+  const link = tuple && validateLinkEndpoints(tuple)
+  if (!link) return false
+  return connectEndpointsMatch(link, op) && String(link.type) === op.link_type
 }
 
 export function useAgentCrdtFollower(
@@ -401,12 +426,12 @@ function startAgentCrdtFollower(
   // no `projectionRef`), and `pendingCorrelation` closes over `sender`
   // (needed for its reactivation-invalidation seam) rather than the other
   // way around.
-  const projectedSequence = createProjectedSequenceWatermark()
+  let projectedSeq: number | null = null
   const pendingOps = createPendingOpTracker({
     // Applied seq only, never the ack fallback: between doc_subscribed(seq=N)
     // and the catch-up doc_update(seq=N) the canvas still shows pre-subscribe
     // state, so a skipped result must park there rather than clear on the ack.
-    currentSeq: () => projectedSequence.get() ?? 0,
+    currentSeq: () => projectedSeq ?? 0,
     onEvent: (event) => {
       notifyReverted(event, applyPendingOpRevert(event, removeRevertedNode))
       recordDevEvent('pending_ops', event)
@@ -513,12 +538,43 @@ function startAgentCrdtFollower(
   // tab deactivation: the ledger must NOT reset there, only on a lineage
   // break (doc_reset, follower_replaced, or a bind to a workflow other than
   // this one), which `pendingCorrelation` tracks independently of activity.
+  // Bounded, lifecycle-owned retry for a forced reconcile
+  // `resolveIfAlreadyCurrent` deferred: a quiet channel sends no further
+  // frame for `onProjected`'s opportunistic retry to piggyback on, so this
+  // timer is the only thing that ever tries again.
+  let alreadyCurrentRetryTimer: ReturnType<typeof setTimeout> | null = null
+  const clearAlreadyCurrentRetryTimer = (): void => {
+    if (alreadyCurrentRetryTimer !== null) {
+      clearTimeout(alreadyCurrentRetryTimer)
+      alreadyCurrentRetryTimer = null
+    }
+  }
+  const scheduleAlreadyCurrentRetry = (): void => {
+    clearAlreadyCurrentRetryTimer()
+    let attempts = 0
+    const attempt = (): void => {
+      attempts += 1
+      const resolved = pendingCorrelation.retryAlreadyCurrent()
+      alreadyCurrentRetryTimer =
+        resolved || attempts >= ALREADY_CURRENT_RETRY_MAX_ATTEMPTS
+          ? null
+          : setTimeout(attempt, ALREADY_CURRENT_RETRY_INTERVAL_MS)
+    }
+    alreadyCurrentRetryTimer = setTimeout(
+      attempt,
+      ALREADY_CURRENT_RETRY_INTERVAL_MS
+    )
+  }
   const pendingCorrelation = createPendingCorrelation({
     pendingOps,
-    watermark: projectedSequence,
+    getWatermark: () => projectedSeq,
+    setWatermark: (seq) => {
+      projectedSeq = seq
+    },
     reconcileFromDoc: (id, seq) => projection.reconcileFromDoc(id, seq),
     effectPresent: (op) => docEffectPresent(op),
-    abortSender: () => sender.abortAll()
+    abortSender: () => sender.abortAll(),
+    onRetryPending: scheduleAlreadyCurrentRetry
   })
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
@@ -584,7 +640,6 @@ function startAgentCrdtFollower(
 
   const onSubscribeConfirmed = (event: CustomEvent): void => {
     lifecycle.onSubscribeConfirmed()
-    resumeHeldOpsIfSubscribed()
     if (subscribedWorkflowId.value !== null)
       retryPendingProjection(subscribedWorkflowId.value)
     // Consumed once per ack: only the ack that follows a resume from a
@@ -592,13 +647,18 @@ function startAgentCrdtFollower(
     // `pendingCorrelation.ts`'s `resolveIfAlreadyCurrent` doc comment.
     const isReactivation = awaitingReactivationContinuity
     awaitingReactivationContinuity = false
-    const detail = event.detail as { seq?: number; generation?: number } | null
-    // Rationale: `pendingCorrelation.ts`'s `resolveIfAlreadyCurrent` doc comment.
+    const { seq, generation } = readSubscribedAckDetail(event.detail)
+    // `resumeHeldOpsIfSubscribed` is passed in, not called here first: the
+    // held sender must not resume until continuity is decided, so
+    // `resolveIfAlreadyCurrent` is the one that calls it.
     pendingCorrelation.resolveIfAlreadyCurrent(
-      subscribedWorkflowId.value,
-      detail?.seq,
-      detail?.generation,
-      isReactivation
+      {
+        workflowId: subscribedWorkflowId.value,
+        seq,
+        generation,
+        isReactivation
+      },
+      resumeHeldOpsIfSubscribed
     )
   }
   // FE #16637 residual: a refusal is the earliest signal the sender can get
@@ -884,11 +944,21 @@ function startAgentCrdtFollower(
   let awaitingReactivationContinuity = false
   const releaseHeldOps = (): void => {
     heldForWorkflowId = null
+    // Cleared together: an ordinary subscription right after — even for
+    // another workflow — must never be classified as this hold's
+    // reactivation ack.
+    awaitingReactivationContinuity = false
     sender.resume()
   }
   const resumeHeldOpsIfSubscribed = (): void => {
     if (
       heldForWorkflowId !== null &&
+      // `bridge.subscribedWorkflowId` is send reality, latched the instant
+      // the resubscribe frame leaves the transport — well before its ack.
+      // While a continuity check is still outstanding for THIS hold, that
+      // send alone must never release it: `onSubscribeConfirmed` is what
+      // calls this once the ack has actually decided continuity holds.
+      !awaitingReactivationContinuity &&
       bridge.subscribedWorkflowId === heldForWorkflowId
     ) {
       releaseHeldOps()
@@ -1029,6 +1099,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
+      () => clearAlreadyCurrentRetryTimer(),
       // abortAll() before detach(): a plain detach() drops queued, open and
       // in-flight batches without settling them, so their ledger entries
       // would outlive this scope in a non-terminal state with no outcome to
