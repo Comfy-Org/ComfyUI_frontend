@@ -11,6 +11,36 @@ interface WebSocketTracker {
   waitForNext: () => Promise<WebSocketRoute>
 }
 
+export class CapturedWebSocketMessages extends Map<WebSocketRoute, string[]> {
+  countFor(
+    socket: WebSocketRoute,
+    matches: (message: string) => boolean
+  ): number {
+    return (this.get(socket) ?? []).filter(matches).length
+  }
+
+  count(
+    matches: (message: string) => boolean,
+    except?: WebSocketRoute
+  ): number {
+    let total = 0
+    for (const [socket, messages] of this) {
+      if (socket !== except) total += messages.filter(matches).length
+    }
+    return total
+  }
+
+  firstSocket(
+    matches: (message: string) => boolean,
+    except?: WebSocketRoute
+  ): WebSocketRoute | null {
+    for (const [socket, messages] of this) {
+      if (socket !== except && messages.some(matches)) return socket
+    }
+    return null
+  }
+}
+
 function createWebSocketRouteHandler(
   connectWebSocketToServer: boolean,
   onRouted: (ws: WebSocketRoute, server: WebSocketRoute | null) => void
@@ -35,13 +65,13 @@ export const webSocketFixture = base.extend<{
   getWebSocket: () => Promise<WebSocketRoute>
   nextWebSocket: () => Promise<WebSocketRoute>
   webSocketTracker: WebSocketTracker
-  webSocketMessages: Map<WebSocketRoute, string[]>
+  webSocketMessages: CapturedWebSocketMessages
 }>({
   connectWebSocketToServer: [true, { option: true }],
   captureWebSocketMessages: [false, { option: true }],
   // oxlint-disable-next-line no-empty-pattern -- Playwright requires an object pattern.
   webSocketMessages: async ({}, use) => {
-    await use(new Map())
+    await use(new CapturedWebSocketMessages())
   },
   webSocketTracker: [
     async (

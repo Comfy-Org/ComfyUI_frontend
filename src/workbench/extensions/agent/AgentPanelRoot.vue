@@ -452,20 +452,11 @@ watch(
   { immediate: true }
 )
 
-const newChatDetached = ref(false)
 const restorableDocId = ref<string | null>(reconcilePersistedDocId())
 const workflowDetached = computed(
   () =>
-    newChatDetached.value ||
-    (selectedTarget.value === null &&
-      (!agentPanelStore.canRestoreWorkflow || restorableDocId.value === null))
-)
-watch(
-  selectedTarget,
-  (target) => {
-    if (target !== null) newChatDetached.value = false
-  },
-  { flush: 'sync' }
+    selectedTarget.value === null &&
+    (!agentPanelStore.canRestoreWorkflow || restorableDocId.value === null)
 )
 
 // Resolves the tab a turn is attributed to. `null` (the send had no origin
@@ -584,7 +575,16 @@ const {
   workflow: {
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
-    restored: onWorkflowRestored,
+    restored: async (workflowId, isCurrent) => {
+      await onWorkflowRestored(workflowId, isCurrent)
+      if (
+        workflowId !== undefined &&
+        isCurrent() &&
+        selectedTarget.value !== null &&
+        bindingStore.tabPathFor(workflowId) === selectedTarget.value.path
+      )
+        bindWorkflow(workflowId)
+    },
     prepare: async () => {
       await refreshCloudWorkflowIds()
     },
@@ -599,25 +599,8 @@ const isSending = computed(
   () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
 )
 
-// FE-1969: `boundWorkflowId` is the in-memory session binding. A panel remount
-// can restore it within the same page load. A browser reload creates a new page
-// load, so `reconcilePersistedDocId()` adopts the previous load's unexpired
-// record and replaces its nonce. In either case, the follower can rebind only
-// if this computed drives it with `active=true`. "New chat" is deliberately not
-// one of those cases: it ends the session, so `onNewChat` drops the record and
-// there is nothing left to restore. The
-// fallback is scoped to that one doc: the active tab's persisted tab binding
-// counts only when it names the doc the follower would restore, so a tab that
-// merely carries a stale binding, or a second bound tab, never reads as
-// active and never keeps the follower projecting into a background tab.
-// `reconcilePersistedDocId()` is not a pure read: it adopts and re-stamps the
-// record on a reload. A nonce mismatch is adopted and re-stamped during reload
-// navigation, but dropped during other navigation. It also consults untracked
-// `sessionStorage` and `Date.now()`. Calling it from inside the computed getter
-// therefore let an unrelated re-render consume or rewrite the record the
-// follower was about to read, and the cached value never invalidated when the
-// record lapsed. Resolve it at the explicit lifecycle points that used to drive
-// re-evaluation and let the getter read only reactive state.
+// Reconciliation mutates storage, so run it only at explicit lifecycle edges;
+// computed getters below read reactive state without consuming the record.
 watch(
   [() => workflowStore.activeWorkflow, boundWorkflowId],
   () => {
@@ -1078,15 +1061,11 @@ function onNewChat(): void {
   // Ending the session also ends the document's claim on the graph.
   clearPersistedDocId()
   restorableDocId.value = null
-  newChatDetached.value = true
   // A new chat targets whatever tab is on screen right now, not the previous
   // chat's target - unlike onSelectHistory(), which resets to 'uninitialized'
   // so restoreTarget() can re-apply the loaded thread's own binding.
   agentPanelStore.setWorkflowTarget(workflowStore.activeWorkflow)
   newChat()
-  // A selected target remains explicit context across chats; only a targetless
-  // new chat stays detached after the session binding is cleared.
-  if (selectedTarget.value !== null) newChatDetached.value = false
 }
 
 const panelRef = ref<InstanceType<typeof AgentPanel>>()
