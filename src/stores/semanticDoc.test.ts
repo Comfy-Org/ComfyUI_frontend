@@ -1,0 +1,213 @@
+import { applyOps, mint } from '@comfyorg/comfy-multi-player'
+import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import * as Y from 'yjs'
+
+import { toRootGraphId } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
+
+import { SemanticDocRegistry, isRemoteUpdateOrigin } from './semanticDoc'
+import type { RemoteUpdateOrigin } from './semanticDoc'
+
+const rootA = toRootGraphId('root-a')
+const rootB = toRootGraphId('root-b')
+const origin: RemoteUpdateOrigin = { source: 'agent-remote', actor: 'agent:x' }
+
+const catalog: WidgetCatalog = {
+  types: { Source: { widget_order: ['steps'] }, Sink: { widget_order: [] } }
+}
+
+function mintHost(): Y.Doc {
+  return mint(
+    {
+      nodes: [
+        {
+          id: 1,
+          type: 'Source',
+          inputs: [],
+          outputs: [{ name: 'out', type: 'IMAGE', links: [9] }],
+          widgets_values: [20]
+        },
+        {
+          id: 2,
+          type: 'Sink',
+          inputs: [{ name: 'image', type: 'IMAGE', link: 9 }],
+          outputs: []
+        }
+      ],
+      links: [[9, 1, 0, 2, 0, 'IMAGE']]
+    },
+    catalog
+  )
+}
+
+function delta(host: Y.Doc, follower: Y.Doc | undefined): Uint8Array {
+  return Y.encodeStateAsUpdate(
+    host,
+    follower ? Y.encodeStateVector(follower) : undefined
+  )
+}
+
+function setSteps(host: Y.Doc, value: number, version: number): void {
+  const op: Op = {
+    op: 'set_widget',
+    op_id: `set-steps-${version}`,
+    actor: 'agent:x',
+    base_version: version,
+    stamp: [version, 'agent:x'],
+    node_id: 1,
+    widget: 'steps',
+    value
+  }
+  const result = applyOps(host, [op], catalog)
+  expect(result.outcomes.map(({ outcome }) => outcome)).toEqual(['applied'])
+}
+
+describe('SemanticDocRegistry', () => {
+  const registry = new SemanticDocRegistry()
+  const hosts: Y.Doc[] = []
+
+  function host(): Y.Doc {
+    const doc = mintHost()
+    hosts.push(doc)
+    return doc
+  }
+
+  afterEach(() => {
+    registry.destroyAll()
+    for (const doc of hosts.splice(0)) doc.destroy()
+  })
+
+  it('reads an unknown root graph as empty without creating a document', () => {
+    expect(registry.readGraph(rootA)).toEqual({ nodes: {}, links: {} })
+    expect(registry.hasNode(rootA, toNodeId(1))).toBe(false)
+    expect(registry.readDefinitions(rootA)).toEqual({})
+    expect(registry.has(rootA)).toBe(false)
+    expect(registry.get(rootA)).toBeUndefined()
+  })
+
+  it('merges a minted host into a fresh document and exposes its graph', () => {
+    registry.applyRemote(rootA, delta(host(), undefined), origin)
+
+    const graph = registry.readGraph(rootA)
+    expect(Object.keys(graph.nodes).sort()).toEqual(['1', '2'])
+    expect(graph.nodes['1']).toMatchObject({
+      type: 'Source',
+      widgets: { steps: 20 }
+    })
+    expect(Object.keys(graph.links)).toEqual(['9'])
+    expect(registry.hasNode(rootA, toNodeId(1))).toBe(true)
+    expect(registry.hasNode(rootA, toNodeId(3))).toBe(false)
+  })
+
+  it('keeps root graphs in separate documents', () => {
+    registry.applyRemote(rootA, delta(host(), undefined), origin)
+
+    expect(registry.has(rootB)).toBe(false)
+    expect(registry.readGraph(rootB).nodes).toEqual({})
+    registry.ensure(rootB)
+    expect(registry.get(rootB)).not.toBe(registry.get(rootA))
+    expect(registry.readGraph(rootB).nodes).toEqual({})
+  })
+
+  it('carries the remote origin as the transaction origin', () => {
+    const doc = registry.ensure(rootA)
+    const origins: unknown[] = []
+    doc.on('afterTransaction', (transaction: Y.Transaction) => {
+      origins.push(transaction.origin)
+    })
+
+    registry.applyRemote(rootA, delta(host(), undefined), origin)
+
+    expect(origins).toHaveLength(1)
+    expect(origins[0]).toBe(origin)
+    expect(isRemoteUpdateOrigin(origins[0])).toBe(true)
+  })
+
+  it('never adds a layout root and never reads a root into existence', () => {
+    registry.applyRemote(rootA, delta(host(), undefined), origin)
+    registry.observe(rootA, () => {})
+    registry.readDefinitions(rootA)
+    registry.readGraph(rootA)
+
+    const roots = [...registry.ensure(rootA).share.keys()]
+    expect(roots).toEqual(expect.arrayContaining(['nodes', 'links']))
+    expect(
+      roots.filter((root) => /layout|viewport|group|reroute/i.test(root))
+    ).toEqual([])
+    expect(roots).not.toContain('definitions')
+  })
+
+  it('attaching observers adds no document content', () => {
+    const doc = registry.ensure(rootA)
+    const before = Y.encodeStateAsUpdate(doc)
+    const sharesBefore = doc.share.size
+
+    registry.observe(rootA, () => {})
+
+    expect(doc.share.size).toBeGreaterThan(sharesBefore)
+    expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
+  })
+
+  it('notifies observers of nested remote changes and stops after unsubscribe', () => {
+    const hostDoc = host()
+    registry.applyRemote(rootA, delta(hostDoc, undefined), origin)
+    const seen: { keys: string[]; origin: unknown }[] = []
+    const listener = vi.fn(
+      (
+        events: readonly Y.YEvent<Y.AbstractType<unknown>>[],
+        transaction: Y.Transaction
+      ) => {
+        // `changes` may only be read while the handler runs.
+        seen.push({
+          keys: events.flatMap((event) => [...event.changes.keys.keys()]),
+          origin: transaction.origin
+        })
+      }
+    )
+    const stop = registry.observe(rootA, listener)
+
+    setSteps(hostDoc, 30, 1)
+    registry.applyRemote(rootA, delta(hostDoc, registry.get(rootA)), origin)
+
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(seen[0].origin).toBe(origin)
+    expect(seen[0].keys).toContain('steps')
+    expect(registry.readGraph(rootA).nodes['1']).toMatchObject({
+      widgets: { steps: 30 }
+    })
+
+    stop()
+    setSteps(hostDoc, 40, 2)
+    registry.applyRemote(rootA, delta(hostDoc, registry.get(rootA)), origin)
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(registry.readGraph(rootA).nodes['1']).toMatchObject({
+      widgets: { steps: 40 }
+    })
+  })
+
+  it('destroy forgets the document and detaches its observers', () => {
+    const hostDoc = host()
+    registry.applyRemote(rootA, delta(hostDoc, undefined), origin)
+    const doc = registry.get(rootA)
+    const listener = vi.fn()
+    registry.observe(rootA, listener)
+
+    registry.destroy(rootA)
+
+    expect(registry.has(rootA)).toBe(false)
+    expect(registry.readGraph(rootA).nodes).toEqual({})
+    // A stale handle to the destroyed document is inert for the registry.
+    registry.applyRemote(rootA, delta(hostDoc, undefined), origin)
+    expect(registry.get(rootA)).not.toBe(doc)
+    expect(listener).not.toHaveBeenCalled()
+    expect(registry.readGraph(rootA).nodes['1']).toBeDefined()
+  })
+
+  it('isRemoteUpdateOrigin rejects local and malformed origins', () => {
+    expect(isRemoteUpdateOrigin(null)).toBe(false)
+    expect(isRemoteUpdateOrigin(Symbol('local'))).toBe(false)
+    expect(isRemoteUpdateOrigin({ source: 'agent-remote' })).toBe(false)
+    expect(isRemoteUpdateOrigin({ source: 'human', actor: 'u' })).toBe(false)
+  })
+})
