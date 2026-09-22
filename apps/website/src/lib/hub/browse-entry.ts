@@ -74,6 +74,8 @@ export interface BrowseRequest {
   readonly useCase: UseCase | 'all'
   readonly usesModel: string
   readonly query: string
+  /** Whether the address asked past the shelves, for the half entire. */
+  readonly all: boolean
 }
 
 const TABS: readonly TypeFilter[] = ['model', 'workflow']
@@ -89,6 +91,7 @@ export function browseRequestFrom(search: string): BrowseRequest {
     type: model ? 'workflow' : (TABS.find((tab) => tab === asked) ?? 'model'),
     useCase: useCase ?? 'all',
     usesModel: model,
-    query: params.get('q') ?? ''
+    query: params.get('q') ?? '',
+    all: params.get('all') === '1'
   }
 }

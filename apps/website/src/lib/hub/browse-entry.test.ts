@@ -11,7 +11,8 @@ describe('browseRequestFrom', () => {
       type: 'model',
       useCase: 'all',
       usesModel: '',
-      query: ''
+      query: '',
+      all: false
     })
   })
 
@@ -22,13 +23,19 @@ describe('browseRequestFrom', () => {
       type: 'model',
       useCase: 'edit-images',
       usesModel: '',
-      query: 'poster'
+      query: 'poster',
+      all: false
     })
   })
 
   // An app browses as a workflow, so it is not a tab a link can ask for.
   it.for(['sculpture', 'app', 'all'])('reads %s as no tab at all', (asked) => {
     expect(browseRequestFrom(`?type=${asked}`).type).toBe('model')
+  })
+
+  // A saved address for the whole half opens on it rather than on the shelves.
+  it('reads a link that asked past the shelves', () => {
+    expect(browseRequestFrom('?type=workflow&all=1').all).toBe(true)
   })
 
   it('ignores a use case it does not have', () => {

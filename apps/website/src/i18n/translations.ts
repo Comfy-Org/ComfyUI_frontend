@@ -10547,6 +10547,10 @@ Enterprise`
     'zh-CN': 'Comfy 可运行的全部模型，以及基于它们构建的工作流。'
   },
   'workshop.v2.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
+  'workshop.v2.browseAll': {
+    en: 'Browse all {n} {kind}',
+    'zh-CN': '浏览全部 {n} 个{kind}'
+  },
   'workshop.outcome.animateCharacters': {
     en: 'Animate characters',
     'zh-CN': '让角色动起来'

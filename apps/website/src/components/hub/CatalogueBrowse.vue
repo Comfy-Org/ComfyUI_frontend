@@ -173,11 +173,19 @@ function clearNarrowing() {
 // The shelves are the catalogue at rest: one row per thing you might want to
 // make. Asking anything of it, a use case or a search, is what turns it into a
 // list. The tab is not one of those: both tabs open on their own shelves.
-const browsing = computed(() => useCase.value !== 'all' || narrowed.value)
+// A reader who wants the whole half rather than one job asks for it at the
+// foot of the shelves: the shelves name the ways in, and this is the way past
+// them.
+const wholeList = ref(false)
+
+const browsing = computed(
+  () => useCase.value !== 'all' || narrowed.value || wholeList.value
+)
 
 function backToShelves() {
   clearNarrowing()
   useCase.value = 'all'
+  wholeList.value = false
   order.value = 'popular'
 }
 
@@ -185,6 +193,7 @@ onMounted(() => {
   const asked = browseRequestFrom(location.search)
   type.value = asked.type
   useCase.value = asked.useCase
+  wholeList.value = asked.all
   usesModel.value = asked.usesModel
   query.value = asked.query
 })
@@ -233,7 +242,9 @@ function openOutcome(asked: WorkshopOutcome) {
 
 const heading = computed(() =>
   useCase.value === 'all'
-    ? undefined
+    ? wholeList.value
+      ? t(kindLabelKey[type.value], locale)
+      : undefined
     : t(useCaseLabelKey[useCase.value], locale)
 )
 </script>
@@ -297,11 +308,12 @@ const heading = computed(() =>
       :entries="matched"
       :locale
       @open="useCase = $event"
+      @open-all="wholeList = true"
     />
 
     <div v-else class="min-w-0">
       <div
-        v-if="useCase !== 'all'"
+        v-if="useCase !== 'all' || wholeList"
         class="mb-6 flex flex-wrap items-baseline gap-4"
       >
         <button
