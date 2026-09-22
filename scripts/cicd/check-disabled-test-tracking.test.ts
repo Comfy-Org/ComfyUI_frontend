@@ -3,12 +3,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   disabledDeclarations,
   findViolations,
-  hasRestorationReference
+  hasRestorationReference,
+  main
 } from './check-disabled-test-tracking'
 
 const temporaryDirectories: string[] = []
@@ -290,5 +291,17 @@ test.skip('newly disabled', () => {})
     const head = commit(root, 'base')
 
     expect(() => findViolations(root, 'missing', head)).toThrow()
+  })
+
+  it('returns failure statuses for untracked disables and Git errors', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const root = createRepository()
+    write(root, 'tests/example.test.ts', `test('example', () => {})\n`)
+    const base = commit(root, 'base')
+    write(root, 'tests/example.test.ts', `test.skip('example', () => {})\n`)
+    const head = commit(root, 'disable test')
+
+    expect(main([base, head], root, '')).toBe(1)
+    expect(main(['missing', head], root, '')).toBe(2)
   })
 })
