@@ -11,7 +11,7 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { parseClientDocFrame } from '@e2e/fixtures/agentFollowerHostSocket'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -61,6 +61,7 @@ const AGENT_RECONNECT_LINK_ID = 9004
 const WORKFLOW_ID = '6a1c9f3e-4d2b-4a7c-8e1f-3b5d7c9a1f6b'
 const THREAD_ID = 'c3d4e5f6-1a2b-4c3d-8e4f-5a6b7c8d9e0f'
 const MESSAGE_ID = 'a1b2c3d4-5e6f-4a1b-8c2d-3e4f5a6b7c8d'
+const SOCKET_SID = 'f1e2d3c4-b5a6-4978-8a9b-0c1d2e3f4a5b'
 
 // Trimmed `/object_info` entries: a plain IMAGE source, and an API node whose
 // only input is a `COMFY_AUTOGROW_V3` group named `model.images`, mirroring
@@ -186,15 +187,18 @@ const seed: WorkflowJSON = {
 async function readImageInputs(page: Page) {
   return page.evaluate((id) => {
     const node = window.app!.graph.getNodeById(id)
-    return (node?.inputs ?? [])
-      .filter((input) => input.name.startsWith('model.images.'))
-      .map((input, index) => {
-        const link = node!.getInputLink(index)
-        return {
-          name: input.name,
-          originNodeId: link ? String(link.origin_id) : null
-        }
-      })
+    if (!node) return []
+    // `getInputLink` indexes the node's FULL `inputs` array, so the index
+    // paired with it here must be that same unfiltered position, not the
+    // position within the `model.images.`-only slice (`getConnectedInputs`
+    // in `nodeInputLinks.ts` follows the same rule).
+    return node.inputs.flatMap((input, index) => {
+      if (!input.name.startsWith('model.images.')) return []
+      const link = node.getInputLink(index)
+      return [
+        { name: input.name, originNodeId: link ? String(link.origin_id) : null }
+      ]
+    })
   }, toNodeId(GPT_NODE_ID))
 }
 
@@ -213,27 +217,18 @@ async function setUpFixture(page: Page) {
   )
 
   const host = new HostDoc(WORKFLOW_ID, seed, catalog)
-  let socketSend: ((frame: unknown) => void) | null = null
-  let subscribedTo: string | null = null
-  await page.routeWebSocket(/\/ws/, (socket) => {
-    socketSend = (frame) => socket.send(JSON.stringify(frame))
-    socket.onMessage((raw) => {
-      const frame = parseClientDocFrame(raw)
-      if (
-        frame?.type !== 'doc_subscribe' ||
-        frame.workflowId !== WORKFLOW_ID ||
-        frame.stateVector === null
-      )
-        return
-      subscribedTo = frame.workflowId
-      socketSend!(host.subscribed())
-      socketSend!(host.catchUp(frame.stateVector))
-    })
-    socketSend({
-      type: 'status',
-      data: { status: { exec_info: { queue_remaining: 0 } }, sid: 's' }
-    })
-  })
+  // 'apply' because the hand-wire step below mints a real `doc_ops` batch
+  // over this socket (any `registerLinkTopology` placement does, canvas or
+  // agent alike) — the host has to answer it like the relay does instead of
+  // leaving the batch unacked.
+  const hostSocket = new AgentFollowerHostSocket(
+    page,
+    WORKFLOW_ID,
+    host,
+    SOCKET_SID,
+    'apply'
+  )
+  await hostSocket.install()
   await page.route('**/api/agent/threads', (route) =>
     route.fulfill(jsonRoute({ threads: [] }))
   )
@@ -298,8 +293,8 @@ async function setUpFixture(page: Page) {
     await composer.fill('hello')
     await panel.getByRole('button', { name: enMessages.agent.send }).click()
     await expect(panel.getByText('hello').first()).toBeVisible()
-    await expect.poll(() => subscribedTo, { timeout: 20_000 }).toBe(WORKFLOW_ID)
-    socketSend!({
+    await hostSocket.waitForSubscribe()
+    hostSocket.send({
       type: 'agent_message_done',
       data: { message_id: MESSAGE_ID, thread_id: THREAD_ID }
     })
@@ -322,9 +317,9 @@ async function setUpFixture(page: Page) {
     const freeIndex = await page.evaluate((id) => {
       const node = window.app!.graph.getNodeById(id)!
       return node.inputs.findIndex(
-        (input) =>
+        (input, index) =>
           input.name.startsWith('model.images.') &&
-          !node.isInputConnected(node.inputs.indexOf(input))
+          !node.isInputConnected(index)
       )
     }, toNodeId(GPT_NODE_ID))
     expect(freeIndex).toBeGreaterThanOrEqual(0)
@@ -346,8 +341,12 @@ async function setUpFixture(page: Page) {
         targetSlot: freeIndex
       }
     )
+    // Settles only once the CRDT round trip (now acked by the host, per
+    // `humanOpsHost: 'apply'` above) and autogrow's own client-side growth
+    // have both landed on this freshly booted page — the same CI slowness
+    // the subscribe wait above budgets for.
     await expect
-      .poll(() => readImageInputs(page))
+      .poll(() => readImageInputs(page), { timeout: 20_000 })
       .toEqual([
         { name: IMAGE_1_NAME, originNodeId: String(SOURCE_A_ID) },
         { name: IMAGE_2_NAME, originNodeId: String(SOURCE_HAND_ID) },
@@ -362,7 +361,7 @@ async function setUpFixture(page: Page) {
     topbar,
     gptNodeId,
     host,
-    socketSend: (frame: unknown) => socketSend!(frame),
+    hostSocket,
     readImageInputs: () => readImageInputs(page)
   }
 }
@@ -383,7 +382,7 @@ export type AutogrowHandWiredLinkContext = Awaited<
 async function sendSecondTurnAndReconnectFirstSlot(
   ctx: AutogrowHandWiredLinkContext
 ): Promise<void> {
-  const { panel, socketSend, host } = ctx
+  const { panel, hostSocket, host } = ctx
   const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
   await composer.fill('use a different reference image')
   await panel.getByRole('button', { name: enMessages.agent.send }).click()
@@ -391,7 +390,7 @@ async function sendSecondTurnAndReconnectFirstSlot(
     panel.getByText('use a different reference image').first()
   ).toBeVisible()
 
-  socketSend(
+  hostSocket.send(
     host.apply([
       {
         op: 'connect',
@@ -404,7 +403,7 @@ async function sendSecondTurnAndReconnectFirstSlot(
       }
     ])
   )
-  socketSend({
+  hostSocket.send({
     type: 'agent_message_done',
     data: { message_id: MESSAGE_ID, thread_id: THREAD_ID }
   })
@@ -426,6 +425,7 @@ export {
   IMAGE_1_NAME,
   IMAGE_2_NAME,
   IMAGE_3_NAME,
+  SEED_LINK_ID,
   SOURCE_AGENT_ID,
   SOURCE_HAND_ID,
   sendSecondTurnAndReconnectFirstSlot
