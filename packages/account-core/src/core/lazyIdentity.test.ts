@@ -4,7 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { createTestIdentity } from '../testing.js'
 import type { AccountIdentity } from './identity.js'
 import type { LazyIdentity } from './lazyIdentity.js'
-import { createLazyIdentity } from './lazyIdentity.js'
+import {
+  createLazyIdentity,
+  createUnavailableIdentity
+} from './lazyIdentity.js'
 import { createSessionClient } from './session.js'
 import type { AccountUser } from './sessionContracts.js'
 
@@ -470,6 +473,27 @@ describe('createLazyIdentity', () => {
     expect(client.getSnapshot().phase).toBe('pending')
     inner.fire(null)
     await activation
+
+    expect(client.getSnapshot().phase).toBe('signed-out')
+  })
+})
+
+describe('createUnavailableIdentity', () => {
+  it('delivers null once to every subscriber, synchronously', () => {
+    const identity = createUnavailableIdentity<AccountUser>()
+    const listener = vi.fn()
+
+    identity.onUserChanged(listener)
+
+    expect(listener).toHaveBeenCalledExactlyOnceWith(null)
+  })
+
+  it('settles a session client to signed-out without a pending wait', async () => {
+    const identity = createUnavailableIdentity<AccountUser>()
+    const client = createSessionClient(
+      { exchangeUrl: 'https://example.test/token', storage: noopStorage },
+      identity
+    )
 
     expect(client.getSnapshot().phase).toBe('signed-out')
   })

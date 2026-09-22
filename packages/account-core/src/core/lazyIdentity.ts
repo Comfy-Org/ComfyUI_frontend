@@ -27,6 +27,22 @@ export interface LazyIdentity<
   deactivate: () => void
 }
 
+/**
+ * An identity that has already settled signed-out: for a `load` that
+ * legitimately has no source to resolve, so the port still delivers once and
+ * a subscriber reaches signed-out instead of hanging in `pending` forever.
+ */
+export function createUnavailableIdentity<
+  TUser extends AccountUser
+>(): AccountIdentity<TUser> {
+  return brandIdentity<TUser>({
+    onUserChanged: (callback) => {
+      callback(null)
+      return () => undefined
+    }
+  })
+}
+
 export function createLazyIdentity<TUser extends AccountUser>(
   load: () => Promise<AccountIdentity<TUser>>
 ): LazyIdentity<TUser> {

@@ -14,9 +14,7 @@ const h = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(import('@/config/firebase'), () => ({
-  get billingWebIdentity() {
-    return h.identity
-  }
+  resolveBillingWebIdentity: () => Promise.resolve(h.identity)
 }))
 
 const STORAGE_KEY = 'comfy.billing-web.session.v1'
@@ -58,6 +56,9 @@ async function freshSession({ configured = true } = {}) {
     : undefined
   const module = await import('@/session/billingWebSession')
   const session = module.useBillingWebSession()
+  // The lazy identity resolves through a microtask hop before the real
+  // port's `onUserChanged` runs and captures `h.deliver`.
+  if (configured) await vi.waitFor(() => expect(h.deliver).toBeDefined())
   return {
     session,
     phase: module.billingWebSessionPhase,
@@ -94,11 +95,13 @@ describe('useBillingWebSession', () => {
 
     const { projection } = await freshSession({ configured: false })
 
-    expect(projection()).toEqual({
-      phase: 'signed-out',
-      uid: null,
-      hasSession: false
-    })
+    await vi.waitFor(() =>
+      expect(projection()).toEqual({
+        phase: 'signed-out',
+        uid: null,
+        hasSession: false
+      })
+    )
   })
 
   it.for([

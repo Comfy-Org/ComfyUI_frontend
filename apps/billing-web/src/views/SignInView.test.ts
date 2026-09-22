@@ -22,7 +22,7 @@ vi.mock(import('@/auth/useSignInController'), async () => {
       busy: computed(() => false),
       leaving: computed(() => false),
       errorMessage: computed(() => ''),
-      available: h.available,
+      available: computed(() => h.available),
       signInWith: h.signInWith,
       submitEmail: h.submitEmail,
       retryMint: h.retryMint

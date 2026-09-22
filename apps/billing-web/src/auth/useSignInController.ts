@@ -16,7 +16,7 @@ import type {
 } from '@/auth/signInState'
 import { signInTransition } from '@/auth/signInState'
 import en from '@/locales/en/main.json' with { type: 'json' }
-import { billingWebIdentity } from '@/config/firebase'
+import { resolveBillingWebIdentity } from '@/config/firebase'
 import {
   billingWebSessionClient,
   useBillingWebSession
@@ -27,6 +27,13 @@ const AUTH_ERROR_COPY: AuthErrorCopy = en.auth.errors
 export function useSignInController(onSignedIn: () => void) {
   const { user } = useBillingWebSession()
   const state = ref<SignInState>({ step: 'idle' })
+  // Resolved once, asynchronously: the runtime config wins when the bounded
+  // fetch beats this page's first sign-in click, the build-time fallback
+  // otherwise. Never awaited here, so it can't block first paint.
+  const identity = ref<FirebaseIdentity>()
+  void resolveBillingWebIdentity().then((resolved) => {
+    identity.value = resolved
+  })
 
   const busy = computed(
     () => state.value.step === 'pending' || state.value.step === 'minting'
@@ -76,11 +83,11 @@ export function useSignInController(onSignedIn: () => void) {
     provider: SignInProvider,
     authenticate: (identity: FirebaseIdentity) => Promise<UserCredential>
   ): Promise<void> {
-    if (!billingWebIdentity || busy.value) return
+    if (!identity.value || busy.value) return
     dispatch({ type: 'signInStarted', provider })
     let credential: UserCredential
     try {
-      credential = await authenticate(billingWebIdentity)
+      credential = await authenticate(identity.value)
     } catch (error) {
       dispatch({ type: 'signInFailed', error })
       return
@@ -132,7 +139,7 @@ export function useSignInController(onSignedIn: () => void) {
     busy,
     leaving,
     errorMessage,
-    available: billingWebIdentity !== undefined,
+    available: computed(() => identity.value !== undefined),
     signInWith,
     submitEmail,
     retryMint

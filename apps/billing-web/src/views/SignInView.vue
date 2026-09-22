@@ -46,7 +46,7 @@ async function showEmail(show: boolean): Promise<void> {
 const secureContext = window.isSecureContext ?? true
 
 const noticeKey = computed(() => {
-  if (!available) return 'auth.signIn.unavailable'
+  if (!available.value) return 'auth.signIn.unavailable'
   return secureContext ? undefined : 'auth.signIn.insecureContextWarning'
 })
 const progressKey = computed(() =>
@@ -54,7 +54,7 @@ const progressKey = computed(() =>
     ? 'auth.signIn.pending'
     : 'auth.signIn.signingIn'
 )
-const blocked = computed(() => busy.value || !available)
+const blocked = computed(() => busy.value || !available.value)
 const sessionFailed = computed(
   () => state.value.step === 'signedIn' && state.value.mintFailed === true
 )
