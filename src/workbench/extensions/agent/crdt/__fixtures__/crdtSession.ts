@@ -45,7 +45,10 @@ export type CreateCrdtSession = CrdtFixtures['createCrdtSession']
  * of the causes are silently dropped. See `crdtSession.test.ts` for the
  * focused regression coverage on this behavior.
  */
-export function runCleanupsInReverse(cleanups: readonly (() => void)[]): void {
+export function runCleanupsInReverse(
+  cleanups: readonly (() => void)[],
+  aggregateMessage = '[agent-crdt] fixture cleanup failed'
+): void {
   const errors: unknown[] = []
   for (const cleanup of [...cleanups].reverse()) {
     try {
@@ -56,12 +59,12 @@ export function runCleanupsInReverse(cleanups: readonly (() => void)[]): void {
   }
   if (errors.length === 1) throw errors[0]
   if (errors.length > 1) {
-    throw new AggregateError(errors, '[agent-crdt] fixture cleanup failed')
+    throw new AggregateError(errors, aggregateMessage)
   }
 }
 
 export const crdtTest = baseTest.extend<CrdtFixtures>({
-  createCrdtSession: async ({}, use) => {
+  createCrdtSession: async ({ task }, use) => {
     const cleanups: Array<() => void> = []
     await use(({ workflowId, seed, catalog }) => {
       const graph = new LGraph()
@@ -89,7 +92,8 @@ export const crdtTest = baseTest.extend<CrdtFixtures>({
         enqueue: (operations) => minted.push(...operations),
         layoutChanges: () => () => {},
         localActorPrefix: 'user-',
-        getGraph: () => graph
+        getGraph: () => graph,
+        boundRootGraphId: () => graphScopeOf(graph).rootGraphId
       })
       cleanups.push(() => wiring.detach())
       let sequence = 0
@@ -126,6 +130,9 @@ export const crdtTest = baseTest.extend<CrdtFixtures>({
       }
     })
 
-    runCleanupsInReverse(cleanups)
+    runCleanupsInReverse(
+      cleanups,
+      `CRDT session cleanup failed in "${task.name}"`
+    )
   }
 })

@@ -355,10 +355,8 @@ function materialize(
     const savedInputs = serialised.inputs?.map((input) => ({ ...input }))
     node.configure(withNamedWidgetValues(serialised, widgets))
     replayUpdatedWidgetCallbacks(node, serialised, widgets)
-    // configure() and any widget-driven restructuring (autogrow growth) can
-    // reorder live inputs relative to the saved document. Re-point each
-    // saved link at the input with the same name, however many autogrow
-    // groups reordered and whatever order they reordered in.
+    // After configure and any widget-driven restructuring, re-point the saved
+    // links at their named inputs (CRDT-INPUTS-0030).
     realignInputLinkSlots(graph.rootGraph, [
       [node.id, { id: node.id, inputs: savedInputs }]
     ])

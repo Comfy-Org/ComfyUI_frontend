@@ -160,27 +160,6 @@ function patchLiveOutputSlots(
 }
 
 /**
- * `nodeDataStore.updateNodeSlots` merges incoming slots by name and keeps
- * any live-only slot it doesn't recognise, which is the right default for a
- * partial sync (it lets a local-only output survive one). `connect`'s own
- * output list is authoritative for the whole node, though: outputs are
- * never autogrown, so a live output past what `patchLiveOutputSlots`
- * computed must not survive the merge -- nothing will ever remove it again.
- * Removes it from `liveOutputs` in place so callers holding that array
- * (e.g. a reactive view) see the same array with the entry gone, not a
- * different array.
- */
-function pruneOutputsBeyondDocument(
-  liveOutputs: NodeState['outputs'],
-  documentOutputs: NodeState['outputs']
-): void {
-  const documentNames = new Set(documentOutputs.map((output) => output.name))
-  for (let i = liveOutputs.length - 1; i >= 0; i--) {
-    if (!documentNames.has(liveOutputs[i].name)) liveOutputs.splice(i, 1)
-  }
-}
-
-/**
  * Patches each live input slot by name (inputs may have been reordered
  * locally). Litegraph does not enforce unique input names, so each
  * document slot is consumed at most once -- otherwise two live inputs
@@ -563,7 +542,8 @@ function prepareOutputSlots(value: unknown): NodeState['outputs'] {
 function hasNonGrowthInputSetChange(
   live: NodeState['inputs'],
   documentInputs: Record<string, unknown>[],
-  autogrowGroupOf: (name: unknown) => string | undefined
+  autogrowGroupOf: (name: unknown) => string | undefined,
+  preserveLinkedAutogrow: boolean
 ): boolean {
   const liveCounts = new Map<unknown, number>()
   for (const input of live) {
@@ -590,8 +570,10 @@ function hasNonGrowthInputSetChange(
       remainingByName.set(input.name, remaining - 1)
       return false
     }
-    if (input.link !== null) return true
-    return autogrowGroupOf(input.name) === undefined
+    if (preserveLinkedAutogrow && !isPlainObject(input)) return false
+    const autogrowGroup = autogrowGroupOf(input.name)
+    if (input.link !== null && !preserveLinkedAutogrow) return true
+    return autogrowGroup === undefined
   })
   return documentExceedsLive || liveOnlyIsUnaccountedFor
 }
@@ -700,7 +682,8 @@ function nameShapeAutogrowGroupOf(name: unknown): string | undefined {
 function mergeInputSlotsByName(
   live: NodeState['inputs'],
   supplied: unknown,
-  autogrowGroupOf: (name: unknown) => string | undefined
+  autogrowGroupOf: (name: unknown) => string | undefined,
+  preserveLinkedAutogrow = false
 ): NodeState['inputs'] {
   const documentInputs = Array.isArray(supplied)
     ? supplied.filter(isRecord)
@@ -723,7 +706,14 @@ function mergeInputSlotsByName(
   // for more copies of a shared name than live has), or the node kept a
   // live-only slot that still carries a link the document doesn't: either
   // way the input set changed, so the document decides the list positionally.
-  if (hasNonGrowthInputSetChange(live, documentInputs, autogrowGroupOf)) {
+  if (
+    hasNonGrowthInputSetChange(
+      live,
+      documentInputs,
+      autogrowGroupOf,
+      preserveLinkedAutogrow
+    )
+  ) {
     return prepareInputSlots(documentInputs, live)
   }
   const merged = [...live]
@@ -1397,7 +1387,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                   node.state.id,
                   node.state.type,
                   name
-                )
+                ),
+              queued.some(
+                (queuedMutation) =>
+                  queuedMutation.kind === 'connect' &&
+                  queuedMutation.link.targetNodeId === node.state.id
+              )
             )
           }
           nodes.set(key, node.state)
@@ -1521,7 +1516,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (topology.originSlot >= originOutputs.length) {
             return `connect origin slot ${topology.originSlot} does not exist`
           }
-          if (topology.targetSlot >= targetInputs.length) {
+          if (
+            topology.targetSlot < 0 ||
+            topology.targetSlot >= targetInputs.length
+          ) {
             return `connect target slot ${topology.targetSlot} does not exist`
           }
           const originType = originOutputs[topology.originSlot]?.type
@@ -1942,6 +1940,44 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           break
         }
         case 'connect': {
+          const endpointNodes = new Map(
+            nodeStore
+              .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+              .map((node) => [nodeKey(node.id), node])
+          )
+          const origin = endpointNodes.get(
+            nodeKey(mutation.topology.originNodeId)
+          )
+          const target = endpointNodes.get(
+            nodeKey(mutation.topology.targetNodeId)
+          )
+          let targetInputs = mutation.targetInputs
+          if (target && targetInputs) {
+            const targetName = targetInputs[mutation.topology.targetSlot].name
+            const targetOccurrence = targetInputs
+              .slice(0, mutation.topology.targetSlot)
+              .filter(({ name }) => name === targetName).length
+            targetInputs = mergeInputSlotsByName(
+              target.inputs,
+              targetInputs,
+              (name) =>
+                resolveAutogrowGroup(
+                  memory,
+                  scope,
+                  target.id,
+                  target.type,
+                  name
+                ),
+              true
+            )
+            let occurrence = 0
+            mutation.topology.targetSlot = targetInputs.findIndex(
+              ({ name }) => {
+                if (name !== targetName) return false
+                return occurrence++ === targetOccurrence
+              }
+            )
+          }
           const existing = linkStore.getTopology(
             scope.rootGraphId,
             mutation.topology.id
@@ -1970,44 +2006,24 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             linkPresentationStore.patch(scope, replacement.id, presentation)
           }
 
-          const endpointNodes = new Map(
-            nodeStore
-              .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
-              .map((node) => [nodeKey(node.id), node])
-          )
-          const origin = endpointNodes.get(
-            nodeKey(mutation.topology.originNodeId)
-          )
-          const target = endpointNodes.get(
-            nodeKey(mutation.topology.targetNodeId)
-          )
           if (origin && mutation.originOutputs) {
             const outputs = patchLiveOutputSlots(
               origin.outputs,
               mutation.originOutputs
             )
-            nodeStore.updateNodeSlots(
+            nodeStore.updateNode(
               scope,
               origin.id,
-              {
-                inputs: origin.inputs,
-                outputs
-              },
+              { ...origin, outputs },
               context
             )
-            pruneOutputsBeyondDocument(origin.outputs, outputs)
           }
-          if (target && mutation.targetInputs) {
-            nodeStore.updateNodeSlots(
+          if (target && targetInputs) {
+            const inputs = patchLiveInputSlots(target.inputs, targetInputs)
+            nodeStore.updateNode(
               scope,
               target.id,
-              {
-                inputs: patchLiveInputSlots(
-                  target.inputs,
-                  mutation.targetInputs
-                ),
-                outputs: target.outputs
-              },
+              { ...target, inputs },
               context
             )
           }
