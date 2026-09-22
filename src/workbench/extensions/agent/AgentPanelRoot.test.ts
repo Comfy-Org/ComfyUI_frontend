@@ -130,6 +130,7 @@ const appMock = vi.hoisted(() => {
           allow_dragnodes: boolean
           selectOnly: boolean
           canvas: HTMLCanvasElement
+          setDirty: ReturnType<typeof vi.fn>
         }
       | undefined
   }
@@ -916,7 +917,8 @@ function setupNodeSelectionCanvas() {
     multi_select: false,
     allow_dragnodes: true,
     selectOnly: false,
-    canvas: canvasElement
+    canvas: canvasElement,
+    setDirty: vi.fn()
   }
   appMock.canvas = canvas
   canvasStore.canvas = fromPartial(canvas)
@@ -7159,7 +7161,8 @@ describe('AgentPanelRoot workflow binding', () => {
       multi_select: false,
       allow_dragnodes: true,
       selectOnly: false,
-      canvas: document.createElement('canvas')
+      canvas: document.createElement('canvas'),
+      setDirty: vi.fn()
     }
 
     renderWithSelectedTarget()
