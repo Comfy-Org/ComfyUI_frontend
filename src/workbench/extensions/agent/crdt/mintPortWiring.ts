@@ -6,13 +6,14 @@
  * fail-closed boolean over beforeLoadGraph/afterConfigureGraph: a failed load
  * leaves mints suppressed until the next load's pair recloses.
  *
- * Title has no owning Pinia store (a canvas rename writes straight onto the
- * `LGraphNode` instance via its tracked `title` setter, `setTrackedNodeState`
- * - see `nodeShellState.ts`), so its mint port instead listens to the ROOT
- * graph's own `node:property:changed` event, filtered to `property ===
- * 'title'`. Listening only on the root graph's event target (never a
- * subgraph's) is what scopes this to top-level nodes, matching `set_title`
- * having no interior/subgraph-instance variant.
+ * `title` and `mode` have no owning Pinia store (a canvas rename or a
+ * mode toggle writes straight onto the `LGraphNode` instance via its tracked
+ * `title`/`mode` setters, `setTrackedNodeState` - see `nodeShellState.ts`),
+ * so their mint port instead listens to the ROOT graph's own
+ * `node:property:changed` event, filtered to `property === 'title'` or
+ * `property === 'mode'`. Listening only on the root graph's event target
+ * (never a subgraph's) is what scopes this to top-level nodes, matching
+ * `set_node_field` having no interior/subgraph-instance variant.
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -31,7 +32,7 @@ import type { GraphOperation } from './graphOperations'
 import { attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { attachLinkMintPort } from './linkMintPort'
-import { attachTitleMintPort } from './titleMintPort'
+import { attachNodeFieldMintPort } from './nodeFieldMintPort'
 import { attachWidgetMintPort } from './widgetMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
@@ -193,13 +194,13 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   type SetListener = Parameters<
     Parameters<typeof attachWidgetMintPort>[0]['events']['onSet']
   >[0]
-  type TitleListener = Parameters<
-    Parameters<typeof attachTitleMintPort>[0]['events']['onChange']
+  type NodeFieldListener = Parameters<
+    Parameters<typeof attachNodeFieldMintPort>[0]['events']['onChange']
   >[0]
   const placedListeners = new Set<PlacedListener>()
   const deletedListeners = new Set<DeletedListener>()
   const setListeners = new Set<SetListener>()
-  const titleListeners = new Set<TitleListener>()
+  const nodeFieldListeners = new Set<NodeFieldListener>()
 
   const linkPort = attachLinkMintPort({
     events: {
@@ -260,11 +261,11 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     enqueue
   })
 
-  const titlePort = attachTitleMintPort({
+  const nodeFieldPort = attachNodeFieldMintPort({
     events: {
       onChange(listener) {
-        titleListeners.add(listener)
-        return () => titleListeners.delete(listener)
+        nodeFieldListeners.add(listener)
+        return () => nodeFieldListeners.delete(listener)
       }
     },
     session,
@@ -275,8 +276,13 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
 
   function handlePropertyChanged(event: PropertyChangedEvent): void {
     const { property, nodeId, newValue } = event.detail
-    if (property !== 'title' || typeof newValue !== 'string') return
-    for (const listener of titleListeners) listener({ nodeId, title: newValue })
+    if (property === 'title' && typeof newValue === 'string') {
+      for (const listener of nodeFieldListeners)
+        listener({ nodeId, field: 'title', value: newValue })
+    } else if (property === 'mode' && typeof newValue === 'number') {
+      for (const listener of nodeFieldListeners)
+        listener({ nodeId, field: 'mode', value: newValue })
+    }
   }
 
   let attachedGraphEvents: MintableGraph['events'] | null = null
@@ -360,7 +366,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
         )
         attachedGraphEvents = null
       }
-      titlePort.detach()
+      nodeFieldPort.detach()
       widgetPort.detach()
       layoutPort.detach()
       linkPort.detach()

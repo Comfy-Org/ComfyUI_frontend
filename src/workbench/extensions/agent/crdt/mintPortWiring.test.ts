@@ -261,20 +261,44 @@ describe('attachMintPortWiring', () => {
     expect(minted).toEqual([])
   })
 
-  it('mints a top-level set_title from the root graph title property change', () => {
-    dispatchPropertyChanged({
-      nodeId: toNodeId(7),
-      property: 'title',
+  it.for([
+    {
+      name: 'title',
       oldValue: 'Old Name',
-      newValue: 'New Name'
-    })
+      newValue: 'New Name',
+      operation: {
+        op: 'set_node_field',
+        node_id: toNodeId(7),
+        field: 'title',
+        value: 'New Name'
+      }
+    },
+    {
+      name: 'mode',
+      oldValue: 0,
+      newValue: 4,
+      operation: {
+        op: 'set_node_field',
+        node_id: toNodeId(7),
+        field: 'mode',
+        value: 4
+      }
+    }
+  ])(
+    'mints a top-level set_node_field from the root graph $name property change',
+    ({ name, oldValue, newValue, operation }) => {
+      dispatchPropertyChanged({
+        nodeId: toNodeId(7),
+        property: name,
+        oldValue,
+        newValue
+      })
 
-    expect(minted).toEqual([
-      { op: 'set_title', node_id: toNodeId(7), title: 'New Name' }
-    ])
-  })
+      expect(minted).toEqual([operation])
+    }
+  )
 
-  it('ignores a non-title property change (e.g. color)', () => {
+  it('ignores a non-writable property change (e.g. color)', () => {
     dispatchPropertyChanged({
       nodeId: toNodeId(7),
       property: 'color',
@@ -339,7 +363,12 @@ describe('attachMintPortWiring', () => {
     )
 
     expect(minted).toEqual([
-      { op: 'set_title', node_id: toNodeId(7), title: 'New Name' }
+      {
+        op: 'set_node_field',
+        node_id: toNodeId(7),
+        field: 'title',
+        value: 'New Name'
+      }
     ])
     lateWiring.detach()
   })
