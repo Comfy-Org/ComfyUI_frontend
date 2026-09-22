@@ -1,4 +1,5 @@
 import { expect, mergeTests } from '@playwright/test'
+import type { WebSocketRoute } from '@playwright/test'
 
 import type {
   AgentThreadListResponse,
@@ -19,17 +20,32 @@ import {
   readPersistedAgentDocIdentity,
   switchToAgentWorkflowTab
 } from '@e2e/fixtures/agentPanelFixture'
+import { parseClientDocFrame } from '@e2e/fixtures/agentFollowerHostSocket'
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
-import { countDocFrames } from '@e2e/fixtures/utils/countDocFrames'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+
+function countDocFrames(
+  messagesBySocket: Map<WebSocketRoute, string[]>,
+  ws: WebSocketRoute,
+  type: 'doc_subscribe' | 'doc_unsubscribe',
+  workflowId: string
+): number {
+  return (messagesBySocket.get(ws) ?? []).filter((message) => {
+    const frame = parseClientDocFrame(message)
+    return frame?.type === type && frame.workflowId === workflowId
+  }).length
+}
 
 const test = mergeTests(agentTest, webSocketFixture)
 
 test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
-  test.use({ connectWebSocketToServer: false })
+  test.use({
+    connectWebSocketToServer: false,
+    captureWebSocketMessages: true
+  })
 
   test.beforeEach(async ({ page }) => {
     const workflows: WorkflowListResponse = {
@@ -132,6 +148,18 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
       }
       return total
     }
+    const firstSocketWithFrameAfterReload = (
+      type: 'doc_subscribe' | 'doc_unsubscribe'
+    ): WebSocketRoute | null => {
+      for (const socket of webSocketMessages.keys()) {
+        if (
+          socket !== ws &&
+          countDocFrames(webSocketMessages, socket, type, workflowId) > 0
+        )
+          return socket
+      }
+      return null
+    }
 
     await test.step('Reload and restore the workflow subscription', async () => {
       // Arm the waiter BEFORE the reload. The replacement socket is routed
@@ -162,7 +190,10 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
 
       await expect.poll(() => countAfterReload('doc_subscribe')).toBe(1)
 
-      reloadedWs.send(
+      const subscribedSocket = firstSocketWithFrameAfterReload('doc_subscribe')
+      if (!subscribedSocket)
+        throw new Error('Reloaded workflow subscription socket is missing')
+      subscribedSocket.send(
         JSON.stringify({
           type: 'doc_subscribed',
           data: { v: 1, workflow_id: workflowId, ok: true, seq: 0 }
@@ -170,16 +201,16 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
       )
     })
 
-    await test.step('Switching away suspends the follower and returning resumes it', async () => {
+    await test.step('Switching away unsubscribes and returning requests a subscription', async () => {
       expect(countAfterReload('doc_unsubscribe')).toBe(0)
       await command.executeCommand('Comfy.NewBlankWorkflow')
       await expect.poll(() => countAfterReload('doc_unsubscribe')).toBe(1)
-      const subscribeCountBeforeResume = countAfterReload('doc_subscribe')
+      const subscribeCountBeforeReturn = countAfterReload('doc_subscribe')
 
       await switchToAgentWorkflowTab(page, boundPath)
       await expect
         .poll(() => countAfterReload('doc_subscribe'))
-        .toBe(subscribeCountBeforeResume + 1)
+        .toBe(subscribeCountBeforeReturn + 1)
     })
   })
 })

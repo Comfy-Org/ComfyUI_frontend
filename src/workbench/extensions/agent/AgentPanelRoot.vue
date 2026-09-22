@@ -973,6 +973,8 @@ void refreshHistory()
 async function onSelectHistory(id: string): Promise<void> {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
+  clearPersistedDocId()
+  restorableDocId.value = null
   agentPanelStore.resetWorkflowTarget()
   exitNodeSelectionMode()
   await loadThread(id)
