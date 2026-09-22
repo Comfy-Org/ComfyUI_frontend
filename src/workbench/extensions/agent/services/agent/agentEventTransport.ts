@@ -101,7 +101,7 @@ export function createAgentEventTransport(
           message.parts.push(part)
         }
         part.name = event.data.tool_name
-        part.skill = event.data.skill
+        if (event.data.skill !== undefined) part.skill = event.data.skill
         if (event.data.status !== 'running') {
           part.state = 'done'
           part.ok = event.data.status === 'success'

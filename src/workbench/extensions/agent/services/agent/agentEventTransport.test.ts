@@ -378,7 +378,7 @@ describe('agentEventTransport text and tool parts', () => {
   it('preserves the skill name across the load lifecycle', () => {
     const message = drive([
       toolCall('load_skill', 'running', 'call-1', 'comfy-director'),
-      toolCall('load_skill', 'success', 'call-1', 'comfy-director')
+      toolCall('load_skill', 'success', 'call-1')
     ])
 
     expect(toolParts(message)[0]).toMatchObject({
