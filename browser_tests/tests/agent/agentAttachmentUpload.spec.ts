@@ -36,7 +36,7 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
       await panel.getByTestId('agent-file-input').setInputFiles({
         name: 'pending.mp4',
         mimeType: 'video/mp4',
-        buffer: Buffer.from('pending upload')
+        buffer: Buffer.from([0, 0, 0, 0, 0x66, 0x74, 0x79, 0x70])
       })
       await uploadReceived
       await expect(

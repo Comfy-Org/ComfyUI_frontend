@@ -849,8 +849,14 @@ function dispatchDrag(
   return event.defaultPrevented
 }
 
+function fileContents(name: string): BlobPart {
+  return /\.(?:mp4|mov|m4v)$/i.test(name)
+    ? new Uint8Array([0, 0, 0, 24, 0x66, 0x74, 0x79, 0x70]).buffer
+    : 'x'
+}
+
 function fileOfSize(name: string, size: number, type: string): File {
-  const file = new File(['x'], name, { type })
+  const file = new File([fileContents(name)], name, { type })
   Object.defineProperty(file, 'size', { value: size })
   return file
 }
@@ -1312,7 +1318,7 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(
       dispatchDrag(screen.getByRole('textbox'), 'drop', {
-        files: [new File(['x'], name, { type })]
+        files: [new File([fileContents(name)], name, { type })]
       })
     ).toBe(true)
 
@@ -1322,6 +1328,54 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual([name]))
+  })
+
+  it('refuses a text file renamed to mp4 from the picker', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.attachFiles')
+      })
+    )
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['plain text'], 'renamed.mp4', { type: 'video/mp4' })
+    )
+
+    expect(uploaded).toEqual([])
+    expect(screen.queryByText('renamed.mp4')).not.toBeInTheDocument()
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'warn',
+        detail: i18n.global.t('agent.assetNotAttachable')
+      })
+    )
+  })
+
+  it('refuses a text file renamed to mp4 from drag and drop', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    const renamed = new File(['plain text'], 'renamed.mp4', {
+      type: 'video/mp4'
+    })
+
+    expect(
+      dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [renamed] })
+    ).toBe(true)
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: i18n.global.t('agent.assetNotAttachable')
+        })
+      )
+    )
+    expect(uploaded).toEqual([])
+    expect(screen.queryByText('renamed.mp4')).not.toBeInTheDocument()
   })
 
   it('names every approved format in the picker accept list', async () => {
@@ -1578,7 +1632,7 @@ describe('AgentPanelRoot attach flow', () => {
         vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = String(input)
           if (url.includes('/api/view'))
-            return new Response(new Blob(['asset']), {
+            return new Response(new Blob([fileContents(filename)]), {
               headers: { 'Content-Type': mime }
             })
           if (url.endsWith('/api/upload/image'))
@@ -1641,6 +1695,47 @@ describe('AgentPanelRoot attach flow', () => {
       })
     }
   )
+
+  it('warns once when a Media-card video has invalid contents', async () => {
+    const fetchSpy = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/view'))
+        return new Response(new Blob(['plain text']), {
+          headers: { 'Content-Type': 'video/mp4' }
+        })
+      return new Response('{"threads":[]}', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+    renderWithSelectedTarget()
+    await nextTick()
+
+    expect(
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'renamed.mp4', type: 'input' })
+            : 'http://localhost/api/view?filename=renamed.mp4'
+      })
+    ).toBe(true)
+
+    await vi.waitFor(() =>
+      expect(
+        useToastStore().messagesToAdd.filter(
+          ({ detail }) => detail === i18n.global.t('agent.assetNotAttachable')
+        )
+      ).toHaveLength(1)
+    )
+    expect(screen.queryByText('renamed.mp4')).not.toBeInTheDocument()
+    expect(
+      fetchSpy.mock.calls.some(([url]) =>
+        String(url).endsWith('/api/upload/image')
+      )
+    ).toBe(false)
+  })
 
   it.for([
     { mime: 'image/png', filename: 'gen.png' },

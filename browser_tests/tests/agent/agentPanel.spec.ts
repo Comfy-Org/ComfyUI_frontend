@@ -435,12 +435,17 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await agentPanel.open()
     const panel = page.locator('#agent-panel-root')
     const fileInput = panel.getByTestId('agent-file-input')
+    const mp4Buffer = (size: number) => {
+      const buffer = Buffer.alloc(size)
+      buffer.write('ftyp', 4, 'ascii')
+      return buffer
+    }
 
     const uploadResponse = page.waitForResponse('**/api/upload/image')
     await fileInput.setInputFiles({
       name: 'movie.mp4',
       mimeType: 'video/mp4',
-      buffer: Buffer.alloc(21 * 1024 * 1024)
+      buffer: mp4Buffer(21 * 1024 * 1024)
     })
     expect((await uploadResponse).ok()).toBe(true)
     await expect(
@@ -451,7 +456,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await fileInput.setInputFiles({
       name: 'too-large.mp4',
       mimeType: 'video/mp4',
-      buffer: Buffer.alloc(25 * 1024 * 1024)
+      buffer: mp4Buffer(25 * 1024 * 1024)
     })
     await expect(
       page.getByText('too-large.mp4 is larger than 24 MB')

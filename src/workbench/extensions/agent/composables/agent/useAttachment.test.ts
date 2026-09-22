@@ -79,6 +79,31 @@ describe('useAttachment', () => {
     expect(upload).toHaveBeenCalledWith(movie, expect.any(AbortSignal))
   })
 
+  it('does not stage a file cancelled while validation is pending', async () => {
+    let resolveValidation: (valid: boolean) => void = () => {}
+    const validate = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveValidation = resolve
+        })
+    )
+    const upload = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles, cancelAllUploads } = useAttachment({
+      upload,
+      validate,
+      ...registry
+    })
+
+    const pending = addFiles([fileOfSize('clip.mp4', 1024, 'video/mp4')])
+    cancelAllUploads()
+    resolveValidation(true)
+    await pending
+
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+  })
+
   it('stages a whole batch before uploading it concurrently', async () => {
     const resolvers: Array<(result: { ref: string }) => void> = []
     const upload = vi.fn(
@@ -234,6 +259,26 @@ describe('useAttachment', () => {
       addDeferredFile('missing.mp4', async () => undefined)
     ).resolves.toBe('unsupported')
 
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('returns invalid and removes a deferred file that fails validation', async () => {
+    const upload = vi.fn()
+    const onInvalid = vi.fn()
+    const registry = chipRegistry()
+    const invalid = fileOfSize('renamed.mp4', 1024, 'video/mp4')
+    const { addDeferredFile } = useAttachment({
+      upload,
+      validate: async () => false,
+      onInvalid,
+      ...registry
+    })
+
+    await expect(
+      addDeferredFile(invalid.name, async () => invalid)
+    ).resolves.toBe('invalid')
+    expect(onInvalid).toHaveBeenCalledWith(invalid)
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
   })
