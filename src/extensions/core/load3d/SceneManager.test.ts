@@ -10,6 +10,7 @@ import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
 import type { EventManagerInterface } from './interfaces'
 import Load3dUtils from './Load3dUtils'
 import { SceneManager } from './SceneManager'
+import { QuadWireframeOverlay } from './quadWireframe/QuadWireframeManager'
 
 const { mockTextureLoad } = vi.hoisted(() => ({
   mockTextureLoad: vi.fn()
@@ -572,6 +573,26 @@ describe('SceneManager', () => {
       expect(manager.gridHelper.visible).toBe(true)
     })
 
+    it('keeps quad wireframe overlays out of the normal pass only', async () => {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(),
+        new THREE.MeshStandardMaterial()
+      )
+      const overlay = new QuadWireframeOverlay(new THREE.BufferGeometry())
+      mesh.add(overlay)
+      manager.scene.add(mesh)
+      const overlayVisiblePerRender: boolean[] = []
+      vi.mocked(renderer.render).mockImplementation(() => {
+        overlayVisiblePerRender.push(overlay.visible)
+      })
+
+      await manager.captureScene(100, 100)
+
+      expect(overlayVisiblePerRender.at(-1)).toBe(false)
+      expect(overlayVisiblePerRender.slice(0, -1)).not.toContain(false)
+      expect(overlay.visible).toBe(true)
+    })
+
     it('rejects when the renderer throws during capture', async () => {
       vi.mocked(renderer.render).mockImplementationOnce(() => {
         throw new Error('renderer fail')
@@ -580,6 +601,30 @@ describe('SceneManager', () => {
       await expect(manager.captureScene(100, 100)).rejects.toThrow(
         'renderer fail'
       )
+    })
+
+    it('restores hidden overlays when the normal pass throws', async () => {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(),
+        new THREE.MeshStandardMaterial()
+      )
+      const overlay = new QuadWireframeOverlay(new THREE.BufferGeometry())
+      mesh.add(overlay)
+      manager.scene.add(mesh)
+      manager.gridHelper.visible = true
+      let renders = 0
+      vi.mocked(renderer.render).mockImplementation(() => {
+        renders += 1
+        if (renders === 3) throw new Error('normal pass fail')
+      })
+
+      await expect(manager.captureScene(100, 100)).rejects.toThrow(
+        'normal pass fail'
+      )
+
+      expect(overlay.visible).toBe(true)
+      expect(manager.gridHelper.visible).toBe(true)
+      expect(mesh.material).toBeInstanceOf(THREE.MeshStandardMaterial)
     })
   })
 

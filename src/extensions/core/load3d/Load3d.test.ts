@@ -9,6 +9,7 @@ import type {
   GizmoMode
 } from '@/extensions/core/load3d/interfaces'
 import type { PointerNdcSource } from '@/extensions/core/load3d/load3dViewport'
+import { QuadWireframeOverlay } from '@/extensions/core/load3d/quadWireframe/QuadWireframeManager'
 
 const {
   cloneSkinnedMock,
@@ -1243,6 +1244,7 @@ describe('Load3d', () => {
       originalModel?: THREE.Object3D | null
       originalFileName?: string | null
       originalURL?: string | null
+      originalMaterials?: WeakMap<THREE.Mesh, THREE.Material | THREE.Material[]>
     }) {
       Object.assign(ctx.load3d, {
         modelManager: {
@@ -1250,7 +1252,8 @@ describe('Load3d', () => {
           currentModel: overrides.currentModel,
           originalModel: overrides.originalModel ?? null,
           originalFileName: overrides.originalFileName ?? 'cube',
-          originalURL: overrides.originalURL ?? null
+          originalURL: overrides.originalURL ?? null,
+          originalMaterials: overrides.originalMaterials ?? new WeakMap()
         }
       })
     }
@@ -1362,6 +1365,37 @@ describe('Load3d', () => {
         THREE.Object3D & { animations: THREE.AnimationClip[] }
       ]
       expect(exportedModel.animations).toEqual([clip])
+    })
+
+    it('hands the exporter a model without the quad wireframe overlay', async () => {
+      const original = new THREE.MeshStandardMaterial()
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(),
+        new THREE.MeshBasicMaterial({ visible: false })
+      )
+      const overlay = new QuadWireframeOverlay(new THREE.BufferGeometry())
+      mesh.add(overlay)
+      const model = new THREE.Group().add(mesh)
+      const originalMaterials = new WeakMap<THREE.Mesh, THREE.Material>()
+      originalMaterials.set(mesh, original)
+
+      setupForExport({ currentModel: model, originalMaterials })
+
+      await ctx.load3d.exportModel('glb')
+
+      const [exported] = exportGLBMock.mock.calls[0] as [THREE.Object3D]
+      const exportedMeshes: THREE.Mesh[] = []
+      let overlays = 0
+      exported.traverse((child) => {
+        if (child instanceof THREE.Mesh) exportedMeshes.push(child)
+        if (child instanceof QuadWireframeOverlay) overlays += 1
+      })
+      expect(overlays).toBe(0)
+      expect(exportedMeshes).toHaveLength(1)
+      expect(exportedMeshes[0].material).toBe(original)
+      // The on-screen model keeps its overlay and its wireframe material.
+      expect(mesh.children).toContain(overlay)
+      expect(mesh.material).not.toBe(original)
     })
 
     it('uses Object3D.clone (not SkeletonUtils) for non-fbx formats', async () => {
