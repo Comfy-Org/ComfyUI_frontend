@@ -13,6 +13,7 @@ import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStor
 import type { EntryPath } from '@/platform/onboarding/onboardingTours'
 import type { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useTelemetry } from '@/platform/telemetry'
 import type { useExtensionService } from '@/services/extensionService'
 import type { PostHog } from 'posthog-js'
@@ -56,10 +57,13 @@ vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
   () => {
     const consent = fromPartial<ReturnType<typeof useAgentConsent>>({
-      withConsent: vi.fn(async (onAccept: () => void, onShown?: () => void) => {
-        onShown?.()
-        onAccept()
-      })
+      withConsent: vi.fn(
+        async (onAccept: () => void, hooks?: ConsentOfferHooks) => {
+          if (hooks?.canShow?.() === false) return
+          hooks?.onShown?.()
+          onAccept()
+        }
+      )
     })
     return { useAgentConsent: () => consent }
   }
@@ -202,8 +206,8 @@ describe('AgentPanel extension flag gate', () => {
       })
     )
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (onAccept, onShown) => {
-        onShown?.()
+      async (onAccept, hooks) => {
+        hooks?.onShown?.()
         await Promise.resolve().then(() => {
           Object.assign(consentStore, { accepted: true })
         })
@@ -260,8 +264,8 @@ describe('AgentPanel extension flag gate', () => {
       finish = resolve
     })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_onAccept, onShown) => {
-        show = onShown ?? show
+      async (_onAccept, hooks) => {
+        show = hooks?.onShown ?? show
         await pending
       }
     )
@@ -443,6 +447,47 @@ describe('AgentPanel extension flag gate', () => {
     expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     finish()
     await flush()
+  })
+
+  it('withholds a card whose tour started while the offer was in flight, then re-offers', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_onAccept, hooks) => {
+        activeTour.value = 'appMode'
+        await flush()
+        if (hooks?.canShow?.() === false) return
+        hooks?.onShown?.()
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    await flush()
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('false')
+    expect(agentStore.open).not.toHaveBeenCalled()
+
+    activeTour.value = null
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+    expect(agentStore.open).toHaveBeenCalledOnce()
+  })
+
+  it('stays silent after a tour ends when the saved consent cannot be read', async () => {
+    mocks.flagEnabled = true
+    activeTour.value = 'appMode'
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(consentStore.load).mockRejectedValue(new Error('offline'))
+
+    await loadEntryAndSetup()
+    activeTour.value = null
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
   })
 
   it('keeps withholding after a tour ends when Getting Started took the screen', async () => {

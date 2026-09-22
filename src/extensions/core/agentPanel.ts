@@ -163,15 +163,16 @@ export function registerAgentPanelExtension(): void {
         { immediate: true, flush: 'sync' }
       )
 
+      const onboardingHoldsScreen = (): boolean =>
+        firstRunTookScreen.value || onboardingTourStore.activeTour !== null
+
       let autoShowInFlight = false
       const offerConsentUnprompted = (): void => {
         if (autoShowInFlight) return
         if (!agentPanelStore.enabled || !isLoggedIn.value) return
         if (consentStore.isChecking || consentStore.accepted) return
-        // Must precede prepareAutoShow, which burns the one-shot key. A tour
-        // that auto-opens after this check still paints under the card.
-        if (firstRunTookScreen.value || onboardingTourStore.activeTour !== null)
-          return
+        // Must precede prepareAutoShow, which burns the one-shot key.
+        if (onboardingHoldsScreen()) return
 
         const userId = resolvedUserInfo.value?.id
         const workspaceId = workspaceStore.activeWorkspaceId
@@ -187,8 +188,11 @@ export function registerAgentPanelExtension(): void {
             if (!agentPanelStore.enabled) return
             agentPanelStore.open('automatic_consent')
           },
-          () => {
-            writeAutoShown(key, true)
+          {
+            onShown: () => {
+              writeAutoShown(key, true)
+            },
+            canShow: () => !onboardingHoldsScreen()
           }
         ).finally(() => {
           autoShowInFlight = false
@@ -199,9 +203,15 @@ export function registerAgentPanelExtension(): void {
       const offerWhenStartupDecided = (): void => {
         // A boot that never reports forfeits this session's automatic offer
         // rather than landing it on a late first-run screen.
-        void whenStartupDecided().then((decided) => {
-          if (decided) offerConsentUnprompted()
-        })
+        whenStartupDecided()
+          .then((decided) => {
+            if (decided) offerConsentUnprompted()
+          })
+          .catch((error: unknown) => {
+            reportError(error, {
+              errorType: 'agent_consent_auto_offer_failure'
+            })
+          })
       }
 
       const loadConsentIfEligible = (): void => {
@@ -225,7 +235,7 @@ export function registerAgentPanelExtension(): void {
       watch(
         () => onboardingTourStore.activeTour,
         (tour) => {
-          if (tour === null) offerWhenStartupDecided()
+          if (tour === null) loadConsentIfEligible()
         }
       )
       return setupFlagGate(loadConsentIfEligible)

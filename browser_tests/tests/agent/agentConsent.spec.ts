@@ -536,7 +536,7 @@ test.describe(
       }
     })
 
-    test('waits behind Getting Started instead of stacking on it', async ({
+    test('stays silent for the session once Getting Started took the screen', async ({
       comfyPage,
       agentPanel,
       agentConsentReads
@@ -557,7 +557,7 @@ test.describe(
         await expect
           .poll(() => agentConsentReads.length, {
             message:
-              'the automatic offer only runs after consent is read; asserting absence before that would pass vacuously',
+              'the automatic offer runs once the consent read and the boot decision are both in; the fixture already waited past the decision (the loading overlay clears after it), so the read is the last input and the silence below is a decision, not a race',
             timeout: 15_000
           })
           .toBeGreaterThan(0)
