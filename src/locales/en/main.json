@@ -3283,8 +3283,14 @@
     "planCredits": {
       "tabs": {
         "activity": "Activity",
-        "overview": "Credits"
+        "overview": "Credits",
+        "invoices": "Invoices"
       }
+    },
+    "invoices": {
+      "nextInvoice": "Next month invoice",
+      "usd": "USD",
+      "fullHistory": "Full invoice history"
     },
     "tabs": {
       "dashboard": "Dashboard",

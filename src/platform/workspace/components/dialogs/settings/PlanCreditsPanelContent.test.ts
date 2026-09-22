@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -17,9 +18,24 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 const refreshSpy = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 
+const permissionState = vi.hoisted(() => ({ canManageSubscription: true }))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: computed(() => ({
+        canManageSubscription: permissionState.canManageSubscription
+      }))
+    })
+  })
+)
+
 const stubs = {
   SubscriptionPanelContentWorkspace: {
     template: '<section aria-label="Plan and credits overview" />'
+  },
+  WorkspaceInvoicesContent: {
+    template: '<section aria-label="Invoices" />'
   },
   CreditsPanel: {
     props: ['embedded'],
@@ -45,6 +61,10 @@ function renderPanel({ cloud = true } = {}) {
   })
   return render(PlanCreditsPanelContent, { global: { plugins: [i18n], stubs } })
 }
+
+beforeEach(() => {
+  permissionState.canManageSubscription = true
+})
 
 describe('PlanCreditsPanelContent', () => {
   it('shows Credits and Activity tabs with Credits active by default', () => {
@@ -80,6 +100,31 @@ describe('PlanCreditsPanelContent', () => {
       screen.queryByRole('region', { name: 'Plan and credits overview' })
     ).toBeNull()
     await waitFor(() => expect(refreshSpy).toHaveBeenCalledOnce())
+  })
+
+  it('opens the Invoices tab for a billing manager', async () => {
+    renderPanel()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Invoices' }))
+
+    expect(screen.getByRole('region', { name: 'Invoices' })).toBeTruthy()
+    expect(
+      screen.queryByRole('region', { name: 'Plan and credits overview' })
+    ).toBeNull()
+  })
+
+  it('hides Invoices from members who cannot manage billing', () => {
+    permissionState.canManageSubscription = false
+    renderPanel()
+
+    expect(screen.queryByRole('button', { name: 'Invoices' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Activity' })).toBeTruthy()
+  })
+
+  it('hides Invoices off cloud, where there is no upcoming charge to show', () => {
+    renderPanel({ cloud: false })
+
+    expect(screen.queryByRole('button', { name: 'Invoices' })).toBeNull()
   })
 
   it('reports usage-log refresh failures', async () => {

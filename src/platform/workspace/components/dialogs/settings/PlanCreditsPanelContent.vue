@@ -27,6 +27,7 @@
         />
       </div>
     </template>
+    <WorkspaceInvoicesContent v-else-if="activeView === 'invoices'" />
     <UsageLogsTable v-else ref="usageLogsTable" />
   </div>
 </template>
@@ -41,17 +42,41 @@ import Button from '@/components/ui/button/Button.vue'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
+import WorkspaceInvoicesContent from '@/platform/workspace/components/dialogs/settings/WorkspaceInvoicesContent.vue'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
-type View = 'overview' | 'activity'
+type View = 'overview' | 'activity' | 'invoices'
 
 const { t } = useI18n()
+const { permissions } = useWorkspaceUI()
+
+// Invoices covers a workspace-wide charge, so it is billing-manager only, and
+// the upcoming amount and Stripe portal only exist on cloud.
+const canSeeInvoices = computed(
+  () => isCloud && permissions.value.canManageSubscription
+)
 
 const tabs = computed<{ key: View; label: string }[]>(() => [
   { key: 'overview', label: t('workspacePanel.planCredits.tabs.overview') },
-  { key: 'activity', label: t('workspacePanel.planCredits.tabs.activity') }
+  { key: 'activity', label: t('workspacePanel.planCredits.tabs.activity') },
+  ...(canSeeInvoices.value
+    ? [
+        {
+          key: 'invoices' as const,
+          label: t('workspacePanel.planCredits.tabs.invoices')
+        }
+      ]
+    : [])
 ])
 
 const activeView = ref<View>('overview')
+
+// Switching workspaces can drop the billing-manager role while the dialog
+// stays open; leaving Invoices selected would keep the panel rendered after
+// its tab disappeared.
+watch(canSeeInvoices, (allowed) => {
+  if (!allowed && activeView.value === 'invoices') activeView.value = 'overview'
+})
 
 const usageLogsTable = useTemplateRef('usageLogsTable')
 watch(usageLogsTable, (table) => {
