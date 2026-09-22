@@ -239,14 +239,11 @@ function reportInvalidHostTarget(
   )
 }
 
-function readSemanticLink(
-  doc: Y.Doc,
-  id: string,
-  definitions: SubgraphDefinitionIndex,
-  reported: Set<string>
-): SemanticLinkPayload | null {
-  const tuple = readLinkTuple(doc, id)
-  if (!tuple || tuple.length < 5) return null
+/** The scalar fields a link tuple must carry, parsed and integer-validated. */
+function parseLinkScalarFields(
+  tuple: readonly unknown[],
+  id: string
+): { linkId: number; originSlot: number; targetSlot: number } | null {
   const linkId = Number(tuple[0] ?? id)
   const originSlot = Number(tuple[2])
   const targetSlot = Number(tuple[4])
@@ -259,6 +256,20 @@ function readSemanticLink(
   ) {
     return null
   }
+  return { linkId, originSlot, targetSlot }
+}
+
+function readSemanticLink(
+  doc: Y.Doc,
+  id: string,
+  definitions: SubgraphDefinitionIndex,
+  reported: Set<string>
+): SemanticLinkPayload | null {
+  const tuple = readLinkTuple(doc, id)
+  if (!tuple || tuple.length < 5) return null
+  const fields = parseLinkScalarFields(tuple, id)
+  if (!fields) return null
+  const { linkId, originSlot, targetSlot } = fields
   const targetNodeId = String(tuple[3])
   const target = hostTarget(
     doc,
