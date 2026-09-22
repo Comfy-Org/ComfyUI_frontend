@@ -9,106 +9,76 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
 import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
 
+/** One loader's failure must not keep the rest of the boot chain from running,
+ * and a deep link that cannot be served is not worth a visible error. */
+async function attempt(what: string, run: () => void | Promise<void>) {
+  try {
+    await run()
+  } catch (error) {
+    console.error(`[UrlActionLoaders] Failed to ${what}:`, error)
+  }
+}
+
 /**
  * Aggregates the query-param "deep link" loaders the cloud app checks on mount
  * (`?invite`, `?create_workspace`, `?pricing`, `?topup`, `?settings`,
- * `?assets`), then
- * recovers an interrupted checkout. The loaders are instantiated in setup so
- * their `useRoute`/`useRouter` resolve; call `runUrlActionLoaders()` from
- * `onMounted` once the app is ready.
+ * `?assets`), then recovers an interrupted checkout. The loaders are
+ * instantiated in setup so their `useRoute`/`useRouter` resolve; call
+ * `runUrlActionLoaders()` from `onMounted` once the app is ready.
  */
 export function useUrlActionLoaders() {
-  const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
-  const createWorkspaceUrlLoader = isCloud
-    ? useCreateWorkspaceUrlLoader()
-    : null
-  const pricingTableUrlLoader = isCloud ? usePricingTableUrlLoader() : null
-  const topUpUrlLoader = isCloud ? useTopUpUrlLoader() : null
-  const settingsUrlLoader = isCloud ? useSettingsUrlLoader() : null
-  const assetsUrlLoader = isCloud ? useAssetsUrlLoader() : null
-  const paymentReturnUrlLoader = isCloud ? usePaymentReturnUrlLoader() : null
-  const subscriptionDialog = isCloud ? useSubscriptionDialog() : null
+  // Every one of these is cloud-only, so they are created and guarded together.
+  const cloud = isCloud
+    ? {
+        invite: useInviteUrlLoader(),
+        createWorkspace: useCreateWorkspaceUrlLoader(),
+        pricingTable: usePricingTableUrlLoader(),
+        topUp: useTopUpUrlLoader(),
+        settings: useSettingsUrlLoader(),
+        assets: useAssetsUrlLoader(),
+        paymentReturn: usePaymentReturnUrlLoader(),
+        subscriptionDialog: useSubscriptionDialog()
+      }
+    : undefined
 
   async function runUrlActionLoaders() {
+    if (!cloud) return
+
     // Accept workspace invite from URL if present (e.g., ?invite=TOKEN).
-    if (inviteUrlLoader) {
-      await inviteUrlLoader.loadInviteFromUrl()
-    }
+    await cloud.invite.loadInviteFromUrl()
 
     // Open create workspace dialog from URL if present (e.g., ?create_workspace=1).
-    if (createWorkspaceUrlLoader) {
-      try {
-        await createWorkspaceUrlLoader.loadCreateWorkspaceFromUrl()
-      } catch (error) {
-        console.error(
-          '[UrlActionLoaders] Failed to load create workspace from URL:',
-          error
-        )
-      }
-    }
+    await attempt('load create workspace from URL', () =>
+      cloud.createWorkspace.loadCreateWorkspaceFromUrl()
+    )
 
     // Open the pricing table from URL if present (e.g., ?pricing=1 / ?pricing=team).
-    if (pricingTableUrlLoader) {
-      try {
-        await pricingTableUrlLoader.loadPricingTableFromUrl()
-      } catch (error) {
-        console.error(
-          '[UrlActionLoaders] Failed to load pricing table from URL:',
-          error
-        )
-      }
-    }
+    await attempt('load pricing table from URL', () =>
+      cloud.pricingTable.loadPricingTableFromUrl()
+    )
 
     // Open the credit top-up dialog from URL if present (e.g., ?topup=1).
     // Not gated on the team-workspaces flag: it also drives personal/legacy users.
-    if (topUpUrlLoader) {
-      try {
-        await topUpUrlLoader.loadTopUpFromUrl()
-      } catch (error) {
-        console.error(
-          '[UrlActionLoaders] Failed to load top-up dialog from URL:',
-          error
-        )
-      }
-    }
+    await attempt('load top-up dialog from URL', () =>
+      cloud.topUp.loadTopUpFromUrl()
+    )
 
     // Open a Settings panel from URL if present (e.g. ?settings=plan-credits).
-    if (settingsUrlLoader) {
-      try {
-        settingsUrlLoader.loadSettingsFromUrl()
-      } catch (error) {
-        console.error(
-          '[UrlActionLoaders] Failed to load settings panel from URL:',
-          error
-        )
-      }
-    }
+    await attempt('load settings panel from URL', () =>
+      cloud.settings.loadSettingsFromUrl()
+    )
 
     // Open the Assets sidebar panel from URL if present (e.g. ?assets=1).
-    if (assetsUrlLoader) {
-      try {
-        assetsUrlLoader.loadAssetsFromUrl()
-      } catch (error) {
-        console.error(
-          '[UrlActionLoaders] Failed to open assets panel from URL:',
-          error
-        )
-      }
-    }
+    await attempt('open assets panel from URL', () =>
+      cloud.assets.loadAssetsFromUrl()
+    )
 
     // Handle the return leg of a redirect payment (Stripe appends
     // payment_intent/redirect_status params): strip the params and refresh
     // billing status so the pending checkout resumes polling immediately.
-    if (paymentReturnUrlLoader) {
-      try {
-        await paymentReturnUrlLoader.loadPaymentReturnFromUrl()
-      } catch (error) {
-        console.error(
-          '[UrlActionLoaders] Failed to handle payment return from URL:',
-          error
-        )
-      }
-    }
+    await attempt('handle payment return from URL', () =>
+      cloud.paymentReturn.loadPaymentReturnFromUrl()
+    )
 
     // Reopen a checkout that was interrupted by a redirect payment. Runs here,
     // not during workspace init, so the first-run and Templates overlays are
@@ -116,15 +86,12 @@ export function useUrlActionLoaders() {
     // awaited: the resume only settles once the recovered operation reaches a
     // terminal status, which for an abandoned checkout can take hours, and the
     // boot chain (emit('ready'), the tour, telemetry) must not wait on it.
-    if (subscriptionDialog) {
-      void (async () => subscriptionDialog.resumePendingPricingFlow())().catch(
-        (error) => {
-          reportError(error, {
-            errorType: 'billing_pending_checkout_resume_failure'
-          })
-        }
-      )
-    }
+    void (async () =>
+      cloud.subscriptionDialog.resumePendingPricingFlow())().catch((error) => {
+      reportError(error, {
+        errorType: 'billing_pending_checkout_resume_failure'
+      })
+    })
   }
 
   return { runUrlActionLoaders }
