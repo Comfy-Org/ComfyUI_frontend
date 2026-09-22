@@ -18,6 +18,7 @@ interface ImportMetaEnv {
   readonly PUBLIC_WORKSHOP_AUTH_FLAG?: string
   readonly PUBLIC_WORKSHOP_ENABLED?: string
   readonly PUBLIC_WORKSHOP_ROUTER_RUN?: string
+  readonly PUBLIC_WORKSHOP_SAVE_ASSETS?: string
   /** Optional Turnstile mode override: off, shadow, or enforce. */
   readonly PUBLIC_WORKSHOP_TURNSTILE_MODE?: string
   readonly PUBLIC_POSTHOG_KEY?: string

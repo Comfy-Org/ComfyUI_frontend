@@ -16,9 +16,11 @@
     ".astro/types.d.ts",
     "src/**/*",
     "e2e/**/*",
+    "e2e-assets/**/*",
     "scripts/**/*",
     "astro.config.ts",
     "playwright.config.ts",
+    "playwright-assets.config.ts",
     "vitest.config.ts"
   ],
   "exclude": ["src/**/*.stories.ts"],

@@ -16,6 +16,11 @@ import {
 import { WorkshopRouterError } from './workshop-router-errors'
 import type { RunOutput } from './workshop-run'
 
+export const WORKSHOP_USER_CANCEL = new DOMException(
+  'Generation cancelled by user',
+  'AbortError'
+)
+
 const REQUEST_TIMEOUT_MS = 120_000
 const POLL_DEFAULT_MS = 2_000
 const POLL_MIN_MS = 1_000
@@ -123,6 +128,7 @@ async function routerFetch(
     redirect: 'error',
     headers: {
       Authorization: `Bearer ${token}`,
+      'Comfy-Usage-Source': 'comfy-models',
       ...(init.body === undefined
         ? {}
         : {
@@ -141,12 +147,16 @@ async function submit(
   state: Submitting,
   context: QueueContext
 ): Promise<QueuedRun> {
-  const response = await routerFetch(context, requestsUrl(context), {
+  const submitUrl =
+    requestsUrl(context) +
+    (context.options.comfy_save_asset ? '?comfy_save_asset=true' : '')
+  const response = await routerFetch(context, submitUrl, {
     method: 'POST',
     body: context.body
   })
   const callId = response.headers.get('X-Comfy-Request-Id')
   if (
+    !context.options.comfy_save_asset &&
     response.status === 403 &&
     response.headers.get('X-Comfy-Error-Type') === 'not_enabled'
   ) {
@@ -174,6 +184,21 @@ async function submit(
   if (!requestId)
     throw new WorkshopRouterError('response', callId, {}, undefined, 'response')
   context.options.onRequestId?.(requestId)
+  if (
+    context.options.comfy_save_asset &&
+    (typeof handle !== 'object' ||
+      handle === null ||
+      !('comfy_save_asset' in handle) ||
+      handle.comfy_save_asset !== true)
+  )
+    throw new WorkshopRouterError(
+      'unavailable',
+      requestId,
+      {},
+      undefined,
+      'response',
+      { requestSettlement: 'pending' }
+    )
   return { phase: 'collect', requestId, interruptions: 0, unreadableResults: 0 }
 }
 
@@ -370,7 +395,7 @@ export async function runWorkshopRouter(
     }
   } catch (error) {
     const requestId = runRequestId(state)
-    if (options.signal.aborted && requestId)
+    if (options.signal.reason === WORKSHOP_USER_CANCEL && requestId)
       requestCancellation(context, requestId)
     options.signal.throwIfAborted()
     if (error instanceof WorkshopRouterError) throw error

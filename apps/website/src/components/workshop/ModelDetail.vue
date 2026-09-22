@@ -3,6 +3,7 @@ import { Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
 import {
   computed,
+  onMounted,
   onScopeDispose,
   onUnmounted,
   ref,
@@ -79,6 +80,8 @@ import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
 import ModelSupport from './ModelSupport.vue'
+import GenerationHistory from './GenerationHistory.vue'
+import { WORKSHOP_USER_CANCEL } from '../../config/workshop-router-queue'
 
 const {
   model,
@@ -201,6 +204,7 @@ const runState = ref<RunState>(
     ? { status: 'example', output: exampleOutput(firstExample) }
     : IDLE
 )
+const savesAssets = import.meta.env.PUBLIC_WORKSHOP_SAVE_ASSETS === '1'
 const runs = ref<RunRecord[]>([])
 const earlier = computed(() => runs.value.slice(1))
 const attachments = computed(() =>
@@ -289,7 +293,7 @@ watch(
 // standing one costs the idle page its place in the back/forward cache.
 // globalThis.window, not window: on the server the island has neither.
 useEventListener(
-  () => (isRunning.value ? globalThis.window : undefined),
+  () => (isRunning.value && !savesAssets ? globalThis.window : undefined),
   'beforeunload',
   (event: BeforeUnloadEvent) => event.preventDefault()
 )
@@ -298,7 +302,7 @@ useEventListener(
 // listener: declining restores the prior entry without unmounting this island;
 // accepting lets Astro finish the traversal and cancel the run on unmount.
 useEventListener(
-  () => (isRunning.value ? globalThis.window : undefined),
+  () => (isRunning.value && !savesAssets ? globalThis.window : undefined),
   'popstate',
   (event: PopStateEvent) => {
     if (restoringTraversal) {
@@ -329,7 +333,7 @@ useEventListener(
 // reach the guards above.
 const leavingTo = ref<string>()
 useEventListener(
-  () => (isRunning.value ? globalThis.document : undefined),
+  () => (isRunning.value && !savesAssets ? globalThis.document : undefined),
   'click',
   (event: MouseEvent) => {
     const href = linkLeavingPage(event, location)
@@ -343,7 +347,7 @@ function leaveForLink() {
   const href = leavingTo.value
   leavingTo.value = undefined
   if (!href) return
-  cancelRun()
+  stopObserving()
   location.assign(href)
 }
 
@@ -351,7 +355,7 @@ function leaveForLink() {
 // beforeunload guard owns its confirmation. An approved traversal is the one
 // exception: it was already confirmed in the capture-phase popstate handler.
 useEventListener(
-  () => (isRunning.value ? globalThis.document : undefined),
+  () => (isRunning.value && !savesAssets ? globalThis.document : undefined),
   'astro:before-preparation',
   (event: Event) => {
     const navigationType = Reflect.get(event, 'navigationType')
@@ -383,14 +387,14 @@ const now = useTimestamp({ interval: 1000 })
 // The header is its own island and switching workspace is not a navigation,
 // so none of the guards above see it. This is how it learns there is a run.
 watch(isRunning, (running) =>
-  reportWorkshopRun(running ? cancelRun : undefined)
+  reportWorkshopRun(running && !savesAssets ? cancelRun : undefined)
 )
 onScopeDispose(() => reportWorkshopRun(undefined))
 
 function cancelRun() {
   delivery.cancel()
   if (activeRun) {
-    activeRun.controller.abort()
+    activeRun.controller.abort(WORKSHOP_USER_CANCEL)
     captureWorkshopEvent({
       name: 'run_finished',
       properties: {
@@ -404,6 +408,46 @@ function cancelRun() {
   }
   runState.value = transition(runState.value, { type: 'cancel' })
 }
+
+function stopObserving() {
+  activeRun?.controller.abort()
+  activeRun = undefined
+  runState.value = IDLE
+  reportWorkshopRun(undefined)
+}
+
+function clearSessionOutputs() {
+  stopObserving()
+  pendingRequest = undefined
+  releaseRouterOutputs(
+    runs.value.flatMap((run) => [run.output, ...run.attachments])
+  )
+  runs.value = []
+  requestId.value = null
+  runState.value = IDLE
+}
+
+async function historyToken(): Promise<string> {
+  const owner = session.value
+  const result = await ensureFresh()
+  if (
+    !owner ||
+    result?.status !== 'ok' ||
+    result.session.uid !== owner.uid ||
+    result.session.workspace.id !== owner.workspace.id ||
+    session.value?.uid !== owner.uid ||
+    session.value?.workspace.id !== owner.workspace.id
+  )
+    throw new WorkshopRouterError('unavailable')
+  return result.session.token
+}
+
+onMounted(() => {
+  if (!savesAssets) return
+  const id = new URL(window.location.href).searchParams.get('request_id')
+  if (id && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id))
+    requestId.value = id
+})
 
 const personalSwitchPending = ref(false)
 const personalSwitchError = ref(false)
@@ -426,7 +470,7 @@ async function switchToPersonal() {
 }
 
 onUnmounted(() => {
-  cancelRun()
+  stopObserving()
   releaseRouterOutputs(
     runs.value.flatMap((run) => [run.output, ...run.attachments])
   )
@@ -434,13 +478,13 @@ onUnmounted(() => {
 watch(
   () => session.value?.uid,
   (uid, previous) => {
-    if (uid !== previous) cancelRun()
+    if (previous !== undefined && uid !== previous) clearSessionOutputs()
   }
 )
 watch(
   () => session.value?.workspace.id,
   (workspace, previous) => {
-    if (workspace !== previous) cancelRun()
+    if (previous !== undefined && workspace !== previous) clearSessionOutputs()
   }
 )
 
@@ -497,6 +541,7 @@ async function renderRun(
     {},
     {
       model,
+      comfy_save_asset: savesAssets,
       form: { schema: schema.value, values: values.value },
       signal: attempt.controller.signal,
       token: async () => (await freshCredentialFor(startedFor, attempt)).token,
@@ -511,7 +556,13 @@ async function renderRun(
       },
       idempotencyKey: (body) => idempotencyKeyFor(startedFor, body),
       onRequestId: (id) => {
-        if (runIsActive(attempt)) requestId.value = id
+        if (!runIsActive(attempt)) return
+        requestId.value = id
+        if (savesAssets && id) {
+          const url = new URL(window.location.href)
+          url.searchParams.set('request_id', id)
+          window.history.replaceState(window.history.state, '', url)
+        }
       }
     }
   )
@@ -945,7 +996,7 @@ function useInCode() {
           class="flex flex-col gap-1"
         >
           <p
-            v-if="runState.status === 'succeeded'"
+            v-if="runState.status === 'succeeded' && !savesAssets"
             class="text-xs text-primary-warm-gray"
             data-testid="output-expires"
           >
@@ -1023,6 +1074,15 @@ function useInCode() {
         :model-slug="model.slug"
       />
     </section>
+
+    <GenerationHistory
+      v-if="savesAssets && session"
+      :key="JSON.stringify([session.uid, session.workspace.id])"
+      :model-id="model.routerId"
+      :active-request-id="requestId"
+      :token="historyToken"
+      :locale
+    />
 
     <RunLeaveDialog
       :open="leavingTo !== undefined"
