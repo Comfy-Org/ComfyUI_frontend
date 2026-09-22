@@ -19,6 +19,7 @@ interface RecordedRequest {
   /** Below `/api`, e.g. `/billing/status`. */
   readonly path: string
   readonly authorization: string | null
+  readonly idempotencyKey: string | null
   readonly body: unknown
 }
 
@@ -263,6 +264,7 @@ export async function installMockCloud(
       method: request.method(),
       path: url.pathname.replace(/^\/api/, ''),
       authorization: request.headers()['authorization'] ?? null,
+      idempotencyKey: request.headers()['idempotency-key'] ?? null,
       body: parseBody(request)
     }
     requests.push(recorded)
