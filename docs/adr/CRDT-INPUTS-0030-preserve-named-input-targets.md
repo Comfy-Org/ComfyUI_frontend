@@ -49,10 +49,16 @@ The current interim implementation applies it at two boundaries:
   `mergeInputSlotsByName` falls back to positional preparation using the
   document's input list and order, dropping live-only inputs.
 
-Remote slot projection retains runtime slot instances and shared array
-references, because `LGraphNode` captures `_inputs`/`_outputs` at construction
-and reassigning the store's arrays strands the reactive array the renderer
+Incoming connect patches matching runtime slot instances and retains shared
+array references. `LGraphNode` captures `_inputs`/`_outputs` at construction,
+so reassigning the store's arrays would strand the reactive array the renderer
 tracks, the rehydration proxy, and the slot-view WeakMap.
+
+Authoritative snapshot reconciliation retains the arrays but can replace their
+slot objects. It does not currently guarantee runtime slot identity or retention
+of runtime-only metadata such as input widget markers and output labels. That
+preservation gap remains separate follow-up work; this ADR does not claim it is
+fixed by the incoming-connect path.
 
 Outputs remain index-based because their names need not be unique.
 
