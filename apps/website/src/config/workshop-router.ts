@@ -1,3 +1,4 @@
+import { combineAbortSignals } from '../utils/abortSignal'
 import type { WorkshopContract } from './workshop-contract'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { serializeRouterInput } from './workshop-request'
@@ -350,7 +351,7 @@ export function createAttemptContext(
     options,
     body: serializeRouterInput(options.body),
     controller,
-    signal: AbortSignal.any([controller.signal, options.signal]),
+    signal: combineAbortSignals([controller.signal, options.signal]),
     deadlineAt: Date.now() + TOTAL_RUN_TIMEOUT_MS
   }
 }

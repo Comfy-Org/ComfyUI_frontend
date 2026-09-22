@@ -23,6 +23,18 @@ const run: WorkshopRunAnalytics = {
   workspace_id: 'private-workspace'
 }
 
+type FailedRun = Extract<
+  Extract<WorkshopAnalyticsEvent, { name: 'run_finished' }>['properties'],
+  { status: 'failed' }
+>
+type FailureDetails = Pick<FailedRun, 'reason'> &
+  Partial<
+    Omit<
+      FailedRun,
+      keyof WorkshopRunAnalytics | 'status' | 'duration_ms' | 'reason'
+    >
+  >
+
 describe('Workshop health', () => {
   it('preserves declared field names for validation diagnostics', () => {
     expect(
@@ -36,7 +48,8 @@ describe('Workshop health', () => {
       })
     ).toMatchObject({
       field_error_names: ['first_frame'],
-      field_error_codes: ['required']
+      field_error_codes: ['required'],
+      failure_type: 'validation'
     })
   })
   it.for([
@@ -54,8 +67,8 @@ describe('Workshop health', () => {
         workshopHealthLog({
           name: 'run_finished',
           properties: { ...run, status: 'failed', reason, duration_ms: 10 }
-        })?.service_health
-      ).toBe(expected)
+        })
+      ).toMatchObject({ service_health: expected, failure_type: reason })
     }
   )
 
@@ -135,7 +148,23 @@ describe('Workshop health', () => {
       client_attempt_id: run.attempt_id,
       request_id: 'router-request'
     })
+    expect(record).not.toHaveProperty('failure_type')
+    expect(record).not.toHaveProperty('reason')
     expect(JSON.stringify(record)).not.toMatch(/private-user|private-workspace/)
+  })
+
+  it('excludes a cancelled run without assigning a failure type', () => {
+    const record = workshopHealthLog({
+      name: 'run_finished',
+      properties: {
+        ...run,
+        status: 'cancelled',
+        duration_ms: 10
+      }
+    })
+
+    expect(record).toMatchObject({ service_health: 'excluded' })
+    expect(record).not.toHaveProperty('failure_type')
   })
 
   it('retains sanitized client diagnostics without private exception text', () => {
@@ -150,7 +179,7 @@ describe('Workshop health', () => {
     const failure = new WorkshopRouterError(
       'client',
       null,
-      { private_field: 'fileUnreadable' },
+      { source_file: 'fileUnreadable' },
       undefined,
       'file_read',
       { cause }
@@ -161,19 +190,111 @@ describe('Workshop health', () => {
         ...run,
         status: 'failed',
         duration_ms: 10,
-        ...workshopFailureAnalytics(failure)
+        ...workshopFailureAnalytics(failure, [
+          {
+            kind: 'file',
+            name: 'source_file',
+            label: 'File',
+            accept: [],
+            maxBytes: 1,
+            required: true
+          }
+        ])
       }
     })
 
     expect(record).toMatchObject({
-      service_health: 'failure',
+      service_health: 'excluded',
       failure_stage: 'file_read',
+      field_error_names: ['source_file'],
       field_error_codes: ['fileUnreadable'],
+      failure_type: 'NotReadableError',
       exception_name: 'NotReadableError',
       exception_frames: ['/_website/ModelDetail.abc.js:12:34']
     })
     expect(JSON.stringify(record)).not.toContain('private')
   })
+
+  it.for([
+    {
+      name: 'client-side video duration validation',
+      failure: {
+        reason: 'validation',
+        failure_stage: 'input_preparation',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'unreadable selected video',
+      failure: {
+        reason: 'client',
+        failure_stage: 'input_preparation',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoUnreadable']
+      }
+    }
+  ] satisfies Array<{ name: string; failure: FailureDetails }>)(
+    'excludes $name from service failures',
+    ({ failure }) => {
+      expect(
+        workshopHealthLog({
+          name: 'run_finished',
+          properties: {
+            ...run,
+            status: 'failed',
+            duration_ms: 10,
+            ...failure
+          }
+        })
+      ).toMatchObject({ service_health: 'excluded' })
+    }
+  )
+
+  it.for([
+    {
+      name: 'validation without a visible field',
+      failure: {
+        reason: 'validation',
+        field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'Router validation response',
+      failure: {
+        reason: 'validation',
+        request_id: 'router-request',
+        http_status: 422,
+        router_error_type: 'invalid_input',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'failed file upload',
+      failure: {
+        reason: 'upload',
+        failure_stage: 'upload_put',
+        field_error_names: ['image'],
+        field_error_codes: ['uploadFailed']
+      }
+    }
+  ] satisfies Array<{ name: string; failure: FailureDetails }>)(
+    'retains $name as a service failure',
+    ({ failure }) => {
+      expect(
+        workshopHealthLog({
+          name: 'run_finished',
+          properties: {
+            ...run,
+            status: 'failed',
+            duration_ms: 10,
+            ...failure
+          }
+        })?.service_health
+      ).toBe('failure')
+    }
+  )
 
   it.for([
     { status: 'succeeded' as const, expected: 'success' },
@@ -188,6 +309,43 @@ describe('Workshop health', () => {
       })?.service_health
     ).toBe(expected)
   })
+
+  it('uses Router attribution before a captured response exception', () => {
+    expect(
+      workshopHealthLog({
+        name: 'run_finished',
+        properties: {
+          ...run,
+          status: 'failed',
+          reason: 'provider',
+          duration_ms: 10,
+          router_error_type: 'provider_error',
+          exception_name: 'TypeError'
+        }
+      })
+    ).toMatchObject({ failure_type: 'provider_error' })
+  })
+
+  it.for([
+    { reason: 'media_timeout' as const, expected: 'media_timeout' },
+    { reason: undefined, expected: 'delivery_error' }
+  ])(
+    'classifies a delivery failure as $expected without Router metadata',
+    ({ reason, expected }) => {
+      expect(
+        workshopHealthLog({
+          name: 'delivery_finished',
+          properties: {
+            ...run,
+            duration_ms: 1,
+            output_kind: 'image',
+            status: 'failed',
+            reason
+          }
+        })
+      ).toMatchObject({ failure_type: expected })
+    }
+  )
 
   it.for([
     ['comfy.org', 'prod-v2'],

@@ -16,6 +16,24 @@ function isAccountRefusal(failure: FailedRun): boolean {
   )
 }
 
+function isActionableInputIssue(failure: FailedRun): boolean {
+  if (
+    failure.request_id ||
+    failure.http_status !== undefined ||
+    failure.router_error_type ||
+    !failure.field_error_names?.length ||
+    !failure.field_error_codes?.length
+  )
+    return false
+  if (failure.reason === 'validation') return true
+  return (
+    failure.reason === 'client' &&
+    failure.field_error_codes.every((code) =>
+      ['fileUnreadable', 'videoUnreadable'].includes(code)
+    )
+  )
+}
+
 function health(event: WorkshopAnalyticsEvent): ServiceHealth {
   if (event.name === 'delivery_finished') {
     if (event.properties.status === 'succeeded') return 'success'
@@ -25,11 +43,27 @@ function health(event: WorkshopAnalyticsEvent): ServiceHealth {
   if (event.properties.status === 'succeeded') return 'pending'
   if (event.properties.status === 'cancelled') return 'excluded'
   if (isAccountRefusal(event.properties)) return 'excluded'
+  if (isActionableInputIssue(event.properties)) return 'excluded'
   return ['noCredits', 'policy', 'concurrency'].includes(
     event.properties.reason
   )
     ? 'excluded'
     : 'failure'
+}
+
+function failureType(event: WorkshopAnalyticsEvent): string | undefined {
+  if (event.name === 'run_validation_failed') return 'validation'
+  if (event.name === 'delivery_finished') {
+    if (event.properties.status !== 'failed') return
+    return event.properties.reason ?? 'delivery_error'
+  }
+  if (event.name !== 'run_finished' || event.properties.status !== 'failed')
+    return
+  return (
+    event.properties.router_error_type ??
+    event.properties.exception_name ??
+    event.properties.reason
+  )
 }
 
 const HEALTH_FIELDS = new Set([
@@ -60,6 +94,7 @@ export function workshopHealthLog(event: WorkshopAnalyticsEvent) {
   )
     return
   const properties = event.properties
+  const type = failureType(event)
   return {
     ...Object.fromEntries(
       Object.entries(properties).filter(([key]) => HEALTH_FIELDS.has(key))
@@ -68,7 +103,10 @@ export function workshopHealthLog(event: WorkshopAnalyticsEvent) {
     telemetry_version: 1,
     event_name: event.name,
     service_health: health(event),
-    reason: 'reason' in properties ? properties.reason : 'none',
+    ...('reason' in properties && properties.reason
+      ? { reason: properties.reason }
+      : {}),
+    ...(type ? { failure_type: type } : {}),
     ...('attempt_id' in properties
       ? { client_attempt_id: properties.attempt_id }
       : {}),

@@ -1,3 +1,4 @@
+import { combineAbortSignals } from '../utils/abortSignal'
 import type { RunOutput } from './workshop-run'
 
 const EXTENSIONS = new Map([
@@ -60,7 +61,7 @@ export async function discoverOutputMimes(
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 5_000)
   const requestSignal = signal
-    ? AbortSignal.any([signal, controller.signal])
+    ? combineAbortSignals([signal, controller.signal])
     : controller.signal
   let next = 0
   async function worker() {

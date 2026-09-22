@@ -1,3 +1,4 @@
+import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import type {
   AttemptContext,
@@ -130,9 +131,9 @@ async function routerFetch(
             'Idempotency-Key': options.idempotencyKey
           })
     },
-    signal: AbortSignal.any([
+    signal: combineAbortSignals([
       context.signal,
-      AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+      createTimeoutSignal(REQUEST_TIMEOUT_MS)
     ])
   })
 }
