@@ -12,7 +12,7 @@
       v-if="showOverflowArrows"
       variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-left aspect-square h-full w-auto"
+      class="shrink-0 self-center rounded-lg p-2 disabled:opacity-25"
       :aria-label="$t('g.scrollLeft')"
       :disabled="!leftArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(-1))"
@@ -34,7 +34,8 @@
           "
           :pt="{
             pcToggleButton: {
-              root: 'rounded-lg bg-transparent text-base-foreground/75 hover:bg-secondary-background-hover hover:text-base-foreground aria-pressed:bg-secondary-background aria-pressed:text-base-foreground aria-pressed:hover:bg-secondary-background-hover'
+              root: ({ context }: ToggleButtonPassThroughMethodOptions) =>
+                cn(tabStateVariants({ active: context.active }), 'p-0')
             }
           }"
           :model-value="selectedWorkflow"
@@ -68,7 +69,7 @@
       v-if="showOverflowArrows"
       variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-right aspect-square h-full w-auto"
+      class="shrink-0 self-center rounded-lg p-2 disabled:opacity-25"
       :aria-label="$t('g.scrollRight')"
       :disabled="!rightArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(1))"
@@ -143,7 +144,9 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll, whenever } from '@vueuse/core'
 import SelectButton from 'primevue/selectbutton'
+import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
+
 import AgentEntryButton from '@/components/topbar/AgentEntryButton.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
@@ -151,6 +154,7 @@ import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 
+import { tabStateVariants } from '@/components/tab/tab.variants'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
@@ -387,15 +391,6 @@ onUpdated(checkOverflow)
   border: 0;
   padding: 0;
   min-width: 90px;
-}
-
-.overflow-arrow {
-  border-radius: 0;
-  padding-inline: calc(var(--spacing) * 2);
-}
-
-.overflow-arrow[disabled] {
-  opacity: 0.25;
 }
 
 :deep(.p-togglebutton > .p-togglebutton-content) {
