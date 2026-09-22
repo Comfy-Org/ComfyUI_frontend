@@ -77,6 +77,39 @@ const copy = {
     en: 'fal · Runware · Wavespeed',
     'zh-CN': 'fal · Runware · Wavespeed'
   },
+  'platform.router.coverage.heading': {
+    en: 'Same models. More places to run them.',
+    'zh-CN': '同样的模型，更多运行选择。'
+  },
+  'platform.router.coverage.body': {
+    en: "Every model runs on Comfy by default, you can set `model_provider` to run them on another provider. We're starting with the highest-traffic models, more models and providers are coming soon.",
+    'zh-CN':
+      '每个模型默认在 Comfy 上运行，你可以设置 `model_provider` 让它们在其他供应商上运行。我们从流量最高的模型开始，更多模型和供应商即将上线。'
+  },
+  'platform.router.coverage.modelColumn': {
+    en: 'MODEL',
+    'zh-CN': '模型'
+  },
+  'platform.router.coverage.moreModels': {
+    en: '+{count} more models',
+    'zh-CN': '另有 {count} 个模型'
+  },
+  'platform.router.coverage.moreModelsSuffix': {
+    en: 'run on Comfy',
+    'zh-CN': '在 Comfy 上运行'
+  },
+  'platform.router.coverage.browseAll': {
+    en: 'Browse all {count} models',
+    'zh-CN': '浏览全部 {count} 个模型'
+  },
+  'platform.router.coverage.served': {
+    en: 'Served',
+    'zh-CN': '可提供服务'
+  },
+  'platform.router.coverage.notServed': {
+    en: 'Not served',
+    'zh-CN': '不提供服务'
+  },
   'platform.router.section3.heading': {
     en: 'Hit a concurrency limit? Queue the job.',
     'zh-CN': '遇到并发限制？把任务排入队列。'
