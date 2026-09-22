@@ -217,6 +217,58 @@ describe('SavedAssetsStrip', () => {
     vi.useRealTimers()
   })
 
+  it('asks again after a transient access failure instead of waiting forever', async () => {
+    vi.useFakeTimers()
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [saved] })
+    vi.mocked(accessWorkshopAsset)
+      .mockRejectedValueOnce(new GenerationAccessError(503))
+      .mockResolvedValue({
+        content_url: 'https://assets.example/saved.png',
+        expires_at: new Date(Date.now() + 900_000).toISOString()
+      })
+    render(SavedAssetsStrip, { props })
+    await vi.waitFor(() => expect(accessWorkshopAsset).toHaveBeenCalledTimes(1))
+
+    await vi.advanceTimersByTimeAsync(16_000)
+
+    expect(
+      vi.mocked(accessWorkshopAsset),
+      'list polling has stopped once the run is complete, so nothing else would ever ask'
+    ).toHaveBeenCalledTimes(2)
+    vi.useRealTimers()
+  })
+
+  it('grants access to the asset a gone one uncovers', async () => {
+    const shown = 8
+    const older = Array.from({ length: shown + 1 }, (_, index) => ({
+      ...saved,
+      request_id: `3${index}655193-3f73-4abf-b49c-1c6a058355bc`,
+      created_at: `2026-09-${20 - index}T12:00:00Z`,
+      asset_outputs: [
+        {
+          ...saved.asset_outputs[0],
+          asset_id: `c${index}c2d3e4-c94f-4e83-bffa-84be407b0441`
+        }
+      ]
+    }))
+    const survivor = older[shown].asset_outputs[0].asset_id
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: older })
+    vi.mocked(accessWorkshopAsset).mockImplementation(async (id) =>
+      id === survivor
+        ? {
+            content_url: 'https://assets.example/survivor.png',
+            expires_at: new Date(Date.now() + 900_000).toISOString()
+          }
+        : Promise.reject(new GenerationAccessError(404))
+    )
+    render(SavedAssetsStrip, { props })
+
+    expect(
+      await screen.findByTestId('saved-asset-media'),
+      'the strip drops what is gone, so the asset behind it becomes the one on screen'
+    ).toHaveAttribute('src', 'https://assets.example/survivor.png')
+  })
+
   it('keeps polling while a generation is still running', async () => {
     vi.useFakeTimers()
     vi.mocked(listWorkshopGenerations).mockResolvedValue({

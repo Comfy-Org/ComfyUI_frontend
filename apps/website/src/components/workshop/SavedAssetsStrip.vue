@@ -40,9 +40,11 @@ const {
 const PENDING_POLL_MS = 3_000
 const FAILED_POLL_MS = 15_000
 const ACCESS_HEADROOM_MS = 30_000
+const ACCESS_RETRY_MS = 15_000
+const ACCESS_PASSES = 8
 
 const generations = ref<SavedGeneration[]>([])
-const access = ref(new Map<string, { url: string; renewAt: number }>())
+const access = ref(new Map<string, { url?: string; renewAt: number }>())
 const unavailable = ref(new Set<string>())
 const failed = ref(false)
 const viewingKey = ref<string>()
@@ -174,9 +176,15 @@ async function grantAccess(tile: SavedAsset) {
       renewAt: renewAt(Date.parse(granted.expires_at))
     })
   } catch (error) {
-    if (controller.signal.aborted || !gone(error)) return
-    unavailable.value.add(tile.assetId)
-    access.value.delete(tile.assetId)
+    if (controller.signal.aborted) return
+    if (gone(error)) {
+      unavailable.value.add(tile.assetId)
+      access.value.delete(tile.assetId)
+      return
+    }
+    // A timeout or a 503 leaves the tile with no URL. Without a deadline of its
+    // own nothing would ask again, and the reader waits on a spinner forever.
+    access.value.set(tile.assetId, { renewAt: Date.now() + ACCESS_RETRY_MS })
   }
 }
 
@@ -188,20 +196,36 @@ function renewAt(expiresAt: number): number {
   return expiresAt - Math.min(ACCESS_HEADROOM_MS, (expiresAt - Date.now()) / 2)
 }
 
+// Retiring an asset uncovers the one behind it, which needs a grant of its own,
+// so the sweep repeats until the visible set stops moving. Each pass either
+// grants a URL or retires an asset, so it settles; the bound is a backstop.
 async function resolveAccess() {
-  const now = Date.now()
-  await Promise.all(
-    savedTiles.value
-      .filter((tile) => (access.value.get(tile.assetId)?.renewAt ?? 0) <= now)
-      .map(grantAccess)
-  )
+  for (let pass = 0; pass < ACCESS_PASSES; pass += 1) {
+    const now = Date.now()
+    const due = savedTiles.value.filter(
+      (tile) => (access.value.get(tile.assetId)?.renewAt ?? 0) <= now
+    )
+    if (!due.length) break
+    await Promise.all(due.map(grantAccess))
+  }
   scheduleRenewal()
 }
 
+// Only what the reader can see is worth renewing. An asset pushed out of the
+// strip keeps a deadline that nothing advances, and its lapsed time would pin
+// the timer to its one-second floor for as long as the page stayed open.
 function scheduleRenewal() {
   clearTimeout(accessTimer)
-  const due = [...access.value.values()].map((entry) => entry.renewAt)
-  if (!due.length || controller.signal.aborted) return
+  if (controller.signal.aborted) return
+  const visible = savedTiles.value.map((tile) => tile.assetId)
+  const shown = new Set(visible)
+  for (const assetId of [...access.value.keys()])
+    if (!shown.has(assetId)) access.value.delete(assetId)
+  if (!visible.length) return
+  const due = visible.map(
+    (assetId) =>
+      access.value.get(assetId)?.renewAt ?? Date.now() + ACCESS_RETRY_MS
+  )
   accessTimer = setTimeout(
     () => void resolveAccess(),
     Math.max(1_000, Math.min(...due) - Date.now())
