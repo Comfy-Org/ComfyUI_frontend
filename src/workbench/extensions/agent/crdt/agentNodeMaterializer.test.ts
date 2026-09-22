@@ -1529,3 +1529,109 @@ describe('reconcileAgentAdapters', () => {
     })
   })
 })
+
+describe('node id write-drop guard', () => {
+  /** The one id both writes below claim. */
+  const COLLIDED_ID = 7
+
+  function addNodeAt(classType: string): GraphOperation {
+    return {
+      op: 'add_node',
+      node_id: COLLIDED_ID,
+      class_type: classType,
+      pos: [0, 0],
+      node: nodePayload(COLLIDED_ID, classType)
+    }
+  }
+
+  /**
+   * Two `add_node` writes claiming one id, resolved by the real applier: the
+   * higher stamp keeps the register and the loser comes back `lww-dropped`,
+   * which is reported to its own author as applied. The winner's document is
+   * then delivered as an ordinary catch-up frame.
+   */
+  function deliverCompetingAdds(
+    graph: LGraph,
+    winnerClass: string,
+    loserClass: string
+  ): void {
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(remoteMutations(graphScopeOf(graph)))
+    adapter.bind('workflow', follower)
+
+    const host = mint({ nodes: [], links: [] }, CATALOG)
+    const winner = agentOperation('agent-op', 2, addNodeAt(winnerClass))
+    const loser: Op = {
+      ...agentOperation('human-op', 1, addNodeAt(loserClass)),
+      actor: 'human:test',
+      stamp: [1, 'human:test']
+    }
+    expect(applyOps(host, [winner], CATALOG).outcomes).toEqual([
+      { op_id: 'agent-op', outcome: 'applied' }
+    ])
+    expect(applyOps(host, [loser], CATALOG).outcomes).toEqual([
+      { op_id: 'human-op', outcome: 'lww-dropped' }
+    ])
+
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'workflow',
+        seq: 1,
+        update,
+        actor: 'agent:test',
+        opIds: [winner.op_id, loser.op_id]
+      })
+    ).toBe(true)
+  }
+
+  /** The losing write's node, live on the canvas at the id it claimed. */
+  function addLiveNode(graph: LGraph, classType: string): LGraphNode {
+    const node = LiteGraph.createNode(classType)
+    if (!node) throw new Error('Test node types not registered')
+    node.id = toNodeId(COLLIDED_ID)
+    graph.add(node)
+    return node
+  }
+
+  it('reports the losing write when the document replaces a live node with another class', () => {
+    const graph = new LGraph()
+    const dropped = addLiveNode(graph, 'dummy')
+
+    deliverCompetingAdds(graph, 'widget-node', 'dummy')
+
+    expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(COLLIDED_ID)])
+    expect(graph.getNodeById(toNodeId(COLLIDED_ID))?.type).toBe('widget-node')
+    expect(graph._nodes).not.toContain(dropped)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+      errorType: 'agent_node_id_collision_write_dropped',
+      tags: expect.objectContaining({
+        feature_area: 'agent',
+        operation: 'sync',
+        outcome: 'degraded'
+      }),
+      context: {
+        graphId: graph.id,
+        nodeId: String(COLLIDED_ID),
+        liveClass: 'dummy',
+        docClass: 'widget-node'
+      }
+    })
+  })
+
+  // The same collision between two writes of the SAME class leaves the record
+  // reconciled in place, so the live node is never orphaned and there is
+  // nothing for the guard to see: a drop whose winner and loser agree on the
+  // class is invisible here, by design rather than by oversight.
+  it('stays silent when the record at a live id keeps its class', () => {
+    const graph = new LGraph()
+    const kept = addLiveNode(graph, 'dummy')
+
+    deliverCompetingAdds(graph, 'dummy', 'dummy')
+
+    expect(reconcileAgentAdapters(graph)).toEqual([])
+    expect(graph.getNodeById(toNodeId(COLLIDED_ID))).toBe(kept)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+})

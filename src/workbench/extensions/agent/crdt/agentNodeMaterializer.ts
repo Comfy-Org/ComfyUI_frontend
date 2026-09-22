@@ -272,6 +272,7 @@ function materialize(
   const node =
     LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
   node.id = state.id
+  reportNodeIdWriteDropped(graph, state, orphan)
 
   const widgets = widgetStore.getNodeWidgets(scope.rootGraphId, state.id).map(
     (widget): WidgetStateInit => ({
@@ -363,6 +364,45 @@ function materialize(
     })
   }
   return true
+}
+
+/**
+ * A node id's class is fixed by the `add_node` that claimed it: the op
+ * vocabulary has no retype, so nothing can legally change the class at a live
+ * id. The document nonetheless resolves the `["node", id]` register two
+ * `add_node` writes share as pure last-write-wins and drops the loser with no
+ * error to either actor, which is what a class change here means: the losing
+ * write is gone from the document, and this reconcile is about to take its
+ * still-live node off the canvas with it.
+ *
+ * `orphan` is that losing node — live, at this id, and no longer owned by the
+ * record the document holds for it. Comparing its class to the record's is the
+ * only trace of the drop this client gets, since the ack counts an
+ * LWW-dropped op as applied and the applier's own conflict event fires
+ * host-side.
+ */
+function reportNodeIdWriteDropped(
+  graph: MaterializableGraph,
+  state: NodeState,
+  orphan: LGraphNode | undefined
+): void {
+  const liveClass = orphan?.type
+  if (!liveClass || liveClass === state.type) return
+  reportError(
+    new Error(
+      `Node id ${String(state.id)} changed class from ${liveClass} to ${state.type}: two writes claimed the id and the document kept one`
+    ),
+    {
+      errorType: 'agent_node_id_collision_write_dropped',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
+      context: {
+        graphId: graph.id,
+        nodeId: String(state.id),
+        liveClass,
+        docClass: state.type
+      }
+    }
+  )
 }
 
 function replayUpdatedWidgetCallbacks(
