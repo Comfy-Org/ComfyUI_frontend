@@ -1,43 +1,57 @@
-// @vitest-environment happy-dom
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick, readonly, ref } from 'vue'
 
+import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
+import {
+  useWorkshopAuthFlag,
+  useWorkshopEnabled
+} from '../../../scripts/posthog'
 import HeaderMain from './HeaderMain.vue'
 
-const hoisted = vi.hoisted(() => ({
-  flag: undefined as { value: boolean } | undefined
-}))
+vi.mock(import('../../../scripts/posthog'))
 
-vi.mock(import('../../../scripts/posthog.ts'), async () => {
-  const { ref } = await import('vue')
-  const flag = ref(false)
-  hoisted.flag = flag
-  return { useWorkshopAuthFlag: () => flag }
-})
+let flag = ref(false)
+let visibility = ref(false)
 
-vi.mock<unknown>(import('../../workshop/HeaderAccount.vue'), async () => {
-  const { defineComponent, h } = await import('vue')
-  return {
-    __esModule: true,
-    default: defineComponent({
-      name: 'HeaderAccountStub',
-      render: () => h('div', { 'data-testid': 'header-account' })
-    })
-  }
-})
+function renderHeader(workshopInBuild = false) {
+  return render(HeaderMain, {
+    props: { workshopInBuild },
+    global: {
+      stubs: {
+        HeaderAccount: defineComponent({
+          render: () => h('div', { 'data-testid': 'header-account' })
+        }),
+        BuyCreditsDialog: defineComponent({
+          props: { open: { type: Boolean, required: true } },
+          setup: (props) => () =>
+            props.open
+              ? h('div', { 'data-testid': 'buy-credits-dialog' })
+              : null
+        })
+      }
+    }
+  })
+}
 
 beforeEach(() => {
-  hoisted.flag!.value = false
+  flag = ref(false)
+  visibility = ref(false)
+  vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(flag))
+  vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(visibility))
 })
 
 describe('HeaderMain workshop gating', () => {
   it.for([
-    { workshopInBuild: false, modelsAvailable: false },
-    { workshopInBuild: true, modelsAvailable: true }
+    { workshopInBuild: false, enabled: true, modelsAvailable: false },
+    { workshopInBuild: true, enabled: false, modelsAvailable: false },
+    { workshopInBuild: true, enabled: true, modelsAvailable: true }
   ])(
     'renders Models availability as $modelsAvailable when workshopInBuild is $workshopInBuild',
-    ({ workshopInBuild, modelsAvailable }) => {
-      render(HeaderMain, { props: { workshopInBuild } })
+    async ({ workshopInBuild, enabled, modelsAvailable }) => {
+      visibility.value = enabled
+      renderHeader(workshopInBuild)
+      await nextTick()
 
       expect(screen.queryByRole('link', { name: /^Models\b/i }) !== null).toBe(
         modelsAvailable
@@ -46,16 +60,17 @@ describe('HeaderMain workshop gating', () => {
   )
 
   it('mounts no account island while the flag is off', () => {
-    render(HeaderMain)
+    renderHeader()
 
     expect(screen.queryByTestId('header-account')).toBeNull()
   })
 
   it('mounts the account island when the flag turns on after mount', async () => {
-    render(HeaderMain)
+    visibility.value = true
+    renderHeader(true)
     expect(screen.queryByTestId('header-account')).toBeNull()
 
-    hoisted.flag!.value = true
+    flag.value = true
 
     await waitFor(() => {
       expect(
@@ -66,8 +81,9 @@ describe('HeaderMain workshop gating', () => {
   })
 
   it('mounts the account island in the mobile row as well as the desktop row', async () => {
-    hoisted.flag!.value = true
-    render(HeaderMain)
+    flag.value = true
+    visibility.value = true
+    renderHeader(true)
 
     await waitFor(() => {
       expect(
@@ -82,5 +98,96 @@ describe('HeaderMain workshop gating', () => {
         'header-account'
       )
     ).toBeTruthy()
+  })
+
+  it('owns one credits dialog for both account placements and page requests', async () => {
+    flag.value = true
+    visibility.value = true
+    renderHeader(true)
+    await waitFor(() =>
+      expect(screen.getAllByTestId('header-account')).toHaveLength(2)
+    )
+
+    requestWorkshopBuyCredits()
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId('buy-credits-dialog')).toHaveLength(1)
+    )
+  })
+
+  it('replays a request made before the header island mounts', async () => {
+    flag.value = true
+    visibility.value = true
+    requestWorkshopBuyCredits()
+
+    renderHeader(true)
+
+    expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
+  })
+
+  it('does not latch requests while auth is disabled', async () => {
+    visibility.value = true
+    renderHeader(true)
+
+    requestWorkshopBuyCredits()
+    flag.value = true
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId('header-account')).toHaveLength(2)
+    )
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+  })
+
+  it('keeps an active checkout mounted through a flag refresh', async () => {
+    flag.value = true
+    visibility.value = true
+    renderHeader(true)
+    requestWorkshopBuyCredits()
+    expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
+
+    flag.value = false
+    await waitFor(() =>
+      expect(screen.queryByTestId('header-account')).toBeNull()
+    )
+    expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
+    flag.value = true
+    await waitFor(() =>
+      expect(screen.getAllByTestId('header-account')).toHaveLength(2)
+    )
+
+    expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
+  })
+
+  it('ignores credits requests while Models is hidden', async () => {
+    flag.value = true
+    renderHeader(true)
+    await nextTick()
+
+    requestWorkshopBuyCredits()
+    await nextTick()
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+
+    visibility.value = true
+    await waitFor(() =>
+      expect(screen.getAllByTestId('header-account')).toHaveLength(2)
+    )
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+
+    requestWorkshopBuyCredits()
+    expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
+  })
+
+  it('updates navigation and removes the account controls when access is revoked', async () => {
+    flag.value = true
+    renderHeader(true)
+    expect(screen.queryByRole('link', { name: /^Models\b/i })).toBeNull()
+    expect(screen.queryByTestId('header-account')).toBeNull()
+
+    visibility.value = true
+    await screen.findByRole('link', { name: /^Models\b/i })
+    visibility.value = false
+    await nextTick()
+    expect(screen.queryByRole('link', { name: /^Models\b/i })).toBeNull()
+    expect(screen.queryByTestId('header-account')).toBeNull()
   })
 })

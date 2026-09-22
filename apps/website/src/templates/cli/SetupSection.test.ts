@@ -1,20 +1,15 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import {
+  captureCliConnectionTabClick,
+  captureCliClientTabClick
+} from '../../scripts/posthog'
 import SetupSection from './SetupSection.vue'
 
-const { connectionSpy, clientSpy } = vi.hoisted(() => ({
-  connectionSpy: vi.fn(),
-  clientSpy: vi.fn()
-}))
-
-vi.mock(import('../../scripts/posthog'), () => ({
-  captureCliConnectionTabClick: connectionSpy,
-  captureCliClientTabClick: clientSpy
-}))
+vi.mock(import('../../scripts/posthog'))
 
 // reka-ui tab triggers activate on the pointer sequence, not a bare synthetic
 // click, so drive them through userEvent.
@@ -30,11 +25,6 @@ async function selectConnection(name: RegExp) {
 }
 
 describe('SetupSection', () => {
-  beforeEach(() => {
-    connectionSpy.mockClear()
-    clientSpy.mockClear()
-  })
-
   it('renders the connection tabs and a client tab list', () => {
     render(SetupSection, { props: { locale: 'en' } })
 
@@ -54,30 +44,30 @@ describe('SetupSection', () => {
     render(SetupSection, { props: { locale: 'en' } })
 
     await selectConnection(/Local ComfyUI/)
-    expect(connectionSpy).toHaveBeenCalledTimes(1)
-    expect(connectionSpy).toHaveBeenCalledWith('local')
+    expect(captureCliConnectionTabClick).toHaveBeenCalledTimes(1)
+    expect(captureCliConnectionTabClick).toHaveBeenCalledWith('local')
 
     await selectConnection(/Local ComfyUI/)
-    expect(connectionSpy).toHaveBeenCalledTimes(1)
+    expect(captureCliConnectionTabClick).toHaveBeenCalledTimes(1)
   })
 
   it('dedupes client tab captures per connection, not globally', async () => {
     render(SetupSection, { props: { locale: 'en' } })
 
     await selectTab('Codex')
-    expect(clientSpy).toHaveBeenCalledTimes(1)
-    expect(clientSpy).toHaveBeenCalledWith('codex')
+    expect(captureCliClientTabClick).toHaveBeenCalledTimes(1)
+    expect(captureCliClientTabClick).toHaveBeenCalledWith('codex')
 
     await selectTab('Codex')
-    expect(clientSpy).toHaveBeenCalledTimes(1)
+    expect(captureCliClientTabClick).toHaveBeenCalledTimes(1)
 
     // The same client under the other connection is a distinct selection.
     await selectConnection(/Local ComfyUI/)
     await selectTab('Codex')
-    expect(clientSpy).toHaveBeenCalledTimes(2)
-    expect(clientSpy).toHaveBeenLastCalledWith('codex')
+    expect(captureCliClientTabClick).toHaveBeenCalledTimes(2)
+    expect(captureCliClientTabClick).toHaveBeenLastCalledWith('codex')
 
     await selectTab('Codex')
-    expect(clientSpy).toHaveBeenCalledTimes(2)
+    expect(captureCliClientTabClick).toHaveBeenCalledTimes(2)
   })
 })

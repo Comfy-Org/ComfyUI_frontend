@@ -1,8 +1,20 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { router_render } from './router-render'
+import type { RouterRenderOptions } from './router-render'
+import { router_render as renderWithModel } from './router-render'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { releaseRouterOutputs } from './workshop-response'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
+
+function router_render(
+  slug: string,
+  parameters: Parameters<typeof renderWithModel>[1],
+  options: Omit<RouterRenderOptions, 'model'>
+) {
+  const model = getRouterWorkshopModelDetail(slug)
+  if (!model) throw new Error(`Missing test model: ${slug}`)
+  return renderWithModel(slug, parameters, { ...options, model })
+}
 
 const png = Uint8Array.from(
   atob(
@@ -11,7 +23,39 @@ const png = Uint8Array.from(
   (character) => character.charCodeAt(0)
 )
 
+function queueNotEnabled() {
+  return Response.json(
+    { detail: 'Not enabled', error_type: 'not_enabled' },
+    { status: 403, headers: { 'X-Comfy-Error-Type': 'not_enabled' } }
+  )
+}
+
 describe('shared Router rendering', () => {
+  it('preserves unexpected preparation errors without dispatching a generation', async () => {
+    const cause = new TypeError('Unexpected encoder failure')
+    vi.spyOn(globalThis, 'btoa').mockImplementation(() => {
+      throw cause
+    })
+    const fetch = vi.fn<typeof globalThis.fetch>()
+    vi.stubGlobal('fetch', fetch)
+
+    await expect(
+      router_render(
+        'vertexai--gemini-3-pro-image--edit-images',
+        {
+          prompt: 'Edit',
+          reference_images: [new Blob([png], { type: 'image/png' })]
+        },
+        { token: 'test-key' }
+      )
+    ).rejects.toMatchObject({
+      reason: 'client',
+      stage: 'input_preparation',
+      cause
+    })
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('reuses uploaded bytes and the same request body for an explicit retry', async () => {
     const source = new Blob([png], { type: 'image/png' })
     let grants = 0
@@ -19,6 +63,7 @@ describe('shared Router rendering', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>(async (url, init) => {
+        if (String(url).endsWith('/requests')) return queueNotEnabled()
         if (String(url).endsWith('/customers/storage')) {
           grants++
           return Response.json({
@@ -62,6 +107,7 @@ describe('shared Router rendering', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>(async (url, init) => {
+        if (String(url).endsWith('/requests')) return queueNotEnabled()
         calls.push(String(url))
         const headers = new Headers(init?.headers)
         if (url === `${WORKSHOP_ROUTER_BASE_URL}/customers/storage`) {
@@ -111,6 +157,7 @@ describe('shared Router rendering', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>(async (url, init) => {
+        if (String(url).endsWith('/requests')) return queueNotEnabled()
         calls.push(String(url))
         if (url === source) {
           expect(new Headers(init?.headers).has('Authorization')).toBe(false)

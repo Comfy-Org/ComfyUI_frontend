@@ -1,22 +1,25 @@
-import posthog from 'posthog-js'
+import { WORKSHOP_LOCAL_DEV, WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
+import { posthog } from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { SessionRefreshOutcome } from '@comfyorg/account/session'
+import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
 import {
   AUTH_TELEMETRY_EVENT,
   SESSION_TELEMETRY_EVENT
-} from '@comfyorg/account/telemetry'
+} from '@comfyorg/account-core/telemetry'
 import type {
   AuthCompletedMetadata,
   AuthErrorMetadata
-} from '@comfyorg/account/telemetry'
+} from '@comfyorg/account-core/telemetry'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
-import { normalizeTurnstileMode } from '@comfyorg/account/turnstile'
-import type { TurnstileMode } from '@comfyorg/account/turnstile'
+import { normalizeTurnstileMode } from '@comfyorg/account-core/turnstile'
+import type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
+import type { WorkshopAnalyticsEvent } from './workshop-analytics'
+import { captureWorkshopHealth } from './workshop-datadog'
 
 const POSTHOG_KEY =
   import.meta.env.PUBLIC_POSTHOG_KEY ??
@@ -54,6 +57,10 @@ export type CliClientId =
   | 'ci'
 
 type AnalyticsEvent =
+  | {
+      name: `website:workshop_${WorkshopAnalyticsEvent['name']}`
+      properties: WorkshopAnalyticsEvent['properties']
+    }
   | { name: typeof ANALYTICS_EVENT.pageview; properties?: undefined }
   | {
       name: typeof ANALYTICS_EVENT.downloadButtonClicked
@@ -96,19 +103,117 @@ type AnalyticsEvent =
 let initialized = false
 
 const WORKSHOP_AUTH_FLAG = 'workshop-auth'
+const WORKSHOP_ENABLED_FLAG = 'workshop-enabled'
 const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 
-/**
- * The build-time override forces the flag on for dev and preview builds, which
- * have no PostHog to answer; without it no flag-gated surface is exercisable
- * anywhere. It is sticky: an override-on build ignores PostHog turning the flag
- * off. Otherwise the ref tracks PostHog's answer both ways, so disabling the
- * flag remotely actually takes the surfaces down.
- */
-const OVERRIDDEN_ON = import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
-const workshopAuthEnabled = ref(OVERRIDDEN_ON)
-/** True once PostHog has answered (or the override stands in for it). */
-const workshopAuthFlagSettled = ref(OVERRIDDEN_ON)
+const VISIBILITY_OVERRIDE =
+  WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
+const workshopEnabled = ref(VISIBILITY_OVERRIDE)
+// Default to the resolved public experience. The gate only leaves it once
+// `awaitFlagAnswer()` starts a real flag fetch (and arms the timeout), so an
+// environment that never initializes PostHog — local dev, no key, SSR — shows
+// the public site instead of stranding on the loading frame.
+const workshopEnabledSettled = ref(true)
+let workshopUser: WorkshopIdentity | null | undefined
+
+// If PostHog never answers (blocked, offline), resolve to the default-off
+// experience rather than leaving the gate on its loading frame forever.
+const FLAG_RESOLUTION_TIMEOUT_MS = 3000
+let flagResolutionTimer: ReturnType<typeof setTimeout> | undefined
+
+function markFlagResolved(): void {
+  if (flagResolutionTimer !== undefined) {
+    clearTimeout(flagResolutionTimer)
+    flagResolutionTimer = undefined
+  }
+  workshopEnabledSettled.value = true
+}
+
+function awaitFlagAnswer(): void {
+  if (flagResolutionTimer !== undefined) clearTimeout(flagResolutionTimer)
+  workshopEnabledSettled.value = false
+  flagResolutionTimer = setTimeout(markFlagResolved, FLAG_RESOLUTION_TIMEOUT_MS)
+}
+
+export function useWorkshopEnabled(): Readonly<Ref<boolean>> {
+  return readonly(workshopEnabled)
+}
+
+export function useWorkshopEnabledSettled(): Readonly<Ref<boolean>> {
+  return readonly(workshopEnabledSettled)
+}
+
+export interface WorkshopIdentity {
+  uid: string
+  email?: string | null
+  emailVerified?: boolean
+}
+
+const STAFF_EMAIL_DOMAINS = new Set(['comfy.org', 'drip.art'])
+
+function isStaff({ email, emailVerified }: WorkshopIdentity): boolean {
+  const domain = email?.split('@')[1]?.toLowerCase()
+  return (
+    emailVerified === true &&
+    domain !== undefined &&
+    STAFF_EMAIL_DOMAINS.has(domain)
+  )
+}
+
+function identifyInPostHog(user: WorkshopIdentity): void {
+  if (isStaff(user)) posthog.identify(user.uid, { comfy_staff: true })
+  else posthog.identify(user.uid)
+}
+
+function refreshFlagForSameIdentity(user: WorkshopIdentity | null): void {
+  const cachedAnswer =
+    user &&
+    posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, { send_event: false })
+  if (cachedAnswer !== undefined) return
+  workshopEnabled.value = VISIBILITY_OVERRIDE
+  awaitFlagAnswer()
+  posthog.reloadFeatureFlags()
+}
+
+function adoptNewIdentity(
+  user: WorkshopIdentity | null,
+  persistedUid: string | undefined,
+  waitForIdentityAnswer: boolean
+): void {
+  workshopEnabled.value = VISIBILITY_OVERRIDE
+  if (waitForIdentityAnswer) awaitFlagAnswer()
+  else markFlagResolved()
+  if (persistedUid) posthog.reset()
+  if (user) identifyInPostHog(user)
+  posthog.reloadFeatureFlags()
+}
+
+export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
+  if (workshopUser !== undefined && workshopUser?.uid === user?.uid) return
+  const previous = workshopUser
+  workshopUser = user
+  // Before init, visibility stays at its resolved default; initPostHog owns the
+  // transition into awaiting an answer, so an identity arriving first must not
+  // strand the gate by unsettling without a resolver.
+  if (!initialized) return
+  try {
+    const uid = user?.uid ?? null
+    const persistedUid = posthog.get_property('$user_id') ?? previous?.uid
+    if (uid === persistedUid || (!uid && !persistedUid))
+      return refreshFlagForSameIdentity(user)
+    adoptNewIdentity(user, persistedUid, !VISIBILITY_OVERRIDE && user !== null)
+  } catch (error) {
+    workshopUser = previous
+    workshopEnabled.value = VISIBILITY_OVERRIDE
+    markFlagResolved()
+    console.error('PostHog identity failed', error)
+  }
+}
+
+const OVERRIDDEN_ON =
+  WORKSHOP_DEPLOY_ENV !== 'production' &&
+  import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
+const workshopAuthEnabled = ref(true)
 const TURNSTILE_OVERRIDE = import.meta.env.PUBLIC_WORKSHOP_TURNSTILE_MODE
 const TURNSTILE_OVERRIDDEN = Boolean(TURNSTILE_OVERRIDE)
 const workshopTurnstileMode = ref<TurnstileMode>(
@@ -119,16 +224,16 @@ export function useWorkshopAuthFlag(): Readonly<Ref<boolean>> {
   return readonly(workshopAuthEnabled)
 }
 
-export function useWorkshopAuthFlagSettled(): Readonly<Ref<boolean>> {
-  return readonly(workshopAuthFlagSettled)
-}
-
 export function useWorkshopTurnstileMode(): Readonly<Ref<TurnstileMode>> {
   return readonly(workshopTurnstileMode)
 }
 
 export function initPostHog() {
   if (initialized || typeof window === 'undefined' || !POSTHOG_KEY) return
+  // Enter the awaiting state before init can throw, so the gate holds the
+  // loader (not the public page) through the whole fetch and the timeout is
+  // always armed the moment visibility becomes unresolved.
+  if (!VISIBILITY_OVERRIDE) awaitFlagAnswer()
   try {
     posthog.init(POSTHOG_KEY, {
       api_host: POSTHOG_API_HOST,
@@ -140,11 +245,31 @@ export function initPostHog() {
       before_send: createPostHogBeforeSend()
     })
     initialized = true
-    posthog.onFeatureFlags(() => {
-      workshopAuthFlagSettled.value = true
+    const persistedAnswer = posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, {
+      send_event: false
+    })
+    const persistedUid = posthog.get_property('$user_id')
+    const expectedUid = workshopUser?.uid ?? null
+    const persistedIdentityMatches =
+      workshopUser === undefined ||
+      expectedUid === persistedUid ||
+      (!expectedUid && !persistedUid)
+    if (persistedAnswer !== undefined && persistedIdentityMatches) {
+      workshopEnabled.value = VISIBILITY_OVERRIDE || persistedAnswer
+      markFlagResolved()
+    }
+    posthog.onFeatureFlags((_flags, _variants, context) => {
+      if (context?.errorsLoading) {
+        markFlagResolved()
+        return
+      }
+      workshopEnabled.value =
+        VISIBILITY_OVERRIDE ||
+        posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
+      markFlagResolved()
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =
-          posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) === true
+          posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) !== false
       }
       if (!TURNSTILE_OVERRIDDEN) {
         const value = posthog.getFeatureFlag(WORKSHOP_TURNSTILE_FLAG)
@@ -153,7 +278,13 @@ export function initPostHog() {
         )
       }
     })
+    if (workshopUser !== undefined) {
+      const user = workshopUser
+      workshopUser = undefined
+      identifyWorkshopUser(user)
+    }
   } catch (error) {
+    markFlagResolved()
     console.error('PostHog init failed', error)
   }
 }
@@ -169,6 +300,14 @@ function captureEvent(event: AnalyticsEvent): void {
 
 export function capturePageview(): void {
   captureEvent({ name: ANALYTICS_EVENT.pageview })
+}
+
+export function captureWorkshopEvent(event: WorkshopAnalyticsEvent): void {
+  captureWorkshopHealth(event)
+  captureEvent({
+    name: `website:workshop_${event.name}`,
+    properties: event.properties
+  })
 }
 
 export function captureDownloadClick(platform: Platform): void {

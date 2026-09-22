@@ -7,6 +7,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { paymentReturnUrl } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
+import { amountDueTodayChanged } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
 import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -15,24 +16,38 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
+  CheckoutEntryFlow,
+  CheckoutJourneyPhaseEvent,
   PaymentIntentSource,
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type {
   Plan,
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
   SavedPaymentMethod,
-  SubscribeOptions,
-  SubscribeResponse
+  SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  bindOperationToCheckoutJourney,
+  getActiveCheckoutJourney,
+  resolveCheckoutAssignment,
+  resolveCheckoutJourney,
+  toCheckoutJourneyContext
+} from '@/platform/workspace/utils/checkoutJourney'
+import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
 import {
   clearPendingSubscriptionCheckoutIfTerminal,
   savePendingSubscriptionCheckout
@@ -144,6 +159,7 @@ export function useSubscriptionCheckout(
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const subscriptionRail = useSubscriptionRail()
 
   const checkoutStep = ref<CheckoutStep>('pricing')
   const isLoadingPreview = ref(false)
@@ -163,6 +179,7 @@ export function useSubscriptionCheckout(
   let checkoutMutationSeq = 0
   let refreshStatusOnFocus = false
   let activeCheckoutAttemptStartedAt: number | undefined
+  let lastEmittedPreviewRevision: string | undefined
   useEventListener(window, 'focus', () => {
     if (!refreshStatusOnFocus) return
     refreshStatusOnFocus = false
@@ -175,19 +192,35 @@ export function useSubscriptionCheckout(
   const reactivationRequired = ref(false)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const activeCheckoutOperationId = ref<string | null>(null)
+  // The operation this checkout is watching, from whichever rail is driving it.
+  // On the subscription rail the lifecycle owns it, so reading only the legacy
+  // store left the parked-recovery prompt, the authentication state and the
+  // busy state all answering off a store nothing was writing.
+  //
+  // Both are consulted, rail first, because the rail owning the flag does not
+  // mean it owns every operation: a subscribe that fell back to the legacy
+  // transport on a 404 registers its poller in the legacy store while the flag
+  // is still on, and reading only the rail would lose that one entirely.
   const activeCheckoutOperation = computed(() => {
-    if (!activeCheckoutOperationId.value) {
-      return billingOperationStore.subscriptionActionOperation
+    const operationId = activeCheckoutOperationId.value
+    if (!operationId) {
+      return (
+        subscriptionRail?.subscriptionActionOperation ??
+        billingOperationStore.subscriptionActionOperation
+      )
     }
-    const operation = billingOperationStore.getOperation(
-      activeCheckoutOperationId.value
-    )
+    const operation =
+      subscriptionRail?.getOperation(operationId) ??
+      billingOperationStore.getOperation(operationId)
     return operation?.workspaceId === workspaceStore.activeWorkspaceId
       ? operation
       : undefined
   })
   const activeCheckoutActionUrl = computed(
-    () => activeCheckoutOperation.value?.actionUrl ?? null
+    () =>
+      activeCheckoutOperation.value?.actionUrl ??
+      subscriptionRail?.subscriptionActionUrl ??
+      null
   )
   // The server says whether the operation is parked; the client no longer
   // guesses. Only awaiting_payment_method offers this recovery — an operation
@@ -221,6 +254,10 @@ export function useSubscriptionCheckout(
     if (operation.status === 'succeeded') return true
     if (operation.status !== 'pending') return false
     if (operation.isAuthenticating) return true
+    // Deliberately narrower than isBlockedOnCustomerPhase: releasing the action
+    // exists so the customer can supply the card this park is waiting for. An
+    // invoice park has no such re-submit route — the server refuses a second
+    // operation while this one is open — so it keeps the action busy.
     if (operation.phase === 'awaiting_payment_method') return false
     return (
       operation.authenticationState !== 'failed_retryable' &&
@@ -250,6 +287,17 @@ export function useSubscriptionCheckout(
     return subscription.value?.isCancelled ?? false
   }
 
+  // An absent `requires_reactivation_confirmation` means the server did not
+  // decide, so fall back to the subscription's own state rather than assuming
+  // a cancellation the user may never have had.
+  function previewRequiresReactivation(
+    preview: PreviewSubscribeResponse | null | undefined
+  ): boolean {
+    return (
+      preview?.requires_reactivation_confirmation ?? isSubscriptionCancelled()
+    )
+  }
+
   function hasQuoteIdentity(
     preview: PreviewSubscribeResponse
   ): preview is PreviewSubscribeResponse & {
@@ -263,16 +311,31 @@ export function useSubscriptionCheckout(
     if (!preview.allowed) return false
     previewData.value = preview
     if (embeddedCheckoutEnabled) {
-      reactivationRequired.value =
-        preview.requires_reactivation_confirmation ?? true
+      reactivationRequired.value = previewRequiresReactivation(preview)
     }
     quoteIsCurrent.value = true
+
+    const journey = getActiveCheckoutJourney()
+    if (journey) {
+      const revision = hasQuoteIdentity(preview)
+        ? `${preview.quote_id}:${preview.quote_version}`
+        : undefined
+      // Once per accepted revision: a re-render or refresh that reinstalls the
+      // same quote must not emit another preview_ready.
+      if (revision === undefined || revision !== lastEmittedPreviewRevision) {
+        lastEmittedPreviewRevision = revision
+        emitCheckoutJourneyPhase(journey, {
+          phase: 'preview_ready',
+          ...(revision !== undefined && { preview_revision: revision })
+        })
+      }
+    }
     return true
   }
 
   function requiresReactivationConfirmation(): boolean {
     if (embeddedCheckoutEnabled) {
-      return previewData.value?.requires_reactivation_confirmation ?? true
+      return previewRequiresReactivation(previewData.value)
     }
     return isSubscriptionCancelled() || reactivationRequired.value
   }
@@ -311,7 +374,12 @@ export function useSubscriptionCheckout(
   async function loadSavedPaymentMethods(): Promise<void> {
     if (!embeddedCheckoutEnabled || !shouldUseWorkspaceBilling.value) return
     try {
-      const methods = await workspaceApi.listSavedPaymentMethods()
+      const rail = useBillingReadRail()
+      const methods =
+        rail === null
+          ? await workspaceApi.listSavedPaymentMethods()
+          : await readOnRail(rail.readPaymentMethods)
+      if (methods === undefined) return
       savedPaymentMethods.value = methods
       selectedSavedPaymentMethodId.value =
         methods.find((method) => method.is_default)?.id ?? null
@@ -486,19 +554,37 @@ export function useSubscriptionCheckout(
     )
   }
 
+  /**
+   * The portal URL for recovery, from whichever rail owns the subscription.
+   * An `unavailable` route is not deployed here, so the legacy client answers;
+   * a failure throws into the caller's catch, where a legacy throw already
+   * lands.
+   */
+  async function readPaymentPortalUrl(returnUrl: string): Promise<string> {
+    if (subscriptionRail) {
+      const outcome = await subscriptionRail.openPaymentPortal(returnUrl)
+      if (outcome.status === 'ok') return outcome.value
+      if (outcome.status === 'error') throw outcome.error
+    }
+    return (await workspaceApi.getPaymentPortalUrl(returnUrl)).url
+  }
+
   async function recoverOutstandingPayment(
     error: unknown,
     isCurrent: () => boolean = () => true
   ) {
+    const readRail = useBillingReadRail()
     const hasPaymentRecoveryCode =
       hasErrorCode(error, 'SUBSCRIPTION_PAYMENT_REQUIRED') ||
       hasErrorCode(error, 'OUTSTANDING_PAYMENT_REQUIRED')
     let requiresRecovery = hasPaymentRecoveryCode
     if (!requiresRecovery && hasErrorCode(error, 'TRANSITION_NOT_ALLOWED')) {
       try {
-        requiresRecovery =
-          (await workspaceApi.getBillingStatus()).billing_status ===
-          'payment_failed'
+        const status =
+          readRail === null
+            ? await workspaceApi.getBillingStatus()
+            : await readOnRail(readRail.readStatus)
+        requiresRecovery = status?.billing_status === 'payment_failed'
       } catch {
         return null
       }
@@ -508,7 +594,7 @@ export function useSubscriptionCheckout(
     try {
       const returnUrl = `${globalThis.location.origin}${globalThis.location.pathname}`
       const portalUrl = parseBillingPortalUrl(
-        (await workspaceApi.getPaymentPortalUrl(returnUrl)).url
+        await readPaymentPortalUrl(returnUrl)
       )
       if (!isCurrent()) return null
       if (!portalUrl) {
@@ -569,7 +655,8 @@ export function useSubscriptionCheckout(
     }
 
     const amountChanged =
-      freshPreview.cost_today_cents !== previewData.value?.cost_today_cents
+      !previewData.value ||
+      amountDueTodayChanged(previewData.value, freshPreview)
     installPreview(freshPreview)
     toast.add({
       severity: 'error',
@@ -583,10 +670,12 @@ export function useSubscriptionCheckout(
     return true
   }
 
+  // Resolves `true` when the checkout stays blocked, `false` when the refresh
+  // cleared the block and the caller may continue.
   async function refreshPreviewOnReactivationBlock(
     planSlug: string,
     options?: PreviewSubscribeOptions
-  ): Promise<void> {
+  ): Promise<boolean> {
     let freshPreview: PreviewSubscribeResponse | null = null
     try {
       freshPreview = await previewSubscribe(
@@ -596,7 +685,7 @@ export function useSubscriptionCheckout(
     } catch (error) {
       const recovery = await recoverOutstandingPayment(error)
       if (recovery === 'failed') resetToPricing()
-      if (recovery) return
+      if (recovery) return true
       // Treated the same as an incapable preview below.
     }
     if (
@@ -606,7 +695,30 @@ export function useSubscriptionCheckout(
       installPreview(freshPreview)
       reactivationRequired.value = true
       notifyReactivationConfirmationRequired()
-      return
+      return true
+    }
+    // A first subscription has no prior plan to reactivate, so a valid
+    // new_subscription quote answers the block rather than failing it.
+    if (
+      freshPreview?.allowed &&
+      freshPreview.transition_type === 'new_subscription' &&
+      !isSubscriptionCancelled() &&
+      !previewRequiresReactivation(freshPreview)
+    ) {
+      // No installed quote means no amount the user has already seen; drop the
+      // `!!` and the empty-preview case this branch exists for compares a real
+      // amount against `undefined` and blocks again.
+      const amountChanged =
+        !!previewData.value &&
+        amountDueTodayChanged(previewData.value, freshPreview)
+      installPreview(freshPreview)
+      if (!amountChanged) return false
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('subscription.preview.reactivation.amountChanged')
+      })
+      return true
     }
     reactivationRequired.value = false
     resetToPricing()
@@ -615,6 +727,7 @@ export function useSubscriptionCheckout(
       summary: t('g.error'),
       detail: t('subscription.preview.reactivation.unavailable')
     })
+    return true
   }
 
   function canSelectTierPlan(): boolean {
@@ -714,6 +827,7 @@ export function useSubscriptionCheckout(
     loadingTier.value = tierKey
     selectedTierKey.value = tierKey
     selectedBillingCycle.value = billingCycle
+    enterCheckoutJourney(`${tierKey}:${billingCycle}`)
 
     try {
       let planSlug = getApiPlanSlug(tierKey, billingCycle)
@@ -740,6 +854,13 @@ export function useSubscriptionCheckout(
         : await previewSubscribe(planSlug)
 
       if (!response || !response.allowed) {
+        const journey = getActiveCheckoutJourney()
+        if (journey) {
+          emitCheckoutJourneyPhase(journey, {
+            phase: 'preview_failed',
+            failure_category: 'unknown'
+          })
+        }
         toast.add({
           severity: 'error',
           summary: 'Unable to subscribe',
@@ -755,6 +876,13 @@ export function useSubscriptionCheckout(
       checkoutStep.value = 'preview'
     } catch (error) {
       if (await recoverOutstandingPayment(error)) return
+      const journey = getActiveCheckoutJourney()
+      if (journey) {
+        emitCheckoutJourneyPhase(journey, {
+          phase: 'preview_failed',
+          failure_category: categorizeBillingApiError(error)
+        })
+      }
       const message =
         error instanceof Error
           ? error.message
@@ -796,6 +924,7 @@ export function useSubscriptionCheckout(
     selectedTierKey.value = null
     previewData.value = null
     quoteIsCurrent.value = false
+    enterCheckoutJourney(`team:${payload.stop.id}:${payload.billingCycle}`)
 
     if (!embeddedCheckoutEnabled) {
       const teamCreditStopId = payload.stop.id
@@ -964,8 +1093,7 @@ export function useSubscriptionCheckout(
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       await fetchStatus()
       if (!confirmReactivation && requiresReactivationConfirmation()) {
-        await refreshPreviewOnReactivationBlock(planSlug)
-        return
+        if (await refreshPreviewOnReactivationBlock(planSlug)) return
       }
       const attemptStartedAt = trackSubscriptionStarted({
         tier: tierKey,
@@ -978,6 +1106,10 @@ export function useSubscriptionCheckout(
       const quote = embeddedCheckoutEnabled ? previewData.value : null
       if (embeddedCheckoutEnabled && quote && !quoteIsCurrent.value) {
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
+      }
+      const submittingJourney = getActiveCheckoutJourney()
+      if (submittingJourney) {
+        emitCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
       }
       const response = await subscribe(planSlug, {
         ...(embeddedCheckoutEnabled &&
@@ -993,6 +1125,10 @@ export function useSubscriptionCheckout(
       })
 
       if (response) {
+        linkSubmittingJourneyToOperation(
+          submittingJourney,
+          response.billing_op_id
+        )
         trackWorkspaceCheckoutStarted({
           tier: tierKey,
           cycle: billingCycle,
@@ -1014,8 +1150,10 @@ export function useSubscriptionCheckout(
       )
       activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
-      if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
-        await refreshPreviewOnReactivationBlock(planSlug)
+      if (
+        hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED') &&
+        (await refreshPreviewOnReactivationBlock(planSlug))
+      ) {
         return
       }
       trackSubscriptionFailure(
@@ -1143,6 +1281,65 @@ export function useSubscriptionCheckout(
     attemptStartedAt?: number
   }
 
+  function currentSubscriptionEntryFlow(): CheckoutEntryFlow {
+    return subscription.value?.isActive && subscription.value.tier !== 'FREE'
+      ? 'paid_upgrade'
+      : 'initial_subscription'
+  }
+
+  function emitCheckoutJourneyPhase(
+    record: CheckoutJourneyRecord,
+    phase: CheckoutJourneyPhaseEvent
+  ): void {
+    telemetry?.trackCheckoutJourneyEvent({
+      ...toCheckoutJourneyContext(record),
+      ...phase
+    })
+  }
+
+  function enterCheckoutJourney(intent: string): CheckoutJourneyRecord | null {
+    const workspaceId = workspaceStore.activeWorkspaceId
+    const ownerUid = useAuthStore().userId
+    if (!workspaceId || !ownerUid) return null
+
+    const resolved = resolveCheckoutJourney({
+      actorUid: ownerUid,
+      workspaceId,
+      entryFlow: currentSubscriptionEntryFlow(),
+      entrySource: 'pricing',
+      intent,
+      uiMode: embeddedCheckoutEnabled ? 'embedded' : 'hosted',
+      assignment: resolveCheckoutAssignment(api.getServerFeatures())
+    })
+    if (resolved.status === 'blocked') return null
+
+    if (!resolved.resumed) {
+      emitCheckoutJourneyPhase(resolved.record, { phase: 'entered' })
+    }
+    return resolved.record
+  }
+
+  function linkSubmittingJourneyToOperation(
+    submittingJourney: CheckoutJourneyRecord | null,
+    billingOpId: string
+  ): void {
+    // Bind only when the submitting journey is still active. A tier/cycle change
+    // mid-request starts a new journey that must not inherit this operation.
+    if (
+      !submittingJourney ||
+      getActiveCheckoutJourney()?.journey_id !== submittingJourney.journey_id
+    ) {
+      return
+    }
+    const linked = bindOperationToCheckoutJourney(billingOpId)
+    if (linked) {
+      emitCheckoutJourneyPhase(linked, {
+        phase: 'operation_linked',
+        billing_op_id: billingOpId
+      })
+    }
+  }
+
   function trackSubscriptionStarted(
     context: SubscriptionOutcomeContext
   ): number | undefined {
@@ -1215,7 +1412,7 @@ export function useSubscriptionCheckout(
   }
 
   async function handleSubscribeResponse(
-    response: SubscribeResponse | void,
+    response: SettledSubscribeResponse | void,
     context: SubscriptionOutcomeContext,
     shouldTrackSubscriptionSuccess = true,
     // 0 when the caller holds no lock; a release from a non-holder is a no-op.
@@ -1234,11 +1431,11 @@ export function useSubscriptionCheckout(
         const durationMs = Date.now() - context.attemptStartedAt
         // PostHog implements both trackBillingEvent and
         // trackMonthlySubscriptionSucceeded (PostHogTelemetryProvider.ts:405,
-        // :444), so also calling the legacy event here would double-count this
-        // success for it. billingOperationStore.ts's own success handler
-        // already restores trackMonthlySubscriptionSucceeded for the
-        // providers that need it (Mixpanel, GTM); this call site doesn't need
-        // a second one.
+        // :444), so calling the legacy event for a plan the server activated
+        // on the spot would double-count that success for it. Only a subscribe
+        // the server charged for reaches the legacy event below, which is the
+        // set billingOperationStore.ts's success handler counts for the
+        // providers that need it (Mixpanel, GTM) on the legacy path.
         telemetry?.trackBillingEvent({
           operation: 'subscription_checkout',
           stage: 'succeeded',
@@ -1261,6 +1458,24 @@ export function useSubscriptionCheckout(
           payment_intent_source: paymentIntentSource,
           billing_op_id: response.billing_op_id,
           duration_ms: durationMs
+        })
+        if (response.requiredPayment) {
+          telemetry?.trackMonthlySubscriptionSucceeded({
+            tier: context.tier,
+            cycle: context.cycle,
+            checkout_type: context.checkoutType,
+            payment_intent_source: paymentIntentSource,
+            billing_op_id: response.billing_op_id
+          })
+        }
+      }
+      // The poller announced every subscription operation it settled, whatever
+      // the caller was tracking; on this rail there is no poller to do it.
+      if (response.requiredPayment) {
+        toast.add({
+          severity: 'success',
+          summary: t('billingOperation.subscriptionSuccess'),
+          life: 5000
         })
       }
       checkoutStep.value = 'success'
@@ -1420,10 +1635,10 @@ export function useSubscriptionCheckout(
     try {
       await fetchStatus()
       if (!confirmReactivation && requiresReactivationConfirmation()) {
-        await refreshPreviewOnReactivationBlock(planSlug, {
+        const blocked = await refreshPreviewOnReactivationBlock(planSlug, {
           teamCreditStopId: stop.id
         })
-        return
+        if (blocked) return
       }
       const attemptStartedAt = trackSubscriptionStarted({
         tier: 'team',
@@ -1438,6 +1653,10 @@ export function useSubscriptionCheckout(
       const quote = embeddedCheckoutEnabled ? previewData.value : null
       if (embeddedCheckoutEnabled && quote && !quoteIsCurrent.value) {
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
+      }
+      const submittingJourney = getActiveCheckoutJourney()
+      if (submittingJourney) {
+        emitCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
       }
       const response = await subscribe(planSlug, {
         ...(embeddedCheckoutEnabled &&
@@ -1455,6 +1674,10 @@ export function useSubscriptionCheckout(
       })
 
       if (response) {
+        linkSubmittingJourneyToOperation(
+          submittingJourney,
+          response.billing_op_id
+        )
         trackWorkspaceCheckoutStarted({
           tier: 'team',
           cycle: billingCycle,
@@ -1476,10 +1699,12 @@ export function useSubscriptionCheckout(
       )
       activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
-      if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
-        await refreshPreviewOnReactivationBlock(planSlug, {
+      if (
+        hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED') &&
+        (await refreshPreviewOnReactivationBlock(planSlug, {
           teamCreditStopId: stop.id
-        })
+        }))
+      ) {
         return
       }
       trackSubscriptionFailure(

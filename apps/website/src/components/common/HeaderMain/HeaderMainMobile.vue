@@ -8,7 +8,6 @@ import { lockScroll, unlockScroll } from '../../../composables/scrollLock'
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import NavLinkContent from './NavLinkContent.vue'
-import NewBadge from './NewBadge.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
 import SheetContent from '@/components/ui/sheet/SheetContent.vue'
 import SheetDescription from '@/components/ui/sheet/SheetDescription.vue'
@@ -23,13 +22,15 @@ const { locale = 'en', workshopInBuild = false } = defineProps<{
   workshopInBuild?: boolean
 }>()
 const routes = getRoutes(locale)
-const mainNavigation = getMainNavigation(locale, workshopInBuild)
+const mainNavigation = computed(() =>
+  getMainNavigation(locale, workshopInBuild)
+)
 
 const isOpen = ref(false)
 const activeSection = ref<string | null>(null)
 
 const activeItem = computed(() =>
-  mainNavigation.find(
+  mainNavigation.value.find(
     (item) => item.label === activeSection.value && item.columns
   )
 )
@@ -53,7 +54,7 @@ onUnmounted(() => {
     <Sheet v-model:open="isOpen">
       <SheetTrigger
         :aria-label="t('nav.toggleMenu', locale)"
-        class="bg-primary-comfy-yellow grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl text-primary-comfy-ink hover:opacity-90"
+        class="grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90"
       >
         <BreadthumbIcon class="h-3 w-5 text-primary-comfy-ink" />
       </SheetTrigger>
@@ -72,7 +73,7 @@ onUnmounted(() => {
         <div>
           <a
             :href="routes.home"
-            class="focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex w-auto shrink-0 focus-visible:ring-3"
+            class="inline-flex w-auto shrink-0 focus-visible:border-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           >
             <img src="/icons/logomark.svg" alt="" class="h-11 w-auto" />
             <span class="sr-only">{{ t('nav.home', locale) }}</span>
@@ -100,8 +101,7 @@ onUnmounted(() => {
                   :href="item.columns ? undefined : item.href"
                   @click="item.columns && (activeSection = item.label)"
                 >
-                  <span class="ppformula-text-center">{{ item.label }}</span>
-                  <NewBadge v-if="item.badge" :locale="locale" size="xxs" />
+                  <NavLinkContent :item="item" :locale="locale" />
                   <template #append>
                     <ChevronRight class="size-7" />
                   </template>
