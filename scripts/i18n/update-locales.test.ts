@@ -928,6 +928,19 @@ describe('createOpenAiTranslator', () => {
     }
   )
 
+  it('accepts a successful response without a status', async () => {
+    const { translate, callCount } = translatorFor(() =>
+      response('{"1":"Bonjour {name}","2":"Au revoir {name}"}', {
+        status: undefined
+      })
+    )
+    await expect(translate(locale, items)).resolves.toEqual({
+      '1': 'Bonjour {name}',
+      '2': 'Au revoir {name}'
+    })
+    expect(callCount()).toBe(1)
+  })
+
   it.for([
     {
       name: 'content filtering',
