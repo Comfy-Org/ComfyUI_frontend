@@ -539,6 +539,13 @@ describe('createOpenAiTranslator', () => {
     }
   ]
 
+  function jsonResponse(body: unknown): Response {
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { 'content-type': 'application/json' }
+    })
+  }
+
   function response(
     content: string,
     overrides: Partial<OpenAiResponse> = {}
@@ -558,10 +565,7 @@ describe('createOpenAiTranslator', () => {
       ],
       ...overrides
     } satisfies Partial<OpenAiResponse>
-    return new Response(JSON.stringify(body), {
-      status: 200,
-      headers: { 'content-type': 'application/json' }
-    })
+    return jsonResponse(body)
   }
 
   const truncated: Partial<OpenAiResponse> = {
@@ -772,6 +776,57 @@ describe('createOpenAiTranslator', () => {
   })
 
   it.for([
+    { name: 'a null envelope', body: null },
+    {
+      name: 'missing output',
+      body: { object: 'response', status: 'completed' }
+    },
+    {
+      name: 'null output',
+      body: { object: 'response', status: 'completed', output: null }
+    },
+    {
+      name: 'missing message content',
+      body: {
+        object: 'response',
+        status: 'completed',
+        output: [{ type: 'message' }]
+      }
+    }
+  ])('recovers from $name within the request budget', async ({ body }) => {
+    const { translate, callCount } = translatorFor([
+      jsonResponse(body),
+      response('{"1":"Bonjour {name}","2":"Au revoir {name}"}')
+    ])
+    await expect(translate(locale, items)).resolves.toEqual({
+      '1': 'Bonjour {name}',
+      '2': 'Au revoir {name}'
+    })
+    expect(callCount()).toBe(2)
+  })
+
+  it('defers persistently malformed envelopes after one retry and retains usage', async () => {
+    const usage = {
+      input_tokens: 10,
+      output_tokens: 4,
+      total_tokens: 14,
+      input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 },
+      output_tokens_details: { reasoning_tokens: 2 }
+    }
+    const onUsage = vi.fn()
+    const { translate, callCount } = translatorFor(
+      () => jsonResponse({ status: 'completed', output: null, usage }),
+      { onUsage }
+    )
+    await expect(translate(locale, items)).resolves.toEqual({})
+    expect(callCount()).toBe(2)
+    expect(onUsage.mock.calls).toEqual([[usage], [usage]])
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('invalid response envelope')
+    )
+  })
+
+  it.for([
     { name: 'a string input count', invalid: { input_tokens: '10' } },
     { name: 'a negative output count', invalid: { output_tokens: -1 } },
     { name: 'a fractional total', invalid: { total_tokens: 14.5 } },
@@ -841,6 +896,40 @@ describe('createOpenAiTranslator', () => {
 
   it.for([
     {
+      status: 'completed',
+      error: null,
+      expected: { '1': 'Bonjour {name}', '2': 'Au revoir {name}' }
+    },
+    {
+      status: 'failed',
+      error: { code: 'server_error', message: 'Generation failed' },
+      expected: {}
+    }
+  ] satisfies {
+    status: OpenAiResponse['status']
+    error: OpenAiResponse['error']
+    expected: Record<string, string>
+  }[])(
+    'retries a server error once before a $status response',
+    async ({ status, error, expected }) => {
+      const failed = {
+        status: 'failed',
+        error: { code: 'server_error', message: 'Generation failed' }
+      } satisfies Partial<OpenAiResponse>
+      const { translate, callCount } = translatorFor([
+        response('', failed),
+        response('{"1":"Bonjour {name}","2":"Au revoir {name}"}', {
+          status,
+          error
+        })
+      ])
+      await expect(translate(locale, items)).resolves.toEqual(expected)
+      expect(callCount()).toBe(2)
+    }
+  )
+
+  it.for([
+    {
       name: 'content filtering',
       overrides: {
         status: 'incomplete',
@@ -848,10 +937,14 @@ describe('createOpenAiTranslator', () => {
       }
     },
     {
-      name: 'a failed response',
+      name: 'an incomplete response without a reason',
+      overrides: { status: 'incomplete', incomplete_details: null }
+    },
+    {
+      name: 'a permanent failure',
       overrides: {
         status: 'failed',
-        error: { code: 'server_error', message: 'Generation failed' }
+        error: { code: 'invalid_prompt', message: 'Invalid input' }
       }
     },
     {
@@ -942,6 +1035,47 @@ describe('createOpenAiTranslator', () => {
     expect(callCount()).toBe(2)
   })
 
+  it.for([
+    {
+      name: 'JSON split across text parts',
+      parts: ['{"1":"Bonjour {name}",', '"2":"Au revoir {name}"}'],
+      expected: { '1': 'Bonjour {name}', '2': 'Au revoir {name}' },
+      calls: 1
+    },
+    {
+      name: 'conflicting JSON documents',
+      parts: [
+        '{"1":"Bonjour {name}","2":"Au revoir {name}"}',
+        '{"1":"Salut {name}","2":"Adieu {name}"}'
+      ],
+      expected: {},
+      calls: 2
+    }
+  ])(
+    'validates $name as one translation result',
+    async ({ parts, expected, calls }) => {
+      const { translate, callCount } = translatorFor(() =>
+        response('', {
+          output: [
+            {
+              type: 'message',
+              id: 'message',
+              role: 'assistant',
+              status: 'completed',
+              content: parts.map((text) => ({
+                type: 'output_text',
+                text,
+                annotations: []
+              }))
+            }
+          ]
+        })
+      )
+      await expect(translate(locale, items)).resolves.toEqual(expected)
+      expect(callCount()).toBe(calls)
+    }
+  )
+
   it.for(['1', 'pricing.hero.title'])(
     'requests and parses strict structured output for key %s',
     async (id) => {
@@ -980,6 +1114,11 @@ describe('createOpenAiTranslator', () => {
       })
       expect(request).toMatchObject({
         instructions: expect.stringContaining(targetLocale.guidance)
+      })
+      expect(request).toMatchObject({
+        instructions: expect.stringContaining(
+          'preserve substring byte for byte'
+        )
       })
     }
   )

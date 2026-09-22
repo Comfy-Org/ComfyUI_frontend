@@ -1,9 +1,6 @@
 import OpenAI from 'openai'
 import { zodTextFormat } from 'openai/helpers/zod'
-import type {
-  Response as OpenAiResponse,
-  ResponseUsage
-} from 'openai/resources/responses/responses'
+import type { ResponseUsage } from 'openai/resources/responses/responses'
 import { z } from 'zod'
 
 import type { OutputLocale, TranslationPipelineConfig } from './config'
@@ -24,7 +21,7 @@ export type TranslateBatch = (
 
 const defaultRequestTimeoutMs = 120_000
 const maxNetworkRetries = 3
-const maxMalformedResponseRetries = 1
+const maxResponseRetries = 1
 
 const tokenCountSchema = z.number().int().nonnegative()
 const responseUsageSchema = z.object({
@@ -37,6 +34,27 @@ const responseUsageSchema = z.object({
   }),
   output_tokens_details: z.object({ reasoning_tokens: tokenCountSchema })
 }) satisfies z.ZodType<ResponseUsage, z.ZodTypeDef, unknown>
+
+const usageEnvelopeSchema = z.object({ usage: responseUsageSchema.nullish() })
+const responseEnvelopeSchema = z.object({
+  status: z.string(),
+  error: z.object({ code: z.string(), message: z.string() }).nullish(),
+  incomplete_details: z.object({ reason: z.string() }).nullish(),
+  output: z.array(
+    z.discriminatedUnion('type', [
+      z.object({ type: z.literal('reasoning') }),
+      z.object({
+        type: z.literal('message'),
+        content: z.array(
+          z.discriminatedUnion('type', [
+            z.object({ type: z.literal('output_text'), text: z.string() }),
+            z.object({ type: z.literal('refusal') })
+          ])
+        )
+      })
+    ])
+  )
+})
 
 // Unlike es-toolkit's mapAsync, which dispatches every item up front, this
 // pool stops dispatching once any task fails so a fatal error does not keep
@@ -102,9 +120,10 @@ a node-based generative AI application. Return each translation
 under its item's id.
 
 Use context to resolve meaning. Preserve the source's meaning,
-tone, and level of detail. Keep code identifiers and every substring
-in preserve unchanged. Retain the number and order of | separated
-plural forms.
+tone, and level of detail. Keep code identifiers unchanged.
+Reproduce every preserve substring byte for byte. Never translate,
+transliterate, or renumber it. Keep interpolation placeholders unchanged.
+Retain the number and order of | separated plural forms.
 
 ${glossary}
 ${locale.guidance ? `\n${locale.name} guidelines:\n${locale.guidance}\n` : ''}`
@@ -140,10 +159,9 @@ type TranslationAttempt =
   | { status: 'truncated' }
   | { status: 'retry' | 'defer'; reason: string }
 
-function parseTranslationResponse(
-  response: OpenAiResponse,
-  schema: z.ZodType<Record<string, string>>
-): TranslationAttempt {
+function classifyResponseStatus(
+  response: z.infer<typeof responseEnvelopeSchema>
+): TranslationAttempt | undefined {
   if (
     response.status === 'incomplete' &&
     response.incomplete_details?.reason === 'max_output_tokens'
@@ -152,20 +170,35 @@ function parseTranslationResponse(
   }
   if (response.status !== 'completed') {
     return {
-      status: 'defer',
-      reason: `response status ${response.status}: ${JSON.stringify(response.incomplete_details ?? response.error ?? 'no details')}`
+      status:
+        response.status === 'failed' && response.error?.code === 'server_error'
+          ? 'retry'
+          : 'defer',
+      reason: `response status ${response.status}: ${JSON.stringify({ error: response.error, incomplete_details: response.incomplete_details })}`
     }
   }
-  if (
-    response.output.some(
-      (item) =>
-        item.type === 'message' &&
-        item.content.some((content) => content.type === 'refusal')
-    )
-  ) {
+}
+
+function parseTranslationResponse(
+  body: unknown,
+  schema: z.ZodType<Record<string, string>>
+): TranslationAttempt {
+  const response = responseEnvelopeSchema.safeParse(body)
+  if (!response.success) {
+    return { status: 'retry', reason: 'invalid response envelope' }
+  }
+  const status = classifyResponseStatus(response.data)
+  if (status) return status
+  const content = response.data.output.flatMap((item) =>
+    item.type === 'message' ? item.content : []
+  )
+  if (content.some((item) => item.type === 'refusal')) {
     return { status: 'defer', reason: 'the model refused the translation' }
   }
-  return parseTranslationOutput(response.output_text, schema)
+  const text = content
+    .flatMap((item) => (item.type === 'output_text' ? [item.text] : []))
+    .join('')
+  return parseTranslationOutput(text, schema)
 }
 
 function parseTranslationOutput(
@@ -219,20 +252,23 @@ export function createOpenAiTranslator(
       instructions: buildSystemPrompt(locale, options.glossary),
       input: JSON.stringify({ items })
     })
-    let response: OpenAiResponse
+    let body: unknown
     try {
-      response = await request
+      const response = await request.asResponse()
+      body = await response.json()
     } catch (error) {
       if (!(error instanceof SyntaxError)) throw error
       options.onUsage?.(undefined)
       return { status: 'retry', reason: error.message }
     }
-    const usage = responseUsageSchema.nullish().safeParse(response.usage)
-    options.onUsage?.(usage.success ? (usage.data ?? undefined) : undefined)
+    const usage = usageEnvelopeSchema.safeParse(body)
+    options.onUsage?.(
+      usage.success ? (usage.data.usage ?? undefined) : undefined
+    )
     if (!usage.success) {
       return { status: 'retry', reason: 'invalid token usage' }
     }
-    return parseTranslationResponse(response, schema)
+    return parseTranslationResponse(body, schema)
   }
 
   async function translateBatch(
@@ -245,7 +281,7 @@ export function createOpenAiTranslator(
       .object(Object.fromEntries(items.map((item) => [item.id, z.string()])))
       .strict()
     let deferralReason = 'the request was not attempted'
-    for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
+    for (let attempt = 0; attempt <= maxResponseRetries; attempt++) {
       const result = await requestTranslation(locale, items, schema)
       if (result.status === 'translated') return result.translations
       if (result.status !== 'truncated') {
