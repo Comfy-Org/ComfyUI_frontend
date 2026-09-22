@@ -230,14 +230,15 @@ function mountFollower(
   let enqueue!: (operations: GraphOperation[]) => void
   const host = defineComponent({
     setup() {
-      const { status, retrySubscription, enqueueHumanOperations } = useAgentCrdtFollower(
-        workflowId,
-        graphMutations,
-        () => null,
-        isTargetActive,
-        getGraph,
-        events
-      )
+      const { status, retrySubscription, enqueueHumanOperations } =
+        useAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          () => null,
+          isTargetActive,
+          getGraph,
+          events
+        )
       exposedStatus = () => status.value as AgentCrdtStatus
       exposedRetry = retrySubscription
       enqueue = enqueueHumanOperations
