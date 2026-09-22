@@ -157,6 +157,12 @@ describe('ogLocaleAlternates', () => {
     ])
   })
 
+  it('treats an unrecognized locale as English', () => {
+    expect(ogLocaleAlternates('fr', alt('en', 'zh-CN', 'x-default'))).toEqual([
+      'zh_CN'
+    ])
+  })
+
   /**
    * An English-only route still carries `en` and `x-default`, so a non-empty
    * cluster was never evidence that a Chinese page exists.
