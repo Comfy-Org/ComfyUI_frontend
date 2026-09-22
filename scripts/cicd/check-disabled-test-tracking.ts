@@ -318,17 +318,27 @@ function correspondingBaseDeclarations(
   const matchedBase = new Set<number>()
   const matchedHead = new Set<number>()
   const candidates = head.flatMap((headDeclaration, headIndex) =>
-    base.map((baseDeclaration, baseIndex) => ({
-      baseDeclaration,
-      baseIndex,
-      headIndex,
-      rank: [
-        baseDeclaration.title === headDeclaration.title ? 0 : 1,
-        baseDeclaration.context === headDeclaration.context ? 0 : 1,
-        headDeclaration.relevantLines.some(isAddedLine) ? 1 : 0,
-        Math.abs(projectBaseLine(baseDeclaration.line) - headDeclaration.line)
-      ]
-    }))
+    base.flatMap((baseDeclaration, baseIndex) => {
+      const sameTitle = baseDeclaration.title === headDeclaration.title
+      const sameContext = baseDeclaration.context === headDeclaration.context
+      return sameTitle || sameContext
+        ? [
+            {
+              baseDeclaration,
+              baseIndex,
+              headIndex,
+              rank: [
+                sameTitle ? 0 : 1,
+                sameContext ? 0 : 1,
+                headDeclaration.relevantLines.some(isAddedLine) ? 1 : 0,
+                Math.abs(
+                  projectBaseLine(baseDeclaration.line) - headDeclaration.line
+                )
+              ]
+            }
+          ]
+        : []
+    })
   )
 
   candidates.sort((left, right) =>
