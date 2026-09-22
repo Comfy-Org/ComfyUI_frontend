@@ -29,12 +29,7 @@ vi.mock<unknown>(import('@/scripts/defaultGraph'), () => ({
   blankGraph: {}
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    prompt: vi.fn(),
-    confirm: vi.fn()
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })

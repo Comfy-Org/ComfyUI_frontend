@@ -128,19 +128,29 @@ export function creatorFormFor(
       request = { kind: 'callback', callback: 'dialogue', options: {} }
       break
     case 'seedance':
-      addRoot()
+      // An edit keeps the source clip's length and aspect ratio, so those
+      // controls (and the last-frame return) are not offered on the edit page.
+      addRoot(
+        model.options.mode === 'edit'
+          ? ['duration', 'ratio', 'return_last_frame']
+          : []
+      )
       prompt('content/[]/text')
       if (model.options.urlMedia) {
         if (model.options.mode === 'reference') {
           url('reference_image_url', 'Reference image', true)
           for (let index = 2; index <= 4; index++)
             url(`reference_image_url_${index}`, `Reference image ${index}`)
+        } else if (model.options.mode === 'edit') {
+          // The edit page rewrites a source clip; Seedance keeps its length
+          // and aspect ratio, so no frame or reference slots are offered.
+          url('video_url', 'Source video', true, 'video')
         } else if (model.options.mode !== 'text') {
           url('first_frame_url', 'First frame', true)
           if (model.options.mode === 'first-last')
             url('last_frame_url', 'Last frame')
         }
-      } else if (model.options.mode !== 'text') {
+      } else if (!['text', 'edit'].includes(model.options.mode)) {
         file('first_frame', 'First frame', 1, model.options.mode === 'image')
         if (model.options.mode === 'mixed') {
           file('last_frame', 'Last frame')
@@ -154,15 +164,31 @@ export function creatorFormFor(
       }
       break
     case 'seedream':
-      addRoot()
+      addRoot(model.options.mode === 'generate' ? ['layer_decomposition'] : [])
       required.add('prompt')
-      if (Object.hasOwn(object.parse(source.properties), 'image'))
-        file('images', 'Reference images', 10)
+      // The generate page hides the image slot; the edit page requires it.
+      if (
+        model.options.mode !== 'generate' &&
+        Object.hasOwn(object.parse(source.properties), 'image')
+      )
+        file(
+          'images',
+          model.options.mode === 'edit' ? 'Source images' : 'Reference images',
+          10,
+          model.options.mode === 'edit'
+        )
       request = { kind: 'callback', callback: 'seedream', options: {} }
       break
     case 'gemini-image':
       prompt('contents/[]/parts/[]/text')
-      file('images', 'Images', 4)
+      // The generate page hides the image slot; the edit page requires it.
+      if (model.options.mode !== 'generate')
+        file(
+          'images',
+          model.options.mode === 'edit' ? 'Source images' : 'Images',
+          4,
+          model.options.mode === 'edit'
+        )
       settings(
         'generationConfig',
         ['temperature', 'topP', 'topK', 'maxOutputTokens'],
@@ -337,12 +363,20 @@ export function creatorFormFor(
           throw new Error(`Missing creator parameter ${id}:parameters.${name}`)
       }
       prompt('instances/[]/prompt')
-      file('first_frame', 'First frame', 1, false, ['image/jpeg', 'image/png'])
-      file('last_frame', 'Last frame', 1, false, ['image/jpeg', 'image/png'])
-      file('reference_images', 'Reference images', 3, false, [
-        'image/jpeg',
-        'image/png'
-      ])
+      // Text mode (the generate page) takes no frames; image mode (the animate
+      // page) requires the first frame. Without a mode every slot is optional.
+      if (model.options.mode !== 'text') {
+        file('first_frame', 'First frame', 1, model.options.mode === 'image', [
+          'image/jpeg',
+          'image/png'
+        ])
+        file('last_frame', 'Last frame', 1, false, ['image/jpeg', 'image/png'])
+        if (model.options.mode !== 'image')
+          file('reference_images', 'Reference images', 3, false, [
+            'image/jpeg',
+            'image/png'
+          ])
+      }
       settings(
         'parameters',
         [
@@ -419,7 +453,7 @@ export function creatorFormFor(
         url('reference_image_url', 'Reference image', true)
         for (let index = 2; index <= 4; index++)
           url(`reference_image_url_${index}`, `Reference image ${index}`)
-      } else
+      } else if (model.options.mode !== 'text')
         url('image_url', 'First frame image', model.options.mode === 'image')
       request = {
         kind: 'callback',
@@ -500,6 +534,11 @@ export function creatorFormFor(
       if (Object.hasOwn(properties, 'prompt')) required.add('prompt')
       if (id === 'kling/kling-v1-5') required.add('image')
       request = { kind: 'callback', callback: 'flat', options: {} }
+      break
+    case 'gpt-image':
+      addRoot()
+      required.add('prompt')
+      request = { kind: 'callback', callback: 'gpt-image', options: {} }
       break
     case 'ideogram':
       addRoot(['text_prompt', 'json_prompt'])

@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useSubgraphOperations } from './useSubgraphOperations'
 
 const captureCanvasState = vi.fn()
@@ -32,7 +34,7 @@ function createRegularNode(): LGraphNode {
 
 describe('useSubgraphOperations', () => {
   beforeEach(() => {
-    useCanvasStore().selectedItems = []
+    setCanvasSelection([])
     useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
       changeTracker: { captureCanvasState }
     })
@@ -40,7 +42,8 @@ describe('useSubgraphOperations', () => {
   })
 
   it('preserves previews and history when every unpack is refused', () => {
-    const subgraphNode = createSubgraphNode()
+    const firstSubgraphNode = createSubgraphNode()
+    const secondSubgraphNode = createSubgraphNode()
     const unpackSubgraph = vi.fn(() => false)
     const revokeSubgraphPreviews = vi
       .spyOn(useNodeOutputStore(), 'revokeSubgraphPreviews')
@@ -48,17 +51,27 @@ describe('useSubgraphOperations', () => {
     vi.mocked(useCanvasStore().getCanvas).mockReturnValue(
       fromPartial<LGraphCanvas>({
         graph: fromPartial<LGraph>({ unpackSubgraph }),
-        selectedItems: new Set([subgraphNode])
+        selectedItems: new Set([firstSubgraphNode, secondSubgraphNode])
       })
     )
 
     useSubgraphOperations().unpackSubgraph()
 
-    expect(unpackSubgraph).toHaveBeenCalledWith(subgraphNode, {
+    expect(unpackSubgraph).toHaveBeenCalledWith(firstSubgraphNode, {
+      skipMissingNodes: true
+    })
+    expect(unpackSubgraph).toHaveBeenCalledWith(secondSubgraphNode, {
       skipMissingNodes: true
     })
     expect(revokeSubgraphPreviews).not.toHaveBeenCalled()
     expect(captureCanvasState).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toEqual([
+      {
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Unable to unpack the selected subgraph.'
+      }
+    ])
   })
 
   it('updates previews and history only for successful unpacks', () => {
@@ -87,7 +100,7 @@ describe('useSubgraphOperations', () => {
   })
 
   it('addSubgraphToLibrary calls publishSubgraph when single SubgraphNode selected', async () => {
-    useCanvasStore().selectedItems = [createSubgraphNode()]
+    setCanvasSelection([createSubgraphNode()])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
@@ -96,7 +109,7 @@ describe('useSubgraphOperations', () => {
   })
 
   it('addSubgraphToLibrary does not call publishSubgraph when no items selected', async () => {
-    useCanvasStore().selectedItems = []
+    setCanvasSelection([])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
@@ -105,10 +118,7 @@ describe('useSubgraphOperations', () => {
   })
 
   it('addSubgraphToLibrary does not call publishSubgraph when multiple items selected', async () => {
-    useCanvasStore().selectedItems = [
-      createSubgraphNode(),
-      createSubgraphNode()
-    ]
+    setCanvasSelection([createSubgraphNode(), createSubgraphNode()])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()
@@ -117,7 +127,7 @@ describe('useSubgraphOperations', () => {
   })
 
   it('addSubgraphToLibrary does not call publishSubgraph when selected item is not a SubgraphNode', async () => {
-    useCanvasStore().selectedItems = [createRegularNode()]
+    setCanvasSelection([createRegularNode()])
     const { addSubgraphToLibrary } = useSubgraphOperations()
 
     await addSubgraphToLibrary()

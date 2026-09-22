@@ -19,7 +19,7 @@ afterEach(async () => {
 
 describe('artifact verification', () => {
   it('downloads raw bytes without forwarding Router credentials', async () => {
-    vi.stubEnv('COMFY_KEY', 'secret-comfy-key')
+    vi.stubEnv('COMFY_API_KEY', 'secret-comfy-key')
     vi.stubGlobal('fetch', async (_url: string, options: RequestInit) => {
       if (new Headers(options.headers).has('authorization'))
         return new Response('Credential was exposed', { status: 403 })

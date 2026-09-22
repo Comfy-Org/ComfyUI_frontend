@@ -1,0 +1,125 @@
+name: Explain Check
+description: >
+  Render one required check's outcome in a shape a human or an agent can act on
+  without opening the run: what the verdict means, the findings themselves, the
+  command that reproduces it locally, and where the full docs are.
+
+  Writes to the job summary always, and upserts a section into the shared PR
+  report comment when the token can write, so a fork PR degrades rather than
+  failing.
+
+  The convention: any required check that can fail for a reason not obvious
+  from its name should call this. The checks nobody has to ask about
+  (Playwright, Storybook, website E2E, the Vercel preview) are the ones that
+  already put a section in the PR comment; the ones people get stuck on are the
+  ones whose docs live in a workflow header, a scripts/ README, or Notion.
+
+inputs:
+  slug:
+    description: >
+      Section identifier in the shared PR comment (e.g. "fallow",
+      "custom-nodes-matrix"). Stable per check — it is the upsert key.
+    required: true
+  title:
+    description: Human name of the check, e.g. "Fallow"
+    required: true
+  icon:
+    description: Emoji shown beside the title
+    required: false
+    default: '🔎'
+  status:
+    description: 'One of: pass | fail | withheld | warn | running'
+    required: true
+  headline:
+    description: >
+      One sentence, in plain English, saying what this verdict means for the
+      person reading it. Not a restatement of the status — the thing they would
+      otherwise have to read the workflow source to learn.
+    required: true
+  details-file:
+    description: Path to a Markdown file with the findings themselves
+    required: false
+  reproduce:
+    description: Shell command that reproduces this verdict locally
+    required: false
+  docs:
+    description: Link or repo path to the full documentation
+    required: false
+  pr-number:
+    description: PR number. Omit to write the job summary only.
+    required: false
+  token:
+    description: Token with pull-requests write. Omit to write the summary only.
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Render explainer
+      id: render
+      shell: bash
+      env:
+        INPUT_SLUG: ${{ inputs.slug }}
+        INPUT_TITLE: ${{ inputs.title }}
+        INPUT_ICON: ${{ inputs.icon }}
+        INPUT_STATUS: ${{ inputs.status }}
+        INPUT_HEADLINE: ${{ inputs.headline }}
+        INPUT_DETAILS_FILE: ${{ inputs.details-file }}
+        INPUT_REPRODUCE: ${{ inputs.reproduce }}
+        INPUT_DOCS: ${{ inputs.docs }}
+      run: |
+        set -euo pipefail
+
+        case "$INPUT_STATUS" in
+          pass)     badge='✅ Passed' ;;
+          fail)     badge='❌ Failed' ;;
+          # Deliberately distinct from `fail`: the check could not measure, which
+          # is not the same claim as "your change broke something".
+          withheld) badge='🟡 Withheld — could not measure' ;;
+          warn)     badge='⚠️ Warning' ;;
+          running)  badge='⏳ Running…' ;;
+          *)
+            echo "::error::explain-check: unknown status '$INPUT_STATUS' (expected pass|fail|withheld|warn|running)"
+            exit 1
+            ;;
+        esac
+
+        # Must live inside the workspace: read-and-upsert-comment-section guards
+        # on hashFiles(), which only resolves paths under GITHUB_WORKSPACE and
+        # would silently no-op on a RUNNER_TEMP path.
+        out="$GITHUB_WORKSPACE/.explain-check-${INPUT_SLUG}.md"
+        {
+          printf '## %s %s: %s\n\n' "$INPUT_ICON" "$INPUT_TITLE" "$badge"
+          printf '%s\n' "$INPUT_HEADLINE"
+
+          if [ -n "$INPUT_DETAILS_FILE" ] && [ -s "$INPUT_DETAILS_FILE" ]; then
+            printf '\n'
+            cat "$INPUT_DETAILS_FILE"
+          fi
+
+          if [ -n "$INPUT_REPRODUCE" ]; then
+            printf '\n<details>\n<summary>Reproduce locally</summary>\n\n'
+            printf '```bash\n%s\n```\n\n</details>\n' "$INPUT_REPRODUCE"
+          fi
+
+          if [ -n "$INPUT_DOCS" ]; then
+            printf '\nFull docs: %s\n' "$INPUT_DOCS"
+          fi
+        } > "$out"
+
+        echo "file=$out" >> "$GITHUB_OUTPUT"
+
+        # The summary is the fallback that always works — fork PRs carry a
+        # read-only token, so the comment path below is skipped for them.
+        cat "$out" >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upsert section into the PR report
+      if: ${{ inputs.pr-number != '' && inputs.token != '' }}
+      # A comment failure must not turn a green check red, nor mask a red one.
+      continue-on-error: true
+      uses: ./.github/actions/read-and-upsert-comment-section
+      with:
+        pr-number: ${{ inputs.pr-number }}
+        section-name: ${{ inputs.slug }}
+        section-file: ${{ steps.render.outputs.file }}
+        token: ${{ inputs.token }}

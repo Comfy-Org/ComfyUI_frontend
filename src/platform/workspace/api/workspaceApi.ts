@@ -118,6 +118,7 @@ export type { BillingStatusResponse }
 export type { ScheduledPlanChange }
 
 export type { BillingBalanceResponse }
+export type { BillingEventsResponse }
 export type { BillingCapabilitiesResponse }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
@@ -130,6 +131,9 @@ export type BillingDeclineReason = NonNullable<
 >
 export type BillingOperationPhase = NonNullable<
   BillingOpStatusResponse['phase']
+>
+export type BillingRecoveryAction = NonNullable<
+  BillingOpStatusResponse['recovery_action']
 >
 
 interface GetBillingEventsParams {

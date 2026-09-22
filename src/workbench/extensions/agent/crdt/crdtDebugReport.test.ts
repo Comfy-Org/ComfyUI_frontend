@@ -1,5 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useExtensionStore } from '@/stores/extensionStore'
+
+import { toTurnId } from '../schemas/agentApiSchema'
+import type {
+  AssistantMessage,
+  MessagePart,
+  ToolPart
+} from '../services/agent/agentMessageParts'
+import { createAssistantMessage } from '../services/agent/agentMessageParts'
 
 const { getSystemStats, getLogs, getSettings } = vi.hoisted(() => ({
   getSystemStats: vi.fn(),
@@ -243,23 +251,424 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('Review before sharing')
   })
 
-  it('leaves logs, settings and the workflow out unless the tester opts in', async () => {
+  it('leaves logs, settings and the workflow out when the tester turns them off', async () => {
     getSettings.mockResolvedValue({ 'Comfy.Theme': 'do-not-leak-settings' })
     getLogs.mockResolvedValue('do-not-leak-logs')
 
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
       events: [],
+      sources: { serverLogs: false, settings: false, workflow: false },
       workflow: { nodes: [{ id: 'do-not-leak-workflow' }] }
     })
 
     expect(report).not.toContain('do-not-leak-settings')
     expect(report).not.toContain('do-not-leak-logs')
     expect(report).not.toContain('do-not-leak-workflow')
-    expect(report).toContain('did not opt in')
+    expect(report).toContain('Turned off by the tester')
     // The parts that are the point of the feature still ship.
     expect(report).toContain('## CRDT state')
     expect(report).toContain('## System')
+  })
+
+  it('includes all optional sources by default and records collection outcomes', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      workflow: { nodes: [{ id: 'workflow-node' }] }
+    })
+
+    expect(report).toContain('backend log line')
+    expect(report).toContain('Comfy.Setting')
+    expect(report).toContain('workflow-node')
+    expect(report).toContain('## Collection status')
+    expect(report).toContain('- System stats: collected')
+    expect(report).toContain('- Server logs: collected')
+    expect(report).toContain('- Settings: collected')
+    expect(report).toContain('- Workflow: collected')
+  })
+
+  it('distinguishes failed, turned off and unavailable sources in collection status', async () => {
+    getLogs.mockRejectedValue(new Error('offline'))
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      sources: { serverLogs: true, settings: false, workflow: true }
+    })
+
+    expect(report).toContain('- Server logs: failed (see source section)')
+    expect(report).toContain('- Settings: turned off')
+    expect(report).toContain('- Workflow: unavailable')
+    expect(report).toContain('Server logs unavailable: Error: offline')
+  })
+
+  it('reports unavailable tool metadata explicitly', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: []
+    })
+
+    expect(report).toContain('- Agent tool calls: unavailable')
+    expect(report).toContain('Restored history may omit tool calls')
+  })
+
+  it('reports an empty retained tool-call array explicitly', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: []
+    })
+
+    expect(report).toContain('- Agent tool calls: no retained calls')
+    const serialized = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.match(/```json\n([\s\S]*?)\n```/)?.[1]
+    assert.exists(serialized)
+    expect(JSON.parse(serialized)).toEqual([])
+  })
+
+  it('correlates tool outcomes and backend durations without conversation content', async () => {
+    const agentMessages: AssistantMessage[] = [
+      {
+        ...createAssistantMessage(toTurnId('turn-21')),
+        parts: [
+          { type: 'text', text: 'private assistant response', state: 'done' },
+          {
+            type: 'tool',
+            callId: 'call-success',
+            name: 'inspect_workflow',
+            state: 'done',
+            ok: true,
+            durationMs: 137
+          }
+        ]
+      },
+      {
+        ...createAssistantMessage(toTurnId('turn-43')),
+        parts: [
+          { type: 'thinking', text: 'private reasoning', state: 'done' },
+          {
+            type: 'tool',
+            callId: 'call-error',
+            name: 'edit_workflow',
+            state: 'done',
+            ok: false,
+            durationMs: 294
+          },
+          {
+            type: 'tool',
+            callId: 'call-unsettled',
+            name: 'run_workflow',
+            state: 'streaming'
+          }
+        ]
+      }
+    ]
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages
+    })
+
+    expect(report).toContain(
+      '- Agent tool calls: collected (3/3 retained calls)'
+    )
+    const serialized = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.match(/```json\n([\s\S]*?)\n```/)?.[1]
+    assert.exists(serialized)
+    const calls: unknown = JSON.parse(serialized)
+    expect(calls).toEqual([
+      {
+        turnId: 'turn-21',
+        callId: 'call-success',
+        name: 'inspect_workflow',
+        state: 'done',
+        ok: true,
+        durationMs: 137
+      },
+      {
+        turnId: 'turn-43',
+        callId: 'call-error',
+        name: 'edit_workflow',
+        state: 'done',
+        ok: false,
+        durationMs: 294
+      },
+      {
+        turnId: 'turn-43',
+        callId: 'call-unsettled',
+        name: 'run_workflow',
+        state: 'streaming'
+      }
+    ])
+    expect(report).not.toContain('private assistant response')
+    expect(report).not.toContain('private reasoning')
+    expect(agentMessages.map(({ id }) => id)).toEqual(['turn-21', 'turn-43'])
+    expect(
+      agentMessages.map(({ parts }) => parts.map(({ type }) => type))
+    ).toEqual([
+      ['text', 'tool'],
+      ['thinking', 'tool', 'tool']
+    ])
+  })
+
+  it.for([
+    {
+      count: 50,
+      status: 'collected (50/50 retained calls)',
+      includesOldest: true,
+      newest: 'call-49'
+    },
+    {
+      count: 51,
+      status: 'truncated (50/51 retained calls)',
+      includesOldest: false,
+      newest: 'call-50'
+    }
+  ])(
+    'bounds $count tool calls to the most recent 50',
+    async ({ count, status, includesOldest, newest }) => {
+      const report = await collectCrdtDebugReport({
+        crdt: SNAPSHOT,
+        events: [],
+        agentMessages: [
+          {
+            ...createAssistantMessage(toTurnId('turn-many-1')),
+            parts: Array.from({ length: 30 }, (_, index) => ({
+              type: 'tool',
+              callId: `call-${index}`,
+              name: 'inspect_workflow',
+              state: 'done',
+              ok: true
+            }))
+          },
+          {
+            ...createAssistantMessage(toTurnId('turn-many-2')),
+            parts: [
+              ...Array.from(
+                { length: count - 30 },
+                (_, index): ToolPart => ({
+                  type: 'tool',
+                  callId: `call-${index + 30}`,
+                  name: 'inspect_workflow',
+                  state: 'done',
+                  ok: true
+                })
+              ),
+              {
+                type: 'text',
+                text: 'private text after the newest tool call',
+                state: 'done'
+              }
+            ] satisfies MessagePart[]
+          }
+        ]
+      })
+
+      expect(report).toContain(`- Agent tool calls: ${status}`)
+      expect(report.includes('"callId": "call-0"')).toBe(includesOldest)
+      expect(report).toContain(`"callId": "${newest}"`)
+      expect(
+        [...report.matchAll(/"callId": "(call-\d+)"/g)].map(
+          ([, callId]) => callId
+        )
+      ).toEqual(
+        Array.from(
+          { length: 50 },
+          (_, index) => `call-${index + Math.max(0, count - 50)}`
+        )
+      )
+      expect(report).not.toContain('private text after the newest tool call')
+    }
+  )
+
+  it('redacts credential-shaped tool metadata', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('auth: Bearer private-turn')),
+          parts: [
+            {
+              type: 'tool',
+              callId: 'Bearer private-call',
+              name: '/home/private-tool',
+              state: 'done',
+              ok: false
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(report).not.toContain('private-turn')
+    expect(report).not.toContain('private-call')
+    expect(report).not.toContain('private-tool')
+    expect(report).toContain('[redacted by the debug report]')
+    expect(report).toContain('"ok": false')
+  })
+
+  it('bounds oversized metadata and preserves the newest call in the excerpt', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('turn-large')),
+          parts: [
+            {
+              type: 'tool',
+              callId: 'call-oldest',
+              name: 'x'.repeat(70_000),
+              state: 'done'
+            },
+            {
+              type: 'tool',
+              callId: 'call-newest',
+              name: 'inspect_workflow',
+              state: 'done',
+              ok: true,
+              durationMs: 41
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(report).toContain(
+      '- Agent tool calls: truncated (1/2 retained calls)'
+    )
+    const serialized = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.match(/```json\n([\s\S]*?)\n```/)?.[1]
+    assert.exists(serialized)
+    expect(JSON.parse(serialized)).toEqual([
+      {
+        turnId: 'turn-large',
+        callId: 'call-newest',
+        name: 'inspect_workflow',
+        state: 'done',
+        ok: true,
+        durationMs: 41
+      }
+    ])
+    expect(report.length).toBeLessThan(70_000)
+  })
+
+  it('includes the tool section wrapper in its character limit', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('turn-boundary')),
+          parts: [
+            {
+              type: 'tool',
+              callId: 'call-boundary',
+              name: 'x'.repeat(59_800),
+              state: 'done'
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(report).toContain(
+      '- Agent tool calls: truncated (0/1 retained calls)'
+    )
+    const section = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.split('\n\n## ')[0]
+    assert.exists(section)
+    expect(section.length).toBeLessThanOrEqual(60_000)
+  })
+
+  it.for([
+    { enabled: true, status: 'failed (see source section)' },
+    { enabled: false, status: 'turned off' }
+  ])(
+    'reports workflow serialization failure when enabled=$enabled',
+    async ({ enabled, status }) => {
+      const report = await collectCrdtDebugReport({
+        crdt: SNAPSHOT,
+        events: [],
+        sources: { serverLogs: false, settings: false, workflow: enabled },
+        workflowError: 'serialize failed'
+      })
+
+      expect(report).toContain(`- Workflow: ${status}`)
+      expect(report.includes('serialize failed')).toBe(enabled)
+    }
+  )
+
+  it('redacts and bounds a workflow serialization failure', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      sources: ALL_SOURCES,
+      workflowError: `${'x'.repeat(80_000)} apiKey=do-not-leak "apiKey":"json-do-not-leak" auth: Bearer bearer-do-not-leak`
+    })
+
+    expect(report).not.toContain('do-not-leak')
+    expect(report).toContain('apiKey=[redacted by the debug report]')
+    expect(report).toContain('"apiKey":"[redacted by the debug report]"')
+    expect(report).toContain('auth: [redacted by the debug report]')
+    expect(report).toContain('earlier characters trimmed')
+  })
+
+  it.for([
+    {
+      case: 'escaped double-quote',
+      workflowError: String.raw`"apiKey":"escaped\"double-do-not-leak"`,
+      redacted: '"apiKey":"[redacted by the debug report]"'
+    },
+    {
+      case: 'escaped single-quote',
+      workflowError: String.raw`'secret':'escaped\'single-do-not-leak'`,
+      redacted: "'secret':'[redacted by the debug report]'"
+    },
+    {
+      case: 'multiline double-quote',
+      workflowError: '"apiKey":"first-line\ndouble-do-not-leak"',
+      redacted: '"apiKey":"[redacted by the debug report]"'
+    },
+    {
+      case: 'multiline single-quote',
+      workflowError: "'secret':'first-line\nsingle-do-not-leak'",
+      redacted: "'secret':'[redacted by the debug report]'"
+    }
+  ])('redacts $case secrets', async ({ workflowError, redacted }) => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      sources: ALL_SOURCES,
+      workflowError
+    })
+
+    expect(report).not.toContain('do-not-leak')
+    expect(report).toContain(redacted)
+  })
+
+  it('reports a thrown workflow JSON conversion as failed', async () => {
+    const workflow = Object.defineProperty({}, 'broken', {
+      enumerable: true,
+      get: () => {
+        throw new Error('serialize failed')
+      }
+    })
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      sources: ALL_SOURCES,
+      workflow
+    })
+
+    expect(report).toContain('- Workflow: failed (see source section)')
+    expect(report).toContain('## Workflow')
   })
 
   it('redacts widget values from outbound operation events', async () => {
@@ -528,6 +937,7 @@ describe('collectCrdtDebugReport', () => {
     })
 
     expect(report).toContain('workflow omitted')
+    expect(report).toContain('- Workflow: omitted (over 200000 characters)')
   })
 
   it('deterministically caps an oversized report without dropping its contract markers', async () => {

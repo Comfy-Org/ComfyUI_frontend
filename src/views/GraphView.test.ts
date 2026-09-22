@@ -49,27 +49,7 @@ const distribution = vi.hoisted(
 )
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
-vi.mock<unknown>(import('firebase/auth'), () => {
-  class AuthProvider {
-    addScope() {}
-    setCustomParameters() {}
-  }
-
-  return {
-    AuthErrorCodes: {
-      POPUP_CLOSED_BY_USER: 'auth/popup-closed-by-user',
-      EXPIRED_POPUP_REQUEST: 'auth/cancelled-popup-request',
-      POPUP_BLOCKED: 'auth/popup-blocked',
-      CREDENTIAL_TOO_OLD_LOGIN_AGAIN: 'auth/requires-recent-login'
-    },
-    GoogleAuthProvider: AuthProvider,
-    GithubAuthProvider: AuthProvider,
-    browserLocalPersistence: {},
-    setPersistence: vi.fn(async () => {}),
-    onAuthStateChanged: vi.fn(() => () => {}),
-    onIdTokenChanged: vi.fn(() => () => {})
-  }
-})
+vi.mock(import('firebase/auth'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {

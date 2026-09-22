@@ -25,9 +25,6 @@ app.registerExtension({
 
       constructor(title?: string) {
         super(title ?? '')
-        if (!this.properties) {
-          this.properties = {}
-        }
         this.properties.showOutputText = RerouteNode.defaultVisibility
         this.properties.horizontal = false
 
@@ -106,7 +103,6 @@ app.registerExtension({
             }
           } else {
             // This path has no input node
-            currentNode = null
             break
           }
         }
@@ -167,10 +163,9 @@ app.registerExtension({
           for (const link of outputLinks(graph, node.id, 0)) {
             link.color = color
 
-            if (app.configuringGraph) continue
             const targetNode = graph.getNodeById(link.target_id)
             if (!targetNode) continue
-            const targetInput = targetNode.inputs?.[link.target_slot]
+            const targetInput = targetNode.inputs.at(link.target_slot)
             if (targetInput?.widget) {
               const config = getWidgetConfig(targetInput)
               if (!widgetConfig) {
@@ -241,7 +236,7 @@ app.registerExtension({
       }
       override computeSize(): [number, number] {
         return [
-          this.properties.showOutputText && this.outputs && this.outputs.length
+          this.properties.showOutputText && this.outputs.length
             ? Math.max(
                 75,
                 LiteGraph.NODE_TEXT_SIZE * this.outputs[0].name.length * 0.6 +
