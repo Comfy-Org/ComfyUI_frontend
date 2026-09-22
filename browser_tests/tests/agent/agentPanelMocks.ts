@@ -140,15 +140,8 @@ export const MESSAGE_DONE_EVENT: AgentWsEvent = {
   }
 }
 
-function agentFeatures(
-  agentFlag: boolean,
-  firstSession: boolean
-): RemoteConfig {
+function agentFeatures(agentFlag: boolean): RemoteConfig {
   return {
-    ...(firstSession && {
-      onboarding_tour_enabled: true,
-      subscription_required: true
-    }),
     posthog_project_token: 'phc_e2e_agent_panel',
     posthog_config: {
       advanced_disable_flags: true,
@@ -165,15 +158,19 @@ async function mockAgentBoot(
     agentConsentAccepted,
     agentConsentSave,
     agentConsentWrites,
-    agentFirstSession,
     agentFlagEnabled,
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
     agentRetryAfter,
     crdtDebugEnabled,
+    initialFeatureFlags,
+    initialSettings,
     objectInfo,
     postedMessages
-  }: Omit<AgentFixtures, 'agentPanel'>
+  }: Omit<AgentFixtures, 'agentPanel'> & {
+    initialFeatureFlags: Record<string, unknown>
+    initialSettings: Record<string, unknown>
+  }
 ): Promise<void> {
   let consentAccepted = agentConsentAccepted
 
@@ -221,10 +218,11 @@ async function mockAgentBoot(
   )
 
   await mockCloudBootRoutes(page, {
-    features: agentFeatures(agentFlagEnabled, agentFirstSession),
+    features: { ...agentFeatures(agentFlagEnabled), ...initialFeatureFlags },
     settings: {
-      'Comfy.TutorialCompleted': !agentFirstSession,
-      'Comfy.RightSidePanel.ShowErrorsTab': false
+      'Comfy.TutorialCompleted': true,
+      'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...initialSettings
     },
     objectInfo
   })
@@ -391,7 +389,6 @@ type AgentFixtures = {
   agentConsentAccepted: boolean
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWrites: boolean[]
-  agentFirstSession: boolean
   agentFlagEnabled: boolean
   agentPanel: AgentPanel
   agentPanelInitiallyOpen: boolean
@@ -411,7 +408,6 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentConsentWrites: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },
-  agentFirstSession: [false, { option: true }],
   agentFlagEnabled: [true, { option: true }],
   agentPanel: async ({ comfyPage }, use) => {
     await use(new AgentPanel(comfyPage.page))
@@ -426,12 +422,13 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentAccepted,
       agentConsentSave,
       agentConsentWrites,
-      agentFirstSession,
       agentFlagEnabled,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       agentRetryAfter,
       crdtDebugEnabled,
+      initialFeatureFlags,
+      initialSettings,
       objectInfo,
       page,
       postedMessages
@@ -442,12 +439,13 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentAccepted,
       agentConsentSave,
       agentConsentWrites,
-      agentFirstSession,
       agentFlagEnabled,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       agentRetryAfter,
       crdtDebugEnabled,
+      initialFeatureFlags,
+      initialSettings,
       objectInfo,
       postedMessages
     })

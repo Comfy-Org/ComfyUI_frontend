@@ -527,7 +527,14 @@ test.describe(
   'Automatic agent consent in the first session',
   { tag: ['@cloud', '@ui'] },
   () => {
-    test.use({ agentConsentAccepted: false, agentFirstSession: true })
+    test.use({
+      agentConsentAccepted: false,
+      initialSettings: { 'Comfy.TutorialCompleted': false },
+      initialFeatureFlags: {
+        onboarding_tour_enabled: true,
+        subscription_required: true
+      }
+    })
 
     test('waits behind Getting Started instead of stacking on it', async ({
       comfyPage,
@@ -547,9 +554,11 @@ test.describe(
 
       await test.step('The automatic offer runs and stays silent', async () => {
         await expect(
-          page.locator('[data-agent-gate-settled]'),
+          page.getByTestId('integrated-tab-bar-actions'),
           'the automatic offer only runs once the flag gate settles; asserting absence before that would pass vacuously'
-        ).toBeAttached({ timeout: 15_000 })
+        ).toHaveAttribute('data-agent-gate-settled', 'true', {
+          timeout: 15_000
+        })
         await expect(consent).toHaveCount(0)
         await expect(agentPanel.root).toHaveCount(0)
         expect(
