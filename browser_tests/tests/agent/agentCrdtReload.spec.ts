@@ -30,7 +30,6 @@ const test = mergeTests(agentTest, webSocketFixture)
 
 test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
-  const workflowId = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 
   test.beforeEach(async ({ page }) => {
     const workflows: WorkflowListResponse = {
@@ -65,6 +64,7 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     webSocketMessages
   }) => {
     test.setTimeout(90_000)
+    const workflowId = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
     const agentPanel = new AgentPanel(page)
     const command = new CommandHelper(page)
 
