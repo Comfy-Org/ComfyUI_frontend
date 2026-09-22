@@ -48,6 +48,8 @@ describe('attachLinkMintPort', () => {
   let enabled: boolean
   let bound: boolean
   let intentionalClear: boolean
+  let target: string
+  let routed: Array<{ target: string; operations: GraphOperation[] }>
   let session: MintSession
   let placedListeners: Set<
     (scope: LinkScopeView, topology: LinkTopologyView) => void
@@ -69,6 +71,8 @@ describe('attachLinkMintPort', () => {
     enabled = true
     bound = true
     intentionalClear = false
+    target = 'workflow-a'
+    routed = []
     session = createMintSession()
     placedListeners = new Set()
     deletedListeners = new Set()
@@ -87,7 +91,10 @@ describe('attachLinkMintPort', () => {
       isEnabled: () => enabled,
       isDocBound: () => bound,
       isIntentionalClear: () => intentionalClear,
-      enqueue: (operations) => minted.push(...operations)
+      enqueue: (operations) => {
+        minted.push(...operations)
+        routed.push({ target, operations })
+      }
     })
   })
 
@@ -151,14 +158,11 @@ describe('attachLinkMintPort', () => {
     expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([])
   })
 
-  it('mints a standalone disconnect for a local link deletion', async () => {
+  it('mints a standalone disconnect synchronously for a local link deletion', () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
-
-    expect(minted).toEqual([])
-    await afterSweep()
 
     expect(minted).toEqual([
       { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
@@ -180,6 +184,34 @@ describe('attachLinkMintPort', () => {
     ])
     expect(consoleError).not.toHaveBeenCalled()
     consoleError.mockRestore()
+  })
+
+  it('preserves delete then place order before the severance sweep', async () => {
+    remove(ROOT_SCOPE, topology(41))
+    place(ROOT_SCOPE, topology(41))
+
+    expect(minted.map((operation) => operation.op)).toEqual([
+      'disconnect',
+      'connect'
+    ])
+    await afterSweep()
+    expect(minted.map((operation) => operation.op)).toEqual([
+      'disconnect',
+      'connect'
+    ])
+  })
+
+  it('routes a disconnect before the active workflow can change', async () => {
+    remove(ROOT_SCOPE, topology(41))
+    target = 'workflow-b'
+    await afterSweep()
+
+    expect(routed).toEqual([
+      {
+        target: 'workflow-a',
+        operations: [{ op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }]
+      }
+    ])
   })
 
   it('surfaces an unconsumed subgraph-interior deletion observably instead of minting', async () => {
@@ -266,13 +298,15 @@ describe('attachLinkMintPort', () => {
     expect(minted).toEqual([])
   })
 
-  it('drops a deferred disconnect when detached before the sweep', async () => {
+  it('does not retract an admitted disconnect when detached before cleanup', async () => {
     remove(ROOT_SCOPE, topology(41))
     port.detach()
 
     await afterSweep()
 
-    expect(minted).toEqual([])
+    expect(minted).toEqual([
+      { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
+    ])
     expect(port.severances.take(ROOT_SCOPE.owningGraphId, '1')).toEqual([])
   })
 })

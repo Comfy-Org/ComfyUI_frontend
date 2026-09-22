@@ -168,27 +168,23 @@ describe('mint ports against the real layout store delivery', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
 
-    // The real teardown order: litegraph severs the node's links
-    // synchronously, then the layout deleteNode queues and delivers on the
-    // store's own microtask. If delivery ever slips past the ports'
-    // double-microtask sweep, removed_links comes back EMPTY here and a
-    // false disconnect-divergence error fires - both assertions below
-    // are the alarm.
+    // Litegraph severs links synchronously before the layout store delivers
+    // deleteNode on its microtask. The capture must survive that delivery.
     linkStore.deleteLink(scope, severed)
     layoutStore.applyOperation(deleteNodeOp(graphId, '2'))
     await realDelivery()
 
     expect(minted).toEqual([
       {
-        op: 'delete_node',
-        node_id: '2',
-        removed_links: [toLinkId(41)]
-      },
-      {
         op: 'disconnect',
         link_id: toLinkId(41),
         to_node: toNodeId('2'),
         to_slot: 0
+      },
+      {
+        op: 'delete_node',
+        node_id: '2',
+        removed_links: [toLinkId(41)]
       }
     ])
     expect(consoleError).not.toHaveBeenCalled()

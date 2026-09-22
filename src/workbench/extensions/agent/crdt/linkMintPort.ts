@@ -77,9 +77,8 @@ export interface LinkMintPort {
 
 interface SeveranceEntry {
   linkId: WireNodeId
-  topology: LinkTopologyView
   owningGraphId: string
-  /** The gate was open at severance: unconsumed means a real divergence. */
+  /** The gate was open when this link was severed. */
   mintable: boolean
   /** Only root-scope link deletions can be represented as standalone ops. */
   rootScoped: boolean
@@ -152,25 +151,14 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
         const surfaced = new Set<string>()
         for (const entries of severancesByNode.values()) {
           for (const entry of entries) {
+            if (!entry.mintable || entry.rootScoped) continue
             const key = linkKey(entry)
-            if (!entry.mintable) continue
             if (surfaced.has(key)) continue
             surfaced.add(key)
-            if (entry.rootScoped) {
-              deps.enqueue([
-                {
-                  op: 'disconnect',
-                  link_id: entry.linkId,
-                  to_node: entry.topology.targetNodeId,
-                  to_slot: entry.topology.targetSlot
-                }
-              ])
-            } else {
-              surfaceUnrepresentable(
-                'subgraph-interior disconnect',
-                String(entry.linkId)
-              )
-            }
+            surfaceUnrepresentable(
+              'subgraph-interior disconnect',
+              String(entry.linkId)
+            )
           }
         }
         severancesByNode.clear()
@@ -191,13 +179,22 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     const rootScoped = isRootScope(scope)
     const entry: SeveranceEntry = {
       linkId: topology.id,
-      topology,
       owningGraphId: scope.owningGraphId,
       mintable,
       rootScoped
     }
     capture(topology.originNodeId, entry)
     capture(topology.targetNodeId, entry)
+    if (mintable && rootScoped) {
+      deps.enqueue([
+        {
+          op: 'disconnect',
+          link_id: topology.id,
+          to_node: topology.targetNodeId,
+          to_slot: topology.targetSlot
+        }
+      ])
+    }
     scheduleSweep()
   }
 
