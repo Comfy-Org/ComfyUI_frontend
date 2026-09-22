@@ -1,8 +1,11 @@
+import type { User } from 'firebase/auth'
+
 import type {
   FirebaseIdentity,
   FirebaseIdentityConfig
 } from '@comfyorg/account-core/firebase'
 import type { RuntimeFirebaseOptions } from '@comfyorg/account-core/firebaseConfigSource'
+import { createTestIdentity } from '@comfyorg/account-core/testing'
 
 const h = vi.hoisted(() => ({
   fetchFirebaseConfig:
@@ -18,6 +21,8 @@ vi.mock(import('@comfyorg/account-core/firebaseConfigSource'), () => ({
   fetchFirebaseConfig: h.fetchFirebaseConfig
 }))
 
+// A structurally complete FirebaseIdentity double: a shape change on the
+// interface fails this file at typecheck instead of only at runtime.
 vi.mock(import('@comfyorg/account-core/firebase'), () => ({
   createFirebaseIdentity: (
     config: FirebaseIdentityConfig
@@ -27,9 +32,11 @@ vi.mock(import('@comfyorg/account-core/firebase'), () => ({
     }
     const options = config.options as RuntimeFirebaseOptions
     const appName = config.appName ?? 'comfy-account'
-    return {
-      kind: 'identity',
-      options,
+    const identity = {
+      ...createTestIdentity<User>({
+        onUserChanged: () => () => undefined
+      }),
+      onTokenChanged: () => () => undefined,
       initialize: () => {
         const existingProject = h.registeredApps.get(appName)
         if (existingProject && existingProject !== options.projectId) {
@@ -41,8 +48,22 @@ vi.mock(import('@comfyorg/account-core/firebase'), () => ({
         if (h.failInitializeFor.has(options.apiKey)) {
           throw new Error(`invalid config: ${options.apiKey}`)
         }
-      }
-    } as unknown as FirebaseIdentity
+      },
+      currentUser: () => null,
+      signInWithGoogle: () =>
+        Promise.reject(new Error('not used by this test')),
+      signInWithGitHub: () =>
+        Promise.reject(new Error('not used by this test')),
+      signInWithEmail: () => Promise.reject(new Error('not used by this test')),
+      createUserWithEmail: () =>
+        Promise.reject(new Error('not used by this test')),
+      sendPasswordReset: () => Promise.resolve(),
+      updatePassword: () => Promise.reject(new Error('not used by this test')),
+      signOut: () => Promise.resolve(),
+      // Test-only marker so a test can tell which config it resolved.
+      options
+    }
+    return identity
   }
 }))
 
@@ -84,8 +105,7 @@ describe('resolveBillingWebIdentity', () => {
     h.fallbackOptions = FALLBACK_OPTIONS
     const { resolveBillingWebIdentity } = await freshFirebase()
 
-    await expect(resolveBillingWebIdentity()).resolves.toEqual({
-      kind: 'identity',
+    await expect(resolveBillingWebIdentity()).resolves.toMatchObject({
       options: RUNTIME_OPTIONS,
       initialize: expect.any(Function)
     })
@@ -96,8 +116,7 @@ describe('resolveBillingWebIdentity', () => {
     h.fallbackOptions = FALLBACK_OPTIONS
     const { resolveBillingWebIdentity } = await freshFirebase()
 
-    await expect(resolveBillingWebIdentity()).resolves.toEqual({
-      kind: 'identity',
+    await expect(resolveBillingWebIdentity()).resolves.toMatchObject({
       options: FALLBACK_OPTIONS,
       initialize: expect.any(Function)
     })
@@ -129,8 +148,7 @@ describe('resolveBillingWebIdentity', () => {
     h.failInitializeFor.add(RUNTIME_OPTIONS.apiKey)
     const { resolveBillingWebIdentity } = await freshFirebase()
 
-    await expect(resolveBillingWebIdentity()).resolves.toEqual({
-      kind: 'identity',
+    await expect(resolveBillingWebIdentity()).resolves.toMatchObject({
       options: FALLBACK_OPTIONS,
       initialize: expect.any(Function)
     })
