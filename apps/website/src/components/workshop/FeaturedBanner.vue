@@ -172,7 +172,7 @@ const fill = computed(() =>
         </div>
 
         <h2
-          class="mt-2 text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
+          class="text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
         >
           {{ active.name }}
         </h2>
@@ -206,7 +206,7 @@ const fill = computed(() =>
 
     <div
       v-if="slides.length > 1"
-      class="absolute bottom-5 left-8 flex gap-2 lg:left-12"
+      class="pointer-events-none absolute inset-x-8 bottom-5 flex gap-2 lg:inset-x-12"
       data-testid="featured-pagination"
     >
       <button
@@ -215,7 +215,7 @@ const fill = computed(() =>
         type="button"
         :aria-label="slide.model.name"
         :aria-current="index === activeIndex ? 'true' : undefined"
-        class="group w-12 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        class="group pointer-events-auto max-w-12 min-w-0 flex-1 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         @click="goTo(index)"
       >
         <span

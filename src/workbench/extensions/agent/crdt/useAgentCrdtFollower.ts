@@ -34,6 +34,7 @@ import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
@@ -351,6 +352,7 @@ function startAgentCrdtFollower(
     () => bridge.follower.doc,
     { pendingDeletes: pendingHumanDeletes }
   )
+  const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
@@ -485,6 +487,7 @@ function startAgentCrdtFollower(
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
     projection.clearForReset(detail.workflowId, context)
+    sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false
     updatesApplied.value = 0
@@ -638,13 +641,16 @@ function startAgentCrdtFollower(
     sender.suspend()
     bridge.unsubscribe()
   }
-  // Drive the bridge's intent, then give the sender the same eager signal the
-  // refusal branch gets: `reconcile()` clears send reality synchronously when
-  // the desired doc changes, and a batch minted for the old doc would
+  // Flush first: an edit admitted this tick is pinned to the doc still bound
+  // here, and the coalescer's deferred flush would otherwise find it unbound.
+  // Then drive the bridge's intent and give the sender the same eager signal
+  // the refusal branch gets: `reconcile()` clears send reality synchronously
+  // when the desired doc changes, and a batch minted for the old doc would
   // otherwise wait out the 10 s result-silence window before noticing. The
   // one exception is the workflow whose ops are held: its subscribe may not
   // have left a closed socket yet, so the abort waits for the ack instead.
   const retarget = (next: string | null): void => {
+    sender.flush()
     if (next === null) bridge.unsubscribe()
     else bridge.subscribe(next)
     if (next !== null && next === heldForWorkflowId) {
@@ -748,6 +754,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => sender.detach(),
+      () => coalescer.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),
       () => client.destroy()
@@ -775,6 +782,6 @@ function startAgentCrdtFollower(
     status: readonly(status),
     debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      sender.enqueue(operations)
+      coalescer.enqueue(operations)
   }
 }

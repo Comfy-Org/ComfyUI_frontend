@@ -107,6 +107,13 @@ export class HostDoc {
     }
   }
 
+  initialSync(): HostFrame[] {
+    const emptyDoc = new Y.Doc()
+    const stateVector = toBase64(Y.encodeStateVector(emptyDoc))
+    emptyDoc.destroy()
+    return [this.subscribed(), this.catchUp(stateVector)]
+  }
+
   /**
    * The server's REFUSAL of a subscribe: `docService` nil (`unsupported`), an
    * overloaded host, or the per-session document cap
