@@ -1,4 +1,4 @@
-import type { Router } from 'vue-router'
+import type { LocationQuery, Router } from 'vue-router'
 
 import {
   capturePreservedQuery,
@@ -20,6 +20,37 @@ interface PreservedQueryDefinition {
    * replace-on-capture semantics.
    */
   stripAfterCapture?: boolean
+  /**
+   * When set, a key present as a repeated (array) value, or present with no
+   * value at all (`?key`, which the router reads as `null`, in a single
+   * value or inside an array), is captured as an ambiguous marker instead of
+   * silently picking one: repeated values join with `,`; a lone `null`
+   * becomes a bare `,`. Both are strings outside any real id's charset, so
+   * they read back as invalid rather than resolving to one of several
+   * colliding values or to "absent" (`capturePreservedQuery` itself drops a
+   * null/empty value as not worth capturing).
+   */
+  rejectRepeated?: true
+}
+
+/** Marks each `keys` entry present as a repeated value, or with no value at
+ * all, with a charset-invalid string capturePreservedQuery would otherwise
+ * either mis-simplify (repeated → first entry) or drop (null → nothing).
+ * Leaves every other key untouched. */
+function withAmbiguityMarked(
+  query: LocationQuery,
+  keys: string[]
+): LocationQuery {
+  const result = { ...query }
+  for (const key of keys) {
+    const value = result[key]
+    const values = Array.isArray(value) ? value : [value]
+    const isRepeated = values.length > 1
+    const hasBareEntry = values.includes(null)
+    if (!isRepeated && !hasBareEntry) continue
+    result[key] = values.map((entry) => entry ?? '').join(',') || ','
+  }
+  return result
 }
 
 export const installPreservedQueryTracker = (
@@ -31,7 +62,7 @@ export const installPreservedQueryTracker = (
     const keysToStrip = new Set<string>()
 
     definitions.forEach(
-      ({ namespace, keys, requiredKey, stripAfterCapture }) => {
+      ({ namespace, keys, requiredKey, stripAfterCapture, rejectRepeated }) => {
         hydratePreservedQuery(namespace)
         const presentKeys = keys.filter((key) => queryKeys.has(key))
         if (presentKeys.length === 0) return
@@ -39,7 +70,10 @@ export const installPreservedQueryTracker = (
           clearPreservedQuery(namespace)
           return
         }
-        capturePreservedQuery(namespace, to.query, keys, {
+        const captureQuery = rejectRepeated
+          ? withAmbiguityMarked(to.query, keys)
+          : to.query
+        capturePreservedQuery(namespace, captureQuery, keys, {
           merge: stripAfterCapture
         })
         if (stripAfterCapture) {

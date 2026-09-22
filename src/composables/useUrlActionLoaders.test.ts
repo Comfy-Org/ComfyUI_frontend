@@ -11,6 +11,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 const mocks = vi.hoisted(() => ({
   reportError: vi.fn(),
+  loadWorkspace: vi.fn(async (): Promise<boolean | undefined> => undefined),
   loadInvite: vi.fn(async () => undefined),
   loadCreateWorkspace: vi.fn(async () => undefined),
   loadPricingTable: vi.fn(async () => undefined),
@@ -18,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   loadSettings: vi.fn(),
   loadPaymentReturn: vi.fn(async () => undefined),
   resumePendingPricingFlow: vi.fn(async () => undefined),
+  useWorkspace: vi.fn(),
   useInvite: vi.fn(),
   useCreateWorkspace: vi.fn(),
   usePricingTable: vi.fn(),
@@ -25,6 +27,9 @@ const mocks = vi.hoisted(() => ({
   useSettings: vi.fn(),
   usePaymentReturn: vi.fn(),
   useSubscriptionDialog: vi.fn()
+}))
+mocks.useWorkspace.mockImplementation(() => ({
+  loadWorkspaceFromUrl: mocks.loadWorkspace
 }))
 mocks.useInvite.mockImplementation(() => ({
   loadInviteFromUrl: mocks.loadInvite
@@ -48,6 +53,12 @@ mocks.useSubscriptionDialog.mockImplementation(() => ({
   resumePendingPricingFlow: mocks.resumePendingPricingFlow
 }))
 
+vi.mock(
+  import('@/platform/workspace/composables/useWorkspaceUrlLoader'),
+  () => ({
+    useWorkspaceUrlLoader: mocks.useWorkspace
+  })
+)
 vi.mock(import('@/platform/workspace/composables/useInviteUrlLoader'), () => ({
   useInviteUrlLoader: mocks.useInvite
 }))
@@ -85,6 +96,9 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 describe('useUrlActionLoaders', () => {
   beforeEach(() => {
     mockIsCloud.value = true
+    mocks.useWorkspace.mockImplementation(() => ({
+      loadWorkspaceFromUrl: mocks.loadWorkspace
+    }))
     mocks.useInvite.mockImplementation(() => ({
       loadInviteFromUrl: mocks.loadInvite
     }))
@@ -114,6 +128,7 @@ describe('useUrlActionLoaders', () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
 
+    expect(mocks.useWorkspace).not.toHaveBeenCalled()
     expect(mocks.useInvite).not.toHaveBeenCalled()
     expect(mocks.useCreateWorkspace).not.toHaveBeenCalled()
     expect(mocks.usePricingTable).not.toHaveBeenCalled()
@@ -121,6 +136,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.useSettings).not.toHaveBeenCalled()
     expect(mocks.usePaymentReturn).not.toHaveBeenCalled()
     expect(mocks.useSubscriptionDialog).not.toHaveBeenCalled()
+    expect(mocks.loadWorkspace).not.toHaveBeenCalled()
     expect(mocks.loadInvite).not.toHaveBeenCalled()
     expect(mocks.loadCreateWorkspace).not.toHaveBeenCalled()
     expect(mocks.loadPricingTable).not.toHaveBeenCalled()
@@ -134,12 +150,61 @@ describe('useUrlActionLoaders', () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
 
+    expect(mocks.loadWorkspace).toHaveBeenCalledOnce()
     expect(mocks.loadInvite).toHaveBeenCalledOnce()
     expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
     expect(mocks.loadPricingTable).toHaveBeenCalledOnce()
     expect(mocks.loadTopUp).toHaveBeenCalledOnce()
     expect(mocks.loadSettings).toHaveBeenCalledOnce()
     expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
+  })
+
+  it('opens the requested workspace before any other loader reads the URL', async () => {
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(mocks.loadWorkspace.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.loadInvite.mock.invocationCallOrder[0]
+    )
+    expect(mocks.loadWorkspace.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.loadSettings.mock.invocationCallOrder[0]
+    )
+    expect(mocks.loadWorkspace.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.loadPricingTable.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('isolates a workspace-loader failure so it does not abort the boot chain', async () => {
+    mocks.loadWorkspace.mockRejectedValueOnce(new Error('boom'))
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await expect(runUrlActionLoaders()).resolves.toBeUndefined()
+
+    expect(mocks.loadInvite).toHaveBeenCalledOnce()
+    expect(mocks.loadSettings).toHaveBeenCalledOnce()
+  })
+
+  it('stops the loop when the workspace loader reports a reload in flight', async () => {
+    mocks.loadWorkspace.mockResolvedValueOnce(true)
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(mocks.loadInvite).not.toHaveBeenCalled()
+    expect(mocks.loadCreateWorkspace).not.toHaveBeenCalled()
+    expect(mocks.loadPricingTable).not.toHaveBeenCalled()
+    expect(mocks.loadTopUp).not.toHaveBeenCalled()
+    expect(mocks.loadSettings).not.toHaveBeenCalled()
+    expect(mocks.loadPaymentReturn).not.toHaveBeenCalled()
+  })
+
+  it('skips checkout recovery when a switch reload is in flight', async () => {
+    mocks.loadWorkspace.mockResolvedValueOnce(true)
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(mocks.resumePendingPricingFlow).not.toHaveBeenCalled()
   })
 
   it('recovers an interrupted checkout after handling the payment return', async () => {
