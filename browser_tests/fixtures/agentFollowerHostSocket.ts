@@ -57,6 +57,10 @@ function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' ? value : null
 }
 
+function opLabel(op: WireOpEnvelope): string {
+  return `${op.op}:${'node_id' in op ? String(op.node_id) : ''}`
+}
+
 export function parseClientDocFrame(
   raw: string | Buffer
 ): ParsedClientDocFrame | null {
@@ -144,26 +148,38 @@ export class AgentFollowerHostSocket {
   private onClientFrame(raw: string | Buffer): void {
     const frame = parseClientDocFrame(raw)
     if (!frame) return
+    this.recordClientFrame(frame)
+    if (frame.workflowId !== this.workflowId) {
+      this.rejectForeignOps(frame)
+      return
+    }
+    this.routeClientDocFrame(frame)
+  }
+
+  private recordClientFrame(frame: ParsedClientDocFrame): void {
     const ops = frame.opsResult.ok ? frame.opsResult.ops : []
     this.clientFrames.push({
       atMs: Date.now() - this.createdAt,
       type: frame.type,
       workflowId: frame.workflowId,
-      ops: ops.map(
-        (op) => `${op.op}:${'node_id' in op ? String(op.node_id) : ''}`
-      ),
+      ops: ops.map((op) => opLabel(op)),
       opIds: ops.map((op) => op.op_id)
     })
-    if (frame.workflowId !== this.workflowId) {
-      this.rejectForeignOps(frame)
+  }
+
+  /** Dispatches a frame already confirmed to target this host's workflow. */
+  private routeClientDocFrame(frame: ParsedClientDocFrame): void {
+    if (frame.type === 'doc_subscribe' && frame.stateVector !== null) {
+      this.answerSubscribe(frame.stateVector)
       return
     }
-    if (frame.type === 'doc_subscribe' && frame.stateVector !== null)
-      this.answerSubscribe(frame.stateVector)
-    else if (frame.type === 'doc_ops' && this.humanOpsHost === 'apply')
+    if (frame.type === 'doc_ops' && this.humanOpsHost === 'apply') {
       this.judgeHumanOps(frame.opsResult)
-    else if (frame.type === 'doc_ops' && frame.opsResult.ok)
+      return
+    }
+    if (frame.type === 'doc_ops' && frame.opsResult.ok) {
       this.heldOps.push(...frame.opsResult.ops)
+    }
   }
 
   /**
