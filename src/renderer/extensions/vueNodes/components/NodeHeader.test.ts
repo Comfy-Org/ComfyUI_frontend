@@ -137,7 +137,7 @@ describe('NodeHeader.vue', () => {
     { picking: false, disabled: false, collapseCalls: 1 },
     { picking: true, disabled: true, collapseCalls: 0 }
   ])(
-    'picking=$picking disables the collapse button: disabled=$disabled, collapse emitted $collapseCalls times',
+    'picking=$picking sets collapse disabled=$disabled and emits collapse $collapseCalls times',
     async ({ picking, disabled, collapseCalls }) => {
       useAgentNodeSelectionStore().isActive = picking
       const { user, onCollapse } = renderHeader()
