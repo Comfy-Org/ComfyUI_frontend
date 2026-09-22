@@ -73,7 +73,9 @@ export function parseAgentResponseFixture(
   return structuredClone({ scenario: value.scenario, frames })
 }
 
-function collectDraftPatchFrames(values: readonly unknown[]): DraftPatchFrame[] {
+function collectDraftPatchFrames(
+  values: readonly unknown[]
+): DraftPatchFrame[] {
   const candidates = values.filter(isDraftPatchCandidate)
   const frames: DraftPatchFrame[] = []
   for (const candidate of candidates) {
@@ -92,7 +94,9 @@ function collectDraftPatchFrames(values: readonly unknown[]): DraftPatchFrame[] 
   return frames
 }
 
-function assertContiguousDraftPatches(frames: readonly DraftPatchFrame[]): void {
+function assertContiguousDraftPatches(
+  frames: readonly DraftPatchFrame[]
+): void {
   const workflowId = frames[0].data.workflow_id
   for (let index = 1; index < frames.length; index++) {
     const previous = frames[index - 1].data
