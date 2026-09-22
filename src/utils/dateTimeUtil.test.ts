@@ -206,13 +206,25 @@ describe('formatClockTime', () => {
 
   it('takes the hour cycle from the system when no preference is given', () => {
     const RealDateTimeFormat = Intl.DateTimeFormat
-    vi.spyOn(Intl, 'DateTimeFormat').mockImplementationOnce(
-      function (_locales, options) {
-        return new RealDateTimeFormat('en-US-u-hc-h23', options)
-      }
-    )
+    const systemLocale = 'en-US-u-hc-h23'
+    const appLocale = 'en-US-u-nu-arab'
+    const dateTimeFormatSpy = vi
+      .spyOn(Intl, 'DateTimeFormat')
+      .mockImplementation(function (locales, options) {
+        return new RealDateTimeFormat(locales ?? systemLocale, options)
+      })
     const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
+    const expected = new RealDateTimeFormat(appLocale, {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23'
+    }).format(new Date(ts))
 
-    expect(formatClockTime(ts, 'en-US')).toBe('14:05:06')
+    try {
+      expect(formatClockTime(ts, appLocale)).toBe(expected)
+    } finally {
+      dateTimeFormatSpy.mockRestore()
+    }
   })
 })
