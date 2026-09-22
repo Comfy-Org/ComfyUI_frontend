@@ -20,6 +20,7 @@ const { group } = defineProps<{
   activityParts: readonly ActivityPart[]
   answeringAskIds: ReadonlySet<string>
   paywallPresentation: AgentPaywallPresentation
+  boundWorkflowId?: string
 }>()
 
 const emit = defineEmits<{
@@ -53,6 +54,9 @@ const emit = defineEmits<{
     v-else-if="group.kind === 'runApproval'"
     :part="group.part"
     :answering="answeringAskIds.has(group.part.askId)"
+    :hide-workflow-name="
+      !!boundWorkflowId && group.part.workflowId === boundWorkflowId
+    "
     @answer="(askId, selection) => emit('answer', askId, selection)"
     @shown="(askId, workflowId) => emit('approvalShown', askId, workflowId)"
     @open-workflow="
