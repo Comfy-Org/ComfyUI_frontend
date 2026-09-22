@@ -2,21 +2,27 @@ import type { WebSocketRoute } from '@playwright/test'
 
 type SubscriptionFrameType = 'doc_subscribe' | 'doc_unsubscribe'
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function parseFrame(message: string): unknown {
+  try {
+    return JSON.parse(message)
+  } catch {
+    return null
+  }
+}
+
 function isMatchingSubscriptionFrame(
   message: string,
   type: SubscriptionFrameType,
   workflowId: string
 ): boolean {
-  try {
-    const frame: unknown = JSON.parse(message)
-    if (typeof frame !== 'object' || frame === null) return false
-    if (!('type' in frame) || frame.type !== type) return false
-    if (!('data' in frame) || typeof frame.data !== 'object' || !frame.data)
-      return false
-    return 'workflow_id' in frame.data && frame.data.workflow_id === workflowId
-  } catch {
+  const frame = parseFrame(message)
+  if (!isRecord(frame) || frame.type !== type || !isRecord(frame.data))
     return false
-  }
+  return frame.data.workflow_id === workflowId
 }
 
 export function countDocFrames(
