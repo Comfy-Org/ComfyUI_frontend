@@ -1,3 +1,5 @@
+import { isPlainObject } from 'es-toolkit'
+
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
@@ -49,6 +51,30 @@ export interface SemanticLinkPayload {
   /** Final semantic slot records after the shared applier handled this link. */
   originOutputs?: readonly ISerialisableNodeOutput[]
   targetInputs?: readonly ISerialisableNodeInput[]
+}
+
+function isSlotRecord(value: unknown): value is { name?: unknown } {
+  return value !== null && typeof value === 'object'
+}
+
+/**
+ * Copies a serialized slot's fields onto the live slot object so the node
+ * keeps its slot identity; an omitted field keeps the live value. A plain
+ * store record takes `link`/`links` as data, while a node's slot instance
+ * derives them from the link store and must not have them assigned.
+ */
+function patchLiveSlot(live: object, serialized: object): void {
+  const derivesLinks = !isPlainObject(live)
+  Object.assign(
+    live,
+    Object.fromEntries(
+      Object.entries(serialized).filter(
+        ([key, value]) =>
+          value !== undefined &&
+          !(derivesLinks && (key === 'link' || key === 'links'))
+      )
+    )
+  )
 }
 
 interface SemanticNodeLayout {
@@ -260,7 +286,7 @@ function serialisableSlotFields(
 function applySlotLink(
   slot: INodeInputSlot,
   index: number,
-  existing?: NodeState['inputs']
+  existing?: readonly (NodeState['inputs'][number] | undefined)[]
 ): void {
   if (typeof slot.link === 'number') {
     slot.link = toLinkId(slot.link)
@@ -288,7 +314,7 @@ function preserveSlotDisplayMetadata(
 function prepareInputSlot(
   raw: Record<string, unknown>,
   index: number,
-  existing?: NodeState['inputs']
+  existing?: readonly (NodeState['inputs'][number] | undefined)[]
 ): INodeInputSlot | undefined {
   if (
     typeof raw.name !== 'string' ||
@@ -312,7 +338,7 @@ function prepareInputSlot(
 
 function prepareInputSlots(
   value: unknown,
-  existing?: NodeState['inputs']
+  existing?: readonly (NodeState['inputs'][number] | undefined)[]
 ): NodeState['inputs'] {
   if (!Array.isArray(value)) return []
   return value.flatMap((raw, index) => {
@@ -344,6 +370,34 @@ function prepareOutputSlots(value: unknown): NodeState['outputs'] {
     }
     return [slot]
   })
+}
+
+/**
+ * Preserves live input order and live-only slots when every document input
+ * name exists live. This also admits stale or extension-added slots; it does
+ * not identify autogrow as the cause. Otherwise the document list and order
+ * replace the live inputs (CRDT-INPUTS-0030).
+ */
+function mergeInputSlotsByName(
+  live: NodeState['inputs'],
+  supplied: unknown
+): NodeState['inputs'] {
+  const documentInputs = Array.isArray(supplied)
+    ? supplied.filter(isRecord)
+    : []
+  const liveByName = documentInputs.map((slot) =>
+    live.find((input) => input.name === slot.name)
+  )
+  if (liveByName.some((match) => match === undefined)) {
+    return prepareInputSlots(documentInputs, live)
+  }
+  const merged = [...live]
+  for (const input of prepareInputSlots(documentInputs, liveByName)) {
+    const index = merged.findIndex((local) => local.name === input.name)
+    if (index < 0) merged.push(input)
+    else merged[index] = input
+  }
+  return merged
 }
 
 function readPair(
@@ -503,7 +557,7 @@ function detachedLinkSlots(
   if (origin?.outputs[topology.originSlot]) {
     const slots = slotsFor(origin)
     slots.outputs = slots.outputs.map((output, index) =>
-      index === topology.originSlot
+      index === topology.originSlot && isPlainObject(output)
         ? {
             ...output,
             links: output.links?.filter((id) => id !== topology.id) ?? null
@@ -516,7 +570,9 @@ function detachedLinkSlots(
   if (target?.inputs[topology.targetSlot]?.link === topology.id) {
     const slots = slotsFor(target)
     slots.inputs = slots.inputs.map((input, index) =>
-      index === topology.targetSlot ? { ...input, link: null } : input
+      index === topology.targetSlot && isPlainObject(input)
+        ? { ...input, link: null }
+        : input
     )
   }
 
@@ -621,6 +677,16 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (mutation.kind === 'addNode' && nodes.has(key)) {
             return `node id ${key} is already registered`
           }
+          if (
+            mutation.kind === 'reconcileNode' &&
+            existing &&
+            existing.type === node.state.type
+          ) {
+            node.state.inputs = mergeInputSlotsByName(
+              existing.inputs,
+              mutation.payload.inputs
+            )
+          }
           nodes.set(key, node.state)
           if (mutation.kind === 'addNode') {
             prepared.push({ kind: 'addNode', node, queued: 'addNode' })
@@ -720,13 +786,32 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const originOutputs = mutation.link.originOutputs
             ? prepareOutputSlots(mutation.link.originOutputs)
             : origin.outputs
-          const targetInputs = mutation.link.targetInputs
-            ? prepareInputSlots(mutation.link.targetInputs, target.inputs)
-            : target.inputs
+          let targetInputs = target.inputs
+          if (mutation.link.targetInputs) {
+            if (target.inputs.some((input) => !isSlotRecord(input))) {
+              return 'connect target inputs contain a malformed live slot'
+            }
+            const name = mutation.link.targetInputs
+              .filter(isRecord)
+              .at(topology.targetSlot)?.name
+            if (typeof name !== 'string') {
+              return `connect target slot ${topology.targetSlot} does not exist`
+            }
+            targetInputs = mergeInputSlotsByName(
+              target.inputs,
+              mutation.link.targetInputs
+            )
+            topology.targetSlot = targetInputs.findIndex(
+              (input) => input.name === name
+            )
+          }
           if (topology.originSlot >= originOutputs.length) {
             return `connect origin slot ${topology.originSlot} does not exist`
           }
-          if (topology.targetSlot >= targetInputs.length) {
+          if (
+            topology.targetSlot < 0 ||
+            topology.targetSlot >= targetInputs.length
+          ) {
             return `connect target slot ${topology.targetSlot} does not exist`
           }
           const originType = originOutputs[topology.originSlot]?.type
@@ -1165,24 +1250,39 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             nodeKey(mutation.topology.targetNodeId)
           )
           if (origin && mutation.originOutputs) {
-            nodeStore.updateNodeSlots(
+            const outputs = [...mutation.originOutputs]
+            // Outputs keep their document positions, so each live slot is
+            // patched from the serialized slot sharing its index.
+            for (const [index, output] of origin.outputs.entries()) {
+              if (isSlotRecord(output) && isSlotRecord(outputs[index])) {
+                patchLiveSlot(output, outputs[index])
+              }
+              outputs[index] = output
+            }
+            nodeStore.updateNode(
               scope,
               origin.id,
-              {
-                inputs: origin.inputs,
-                outputs: mutation.originOutputs
-              },
+              { ...origin, outputs },
               context
             )
           }
           if (target && mutation.targetInputs) {
-            nodeStore.updateNodeSlots(
+            const inputs = [...mutation.targetInputs]
+            // Inputs may have been reordered locally, so each live slot is
+            // matched to its serialized slot by name (CRDT-INPUTS-0030).
+            for (const input of target.inputs) {
+              if (!isSlotRecord(input)) continue
+              const index = inputs.findIndex(
+                (candidate) => candidate.name === input.name
+              )
+              if (index < 0) continue
+              patchLiveSlot(input, inputs[index])
+              inputs[index] = input
+            }
+            nodeStore.updateNode(
               scope,
               target.id,
-              {
-                inputs: mutation.targetInputs,
-                outputs: target.outputs
-              },
+              { ...target, inputs },
               context
             )
           }

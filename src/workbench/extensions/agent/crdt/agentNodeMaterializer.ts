@@ -1,4 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
@@ -325,8 +326,14 @@ function materialize(
   if (!added) return rollback('LGraph.add returned no node')
 
   try {
+    const savedInputs = serialised.inputs?.map((input) => ({ ...input }))
     node.configure(withNamedWidgetValues(serialised, widgets))
     replayUpdatedWidgetCallbacks(node, serialised, widgets)
+    // After configure and any widget-driven restructuring, re-point the saved
+    // links at their named inputs (CRDT-INPUTS-0030).
+    realignInputLinkSlots(graph.rootGraph, [
+      [node.id, { id: node.id, inputs: savedInputs }]
+    ])
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
     // would also drop the layout entry it adopted. Keep it and report.
