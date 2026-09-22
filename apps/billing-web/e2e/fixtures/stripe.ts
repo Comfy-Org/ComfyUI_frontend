@@ -15,7 +15,13 @@ import type { BrowserContext } from '@playwright/test'
 
 const FAKE_STRIPE_JS = `
 (() => {
-  window.__e2eFakeStripe = { confirmationTokens: 0, nextActions: 0 }
+  window.__e2eFakeStripe = {
+    confirmationTokens: 0,
+    nextActions: 0,
+    // Every argument the app actually passed to handleNextAction, so a spec
+    // can tell "called correctly" from "called with the wrong secret".
+    nextActionCalls: []
+  }
   function fakeElement() {
     return { mount() {}, unmount() {}, destroy() {}, on() {} }
   }
@@ -35,8 +41,9 @@ const FAKE_STRIPE_JS = `
           confirmationToken: { id: 'ctok_e2e_fake' }
         })
       },
-      handleNextAction: () => {
+      handleNextAction: (args) => {
         window.__e2eFakeStripe.nextActions += 1
+        window.__e2eFakeStripe.nextActionCalls.push(args)
         return Promise.resolve({ paymentIntent: { status: 'succeeded' } })
       }
     }

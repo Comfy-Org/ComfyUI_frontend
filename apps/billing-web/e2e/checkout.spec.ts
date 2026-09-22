@@ -45,6 +45,13 @@ async function fakeStripeCalls(
   return page.evaluate(`window.__e2eFakeStripe.${key}`)
 }
 
+/** Every argument `handleNextAction` was actually called with. */
+async function fakeStripeNextActionCalls(page: {
+  evaluate: (script: string) => Promise<unknown>
+}): Promise<unknown> {
+  return page.evaluate('window.__e2eFakeStripe.nextActionCalls')
+}
+
 test('submitting payment carries the idempotency key and plan, and settles as success', async ({
   page,
   cloud,
@@ -69,7 +76,13 @@ test('submitting payment carries the idempotency key and plan, and settles as su
     (request) => request.path === '/billing/subscribe'
   )
   expect(subscribe?.idempotencyKey).toBeTruthy()
-  expect(subscribe?.body).toMatchObject({ plan_slug: 'pro_monthly' })
+  // The exact id the fake's createConfirmationToken resolved: proves the
+  // token StripePaymentForm minted is the one that actually reached the
+  // server, not just that some value was sent.
+  expect(subscribe?.body).toMatchObject({
+    plan_slug: 'pro_monthly',
+    confirmation_token: 'ctok_e2e_fake'
+  })
 
   expect(await fakeStripeCalls(page, 'confirmationTokens')).toBe(1)
   expect(await fakeStripeCalls(page, 'nextActions')).toBe(0)
@@ -123,6 +136,12 @@ test('a 3DS challenge is driven by the fake and settles as success', async ({
 
   expect(await fakeStripeCalls(page, 'confirmationTokens')).toBe(1)
   expect(await fakeStripeCalls(page, 'nextActions')).toBe(1)
+  // The client secret the challenge port actually handed to Stripe's
+  // handleNextAction, matching stripeChallengePort.ts's call shape — proves
+  // the poll's own secret drove the challenge, not a stale or wrong one.
+  expect(await fakeStripeNextActionCalls(page)).toEqual([
+    { clientSecret: 'seti_e2e_secret' }
+  ])
   expect(polls).toBeGreaterThanOrEqual(2)
 })
 
