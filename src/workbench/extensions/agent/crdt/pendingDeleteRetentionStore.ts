@@ -3,6 +3,8 @@
  * follower instance; see ADR CRDT-WRITE-0035 for why, and for the retention
  * state machine this module implements.
  */
+import { reportError } from '@/platform/telemetry/reportError'
+
 import { STALE_AFTER_MS } from './agentCrdtDocLifecycle'
 import type { BatchOutcome } from './opSender'
 
@@ -31,29 +33,26 @@ function expiresAtOf(retained: RetainedDelete): number | null {
   return retained.reason === 'confirmed-applied' ? null : retained.expiresAt
 }
 
-/** A concrete identity mismatch between the two names a later incarnation under the same node id; either side lacking an identity to compare is inconclusive, not a mismatch. */
-function identitiesConflict(
-  existing: RetainedDelete,
-  incoming: RetainedDelete
-): boolean {
-  const existingId = deletedItemIdOf(existing)
-  const incomingId = deletedItemIdOf(incoming)
-  return existingId !== null && incomingId !== null && existingId !== incomingId
+/**
+ * Two records naming the same real identity (or both naming none) are the
+ * same releasable intent and may collapse into one; anything else is
+ * independent and must be tracked as its own entry (see
+ * {@link insertRetainedDelete}).
+ */
+function sameIdentityBucket(a: RetainedDelete, b: RetainedDelete): boolean {
+  return deletedItemIdOf(a) === deletedItemIdOf(b)
 }
 
 /**
- * The record to keep, assuming no identity conflict. A permanent record (an
- * identified `confirmed-applied`) always outranks a bounded one, since it is
- * released only by a conflicting identity (already ruled out above), never
- * by time. Between two bounded records, reason strength is not a safe
- * tiebreak on its own: an identity-less `confirmed-applied-unidentified` and
- * an `unknown` for a different, real identity are two independent,
- * non-comparable intents, so picking the "stronger" one by reason alone can
- * expire the other's own, still-open ambiguity window early. The record
- * whose own expiry is later - whichever intent's window is open longest -
- * wins instead, preserving its own identity and deadline.
+ * The record to keep when both name the same identity bucket (verified by
+ * the caller via {@link sameIdentityBucket}). A permanent record (an
+ * identified `confirmed-applied`) always outranks a bounded one for the same
+ * identity, since it is released only by a conflicting identity, never by
+ * time. Between two bounded records for the same bucket, the one whose own
+ * expiry is later - whichever intent's window is open longest - wins,
+ * preserving the longer deadline.
  */
-function strongerRetainedDelete(
+function mergeSameIdentityDelete(
   existing: RetainedDelete,
   incoming: RetainedDelete
 ): RetainedDelete {
@@ -64,14 +63,41 @@ function strongerRetainedDelete(
   return incomingExpiry >= existingExpiry ? incoming : existing
 }
 
-/** Merges a newly settled retention into any existing record for the same node id. */
-function mergeRetainedDelete(
-  existing: RetainedDelete | undefined,
+/**
+ * Inserts a newly settled retention into the node's existing records.
+ *
+ * A record naming the same identity bucket as `incoming` (see
+ * {@link sameIdentityBucket}) merges with it via
+ * {@link mergeSameIdentityDelete}. A record naming a DIFFERENT, real
+ * identity than `incoming`'s is dropped: the node has moved on to a newer
+ * known incarnation, and the old identity can never reoccupy it. A record
+ * naming no identity at all is independent of `incoming` either way (an
+ * identity-less intent can be about any incarnation, so no known identity
+ * can safely rule it superseded) and is kept untouched alongside it - this
+ * is what lets a permanent, identified record and a bounded, unidentified
+ * record for the same node id each survive on their own terms, in either
+ * settlement order.
+ */
+function insertRetainedDelete(
+  existingRecords: readonly RetainedDelete[],
   incoming: RetainedDelete
-): RetainedDelete {
-  if (!existing) return incoming
-  if (identitiesConflict(existing, incoming)) return incoming
-  return strongerRetainedDelete(existing, incoming)
+): RetainedDelete[] {
+  const kept: RetainedDelete[] = []
+  let merged = false
+  for (const record of existingRecords) {
+    if (sameIdentityBucket(record, incoming)) {
+      kept.push(mergeSameIdentityDelete(record, incoming))
+      merged = true
+    } else if (
+      deletedItemIdOf(record) === null ||
+      deletedItemIdOf(incoming) === null
+    ) {
+      kept.push(record)
+    }
+    // else: both name a real, different identity - drop `record`.
+  }
+  if (!merged) kept.push(incoming)
+  return kept
 }
 
 /** The retention reason a settled `delete_node` op's own outcome names, or `null` when it does not retain (skipped, undeliverable). */
@@ -79,11 +105,32 @@ function retentionReason(
   outcome: BatchOutcome,
   opId: string
 ): RetentionReason | null {
-  if (outcome.state === 'acknowledged')
-    return outcome.result.applied.includes(opId) ? 'confirmed-applied' : null
-  if (outcome.state === 'unconfirmed' || outcome.state === 'unacknowledged')
-    return 'unknown'
-  return null
+  switch (outcome.state) {
+    case 'acknowledged':
+      return outcome.result.applied.includes(opId) ? 'confirmed-applied' : null
+    case 'unconfirmed':
+    case 'unacknowledged':
+      return 'unknown'
+    case 'undeliverable':
+      // The transport never carried this op within the retry budget (or no
+      // doc was ever bound to carry it), so the host never saw it: nothing
+      // to retain.
+      return null
+    default: {
+      // Exhaustiveness guard: a `BatchOutcome` variant not one of the cases
+      // above fails this assignment at compile time, forcing a retention
+      // policy choice for it here instead of silently falling through to
+      // "do not retain". Unreachable under a correctly typed caller.
+      const unhandled: never = outcome
+      reportError(
+        `Unhandled BatchOutcome state: ${JSON.stringify(unhandled)}`,
+        {
+          errorType: 'error_handling_unhandled_batch_outcome_state'
+        }
+      )
+      return null
+    }
+  }
 }
 
 function buildRetainedDelete(
@@ -122,26 +169,40 @@ function retainedDeletesFromBatch(
   return retained
 }
 
-/** Prunes one workflow's released retained deletes in place. */
+/**
+ * Prunes one workflow's released retained deletes in place, dropping only
+ * the specific records whose own identity is confirmed-superseded or whose
+ * own expiry has passed - never a node id's whole record set on account of
+ * just one of possibly several independent records for it (see
+ * {@link insertRetainedDelete}).
+ */
 function pruneWorkflowDeletes(
-  deletes: Map<string, RetainedDelete>,
+  deletes: Map<string, RetainedDelete[]>,
   docNodeIds: ReadonlySet<string>,
   currentItemId: (nodeId: string) => string | null
 ): void {
   const now = Date.now()
-  for (const [id, retained] of deletes) {
-    const expiresAt = expiresAtOf(retained)
-    const expired = expiresAt !== null && now >= expiresAt
-    const deletedItemId = deletedItemIdOf(retained)
+  for (const [id, records] of deletes) {
+    if (!docNodeIds.has(id)) {
+      deletes.delete(id)
+      continue
+    }
     const currentId = currentItemId(id)
-    // A null current identity is an unreadable read (internal Yjs-shape
-    // failure) or no live doc to read from - never proof a different item
-    // replaced this one. Only a real, differing identity supersedes.
-    const superseded =
-      deletedItemId !== null &&
-      currentId !== null &&
-      currentId !== deletedItemId
-    if (!docNodeIds.has(id) || superseded || expired) deletes.delete(id)
+    const remaining = records.filter((retained) => {
+      const expiresAt = expiresAtOf(retained)
+      const expired = expiresAt !== null && now >= expiresAt
+      const deletedItemId = deletedItemIdOf(retained)
+      // A null current identity is an unreadable read (internal Yjs-shape
+      // failure) or no live doc to read from - never proof a different
+      // item replaced this one. Only a real, differing identity supersedes.
+      const superseded =
+        deletedItemId !== null &&
+        currentId !== null &&
+        currentId !== deletedItemId
+      return !superseded && !expired
+    })
+    if (remaining.length === 0) deletes.delete(id)
+    else deletes.set(id, remaining)
   }
 }
 
@@ -159,7 +220,7 @@ export interface PendingDeleteRetentionStore {
 }
 
 export function createPendingDeleteRetentionStore(): PendingDeleteRetentionStore {
-  const confirmedDeletes = new Map<string, Map<string, RetainedDelete>>()
+  const confirmedDeletes = new Map<string, Map<string, RetainedDelete[]>>()
 
   return {
     settleBatch(outcome) {
@@ -173,7 +234,10 @@ export function createPendingDeleteRetentionStore(): PendingDeleteRetentionStore
         confirmedDeletes.set(workflowId, deletes)
       }
       for (const [nodeId, record] of retained)
-        deletes.set(nodeId, mergeRetainedDelete(deletes.get(nodeId), record))
+        deletes.set(
+          nodeId,
+          insertRetainedDelete(deletes.get(nodeId) ?? [], record)
+        )
     },
     retainedNodeIds(workflowId, docNodeIds, currentItemId) {
       const deletes = confirmedDeletes.get(workflowId)

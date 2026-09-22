@@ -700,9 +700,13 @@ describe('createOpSender', () => {
 
   it('binds each of two simultaneously outstanding deletes for the same recreated node to its OWN admission-time identity', () => {
     // Regression: the sender must key captured identity by each op's own
-    // minted `op_id`, not by node id or FIFO position - two deletes for the
-    // same node id, admitted while it holds different identities, must not
-    // cross-contaminate when their batches settle out of admission order.
+    // minted `op_id`, not by node id - two deletes for the same node id,
+    // admitted while it holds different identities, must not
+    // cross-contaminate when their batches settle. Settlement here is still
+    // strictly serialized in admission order (acking the first is what lets
+    // the queued second batch transmit), so this alone does not rule out a
+    // FIFO-position-keyed capture; it only proves each op's own
+    // admission-time identity survives settlement under its own `op_id`.
     let currentIdentity: string | null = 'A'
     const localSettled: BatchOutcome[] = []
     const localSender = createOpSender({
