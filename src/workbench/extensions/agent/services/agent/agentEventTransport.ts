@@ -24,6 +24,19 @@ export type AgentChatEvent = Extract<
   }
 >
 
+type AgentToolCallEvent = Extract<AgentChatEvent, { type: 'agent_tool_call' }>
+type AgentActiveTabEvent = Extract<AgentChatEvent, { type: 'agent_active_tab' }>
+type AgentAskEvent = Extract<AgentChatEvent, { type: 'agent_ask' }>
+type AgentThinkingEvent = Extract<AgentChatEvent, { type: 'agent_thinking' }>
+type AgentAskResolvedEvent = Extract<
+  AgentChatEvent,
+  { type: 'agent_ask_resolved' }
+>
+type AgentMessageDeltaEvent = Extract<
+  AgentChatEvent,
+  { type: 'agent_message_delta' }
+>
+
 export interface AgentEventTransport {
   ingest: (event: AgentChatEvent) => void
   settle: () => void
@@ -79,6 +92,128 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
+  /**
+   * PM-1575: applies a finished tool-call frame's outcome to its part, then
+   * decides whether the part's displayed `state` can flip straight to
+   * `'done'` or must be held at `'streaming'` pending canvas catch-up (see
+   * `shouldAwaitCanvasSync` above). Pulled out of `ingest` so that switch's
+   * `agent_tool_call` branch stays a simple call instead of an inline gate.
+   */
+  function resolveToolCallState(
+    part: ToolPart,
+    status: 'success' | 'error',
+    durationMs: number | undefined
+  ): void {
+    part.ok = status === 'success'
+    part.durationMs = durationMs
+    if (shouldAwaitCanvasSync()) {
+      pendingCanvasSync.set(
+        part,
+        setTimeout(() => {
+          settlePendingCanvasSync(part)
+          emit(snapshotMessage(message))
+        }, STALE_AFTER_MS)
+      )
+    } else {
+      part.state = 'done'
+    }
+  }
+
+  /**
+   * Applies one `agent_tool_call` frame: finds or creates the part it
+   * targets, updates its name, and (once the frame reports a terminal
+   * status) resolves its displayed state via `resolveToolCallState`. Pulled
+   * out of `ingest`'s switch so that case is a single call.
+   */
+  function handleToolCallEvent(data: AgentToolCallEvent['data']): void {
+    let part = tools.get(data.tool_call_id)
+    if (!part) {
+      part = {
+        type: 'tool',
+        callId: data.tool_call_id,
+        name: data.tool_name,
+        state: 'streaming'
+      }
+      tools.set(data.tool_call_id, part)
+      message.parts.push(part)
+    }
+    part.name = data.tool_name
+    if (data.status !== 'running') {
+      resolveToolCallState(part, data.status, data.duration_ms)
+    }
+  }
+
+  /**
+   * Applies one `agent_active_tab` frame. The agent re-announces the same
+   * tab as it keeps working on it, with text and tool calls in between, so
+   * only a change of tab is worth another link in the transcript. Returns
+   * `false` when this frame repeats the last-announced tab and was
+   * otherwise a no-op, mirroring `ingest`'s early `return` for that case.
+   */
+  function handleActiveTabEvent(data: AgentActiveTabEvent['data']): boolean {
+    const targetKey = `${data.workflow_id}\u0000${data.node_locator_id ?? ''}`
+    if (lastTabTargetKey === targetKey) return false
+    lastTabTargetKey = targetKey
+    closeOpenText()
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+    message.parts.push({
+      type: 'tabLink',
+      workflowId: data.workflow_id,
+      locatorId: data.node_locator_id,
+      name: data.name
+    })
+    return true
+  }
+
+  /**
+   * Applies one `agent_ask` frame. Only the `run_approval` kind renders a
+   * part; returns `false` for any other kind, mirroring `ingest`'s early
+   * `return` for that case.
+   */
+  function handleAskEvent(data: AgentAskEvent['data']): boolean {
+    if (data.kind !== 'run_approval') return false
+    closeOpenText()
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+    const part: RunApprovalPart = {
+      type: 'runApproval',
+      askId: data.ask_id,
+      workflowId: data.context?.workflow_id || undefined,
+      workflowName: data.context?.workflow_name || undefined
+    }
+    message.parts.push(part)
+    return true
+  }
+
+  /** Applies one `agent_thinking` frame: appends its delta to the open
+   * thinking part, opening one first if none is open. */
+  function handleThinkingEvent(data: AgentThinkingEvent['data']): void {
+    closeOpenText()
+    message.thinking = true
+    ;(openThinking ?? openNewThinking()).text += data.delta
+    message.thinkingText = openThinking?.text
+  }
+
+  /** Applies one `agent_ask_resolved` frame: drops the matching run-approval
+   * part, since its ask is no longer pending. */
+  function handleAskResolvedEvent(data: AgentAskResolvedEvent['data']): void {
+    message.parts = message.parts.filter(
+      (part) => part.type !== 'runApproval' || part.askId !== data.ask_id
+    )
+  }
+
+  /** Applies one `agent_message_delta` frame: appends its delta to the open
+   * text part, opening one first if none is open. */
+  function handleMessageDeltaEvent(data: AgentMessageDeltaEvent['data']): void {
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+    ;(openText ?? openNewText()).text += data.delta
+  }
+
   function closeOpenText(): void {
     if (openText) {
       openText.state = 'done'
@@ -114,100 +249,45 @@ export function createAgentEventTransport(
     return part
   }
 
-  function ingest(event: AgentChatEvent): void {
-    if (settled) return
+  /**
+   * Applies one chat event to `message` by dispatching to the per-type
+   * handler above, and reports whether `ingest` should emit a fresh
+   * snapshot afterwards. Most event types always want a snapshot; a
+   * repeated `agent_active_tab` or a non-`run_approval` `agent_ask` is a
+   * no-op (mirroring their handlers' own `false` return), and
+   * `agent_message_done` already emits via `settle()` so it says no too.
+   */
+  function applyChatEvent(event: AgentChatEvent): boolean {
     switch (event.type) {
       case 'agent_thinking':
-        closeOpenText()
-        message.thinking = true
-        ;(openThinking ?? openNewThinking()).text += event.data.delta
-        message.thinkingText = openThinking?.text
-        break
-      case 'agent_tool_call': {
+        handleThinkingEvent(event.data)
+        return true
+      case 'agent_tool_call':
         closeOpenText()
         closeOpenThinking()
         message.thinking = false
         message.thinkingText = undefined
-        let part = tools.get(event.data.tool_call_id)
-        if (!part) {
-          part = {
-            type: 'tool',
-            callId: event.data.tool_call_id,
-            name: event.data.tool_name,
-            state: 'streaming'
-          }
-          tools.set(event.data.tool_call_id, part)
-          message.parts.push(part)
-        }
-        part.name = event.data.tool_name
-        if (event.data.status !== 'running') {
-          part.ok = event.data.status === 'success'
-          part.durationMs = event.data.duration_ms
-          if (shouldAwaitCanvasSync()) {
-            pendingCanvasSync.set(
-              part,
-              setTimeout(() => {
-                settlePendingCanvasSync(part)
-                emit(snapshotMessage(message))
-              }, STALE_AFTER_MS)
-            )
-          } else {
-            part.state = 'done'
-          }
-        }
-        break
-      }
-      case 'agent_active_tab': {
-        // The agent re-announces the same tab as it keeps working on it, with
-        // text and tool calls in between, so the tail of parts is not the test;
-        // only a change of tab is worth another link in the transcript.
-        const targetKey = `${event.data.workflow_id}\u0000${event.data.node_locator_id ?? ''}`
-        if (lastTabTargetKey === targetKey) return
-        lastTabTargetKey = targetKey
-        closeOpenText()
-        closeOpenThinking()
-        message.thinking = false
-        message.thinkingText = undefined
-        message.parts.push({
-          type: 'tabLink',
-          workflowId: event.data.workflow_id,
-          locatorId: event.data.node_locator_id,
-          name: event.data.name
-        })
-        break
-      }
-      case 'agent_ask': {
-        if (event.data.kind !== 'run_approval') return
-        closeOpenText()
-        closeOpenThinking()
-        message.thinking = false
-        message.thinkingText = undefined
-        const part: RunApprovalPart = {
-          type: 'runApproval',
-          askId: event.data.ask_id,
-          workflowId: event.data.context?.workflow_id || undefined,
-          workflowName: event.data.context?.workflow_name || undefined
-        }
-        message.parts.push(part)
-        break
-      }
+        handleToolCallEvent(event.data)
+        return true
+      case 'agent_active_tab':
+        return handleActiveTabEvent(event.data)
+      case 'agent_ask':
+        return handleAskEvent(event.data)
       case 'agent_ask_resolved':
-        message.parts = message.parts.filter(
-          (part) =>
-            part.type !== 'runApproval' || part.askId !== event.data.ask_id
-        )
-        break
+        handleAskResolvedEvent(event.data)
+        return true
       case 'agent_message_delta':
-        closeOpenThinking()
-        message.thinking = false
-        message.thinkingText = undefined
-        ;(openText ?? openNewText()).text += event.data.delta
-        break
+        handleMessageDeltaEvent(event.data)
+        return true
       case 'agent_message_done':
         settle()
-        return
+        return false
     }
-    emit(snapshotMessage(message))
+  }
+
+  function ingest(event: AgentChatEvent): void {
+    if (settled) return
+    if (applyChatEvent(event)) emit(snapshotMessage(message))
   }
 
   function settle(): void {
