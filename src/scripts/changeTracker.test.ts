@@ -1213,6 +1213,22 @@ describe('ChangeTracker', () => {
       expect(app.rootGraph.serialize).not.toHaveBeenCalled()
       expect(useNodeOutputStore().snapshotOutputs).toHaveBeenCalled()
     })
+
+    it('is a full no-op and calls assert when called on inactive tracker', () => {
+      const tracker = createTracker()
+      useWorkflowStore().activeWorkflow = fromPartial({
+        changeTracker: {}
+      })
+
+      tracker.deactivate()
+
+      expect(app.rootGraph.serialize).not.toHaveBeenCalled()
+      expect(useNodeOutputStore().snapshotOutputs).not.toHaveBeenCalled()
+      expect(mockAssert).toHaveBeenCalledWith(
+        false,
+        'ChangeTracker.deactivate() called on inactive tracker'
+      )
+    })
   })
 
   describe('restore', () => {
@@ -1229,38 +1245,51 @@ describe('ChangeTracker', () => {
       const survivor = fromPartial<Subgraph>({ id: 'outer' })
       app.rootGraph.subgraphs.set('outer', survivor)
       const tracker = deactivateWithNavigation(['outer', 'inner', 'innermost'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
 
       tracker.restore()
 
-      expect(useSubgraphNavigationStore().restoreState).toHaveBeenCalledWith([
-        'outer'
-      ])
+      expect(restoredNavigation).toEqual(['outer'])
       expect(app.canvas.setGraph).toHaveBeenCalledWith(survivor)
+    })
+
+    it('reopens the deepest of multiple surviving ancestors', () => {
+      const outer = fromPartial<Subgraph>({ id: 'outer' })
+      const inner = fromPartial<Subgraph>({ id: 'inner' })
+      app.rootGraph.subgraphs.set('outer', outer)
+      app.rootGraph.subgraphs.set('inner', inner)
+      const tracker = deactivateWithNavigation(['outer', 'inner', 'innermost'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
+
+      tracker.restore()
+
+      expect(restoredNavigation).toEqual(['outer', 'inner'])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(inner)
     })
 
     it('returns to the root graph when the undone state removed every ancestor', () => {
       const tracker = deactivateWithNavigation(['outer', 'inner'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
 
       tracker.restore()
 
-      expect(useSubgraphNavigationStore().restoreState).toHaveBeenCalledWith([])
+      expect(restoredNavigation).toEqual([])
       expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
-    })
-
-    it('is a full no-op and calls assert when called on inactive tracker', () => {
-      const tracker = createTracker()
-      useWorkflowStore().activeWorkflow = fromPartial({
-        changeTracker: {}
-      })
-
-      tracker.deactivate()
-
-      expect(app.rootGraph.serialize).not.toHaveBeenCalled()
-      expect(useNodeOutputStore().snapshotOutputs).not.toHaveBeenCalled()
-      expect(mockAssert).toHaveBeenCalledWith(
-        false,
-        'ChangeTracker.deactivate() called on inactive tracker'
-      )
     })
   })
 
