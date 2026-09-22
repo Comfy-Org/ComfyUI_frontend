@@ -1973,6 +1973,22 @@ describe('useSubscriptionCheckout', () => {
         expect(mockPreviewSubscribe).toHaveBeenCalledOnce()
         expect(checkout.checkoutStep.value).toBe('preview')
       })
+
+      it('opens the hosted tab before any await, so the click gesture survives', async () => {
+        mockOpenHostedBillingTab.mockReturnValue(true)
+        const checkout = await setup()
+
+        const pending = checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+
+        expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
+          plan: 'standard-yearly'
+        })
+
+        await pending
+      })
     })
   })
 

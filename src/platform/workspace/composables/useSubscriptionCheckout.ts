@@ -748,18 +748,23 @@ export function useSubscriptionCheckout(
       : canSubscribeSelfServe.value
   }
 
+  // Synchronous so the caller can branch before any await: a hosted-tab
+  // open right after this needs the click's transient user activation,
+  // which an await can drop in stricter browsers (Safari).
+  function needsTeamToPersonalDowngrade(): boolean {
+    return tierPlanType !== 'team' && isTeamPlan.value
+  }
+
   async function showTeamToPersonalDowngrade(
     planSlug: string,
     tierKey: CheckoutTierKey
-  ): Promise<boolean> {
-    if (tierPlanType === 'team' || !isTeamPlan.value) return false
-
+  ): Promise<void> {
     const { useDialogService } = await import('@/services/dialogService')
     const result = await useDialogService().showDowngradeToPersonalDialog({
       planName: t(`subscription.tiers.${tierKey}.name`),
       planSlug
     })
-    if (!result) return true
+    if (!result) return
 
     previewData.value = result.preview
     trackWorkspaceCheckoutStarted({
@@ -778,7 +783,6 @@ export function useSubscriptionCheckout(
       },
       false
     )
-    return true
   }
 
   const previewVariant = computed<PreviewVariant>(() => {
@@ -844,7 +848,10 @@ export function useSubscriptionCheckout(
         })
         return
       }
-      if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
+      if (needsTeamToPersonalDowngrade()) {
+        await showTeamToPersonalDowngrade(planSlug, tierKey)
+        return
+      }
       if (openHostedBillingTab('checkout', { plan: planSlug })) {
         emit('close', false)
         return
@@ -1106,7 +1113,10 @@ export function useSubscriptionCheckout(
 
     isSubscribing.value = true
     try {
-      if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
+      if (needsTeamToPersonalDowngrade()) {
+        await showTeamToPersonalDowngrade(planSlug, tierKey)
+        return
+      }
       await fetchStatus()
       if (!confirmReactivation && requiresReactivationConfirmation()) {
         if (await refreshPreviewOnReactivationBlock(planSlug)) return
