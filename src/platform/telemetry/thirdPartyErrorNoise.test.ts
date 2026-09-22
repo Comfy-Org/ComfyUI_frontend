@@ -12,7 +12,9 @@ describe('third-party error noise', () => {
   it.for([
     EXTENSION_ERROR,
     `Error: ${EXTENSION_ERROR}`,
-    `Unhandled promise rejection: ${EXTENSION_ERROR}`
+    `Unhandled promise rejection: ${EXTENSION_ERROR}`,
+    `Unhandled promise rejection: Error: ${EXTENSION_ERROR}`,
+    `${EXTENSION_ERROR} extension context`
   ])('identifies the extension tab error in %s', (message) => {
     expect(isThirdPartyErrorNoise(message)).toBe(true)
   })
