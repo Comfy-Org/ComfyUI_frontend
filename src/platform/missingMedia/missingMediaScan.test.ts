@@ -174,6 +174,53 @@ beforeEach(() => {
 })
 
 describe('scanNodeMediaCandidates', () => {
+  it.for([
+    { isCloud: false, value: 'preview.png [temp]' },
+    { isCloud: true, value: 'asset-hash.png [temp]' },
+    { isCloud: true, value: 'asset-hash.png[temp]' }
+  ])(
+    'excludes explicit temp inputs ($value, cloud: $isCloud)',
+    async ({ isCloud, value }) => {
+      const node = makeMediaNode(1, 'LoadImage', [
+        makeMediaCombo('image', value)
+      ])
+      const candidates = scanNodeMediaCandidates(
+        makeGraph([node]),
+        node,
+        isCloud
+      )
+      const resolveAssetSources = vi.fn<MissingMediaAssetResolver>()
+
+      expect(candidates).toEqual([])
+      await verifyMediaCandidates(candidates, { isCloud, resolveAssetSources })
+
+      expect(resolveAssetSources).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { isCloud: false, value: 'preview.png[temp]' },
+    { isCloud: false, value: 'ComfyUI_temp_abc_00001_.png' },
+    { isCloud: true, value: 'ComfyUI_temp_abc_00001_.png [output]' },
+    { isCloud: true, value: 'asset-hash.png' },
+    { isCloud: true, value: 'preview [temp] copy.png' }
+  ])(
+    'keeps inputs without a supported temp suffix ($value, cloud: $isCloud)',
+    ({ isCloud, value }) => {
+      const node = makeMediaNode(1, 'LoadImage', [
+        makeMediaCombo('image', value)
+      ])
+
+      const candidates = scanNodeMediaCandidates(
+        makeGraph([node]),
+        node,
+        isCloud
+      )
+
+      expect(candidates).toEqual([expect.objectContaining({ name: value })])
+    }
+  )
+
   it('does not report a regular media widget whose input value comes from a link', () => {
     const graph = new LGraph()
     const upstream = new LGraphNode('ImageSource')

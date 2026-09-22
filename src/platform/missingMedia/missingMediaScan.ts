@@ -132,6 +132,12 @@ export function scanNodeMediaCandidates(
 
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
+    if (
+      getAnnotatedMediaPathTypeForDetection(value, {
+        allowCompactSuffix: isCloud
+      }) === 'temp'
+    )
+      continue
 
     const isMissing = resolveMediaMissingState(widget, value, isCloud)
 
