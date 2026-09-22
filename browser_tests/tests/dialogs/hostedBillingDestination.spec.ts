@@ -421,66 +421,62 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
   })
 })
 
-test.describe(
-  'Hosted billing checkout handoff (FE-2619)',
-  { tag: '@cloud' },
-  () => {
-    test('opens the billing-web checkout entry with the selected plan and workspace while the destination is billing_web', async ({
-      page
-    }) => {
-      test.setTimeout(60_000)
-      await mockCloudBoot(page)
-      const previewRequests = await mockStandardPlan(page)
-      await bootApp(page)
-      await new FeatureFlagHelper(page).setServerFlagsPersistent({
-        hosted_billing_destination: 'billing_web'
-      })
-
-      await clickPlansAndPricing(page)
-      await expect(pricingHeading(page)).toBeVisible()
-      await standardTierButton(page).click()
-
-      await expect
-        .poll(() => openedUrl(page))
-        .toBe(
-          `${BILLING_WEB_ORIGIN}/v1/checkout?plan=standard-yearly&product=comfyui&return_to=comfyui_workspace&workspace_id=ws-personal`
-        )
-      expect(previewRequests).toHaveLength(0)
-      await expect(pricingDialog(page)).toHaveCount(0)
+test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
+  test('opens the billing-web checkout entry with the selected plan and workspace while the destination is billing_web', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    await mockCloudBoot(page)
+    const previewRequests = await mockStandardPlan(page)
+    await bootApp(page)
+    await new FeatureFlagHelper(page).setServerFlagsPersistent({
+      hosted_billing_destination: 'billing_web'
     })
 
-    test('falls back to the embedded confirm step when the checkout tab is blocked', async ({
-      page
-    }) => {
-      test.setTimeout(60_000)
-      await mockCloudBoot(page)
-      await mockStandardPlan(page)
-      await bootApp(page, { blockPopups: true })
-      await new FeatureFlagHelper(page).setServerFlagsPersistent({
-        hosted_billing_destination: 'billing_web'
-      })
+    await clickPlansAndPricing(page)
+    await expect(pricingHeading(page)).toBeVisible()
+    await standardTierButton(page).click()
 
-      await clickPlansAndPricing(page)
-      await expect(pricingHeading(page)).toBeVisible()
-      await standardTierButton(page).click()
+    await expect
+      .poll(() => openedUrl(page))
+      .toBe(
+        `${BILLING_WEB_ORIGIN}/v1/checkout?plan=standard-yearly&product=comfyui&return_to=comfyui_workspace&workspace_id=ws-personal`
+      )
+    expect(previewRequests).toHaveLength(0)
+    await expect(pricingDialog(page)).toHaveCount(0)
+  })
 
-      await expect(confirmPaymentHeading(page)).toBeVisible()
+  test('falls back to the embedded confirm step when the checkout tab is blocked', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    await mockCloudBoot(page)
+    await mockStandardPlan(page)
+    await bootApp(page, { blockPopups: true })
+    await new FeatureFlagHelper(page).setServerFlagsPersistent({
+      hosted_billing_destination: 'billing_web'
     })
 
-    test('stays on the embedded confirm step and opens no tab while the destination is stripe', async ({
-      page
-    }) => {
-      test.setTimeout(60_000)
-      await mockCloudBoot(page)
-      await mockStandardPlan(page)
-      await bootApp(page)
+    await clickPlansAndPricing(page)
+    await expect(pricingHeading(page)).toBeVisible()
+    await standardTierButton(page).click()
 
-      await clickPlansAndPricing(page)
-      await expect(pricingHeading(page)).toBeVisible()
-      await standardTierButton(page).click()
+    await expect(confirmPaymentHeading(page)).toBeVisible()
+  })
 
-      await expect(confirmPaymentHeading(page)).toBeVisible()
-      expect(await openedUrl(page)).toBeNull()
-    })
-  }
-)
+  test('stays on the embedded confirm step and opens no tab while the destination is stripe', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    await mockCloudBoot(page)
+    await mockStandardPlan(page)
+    await bootApp(page)
+
+    await clickPlansAndPricing(page)
+    await expect(pricingHeading(page)).toBeVisible()
+    await standardTierButton(page).click()
+
+    await expect(confirmPaymentHeading(page)).toBeVisible()
+    expect(await openedUrl(page)).toBeNull()
+  })
+})
