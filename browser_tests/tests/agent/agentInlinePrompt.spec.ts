@@ -142,8 +142,7 @@ test(
       .click()
     await expect(editor).toHaveText(text)
     await expect(chips).toHaveCount(2)
-    await editor.press('ControlOrMeta+a')
-    await editor.press('ArrowRight')
+    await editor.press('ControlOrMeta+End')
     await editor.pressSequentially(' again')
     await expect(editor).toHaveText(`${text} again`)
     await panel
