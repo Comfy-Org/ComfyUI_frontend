@@ -29,6 +29,7 @@ import {
 } from './pendingOpRevert'
 import { createPendingOpTracker } from './pendingOpTracker'
 import type { PendingOpTrackerEvent } from './pendingOpTracker'
+import { toRootGraphId } from '@/types/graphScopeId'
 
 const LOCAL_PREFIX = 'user-'
 const LOCAL_ACTOR = 'user-abc123'
@@ -108,7 +109,7 @@ describe('human add_node rejection regression pin', () => {
     const wiring = attachMintPortWiring({
       isEnabled: () => true,
       isDocBound: () => true,
-      boundRootGraphId: () => 'root',
+      boundRootGraphId: () => toRootGraphId('root'),
       enqueue: (operations) => sender.enqueue(operations),
       layoutChanges: (listener) => {
         layoutListeners.add(listener)

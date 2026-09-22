@@ -94,14 +94,14 @@ describe('attachMintPortWiring', () => {
     wiring = attachMintPortWiring({
       isEnabled: () => enabled,
       isDocBound: () => bound,
-      boundRootGraphId: () => ROOT_ID,
       enqueue: (operations) => minted.push(...operations),
       layoutChanges: (listener) => {
         layoutListeners.add(listener)
         return () => layoutListeners.delete(listener)
       },
       localActorPrefix: 'user-',
-      getGraph: () => graph
+      getGraph: () => graph,
+      boundRootGraphId: () => toRootGraphId(ROOT_ID)
     })
   })
 
