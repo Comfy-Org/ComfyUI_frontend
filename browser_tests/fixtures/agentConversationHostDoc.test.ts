@@ -6,6 +6,39 @@ import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 
 describe('HostDoc.applyWire', () => {
+  it('applies a coalesced canvas clear to the host document', () => {
+    const host = new HostDoc(
+      'workflow-1',
+      {
+        nodes: [
+          { id: 1, type: 'TestNode', pos: [0, 0] },
+          { id: 2, type: 'TestNode', pos: [100, 100] }
+        ],
+        links: []
+      },
+      { types: {} }
+    )
+    const ops = mintWireOps(
+      [
+        { op: 'delete_node', node_id: 1, removed_links: [] },
+        { op: 'delete_node', node_id: 2, removed_links: [] }
+      ],
+      {
+        actor: 'human:test-user:tab-1',
+        baseVersion: 1
+      }
+    )
+
+    const { result } = host.applyWire(ops)
+
+    expect(result.data).toMatchObject({
+      ok: true,
+      applied: ops.map((op) => op.op_id),
+      skipped: []
+    })
+    expect(host.projection().nodes).toEqual([])
+  })
+
   it('acknowledges a duplicate operation as skipped without broadcasting an update', () => {
     const host = new HostDoc(
       'workflow-1',
