@@ -522,3 +522,45 @@ test.describe('Automatic agent consent', { tag: ['@cloud', '@ui'] }, () => {
     })
   })
 })
+
+test.describe(
+  'Automatic agent consent in the first session',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    test.use({ agentConsentAccepted: false, agentFirstSession: true })
+
+    test('waits behind Getting Started instead of stacking on it', async ({
+      comfyPage,
+      agentPanel
+    }) => {
+      const page = comfyPage.page
+      const gettingStarted = page.getByRole('dialog', {
+        name: enMessages.gettingStarted.title
+      })
+      const consent = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+
+      await test.step('Getting Started owns the first screen', async () => {
+        await expect(gettingStarted).toBeVisible()
+      })
+
+      await test.step('The automatic offer runs and stays silent', async () => {
+        // The offer only fires once the flag gate settles; wait for that so an
+        // unsettled gate cannot make the absence below pass vacuously.
+        await expect(page.locator('[data-agent-gate-settled]')).toBeAttached({
+          timeout: 15_000
+        })
+        await expect(consent).toHaveCount(0)
+        await expect(agentPanel.root).toHaveCount(0)
+        expect(
+          await page.evaluate(() =>
+            localStorage.getItem(
+              'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
+            )
+          )
+        ).toBeNull()
+      })
+    })
+  }
+)
