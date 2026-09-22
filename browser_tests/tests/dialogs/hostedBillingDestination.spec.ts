@@ -2,7 +2,12 @@ import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingPlansResponse,
+  BillingStatusResponse,
+  Plan,
+  PreviewSubscribeResponse
+} from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
@@ -48,6 +53,33 @@ const ACTIVE_BILLING_STATUS: BillingStatusResponse = {
   billing_status: 'paid',
   renewal_date: '2099-02-20T12:00:00Z',
   has_funds: true
+}
+
+const STANDARD_YEARLY_PLAN: Plan = {
+  slug: 'standard-yearly',
+  tier: 'STANDARD',
+  duration: 'ANNUAL',
+  price_cents: 16_000,
+  credits_cents: 4_200,
+  max_seats: 1,
+  availability: { available: true },
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 16_000,
+    total_credits_cents: 4_200
+  }
+}
+
+const NEW_STANDARD_SUBSCRIPTION: PreviewSubscribeResponse = {
+  allowed: true,
+  transition_type: 'new_subscription',
+  effective_at: '2026-07-21T00:00:00Z',
+  is_immediate: true,
+  cost_today_cents: 16_000,
+  cost_next_period_cents: 16_000,
+  credits_today_cents: 4_200,
+  credits_next_period_cents: 4_200,
+  new_plan: STANDARD_YEARLY_PLAN
 }
 
 interface CloudBootRequests {
@@ -209,6 +241,32 @@ const pricingHeading = (page: Page) =>
 const pricingDialog = (page: Page) =>
   page.locator('[data-dialog-key="subscription-required"]')
 
+/** The Standard tier's card action, whether it reads "Subscribe to" or "Change to". */
+const standardTierButton = (page: Page) =>
+  page.getByRole('button', { name: /Standard Yearly/ })
+
+const confirmPaymentHeading = (page: Page) =>
+  page.getByRole('heading', { name: 'Confirm your payment' })
+
+/** `/api/billing/plans` and `/api/billing/preview-subscribe`, mocked for a
+ * fresh Standard-yearly subscribe: the billing_web handoff never reaches
+ * preview-subscribe, but the embedded fallback tests do. */
+async function mockStandardPlan(page: Page): Promise<Request[]> {
+  const previewRequests: Request[] = []
+  await page.route('**/api/billing/plans', (r) =>
+    r.fulfill(
+      jsonRoute({
+        plans: [STANDARD_YEARLY_PLAN]
+      } satisfies BillingPlansResponse)
+    )
+  )
+  await page.route('**/api/billing/preview-subscribe', (r) => {
+    previewRequests.push(r.request())
+    return r.fulfill(jsonRoute(NEW_STANDARD_SUBSCRIPTION))
+  })
+  return previewRequests
+}
+
 test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
   test('opens the provider portal while the destination is stripe', async ({
     page
@@ -362,3 +420,67 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
       .toBeGreaterThan(requestsBeforeReturn)
   })
 })
+
+test.describe(
+  'Hosted billing checkout handoff (FE-2619)',
+  { tag: '@cloud' },
+  () => {
+    test('opens the billing-web checkout entry with the selected plan and workspace while the destination is billing_web', async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+      await mockCloudBoot(page)
+      const previewRequests = await mockStandardPlan(page)
+      await bootApp(page)
+      await new FeatureFlagHelper(page).setServerFlagsPersistent({
+        hosted_billing_destination: 'billing_web'
+      })
+
+      await clickPlansAndPricing(page)
+      await expect(pricingHeading(page)).toBeVisible()
+      await standardTierButton(page).click()
+
+      await expect
+        .poll(() => openedUrl(page))
+        .toBe(
+          `${BILLING_WEB_ORIGIN}/v1/checkout?plan=standard-yearly&product=comfyui&return_to=comfyui_workspace&workspace_id=ws-personal`
+        )
+      expect(previewRequests).toHaveLength(0)
+      await expect(pricingDialog(page)).toHaveCount(0)
+    })
+
+    test('falls back to the embedded confirm step when the checkout tab is blocked', async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+      await mockCloudBoot(page)
+      await mockStandardPlan(page)
+      await bootApp(page, { blockPopups: true })
+      await new FeatureFlagHelper(page).setServerFlagsPersistent({
+        hosted_billing_destination: 'billing_web'
+      })
+
+      await clickPlansAndPricing(page)
+      await expect(pricingHeading(page)).toBeVisible()
+      await standardTierButton(page).click()
+
+      await expect(confirmPaymentHeading(page)).toBeVisible()
+    })
+
+    test('stays on the embedded confirm step and opens no tab while the destination is stripe', async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+      await mockCloudBoot(page)
+      await mockStandardPlan(page)
+      await bootApp(page)
+
+      await clickPlansAndPricing(page)
+      await expect(pricingHeading(page)).toBeVisible()
+      await standardTierButton(page).click()
+
+      await expect(confirmPaymentHeading(page)).toBeVisible()
+      expect(await openedUrl(page)).toBeNull()
+    })
+  }
+)

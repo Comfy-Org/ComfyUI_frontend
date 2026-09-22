@@ -32,6 +32,7 @@ import type {
   SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
 import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -844,6 +845,10 @@ export function useSubscriptionCheckout(
         return
       }
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
+      if (openHostedBillingTab('checkout', { plan: planSlug })) {
+        emit('close', false)
+        return
+      }
       const response = embeddedCheckoutEnabled
         ? (
             await Promise.all([
@@ -925,6 +930,15 @@ export function useSubscriptionCheckout(
     previewData.value = null
     quoteIsCurrent.value = false
     enterCheckoutJourney(`team:${payload.stop.id}:${payload.billingCycle}`)
+
+    if (
+      openHostedBillingTab('checkout', {
+        plan: getTeamPlanSlug(payload.billingCycle)
+      })
+    ) {
+      emit('close', false)
+      return
+    }
 
     if (!embeddedCheckoutEnabled) {
       const teamCreditStopId = payload.stop.id
@@ -1734,6 +1748,11 @@ export function useSubscriptionCheckout(
 
   async function handleResubscribe() {
     if (!canReactivatePlan.value) return
+
+    if (openHostedBillingTab('subscription')) {
+      emit('close', false)
+      return
+    }
 
     const source = 'pricing_dialog' as const
 
