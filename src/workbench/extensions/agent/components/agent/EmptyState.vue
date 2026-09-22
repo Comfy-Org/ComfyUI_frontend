@@ -57,7 +57,7 @@ const promptIcons = [
           :class="
             cn(
               'w-full max-w-full min-w-0 justify-start rounded-full px-3 text-sm @min-[460px]:w-auto',
-              index >= 3 && '@max-[459px]:hidden'
+              index >= 3 && '@max-[460px]:hidden'
             )
           "
           @click="emit('insert', prompt)"
