@@ -59,6 +59,7 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { defaultGraph } from '@/scripts/defaultGraph'
 import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -10921,11 +10922,12 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('sends the serialized empty graph when a new tab has not finished loading', async () => {
-    const initialContent = fromPartial<ComfyWorkflowJSON>({
-      id: 'fresh-local-graph',
+    const initialContent: ComfyWorkflowJSON = {
+      ...structuredClone(defaultGraph),
+      id: '123e4567-e89b-42d3-a456-426614174000',
       nodes: [],
       links: []
-    })
+    }
     const tab = makeTab()
     Object.assign(tab, {
       isTemporary: true,
@@ -10943,6 +10945,25 @@ describe('AgentPanelRoot workflow binding', () => {
       draft: { content: initialContent }
     })
   })
+
+  it.for(['{}', '[]'])(
+    'omits an invalid serialized graph while a new tab loads: %s',
+    async (content) => {
+      const tab = makeTab()
+      Object.assign(tab, {
+        isTemporary: true,
+        changeTracker: null,
+        activeState: null,
+        content
+      })
+      const bodies = mockMessagesEndpoint('wf-fresh')
+
+      await renderAndSend('add one text input node')
+
+      expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
+      expect(bodies[0]).not.toHaveProperty('draft')
+    }
+  )
 
   // A restored/existing thread (no turn of THIS session has bound anything
   // yet - `New Chat` is what puts the session into that state here) whose
