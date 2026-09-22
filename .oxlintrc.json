@@ -8,7 +8,6 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
-    "scripts/patch-playwright-agents.js",
     "scripts/registry-census/detection-proof/**",
     "src/__ecs_matrix__/**",
     "src/types/generatedManagerTypes.ts",
@@ -186,12 +185,6 @@
       }
     },
     {
-      "files": ["src/scripts/app.test.ts", "src/scripts/app.ts"],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["browser_tests/fixtures/data/**/*.ts"],
       "rules": {
         "comfy/no-playwright-imports-in-fixture-data": "error"
@@ -270,7 +263,7 @@
       }
     },
     {
-      "files": ["tools/test-recorder/**/*.ts"],
+      "files": ["scripts/**", "tools/test-recorder/**/*.ts"],
       "rules": {
         "no-console": "allow"
       }

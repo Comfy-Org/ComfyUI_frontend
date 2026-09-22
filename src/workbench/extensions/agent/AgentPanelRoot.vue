@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import './agentPanel.css'
 
+import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -25,11 +26,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import {
-  fetchDroppedAsset,
-  getDroppedAsset,
-  hasVideoType
-} from '@/utils/eventUtils'
+import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -55,6 +52,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
 import { parseNodeId } from '@/types/nodeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -179,6 +177,7 @@ const workflowResolver = useAgentWorkflowResolver({
 })
 const {
   refreshCloudWorkflowIds,
+  forgetCloudWorkflowId,
   cloudIdFor,
   boundOrOpenWorkflowFor,
   storedWorkflowFor,
@@ -571,6 +570,7 @@ const {
     prepare: async () => {
       await refreshCloudWorkflowIds()
     },
+    disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
     draft: targetWorkflowDraft
@@ -621,13 +621,25 @@ const {
     onReset: graphActivity.resetWorkflow
   }
 )
+// The bound document's serialized root graph id, independent of what is
+// currently on the canvas: `beforeLoadNewGraph` persists the outgoing
+// workflow's `activeState` before the shared renderer graph is rewritten, so
+// this stays the bound workflow's own root id through a tab switch instead of
+// tracking whichever graph the switch is loading.
+function boundRootGraphId(): RootGraphId | null {
+  const bound = boundWorkflowId.value
+  if (bound === null) return null
+  const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
+  return id === undefined ? null : toRootGraphId(id)
+}
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
-  getGraph: () => (app.isGraphReady ? app.rootGraph : null)
+  getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  boundRootGraphId
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
@@ -839,10 +851,20 @@ const history = useAgentChatHistoryStore()
 const { copy } = useClipboard({ legacy: true })
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
+  const message = entries.value.find(
+    (entry) => entry.role === 'assistant' && entry.id === turnId
+  )
+  const workflowId =
+    message?.role === 'assistant'
+      ? (message.parts
+          .flatMap((part) => (part.type === 'tabLink' ? [part.workflowId] : []))
+          .at(-1) ?? null)
+      : null
+
   useTelemetry()?.trackAgentMessageFeedback({
     message_id: turnId,
     vote,
-    workflow_id: boundWorkflowId.value
+    workflow_id: workflowId
   })
 }
 
@@ -942,7 +964,10 @@ const { submit: onSend } = useAgentDraftSubmission({
       attachment_count: attachments.length,
       node_tag_count: nodes.length
     })
-    return sendMessage(text, attachments, nodes, references)
+    const selectionWorkflow = selectedTarget.value
+    return sendMessage(text, attachments, nodes, references, () =>
+      selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
+    )
   },
   stop: stopTurn
 })
@@ -1015,7 +1040,6 @@ function exitNodeSelectionMode(): void {
   if (agentNodeSelectionStore.isActive) agentNodeSelectionStore.exit()
   if (canvas) {
     canvas.deselectAll()
-    canvasStore.updateSelectedItems()
   }
 }
 
@@ -1064,7 +1088,6 @@ function onSelectNodes(): void {
   }
   if (merged.size) {
     canvas.selectItems([...merged.values()])
-    canvasStore.updateSelectedItems()
   }
   restoreAllowDragNodes = canvas.allow_dragnodes
   restoreSelectOnly = canvas.selectOnly
@@ -1080,29 +1103,33 @@ function onSelectNodes(): void {
 }
 
 const assetsStore = useAssetsStore()
+let inputAssetRefresh: Promise<unknown> = Promise.resolve()
 
 const attachment = useAttachment({
-  upload: async (file) => {
-    const uploaded = await rest.uploadImage(file, file.name)
-    // The library caches input assets; without this refresh a just-uploaded
-    // file is neither listed in the Assets tab nor mentionable this session.
-    void assetsStore.inputAssets.loadNew()
+  upload: async (file, signal) => {
+    const uploaded = await rest.uploadImage(file, file.name, signal)
+    const filename = uploaded.name ?? file.name
     return {
-      ref: uploaded.name,
+      ref: filename,
       url: api.apiURL(
-        `/view?filename=${encodeURIComponent(uploaded.name)}&type=input`
+        `/view?filename=${encodeURIComponent(filename)}&type=input`
       )
     }
   },
-  maxBytes: (file) => {
-    const serverLimit = api.getServerFeature(
-      'max_upload_size',
-      MAX_ATTACHMENT_BYTES
-    )
-    return hasVideoType(file)
-      ? serverLimit
-      : Math.min(MAX_ATTACHMENT_BYTES, serverLimit)
+  // The library caches input assets; without this refresh a just-uploaded file
+  // is neither listed in the Assets tab nor mentionable this session. One run
+  // per settled batch, chained, because the query queue coalesces an
+  // overlapping refresh into the in-flight one instead of scheduling a
+  // trailing pass.
+  onUploaded: () => {
+    inputAssetRefresh = inputAssetRefresh
+      .then(() => assetsStore.inputAssets.loadNew())
+      .catch(() => undefined)
   },
+  maxBytes: () =>
+    api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
+      'max_upload_size'
+    ) ?? MAX_ATTACHMENT_BYTES,
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
   onError: (message) =>
@@ -1111,6 +1138,8 @@ const attachment = useAttachment({
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
 })
+
+onBeforeUnmount(() => attachment.cancelAllUploads())
 
 function onAttach(): void {
   exitNodeSelectionMode()
@@ -1198,11 +1227,11 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     return
   }
 
-  const file = await attachment.addDeferredFile(asset.name, async () => {
+  const result = await attachment.addDeferredFile(asset.name, async () => {
     const file = await fetchDroppedAsset(asset)
     return file && isAgentAttachable(file) ? file : undefined
   })
-  if (!file)
+  if (result === 'unsupported')
     toast.add({
       severity: 'warn',
       detail: t('agent.assetNotAttachable'),

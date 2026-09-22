@@ -31,6 +31,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
@@ -262,7 +263,10 @@ interface BackendApiCalls {
 }
 
 /** Dictionary of all api calls */
-interface ApiCalls extends BackendApiCalls, FrontendApiCalls {}
+interface ApiCalls extends BackendApiCalls, FrontendApiCalls {
+  'cm-task-started': ManagerComponents['schemas']['MessageTaskStarted']
+  'cm-task-completed': ManagerComponents['schemas']['MessageTaskDone']
+}
 
 /** Used to create a discriminating union on type value. */
 interface ApiMessage<T extends keyof ApiCalls> {

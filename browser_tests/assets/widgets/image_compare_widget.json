@@ -12,12 +12,12 @@
       "mode": 0,
       "inputs": [
         {
-          "name": "a_images",
+          "name": "image_a",
           "type": "IMAGE",
           "link": null
         },
         {
-          "name": "b_images",
+          "name": "image_b",
           "type": "IMAGE",
           "link": null
         }
