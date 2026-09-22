@@ -1,6 +1,7 @@
 import {
   breakpointsTailwind,
   createSharedComposable,
+  until,
   useBreakpoints
 } from '@vueuse/core'
 import { readonly, ref } from 'vue'
@@ -16,6 +17,9 @@ import { useCommandStore } from '@/stores/commandStore'
 
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 
+/** A boot that never reports its decision must not hold other surfaces forever. */
+const STARTUP_DECISION_TIMEOUT_MS = 15_000
+
 /**
  * Decides what a first-time user sees once startup reports its outcome: the
  * Getting Started screen for first-run tour candidates, the template browser
@@ -24,6 +28,8 @@ import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 export const useFirstRunEntry = createSharedComposable(() => {
   const settingStore = useSettingStore()
   const gettingStartedVisible = ref(false)
+  const startupDecided = ref(false)
+  const firstRunTookScreen = ref(false)
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
@@ -48,7 +54,6 @@ export const useFirstRunEntry = createSharedComposable(() => {
     return 'getting-started'
   }
 
-  /** Decided once per boot; it does not flip when Getting Started is dismissed. */
   function isFirstRunCandidate(): boolean {
     return decideFirstRun() === 'getting-started'
   }
@@ -68,6 +73,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
 
     if (decision === 'getting-started') {
       gettingStartedVisible.value = true
+      firstRunTookScreen.value = true
       return
     }
 
@@ -90,14 +96,28 @@ export const useFirstRunEntry = createSharedComposable(() => {
     templateId?: string,
     sharedStatus?: SharedWorkflowUrlLoadStatus
   ) {
-    if (outcome !== 'url-intent' || !isFirstRunCandidate()) return
-    const shareLoaded =
-      sharedStatus === 'loaded' || sharedStatus === 'loaded-without-assets'
-    if (templateId === undefined && !shareLoaded) return
-    const started = await useFirstRunTourController().beginTour(
-      shareLoaded ? undefined : templateId
-    )
-    if (started) await markTutorialCompleted()
+    try {
+      if (outcome !== 'url-intent' || !isFirstRunCandidate()) return
+      const shareLoaded =
+        sharedStatus === 'loaded' || sharedStatus === 'loaded-without-assets'
+      if (templateId === undefined && !shareLoaded) return
+      const started = await useFirstRunTourController().beginTour(
+        shareLoaded ? undefined : templateId
+      )
+      if (!started) return
+      firstRunTookScreen.value = true
+      await markTutorialCompleted()
+    } finally {
+      startupDecided.value = true
+    }
+  }
+
+  /** Settles once this boot's first-run stages have run, or after the grace period. */
+  function whenStartupDecided(): Promise<boolean> {
+    return until(startupDecided).toBe(true, {
+      timeout: STARTUP_DECISION_TIMEOUT_MS,
+      throwOnTimeout: false
+    })
   }
 
   // Applied locally before the request, so a failed write is next launch's problem.
@@ -116,7 +136,8 @@ export const useFirstRunEntry = createSharedComposable(() => {
 
   return {
     gettingStartedVisible: readonly(gettingStartedVisible),
-    isFirstRunCandidate,
+    firstRunTookScreen: readonly(firstRunTookScreen),
+    whenStartupDecided,
     handleStartupOutcome,
     handleUrlWorkflow,
     dismissGettingStarted

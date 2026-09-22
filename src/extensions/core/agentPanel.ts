@@ -151,7 +151,7 @@ export function registerAgentPanelExtension(): void {
       const workspaceStore = useTeamWorkspaceStore()
       const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
       const { withConsent } = useAgentConsent()
-      const { isFirstRunCandidate } = useFirstRunEntry()
+      const { firstRunTookScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
       registerWorkflowTabActivityTracker(enabled)
 
@@ -170,7 +170,7 @@ export function registerAgentPanelExtension(): void {
         if (consentStore.isChecking || consentStore.accepted) return
         // Before prepareAutoShow: the one-shot key stays untouched, so the
         // next boot offers.
-        if (isFirstRunCandidate() || onboardingTourStore.activeTour !== null)
+        if (firstRunTookScreen.value || onboardingTourStore.activeTour !== null)
           return
 
         const userId = resolvedUserInfo.value?.id
@@ -198,9 +198,8 @@ export function registerAgentPanelExtension(): void {
 
       const loadConsentIfEligible = (): void => {
         if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
-        void consentStore
-          .load()
-          .then((isAccepted) => {
+        void Promise.all([consentStore.load(), whenStartupDecided()])
+          .then(([isAccepted]) => {
             if (!isAccepted) offerConsentUnprompted()
           })
           .catch((error: unknown) => {
@@ -213,6 +212,13 @@ export function registerAgentPanelExtension(): void {
         [() => resolvedUserInfo.value?.id, () => consentStore.identity],
         loadConsentIfEligible,
         { immediate: true }
+      )
+      // A tour that held the offer hands the screen back when it ends.
+      watch(
+        () => onboardingTourStore.activeTour,
+        (tour, previous) => {
+          if (tour === null && previous !== null) offerConsentUnprompted()
+        }
       )
       return setupFlagGate(loadConsentIfEligible)
     }
