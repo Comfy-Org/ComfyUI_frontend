@@ -147,6 +147,26 @@ describe('useUrlActionLoaders', () => {
     expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
   })
 
+  // The payment-return loader clears Stripe's params with history.replaceState,
+  // which the router never sees, so the sweep is built from a query that still
+  // holds them — the client secret included.
+  it('does not hand back the Stripe params the router still thinks are there', async () => {
+    await router.replace({
+      path: '/',
+      query: {
+        assets: '1',
+        payment_intent: 'pi_123',
+        payment_intent_client_secret: 'pi_123_secret_456',
+        redirect_status: 'succeeded'
+      }
+    })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({})
+  })
+
   it('keeps a query that carries no deep-link param', async () => {
     await router.replace({ path: '/', query: { workflow: 'keep-me' } })
 
@@ -169,11 +189,13 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.useSettings).not.toHaveBeenCalled()
     expect(mocks.usePaymentReturn).not.toHaveBeenCalled()
     expect(mocks.useSubscriptionDialog).not.toHaveBeenCalled()
+    expect(mocks.useAssets).not.toHaveBeenCalled()
     expect(mocks.loadInvite).not.toHaveBeenCalled()
     expect(mocks.loadCreateWorkspace).not.toHaveBeenCalled()
     expect(mocks.loadPricingTable).not.toHaveBeenCalled()
     expect(mocks.loadTopUp).not.toHaveBeenCalled()
     expect(mocks.loadSettings).not.toHaveBeenCalled()
+    expect(mocks.loadAssets).not.toHaveBeenCalled()
     expect(mocks.loadPaymentReturn).not.toHaveBeenCalled()
     expect(mocks.resumePendingPricingFlow).not.toHaveBeenCalled()
   })
@@ -186,6 +208,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
     expect(mocks.loadPricingTable).toHaveBeenCalledOnce()
     expect(mocks.loadTopUp).toHaveBeenCalledOnce()
+    expect(mocks.loadAssets).toHaveBeenCalledOnce()
     expect(mocks.loadSettings).toHaveBeenCalledOnce()
     expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
   })
@@ -235,6 +258,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadInvite).toHaveBeenCalledOnce()
     expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
     expect(mocks.loadTopUp).toHaveBeenCalledOnce()
+    expect(mocks.loadAssets).toHaveBeenCalledOnce()
   })
 
   it('isolates a top-up-loader failure so it does not abort the boot chain', async () => {

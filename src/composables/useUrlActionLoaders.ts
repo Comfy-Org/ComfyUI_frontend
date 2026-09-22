@@ -2,6 +2,7 @@ import { useRouter } from 'vue-router'
 
 import { useAssetsUrlLoader } from '@/platform/assets/composables/useAssetsUrlLoader'
 import { usePaymentReturnUrlLoader } from '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'
+import { STRIPE_RETURN_PARAMS } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTopUpUrlLoader } from '@/platform/cloud/subscription/composables/useTopUpUrlLoader'
@@ -28,7 +29,12 @@ async function attempt(what: string, run: () => void | Promise<void>) {
  * instantiated in setup so their `useRoute`/`useRouter` resolve; call
  * `runUrlActionLoaders()` from `onMounted` once the app is ready.
  */
-/** Every param a loader above consumes, stripped centrally as a backstop. */
+/**
+ * Every param a loader above consumes, stripped centrally as a backstop. The
+ * Stripe ones are already gone from the address bar by then, but only through
+ * `history.replaceState`, which leaves the router's own query holding them —
+ * so a replace built from that query would hand them back.
+ */
 const HANDLED_PARAMS = [
   'invite',
   'create_workspace',
@@ -37,7 +43,8 @@ const HANDLED_PARAMS = [
   'cycle',
   'topup',
   'settings',
-  'assets'
+  'assets',
+  ...STRIPE_RETURN_PARAMS
 ]
 
 export function useUrlActionLoaders() {
