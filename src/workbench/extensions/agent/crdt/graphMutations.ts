@@ -944,6 +944,156 @@ function removeSimulatedLink(
 }
 
 /**
+ * A remembered live `member`/`notMember` answer, pinned to the exact node
+ * INCARNATION it was answered for: the node type, and the identity of that
+ * type's definition object at the time. Both are part of the entry because a
+ * node id can be reused for a different type (replace), and a type name can
+ * be re-registered against a different schema (hot reload) -- either way the
+ * old answer describes a node that no longer exists and must not win.
+ * `group: null` records a definitive "not a member"; no entry at all means
+ * never resolved.
+ */
+interface RememberedAutogrowGroup {
+  readonly nodeType: string
+  readonly nodeDef: ComfyNodeDefImpl | undefined
+  readonly group: string | null
+}
+
+/**
+ * Distinguishes "never resolved" (the caller should fall through to the node
+ * definition, then the name-shape heuristic) from a remembered, definitive
+ * `notMember` (`group: undefined`, but resolved -- the caller must trust that
+ * "no" and not let the heuristic override it).
+ */
+type RememberedAutogrowRead =
+  | { readonly remembered: true; readonly group: string | undefined }
+  | { readonly remembered: false }
+
+type StagedAutogrowWrite =
+  | {
+      readonly kind: 'remember'
+      readonly key: string
+      readonly name: string
+      readonly entry: RememberedAutogrowGroup
+    }
+  | { readonly kind: 'forget'; readonly key: string }
+
+/**
+ * The writes one batch wants to make to the follower's autogrow memory. They
+ * are staged rather than applied, because `prepare()` resolves (and therefore
+ * learns) autogrow answers before a later queued mutation can still reject the
+ * whole batch: a rejected batch must leave no trace, or a retry that finds the
+ * live port `unavailable` classifies slots off an answer the store never
+ * accepted. `read` sees this batch's own staged writes so resolution stays
+ * self-consistent within the batch; `apply` is called once, after the batch
+ * has both validated and committed.
+ */
+interface AutogrowMemoryDraft {
+  read(
+    scope: GraphScope,
+    nodeId: NodeId,
+    nodeType: string,
+    name: string
+  ): RememberedAutogrowRead
+  remember(
+    scope: GraphScope,
+    nodeId: NodeId,
+    nodeType: string,
+    name: string,
+    group: string | undefined
+  ): void
+  forget(scope: GraphScope, nodeId: NodeId): void
+  apply(): void
+}
+
+/**
+ * This follower's own memory of live `member`/`notMember` autogrow answers, so
+ * a later reconcile that finds the live node `unavailable` (unmounted,
+ * background workflow) can prefer prior real provenance over guessing from the
+ * name's shape again -- the same "carry it forward in the store we already
+ * control" approach `preserveSlotDisplayMetadata` takes for
+ * `localized_name`/`label`.
+ *
+ * One memory per `GraphMutations` instance, not per module, so distinct
+ * followers never see each other's answers. A single instance is nonetheless
+ * retained across graph scopes (production keeps one per cloud workflow while
+ * resolving the current local workflow state on every batch), so the graph
+ * scope is part of every key: the same node id, type and input name in another
+ * root is a different node.
+ */
+function createAutogrowMemory() {
+  const remembered = new Map<string, Map<string, RememberedAutogrowGroup>>()
+
+  const memoryKey = (scope: GraphScope, nodeId: NodeId): string =>
+    `${scope.rootGraphId}\u0000${scope.owningGraphId}\u0000${nodeKey(nodeId)}`
+
+  const currentNodeDef = (nodeType: string): ComfyNodeDefImpl | undefined =>
+    useNodeDefStore().getNodeDefByName(nodeType)
+
+  // A current, definitive node definition always beats stale memory: an entry
+  // recorded against another type, or against a definition object that has
+  // since been replaced by a re-registration, reads back as "never resolved"
+  // so the caller consults the live definition instead.
+  const readEntry = (
+    entry: RememberedAutogrowGroup | undefined,
+    nodeType: string
+  ): RememberedAutogrowRead =>
+    entry &&
+    entry.nodeType === nodeType &&
+    entry.nodeDef === currentNodeDef(nodeType)
+      ? { remembered: true, group: entry.group ?? undefined }
+      : { remembered: false }
+
+  return {
+    draft(): AutogrowMemoryDraft {
+      const staged: StagedAutogrowWrite[] = []
+      return {
+        read(scope, nodeId, nodeType, name) {
+          const key = memoryKey(scope, nodeId)
+          for (let index = staged.length - 1; index >= 0; index--) {
+            const write = staged[index]
+            if (write.key !== key) continue
+            if (write.kind === 'forget') return { remembered: false }
+            if (write.name === name) return readEntry(write.entry, nodeType)
+          }
+          return readEntry(remembered.get(key)?.get(name), nodeType)
+        },
+        remember(scope, nodeId, nodeType, name, group) {
+          staged.push({
+            kind: 'remember',
+            key: memoryKey(scope, nodeId),
+            name,
+            entry: {
+              nodeType,
+              nodeDef: currentNodeDef(nodeType),
+              group: group ?? null
+            }
+          })
+        },
+        forget(scope, nodeId) {
+          staged.push({ kind: 'forget', key: memoryKey(scope, nodeId) })
+        },
+        apply() {
+          for (const write of staged) {
+            if (write.kind === 'forget') {
+              remembered.delete(write.key)
+              continue
+            }
+            let forNode = remembered.get(write.key)
+            if (!forNode) {
+              forNode = new Map()
+              remembered.set(write.key, forNode)
+            }
+            forNode.set(write.name, write.entry)
+          }
+          staged.length = 0
+        }
+      }
+    }
+  }
+}
+
+/**
  * Builds the graph-scoped composite used by the remote follower. Every batch
  * is validated against a simulated final store state before its first write;
  * the synchronous commit then uses explicit remote IDs and call-carried
@@ -955,91 +1105,25 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   const linkPresentationStore = useLinkPresentationStore()
   const widgetStore = useWidgetValueStore()
 
-  // This follower's own memory of a live `member`/`notMember` autogrow
-  // answer, keyed by node, then input name, then the node TYPE it was
-  // answered for (`undefined` stored as `null` recorded a definitive "not
-  // a member", as opposed to no entry at all, which means never resolved).
-  // It exists so a later reconcile that finds the live node `unavailable`
-  // (unmounted, background workflow) can prefer this follower's own prior,
-  // real provenance over guessing from the name's shape again -- the same
-  // "carry it forward in the store we already control" approach
-  // `preserveSlotDisplayMetadata` takes for `localized_name`/`label`. The
-  // node type is part of the key because a node ID can be reused for a
-  // different type (replace, or a same-named type re-registered with a
-  // different schema): an answer recorded under the old type must never
-  // win for the new one, so a type mismatch reads back as "never
-  // resolved" rather than resurrecting the stale answer. It is scoped to
-  // this `GraphMutations` instance (one per follower), not the module, so
-  // distinct followers -- and distinct tests -- never see each other's
-  // memory.
-  const rememberedAutogrowGroups = new Map<
-    string,
-    Map<string, { nodeType: string; group: string | null }>
-  >()
-
-  function rememberAutogrowGroup(
-    nodeId: NodeId,
-    nodeType: string,
-    name: string,
-    group: string | undefined
-  ): void {
-    const key = nodeKey(nodeId)
-    let forNode = rememberedAutogrowGroups.get(key)
-    if (!forNode) {
-      forNode = new Map()
-      rememberedAutogrowGroups.set(key, forNode)
-    }
-    forNode.set(name, { nodeType, group: group ?? null })
-  }
-
-  // Distinguishes "never resolved" (the caller should fall back to the
-  // name-shape heuristic) from a remembered, definitive `notMember`
-  // (`group: undefined`, but resolved -- the caller must trust that "no"
-  // and not let the heuristic override it). An entry recorded for a
-  // different node type also reads back as "never resolved".
-  function rememberedAutogrowGroup(
-    nodeId: NodeId,
-    nodeType: string,
-    name: string
-  ): { remembered: true; group: string | undefined } | { remembered: false } {
-    const remembered = rememberedAutogrowGroups.get(nodeKey(nodeId))?.get(name)
-    if (!remembered || remembered.nodeType !== nodeType) {
-      return { remembered: false }
-    }
-    return { remembered: true, group: remembered.group ?? undefined }
-  }
-
-  function forgetAutogrowGroups(nodeId: NodeId): void {
-    rememberedAutogrowGroups.delete(nodeKey(nodeId))
-  }
+  const autogrowMemory = createAutogrowMemory()
 
   // Prefers the live node's own autogrow group registration (real
-  // provenance) over every fallback below. Trusts a `member`/`notMember`
-  // answer as authoritative and final, and remembers it (see
-  // `rememberAutogrowGroup`) so a later call for the same node and name
-  // can still use it once the live port stops being able to answer.
+  // provenance) over every fallback below, and stages that answer in
+  // `memory` for later calls that can no longer ask the live node.
   //
   // The fallbacks run only when the live port itself has no opinion, i.e.
   // no port is wired at all, or the wired port answers `unavailable` (the
   // live node couldn't be asked, not that it was asked and said no) -- see
-  // `SemanticLiveNodeQueryPort`/`LiveAutogrowGroupAnswer`. This follower's
-  // own memory of an earlier definitive answer for the exact same node and
-  // name is preferred first, since it is real provenance the node already
-  // gave, just not right now. Absent that memory too -- including on this
-  // follower's very first reconcile of the node, before it has ever had a
-  // chance to ask the live node anything -- `nodeDefAutogrowGroupOf` reads
-  // the same registration `SemanticLiveNodeQueryPort` would, off the node
-  // TYPE's own static definition rather than a live instance, so it is
+  // `SemanticLiveNodeQueryPort`/`LiveAutogrowGroupAnswer`. Memory comes
+  // first among them, since it is real provenance the node already gave,
+  // just not right now. Absent that -- including on this follower's very
+  // first reconcile of the node -- `nodeDefAutogrowGroupOf` reads the same
+  // registration off the node TYPE's own static definition, so it is
   // equally real provenance and does not depend on the node being live at
   // all. `nameShapeAutogrowGroupOf` is the true last resort, guessing from
   // the name's shape, for a name neither of those has ever resolved.
-  //
-  // Defined here, alongside the memory it reads, rather than inside
-  // `prepare` (its only caller): a closure nested in `prepare`'s own body
-  // adds its branches to `prepare`'s complexity score, even though none of
-  // them depend on anything `prepare` computes beyond `scope`/`nodeType`,
-  // which it takes as parameters instead.
   function resolveAutogrowGroup(
+    memory: AutogrowMemoryDraft,
     scope: GraphScope,
     nodeId: NodeId,
     nodeType: string,
@@ -1047,8 +1131,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   ): string | undefined {
     if (typeof name !== 'string') return undefined
     const fallback = (): string | undefined => {
-      const memory = rememberedAutogrowGroup(nodeId, nodeType, name)
-      if (memory.remembered) return memory.group
+      const recalled = memory.read(scope, nodeId, nodeType, name)
+      if (recalled.remembered) return recalled.group
       const fromDef = nodeDefAutogrowGroupOf(nodeType, name)
       return fromDef.known ? fromDef.group : nameShapeAutogrowGroupOf(name)
     }
@@ -1056,10 +1140,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     const answer = deps.liveNodes.autogrowGroupOf(scope, nodeId, name)
     switch (answer.kind) {
       case 'member':
-        rememberAutogrowGroup(nodeId, nodeType, name, answer.group)
+        memory.remember(scope, nodeId, nodeType, name, answer.group)
         return answer.group
       case 'notMember':
-        rememberAutogrowGroup(nodeId, nodeType, name, undefined)
+        memory.remember(scope, nodeId, nodeType, name, undefined)
         return undefined
       case 'unavailable':
         return fallback()
@@ -1072,6 +1156,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   }
 
   function prepare(
+    memory: AutogrowMemoryDraft,
     scope: GraphScope,
     queued: readonly QueuedMutation[]
   ): PreparedMutation[] | string {
@@ -1140,6 +1225,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               mutation.payload.inputs,
               (name) =>
                 resolveAutogrowGroup(
+                  memory,
                   scope,
                   node.state.id,
                   node.state.type,
@@ -1151,11 +1237,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (mutation.kind === 'addNode') {
             prepared.push({ kind: 'addNode', node, queued: 'addNode' })
           } else {
+            const replaced = existing && existing.type !== node.state.type
+            if (replaced) memory.forget(scope, node.state.id)
             prepared.push({
-              kind:
-                existing && existing.type !== node.state.type
-                  ? 'replaceNode'
-                  : 'reconcileNode',
+              kind: replaced ? 'replaceNode' : 'reconcileNode',
               node
             })
           }
@@ -1178,6 +1263,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             if (validationError) return validationError
             nodes.set(key, node.state)
             if (existing) {
+              memory.forget(scope, node.state.id)
               prepared.push({ kind: 'replaceNode', node })
             } else {
               prepared.push({
@@ -1254,6 +1340,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               topology.targetSlot,
               (candidateName) =>
                 resolveAutogrowGroup(
+                  memory,
                   scope,
                   topology.targetNodeId,
                   target.type,
@@ -1334,6 +1421,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           for (const id of nodeIds) {
             nodes.delete(nodeKey(id))
             removeIncidentLinks(nodes, links, id)
+            memory.forget(scope, id)
           }
           const linkIds = [...links.keys()].filter(
             (id) => !retainedLinkIds.has(id)
@@ -1384,6 +1472,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           nodes.delete(nodeKey(mutation.nodeId))
           removeIncidentLinks(nodes, links, mutation.nodeId)
+          memory.forget(scope, mutation.nodeId)
           for (const id of removedLinkIds) {
             removeSimulatedLink(nodes, links, id)
           }
@@ -1396,6 +1485,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         }
         case 'clearSemanticGraph': {
           const nodeIds = [...nodes.values()].map(({ id }) => id)
+          for (const id of nodeIds) memory.forget(scope, id)
           nodes.clear()
           links.clear()
           prepared.push({ kind: mutation.kind, nodeIds })
@@ -1634,7 +1724,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           )
           if (mutation.kind === 'replaceNode' && existing) {
             deleteNode(scope, existing.id, [], context)
-            forgetAutogrowGroups(existing.id)
             existing = undefined
           }
           if (mutation.kind === 'reconcileNode' && existing) {
@@ -1761,7 +1850,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           for (const id of mutation.nodeIds) {
             deleteNode(scope, id, [], context)
-            forgetAutogrowGroups(id)
           }
           break
         case 'removeLinks':
@@ -1772,12 +1860,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           break
         case 'deleteNode':
           deleteNode(scope, mutation.nodeId, mutation.removedLinkIds, context)
-          forgetAutogrowGroups(mutation.nodeId)
           break
         case 'clearSemanticGraph':
           for (const nodeId of mutation.nodeIds) {
             widgetStore.clearNode(scope.rootGraphId, nodeId, context)
-            forgetAutogrowGroups(nodeId)
           }
           deps.layout.deleteNodes(scope, mutation.nodeIds, context)
           linkStore.clearOwner(scope, context)
@@ -1829,10 +1915,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       const existingIds = nodeStore
         .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
         .map((node) => node.id)
-      const prepared = prepare(scope, queued)
+      const memory = autogrowMemory.draft()
+      const prepared = prepare(memory, scope, queued)
       if (typeof prepared === 'string') return fail(prepared)
       offsetInsertedBatch(scope, existingIds, prepared)
       commit(scope, prepared, context)
+      memory.apply()
       return true
     },
     addNode(payload, context) {
