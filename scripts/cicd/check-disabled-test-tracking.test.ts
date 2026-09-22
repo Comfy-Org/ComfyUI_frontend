@@ -84,6 +84,21 @@ test.fixme('real declaration', () => {})
     ])
   })
 
+  it('parses static computed test modifiers', () => {
+    const source = `
+test['skip']('disabled', () => {})
+test[\`fixme\`]('also disabled', () => {})
+test['describe']['skip']('disabled suite', () => {})
+test[modifier]('dynamic property', () => {})
+`
+
+    expect(disabledDeclarations(source)).toEqual([
+      { line: 2, relevantLines: [2] },
+      { line: 3, relevantLines: [3] },
+      { line: 4, relevantLines: [4] }
+    ])
+  })
+
   it('parses a parenthesized literal true condition as disabled', () => {
     const source = `test.skip((true), 'disabled', () => {})`
 
@@ -129,6 +144,7 @@ test.skip(
 )
 
 const regex = /describe.fixme('not code')/
+test['skip']('computed modifier', () => {})
 `
     )
     write(root, 'tests/café.spec.ts', `describe.fixme('new suite', () => {})\n`)
@@ -142,7 +158,8 @@ const regex = /describe.fixme('not code')/
     expect(findViolations(root, base, head)).toEqual([
       "  tests/café.spec.ts:1: describe.fixme('new suite', () => {})",
       '  tests/example.spec.ts:3: test.skip(',
-      '  tests/example.spec.ts:8: test.skip('
+      '  tests/example.spec.ts:8: test.skip(',
+      "  tests/example.spec.ts:14: test['skip']('computed modifier', () => {})"
     ])
   })
 

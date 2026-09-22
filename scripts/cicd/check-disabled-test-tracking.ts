@@ -3,7 +3,6 @@ import { execFileSync } from 'node:child_process'
 import type {
   Expression,
   LeftHandSideExpression,
-  MemberName,
   Node,
   NoSubstitutionTemplateLiteral,
   StringLiteral,
@@ -14,6 +13,7 @@ import {
   createSourceFile,
   forEachChild,
   isCallExpression,
+  isElementAccessExpression,
   isIdentifier,
   isNoSubstitutionTemplateLiteral,
   isParenthesizedExpression,
@@ -44,7 +44,13 @@ type ChangedFile = {
 
 type TestCall = {
   factory: boolean
-  modifier?: MemberName
+  modifier?: Node
+}
+
+type StaticMember = {
+  name: string
+  node: Node
+  receiver: LeftHandSideExpression
 }
 
 type TestTitle =
@@ -89,6 +95,29 @@ function lineOf(node: Node, sourceFile: SourceFile): number {
   )
 }
 
+function staticMember(
+  expression: LeftHandSideExpression
+): StaticMember | undefined {
+  if (isPropertyAccessExpression(expression)) {
+    return {
+      name: expression.name.text,
+      node: expression.name,
+      receiver: expression.expression
+    }
+  }
+  if (
+    isElementAccessExpression(expression) &&
+    (isStringLiteral(expression.argumentExpression) ||
+      isNoSubstitutionTemplateLiteral(expression.argumentExpression))
+  ) {
+    return {
+      name: expression.argumentExpression.text,
+      node: expression.argumentExpression,
+      receiver: expression.expression
+    }
+  }
+}
+
 function isTestReceiver(expression: LeftHandSideExpression): boolean {
   if (
     isIdentifier(expression) &&
@@ -96,11 +125,12 @@ function isTestReceiver(expression: LeftHandSideExpression): boolean {
   ) {
     return true
   }
-  return (
-    isPropertyAccessExpression(expression) &&
-    isIdentifier(expression.expression) &&
-    expression.expression.text === 'test' &&
-    expression.name.text === 'describe'
+  const member = staticMember(expression)
+  return Boolean(
+    member &&
+    isIdentifier(member.receiver) &&
+    member.receiver.text === 'test' &&
+    member.name === 'describe'
   )
 }
 
@@ -117,20 +147,28 @@ function isDisablingArgument(argument: Expression): boolean {
 }
 
 function testCall(expression: LeftHandSideExpression): TestCall | undefined {
-  const modifiers: MemberName[] = []
+  const modifiers: StaticMember[] = []
   let receiver: LeftHandSideExpression = expression
   let parameterized = false
 
-  while (isPropertyAccessExpression(receiver)) {
-    modifiers.push(receiver.name)
-    receiver = receiver.expression
+  for (
+    let member = staticMember(receiver);
+    member;
+    member = staticMember(receiver)
+  ) {
+    modifiers.push(member)
+    receiver = member.receiver
   }
   if (isCallExpression(receiver)) {
     parameterized = true
     receiver = receiver.expression
-    while (isPropertyAccessExpression(receiver)) {
-      modifiers.push(receiver.name)
-      receiver = receiver.expression
+    for (
+      let member = staticMember(receiver);
+      member;
+      member = staticMember(receiver)
+    ) {
+      modifiers.push(member)
+      receiver = member.receiver
     }
   }
   if (!isTestReceiver(receiver)) return
@@ -138,8 +176,9 @@ function testCall(expression: LeftHandSideExpression): TestCall | undefined {
   return {
     factory:
       !parameterized &&
-      modifiers.some(({ text }) => ['each', 'for'].includes(text)),
-    modifier: modifiers.find(({ text }) => ['skip', 'fixme'].includes(text))
+      modifiers.some(({ name }) => ['each', 'for'].includes(name)),
+    modifier: modifiers.find(({ name }) => ['skip', 'fixme'].includes(name))
+      ?.node
   }
 }
 
@@ -160,7 +199,7 @@ function titleText(title: TestTitle, sourceFile: SourceFile): string {
 function declarationContext(
   arguments_: readonly Expression[],
   title: Expression | undefined,
-  modifier: MemberName | undefined,
+  modifier: Node | undefined,
   sourceFile: SourceFile
 ): string {
   return arguments_
@@ -175,7 +214,7 @@ function declarationContext(
 function relevantLines(
   expression: LeftHandSideExpression,
   argument: Expression | undefined,
-  modifier: MemberName | undefined,
+  modifier: Node | undefined,
   sourceFile: SourceFile
 ): number[] {
   if (!modifier || !argument) return [lineOf(expression, sourceFile)]
