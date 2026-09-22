@@ -464,6 +464,7 @@ describe('Japanese publication', () => {
   it('requires a built Japanese page in the page and sitemap clusters', () => {
     const site = healthySite()
     site.pages.set('/ja/about/', [])
+    site.canonicals.set('/ja/about/', `${ORIGIN}/ja/about/`)
 
     const errors = auditBuiltSite(site)
     expect(errors).toHaveLength(9)
