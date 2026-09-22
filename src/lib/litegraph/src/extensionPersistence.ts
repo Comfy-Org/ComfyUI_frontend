@@ -156,11 +156,20 @@ const readPayload = (value: unknown): ExtensionPayload => {
   return payload
 }
 
-function copyExtensionFields(
-  target: ExtensionPayload,
+function readNamespacedPayload(source: object): ExtensionPayload {
+  try {
+    return readPayload(Reflect.get(source, 'extensions'))
+  } catch {
+    console.warn('LiteGraph: ignoring non-serializable extension payload')
+    return {}
+  }
+}
+
+function readExtensionFields(
   source: object,
   canonicalFields: ReadonlySet<string>
-): void {
+): ExtensionPayload {
+  const payload: ExtensionPayload = {}
   for (const key of Object.keys(source)) {
     if (
       !isSafeExtensionKey(key) ||
@@ -171,11 +180,12 @@ function copyExtensionFields(
     }
     const clonedValue = readClonedEntry(source, key)
     if (clonedValue !== undefined) {
-      target[key] = clonedValue
+      payload[key] = clonedValue
     } else {
       console.warn('LiteGraph: ignoring non-serializable extension payload')
     }
   }
+  return payload
 }
 
 export const hydrateExtensionPayload = (
@@ -183,14 +193,12 @@ export const hydrateExtensionPayload = (
   data: object,
   canonicalFields: ReadonlySet<string>
 ): void => {
-  const record = Object.fromEntries(Object.entries(data))
   const previous = payloads.get(owner)
   for (const key of Object.keys(previous?.legacy ?? {}))
     Reflect.deleteProperty(owner, key)
 
-  const namespaced = readPayload(record.extensions)
-  const legacyFields: ExtensionPayload = {}
-  copyExtensionFields(legacyFields, record, canonicalFields)
+  const namespaced = readNamespacedPayload(data)
+  const legacyFields = readExtensionFields(data, canonicalFields)
   Object.assign(owner, structuredClone(legacyFields))
   for (const key of Object.keys(legacyFields)) delete namespaced[key]
   payloads.set(owner, { legacy: legacyFields, namespaced })
@@ -224,15 +232,8 @@ export const runExtensionSerializeHook = <T extends object>(
     }
   }
 
-  let namespaced: ExtensionPayload
-  try {
-    namespaced = readPayload(Reflect.get(view, 'extensions'))
-  } catch {
-    console.warn('LiteGraph: ignoring non-serializable extension payload')
-    namespaced = {}
-  }
-  const legacy: ExtensionPayload = {}
-  copyExtensionFields(legacy, view, canonicalFields)
+  const namespaced = readNamespacedPayload(view)
+  const legacy = readExtensionFields(view, canonicalFields)
   for (const key of Object.keys(legacy)) delete namespaced[key]
   payloads.set(owner, { legacy, namespaced })
 
