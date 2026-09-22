@@ -310,10 +310,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       baseVersion: deps.baseVersion()
     })
     const workflowId = deps.workflowId()
-    // Detached (nothing will ever flush again - a re-entrant admit from a
-    // settle listener, or a lingering caller) and unbound (no doc to join a
-    // group for) both settle at once rather than silently vanish.
-    if (detached || workflowId === null) {
+    // Unbound (no doc to join a group for) settles at once rather than
+    // silently vanishing. `detached` has no production caller here: the
+    // sole owner (`useAgentCrdtFollower`) clears its exposed
+    // `enqueueHumanOperations` to a no-op before `detach()` runs, and
+    // `onBatchSettled` never calls back into `admit`/`enqueue`.
+    if (workflowId === null) {
       deps.onBatchSettled({ state: 'undeliverable', ops: minted, workflowId })
       return
     }
