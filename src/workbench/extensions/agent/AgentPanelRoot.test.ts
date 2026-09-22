@@ -274,8 +274,6 @@ vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
   return fromPartial<MintPortWiring>({ detach: vi.fn() })
 })
 
-import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
-import { sharedPendingDeleteRetentionStore } from './crdt/pendingDeleteRetentionStore'
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
 
@@ -7268,26 +7266,5 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-42-rotated')
     )
-  })
-})
-
-describe('AgentPanelRoot CRDT retention store wiring', () => {
-  it('passes the module-level shared retention store into useAgentCrdtFollower on every mount', () => {
-    vi.mocked(useAgentCrdtFollower).mockClear()
-
-    const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    first.unmount()
-    const second = render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    second.unmount()
-
-    const calls = vi.mocked(useAgentCrdtFollower).mock.calls
-    expect(calls).toHaveLength(2)
-    // The options object's `retentionStore`; a future change that drops it
-    // or swaps it for a fresh instance per mount would reintroduce
-    // resurrection after an actual panel close/reopen even though every
-    // composable-level test (which injects its own store explicitly) stays
-    // green.
-    expect(calls[0][2]?.retentionStore).toBe(sharedPendingDeleteRetentionStore)
-    expect(calls[1][2]?.retentionStore).toBe(sharedPendingDeleteRetentionStore)
   })
 })

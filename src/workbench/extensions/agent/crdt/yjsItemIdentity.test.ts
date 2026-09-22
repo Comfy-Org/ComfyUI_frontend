@@ -4,7 +4,7 @@
  * storage. If a Yjs upgrade changes that internal shape, this file is where
  * it fails loudly.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
@@ -20,10 +20,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 import { readNodeItemIdentity } from './yjsItemIdentity'
 
 describe('readNodeItemIdentity', () => {
-  beforeEach(() => {
-    telemetryState.reportError.mockClear()
-  })
-
   it('returns null for a node id that was never set', () => {
     const doc = new Y.Doc()
     expect(readNodeItemIdentity(doc, '1')).toBeNull()

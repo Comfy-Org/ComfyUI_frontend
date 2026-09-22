@@ -35,10 +35,14 @@ import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { createOpCoalescer } from './opCoalescer'
-import type { OpsResultView } from './opSender'
+import type { BatchOutcome, OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
-import type { PendingDeleteRetentionStore } from './pendingDeleteRetentionStore'
-import { createPendingDeleteRetentionStore } from './pendingDeleteRetentionStore'
+import type {
+  PendingDeleteRetentionStore,
+  RetainedDeleteCandidate,
+  RetentionReason
+} from './pendingDeleteRetentionStore'
+import { sharedPendingDeleteRetentionStore } from './pendingDeleteRetentionStore'
 import { readNodeItemIdentity } from './yjsItemIdentity'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
@@ -152,6 +156,56 @@ function notifyAgentMaterialization(
   )
 }
 
+/** What a settled `delete_node` op's own outcome names for retention, or `null` when it does not retain (skipped, undeliverable). */
+function retentionReasonFor(
+  outcome: BatchOutcome,
+  opId: string
+): RetentionReason | null {
+  switch (outcome.state) {
+    case 'acknowledged':
+      return outcome.result.applied.includes(opId) ? 'confirmed-applied' : null
+    case 'unconfirmed':
+    case 'unacknowledged':
+      return 'unknown'
+    case 'undeliverable':
+      // The transport never carried this op within the retry budget (or no
+      // doc was ever bound to carry it), so the host never saw it.
+      return null
+    default: {
+      // `BatchOutcome.state` is internally typed and minted only by
+      // opSender.ts, so no unvalidated value reaches this switch at runtime.
+      const unhandled: never = outcome
+      return unhandled
+    }
+  }
+}
+
+/**
+ * Adapts one settled batch into the narrow candidates
+ * {@link PendingDeleteRetentionStore.settleBatch} consumes, so the store
+ * depends only on its own domain shape, never the sender's wire/outcome
+ * types (see ADR CRDT-WRITE-0035).
+ */
+function retentionCandidatesFromBatch(
+  outcome: BatchOutcome
+): RetainedDeleteCandidate[] {
+  if (outcome.workflowId === null) return []
+  const workflowId = outcome.workflowId
+  const candidates: RetainedDeleteCandidate[] = []
+  for (const op of outcome.ops) {
+    if (op.op !== 'delete_node') continue
+    const reason = retentionReasonFor(outcome, op.op_id)
+    if (!reason) continue
+    candidates.push({
+      workflowId,
+      nodeId: String(op.node_id),
+      reason,
+      identity: outcome.deletedItemIds.get(op.op_id) ?? null
+    })
+  }
+  return candidates
+}
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
@@ -216,7 +270,12 @@ export function useAgentCrdtFollower(
     isTargetActive = ref(true),
     getGraph = () => null,
     events = {},
-    retentionStore = createPendingDeleteRetentionStore()
+    // The ADR CRDT-WRITE-0035 requirement - retention surviving a follower
+    // being disposed and a new one mounted for the same workflow - is the
+    // ordinary case, not an opt-in: default to the module-level, page-load
+    // scoped store, and let a test override it with its own isolated
+    // instance instead of every production caller having to remember to.
+    retentionStore = sharedPendingDeleteRetentionStore
   } = options
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -310,13 +369,21 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
-  // The follower's own live doc, narrowed to a real `Y.Doc`: tests stand in
-  // a plain object for it, which readNodeItemIdentity's contract does not
-  // cover (see yjsItemIdentity.ts).
+  // `LayoutFollowerBridge.follower` is typed `FollowerDoc`, whose `doc` is
+  // always a real `Y.Doc` (see followerDoc.ts) - trusted here rather than
+  // re-guarded at every read site.
   function boundNodeItemId(nodeId: string): string | null {
-    const doc = bridge.follower.doc
-    return doc instanceof Y.Doc ? readNodeItemIdentity(doc, nodeId) : null
+    return readNodeItemIdentity(bridge.follower.doc, nodeId)
   }
+  // False only in the transient window between a lineage replacement
+  // (`follower_replaced`) and the next real frame this composable applies
+  // for it: the freshly reminted doc is empty until then, so a
+  // `currentDocNodeIds()` read taken inside that window proves nothing
+  // about which nodes the host actually still has (see
+  // pendingDeleteRetentionStore.ts and ADR CRDT-WRITE-0035). True the rest
+  // of the time, including for a doc that was never reminted at all - its
+  // content is presumed caught up unless a replacement says otherwise.
+  let docCaughtUp = true
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
@@ -345,7 +412,7 @@ function startAgentCrdtFollower(
     // See ADR CRDT-WRITE-0035.
     deletedItemId: boundNodeItemId,
     onBatchSettled: (outcome) => {
-      retentionStore.settleBatch(outcome)
+      retentionStore.settleBatch(retentionCandidatesFromBatch(outcome))
       recordDevEvent('human_ops_settled', outcome)
     }
   })
@@ -354,7 +421,8 @@ function startAgentCrdtFollower(
       retentionStore.retainedNodeIds(
         workflowId,
         currentDocNodeIds(),
-        boundNodeItemId
+        boundNodeItemId,
+        docCaughtUp
       )
     )
     for (const batch of sender.pendingOps()) {
@@ -454,6 +522,7 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
+    docCaughtUp = true
     const materialized = applyAndReconcile(update)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
@@ -535,6 +604,11 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
+      // The bridge just reminted an empty doc for this lineage (FEB-5): its
+      // node set proves nothing about what the host actually still has
+      // until the catch-up frame lands (see `docCaughtUp` above and
+      // pendingDeleteRetentionStore.ts).
+      docCaughtUp = false
       // Deliberately no `retentionStore.clearWorkflow` here - see ADR
       // CRDT-WRITE-0035 on why only `doc_reset` (below) clears retention.
       projection.clearForReset(workflowId, {
