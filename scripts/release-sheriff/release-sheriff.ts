@@ -221,11 +221,10 @@ async function datadogGet(
     url.searchParams.set(key, value)
   }
 
-  const lookup = path === '/responders' ? 'current responders' : 'rotation'
-  const attempts = 3
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    let failure: string
-    let retryable: boolean
+  for (let attempt = 0; ; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt))
+    }
     try {
       const response = await fetch(url, {
         headers: {
@@ -235,52 +234,33 @@ async function datadogGet(
         },
         signal: AbortSignal.timeout(15_000)
       })
-      if (response.ok) {
-        return { payload: await response.json(), warning: null }
+      if (!response.ok) {
+        if (
+          attempt < 2 &&
+          (response.status === 429 || response.status >= 500)
+        ) {
+          await response.body?.cancel()
+          continue
+        }
+        return {
+          payload: null,
+          warning: `Datadog On-Call responded ${response.status} ${response.statusText} — using the fallback.`
+        }
       }
-      failure = `HTTP ${response.status}`
-      retryable = response.status === 429 || response.status >= 500
-      await response.body?.cancel()
+      return { payload: await response.json(), warning: null }
     } catch (error) {
-      const cause = isRecord(error) ? error.cause : undefined
-      const code = isRecord(cause) ? cause.code : undefined
-      const safeCode =
-        typeof code === 'string' &&
-        [
-          'EAI_AGAIN',
-          'ENOTFOUND',
-          'ECONNRESET',
-          'ECONNREFUSED',
-          'ETIMEDOUT',
-          'ENETUNREACH',
-          'UND_ERR_CONNECT_TIMEOUT',
-          'UND_ERR_HEADERS_TIMEOUT',
-          'UND_ERR_BODY_TIMEOUT',
-          'UND_ERR_SOCKET',
-          'CERT_HAS_EXPIRED',
-          'UNABLE_TO_VERIFY_LEAF_SIGNATURE'
-        ].includes(code)
-          ? code
-          : null
-      const timeout = error instanceof Error && error.name === 'TimeoutError'
-      retryable =
-        timeout ||
-        (error instanceof TypeError && error.message === 'fetch failed')
-      failure = timeout ? 'request timed out' : 'request or response failed'
-      if (safeCode) failure += ` (${safeCode})`
-    }
-
-    if (!retryable || attempt === attempts) {
+      if (
+        attempt < 2 &&
+        ((error instanceof TypeError && error.message === 'fetch failed') ||
+          (error instanceof Error && error.name === 'TimeoutError'))
+      )
+        continue
       return {
         payload: null,
-        warning: `Datadog On-Call ${lookup} lookup failed after ${attempt} attempt(s): ${failure}.`
+        warning: `Datadog On-Call lookup failed (${String(error)}) — using the fallback.`
       }
     }
-    await new Promise((resolve) =>
-      setTimeout(resolve, 1000 * 2 ** (attempt - 1))
-    )
   }
-  throw new Error('unreachable')
 }
 
 export async function fetchOnCallEmails(
