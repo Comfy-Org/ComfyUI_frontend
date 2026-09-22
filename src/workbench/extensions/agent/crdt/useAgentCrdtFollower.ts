@@ -32,6 +32,7 @@ import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
@@ -424,6 +425,7 @@ function startAgentCrdtFollower(
   const adapter = new EcsFollowerAdapter(graphMutations, {
     pendingDeletes: pendingHumanDeletes
   })
+  const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   // FE-1901 (poc-2): a `doc_subscribed {ok:false}` is a SERVER refusal — e.g.
   // the subscribe raced the doc-host before the turn ack minted the doc. The
@@ -682,6 +684,7 @@ function startAgentCrdtFollower(
     // reconcile here the pre-reset nodes survive -- and can be written back
     // -- until some later frame happens to arrive.
     reconcileLiveGraph(detail.workflowId)
+    sender.abortAll()
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
@@ -852,11 +855,16 @@ function startAgentCrdtFollower(
     sender.suspend()
     bridge.unsubscribe()
   }
-  // Drive the bridge's intent, then give the sender the same eager signal the
-  // refusal branch gets: `reconcile()` clears send reality synchronously when
-  // the desired doc changes, and a batch minted for the old doc would
-  // otherwise wait out the 10 s result-silence window before noticing.
+  // Flush first: an edit admitted this tick is pinned to the doc still bound
+  // here, and the coalescer's deferred flush would otherwise find it unbound.
+  // Then drive the bridge's intent and give the sender the same eager signal
+  // the refusal branch gets: `reconcile()` clears send reality synchronously
+  // when the desired doc changes, and a batch minted for the old doc would
+  // otherwise wait out the 10 s result-silence window before noticing. The
+  // one exception is the workflow whose ops are held: its subscribe may not
+  // have left a closed socket yet, so the abort waits for the ack instead.
   const retarget = (next: string | null): void => {
+    sender.flush()
     if (next === null) bridge.unsubscribe()
     else bridge.subscribe(next)
     if (next !== null && next === heldForWorkflowId) {
@@ -952,6 +960,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => sender.detach(),
+      () => coalescer.detach(),
       () => adapter.destroy(),
       () => bridge.destroy(),
       () => client.destroy()
@@ -979,6 +988,6 @@ function startAgentCrdtFollower(
     status: readonly(status),
     debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      sender.enqueue(operations)
+      coalescer.enqueue(operations)
   }
 }
