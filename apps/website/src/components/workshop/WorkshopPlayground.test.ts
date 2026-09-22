@@ -336,12 +336,15 @@ describe('WorkshopPlayground', () => {
       ReturnType<typeof useWorkshopSession>['session']['value']
     >
 
-    it('stays plain while signed out', () => {
+    it('sends the get-key link as a models onboarding arrival for this model', () => {
       render(WorkshopPlayground, { props: { model } })
-
       expect(
-        screen.getByRole('link', { name: 'Get your API key' })
-      ).toHaveAttribute('href', 'https://platform.comfy.org/profile/api-keys')
+        screen
+          .getByRole('link', { name: 'Get your API key' })
+          .getAttribute('href')
+      ).toBe(
+        'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-3'
+      )
     })
 
     it('carries the active workspace once signed in', () => {
@@ -353,7 +356,7 @@ describe('WorkshopPlayground', () => {
         screen.getByRole('link', { name: 'Get your API key' })
       ).toHaveAttribute(
         'href',
-        'https://platform.comfy.org/profile/api-keys?workspace=ws-team'
+        'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-3&workspace=ws-team'
       )
     })
   })

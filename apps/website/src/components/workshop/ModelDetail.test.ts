@@ -2333,4 +2333,14 @@ describe('ModelDetail', () => {
       expect(runWorkshopRouter).not.toHaveBeenCalled()
     }
   )
+
+  it("sends the API tab's get-key link as a models onboarding arrival for this model", async () => {
+    auth.session.value = credential
+    mountDetail({ model: runnable })
+    await nextTick()
+    await user().click(screen.getByTestId('tab-api'))
+    expect(screen.getByTestId('api-get-key').getAttribute('href')).toBe(
+      'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-2-pro'
+    )
+  })
 })

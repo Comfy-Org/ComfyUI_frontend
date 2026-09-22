@@ -3,7 +3,7 @@ import { useClipboard } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { externalLinks } from '../../config/routes'
+import { apiKeysLink } from '../../config/routes'
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import { defaultWorkshopValues } from '../../config/workshop-detail'
 import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
@@ -32,7 +32,10 @@ const { model, locale = 'en' } = defineProps<{
 
 const { session } = useWorkshopSession()
 const apiKeyHref = computed(() =>
-  workspaceLinkedHref(externalLinks.apiKeys, session.value?.workspace.id)
+  workspaceLinkedHref(
+    apiKeysLink({ onboarding: 'models', model: model.slug }),
+    session.value?.workspace.id
+  )
 )
 const values = ref(defaultWorkshopValues(model.fields))
 

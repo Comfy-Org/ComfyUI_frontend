@@ -55,6 +55,7 @@ catalog:
   '@tiptap/pm': 3.31.0
   '@tiptap/starter-kit': 3.31.0
   '@total-typescript/shoehorn': ^0.1.2
+  '@typescript-eslint/utils': ^8.69.0
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
   '@types/leaflet': ^1.9.20

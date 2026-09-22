@@ -862,13 +862,12 @@ describe('Composer', () => {
     })
 
     it('opens the Nodes submenu and lists matching nodes alphabetically', async () => {
-      mount({
-        getMentionNodes: () => [
-          { id: '3', title: 'VAE Decode' },
-          { id: '1', title: 'Alpha' },
-          { id: '2', title: 'KSampler' }
-        ]
-      })
+      const mentionNodes = [
+        { id: '3', title: 'VAE Decode' },
+        { id: '1', title: 'Alpha' },
+        { id: '2', title: 'KSampler' }
+      ]
+      mount({ getMentionNodes: () => mentionNodes })
 
       const menu = await openReferenceSection('Nodes')
 
@@ -877,6 +876,11 @@ describe('Composer', () => {
           .getAllByRole('menuitem')
           .map((item) => item.textContent.trim())
       ).toEqual(['Back', 'Alpha', 'KSampler', 'VAE Decode'])
+      expect(mentionNodes.map(({ title }) => title)).toEqual([
+        'VAE Decode',
+        'Alpha',
+        'KSampler'
+      ])
     })
 
     // Re-picking a staged node is a no-op, so it drops out of the list.

@@ -5,7 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import { externalLinks } from '../../config/routes'
+import { apiKeysLink, externalLinks } from '../../config/routes'
 import type { FileValue, FormValues } from '../../config/workshop-playground'
 import { schemaForModel } from '../../config/workshop-playground'
 import { formForContract } from '../../config/workshop-contract'
@@ -32,16 +32,21 @@ const {
   contract,
   values,
   workspaceId,
-  locale = 'en'
+  locale = 'en',
+  modelSlug
 } = defineProps<{
   contract?: WorkshopContract
   values: FormValues
   workspaceId?: string
   locale?: Locale
+  modelSlug?: string
 }>()
 
 const apiKeyHref = computed(() =>
-  workspaceLinkedHref(externalLinks.apiKeys, workspaceId)
+  workspaceLinkedHref(
+    apiKeysLink({ onboarding: 'models', model: modelSlug }),
+    workspaceId
+  )
 )
 
 const language = ref<SnippetLanguage>('python')

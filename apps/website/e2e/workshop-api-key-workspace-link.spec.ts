@@ -10,7 +10,8 @@ import { zExchangeTokenRequest } from '@comfyorg/ingest-types/zod'
 import { AccountMenu } from './fixtures/accountMenu'
 import { MODEL_PATH, MODELS_WORKSPACE_ID, test } from './fixtures/modelsAccount'
 
-const API_KEYS_URL = 'https://platform.comfy.org/profile/api-keys'
+const API_KEYS_URL =
+  'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-2-max--generate-images'
 
 const WORKSPACES: ListWorkspacesResponse = {
   workspaces: [
@@ -78,7 +79,9 @@ async function signIn(
   await expect(page).toHaveURL('/')
 }
 
-test('the API key link stays plain when signed out', async ({ page }) => {
+test('the API key link stays a models onboarding arrival when signed out', async ({
+  page
+}) => {
   await page.goto(MODEL_PATH)
   await page.getByTestId('tab-api').click()
   await expect(page.getByTestId('api-get-key')).toHaveAttribute(
@@ -99,12 +102,12 @@ test('the API key link carries the active workspace, and follows a switch', asyn
   const link = page.getByTestId('api-get-key')
   await expect(link).toHaveAttribute(
     'href',
-    `${API_KEYS_URL}?workspace=${MODELS_WORKSPACE_ID}`
+    `${API_KEYS_URL}&workspace=${MODELS_WORKSPACE_ID}`
   )
 
   await new AccountMenu(page).pickWorkspace(TEAM.id)
   await expect(link).toHaveAttribute(
     'href',
-    `${API_KEYS_URL}?workspace=${TEAM.id}`
+    `${API_KEYS_URL}&workspace=${TEAM.id}`
   )
 })

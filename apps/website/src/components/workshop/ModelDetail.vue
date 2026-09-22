@@ -1021,6 +1021,7 @@ function useInCode() {
         :values
         :workspace-id="session?.workspace.id"
         :locale
+        :model-slug="model.slug"
       />
     </section>
 

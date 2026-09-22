@@ -7,7 +7,8 @@ import { toNodeId } from '@/types/nodeId'
 
 import {
   agentTest as test,
-  bootAgentApp
+  bootAgentApp,
+  mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { parseClientDocFrame } from '@e2e/fixtures/agentFollowerHostSocket'
@@ -225,50 +226,9 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
   // Registered only now, same as `AgentConversationHarness.
   // selectWorkflowTarget`: `bootAgentApp`'s own mocks blanket-match
   // `**/api/userdata**` for every method, and Playwright runs the
-  // most-recently-registered matching route first, so these have to
+  // most-recently-registered matching route first, so this has to
   // come after it to take over the workflow-save round trip.
-  let savedName: string | undefined
-  await page.route('**/api/userdata/*', (route) => {
-    const request = route.request()
-    const path = decodeURIComponent(
-      new URL(request.url()).pathname.split('/userdata/')[1]
-    )
-    if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-      return route.fallback()
-    savedName = path.slice('workflows/'.length, -'.json'.length)
-    return route.fulfill(
-      jsonRoute({
-        path,
-        modified: Date.now(),
-        size: request.postDataBuffer()?.length ?? 0
-      })
-    )
-  })
-  await page.route('**/api/workflows?*', (route) =>
-    route.fulfill(
-      jsonRoute({
-        data:
-          savedName === undefined
-            ? []
-            : [
-                {
-                  id: WORKFLOW_ID,
-                  name: savedName,
-                  created_at: '2026-09-01T00:00:00Z',
-                  updated_at: '2026-09-01T00:00:00Z',
-                  created_by: 'test-user-e2e',
-                  latest_version: 1
-                }
-              ],
-        pagination: {
-          has_more: false,
-          limit: 100,
-          offset: 0,
-          total: savedName === undefined ? 0 : 1
-        }
-      })
-    )
-  )
+  await mockWorkflowPersistence(page, WORKFLOW_ID)
 
   const topbar = new Topbar(page)
   const vueNodes = new VueNodeHelpers(page)
