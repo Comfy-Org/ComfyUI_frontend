@@ -78,7 +78,7 @@ test(
     await canvas.press('Control+c')
 
     await page
-      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .getByRole('button', { name: enMessages.agent.entryButton })
       .click()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()

@@ -17,6 +17,7 @@ import type {
   AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -35,6 +36,16 @@ const TURN_ACCEPTED: AgentTurnAccepted = {
 }
 
 const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
+
+export const FUNDS_UNAVAILABLE_MESSAGE =
+  'Billing status is temporarily unavailable; please retry.'
+const FUNDS_UNAVAILABLE = zAgentAdmissionError.parse({
+  error: {
+    message: FUNDS_UNAVAILABLE_MESSAGE,
+    reason: 'funds_unavailable',
+    type: 'SERVICE_UNAVAILABLE'
+  }
+})
 
 export const THINKING_TEXT =
   "I'll set the positive prompt to your red fox scene."
@@ -150,7 +161,9 @@ async function mockAgentBoot(
     agentFlagEnabled,
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
+    agentRetryAfter,
     crdtDebugEnabled,
+    objectInfo,
     postedMessages
   }: Omit<AgentFixtures, 'agentPanel'>
 ): Promise<void> {
@@ -204,7 +217,8 @@ async function mockAgentBoot(
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false
-    }
+    },
+    objectInfo
   })
   let savedWorkflow: UserDataFullInfo | undefined
   let savedContent: string | undefined
@@ -335,6 +349,15 @@ async function mockAgentBoot(
     const request = route.request()
     if (request.method() === 'POST') {
       postedMessages.push(request.postData() ?? '')
+      if (agentRetryAfter !== undefined)
+        return route.fulfill({
+          status: 503,
+          headers: {
+            'content-type': 'application/json',
+            'retry-after': agentRetryAfter
+          },
+          body: JSON.stringify(FUNDS_UNAVAILABLE)
+        })
       const accepted: AgentTurnAccepted = {
         ...TURN_ACCEPTED,
         message_id:
@@ -364,7 +387,10 @@ type AgentFixtures = {
   agentPanel: AgentPanel
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
+  agentRetryAfter: string | undefined
   crdtDebugEnabled: boolean
+  /** `'server'` loads real node definitions instead of the empty catalog. */
+  objectInfo: 'server' | undefined
   postedMessages: string[]
 }
 
@@ -382,7 +408,9 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   },
   agentPanelInitiallyOpen: [false, { option: true }],
   agentOnboardingCompleted: [true, { option: true }],
+  agentRetryAfter: [undefined, { option: true }],
   crdtDebugEnabled: [false, { option: true }],
+  objectInfo: [undefined, { option: true }],
   page: async (
     {
       agentConsentAccepted,
@@ -391,7 +419,9 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentFlagEnabled,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
+      agentRetryAfter,
       crdtDebugEnabled,
+      objectInfo,
       page,
       postedMessages
     },
@@ -404,7 +434,9 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentFlagEnabled,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
+      agentRetryAfter,
       crdtDebugEnabled,
+      objectInfo,
       postedMessages
     })
     await use(page)
