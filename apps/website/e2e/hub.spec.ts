@@ -136,19 +136,18 @@ test.describe('V2 catalogue', () => {
   })
 
   // The page opens on the thing to do. How the workflow is built is a second
-  // question, so it waits behind its own tab rather than sitting under the
-  // form where a reader meets it on the way past.
+  // question, so it waits behind the tab the model page already has for it.
   test('opens on the playground and keeps the graph behind its tab', async ({
     page
   }) => {
     await page.goto('/hub/workflow/api_google_nano_banana2_image_edit/')
 
     await expect(page.getByTestId('workflow-kind')).toContainText(/Workflow/i)
-    await expect(page.getByTestId('workflow-panel-run')).toBeVisible()
-    await expect(page.getByTestId('workflow-panel-about')).toBeHidden()
+    await expect(page.getByTestId('playground-tab')).toBeVisible()
+    await expect(page.getByTestId('workflow-about')).toHaveCount(0)
 
-    await page.getByTestId('workflow-tab-about').click()
-    await expect(page.getByTestId('workflow-panel-run')).toBeHidden()
+    await page.getByTestId('tab-details').click()
+    await expect(page.getByTestId('playground-tab')).toHaveCount(0)
     // The form says what goes in and the output says what comes back, so the
     // model it calls is the one thing left for the page to name.
     await expect(page.getByTestId('workflow-runs-on')).toBeVisible()
@@ -166,7 +165,7 @@ test.describe('V2 catalogue', () => {
     page
   }) => {
     await page.goto('/hub/workflow/api_google_nano_banana2_image_edit/')
-    await page.getByTestId('workflow-tab-about').click()
+    await page.getByTestId('tab-details').click()
 
     const actions = page.getByTestId('workflow-actions')
     await expect(actions.getByTestId('workflow-open-cloud')).toHaveAttribute(
@@ -178,18 +177,18 @@ test.describe('V2 catalogue', () => {
     ).toHaveAttribute('href', /workflow_templates/)
   })
 
-  // The endpoint is offered beside the graph but answers on the playground,
-  // so asking for it has to open the tab that holds the answer.
-  test('the endpoint route opens the playground it points into', async ({
-    page
-  }) => {
+  // The endpoint is offered beside the graph but answers on the API tab, so
+  // asking for it has to open the tab that holds the answer.
+  test('the endpoint route opens the tab it points into', async ({ page }) => {
     await page.goto('/hub/workflow/api_nano_banana_pro/')
-    await page.getByTestId('workflow-tab-about').click()
+    await page.getByTestId('tab-details').click()
 
     await page.getByTestId('workflow-endpoint').click()
 
-    await expect(page.getByTestId('workflow-panel-run')).toBeVisible()
-    await expect(page.getByTestId('workflow-panel-about')).toBeHidden()
+    await expect(page.getByTestId('tab-api')).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
   })
 
   // A workflow that is one call to a model the catalogue carries is that
