@@ -1014,6 +1014,14 @@ pnpm test:browser:local --update-snapshots
 
 Fork PRs can't auto-commit screenshots — a maintainer commits them for you.
 
+### Canvas baselines: pin the viewport instead of re-baselining
+
+If a canvas screenshot diff is only a viewport translation (same image size,
+the whole graph shifted), the baseline is not stale: pin the pan/zoom in the
+test before the shot rather than regenerating. Regenerate only when the
+product changed, and open the diff to confirm the change is the one you made
+rather than a viewport shift.
+
 ## Debugging in CI
 
 1. Download artifacts from the failed run.
