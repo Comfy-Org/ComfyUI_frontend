@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'
@@ -224,6 +225,27 @@ describe('OnboardingCoach', () => {
     await nextTick()
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(localStorage.getItem(KEY)).toBe('false')
+  })
+
+  it('signals the onboarding overlay while running and clears it when dismissed', async () => {
+    const overlay = useOnboardingOverlayStore()
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    expect(overlay.active).toBe(true)
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }))
+    expect(overlay.active).toBe(false)
+  })
+
+  it('clears the onboarding overlay signal when it unmounts mid-tour', async () => {
+    const overlay = useOnboardingOverlayStore()
+    const { unmount } = mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    expect(overlay.active).toBe(true)
+
+    unmount()
+    expect(overlay.active).toBe(false)
   })
 
   it('waits for a late target without letting Escape complete an unseen tour', async () => {
