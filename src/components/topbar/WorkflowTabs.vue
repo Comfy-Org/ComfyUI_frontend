@@ -3,7 +3,7 @@
     ref="containerRef"
     :class="
       cn(
-        'workflow-tabs-container flex h-full max-w-full flex-auto flex-row overflow-hidden',
+        'workflow-tabs-container flex h-full max-w-full flex-auto flex-row gap-1 overflow-hidden px-1',
         isDesktop && 'workflow-tabs-container-desktop'
       )
     "
@@ -12,7 +12,7 @@
       v-if="showOverflowArrows"
       variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-left aspect-square h-full w-auto"
+      class="shrink-0 self-center rounded-lg p-2 disabled:opacity-25"
       :aria-label="$t('g.scrollLeft')"
       :disabled="!leftArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(-1))"
@@ -26,7 +26,18 @@
         @wheel="handleWheel"
       >
         <SelectButton
-          :class="cn('workflow-tabs bg-transparent', props.class)"
+          :class="
+            cn(
+              'workflow-tabs flex items-center gap-1 bg-transparent',
+              props.class
+            )
+          "
+          :pt="{
+            pcToggleButton: {
+              root: ({ context }: ToggleButtonPassThroughMethodOptions) =>
+                cn(tabStateVariants({ active: context.active }), 'p-0')
+            }
+          }"
           :model-value="selectedWorkflow"
           :options
           option-label="label"
@@ -58,7 +69,7 @@
       v-if="showOverflowArrows"
       variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-right aspect-square h-full w-auto"
+      class="shrink-0 self-center rounded-lg p-2 disabled:opacity-25"
       :aria-label="$t('g.scrollRight')"
       :disabled="!rightArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(1))"
@@ -75,7 +86,7 @@
         value: $t('sideToolbar.newBlankWorkflow'),
         showDelay: 300
       }"
-      class="new-blank-workflow-button no-drag aspect-square h-full w-auto shrink-0 rounded-none"
+      class="new-blank-workflow-button no-drag shrink-0 self-center rounded-lg"
       variant="muted-textonly"
       size="icon"
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
@@ -89,33 +100,41 @@
       :data-agent-gate-settled="agentPanelStore.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
-      <Button
-        v-if="
-          agentPanelStore.enabled &&
-          !agentPanelStore.isVisible &&
-          !(agentPanelStore.isOpen && isChecking)
-        "
-        variant="link"
-        size="sm"
-        class="no-drag shrink-0 border border-solid border-plum-600 bg-ink-700 text-base-foreground hover:border-plum-500"
-        @click="onAgentEntryClick"
-      >
-        <i class="icon-[comfy--comfy-c] size-3 text-brand-yellow" />
-        <span>{{ $t('agent.askComfyAgent') }}</span>
-      </Button>
+      <TopbarBadges />
+      <TopbarSubscribeButton />
+      <div
+        v-if="topbarBadgeStore.badges.length"
+        data-testid="environment-badge-separator"
+        class="h-5 w-px shrink-0 bg-border-subtle"
+      />
       <Button
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
         variant="muted-textonly"
         size="icon"
-        class="shrink-0 text-base-foreground"
+        class="size-6 shrink-0 rounded-sm p-0"
         :aria-label="$t('actionbar.feedback')"
         @click="openFeedback"
       >
-        <i class="icon-[lucide--megaphone]" />
+        <i class="icon-[lucide--megaphone] size-4" />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
+      <template v-if="showAgentEntry">
+        <div
+          data-testid="agent-entry-separator"
+          class="h-5 w-px shrink-0 bg-border-subtle"
+        />
+        <AgentEntryButton
+          :active="agentPanelStore.isVisible"
+          :inviting="!agentPanelStore.hasEverOpened"
+          @click="onAgentEntryClick"
+        />
+      </template>
+    </div>
+    <div v-else class="ml-auto flex h-full shrink-0 items-center">
+      <TopbarBadges />
+      <TopbarSubscribeButton />
     </div>
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
   </div>
@@ -125,11 +144,17 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useScroll, whenever } from '@vueuse/core'
 import SelectButton from 'primevue/selectbutton'
+import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
+
+import AgentEntryButton from '@/components/topbar/AgentEntryButton.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
+import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 
+import { tabStateVariants } from '@/components/tab/tab.variants'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
@@ -142,6 +167,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
@@ -166,10 +192,15 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
+const topbarBadgeStore = useTopbarBadgeStore()
 const { withConsent, isChecking } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
 const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()
+
+const showAgentEntry = computed(
+  () => agentPanelStore.enabled && !(agentPanelStore.isOpen && isChecking.value)
+)
 
 async function onAgentEntryClick(): Promise<void> {
   if (isOpeningAgent.value) return
@@ -358,22 +389,8 @@ onUpdated(checkOverflow)
   position: relative;
   flex-shrink: 1;
   border: 0;
-  border-right-style: solid;
-  border-right-width: 1px;
-  border-radius: 0;
-  background-color: transparent;
   padding: 0;
-  border-right-color: var(--border-color);
   min-width: 90px;
-}
-
-.overflow-arrow {
-  border-radius: 0;
-  padding-inline: calc(var(--spacing) * 2);
-}
-
-.overflow-arrow[disabled] {
-  opacity: 0.25;
 }
 
 :deep(.p-togglebutton > .p-togglebutton-content) {
@@ -386,31 +403,6 @@ onUpdated(checkOverflow)
 
 :deep(.p-togglebutton::before) {
   display: none;
-}
-
-:deep(.p-togglebutton:first-child) {
-  border-left-style: solid;
-  border-left-width: 1px;
-  border-left-color: var(--border-color);
-}
-
-:deep(.p-togglebutton:not(:first-child)) {
-  border-left-width: 0;
-}
-
-:deep(.p-togglebutton.p-togglebutton-checked) {
-  height: 100%;
-  border-bottom-style: solid;
-  border-bottom-width: 1px;
-  border-bottom-color: var(--p-button-text-primary-color);
-}
-
-:deep(.p-togglebutton:not(.p-togglebutton-checked)) {
-  opacity: 0.75;
-}
-
-:deep(.workflow-tabs) {
-  display: flex;
 }
 
 :deep(.p-selectbutton) {

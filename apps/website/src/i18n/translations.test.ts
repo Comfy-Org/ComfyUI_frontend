@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
-import { t } from './translations'
+import { t, translationKeys } from './translations'
+
+describe('translation keys', () => {
+  it('never uses a key as the prefix of another key', () => {
+    const keys = new Set<string>(translationKeys)
+    const collisions = translationKeys.filter((key) => {
+      const segments = key.split('.')
+      return segments
+        .slice(1)
+        .some((_, index) => keys.has(segments.slice(0, index + 1).join('.')))
+    })
+    expect(collisions).toEqual([])
+  })
+})
 
 describe('t() fallback semantics', () => {
   it('returns Japanese copy when it exists', () => {

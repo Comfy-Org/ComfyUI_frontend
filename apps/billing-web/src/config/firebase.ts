@@ -4,8 +4,8 @@
  * action runs, so a deployment without configuration boots and offers the
  * sign-in page in its unavailable state rather than failing at import.
  */
-import type { FirebaseIdentity } from '@comfyorg/account/firebase'
-import { createFirebaseIdentity } from '@comfyorg/account/firebase'
+import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
 
 import { FIREBASE_OPTIONS } from '@/config/env'
 

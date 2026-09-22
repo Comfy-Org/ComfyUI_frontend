@@ -23,6 +23,11 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
 
+import type {
+  AssistantMessage,
+  ToolPart
+} from '../services/agent/agentMessageParts'
+
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
 import { devEventReplacer } from './devPanelLog'
@@ -34,6 +39,7 @@ const MAX_WORKFLOW_CHARS = 200_000
 /** The event log and the stamp ledger both grow without bound with session length. */
 const MAX_SECTION_CHARS = 60_000
 const MAX_REPORT_CHARS = 256_000
+const MAX_TOOL_CALLS = 50
 const MAX_REDACTION_DEPTH = 12
 const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
 const SOURCE_TIMEOUT_MS = 5_000
@@ -179,6 +185,7 @@ export interface CrdtDebugReportInput {
   /** Serialized active workflow, when the caller can supply one. */
   workflow?: unknown
   workflowError?: string
+  agentMessages?: readonly AssistantMessage[]
 }
 
 async function attempt<T>(label: string, load: () => Promise<T>) {
@@ -282,16 +289,19 @@ type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
  */
 const PRIVATE_VALUE_PATTERN =
   /(^|=)(\/|~|[A-Za-z]:[\\/]|\\\\|\.{1,2}[\\/])|:\/\//
+const BEARER_VALUE_PATTERN = /^(\s*bearer\s+)\S+\s*$/i
 const SECRET_VALUE_PATTERN =
   /((?:["']?)(?:token|secret|password|passwd|credential|api[-_]?key|apikey|authorization|auth|bearer|session|cookie|private)(?:["']?)\s*[:=]\s*)(?:bearer\s+)?(?:(['"])(?:\\[\s\S]|(?!\2)[\s\S])*\2|[^\s,;]+)/gi
 
 function redactPrivateValue(value: string): string {
   if (PRIVATE_VALUE_PATTERN.test(value)) return REDACTED
-  return value.replace(
-    SECRET_VALUE_PATTERN,
-    (_match, prefix: string, quote: string | undefined) =>
-      `${prefix}${quote ?? ''}${REDACTED}${quote ?? ''}`
-  )
+  return value
+    .replace(BEARER_VALUE_PATTERN, `$1${REDACTED}`)
+    .replace(
+      SECRET_VALUE_PATTERN,
+      (_match, prefix: string, quote: string | undefined) =>
+        `${prefix}${quote ?? ''}${REDACTED}${quote ?? ''}`
+    )
 }
 
 function redactArgv(argv: readonly string[]): string {
@@ -464,6 +474,64 @@ function serializeWorkflow(
   return { status: 'collected', section: fence('json', serialized) }
 }
 
+type RetainedToolCall = Pick<
+  ToolPart,
+  'callId' | 'name' | 'state' | 'ok' | 'durationMs'
+> & {
+  turnId: AssistantMessage['id']
+}
+
+function fitToolCalls(calls: readonly RetainedToolCall[], context: string) {
+  let start = 0
+  let body = json(redactSecrets(calls))
+  let section = [context, fence('json', body)].join('\n\n')
+  while (section.length > MAX_SECTION_CHARS) {
+    start++
+    body = json(redactSecrets(calls.slice(start)))
+    section = [context, fence('json', body)].join('\n\n')
+  }
+  return { section, retained: calls.length - start }
+}
+
+function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
+  const calls: RetainedToolCall[] = []
+  let total = 0
+  for (const message of [...messages].reverse()) {
+    for (const part of [...message.parts].reverse()) {
+      if (part.type !== 'tool') continue
+      total++
+      if (calls.length === MAX_TOOL_CALLS) continue
+      calls.push({
+        turnId: message.id,
+        callId: part.callId,
+        name: part.name,
+        state: part.state,
+        ok: part.ok,
+        durationMs: part.durationMs
+      })
+    }
+  }
+  return { calls: calls.reverse(), total }
+}
+
+function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
+  const context =
+    'Current conversation metadata retained in this tab only. Restored history may omit tool calls. Durations are backend-reported; missing ok or durationMs means no outcome or timing was observed. State is the retained UI state, not proof a request is still running. No arguments, responses, prompts or reasoning are included.'
+  if (messages === undefined) {
+    return { section: context, status: 'unavailable' }
+  }
+
+  const { calls, total } = collectAgentToolCalls(messages)
+  const fitted = fitToolCalls(calls, context)
+  return {
+    section: fitted.section,
+    status:
+      total === 0
+        ? 'no retained calls'
+        : `${total > fitted.retained ? 'truncated' : 'collected'} (${fitted.retained}/${total} retained calls)`
+  }
+}
+
 function formatSource<T>(
   result: Awaited<ReturnType<typeof attempt<T>>> | null,
   warning: string,
@@ -509,6 +577,7 @@ export async function collectCrdtDebugReport(
   })()
 
   const sources = input.sources ?? DEFAULT_REPORT_SOURCES
+  const agentTools = agentToolSection(input.agentMessages)
   const [stats, logs, settings] = await Promise.all([
     attempt('System stats', () => api.getSystemStats()),
     sources.serverLogs ? attempt('Server logs', () => api.getLogs()) : null,
@@ -535,7 +604,8 @@ export async function collectCrdtDebugReport(
     [
       ['System stats', systemReport],
       ['Server logs', logsReport],
-      ['Settings', settingsReport]
+      ['Settings', settingsReport],
+      ['Agent tool calls', agentTools]
     ] as const
   ).map(([label, result]) => `- ${label}: ${result.status}`)
 
@@ -562,6 +632,8 @@ export async function collectCrdtDebugReport(
   }
 
   sections.push('## CRDT state', crdtSection(input.crdt))
+
+  sections.push('## Agent tool calls', agentTools.section)
 
   if (input.mergeTrace?.length) {
     sections.push('## Merge trace', mergeSection(input.mergeTrace))

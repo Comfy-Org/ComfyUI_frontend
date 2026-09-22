@@ -81,7 +81,7 @@ function makeViewer(overrides: Record<string, unknown> = {}) {
 function renderViewer() {
   return render(HdrViewerContent, {
     props: { imageUrl: '/api/view?filename=out.exr' },
-    global: { plugins: [i18n], stubs: { Button: true } }
+    global: { plugins: [i18n] }
   })
 }
 

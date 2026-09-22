@@ -7,7 +7,7 @@ import type { useMissingMediaStore } from '@/platform/missingMedia/missingMediaS
 import type { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { getParentExecutionIds } from '@/types/nodeIdentification'
 import { hasErrorForSlot } from '@/utils/executionErrorUtil'
 import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
@@ -107,13 +107,14 @@ export function useNodeErrorFlagSync(
       showErrorsTab
     ],
     () => {
-      if (!app.isGraphReady) return
+      const rootGraph = app.rootGraphOrUndefined
+      if (!rootGraph) return
       // Legacy (LGraphNode) only: suppress missing-resource error flags
       // when the Errors tab is hidden, since legacy nodes lack the per-widget
       // red highlight that Vue nodes use to indicate *why* a node has errors.
       // Vue nodes compute hasAnyError independently and are unaffected.
       reconcileNodeErrorFlags(
-        app.rootGraph,
+        rootGraph,
         nodeErrors.value,
         showErrorsTab.value
           ? missingModelStore.missingModelAncestorExecutionIds

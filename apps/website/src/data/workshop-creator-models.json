@@ -1,6 +1,8 @@
 {
   "models": {
-    "beeble/switchx": { "family": "flat" },
+    "beeble/switchx": {
+      "family": "flat"
+    },
     "bfl/flux-3-video": {
       "family": "bfl-video"
     },
@@ -9,6 +11,12 @@
     },
     "bria/image-edit-expand": {
       "family": "bria-expand"
+    },
+    "byteplus/dreamina-seedance-2-0-260128": {
+      "family": "seedance",
+      "options": {
+        "mode": "mixed"
+      }
     },
     "byteplus/dreamina-seedance-2-0-fast-260128": {
       "family": "seedance",
@@ -28,9 +36,6 @@
         "mode": "mixed"
       }
     },
-    "byteplus/seed-audio-1.0": {
-      "family": "flat"
-    },
     "byteplus/seed-2-0-lite-260228": {
       "family": "text-input"
     },
@@ -39,6 +44,9 @@
     },
     "byteplus/seed-2-0-pro-260328": {
       "family": "text-input"
+    },
+    "byteplus/seed-audio-1.0": {
+      "family": "flat"
     },
     "byteplus/seed-audio-1.0-multilingual": {
       "family": "flat"
@@ -144,11 +152,15 @@
     },
     "luma_2/uni-1": {
       "family": "luma-image",
-      "options": { "agents": true }
+      "options": {
+        "agents": true
+      }
     },
     "luma_2/uni-1-max": {
       "family": "luma-image",
-      "options": { "agents": true }
+      "options": {
+        "agents": true
+      }
     },
     "meshy/animations": {
       "family": "flat"
@@ -158,6 +170,15 @@
     },
     "meshy/rigging": {
       "family": "meshy-source"
+    },
+    "openai/gpt-image-2": {
+      "family": "gpt-image"
+    },
+    "openai/gpt-image-2.5-flare": {
+      "family": "gpt-image"
+    },
+    "openai/gpt-image-2.5-sunburst": {
+      "family": "gpt-image"
     },
     "qwen/qwen-image-3.0": {
       "family": "qwen-image"

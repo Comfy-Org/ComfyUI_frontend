@@ -3,6 +3,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   AssetItem,
   AssetResponse
@@ -14,7 +15,6 @@ import {
 import { api } from '@/scripts/api'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -22,16 +22,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get supportsModelTypeTags() {
-        return mockSupportsModelTypeTags.value
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockInvalidateInputAssets = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -99,11 +90,13 @@ function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 beforeEach(() => {
   const registeredNodeTypes: Record<string, string> = {
     CheckpointLoaderSimple: 'ckpt_name',
-    LoraLoader: 'lora_name'
+    LoraLoader: 'lora_name',
+    LoadChatGLM3: 'chatglm3_checkpoint'
   }
   const nodeTypeCategories: Record<string, string> = {
     CheckpointLoaderSimple: 'checkpoints',
-    LoraLoader: 'loras'
+    LoraLoader: 'loras',
+    LoadChatGLM3: 'LLM/checkpoints'
   }
   vi.mocked(useModelToNodeStore().getRegisteredNodeTypes).mockImplementation(
     () => registeredNodeTypes
@@ -398,7 +391,7 @@ describe('assetResponseSchema accepts real API shapes', () => {
 describe(assetService.getAssetModels, () => {
   beforeEach(() => {
     assetService.invalidateModelBuckets()
-    mockSupportsModelTypeTags.value = true
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
   })
 
   it('walks the models tag once, excluding missing assets', async () => {
@@ -447,7 +440,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('buckets by bare tags when model_type tags are unsupported', async () => {
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -467,7 +460,7 @@ describe(assetService.getAssetModels, () => {
     // The flag arrives asynchronously over the websocket handshake. A first
     // walk before it lands (flag still false) buckets a model_type: tag as a
     // literal folder, so 'checkpoints' comes back empty.
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -481,7 +474,7 @@ describe(assetService.getAssetModels, () => {
 
     // Once the flag lands, the stale cache must be discarded and re-walked so
     // the asset buckets under 'checkpoints' instead of staying invisible.
-    mockSupportsModelTypeTags.value = true
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = true
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -600,7 +593,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('groups slashed bare tags by their top-level segment', async () => {
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -617,7 +610,7 @@ describe(assetService.getAssetModels, () => {
   })
 
   it('falls back to filename metadata then name on bare-tag backends', async () => {
-    mockSupportsModelTypeTags.value = false
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
@@ -737,6 +730,25 @@ describe(assetService.getAssetModels, () => {
     expect(diffusion).toEqual([{ name: 'dual_use.safetensors', pathIndex: 0 }])
     // Both folder reads resolve from a single memoized models walk.
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
+  })
+
+  it.fails("resolves models when queried by the node-widget's full category path, not just the bucket's top-level folder key", async () => {
+    vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
+    const category =
+      useModelToNodeStore().getCategoryForNodeType('LoadChatGLM3')
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([
+        validAsset({
+          id: 'chatglm3',
+          name: 'chatglm3-checkpoint.safetensors',
+          tags: ['models', 'LLM/checkpoints']
+        })
+      ])
+    )
+
+    const models = await assetService.getAssetModels(category!)
+
+    expect(models).not.toEqual([])
   })
 })
 

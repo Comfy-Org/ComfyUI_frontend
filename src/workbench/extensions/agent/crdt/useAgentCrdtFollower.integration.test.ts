@@ -7,14 +7,15 @@ import * as Y from 'yjs'
 
 import { render } from '@testing-library/vue'
 
-import { createGraphMutations } from '@/core/graph/graphMutations'
 import { api } from '@/scripts/api'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { encodeBase64 } from './docFrameClient'
+import { createGraphMutations } from './graphMutations'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 const sent: string[] = []
@@ -65,7 +66,8 @@ describe('useAgentCrdtFollower projection recovery', () => {
     let scopeAvailable = true
     const mutations = createGraphMutations({
       getScope: () => (scopeAvailable ? scope : null),
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+      placement: inertPlacementPort
     })
     mutations.addNode(
       { id: 99, type: 'Sink' },

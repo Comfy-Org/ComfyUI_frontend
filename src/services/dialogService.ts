@@ -1,3 +1,5 @@
+import { zPromptErrorResponse } from '@comfyorg/ingest-types/zod'
+import { isPlainObject } from 'es-toolkit'
 import { merge } from 'es-toolkit/compat'
 import { watch } from 'vue'
 import type { Component } from 'vue'
@@ -15,6 +17,10 @@ import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
+import type { PromptError } from '@/platform/remote/comfyui/types'
+import { PromptExecutionError } from '@/scripts/api'
+import { tryExtractValidationError } from '@/utils/executionErrorUtil'
 import type {
   DialogComponentProps,
   ShowDialogOptions
@@ -106,11 +112,127 @@ export interface ExecutionErrorDialogInput {
   traceback?: string[] | null
 }
 
+const GLOBAL_PROMPT_KEY = 'global-prompt'
+
+function getCatalogPromptError(value: unknown): PromptError | null {
+  if (typeof value === 'string')
+    return { type: 'error', message: value, details: '' }
+  if (!isPlainObject(value)) return null
+
+  const {
+    type = 'error',
+    message = '',
+    details = ''
+  }: Record<string, unknown> = value
+  return typeof type === 'string' &&
+    typeof message === 'string' &&
+    typeof details === 'string'
+    ? { type, message, details }
+    : null
+}
+
+function getPromptErrorSources(response: unknown): RunErrorMessageSource[] {
+  const parsed = zPromptErrorResponse.safeParse(response)
+  if (!parsed.success) return []
+
+  const promptError = getCatalogPromptError(parsed.data.error)
+  const nodeErrors: Record<string, unknown> = isPlainObject(
+    parsed.data.node_errors
+  )
+    ? parsed.data.node_errors
+    : {}
+
+  return [
+    ...(promptError
+      ? [{ kind: 'prompt' as const, error: promptError, isCloud }]
+      : []),
+    ...Object.entries(nodeErrors).flatMap(([nodeId, value]) => {
+      if (!isPlainObject(value)) return []
+      const node: Record<string, unknown> = value
+      const errors: unknown[] = Array.isArray(node.errors) ? node.errors : []
+      return errors.flatMap((value): RunErrorMessageSource[] => {
+        if (!isPlainObject(value)) return []
+        const error = getCatalogPromptError(value)
+        if (!error) return []
+
+        const extraInfo: Record<string, unknown> = isPlainObject(
+          value.extra_info
+        )
+          ? value.extra_info
+          : {}
+        return [
+          {
+            kind: 'node_validation',
+            error: {
+              ...error,
+              extra_info: {
+                ...extraInfo,
+                input_name:
+                  typeof extraInfo.input_name === 'string'
+                    ? extraInfo.input_name
+                    : undefined
+              }
+            },
+            nodeDisplayName:
+              typeof node.class_type === 'string'
+                ? `${node.class_type} (#${nodeId})`
+                : `#${nodeId}`
+          }
+        ]
+      })
+    })
+  ]
+}
+
+function formatDialogError(error: Error): string {
+  try {
+    return error.toString()
+  } catch (cause) {
+    if (!(error instanceof PromptExecutionError)) throw cause
+    return JSON.stringify(error.response)
+  }
+}
+
+// dialogStore.showDialog raises an existing dialog with the same key instead of
+// wiring the new caller's callbacks, so a second concurrent caller on that key
+// would never settle. Serialize FIFO per key; distinct keys stay concurrent.
+const promptTails = new Map<string, Promise<unknown>>()
+
+function enqueuePrompt<T>(
+  key: string,
+  show: (resolve: (value: T) => void) => void
+): Promise<T> {
+  const tail = promptTails.get(key) ?? Promise.resolve()
+  const result = tail.then(() => new Promise<T>(show))
+  const settled = result.then(
+    () => undefined,
+    () => undefined
+  )
+  promptTails.set(key, settled)
+  void settled.then(() => {
+    if (promptTails.get(key) === settled) promptTails.delete(key)
+  })
+  return result
+}
+
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
 
   function showExecutionErrorDialog(executionError: ExecutionErrorDialogInput) {
+    const validationError = tryExtractValidationError(
+      executionError.exception_message
+    )
+    const validationSources = getPromptErrorSources(validationError)
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
+      errorSources: validationSources.length
+        ? validationSources
+        : [
+            {
+              kind: 'execution',
+              error: executionError,
+              nodeDisplayName: executionError.node_type ?? ''
+            }
+          ],
       error: {
         exceptionType: executionError.exception_type,
         exceptionMessage: executionError.exception_message,
@@ -149,7 +271,7 @@ export const useDialogService = () => {
       : undefined
 
     return {
-      errorMessage: error.toString(),
+      errorMessage: formatDialogError(error),
       stackTrace: error.stack,
       extensionFile
     }
@@ -179,6 +301,10 @@ export const useDialogService = () => {
           }
 
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
+      errorSources:
+        error instanceof PromptExecutionError
+          ? getPromptErrorSources(error.response)
+          : undefined,
       error: {
         exceptionType: options.title ?? 'Unknown Error',
         exceptionMessage: errorProps.errorMessage,
@@ -231,7 +357,7 @@ export const useDialogService = () => {
           headless: true,
           contentClass: `${SELF_STYLED_PANEL_CONTENT_CLASS} p-0`,
           closable: true,
-          onClose: () => resolve(false)
+          onRemoved: () => resolve(false)
         }
       })
     }).then((result) => {
@@ -258,7 +384,7 @@ export const useDialogService = () => {
           // 352px after the body padding; hug the intrinsic width instead.
           contentClass: HUG_CONTENT_CLASS,
           closable: true,
-          onClose: () => resolve(false)
+          onRemoved: () => resolve(false)
         }
       })
     }).then((result) => {
@@ -278,9 +404,9 @@ export const useDialogService = () => {
     defaultValue?: string
     placeholder?: string
   }): Promise<string | null> {
-    return new Promise((resolve) => {
+    return enqueuePrompt<string | null>(GLOBAL_PROMPT_KEY, (resolve) => {
       dialogStore.showDialog({
-        key: 'global-prompt',
+        key: GLOBAL_PROMPT_KEY,
         title,
         component: PromptDialogContent,
         props: {
@@ -294,7 +420,7 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => {
+          onRemoved: () => {
             resolve(null)
           }
         }
@@ -314,9 +440,9 @@ export const useDialogService = () => {
     itemList = [],
     hint,
     denyLabel,
-    key = 'global-prompt'
+    key = GLOBAL_PROMPT_KEY
   }: ConfirmOptions): Promise<boolean | null> {
-    return new Promise((resolve) => {
+    const show = (resolve: (value: boolean | null) => void) => {
       const options: ShowDialogOptions = {
         key,
         title,
@@ -332,12 +458,14 @@ export const useDialogService = () => {
         dialogComponentProps: {
           renderer: 'reka',
           size: 'md',
-          onClose: () => resolve(null)
+          onRemoved: () => resolve(null)
         }
       }
 
       dialogStore.showDialog(options)
-    })
+    }
+
+    return enqueuePrompt<boolean | null>(key, show)
   }
 
   async function showTopUpCreditsDialog(options?: {
@@ -483,7 +611,35 @@ export const useDialogService = () => {
   async function showSubscriptionRequiredDialog(
     options?: SubscriptionDialogOptions
   ) {
-    if (!isCloud || !window.__CONFIG__?.subscription_required) {
+    if (!isCloud) return
+
+    // A caller (e.g. the agent panel's paywall card) can fire this before the
+    // bootstrap /features fetch resolves, most likely right after a fresh
+    // load. window.__CONFIG__ is then still empty and the flag check below
+    // would silently swallow the click. Await one fresh fetch before
+    // deciding, rather than trusting a config snapshot that was never taken.
+    if (!window.__CONFIG__?.subscription_required) {
+      const { remoteConfigState } =
+        await import('@/platform/remoteConfig/remoteConfig')
+      if (remoteConfigState.value === 'unloaded') {
+        const { refreshRemoteConfig } =
+          await import('@/platform/remoteConfig/refreshRemoteConfig')
+        await refreshRemoteConfig()
+      }
+    }
+
+    if (!window.__CONFIG__?.subscription_required) {
+      // This gate closing is never expected to be reachable from a cloud
+      // surface with subscriptions enabled. Report it instead of returning
+      // silently, so a caller's "Subscribe" button failing to do anything
+      // shows up in telemetry rather than only in a user's bug report.
+      const { reportError } = await import('@/platform/telemetry/reportError')
+      reportError(
+        new Error(
+          'showSubscriptionRequiredDialog: subscription_required gate closed'
+        ),
+        { errorType: 'error_opening_subscription_dialog_gate_closed' }
+      )
       return
     }
 
@@ -810,7 +966,7 @@ export const useDialogService = () => {
           closable: false,
           contentClass:
             'w-170 max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[min(42.5rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))] rounded-2xl overflow-hidden',
-          onClose: () => resolve()
+          onRemoved: () => resolve()
         }
       })
     })
