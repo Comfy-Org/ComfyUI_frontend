@@ -24,7 +24,7 @@ import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
 import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
-import { noEs2023ArrayCopyMethod } from './tools/eslint-plugins/noEs2023ArrayCopyMethod'
+import { es2022CompatPlugin } from './tools/eslint-plugins/noEs2023ArrayCopyMethod'
 import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
 
 const extraFileExtensions = ['.vue']
@@ -368,9 +368,7 @@ export default defineConfig([
     files: ['src/**/*.{js,mjs,cjs,ts,mts,cts,vue}'],
     ignores: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     plugins: {
-      'es2022-compat': {
-        rules: { 'no-array-copy-method': noEs2023ArrayCopyMethod }
-      }
+      'es2022-compat': es2022CompatPlugin
     },
     rules: {
       'es2022-compat/no-array-copy-method': 'error'

@@ -40,7 +40,12 @@ describe('ES2023 array method restrictions', () => {
   it.for([
     ['dotted', 'items.toSorted()'],
     ['computed literal', "items['toSorted']()"],
-    ['computed template literal', 'items[`toSorted`]()']
+    ['computed template literal', 'items[`toSorted`]()'],
+    [
+      'computed restricted identifier',
+      `const method = 'toSorted' as const
+items[method]()`
+    ]
   ] as const)('rejects %s calls in runtime files', async ([_name, code]) => {
     const [result] = await eslint.lintText(`const items = [1, 2]\n${code}`, {
       filePath: runtimeFilePath
@@ -125,18 +130,26 @@ items.with(0, 1)`
       'optional union',
       `declare const items: number[] | undefined
 items?.with(0, 1)`
+    ],
+    [
+      'mixed union',
+      `declare const items: number[] | { toSorted(): number[] }
+items.toSorted()`
     ]
-  ] as const)('rejects Array.with on a %s receiver', async ([_name, code]) => {
-    const [result] = await eslint.lintText(code, {
-      filePath: runtimeFilePath
-    })
-
-    expect(result.messages).toEqual([
-      expect.objectContaining({
-        ruleId: 'es2022-compat/no-array-copy-method',
-        severity: 2,
-        message: restrictionMessage
+  ] as const)(
+    'rejects array copy methods on a %s receiver',
+    async ([_name, code]) => {
+      const [result] = await eslint.lintText(code, {
+        filePath: runtimeFilePath
       })
-    ])
-  })
+
+      expect(result.messages).toEqual([
+        expect.objectContaining({
+          ruleId: 'es2022-compat/no-array-copy-method',
+          severity: 2,
+          message: restrictionMessage
+        })
+      ])
+    }
+  )
 })
