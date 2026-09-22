@@ -688,7 +688,7 @@ describe('createHostedTopupCheckout', () => {
     ).toHaveLength(2)
   })
 
-  it('carries no server or provider text on any path', async () => {
+  it('carries the server code and message of a refusal', async () => {
     const { hosted, answer } = harness()
     answer(
       'POST',
@@ -701,13 +701,18 @@ describe('createHostedTopupCheckout', () => {
 
     const result: HostedTopupCheckoutResult = await hosted()
 
-    expect(result).toMatchObject({ status: 'error', code: 'REQUEST_FAILED' })
-    expect(JSON.stringify(result)).not.toMatch(/stripe|allowlisted/i)
+    expect(result).toEqual({
+      status: 'error',
+      code: 'REQUEST_FAILED',
+      httpStatus: 400,
+      serverCode: 'INVALID_RETURN_URL',
+      serverMessage: 'stripe: return_url origin not allowlisted'
+    })
   })
 })
 
 describe('TopupResult', () => {
-  it('carries no server or provider text on any path', async () => {
+  it('carries the server code and message of a 5xx', async () => {
     const { topup, answer } = harness()
     answer(
       'POST',
@@ -720,6 +725,12 @@ describe('TopupResult', () => {
 
     const result: TopupResult = await settle(topup())
 
-    expect(JSON.stringify(result)).not.toMatch(/stripe|idempotency clash/i)
+    expect(result).toEqual({
+      status: 'error',
+      code: 'REQUEST_FAILED',
+      httpStatus: 500,
+      serverCode: 'INTERNAL',
+      serverMessage: 'stripe: idempotency clash'
+    })
   })
 })

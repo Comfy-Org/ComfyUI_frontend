@@ -23,6 +23,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import type { DocFrameTransport } from './docFrameClient'
+import type { GraphOperation } from './graphOperations'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
 
 const bridgeState = vi.hoisted(() => {
@@ -42,7 +43,10 @@ const bridgeState = vi.hoisted(() => {
       }
     }
   }
-  return { FakeBridge, current: null as InstanceType<typeof FakeBridge> | null }
+  return {
+    FakeBridge,
+    current: null as InstanceType<typeof FakeBridge> | null
+  }
 })
 
 const clientState = vi.hoisted(() => ({
@@ -210,13 +214,15 @@ function mountFollower(
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
+  enqueue: (operations: GraphOperation[]) => void
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
+  let enqueue!: (operations: GraphOperation[]) => void
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(
+      const { status, enqueueHumanOperations } = useAgentCrdtFollower(
         workflowId,
         graphMutations,
         () => null,
@@ -225,11 +231,12 @@ function mountFollower(
         events
       )
       exposedStatus = () => status.value as AgentCrdtStatus
+      enqueue = enqueueHumanOperations
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus }
+  return { unmount, workflowId, isTargetActive, status: exposedStatus, enqueue }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
