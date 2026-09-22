@@ -261,7 +261,7 @@ describe('R-73 cross-workflow pending operation characterization', () => {
         state: 'unconfirmed',
         ops: [expect.objectContaining({ op_id: operationAId })],
         workflowId: 'wf-a',
-        deletedItemIds: expect.any(Map)
+        admissionMetadata: expect.any(Map)
       }
     )
     await enqueue([deleteNode('b-pending')])

@@ -29,16 +29,6 @@ function del(
 }
 
 describe('createPendingDeleteRetentionStore', () => {
-  it('never retains a delete the host reports skipped, even though it consumed a wire slot', () => {
-    const store = createPendingDeleteRetentionStore()
-    // A skipped delete never becomes a candidate in production (see
-    // useAgentCrdtFollower.ts's adapter); the store itself is never told
-    // about it, so there is nothing to retain.
-    expect(
-      store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
-    ).toEqual(new Set())
-  })
-
   it('drops one workflow only', () => {
     const store = createPendingDeleteRetentionStore()
 
@@ -79,14 +69,19 @@ describe('createPendingDeleteRetentionStore', () => {
       store.retainedNodeIds('wf-1', new Set(['1']), () => 'new-item', true)
     ).toEqual(new Set(['1']))
 
-    vi.advanceTimersByTime(24 * 60 * 60 * 1000)
-
-    // A day later, a real node now occupies the id: the bounded,
-    // identity-less retention has expired, so the new node is not
-    // suppressed.
+    // Exactly at the boundary: one ms short of expiry still retains, and
+    // reaching the deadline itself releases (`now >= expiresAt`, not
+    // `now > expiresAt`) - representative of every reason's own expiry
+    // check, so not repeated for each one.
+    vi.setSystemTime(30_000 - 1)
+    expect(
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'new-item', true)
+    ).toEqual(new Set(['1']))
+    vi.setSystemTime(30_000)
     expect(
       store.retainedNodeIds('wf-1', new Set(['1']), () => 'new-item', true)
     ).toEqual(new Set())
+
     vi.useRealTimers()
   })
 
@@ -197,6 +192,27 @@ describe('createPendingDeleteRetentionStore', () => {
         expect(
           store.retainedNodeIds('wf-1', new Set(['1']), () => second, true)
         ).toEqual(new Set(['1']))
+
+        // A fresh duplicate, queried with the EARLIER identity: a keep-both
+        // bug would still retain here (some record still names it), but the
+        // correct behavior releases it. Querying `first` against the SAME
+        // store as above would not prove this - that read would prune
+        // whichever record it names first, masking a keep-both bug.
+        const droppedEarlier = createPendingDeleteRetentionStore()
+        droppedEarlier.settleBatch([
+          del('wf-1', '1', 'confirmed-applied', first)
+        ])
+        droppedEarlier.settleBatch([
+          del('wf-1', '1', 'confirmed-applied', second)
+        ])
+        expect(
+          droppedEarlier.retainedNodeIds(
+            'wf-1',
+            new Set(['1']),
+            () => first,
+            true
+          )
+        ).toEqual(new Set())
       }
     )
 
@@ -264,8 +280,11 @@ describe('createPendingDeleteRetentionStore', () => {
       'keeps an unidentified bounded record and a DIFFERENT-identity bounded record for the same node both alive, settled %s-then-%s',
       ([first, second]) => {
         // Neither name the same bucket (null vs a real identity) and
-        // neither is permanent: both are independent, time-bounded records
-        // that must each survive on their own terms.
+        // neither is permanent: both are independent, time-bounded records.
+        // Settling `second` a second after `first` gives each its own
+        // expiry, so releasing only `first`'s deadline - with `second`'s
+        // still open - proves `second` alone keeps the node suppressed,
+        // regardless of which bucket happened to settle first.
         vi.useFakeTimers()
         vi.setSystemTime(0)
         const settle = {
@@ -278,16 +297,18 @@ describe('createPendingDeleteRetentionStore', () => {
         }
         const store = createPendingDeleteRetentionStore()
         settle[first](store)
+        vi.setSystemTime(1_000)
         settle[second](store)
 
-        // C's own identity does not supersede the unidentified record
-        // (nothing can), and C's own record is not superseded by itself:
-        // both keep the node suppressed until they individually expire.
+        // Just past FIRST's own (earlier) deadline: SECOND's bucket alone
+        // must still keep the node suppressed.
+        vi.setSystemTime(30_000 + 1)
         expect(
           store.retainedNodeIds('wf-1', new Set(['1']), () => 'C', true)
         ).toEqual(new Set(['1']))
 
-        vi.advanceTimersByTime(30_000 + 1)
+        // Just past SECOND's own (later) deadline: both have expired.
+        vi.setSystemTime(31_000 + 1)
         expect(
           store.retainedNodeIds('wf-1', new Set(['1']), () => 'C', true)
         ).toEqual(new Set())

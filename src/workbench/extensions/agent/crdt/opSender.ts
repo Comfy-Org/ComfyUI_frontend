@@ -54,12 +54,15 @@ export interface OpSenderDeps {
   /** The follower's last observed doc sequence (stamps `base_version`). */
   baseVersion(): number
   /**
-   * The Yjs item identity a `delete_node`'s target currently names, read
-   * once at admission time (when its `op_id` is minted) and handed back on
-   * that op's own {@link BatchOutcome}. Null when the follower doc has no
-   * item for the id yet. Omitted deps default to always-null.
+   * Opaque per-op admission-time metadata, read once when `op`'s `op_id` is
+   * minted and handed back on that op's own {@link BatchOutcome}, keyed by
+   * that same `op_id`. The sender neither inspects `op` to decide whether to
+   * call this nor interprets what comes back - which ops carry metadata and
+   * what it means (e.g. a `delete_node`'s target Yjs item identity) is the
+   * caller's own domain policy, kept out of transport batching and retry.
+   * Omitted deps default to capturing nothing.
    */
-  deletedItemId?(nodeId: string): string | null
+  admissionMetadata?(op: Op): string | null
   /**
    * Terminal per-batch report: 'acknowledged' carries the host's result;
    * 'unacknowledged' means one resend after silence also drew no result;
@@ -88,8 +91,8 @@ export type BatchOutcome = (
   | { workflowId: string; state: 'unconfirmed'; ops: Op[] }
   | { workflowId: string | null; state: 'undeliverable'; ops: Op[] }
 ) & {
-  /** Every `delete_node` op in this batch, by its own `op_id` -> the identity `deletedItemId` captured for it at admission time (see {@link OpSenderDeps.deletedItemId}). */
-  deletedItemIds: ReadonlyMap<string, string | null>
+  /** Every op in this batch, by its own `op_id` -> the metadata captured for it at admission time (see {@link OpSenderDeps.admissionMetadata}). */
+  admissionMetadata: ReadonlyMap<string, string | null>
 }
 
 export interface OpSender {
@@ -173,8 +176,8 @@ interface InFlight extends OpGroup {
 interface OpGroup {
   workflowId: string
   ops: Op[]
-  /** Captured once at admission time (see {@link captureDeletedItemIds}) and carried by reference as the group moves from `open` to `queue` to {@link InFlight} - never a separate, manually-synced side table. */
-  deletedItemIds: Map<string, string | null>
+  /** Captured once at admission time (see {@link captureAdmissionMetadata}) and carried by reference as the group moves from `open` to `queue` to {@link InFlight} - never a separate, manually-synced side table. */
+  admissionMetadata: Map<string, string | null>
 }
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
@@ -184,14 +187,14 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let detached = false
   let suspended = false
 
-  /** Identity capture for every `delete_node` op just minted, keyed by its own `op_id`. */
-  function captureDeletedItemIds(ops: Op[]): Map<string, string | null> {
-    const identities = new Map<string, string | null>()
+  /** `deps.admissionMetadata` for every op just minted, keyed by its own `op_id`; empty when the dep is omitted. */
+  function captureAdmissionMetadata(ops: Op[]): Map<string, string | null> {
+    const metadata = new Map<string, string | null>()
+    if (!deps.admissionMetadata) return metadata
     for (const op of ops) {
-      if (op.op !== 'delete_node') continue
-      identities.set(op.op_id, deps.deletedItemId?.(String(op.node_id)) ?? null)
+      metadata.set(op.op_id, deps.admissionMetadata(op) ?? null)
     }
-    return identities
+    return metadata
   }
   // Late-result credits: a batch retired after transmission (settled
   // 'unacknowledged' after two sends, or 'unconfirmed' by an abort after one
@@ -253,7 +256,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
       ops: batch.ops,
       workflowId: batch.workflowId,
-      deletedItemIds: batch.deletedItemIds
+      admissionMetadata: batch.admissionMetadata
     })
   }
 
@@ -267,7 +270,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           state: 'unacknowledged',
           ops: batch.ops,
           workflowId: batch.workflowId,
-          deletedItemIds: batch.deletedItemIds
+          admissionMetadata: batch.admissionMetadata
         })
         return
       }
@@ -297,7 +300,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
         ops: batch.ops,
         workflowId: batch.workflowId,
-        deletedItemIds: batch.deletedItemIds
+        admissionMetadata: batch.admissionMetadata
       })
     }
     for (const batch of queued) {
@@ -305,7 +308,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         state: 'undeliverable',
         ops: batch.ops,
         workflowId: batch.workflowId,
-        deletedItemIds: batch.deletedItemIds
+        admissionMetadata: batch.admissionMetadata
       })
     }
     if (admitted) {
@@ -313,7 +316,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         state: 'undeliverable',
         ops: admitted.ops,
         workflowId: admitted.workflowId,
-        deletedItemIds: admitted.deletedItemIds
+        admissionMetadata: admitted.admissionMetadata
       })
     }
   }
@@ -325,7 +328,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     inFlight = {
       workflowId: queued.workflowId,
       ops: queued.ops,
-      deletedItemIds: queued.deletedItemIds,
+      admissionMetadata: queued.admissionMetadata,
       opIds: new Set(queued.ops.map((op) => op.op_id)),
       transmitted: false,
       resent: false,
@@ -340,7 +343,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       state: 'undeliverable',
       ops: minted,
       workflowId,
-      deletedItemIds: captureDeletedItemIds(minted)
+      admissionMetadata: captureAdmissionMetadata(minted)
     })
   }
 
@@ -361,28 +364,28 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       settleUnadmitted(minted, workflowId)
       return
     }
-    const deletedItemIds = captureDeletedItemIds(minted)
+    const admissionMetadata = captureAdmissionMetadata(minted)
     if (open?.workflowId !== workflowId) seal()
     if (open) {
       open.ops.push(...minted)
-      for (const [opId, identity] of deletedItemIds)
-        open.deletedItemIds.set(opId, identity)
+      for (const [opId, metadata] of admissionMetadata)
+        open.admissionMetadata.set(opId, metadata)
     } else {
-      open = { workflowId, ops: minted, deletedItemIds }
+      open = { workflowId, ops: minted, admissionMetadata }
     }
   }
 
   function seal(): void {
     if (!open) return
-    const { workflowId, ops, deletedItemIds } = open
+    const { workflowId, ops, admissionMetadata } = open
     open = null
     for (const chunkOps of chunkWireOps(ops)) {
       const chunkOpIds = new Set(chunkOps.map((op) => op.op_id))
       queue.push({
         workflowId,
         ops: chunkOps,
-        deletedItemIds: new Map(
-          [...deletedItemIds].filter(([opId]) => chunkOpIds.has(opId))
+        admissionMetadata: new Map(
+          [...admissionMetadata].filter(([opId]) => chunkOpIds.has(opId))
         )
       })
     }
@@ -430,7 +433,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       ops: inFlight.ops,
       result,
       workflowId: inFlight.workflowId,
-      deletedItemIds: inFlight.deletedItemIds
+      admissionMetadata: inFlight.admissionMetadata
     })
   })
 

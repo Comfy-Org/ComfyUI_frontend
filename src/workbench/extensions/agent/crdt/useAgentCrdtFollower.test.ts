@@ -1452,7 +1452,9 @@ describe('useAgentCrdtFollower', () => {
       vi.mocked(recordDevEvent).mockClear()
       const { enqueue, unmount } = mountWithHumanOps()
       const intent = requireIntent()
-      bridge().follower.doc.getMap = () => ({ toJSON: () => ({ '1': {} }) })
+      const doc = new Y.Doc()
+      doc.getMap('nodes').set('1', { type: 'KSampler' })
+      bridge().follower.doc = doc
 
       await settle(enqueue)
 
@@ -1467,40 +1469,49 @@ describe('useAgentCrdtFollower', () => {
     }
   )
 
-  it('releases an unconfirmed delete once it expires even though the host kept the node (no doc frame ever says otherwise)', async () => {
+  it('captures no identity for a delete when the identity read fails, entering the bounded unidentified path (boundary test)', async () => {
+    // Reserves a malformed doc for this explicit boundary case (see the
+    // table test above, which uses a real Y.Doc for its own outcome-state
+    // coverage): simulates a future Yjs internal-shape break the same way
+    // yjsItemIdentity.test.ts does, without depending on one existing today.
     vi.useFakeTimers()
     const { enqueue, unmount } = mountWithHumanOps()
     const intent = requireIntent()
-    // The host legitimately never applied the delete: the doc keeps node
-    // '1' for the rest of this test, so `!docNodeIds.has(id)` - the doc's
-    // half of the release condition - never fires on its own.
-    bridge().follower.doc.getMap = () => ({ toJSON: () => ({ '1': {} }) })
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('1', { type: 'KSampler' })
+    Object.defineProperty(doc.getMap('nodes'), '_map', {
+      get() {
+        throw new Error('shape changed')
+      }
+    })
+    bridge().follower.doc = doc
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
-    bridge().subscribedWorkflowId = null
-    vi.advanceTimersByTime(10_000)
-    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+    const opId = requireSentOpId()
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [opId],
+      skipped: []
+    })
 
-    // Short of the expiry budget: still pending, so the test is exercising
-    // the expiry itself rather than some other, earlier release path.
-    vi.advanceTimersByTime(STALE_AFTER_MS - 1)
+    // Bounded ('confirmed-applied-unidentified'), unlike the identified,
+    // unbounded case below: it expires instead of staying pending forever.
     expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
-
-    vi.advanceTimersByTime(1)
+    vi.advanceTimersByTime(STALE_AFTER_MS)
     expect([...intent.pendingDeletes('wf-1')]).toEqual([])
     unmount()
   })
 
-  it('keeps a host-confirmed-applied delete pending past the expiry deadline, releasing only once the doc catches up', async () => {
-    vi.useFakeTimers()
+  it('does not erase a retained delete when the current node-set read throws on an otherwise caught-up doc (P1 regression)', async () => {
+    // Regression: `currentDocNodeIds()` swallows a read failure into an
+    // empty Set, indistinguishable from a document that genuinely holds no
+    // nodes. Reading that empty Set as authoritative (docCaughtUp stays true
+    // here - this is not the follower-replaced window) let a transient
+    // unreadable snapshot permanently prune a still-needed retention.
     const { enqueue, unmount } = mountWithHumanOps()
     const intent = requireIntent()
-    // A KNOWN identity was captured at issue time (a real Y.Doc item), and
-    // the doc's own removal effect frame is merely slow, not absent - unlike
-    // the 'unknown' or identity-less case, this delete is definitively
-    // applied on a known identity, so it must outlive
-    // PENDING_DELETE_EXPIRY_MS rather than expire on the same timer.
     const doc = new Y.Doc()
     doc.getMap('nodes').set('1', { type: 'KSampler' })
     bridge().follower.doc = doc
@@ -1516,11 +1527,13 @@ describe('useAgentCrdtFollower', () => {
     })
     expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
 
-    vi.advanceTimersByTime(STALE_AFTER_MS * 2)
-    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+    bridge().follower.doc.getMap = () => ({
+      toJSON: () => {
+        throw new Error('unreadable node set')
+      }
+    })
 
-    doc.getMap('nodes').delete('1')
-    expect([...intent.pendingDeletes('wf-1')]).toEqual([])
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
     unmount()
   })
 
