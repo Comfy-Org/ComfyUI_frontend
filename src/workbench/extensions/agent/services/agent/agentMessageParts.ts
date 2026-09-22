@@ -12,6 +12,7 @@ export interface ToolPart {
   type: 'tool'
   callId: string
   name: string
+  skill?: string
   state: PartState
   ok?: boolean
   durationMs?: number
