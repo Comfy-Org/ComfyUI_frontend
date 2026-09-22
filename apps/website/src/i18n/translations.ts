@@ -10618,7 +10618,6 @@ Enterprise`
     en: 'Custom nodes',
     'zh-CN': '自定义节点'
   },
-  'workshop.v2.workflow.runsHere': { en: 'Runs here', 'zh-CN': '可在此运行' },
   'workshop.v2.sort.label': { en: 'Sort', 'zh-CN': '排序' },
   'workshop.v2.sort.popular': { en: 'Most popular', 'zh-CN': '推荐' },
   'workshop.v2.sort.name': { en: 'Name A to Z', 'zh-CN': '名称 A 到 Z' },

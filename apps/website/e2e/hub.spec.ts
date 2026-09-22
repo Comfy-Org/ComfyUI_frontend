@@ -184,7 +184,6 @@ test.describe('V2 catalogue', () => {
     await page.goto('/hub/workflow/api_nano_banana_pro/')
 
     await expect(page.getByTestId('workflow-run')).toBeVisible()
-    await expect(page.getByTestId('workflow-kind')).toContainText(/Runs here/i)
     await expect(page.getByTestId('workflow-destination')).toHaveCount(0)
   })
 
