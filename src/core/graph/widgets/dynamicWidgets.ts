@@ -563,6 +563,10 @@ export function reconcileAutogrowInputs(node: LGraphNode): void {
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const input = node.inputs.at(index)
   if (!input) return
+  //The slot was reconnected before this deferred compaction ran (e.g. a
+  //connect/disconnect/reconnect sequence in immediate succession); the
+  //compaction is stale and must not run against the slot's new link.
+  if (node.getInputLink(index)) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const autogrowGroup = Object.hasOwn(node.comfyDynamic.autogrow, groupName)
     ? node.comfyDynamic.autogrow[groupName]
@@ -703,9 +707,6 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
       if (iscon) {
         if (pendingConnection === slot) pendingConnectionSeen = true
         if (swappingSlot === slot) {
-          //This is the swap's own matching connect - the slot was already
-          //occupied, so the growth bookkeeping below doesn't apply.
-          //Resolved; no need to wait for a frame.
           swappingSlot = undefined
           return
         }
