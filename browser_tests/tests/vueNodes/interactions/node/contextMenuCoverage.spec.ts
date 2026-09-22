@@ -3,8 +3,6 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import {
-  clickExactMenuItem,
-  getNodeRef,
   openContextMenu,
   openMultiNodeContextMenu
 } from '@e2e/fixtures/utils/contextMenuTestHelpers'
@@ -22,41 +20,53 @@ test.describe(
       test('should change node color via Color submenu', async ({
         comfyPage
       }) => {
-        const nodeRef = await getNodeRef(comfyPage, 'KSampler')
+        const nodeRef = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
         const initialColor = await nodeRef.getProperty<string | undefined>(
           'color'
         )
 
-        await openContextMenu(comfyPage, 'KSampler')
-        const menu = comfyPage.contextMenu.primeVueMenu
-        await menu.getByRole('menuitem', { name: 'Color', exact: true }).click()
+        await test.step('Choose a color from the submenu', async () => {
+          await openContextMenu(comfyPage, 'KSampler')
+          const menu = comfyPage.contextMenu.primeVueMenu
+          await menu
+            .getByRole('menuitem', { name: 'Color', exact: true })
+            .click()
 
-        const redSwatch = comfyPage.page.getByTitle('Red', { exact: true })
-        await expect(redSwatch.first()).toBeVisible()
-        await redSwatch.first().click()
+          const redSwatch = comfyPage.page.getByTitle('Red', { exact: true })
+          await expect(redSwatch.first()).toBeVisible()
+          await redSwatch.first().click()
+        })
 
-        await expect
-          .poll(() => nodeRef.getProperty<string | undefined>('color'))
-          .not.toBe(initialColor)
+        await test.step('Apply the chosen color', async () => {
+          await expect
+            .poll(() => nodeRef.getProperty<string | undefined>('color'))
+            .not.toBe(initialColor)
+        })
       })
 
       test('should change node shape via Shape submenu', async ({
         comfyPage
       }) => {
-        const nodeRef = await getNodeRef(comfyPage, 'KSampler')
+        const nodeRef = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
 
-        await openContextMenu(comfyPage, 'KSampler')
-        const menu = comfyPage.contextMenu.primeVueMenu
-        await menu.getByRole('menuitem', { name: 'Shape', exact: true }).click()
+        await test.step('Choose a shape from the submenu', async () => {
+          await openContextMenu(comfyPage, 'KSampler')
+          const menu = comfyPage.contextMenu.primeVueMenu
+          await menu
+            .getByRole('menuitem', { name: 'Shape', exact: true })
+            .click()
 
-        const shapePopover = comfyPage.page
-          .locator('.p-popover')
-          .filter({ hasText: 'Default' })
-        const boxItem = shapePopover.getByText('Box', { exact: true })
-        await expect(boxItem).toBeVisible()
-        await boxItem.click()
+          const shapePopover = comfyPage.page
+            .locator('.p-popover')
+            .filter({ hasText: 'Default' })
+          const boxItem = shapePopover.getByText('Box', { exact: true })
+          await expect(boxItem).toBeVisible()
+          await boxItem.click()
+        })
 
-        await expect.poll(() => nodeRef.getProperty<number>('shape')).toBe(1)
+        await test.step('Apply the chosen shape', async () => {
+          await expect.poll(() => nodeRef.getProperty<number>('shape')).toBe(1)
+        })
       })
 
       test('should delete node via Delete context menu', async ({
@@ -65,7 +75,7 @@ test.describe(
         const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
         await openContextMenu(comfyPage, 'KSampler')
-        await clickExactMenuItem(comfyPage, 'Delete')
+        await comfyPage.contextMenu.clickMenuItemExact('Delete')
 
         await expect
           .poll(() => comfyPage.nodeOps.getGraphNodesCount())
@@ -86,7 +96,7 @@ test.describe(
       })
 
       test('should show Run Branch for output nodes', async ({ comfyPage }) => {
-        const nodeRef = await getNodeRef(comfyPage, 'Save Image')
+        const nodeRef = await comfyPage.nodeOps.getNodeRefByTitle('Save Image')
         await comfyPage.nodeOps.panToNode(nodeRef)
 
         await openContextMenu(comfyPage, 'Save Image')
@@ -102,7 +112,6 @@ test.describe(
     test.describe('Image Node Actions', () => {
       test.beforeEach(async ({ comfyPage }) => {
         await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-        await comfyPage.vueNodes.waitForNodes()
         await comfyPage.page
           .getByTestId(TestIds.node.mainImage)
           .first()
@@ -127,7 +136,7 @@ test.describe(
         comfyPage
       }) => {
         await openContextMenu(comfyPage, 'Load Image')
-        await clickExactMenuItem(comfyPage, 'Open in Mask Editor')
+        await comfyPage.contextMenu.clickMenuItemExact('Open in Mask Editor')
 
         await expect(
           comfyPage.page.getByRole('heading', { name: 'Mask Editor' })
@@ -141,7 +150,7 @@ test.describe(
       }) => {
         const nodeTitles = ['KSampler', 'Load Checkpoint', 'Empty Latent Image']
         const nodeRefs = await Promise.all(
-          nodeTitles.map((title) => getNodeRef(comfyPage, title))
+          nodeTitles.map((title) => comfyPage.nodeOps.getNodeRefByTitle(title))
         )
         const contextNode = nodeRefs[1]
         const contextNodeInitialY = (
@@ -152,29 +161,35 @@ test.describe(
           (await nodeRefs[0].getProperty<[number, number]>('pos'))[1]
         ).not.toBe(contextNodeInitialY)
 
-        await openMultiNodeContextMenu(comfyPage, nodeTitles, nodeTitles[1])
-        const menu = comfyPage.contextMenu.primeVueMenu
-        await menu
-          .getByRole('menuitem', {
-            name: 'Align Selected To',
-            exact: true
-          })
-          .hover()
+        await test.step('Align selected nodes to the top of the context node', async () => {
+          await openMultiNodeContextMenu(comfyPage, nodeTitles, nodeTitles[1])
+          const menu = comfyPage.contextMenu.primeVueMenu
+          await menu
+            .getByRole('menuitem', {
+              name: 'Align Selected To',
+              exact: true
+            })
+            .hover()
 
-        const topItem = menu
-          .getByRole('menuitem', { name: 'Top', exact: true })
-          .last()
-        await expect(topItem).toBeVisible()
-        await topItem.click()
+          const topItem = menu
+            .getByRole('menuitem', { name: 'Top', exact: true })
+            .last()
+          await expect(topItem).toBeVisible()
+          await topItem.click()
+        })
 
-        await expect
-          .poll(async () => {
-            const positions = await Promise.all(
-              nodeRefs.map((node) => node.getProperty<[number, number]>('pos'))
-            )
-            return positions.map((position) => position[1])
-          })
-          .toEqual(nodeRefs.map(() => contextNodeInitialY))
+        await test.step('Align all selected nodes', async () => {
+          await expect
+            .poll(async () => {
+              const positions = await Promise.all(
+                nodeRefs.map((node) =>
+                  node.getProperty<[number, number]>('pos')
+                )
+              )
+              return positions.map((position) => position[1])
+            })
+            .toEqual(nodeRefs.map(() => contextNodeInitialY))
+        })
       })
 
       test('should distribute selected nodes via Distribute Nodes submenu', async ({
@@ -182,65 +197,80 @@ test.describe(
       }) => {
         const threeNodes = ['Load Checkpoint', 'KSampler', 'Empty Latent Image']
 
-        await openMultiNodeContextMenu(comfyPage, threeNodes)
-        const menu = comfyPage.contextMenu.primeVueMenu
-        await menu
-          .getByRole('menuitem', {
-            name: 'Distribute Nodes',
-            exact: true
-          })
-          .hover()
+        await test.step('Choose horizontal distribution', async () => {
+          await openMultiNodeContextMenu(comfyPage, threeNodes)
+          const menu = comfyPage.contextMenu.primeVueMenu
+          await menu
+            .getByRole('menuitem', {
+              name: 'Distribute Nodes',
+              exact: true
+            })
+            .hover()
 
-        const horizontalItem = menu
-          .getByRole('menuitem', {
-            name: 'Horizontal',
-            exact: true
-          })
-          .last()
-        await expect(horizontalItem).toBeVisible()
-        await horizontalItem.click()
+          const horizontalItem = menu
+            .getByRole('menuitem', {
+              name: 'Horizontal',
+              exact: true
+            })
+            .last()
+          await expect(horizontalItem).toBeVisible()
+          await horizontalItem.click()
+        })
 
-        const nodeRef0 = await getNodeRef(comfyPage, threeNodes[0])
-        const nodeRef1 = await getNodeRef(comfyPage, threeNodes[1])
-        const nodeRef2 = await getNodeRef(comfyPage, threeNodes[2])
-
-        await expect
-          .poll(async () => {
-            const bounds = await Promise.all([
-              nodeRef0.getBounding(),
-              nodeRef1.getBounding(),
-              nodeRef2.getBounding()
-            ])
-            const sorted = bounds.toSorted((a, b) => a.x - b.x)
-            const gap1 = sorted[1].x - (sorted[0].x + sorted[0].width)
-            const gap2 = sorted[2].x - (sorted[1].x + sorted[1].width)
-            return Math.abs(gap1 - gap2)
-          })
-          .toBeLessThanOrEqual(1)
+        await test.step('Distribute selected nodes evenly', async () => {
+          const nodeRefs = await Promise.all(
+            threeNodes.map((title) =>
+              comfyPage.nodeOps.getNodeRefByTitle(title)
+            )
+          )
+          await expect
+            .poll(async () => {
+              const bounds = await Promise.all(
+                nodeRefs.map((node) => node.getBounding())
+              )
+              const sorted = bounds.toSorted((a, b) => a.x - b.x)
+              const gap1 = sorted[1].x - (sorted[0].x + sorted[0].width)
+              const gap2 = sorted[2].x - (sorted[1].x + sorted[1].width)
+              return Math.abs(gap1 - gap2)
+            })
+            .toBeLessThanOrEqual(1)
+        })
       })
 
       test('should hide node-specific LiteGraph options for multiple nodes', async ({
         comfyPage
       }) => {
         const nodeTitle = 'KSampler'
-        const node = await getNodeRef(comfyPage, nodeTitle)
+        const node = await comfyPage.nodeOps.getNodeRefByTitle(nodeTitle)
         await comfyPage.page.evaluate((nodeId) => {
           const graphNode = window.app!.graph.getNodeById(nodeId)
           if (!graphNode) throw new Error(`Node ${nodeId} not found`)
           graphNode.getExtraMenuOptions = (_canvas, options) => [
             ...options,
-            { content: 'Node-only action', callback: () => {} }
+            {
+              content: 'Node-only action',
+              callback: (_value, _options, _event, _menu, clickedNode) => {
+                document.body.dataset.contextMenuNodeActionTarget =
+                  clickedNode === graphNode ? 'matched' : 'mismatched'
+              }
+            }
           ]
         }, node.id)
 
         const singleNodeMenu = await openContextMenu(comfyPage, nodeTitle)
-        await expect(
-          singleNodeMenu.getByRole('menuitem', {
-            name: 'Node-only action',
-            exact: true
-          })
-        ).toBeVisible()
-        await singleNodeMenu.press('Escape')
+        const nodeOnlyAction = singleNodeMenu.getByRole('menuitem', {
+          name: 'Node-only action',
+          exact: true
+        })
+        await expect(nodeOnlyAction).toBeVisible()
+        await nodeOnlyAction.click()
+        await expect
+          .poll(() =>
+            comfyPage.page
+              .locator('body')
+              .getAttribute('data-context-menu-node-action-target')
+          )
+          .toBe('matched')
 
         const multiNodeMenu = await openMultiNodeContextMenu(comfyPage, [
           nodeTitle,
@@ -259,7 +289,7 @@ test.describe(
       test('should disable Delete for a non-removable node', async ({
         comfyPage
       }) => {
-        const node = await getNodeRef(comfyPage, 'KSampler')
+        const node = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
         await comfyPage.page.evaluate((nodeId) => {
           const graphNode = window.app!.graph.getNodeById(nodeId)
           if (!graphNode) throw new Error(`Node ${nodeId} not found`)
@@ -278,7 +308,8 @@ test.describe(
       test('should disable Delete when another selected node blocks deletion', async ({
         comfyPage
       }) => {
-        const protectedNode = await getNodeRef(comfyPage, 'KSampler')
+        const protectedNode =
+          await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
         await comfyPage.page.evaluate((nodeId) => {
           const graphNode = window.app!.graph.getNodeById(nodeId)
           if (!graphNode) throw new Error(`Node ${nodeId} not found`)
@@ -300,7 +331,7 @@ test.describe(
       test('should show widget-specific options when right-clicking a named widget', async ({
         comfyPage
       }) => {
-        const nodeRef = await getNodeRef(comfyPage, 'KSampler')
+        const nodeRef = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
         await comfyPage.nodeOps.panToNode(nodeRef)
 
         const widgetLocator = comfyPage.vueNodes.getWidgetByName(
@@ -316,22 +347,11 @@ test.describe(
 
         const menu = comfyPage.contextMenu.primeVueMenu
         await menu.waitFor({ state: 'visible' })
-
-        const menuItems = menu.getByRole('menuitem')
-        const labels = await menuItems.allTextContents()
-        const trimmedLabels = labels.map((l) => l.trim())
-
-        const hasFavoriteOrRename = trimmedLabels.some(
-          (label) =>
-            label.startsWith('Favorite Widget') ||
-            label.startsWith('Unfavorite Widget') ||
-            label.startsWith('Rename Widget')
-        )
-
-        expect(
-          hasFavoriteOrRename,
-          'Widget-specific menu options (Favorite/Unfavorite/Rename Widget) should appear for the "seed" widget'
-        ).toBe(true)
+        await expect(
+          menu.getByRole('menuitem', {
+            name: /^(Favorite|Unfavorite) Widget: seed$/
+          })
+        ).toBeVisible()
       })
     })
   }
