@@ -36,6 +36,7 @@ const ANALYTICS_EVENT = {
   cliClientTabClicked: 'website:cli_client_tab_clicked',
   mcpConnectionTabClicked: 'website:mcp_connection_tab_clicked',
   mcpClientTabClicked: 'website:mcp_client_tab_clicked',
+  routerRoadmapCardExpanded: 'website:router_roadmap_card_expanded',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
@@ -55,6 +56,8 @@ export type CliClientId =
   | 'hermes'
   | 'terminal'
   | 'ci'
+
+export type RouterRoadmapCardId = 'workflow' | 'strategy' | 'use-case' | 'byok'
 
 type AnalyticsEvent =
   | {
@@ -79,6 +82,10 @@ type AnalyticsEvent =
   | {
       name: typeof ANALYTICS_EVENT.mcpClientTabClicked
       properties: { client: McpClientId }
+    }
+  | {
+      name: typeof ANALYTICS_EVENT.routerRoadmapCardExpanded
+      properties: { card: RouterRoadmapCardId }
     }
   | {
       name:
@@ -342,6 +349,15 @@ export function captureMcpClientTabClick(client: McpClientId): void {
   captureEvent({
     name: ANALYTICS_EVENT.mcpClientTabClicked,
     properties: { client }
+  })
+}
+
+export function captureRouterRoadmapCardExpanded(
+  card: RouterRoadmapCardId
+): void {
+  captureEvent({
+    name: ANALYTICS_EVENT.routerRoadmapCardExpanded,
+    properties: { card }
   })
 }
 
