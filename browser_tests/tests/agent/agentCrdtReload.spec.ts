@@ -29,7 +29,10 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const test = mergeTests(agentTest, webSocketFixture)
 
 test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
-  test.use({ connectWebSocketToServer: false })
+  test.use({
+    connectWebSocketToServer: false,
+    captureWebSocketMessages: true
+  })
 
   test.beforeEach(async ({ page }) => {
     const workflows: WorkflowListResponse = {

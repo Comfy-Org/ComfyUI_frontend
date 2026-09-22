@@ -31,34 +31,45 @@ function createWebSocketRouteHandler(
 
 export const webSocketFixture = base.extend<{
   connectWebSocketToServer: boolean
+  captureWebSocketMessages: boolean
   getWebSocket: () => Promise<WebSocketRoute>
   nextWebSocket: () => Promise<WebSocketRoute>
   webSocketTracker: WebSocketTracker
   webSocketMessages: Map<WebSocketRoute, string[]>
 }>({
   connectWebSocketToServer: [true, { option: true }],
+  captureWebSocketMessages: [false, { option: true }],
   // oxlint-disable-next-line no-empty-pattern -- Playwright requires an object pattern.
   webSocketMessages: async ({}, use) => {
     await use(new Map())
   },
   webSocketTracker: [
-    async ({ context, connectWebSocketToServer, webSocketMessages }, use) => {
+    async (
+      {
+        context,
+        connectWebSocketToServer,
+        captureWebSocketMessages,
+        webSocketMessages
+      },
+      use
+    ) => {
       let current: WebSocketRoute | undefined
       const waiters = new Set<(ws: WebSocketRoute) => void>()
 
       await context.routeWebSocket(
         /\/ws/,
         createWebSocketRouteHandler(connectWebSocketToServer, (ws, server) => {
-          const messages: string[] = []
-          webSocketMessages.set(ws, messages)
-          // Registering a page-side handler switches off Playwright's automatic
-          // page-to-server forwarding, so recording has to re-send the frame
-          // itself. Without this every spec merging the fixture drops the
-          // `feature_flags` handshake and leaves `api.serverFeatureFlags` empty.
-          ws.onMessage((message) => {
-            if (typeof message === 'string') messages.push(message)
-            server?.send(message)
-          })
+          if (captureWebSocketMessages) {
+            const messages: string[] = []
+            webSocketMessages.set(ws, messages)
+            // Registering a page-side handler switches off Playwright's
+            // automatic page-to-server forwarding, so recording has to
+            // re-send the frame itself.
+            ws.onMessage((message) => {
+              if (typeof message === 'string') messages.push(message)
+              server?.send(message)
+            })
+          }
           current = ws
           const pending = [...waiters]
           waiters.clear()
