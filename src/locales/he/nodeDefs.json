@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "עורך או משלב עד 5 תמונות ייחוס בהנחיית פרומפט טקסט באמצעות מודל Hunyuan Image של Tencent.",
+    "display_name": "Tencent HY Image: עריכה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_רוחב-גובה"
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_reference_detail": {
+        "name": "פירוט_ייחוס"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_watermark": {
+        "name": "סימן מים"
+      },
+      "model_width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "יוצר תמונות מפרומפט טקסט באמצעות מודל Hunyuan Image של Tencent.",
+    "display_name": "Tencent HY Image: טקסט לתמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_רוחב-גובה"
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_watermark": {
+        "name": "סימן מים"
+      },
+      "model_width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
