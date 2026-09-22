@@ -1,3 +1,4 @@
+import type { ErrorEvent, EventHint } from '@sentry/vue'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -25,25 +26,32 @@ describe('third-party error noise', () => {
 
   it.for([
     {
-      event: {},
+      event: { type: undefined },
       hint: { originalException: new Error(EXTENSION_ERROR) }
     },
     {
-      event: { message: `Error: ${EXTENSION_ERROR}` },
+      event: { type: undefined, message: `Error: ${EXTENSION_ERROR}` },
       hint: {}
     },
     {
-      event: { exception: { values: [{ value: EXTENSION_ERROR }] } },
+      event: {
+        type: undefined,
+        exception: { values: [{ value: EXTENSION_ERROR }] }
+      },
       hint: {}
     }
-  ])('drops the extension error from Sentry', ({ event, hint }) => {
-    expect(sentryThirdPartyErrorFilter(event, hint)).toBeNull()
-  })
+  ] satisfies Array<{ event: ErrorEvent; hint: EventHint }>)(
+    'drops the extension error from Sentry',
+    ({ event, hint }) => {
+      expect(sentryThirdPartyErrorFilter(event, hint)).toBeNull()
+    }
+  )
 
   it('keeps ordinary Sentry events unchanged', () => {
     const event = {
+      type: undefined,
       exception: { values: [{ value: 'Application failed' }] }
-    }
+    } satisfies ErrorEvent
 
     expect(sentryThirdPartyErrorFilter(event, {})).toBe(event)
   })

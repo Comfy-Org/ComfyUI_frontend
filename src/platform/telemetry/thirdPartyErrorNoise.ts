@@ -1,12 +1,7 @@
+import type { ErrorEvent, EventHint } from '@sentry/vue'
+
 const EXTENSION_TAB_NOT_FOUND_MESSAGE =
   'Invalid call to runtime.sendMessage(). Tab not found.'
-
-type SentryEventLike = {
-  message?: string
-  exception?: { values?: Array<{ value?: string }> }
-}
-
-type SentryHintLike = { originalException?: unknown }
 
 function messageFrom(value: unknown): string | undefined {
   if (typeof value === 'string') return value
@@ -30,10 +25,10 @@ export function isThirdPartyErrorNoise(message?: string): boolean {
 }
 
 /** Drops a browser-extension messaging failure that the app never emits. */
-export function sentryThirdPartyErrorFilter<T extends SentryEventLike>(
-  event: T,
-  hint: SentryHintLike
-): T | null {
+export function sentryThirdPartyErrorFilter(
+  event: ErrorEvent,
+  hint: EventHint
+): ErrorEvent | null {
   const messages = [
     messageFrom(hint.originalException),
     event.message,
