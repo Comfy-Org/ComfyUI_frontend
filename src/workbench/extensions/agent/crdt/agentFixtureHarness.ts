@@ -75,11 +75,14 @@ export function parseAgentResponseFixture(
 
 function collectDraftPatchFrames(values: readonly unknown[]): DraftPatchFrame[] {
   const candidates = values.filter(isDraftPatchCandidate)
-  const frames = candidates.filter(isDraftPatchFrame)
-  if (frames.length !== candidates.length) {
-    throw new AgentFixtureError(
-      'Invalid agent response fixture: malformed draft_patch frame'
-    )
+  const frames: DraftPatchFrame[] = []
+  for (const candidate of candidates) {
+    if (!isDraftPatchFrame(candidate)) {
+      throw new AgentFixtureError(
+        'Invalid agent response fixture: malformed draft_patch frame'
+      )
+    }
+    frames.push(candidate)
   }
   if (frames.length === 0) {
     throw new AgentFixtureError(
