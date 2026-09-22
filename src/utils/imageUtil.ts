@@ -1,4 +1,5 @@
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 
 const GRID_THUMBNAIL_PREVIEW_FORMAT = 'webp;75'
 
@@ -39,13 +40,8 @@ export function parseImageWidgetValue(raw: string): {
   subfolder: string
   type: string
 } {
-  let value = raw
-  let type = 'input'
-  const typeMatch = value.match(/ \[([^\]]+)\]$/)
-  if (typeMatch) {
-    type = typeMatch[1]
-    value = value.slice(0, -typeMatch[0].length)
-  }
+  const { filepath, rootFolder: type } = parseAnnotatedPath(raw)
+  let value = filepath
   let subfolder = ''
   const slashIndex = value.lastIndexOf('/')
   if (slashIndex !== -1) {
