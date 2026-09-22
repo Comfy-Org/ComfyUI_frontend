@@ -1,0 +1,2743 @@
+@keyframes wf-conditioner-base {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  0.88402% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+    animation-timing-function: ease-out;
+  }
+  1.224028% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.659992% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.863997% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+}
+@keyframes wf-conditioner-products {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  2.17605% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+    animation-timing-function: ease-out;
+  }
+  2.516058% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.659992% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.863997% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+}
+@keyframes wf-conditioner-keygen {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  3.740086% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+    animation-timing-function: ease-out;
+  }
+  4.080094% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.659992% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.863997% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+}
+@keyframes wf-conditioner-keyframe-white {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  6.490851% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+    animation-timing-function: ease-out;
+  }
+  6.830859% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.659992% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.863997% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+}
+@keyframes wf-conditioner-keyframe-white-image {
+  0% {
+    opacity: 0;
+  }
+  8.689053% {
+    opacity: 0;
+  }
+  8.961059% {
+    opacity: 1;
+  }
+  99.659992% {
+    opacity: 1;
+  }
+  99.863997% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wf-conditioner-keyframe-gold {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  6.490851% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+    animation-timing-function: ease-out;
+  }
+  6.830859% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.659992% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.863997% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+}
+@keyframes wf-conditioner-keyframe-gold-image {
+  0% {
+    opacity: 0;
+  }
+  8.689053% {
+    opacity: 0;
+  }
+  8.961059% {
+    opacity: 1;
+  }
+  99.659992% {
+    opacity: 1;
+  }
+  99.863997% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wf-conditioner-keyframe-purple {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  6.490851% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+    animation-timing-function: ease-out;
+  }
+  6.830859% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.659992% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.863997% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+}
+@keyframes wf-conditioner-keyframe-purple-image {
+  0% {
+    opacity: 0;
+  }
+  8.689053% {
+    opacity: 0;
+  }
+  8.961059% {
+    opacity: 1;
+  }
+  99.659992% {
+    opacity: 1;
+  }
+  99.863997% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wf-conditioner-keyframe-purple-selection {
+  0% {
+    opacity: 0;
+  }
+  10.348291% {
+    opacity: 0;
+  }
+  10.416292% {
+    opacity: 1;
+  }
+  99.659992% {
+    opacity: 1;
+  }
+  99.863997% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wf-conditioner-motionref {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  11.545118% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+    animation-timing-function: ease-out;
+  }
+  11.885126% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.659992% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.863997% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+}
+@keyframes wf-conditioner-videogen {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  12.837148% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+    animation-timing-function: ease-out;
+  }
+  13.177156% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.659992% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.863997% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+}
+@keyframes wf-conditioner-result-purple {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  15.587913% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+    animation-timing-function: ease-out;
+  }
+  15.927921% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.659992% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  99.863997% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0);
+  }
+}
+@keyframes wf-conditioner-result-purple-image {
+  0% {
+    opacity: 0;
+  }
+  17.786115% {
+    opacity: 0;
+  }
+  18.058121% {
+    opacity: 1;
+  }
+  99.659992% {
+    opacity: 1;
+  }
+  99.863997% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wf-conditioner-base-keygen {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  4.45765% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  4.46445% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  5.078511% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.659992% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.863997% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes wf-conditioner-products-keygen {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  5.663029% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  5.669829% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  6.28389% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.659992% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.863997% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes wf-conditioner-keygen-keyframe-white {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  7.249216% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  7.256017% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  7.870077% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.659992% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.863997% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes wf-conditioner-keygen-keyframe-gold {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  7.249216% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  7.256017% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  7.870077% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.659992% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.863997% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes wf-conditioner-keygen-keyframe-purple {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  7.249216% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  7.256017% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  7.870077% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.659992% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.863997% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes wf-conditioner-keyframe-purple-videogen {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  13.554712% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  13.561512% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  14.175573% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.659992% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.863997% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes wf-conditioner-motionref-videogen {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  14.760091% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  14.766891% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  15.380952% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.659992% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.863997% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes wf-conditioner-videogen-result-purple {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  16.346278% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  16.353079% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  16.96714% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.659992% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  99.863997% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes wf-user-conditioner {
+  0% {
+    opacity: 0;
+    transform: scale(1);
+    left: 5.2904cqw;
+    top: 2.3577cqw;
+  }
+  0.204005% {
+    opacity: 0;
+    transform: scale(1);
+    left: 5.2904cqw;
+    top: 2.3577cqw;
+  }
+  0.258406% {
+    opacity: 1;
+    transform: scale(1);
+    left: 5.2904cqw;
+    top: 2.3577cqw;
+  }
+  0.748017% {
+    opacity: 1;
+    transform: scale(1);
+    left: 8.2806cqw;
+    top: 13.2516cqw;
+  }
+  0.843219% {
+    opacity: 1;
+    transform: scale(0.82);
+    left: 8.2806cqw;
+    top: 13.2516cqw;
+  }
+  0.992823% {
+    opacity: 1;
+    transform: scale(1);
+    left: 8.2806cqw;
+    top: 13.2516cqw;
+  }
+  1.224028% {
+    opacity: 1;
+    transform: scale(1);
+    left: 8.2806cqw;
+    top: 13.2516cqw;
+  }
+  1.496034% {
+    opacity: 1;
+    transform: scale(1);
+    left: 8.2806cqw;
+    top: 13.2516cqw;
+  }
+  2.040047% {
+    opacity: 1;
+    transform: scale(1);
+    left: 8.2806cqw;
+    top: 23.2892cqw;
+  }
+  2.135249% {
+    opacity: 1;
+    transform: scale(0.82);
+    left: 8.2806cqw;
+    top: 23.2892cqw;
+  }
+  2.284852% {
+    opacity: 1;
+    transform: scale(1);
+    left: 8.2806cqw;
+    top: 23.2892cqw;
+  }
+  2.516058% {
+    opacity: 1;
+    transform: scale(1);
+    left: 8.2806cqw;
+    top: 23.2892cqw;
+  }
+  2.788064% {
+    opacity: 1;
+    transform: scale(1);
+    left: 5.2904cqw;
+    top: 2.3577cqw;
+  }
+  9.641075% {
+    opacity: 1;
+    transform: scale(1);
+    left: 5.2904cqw;
+    top: 2.3577cqw;
+  }
+  10.253089% {
+    opacity: 1;
+    transform: scale(1);
+    left: 37.2628cqw;
+    top: 27.5572cqw;
+  }
+  10.348291% {
+    opacity: 1;
+    transform: scale(0.82);
+    left: 37.2628cqw;
+    top: 27.5572cqw;
+  }
+  10.497894% {
+    opacity: 1;
+    transform: scale(1);
+    left: 37.2628cqw;
+    top: 27.5572cqw;
+  }
+  10.525095% {
+    opacity: 1;
+    transform: scale(1);
+    left: 37.2628cqw;
+    top: 27.5572cqw;
+  }
+  10.865103% {
+    opacity: 1;
+    transform: scale(1);
+    left: 37.2628cqw;
+    top: 27.5572cqw;
+  }
+  11.409115% {
+    opacity: 1;
+    transform: scale(1);
+    left: 50.9201cqw;
+    top: 13.8603cqw;
+  }
+  11.504317% {
+    opacity: 1;
+    transform: scale(0.82);
+    left: 50.9201cqw;
+    top: 13.8603cqw;
+  }
+  11.653921% {
+    opacity: 1;
+    transform: scale(1);
+    left: 50.9201cqw;
+    top: 13.8603cqw;
+  }
+  11.885126% {
+    opacity: 1;
+    transform: scale(1);
+    left: 50.9201cqw;
+    top: 13.8603cqw;
+  }
+  12.157132% {
+    opacity: 1;
+    transform: scale(1);
+    left: 5.2904cqw;
+    top: 2.3577cqw;
+  }
+  99.659992% {
+    opacity: 1;
+    transform: scale(1);
+    left: 5.2904cqw;
+    top: 2.3577cqw;
+  }
+  99.863997% {
+    opacity: 0;
+    transform: scale(1);
+    left: 5.2904cqw;
+    top: 2.3577cqw;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+    left: 5.2904cqw;
+    top: 2.3577cqw;
+  }
+}
+@keyframes wf-agent-conditioner {
+  0% {
+    opacity: 0;
+    transform: scale(1);
+    left: 89.0167cqw;
+    top: 29.4422cqw;
+  }
+  3.06007% {
+    opacity: 0;
+    transform: scale(1);
+    left: 89.0167cqw;
+    top: 29.4422cqw;
+  }
+  3.114471% {
+    opacity: 1;
+    transform: scale(1);
+    left: 89.0167cqw;
+    top: 29.4422cqw;
+  }
+  3.604083% {
+    opacity: 1;
+    transform: scale(1);
+    left: 23.0305cqw;
+    top: 14.9511cqw;
+  }
+  3.699285% {
+    opacity: 1;
+    transform: scale(0.82);
+    left: 23.0305cqw;
+    top: 14.9511cqw;
+  }
+  3.848888% {
+    opacity: 1;
+    transform: scale(1);
+    left: 23.0305cqw;
+    top: 14.9511cqw;
+  }
+  4.080094% {
+    opacity: 1;
+    transform: scale(1);
+    left: 23.0305cqw;
+    top: 14.9511cqw;
+  }
+  4.46445% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.1811cqw;
+    top: 13.2516cqw;
+  }
+  4.476532% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.2448cqw;
+    top: 13.253cqw;
+  }
+  4.488243% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.3063cqw;
+    top: 13.2571cqw;
+  }
+  4.499617% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.3658cqw;
+    top: 13.2639cqw;
+  }
+  4.510693% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.4234cqw;
+    top: 13.2732cqw;
+  }
+  4.521506% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.4791cqw;
+    top: 13.285cqw;
+  }
+  4.532089% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.5331cqw;
+    top: 13.2992cqw;
+  }
+  4.542477% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.5853cqw;
+    top: 13.3156cqw;
+  }
+  4.552701% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.6358cqw;
+    top: 13.3342cqw;
+  }
+  4.562791% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.6848cqw;
+    top: 13.3548cqw;
+  }
+  4.572773% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.7322cqw;
+    top: 13.3775cqw;
+  }
+  4.582673% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.7782cqw;
+    top: 13.402cqw;
+  }
+  4.592514% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.8229cqw;
+    top: 13.4283cqw;
+  }
+  4.602315% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.8662cqw;
+    top: 13.4564cqw;
+  }
+  4.612094% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.9084cqw;
+    top: 13.486cqw;
+  }
+  4.621866% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.9494cqw;
+    top: 13.5171cqw;
+  }
+  4.631644% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.9893cqw;
+    top: 13.5497cqw;
+  }
+  4.641438% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.0282cqw;
+    top: 13.5836cqw;
+  }
+  4.651255% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.0661cqw;
+    top: 13.6187cqw;
+  }
+  4.661102% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.1032cqw;
+    top: 13.6549cqw;
+  }
+  4.670982% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.1395cqw;
+    top: 13.6922cqw;
+  }
+  4.680898% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.1751cqw;
+    top: 13.7304cqw;
+  }
+  4.69085% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.2101cqw;
+    top: 13.7695cqw;
+  }
+  4.700838% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.2445cqw;
+    top: 13.8093cqw;
+  }
+  4.710859% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.2783cqw;
+    top: 13.8498cqw;
+  }
+  4.720912% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.3118cqw;
+    top: 13.8909cqw;
+  }
+  4.730991% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.3448cqw;
+    top: 13.9324cqw;
+  }
+  4.741093% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.3776cqw;
+    top: 13.9743cqw;
+  }
+  4.751212% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.4102cqw;
+    top: 14.0165cqw;
+  }
+  4.761343% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.4426cqw;
+    top: 14.0589cqw;
+  }
+  4.771481% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.475cqw;
+    top: 14.1014cqw;
+  }
+  4.781618% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.5073cqw;
+    top: 14.1438cqw;
+  }
+  4.791749% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.5398cqw;
+    top: 14.1862cqw;
+  }
+  4.801868% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.5723cqw;
+    top: 14.2284cqw;
+  }
+  4.81197% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.6051cqw;
+    top: 14.2703cqw;
+  }
+  4.822049% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.6382cqw;
+    top: 14.3118cqw;
+  }
+  4.832102% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.6717cqw;
+    top: 14.3529cqw;
+  }
+  4.842123% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.7055cqw;
+    top: 14.3934cqw;
+  }
+  4.852111% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.7399cqw;
+    top: 14.4332cqw;
+  }
+  4.862063% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.7748cqw;
+    top: 14.4723cqw;
+  }
+  4.871979% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.8104cqw;
+    top: 14.5105cqw;
+  }
+  4.881859% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.8467cqw;
+    top: 14.5478cqw;
+  }
+  4.891706% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.8838cqw;
+    top: 14.584cqw;
+  }
+  4.901523% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.9218cqw;
+    top: 14.6191cqw;
+  }
+  4.911317% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.9607cqw;
+    top: 14.653cqw;
+  }
+  4.921095% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.0006cqw;
+    top: 14.6856cqw;
+  }
+  4.930867% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.0416cqw;
+    top: 14.7167cqw;
+  }
+  4.940646% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.0837cqw;
+    top: 14.7463cqw;
+  }
+  4.950447% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.1271cqw;
+    top: 14.7744cqw;
+  }
+  4.960288% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.1717cqw;
+    top: 14.8007cqw;
+  }
+  4.970188% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.2177cqw;
+    top: 14.8252cqw;
+  }
+  4.98017% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.2652cqw;
+    top: 14.8479cqw;
+  }
+  4.99026% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.3142cqw;
+    top: 14.8685cqw;
+  }
+  5.000484% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.3647cqw;
+    top: 14.8871cqw;
+  }
+  5.010872% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.4169cqw;
+    top: 14.9035cqw;
+  }
+  5.021455% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.4708cqw;
+    top: 14.9177cqw;
+  }
+  5.032268% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.5265cqw;
+    top: 14.9295cqw;
+  }
+  5.043344% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.5841cqw;
+    top: 14.9388cqw;
+  }
+  5.054718% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.6437cqw;
+    top: 14.9456cqw;
+  }
+  5.066429% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.7052cqw;
+    top: 14.9497cqw;
+  }
+  5.078511% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.7688cqw;
+    top: 14.9511cqw;
+  }
+  5.285472% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.7688cqw;
+    top: 14.9511cqw;
+  }
+  5.669829% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.1811cqw;
+    top: 23.2892cqw;
+  }
+  5.674189% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.2448cqw;
+    top: 23.2824cqw;
+  }
+  5.678604% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.3063cqw;
+    top: 23.2621cqw;
+  }
+  5.68325% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.3658cqw;
+    top: 23.2288cqw;
+  }
+  5.688262% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.4234cqw;
+    top: 23.183cqw;
+  }
+  5.693733% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.4791cqw;
+    top: 23.1252cqw;
+  }
+  5.699721% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.5331cqw;
+    top: 23.0558cqw;
+  }
+  5.706258% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.5853cqw;
+    top: 22.9753cqw;
+  }
+  5.713361% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.6358cqw;
+    top: 22.8841cqw;
+  }
+  5.72103% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.6848cqw;
+    top: 22.7827cqw;
+  }
+  5.72926% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.7322cqw;
+    top: 22.6716cqw;
+  }
+  5.738039% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.7782cqw;
+    top: 22.5512cqw;
+  }
+  5.74735% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.8229cqw;
+    top: 22.4221cqw;
+  }
+  5.757172% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.8662cqw;
+    top: 22.2846cqw;
+  }
+  5.767484% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.9084cqw;
+    top: 22.1392cqw;
+  }
+  5.778261% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.9494cqw;
+    top: 21.9864cqw;
+  }
+  5.789477% {
+    opacity: 1;
+    transform: scale(1);
+    left: 15.9893cqw;
+    top: 21.8267cqw;
+  }
+  5.801108% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.0282cqw;
+    top: 21.6605cqw;
+  }
+  5.813124% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.0661cqw;
+    top: 21.4882cqw;
+  }
+  5.825498% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.1032cqw;
+    top: 21.3104cqw;
+  }
+  5.838202% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.1395cqw;
+    top: 21.1275cqw;
+  }
+  5.851206% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.1751cqw;
+    top: 20.94cqw;
+  }
+  5.864481% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.2101cqw;
+    top: 20.7483cqw;
+  }
+  5.877998% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.2445cqw;
+    top: 20.5529cqw;
+  }
+  5.891726% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.2783cqw;
+    top: 20.3542cqw;
+  }
+  5.905637% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.3118cqw;
+    top: 20.1528cqw;
+  }
+  5.919699% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.3448cqw;
+    top: 19.9491cqw;
+  }
+  5.933883% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.3776cqw;
+    top: 19.7435cqw;
+  }
+  5.948158% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.4102cqw;
+    top: 19.5365cqw;
+  }
+  5.962493% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.4426cqw;
+    top: 19.3286cqw;
+  }
+  5.97686% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.475cqw;
+    top: 19.1202cqw;
+  }
+  5.991226% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.5073cqw;
+    top: 18.9118cqw;
+  }
+  6.005561% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.5398cqw;
+    top: 18.7039cqw;
+  }
+  6.019836% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.5723cqw;
+    top: 18.4969cqw;
+  }
+  6.03402% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.6051cqw;
+    top: 18.2913cqw;
+  }
+  6.048082% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.6382cqw;
+    top: 18.0876cqw;
+  }
+  6.061993% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.6717cqw;
+    top: 17.8861cqw;
+  }
+  6.075721% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.7055cqw;
+    top: 17.6875cqw;
+  }
+  6.089238% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.7399cqw;
+    top: 17.4921cqw;
+  }
+  6.102513% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.7748cqw;
+    top: 17.3004cqw;
+  }
+  6.115517% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.8104cqw;
+    top: 17.1129cqw;
+  }
+  6.128221% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.8467cqw;
+    top: 16.93cqw;
+  }
+  6.140595% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.8838cqw;
+    top: 16.7522cqw;
+  }
+  6.152611% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.9218cqw;
+    top: 16.5799cqw;
+  }
+  6.164242% {
+    opacity: 1;
+    transform: scale(1);
+    left: 16.9607cqw;
+    top: 16.4137cqw;
+  }
+  6.175458% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.0006cqw;
+    top: 16.254cqw;
+  }
+  6.186235% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.0416cqw;
+    top: 16.1012cqw;
+  }
+  6.196547% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.0837cqw;
+    top: 15.9558cqw;
+  }
+  6.206369% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.1271cqw;
+    top: 15.8183cqw;
+  }
+  6.21568% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.1717cqw;
+    top: 15.6891cqw;
+  }
+  6.224459% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.2177cqw;
+    top: 15.5688cqw;
+  }
+  6.232689% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.2652cqw;
+    top: 15.4577cqw;
+  }
+  6.240358% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.3142cqw;
+    top: 15.3563cqw;
+  }
+  6.247461% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.3647cqw;
+    top: 15.2651cqw;
+  }
+  6.253998% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.4169cqw;
+    top: 15.1846cqw;
+  }
+  6.259986% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.4708cqw;
+    top: 15.1152cqw;
+  }
+  6.265457% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.5265cqw;
+    top: 15.0574cqw;
+  }
+  6.270469% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.5841cqw;
+    top: 15.0116cqw;
+  }
+  6.275115% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.6437cqw;
+    top: 14.9783cqw;
+  }
+  6.27953% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.7052cqw;
+    top: 14.958cqw;
+  }
+  6.28389% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.7688cqw;
+    top: 14.9511cqw;
+  }
+  6.87166% {
+    opacity: 1;
+    transform: scale(1);
+    left: 17.7688cqw;
+    top: 14.9511cqw;
+  }
+  7.256017% {
+    opacity: 1;
+    transform: scale(1);
+    left: 28.2921cqw;
+    top: 14.9511cqw;
+  }
+  7.870077% {
+    opacity: 1;
+    transform: scale(1);
+    left: 28.2921cqw;
+    top: 14.9511cqw;
+  }
+  8.077039% {
+    opacity: 1;
+    transform: scale(1);
+    left: 28.2921cqw;
+    top: 14.9511cqw;
+  }
+  8.485048% {
+    opacity: 1;
+    transform: scale(1);
+    left: 89.0167cqw;
+    top: 29.4422cqw;
+  }
+  12.157132% {
+    opacity: 1;
+    transform: scale(1);
+    left: 89.0167cqw;
+    top: 29.4422cqw;
+  }
+  12.701145% {
+    opacity: 1;
+    transform: scale(1);
+    left: 65.5549cqw;
+    top: 17.8281cqw;
+  }
+  12.796347% {
+    opacity: 1;
+    transform: scale(0.82);
+    left: 65.5549cqw;
+    top: 17.8281cqw;
+  }
+  12.94595% {
+    opacity: 1;
+    transform: scale(1);
+    left: 65.5549cqw;
+    top: 17.8281cqw;
+  }
+  13.177156% {
+    opacity: 1;
+    transform: scale(1);
+    left: 65.5549cqw;
+    top: 17.8281cqw;
+  }
+  13.561512% {
+    opacity: 1;
+    transform: scale(1);
+    left: 43.1282cqw;
+    top: 24.2093cqw;
+  }
+  13.575062% {
+    opacity: 1;
+    transform: scale(1);
+    left: 43.5207cqw;
+    top: 24.1239cqw;
+  }
+  13.588324% {
+    opacity: 1;
+    transform: scale(1);
+    left: 43.9049cqw;
+    top: 24.0399cqw;
+  }
+  13.601308% {
+    opacity: 1;
+    transform: scale(1);
+    left: 44.2808cqw;
+    top: 23.9574cqw;
+  }
+  13.614022% {
+    opacity: 1;
+    transform: scale(1);
+    left: 44.6489cqw;
+    top: 23.8761cqw;
+  }
+  13.626475% {
+    opacity: 1;
+    transform: scale(1);
+    left: 45.0093cqw;
+    top: 23.796cqw;
+  }
+  13.638676% {
+    opacity: 1;
+    transform: scale(1);
+    left: 45.3623cqw;
+    top: 23.717cqw;
+  }
+  13.650633% {
+    opacity: 1;
+    transform: scale(1);
+    left: 45.7081cqw;
+    top: 23.6389cqw;
+  }
+  13.662355% {
+    opacity: 1;
+    transform: scale(1);
+    left: 46.0469cqw;
+    top: 23.5617cqw;
+  }
+  13.673852% {
+    opacity: 1;
+    transform: scale(1);
+    left: 46.379cqw;
+    top: 23.4851cqw;
+  }
+  13.685131% {
+    opacity: 1;
+    transform: scale(1);
+    left: 46.7047cqw;
+    top: 23.4092cqw;
+  }
+  13.696203% {
+    opacity: 1;
+    transform: scale(1);
+    left: 47.0241cqw;
+    top: 23.3337cqw;
+  }
+  13.707074% {
+    opacity: 1;
+    transform: scale(1);
+    left: 47.3376cqw;
+    top: 23.2586cqw;
+  }
+  13.717755% {
+    opacity: 1;
+    transform: scale(1);
+    left: 47.6452cqw;
+    top: 23.1838cqw;
+  }
+  13.728255% {
+    opacity: 1;
+    transform: scale(1);
+    left: 47.9474cqw;
+    top: 23.109cqw;
+  }
+  13.738582% {
+    opacity: 1;
+    transform: scale(1);
+    left: 48.2443cqw;
+    top: 23.0343cqw;
+  }
+  13.748745% {
+    opacity: 1;
+    transform: scale(1);
+    left: 48.5362cqw;
+    top: 22.9596cqw;
+  }
+  13.758754% {
+    opacity: 1;
+    transform: scale(1);
+    left: 48.8233cqw;
+    top: 22.8846cqw;
+  }
+  13.768616% {
+    opacity: 1;
+    transform: scale(1);
+    left: 49.1058cqw;
+    top: 22.8092cqw;
+  }
+  13.778342% {
+    opacity: 1;
+    transform: scale(1);
+    left: 49.384cqw;
+    top: 22.7335cqw;
+  }
+  13.787941% {
+    opacity: 1;
+    transform: scale(1);
+    left: 49.6582cqw;
+    top: 22.6571cqw;
+  }
+  13.797421% {
+    opacity: 1;
+    transform: scale(1);
+    left: 49.9285cqw;
+    top: 22.5802cqw;
+  }
+  13.806793% {
+    opacity: 1;
+    transform: scale(1);
+    left: 50.1952cqw;
+    top: 22.5024cqw;
+  }
+  13.816064% {
+    opacity: 1;
+    transform: scale(1);
+    left: 50.4586cqw;
+    top: 22.4237cqw;
+  }
+  13.825244% {
+    opacity: 1;
+    transform: scale(1);
+    left: 50.7188cqw;
+    top: 22.344cqw;
+  }
+  13.834344% {
+    opacity: 1;
+    transform: scale(1);
+    left: 50.9762cqw;
+    top: 22.2632cqw;
+  }
+  13.843371% {
+    opacity: 1;
+    transform: scale(1);
+    left: 51.2309cqw;
+    top: 22.1811cqw;
+  }
+  13.852336% {
+    opacity: 1;
+    transform: scale(1);
+    left: 51.4833cqw;
+    top: 22.0977cqw;
+  }
+  13.861247% {
+    opacity: 1;
+    transform: scale(1);
+    left: 51.7334cqw;
+    top: 22.0128cqw;
+  }
+  13.870115% {
+    opacity: 1;
+    transform: scale(1);
+    left: 51.9817cqw;
+    top: 21.9263cqw;
+  }
+  13.878949% {
+    opacity: 1;
+    transform: scale(1);
+    left: 52.2283cqw;
+    top: 21.8381cqw;
+  }
+  13.887758% {
+    opacity: 1;
+    transform: scale(1);
+    left: 52.4734cqw;
+    top: 21.7481cqw;
+  }
+  13.896552% {
+    opacity: 1;
+    transform: scale(1);
+    left: 52.7174cqw;
+    top: 21.6562cqw;
+  }
+  13.90534% {
+    opacity: 1;
+    transform: scale(1);
+    left: 52.9604cqw;
+    top: 21.5621cqw;
+  }
+  13.914132% {
+    opacity: 1;
+    transform: scale(1);
+    left: 53.2027cqw;
+    top: 21.466cqw;
+  }
+  13.922938% {
+    opacity: 1;
+    transform: scale(1);
+    left: 53.4445cqw;
+    top: 21.3675cqw;
+  }
+  13.931768% {
+    opacity: 1;
+    transform: scale(1);
+    left: 53.686cqw;
+    top: 21.2667cqw;
+  }
+  13.94063% {
+    opacity: 1;
+    transform: scale(1);
+    left: 53.9276cqw;
+    top: 21.1633cqw;
+  }
+  13.949536% {
+    opacity: 1;
+    transform: scale(1);
+    left: 54.1694cqw;
+    top: 21.0573cqw;
+  }
+  13.958493% {
+    opacity: 1;
+    transform: scale(1);
+    left: 54.4117cqw;
+    top: 20.9486cqw;
+  }
+  13.967512% {
+    opacity: 1;
+    transform: scale(1);
+    left: 54.6547cqw;
+    top: 20.837cqw;
+  }
+  13.976603% {
+    opacity: 1;
+    transform: scale(1);
+    left: 54.8986cqw;
+    top: 20.7224cqw;
+  }
+  13.985775% {
+    opacity: 1;
+    transform: scale(1);
+    left: 55.1438cqw;
+    top: 20.6048cqw;
+  }
+  13.995038% {
+    opacity: 1;
+    transform: scale(1);
+    left: 55.3904cqw;
+    top: 20.484cqw;
+  }
+  14.004401% {
+    opacity: 1;
+    transform: scale(1);
+    left: 55.6386cqw;
+    top: 20.3598cqw;
+  }
+  14.013874% {
+    opacity: 1;
+    transform: scale(1);
+    left: 55.8888cqw;
+    top: 20.2322cqw;
+  }
+  14.023466% {
+    opacity: 1;
+    transform: scale(1);
+    left: 56.1411cqw;
+    top: 20.101cqw;
+  }
+  14.033188% {
+    opacity: 1;
+    transform: scale(1);
+    left: 56.3959cqw;
+    top: 19.9662cqw;
+  }
+  14.043048% {
+    opacity: 1;
+    transform: scale(1);
+    left: 56.6532cqw;
+    top: 19.8277cqw;
+  }
+  14.053055% {
+    opacity: 1;
+    transform: scale(1);
+    left: 56.9135cqw;
+    top: 19.6852cqw;
+  }
+  14.06322% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.1769cqw;
+    top: 19.5387cqw;
+  }
+  14.073552% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.4436cqw;
+    top: 19.3881cqw;
+  }
+  14.08406% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.7139cqw;
+    top: 19.2332cqw;
+  }
+  14.094753% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.988cqw;
+    top: 19.074cqw;
+  }
+  14.105641% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.2662cqw;
+    top: 18.9104cqw;
+  }
+  14.116733% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.5488cqw;
+    top: 18.7421cqw;
+  }
+  14.128038% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.8359cqw;
+    top: 18.5692cqw;
+  }
+  14.139565% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.1277cqw;
+    top: 18.3914cqw;
+  }
+  14.151324% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.4246cqw;
+    top: 18.2087cqw;
+  }
+  14.163324% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.7268cqw;
+    top: 18.021cqw;
+  }
+  14.175573% {
+    opacity: 1;
+    transform: scale(1);
+    left: 60.0345cqw;
+    top: 17.8281cqw;
+  }
+  14.382534% {
+    opacity: 1;
+    transform: scale(1);
+    left: 60.0345cqw;
+    top: 17.8281cqw;
+  }
+  14.766891% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.2168cqw;
+    top: 13.8603cqw;
+  }
+  14.784912% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.274cqw;
+    top: 13.9926cqw;
+  }
+  14.802287% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.3307cqw;
+    top: 14.1196cqw;
+  }
+  14.819038% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.3868cqw;
+    top: 14.2414cqw;
+  }
+  14.835187% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.4423cqw;
+    top: 14.3581cqw;
+  }
+  14.850755% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.4974cqw;
+    top: 14.4699cqw;
+  }
+  14.865764% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.5519cqw;
+    top: 14.5769cqw;
+  }
+  14.880235% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.6059cqw;
+    top: 14.6793cqw;
+  }
+  14.894191% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.6594cqw;
+    top: 14.7774cqw;
+  }
+  14.907652% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.7124cqw;
+    top: 14.8711cqw;
+  }
+  14.920641% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.7649cqw;
+    top: 14.9608cqw;
+  }
+  14.933178% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.817cqw;
+    top: 15.0466cqw;
+  }
+  14.945285% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.8687cqw;
+    top: 15.1286cqw;
+  }
+  14.956983% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.9199cqw;
+    top: 15.207cqw;
+  }
+  14.968294% {
+    opacity: 1;
+    transform: scale(1);
+    left: 57.9706cqw;
+    top: 15.2819cqw;
+  }
+  14.979238% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.021cqw;
+    top: 15.3536cqw;
+  }
+  14.989835% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.0709cqw;
+    top: 15.4221cqw;
+  }
+  15.000107% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.1204cqw;
+    top: 15.4877cqw;
+  }
+  15.010073% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.1696cqw;
+    top: 15.5505cqw;
+  }
+  15.019754% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.2184cqw;
+    top: 15.6107cqw;
+  }
+  15.029168% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.2668cqw;
+    top: 15.6685cqw;
+  }
+  15.038335% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.3148cqw;
+    top: 15.7239cqw;
+  }
+  15.047273% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.3626cqw;
+    top: 15.7772cqw;
+  }
+  15.056002% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.41cqw;
+    top: 15.8285cqw;
+  }
+  15.064538% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.457cqw;
+    top: 15.878cqw;
+  }
+  15.072899% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.5038cqw;
+    top: 15.9258cqw;
+  }
+  15.081102% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.5503cqw;
+    top: 15.9722cqw;
+  }
+  15.089164% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.5965cqw;
+    top: 16.0172cqw;
+  }
+  15.097101% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.6424cqw;
+    top: 16.0611cqw;
+  }
+  15.104928% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.6881cqw;
+    top: 16.104cqw;
+  }
+  15.112661% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.7335cqw;
+    top: 16.1461cqw;
+  }
+  15.120316% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.7786cqw;
+    top: 16.1874cqw;
+  }
+  15.127906% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.8236cqw;
+    top: 16.2283cqw;
+  }
+  15.135448% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.8683cqw;
+    top: 16.2688cqw;
+  }
+  15.142955% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.9128cqw;
+    top: 16.3092cqw;
+  }
+  15.150442% {
+    opacity: 1;
+    transform: scale(1);
+    left: 58.9571cqw;
+    top: 16.3495cqw;
+  }
+  15.157925% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.0013cqw;
+    top: 16.39cqw;
+  }
+  15.165418% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.0452cqw;
+    top: 16.4308cqw;
+  }
+  15.172936% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.089cqw;
+    top: 16.472cqw;
+  }
+  15.180495% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.1327cqw;
+    top: 16.5139cqw;
+  }
+  15.188111% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.1762cqw;
+    top: 16.5566cqw;
+  }
+  15.1958% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.2196cqw;
+    top: 16.6002cqw;
+  }
+  15.203578% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.2629cqw;
+    top: 16.645cqw;
+  }
+  15.211464% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.306cqw;
+    top: 16.691cqw;
+  }
+  15.219475% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.3491cqw;
+    top: 16.7385cqw;
+  }
+  15.227629% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.3921cqw;
+    top: 16.7876cqw;
+  }
+  15.235945% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.435cqw;
+    top: 16.8385cqw;
+  }
+  15.244443% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.4778cqw;
+    top: 16.8913cqw;
+  }
+  15.253142% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.5206cqw;
+    top: 16.9462cqw;
+  }
+  15.262063% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.5634cqw;
+    top: 17.0033cqw;
+  }
+  15.271226% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.6061cqw;
+    top: 17.0629cqw;
+  }
+  15.280653% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.6489cqw;
+    top: 17.1251cqw;
+  }
+  15.290365% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.6916cqw;
+    top: 17.19cqw;
+  }
+  15.300383% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.7343cqw;
+    top: 17.2579cqw;
+  }
+  15.31073% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.7771cqw;
+    top: 17.3288cqw;
+  }
+  15.321428% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.8198cqw;
+    top: 17.403cqw;
+  }
+  15.332498% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.8626cqw;
+    top: 17.4805cqw;
+  }
+  15.343963% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.9055cqw;
+    top: 17.5617cqw;
+  }
+  15.355845% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.9484cqw;
+    top: 17.6465cqw;
+  }
+  15.368167% {
+    opacity: 1;
+    transform: scale(1);
+    left: 59.9914cqw;
+    top: 17.7353cqw;
+  }
+  15.380952% {
+    opacity: 1;
+    transform: scale(1);
+    left: 60.0345cqw;
+    top: 17.8281cqw;
+  }
+  15.968722% {
+    opacity: 1;
+    transform: scale(1);
+    left: 60.0345cqw;
+    top: 17.8281cqw;
+  }
+  16.353079% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.0753cqw;
+    top: 17.8281cqw;
+  }
+  16.365114% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.1192cqw;
+    top: 17.8271cqw;
+  }
+  16.376779% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.1616cqw;
+    top: 17.8242cqw;
+  }
+  16.388111% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.2026cqw;
+    top: 17.8195cqw;
+  }
+  16.399147% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.2422cqw;
+    top: 17.813cqw;
+  }
+  16.409922% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.2806cqw;
+    top: 17.8048cqw;
+  }
+  16.420472% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.3178cqw;
+    top: 17.7949cqw;
+  }
+  16.430831% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.3537cqw;
+    top: 17.7835cqw;
+  }
+  16.441029% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.3885cqw;
+    top: 17.7705cqw;
+  }
+  16.451096% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.4223cqw;
+    top: 17.7561cqw;
+  }
+  16.461061% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.455cqw;
+    top: 17.7403cqw;
+  }
+  16.470947% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.4867cqw;
+    top: 17.7232cqw;
+  }
+  16.480779% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.5174cqw;
+    top: 17.7049cqw;
+  }
+  16.490575% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.5473cqw;
+    top: 17.6854cqw;
+  }
+  16.500354% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.5763cqw;
+    top: 17.6647cqw;
+  }
+  16.510129% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.6046cqw;
+    top: 17.643cqw;
+  }
+  16.519914% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.632cqw;
+    top: 17.6203cqw;
+  }
+  16.529717% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.6588cqw;
+    top: 17.5967cqw;
+  }
+  16.539548% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.685cqw;
+    top: 17.5723cqw;
+  }
+  16.549412% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.7106cqw;
+    top: 17.547cqw;
+  }
+  16.559312% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.7356cqw;
+    top: 17.521cqw;
+  }
+  16.56925% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.7601cqw;
+    top: 17.4944cqw;
+  }
+  16.579227% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.7842cqw;
+    top: 17.4672cqw;
+  }
+  16.589242% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.8078cqw;
+    top: 17.4394cqw;
+  }
+  16.599292% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.8312cqw;
+    top: 17.4112cqw;
+  }
+  16.609375% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.8542cqw;
+    top: 17.3826cqw;
+  }
+  16.619486% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.877cqw;
+    top: 17.3536cqw;
+  }
+  16.629621% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.8996cqw;
+    top: 17.3244cqw;
+  }
+  16.639773% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.922cqw;
+    top: 17.295cqw;
+  }
+  16.649938% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.9444cqw;
+    top: 17.2655cqw;
+  }
+  16.66011% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.9666cqw;
+    top: 17.2359cqw;
+  }
+  16.670281% {
+    opacity: 1;
+    transform: scale(1);
+    left: 71.9889cqw;
+    top: 17.2063cqw;
+  }
+  16.680446% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.0113cqw;
+    top: 17.1768cqw;
+  }
+  16.690598% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.0337cqw;
+    top: 17.1474cqw;
+  }
+  16.700733% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.0563cqw;
+    top: 17.1182cqw;
+  }
+  16.710844% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.0791cqw;
+    top: 17.0892cqw;
+  }
+  16.720927% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.1021cqw;
+    top: 17.0606cqw;
+  }
+  16.730977% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.1255cqw;
+    top: 17.0324cqw;
+  }
+  16.740992% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.1491cqw;
+    top: 17.0047cqw;
+  }
+  16.750969% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.1732cqw;
+    top: 16.9774cqw;
+  }
+  16.760907% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.1977cqw;
+    top: 16.9508cqw;
+  }
+  16.770807% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.2227cqw;
+    top: 16.9248cqw;
+  }
+  16.780671% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.2483cqw;
+    top: 16.8996cqw;
+  }
+  16.790502% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.2745cqw;
+    top: 16.8751cqw;
+  }
+  16.800305% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.3013cqw;
+    top: 16.8515cqw;
+  }
+  16.81009% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.3287cqw;
+    top: 16.8288cqw;
+  }
+  16.819865% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.357cqw;
+    top: 16.8071cqw;
+  }
+  16.829644% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.386cqw;
+    top: 16.7865cqw;
+  }
+  16.83944% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.4159cqw;
+    top: 16.7669cqw;
+  }
+  16.849272% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.4466cqw;
+    top: 16.7486cqw;
+  }
+  16.859158% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.4783cqw;
+    top: 16.7315cqw;
+  }
+  16.869123% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.511cqw;
+    top: 16.7157cqw;
+  }
+  16.87919% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.5447cqw;
+    top: 16.7013cqw;
+  }
+  16.889388% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.5796cqw;
+    top: 16.6884cqw;
+  }
+  16.899747% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.6155cqw;
+    top: 16.6769cqw;
+  }
+  16.910297% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.6527cqw;
+    top: 16.6671cqw;
+  }
+  16.921072% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.6911cqw;
+    top: 16.6588cqw;
+  }
+  16.932108% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.7307cqw;
+    top: 16.6523cqw;
+  }
+  16.94344% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.7717cqw;
+    top: 16.6476cqw;
+  }
+  16.955105% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.8141cqw;
+    top: 16.6447cqw;
+  }
+  16.96714% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.858cqw;
+    top: 16.6438cqw;
+  }
+  17.174101% {
+    opacity: 1;
+    transform: scale(1);
+    left: 72.858cqw;
+    top: 16.6438cqw;
+  }
+  17.58211% {
+    opacity: 1;
+    transform: scale(1);
+    left: 89.0167cqw;
+    top: 29.4422cqw;
+  }
+  99.659992% {
+    opacity: 1;
+    transform: scale(1);
+    left: 89.0167cqw;
+    top: 29.4422cqw;
+  }
+  99.863997% {
+    opacity: 0;
+    transform: scale(1);
+    left: 89.0167cqw;
+    top: 29.4422cqw;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+    left: 89.0167cqw;
+    top: 29.4422cqw;
+  }
+}
+@keyframes wf-scene-conditioner {
+  0% {
+    opacity: 1;
+    visibility: visible;
+  }
+  99.9864% {
+    opacity: 1;
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}

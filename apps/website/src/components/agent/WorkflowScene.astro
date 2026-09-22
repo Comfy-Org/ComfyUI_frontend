@@ -1,0 +1,96 @@
+---
+import type { WorkflowGraph, WorkflowGraphNode } from './workflowGraph'
+import type { Point } from './workflowMotion'
+import { createWorkflowMotion } from './workflowMotion'
+
+interface Props {
+  workflow: WorkflowGraph
+  height: number
+  width?: number
+  motionCss?: string
+  userRest?: Point
+  holdDuration?: number
+  agentRest?: Point
+}
+
+const {
+  workflow,
+  height,
+  width = 1600,
+  holdDuration = 4,
+  agentRest,
+  userRest,
+  motionCss
+} = Astro.props
+const unit = width / 100
+
+const { nodes } = workflow
+const imageRoot = 'https://media.comfy.org/website/comfy-agent'
+const motion = createWorkflowMotion([workflow], {
+  width,
+  holdDuration,
+  connectionSpeed: 2,
+  agentRest,
+  userRest
+})
+const scene = motion.scenes[0]
+const portStyle = (port: Point, node: WorkflowGraphNode) =>
+  `left:${(port.x - node.x) / unit}cqw;top:${(port.y - node.y) / unit}cqw`
+---
+
+<style is:inline set:html={motionCss ?? motion.css} />
+<div style={`--wf-duration:${motion.duration}s;--wf-aspect:${width} / ${height}`} class="wf-example" data-example={workflow.id}>
+  <div class="wf-scroll">
+    <div class="wf-stage">
+      <div class="wf-scene" id={`workflow-${workflow.id}`} data-workflow={workflow.id} data-start={scene.start} style={`animation-name:wf-scene-${workflow.id}`}>
+        <svg class="wf-connections" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+          {scene.wires.map(wire => <path d={wire.path} pathLength="1" style={`animation-name:${wire.name}`} />)}
+        </svg>
+        {nodes.map((node, index) => (
+          <div data-step={index} data-node={node.id} class:list={['wf-node', `wf-kind-${node.kind}`]} style={`left:${node.x / unit}cqw;top:${node.y / unit}cqw;width:${node.width / unit}cqw;height:${node.height / unit}cqw;animation-name:${scene.nodes[index].name}`}>
+            <div class="wf-node-heading"><span class="ppformula-text-center">{node.label}</span></div>
+            {node.input && <span class="wf-port" style={portStyle(node.input, node)} aria-hidden="true" />}
+            {node.output && <span class="wf-port" style={portStyle(node.output, node)} aria-hidden="true" />}
+            {node.extraPorts?.map(port => <span class="wf-port" style={portStyle(port, node)} aria-hidden="true" />)}
+            {node.image && (
+              <>
+                <div class="wf-image-well" aria-hidden="true" />
+                <img class:list={['wf-node-image', { 'wf-generated-image': scene.nodes[index].imageName }]} style={scene.nodes[index].imageName ? `animation-name:${scene.nodes[index].imageName}` : undefined} src={`${imageRoot}/${node.image}`} alt={node.alt} width={node.kind === 'landscape' ? 256 : node.kind === 'reference' ? 227 : node.kind === 'result' ? 264 : 153} height={node.kind === 'landscape' ? 144 : node.kind === 'reference' ? 226 : node.kind === 'result' ? 268 : 152} />
+              </>
+            )}
+            {node.images && <div class="wf-product-references">{node.images.map(image => <img src={`${imageRoot}/${image.src}`} alt={image.alt} width="80" height="80" />)}</div>}
+            {node.pending && <div class:list={['wf-pending', { 'wf-generated-image': scene.nodes[index].imageName }]} style={scene.nodes[index].imageName ? `animation-name:${scene.nodes[index].imageName}` : undefined}><span>{node.pending}</span></div>}
+            {node.video && (
+              <>
+                <div class="wf-image-well" aria-hidden="true" />
+                <video class:list={['wf-node-image', { 'wf-generated-image': scene.nodes[index].imageName }]} style={scene.nodes[index].imageName ? `animation-name:${scene.nodes[index].imageName}` : undefined} data-src={`${imageRoot}/${node.video}`} poster={node.poster ? `${imageRoot}/${node.poster}` : undefined} muted playsinline loop={node.loopVideo} preload="none" aria-label={node.alt} width="256" height="144" />
+                <span class="wf-video-cue" style={`animation-delay:${scene.nodes[index].mediaAt ?? 0}s`} aria-hidden="true" />
+              </>
+            )}
+            {scene.nodes[index].selectionName && <span class="wf-selection" style={`animation-name:${scene.nodes[index].selectionName}`} aria-hidden="true" />}
+            {node.text && (
+              <p class="wf-prompt-well">
+                {scene.nodes[index].characters ? (
+                  <>
+                    <span class="sr-only">{node.text}</span>
+                    <span aria-hidden="true">{Array.from(node.text).map((character, characterIndex) => (
+                      <span class="wf-typed-character" style={`animation-name:${scene.nodes[index].characters?.[characterIndex].name}`}>{character}</span>
+                    ))}</span>
+                  </>
+                ) : <span class:list={{ 'wf-generated-image': scene.nodes[index].promptName }} style={scene.nodes[index].promptName ? `animation-name:${scene.nodes[index].promptName}` : undefined}>{node.text}</span>}
+              </p>
+            )}
+
+          </div>
+        ))}
+        <div style={`animation-name:${scene.userCursor.name};${userRest ? `left:${userRest.x / unit}cqw;top:${userRest.y / unit}cqw` : ''}`} class="wf-user" role="img" aria-label="User collaborating with the agent">
+          <img class="wf-user-pointer" src={`${imageRoot}/user-pointer.svg`} alt="" width="23" height="26" />
+          <span class="wf-user-badge"><img src={`${imageRoot}/user-left.svg`} alt="" width="14" height="29" /><span><span class="ppformula-text-center">User</span></span><img src={`${imageRoot}/user-right.svg`} alt="" width="14" height="29" /></span>
+        </div>
+        <div style={`animation-name:${scene.agentCursor.name};${agentRest ? `left:${agentRest.x / unit}cqw;top:${agentRest.y / unit}cqw` : ''}`} class="wf-agent" role="img" aria-label="Comfy Agent">
+          <img class="wf-agent-artwork" src={`${imageRoot}/agent-cursor.svg`} alt="" width="459" height="223" />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -39,6 +39,7 @@ interface Props {
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
+  hideAnnouncementBanner?: boolean
 }
 
 const {
@@ -51,7 +52,8 @@ const {
   breadcrumbs,
   mainEntityId,
   extraJsonLd,
-  minimal = false
+  minimal = false,
+  hideAnnouncementBanner = false
 } = Astro.props
 
 const keywordsContent =
@@ -78,6 +80,7 @@ const githubStars = rawStars ? formatStarCount(rawStars) : ''
 // suppressed when its CTA points at the current path.
 const bannerData = getBannerData(bannerConfig, locale)
 const bannerVisible =
+  !hideAnnouncementBanner &&
   evaluateBannerVisibility(bannerConfig, {
     currentLocale: locale,
     currentSection: 'sitewide',

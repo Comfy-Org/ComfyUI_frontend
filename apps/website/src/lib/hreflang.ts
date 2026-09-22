@@ -1,3 +1,4 @@
+import { isNoindexPathname } from '../config/indexing'
 import { isLocaleInvariantPath } from '../config/routes'
 
 const LOCALE_PREFIX = '/zh-CN'
@@ -42,15 +43,14 @@ export function hreflangAlternates(
   // request is suppressed too. Clustering ja properly is BE-11285.
   if (en === '/ja' || en.startsWith('/ja/')) return []
   if (en === '/404' || isLocaleInvariantPath(en)) return []
+  const zh = `${LOCALE_PREFIX}${en === '/' ? '' : en}`
+  if (isNoindexPathname(en) || isNoindexPathname(zh)) return []
   const enHref = new URL(withSlash(en), origin).href
   return [
     { hreflang: 'en', href: enHref },
     {
       hreflang: 'zh-CN',
-      href: new URL(
-        withSlash(`${LOCALE_PREFIX}${en === '/' ? '' : en}`),
-        origin
-      ).href
+      href: new URL(withSlash(zh), origin).href
     },
     { hreflang: 'x-default', href: enHref }
   ]
