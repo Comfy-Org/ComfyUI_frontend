@@ -22,7 +22,7 @@ export type PendingOpTrackerEvent =
       type: 'reverted'
       reason: PendingOpRevertReason
       opIds: string[]
-      /** The dropped ledger entries' ops, so consumers can undo their effect. */
+      /** The dropped ops needed to undo their optimistic effects. */
       ops: Op[]
       /**
        * The dropped entries' shadow ops carry their own kind (`ops` above),
@@ -38,9 +38,9 @@ export type PendingOpTrackerEvent =
     }
   | { type: 'delivery_unknown'; opIds: string[] }
   | { type: 'cleared'; opIds: string[] }
-  /** Skipped duplicates resolved by a projection at/after their ack seq. */
+  /** Duplicate already covered by a projected authoritative sequence. */
   | { type: 'skipped_cleared'; seq: number | null; opIds: string[] }
-  /** Skipped duplicates parked until a projection covers their ack seq. */
+  /** Duplicate waiting for its acknowledged sequence to be projected. */
   | { type: 'skipped_awaiting'; seq: number | null; opIds: string[] }
   | { type: 'reset'; opIds: string[] }
 
@@ -58,13 +58,9 @@ export interface PendingOpTrackerDeps {
 }
 
 export interface PendingOpTracker {
-  /** `OpSenderDeps.onBatchMinted`. */
   onBatchMinted(ops: Op[]): void
-  /** `OpSenderDeps.onBatchTransmitted`. */
   onBatchTransmitted(ops: Op[]): void
-  /** `OpSenderDeps.onBatchSettled`. */
   onBatchSettled(outcome: BatchOutcome): void
-  /** A `doc_update` carried these op ids: their effect is now in the doc. */
   onDocEffect(opIds: readonly string[]): void
   /**
    * The follower projected authoritative doc state at `seq` (null when the
@@ -87,7 +83,6 @@ export interface PendingOpTracker {
    * (`reason: 'diverged'`) through the same path a host rejection uses.
    */
   resolveDeliveryUnknown(effectPresent: (op: Op) => boolean | null): void
-  /** Doc lineage broke (reset / replacement / teardown): nothing is pending. */
   reset(): void
   entries(): PendingOpEntry<Op>[]
   /**
@@ -232,9 +227,7 @@ export function createPendingOpTracker(
   function parkOrClearSkipped(skipped: string[], ackSeq: number | null): void {
     if (skipped.length === 0) return
     if (ackSeq !== null && currentSeq() >= ackSeq) {
-      // The projection already folded doc state at/after the ack, so the
-      // duplicate's authoritative outcome is on screen NOW. This is a
-      // projection-based transition, not a clear-on-ack.
+      // An ack alone is insufficient; the projected sequence proves coverage.
       clearSkipped(skipped, ackSeq)
       return
     }

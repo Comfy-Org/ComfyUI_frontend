@@ -1,13 +1,7 @@
 /**
- * ADR-CRDT-PENDING-0030's load-bearing pin: a pending-op revert removal must
- * not re-mint a `delete_node`. `LGraph.remove` ends in an actor-less layout
- * `deleteNode` that the store delivers on a microtask - AFTER
- * `runMintPortsSuppressed`'s bracket has ended - so only
- * `layoutStore.withActor`'s apply-time stamping keeps the layout mint port's
- * local-actor gate closed. Runs the REAL store through the REAL wiring (like
- * `layoutStoreMintDelivery.test.ts`), with a would-have-minted control so the
- * pin can fail. Lives in renderer because it imports the real layout store;
- * the workbench module takes `withActor` injected.
+ * `LGraph.remove` delivers an actor-less layout deletion on a microtask, after
+ * mint suppression ends. The actor stamp is what prevents a rejected add from
+ * minting a new `delete_node`.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
@@ -71,9 +65,7 @@ describe('pending revert removal against the real layout store', () => {
             Record<string, LGraphNode>
           >
         },
-        // The tail of the real LGraph.remove teardown: `detachNodeLayout`
-        // applies an ACTOR-LESS deleteNode that the store stamps and delivers
-        // on its own microtask.
+        // Match the deferred delivery at the tail of LGraph.remove.
         remove(node: LGraphNode) {
           graphNodes.delete(String(node.id))
           layoutStore.applyOperation({

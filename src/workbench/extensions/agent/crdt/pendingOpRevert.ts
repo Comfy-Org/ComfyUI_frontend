@@ -31,9 +31,7 @@ export type WithLayoutActor = <T>(actor: string, fn: () => T) => T
 export type RevertableGraph = Pick<LGraph, '_nodes_by_id' | 'remove'>
 
 export interface PendingRevertRemovalSeams {
-  /** The live root graph, or null when no workflow is open. */
   getGraph(): RevertableGraph | null
-  /** `layoutStore.withActor`, injected by the composition root. */
   withLayoutActor: WithLayoutActor
 }
 

@@ -92,10 +92,6 @@ export class AgentCrdtProjection<TUpdate extends DocUpdate = DocUpdate> {
     return committed
   }
 
-  /**
-   * Re-attempts the last frame whose ECS batch did not commit (s3-opt-6).
-   * Returns the frame on success so the caller can publish its projection.
-   */
   retryPending(workflowId: string): TUpdate | null {
     return this.adapter.retryPending(workflowId)
   }

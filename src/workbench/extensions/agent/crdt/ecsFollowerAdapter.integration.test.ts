@@ -400,8 +400,7 @@ describe('EcsFollowerAdapter integration', () => {
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
 
-    // Committed baseline: the bind-time full reconcile is consumed, so the
-    // next frame takes the incremental path.
+    // Consume the bind-time reconcile so this frame takes the incremental path.
     const baseline = Y.encodeStateAsUpdate(host)
     follower.applyRemoteUpdate(baseline)
     expect(
@@ -431,9 +430,7 @@ describe('EcsFollowerAdapter integration', () => {
     ).toBe(false)
     expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
 
-    // The rejection consumed the frame's captured deltas; the retry must not
-    // commit an empty incremental batch and report the frame projected. The
-    // armed full reconcile re-reads the doc, so node 7 lands.
+    // Retry must re-read the doc because the rejected batch consumed its deltas.
     scopeAvailable = true
     expect(adapter.retryPending('wf')).toEqual({
       workflowId: 'wf',

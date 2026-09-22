@@ -572,8 +572,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       seq: 7
     })
 
-    // The ack moves the outbound baseline but nothing has landed in the doc
-    // yet; a skipped-duplicate result gating on the applied seq must not see 7.
+    // The ack advances the outbound baseline, not the applied watermark.
     expect(bridge.lastSequence).toBe(7)
     expect(bridge.lastAppliedSequence).toBeNull()
 
@@ -583,7 +582,7 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     )
     expect(bridge.lastAppliedSequence).toBe(7)
 
-    // A resubscribe reopens the window: the ack is known again, applied is not.
+    // Resubscribe waits for a fresh projection of the acknowledged sequence.
     bridge.resubscribe()
     transport.deliver('doc_subscribed', {
       v: 1,

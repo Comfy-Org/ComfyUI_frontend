@@ -305,7 +305,6 @@ export function useAgentCrdtFollower(
    */
   getGraph: () => MaterializableGraph | null = () => null,
   events: AgentCrdtFollowerEvents = {},
-  /** `layoutStore.withActor`, injected by the composition root. */
   withLayoutActor: WithLayoutActor = (_actor, fn) => fn()
 ) {
   const productGate = useAgentPanelStore()
@@ -801,8 +800,7 @@ function startAgentCrdtFollower(
         : null
     if (detail?.workflowId !== undefined)
       projection.discardPending(detail.workflowId)
-    // The read path is closed, so no doc_update effect can ever retire what
-    // is pending; drop the correlation instead of leaving it stranded.
+    // No later doc update can retire entries after the read path closes.
     pendingCorrelation.reset()
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
     recordDevEvent(
@@ -890,7 +888,6 @@ function startAgentCrdtFollower(
     }
   }
 
-  /** Watermark and settlement only - callers own the live-graph reconcile. */
   function onProjected(update: ClassifiedDocUpdate): void {
     pendingCorrelation.onProjected(update)
   }
