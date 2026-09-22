@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { fetchFirebaseConfig } from './configSource.js'
+import {
+  fetchCloudFeatures,
+  fetchFirebaseConfig,
+  fetchStripePublishableKey
+} from './configSource.js'
 
 const VALID_CONFIG = {
   apiKey: 'api-key',
@@ -131,5 +135,85 @@ describe('fetchFirebaseConfig', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('fetchStripePublishableKey', () => {
+  it('extracts the key from a valid response', async () => {
+    const fetchImpl = jsonFetch({ stripe_publishable_key: 'pk_live_123' })
+
+    await expect(
+      fetchStripePublishableKey('https://cloud.comfy.org', { fetchImpl })
+    ).resolves.toBe('pk_live_123')
+  })
+
+  it('offers no key when the field is absent', async () => {
+    const fetchImpl = jsonFetch({})
+
+    await expect(
+      fetchStripePublishableKey('https://cloud.comfy.org', { fetchImpl })
+    ).resolves.toBeUndefined()
+  })
+
+  it('offers no key when the field is an empty string', async () => {
+    const fetchImpl = jsonFetch({ stripe_publishable_key: '' })
+
+    await expect(
+      fetchStripePublishableKey('https://cloud.comfy.org', { fetchImpl })
+    ).resolves.toBeUndefined()
+  })
+
+  it('offers no key when the field is not a string', async () => {
+    const fetchImpl = jsonFetch({ stripe_publishable_key: 42 })
+
+    await expect(
+      fetchStripePublishableKey('https://cloud.comfy.org', { fetchImpl })
+    ).resolves.toBeUndefined()
+  })
+
+  it('offers no key on a non-OK response', async () => {
+    const fetchImpl = jsonFetch({ stripe_publishable_key: 'pk_live_123' }, 500)
+
+    await expect(
+      fetchStripePublishableKey('https://cloud.comfy.org', { fetchImpl })
+    ).resolves.toBeUndefined()
+  })
+})
+
+describe('fetchCloudFeatures', () => {
+  it('reads the Firebase config and the Stripe key from one fetch', async () => {
+    const fetchImpl = jsonFetch({
+      firebase_config: VALID_CONFIG,
+      stripe_publishable_key: 'pk_live_123'
+    })
+
+    await expect(
+      fetchCloudFeatures('https://cloud.comfy.org', { fetchImpl })
+    ).resolves.toEqual({
+      firebaseConfig: VALID_CONFIG,
+      stripePublishableKey: 'pk_live_123'
+    })
+    expect(fetchImpl).toHaveBeenCalledOnce()
+  })
+
+  it('offers neither field when the document omits both', async () => {
+    const fetchImpl = jsonFetch({})
+
+    await expect(
+      fetchCloudFeatures('https://cloud.comfy.org', { fetchImpl })
+    ).resolves.toEqual({
+      firebaseConfig: undefined,
+      stripePublishableKey: undefined
+    })
+  })
+
+  it('offers neither field on a network failure', async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new TypeError('Failed to fetch')
+    })
+
+    await expect(
+      fetchCloudFeatures('https://cloud.comfy.org', { fetchImpl })
+    ).resolves.toEqual({})
   })
 })

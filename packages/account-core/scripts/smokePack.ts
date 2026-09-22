@@ -206,7 +206,11 @@ import { createSessionBillingTransport } from '@comfyorg/account-core/billing'
 import type { FirebaseIdentityAppConfig } from '@comfyorg/account-core/firebase'
 import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
 import type { RuntimeFirebaseOptions } from '@comfyorg/account-core/firebaseConfigSource'
-import { fetchFirebaseConfig } from '@comfyorg/account-core/firebaseConfigSource'
+import {
+  fetchCloudFeatures,
+  fetchFirebaseConfig,
+  fetchStripePublishableKey
+} from '@comfyorg/account-core/firebaseConfigSource'
 import { createWebCrossTabRefreshPort } from '@comfyorg/account-core/web'
 import type { IdentityPort } from '@comfyorg/account-core/testing'
 import { createTestIdentity } from '@comfyorg/account-core/testing'
@@ -251,6 +255,8 @@ export const values = {
   createSessionBillingTransport,
   createFirebaseIdentity,
   fetchFirebaseConfig,
+  fetchStripePublishableKey,
+  fetchCloudFeatures,
   createWebCrossTabRefreshPort,
   createTestIdentity,
   MISSING_CUSTOMER_MESSAGE,
