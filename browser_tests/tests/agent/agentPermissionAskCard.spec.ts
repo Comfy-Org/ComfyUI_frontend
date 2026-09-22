@@ -83,6 +83,7 @@ test.describe('Agent permission ask card', { tag: '@cloud' }, () => {
       // answer twice.
       await expect(allow).toBeDisabled()
       await expect(deny).toBeDisabled()
+      await expect(panel.getByText(target, { exact: true })).toBeVisible()
     })
 
     await test.step('the resolution frame removes the card', async () => {
