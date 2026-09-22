@@ -81,14 +81,22 @@ const expectedLinks = [
 // A projection-dependent read that follows a real CRDT round trip or a
 // graph reload; the default 5s budget is too tight for CI, matching the
 // subscribe wait `agentAutogrowHandWiredLinkFixture.ts` widens for the
-// same reason.
-const SETTLE_TIMEOUT = 20_000
+// same reason. 30s matches the post-reload/post-CRDT settle budget used
+// elsewhere (e.g. `agentChatRefreshPersistence.spec.ts`,
+// `agentAttachmentHistoryPersistence.spec.ts`) — wide enough to absorb the
+// `playwright-video-new-tests` CI job's `SLOW_MO=250` tax across this
+// test's several UI actions and round trips, on top of the CRDT/RAF settle
+// time itself.
+const SETTLE_TIMEOUT = 30_000
 
 test.describe(
   'A hand-wired autogrow link survives a later agent turn',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test.describe.configure({ timeout: 60_000 })
+    // Three sequential SETTLE_TIMEOUT polls plus fixture setup and a graph
+    // reload can outrun a 60s test budget under SLOW_MO; 120s matches the
+    // sibling multi-round-trip specs above.
+    test.describe.configure({ timeout: 120_000 })
 
     test('keeps the hand-wired link on its own slot name after the agent reconnects another slot and sends', async ({
       autogrowHandWiredLink
