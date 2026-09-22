@@ -29,6 +29,7 @@ import {
   materializeRerouteLayout,
   releaseNodeLayoutAttachment
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -443,7 +444,9 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     return nodes.map((node) => node.serialize())
   }
   return serialisers.map(({ adapter, state }) =>
-    adapter.serializeFromStoreState(state)
+    adapter.serialize === LGraphNode.prototype.serialize
+      ? adapter.serializeFromStoreState(state)
+      : adapter.serialize()
   )
 }
 
@@ -798,9 +801,13 @@ export class LGraph
       useLinkPresentationStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
+      useSelectionStore().clearRoot(toRootGraphId(graphId))
       layoutStore.clearGraph(graphId)
     } else if (getRuntimeRootGraph(this)) {
       useExecutionOrderStore().clearGraph(graphScopeOf(this))
+      useSelectionStore().apply(graphScopeOf(this), {
+        type: 'selection.clear'
+      })
     }
     this.reroutes.clear()
 

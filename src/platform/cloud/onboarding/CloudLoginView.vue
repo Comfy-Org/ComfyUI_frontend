@@ -21,7 +21,7 @@
       </span>
     </p>
 
-    <Message v-if="!isSecureContext" severity="warn" class="mt-4 w-full">
+    <Message v-if="!isSecureContext" severity="warning" class="mt-4 w-full">
       {{ t('auth.login.insecureContextWarning') }}
     </Message>
 
@@ -60,10 +60,10 @@
 </template>
 
 <script setup lang="ts">
-import Message from 'primevue/message'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
+import Message from '@/components/ui/message/Message.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import CloudSocialAuthButtons from '@/platform/cloud/onboarding/components/CloudSocialAuthButtons.vue'

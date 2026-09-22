@@ -9,7 +9,6 @@ import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -72,11 +71,19 @@ export function registerAgentPanelExtension(): void {
           .nodeIds(workflowPath)
           .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
           .filter(isLGraphNode)
+        if (nodes.length === 0) {
+          // Nothing was saved for this workflow (e.g. a brand-new, never-saved
+          // tab). Disarm the restore guard directly instead of arming it with
+          // an empty selection - otherwise it stays armed until the *next*
+          // unrelated selection change (such as manually adding a node), which
+          // then gets wrongly adopted as "the restored selection".
+          nodeSelectionStore.finishWorkflowLoad()
+          return
+        }
         nodeSelectionStore.restoreNodeIds(
           nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
         )
         canvas.selectItems(nodes)
-        useCanvasStore().updateSelectedItems()
       } catch (error) {
         nodeSelectionStore.finishWorkflowLoad()
         throw error
