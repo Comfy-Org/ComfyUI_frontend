@@ -2,7 +2,7 @@ import type { WorkflowGraph, WorkflowGraphNode } from './workflowGraph'
 import type { MotionEdge, Point } from './workflowMotion'
 
 export const productWorkflowSize = { width: 1739, height: 599 }
-export const productWorkflowHoldDuration = 60
+export const productWorkflowHoldDuration = 10
 export const productWorkflowUserRest = { x: 92, y: 41 }
 export const productWorkflowAgentRest = { x: 1548, y: 512 }
 

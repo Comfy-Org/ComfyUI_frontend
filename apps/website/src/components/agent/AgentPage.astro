@@ -51,13 +51,13 @@ const briefs = [
       <p class="mt-6 w-0 min-w-full text-[17px]/[1.6] font-light text-primary-comfy-canvas sm:-ml-[10%] sm:min-w-[120%] lg:mt-8">It lives right inside ComfyUI, local and cloud. Describe what you want. It builds, runs, and reviews the workflow. Editing the canvas while you work, it crafts side by side with you.</p>
     </div>
     <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
-      <BrandButton href={externalLinks.cloud} size="lg" class="min-h-12 w-full rounded-2xl px-6 text-sm tracking-normal uppercase sm:w-auto">Try on Comfy Cloud</BrandButton>
+      <BrandButton href={externalLinks.cloud} size="lg" class="min-h-12 w-full rounded-2xl px-6 text-sm tracking-normal uppercase sm:w-auto">Try Comfy Agent</BrandButton>
     </div>
   </section>
 
   <WorkflowCanvas />
 
-  <section class="mx-auto max-w-400 px-6 pt-[4.2rem] sm:pt-14 lg:px-20 lg:pt-[4.95rem]" aria-labelledby="capabilities-title">
+  <section class="mx-auto max-w-400 px-6 pt-[4.2rem] sm:pt-14 lg:px-20 lg:pt-15" aria-labelledby="capabilities-title">
     <div class="text-center">
       <p class="text-sm font-extrabold tracking-wider text-primary-comfy-yellow uppercase">The agent</p>
       <h2 id="capabilities-title" class="mt-4 text-4xl/[1.25] font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl">A real creative teammate, and beyond</h2>
@@ -74,7 +74,7 @@ const briefs = [
       ))}
     </div>
     <div class="mt-10 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
-      <BrandButton href={externalLinks.cloud} size="lg" class="min-h-12 w-full rounded-2xl px-6 text-sm uppercase sm:min-h-16 sm:w-auto sm:rounded-3xl">Try on Comfy Cloud</BrandButton>
+      <BrandButton href={externalLinks.cloud} size="lg" class="min-h-12 w-full rounded-2xl px-6 text-sm uppercase sm:min-h-16 sm:w-auto sm:rounded-3xl">Try Comfy Agent</BrandButton>
     </div>
   </section>
 
@@ -138,7 +138,7 @@ const briefs = [
   </section>
 
   <section class="mx-auto grid max-w-400 gap-12 px-6 pt-[4.76rem] lg:grid-cols-[440fr_880fr] lg:gap-30 lg:px-20 lg:pt-[8.16rem]" aria-labelledby="start-title">
-    <div><h2 id="start-title" class="max-w-100 text-4xl/[1.25] font-light tracking-[-0.03em] text-primary-comfy-canvas lg:text-5xl">Where to start from</h2><p class="mt-12 hidden text-[17px]/[1.6] font-light text-primary-warm-white sm:block">Local or cloud, it lives wherever you build.</p></div>
+    <div class="max-sm:text-center"><h2 id="start-title" class="max-w-100 text-4xl/[1.25] font-light tracking-[-0.03em] text-primary-comfy-canvas max-sm:mx-auto lg:text-5xl">Where to start from</h2><p class="mt-12 hidden text-[17px]/[1.6] font-light text-primary-warm-white sm:block">Local or cloud, it lives wherever you build.</p></div>
     <div class="space-y-16">
       <div class="grid gap-6 border-b border-primary-comfy-canvas/40 pb-16 md:grid-cols-[280fr_568fr] md:gap-8">
         <h3 class="text-2xl/[1.4] font-medium text-primary-comfy-canvas">Running ComfyUI locally</h3>

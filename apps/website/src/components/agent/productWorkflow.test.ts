@@ -79,7 +79,7 @@ describe('conditioner workflow', () => {
     expect(imported.filter(({ name }) => !cursors.includes(name))).toEqual(
       generated.filter(({ name }) => !cursors.includes(name))
     )
-    expect(motion.duration).toBeCloseTo(73.52772575250836, 6)
+    expect(motion.duration).toBeCloseTo(23.52772575250836, 6)
   })
 
   it.for(['base', 'products', 'motionref'])(
@@ -211,7 +211,7 @@ describe('conditioner workflow', () => {
     }
   )
 
-  it('loops the final purple video in place during a sixty-second hold', () => {
+  it('loops the final purple video in place during a ten-second hold', () => {
     const videos = scene.timeline.find(
       (event) =>
         event.type === 'images' && event.nodes.includes('result-purple')
@@ -221,7 +221,7 @@ describe('conditioner workflow', () => {
     )
     assert.exists(videos?.imagesAt)
     assert.exists(final)
-    expect(motion.duration - 0.25 - videos.end).toBeCloseTo(60)
+    expect(motion.duration - 0.25 - videos.end).toBeCloseTo(10)
     const finalIndex = productWorkflow.nodes.indexOf(final)
     const holdFrame = animationFrames(
       motion,
