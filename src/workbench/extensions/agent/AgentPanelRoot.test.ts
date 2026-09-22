@@ -6862,12 +6862,12 @@ describe('AgentPanelRoot CRDT retention store wiring', () => {
 
     const calls = vi.mocked(useAgentCrdtFollower).mock.calls
     expect(calls).toHaveLength(2)
-    // The 7th positional argument (index 6) is the retention store; a future
-    // change that drops it or swaps it for a fresh instance per mount would
-    // reintroduce resurrection after an actual panel close/reopen even
-    // though every composable-level test (which injects its own store
-    // explicitly) stays green.
-    expect(calls[0][6]).toBe(sharedPendingDeleteRetentionStore)
-    expect(calls[1][6]).toBe(sharedPendingDeleteRetentionStore)
+    // The options object's `retentionStore`; a future change that drops it
+    // or swaps it for a fresh instance per mount would reintroduce
+    // resurrection after an actual panel close/reopen even though every
+    // composable-level test (which injects its own store explicitly) stays
+    // green.
+    expect(calls[0][2]?.retentionStore).toBe(sharedPendingDeleteRetentionStore)
+    expect(calls[1][2]?.retentionStore).toBe(sharedPendingDeleteRetentionStore)
   })
 })

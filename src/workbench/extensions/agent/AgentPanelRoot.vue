@@ -600,16 +600,15 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations
-} = useAgentCrdtFollower(
-  boundWorkflowId,
-  graphMutations,
-  () => resolvedUserInfo.value?.id ?? null,
-  isBoundWorkflowActive,
+} = useAgentCrdtFollower(boundWorkflowId, graphMutations, {
+  userId: () => resolvedUserInfo.value?.id ?? null,
+  isTargetActive: isBoundWorkflowActive,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
-  {
+  getGraph: () =>
+    canvasStore.canvas && app.isGraphReady ? app.rootGraph : null,
+  events: {
     onMaterialized({ workflowId, nodeIds }) {
       if (app.isGraphReady) {
         graphActivity.recordMaterialized(
@@ -622,8 +621,8 @@ const {
     onReset: graphActivity.resetWorkflow
   },
   // See ADR CRDT-WRITE-0035.
-  sharedPendingDeleteRetentionStore
-)
+  retentionStore: sharedPendingDeleteRetentionStore
+})
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,

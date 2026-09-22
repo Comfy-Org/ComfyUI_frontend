@@ -54,6 +54,13 @@ export interface OpSenderDeps {
   /** The follower's last observed doc sequence (stamps `base_version`). */
   baseVersion(): number
   /**
+   * The Yjs item identity a `delete_node`'s target currently names, read
+   * once at admission time (when its `op_id` is minted) and handed back on
+   * that op's own {@link BatchOutcome}. Null when the follower doc has no
+   * item for the id yet. Omitted deps default to always-null.
+   */
+  deletedItemId?(nodeId: string): string | null
+  /**
    * Terminal per-batch report: 'acknowledged' carries the host's result;
    * 'unacknowledged' means one resend after silence also drew no result;
    * 'unconfirmed' means the transport carried it at least once but its doc
@@ -70,7 +77,7 @@ export interface OpSenderDeps {
 // state settles a batch that was minted against a real `InFlight.workflowId`
 // (a `string`), so making `workflowId: null` uncombinable with them here
 // means a caller cannot construct an invalid pairing and have it compile.
-export type BatchOutcome =
+export type BatchOutcome = (
   | {
       workflowId: string
       state: 'acknowledged'
@@ -80,6 +87,10 @@ export type BatchOutcome =
   | { workflowId: string; state: 'unacknowledged'; ops: Op[] }
   | { workflowId: string; state: 'unconfirmed'; ops: Op[] }
   | { workflowId: string | null; state: 'undeliverable'; ops: Op[] }
+) & {
+  /** Every `delete_node` op in this batch, by its own `op_id` -> the identity `deletedItemId` captured for it at admission time (see {@link OpSenderDeps.deletedItemId}). */
+  deletedItemIds: ReadonlyMap<string, string | null>
+}
 
 export interface OpSender {
   enqueue(operations: GraphOperation[]): void
@@ -144,7 +155,9 @@ export interface OpSender {
    * from success to `onBatchSettled`'s listener, and a delete the host never
    * received can resurrect its node on the next reconcile. A listener that
    * throws settling one batch never blocks the rest, and the transport
-   * always unsubscribes.
+   * always unsubscribes. Terminal: an `admit()`/`enqueue()` that arrives
+   * after `detach()` settles `undeliverable` at once instead of joining a
+   * group `pump()` would then refuse to ever drain.
    */
   detach(): void
 }
@@ -165,6 +178,21 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let inFlight: InFlight | null = null
   let detached = false
   let suspended = false
+  // Keyed by op_id (globally unique per mint), not by workflow or position:
+  // an op's own identity capture stays bound to it through retries, resends
+  // and out-of-order settlement. Entries are taken (read and removed) by
+  // `takeDeletedItemIds` as each op's batch settles.
+  const capturedDeletedItemIds = new Map<string, string | null>()
+
+  function takeDeletedItemIds(ops: Op[]): ReadonlyMap<string, string | null> {
+    const identities = new Map<string, string | null>()
+    for (const op of ops) {
+      if (!capturedDeletedItemIds.has(op.op_id)) continue
+      identities.set(op.op_id, capturedDeletedItemIds.get(op.op_id) ?? null)
+      capturedDeletedItemIds.delete(op.op_id)
+    }
+    return identities
+  }
   // Late-result credits: a batch retired after transmission (settled
   // 'unacknowledged' after two sends, or 'unconfirmed' by an abort after one
   // or two) may still draw one result per send - as ANONYMOUS failures
@@ -224,7 +252,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     settle({
       state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
       ops: batch.ops,
-      workflowId: batch.workflowId
+      workflowId: batch.workflowId,
+      deletedItemIds: takeDeletedItemIds(batch.ops)
     })
   }
 
@@ -237,7 +266,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         settle({
           state: 'unacknowledged',
           ops: batch.ops,
-          workflowId: batch.workflowId
+          workflowId: batch.workflowId,
+          deletedItemIds: takeDeletedItemIds(batch.ops)
         })
         return
       }
@@ -266,21 +296,24 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       notify({
         state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
         ops: batch.ops,
-        workflowId: batch.workflowId
+        workflowId: batch.workflowId,
+        deletedItemIds: takeDeletedItemIds(batch.ops)
       })
     }
     for (const batch of queued) {
       notify({
         state: 'undeliverable',
         ops: batch.ops,
-        workflowId: batch.workflowId
+        workflowId: batch.workflowId,
+        deletedItemIds: takeDeletedItemIds(batch.ops)
       })
     }
     if (admitted) {
       notify({
         state: 'undeliverable',
         ops: admitted.ops,
-        workflowId: admitted.workflowId
+        workflowId: admitted.workflowId,
+        deletedItemIds: takeDeletedItemIds(admitted.ops)
       })
     }
   }
@@ -301,20 +334,41 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     transmit(inFlight, 0)
   }
 
+  function captureDeletedItemIds(ops: Op[]): void {
+    for (const op of ops) {
+      if (op.op !== 'delete_node') continue
+      capturedDeletedItemIds.set(
+        op.op_id,
+        deps.deletedItemId?.(String(op.node_id)) ?? null
+      )
+    }
+  }
+
+  function settleUnadmitted(minted: Op[], workflowId: string | null): void {
+    deps.onBatchSettled({
+      state: 'undeliverable',
+      ops: minted,
+      workflowId,
+      deletedItemIds: takeDeletedItemIds(minted)
+    })
+  }
+
   function admit(operations: GraphOperation[]): void {
     if (operations.length === 0) return
     const minted = mintWireOps(operations, {
       actor: deps.actor(),
       baseVersion: deps.baseVersion()
     })
+    captureDeletedItemIds(minted)
     const workflowId = deps.workflowId()
-    // Unbound (no doc to join a group for) settles at once rather than
-    // silently vanishing. `detached` has no production caller here: the
-    // sole owner (`useAgentCrdtFollower`) clears its exposed
-    // `enqueueHumanOperations` to a no-op before `detach()` runs, and
-    // `onBatchSettled` never calls back into `admit`/`enqueue`.
-    if (workflowId === null) {
-      deps.onBatchSettled({ state: 'undeliverable', ops: minted, workflowId })
+    // Detached is terminal: nothing will ever flush or transmit again, so an
+    // admission that arrives after detach (a re-entrant admit from a settle
+    // listener, or a lingering caller) must settle immediately rather than
+    // join a group `flush()` would move into `queue` for a `pump()` that
+    // permanently refuses to send it. Unbound (no doc to join a group for)
+    // settles the same way.
+    if (detached || workflowId === null) {
+      settleUnadmitted(minted, workflowId)
       return
     }
     if (open?.workflowId !== workflowId) seal()
@@ -370,7 +424,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       state: 'acknowledged',
       ops: inFlight.ops,
       result,
-      workflowId: inFlight.workflowId
+      workflowId: inFlight.workflowId,
+      deletedItemIds: takeDeletedItemIds(inFlight.ops)
     })
   })
 

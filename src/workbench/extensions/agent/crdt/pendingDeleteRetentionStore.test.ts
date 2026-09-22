@@ -1,12 +1,14 @@
 /**
- * Store-level coverage for the capture/settle correlation the composable
- * relies on (see `useAgentCrdtFollower.test.ts` for the composable's own
- * behavior through the real coalescer/sender). Constructing `BatchOutcome`s
- * directly here proves the correlation logic at the lowest level it can be
- * observed, without needing a real Yjs doc, sender, or coalescer.
+ * Store-level coverage for the retention state machine (see
+ * `useAgentCrdtFollower.test.ts` for the composable's own behavior through
+ * the real coalescer/sender). Constructing `BatchOutcome`s directly here,
+ * with each delete's captured identity already bound to its own `op_id`
+ * (as `opSender.ts`'s `admit()` binds it), proves the retention logic at the
+ * lowest level it can be observed, without needing a real Yjs doc, sender,
+ * or coalescer.
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { BatchOutcome } from './opSender'
 import { createPendingDeleteRetentionStore } from './pendingDeleteRetentionStore'
@@ -28,7 +30,8 @@ function deleteOp(opId: string, nodeId: string): Op {
 function acknowledged(
   workflowId: string,
   ops: Op[],
-  applied: string[]
+  applied: string[],
+  deletedItemIds: ReadonlyMap<string, string | null> = new Map()
 ): BatchOutcome {
   return {
     workflowId,
@@ -38,69 +41,39 @@ function acknowledged(
       ok: true,
       applied,
       skipped: ops.map((op) => op.op_id).filter((id) => !applied.includes(id))
-    }
+    },
+    deletedItemIds
   }
 }
 
+function unconfirmed(
+  workflowId: string,
+  ops: Op[],
+  deletedItemIds: ReadonlyMap<string, string | null> = new Map()
+): BatchOutcome {
+  return { workflowId, state: 'unconfirmed', ops, deletedItemIds }
+}
+
 describe('createPendingDeleteRetentionStore', () => {
-  it('associates a delete settled after a later same-id delete was already captured with its OWN identity, not the later one', () => {
+  it('associates each delete with its OWN identity via its own op_id, not another delete of the same node', () => {
     const store = createPendingDeleteRetentionStore()
 
-    // Node '1' is deleted as incarnation A; before A's own result settles,
-    // it is recreated and deleted again as incarnation B.
-    store.captureDeleteIntent('wf-1', '1', 'A')
-    store.captureDeleteIntent('wf-1', '1', 'B')
-
-    // A's result settles first, B's second - matching capture order.
-    store.settleBatch(acknowledged('wf-1', [deleteOp('op-a', '1')], ['op-a']))
-    store.settleBatch(acknowledged('wf-1', [deleteOp('op-b', '1')], ['op-b']))
-
-    const docNodeIds = new Set(['1'])
-    // The retained identity is B's (the later delete's own), not A's stale
-    // one and not a null fallback that would match anything.
-    expect(store.retainedNodeIds('wf-1', docNodeIds, () => 'B')).toEqual(
-      new Set(['1'])
-    )
-    expect(store.retainedNodeIds('wf-1', docNodeIds, () => 'C')).toEqual(
-      new Set()
-    )
-  })
-
-  it('associates two same-tick deletes of one node, settled together, with their own captured identities in issuance order', () => {
-    const store = createPendingDeleteRetentionStore()
-
-    store.captureDeleteIntent('wf-1', '1', 'X')
-    store.captureDeleteIntent('wf-1', '1', 'Y')
+    // Node '1' is deleted as incarnation A, recreated, and deleted again as
+    // incarnation B - both ops settle in the same batch.
     store.settleBatch(
       acknowledged(
         'wf-1',
-        [deleteOp('op-1', '1'), deleteOp('op-2', '1')],
-        ['op-1', 'op-2']
+        [deleteOp('op-a', '1'), deleteOp('op-b', '1')],
+        ['op-a', 'op-b'],
+        new Map([
+          ['op-a', 'A'],
+          ['op-b', 'B']
+        ])
       )
     )
 
     const docNodeIds = new Set(['1'])
-    // The second op's own identity (Y) wins, not a mis-paired or null one.
-    expect(store.retainedNodeIds('wf-1', docNodeIds, () => 'Y')).toEqual(
-      new Set(['1'])
-    )
-    expect(store.retainedNodeIds('wf-1', docNodeIds, () => 'Z')).toEqual(
-      new Set()
-    )
-  })
-
-  it('consumes a capture even when its own delete is skipped, so it cannot leak into a later, unrelated delete of the same node', () => {
-    const store = createPendingDeleteRetentionStore()
-
-    // The host rejects the first delete outright (skipped, not applied).
-    store.captureDeleteIntent('wf-1', '1', 'A')
-    store.settleBatch(acknowledged('wf-1', [deleteOp('op-a', '1')], []))
-
-    // A second, unrelated delete of the (recreated) same node id follows.
-    store.captureDeleteIntent('wf-1', '1', 'B')
-    store.settleBatch(acknowledged('wf-1', [deleteOp('op-b', '1')], ['op-b']))
-
-    const docNodeIds = new Set(['1'])
+    // The later op's own identity (B) wins, not a mis-paired or null one.
     expect(store.retainedNodeIds('wf-1', docNodeIds, () => 'B')).toEqual(
       new Set(['1'])
     )
@@ -109,13 +82,42 @@ describe('createPendingDeleteRetentionStore', () => {
     )
   })
 
-  it('drops both retained deletes and any unconsumed capture for one workflow only', () => {
+  it('never retains a delete the host reports skipped, even though it consumed a wire slot', () => {
     const store = createPendingDeleteRetentionStore()
 
-    store.captureDeleteIntent('wf-1', '1', 'A')
-    store.settleBatch(acknowledged('wf-1', [deleteOp('op-a', '1')], ['op-a']))
-    store.captureDeleteIntent('wf-2', '9', 'Z')
-    store.settleBatch(acknowledged('wf-2', [deleteOp('op-z', '9')], ['op-z']))
+    store.settleBatch(
+      acknowledged(
+        'wf-1',
+        [deleteOp('op-a', '1')],
+        [],
+        new Map([['op-a', 'A']])
+      )
+    )
+
+    expect(store.retainedNodeIds('wf-1', new Set(['1']), () => 'A')).toEqual(
+      new Set()
+    )
+  })
+
+  it('drops one workflow only', () => {
+    const store = createPendingDeleteRetentionStore()
+
+    store.settleBatch(
+      acknowledged(
+        'wf-1',
+        [deleteOp('op-a', '1')],
+        ['op-a'],
+        new Map([['op-a', 'A']])
+      )
+    )
+    store.settleBatch(
+      acknowledged(
+        'wf-2',
+        [deleteOp('op-z', '9')],
+        ['op-z'],
+        new Map([['op-z', 'Z']])
+      )
+    )
 
     store.clearWorkflow('wf-1')
 
@@ -133,11 +135,90 @@ describe('createPendingDeleteRetentionStore', () => {
       store.settleBatch({
         workflowId: null,
         state: 'undeliverable',
-        ops: [deleteOp('op-x', '1')]
+        ops: [deleteOp('op-x', '1')],
+        deletedItemIds: new Map()
       })
     ).not.toThrow()
     expect(store.retainedNodeIds('wf-1', new Set(['1']), () => null)).toEqual(
       new Set()
     )
+  })
+
+  it('a confirmed delete with no captured identity does not stay retained forever once a new item occupies the id', () => {
+    // Regression: a delete admitted while its target existed only as a
+    // local, not-yet-synced add captures no Yjs identity (null). Without a
+    // bound expiry, that record could suppress any later, unrelated node
+    // recreated under the same id indefinitely.
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const store = createPendingDeleteRetentionStore()
+
+    store.settleBatch(
+      acknowledged(
+        'wf-1',
+        [deleteOp('op-a', '1')],
+        ['op-a'],
+        new Map([['op-a', null]])
+      )
+    )
+
+    // Still within the window: a lagging reconcile must not resurrect it.
+    expect(
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'new-item')
+    ).toEqual(new Set(['1']))
+
+    vi.advanceTimersByTime(24 * 60 * 60 * 1000)
+
+    // A day later, a real node now occupies the id: the bounded,
+    // identity-less retention has expired, so the new node is not
+    // suppressed.
+    expect(
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'new-item')
+    ).toEqual(new Set())
+    vi.useRealTimers()
+  })
+
+  it('an unknown outcome with no captured identity is bounded exactly like a confirmed one with no identity', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const store = createPendingDeleteRetentionStore()
+
+    store.settleBatch(
+      unconfirmed('wf-1', [deleteOp('op-a', '1')], new Map([['op-a', null]]))
+    )
+
+    vi.advanceTimersByTime(24 * 60 * 60 * 1000)
+
+    expect(
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'new-item')
+    ).toEqual(new Set())
+    vi.useRealTimers()
+  })
+
+  it('a confirmed delete WITH a captured identity is never bounded by time, only by a different identity occupying the id', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const store = createPendingDeleteRetentionStore()
+
+    store.settleBatch(
+      acknowledged(
+        'wf-1',
+        [deleteOp('op-a', '1')],
+        ['op-a'],
+        new Map([['op-a', 'A']])
+      )
+    )
+
+    vi.advanceTimersByTime(24 * 60 * 60 * 1000)
+
+    // Still no other identity at this id: stays retained, unbounded by time.
+    expect(store.retainedNodeIds('wf-1', new Set(['1']), () => 'A')).toEqual(
+      new Set(['1'])
+    )
+    // A different identity now occupies the id: released regardless of time.
+    expect(
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'different')
+    ).toEqual(new Set())
+    vi.useRealTimers()
   })
 })

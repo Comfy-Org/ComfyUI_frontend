@@ -192,21 +192,32 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
   }
 }
 
-export function useAgentCrdtFollower(
-  workflowId: Ref<string | null>,
-  graphMutations: MutationsForTarget,
-  userId: () => string | null = () => null,
-  isTargetActive: Ref<boolean> = ref(true),
+export interface UseAgentCrdtFollowerOptions {
+  userId?: () => string | null
+  isTargetActive?: Ref<boolean>
   /**
    * Live graph that receives node adapters for store-only records. Reactive
    * reads inside the getter are tracked, so a `null` → graph flip triggers a
    * reconcile without waiting for the next remote frame.
    */
-  getGraph: () => MaterializableGraph | null = () => null,
-  events: AgentCrdtFollowerEvents = {},
+  getGraph?: () => MaterializableGraph | null
+  events?: AgentCrdtFollowerEvents
   /** See `pendingDeleteRetentionStore.ts` and ADR CRDT-WRITE-0035. */
-  retentionStore: PendingDeleteRetentionStore = createPendingDeleteRetentionStore()
+  retentionStore?: PendingDeleteRetentionStore
+}
+
+export function useAgentCrdtFollower(
+  workflowId: Ref<string | null>,
+  graphMutations: MutationsForTarget,
+  options: UseAgentCrdtFollowerOptions = {}
 ) {
+  const {
+    userId = () => null,
+    isTargetActive = ref(true),
+    getGraph = () => null,
+    events = {},
+    retentionStore = createPendingDeleteRetentionStore()
+  } = options
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
   const disabledStatus: AgentCrdtStatus = {
@@ -331,6 +342,8 @@ function startAgentCrdtFollower(
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
+    // See ADR CRDT-WRITE-0035.
+    deletedItemId: boundNodeItemId,
     onBatchSettled: (outcome) => {
       retentionStore.settleBatch(outcome)
       recordDevEvent('human_ops_settled', outcome)
@@ -351,25 +364,6 @@ function startAgentCrdtFollower(
       }
     }
     return pending
-  }
-  /**
-   * Captures the item identity of every `delete_node` op's target, at the
-   * moment the human issues it - before it reaches `coalescer`/`sender`, and
-   * therefore before any doc_update could react to it (see
-   * `PendingDeleteRetentionStore.captureDeleteIntent`).
-   */
-  function captureDeleteIntents(operations: GraphOperation[]): void {
-    const targetWorkflowId = bridge.subscribedWorkflowId
-    if (targetWorkflowId === null) return
-    for (const op of operations) {
-      if (op.op !== 'delete_node') continue
-      const nodeId = String(op.node_id)
-      retentionStore.captureDeleteIntent(
-        targetWorkflowId,
-        nodeId,
-        boundNodeItemId(nodeId)
-      )
-    }
   }
   const projection = new AgentCrdtProjection(
     graphMutations,
@@ -541,15 +535,8 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      // Retention is NOT cleared here. `follower_replaced` fires both for a
-      // true same-workflow server lineage reset (always preceded by this
-      // bridge's own `doc_reset` event, whose handler below already clears
-      // this workflow's retention) and for an ordinary local switch away
-      // from a different workflow's lineage (no `doc_reset` at all) - the
-      // two are indistinguishable from this event alone, but only the first
-      // should erase retained state. Clearing it here would erase a
-      // confirmed delete this very workflow already earned on an earlier
-      // visit, right before its first post-switch reconcile needs it.
+      // Deliberately no `retentionStore.clearWorkflow` here - see ADR
+      // CRDT-WRITE-0035 on why only `doc_reset` (below) clears retention.
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
@@ -814,9 +801,7 @@ function startAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
-    enqueueHumanOperations: (operations: GraphOperation[]) => {
-      captureDeleteIntents(operations)
+    enqueueHumanOperations: (operations: GraphOperation[]) =>
       coalescer.enqueue(operations)
-    }
   }
 }
