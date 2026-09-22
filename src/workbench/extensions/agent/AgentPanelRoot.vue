@@ -789,7 +789,23 @@ function targetWorkflowTurnContext(
 function serializedCanvas(target: ComfyWorkflow) {
   if (target.path === workflowStore.activeWorkflow?.path)
     target.changeTracker?.prepareForSave()
-  return target.activeState
+  return target.activeState ?? temporaryWorkflowContent(target)
+}
+
+/**
+ * A newly-created temporary tab is visible before its async load installs a
+ * change tracker. During that window activeState is null, but createTemporary
+ * has already stored the canonical empty graph in content.
+ */
+function temporaryWorkflowContent(
+  workflow: ComfyWorkflow
+): ComfyWorkflowJSON | undefined {
+  if (!workflow.isTemporary || workflow.content === null) return undefined
+  try {
+    return JSON.parse(workflow.content) as ComfyWorkflowJSON
+  } catch {
+    return undefined
+  }
 }
 
 function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
