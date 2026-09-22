@@ -207,8 +207,7 @@ describe('formatClockTime', () => {
   it('takes the hour cycle from the system when no preference is given', () => {
     const RealDateTimeFormat = Intl.DateTimeFormat
     vi.spyOn(Intl, 'DateTimeFormat').mockImplementationOnce(
-      (_locales, options) =>
-        new RealDateTimeFormat('en-US-u-hc-h23', options)
+      (_locales, options) => new RealDateTimeFormat('en-US-u-hc-h23', options)
     )
     const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
 
