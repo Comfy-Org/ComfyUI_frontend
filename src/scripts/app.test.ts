@@ -478,6 +478,43 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('resolves false and notifies onGraphLoadError when a pre-configure step fails', async () => {
+      // A failure before `rootGraph.configure` even runs (a `beforeConfigureGraph`
+      // extension hook throwing, here) previously skipped both
+      // `afterConfigureGraph` and `onGraphLoadError` entirely, rejecting the
+      // promise instead and leaking any suppression/loading-state a
+      // `beforeLoadGraph` listener had opened for this same load.
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook: string) => {
+          if (hook === 'beforeConfigureGraph') {
+            throw new Error('bad extension')
+          }
+        }
+      )
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+          workflowNavigationId: 9
+        })
+      ).resolves.toBe(false)
+
+      expect(showDialog).toHaveBeenCalledOnce()
+      expect(useSubgraphNavigationStore().updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        9
+      )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ message: 'bad extension' })
+      )
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+    })
+
     it('notifies extensions once on each side of a graph load, in order', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())

@@ -1,3 +1,5 @@
+import { isEqual } from 'es-toolkit/compat'
+
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
@@ -1068,6 +1070,15 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
    * once its own candidate value already matches the widget's current one -
    * the document has caught up, and that write clears the mark itself, since
    * it carries a context. Anything else keeps skipping and keeps the mark.
+   *
+   * "Matches" has to be value equality, not reference equality:
+   * `parseWidgetValues` (via `cloneWidgetValue`) runs a fresh
+   * `structuredClone` over every object-typed candidate, so an
+   * object-valued widget's doc-parsed value is never the same object
+   * instance as the widget's stored value even once the document
+   * genuinely reflects it. `Object.is`/`===` would then never see the two
+   * as equal, so the guard could never conclude the document caught up and
+   * the dirty mark would never clear except via an explicit `setWidget`.
    */
   function skipStaleReconcile(
     scope: GraphScope,
@@ -1077,7 +1088,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   ): boolean {
     const id = widgetId(scope.rootGraphId, nodeId, name)
     if (!isWidgetId(id) || !widgetStore.isLocallyDirty(id)) return false
-    return !Object.is(widgetStore.getWidget(id)?.value, value)
+    return !isEqual(widgetStore.getWidget(id)?.value, value)
   }
 
   /**

@@ -1288,6 +1288,23 @@ export class ComfyApp {
     }
   }
 
+  /**
+   * Shared failure reporting for a graph load that cannot proceed: shows the
+   * load-error dialog, logs it, and notifies `onGraphLoadError` so any
+   * suppression or loading-state a `beforeLoadGraph` listener opened for this
+   * same load (e.g. the agent panel's local-dirty-tracking suppression) is
+   * reliably closed out, exactly as if `rootGraph.configure` itself had
+   * thrown. Callers still decide what to return/rethrow.
+   */
+  private async reportGraphLoadFailure(error: unknown): Promise<void> {
+    useDialogService().showErrorDialog(error, {
+      title: t('errorDialog.loadWorkflowTitle'),
+      reportType: 'loadWorkflowError'
+    })
+    console.error(error)
+    await useExtensionService().invokeExtensionsAsync('onGraphLoadError', error)
+  }
+
   async loadGraphData(
     graphData?: ComfyWorkflowJSON,
     clean: boolean = true,
@@ -1377,81 +1394,98 @@ export class ComfyApp {
         severity: 'warn'
       })
     }
-    useSubgraphService().loadSubgraphs(graphData)
-
     const missingNodeTypes: MissingNodeType[] = []
-    await useExtensionService().invokeExtensionsAsync(
-      'beforeConfigureGraph',
-      graphData,
-      missingNodeTypes
-    )
+    try {
+      useSubgraphService().loadSubgraphs(graphData)
 
-    const nodeReplacementStore = useNodeReplacementStore()
-    await nodeReplacementStore.load()
+      await useExtensionService().invokeExtensionsAsync(
+        'beforeConfigureGraph',
+        graphData,
+        missingNodeTypes
+      )
 
-    // Collect missing node types from all nodes (root + subgraphs)
-    const collectMissingNodes = (
-      nodes: readonly FlattenableWorkflowNode[],
-      pathPrefix: string = '',
-      displayName: string = ''
-    ) => {
-      if (!Array.isArray(nodes)) {
-        console.warn(
-          'Workflow nodes data is missing or invalid, skipping node processing',
-          { nodes, pathPrefix }
-        )
-        return
-      }
-      for (const n of nodes) {
-        if (!(n.type in LiteGraph.registered_node_types)) {
-          // Always sanitize so configure() can handle unregistered types,
-          // but only report as missing if the node is active.
-          const isMuted =
-            n.mode === LGraphEventMode.NEVER ||
-            n.mode === LGraphEventMode.BYPASS
-          if (!isMuted) {
-            const replacement = nodeReplacementStore.getReplacementFor(n.type)
-            const cnrId = getCnrIdFromProperties(
-              n.properties as Record<string, unknown> | undefined
-            )
-            const executionId = pathPrefix
-              ? `${pathPrefix}:${n.id}`
-              : String(n.id)
+      const nodeReplacementStore = useNodeReplacementStore()
+      await nodeReplacementStore.load()
 
-            missingNodeTypes.push({
-              type: n.type,
-              nodeId: executionId,
-              cnrId,
-              ...(displayName && {
-                hint: t('g.inSubgraph', { name: displayName })
-              }),
-              isReplaceable: replacement !== null,
-              replacement: replacement ?? undefined
-            })
+      // Collect missing node types from all nodes (root + subgraphs)
+      const collectMissingNodes = (
+        nodes: readonly FlattenableWorkflowNode[],
+        pathPrefix: string = '',
+        displayName: string = ''
+      ) => {
+        if (!Array.isArray(nodes)) {
+          console.warn(
+            'Workflow nodes data is missing or invalid, skipping node processing',
+            { nodes, pathPrefix }
+          )
+          return
+        }
+        for (const n of nodes) {
+          if (!(n.type in LiteGraph.registered_node_types)) {
+            // Always sanitize so configure() can handle unregistered types,
+            // but only report as missing if the node is active.
+            const isMuted =
+              n.mode === LGraphEventMode.NEVER ||
+              n.mode === LGraphEventMode.BYPASS
+            if (!isMuted) {
+              const replacement = nodeReplacementStore.getReplacementFor(n.type)
+              const cnrId = getCnrIdFromProperties(
+                n.properties as Record<string, unknown> | undefined
+              )
+              const executionId = pathPrefix
+                ? `${pathPrefix}:${n.id}`
+                : String(n.id)
+
+              missingNodeTypes.push({
+                type: n.type,
+                nodeId: executionId,
+                cnrId,
+                ...(displayName && {
+                  hint: t('g.inSubgraph', { name: displayName })
+                }),
+                isReplaceable: replacement !== null,
+                replacement: replacement ?? undefined
+              })
+            }
+
+            n.type = sanitizeNodeName(n.type)
           }
-
-          n.type = sanitizeNodeName(n.type)
         }
       }
-    }
 
-    collectMissingNodes(graphData.nodes)
-    const subgraphDefs = collectSubgraphDefinitions(
-      graphData.definitions?.subgraphs ?? []
-    )
-    const subgraphContainerIdMap = buildSubgraphExecutionPaths(
-      graphData.nodes,
-      subgraphDefs
-    )
-    for (const subgraph of subgraphDefs) {
-      const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
-      for (const pathPrefix of paths) {
-        collectMissingNodes(
-          subgraph.nodes,
-          pathPrefix,
-          subgraph.name || subgraph.id
-        )
+      collectMissingNodes(graphData.nodes)
+      const subgraphDefs = collectSubgraphDefinitions(
+        graphData.definitions?.subgraphs ?? []
+      )
+      const subgraphContainerIdMap = buildSubgraphExecutionPaths(
+        graphData.nodes,
+        subgraphDefs
+      )
+      for (const subgraph of subgraphDefs) {
+        const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
+        for (const pathPrefix of paths) {
+          collectMissingNodes(
+            subgraph.nodes,
+            pathPrefix,
+            subgraph.name || subgraph.id
+          )
+        }
       }
+    } catch (error) {
+      // Anything here - a malformed subgraph definition, a
+      // `beforeConfigureGraph` extension hook throwing, or a node-replacement
+      // load failure - happens before `rootGraph.configure` and so reaches
+      // neither the `afterConfigureGraph` success path nor the
+      // `onGraphLoadError` catch below. Left unhandled, that would both
+      // reject silently and leak any suppression/loading-state a
+      // `beforeLoadGraph` listener opened for this load, since nothing ever
+      // notifies it the load ended.
+      await this.reportGraphLoadFailure(error)
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
+      return false
     }
 
     const canvasVisible = !!(this.canvasEl.width && this.canvasEl.height)
@@ -1512,15 +1546,7 @@ export class ComfyApp {
 
         if (canvasVisible) fitView()
       } catch (error) {
-        useDialogService().showErrorDialog(error, {
-          title: t('errorDialog.loadWorkflowTitle'),
-          reportType: 'loadWorkflowError'
-        })
-        console.error(error)
-        await useExtensionService().invokeExtensionsAsync(
-          'onGraphLoadError',
-          error
-        )
+        await this.reportGraphLoadFailure(error)
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }

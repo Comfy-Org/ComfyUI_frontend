@@ -71,6 +71,9 @@ const noteWidgets: readonly LiveWidget[] = [
     options: { multiline: true }
   }
 ]
+const objectWidgets: readonly LiveWidget[] = [
+  { name: 'config', type: 'legacy', value: { mode: 'auto' }, options: {} }
+]
 
 describe('graphMutations', () => {
   const createLayout = vi.fn()
@@ -341,6 +344,79 @@ describe('graphMutations', () => {
       expect(graph.setWidget(toNodeId(1), 'steps', 30, context)).toBe(true)
       expect(useWidgetValueStore().getWidget(id)?.value).toBe(30)
       expect(useWidgetValueStore().isLocallyDirty(id)).toBe(false)
+    })
+
+    it('releases an object-valued named widget by deep equality, not reference equality', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, objectWidgets)
+      const id = widgetId('root', toNodeId(1), 'config')
+      const widgetStore = useWidgetValueStore()
+      widgetStore.setValue(id, { mode: 'manual' })
+
+      // A stale reconcile whose candidate is structurally different keeps
+      // skipping, same as the primitive case.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values: { config: { mode: 'auto' } }
+          })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toEqual({ mode: 'manual' })
+      expect(widgetStore.isLocallyDirty(id)).toBe(true)
+
+      // `parseWidgetValues` clones every object candidate, so the reconcile
+      // that finally "matches" the local edit never delivers the *same*
+      // object instance - only one that is structurally identical. The
+      // guard must compare by value: an Object.is/=== comparison would see
+      // two distinct clones as unequal forever and the mark would never
+      // clear.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values: { config: { mode: 'manual' } }
+          })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toEqual({ mode: 'manual' })
+      expect(widgetStore.isLocallyDirty(id)).toBe(false)
+    })
+
+    it('releases an object-valued positional widget by deep equality, not reference equality', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, objectWidgets)
+      const id = widgetId('root', toNodeId(1), 'config')
+      const widgetStore = useWidgetValueStore()
+      widgetStore.setValue(id, { mode: 'manual' })
+
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values: [{ mode: 'auto' }]
+          })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toEqual({ mode: 'manual' })
+      expect(widgetStore.isLocallyDirty(id)).toBe(true)
+
+      // Same catch-up case as the named path, but through the positional
+      // branch (`applyPositionalWidgetValues`), which shares the same
+      // `skipStaleReconcile` guard.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values: [{ mode: 'manual' }]
+          })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toEqual({ mode: 'manual' })
+      expect(widgetStore.isLocallyDirty(id)).toBe(false)
     })
   })
 

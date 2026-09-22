@@ -561,6 +561,73 @@ describe('AgentPanel extension flag gate', () => {
     expect(widgetStore.isLocallyDirty(id)).toBe(true)
   })
 
+  it('keeps the suppression open across two overlapping loads until both finish', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId('graph-a', toNodeId(1), 'value')
+    const registered = widgetStore.registerWidget<number>(id, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })!
+
+    // Load A and load B both open the suppression (e.g. two rapid tab
+    // switches) before either finishes.
+    await extension!.beforeLoadGraph!({} as never)
+    await extension!.beforeLoadGraph!({} as never)
+
+    // Load A finishes first - success or error, same as here - while load B
+    // is still mid-configure. A single boolean would close the shared
+    // suppression right here, wrongly exposing B's still-in-flight
+    // structural writes as dirty.
+    await extension!.afterConfigureGraph!([], {} as never)
+
+    // A structural write made as part of load B's own (still-suppressed)
+    // configure must not be marked dirty just because load A already
+    // closed out.
+    registered.value = 2
+    expect(widgetStore.isLocallyDirty(id)).toBe(false)
+
+    // Only once load B also finishes does the suppression actually close.
+    await extension!.afterConfigureGraph!([], {} as never)
+    registered.value = 3
+    expect(widgetStore.isLocallyDirty(id)).toBe(true)
+  })
+
+  it('closes the suppression exactly once per load regardless of completion order', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId('graph-a', toNodeId(1), 'value')
+    const registered = widgetStore.registerWidget<number>(id, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })!
+
+    // Load A opens, then load B opens; load B (the more recent one) is the
+    // one that finishes first this time, and by error rather than success.
+    await extension!.beforeLoadGraph!({} as never)
+    await extension!.beforeLoadGraph!({} as never)
+    await extension!.onGraphLoadError!(new Error('load B failed'), {} as never)
+
+    registered.value = 2
+    expect(widgetStore.isLocallyDirty(id)).toBe(false)
+
+    // Load A's own completion is the one that actually returns the depth to
+    // zero and closes the suppression.
+    await extension!.afterConfigureGraph!([], {} as never)
+    registered.value = 3
+    expect(widgetStore.isLocallyDirty(id)).toBe(true)
+  })
+
   it('restores a subgraph reference by its locator after graph load', async () => {
     const { registerAgentPanelExtension } = await import('./agentPanel')
     registerAgentPanelExtension()
