@@ -202,11 +202,15 @@ describe('useAssetsQuery malformed response', () => {
 })
 
 describe('useAssetsQuery stale invalidation', () => {
-  it('does not restore a stale asset from an in-flight page', async () => {
-    const list = await createList('stale-in-flight', ['deleted', 'newest'], {
-      hasMore: true,
-      nextCursor: 'page-2'
-    })
+  it('preserves concurrent invalidations across an in-flight page', async () => {
+    const list = await createList(
+      'stale-in-flight',
+      ['deleted-a', 'deleted-b', 'newest'],
+      {
+        hasMore: true,
+        nextCursor: 'page-2'
+      }
+    )
     let resolvePage!: (response: Response) => void
     fetchApiMock.mockReturnValueOnce(
       new Promise((resolve) => {
@@ -216,9 +220,10 @@ describe('useAssetsQuery stale invalidation', () => {
 
     const loading = list.loadMore()
     await vi.waitFor(() => expect(fetchApiMock).toHaveBeenCalledTimes(2))
-    const invalidating = list.invalidate(['deleted'])
-    resolvePage(response(['deleted', 'older']))
-    await Promise.all([loading, invalidating])
+    const invalidatingA = list.invalidate(['deleted-a'])
+    const invalidatingB = list.invalidate(['deleted-b'])
+    resolvePage(response(['deleted-a', 'deleted-b', 'older']))
+    await Promise.all([loading, invalidatingA, invalidatingB])
 
     expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest', 'older'])
   })

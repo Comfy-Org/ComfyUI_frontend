@@ -105,10 +105,9 @@ function assetsQueryInternal(
 
   async function invalidate(stale?: string[]) {
     if (stale) {
-      await preempt(async () => {
-        const ids = new Set(stale)
-        items.value = items.value.filter((item) => !ids.has(item.id))
-      })
+      await preempt(() => Promise.resolve())
+      const ids = new Set(stale)
+      items.value = items.value.filter((item) => !ids.has(item.id))
       return
     }
     await preempt(async () => {
