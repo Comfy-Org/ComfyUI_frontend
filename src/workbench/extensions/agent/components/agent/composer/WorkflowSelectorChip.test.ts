@@ -69,6 +69,7 @@ const trigger = () =>
 describe('WorkflowSelectorChip', () => {
   it('names the active workflow on the trigger and lists every open tab', async () => {
     const { user } = renderChip()
+    expect(trigger()).toHaveClass('justify-start', 'text-left')
     expect(within(trigger()).getByText('portrait')).toBeVisible()
     expect(screen.getAllByRole('button')).toHaveLength(1)
 
