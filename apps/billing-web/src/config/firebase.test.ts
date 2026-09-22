@@ -2,7 +2,8 @@ const h = vi.hoisted(() => ({
   fetchFirebaseConfig: vi.fn(),
   fallbackOptions: undefined as
     | { apiKey: string; authDomain: string; projectId: string; appId: string }
-    | undefined
+    | undefined,
+  failInitializeFor: new Set<string>()
 }))
 
 vi.mock<unknown>(import('@comfyorg/account-core/firebaseConfigSource'), () => ({
@@ -10,9 +11,14 @@ vi.mock<unknown>(import('@comfyorg/account-core/firebaseConfigSource'), () => ({
 }))
 
 vi.mock<unknown>(import('@comfyorg/account-core/firebase'), () => ({
-  createFirebaseIdentity: (config: { options: unknown }) => ({
+  createFirebaseIdentity: (config: { options: { apiKey: string } }) => ({
     kind: 'identity',
-    options: config.options
+    options: config.options,
+    initialize: () => {
+      if (h.failInitializeFor.has(config.options.apiKey)) {
+        throw new Error(`invalid config: ${config.options.apiKey}`)
+      }
+    }
   })
 }))
 
@@ -39,6 +45,7 @@ const FALLBACK_OPTIONS = {
 
 beforeEach(() => {
   h.fallbackOptions = undefined
+  h.failInitializeFor.clear()
 })
 
 async function freshFirebase() {
@@ -54,7 +61,8 @@ describe('resolveBillingWebIdentity', () => {
 
     await expect(resolveBillingWebIdentity()).resolves.toEqual({
       kind: 'identity',
-      options: RUNTIME_OPTIONS
+      options: RUNTIME_OPTIONS,
+      initialize: expect.any(Function)
     })
   })
 
@@ -65,7 +73,8 @@ describe('resolveBillingWebIdentity', () => {
 
     await expect(resolveBillingWebIdentity()).resolves.toEqual({
       kind: 'identity',
-      options: FALLBACK_OPTIONS
+      options: FALLBACK_OPTIONS,
+      initialize: expect.any(Function)
     })
   })
 
@@ -86,6 +95,45 @@ describe('resolveBillingWebIdentity', () => {
       resolveBillingWebIdentity()
     ])
 
+    expect(h.fetchFirebaseConfig).toHaveBeenCalledOnce()
+  })
+
+  it('falls back to the build-time options when the runtime config fails to construct', async () => {
+    h.fetchFirebaseConfig.mockResolvedValue(RUNTIME_OPTIONS)
+    h.fallbackOptions = FALLBACK_OPTIONS
+    h.failInitializeFor.add(RUNTIME_OPTIONS.apiKey)
+    const { resolveBillingWebIdentity } = await freshFirebase()
+
+    await expect(resolveBillingWebIdentity()).resolves.toEqual({
+      kind: 'identity',
+      options: FALLBACK_OPTIONS,
+      initialize: expect.any(Function)
+    })
+  })
+
+  it('resolves no identity, never a rejection, when both configs fail to construct', async () => {
+    h.fetchFirebaseConfig.mockResolvedValue(RUNTIME_OPTIONS)
+    h.fallbackOptions = FALLBACK_OPTIONS
+    h.failInitializeFor.add(RUNTIME_OPTIONS.apiKey)
+    h.failInitializeFor.add(FALLBACK_OPTIONS.apiKey)
+    const { resolveBillingWebIdentity } = await freshFirebase()
+
+    await expect(resolveBillingWebIdentity()).resolves.toBeUndefined()
+  })
+
+  it('memoizes the resolved fallback, not a rejection, so a second caller sees the same result', async () => {
+    h.fetchFirebaseConfig.mockResolvedValue(RUNTIME_OPTIONS)
+    h.fallbackOptions = undefined
+    h.failInitializeFor.add(RUNTIME_OPTIONS.apiKey)
+    const { resolveBillingWebIdentity } = await freshFirebase()
+
+    const [first, second] = await Promise.all([
+      resolveBillingWebIdentity(),
+      resolveBillingWebIdentity()
+    ])
+
+    expect(first).toBeUndefined()
+    expect(second).toBeUndefined()
     expect(h.fetchFirebaseConfig).toHaveBeenCalledOnce()
   })
 })

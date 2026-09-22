@@ -10,6 +10,8 @@
  * depend on the Cloud app being up: a Cloud outage should not also take down
  * billing-web's sign-in screen.
  */
+import type { FirebaseOptions } from 'firebase/app'
+
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { fetchFirebaseConfig } from '@comfyorg/account-core/firebaseConfigSource'
@@ -22,9 +24,29 @@ const CONFIG_FETCH_TIMEOUT_MS = 4000
 let resolution: Promise<FirebaseIdentity | undefined> | undefined
 
 /**
+ * Structurally valid options can still fail the SDK's own checks (a bad key,
+ * an app-name collision with a different project), and that only surfaces
+ * once `initialize()` forces the app/Auth resolution eagerly, here, instead
+ * of leaving it to whichever caller first touches the identity.
+ */
+function tryCreateIdentity(
+  options: FirebaseOptions
+): FirebaseIdentity | undefined {
+  try {
+    const identity = createFirebaseIdentity({ options, appName: APP_NAME })
+    identity.initialize()
+    return identity
+  } catch {
+    return undefined
+  }
+}
+
+/**
  * Resolves once and is safe to call repeatedly; every caller shares the one
- * fetch and the one identity it produces. `undefined` only when neither the
- * runtime fetch nor the build-time fallback has anything to offer.
+ * fetch and the one identity it produces. `undefined` only when neither
+ * source yields a working identity, never a rejection, so a bad runtime or
+ * build-time config degrades to signed-out instead of stranding the session
+ * in `pending` forever.
  */
 export function resolveBillingWebIdentity(): Promise<
   FirebaseIdentity | undefined
@@ -32,10 +54,11 @@ export function resolveBillingWebIdentity(): Promise<
   resolution ??= fetchFirebaseConfig(CLOUD_BASE_URL, {
     timeoutMs: CONFIG_FETCH_TIMEOUT_MS
   }).then((runtimeOptions) => {
-    const options = runtimeOptions ?? FIREBASE_OPTIONS
-    return options
-      ? createFirebaseIdentity({ options, appName: APP_NAME })
-      : undefined
+    const runtimeIdentity = runtimeOptions && tryCreateIdentity(runtimeOptions)
+    return (
+      runtimeIdentity ??
+      (FIREBASE_OPTIONS && tryCreateIdentity(FIREBASE_OPTIONS))
+    )
   })
   return resolution
 }

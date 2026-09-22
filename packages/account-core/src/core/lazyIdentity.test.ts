@@ -327,6 +327,19 @@ describe('createLazyIdentity', () => {
     }
   )
 
+  it('delivers signed-out to listeners when the loader rejects, and still rejects activate()', async () => {
+    const load = vi.fn<() => Promise<AccountIdentity>>(() =>
+      Promise.reject(new Error('chunk failed'))
+    )
+    const port = createLazyIdentity(load)
+    const listener = vi.fn()
+    port.onUserChanged(listener)
+
+    await expect(port.activate()).rejects.toThrow('chunk failed')
+
+    expect(listener).toHaveBeenCalledExactlyOnceWith(null)
+  })
+
   it('resolves the activation even when a listener throws on the first delivery', async () => {
     const { inner, release, load } = deferredLoader()
     const port = createLazyIdentity(load)

@@ -77,6 +77,11 @@ export function createLazyIdentity<TUser extends AccountUser>(
         if (started !== generation) return
         activation = undefined
         settleActivation = undefined
+        // A load that can't produce an identity still owes subscribers an
+        // answer: deliver signed-out so nobody is left waiting on a promise
+        // this activation will never settle. The caller still sees the
+        // rejection below and can report or retry.
+        deliver(null)
         reject(error)
       })
     })
