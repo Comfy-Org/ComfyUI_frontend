@@ -100,7 +100,6 @@ function renderCard(
     global: {
       plugins: [i18n],
       stubs: {
-        LoadingOverlay: true,
         MediaTitle: true
       },
       directives: { tooltip: {} }
