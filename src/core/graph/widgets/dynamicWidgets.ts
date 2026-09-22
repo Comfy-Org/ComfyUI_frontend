@@ -160,18 +160,18 @@ function dynamicComboWidget(
   const updateWidgets = (value?: string) => {
     if (!node.widgets) {
       console.error(new Error('Dynamic widget node has no widgets'))
-      return
+      return false
     }
     const newSpec = value ? options[value] : undefined
     const insertionPoint = node.widgets.findIndex((w) => w === widget) + 1
     if (insertionPoint === 0) {
       console.error(new Error("Dynamic widget doesn't exist on node"))
-      return
+      return false
     }
     const hasInput = node.inputs.some((input) => input.name === widget.name)
     if (newSpec && !hasInput && !initializing) {
       console.error(new Error('Failed to find input socket for ' + widget.name))
-      return
+      return false
     }
     const removedOption = activeOption
     activeOption = value
@@ -192,9 +192,9 @@ function dynamicComboWidget(
 
     if (!newSpec) {
       const result = commitMutatedInputs(node, previous, inputLinks)
-      if (!result.ok) return
+      if (!result.ok) return false
       syncNodeWidgetOrder(node)
-      return
+      return true
     }
 
     const startingLength = node.widgets.length
@@ -224,9 +224,9 @@ function dynamicComboWidget(
     syncNodeWidgetOrder(node)
     if (inputInsertionPoint === 0) {
       const result = commitMutatedInputs(node, previous, inputLinks)
-      if (!result.ok) return
+      if (!result.ok) return false
       restoreRemovedValues(value, addedWidgetNames)
-      return
+      return true
     }
     const addedInputs = node.inputs
       .splice(startingInputLength)
@@ -247,16 +247,17 @@ function dynamicComboWidget(
       if (replacement && link) inputLinks.set(replacement, link)
     }
     const result = commitMutatedInputs(node, previous, inputLinks)
-    if (!result.ok) return
+    if (!result.ok) return false
     for (const { input, link, slot } of result.replacements) {
       node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
     }
     restoreRemovedValues(value, addedWidgetNames)
 
-    if (!node.graph) return
+    if (!node.graph) return true
     node._setConcreteSlots()
     node.arrange()
     node.graph.setDirtyCanvas(true, true)
+    return true
   }
   //Refit height on the callback channel: interaction fires it after the value
   //setter, while configure (load, clone, paste) only fires the setter and must
@@ -280,10 +281,10 @@ function dynamicComboWidget(
       return getState()?.value ?? widgetValue
     },
     set(value) {
+      if (!updateWidgets(value)) return
       const state = getState()
       if (state) state.value = value
       widgetValue = value
-      updateWidgets(value)
     }
   })
   widget.value = widgetValue
