@@ -346,79 +346,32 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
       .toBeGreaterThan(requestsBeforeReturn)
   })
 
-  test('opens the in-app pricing table from the avatar menu while the destination is stripe', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-    await mockCloudBoot(page)
-    await bootApp(page)
+  /**
+   * Plan selection stays in the app regardless of the destination: billing-web's
+   * `/v1/pricing` has no personal/team tabs, cycle toggle, or credit slider
+   * (G7), and a per-credit Team plan 400s there (FE-2642). Only a Subscribe
+   * click inside this table hands off to billing-web — see the "Hosted
+   * billing checkout handoff" describe below.
+   */
+  for (const destination of ['stripe', 'billing_web'] as const) {
+    test(`opens the in-app pricing table from the avatar menu while the destination is ${destination}`, async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+      await mockCloudBoot(page)
+      await bootApp(page)
+      if (destination === 'billing_web') {
+        await new FeatureFlagHelper(page).setServerFlagsPersistent({
+          hosted_billing_destination: 'billing_web'
+        })
+      }
 
-    await clickPlansAndPricing(page)
+      await clickPlansAndPricing(page)
 
-    await expect(pricingHeading(page)).toBeVisible()
-    expect(await openedUrl(page)).toBeNull()
-  })
-
-  test('opens the billing-web pricing entry with the active workspace from the avatar menu while the destination is billing_web', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-    await mockCloudBoot(page)
-    await bootApp(page)
-    await new FeatureFlagHelper(page).setServerFlagsPersistent({
-      hosted_billing_destination: 'billing_web'
+      await expect(pricingHeading(page)).toBeVisible()
+      expect(await openedUrl(page)).toBeNull()
     })
-
-    await clickPlansAndPricing(page)
-
-    await expect
-      .poll(() => openedUrl(page))
-      .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/pricing?product=comfyui&return_to=comfyui_workspace&workspace=ws-personal`
-      )
-    await expect(pricingDialog(page)).toHaveCount(0)
-    await expect(pricingHeading(page)).toBeHidden()
-  })
-
-  test('falls back to the in-app pricing table when the hosted pricing tab is blocked', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-    await mockCloudBoot(page)
-    await bootApp(page, { blockPopups: true })
-    await new FeatureFlagHelper(page).setServerFlagsPersistent({
-      hosted_billing_destination: 'billing_web'
-    })
-
-    await clickPlansAndPricing(page)
-
-    await expect(pricingHeading(page)).toBeVisible()
-  })
-
-  test('refetches billing status when the hosted pricing tab regains focus', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-    const { statusRequests } = await mockCloudBoot(page)
-    await bootApp(page)
-    await new FeatureFlagHelper(page).setServerFlagsPersistent({
-      hosted_billing_destination: 'billing_web'
-    })
-
-    await clickPlansAndPricing(page)
-    await expect
-      .poll(() => openedUrl(page))
-      .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/pricing?product=comfyui&return_to=comfyui_workspace&workspace=ws-personal`
-      )
-
-    const requestsBeforeReturn = statusRequests.length
-    await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-
-    await expect
-      .poll(() => statusRequests.length)
-      .toBeGreaterThan(requestsBeforeReturn)
-  })
+  }
 })
 
 test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
