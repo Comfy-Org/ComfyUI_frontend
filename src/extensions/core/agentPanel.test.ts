@@ -741,8 +741,8 @@ describe('AgentPanel extension flag gate', () => {
     )
     const app = fromPartial<ComfyApp>({})
 
-    extension!.beforeLoadGraph!(app)
-    extension!.onGraphLoadError!(new Error('bad workflow json'), app)
+    await extension!.beforeLoadGraph!(app)
+    await extension!.onGraphLoadError!(new Error('bad workflow json'), app)
 
     expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(mocks.notifyAfterGraphConfigure).not.toHaveBeenCalled()
