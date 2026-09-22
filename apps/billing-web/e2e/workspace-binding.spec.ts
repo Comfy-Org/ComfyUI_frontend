@@ -16,7 +16,7 @@ test('an entry link naming a workspace mints for it and names it in the shell', 
     }
   }))
   const subscription = entryPath('subscription', {
-    workspace_id: 'ws_team_e2e'
+    workspace: 'ws_team_e2e'
   })
 
   await signIn(subscription)
@@ -50,7 +50,7 @@ for (const { name, status, message } of REFUSAL_CASES) {
       body: { error: 'refused' }
     }))
     const subscription = entryPath('subscription', {
-      workspace_id: 'ws_not_a_member'
+      workspace: 'ws_not_a_member'
     })
 
     await page.goto(subscription)

@@ -22,7 +22,7 @@ describe('boundWorkspaceId', () => {
     history.pushState(
       null,
       '',
-      '/v1/subscription?product=comfyui&return_to=comfyui_workspace&workspace_id=ws-team'
+      '/v1/subscription?product=comfyui&return_to=comfyui_workspace&workspace=ws-team'
     )
 
     const { boundWorkspaceId } = await freshBinding()
@@ -43,7 +43,7 @@ describe('boundWorkspaceId', () => {
     history.pushState(
       null,
       '',
-      '/v1/subscription?product=comfyui&return_to=comfyui_workspace&workspace_id=ws-new'
+      '/v1/subscription?product=comfyui&return_to=comfyui_workspace&workspace=ws-new'
     )
 
     const { boundWorkspaceId } = await freshBinding()

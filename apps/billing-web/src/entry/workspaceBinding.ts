@@ -2,7 +2,7 @@
  * The workspace this tab's session is bound to, once an entry link has named
  * one: a tab-scoped id that outlives any single route so the sign-in
  * redirect, a reload, and this app's own internal links (which do not repeat
- * `workspace_id`, e.g. `CheckoutView`'s result link) all keep minting for the
+ * `workspace`, e.g. `CheckoutView`'s result link) all keep minting for the
  * same target. `useBillingEntry`'s entry is route-scoped and gets overwritten
  * by every navigation, including the ones this app makes for itself, so it
  * cannot hold this by itself.

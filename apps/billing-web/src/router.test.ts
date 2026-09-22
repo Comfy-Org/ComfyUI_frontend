@@ -45,7 +45,7 @@ describe('entry workspace binding', () => {
       onEntryWorkspace
     )
 
-    await router.push(`/v1/subscription?${ENTRY_QUERY}&workspace_id=ws-team`)
+    await router.push(`/v1/subscription?${ENTRY_QUERY}&workspace=ws-team`)
 
     expect(onEntryWorkspace).toHaveBeenCalledExactlyOnceWith('ws-team')
   })
@@ -71,7 +71,7 @@ describe('entry workspace binding', () => {
       onEntryWorkspace
     )
 
-    await router.push(`/v1/subscription?${ENTRY_QUERY}&workspace_id=ws/1`)
+    await router.push(`/v1/subscription?${ENTRY_QUERY}&workspace=ws/1`)
 
     expect(onEntryWorkspace).not.toHaveBeenCalled()
   })
