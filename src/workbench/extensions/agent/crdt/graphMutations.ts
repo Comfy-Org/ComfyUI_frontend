@@ -13,7 +13,6 @@ import type {
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { zAutogrowOptions } from '@/schemas/nodeDefSchema'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -502,14 +501,9 @@ function nodeDefAutogrowGroupOf(
   if (dot < 0) return { known: true, group: undefined }
   const groupName = name.slice(0, dot)
   const key = name.slice(dot + 1)
-  // `ComfyNodeDefImpl.inputs` is `Record<string, InputSpecV2>`, which this
-  // project's TypeScript config (`noUncheckedIndexedAccess` is off) types as
-  // always present, even though a candidate group name commonly has no
-  // matching input -- widen it explicitly, as `nodeDefStore.ts`'s own
-  // `getInputSpecForWidget` does for the same access.
-  const inputSpec = nodeDef.inputs[groupName] as InputSpecV2 | undefined
-  const template =
-    inputSpec && zAutogrowOptions.safeParse(inputSpec).data?.template
+  const inputSpec: unknown = nodeDef.inputs[groupName]
+  const parsed = zAutogrowOptions.safeParse(inputSpec)
+  const template = parsed.success ? parsed.data.template : undefined
   if (!template) return { known: true, group: undefined }
   const isMember = isAutogrowGroupMember(key, template.names)
   return { known: true, group: isMember ? groupName : undefined }
@@ -819,10 +813,6 @@ export function isIncompatibleLinkType(link: {
 
 type ChangedNodeSlots = Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>>
 
-/**
- * True when `replacement` is the same link still occupying this link's
- * origin slot, so that slot's outgoing link list should be left untouched.
- */
 function keepsOriginSlot(
   topology: LinkTopology,
   replacement: LinkTopology | undefined
@@ -834,10 +824,6 @@ function keepsOriginSlot(
   )
 }
 
-/**
- * True when `replacement` is the same link still occupying this link's
- * target slot, so that slot's incoming link should be left untouched.
- */
 function keepsTargetSlot(
   topology: LinkTopology,
   replacement: LinkTopology | undefined

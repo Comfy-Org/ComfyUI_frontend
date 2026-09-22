@@ -212,11 +212,6 @@ export const useLinkStore = defineStore('link', () => {
     return replaceLink(scope, undefined, topology, undefined, context)
   }
 
-  /**
-   * Rejects a `replacement` whose id would collide with an unrelated
-   * incumbent link, or whose declared `replaced` link is not actually owned
-   * by this scope's placement.
-   */
   function canPlaceReplacement(
     scope: GraphScope,
     bucket: RootTopologyBucket | undefined,
@@ -236,7 +231,6 @@ export const useLinkStore = defineStore('link', () => {
     return true
   }
 
-  /** Rejects a `replacement` whose target slot is occupied by anything other than `expected`. */
   function targetSlotIsAvailable(
     bucket: RootTopologyBucket | undefined,
     scope: GraphScope,
@@ -257,7 +251,6 @@ export const useLinkStore = defineStore('link', () => {
     return true
   }
 
-  /** Displaces both the expected occupant and, if distinct, the caller's own prior placement being replaced. */
   function displaceForReplacement(
     targetBucket: RootTopologyBucket,
     expected: LinkTopology | undefined,

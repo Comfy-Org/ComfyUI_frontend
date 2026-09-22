@@ -8,57 +8,10 @@ import {
   multiAutogrowRealignTest as test
 } from '@e2e/fixtures/multiAutogrowRealignFixture'
 
-/**
- * A node with two independent COMFY_AUTOGROW_V3 groups (reduced from
- * MiniMaxH3ReferenceToVideo's `ref_images`/`ref_videos` shape) had its links
- * silently re-target to the wrong input once both groups had already grown
- * on a saved graph.
- *
- * Root cause: the CRDT follower materialized an agent-authored node by
- * building link adapters against the saved DOCUMENT's input positions.
- * `node.configure()` and COMFY_AUTOGROW_V3 growth reorder LIVE inputs as the
- * node is built, so with two or more autogrow groups sharing a node the
- * adapters kept pointing at stale indexes: a link painted on the wrong
- * socket, and the value read at submit time was wrong for the same reason.
- *
- * Fixed in `graphMutations.ts`'s `mergeInputSlotsByName`/`prepareNode`: a
- * reconcile now resolves each saved link's destination by the input's NAME
- * against the live node, not by the document's position.
- *
- * See `agentNodeMaterializer.multiAutogrow.test.ts` for the Vitest regression
- * on the same interleaved shape and `agentAutogrowTabSwitchReconcile.spec.ts`
- * for the same tab-switch replay mechanism.
- *
- * NOT covered here, or by `agentFollowerReloadBinding.spec.ts` (which only
- * reattaches an ordinary scalar widget edit, not a multi-autogrow node): the
- * outbound leg's own link-position corruption, where the page mints a link
- * by LIVE position into the host document while the host document's own
- * inputs are ordered by NAME, so `[link, originSlot, ..., targetSlot, ...]`
- * can point at the wrong input once a save/reload/reattach round-trips a
- * node with more than one autogrow group. That defect is tracked and
- * reproduced with a real failing unit test at
- * https://github.com/Comfy-Org/ComfyUI_frontend/pull/18332
- * (`linkMintOutboundPositionCorruption.test.ts`).
- */
 test.describe(
   'Agent CRDT multi-autogrow link realignment',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    // Each test below boots its own app and submits a real Run; only the
-    // second and third also reload the page. This project inherits the
-    // repo's top-level `fullyParallel: true`, so without `serial` CI's
-    // default `workers: 2` puts these three heavy Chromium instances in
-    // concurrent workers; that contention, not a logic bug, is what pushes
-    // them past budget. `serial` trades that for a different cost: these
-    // three tests share no state, so Playwright skipping the rest of the
-    // file after one failure is the wrong contract for them. The real fix
-    // is a dedicated `fullyParallel: false`, `--workers=1` project for this
-    // file, matching the existing `custom-nodes`/`performance`/`audit`
-    // projects; that needs a CI workflow change this environment can't
-    // verify against the real video-recording job, so `serial` stays for
-    // now.
-    test.describe.configure({ mode: 'serial' })
-
     test('keeps every link and scalar under its named slot across a reconcile and a resubscribe', async ({
       realign
     }) => {
@@ -85,7 +38,7 @@ test.describe(
       })
     })
 
-    test('serializes and restores every scalar and link under its own name across a save and a reload', async ({
+    test('serializes and restores named links from the saved workflow response', async ({
       realign
     }) => {
       test.setTimeout(120_000)
@@ -99,32 +52,6 @@ test.describe(
           SENTINEL_HEIGHT
         ])
         expect(saved.linkTargets).toEqual(realign.expectedSavedLinkTargets())
-      })
-
-      await test.step('reload and reopen the saved workflow', async () => {
-        await realign.reloadAndReopenSavedWorkflow()
-        await expect(realign.targetNode).toBeVisible({ timeout: 30_000 })
-      })
-
-      await test.step('verify restored links, values and submission', async () => {
-        await realign.expectEveryLinkOnItsNamedSlot()
-        await realign.expectSentinelWidgetValues()
-        await realign.expectSubmittedValuesNamedCorrectly()
-      })
-    })
-
-    test('reads the restored prompt from the saved GET response, not from draft or cache state', async ({
-      realign
-    }) => {
-      test.setTimeout(120_000)
-
-      await test.step('save then corrupt the persisted bytes', async () => {
-        await realign.fillSentinelWidgetValues()
-        await realign.saveAndReadPostedGraph()
-        // A real save always contains the sentinel prompt verbatim;
-        // replacing just that value (rather than fulfilling an unrelated
-        // body) keeps the graph structure intact, so the reopen below
-        // differs from the live canvas in exactly one readable place.
         realign.corruptSavedContentPrompt(CORRUPTED_PROMPT)
       })
 
@@ -134,8 +61,7 @@ test.describe(
       })
 
       await test.step('the corrupted value round-tripped, not a cached one', async () => {
-        // The exact corrupted value, not merely "some assertion failed":
-        // the restored prompt has to be what the GET served.
+        await realign.expectEveryLinkOnItsNamedSlot()
         await realign.expectSentinelWidgetValues(CORRUPTED_PROMPT)
         await realign.expectSubmittedValuesNamedCorrectly(CORRUPTED_PROMPT)
       })

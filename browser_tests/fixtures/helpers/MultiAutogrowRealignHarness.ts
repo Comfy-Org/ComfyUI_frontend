@@ -64,14 +64,8 @@ export const CORRUPTED_PROMPT = 'multi-autogrow-realign-corrupted-prompt'
  */
 const SAVED_WORKFLOW_NAME = 'Multi autogrow realign'
 
-/** A cold boot plus a workflow reopen, not a plain DOM settle. */
 const RELOAD_READY_TIMEOUT = 30_000
 
-/**
- * Same narrow-then-parse boundary crossing `linksExecution.spec.ts` uses for a
- * captured `/api/prompt` body: `postDataJSON()` is `unknown`, so this confirms
- * the shape before handing `.prompt` to the schema that owns validating it.
- */
 function getQueuedPrompt(body: unknown): ComfyApiWorkflow {
   if (typeof body !== 'object' || body === null || !('prompt' in body)) {
     throw new Error('Expected /api/prompt body to contain a prompt object')
@@ -81,15 +75,8 @@ function getQueuedPrompt(body: unknown): ComfyApiWorkflow {
 
 type ParsedSavedNode = WorkflowJSON04['nodes'][number]
 
-/** `[targetNodeId, inputName]` for one saved link, once resolved. */
-type SavedLinkTarget = readonly [ParsedSavedNode['id'], string | undefined]
+type SavedLinkTarget = readonly [ParsedSavedNode['id'], string]
 
-/**
- * Owns the lifecycle the multi-autogrow realign scenarios share: the routed
- * `/ws` host, the agent thread/run-mode/messages endpoints, the boot mocks,
- * the saved-workflow persistence round trip, and the `/api/prompt` capture.
- * Each scenario's own acts and assertions stay in its `test()` body.
- */
 export class MultiAutogrowRealignHarness {
   private readonly host = new HostDoc(WORKFLOW_ID, seed, catalog)
   readonly hostSocket: AgentFollowerHostSocket
@@ -97,7 +84,6 @@ export class MultiAutogrowRealignHarness {
   readonly vueNodes: VueNodeHelpers
   readonly agentPanel: AgentPanel
 
-  /** These locator chains depend on nothing runtime, so they are built once. */
   readonly panel: Locator
   readonly targetNode: Locator
   readonly promptField: Locator
@@ -252,11 +238,6 @@ export class MultiAutogrowRealignHarness {
     return this.persistence?.savedName()
   }
 
-  /**
-   * Swaps the sentinel prompt inside the bytes a later GET for the saved path
-   * serves, so the reopen differs from the live canvas in exactly one
-   * readable place.
-   */
   corruptSavedContentPrompt(replacement: string): void {
     const original = this.persistence?.savedContent()
     if (original === undefined) throw new Error('workflow was not saved')
@@ -265,26 +246,17 @@ export class MultiAutogrowRealignHarness {
     )
   }
 
-  /** `[targetNodeId, inputName]` per expected link, as a saved graph holds it. */
   expectedSavedLinkTargets(): readonly SavedLinkTarget[] {
     return EXPECTED_TARGETS.map(
       ({ name }) => [TARGET_NODE_ID, name] as const satisfies SavedLinkTarget
     )
   }
 
-  /** Opens the panel and points the chat at the currently active workflow. */
   async targetActiveWorkflow(): Promise<void> {
     await this.agentPanel.open()
     await this.agentPanel.selectWorkflow()
   }
 
-  /**
-   * The ready state every scenario in this fixture starts from: the panel
-   * bound to the active workflow, a first turn sent and settled, the CRDT
-   * follower subscribed, and the target node visible on canvas. Each
-   * `test()` body's own acts and assertions begin from here, not from this
-   * bootstrap, which all three scenarios shared identically.
-   */
   async bindAndAwaitFirstTurn(): Promise<void> {
     await this.targetActiveWorkflow()
     await this.sendTurn('hello')
@@ -335,11 +307,6 @@ export class MultiAutogrowRealignHarness {
     )
   }
 
-  /**
-   * Resolves a named input's actual live slot index, rather than assuming it
-   * matches the seed's position -- see the comment on `SPARE_SLOTS` in the
-   * fixture module.
-   */
   private resolveInputSlotIndex(name: string) {
     return this.page.evaluate(
       ({ nodeId, name }) => {
@@ -351,10 +318,6 @@ export class MultiAutogrowRealignHarness {
     )
   }
 
-  /**
-   * Every saved link lands on its own named socket, and the canvas paints
-   * exactly the connected/spare split the fixture declares.
-   */
   async expectEveryLinkOnItsNamedSlot(): Promise<void> {
     await expect
       .poll(() => this.readLinkTargets())
@@ -424,7 +387,6 @@ export class MultiAutogrowRealignHarness {
     await expect(this.heightInput).toHaveValue(String(SENTINEL_HEIGHT))
   }
 
-  /** The widget edits reached the host's own CRDT doc, not just the canvas. */
   async expectHostDocHasSentinelValues(): Promise<void> {
     await expect
       .poll(
@@ -436,11 +398,6 @@ export class MultiAutogrowRealignHarness {
       .toEqual([SENTINEL_PROMPT, SENTINEL_WIDTH, SENTINEL_HEIGHT])
   }
 
-  /**
-   * Opens a second tab and comes back, which re-subscribes the follower and
-   * replays the whole document over the node record the store already holds --
-   * the reconcile this fix changed, unlike a first materialization.
-   */
   async switchTabsAwayAndBack(): Promise<void> {
     await expect(
       this.topbar.workflowTabs.locator('.p-togglebutton')
@@ -455,11 +412,6 @@ export class MultiAutogrowRealignHarness {
     await expect.poll(() => this.hostSocket.subscribeCount()).toBe(2)
   }
 
-  /**
-   * Saves through the real Save As UI and returns the exact bytes POSTed, so
-   * a caller can assert the serializer named every scalar and link correctly
-   * independent of what the reopen reads back.
-   */
   async saveAndReadPostedGraph(): Promise<{
     widgetValues: ParsedSavedNode['widgets_values'] | undefined
     linkTargets: readonly (SavedLinkTarget | undefined)[]
@@ -482,13 +434,10 @@ export class MultiAutogrowRealignHarness {
       widgetValues: target?.widgets_values,
       linkTargets: EXPECTED_TARGETS.map(({ linkId }) => {
         const link = workflow.links.find(([id]) => id === linkId)
-        return (
-          link &&
-          ([
-            link[3],
-            target?.inputs?.[link[4]]?.name
-          ] as const satisfies SavedLinkTarget)
-        )
+        const inputName = link && target?.inputs?.[link[4]]?.name
+        return link && inputName
+          ? ([link[3], inputName] as const satisfies SavedLinkTarget)
+          : undefined
       })
     }
   }
