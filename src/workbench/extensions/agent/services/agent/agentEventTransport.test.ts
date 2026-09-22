@@ -590,4 +590,30 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
 
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })
+
+  // PM-1575 regression: most agent tools are read-only or navigational and
+  // never produce a doc_update at all (confirmed against every recorded
+  // conversation under browser_tests/fixtures/data/agent/conversations/ --
+  // e.g. agent-rec-text-only-answer's switch_tab + print_workflow turn
+  // carries no graph_ops whatsoever). Gating those the same as a real graph
+  // edit stranded them at the spinner glyph for the full STALE_AFTER_MS,
+  // since nothing ever calls notifyCanvasCaughtUp for a turn with no canvas
+  // mutation to report.
+  it('settles a successful read-only tool call immediately, even while the gate is open', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(toolCall('switch_tab', 'success'))
+    transport.ingest(toolCall('print_workflow', 'success', 'call-2'))
+
+    expect(toolParts(message)).toEqual([
+      expect.objectContaining({ name: 'switch_tab', ok: true, state: 'done' }),
+      expect.objectContaining({
+        name: 'print_workflow',
+        ok: true,
+        state: 'done'
+      })
+    ])
+  })
 })

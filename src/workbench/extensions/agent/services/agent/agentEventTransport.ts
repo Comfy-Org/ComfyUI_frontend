@@ -37,6 +37,31 @@ type AgentMessageDeltaEvent = Extract<
   { type: 'agent_message_delta' }
 >
 
+/**
+ * PM-1575: tool names whose execution can plausibly land a CRDT `doc_update`
+ * -- the only case `resolveToolCallState` below has anything to wait on. Most
+ * agent tools are read-only or purely navigational (`print_workflow`,
+ * `list_slots`, `switch_tab`, `remember`, ...) and never touch the doc at
+ * all: gating those the same way as a real graph edit strands them at the
+ * spinner glyph for the full `STALE_AFTER_MS`, since nothing -- no later
+ * `notifyCanvasCaughtUp()` in that turn, ever -- settles them early. Confirmed
+ * against every recorded conversation under
+ * `browser_tests/fixtures/data/agent/conversations/`: a read-only turn (e.g.
+ * `agent-rec-text-only-answer`'s `switch_tab` + `print_workflow`) carries no
+ * `graph_ops` at all, so this is not a hypothetical.
+ */
+const CANVAS_MUTATING_TOOLS = new Set([
+  'add_node',
+  'delete_node',
+  'set_widget',
+  'connect',
+  'disconnect',
+  'clear_canvas',
+  'apply_ops',
+  'insert_workflow',
+  'define_subgraph'
+])
+
 export interface AgentEventTransport {
   ingest: (event: AgentChatEvent) => void
   settle: () => void
@@ -107,6 +132,11 @@ export function createAgentEventTransport(
    * failure immediately, and, for a turn whose other tool calls also never
    * touch the canvas, `notifyCanvasCaughtUp` may never fire at all to rescue
    * it early.
+   *
+   * Even a successful outcome is only worth waiting on when the tool itself
+   * is one that can mutate the doc (`CANVAS_MUTATING_TOOLS` above) -- the
+   * same stranding risk applies to e.g. a successful `print_workflow` or
+   * `switch_tab`, which never produces a `doc_update` at all.
    */
   function resolveToolCallState(
     part: ToolPart,
@@ -115,7 +145,11 @@ export function createAgentEventTransport(
   ): void {
     part.ok = status === 'success'
     part.durationMs = durationMs
-    if (status === 'success' && shouldAwaitCanvasSync()) {
+    if (
+      status === 'success' &&
+      CANVAS_MUTATING_TOOLS.has(part.name) &&
+      shouldAwaitCanvasSync()
+    ) {
       pendingCanvasSync.set(
         part,
         setTimeout(() => {
