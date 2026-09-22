@@ -1834,9 +1834,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     })
   }
 
-  /**
-   * Clears all the data inside.
-   */
   clear(): void {
     releaseCanvasSelection(this)
     applyCanvasSelection(this, { type: 'selection.clear' })

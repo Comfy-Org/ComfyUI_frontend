@@ -153,7 +153,11 @@ agent store owns the fact; everything else is a projection of it.
    `commandPolicyStore.graphMutationsLocked` is `true`, so menus, keybindings
    and the selection toolbox share one check and a command body carries no
    policy of its own. The sync in decision 4 writes that flag next to the
-   `selectOnly` pin; `commandPolicyStore` holds nothing else and imports no
+   `selectOnly` pin and with the same ownership: the flag reads `true` while
+   any live sync owner projects picking, and only the last owner to release,
+   because picking ended or its scope was disposed, clears it, so disposing
+   one of several live owners cannot unlock the others.
+   `commandPolicyStore` holds nothing else and imports no
    canvas or app module, so the command store reads the policy synchronously
    and the decision, the predicate and the command body all run in the
    dispatching task. A lazy canvas-store import in an earlier revision moved
@@ -227,7 +231,9 @@ agent store owns the fact; everything else is a projection of it.
   every reader. A value written to it during picking is recorded and becomes
   the value restored when picking ends; a value it held before picking is
   restored otherwise. The restore happens exactly once, when the last sync
-  owner releases.
+  owner releases. `commandPolicyStore.graphMutationsLocked` reads `true`
+  under the same ownership and is cleared by the last owner to release, so a
+  disposed scope never leaves mutating commands refused.
 - Classic picking keeps node selection, empty-canvas preservation, panning
   and the selection rectangle; alt-click clone, reroute and link drags from
   the canvas, link menus, group title-bar drags, click-to-front reordering,
@@ -327,7 +333,8 @@ agent store owns the fact; everything else is a projection of it.
   per-site guards, so a new keyboard or pointer mutation path must still opt
   in.
 - `commandPolicyStore.graphMutationsLocked` is a second projection of
-  `isActive`, written by the same sync as the `selectOnly` pin, kept because
+  `isActive`, written by the same sync as the `selectOnly` pin and owned the
+  same way, kept because
   the command store cannot import the agent or canvas stores without
   pulling the app module into every command-store consumer.
 - An extension that sets `canvas.selectOnly` itself reads `true` while
@@ -347,8 +354,8 @@ Implementation:
 
 The sequence number collides with open
 [PR #18106](https://github.com/Comfy-Org/ComfyUI_frontend/pull/18106)
-(`CRDT-RECONCILE-0035`); four ADRs already share `0028`, so this is tolerable
-by precedent. Re-check at rebase. `ADR-CANVAS-GESTURE-0029` migration step 5
+(`CRDT-RECONCILE-0035`); other ADR filenames already share a sequence
+number, so this is tolerable by precedent. Re-check at rebase. `ADR-CANVAS-GESTURE-0029` migration step 5
 ("Introduce `InteractionPolicy` and derive the legacy mode flags from it")
 should start from `resolvePickingPolicy` for the pick case; 0029 is not
 edited in this PR.
