@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type { BillingOperationState } from '@comfyorg/account-core/billing'
+import type { AccountCredential } from '@comfyorg/account-core/session'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
@@ -32,6 +33,41 @@ vi.mock<unknown>(import('@/config/env'), () => ({
   FIREBASE_OPTIONS: undefined,
   STRIPE_PUBLISHABLE_KEY: 'pk_test_example'
 }))
+
+const workspace = vi.hoisted(() => ({
+  session: undefined as AccountCredential | undefined,
+  bound: undefined as string | undefined
+}))
+
+vi.mock(import('@/session/billingWebSession'), async () => {
+  const { computed } = await import('vue')
+  return {
+    useBillingWebSession: () => ({
+      phase: computed(() =>
+        workspace.session ? 'authenticated' : 'signed-out'
+      ),
+      user: computed(() => null),
+      session: computed(() => workspace.session),
+      failure: computed(() => undefined)
+    })
+  }
+})
+
+vi.mock(import('@/entry/workspaceBinding'), () => ({
+  boundWorkspaceId: () => workspace.bound,
+  bindEntryWorkspace: () => false
+}))
+
+function teamSession(): AccountCredential {
+  return {
+    token: 'jwt-1',
+    permissions: [],
+    expiresAt: Date.now() + 3_600_000,
+    uid: 'uid-1',
+    workspace: { id: 'ws-team', name: 'Acme Team', type: 'team' },
+    role: 'owner'
+  }
+}
 
 const challengeMocks = vi.hoisted(() => ({
   createPort: vi.fn(),
@@ -123,6 +159,11 @@ function stubNavigation() {
 }
 
 describe('CheckoutView', () => {
+  beforeEach(() => {
+    workspace.session = undefined
+    workspace.bound = undefined
+  })
+
   it('quotes the plan the link names and prices the summary from it', async () => {
     const fake = await renderCheckout()
 
@@ -408,6 +449,42 @@ describe('CheckoutView', () => {
       'href',
       'https://testcloud.comfy.org/?billing_result=success&billing_ref=op_9'
     )
+  })
+
+  it('returns the customer into the workspace the session was minted for', async () => {
+    workspace.session = teamSession()
+    workspace.bound = 'ws-other'
+    await renderCheckout(CHECKOUT_PATH, {
+      subscribe: {
+        status: 'ok',
+        value: { phase: 'succeeded', operation: succeededOperation('op_9') }
+      }
+    })
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    await screen.findByRole('heading', { name: "You're all set" })
+    expect(
+      screen.getByRole('link', { name: 'Return to ComfyUI' })
+    ).toHaveAttribute(
+      'href',
+      'https://testcloud.comfy.org/?workspace=ws-team&billing_result=success&billing_ref=op_9'
+    )
+  })
+
+  it('names the minted workspace on the hosted payment way back here', async () => {
+    workspace.session = teamSession()
+    const fake = await renderCheckout()
+    await screen.findByRole('button', { name: 'Pay and subscribe' })
+
+    reportConfirm('ctoken_1')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalled())
+    const [request] = fake.subscribe.mock.calls[0]
+    const returnUrl = new URL(String(request.return_url))
+    expect(returnUrl.pathname).toBe('/v1/result')
+    expect(returnUrl.searchParams.get('workspace')).toBe('ws-team')
   })
 
   it('keeps a declined customer on the page with the form one click away', async () => {

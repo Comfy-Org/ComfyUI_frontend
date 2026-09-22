@@ -30,6 +30,7 @@ import {
 import CheckoutSubmit from '@/components/CheckoutSubmit.vue'
 import EmbeddedCheckout from '@/components/EmbeddedCheckout.vue'
 import HostedSurface from '@/components/HostedSurface.vue'
+import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV, STRIPE_PUBLISHABLE_KEY } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
@@ -40,6 +41,7 @@ const { coded } = useHostedCopy()
 const route = useRoute()
 const router = useRouter()
 const { entry } = useBillingEntry()
+const billedWorkspace = useBilledWorkspace()
 
 const planSlug = computed(() => entry.value?.plan)
 const teamCreditStopId = computed(() => entry.value?.teamCreditStopId)
@@ -178,6 +180,7 @@ const returnLink = computed(() => {
   const url = buildReturnUrl({
     target: arrival.returnTo,
     environment: BILLING_WEB_ENV,
+    workspace: billedWorkspace(),
     result: phase.value === 'success' ? 'success' : undefined,
     reference: checkout.projection.value.operationId
   })
@@ -188,6 +191,7 @@ const returnLink = computed(() => {
 function resultUrl(): string | undefined {
   const arrival = entry.value
   if (!arrival) return undefined
+  const workspaceId = billedWorkspace()
   const built = buildBillingEntryUrl({
     billingOrigin: window.location.origin,
     intent: 'result',
@@ -196,7 +200,8 @@ function resultUrl(): string | undefined {
     ...(arrival.plan === undefined ? {} : { plan: arrival.plan }),
     ...(arrival.teamCreditStopId === undefined
       ? {}
-      : { teamCreditStopId: arrival.teamCreditStopId })
+      : { teamCreditStopId: arrival.teamCreditStopId }),
+    ...(workspaceId === undefined ? {} : { workspaceId })
   })
   return built.status === 'ok' ? built.url.href : undefined
 }
