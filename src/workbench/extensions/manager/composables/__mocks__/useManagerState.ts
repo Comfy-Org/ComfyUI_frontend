@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { vi } from 'vitest'
+import { onTestFinished, vi } from 'vitest'
 import type { useManagerState as realUseManagerState } from '../useManagerState'
 
 type ManagerState = ReturnType<typeof realUseManagerState>
@@ -8,10 +8,28 @@ type ManagerStateMock = Pick<
   'isNewManagerUI' | 'shouldShowManagerButtons' | 'openManager'
 >
 
-const managerState: ManagerStateMock = {
-  isNewManagerUI: computed(() => false),
-  shouldShowManagerButtons: computed(() => false),
+const actionDefaults: Pick<ManagerStateMock, 'openManager'> = {
   openManager: vi.fn(async () => {})
 }
 
-export const useManagerState = vi.fn(() => managerState)
+function createDefaultManagerState(): ManagerStateMock {
+  return {
+    isNewManagerUI: computed(() => false),
+    shouldShowManagerButtons: computed(() => false),
+    ...actionDefaults
+  }
+}
+
+const managerState = createDefaultManagerState()
+let cleanupRegistered = false
+
+export const useManagerState = vi.fn(() => {
+  if (!cleanupRegistered) {
+    onTestFinished(() => {
+      Object.assign(managerState, createDefaultManagerState())
+      cleanupRegistered = false
+    })
+    cleanupRegistered = true
+  }
+  return managerState
+})
