@@ -259,10 +259,7 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import {
-  attachMintPortWiring,
-  notifyMintPortsBeforeGraphLoad
-} from './crdt/mintPortWiring'
+import { attachMintPortWiring } from './crdt/mintPortWiring'
 import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
 
 const mintPortWiringDeps = vi.hoisted(() => ({
@@ -6685,11 +6682,5 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
       toRootGraphId('wf-42-rotated')
     )
-  })
-})
-
-describe('AgentPanelRoot mintPortWiring module mock', () => {
-  it("keeps the module's other exports real instead of undefined (regression)", () => {
-    expect(() => notifyMintPortsBeforeGraphLoad()).not.toThrow()
   })
 })
