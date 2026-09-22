@@ -141,6 +141,24 @@ describe('website E2E workflow', () => {
     )
   })
 
+  it('keeps the screenshot-update trigger literals synchronized', () => {
+    const producer = readFileSync(
+      join(ROOT, '.github/workflows/ci-website-e2e.yaml'),
+      'utf8'
+    )
+    const consumer = readFileSync(
+      join(ROOT, '.github/workflows/pr-update-website-screenshots.yaml'),
+      'utf8'
+    )
+
+    // The consumer fires on a comment body containing both of these, so the
+    // E2E section has to keep emitting them verbatim however it is reshaped.
+    expect(producer).toContain('<!-- WEBSITE_E2E_STATUS -->')
+    expect(consumer).toContain("'<!-- WEBSITE_E2E_STATUS -->'")
+    expect(producer).toContain('- [ ] Update website screenshots')
+    expect(consumer).toContain("'- [x] Update website screenshots'")
+  })
+
   it('passes only skipped or fully successful runs', () => {
     expect(
       checkResult({

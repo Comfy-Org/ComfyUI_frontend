@@ -186,6 +186,10 @@ jobs:
             core.setOutput('screenshot', screenshotFailures)
             core.setOutput('other', failed.length - screenshotFailures)
 
+      # ⚠️ The verdict wording here is duplicated on `post-result-comment` —
+      # keep them in sync. The shapes deliberately differ: this surface stays
+      # expanded, so it can use `> [!TIP]`-style alerts, which the comment's
+      # collapsed box cannot.
       - name: Write job summary
         if: always() && needs.website-e2e-shard.result != 'cancelled'
         uses: actions/github-script@v9
@@ -275,11 +279,8 @@ jobs:
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
           section-content: |-
-            ## 🌐 Website E2E
+            ## 🌐 Website E2E: ⏳ Running… — [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
             <!-- WEBSITE_E2E_STATUS -->
-
-            > [!NOTE]
-            > Tests are running… [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
   post-result-comment:
     needs: website-e2e-report
@@ -294,6 +295,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # ⚠️ The verdict wording here is duplicated from `Write job summary` in
+      # `website-e2e-report` — keep them in sync.
       - name: Build e2e section content
         id: content
         uses: actions/github-script@v9
@@ -311,45 +314,72 @@ jobs:
             const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
             const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
 
-            const lines = ['## 🌐 Website E2E', '<!-- WEBSITE_E2E_STATUS -->', '']
+            const verdict = passed
+              ? '✅ Passed'
+              : infrastructure
+                ? '💥 Infrastructure failure'
+                : '❌ Failed'
 
-            if (passed) {
-              lines.push('> [!TIP]', '> All tests passed.')
-            } else if (infrastructure) {
-              lines.push(
-                '> [!CAUTION]',
-                '> A shard failed before producing a report, so the suite did not fully run. No pass/fail counts are available.'
-              )
-            } else {
-              lines.push('> [!CAUTION]', '> Some tests failed.')
-            }
-
-            const rows = [
-              ['Status', passed ? '✅ Passed' : infrastructure ? '💥 Infrastructure failure' : '❌ Failed'],
-              ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
-            ]
-            if (!passed && !infrastructure) {
-              rows.push(
-                ['Screenshot diffs', String(screenshotFailures)],
-                ['Other failures', String(otherFailures)]
-              )
-            }
-            lines.push(
-              '',
-              '| | |',
-              '|---|---|',
-              ...rows.map(([k, v]) => `| **${k}** | ${v} |`)
-            )
-
+            // The screenshot-diff count belongs on the heading: the checkbox
+            // that acts on it sits inside the box, so nothing would hint the
+            // self-service fix exists without expanding.
+            const breakdown = []
             if (screenshotFailures > 0) {
-              const s = screenshotFailures === 1 ? '' : 's'
-              lines.push('', `- [ ] Update website screenshots (${screenshotFailures} screenshot diff${s})`)
+              breakdown.push(`${screenshotFailures} screenshot diff${screenshotFailures === 1 ? '' : 's'}`)
             }
             if (otherFailures > 0) {
+              breakdown.push(`${otherFailures} other failure${otherFailures === 1 ? '' : 's'}`)
+            }
+
+            const status = [
+              verdict,
+              breakdown.join(', '),
+              reportUrl ? `[View Report](${reportUrl})` : '_report unavailable_'
+            ]
+              .filter(Boolean)
+              .join(' — ')
+
+            // A clean run has nothing the heading does not already say, so it
+            // gets no box to expand.
+            //
+            // Emphasis is inline rather than a `> [!CAUTION]` alert: GitHub's
+            // alert extension does not fire inside an HTML block, so nested in
+            // <details> it degrades to a quote reading literally "[!CAUTION]".
+            const blocks = []
+
+            if (infrastructure) {
+              blocks.push([
+                '**💥 A shard failed before producing a report.** The suite did not fully run, so no pass/fail counts are available.'
+              ])
+            }
+
+            // Ticking this box is what fires pr-update-website-screenshots, so
+            // the `- [x] Update website screenshots` prefix it matches on has
+            // to survive verbatim.
+            if (screenshotFailures > 0) {
+              const s = screenshotFailures === 1 ? '' : 's'
+              blocks.push([`- [ ] Update website screenshots (${screenshotFailures} screenshot diff${s})`])
+            }
+
+            if (otherFailures > 0) {
+              const s = otherFailures === 1 ? '' : 's'
+              blocks.push([
+                `**⚠️ ${otherFailures} non-screenshot failure${s}.** These require manual review.`
+              ])
+            }
+
+            // pr-update-website-screenshots keys its comment trigger off this
+            // marker, so it has to survive every reformat of this section.
+            const lines = [`## 🌐 Website E2E: ${status}`, '<!-- WEBSITE_E2E_STATUS -->']
+            if (blocks.length > 0) {
               lines.push(
                 '',
-                '> [!WARNING]',
-                `> ${otherFailures} non-screenshot failure${otherFailures === 1 ? '' : 's'} — these require manual review.`
+                '<details>',
+                '<summary>Details</summary>',
+                '',
+                blocks.map((block) => block.join('\n')).join('\n\n'),
+                '',
+                '</details>'
               )
             }
 

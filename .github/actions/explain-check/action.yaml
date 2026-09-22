@@ -84,12 +84,8 @@ runs:
             ;;
         esac
 
-        # Must live inside the workspace: read-and-upsert-comment-section guards
-        # on hashFiles(), which only resolves paths under GITHUB_WORKSPACE and
-        # would silently no-op on a RUNNER_TEMP path.
-        out="$GITHUB_WORKSPACE/.explain-check-${INPUT_SLUG}.md"
+        body="${RUNNER_TEMP:-/tmp}/explain-check-${INPUT_SLUG}-body.md"
         {
-          printf '## %s %s: %s\n\n' "$INPUT_ICON" "$INPUT_TITLE" "$badge"
           printf '%s\n' "$INPUT_HEADLINE"
 
           if [ -n "$INPUT_DETAILS_FILE" ] && [ -s "$INPUT_DETAILS_FILE" ]; then
@@ -105,13 +101,40 @@ runs:
           if [ -n "$INPUT_DOCS" ]; then
             printf '\nFull docs: %s\n' "$INPUT_DOCS"
           fi
+        } > "$body"
+
+        heading=$(printf '## %s %s: %s' "$INPUT_ICON" "$INPUT_TITLE" "$badge")
+        # Drop leading blank lines here and trailing ones via the substitution,
+        # so a check that supplies nothing but a verdict renders as a bare
+        # heading rather than an empty box. Mirrors renderPrReportSection.
+        body_text=$(sed -e '/[^[:space:]]/,$!d' "$body")
+        rm -f "$body"
+
+        # Must live inside the workspace: read-and-upsert-comment-section guards
+        # on hashFiles(), which only resolves paths under GITHUB_WORKSPACE and
+        # would silently no-op on a RUNNER_TEMP path.
+        out="$GITHUB_WORKSPACE/.explain-check-${INPUT_SLUG}.md"
+        # Every section of the PR report reads as one status line with the rest
+        # folded away, so the comment stays scannable as checks accumulate.
+        {
+          printf '%s\n' "$heading"
+          if [ -n "$body_text" ]; then
+            printf '\n<details>\n<summary>Details</summary>\n\n%s\n\n</details>\n' "$body_text"
+          fi
         } > "$out"
 
         echo "file=$out" >> "$GITHUB_OUTPUT"
 
         # The summary is the fallback that always works — fork PRs carry a
-        # read-only token, so the comment path below is skipped for them.
-        cat "$out" >> "$GITHUB_STEP_SUMMARY"
+        # read-only token, so the comment path below is skipped for them. It
+        # stays expanded because for those runs it is the only place the
+        # findings are readable at all.
+        {
+          printf '%s\n' "$heading"
+          if [ -n "$body_text" ]; then
+            printf '\n%s\n' "$body_text"
+          fi
+        } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Upsert section into the PR report
       if: ${{ inputs.pr-number != '' && inputs.token != '' }}

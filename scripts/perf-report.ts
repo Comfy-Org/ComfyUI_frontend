@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { renderPrReportSection } from './cicd/pr-report-section'
 import type { MetricStats } from './perf-stats'
 import {
   classifyChange,
@@ -218,6 +219,15 @@ function frameTimeToFps(ms: number): number {
   return ms > 0 ? 1000 / ms : 0
 }
 
+function countBelowFpsTarget(prGroups: Map<string, PerfMeasurement[]>): number {
+  let below = 0
+  for (const prSamples of prGroups.values()) {
+    const p95Frame = medianMetric(prSamples, 'p95FrameDurationMs')
+    if (p95Frame !== null && frameTimeToFps(p95Frame) < TARGET_P5_FPS) below++
+  }
+  return below
+}
+
 function renderHeadlineSummary(
   prGroups: Map<string, PerfMeasurement[]>
 ): string[] {
@@ -254,11 +264,16 @@ function renderHeadlineSummary(
   return lines
 }
 
+interface RenderedReport {
+  status: string
+  lines: string[]
+}
+
 function renderFullReport(
   prGroups: Map<string, PerfMeasurement[]>,
   baseline: PerfReport,
   historical: PerfReport[]
-): string[] {
+): RenderedReport {
   const lines: string[] = []
   const baselineGroups = groupByName(baseline.measurements)
   const tableHeader = [
@@ -311,10 +326,13 @@ function renderFullReport(
     }
   }
 
+  const status =
+    flaggedRows.length > 0
+      ? `⚠️ ${flaggedRows.length} regression${flaggedRows.length > 1 ? 's' : ''} detected`
+      : '✅ No regressions detected'
+
   if (flaggedRows.length > 0) {
     lines.push(
-      `⚠️ **${flaggedRows.length} regression${flaggedRows.length > 1 ? 's' : ''} detected**`,
-      '',
       '<details><summary>Show regressions</summary>',
       '',
       ...tableHeader,
@@ -323,8 +341,6 @@ function renderFullReport(
       '</details>',
       ''
     )
-  } else {
-    lines.push('✅ No regressions detected.', '')
   }
 
   lines.push(
@@ -383,18 +399,18 @@ function renderFullReport(
     )
   }
 
-  return lines
+  return { status, lines }
 }
 
 function renderColdStartReport(
   prGroups: Map<string, PerfMeasurement[]>,
   baseline: PerfReport,
   historicalCount: number
-): string[] {
+): RenderedReport {
   const lines: string[] = []
   const baselineGroups = groupByName(baseline.measurements)
   lines.push(
-    `> ℹ️ Collecting baseline variance data (${historicalCount}/15 runs). Significance will appear after 2 main branch runs.`,
+    '> Significance will appear after 2 main branch runs.',
     '',
     '<details><summary>All metrics (cold start)</summary>',
     '',
@@ -436,16 +452,17 @@ function renderColdStartReport(
   }
 
   lines.push('', '</details>')
-  return lines
+  return {
+    status: `ℹ️ Collecting baseline variance (${historicalCount}/15 runs)`,
+    lines
+  }
 }
 
 function renderNoBaselineReport(
   prGroups: Map<string, PerfMeasurement[]>
-): string[] {
+): RenderedReport {
   const lines: string[] = []
   lines.push(
-    '> ℹ️ No baseline found — significance unavailable.',
-    '',
     '<details><summary>Absolute values</summary>',
     '',
     '| Metric | Value |',
@@ -459,13 +476,17 @@ function renderNoBaselineReport(
     }
   }
   lines.push('', '</details>')
-  return lines
+  return { status: 'ℹ️ No baseline — significance unavailable', lines }
 }
 
 function main() {
   if (!existsSync(CURRENT_PATH)) {
     process.stdout.write(
-      '## ⚡ Performance Report\n\nNo perf metrics found. Perf tests may not have run.\n'
+      renderPrReportSection({
+        icon: '⚡',
+        title: 'Performance',
+        status: '⏭️ No metrics found — perf tests may not have run'
+      }) + '\n'
     )
     process.exit(0)
   }
@@ -479,17 +500,12 @@ function main() {
   const historical = loadHistoricalReports()
   const prGroups = groupByName(current.measurements)
 
-  const lines: string[] = []
-  lines.push('## ⚡ Performance Report\n')
-  lines.push(...renderHeadlineSummary(prGroups))
-
-  if (baseline && historical.length >= 2) {
-    lines.push(...renderFullReport(prGroups, baseline, historical))
-  } else if (baseline) {
-    lines.push(...renderColdStartReport(prGroups, baseline, historical.length))
-  } else {
-    lines.push(...renderNoBaselineReport(prGroups))
-  }
+  const report =
+    baseline && historical.length >= 2
+      ? renderFullReport(prGroups, baseline, historical)
+      : baseline
+        ? renderColdStartReport(prGroups, baseline, historical.length)
+        : renderNoBaselineReport(prGroups)
 
   const rawData = {
     ...current,
@@ -497,13 +513,38 @@ function main() {
       ({ allFrameDurationsMs: _, ...rest }) => rest
     )
   }
-  lines.push('\n<details><summary>Raw data</summary>\n')
-  lines.push('```json')
-  lines.push(JSON.stringify(rawData, null, 2))
-  lines.push('```')
-  lines.push('\n</details>')
 
-  process.stdout.write(lines.join('\n') + '\n')
+  const body = [
+    ...renderHeadlineSummary(prGroups),
+    ...report.lines,
+    '',
+    '<details><summary>Raw data</summary>',
+    '',
+    '```json',
+    JSON.stringify(rawData, null, 2),
+    '```',
+    '',
+    '</details>'
+  ]
+
+  // The per-test target verdict lives in the collapsed summary, so without
+  // this the heading can read ✅ over a hidden ❌. It leads, because a reader
+  // scanning the comment takes the verdict from the first glyph and a target
+  // miss outranks "nothing moved since the baseline".
+  const belowTarget = countBelowFpsTarget(prGroups)
+  const status =
+    belowTarget > 0
+      ? `❌ ${belowTarget} below ${TARGET_P5_FPS} FPS target · ${report.status}`
+      : report.status
+
+  process.stdout.write(
+    renderPrReportSection({
+      icon: '⚡',
+      title: 'Performance',
+      status,
+      body: body.join('\n')
+    }) + '\n'
+  )
 }
 
 main()
