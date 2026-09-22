@@ -107,9 +107,13 @@ crdtTest(
     expect(linksMap(follower.doc).toJSON()).toEqual(originalLinks)
     const saved = structuredClone(graph.serialize())
     const target = saved.nodes.find(({ id }) => String(id) === '2')!
-    for (const { id, name } of connections) {
-      expect(target.inputs?.find((input) => input.name === name)?.link).toBe(id)
-    }
+    expect(
+      Object.fromEntries(
+        target.inputs?.map(({ name, link }) => [name, link]) ?? []
+      )
+    ).toMatchObject(
+      Object.fromEntries(connections.map(({ id, name }) => [name, id]))
+    )
     expect(
       target.inputs?.find(({ name }) => name === 'ref_image_size')
     ).toMatchObject({
