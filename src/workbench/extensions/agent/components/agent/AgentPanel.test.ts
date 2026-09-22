@@ -78,7 +78,8 @@ describe('AgentPanel', () => {
 
   it('shows the targetless run notice shortly after composer focus', async () => {
     vi.useFakeTimers()
-    const pinia = getActivePinia()!
+    const pinia = getActivePinia()
+    if (pinia === undefined) throw new Error('Expected an active testing Pinia')
     render(AgentPanel, {
       props: { entries: [], historyGroups, workflowDetached: true },
       global: {
