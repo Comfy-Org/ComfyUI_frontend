@@ -14,6 +14,9 @@ test('every PP Formula face centres its caps inside the line box', async ({
   page
 }) => {
   await page.goto('/')
+  await expect(page.locator('html')).not.toHaveClass(
+    /(?:^|\s)ppformula-metric-fallback(?:\s|$)/
+  )
 
   const faces = await page.evaluate(async (size) => {
     const rulesOf = (sheet: CSSStyleSheet) => {
@@ -82,4 +85,25 @@ test('every PP Formula face centres its caps inside the line box', async ({
       face.name
     ).toBeLessThanOrEqual(SIZE / 100)
   }
+})
+
+test('keeps the component fallback when metric overrides are unsupported', async ({
+  page
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(FontFace.prototype, 'ascentOverride', {
+      configurable: true,
+      get: () => ''
+    })
+  })
+  await page.goto('/')
+
+  await expect(page.locator('html')).toHaveClass(
+    /(?:^|\s)ppformula-metric-fallback(?:\s|$)/
+  )
+  const marker = page.locator('.ppformula-text-center').first()
+  await expect(marker).toBeVisible()
+  expect(
+    await marker.evaluate((element) => getComputedStyle(element).top)
+  ).not.toBe('auto')
 })

@@ -13,7 +13,7 @@ defineProps<{
 
 <template>
   <span class="flex items-center gap-2">
-    <span class="inline-block">{{ item.label }}</span>
+    <span class="ppformula-text-center inline-block">{{ item.label }}</span>
     <NewBadge
       v-if="item.badge"
       :locale="locale"

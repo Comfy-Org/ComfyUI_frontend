@@ -307,7 +307,7 @@ onUnmounted(() => {
           size="lg"
           class="lg:min-w-60 lg:p-4"
         >
-          <span class="inline-flex items-center gap-2">
+          <span class="ppformula-text-center inline-flex items-center gap-2">
             <i
               class="size-5 -translate-y-px icon-mask mask-[url('/icons/social/github.svg')]"
               aria-hidden="true"

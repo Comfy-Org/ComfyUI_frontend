@@ -533,9 +533,18 @@
   mask-position: center;
 }
 
-/* PP Formula has asymmetric vertical metrics
-   Shifting visually with `top` corrects the appearance without changing the
-   inline-block's bounding box, so button/badge sizes are unaffected. */
+/* Released Safari versions before 27 ignore the metric overrides above. These
+   marker classes keep the same optical centring there without changing layout
+   or overriding display utilities such as `hidden`. */
+html.ppformula-metric-fallback
+  :where(.ppformula-text-center, .ppformula-text-center-sm) {
+  position: relative;
+  top: 0.1145em;
+}
+
+html.ppformula-metric-fallback .ppformula-narrow-text-center {
+  transform: translateY(0.1065em);
+}
 /* Hide native play-button overlay iOS Safari shows when autoplay is blocked
    (e.g. Low Power Mode). These are decorative background videos. */
 video::-webkit-media-controls-start-playback-button,

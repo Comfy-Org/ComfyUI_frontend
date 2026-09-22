@@ -37,7 +37,7 @@ const resolvedRel = computed(() =>
       )
     "
   >
-    <span class="inline-block">
+    <span class="ppformula-text-center inline-block">
       <slot />
     </span>
   </component>

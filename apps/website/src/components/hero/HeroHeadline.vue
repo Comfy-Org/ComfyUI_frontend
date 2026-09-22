@@ -10,7 +10,7 @@ const lines = t('hero.title', locale).split('\n')
 // whatever context renders it (canvas overlay or mobile flow).
 const cap = '-mx-px h-full w-auto self-stretch'
 
-const inner = 'inline-block whitespace-nowrap'
+const inner = 'ppformula-narrow-text-center inline-block whitespace-nowrap'
 </script>
 
 <template>

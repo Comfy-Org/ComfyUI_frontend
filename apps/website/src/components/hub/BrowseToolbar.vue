@@ -332,7 +332,7 @@ function phoneToggle(key: string, value: string) {
             />
             <!-- Below lg the row runs out of width, so the tabs keep the icon
               and drop the word; the trigger's aria-label still names it. -->
-            <span class="max-lg:hidden">
+            <span class="ppformula-text-center-sm max-lg:hidden">
               {{ labels[tab.labelKey] }}
             </span>
           </TabsTrigger>
@@ -357,7 +357,9 @@ function phoneToggle(key: string, value: string) {
           @click="filterOpen = !filterOpen"
         >
           <SlidersHorizontal class="size-3.5 shrink-0" aria-hidden="true" />
-          <span class="max-sm:hidden">{{ labels.filter }}</span>
+          <span class="ppformula-text-center-sm max-sm:hidden">{{
+            labels.filter
+          }}</span>
           <span
             v-if="totalActiveFilters > 0"
             class="ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full bg-page/15 px-1 text-2xs font-bold tabular-nums"
@@ -388,7 +390,9 @@ function phoneToggle(key: string, value: string) {
             "
           >
             <ArrowUpDown class="size-3.5 shrink-0" aria-hidden="true" />
-            <span class="max-sm:hidden">{{ sortLabel }}</span>
+            <span class="ppformula-text-center-sm max-sm:hidden">{{
+              sortLabel
+            }}</span>
           </DropdownMenuTrigger>
           <DropdownMenuPortal>
             <DropdownMenuContent

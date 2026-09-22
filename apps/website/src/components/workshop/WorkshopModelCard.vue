@@ -171,7 +171,7 @@ const pillClass =
         </span>
         <span
           v-if="providerBadge"
-          class="truncate text-sm"
+          class="ppformula-text-center-sm truncate text-sm"
           data-testid="model-card-provider"
         >
           {{ providerName }}
