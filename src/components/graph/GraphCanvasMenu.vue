@@ -35,7 +35,12 @@
       <Button
         v-tooltip.top="t('zoomControls.label')"
         variant="secondary"
-        :class="zoomButtonClass"
+        :class="
+          cn(
+            'h-8 w-15 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+            isModalVisible && 'not-active:bg-interface-panel-selected-surface'
+          )
+        "
         :aria-label="t('zoomControls.label')"
         data-testid="zoom-controls-button"
         :style="stringifiedMinimapStyles.buttonStyles"
@@ -55,7 +60,13 @@
         :aria-label="minimapTooltip"
         data-testid="toggle-minimap-button"
         :style="stringifiedMinimapStyles.buttonStyles"
-        :class="minimapButtonClass"
+        :class="
+          cn(
+            'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+            settingStore.get('Comfy.Minimap.Visible') &&
+              'not-active:bg-interface-panel-selected-surface'
+          )
+        "
         @click="onMinimapToggleClick"
       >
         <i class="icon-[lucide--map] size-4" aria-hidden="true" />
@@ -71,7 +82,12 @@
           }
         }"
         variant="secondary"
-        :class="linkVisibleClass"
+        :class="
+          cn(
+            'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
+            linkHidden && 'not-active:bg-interface-panel-selected-surface'
+          )
+        "
         :aria-label="linkVisibilityAriaLabel"
         data-testid="toggle-link-visibility-button"
         :style="stringifiedMinimapStyles.buttonStyles"
@@ -149,22 +165,6 @@ const minimapCommandText = computed(() =>
   ).toUpperCase()
 )
 
-// Computed properties for button classes and states
-const zoomButtonClass = computed(() =>
-  cn(
-    'h-8 w-15 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-    isModalVisible.value && 'not-active:bg-interface-panel-selected-surface'
-  )
-)
-
-const minimapButtonClass = computed(() =>
-  cn(
-    'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-    settingStore.get('Comfy.Minimap.Visible') &&
-      'not-active:bg-interface-panel-selected-surface'
-  )
-)
-
 // Computed properties for tooltip and aria-label texts
 const fitViewTooltip = computed(() => {
   const label = t('graphCanvasMenu.fitView')
@@ -188,13 +188,6 @@ const linkVisibilityAriaLabel = computed(() =>
     ? t('graphCanvasMenu.showLinks')
     : t('graphCanvasMenu.hideLinks')
 )
-const linkVisibleClass = computed(() =>
-  cn(
-    'size-8 bg-transparent p-0 hover:bg-interface-button-hover-surface',
-    linkHidden.value && 'not-active:bg-interface-panel-selected-surface'
-  )
-)
-
 onMounted(() => {
   canvasStore.initScaleSync()
 })
