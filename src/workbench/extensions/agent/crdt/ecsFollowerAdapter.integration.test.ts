@@ -379,6 +379,52 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('replays authoritative state through real mutations after a batch throws', () => {
+    const mutations = createGraphMutations({
+      placement: inertPlacementPort,
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const realBatch = mutations.batch.bind(mutations)
+    const failure = new Error('projection failed')
+    let throwNextBatch = true
+    const throwingMutations: GraphMutations = {
+      ...mutations,
+      batch: (context, define) => {
+        if (throwNextBatch) {
+          throwNextBatch = false
+          throw failure
+        }
+        return realBatch(context, define)
+      }
+    }
+    const host = mint(
+      { nodes: [{ id: 1, type: 'Source' }], links: [] },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(throwingMutations)
+    adapter.bind('wf', follower)
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+
+    expect(() =>
+      adapter.applyFrame({ workflowId: 'wf', seq: 1, update })
+    ).toThrow(failure)
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+
+    expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(true)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual([toNodeId(1)])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   // `connect` refuses an IMAGE output wired into a STRING input (see
   // graphMutations.test.ts's "rejects connecting an incompatible slot type
   // pair"). Before that check existed the host-owned document could already

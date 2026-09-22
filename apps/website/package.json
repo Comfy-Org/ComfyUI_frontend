@@ -47,6 +47,7 @@
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@customerio/cdp-analytics-browser": "catalog:",
+    "@datadog/browser-logs": "catalog:",
     "@lucide/vue": "catalog:",
     "@vercel/analytics": "catalog:",
     "@vueuse/core": "catalog:",
