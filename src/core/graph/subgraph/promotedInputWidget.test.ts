@@ -18,10 +18,9 @@ describe('promoted subgraph widget options reassignment', () => {
   // values) blindly reassign `widget.options = {...}` for every widget it
   // finds on a node. `SubgraphNode.widgets` projects each promoted input
   // through `promotedInputWidget`/`createPromotedWidgetStoreProjection`,
-  // whose `options` is a getter with no setter, so the reassignment throws a
-  // TypeError instead of replacing the options object - crashing the whole
-  // extension on load.
-  it.fails('reassigning options on a promoted subgraph widget does not throw', () => {
+  // which now has a setter for `options` that writes through to the
+  // widget-value store, so the reassignment is applied instead of throwing.
+  it('reassigning options on a promoted subgraph widget does not throw', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
 
@@ -39,7 +38,9 @@ describe('promoted subgraph widget options reassignment', () => {
     expect(promotedWidget.name).toBe('text')
 
     expect(() => {
-      promotedWidget.options = { ...promotedWidget.options }
+      promotedWidget.options = { ...promotedWidget.options, multiline: true }
     }).not.toThrow()
+
+    expect(promotedWidget.options.multiline).toBe(true)
   })
 })
