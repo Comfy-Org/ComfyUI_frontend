@@ -9,8 +9,9 @@ interface Playback {
 /**
  * A signed URL is renewed under the reader, and assigning the new `src` rewinds
  * the element. Where the asset behind it has not changed, the position and
- * whether it was playing carry across the swap; moving to another asset still
- * starts from the beginning.
+ * whether it was playing carry across the swap — including staying paused,
+ * which the element's own `autoplay` would otherwise undo. Moving to another
+ * asset still starts from the beginning.
  */
 export function useResumePlayback(
   element: Readonly<Ref<HTMLMediaElement | null>>,
@@ -40,6 +41,7 @@ export function useResumePlayback(
     if (!media || !resume) return
     media.currentTime = resume.time
     if (resume.playing) void media.play().catch(() => undefined)
+    else media.pause()
   }
 
   return { restore }
