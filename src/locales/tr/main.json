@@ -65,6 +65,7 @@
     "dismiss": "Kapat",
     "downloadAssets": "Varlıkları indir",
     "dragAndDropAssets": "Varlıkları buraya sürükleyip bırakın",
+    "editWhileWorking": "Çalışırken düzenlemeye devam edebilirsiniz",
     "entryButton": "Aracı",
     "feedbackCaption": "Geri bildirim paylaşın",
     "focusNode": "Tuvalde göster",
@@ -99,6 +100,7 @@
       "selectNode": "Düğüm seç"
     },
     "nodes": "Düğümler",
+    "nodesAdded": "Aracı grafiğe 1 düğüm ekledi | Aracı grafiğe {count} düğüm ekledi",
     "notHelpful": "Yararlı değil",
     "openWorkflowTab": "{name} öğesini aç",
     "otherOpenWorkflows": "Diğer açık iş akışları",
@@ -183,7 +185,9 @@
     "unavailableWorkflowReference": "{name} (kullanılamıyor)",
     "unsavedWorkflow": "Kaydedilmemiş",
     "untitledChat": "Başlıksız",
+    "updatingGraph": "Aracı grafiği güncelliyor",
     "uploading": "Yükleniyor",
+    "viewAddedNodes": "Düğümü görüntüle | Düğümleri görüntüle",
     "worked": "Çalıştı",
     "workedForMinutes": "{minutes} dk. {seconds} sn. çalıştı",
     "workedForSeconds": "{seconds} saniye çalıştı",
@@ -2461,7 +2465,9 @@
     "cancelThisRun": "Bu çalıştırmayı iptal et",
     "deleteAllAssets": "Bu çalışmadaki tüm varlıkları sil",
     "downloadAll": "Bu çalıştırmadan {count} varlığı indir",
+    "dragAndDropAudio": "Göz atmak için tıklayın veya bir ses dosyası sürükleyin",
     "dragAndDropImage": "Bir görseli sürükleyip bırakın",
+    "dragAndDropVideo": "Göz atmak için tıklayın veya bir video sürükleyin",
     "emptyWorkflowExplanation": "Çalışma akışınız boş. Bir uygulama oluşturmaya başlamak için önce bazı düğümler eklemelisiniz.",
     "enterNodeGraph": "Düğüm grafiğine gir",
     "error": {
@@ -3103,6 +3109,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "Vurgulanan düğümler: {count}",
+    "label": "Mini harita",
     "nodeColors": "Düğüm Renkleri",
     "renderBypassState": "Atlama Durumunu Oluştur",
     "renderErrorState": "Hata Durumunu Oluştur",
@@ -4827,6 +4835,7 @@
   "toastMessages": {
     "a1111CoreNodesUnavailable": "Çalışma akışı yüklenemedi çünkü bu ComfyUI kurulumunda çekirdek düğümler eksik. Arka ucun doğru başlatıldığından emin olun.",
     "a1111EmbeddingsUnavailable": "Embedding'ler sunucudan yüklenemedi. İş akışı içe aktarıldı, ancak embedding adları düz metin olarak bırakıldı.",
+    "assetDropFailed": "Bırakılan varlık yüklenemedi",
     "cannotCreateSubgraph": "Alt grafik oluşturulamıyor",
     "couldNotDetermineFileType": "Dosya türü belirlenemedi",
     "dropFileError": "Sürüklenen öğe işlenemiyor: {error}",
