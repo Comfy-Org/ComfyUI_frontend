@@ -110,15 +110,17 @@ test.describe(
 
       // A prior version of this test also drove `window.app.loadGraphData()`
       // in-page and re-asserted across that reload, while the agent CRDT
-      // follower stayed subscribed to the same workflow. That is not a path
-      // a real user takes — a real refresh is a browser navigation that
-      // tears the follower down and rehydrates it from the doc — and CI
-      // showed it fails deterministically (same `image_2` slot losing its
-      // link on every attempt, with or without SLOW_MO, across every retry):
-      // a real, pre-existing gap in how the CRDT follower's post-navigation
-      // reconcile pass interacts with a same-session local reload, unrelated
-      // to the `mergeSlotsByName` fix this test otherwise covers. Left as a
-      // follow-up rather than fixed here, since it needs its own
+      // follower stayed subscribed to the same workflow. CI showed it fails
+      // deterministically (same `image_2` slot losing its link on every
+      // attempt, with or without SLOW_MO, across every retry): a real,
+      // pre-existing gap in how the CRDT follower reconciles when
+      // `loadGraphData()` is called in-session while it's still subscribed,
+      // unrelated to the `mergeSlotsByName` fix this test otherwise covers.
+      // Note this isn't necessarily an unrealistic path in general —
+      // `app.ts`'s real workflow-file loading also calls `loadGraphData()`
+      // — what hasn't been verified is whether the follower's subscription
+      // is in the same state during a normal file load as it is here. Left
+      // as a follow-up rather than fixed here, since it needs its own
       // investigation and is out of scope for this change.
     })
   }
