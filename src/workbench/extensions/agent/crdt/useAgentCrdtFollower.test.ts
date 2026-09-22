@@ -65,9 +65,11 @@ const adapterState = vi.hoisted(() => ({
   discardPending: vi.fn(),
   destroy: vi.fn(),
   // Captured from the constructor so a test can exercise the composable's
-  // real `hasPendingAddNode` closure directly (the mocked adapter itself
-  // never calls it).
-  hasPendingAddNode: undefined as ((nodeId: string) => boolean) | undefined
+  // real `pendingAddType` closure directly (the mocked adapter itself never
+  // calls it).
+  pendingAddType: undefined as
+    | ((nodeId: string) => string | undefined)
+    | undefined
 }))
 
 const materializerState = vi.hoisted(() => ({
@@ -131,12 +133,12 @@ vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   EcsFollowerAdapter: class {
     constructor(
       _mutations: unknown,
-      hasPendingAddNode?: (nodeId: string) => boolean,
+      pendingAddType?: (nodeId: string) => string | undefined,
       intent?: {
         pendingDeletes(workflowId: string): ReadonlySet<string>
       }
     ) {
-      adapterState.hasPendingAddNode = hasPendingAddNode
+      adapterState.pendingAddType = pendingAddType
       adapterState.intent = intent ?? null
     }
 
@@ -265,7 +267,7 @@ describe('useAgentCrdtFollower', () => {
     bridgeState.current = null
     adapterState.applyFrame.mockReset().mockReturnValue(true)
     adapterState.retryPending.mockReset().mockReturnValue(null)
-    adapterState.hasPendingAddNode = undefined
+    adapterState.pendingAddType = undefined
     clientState.transport = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitionIds.mockClear()
@@ -737,6 +739,54 @@ describe('useAgentCrdtFollower', () => {
     expect(adapterState.bind).toHaveBeenLastCalledWith(
       'wf-1',
       bridge().follower
+    )
+    unmount()
+  })
+
+  it('F4: a lineage break for the bound workflow received while inactive still resets the pending correlation on reactivation', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    const isTargetActive = ref(true)
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          () => null,
+          isTargetActive
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+
+    isTargetActive.value = false
+    await nextTick()
+    // The lineage breaks for the still-bound workflow while inactive:
+    // `pendingOpsLineageId` itself does not change across a tab switch, so
+    // only a generation bump can make this visible.
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 3 })
+
+    vi.mocked(recordDevEvent).mockClear()
+    isTargetActive.value = true
+    await nextTick()
+
+    expect(recordDevEvent).toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'reset' })
     )
     unmount()
   })
@@ -1538,7 +1588,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it("ADR-CRDT-RECONCILE-0035 (c): hasPendingAddNode reports true only while the ledger holds that node's add_node", () => {
+  it("ADR-CRDT-RECONCILE-0035 (c): pendingAddType reports the class_type only while the ledger holds that node's add_node", () => {
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
       typeof useAgentCrdtFollower
@@ -1553,12 +1603,12 @@ describe('useAgentCrdtFollower', () => {
       }
     })
     const { unmount } = render(host)
-    const hasPendingAddNode = adapterState.hasPendingAddNode
-    expect(hasPendingAddNode).toBeDefined()
-    if (!hasPendingAddNode) throw new Error('expected a captured predicate')
+    const pendingAddType = adapterState.pendingAddType
+    expect(pendingAddType).toBeDefined()
+    if (!pendingAddType) throw new Error('expected a captured predicate')
 
     // Before any add_node is minted, nothing matches.
-    expect(hasPendingAddNode('7')).toBe(false)
+    expect(pendingAddType('7')).toBeUndefined()
 
     enqueue([
       {
@@ -1570,8 +1620,8 @@ describe('useAgentCrdtFollower', () => {
       }
     ])
 
-    expect(hasPendingAddNode('7')).toBe(true)
-    expect(hasPendingAddNode('some-other-id')).toBe(false)
+    expect(pendingAddType('7')).toBe('Test')
+    expect(pendingAddType('some-other-id')).toBeUndefined()
     unmount()
   })
 
@@ -1630,15 +1680,230 @@ describe('useAgentCrdtFollower', () => {
     // and the deleted node stayed gone -- every parked op's effect is
     // present, so `docEffectPresent` resolves all three kinds it can check.
     const doc = new Y.Doc()
-    doc.getMap('nodes').set('5', new Y.Map())
-    doc.getMap('links').set('9', new Y.Map())
+    doc.getMap('nodes').set('5', new Y.Map([['type', 'Test']]))
+    doc.getMap('links').set('9', Y.Array.from([9, 1, 0, 5, 0, 'IMAGE']))
     bridge().follower.doc = doc
 
-    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
 
     expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
       type: 'cleared',
       opIds: expect.arrayContaining(opIds)
+    })
+    unmount()
+  })
+
+  it('F2: an unrelated live delta must not resolve a parked delivery-unknown entry', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    // The doc already shows the node, so a catch-up would clear it -- but
+    // this frame is a plain live delta (no `catchUp`), so it must not.
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('5', new Y.Map([['type', 'Test']]))
+    bridge().follower.doc = doc
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 3, catchUp: false })
+
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'cleared' })
+    )
+    unmount()
+  })
+
+  it('F2: a resubscribe that completes already-current resolves parked entries with no catch-up frame', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('5', new Y.Map([['type', 'Test']]))
+    bridge().follower.doc = doc
+    // Establishes the projected watermark at seq 2 before anything is
+    // pending, so it is not itself the resolving catch-up.
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    // The host sends no catch-up doc_update at all when this follower's
+    // state vector is already current -- the ack seq equalling the
+    // watermark is the only signal that a resubscribe completed.
+    dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 2 })
+
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'cleared',
+      opIds: [opId]
+    })
+    unmount()
+  })
+
+  it('F8: an add_node whose parked id resolves to a different doc type is reported as a collision, not cleared', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    // The doc id resolved to an unrelated node of a different type.
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('5', new Y.Map([['type', 'SomethingElse']]))
+    bridge().follower.doc = doc
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
+
+    expect(telemetryState.reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_node_id_collision',
+      context: { nodeId: '5', opType: 'Test', docType: 'SomethingElse' }
+    })
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'reverted',
+      reason: 'diverged',
+      opIds: [opId],
+      ops: expect.anything(),
+      undone: true
+    })
+    unmount()
+  })
+
+  it('F8: a connect whose link id resolves to different endpoints is not treated as delivered', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([
+      {
+        op: 'connect',
+        link_id: 9,
+        from_node: 1,
+        from_slot: 0,
+        to_node: 5,
+        to_slot: 0,
+        link_type: 'IMAGE'
+      }
+    ])
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    // Link id 9 exists, but between an unrelated pair of nodes/slots.
+    const doc = new Y.Doc()
+    doc.getMap('links').set('9', Y.Array.from([9, 2, 1, 6, 1, 'IMAGE']))
+    bridge().follower.doc = doc
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
+
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'reverted',
+      reason: 'diverged',
+      opIds: [opId],
+      ops: expect.anything(),
+      undone: false
     })
     unmount()
   })

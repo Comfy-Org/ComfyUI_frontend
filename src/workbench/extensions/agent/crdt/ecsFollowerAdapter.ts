@@ -371,8 +371,9 @@ export class EcsFollowerAdapter {
   constructor(
     private readonly mutations: MutationsForTarget,
     /** ADR-CRDT-RECONCILE-0035 (c); see {@link AgentCrdtProjection}. */
-    private readonly hasPendingAddNode: (nodeId: string) => boolean = () =>
-      false,
+    private readonly pendingAddType: (
+      nodeId: string
+    ) => string | undefined = () => undefined,
     private readonly intent: LocalIntent = NO_LOCAL_INTENT
   ) {}
 
@@ -621,10 +622,12 @@ export class EcsFollowerAdapter {
         }
         // ADR-CRDT-RECONCILE-0035 (c): a node id already registered locally
         // is never a fresh add. It is either the echo of this page's own
-        // accepted add (the ledger still holds an `add_node` for it, in any
-        // state — the ledger survives deactivation) or a collision between a
-        // retained local-only node and a document node minted under the same
-        // graph-local integer. Either way the document wins via `reconcile`
+        // accepted add (the ledger still holds an `add_node` for this id
+        // whose `class_type` matches the incoming payload, in any echo-
+        // visible state — the ledger survives deactivation) or a collision
+        // between a retained local-only node and a document node minted
+        // under the same graph-local integer, or under the same id but an
+        // unrelated type. Either way the document wins via `reconcile`
         // (auto-upgraded to a `replaceNode` by `prepare()` when the types
         // differ); only the collision case is reported.
         const localType = session.mutations.getNodeType(toNodeId(id))
@@ -632,7 +635,7 @@ export class EcsFollowerAdapter {
           upsertNode(payload, 'add')
           continue
         }
-        if (!this.hasPendingAddNode(id)) {
+        if (this.pendingAddType(id) !== payload.type) {
           reportOnce(
             session.reportedErrors,
             `collision:${id}`,

@@ -1377,7 +1377,9 @@ describe('EcsFollowerAdapter integration', () => {
   })
 
   describe('ADR-CRDT-RECONCILE-0035 (c): an already-registered add is never a fresh add', () => {
-    function makeAdapter(hasPendingAddNode?: (nodeId: string) => boolean) {
+    function makeAdapter(
+      pendingAddType?: (nodeId: string) => string | undefined
+    ) {
       const host = mint({ nodes: [], links: [] }, catalog)
       const follower = new FollowerDoc()
       const mutations = createGraphMutations({
@@ -1385,7 +1387,7 @@ describe('EcsFollowerAdapter integration', () => {
         layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
         placement: inertPlacementPort
       })
-      const adapter = new EcsFollowerAdapter(mutations, hasPendingAddNode)
+      const adapter = new EcsFollowerAdapter(mutations, pendingAddType)
       adapter.bind('wf', follower)
       let seq = 0
       let first = true
@@ -1424,7 +1426,7 @@ describe('EcsFollowerAdapter integration', () => {
 
     it("reconciles the echo of the page's own accepted add, without arming a full reconcile", () => {
       const { mutations, deliver, adapter, follower, host } = makeAdapter(
-        () => true
+        () => 'Source'
       )
       // An unrelated first frame flips `reconcileNextFrame` false so the
       // second frame below takes the incremental path this delta changes.
@@ -1454,7 +1456,7 @@ describe('EcsFollowerAdapter integration', () => {
 
     it('reports and lets the document win on a genuine node id collision', () => {
       const { mutations, deliver, adapter, follower, host } = makeAdapter(
-        () => false
+        () => undefined
       )
       expect(deliver(seedNode99)).toBe(true)
 
@@ -1481,7 +1483,7 @@ describe('EcsFollowerAdapter integration', () => {
       host.destroy()
     })
 
-    it('defaults to treating every already-registered add as a collision when no hasPendingAddNode is supplied', () => {
+    it('defaults to treating every already-registered add as a collision when no pendingAddType is supplied', () => {
       const { mutations, deliver, adapter, follower, host } = makeAdapter()
       expect(deliver(seedNode99)).toBe(true)
 
@@ -1495,6 +1497,33 @@ describe('EcsFollowerAdapter integration', () => {
         errorType: 'agent_crdt_node_id_collision',
         context: { nodeId: '1', localType: 'LocalOnlyType', docType: 'Source' }
       })
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
+
+    it('reports a collision, not an echo, when a pending add_node for this id has a different class_type', () => {
+      const { mutations, deliver, adapter, follower, host } = makeAdapter(
+        () => 'Sink'
+      )
+      expect(deliver(seedNode99)).toBe(true)
+
+      mutations.addNode(
+        { id: 1, type: 'Sink', pos: [0, 0], inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'local-hydration', opId: 'local-seed' }
+      )
+
+      expect(deliver(echoNode1)).toBe(true)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_crdt_node_id_collision',
+        context: { nodeId: '1', localType: 'Sink', docType: 'Source' }
+      })
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .find(({ id }) => id === toNodeId(1))?.type
+      ).toBe('Source')
 
       adapter.destroy()
       follower.destroy()

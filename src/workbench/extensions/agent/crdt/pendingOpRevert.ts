@@ -113,6 +113,6 @@ export function createRevertNotifier(
         notify(flush.undone)
       })
     }
-    if (removedNodeIds.length > 0) pending.undone = true
+    if (event.undone && removedNodeIds.length > 0) pending.undone = true
   }
 }

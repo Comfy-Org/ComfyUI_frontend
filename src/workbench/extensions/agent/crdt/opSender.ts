@@ -36,8 +36,14 @@ export interface OpsResultView {
    * resolve the duplicate's pending shadow (s3-opt-2).
    */
   seq?: number
-  /** Failed-batch diagnostics when the host provides them; `op_id` correlates an otherwise empty-list failure to its batch. */
-  failure?: { op_id?: string }
+  /**
+   * Failed-batch diagnostics when the host provides them; `op_id` correlates
+   * an otherwise empty-list failure to its batch. `code` is the host's
+   * stable failure classifier (`DocOpFailure.code`); `message` is free-form
+   * and MUST NOT be forwarded to telemetry (ADR-CRDT-PENDING-0030 / F5) —
+   * that bound lives in the consumer, not in this type.
+   */
+  failure?: { op_id?: string; code?: string; message?: string }
 }
 
 export interface OpSenderDeps {

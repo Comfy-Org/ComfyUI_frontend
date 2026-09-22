@@ -23,15 +23,16 @@ export class AgentCrdtProjection {
     private readonly getGraph: () => MaterializableGraph | null,
     private readonly getFollowerDoc: () => Y.Doc,
     /**
-     * ADR-CRDT-RECONCILE-0035 (c): whether the pending-op ledger holds an
-     * `add_node` for this node id, in any state. Distinguishes the echo of
-     * the page's own accepted add (reconcile, no report) from a genuine id
-     * collision (reconcile, but reported).
+     * ADR-CRDT-RECONCILE-0035 (c): the `class_type` of the pending-op
+     * ledger's `add_node` for this node id, in any echo-visible state, or
+     * `undefined` when none. Distinguishes the echo of the page's own
+     * accepted add (reconcile, no report) from a genuine id collision
+     * (reconcile, but reported) — including a same-id, different-type add.
      */
-    hasPendingAddNode: (nodeId: string) => boolean = () => false,
+    pendingAddType: (nodeId: string) => string | undefined = () => undefined,
     intent?: LocalIntent
   ) {
-    this.adapter = new EcsFollowerAdapter(mutations, hasPendingAddNode, intent)
+    this.adapter = new EcsFollowerAdapter(mutations, pendingAddType, intent)
   }
 
   bind(workflowId: string, follower: FollowerDoc): void {

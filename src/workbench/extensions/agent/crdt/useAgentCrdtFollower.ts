@@ -316,6 +316,35 @@ function startAgentCrdtFollower(
   // or a bind to a workflow other than this one), so it needs its own memory
   // of "what lineage is this" that a deactivation does not touch.
   let pendingOpsLineageId: string | null = null
+  // Bumped on every doc_reset/follower_replaced for `pendingOpsLineageId`,
+  // active or not: a lineage break received while the tab is inactive still
+  // invalidates the pending correlation, even though `pendingOpsLineageId`
+  // itself (the workflow id) does not change across it.
+  let pendingOpsLineageGeneration = 0
+  // The generation the pending correlation currently reflects; compared
+  // against `pendingOpsLineageGeneration` at (re)activation.
+  let consumedLineageGeneration = 0
+  function bumpLineageGeneration(workflowId: unknown): void {
+    if (typeof workflowId === 'string' && workflowId === pendingOpsLineageId)
+      pendingOpsLineageGeneration += 1
+  }
+  /**
+   * Whether the pending correlation needs resetting for `next`: either it
+   * belongs to a different workflow, or a lineage break landed for THIS
+   * workflow while the tab was inactive (F4) — `pendingOpsLineageId` alone
+   * cannot see that, since it does not change across it.
+   */
+  function lineageChanged(next: string | null): boolean {
+    return (
+      pendingOpsLineageId !== next ||
+      consumedLineageGeneration !== pendingOpsLineageGeneration
+    )
+  }
+  function adoptLineage(next: string | null): void {
+    resetPendingCorrelation()
+    pendingOpsLineageId = next
+    consumedLineageGeneration = pendingOpsLineageGeneration
+  }
   const removeRevertedNode = createPendingRevertRemoveNode({
     getGraph,
     withLayoutActor
@@ -353,17 +382,11 @@ function startAgentCrdtFollower(
   })
   // ADR-CRDT-RECONCILE-0035 (c): an incoming `add` for a node id already
   // registered locally is the page's own accepted-add echo, never a fresh
-  // add, exactly when the ledger still holds an `add_node` for that id (in
-  // ANY state — the ledger survives deactivation, so this always covers the
-  // echo case). Otherwise it is an id collision the adapter must report.
-  const hasPendingAddNode = (nodeId: string): boolean =>
-    pendingOps
-      .entries()
-      .some(
-        (entry) =>
-          entry.shadow.op === 'add_node' &&
-          String(entry.shadow.node_id) === nodeId
-      )
+  // add, exactly when the ledger still holds an `add_node` for that id, of
+  // the SAME type, in a state the host can have reflected back already. An
+  // indexed lookup, not a scan/clone of every pending entry.
+  const pendingAddType = (nodeId: string): string | undefined =>
+    pendingOps.pendingAddType(nodeId)
   // Doc node ids whose human delete the host has applied but whose effect
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
@@ -426,7 +449,7 @@ function startAgentCrdtFollower(
     graphMutations,
     getGraph,
     () => bridge.follower.doc,
-    hasPendingAddNode,
+    pendingAddType,
     { pendingDeletes: pendingHumanDeletes }
   )
 
@@ -495,6 +518,14 @@ function startAgentCrdtFollower(
       resumeHeldOpsIfSubscribed()
       if (subscribedWorkflowId.value !== null)
         retryPendingProjection(subscribedWorkflowId.value)
+      // The host sends no catch-up `doc_update` at all when this follower's
+      // state vector is already current (layoutFollowerBridge's ackSeq
+      // comment) — the only sign a resubscribe completed with nothing to
+      // apply. Without this, a parked entry from before the tab went
+      // inactive would never see the catch-up barrier that resolves it.
+      const ackSeq = (event.detail as { seq?: number } | null)?.seq
+      if (ackSeq !== undefined && ackSeq === lastProjectedSequence)
+        pendingOps.resolveDeliveryUnknown(docEffectPresent)
     } else {
       lifecycle.onSubscribeRefused()
       // FE #16637 residual: a refusal is the earliest signal the sender can
@@ -560,6 +591,7 @@ function startAgentCrdtFollower(
           })
         : undefined
     incrementOutcome('reset')
+    bumpLineageGeneration(detail?.workflowId)
     if (!isCurrentWorkflow(detail?.workflowId)) return
     const context: RemoteMutationContext = {
       source: 'agent-remote',
@@ -573,8 +605,7 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
-    resetPendingCorrelation()
-    pendingOpsLineageId = detail.workflowId
+    adoptLineage(detail.workflowId)
     pendingLiveNodeIds.clear()
     confirmedDeletes.clear()
     recordDevEvent(
@@ -591,6 +622,7 @@ function startAgentCrdtFollower(
     if (!(event instanceof CustomEvent)) return
     const detail = event.detail as { workflowId?: unknown } | null
     const workflowId = detail?.workflowId
+    bumpLineageGeneration(workflowId)
     if (
       isTargetActive.value &&
       typeof workflowId === 'string' &&
@@ -604,8 +636,7 @@ function startAgentCrdtFollower(
         opId: `follower-replaced:${workflowId}`
       })
       projection.bind(workflowId, bridge.follower)
-      resetPendingCorrelation()
-      pendingOpsLineageId = workflowId
+      adoptLineage(workflowId)
     }
   }
   const onSchemaError: EventListener = (event) => {
@@ -696,12 +727,40 @@ function startAgentCrdtFollower(
   function docEffectPresent(op: Op): boolean | null {
     const doc = bridge.follower.doc
     switch (op.op) {
-      case 'add_node':
-        return nodesMap(doc).has(String(op.node_id))
+      case 'add_node': {
+        const node = nodesMap(doc).get(String(op.node_id))
+        if (!node) return false
+        const docType = node.get('type')
+        if (docType === op.class_type) return true
+        reportError(
+          new Error(
+            'Delivery-unknown add_node collided with an unrelated doc node'
+          ),
+          {
+            errorType: 'agent_crdt_node_id_collision',
+            context: {
+              nodeId: String(op.node_id),
+              opType: op.class_type,
+              docType
+            }
+          }
+        )
+        return false
+      }
       case 'delete_node':
         return !nodesMap(doc).has(String(op.node_id))
-      case 'connect':
-        return linksMap(doc).has(String(op.link_id))
+      case 'connect': {
+        const raw = linksMap(doc).get(String(op.link_id))
+        const tuple = raw instanceof Y.Array ? raw.toArray() : raw
+        if (!Array.isArray(tuple) || tuple.length < 5) return false
+        const originMatches =
+          String(tuple[1]) === String(op.from_node) &&
+          Number(tuple[2]) === op.from_slot
+        const targetMatches = String(tuple[3]) === String(op.to_node)
+        const slotMatches =
+          op.to_slot == null || Number(tuple[4]) === op.to_slot
+        return originMatches && targetMatches && slotMatches
+      }
       default:
         return null
     }
@@ -712,7 +771,12 @@ function startAgentCrdtFollower(
     lastProjectedSequence = update.seq
     if (update.opIds) pendingOps.onDocEffect(update.opIds)
     pendingOps.onAuthoritativeState(update.seq)
-    pendingOps.resolveDeliveryUnknown(docEffectPresent)
+    // The catch-up barrier only: this is the first frame of a same-lineage
+    // rebind, so whatever the doc holds now is the best evidence available
+    // for a parked entry. An unrelated live delta must not resolve one —
+    // its absence there would prove nothing about a delivery that raced it.
+    if ((update as Partial<ClassifiedDocUpdate>).catchUp)
+      pendingOps.resolveDeliveryUnknown(docEffectPresent)
   }
 
   function retryPendingProjection(workflowId: string): boolean {
@@ -823,8 +887,7 @@ function startAgentCrdtFollower(
       boundWorkflowId = null
       // A real detach (no persisted id to rebind to): nothing is bound any
       // more, so the ledger's lineage ends too.
-      resetPendingCorrelation()
-      pendingOpsLineageId = null
+      adoptLineage(null)
       subscribedWorkflowId.value = null
       retarget(null)
       return
@@ -837,10 +900,7 @@ function startAgentCrdtFollower(
       projection.bind(persisted, bridge.follower)
       boundWorkflowId = persisted
     }
-    if (pendingOpsLineageId !== persisted) {
-      resetPendingCorrelation()
-      pendingOpsLineageId = persisted
-    }
+    if (lineageChanged(persisted)) adoptLineage(persisted)
     subscribedWorkflowId.value = persisted
     retarget(persisted)
     if (justActivated) reconcileAndReportPending(persisted)
@@ -855,10 +915,7 @@ function startAgentCrdtFollower(
       projection.bind(next, bridge.follower)
       boundWorkflowId = next
     }
-    if (pendingOpsLineageId !== next) {
-      resetPendingCorrelation()
-      pendingOpsLineageId = next
-    }
+    if (lineageChanged(next)) adoptLineage(next)
     subscribedWorkflowId.value = next
     retarget(next)
     if (justActivated) reconcileAndReportPending(next)

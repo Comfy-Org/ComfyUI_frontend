@@ -25,6 +25,14 @@ export type PendingOpTrackerEvent =
       opIds: string[]
       /** The dropped ledger entries' ops, so consumers can undo their effect. */
       ops: Op[]
+      /**
+       * True only when every reverted op is `add_node` — the only kind whose
+       * canvas effect a revert can actually undo (remove the optimistic
+       * node). A `delete_node`/`connect`/`set_widget` revert leaves its
+       * optimistic effect in place, so consumers must not tell the user it
+       * was undone.
+       */
+      undone: boolean
     }
   | { type: 'delivery_unknown'; opIds: string[] }
   | { type: 'cleared'; opIds: string[] }
@@ -80,7 +88,24 @@ export interface PendingOpTracker {
   /** Doc lineage broke (reset / replacement / teardown): nothing is pending. */
   reset(): void
   entries(): PendingOpEntry<Op>[]
+  /**
+   * The `class_type` of a pending `add_node` for this node id, read through
+   * an id→opId index rather than a scan/clone of every entry (perf: O(1)
+   * lookup instead of `entries().some(...)`). Returns `undefined` unless the
+   * entry is in a state the host can have already reflected back to this
+   * follower — `inflight`, `applied`, or `delivery_unknown`; a `queued` or
+   * `unprocessed` add_node was never sent (or was rejected before send), so
+   * an incoming doc add under the same id cannot be its echo.
+   */
+  pendingAddType(nodeId: string): string | undefined
 }
+
+/** States in which the host can have already reflected an op back to this follower. */
+const ECHO_VISIBLE_STATES: ReadonlySet<PendingOpEntry<Op>['state']> = new Set([
+  'inflight',
+  'applied',
+  'delivery_unknown'
+])
 
 export function createPendingOpTracker(
   deps: PendingOpTrackerDeps = {}
@@ -93,6 +118,12 @@ export function createPendingOpTracker(
   // Skipped op id → the ack seq the follower must project before it resolves
   // (null: the ack carried no seq; any later projection resolves it).
   const awaitingSkipped = new Map<string, number | null>()
+  // add_node node id → its op id, maintained alongside the ledger so
+  // `pendingAddType` is an index lookup rather than a scan of every entry.
+  const addNodeIndex = new Map<string, string>()
+  // (failure code, op kind) pairs already reported this session, so a
+  // repeated host rejection of the same failure shape reports once.
+  const reportedHumanOpFailures = new Set<string>()
 
   function emit(event: PendingOpTrackerEvent): void {
     try {
@@ -104,10 +135,18 @@ export function createPendingOpTracker(
     }
   }
 
+  function releaseAddNodeIndex(entry: PendingOpEntry<Op>): void {
+    if (entry.shadow.op !== 'add_node') return
+    const nodeId = String(entry.shadow.node_id)
+    if (addNodeIndex.get(nodeId) === entry.opId) addNodeIndex.delete(nodeId)
+  }
+
   function drop(opId: string): PendingOpEntry<Op> | undefined {
     attempts.delete(opId)
     awaitingSkipped.delete(opId)
-    return ledger.take(opId)
+    const entry = ledger.take(opId)
+    if (entry) releaseAddNodeIndex(entry)
+    return entry
   }
 
   function revert(
@@ -124,7 +163,8 @@ export function createPendingOpTracker(
         type: 'reverted',
         reason,
         opIds: reverted.map((entry) => entry.opId),
-        ops: reverted.map((entry) => entry.shadow)
+        ops: reverted.map((entry) => entry.shadow),
+        undone: reverted.every((entry) => entry.shadow.op === 'add_node')
       })
     return reverted
   }
@@ -187,19 +227,31 @@ export function createPendingOpTracker(
     for (const entry of cleared) {
       attempts.delete(entry.opId)
       awaitingSkipped.delete(entry.opId)
+      releaseAddNodeIndex(entry)
     }
     if (cleared.length > 0)
       emit({ type: 'cleared', opIds: cleared.map((entry) => entry.opId) })
   }
 
+  function failureCode(failure: unknown): string | undefined {
+    if (typeof failure !== 'object' || failure === null) return undefined
+    const code = (failure as { code?: unknown }).code
+    return typeof code === 'string' ? code : undefined
+  }
+
   function reportHumanOpRejected(entry: PendingOpEntry<Op>): void {
     const op = entry.shadow
+    const code = failureCode(entry.failure)
+    const key = `${code ?? 'unknown'}:${op.op}`
+    if (reportedHumanOpFailures.has(key)) return
+    reportedHumanOpFailures.add(key)
     reportError(new Error('Agent host rejected a human operation'), {
       errorType: 'agent_crdt_human_op_rejected',
       context: {
+        opId: entry.opId,
         opKind: op.op,
         nodeId: 'node_id' in op ? String(op.node_id) : undefined,
-        failure: entry.failure
+        failureCode: code
       }
     })
   }
@@ -207,7 +259,8 @@ export function createPendingOpTracker(
   return {
     onBatchMinted(ops) {
       for (const op of ops) {
-        ledger.enqueue(op.op_id, op)
+        if (!ledger.enqueue(op.op_id, op)) continue
+        if (op.op === 'add_node') addNodeIndex.set(String(op.node_id), op.op_id)
       }
     },
     onBatchTransmitted(ops) {
@@ -228,8 +281,15 @@ export function createPendingOpTracker(
         const parkable = outcome.ops
           .filter((op) => op.op !== 'clear' && stillPending.includes(op.op_id))
           .map((op) => op.op_id)
-        if (parkable.length > 0) ledger.markDeliveryUnknown(parkable)
-        emit({ type: 'delivery_unknown', opIds: stillPending })
+        const rejected =
+          parkable.length > 0 ? ledger.markDeliveryUnknown(parkable) : parkable
+        const parked = parkable.filter((opId) => !rejected.includes(opId))
+        if (parked.length > 0) emit({ type: 'delivery_unknown', opIds: parked })
+        // A rejected id was never `inflight` when parking was attempted (e.g.
+        // still `queued`, its transmit never landed): it will never get a
+        // delivery-unknown resolution, so it must settle here instead of
+        // leaking as pending forever.
+        revert(rejected, 'undeliverable')
         return
       }
       if (outcome.state !== 'acknowledged') {
@@ -275,11 +335,20 @@ export function createPendingOpTracker(
       const dropped = ledger.reset()
       attempts.clear()
       awaitingSkipped.clear()
+      addNodeIndex.clear()
       if (dropped.length > 0)
         emit({ type: 'reset', opIds: dropped.map((entry) => entry.opId) })
     },
     entries() {
       return ledger.entries()
+    },
+    pendingAddType(nodeId) {
+      const opId = addNodeIndex.get(nodeId)
+      if (!opId) return undefined
+      const entry = ledger.get(opId)
+      if (!entry || entry.shadow.op !== 'add_node') return undefined
+      if (!ECHO_VISIBLE_STATES.has(entry.state)) return undefined
+      return entry.shadow.class_type
     }
   }
 }

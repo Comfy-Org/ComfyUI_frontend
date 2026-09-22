@@ -310,12 +310,19 @@ describe('createPendingOpTracker', () => {
       [['op-1', 'applied']]
     )
     expect(events).toEqual([
-      { type: 'reverted', reason: 'failed', opIds: ['op-2'], ops: [ops[1]] },
+      {
+        type: 'reverted',
+        reason: 'failed',
+        opIds: ['op-2'],
+        ops: [ops[1]],
+        undone: true
+      },
       {
         type: 'reverted',
         reason: 'unprocessed',
         opIds: ['op-3'],
-        ops: [ops[2]]
+        ops: [ops[2]],
+        undone: true
       }
     ])
   })
@@ -333,7 +340,8 @@ describe('createPendingOpTracker', () => {
         type: 'reverted',
         reason: 'unattributed',
         opIds: ['op-1', 'op-2', 'op-3'],
-        ops
+        ops,
+        undone: true
       }
     ])
   })
@@ -348,7 +356,8 @@ describe('createPendingOpTracker', () => {
         type: 'reverted',
         reason: 'undeliverable',
         opIds: ['op-1', 'op-2', 'op-3'],
-        ops
+        ops,
+        undone: true
       }
     ])
   })
@@ -412,18 +421,25 @@ describe('createPendingOpTracker', () => {
       [['op-1', 'applied']]
     )
     expect(events.slice(1)).toEqual([
-      { type: 'reverted', reason: 'failed', opIds: ['op-2'], ops: [ops[1]] },
+      {
+        type: 'reverted',
+        reason: 'failed',
+        opIds: ['op-2'],
+        ops: [ops[1]],
+        undone: true
+      },
       {
         type: 'reverted',
         reason: 'unprocessed',
         opIds: ['op-3'],
-        ops: [ops[2]]
+        ops: [ops[2]],
+        undone: true
       }
     ])
   })
 
   describe('ADR-CRDT-RECONCILE-0035 (a): every host rejection is reported', () => {
-    it('reports a host-rejected op via reportError, once per failed batch', () => {
+    it('reports a host-rejected op via reportError, with only bounded fields', () => {
       tracker.onBatchMinted(ops)
       tracker.onBatchTransmitted(ops)
       tracker.onBatchSettled(
@@ -431,7 +447,7 @@ describe('createPendingOpTracker', () => {
           ok: false,
           applied: ['op-1'],
           skipped: [],
-          failure: { op_id: 'op-2' }
+          failure: { op_id: 'op-2', code: 'refused', message: 'nope' }
         })
       )
 
@@ -439,9 +455,10 @@ describe('createPendingOpTracker', () => {
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         errorType: 'agent_crdt_human_op_rejected',
         context: {
+          opId: 'op-2',
           opKind: 'add_node',
           nodeId: '2',
-          failure: { op_id: 'op-2' }
+          failureCode: 'refused'
         }
       })
     })
@@ -458,6 +475,74 @@ describe('createPendingOpTracker', () => {
       )
 
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('rate-limits repeats of the same (failure code, op kind) to once per session', () => {
+      const first = [addNode('op-1', 1)]
+      tracker.onBatchMinted(first)
+      tracker.onBatchTransmitted(first)
+      tracker.onBatchSettled(
+        acknowledged(first, {
+          ok: false,
+          applied: [],
+          skipped: [],
+          failure: { op_id: 'op-1', code: 'refused', message: 'nope' }
+        })
+      )
+
+      const second = [addNode('op-2', 2)]
+      tracker.onBatchMinted(second)
+      tracker.onBatchTransmitted(second)
+      tracker.onBatchSettled(
+        acknowledged(second, {
+          ok: false,
+          applied: [],
+          skipped: [],
+          failure: { op_id: 'op-2', code: 'refused', message: 'different' }
+        })
+      )
+
+      expect(reportError).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports again for a different failure code or a different op kind', () => {
+      const rejectedAddNode = [addNode('op-1', 1)]
+      tracker.onBatchMinted(rejectedAddNode)
+      tracker.onBatchTransmitted(rejectedAddNode)
+      tracker.onBatchSettled(
+        acknowledged(rejectedAddNode, {
+          ok: false,
+          applied: [],
+          skipped: [],
+          failure: { op_id: 'op-1', code: 'refused' }
+        })
+      )
+
+      const rejectedOtherCode = [addNode('op-2', 2)]
+      tracker.onBatchMinted(rejectedOtherCode)
+      tracker.onBatchTransmitted(rejectedOtherCode)
+      tracker.onBatchSettled(
+        acknowledged(rejectedOtherCode, {
+          ok: false,
+          applied: [],
+          skipped: [],
+          failure: { op_id: 'op-2', code: 'conflict' }
+        })
+      )
+
+      const rejectedOtherKind = [deleteNode('op-3', 3)]
+      tracker.onBatchMinted(rejectedOtherKind)
+      tracker.onBatchTransmitted(rejectedOtherKind)
+      tracker.onBatchSettled(
+        acknowledged(rejectedOtherKind, {
+          ok: false,
+          applied: [],
+          skipped: [],
+          failure: { op_id: 'op-3', code: 'refused' }
+        })
+      )
+
+      expect(reportError).toHaveBeenCalledTimes(3)
     })
   })
 
@@ -520,11 +605,12 @@ describe('createPendingOpTracker', () => {
         type: 'reverted',
         reason: 'diverged',
         opIds: ['op-1'],
-        ops: [op]
+        ops: [op],
+        undone: true
       })
     })
 
-    it('reverts a parked delete_node the doc still shows (the effect never happened)', () => {
+    it('reverts a parked delete_node the doc still shows (the effect never happened), without claiming an undo', () => {
       // The caller's `effectPresent` already negates its own doc lookup for
       // `delete_node` (present === "the node is gone"), so `false` here
       // means the delete never took.
@@ -540,7 +626,8 @@ describe('createPendingOpTracker', () => {
         type: 'reverted',
         reason: 'diverged',
         opIds: ['op-1'],
-        ops: [op]
+        ops: [op],
+        undone: false
       })
     })
 
@@ -641,5 +728,85 @@ describe('createPendingOpTracker', () => {
     // Idempotent: a second reset with nothing held is silent.
     tracker.reset()
     expect(events).toHaveLength(1)
+  })
+
+  describe('pendingAddType: an indexed, state-gated echo check (F1/F10)', () => {
+    it('is undefined before any add_node is minted for that node id', () => {
+      expect(tracker.pendingAddType('1')).toBeUndefined()
+    })
+
+    it('is undefined while the add_node is only queued, never sent (not host-visible)', () => {
+      tracker.onBatchMinted([ops[0]])
+      expect(tracker.pendingAddType('1')).toBeUndefined()
+    })
+
+    it('reports the class_type once the add_node is inflight', () => {
+      tracker.onBatchMinted([ops[0]])
+      tracker.onBatchTransmitted([ops[0]])
+      expect(tracker.pendingAddType('1')).toBe('TestNode')
+    })
+
+    it('reports the class_type while applied, awaiting its doc_update effect', () => {
+      tracker.onBatchMinted([ops[0]])
+      tracker.onBatchTransmitted([ops[0]])
+      tracker.onBatchSettled(
+        acknowledged([ops[0]], { ok: true, applied: ['op-1'], skipped: [] })
+      )
+      expect(tracker.pendingAddType('1')).toBe('TestNode')
+    })
+
+    it('reports the class_type while parked as delivery_unknown', () => {
+      tracker.onBatchMinted([ops[0]])
+      tracker.onBatchTransmitted([ops[0]])
+      tracker.onBatchTransmitted([ops[0]])
+      tracker.onBatchSettled(unacknowledged([ops[0]]))
+      expect(tracker.pendingAddType('1')).toBe('TestNode')
+    })
+
+    it('is undefined for a batch member the host never reached (not host-visible)', () => {
+      tracker.onBatchMinted(ops)
+      tracker.onBatchTransmitted(ops)
+      tracker.onBatchSettled(
+        acknowledged(ops, {
+          ok: false,
+          applied: [],
+          skipped: [],
+          failure: { op_id: 'op-1' }
+        })
+      )
+      expect(tracker.pendingAddType('2')).toBeUndefined()
+    })
+
+    it('is undefined once the entry clears on its doc effect', () => {
+      tracker.onBatchMinted([ops[0]])
+      tracker.onBatchTransmitted([ops[0]])
+      tracker.onDocEffect(['op-1'])
+      expect(tracker.pendingAddType('1')).toBeUndefined()
+    })
+
+    it('is undefined once the entry reverts', () => {
+      tracker.onBatchMinted([ops[0]])
+      tracker.onBatchSettled({ state: 'undeliverable', ops: [ops[0]] })
+      expect(tracker.pendingAddType('1')).toBeUndefined()
+    })
+  })
+
+  it('settles a queued batch member that never transmitted, instead of leaking it as pending forever', () => {
+    const [opA, opB] = ops
+    tracker.onBatchMinted([opA, opB])
+    tracker.onBatchTransmitted([opA])
+    tracker.onBatchSettled(unacknowledged([opA, opB]))
+
+    expect(events).toEqual([
+      { type: 'delivery_unknown', opIds: ['op-1'] },
+      {
+        type: 'reverted',
+        reason: 'undeliverable',
+        opIds: ['op-2'],
+        ops: [opB],
+        undone: true
+      }
+    ])
+    expect(tracker.entries().map((entry) => entry.opId)).toEqual(['op-1'])
   })
 })

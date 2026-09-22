@@ -276,7 +276,7 @@ describe('ADR-CRDT-RECONCILE-0035 (c): AgentCrdtProjection forwards the id-colli
     }
   }
 
-  it('reports a genuine node id collision when constructed without an explicit hasPendingAddNode', () => {
+  it('reports a genuine node id collision when constructed without an explicit pendingAddType', () => {
     const host = mint({ nodes: [], links: [] }, catalog)
     const follower = new FollowerDoc()
     const mutations = createGraphMutations({
@@ -284,7 +284,7 @@ describe('ADR-CRDT-RECONCILE-0035 (c): AgentCrdtProjection forwards the id-colli
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
       placement: inertPlacementPort
     })
-    // No fourth argument: AgentCrdtProjection's own default (`() => false`)
+    // No fourth argument: AgentCrdtProjection's own default (`() => undefined`)
     // must reach the adapter for this collision to be reported at all.
     const projection = new AgentCrdtProjection(
       mutations,

@@ -1275,7 +1275,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     getNodeType(nodeId) {
       const scope = deps.getScope()
       if (!scope) return undefined
-      return nodeStore.getNode(scope.rootGraphId, nodeId)?.type
+      const node = nodeStore.getNode(scope.rootGraphId, nodeId)
+      if (!node || node.graphId !== scope.owningGraphId) return undefined
+      return node.type
     }
   }
 

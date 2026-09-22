@@ -45,12 +45,16 @@ function deleteNode(opId: string, nodeId: number): Op {
   }
 }
 
-function reverted(ops: Op[]): PendingOpTrackerEvent {
+function reverted(
+  ops: Op[],
+  undone = ops.every((op) => op.op === 'add_node')
+): PendingOpTrackerEvent {
   return {
     type: 'reverted',
     reason: 'failed',
     opIds: ops.map((op) => op.op_id),
-    ops
+    ops,
+    undone
   }
 }
 
@@ -240,5 +244,17 @@ describe('createRevertNotifier', () => {
     await Promise.resolve()
 
     expect(notify).not.toHaveBeenCalled()
+  })
+
+  it('never claims an undo for a non-add_node revert, even if a node id was somehow removed', async () => {
+    const notify = vi.fn()
+    const onReverted = createRevertNotifier(notify)
+
+    // event.undone is kind-derived (false for delete_node); a nonzero
+    // removedNodeIds must not override that (F7).
+    onReverted(reverted([deleteNode('op-1', 1)], false), [1])
+    await Promise.resolve()
+
+    expect(notify).toHaveBeenCalledExactlyOnceWith(false)
   })
 })

@@ -107,13 +107,7 @@ function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
     remoteMutations(graphScopeOf(graph)),
     () => graph,
     () => follower.doc,
-    (id) =>
-      pendingOps
-        .entries()
-        .some(
-          ({ shadow }) =>
-            shadow.op === 'add_node' && String(shadow.node_id) === id
-        )
+    (id) => pendingOps.pendingAddType(id)
   )
   let seq = 0
   /** Delivers one host frame; returns whether the adapter committed it. */
