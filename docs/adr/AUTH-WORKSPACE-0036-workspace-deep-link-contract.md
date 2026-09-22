@@ -70,6 +70,15 @@ said whose spelling wins.
    `@comfyorg/account-core/redirect` already does for the other half of a
    sign-in trip. The auth SDK subpath was chosen instead: one less package to
    publish, version, and depend on.
+6. **Every signed-in link that crosses surfaces carries the workspace, in
+   both directions.** This covers the trip out and the trip back: an entry
+   link into billing-web, billing-web's return link to the host, a cloud link
+   to a platform page, and a comfy.org link to either. A link built on a
+   signed-out page has no active workspace and carries none; the destination
+   falls back per decision 4. A builder that produces cross-surface links
+   takes the workspace as a required input, so a new link that forgets it is
+   a type error rather than a review comment. `buildReturnUrl` in
+   `@comfyorg/billing-contract` is the first such builder.
 
 ## Consequences
 
@@ -100,6 +109,28 @@ said whose spelling wins.
   either consumer (FE-2647, FE-2648) exists. If a consumer's real usage
   argues for a fifth function or a different failure shape, that is a reason
   to amend this record, not to route around it.
+- The link only moves the workspace between surfaces. Once a destination
+  applies it and strips the parameter, a reload falls back to that surface's
+  own memory. In the cloud app that memory is the browser-wide
+  `Comfy.Workspace.LastWorkspaceId`, so two tabs on two workspaces converge
+  on whichever switched last after a reload. Per-tab persistence is a
+  separate decision this record does not make.
+
+## Coverage
+
+Each hop needs both halves: the sender writes the parameter and the receiver
+applies it. A hop with only one half does not keep the workspace.
+
+| From → To                                   | Sender                                                           | Receiver                                     |
+| ------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------- |
+| comfy.org → cloud                           | #18344 (Workshop links)                                          | #18345                                       |
+| comfy.org → platform                        | #18344 (API keys link)                                           | Platform repo: API-key route not yet read    |
+| cloud → billing-web                         | #18318                                                           | #18316                                       |
+| cloud → platform                            | #18444                                                           | Platform repo: usage route not yet read      |
+| billing-web → cloud / platform (return)     | #18443                                                           | #18345 for cloud; platform repo for platform |
+| billing-web → billing-web (result, sign-in) | #18316 tab binding; #18443 adds the parameter to the result link | #18316                                       |
+| platform → cloud                            | Platform repo                                                    | #18345                                       |
+| platform → billing-web                      | Platform repo                                                    | #18316                                       |
 
 ## Notes
 
