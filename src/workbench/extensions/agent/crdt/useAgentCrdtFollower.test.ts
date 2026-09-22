@@ -1878,20 +1878,7 @@ describe('useAgentCrdtFollower', () => {
 
   it('F8: an add_node whose parked id resolves to a different doc type is reported as a collision, not cleared', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
-    const workflowId = ref<string | null>('wf-1')
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        enqueue = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        ).enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
+    const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([
       {
@@ -1933,20 +1920,7 @@ describe('useAgentCrdtFollower', () => {
 
   it('F8: a connect whose link id resolves to different endpoints is not treated as delivered', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
-    const workflowId = ref<string | null>('wf-1')
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        enqueue = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        ).enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
+    const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([
       {
@@ -1986,20 +1960,7 @@ describe('useAgentCrdtFollower', () => {
 
   it('F9: a connect whose link id resolves to the same endpoints but a different semantic type is not treated as delivered', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
-    const workflowId = ref<string | null>('wf-1')
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        enqueue = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        ).enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
+    const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([
       {
@@ -2039,21 +2000,7 @@ describe('useAgentCrdtFollower', () => {
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
-    const workflowId = ref<string | null>('wf-1')
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        )
-        enqueue = enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
+    const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
@@ -2076,21 +2023,7 @@ describe('useAgentCrdtFollower', () => {
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
-    const workflowId = ref<string | null>('wf-1')
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        )
-        enqueue = enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
+    const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
@@ -2113,23 +2046,8 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('a doc switch settles the transmitted in-flight batch for the old doc unconfirmed immediately, without waiting the resend', async () => {
-    vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
-    const workflowId = ref<string | null>('wf-1')
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        )
-        enqueue = enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
+    const { unmount, enqueue, workflowId } = mountFollower('wf-1')
     // Mirror the real bridge's reconcile(): a changed desired doc clears send
     // reality synchronously inside subscribe()/unsubscribe().
     bridge().subscribe.mockImplementation((next: string) => {

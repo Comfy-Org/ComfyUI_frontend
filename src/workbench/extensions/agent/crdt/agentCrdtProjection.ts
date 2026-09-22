@@ -11,7 +11,8 @@ import {
 } from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
 import type { DocUpdate } from './docFrameClient'
-import type { LocalIntent, MutationsForTarget } from './ecsFollowerAdapter'
+import type { MutationsForTarget } from './ecsFollowerAdapter'
+import type { LocalIntent } from './ecsFullReconcile'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { FollowerDoc } from './followerDoc'
 
