@@ -24,13 +24,8 @@ on:
     # Nightly PATCH bump on main (proposal PR only; a patch bump never triggers
     # a release-branch cut). 00:00 UTC ≈ 4:00 PM PST / 5:00 PM PDT the prior day.
     - cron: '0 0 * * *'
-    # Weekly RC cut: MINOR bump on main every Monday 20:00 UTC (noon PST /
-    # 13:00 PDT), aligned
-    # with the release freeze in release-weekly-comfyui.yaml. Merging this minor
-    # `Release` PR advances main to the next dev minor AND makes
-    # release-branch-create.yaml cut the outgoing core/x.y + cloud/x.y pair. This
-    # is what makes the Monday branch cut hands-off (no manual minor bump).
-    - cron: '0 20 * * 1'
+    - cron: '0 12 * * 1,3'
+      timezone: America/Los_Angeles
 
 # Key concurrency by target branch so per-branch bumps (e.g. the cloud
 # release fan-out that dispatches this workflow once per active branch) do
@@ -38,11 +33,49 @@ on:
 # fall back to 'main'.
 concurrency:
   group: release-version-bump-${{ github.event.inputs.branch || 'main' }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  bump-version:
+  check-cut:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      issues: read
+    outputs:
+      exists: ${{ steps.cut.outputs.exists }}
+      marker: ${{ steps.cut.outputs.marker }}
+    steps:
+      - uses: actions/github-script@v9
+        id: cut
+        env:
+          IS_CUT: ${{ github.event_name == 'schedule' && github.event.schedule == '0 12 * * 1,3' }}
+        with:
+          script: |
+            if (process.env.IS_CUT !== 'true') return
+            const { data: run } = await github.rest.actions.getWorkflowRun({
+              ...context.repo,
+              run_id: context.runId
+            })
+            const date = new Intl.DateTimeFormat('en-CA', {
+              timeZone: 'America/Los_Angeles'
+            }).format(new Date(run.created_at))
+            const marker = `<!-- release-cut:${date} -->`
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              ...context.repo,
+              labels: 'weekly-release-cut',
+              state: 'all',
+              per_page: 100
+            })
+            const existing = issues.find(issue => issue.pull_request &&
+              (issue.body?.includes(marker) || issue.state === 'open'))
+            core.setOutput('exists', Boolean(existing))
+            core.setOutput('marker', marker)
+            if (existing) core.notice(`Cut already requested: ${existing.html_url}`)
+
+  bump-version:
+    needs: check-cut
+    if: needs.check-cut.outputs.exists != 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -66,11 +99,7 @@ jobs:
           TARGET_BRANCH="$RAW_BRANCH"
           WEEKLY_CUT='false'
 
-          # Monday 20:00 UTC schedule = the weekly RC cut: a MINOR bump on main.
-          # Merging it fires release-branch-create.yaml (cuts core/x.y + cloud/x.y).
-          # Every other schedule (the nightly 00:00 UTC cron) is a patch bump, which
-          # never cuts a branch.
-          if [[ "$EVENT_NAME" == "schedule" && "$SCHEDULE" == '0 20 * * 1' ]]; then
+          if [[ "$EVENT_NAME" == "schedule" && "$SCHEDULE" == '0 12 * * 1,3' ]]; then
             VERSION_TYPE='minor'
             TARGET_BRANCH='main'
             WEEKLY_CUT='true'
@@ -119,7 +148,7 @@ jobs:
                 continue
               }
 
-              // The weekly Monday minor RC cut is also a `version-bump-*` PR, but
+              // The scheduled minor RC cut is also a `version-bump-*` PR, but
               // it must survive until it auto-merges and cuts the release
               // branches. Never close the PR carrying the weekly-cut marker.
               if (pr.labels?.some((label) => label.name === 'weekly-release-cut')) {
@@ -245,19 +274,21 @@ jobs:
             ${{ steps.capitalised.outputs.capitalised }} version increment to ${{ steps.bump-version.outputs.NEW_VERSION }}
 
             **Base branch:** `${{ steps.prepared-inputs.outputs.branch }}`
+
+            ${{ needs.check-cut.outputs.marker }}
           # Shared `version-bump-*` prefix (same as nightly bumps and the former
           # manual minor bumps) so the weekly cut keeps the existing release CI
           # treatment (Chromatic in ci-tests-storybook.yaml, i18n-update-core.yaml).
           # The base slug after the prefix keeps heads unique per base branch
           # while every `startsWith('version-bump-')` filter still matches.
-          # The `weekly-release-cut` marker label — added here for the Monday cut —
+          # The `weekly-release-cut` marker label — retained for scheduled cuts —
           # is what exempts it from the stale-PR closer above.
           branch: version-bump-${{ steps.prepared-inputs.outputs.branch_slug }}-${{ steps.bump-version.outputs.NEW_VERSION }}
           base: ${{ steps.prepared-inputs.outputs.branch }}
           labels: ${{ steps.prepared-inputs.outputs.weekly_cut == 'true' && 'Release,weekly-release-cut' || 'Release' }}
 
-      - name: Enable auto-merge for weekly RC cut PR
-        # Only the Monday weekly minor bump. Native auto-merge makes the PR merge
+      - name: Enable auto-merge for scheduled RC cut PR
+        # Only the scheduled minor bump. Native auto-merge makes the PR merge
         # (and thus fire release-branch-create.yaml) as soon as its required checks
         # pass and it clears main's merge queue — no manual merge click and no
         # manual Monday branch creation.
@@ -277,6 +308,28 @@ jobs:
           # Fail loudly if auto-merge cannot be armed: the PR exists but the cut
           # would silently never happen, so surface it instead of swallowing it.
           if ! gh pr merge "$PR_NUMBER" --auto --squash; then
-            echo "::error::Could not enable auto-merge for PR #$PR_NUMBER. The weekly RC cut will NOT proceed until this PR merges. Enable auto-merge / merge it manually, and confirm the repo 'Allow auto-merge' setting is on."
+            echo "::error::Could not enable auto-merge for PR #$PR_NUMBER. The scheduled RC cut will NOT proceed until this PR merges. Enable auto-merge / merge it manually, and confirm the repo 'Allow auto-merge' setting is on."
+            exit 1
+          fi
+
+      - name: Request frontend review
+        if: >-
+          !cancelled() &&
+          steps.prepared-inputs.outputs.weekly_cut == 'true' &&
+          steps.cpr.outputs.pull-request-operation == 'created'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
+        run: |
+          set -euo pipefail
+          TEXT="<!subteam^S09E7B4QDN3|@frontend-team> Release cut ready for review: ${PR_URL}. Merging cuts cloud/core release branches; testcloud rotation stays with the sheriff."
+          BODY=$(jq -n --arg text "$TEXT" '{channel: "C09EM82R2HL", text: $text, unfurl_links: false, unfurl_media: false}')
+          RESPONSE=$(curl --fail-with-body --silent --show-error \
+            --connect-timeout 10 --max-time 30 \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H 'Content-Type: application/json' \
+            -d "$BODY" https://slack.com/api/chat.postMessage)
+          if ! jq -e '.ok == true' <<<"$RESPONSE" >/dev/null; then
+            echo "::error::Slack notification failed: $(jq -r '.error // "invalid response"' <<<"$RESPONSE")"
             exit 1
           fi
