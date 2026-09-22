@@ -635,6 +635,15 @@ test.describe(
     // `serial` runs them one after another in a single worker instead.
     test.describe.configure({ mode: 'serial' })
 
+    // The first test below (only) now also runs the reattach step's
+    // second full turn round trip (its own scenario call returns early
+    // for the corrupted-content case, before that step). Combined with
+    // this job's `SLOW_MO` and video recording, that second round trip
+    // pushed the first test's own wall-clock time past its 90s budget
+    // even running alone in `serial` mode, with no contention involved
+    // (https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/35660992640/job/106540136171)
+    // -- hence that test's higher `test.setTimeout` below.
+
     // The reattach step below sends a second turn, which re-renders chrome
     // (models picker, jobs indicator) that the boot mocks in
     // `cloudBootMocks.ts` don't cover -- registered here, ahead of
@@ -659,7 +668,27 @@ test.describe(
     test('keeps every link and scalar under its named slot across a reconcile, a resubscribe, and a reload', async ({
       page
     }, testInfo) => {
-      test.setTimeout(90_000)
+      // Higher than the corrupted-content test below: this is the only one
+      // of the two that reaches the reattach step's second full turn round
+      // trip, which the 90s budget didn't have headroom for (see the
+      // `describe` comment above).
+      //
+      // The prior 150s here (raised from 90s for the same reason) still
+      // wasn't enough
+      // (https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/35663417500/job/106550449557)
+      // and it was never actually sized for this job in the first place:
+      // `playwright-video-new-tests` invokes this project with its own
+      // `--timeout=180000` CLI default (ci-tests-e2e.yaml), which this
+      // in-code override was undercutting rather than building on. The
+      // regular (non-video) `cloud` project run of this same spec has no
+      // such override and needs its own explicit budget regardless, since
+      // that project's own default is 15s -- so this can't just be
+      // deleted in favor of the CLI flag. Set well above both the CLI
+      // default and the previous guess, inside the job's own 30-minute
+      // ceiling (`playwright-video-new-tests`'s `timeout-minutes`), so
+      // another round of under-provisioned SLOW_MO + video overhead
+      // doesn't require a fourth guess.
+      test.setTimeout(240_000)
       // The scenario's own assertions run inside the shared helper below;
       // this one confirms it completed rather than being rejected, which
       // both keeps a direct assertion in this test's own body (satisfying
