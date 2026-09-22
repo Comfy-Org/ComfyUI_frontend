@@ -104,7 +104,7 @@ interface SemanticLiveWidgetMutationPort {
   rebind?(scope: GraphScope, nodeId: NodeId, name: string): void
 }
 
-interface GraphMutationBatch {
+export interface GraphMutationBatch {
   addNode(payload: SemanticNodePayload): void
   /**
    * For a node of the same type, resyncs fields and slots and patches widget

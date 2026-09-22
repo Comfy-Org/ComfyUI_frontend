@@ -156,6 +156,21 @@ const RETRYABLE: ReadonlySet<PendingOpState> = new Set([
   'unprocessed'
 ])
 const MISSING_FAILURE_DETAIL = 'Host rejected operation without failure details'
+const RECONCILABLE_STATES: ReadonlySet<PendingOpState> = new Set([
+  'inflight',
+  'delivery_unknown'
+])
+
+function canTransition(
+  entryState: PendingOpState,
+  entryAttempt: number,
+  resultAttempt: number | undefined
+): boolean {
+  return (
+    RECONCILABLE_STATES.has(entryState) &&
+    (entryAttempt <= 1 || resultAttempt === entryAttempt)
+  )
+}
 
 export function createPendingOpLedger<
   TShadow = unknown
@@ -235,10 +250,10 @@ export function createPendingOpLedger<
           summary.unknown.push(opId)
           return
         }
-        if (entry.state !== 'inflight' && entry.state !== 'delivery_unknown')
+        if (
+          !canTransition(entry.state, entry.attempt, outcome.attempts?.[opId])
+        )
           return
-        const resultAttempt = outcome.attempts?.[opId]
-        if (entry.attempt > 1 && resultAttempt !== entry.attempt) return
         entry.state = state
         if (state === 'failed')
           entry.failure = failure ?? MISSING_FAILURE_DETAIL

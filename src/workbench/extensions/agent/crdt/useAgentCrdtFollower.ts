@@ -69,6 +69,12 @@ export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
  * No payload bodies or actor identifiers are recorded here — see
  * `recordDevEvent` call sites for the (dev-only) frame detail surface.
  */
+interface DocResetDetail {
+  workflowId?: string
+  actor?: string
+  seq?: number
+}
+
 interface AgentCrdtOutcomeCounters {
   /** Every `doc_update` event the composable's listener was invoked with. */
   received: number
@@ -199,6 +205,50 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
       })
     }
   }
+}
+
+function addNodeEffectPresent(
+  doc: Y.Doc,
+  op: Extract<Op, { op: 'add_node' }>
+): boolean {
+  const node = nodesMap(doc).get(String(op.node_id))
+  if (!node) return false
+  const docType = node.get('type')
+  if (docType === op.class_type) return true
+  reportError(
+    new Error('Delivery-unknown add_node collided with an unrelated doc node'),
+    {
+      errorType: 'agent_crdt_node_id_collision',
+      context: {
+        nodeId: String(op.node_id),
+        opType: op.class_type,
+        docType
+      }
+    }
+  )
+  return false
+}
+
+function deleteNodeEffectPresent(
+  doc: Y.Doc,
+  op: Extract<Op, { op: 'delete_node' }>
+): boolean {
+  return !nodesMap(doc).has(String(op.node_id))
+}
+
+function connectEffectPresent(
+  doc: Y.Doc,
+  op: Extract<Op, { op: 'connect' }>
+): boolean {
+  const raw = linksMap(doc).get(String(op.link_id))
+  const tuple = raw instanceof Y.Array ? raw.toArray() : raw
+  if (!Array.isArray(tuple) || tuple.length < 5) return false
+  const originMatches =
+    String(tuple[1]) === String(op.from_node) &&
+    Number(tuple[2]) === op.from_slot
+  const targetMatches = String(tuple[3]) === String(op.to_node)
+  const slotMatches = op.to_slot == null || Number(tuple[4]) === op.to_slot
+  return originMatches && targetMatches && slotMatches
 }
 
 export function useAgentCrdtFollower(
@@ -506,6 +556,32 @@ function startAgentCrdtFollower(
     return projection.reconcileLiveGraph(update.workflowId)
   }
 
+  // The host sends no catch-up `doc_update` at all when this follower's
+  // state vector is already current (layoutFollowerBridge's ackSeq comment)
+  // — the only sign a resubscribe completed with nothing to apply. Without
+  // this, a parked entry from before the tab went inactive would never see
+  // the catch-up barrier that resolves it.
+  const resolveParkedIfAlreadyCurrent = (ackSeq: number | undefined): void => {
+    if (ackSeq !== undefined && ackSeq === lastProjectedSequence)
+      pendingOps.resolveDeliveryUnknown(docEffectPresent)
+  }
+  const onSubscribeConfirmed = (event: CustomEvent): void => {
+    lifecycle.onSubscribeConfirmed()
+    resumeHeldOpsIfSubscribed()
+    if (subscribedWorkflowId.value !== null)
+      retryPendingProjection(subscribedWorkflowId.value)
+    resolveParkedIfAlreadyCurrent(
+      (event.detail as { seq?: number } | null)?.seq
+    )
+  }
+  // FE #16637 residual: a refusal is the earliest signal the sender can get
+  // that its in-flight batch's doc is gone — don't make it wait out the 10 s
+  // result-silence window to notice on its own.
+  const onSubscribeRefusedAndBackoff = (): void => {
+    lifecycle.onSubscribeRefused()
+    releaseHeldOps()
+    sender.abortIfUnbound()
+  }
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
@@ -513,27 +589,8 @@ function startAgentCrdtFollower(
     connected.value = ok
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
-    if (ok) {
-      lifecycle.onSubscribeConfirmed()
-      resumeHeldOpsIfSubscribed()
-      if (subscribedWorkflowId.value !== null)
-        retryPendingProjection(subscribedWorkflowId.value)
-      // The host sends no catch-up `doc_update` at all when this follower's
-      // state vector is already current (layoutFollowerBridge's ackSeq
-      // comment) — the only sign a resubscribe completed with nothing to
-      // apply. Without this, a parked entry from before the tab went
-      // inactive would never see the catch-up barrier that resolves it.
-      const ackSeq = (event.detail as { seq?: number } | null)?.seq
-      if (ackSeq !== undefined && ackSeq === lastProjectedSequence)
-        pendingOps.resolveDeliveryUnknown(docEffectPresent)
-    } else {
-      lifecycle.onSubscribeRefused()
-      // FE #16637 residual: a refusal is the earliest signal the sender can
-      // get that its in-flight batch's doc is gone — don't make it wait out
-      // the 10 s result-silence window to notice on its own.
-      releaseHeldOps()
-      sender.abortIfUnbound()
-    }
+    if (ok) onSubscribeConfirmed(event)
+    else onSubscribeRefusedAndBackoff()
   }
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -581,37 +638,46 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_ops_result', event.detail ?? null)
   }
-  const onDocReset: EventListener = (event) => {
+  const bumpLineageForResetEvent = (
+    event: Event
+  ): DocResetDetail | undefined => {
     const detail =
       event instanceof CustomEvent
-        ? (event.detail as {
-            workflowId?: string
-            actor?: string
-            seq?: number
-          })
+        ? (event.detail as DocResetDetail)
         : undefined
-    incrementOutcome('reset')
     bumpLineageGeneration(detail?.workflowId)
-    if (!isCurrentWorkflow(detail?.workflowId)) return
+    return detail
+  }
+  const performDocResetBookkeeping = (
+    workflowId: string,
+    detail: DocResetDetail,
+    event: Event
+  ): void => {
     const context: RemoteMutationContext = {
       source: 'agent-remote',
       actor: detail.actor ?? 'agent-reset',
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
-    projection.clearForReset(detail.workflowId, context)
-    events.onReset?.(detail.workflowId)
+    projection.clearForReset(workflowId, context)
+    events.onReset?.(workflowId)
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
-    adoptLineage(detail.workflowId)
+    adoptLineage(workflowId)
     pendingLiveNodeIds.clear()
     confirmedDeletes.clear()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
+  }
+  const onDocReset: EventListener = (event) => {
+    const detail = bumpLineageForResetEvent(event)
+    incrementOutcome('reset')
+    if (!isCurrentWorkflow(detail?.workflowId)) return
+    performDocResetBookkeeping(detail.workflowId, detail, event)
   }
   const onFollowerReplaced: EventListener = (event) => {
     // Gate on this composable's own INTENT, not the bridge's send REALITY
@@ -727,40 +793,12 @@ function startAgentCrdtFollower(
   function docEffectPresent(op: Op): boolean | null {
     const doc = bridge.follower.doc
     switch (op.op) {
-      case 'add_node': {
-        const node = nodesMap(doc).get(String(op.node_id))
-        if (!node) return false
-        const docType = node.get('type')
-        if (docType === op.class_type) return true
-        reportError(
-          new Error(
-            'Delivery-unknown add_node collided with an unrelated doc node'
-          ),
-          {
-            errorType: 'agent_crdt_node_id_collision',
-            context: {
-              nodeId: String(op.node_id),
-              opType: op.class_type,
-              docType
-            }
-          }
-        )
-        return false
-      }
+      case 'add_node':
+        return addNodeEffectPresent(doc, op)
       case 'delete_node':
-        return !nodesMap(doc).has(String(op.node_id))
-      case 'connect': {
-        const raw = linksMap(doc).get(String(op.link_id))
-        const tuple = raw instanceof Y.Array ? raw.toArray() : raw
-        if (!Array.isArray(tuple) || tuple.length < 5) return false
-        const originMatches =
-          String(tuple[1]) === String(op.from_node) &&
-          Number(tuple[2]) === op.from_slot
-        const targetMatches = String(tuple[3]) === String(op.to_node)
-        const slotMatches =
-          op.to_slot == null || Number(tuple[4]) === op.to_slot
-        return originMatches && targetMatches && slotMatches
-      }
+        return deleteNodeEffectPresent(doc, op)
+      case 'connect':
+        return connectEffectPresent(doc, op)
       default:
         return null
     }
