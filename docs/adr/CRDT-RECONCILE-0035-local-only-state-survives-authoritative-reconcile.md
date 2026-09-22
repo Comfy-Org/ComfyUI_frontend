@@ -183,6 +183,45 @@ here and landed in PR A:
   upgrade below as what closes it. Nothing is re-enqueued. `undeliverable`
   and `unprocessed` revert as #16309 does today; its tracker already
   reverts `unprocessed` with the same toast as `failed`.
+- **The ack-as-barrier path is gated by an outstanding subscribe
+  generation, and, after a reactivation, by continuity with what was last
+  projected.** The transport can re-deliver a successful `doc_subscribed`
+  ack for one logical (re)subscribe (a delayed retry response, or a genuine
+  duplicate) — sequence equality with the current watermark cannot tell a
+  fresh ack from a stale repeat of one already acted on, so the client
+  tracks a local, per-session counter that advances once per subscribe
+  frame it actually sends and tags it onto every ack for that outstanding
+  subscribe; only the FIRST ack naming a given counter value is consumed as
+  a barrier. This is a same-session counter, not a protocol generation
+  token the host echoes back, so it cannot by itself prove an ack belongs
+  to this client's own history rather than to a document the host silently
+  reminted under the same workflow id while the tab was away — that
+  requires a backend wire change (e.g. a per-lineage generation id or reset
+  counter carried on `doc_subscribed`/`doc_reset`), which this frontend-only
+  PR does not have and is not deciding. Pending that dependency, a
+  resubscribe that follows a paused (tab-inactive) subscription checks
+  CONTINUITY instead: the resume's ack `seq` equal to what this client last
+  projected means the document did not change while away (`seq` only
+  advances), so the ack-as-barrier path above runs unchanged. A different
+  `seq` there is treated as "continuity unknown, not disproven": rather than
+  trusting a catch-up frame is coming and letting the ledger ride it out,
+  the client conservatively invalidates — every currently parked entry is
+  reverted now (as if its effect were absent) and every batch the sender
+  still holds settles (queued/open ones `undeliverable`, a
+  transmitted-but-unacknowledged one parked, left for the strict per-kind
+  rules at whatever frame arrives next) — and, for the SAME reason, a full
+  reconcile that runs before that ack is consumed retains none of the
+  ledger's pending adds/connects, since a live or catch-up frame can reach
+  it before the ack does. Outside a reactivation (an ordinary resubscribe
+  while the tab stayed active — a sequence gap or a reconnect), a `seq`
+  mismatch is left alone: the client's state vector was never stale there,
+  so the natural catch-up frame is trusted to arrive and resolve things
+  through the ack-as-barrier path's own per-kind rules instead. This
+  mitigation is accepted as incomplete: it protects the ledger from a
+  reactivation it cannot vouch for, but it cannot detect or repair whatever
+  the underlying Yjs document itself does when a stale state vector is sent
+  against a silently reminted lineage — that is the backend dependency
+  above, tracked as a followup, not resolved by this PR.
 - **Per-frame order is fixed: resolve, apply, clear.** For each
   authoritative frame the follower (1) resolves parked entries against the
   document state the frame produces and marks them terminal, (2) applies the
@@ -224,8 +263,31 @@ durable and should outlive any one mechanism below:
 - a human op the host rejects is reported to the user;
 - an outcome whose delivery is unknown is resolved at the next same-lineage
   catch-up barrier rather than left ambiguous indefinitely;
-- any collision between local and document state is reported rather than
-  resolved silently, with the document winning.
+- any collision between local and document state that the available
+  provenance can identify is reported rather than resolved silently, with
+  the document winning. Provenance today is op-identity-based (the ledger's
+  `add_node` entry for a node id, in a state the host can have echoed): a
+  same-type, same-id replacement under an add that never reached the ledger
+  (never minted, or minted under a different actor's id) is indistinguishable
+  from the page's own echo and converges silently, without a report — the
+  negative consequence recorded below. Closing that residual is a
+  prerequisite (per-op identity broader than the ledger's own opId), not
+  something the guarantee can assume today.
+
+Which slice establishes which requirement, so a reader does not have to
+infer it from the Sequencing acceptance cases:
+
+| Requirement                                                                                                                                                         | A                     | A1                    | B                                                  | C                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | --------------------- | -------------------------------------------------- | -------------------------- |
+| Unresolved intent survives a reconcile (queued/in-flight never discarded)                                                                                           | tab-deactivation only | + panel close/reopen  | + lineage-aware `removeMissing`/orphan sweep       | —                          |
+| A host rejection is reported                                                                                                                                        | yes                   | yes                   | yes                                                | —                          |
+| Delivery-unknown resolves at the next catch-up barrier (or, after a reactivation, only once continuity is established — see the generation/continuity bullet above) | yes                   | yes                   | yes                                                | —                          |
+| An identifiable collision is reported, not resolved silently                                                                                                        | incremental path only | incremental path only | + full-reconcile path, once the known-id set lands | —                          |
+| Blueprint definitions reach the document                                                                                                                            | —                     | —                     | —                                                  | blocked (see Dependencies) |
+
+A blank cell means that slice does not change the requirement's status from
+the slice before it; "—" means the slice does not touch that requirement at
+all.
 
 Under the store-first projection the follower runs today, section (a)'s
 workflow/document-scoped ledger and (b)/(c)'s ledger-aware compensators
@@ -276,10 +338,13 @@ Both scopes apply; neither alone covers the two repros.
   removes exactly the ids in the set that the document no longer holds, so
   the rule is never vacuous, and an id the document once held and later
   reissued to a never-minted local node is retained, because the earlier
-  sweep took it out of the set. Because the set outlives a panel unmount, a
-  node deleted remotely while the panel was closed is still in the set at
-  the next `bind()` and is swept as stale rather than retained as
-  local-only. An id the document never held is retained and reported once
+  sweep took it out of the set. This set is per-follower until A1 lands
+  (same as the ledger); ONLY once A1 hoists it to the workflow/document
+  registry does it outlive a panel unmount, so a node deleted remotely
+  while the panel was closed is still in the set at the next `bind()` and is
+  swept as stale rather than retained as local-only. Before A1, a follower
+  mount starts this set empty, so that case is not yet covered. An id the
+  document never held is retained and reported once
   per session (`reportError`, `agent_crdt_local_only_node_retained`, dev
   event `local_only_retained`).
 
@@ -300,11 +365,18 @@ commits and `reconcileNextFrame` stays false) only when the ledger holds an
 `add_node` for that node id in a state the host can have seen: `inflight`,
 `applied` or `delivery_unknown`. A `queued` or `unprocessed` entry has never
 reached the host and cannot have produced an echo, so an incoming add under
-its id is a collision, and `agent_crdt_node_id_collision` fires. The same
-gate runs in the full-reconcile path: a document node whose id the store
-already holds, with no qualifying ledger entry and no known-id-set
-membership, is a collision there too, so (b)'s retention holds on the
-rebind frame as well as on incremental ones. The ledger survives
+its id is a collision, and `agent_crdt_node_id_collision` fires. The same gate is NOT yet run in the full-reconcile path, and this is
+narrower than originally decided: `applyFullReconcile` reads its node list
+live off the document's own map on every reconcile, so "already registered
+locally" is true for every ordinarily-synced node, not only a colliding
+local-only one, and telling those apart needs (b)'s known-id set. Since that
+set is not landed (it is PR B, after A1), the rebind path reconciles every
+doc node without running this classification; (b)'s ledger-aware retention
+(pending adds/connects survive `removeMissing`) still holds there, but a
+same-id collision on the rebind frame converges silently, as the residual in
+Consequences/Negative already records for the ledger-gated case. Running
+this classification on the rebind path is deferred to PR B alongside the
+known-id set it depends on. The ledger survives
 deactivation per (a), so the echo case is always covered. A collision is a
 retained local-only node and a document node minted under the same
 graph-local integer (the document never saw the local node, so it hands the
@@ -326,23 +398,26 @@ The frontend cannot fix gap 4 alone. When the human insert path
 the bound document lacks, the layout mint port emits `define_subgraph` for
 that definition (nested definitions first) ahead of the host's `add_node`, in
 mint order, so the applier registers the type before the node that uses it.
-The op itself is #17454's, but that chain is stale: #16644 (the workspace
-move meant to give the frontend its own writable copy of
-`packages/comfy-multi-player`) closed unmerged on 2026-09-17, `main` still
-consumes the npm-published `@comfyorg/comfy-multi-player@0.2.1`, and #17454
-is still a draft based on #16644's now-abandoned branch head. No live
-successor package-integration path is verified as of this writing.
-**PR C is therefore blocked pending a new package-integration plan**, not
-merely pending review of the existing chain: #17454 must be restacked onto
-`main` (or replaced) once that plan exists, and #17458 (which projects the
-definitions #17454's applier writes) is blocked on it in turn. Nothing in PR
-A, the ledger-ownership follow-up, or PR B depends on this chain. Once a
-plan exists, the remaining preconditions are unchanged: the op lands in the
-package, the frontend consumes it, and the doc host admits it from human
-actors. The server-side doc host pins the npm package separately, so a
-package release carrying the op is still required even once the frontend
-consumes a workspace or updated npm copy. Until then the host lands as an
-opaque positional node (#18078) and the port reports once per definition id
+The op itself was #17454's, but that chain is now closed, not merely stale:
+#16644 (the workspace move meant to give the frontend its own writable copy
+of `packages/comfy-multi-player`) closed unmerged on 2026-09-17, and #17454
+(the `define_subgraph` op itself, stacked on #16644) closed unmerged in
+turn on 2026-09-22 — `main` still consumes the npm-published
+`@comfyorg/comfy-multi-player@0.2.1`, which has no `define_subgraph`.
+#17458 — the FRONTEND PROJECTION half, which strips the applier's private
+conflict-resolution bookkeeping from a projected definition before LiteGraph
+consumes it — merged on 2026-09-22 anyway: it reads the definition shape the
+op WOULD write directly off the raw Yjs doc, so it needed no dependency on
+#17454 actually existing at runtime, only on the shape agreeing. **PR C is
+therefore still blocked, but on a narrower remaining gap than before**: the
+frontend projection side is done; what remains is (a) a live successor to
+the closed op PR that actually adds `define_subgraph` to the package this
+frontend consumes, and (b) the doc host admitting it from human actors —
+the host still pins its own copy of the package separately, so a package
+release carrying the op is required regardless of which frontend copy this
+repo consumes. Nothing in PR A, the ledger-ownership follow-up, or PR B
+depends on this chain. Until it closes, the host lands as an opaque
+positional node (#18078) and the port reports once per definition id
 (`agent_crdt_blueprint_definition_not_in_doc`).
 
 ## Alternatives considered
@@ -417,8 +492,19 @@ files touched, test names, fixture wiring, which open PRs are in flight) are
 tracked outside this ADR, since that detail changes independently of the
 architecture decision and goes stale quickly. Server dependencies named, not
 owned here: per-op outcomes on `doc_ops_result` or op ids on `doc_update`
-(for effect-correlated clearing), and `define_subgraph` admission from human
+(for effect-correlated clearing), a per-lineage generation or reset counter
+on the subscribe acknowledgement (for the reactivation-continuity gap in
+(a)'s parked-entry bullet above), and `define_subgraph` admission from human
 actors (for C).
+
+### Status
+
+The one snapshot in this ADR that goes stale independently of the
+architecture it decides: PR C's remaining blocker, as (d) records it, is
+narrower than it was — the frontend projection half landed, and what is left
+is a live successor to the closed op change plus doc-host admission. This
+paragraph, not the decision prose in (d), is where that fact is expected to
+need updating again.
 
 ## Consequences
 
