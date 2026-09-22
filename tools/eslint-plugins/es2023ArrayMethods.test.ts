@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { ESLint } from 'eslint'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 const eslint = new ESLint()
 const runtimeFilePath = 'src/config/subscriptionPricesConfig.ts'
@@ -9,6 +9,12 @@ const restrictionMessage =
   'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
 
 describe('ES2023 array method restrictions', () => {
+  beforeAll(async () => {
+    await eslint.lintText('const items = [1, 2]', {
+      filePath: runtimeFilePath
+    })
+  }, 120_000)
+
   it.for([
     ['toReversed', 'items.toReversed()'],
     ['toSorted', 'items.toSorted()'],
@@ -28,8 +34,7 @@ describe('ES2023 array method restrictions', () => {
           message: restrictionMessage
         })
       ])
-    },
-    120_000
+    }
   )
 
   it.for([
