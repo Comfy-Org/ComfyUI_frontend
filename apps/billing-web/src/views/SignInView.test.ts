@@ -142,17 +142,38 @@ describe('SignInView', () => {
     )
   })
 
-  it("names the workspace refusal when the mint's failure carries one", async () => {
+  it.for([
+    ['ACCESS_DENIED', "This account can't manage billing for that workspace."],
+    [
+      'WORKSPACE_NOT_FOUND',
+      "This account can't access that workspace. Reopen billing from the app while signed in with the right account."
+    ]
+  ] as const)('names the workspace refusal for %s', async ([code, message]) => {
     h.initialState = {
       step: 'signedIn',
       origin: 'interactive',
       mintFailed: true
     }
-    h.sessionFailureCode = 'ACCESS_DENIED'
+    h.sessionFailureCode = code
     await renderSignIn()
 
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      "This account can't manage billing for that workspace."
-    )
+    expect(screen.getByRole('alert')).toHaveTextContent(message)
   })
+
+  it.for(['INVALID_FIREBASE_TOKEN', 'TOKEN_EXCHANGE_FAILED'] as const)(
+    'keeps the generic retry prompt for %s, not the catch-all "something went wrong"',
+    async (code) => {
+      h.initialState = {
+        step: 'signedIn',
+        origin: 'interactive',
+        mintFailed: true
+      }
+      h.sessionFailureCode = code
+      await renderSignIn()
+
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'You are signed in, but your workspace session could not be started'
+      )
+    }
+  )
 })

@@ -4,6 +4,7 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import type { SessionErrorCode } from '@comfyorg/account-core/session'
 import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
 
 import { safeReturnTo } from '@/auth/returnTo'
@@ -61,12 +62,22 @@ const blocked = computed(() => busy.value || !available)
 const sessionFailed = computed(
   () => state.value.step === 'signedIn' && state.value.mintFailed === true
 )
-/** The refused workspace's own copy when the SDK named a reason; the generic retry prompt otherwise. */
-const sessionErrorMessage = computed(() =>
-  sessionFailureCode.value === undefined
-    ? t('auth.signIn.sessionError')
-    : coded('failure', sessionFailureCode.value)
-)
+/**
+ * Only a workspace the server named as inaccessible gets its own copy: a
+ * malformed or expired Firebase token is not about the workspace at all, and
+ * the generic retry prompt is the better line for it, not `hosted.failure`'s
+ * catch-all "something went wrong".
+ */
+const WORKSPACE_REFUSAL_CODES: readonly SessionErrorCode[] = [
+  'ACCESS_DENIED',
+  'WORKSPACE_NOT_FOUND'
+]
+const sessionErrorMessage = computed(() => {
+  const code = sessionFailureCode.value
+  return code !== undefined && WORKSPACE_REFUSAL_CODES.includes(code)
+    ? coded('failure', code)
+    : t('auth.signIn.sessionError')
+})
 
 const linkButtonClass =
   'cursor-pointer self-center border-none bg-transparent p-0 text-sm text-muted-foreground underline transition-colors hover:text-base-foreground disabled:cursor-not-allowed disabled:opacity-50'
