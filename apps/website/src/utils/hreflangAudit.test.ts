@@ -110,7 +110,6 @@ describe('auditBuiltSite', () => {
 
   it.for([
     '/404.html',
-    '/baidu_verify_codeva-SdpTW0h62C.html',
     '/affiliates/',
     '/privacy-policy/',
     '/cloud/enterprise/'
@@ -136,6 +135,7 @@ describe('auditBuiltSite', () => {
         sitemap: new Map()
       })
     ).toEqual([
+      '/article.html: canonical must be https://comfy.org/article.html',
       '/article.html: page expects en -> https://comfy.org/article.html/, but does not declare it',
       '/article.html: page expects zh-CN -> https://comfy.org/zh-CN/article.html/, but does not declare it',
       '/article.html: page expects x-default -> https://comfy.org/article.html/, but does not declare it',
@@ -213,9 +213,15 @@ describe('auditBuiltSite', () => {
     site.pages.set('/zh-CN/about/', [])
     site.sitemap.set('/zh-CN/about/', [])
 
-    expect(auditBuiltSite(site)).toContain(
-      '/about/: lists /zh-CN/about/, which does not list it back'
-    )
+    expect(auditBuiltSite(site)).toEqual([
+      '/zh-CN/about/: page expects en -> https://comfy.org/about/, but does not declare it',
+      '/zh-CN/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
+      '/zh-CN/about/: page expects x-default -> https://comfy.org/about/, but does not declare it',
+      '/about/: lists /zh-CN/about/, which does not list it back',
+      '/zh-CN/about/: sitemap expects en -> https://comfy.org/about/, but does not declare it',
+      '/zh-CN/about/: sitemap expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
+      '/zh-CN/about/: sitemap expects x-default -> https://comfy.org/about/, but does not declare it'
+    ])
   })
 
   it('rejects an alternate on another origin', () => {
@@ -317,6 +323,27 @@ describe('auditBuiltSite', () => {
 })
 
 describe('canonical URLs', () => {
+  it('requires a canonical when an indexable page omits every alternate', () => {
+    const pages = new Map<string, Alternate[]>([['/about/', []]])
+
+    expect(
+      auditBuiltSite({
+        origin: ORIGIN,
+        pages,
+        canonicals: new Map(),
+        sitemap: new Map(pages)
+      })
+    ).toEqual([
+      '/about/: canonical must be https://comfy.org/about/',
+      '/about/: page expects en -> https://comfy.org/about/, but does not declare it',
+      '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
+      '/about/: page expects x-default -> https://comfy.org/about/, but does not declare it',
+      '/about/: sitemap expects en -> https://comfy.org/about/, but does not declare it',
+      '/about/: sitemap expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
+      '/about/: sitemap expects x-default -> https://comfy.org/about/, but does not declare it'
+    ])
+  })
+
   it.for([
     {
       name: 'another origin',

@@ -20,6 +20,7 @@ import {
 } from '../src/utils/hreflangAudit'
 
 const DIST = join(process.cwd(), 'dist')
+const PUBLIC = join(process.cwd(), 'public')
 const ORIGIN = 'https://comfy.org'
 
 function htmlFiles(dir: string): string[] {
@@ -85,7 +86,14 @@ function sitemapAlternates(): Map<string, Alternate[]> | null {
   return entries
 }
 
-const files = htmlFiles(DIST)
+const publicHtmlPaths = new Set(
+  existsSync(PUBLIC)
+    ? htmlFiles(PUBLIC).map((file) => relative(PUBLIC, file))
+    : []
+)
+const files = htmlFiles(DIST).filter(
+  (file) => !publicHtmlPaths.has(relative(DIST, file))
+)
 const pages = new Map<string, Alternate[]>()
 const canonicals = new Map<string, string>()
 

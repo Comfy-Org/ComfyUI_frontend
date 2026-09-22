@@ -18,12 +18,6 @@ import { redirects } from '../config/redirects'
 import { isLocaleInvariantPath } from '../config/routes'
 import { unprefixed } from './hreflangRoutes'
 
-const STANDALONE_ROUTES = new Set([
-  '/404/',
-  '/404.html/',
-  '/baidu_verify_codeva-SdpTW0h62C.html/'
-])
-
 export interface BuiltSite {
   /** Every built route, mapped to the alternates its HTML emits. */
   pages: Map<string, Alternate[]>
@@ -70,13 +64,18 @@ function expectedAlternates(
   return expected
 }
 
-function requiresCluster(route: string, origin: string): boolean {
+function isClustered(
+  route: string,
+  alternates: Alternate[],
+  origin: string
+): boolean {
   const path = unprefixed(route)
   return (
-    !STANDALONE_ROUTES.has(path) &&
-    !isLocaleInvariantPath(path) &&
-    !isExcludedFromSitemap(`${origin}${route}`) &&
-    !Object.hasOwn(redirects, route.replace(/\/$/, ''))
+    alternates.length > 0 ||
+    (path !== '/404.html/' &&
+      !isLocaleInvariantPath(path) &&
+      !isExcludedFromSitemap(`${origin}${route}`) &&
+      !Object.hasOwn(redirects, route.replace(/\/$/, '')))
   )
 }
 
@@ -121,7 +120,7 @@ function clusterErrors(
 
   // Reciprocity alone accepts a cluster whose two locales are swapped: each
   // side still lists the other, so every link resolves while the labels lie.
-  if (alternates.length > 0 || requiresCluster(route, origin)) {
+  if (isClustered(route, alternates, origin)) {
     for (const [hreflang, href] of expected) {
       if (
         !alternates.some(
@@ -153,7 +152,7 @@ function pageErrors(
 ): string[] {
   const errors: string[] = []
   for (const [route, alternates] of pages) {
-    if (alternates.length > 0) {
+    if (isClustered(route, alternates, origin)) {
       const expectedCanonical = new URL(route, origin).href
       if (canonicals.get(route) !== expectedCanonical) {
         errors.push(`${route}: canonical must be ${expectedCanonical}`)
@@ -205,10 +204,7 @@ function missingSitemapClusters(
   // Comparing only the sitemap's own entries never sees a clustered page the
   // sitemap leaves out, which is the direction this actually drifted.
   for (const [route, alternates] of pages) {
-    if (
-      (alternates.length > 0 || requiresCluster(route, origin)) &&
-      !sitemap.has(route)
-    ) {
+    if (isClustered(route, alternates, origin) && !sitemap.has(route)) {
       errors.push(`${route}: language cluster missing from sitemap`)
     }
   }

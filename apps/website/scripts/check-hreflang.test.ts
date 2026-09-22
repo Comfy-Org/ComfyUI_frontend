@@ -11,7 +11,7 @@ const loader = pathToFileURL(createRequire(import.meta.url).resolve('tsx')).href
 
 it.for([
   {
-    name: 'valid encoded links',
+    name: 'valid encoded links with copied public HTML',
     canonical: 'https://comfy.org/zh-CN/caf%C3%A9/',
     status: 0,
     diagnostic: 'every cluster is reciprocal'
@@ -66,6 +66,16 @@ it.for([
         .map(({ loc }) => `<url><loc>${loc}</loc>${links}</url>`)
         .join('')}</urlset>`
     )
+    await mkdir(join(directory, 'public'), { recursive: true })
+    const verification = '<html>verification</html>'
+    await writeFile(
+      join(directory, 'public', 'site-verification-token.html'),
+      verification
+    )
+    await writeFile(
+      join(directory, 'dist', 'site-verification-token.html'),
+      verification
+    )
 
     const result = spawnSync(process.execPath, ['--import', loader, script], {
       cwd: directory,
@@ -74,6 +84,7 @@ it.for([
 
     expect(result.error).toBeUndefined()
     expect(result.status).toBe(status)
+    expect(result.stderr).toContain('[hreflang] 2 pages built')
     expect(result.stderr).toContain(diagnostic)
   }
 )
