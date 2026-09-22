@@ -5,6 +5,7 @@ import type {
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
 
+import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 import { AGENT_CRDT_DOC_ID_SESSION_KEY } from '@/platform/workflow/persistence/base/storageKeyConstants'
 import {
   AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY,
@@ -29,7 +30,6 @@ const test = mergeTests(agentTest, webSocketFixture)
 
 test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
-  const workflowId = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 
   test.beforeEach(async ({ page }) => {
     const workflows: WorkflowListResponse = {
@@ -44,8 +44,9 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     await page.route('**/api/internal/cloud_analytics', (route) =>
       route.fulfill(jsonRoute({}))
     )
+    const folders: ModelFolderInfo[] = []
     await page.route('**/api/experiment/models', (route) =>
-      route.fulfill(jsonRoute([]))
+      route.fulfill(jsonRoute(folders))
     )
     await page.route(/\/api\/workflows\?limit=100$/, (route) =>
       route.fulfill(jsonRoute(workflows))
@@ -63,6 +64,7 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     webSocketMessages
   }) => {
     test.setTimeout(90_000)
+    const workflowId = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
     const agentPanel = new AgentPanel(page)
     const command = new CommandHelper(page)
 

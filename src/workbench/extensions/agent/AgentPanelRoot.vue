@@ -460,9 +460,13 @@ const workflowDetached = computed(
     (selectedTarget.value === null &&
       (!agentPanelStore.canRestoreWorkflow || restorableDocId.value === null))
 )
-watch(selectedTarget, (target) => {
-  if (target !== null) newChatDetached.value = false
-})
+watch(
+  selectedTarget,
+  (target) => {
+    if (target !== null) newChatDetached.value = false
+  },
+  { flush: 'sync' }
+)
 
 // Resolves the tab a turn is attributed to. `null` (the send had no origin
 // tab) resolves to nothing rather than falling back to the selected target, so
@@ -607,7 +611,8 @@ const isSending = computed(
 // merely carries a stale binding, or a second bound tab, never reads as
 // active and never keeps the follower projecting into a background tab.
 // `reconcilePersistedDocId()` is not a pure read: it adopts and re-stamps the
-// record on a reload, drops it on a nonce mismatch, and consults untracked
+// record on a reload. A nonce mismatch is adopted and re-stamped during reload
+// navigation, but dropped during other navigation. It also consults untracked
 // `sessionStorage` and `Date.now()`. Calling it from inside the computed getter
 // therefore let an unrelated re-render consume or rewrite the record the
 // follower was about to read, and the cached value never invalidated when the
