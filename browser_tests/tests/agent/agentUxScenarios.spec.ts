@@ -27,16 +27,7 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
       await expect(suggestion).toBeHidden()
     }
 
-    const resizeHandle = page.getByTestId('agent-panel-resize-handle')
-    const handleBox = await resizeHandle.boundingBox()
-    if (!handleBox) throw new Error('Agent panel resize handle is not visible')
-    const handleCenterX = handleBox.x + handleBox.width / 2
-    await page.mouse.move(handleCenterX, handleBox.y + 20)
-    await page.mouse.down()
-    await page.mouse.move(handleCenterX - 60, handleBox.y + 20)
-    await page.mouse.up()
-
-    await expect(dock).toHaveCSS('width', '480px')
+    await agentPanel.resizeTo(480)
     for (const suggestion of suggestions) {
       await expect(suggestion).toBeVisible()
     }
@@ -51,17 +42,7 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
       await agentPanel.open()
       const panel = page.locator('#agent-panel-root')
 
-      const dock = page.getByTestId('docked-agent-panel')
-      const resizeHandle = page.getByTestId('agent-panel-resize-handle')
-      const handleBox = await resizeHandle.boundingBox()
-      if (!handleBox)
-        throw new Error('Agent panel resize handle is not visible')
-      const handleCenterX = handleBox.x + handleBox.width / 2
-      await page.mouse.move(handleCenterX, handleBox.y + 20)
-      await page.mouse.down()
-      await page.mouse.move(handleCenterX - (width - 420), handleBox.y + 20)
-      await page.mouse.up()
-      await expect(dock).toHaveCSS('width', `${width}px`)
+      await agentPanel.resizeTo(width)
 
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
       const send = panel.getByRole('button', { name: 'Send' })
