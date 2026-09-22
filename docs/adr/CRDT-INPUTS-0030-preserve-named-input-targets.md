@@ -33,10 +33,11 @@ document order and live order can disagree:
   (`realignInputLinkSlots`), so a freshly materialized node's adapters follow the
   names the document named rather than the indexes it used.
 - Incoming reconcile and connect resolve the document input name against current
-  live inputs. Live order wins over document order: a live slot the document also
-  names takes the document's fields, a live slot the document omits (a
-  runtime-grown input) stays where it is, and a document slot the live node lacks
-  is appended.
+  live inputs. When every document input name exists in the live list, live
+  order wins: matching inputs take the document's fields and live-only inputs
+  remain in place. If any document input name is absent live,
+  `mergeInputSlotsByName` falls back to positional preparation using the
+  document's input list and order, dropping live-only inputs.
 
 Remote slot projection retains runtime slot instances and shared array
 references, because `LGraphNode` captures `_inputs`/`_outputs` at construction
@@ -72,9 +73,11 @@ Outputs remain index-based because their names need not be unique.
 - Existing document nodes preserve named targets through loading, growth, remote
   updates and save/reopen without rewriting the document.
 - Reconcile semantics change for **every** node whose live inputs differ from the
-  document's, not only autogrow nodes: stale local-only slots now persist, and
-  document slots the live node lacks are appended at the end rather than in
-  document order.
+  document's, not only autogrow nodes. When the live list contains every document
+  input name, local-only slots persist, including stale or extension-added
+  slots; this condition does not prove that autogrow caused the difference.
+  Otherwise, the document's list and order replace the live list, so local-only
+  slots are removed rather than preserved alongside appended document inputs.
 - A connect naming an input that cannot be placed is rejected with a diagnostic
   return value rather than reaching the link store at slot `-1`.
 - Duplicate input names on one node resolve to the first match. Nothing enforces
