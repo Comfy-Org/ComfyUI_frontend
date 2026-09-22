@@ -285,6 +285,67 @@ describe('SavedAssetsStrip', () => {
     expect(screen.getByTestId('saved-asset-next')).toBeEnabled()
   })
 
+  it('jumps straight to an asset from its dot', async () => {
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({
+      requests: savedPair
+    })
+    vi.mocked(accessWorkshopAsset)
+      .mockResolvedValueOnce({
+        content_url: 'https://assets.example/first.png',
+        expires_at: new Date(Date.now() + 900_000).toISOString()
+      })
+      .mockResolvedValue({
+        content_url: 'https://assets.example/second.png',
+        expires_at: new Date(Date.now() + 900_000).toISOString()
+      })
+    render(SavedAssetsStrip, { props })
+
+    await openFirstTile()
+    await userEvent.click(screen.getByRole('button', { name: 'Show asset 2' }))
+
+    expect(
+      (await screen.findByAltText('Your assets')).getAttribute('src')
+    ).toBe('https://assets.example/second.png')
+  })
+
+  it('pages on a swipe, the way the strip is read on a phone', async () => {
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({
+      requests: savedPair
+    })
+    render(SavedAssetsStrip, { props })
+    await openFirstTile()
+    const preview = screen.getByTestId('saved-asset-preview')
+
+    await fireEvent.touchStart(preview, {
+      changedTouches: [{ clientX: 240 }]
+    })
+    await fireEvent.touchEnd(preview, { changedTouches: [{ clientX: 100 }] })
+
+    expect(
+      screen.getByTestId('saved-asset-previous'),
+      'a swipe that lands on the second asset must leave the reader able to go back'
+    ).toBeEnabled()
+  })
+
+  it('ignores a touch too short to be a swipe', async () => {
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({
+      requests: savedPair
+    })
+    render(SavedAssetsStrip, { props })
+    await openFirstTile()
+    const preview = screen.getByTestId('saved-asset-preview')
+
+    await fireEvent.touchStart(preview, {
+      changedTouches: [{ clientX: 240 }]
+    })
+    await fireEvent.touchEnd(preview, { changedTouches: [{ clientX: 220 }] })
+
+    expect(
+      screen.getByTestId('saved-asset-previous'),
+      'a tap on the picture is not a request to move off it'
+    ).toBeDisabled()
+  })
+
   it('reports a listing it could not load instead of looking empty', async () => {
     vi.mocked(listWorkshopGenerations).mockRejectedValue(new Error('offline'))
     render(SavedAssetsStrip, { props })
