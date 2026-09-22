@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, Search, X } from '@lucide/vue'
+import { ChevronLeft } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import type { UseCase } from '../../config/models-catalogue'
@@ -22,6 +22,7 @@ import WorkshopHero from '../workshop/WorkshopHero.vue'
 import type { OrderOption } from './CatalogueSort.vue'
 import CatalogueGrid from './CatalogueGrid.vue'
 import CatalogueModelFilter from './CatalogueModelFilter.vue'
+import CatalogueSearch from './CatalogueSearch.vue'
 import CatalogueToolbar from './CatalogueToolbar.vue'
 import CatalogueSort from './CatalogueSort.vue'
 import CatalogueTypeFilter from './CatalogueTypeFilter.vue'
@@ -301,30 +302,11 @@ const heading = computed(() =>
       <!-- The type says what is in the list; the search and the order narrow
         and rank what it chose, so they group together away from it. -->
       <div class="flex flex-1 items-center gap-3 sm:ms-auto sm:flex-none">
-        <div class="relative min-w-56 flex-1 sm:w-96 sm:flex-none">
-          <Search
-            class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-content-muted"
-            aria-hidden="true"
-          />
-          <input
-            id="catalogue-search"
-            v-model="query"
-            type="search"
-            :placeholder="searchPlaceholder"
-            :aria-label="searchPlaceholder"
-            class="h-11 w-full rounded-2xl bg-transparency-white-t4 ps-9 pe-10 text-sm text-content transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 [&::-webkit-search-cancel-button]:hidden"
-          />
-          <button
-            v-if="query"
-            type="button"
-            class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-primary-warm-gray transition-colors outline-none hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-            :aria-label="t('workshop.search.clear', locale)"
-            data-testid="catalogue-search-clear"
-            @click="query = ''"
-          >
-            <X class="size-4" aria-hidden="true" />
-          </button>
-        </div>
+        <CatalogueSearch
+          v-model="query"
+          :placeholder="searchPlaceholder"
+          :locale
+        />
 
         <CatalogueModelFilter
           v-if="modelFilter && type === 'workflow'"
