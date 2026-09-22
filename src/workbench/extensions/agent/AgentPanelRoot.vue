@@ -460,9 +460,13 @@ const workflowDetached = computed(
     (selectedTarget.value === null &&
       (!agentPanelStore.canRestoreWorkflow || restorableDocId.value === null))
 )
-watch(selectedTarget, (target) => {
-  if (target !== null) newChatDetached.value = false
-})
+watch(
+  selectedTarget,
+  (target) => {
+    if (target !== null) newChatDetached.value = false
+  },
+  { flush: 'sync' }
+)
 
 // Resolves the tab a turn is attributed to. `null` (the send had no origin
 // tab) resolves to nothing rather than falling back to the selected target, so
