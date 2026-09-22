@@ -53,6 +53,11 @@ export type OpenTabsSnapshot = Pick<
   'open_tabs' | 'current_tab'
 >
 
+// TEMPORARY: current_tab_unbound isn't in the generated ingest-types yet (cloud#10068 unmerged); delete this augmentation and use AgentPostMessageRequest directly once push-ingest-types-to-frontend lands it.
+type AgentPostMessageRequestWithUnboundFlag = AgentPostMessageRequest & {
+  current_tab_unbound?: boolean
+}
+
 /** An omitted `version` makes this content authoritative for the backend CAS. */
 export interface DraftSnapshot {
   content: Record<string, unknown>
@@ -67,6 +72,14 @@ export interface PostMessageInput {
   workflowReferences?: AgentPostMessageRequest['workflow_references']
   tabs?: OpenTabsSnapshot
   draft?: DraftSnapshot
+  /**
+   * The turn's target tab has no cloud id yet (a fresh, unsaved tab) - see
+   * AgentPostMessageRequest['current_tab_unbound']. Tells the server this is
+   * a selected-but-unbound tab rather than no tab at all, so it mints a
+   * workflow for it instead of falling back to the thread's previous one and
+   * presenting the turn to the model as having no workflow selected.
+   */
+  currentTabUnbound?: boolean
 }
 
 interface IngestErrorBody {
@@ -339,7 +352,9 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body: Record<string, unknown> = { content: req.content }
+    const body: AgentPostMessageRequestWithUnboundFlag = {
+      content: req.content
+    }
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
     if (req.tabs !== undefined) {
       body.open_tabs = req.tabs.open_tabs
@@ -351,6 +366,8 @@ export function createAgentRestClient() {
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
     if (req.draft !== undefined) body.draft = req.draft
+    if (req.currentTabUnbound !== undefined)
+      body.current_tab_unbound = req.currentTabUnbound
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       jsonInit('POST', body),
