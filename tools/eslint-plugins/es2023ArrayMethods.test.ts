@@ -149,4 +149,35 @@ items.toSorted()`
       ])
     }
   )
+
+  it('rejects array copy methods on typed arrays', async () => {
+    const typedArrays = [
+      'BigInt64Array',
+      'BigUint64Array',
+      'Float32Array',
+      'Float64Array',
+      'Int8Array',
+      'Int16Array',
+      'Int32Array',
+      'Uint8Array',
+      'Uint8ClampedArray',
+      'Uint16Array',
+      'Uint32Array'
+    ]
+    const [result] = await eslint.lintText(
+      typedArrays.map((name) => `new ${name}(1).toSorted()`).join('\n'),
+      { filePath: runtimeFilePath }
+    )
+
+    expect(result.messages).toHaveLength(typedArrays.length)
+    expect(result.messages).toEqual(
+      typedArrays.map(() =>
+        expect.objectContaining({
+          ruleId: 'es2022-compat/no-array-copy-method',
+          severity: 2,
+          message: restrictionMessage
+        })
+      )
+    )
+  })
 })
