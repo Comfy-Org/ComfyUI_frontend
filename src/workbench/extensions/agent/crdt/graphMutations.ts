@@ -825,7 +825,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (topology.originSlot >= originOutputs.length) {
             return `connect origin slot ${topology.originSlot} does not exist`
           }
-          if (topology.targetSlot >= targetInputs.length) {
+          if (
+            topology.targetSlot < 0 ||
+            topology.targetSlot >= targetInputs.length
+          ) {
             return `connect target slot ${topology.targetSlot} does not exist`
           }
           const originType = originOutputs[topology.originSlot]?.type

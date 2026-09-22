@@ -1399,6 +1399,36 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
+  it('rejects a document target removed by slot validation without mutating the graph', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(node(2), context)
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    const input = target.inputs[0]
+    const targetInputs = [{ name: 'invalid', type: 'IMAGE', link: null }]
+    Reflect.set(targetInputs[0], 'type', null)
+
+    expect(
+      graph.connect(
+        {
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          targetInputs
+        },
+        context
+      )
+    ).toBe(false)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    expect(target.inputs).toEqual([input])
+    expect(target.inputs[0]).toBe(input)
+  })
+
   it('does not mutate endpoint metadata when a later batch mutation fails', () => {
     const graph = mutations()
     graph.addNode(node(1), context)
