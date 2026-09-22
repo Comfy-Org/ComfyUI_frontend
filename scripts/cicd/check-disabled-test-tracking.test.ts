@@ -107,6 +107,36 @@ test[modifier]('dynamic property', () => {})
     ])
   })
 
+  it.for([
+    {
+      declaration: `test.skipIf(true)('disabled', () => {})`,
+      relevantLines: [1]
+    },
+    {
+      declaration: `it.runIf(false)('disabled', () => {})`,
+      relevantLines: [1]
+    },
+    {
+      declaration: `suite.skipIf(\n  true\n)('disabled suite', () => {})`,
+      relevantLines: [1, 2]
+    }
+  ])(
+    'parses statically disabled conditional declaration: $declaration',
+    ({ declaration, relevantLines }) => {
+      expect(disabledDeclarations(declaration)).toEqual([
+        { line: 1, relevantLines }
+      ])
+    }
+  )
+
+  it.for([
+    `test.skipIf(false)('enabled', () => {})`,
+    `test.skipIf(isCloud)('runtime condition', () => {})`,
+    `test.runIf(true)('enabled', () => {})`
+  ])('ignores non-static conditional declaration: %s', (declaration) => {
+    expect(disabledDeclarations(declaration)).toEqual([])
+  })
+
   it('finds newly disabled tests through a real Git diff', () => {
     const root = createRepository()
     write(
@@ -205,6 +235,31 @@ test['skip']('computed modifier', () => {})
       `  tests/example.test.ts:1: ${disabled.trim()}`
     ])
   })
+
+  it.for([
+    {
+      enabled: `test.skipIf(false)('case', () => {})\n`,
+      disabled: `test.skipIf(true)('case', () => {})\n`
+    },
+    {
+      enabled: `suite.runIf(true)('case', () => {})\n`,
+      disabled: `suite.runIf(false)('case', () => {})\n`
+    }
+  ])(
+    'finds a conditional declaration changed to disabled',
+    ({ enabled, disabled }) => {
+      const root = createRepository()
+      write(root, 'tests/example.test.ts', enabled)
+      const base = commit(root, 'base')
+
+      write(root, 'tests/example.test.ts', disabled)
+      const head = commit(root, 'disable conditional test')
+
+      expect(findViolations(root, base, head)).toEqual([
+        `  tests/example.test.ts:1: ${disabled.trim()}`
+      ])
+    }
+  )
 
   it('ignores title and formatting edits to disabled tests', () => {
     const root = createRepository()

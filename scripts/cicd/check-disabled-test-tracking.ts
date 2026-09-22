@@ -43,8 +43,9 @@ type ChangedFile = {
 }
 
 type TestCall = {
+  condition?: Expression
   factory: boolean
-  modifier?: Node
+  modifier?: StaticMember
 }
 
 type StaticMember = {
@@ -121,7 +122,7 @@ function staticMember(
 function isTestReceiver(expression: LeftHandSideExpression): boolean {
   if (
     isIdentifier(expression) &&
-    ['test', 'it', 'describe'].includes(expression.text)
+    ['test', 'it', 'describe', 'suite'].includes(expression.text)
   ) {
     return true
   }
@@ -134,9 +135,9 @@ function isTestReceiver(expression: LeftHandSideExpression): boolean {
   )
 }
 
-function isDisablingArgument(argument: Expression): boolean {
+function isStaticallyTrue(argument: Expression): boolean {
   if (isParenthesizedExpression(argument)) {
-    return isDisablingArgument(argument.expression)
+    return isStaticallyTrue(argument.expression)
   }
   return (
     isStringLiteral(argument) ||
@@ -146,10 +147,17 @@ function isDisablingArgument(argument: Expression): boolean {
   )
 }
 
+function isStaticallyFalse(argument: Expression): boolean {
+  return isParenthesizedExpression(argument)
+    ? isStaticallyFalse(argument.expression)
+    : argument.kind === SyntaxKind.FalseKeyword
+}
+
 function testCall(expression: LeftHandSideExpression): TestCall | undefined {
   const modifiers: StaticMember[] = []
   let receiver: LeftHandSideExpression = expression
   let parameterized = false
+  let condition: Expression | undefined
 
   for (
     let member = staticMember(receiver);
@@ -161,6 +169,7 @@ function testCall(expression: LeftHandSideExpression): TestCall | undefined {
   }
   if (isCallExpression(receiver)) {
     parameterized = true
+    condition = receiver.arguments[0]
     receiver = receiver.expression
     for (
       let member = staticMember(receiver);
@@ -174,11 +183,29 @@ function testCall(expression: LeftHandSideExpression): TestCall | undefined {
   if (!isTestReceiver(receiver)) return
 
   return {
+    condition,
     factory:
       !parameterized &&
-      modifiers.some(({ name }) => ['each', 'for'].includes(name)),
-    modifier: modifiers.find(({ name }) => ['skip', 'fixme'].includes(name))
-      ?.node
+      modifiers.some(({ name }) =>
+        ['each', 'for', 'skipIf', 'runIf'].includes(name)
+      ),
+    modifier: modifiers.find(({ name }) =>
+      ['skip', 'fixme', 'skipIf', 'runIf'].includes(name)
+    )
+  }
+}
+
+function isDisabled(call: TestCall, argument: Expression | undefined): boolean {
+  switch (call.modifier?.name) {
+    case 'skip':
+    case 'fixme':
+      return Boolean(argument && isStaticallyTrue(argument))
+    case 'skipIf':
+      return Boolean(call.condition && isStaticallyTrue(call.condition))
+    case 'runIf':
+      return Boolean(call.condition && isStaticallyFalse(call.condition))
+    default:
+      return false
   }
 }
 
@@ -231,19 +258,18 @@ function testDeclaration(
   const call = testCall(node.expression)
   if (!call || call.factory) return
 
-  const { modifier } = call
+  const modifier = call.modifier?.node
   const argument = node.arguments[0]
   const title = node.arguments.find(isTitle)
+  const disablingArgument = call.condition ?? argument
 
   return {
     context: declarationContext(node.arguments, title, modifier, sourceFile),
-    disabled: Boolean(
-      modifier && node.arguments.length > 0 && isDisablingArgument(argument)
-    ),
+    disabled: isDisabled(call, argument),
     line: lineOf(node.expression, sourceFile),
     relevantLines: relevantLines(
       node.expression,
-      argument,
+      disablingArgument,
       modifier,
       sourceFile
     ),
