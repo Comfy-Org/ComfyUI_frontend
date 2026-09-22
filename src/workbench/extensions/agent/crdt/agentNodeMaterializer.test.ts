@@ -1174,9 +1174,7 @@ describe('reconcileAgentAdapters', () => {
       const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
       const promotedWidgetId = instance.inputs[0]?.widgetId
       assert.exists(promotedWidgetId)
-      expect(
-        useWidgetValueStore().getWidget(promotedWidgetId)?.value
-      ).toBe(42)
+      expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(42)
     })
 
     /**
