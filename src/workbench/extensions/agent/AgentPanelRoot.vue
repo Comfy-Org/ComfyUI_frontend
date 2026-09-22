@@ -117,7 +117,6 @@ import {
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { createLiveWidgetProjection } from './crdt/liveWidgetProjection'
-import { sharedPendingDeleteRetentionStore } from './crdt/pendingDeleteRetentionStore'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -619,9 +618,9 @@ const {
       }
     },
     onReset: graphActivity.resetWorkflow
-  },
-  // See ADR CRDT-WRITE-0035.
-  retentionStore: sharedPendingDeleteRetentionStore
+  }
+  // No `retentionStore` override: the composable's own default is the
+  // module-level shared store ADR CRDT-WRITE-0035 requires.
 })
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing

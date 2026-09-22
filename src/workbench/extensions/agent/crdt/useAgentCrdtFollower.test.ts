@@ -171,7 +171,10 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
-import { createPendingDeleteRetentionStore } from './pendingDeleteRetentionStore'
+import {
+  createPendingDeleteRetentionStore,
+  sharedPendingDeleteRetentionStore
+} from './pendingDeleteRetentionStore'
 import {
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS,
@@ -236,6 +239,7 @@ function mountFollower(
         workflowId,
         graphMutations,
         {
+          retentionStore: createPendingDeleteRetentionStore(),
           userId: () => null,
           isTargetActive,
           getGraph,
@@ -1323,7 +1327,8 @@ describe('useAgentCrdtFollower', () => {
       setup() {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
-          graphMutations
+          graphMutations,
+          { retentionStore: createPendingDeleteRetentionStore() }
         )
         enqueue = enqueueHumanOperations
         return () => null
@@ -1359,7 +1364,8 @@ describe('useAgentCrdtFollower', () => {
       setup() {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
-          graphMutations
+          graphMutations,
+          { retentionStore: createPendingDeleteRetentionStore() }
         )
         enqueue = enqueueHumanOperations
         return () => null
@@ -1931,6 +1937,57 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('defaults to the module-level shared store, so retention survives a panel close/reopen without the caller wiring one (AgentPanelRoot.vue no longer has to)', async () => {
+    function mountOnce(): {
+      enqueue: HumanEnqueue
+      intent: { pendingDeletes(workflowId: string): ReadonlySet<string> }
+      unmount: () => void
+    } {
+      const workflowId = ref<string | null>('wf-1')
+      let enqueue!: HumanEnqueue
+      const host = defineComponent({
+        setup() {
+          const { enqueueHumanOperations } = useAgentCrdtFollower(
+            workflowId,
+            graphMutations
+          )
+          enqueue = enqueueHumanOperations
+          return () => null
+        }
+      })
+      const { unmount } = render(host)
+      return { enqueue, intent: requireIntent(), unmount }
+    }
+
+    try {
+      const first = mountOnce()
+      const doc = new Y.Doc()
+      doc.getMap('nodes').set('1', { type: 'KSampler' })
+      bridge().follower.doc = doc
+
+      first.enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+      await Promise.resolve()
+      const opId = requireSentOpId()
+      dispatchFrame('doc_ops_result', {
+        workflowId: 'wf-1',
+        ok: true,
+        applied: [opId],
+        skipped: []
+      })
+      expect([...first.intent.pendingDeletes('wf-1')]).toEqual(['1'])
+      first.unmount()
+
+      // A second mount that ALSO omits `retentionStore` must see the same
+      // module-level singleton the first mount used.
+      const second = mountOnce()
+      bridge().follower.doc = doc
+      expect([...second.intent.pendingDeletes('wf-1')]).toEqual(['1'])
+      second.unmount()
+    } finally {
+      sharedPendingDeleteRetentionStore.clearWorkflow('wf-1')
+    }
+  })
+
   it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
@@ -1942,7 +1999,8 @@ describe('useAgentCrdtFollower', () => {
       setup() {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
-          graphMutations
+          graphMutations,
+          { retentionStore: createPendingDeleteRetentionStore() }
         )
         enqueue = enqueueHumanOperations
         return () => null
@@ -1981,7 +2039,8 @@ describe('useAgentCrdtFollower', () => {
       setup() {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
-          graphMutations
+          graphMutations,
+          { retentionStore: createPendingDeleteRetentionStore() }
         )
         enqueue = enqueueHumanOperations
         return () => null
@@ -2063,7 +2122,8 @@ describe('useAgentCrdtFollower', () => {
       setup() {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
-          graphMutations
+          graphMutations,
+          { retentionStore: createPendingDeleteRetentionStore() }
         )
         enqueue = enqueueHumanOperations
         return () => null
@@ -2230,7 +2290,10 @@ describe('useAgentCrdtFollower', () => {
           const { enqueueHumanOperations } = useAgentCrdtFollower(
             workflowId,
             graphMutations,
-            { isTargetActive }
+            {
+              isTargetActive,
+              retentionStore: createPendingDeleteRetentionStore()
+            }
           )
           enqueue = enqueueHumanOperations
           return () => null
@@ -2582,7 +2645,9 @@ describe('useAgentCrdtFollower', () => {
     const workflowId = ref<string | null>('wf-1')
     const host = defineComponent({
       setup() {
-        useAgentCrdtFollower(workflowId, graphMutations)
+        useAgentCrdtFollower(workflowId, graphMutations, {
+          retentionStore: createPendingDeleteRetentionStore()
+        })
         return () => null
       }
     })

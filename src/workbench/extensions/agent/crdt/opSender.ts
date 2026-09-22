@@ -162,9 +162,7 @@ export interface OpSender {
   detach(): void
 }
 
-interface InFlight {
-  workflowId: string
-  ops: Op[]
+interface InFlight extends OpGroup {
   opIds: Set<string>
   transmitted: boolean
   resent: boolean
@@ -172,24 +170,26 @@ interface InFlight {
   timer: ReturnType<typeof setTimeout> | null
 }
 
+interface OpGroup {
+  workflowId: string
+  ops: Op[]
+  /** Captured once at admission time (see {@link captureDeletedItemIds}) and carried by reference as the group moves from `open` to `queue` to {@link InFlight} - never a separate, manually-synced side table. */
+  deletedItemIds: Map<string, string | null>
+}
+
 export function createOpSender(deps: OpSenderDeps): OpSender {
-  const queue: Array<{ workflowId: string; ops: Op[] }> = []
-  let open: { workflowId: string; ops: Op[] } | null = null
+  const queue: OpGroup[] = []
+  let open: OpGroup | null = null
   let inFlight: InFlight | null = null
   let detached = false
   let suspended = false
-  // Keyed by op_id (globally unique per mint), not by workflow or position:
-  // an op's own identity capture stays bound to it through retries, resends
-  // and out-of-order settlement. Entries are taken (read and removed) by
-  // `takeDeletedItemIds` as each op's batch settles.
-  const capturedDeletedItemIds = new Map<string, string | null>()
 
-  function takeDeletedItemIds(ops: Op[]): ReadonlyMap<string, string | null> {
+  /** Identity capture for every `delete_node` op just minted, keyed by its own `op_id`. */
+  function captureDeletedItemIds(ops: Op[]): Map<string, string | null> {
     const identities = new Map<string, string | null>()
     for (const op of ops) {
-      if (!capturedDeletedItemIds.has(op.op_id)) continue
-      identities.set(op.op_id, capturedDeletedItemIds.get(op.op_id) ?? null)
-      capturedDeletedItemIds.delete(op.op_id)
+      if (op.op !== 'delete_node') continue
+      identities.set(op.op_id, deps.deletedItemId?.(String(op.node_id)) ?? null)
     }
     return identities
   }
@@ -253,7 +253,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
       ops: batch.ops,
       workflowId: batch.workflowId,
-      deletedItemIds: takeDeletedItemIds(batch.ops)
+      deletedItemIds: batch.deletedItemIds
     })
   }
 
@@ -267,7 +267,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           state: 'unacknowledged',
           ops: batch.ops,
           workflowId: batch.workflowId,
-          deletedItemIds: takeDeletedItemIds(batch.ops)
+          deletedItemIds: batch.deletedItemIds
         })
         return
       }
@@ -297,7 +297,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
         ops: batch.ops,
         workflowId: batch.workflowId,
-        deletedItemIds: takeDeletedItemIds(batch.ops)
+        deletedItemIds: batch.deletedItemIds
       })
     }
     for (const batch of queued) {
@@ -305,7 +305,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         state: 'undeliverable',
         ops: batch.ops,
         workflowId: batch.workflowId,
-        deletedItemIds: takeDeletedItemIds(batch.ops)
+        deletedItemIds: batch.deletedItemIds
       })
     }
     if (admitted) {
@@ -313,7 +313,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         state: 'undeliverable',
         ops: admitted.ops,
         workflowId: admitted.workflowId,
-        deletedItemIds: takeDeletedItemIds(admitted.ops)
+        deletedItemIds: admitted.deletedItemIds
       })
     }
   }
@@ -325,6 +325,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     inFlight = {
       workflowId: queued.workflowId,
       ops: queued.ops,
+      deletedItemIds: queued.deletedItemIds,
       opIds: new Set(queued.ops.map((op) => op.op_id)),
       transmitted: false,
       resent: false,
@@ -334,22 +335,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     transmit(inFlight, 0)
   }
 
-  function captureDeletedItemIds(ops: Op[]): void {
-    for (const op of ops) {
-      if (op.op !== 'delete_node') continue
-      capturedDeletedItemIds.set(
-        op.op_id,
-        deps.deletedItemId?.(String(op.node_id)) ?? null
-      )
-    }
-  }
-
   function settleUnadmitted(minted: Op[], workflowId: string | null): void {
     deps.onBatchSettled({
       state: 'undeliverable',
       ops: minted,
       workflowId,
-      deletedItemIds: takeDeletedItemIds(minted)
+      deletedItemIds: captureDeletedItemIds(minted)
     })
   }
 
@@ -359,7 +350,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       actor: deps.actor(),
       baseVersion: deps.baseVersion()
     })
-    captureDeletedItemIds(minted)
     const workflowId = deps.workflowId()
     // Detached is terminal: nothing will ever flush or transmit again, so an
     // admission that arrives after detach (a re-entrant admit from a settle
@@ -371,16 +361,31 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       settleUnadmitted(minted, workflowId)
       return
     }
+    const deletedItemIds = captureDeletedItemIds(minted)
     if (open?.workflowId !== workflowId) seal()
-    if (open) open.ops.push(...minted)
-    else open = { workflowId, ops: minted }
+    if (open) {
+      open.ops.push(...minted)
+      for (const [opId, identity] of deletedItemIds)
+        open.deletedItemIds.set(opId, identity)
+    } else {
+      open = { workflowId, ops: minted, deletedItemIds }
+    }
   }
 
   function seal(): void {
     if (!open) return
-    const { workflowId, ops } = open
+    const { workflowId, ops, deletedItemIds } = open
     open = null
-    queue.push(...chunkWireOps(ops).map((ops) => ({ workflowId, ops })))
+    for (const chunkOps of chunkWireOps(ops)) {
+      const chunkOpIds = new Set(chunkOps.map((op) => op.op_id))
+      queue.push({
+        workflowId,
+        ops: chunkOps,
+        deletedItemIds: new Map(
+          [...deletedItemIds].filter(([opId]) => chunkOpIds.has(opId))
+        )
+      })
+    }
   }
 
   function flush(): void {
@@ -425,7 +430,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       ops: inFlight.ops,
       result,
       workflowId: inFlight.workflowId,
-      deletedItemIds: takeDeletedItemIds(inFlight.ops)
+      deletedItemIds: inFlight.deletedItemIds
     })
   })
 
@@ -441,10 +446,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return queue.length + (inFlight ? 1 : 0) + (open ? 1 : 0)
     },
     pendingOps() {
-      const batches = inFlight
-        ? [{ workflowId: inFlight.workflowId, ops: inFlight.ops }]
-        : []
-      return [...batches, ...queue, ...(open ? [open] : [])]
+      const groups = [
+        ...(inFlight ? [inFlight] : []),
+        ...queue,
+        ...(open ? [open] : [])
+      ]
+      return groups.map(({ workflowId, ops }) => ({ workflowId, ops }))
     },
     suspend() {
       suspended = true

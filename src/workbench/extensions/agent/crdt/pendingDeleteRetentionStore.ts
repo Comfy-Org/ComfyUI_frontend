@@ -1,25 +1,30 @@
 /**
  * Owns retained human-delete intent at a scope wider than any single
  * follower instance; see ADR CRDT-WRITE-0035 for why, and for the retention
- * state machine this module implements.
+ * state machine this module implements. The input shape below is this
+ * store's own contract - it names no sender/transport type, so a future
+ * transport can feed it without fabricating one.
  */
-import { reportError } from '@/platform/telemetry/reportError'
-
 import { STALE_AFTER_MS } from './agentCrdtDocLifecycle'
-import type { BatchOutcome } from './opSender'
 
 const PENDING_DELETE_EXPIRY_MS = STALE_AFTER_MS
 
-/**
- * Local encoding of the three retention reasons; see ADR CRDT-WRITE-0035
- * for the policy each one implements.
- */
+/** A settled `delete_node`'s outcome, as this store needs it. */
+export type RetentionReason = 'confirmed-applied' | 'unknown'
+
+/** One node's settled delete, ready to register with {@link PendingDeleteRetentionStore.settleBatch}. */
+export interface RetainedDeleteCandidate {
+  workflowId: string
+  nodeId: string
+  reason: RetentionReason
+  /** The Yjs item identity captured at admission time, or null when none was captured. */
+  identity: string | null
+}
+
 type RetainedDelete =
   | { reason: 'confirmed-applied'; deletedItemId: string }
   | { reason: 'confirmed-applied-unidentified'; expiresAt: number }
   | { reason: 'unknown'; expiresAt: number; deletedItemId: string | null }
-
-type RetentionReason = 'confirmed-applied' | 'unknown'
 
 /** The captured identity `retained` names, or null when it carries none to compare against (bounded instead). */
 function deletedItemIdOf(retained: RetainedDelete): string | null {
@@ -47,10 +52,10 @@ function sameIdentityBucket(a: RetainedDelete, b: RetainedDelete): boolean {
  * The record to keep when both name the same identity bucket (verified by
  * the caller via {@link sameIdentityBucket}). A permanent record (an
  * identified `confirmed-applied`) always outranks a bounded one for the same
- * identity, since it is released only by a conflicting identity, never by
- * time. Between two bounded records for the same bucket, the one whose own
- * expiry is later - whichever intent's window is open longest - wins,
- * preserving the longer deadline.
+ * identity, since only {@link pruneWorkflowDeletes}'s own two release
+ * conditions ever drop it, never a sooner expiry. Between two bounded
+ * records for the same bucket, the one whose own expiry is later - whichever
+ * intent's window is open longest - wins, preserving the longer deadline.
  */
 function mergeSameIdentityDelete(
   existing: RetainedDelete,
@@ -100,39 +105,6 @@ function insertRetainedDelete(
   return kept
 }
 
-/** The retention reason a settled `delete_node` op's own outcome names, or `null` when it does not retain (skipped, undeliverable). */
-function retentionReason(
-  outcome: BatchOutcome,
-  opId: string
-): RetentionReason | null {
-  switch (outcome.state) {
-    case 'acknowledged':
-      return outcome.result.applied.includes(opId) ? 'confirmed-applied' : null
-    case 'unconfirmed':
-    case 'unacknowledged':
-      return 'unknown'
-    case 'undeliverable':
-      // The transport never carried this op within the retry budget (or no
-      // doc was ever bound to carry it), so the host never saw it: nothing
-      // to retain.
-      return null
-    default: {
-      // Exhaustiveness guard: a `BatchOutcome` variant not one of the cases
-      // above fails this assignment at compile time, forcing a retention
-      // policy choice for it here instead of silently falling through to
-      // "do not retain". Unreachable under a correctly typed caller.
-      const unhandled: never = outcome
-      reportError(
-        `Unhandled BatchOutcome state: ${JSON.stringify(unhandled)}`,
-        {
-          errorType: 'error_handling_unhandled_batch_outcome_state'
-        }
-      )
-      return null
-    }
-  }
-}
-
 function buildRetainedDelete(
   reason: RetentionReason,
   deletedItemId: string | null
@@ -151,39 +123,28 @@ function buildRetainedDelete(
       }
 }
 
-/** Every `delete_node` op in a settled batch that must keep suppressing its node, paired with the `RetainedDelete` record to store for it. */
-function retainedDeletesFromBatch(
-  outcome: BatchOutcome
-): Array<[nodeId: string, record: RetainedDelete]> {
-  const retained: Array<[string, RetainedDelete]> = []
-  for (const op of outcome.ops) {
-    if (op.op !== 'delete_node') continue
-    const reason = retentionReason(outcome, op.op_id)
-    if (!reason) continue
-    const deletedItemId = outcome.deletedItemIds.get(op.op_id) ?? null
-    retained.push([
-      String(op.node_id),
-      buildRetainedDelete(reason, deletedItemId)
-    ])
-  }
-  return retained
-}
-
 /**
  * Prunes one workflow's released retained deletes in place, dropping only
  * the specific records whose own identity is confirmed-superseded or whose
  * own expiry has passed - never a node id's whole record set on account of
  * just one of possibly several independent records for it (see
- * {@link insertRetainedDelete}).
+ * {@link insertRetainedDelete}). A record is released by either: (1) the
+ * document no longer containing the node at all, or (2) a different real
+ * identity now occupying its id. Condition (1) only applies when
+ * `docNodeIds` is itself `authoritative` - a transient read of a document
+ * that has not caught up yet (e.g. a just-reminted, still-empty replacement;
+ * see ADR CRDT-WRITE-0035) proves nothing, and must not drop a record that a
+ * later, authoritative read would still need.
  */
 function pruneWorkflowDeletes(
   deletes: Map<string, RetainedDelete[]>,
   docNodeIds: ReadonlySet<string>,
-  currentItemId: (nodeId: string) => string | null
+  currentItemId: (nodeId: string) => string | null,
+  authoritative: boolean
 ): void {
   const now = Date.now()
   for (const [id, records] of deletes) {
-    if (!docNodeIds.has(id)) {
+    if (authoritative && !docNodeIds.has(id)) {
       deletes.delete(id)
       continue
     }
@@ -207,13 +168,20 @@ function pruneWorkflowDeletes(
 }
 
 export interface PendingDeleteRetentionStore {
-  /** Registers a settled batch's delete_node outcomes, merging with any existing retention for the same node/item. */
-  settleBatch(outcome: BatchOutcome): void
-  /** Every node id in `workflowId` a lagging reconcile must not resurrect, pruned against the live doc first. */
+  /** Registers settled delete_node outcomes, merging with any existing retention for the same node/identity. */
+  settleBatch(candidates: readonly RetainedDeleteCandidate[]): void
+  /**
+   * Every node id in `workflowId` a lagging reconcile must not resurrect,
+   * pruned against `docNodeIds` first. `authoritative` must be false for a
+   * `docNodeIds` read from a document that has not caught up since its last
+   * replacement (see {@link pruneWorkflowDeletes}); passing true for such a
+   * read can permanently and incorrectly drop a still-needed retention.
+   */
   retainedNodeIds(
     workflowId: string,
     docNodeIds: ReadonlySet<string>,
-    currentItemId: (nodeId: string) => string | null
+    currentItemId: (nodeId: string) => string | null,
+    authoritative: boolean
   ): ReadonlySet<string>
   /** Drops one workflow's retained deletes (`doc_reset`). */
   clearWorkflow(workflowId: string): void
@@ -223,26 +191,24 @@ export function createPendingDeleteRetentionStore(): PendingDeleteRetentionStore
   const confirmedDeletes = new Map<string, Map<string, RetainedDelete[]>>()
 
   return {
-    settleBatch(outcome) {
-      if (outcome.workflowId === null) return
-      const workflowId = outcome.workflowId
-      const retained = retainedDeletesFromBatch(outcome)
-      if (retained.length === 0) return
-      let deletes = confirmedDeletes.get(workflowId)
-      if (!deletes) {
-        deletes = new Map()
-        confirmedDeletes.set(workflowId, deletes)
-      }
-      for (const [nodeId, record] of retained)
+    settleBatch(candidates) {
+      for (const candidate of candidates) {
+        let deletes = confirmedDeletes.get(candidate.workflowId)
+        if (!deletes) {
+          deletes = new Map()
+          confirmedDeletes.set(candidate.workflowId, deletes)
+        }
+        const record = buildRetainedDelete(candidate.reason, candidate.identity)
         deletes.set(
-          nodeId,
-          insertRetainedDelete(deletes.get(nodeId) ?? [], record)
+          candidate.nodeId,
+          insertRetainedDelete(deletes.get(candidate.nodeId) ?? [], record)
         )
+      }
     },
-    retainedNodeIds(workflowId, docNodeIds, currentItemId) {
+    retainedNodeIds(workflowId, docNodeIds, currentItemId, authoritative) {
       const deletes = confirmedDeletes.get(workflowId)
       if (!deletes) return new Set()
-      pruneWorkflowDeletes(deletes, docNodeIds, currentItemId)
+      pruneWorkflowDeletes(deletes, docNodeIds, currentItemId, authoritative)
       if (deletes.size === 0) {
         confirmedDeletes.delete(workflowId)
         return new Set()

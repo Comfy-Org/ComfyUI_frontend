@@ -1,147 +1,66 @@
 /**
  * Store-level coverage for the retention state machine (see
  * `useAgentCrdtFollower.test.ts` for the composable's own behavior through
- * the real coalescer/sender). Constructing `BatchOutcome`s directly here,
- * with each delete's captured identity already bound to its own `op_id`
- * (as `opSender.ts`'s `admit()` binds it), proves the retention logic at the
- * lowest level it can be observed, without needing a real Yjs doc, sender,
- * or coalescer.
+ * the real coalescer/sender). Constructing {@link RetainedDeleteCandidate}s
+ * directly here proves the retention logic at the lowest level it can be
+ * observed, without needing a real Yjs doc, sender, or coalescer.
+ *
+ * `retainedNodeIds()` prunes as a side effect of reading, so any assertion
+ * that queries with a DIFFERENT `currentItemId` than a previous assertion on
+ * the SAME store can release state that a later assertion then depends on
+ * for the wrong reason. Each such case below therefore gets its own fresh
+ * store, never reusing one a prior destructive read already touched.
  */
-import type { Op } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { BatchOutcome } from './opSender'
 import { createPendingDeleteRetentionStore } from './pendingDeleteRetentionStore'
+import type {
+  RetainedDeleteCandidate,
+  RetentionReason
+} from './pendingDeleteRetentionStore'
 
-const ACTOR = 'human:test-user:tab-1'
-
-function deleteOp(opId: string, nodeId: string): Op {
-  return {
-    op: 'delete_node',
-    op_id: opId,
-    node_id: nodeId,
-    removed_links: [],
-    actor: ACTOR,
-    base_version: 0,
-    stamp: [0, ACTOR]
-  }
-}
-
-function acknowledged(
+function del(
   workflowId: string,
-  ops: Op[],
-  applied: string[],
-  deletedItemIds: ReadonlyMap<string, string | null> = new Map()
-): BatchOutcome {
-  return {
-    workflowId,
-    state: 'acknowledged',
-    ops,
-    result: {
-      ok: true,
-      applied,
-      skipped: ops.map((op) => op.op_id).filter((id) => !applied.includes(id))
-    },
-    deletedItemIds
-  }
-}
-
-function unconfirmed(
-  workflowId: string,
-  ops: Op[],
-  deletedItemIds: ReadonlyMap<string, string | null> = new Map()
-): BatchOutcome {
-  return { workflowId, state: 'unconfirmed', ops, deletedItemIds }
+  nodeId: string,
+  reason: RetentionReason,
+  identity: string | null
+): RetainedDeleteCandidate {
+  return { workflowId, nodeId, reason, identity }
 }
 
 describe('createPendingDeleteRetentionStore', () => {
-  it('associates each delete with its OWN identity via its own op_id, not another delete of the same node', () => {
-    const store = createPendingDeleteRetentionStore()
-
-    // Node '1' is deleted as incarnation A, recreated, and deleted again as
-    // incarnation B - both ops settle in the same batch.
-    store.settleBatch(
-      acknowledged(
-        'wf-1',
-        [deleteOp('op-a', '1'), deleteOp('op-b', '1')],
-        ['op-a', 'op-b'],
-        new Map([
-          ['op-a', 'A'],
-          ['op-b', 'B']
-        ])
-      )
-    )
-
-    const docNodeIds = new Set(['1'])
-    // The later op's own identity (B) wins, not a mis-paired or null one.
-    expect(store.retainedNodeIds('wf-1', docNodeIds, () => 'B')).toEqual(
-      new Set(['1'])
-    )
-    expect(store.retainedNodeIds('wf-1', docNodeIds, () => 'A')).toEqual(
-      new Set()
-    )
-  })
-
   it('never retains a delete the host reports skipped, even though it consumed a wire slot', () => {
     const store = createPendingDeleteRetentionStore()
-
-    store.settleBatch(
-      acknowledged(
-        'wf-1',
-        [deleteOp('op-a', '1')],
-        [],
-        new Map([['op-a', 'A']])
-      )
-    )
-
-    expect(store.retainedNodeIds('wf-1', new Set(['1']), () => 'A')).toEqual(
-      new Set()
-    )
+    // A skipped delete never becomes a candidate in production (see
+    // useAgentCrdtFollower.ts's adapter); the store itself is never told
+    // about it, so there is nothing to retain.
+    expect(
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+    ).toEqual(new Set())
   })
 
   it('drops one workflow only', () => {
     const store = createPendingDeleteRetentionStore()
 
-    store.settleBatch(
-      acknowledged(
-        'wf-1',
-        [deleteOp('op-a', '1')],
-        ['op-a'],
-        new Map([['op-a', 'A']])
-      )
-    )
-    store.settleBatch(
-      acknowledged(
-        'wf-2',
-        [deleteOp('op-z', '9')],
-        ['op-z'],
-        new Map([['op-z', 'Z']])
-      )
-    )
+    store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
+    store.settleBatch([del('wf-2', '9', 'confirmed-applied', 'Z')])
 
     store.clearWorkflow('wf-1')
 
-    expect(store.retainedNodeIds('wf-1', new Set(['1']), () => 'A')).toEqual(
-      new Set()
-    )
-    expect(store.retainedNodeIds('wf-2', new Set(['9']), () => 'Z')).toEqual(
-      new Set(['9'])
-    )
+    expect(
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+    ).toEqual(new Set())
+    expect(
+      store.retainedNodeIds('wf-2', new Set(['9']), () => 'Z', true)
+    ).toEqual(new Set(['9']))
   })
 
-  it('ignores a batch settled without a workflow id', () => {
+  it('ignores an empty candidate list', () => {
     const store = createPendingDeleteRetentionStore()
-    expect(() =>
-      store.settleBatch({
-        workflowId: null,
-        state: 'undeliverable',
-        ops: [deleteOp('op-x', '1')],
-        deletedItemIds: new Map()
-      })
-    ).not.toThrow()
-    expect(store.retainedNodeIds('wf-1', new Set(['1']), () => null)).toEqual(
-      new Set()
-    )
+    expect(() => store.settleBatch([])).not.toThrow()
+    expect(
+      store.retainedNodeIds('wf-1', new Set(['1']), () => null, true)
+    ).toEqual(new Set())
   })
 
   it('a confirmed delete with no captured identity does not stay retained forever once a new item occupies the id', () => {
@@ -153,18 +72,11 @@ describe('createPendingDeleteRetentionStore', () => {
     vi.setSystemTime(0)
     const store = createPendingDeleteRetentionStore()
 
-    store.settleBatch(
-      acknowledged(
-        'wf-1',
-        [deleteOp('op-a', '1')],
-        ['op-a'],
-        new Map([['op-a', null]])
-      )
-    )
+    store.settleBatch([del('wf-1', '1', 'confirmed-applied', null)])
 
     // Still within the window: a lagging reconcile must not resurrect it.
     expect(
-      store.retainedNodeIds('wf-1', new Set(['1']), () => 'new-item')
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'new-item', true)
     ).toEqual(new Set(['1']))
 
     vi.advanceTimersByTime(24 * 60 * 60 * 1000)
@@ -173,7 +85,7 @@ describe('createPendingDeleteRetentionStore', () => {
     // identity-less retention has expired, so the new node is not
     // suppressed.
     expect(
-      store.retainedNodeIds('wf-1', new Set(['1']), () => 'new-item')
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'new-item', true)
     ).toEqual(new Set())
     vi.useRealTimers()
   })
@@ -183,14 +95,12 @@ describe('createPendingDeleteRetentionStore', () => {
     vi.setSystemTime(0)
     const store = createPendingDeleteRetentionStore()
 
-    store.settleBatch(
-      unconfirmed('wf-1', [deleteOp('op-a', '1')], new Map([['op-a', null]]))
-    )
+    store.settleBatch([del('wf-1', '1', 'unknown', null)])
 
     vi.advanceTimersByTime(24 * 60 * 60 * 1000)
 
     expect(
-      store.retainedNodeIds('wf-1', new Set(['1']), () => 'new-item')
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'new-item', true)
     ).toEqual(new Set())
     vi.useRealTimers()
   })
@@ -200,24 +110,17 @@ describe('createPendingDeleteRetentionStore', () => {
     vi.setSystemTime(0)
     const store = createPendingDeleteRetentionStore()
 
-    store.settleBatch(
-      acknowledged(
-        'wf-1',
-        [deleteOp('op-a', '1')],
-        ['op-a'],
-        new Map([['op-a', 'A']])
-      )
-    )
+    store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
 
     vi.advanceTimersByTime(24 * 60 * 60 * 1000)
 
     // Still no other identity at this id: stays retained, unbounded by time.
-    expect(store.retainedNodeIds('wf-1', new Set(['1']), () => 'A')).toEqual(
-      new Set(['1'])
-    )
+    expect(
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+    ).toEqual(new Set(['1']))
     // A different identity now occupies the id: released regardless of time.
     expect(
-      store.retainedNodeIds('wf-1', new Set(['1']), () => 'different')
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'different', true)
     ).toEqual(new Set())
     vi.useRealTimers()
   })
@@ -231,23 +134,16 @@ describe('createPendingDeleteRetentionStore', () => {
     // letting a lagging reconcile resurrect it.
     const store = createPendingDeleteRetentionStore()
 
-    store.settleBatch(
-      acknowledged(
-        'wf-1',
-        [deleteOp('op-a', '1')],
-        ['op-a'],
-        new Map([['op-a', 'A']])
-      )
-    )
+    store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
 
     // The doc still lists id '1' (it exists in some shape) but reading its
     // identity fails: retention must NOT be released.
-    expect(store.retainedNodeIds('wf-1', new Set(['1']), () => null)).toEqual(
-      new Set(['1'])
-    )
+    expect(
+      store.retainedNodeIds('wf-1', new Set(['1']), () => null, true)
+    ).toEqual(new Set(['1']))
     // A real, differing identity still releases it as before.
     expect(
-      store.retainedNodeIds('wf-1', new Set(['1']), () => 'different')
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'different', true)
     ).toEqual(new Set())
   })
 
@@ -263,92 +159,215 @@ describe('createPendingDeleteRetentionStore', () => {
     vi.setSystemTime(0)
     const store = createPendingDeleteRetentionStore()
 
-    store.settleBatch(
-      acknowledged(
-        'wf-1',
-        [deleteOp('op-a', '1')],
-        ['op-a'],
-        new Map([['op-a', null]])
-      )
-    )
+    store.settleBatch([del('wf-1', '1', 'confirmed-applied', null)])
 
     vi.setSystemTime(1000)
-    store.settleBatch(
-      unconfirmed('wf-1', [deleteOp('op-b', '1')], new Map([['op-b', 'B']]))
-    )
+    store.settleBatch([del('wf-1', '1', 'unknown', 'B')])
 
     // Just past the FIRST record's own (earlier) deadline (settled at t=0,
     // expiring at t=30_000): the merged record must still be retained,
     // because the second, later delete's own ambiguity window is still
     // open.
     vi.setSystemTime(30_000 + 1)
-    expect(store.retainedNodeIds('wf-1', new Set(['1']), () => 'B')).toEqual(
-      new Set(['1'])
-    )
+    expect(
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'B', true)
+    ).toEqual(new Set(['1']))
 
     // Past the SECOND record's own (later) deadline (settled at t=1_000,
     // expiring at t=31_000): now it expires.
     vi.setSystemTime(31_000 + 1)
-    expect(store.retainedNodeIds('wf-1', new Set(['1']), () => 'B')).toEqual(
-      new Set()
-    )
+    expect(
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'B', true)
+    ).toEqual(new Set())
     vi.useRealTimers()
   })
 
-  it.for([
-    ['permanent' as const, 'bounded' as const],
-    ['bounded' as const, 'permanent' as const]
-  ])(
-    'keeps a permanent identified record and an independent bounded unidentified record for the same node both alive, settled %s-then-%s',
-    ([first, second]) => {
-      // Regression: a permanent record (an identified `confirmed-applied`)
-      // must not replace an independently live bounded record for the same
-      // node id, and vice versa. Retain identity A permanently, and
-      // separately settle a later unidentified `unknown` delete (bounded
-      // expiry) for the SAME node id. While that bounded window is still
-      // open, a different, real identity B occupies the node - this must
-      // supersede only A's own permanent record (A can never reoccupy the
-      // node), never the still-open, independent bounded intent, which has
-      // no identity of its own to be superseded by anything.
-      vi.useFakeTimers()
-      vi.setSystemTime(0)
+  describe('two records for the same node id, settled in either order', () => {
+    it.for([['A', 'B'] as const, ['B', 'A'] as const])(
+      'keeps only the LATER of two settled deletes naming different real identities, settled %s-then-%s',
+      ([first, second]) => {
+        // Distinct real identities never share a bucket (see
+        // `insertRetainedDelete`): the later settle always drops the
+        // earlier one, regardless of which identity happens to be first or
+        // second alphabetically.
+        const store = createPendingDeleteRetentionStore()
+        store.settleBatch([del('wf-1', '1', 'confirmed-applied', first)])
+        store.settleBatch([del('wf-1', '1', 'confirmed-applied', second)])
+
+        expect(
+          store.retainedNodeIds('wf-1', new Set(['1']), () => second, true)
+        ).toEqual(new Set(['1']))
+      }
+    )
+
+    it.for([
+      ['permanent', 'bounded'] as const,
+      ['bounded', 'permanent'] as const
+    ])(
+      'keeps a permanent identified record and an independent bounded unidentified record for the same node both alive, settled %s-then-%s',
+      ([first, second]) => {
+        // Regression: a permanent record (an identified `confirmed-applied`)
+        // must not replace an independently live bounded record for the
+        // same node id, and vice versa - they name different identity
+        // buckets (a real one vs none) and never merge.
+        vi.useFakeTimers()
+        vi.setSystemTime(0)
+        const settle = {
+          permanent: (
+            store: ReturnType<typeof createPendingDeleteRetentionStore>
+          ) => store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')]),
+          bounded: (
+            store: ReturnType<typeof createPendingDeleteRetentionStore>
+          ) => store.settleBatch([del('wf-1', '1', 'unknown', null)])
+        }
+
+        // Fresh store per assertion below: `retainedNodeIds` prunes on
+        // read, so reusing one store across a same-identity and a
+        // different-identity query would let the first query's prune hide
+        // whether the SECOND query's record was ever independently there.
+        const withBothSettled = () => {
+          const store = createPendingDeleteRetentionStore()
+          settle[first](store)
+          settle[second](store)
+          return store
+        }
+
+        // A different, real identity (B) supersedes only the permanent
+        // record; the unidentified bounded one has no identity to be
+        // superseded by, so it alone keeps the node suppressed.
+        expect(
+          withBothSettled().retainedNodeIds(
+            'wf-1',
+            new Set(['1']),
+            () => 'B',
+            true
+          )
+        ).toEqual(new Set(['1']))
+
+        // Querying with the PERMANENT record's OWN identity (A, not a
+        // different one) independently proves it is still there on its own
+        // terms, even once the unidentified bounded record's 30s window has
+        // separately expired.
+        const store = withBothSettled()
+        vi.setSystemTime(30_000 + 1)
+        expect(
+          store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+        ).toEqual(new Set(['1']))
+        vi.useRealTimers()
+      }
+    )
+
+    it.for([
+      ['unidentified', 'identified-bounded'] as const,
+      ['identified-bounded', 'unidentified'] as const
+    ])(
+      'keeps an unidentified bounded record and a DIFFERENT-identity bounded record for the same node both alive, settled %s-then-%s',
+      ([first, second]) => {
+        // Neither name the same bucket (null vs a real identity) and
+        // neither is permanent: both are independent, time-bounded records
+        // that must each survive on their own terms.
+        vi.useFakeTimers()
+        vi.setSystemTime(0)
+        const settle = {
+          unidentified: (
+            store: ReturnType<typeof createPendingDeleteRetentionStore>
+          ) => store.settleBatch([del('wf-1', '1', 'unknown', null)]),
+          'identified-bounded': (
+            store: ReturnType<typeof createPendingDeleteRetentionStore>
+          ) => store.settleBatch([del('wf-1', '1', 'unknown', 'C')])
+        }
+        const store = createPendingDeleteRetentionStore()
+        settle[first](store)
+        settle[second](store)
+
+        // C's own identity does not supersede the unidentified record
+        // (nothing can), and C's own record is not superseded by itself:
+        // both keep the node suppressed until they individually expire.
+        expect(
+          store.retainedNodeIds('wf-1', new Set(['1']), () => 'C', true)
+        ).toEqual(new Set(['1']))
+
+        vi.advanceTimersByTime(30_000 + 1)
+        expect(
+          store.retainedNodeIds('wf-1', new Set(['1']), () => 'C', true)
+        ).toEqual(new Set())
+        vi.useRealTimers()
+      }
+    )
+
+    it.for([
+      ['permanent', 'bounded-same-identity'] as const,
+      ['bounded-same-identity', 'permanent'] as const
+    ])(
+      'merges a permanent record and a bounded record naming the SAME identity into one permanent record, settled %s-then-%s',
+      ([first, second]) => {
+        // Both name identity A, the same bucket, so they merge (see
+        // `mergeSameIdentityDelete`); the permanent one has no expiry and
+        // always wins the merge, regardless of settlement order.
+        vi.useFakeTimers()
+        vi.setSystemTime(0)
+        const settle = {
+          permanent: (
+            store: ReturnType<typeof createPendingDeleteRetentionStore>
+          ) => store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')]),
+          'bounded-same-identity': (
+            store: ReturnType<typeof createPendingDeleteRetentionStore>
+          ) => store.settleBatch([del('wf-1', '1', 'unknown', 'A')])
+        }
+        const store = createPendingDeleteRetentionStore()
+        settle[first](store)
+        settle[second](store)
+
+        // Long past what the bounded record's own 30s window would have
+        // been: the merged record is still retained, because it merged
+        // into the permanent one, not the bounded one.
+        vi.advanceTimersByTime(24 * 60 * 60 * 1000)
+        expect(
+          store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+        ).toEqual(new Set(['1']))
+        vi.useRealTimers()
+      }
+    )
+  })
+
+  describe('a transient, not-yet-caught-up document read', () => {
+    it('does not let an empty replacement read permanently prune a retained delete that a later, authoritative read still needs', () => {
+      // Regression (P1): on an ordinary workflow switch, the follower's doc
+      // is reminted empty and `follower_replaced` fires before the
+      // destination's own catch-up frame arrives. A `retainedNodeIds` read
+      // taken inside that window used to treat the empty doc as proof the
+      // node was gone and pruned it for good, so the first (possibly
+      // stale) authoritative frame that arrived afterward - still showing
+      // the deleted incarnation, since the host had not caught up either -
+      // resurrected it.
       const store = createPendingDeleteRetentionStore()
+      store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
 
-      const permanent = () =>
-        store.settleBatch(
-          acknowledged(
-            'wf-1',
-            [deleteOp('op-a', '1')],
-            ['op-a'],
-            new Map([['op-a', 'A']])
-          )
-        )
-      const bounded = () =>
-        store.settleBatch(
-          unconfirmed(
-            'wf-1',
-            [deleteOp('op-b', '1')],
-            new Map([['op-b', null]])
-          )
-        )
-      const settle = { permanent, bounded }
-      settle[first]()
-      settle[second]()
+      // The remint-before-catchup window: an empty doc, not authoritative.
+      expect(
+        store.retainedNodeIds('wf-1', new Set(), () => null, false)
+      ).toEqual(new Set(['1']))
 
-      // Identity B now occupies the node - a real, different identity from
-      // A's permanent record, but the bounded record names no identity at
-      // all, so it cannot be ruled superseded by B and must keep
-      // suppressing the node until its own expiry.
-      expect(store.retainedNodeIds('wf-1', new Set(['1']), () => 'B')).toEqual(
-        new Set(['1'])
-      )
+      // The first real frame lands, authoritative, but still stale (the
+      // host has not applied the delete yet, so it still shows identity A):
+      // retention must still hold.
+      expect(
+        store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+      ).toEqual(new Set(['1']))
+    })
 
-      // Past the bounded record's own 30s deadline: now nothing retains it.
-      vi.setSystemTime(30_000 + 1)
-      expect(store.retainedNodeIds('wf-1', new Set(['1']), () => 'B')).toEqual(
-        new Set()
-      )
-      vi.useRealTimers()
-    }
-  )
+    it('still releases once an authoritative read shows the node truly gone', () => {
+      const store = createPendingDeleteRetentionStore()
+      store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
+
+      expect(
+        store.retainedNodeIds('wf-1', new Set(), () => null, false)
+      ).toEqual(new Set(['1']))
+
+      // The host's real, caught-up state has removed the node entirely.
+      expect(
+        store.retainedNodeIds('wf-1', new Set(), () => null, true)
+      ).toEqual(new Set())
+    })
+  })
 })
