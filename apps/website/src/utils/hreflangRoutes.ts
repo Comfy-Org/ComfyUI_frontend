@@ -10,12 +10,7 @@
 
 import { LOCALE_PREFIXES, LOCALES } from '../config/locales'
 
-/** The value the marketing site publishes for Simplified Chinese. */
-export const ZH_HREFLANG = LOCALES['zh-CN'].hreflang
 export const ZH_PREFIX = LOCALES['zh-CN'].prefix
-
-export const JA_HREFLANG = LOCALES.ja.hreflang
-export const JA_PREFIX = LOCALES.ja.prefix
 
 /**
  * `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory.
@@ -51,9 +46,4 @@ export function unprefixed(pathname: string): string {
     }
   }
   return pathname.endsWith('/') ? pathname : `${pathname}/`
-}
-
-/** The URL of `path` in a locale, given that locale's prefix. */
-export function localizedHref(prefix: string, path: string): string {
-  return `${prefix}${path}`
 }

@@ -145,8 +145,12 @@ describe('og locale', () => {
 })
 
 describe('ogLocaleAlternate', () => {
-  const alt = (...codes: Alternate['hreflang'][]): Alternate[] =>
-    codes.map((hreflang) => ({ hreflang, href: 'https://comfy.org/x/' }))
+  function alt(...codes: Alternate['hreflang'][]): Alternate[] {
+    return codes.map((hreflang) => ({
+      hreflang,
+      href: 'https://comfy.org/x/'
+    }))
+  }
 
   it('names the Chinese twin when the page has one', () => {
     expect(ogLocaleAlternate('en', alt('en', 'zh-CN', 'x-default'))).toBe(

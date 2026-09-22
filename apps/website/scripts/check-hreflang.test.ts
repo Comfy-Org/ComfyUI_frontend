@@ -7,28 +7,48 @@ import { expect, it, onTestFinished } from 'vitest'
 
 const script = join(import.meta.dirname, 'check-hreflang.ts')
 const loader = createRequire(import.meta.url).resolve('tsx')
-const routes = ['/about/', '/zh-CN/about/', '/ja/about/']
-const alternates = [
-  ['en', routes[0]],
-  ['zh-CN', routes[1]],
-  ['ja', routes[2]],
-  ['x-default', routes[0]]
-]
-
 it.for([
-  ['https://comfy.org/ja/about/', 0, 'every cluster is reciprocal'],
-  ['https://other.example/ja/about/', 1, '/ja/about/: canonical must be'],
   [
+    '/about/',
+    '/ja/about/',
+    'https://comfy.org/ja/about/',
+    0,
+    'every cluster is reciprocal'
+  ],
+  [
+    '/about/',
+    '/ja/about/',
+    'https://other.example/ja/about/',
+    1,
+    '/ja/about/: canonical must be'
+  ],
+  [
+    '/about/',
+    '/ja/about/',
     'https://comfy.org/ja/about/?preview=true',
     1,
     '/ja/about/: canonical must be'
   ],
-  ['https://comfy.org/ja/about/#section', 1, '/ja/about/: canonical must be']
+  [
+    '/about/',
+    '/ja/about/',
+    'https://comfy.org/ja/about/#section',
+    1,
+    '/ja/about/: canonical must be'
+  ],
+  ['/', '/', 'https://other.example/', 1, '/: canonical must be']
 ] as const)(
-  'audits the complete Japanese canonical %s',
-  async ([canonical, status, diagnostic]) => {
+  'audits the complete canonical %s for %s on %s',
+  async ([path, canonicalRoute, canonical, status, diagnostic]) => {
     const directory = await mkdtemp(join(tmpdir(), 'hreflang-canonical-'))
     onTestFinished(() => rm(directory, { recursive: true, force: true }))
+    const routes = [path, `/zh-CN${path}`, `/ja${path}`]
+    const alternates = [
+      ['en', routes[0]],
+      ['zh-CN', routes[1]],
+      ['ja', routes[2]],
+      ['x-default', routes[0]]
+    ]
     const links = alternates
       .map(
         ([locale, route]) =>
@@ -41,7 +61,7 @@ it.for([
         await mkdir(target, { recursive: true })
         await writeFile(
           join(target, 'index.html'),
-          `<link rel="canonical" href="${route === '/ja/about/' ? canonical : `https://comfy.org${route}`}">${links}`
+          `<link rel="canonical" href="${route === canonicalRoute ? canonical : `https://comfy.org${route}`}">${links}`
         )
       })
     )

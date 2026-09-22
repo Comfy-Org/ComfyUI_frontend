@@ -7,14 +7,8 @@
  */
 import type { Alternate } from './hreflangRoutes'
 
-import {
-  JA_HREFLANG,
-  JA_PREFIX,
-  localizedHref,
-  unprefixed,
-  ZH_HREFLANG,
-  ZH_PREFIX
-} from './hreflangRoutes'
+import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
+import { unprefixed } from './hreflangRoutes'
 
 export interface BuiltSite {
   /** Every built route, mapped to the alternates its HTML emits. */
@@ -34,8 +28,7 @@ export interface BuiltSite {
 /**
  * The exact locale-to-URL mapping a clustered route must emit.
  *
- * Derived from the same prefix rule the pages and the sitemap use, so there is
- * one definition of what the Chinese twin of a URL is.
+ * Publication is determined by the pages that were actually built.
  */
 function expectedAlternates(
   route: string,
@@ -43,18 +36,14 @@ function expectedAlternates(
   pages: ReadonlyMap<string, Alternate[]>
 ): Map<string, string> {
   const path = unprefixed(route)
-  const english = `${origin}${path}`
-  const chinese = `${origin}${localizedHref(ZH_PREFIX, path)}`
-  const japaneseRoute = localizedHref(JA_PREFIX, path)
-
-  const expected = new Map([
-    ['en', english],
-    [ZH_HREFLANG, chinese]
-  ])
-  if (pages.has(japaneseRoute)) {
-    expected.set(JA_HREFLANG, `${origin}${japaneseRoute}`)
-  }
-  expected.set('x-default', english)
+  const expected = new Map<string, string>(
+    LOCALE_CODES.filter((locale) => pages.has(`${LOCALES[locale].prefix}${path}`))
+      .map((locale): [string, string] => [
+        LOCALES[locale].hreflang,
+        `${origin}${LOCALES[locale].prefix}${path}`
+      ])
+  )
+  expected.set('x-default', `${origin}${LOCALES[DEFAULT_LOCALE].prefix}${path}`)
   return expected
 }
 
@@ -87,8 +76,7 @@ function clusterErrors(
     // Checking only that the expected pairs are present accepts extras beside
     // them. A locale this site does not publish still resolves and can still be
     // reciprocal, so nothing downstream catches it. The set stays closed: `ja`
-    // is admitted above only for a route whose Japanese page was actually
-    // built, so a cluster naming `ja` on any other route is still rejected.
+    // is admitted above only for a route whose page was actually built.
     if (!expected.has(hreflang)) {
       errors.push(
         `${route}: ${source} declares hreflang="${hreflang}", which is not one of ${[...expected.keys()].join(', ')}`
