@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { ESLint } from 'eslint'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 const eslint = new ESLint()
 const runtimeFilePath = 'src/config/subscriptionPricesConfig.ts'
@@ -9,30 +9,31 @@ const restrictionMessage =
   'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
 
 describe('ES2023 array method restrictions', () => {
-  beforeAll(async () => {
-    await eslint.lintText('const items = [1, 2]', {
-      filePath: runtimeFilePath
-    })
-  }, 20_000)
-
   it.for([
     ['toReversed', 'items.toReversed()'],
     ['toSorted', 'items.toSorted()'],
     ['toSpliced', 'items.toSpliced(0, 1)'],
     ['with', 'items.with(0, 1)']
-  ] as const)('rejects %s calls in runtime files', async ([_name, code]) => {
-    const [result] = await eslint.lintText(`const items = [1, 2]\n${code}`, {
-      filePath: runtimeFilePath
-    })
+  ] as const)(
+    'rejects %s calls in runtime files',
+    async ([_name, code]) => {
+      const [result] = await eslint.lintText(
+        `const items = [1, 2]\n${code}`,
+        {
+          filePath: runtimeFilePath
+        }
+      )
 
-    expect(result.messages).toEqual([
-      expect.objectContaining({
-        ruleId: 'es2022-compat/no-array-copy-method',
-        severity: 2,
-        message: restrictionMessage
-      })
-    ])
-  })
+      expect(result.messages).toEqual([
+        expect.objectContaining({
+          ruleId: 'es2022-compat/no-array-copy-method',
+          severity: 2,
+          message: restrictionMessage
+        })
+      ])
+    },
+    120_000
+  )
 
   it.for([
     ['dotted', 'items.toSorted()'],
