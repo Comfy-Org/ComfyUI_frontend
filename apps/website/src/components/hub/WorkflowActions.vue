@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ChevronRight } from '@lucide/vue'
+import { ArrowUpRight, BookOpen, Cloud, Download } from '@lucide/vue'
+import type { Component } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -20,6 +21,7 @@ const {
 interface Route {
   readonly id: string
   readonly href: string
+  readonly icon: Component
   readonly label: TranslationKey
   readonly note: TranslationKey
   readonly download?: boolean
@@ -34,6 +36,7 @@ const routes: readonly Route[] = [
   {
     id: 'workflow-open-cloud',
     href: cloudUrl,
+    icon: Cloud,
     label: 'workshop.v2.workflow.openCloud',
     note: 'workshop.v2.workflow.openCloudNote',
     external: true
@@ -41,6 +44,7 @@ const routes: readonly Route[] = [
   {
     id: 'workflow-download',
     href: downloadUrl,
+    icon: Download,
     label: 'workshop.v2.workflow.download',
     note: 'workshop.v2.workflow.downloadNote',
     download: true
@@ -50,6 +54,7 @@ const routes: readonly Route[] = [
         {
           id: 'workflow-tutorial',
           href: tutorialUrl,
+          icon: BookOpen,
           label: 'workshop.v2.workflow.tutorial',
           note: 'workshop.v2.workflow.tutorialNote',
           external: true
@@ -60,7 +65,7 @@ const routes: readonly Route[] = [
 </script>
 
 <template>
-  <ul class="flex flex-col gap-2" data-testid="workflow-actions">
+  <ul class="grid gap-3 sm:grid-cols-2" data-testid="workflow-actions">
     <li v-for="route in routes" :key="route.id">
       <a
         :href="route.href"
@@ -68,21 +73,26 @@ const routes: readonly Route[] = [
         :target="route.external ? '_blank' : undefined"
         :rel="route.external ? 'noopener' : undefined"
         :data-testid="route.id"
-        class="group flex items-center gap-4 rounded-2xl border border-transparency-white-t8 px-5 py-4 transition-colors outline-none hover:border-transparency-white-t20 hover:bg-transparency-white-t4 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        class="group flex h-full flex-col gap-3 rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 p-5 transition-colors outline-none hover:border-primary-comfy-yellow hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
       >
-        <span class="min-w-0 flex-1">
+        <span class="flex items-center gap-3">
+          <component
+            :is="route.icon"
+            class="size-5 shrink-0 text-primary-comfy-yellow"
+            aria-hidden="true"
+          />
           <span
-            class="block text-sm font-bold tracking-wider text-primary-warm-white uppercase"
+            class="min-w-0 flex-1 text-sm font-bold tracking-wider text-primary-warm-white uppercase"
           >
             {{ t(route.label, locale) }}
           </span>
-          <span class="mt-1 block text-sm text-content-muted">
-            {{ t(route.note, locale) }}
-          </span>
+          <ArrowUpRight
+            class="size-4 shrink-0 text-primary-warm-gray transition-colors group-hover:text-primary-comfy-yellow"
+          />
         </span>
-        <ChevronRight
-          class="size-5 shrink-0 text-primary-warm-gray transition-colors group-hover:text-primary-comfy-yellow"
-        />
+        <span class="text-sm text-content-muted">
+          {{ t(route.note, locale) }}
+        </span>
       </a>
     </li>
   </ul>

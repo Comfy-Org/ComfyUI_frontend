@@ -108,27 +108,32 @@ const pill =
       client:load
     />
 
-    <header class="mb-10 flex flex-col gap-4">
-      <ul class="flex flex-wrap items-center gap-2" data-testid="workflow-kind">
-        {pills.map((label) => <li><span class={pill}>{label}</span></li>)}
-        {price && <li>
-          <span class={pill} data-testid="workflow-price">
-            {price}
-          </span>
-        </li>}
-      </ul>
+    <header class="mb-12 flex flex-col gap-3">
       <h1
         class="max-w-3xl text-3xl font-bold text-primary-comfy-canvas lg:text-5xl"
       >
         {title}
       </h1>
-      <p class="text-sm text-content-secondary" data-testid="workflow-author">
-        {t('workshop.workflow.by').replace('{author}', author)}
-      </p>
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <ul
+          class="flex flex-wrap items-center gap-2"
+          data-testid="workflow-kind"
+        >
+          {pills.map((label) => <li><span class={pill}>{label}</span></li>)}
+          {price && <li>
+            <span class={pill} data-testid="workflow-price">
+              {price}
+            </span>
+          </li>}
+        </ul>
+        <p class="text-sm text-content-secondary" data-testid="workflow-author">
+          {t('workshop.workflow.by').replace('{author}', author)}
+        </p>
+      </div>
     </header>
 
     {runnable ? (
-      <section id="api" data-testid="workflow-run-section">
+      <section id="api" class="mb-16" data-testid="workflow-run-section">
         <WorkflowRun
           model={runnable}
           graphUrl={page.downloadUrl}
@@ -146,7 +151,7 @@ const pill =
         />
       </section>
     ) : (
-      <div class="grid gap-10 lg:grid-cols-12">
+      <div class="mb-16 grid gap-10 lg:grid-cols-12">
         {template.thumbnails[0] && (
           <img
             src={template.thumbnails[0]}
@@ -166,9 +171,7 @@ const pill =
       </div>
     )}
 
-    {relatedViews.length > 0 && <section
-      class="mt-24 border-t border-transparency-white-t8 pt-12"
-    >
+    {relatedViews.length > 0 && <section data-testid="workflow-related">
       <h2 class={sectionTitle}>{t('workshop.v2.workflow.related')}</h2>
       <ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {relatedViews.map((view) => <li>
