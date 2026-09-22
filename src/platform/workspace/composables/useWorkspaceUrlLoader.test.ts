@@ -165,6 +165,31 @@ describe('useWorkspaceUrlLoader', () => {
     })
   })
 
+  it('treats a repeated param as invalid even when the preserved stash holds a single value', async () => {
+    // mergePreservedQueryIntoQuery collapses an array-valued live key to its
+    // stashed single string by design (for namespaces that only ever hold
+    // one value, like ?template=); consulting it here would silently turn
+    // this invalid, repeated link into a valid switch to workspace-2.
+    mockRouteQuery.value = fromAny<Record<string, string>, unknown>({
+      workspace: ['workspace-2', 'workspace-1']
+    })
+    preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
+      workspace: 'workspace-2'
+    })
+
+    const { loadWorkspaceFromUrl } = useWorkspaceUrlLoader()
+    await loadWorkspaceFromUrl()
+
+    expect(
+      preservedQueryMocks.mergePreservedQueryIntoQuery
+    ).not.toHaveBeenCalled()
+    expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
+    expect(useToastStore().add).toHaveBeenCalledWith({
+      severity: 'info',
+      summary: "Couldn't open that workspace. You're still in Home Base."
+    })
+  })
+
   it('is a silent no-op when the link already names the active workspace', async () => {
     mockRouteQuery.value = { workspace: 'workspace-1' }
 
