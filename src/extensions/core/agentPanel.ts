@@ -56,13 +56,15 @@ let registered = false
  * matching completion (`afterConfigureGraph` or `onGraphLoadError`, in
  * either order) decrements it and closes the suppression only once the
  * count is back at 0, i.e. once every overlapping load that opened it has
- * also finished. `app.ts`'s `loadGraphData` mirrors this: every path that
- * can end a load before `rootGraph.configure` (a malformed subgraph
- * definition, a `beforeConfigureGraph` extension hook throwing, or a
- * node-replacement load failure) also routes through `onGraphLoadError`, so
- * this counter's decrement is never skipped. A leaked-open suppression
- * would misread every later context-less user edit as structural and never
- * mark it dirty again.
+ * also finished. `app.ts`'s `loadGraphData` mirrors this: a single try
+ * wraps its entire body from right after `beforeLoadGraph` through
+ * `rootGraph.configure` succeeding (asset-scan resets, `clean()`, workflow
+ * cloning, `validateWorkflow`, reroute-migration inspection, subgraph
+ * loading, a `beforeConfigureGraph` extension hook throwing, or a
+ * node-replacement load failure), so every one of those paths also routes
+ * through `onGraphLoadError` and this counter's decrement is never skipped.
+ * A leaked-open suppression would misread every later context-less user
+ * edit as structural and never mark it dirty again.
  */
 let widgetDirtySuppressionDepth = 0
 
