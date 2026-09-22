@@ -578,12 +578,16 @@ describe('useAgentConversationStore', () => {
     ])
   })
 
-  it('suppresses a paywall recorded after funds are already available', () => {
+  it('shows a later paywall after resolving an earlier one', () => {
     const store = useAgentConversationStore()
+    store.recordPaywall(T1, 'subscribe')
     store.setPaywallsResolved(true)
 
-    store.recordPaywall(T1, 'continue')
+    store.recordPaywall(T2, 'continue')
 
     expect(store.messages[0].parts).toEqual([])
+    expect(store.messages[1].parts).toEqual([
+      { type: 'paywall', message: undefined }
+    ])
   })
 })

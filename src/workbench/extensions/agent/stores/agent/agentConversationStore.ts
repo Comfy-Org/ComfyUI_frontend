@@ -47,8 +47,6 @@ export const useAgentConversationStore = defineStore(
     const userTags = ref(new Map<TurnId, string[]>())
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
     const latestWorkflowId = ref<string>()
-    let paywallsResolved = false
-
     let transport: AgentEventTransport | null = null
     let liveMessage: AssistantMessage | null = null
     const backgroundTurns = new Map<string, BackgroundTurn>()
@@ -111,7 +109,6 @@ export const useAgentConversationStore = defineStore(
       message?: string
     ): void {
       recordSettledReply(turnId, text, [{ type: 'paywall', message }])
-      if (paywallsResolved) resolvePaywalls()
     }
 
     function resolvePaywalls(): void {
@@ -124,7 +121,6 @@ export const useAgentConversationStore = defineStore(
     }
 
     function setPaywallsResolved(resolved: boolean): void {
-      paywallsResolved = resolved
       if (resolved) resolvePaywalls()
     }
 
