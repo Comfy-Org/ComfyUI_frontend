@@ -1,4 +1,8 @@
-import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
+import type {
+  AgentPostMessageRequest,
+  UploadImageResponse
+} from '@comfyorg/ingest-types'
+import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
 import { api } from '@/scripts/api'
@@ -11,8 +15,7 @@ import {
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
-  zCloudWorkflowIndex,
-  zUploadImageResult
+  zCloudWorkflowIndex
 } from '../../schemas/agentApiSchema'
 import type {
   AgentAnswerAccepted,
@@ -21,8 +24,7 @@ import type {
   AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
-  CloudWorkflowEntry,
-  UploadImageResult
+  CloudWorkflowEntry
 } from '../../schemas/agentApiSchema'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
@@ -325,7 +327,7 @@ export function createAgentRestClient() {
 
   async function request<T>(
     route: string,
-    init: RequestInit,
+    init: Parameters<typeof api.fetchApi>[1],
     schema: z.ZodType<T>
   ): Promise<T> {
     const response = await api.fetchApi(route, init)
@@ -450,14 +452,20 @@ export function createAgentRestClient() {
 
   async function uploadImage(
     image: Blob,
-    filename: string
-  ): Promise<UploadImageResult> {
+    filename: string,
+    signal?: AbortSignal
+  ): Promise<UploadImageResponse> {
     const form = new FormData()
     form.append('image', image, filename)
     return request(
       '/upload/image',
-      { method: 'POST', body: form },
-      zUploadImageResult
+      {
+        method: 'POST',
+        body: form,
+        signal,
+        timeoutMs: signal ? null : undefined
+      },
+      zUploadImageResponse
     )
   }
 
