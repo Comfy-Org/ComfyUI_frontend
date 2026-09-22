@@ -125,7 +125,19 @@ describe('browser test global setup', () => {
     )
   })
 
-  it('normalizes a trailing slash in the setup API URL', async () => {
+  it.for([
+    {
+      name: 'a trailing slash',
+      apiUrl: 'http://localhost:8188/',
+      endpoint: 'http://localhost:8188/api/devtools/fake_model.safetensors'
+    },
+    {
+      name: 'a path prefix',
+      apiUrl: 'http://localhost:8188/comfy',
+      endpoint:
+        'http://localhost:8188/comfy/api/devtools/fake_model.safetensors'
+    }
+  ])('preserves $name in the setup API URL', async ({ apiUrl, endpoint }) => {
     const fetchRequest = vi.fn<typeof fetch>(() =>
       Promise.resolve(response(200))
     )
@@ -133,16 +145,13 @@ describe('browser test global setup', () => {
     await runGlobalSetup({
       env: {
         CI: '1',
-        PLAYWRIGHT_SETUP_API_URL: 'http://localhost:8188/'
+        PLAYWRIGHT_SETUP_API_URL: apiUrl
       },
       fetch: fetchRequest,
       backup: vi.fn()
     })
 
-    expect(fetchRequest).toHaveBeenCalledWith(
-      'http://localhost:8188/api/devtools/fake_model.safetensors',
-      expect.any(Object)
-    )
+    expect(fetchRequest).toHaveBeenCalledWith(endpoint, expect.any(Object))
   })
 
   it('honors an explicit local setup API despite a remote Vite backend', async () => {
