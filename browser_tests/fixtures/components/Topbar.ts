@@ -59,10 +59,14 @@ export class Topbar {
     return classes ? !classes.includes('invisible') : false
   }
 
+  getWorkflowTabLabel(tabName: string): Locator {
+    return this.page.locator(
+      `.workflow-tabs .workflow-label:has-text("${tabName}")`
+    )
+  }
+
   getWorkflowTab(tabName: string): Locator {
-    return this.page
-      .locator(`.workflow-tabs .workflow-label:has-text("${tabName}")`)
-      .locator('..')
+    return this.getWorkflowTabLabel(tabName).locator('..')
   }
 
   getTab(index: number): Locator {

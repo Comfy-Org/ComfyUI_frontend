@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Extrae el valor de una clave del primer objeto JSON válido del texto, incluidos los bloques de código Markdown.",
     "display_name": "Extraer cadena de JSON",
     "inputs": {
       "json_string": {
@@ -13234,6 +13235,10 @@
       "ultra_mode": {
         "name": "modo ultra",
         "tooltip": "Ejecuta una pasada de refinamiento adicional para obtener una geometría de mayor fidelidad con detalles de superficie más finos."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Resolución de la pasada ultra: 2k la ejecuta a 2048³ y 4k a 4096³ para obtener el máximo detalle de superficie. 4k requiere meshy-7.1 o una versión posterior. Se usa solo cuando ultra_mode está activado."
       }
     },
     "outputs": {
@@ -13300,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "modo de simetría"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Ejecuta una pasada de refinamiento adicional a 2048³ para obtener una geometría de mayor fidelidad con detalles de superficie más finos."
       }
     },
     "outputs": {
@@ -13441,6 +13450,10 @@
       "ultra_mode": {
         "name": "modo ultra",
         "tooltip": "Ejecuta una pasada de refinamiento adicional para obtener una geometría de mayor fidelidad con detalles de superficie más finos."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Resolución de la pasada ultra: 2k la ejecuta a 2048³ y 4k a 4096³ para obtener el máximo detalle de superficie. 4k requiere meshy-7.1 o una versión posterior. Se usa solo cuando ultra_mode está activado."
       }
     },
     "outputs": {
@@ -18399,6 +18412,28 @@
       "seed": {
         "name": "semilla",
         "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "Permite configurar el dispositivo y la cuantización de la caché KV; de forma predeterminada, el modelo usa la opción auto. La cuantización puede acelerar los flujos de edición cuando falta memoria.",
+    "display_name": "Caché de Qwen Image 2.1",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto usa la VRAM disponible y luego la RAM. cpu (RAM) se precarga durante el cálculo y apenas reduce la velocidad. off recalcula el prefijo en cada paso, lo que es más lento, pero es la única forma de descartar la caché."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Precisión de almacenamiento. default no tiene pérdidas. int8 reduce la caché a la mitad con una precisión aproximada a bf16; int4 la reduce a una cuarta parte, pero aproximadamente duplica el error por paso."
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -23761,6 +23796,45 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "TextEncodeQwenImage21": {
+    "display_name": "Codificación de texto Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Imágenes de referencia, vistas por el codificador de texto e insertadas en la secuencia como latentes VAE."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Las imágenes de referencia se redimensionan a aproximadamente resolution x resolution píxeles, en múltiplos de 32 y conservando la relación de aspecto. 0 mantiene cada referencia con su propio tamaño, redondeado a un múltiplo de 32."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latente",
+        "tooltip": "Latente vacío con el tamaño de la primera imagen de referencia, para coincidir con el muestreo, ya que cualquier otro tamaño desplaza la edición."
       }
     }
   },

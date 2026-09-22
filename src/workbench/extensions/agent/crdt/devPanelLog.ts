@@ -31,6 +31,7 @@ export type DevEventKind =
   | 'schema_error'
   | 'reconnected'
   | 'subscribe_retry'
+  | 'subscribe_ack_timeout'
   | 'doc_nodes_changed'
   | 'rebind'
   | 'stale_probe'

@@ -225,6 +225,32 @@ describe('postMessage wire body', () => {
       draft: { version: 4 }
     })
   })
+
+  it('serializes currentTabUnbound as snake_case current_tab_unbound', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'add a text input node',
+      currentTabUnbound: true,
+      draft: { content: { nodes: [{ id: 1, type: 'TextInput' }], links: [] } }
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'add a text input node',
+      current_tab_unbound: true,
+      draft: { content: { nodes: [{ id: 1, type: 'TextInput' }], links: [] } }
+    })
+  })
+
+  it('omits current_tab_unbound when not provided', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', { content: 'just text' })
+
+    const parsed = JSON.parse(lastCall().init.body as string) as Record<
+      string,
+      unknown
+    >
+    expect(parsed).not.toHaveProperty('current_tab_unbound')
+  })
 })
 
 describe('uploadImage multipart', () => {

@@ -35,6 +35,7 @@ setupInlinePromptEditorDom()
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -120,6 +121,7 @@ const appMock = vi.hoisted(() => {
     loadGraphData: vi.fn(),
     graph,
     rootGraph: graph,
+    isGraphReady: false,
     canvas: undefined as
       | {
           graph: {
@@ -269,6 +271,17 @@ import { useAgentConversationStore } from './stores/agent/agentConversationStore
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import { attachMintPortWiring } from './crdt/mintPortWiring'
+import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
+
+const mintPortWiringDeps = vi.hoisted(() => ({
+  current: null as MintPortWiringDeps | null
+}))
+vi.mock(import('./crdt/mintPortWiring'), { spy: true })
+vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
+  mintPortWiringDeps.current = deps
+  return fromPartial<MintPortWiring>({ detach: vi.fn() })
+})
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
@@ -326,8 +339,14 @@ beforeEach(() => {
   canvasStore.currentGraph = null
   appMock.graph.nodes = []
   appMock.graph.arrange.mockClear()
-  Object.assign(appMock.rootGraph, { subgraphs: new Map() })
+  Object.assign(appMock.rootGraph, { subgraphs: new Map(), id: undefined })
+  appMock.isGraphReady = false
   appMock.canvas = undefined
+  mintPortWiringDeps.current = null
+  vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
+    mintPortWiringDeps.current = deps
+    return fromPartial<MintPortWiring>({ detach: vi.fn() })
+  })
   workflowService.saveWorkflow.mockClear()
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
@@ -401,7 +420,8 @@ function renderWithSelectedTarget() {
 async function sendFromComposer(text: string): Promise<void> {
   const textbox = screen.getByRole('textbox')
   await userEvent.click(textbox)
-  await userEvent.keyboard('{ArrowRight}')
+  window.getSelection()?.collapseToEnd()
+  document.dispatchEvent(new Event('selectionchange'))
   await userEvent.keyboard(text)
   await userEvent.click(screen.getByRole('button', { name: 'Send' }))
   await screen.findByRole('button', { name: 'Stop' })
@@ -5172,6 +5192,61 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBe(false)
   })
 
+  it('a new chat after clearing the canvas keeps the saved target and posts the cleared canvas as its first draft', async () => {
+    const tab = makeTab('wf-42')
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({
+      id: 'wf-42',
+      nodes: [{ id: 1, type: 'LoadImage' }]
+    })
+    const posted: { threadId: string; body: Record<string, unknown> }[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST') {
+          posted.push({
+            threadId: url.split('/threads/')[1].split('/')[0],
+            body: JSON.parse(String(init.body))
+          })
+          return json(202, ack('wf-42', `m-${posted.length}`))
+        }
+        if (url.includes('/messages')) return json(200, [])
+        if (url.includes('/agent/threads'))
+          return json(200, agentThreadList([]))
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [{ id: 'wf-42', name: 'current' }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+          })
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    await renderAndSend('build a duck')
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+    expect(posted[0]).toMatchObject({
+      threadId: 'new',
+      body: { workflow_id: 'wf-42', draft: { content: { nodes: [{ id: 1 }] } } }
+    })
+
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42', nodes: [] })
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+    expect(useAgentConversationStore().threadId).toBeNull()
+
+    await sendFromComposer('start over')
+
+    expect(posted[1]).toMatchObject({
+      threadId: 'new',
+      body: { workflow_id: 'wf-42', draft: { content: { nodes: [] } } }
+    })
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(tab.path)
+  })
+
   it('does not bind an unsaved tab to a workflow that already has an open tab', async () => {
     addTab('workflows/current.json')
     const scratch = addTab('workflows/Scratch.json', { isTemporary: true })
@@ -5415,6 +5490,100 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).not.toHaveProperty('open_tabs')
     expect(bodies[0]).not.toHaveProperty('current_tab')
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  // PM-1429/PM-1430: a brand-new tab plus a brand-new chat session displays
+  // the tab as bound (renderAndSend's target is the active workflow), but
+  // the turn used to go out with neither workflow_id NOR any signal that a
+  // tab was selected at all - indistinguishable, server-side, from no tab
+  // being selected. The agent then refused to edit: "I can't because you
+  // don't have a workflow selected to edit."
+  it('flags a freshly created, unsaved tab as unbound rather than unselected', async () => {
+    const tab = makeTab()
+    Object.assign(tab, {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        nodes: [{ id: 1, type: 'TextInput' }],
+        links: []
+      })
+    })
+    const bodies = mockMessagesEndpoint('wf-fresh')
+
+    await renderAndSend('add one text input node')
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
+  })
+
+  // A restored/existing thread (no turn of THIS session has bound anything
+  // yet - `New Chat` is what puts the session into that state here) whose
+  // target tab is still unbound must flag it AND still send its draft -
+  // dropping the draft here would hand the server's mint an empty canvas
+  // instead of the node already on the tab.
+  it('flags an unbound tab as unbound on a restored thread, with its draft attached', async () => {
+    const tab = makeTab()
+    Object.assign(tab, {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        nodes: [{ id: 1, type: 'TextInput' }],
+        links: []
+      })
+    })
+    const bodies = mockMessagesEndpoint('wf-fresh')
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    useAgentConversationStore().setThreadId('th-existing')
+
+    await sendFromComposer('add one text input node')
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
+    expect(bodies[0]).toHaveProperty('draft')
+  })
+
+  // Companion to the test above: this is the happy path a page reload
+  // relies on. boundWorkflowId (module state, the session's own memory of
+  // having bound something) resets on reload, but the tab-binding store
+  // persists to localStorage and survives it. As long as that persisted
+  // record's graphId still matches the tab's own graph id - guaranteed for
+  // any tab created through workflowStore.createTemporary/createNewWorkflow,
+  // which always mint one via ensureWorkflowId before the tab is ever open -
+  // cloudIdFor resolves the bound id from that persisted record alone, so
+  // the turn never re-flags the tab as unbound or re-mints a second
+  // workflow for it.
+  it('resolves a workflow bound before reload from persisted storage, without re-flagging the tab as unbound', async () => {
+    const tab = makeTab()
+    Object.assign(tab, {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        id: 'graph-abc',
+        nodes: [{ id: 1, type: 'TextInput' }],
+        links: []
+      })
+    })
+    localStorage.setItem(
+      'Comfy.Agent.WorkflowTabBindings.v2',
+      JSON.stringify({
+        'wf-from-before-reload': {
+          tabPath: tab.path,
+          graphId: 'graph-abc',
+          confirmedAt: Date.now()
+        }
+      })
+    )
+    const bodies = mockMessagesEndpoint('wf-from-before-reload')
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    useAgentConversationStore().setThreadId('th-existing')
+
+    await sendFromComposer('add one text input node')
+
+    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-from-before-reload' })
+    expect(bodies[0]).not.toHaveProperty('current_tab_unbound')
   })
 
   it('disables target selection for an active turn and ignores agent tab changes for attribution', async () => {
@@ -6504,5 +6673,80 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it("reports the bound workflow's own stored root graph id once bound", async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add an upscaler')
+
+    await vi.waitFor(() =>
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+        toRootGraphId('wf-42')
+      )
+    )
+  })
+
+  it('leaves the bound root graph id null while no workflow is bound and active', () => {
+    renderWithSelectedTarget()
+
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBeNull()
+  })
+
+  it("reports the newly bound workflow's root graph id after an active-tab switch, even though the previously bound workflow stayed correct while its tab was inactive", async () => {
+    makeTab('wf-a')
+    const tabB = addTab('workflows/b.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-b' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-b', tabB.path)
+    mockMessagesEndpoint('wf-a')
+
+    await renderAndSend('start on A')
+
+    await vi.waitFor(() =>
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+        toRootGraphId('wf-a')
+      )
+    )
+
+    // A stays bound but leaves the screen; a write-once latch would also
+    // still report wf-a here, so this alone would not catch a regression.
+    workflowStore.activeWorkflow = addTab('workflows/elsewhere.json')
+    await nextTick()
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      toRootGraphId('wf-a')
+    )
+
+    // The agent moves the session onto B's own tab.
+    ws.emit('agent_active_tab', { workflow_id: 'wf-b', thread_id: 'th-1' })
+
+    await vi.waitFor(() =>
+      expect(workflowStore.activeWorkflow?.path).toBe(tabB.path)
+    )
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      toRootGraphId('wf-b')
+    )
+  })
+
+  it("reflects the bound workflow's own root graph id rotating without a rebind (regression)", async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add an upscaler')
+
+    await vi.waitFor(() =>
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+        toRootGraphId('wf-42')
+      )
+    )
+
+    // The same bound workflow's own graph id rotates in place (LGraph.clear
+    // mints a fresh uuid) without boundWorkflowId itself ever changing.
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42-rotated' })
+
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      toRootGraphId('wf-42-rotated')
+    )
   })
 })
