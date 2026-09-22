@@ -1,0 +1,205 @@
+# Checks how stale the @comfyorg/comfy-multi-player pin (root package.json)
+# is against comfy-multi-player's own main branch, and files/updates/closes a
+# tracking issue accordingly. Ported from Comfy-Org/cloud's
+# multiplayer-pin-currency.yml, which runs the same check against its own pin
+# of the same package (services/agent/dochost/package.json).
+#
+# This is a currency check, not a consistency check: it says nothing about
+# whether package.json and pnpm-lock.yaml agree with each other, only about
+# how far the pinned version has drifted from unreleased fixes landing on
+# comfy-multi-player's main. Runs on a schedule rather than per-PR because
+# staleness is a function of wall-clock time since main moved, not of any
+# one diff — a stale pin has to be caught on a day nobody touches this
+# package.json line at all.
+#
+# STALENESS BOUND: 14 days since the oldest source-main commit not in the
+# pin, matching cloud's bound. Revisit in docs/adr if release cadence changes.
+name: 'Multiplayer Pin Currency'
+
+on:
+  schedule:
+    # 09:00 Pacific (UTC-7/-8).
+    - cron: '0 16 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  STALENESS_BOUND_DAYS: 14
+  PACKAGE_NAME: '@comfyorg/comfy-multi-player'
+  SOURCE_BRANCH: main
+  ISSUE_LABEL: dependencies
+  ISSUE_TITLE: 'comfy-multi-player pin is past the 14-day staleness bound'
+
+jobs:
+  pin-currency:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: package.json
+          persist-credentials: false
+
+      - name: Compare the pinned version against source-repository main
+        id: currency
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('fs')
+
+            const name = process.env.PACKAGE_NAME
+            const boundDays = Number(process.env.STALENESS_BOUND_DAYS)
+            const sourceBranch = process.env.SOURCE_BRANCH
+
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+            const spec = (pkg.dependencies || {})[name]
+            if (!spec) {
+              core.setFailed(`${name} missing from package.json dependencies`)
+              return
+            }
+
+            const registryResponse = await fetch(`https://registry.npmjs.org/${encodeURIComponent(name)}`, {
+              headers: { 'user-agent': 'comfyui-frontend-multiplayer-pin-currency' }
+            })
+            if (!registryResponse.ok) {
+              core.setFailed(`GET registry.npmjs.org/${name} -> ${registryResponse.status}`)
+              return
+            }
+            const meta = await registryResponse.json()
+
+            const semver = /^\d+\.\d+\.\d+$/.test(spec)
+            const gitPin = spec.match(/^git\+https:\/\/github\.com\/([^/]+\/[^/#]+?)(?:\.git)?#([0-9a-f]{40})$/i)
+            const version = semver && meta.versions && meta.versions[spec]
+            if (semver && !version) {
+              core.setFailed(`pinned version ${spec} has no publish record in the registry — check for a typo or an unpublished/deprecated version`)
+              return
+            }
+
+            const pinnedHead = semver ? version.gitHead : gitPin && gitPin[2]
+            const repository = semver ? version.repository : gitPin && `https://github.com/${gitPin[1]}`
+            const repositoryUrl = typeof repository === 'string' ? repository : repository && repository.url
+            const repoMatch = repositoryUrl && repositoryUrl.match(/github\.com[/:]([^/]+\/[^/#]+?)(?:\.git)?$/)
+            if (!pinnedHead || !/^[0-9a-f]{40}$/i.test(pinnedHead) || !repoMatch) {
+              core.setFailed(`cannot establish source currency for ${name}@${spec}: registry metadata must provide a full gitHead and GitHub repository URL`)
+              return
+            }
+
+            const [sourceOwner, sourceRepo] = repoMatch[1].split('/')
+            const comparison = (await github.rest.repos.compareCommitsWithBasehead({
+              owner: sourceOwner,
+              repo: sourceRepo,
+              basehead: `${pinnedHead}...${sourceBranch}`
+            })).data
+
+            core.info(`${name}: pinned ${spec} at ${pinnedHead}`)
+            core.info(`source: ${sourceOwner}/${sourceRepo}@${sourceBranch} (${comparison.ahead_by} commit(s) ahead)`)
+            core.setOutput('source_repo', `${sourceOwner}/${sourceRepo}`)
+            core.setOutput('pinned_head', pinnedHead)
+            core.setOutput('spec', spec)
+
+            if (comparison.status === 'identical') {
+              core.info('pin is current (matches source-repository main)')
+              return
+            }
+            if (comparison.status !== 'ahead' || !comparison.ahead_by) {
+              core.setFailed(`pinned source commit ${pinnedHead} is not an ancestor of ${sourceOwner}/${sourceRepo}@${sourceBranch} (compare status: ${comparison.status || 'unknown'}); update the pin or source-repository metadata`)
+              return
+            }
+
+            const oldestUnpinned = comparison.commits && comparison.commits[0]
+            const oldestDateValue = oldestUnpinned && oldestUnpinned.commit &&
+              (oldestUnpinned.commit.committer.date || oldestUnpinned.commit.author.date)
+            if (!oldestDateValue) {
+              core.setFailed('source main is ahead, but GitHub returned no commit date for the oldest unpinned commit')
+              return
+            }
+            const ageDays = (Date.now() - new Date(oldestDateValue).getTime()) / (1000 * 60 * 60 * 24)
+            core.info(`oldest unpinned source commit is ${ageDays.toFixed(1)} days old (${oldestDateValue})`)
+            core.setOutput('ahead_by', comparison.ahead_by)
+            core.setOutput('age_days', ageDays.toFixed(1))
+            core.setOutput('oldest_date', oldestDateValue)
+
+            if (ageDays > boundDays) {
+              core.setFailed(`${name} pin (${spec}, ${pinnedHead}) is ${comparison.ahead_by} source commit(s) behind and the oldest has been on ${sourceBranch} for ${ageDays.toFixed(1)} days, past the ${boundDays}-day staleness bound. Bump package.json + pnpm-lock.yaml.`)
+              return
+            }
+
+            core.info(`pin is ${comparison.ahead_by} source commit(s) behind — within the ${boundDays}-day staleness bound`)
+
+      - name: File an issue when the pin has gone stale
+        if: failure()
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const title = process.env.ISSUE_TITLE
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            const body = `The scheduled [Multiplayer Pin Currency](${runUrl}) check found the root \`package.json\` pin of \`${process.env.PACKAGE_NAME}\` more than ${process.env.STALENESS_BOUND_DAYS} days behind its source repository's \`${process.env.SOURCE_BRANCH}\` branch. Bump \`package.json\` + \`pnpm-lock.yaml\` to a current \`@comfyorg/comfy-multi-player\` release before merging anything else that touches the multiplayer integration. See the failing run for the exact source repository, commit delta, and age. This issue is filed/updated by \`.github/workflows/multiplayer-pin-currency.yaml\`; it closes itself once a future scheduled run passes.`
+
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: process.env.ISSUE_LABEL,
+              per_page: 100
+            })
+            const existing = openIssues.find((issue) => issue.title === title)
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body
+              })
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: [process.env.ISSUE_LABEL]
+              })
+            }
+
+      - name: Close the staleness issue once currency is restored
+        if: success()
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const title = process.env.ISSUE_TITLE
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: process.env.ISSUE_LABEL,
+              per_page: 100
+            })
+            const existing = openIssues.find((issue) => issue.title === title)
+            if (!existing) {
+              return
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: existing.number,
+              body: 'Pin currency restored — this run\'s currency check passed. Closing.'
+            })
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: existing.number,
+              state: 'closed'
+            })

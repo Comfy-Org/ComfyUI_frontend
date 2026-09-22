@@ -485,6 +485,25 @@ describe('useAgentConversationStore', () => {
     })
   })
 
+  it('hydrates a persisted user attachment preview on its original turn', () => {
+    const user = historyRow(1, 'user', 'turn-a', 'check this image')
+    user.content = {
+      text: 'check this image',
+      attachments: ['ComfyUI_00002_.png'],
+      attachment_refs: [
+        { name: 'ComfyUI_00002_.png', id: 'asset-1', kind: 'image' }
+      ]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([user, historyRow(2, 'assistant', 'turn-a', 'Looks good.')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }]
+    })
+  })
+
   it('keeps hydrated turn identity stable when persisted row ids change', () => {
     const store = useAgentConversationStore()
     const firstRows = [

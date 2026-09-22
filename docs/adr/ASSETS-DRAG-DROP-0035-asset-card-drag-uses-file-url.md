@@ -42,11 +42,11 @@ after the last URL segment, which for a content URL is the literal `content`.
 
 ## Decision
 
-1. The drag URI names the asset's file, never a preview. `MediaAssetCard`
-   builds `text/uri-list` from `getAssetFileUrl(asset)`, which resolves the
-   file through `getAssetContentId` (`user_metadata.assetId || asset.id`).
-   The rule is media-kind agnostic: no consumer may assume a preview is the
-   file, even when a preview exists.
+1. The drag URI names the asset's file, never a preview. The drag side builds
+   `text/uri-list` from `getAssetFileUrl(asset)`, which resolves the file
+   through `getAssetContentId` (`user_metadata.assetId || asset.id`). The
+   rule is media-kind agnostic: no consumer may assume a preview is the file,
+   even when a preview exists.
 2. Previews stay a rendering concern. `application/x-comfy-asset-info` keeps
    `preview_url` for image previews, and `resolvePreviewUrl` remains the
    source for `<img>` and `<video>` elements. Its own fallback resolves
@@ -56,7 +56,20 @@ after the last URL segment, which for a content URL is the literal `content`.
    from the URI. `useNodeDragAndDrop` prefers `parseAssetInfo(...).filename`
    and falls back to the URL-derived name only for drags that carry no
    asset-info flavour.
-4. A non-OK response is not a file, and the user is told. `fetchDroppedAsset`
+4. The payload belongs to the asset, not to a view mode. Both flavours are
+   written by one function, `startAssetDrag` in
+   `platform/assets/utils/assetDragUtil.ts`, which derives everything from
+   the `AssetItem` alone. Every surface that lets a user drag an asset out of
+   the panel calls it: the grid's `MediaAssetCard` and the list rows in
+   `AssetsSidebarListView`. A surface that renders assets without calling it
+   is a silent attachment failure, because the drop side accepts a drop by
+   looking for `application/x-comfy-asset-info` in `dataTransfer.types` alone
+   (`AgentPanelRoot` `isAssetDrag`) and a row that never starts a drag
+   advertises nothing. PM-1401 was exactly that: list view rendered
+   `AssetsListItem`, which set no `draggable` and no `dragstart`, so dragging
+   an asset onto the agent prompt did nothing while the panel was in list
+   view and worked in grid view.
+5. A non-OK response is not a file, and the user is told. `fetchDroppedAsset`
    returns `undefined` on `!response.ok` (status-based, never content-type
    sniffing). The canvas drop handler, when a drop that carried the
    asset-info flavour yields no file, reports the failure through
@@ -95,3 +108,11 @@ after the last URL segment, which for a content URL is the literal `content`.
   re-upload the fetched file rather than referencing the existing asset.
   Adding `onResultItemDrop` to those targets is a follow-up, not part of this
   decision.
+- Nothing mechanically forces a new asset surface through `startAssetDrag`; a
+  future view mode can still ship undraggable rows. The guard is coverage,
+  not a lint: each surface owns a case asserting it publishes the payload.
+- `startAssetDrag` cancels the drag under Ctrl/Meta because those modifiers
+  belong to panel selection. In list view the marquee never engages today
+  (`useAssetGridSelection` tracks only containers holding `[data-asset-id]`,
+  which list rows deliberately do not set), so that branch is parity with the
+  grid rather than a behaviour list view currently needs.

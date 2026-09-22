@@ -1,10 +1,10 @@
 <template>
   <div>
     <div v-if="loading" class="flex items-center justify-center p-8">
-      <ProgressSpinner />
+      <Spinner />
     </div>
     <div v-else-if="error" class="p-4">
-      <Message severity="error" :closable="false">{{ error }}</Message>
+      <Message severity="error">{{ error }}</Message>
     </div>
     <DataTable
       v-else
@@ -20,9 +20,11 @@
       <Column field="event_type" :header="$t('credits.eventType')">
         <template #body="{ data }">
           <Badge
-            :value="customerEventService.formatEventType(data.event_type)"
+            variant="badge"
             :severity="customerEventService.getEventSeverity(data.event_type)"
-          />
+          >
+            {{ customerEventService.formatEventType(data.event_type) }}
+          </Badge>
         </template>
       </Column>
       <Column field="details" :header="$t('credits.details')">
@@ -91,15 +93,15 @@
 </template>
 
 <script setup lang="ts">
-import Badge from 'primevue/badge'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
-import Message from 'primevue/message'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import Message from '@/components/ui/message/Message.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'

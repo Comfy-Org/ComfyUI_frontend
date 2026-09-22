@@ -25,6 +25,10 @@ function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
 
+function withoutExecutionOrder(nodes: ComfyWorkflowJSON['nodes']) {
+  return nodes.map((node) => _.omit(node, ['order']))
+}
+
 function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
@@ -683,13 +687,17 @@ export class ChangeTracker {
     if (a === b) return true
 
     if (typeof a == 'object' && a && typeof b == 'object' && b) {
-      // Compare nodes ignoring order
+      // Compare nodes ignoring array position and execution order
       if (
-        !_.isEqualWith(a.nodes, b.nodes, (arrA, arrB) => {
-          if (Array.isArray(arrA) && Array.isArray(arrB)) {
-            return _.isEqual(new Set(arrA), new Set(arrB))
+        !_.isEqualWith(
+          withoutExecutionOrder(a.nodes),
+          withoutExecutionOrder(b.nodes),
+          (arrA, arrB) => {
+            if (Array.isArray(arrA) && Array.isArray(arrB)) {
+              return _.isEqual(new Set(arrA), new Set(arrB))
+            }
           }
-        })
+        )
       ) {
         return false
       }

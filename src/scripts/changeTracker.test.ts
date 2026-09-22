@@ -15,6 +15,7 @@ import {
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApi } from '@/scripts/api'
@@ -34,6 +35,7 @@ vi.mock(import('@/scripts/app'), () => ({
     nodePreviewImages: {},
     graph: {},
     rootGraph: {
+      subgraphs: new Map(),
       serialize: vi.fn(() => ({
         nodes: [],
         links: [],
@@ -47,7 +49,8 @@ vi.mock(import('@/scripts/app'), () => ({
     },
     loadGraphData: vi.fn(() => Promise.resolve()),
     canvas: {
-      ds: { scale: 1, offset: [0, 0] }
+      ds: { scale: 1, offset: [0, 0] },
+      setGraph: vi.fn()
     },
     ui: {
       autoQueueEnabled: false,
@@ -214,6 +217,7 @@ describe('ChangeTracker', () => {
     vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
       () => {}
     )
+    app.rootGraph.subgraphs.clear()
   })
 
   describe('captureCanvasState', () => {
@@ -482,6 +486,23 @@ describe('ChangeTracker', () => {
         tracker.captureCanvasState()
 
         expect(tracker.undoQueue).toHaveLength(0)
+      })
+
+      it('does not push when only the recomputed node execution order differs', () => {
+        const initial = createState(2)
+        const tracker = createTracker(initial)
+        const reordered = structuredClone(initial)
+        reordered.nodes[0].order = 1
+        reordered.nodes[1].order = 0
+        mockCanvasState(reordered)
+
+        tracker.captureCanvasState()
+
+        expect(tracker.undoQueue).toHaveLength(0)
+        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+          'graphChanged',
+          expect.anything()
+        )
       })
 
       it.for([
@@ -1207,6 +1228,68 @@ describe('ChangeTracker', () => {
         false,
         'ChangeTracker.deactivate() called on inactive tracker'
       )
+    })
+  })
+
+  describe('restore', () => {
+    function deactivateWithNavigation(navigation: string[]) {
+      const tracker = createTracker(createState(1))
+      vi.mocked(useSubgraphNavigationStore().exportState).mockReturnValue(
+        navigation
+      )
+      tracker.deactivate()
+      return tracker
+    }
+
+    it('reopens the deepest subgraph the undone state still contains', () => {
+      const survivor = fromPartial<Subgraph>({ id: 'outer' })
+      app.rootGraph.subgraphs.set('outer', survivor)
+      const tracker = deactivateWithNavigation(['outer', 'inner', 'innermost'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
+
+      tracker.restore()
+
+      expect(restoredNavigation).toEqual(['outer'])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(survivor)
+    })
+
+    it('reopens the deepest of multiple surviving ancestors', () => {
+      const outer = fromPartial<Subgraph>({ id: 'outer' })
+      const inner = fromPartial<Subgraph>({ id: 'inner' })
+      app.rootGraph.subgraphs.set('outer', outer)
+      app.rootGraph.subgraphs.set('inner', inner)
+      const tracker = deactivateWithNavigation(['outer', 'inner', 'innermost'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
+
+      tracker.restore()
+
+      expect(restoredNavigation).toEqual(['outer', 'inner'])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(inner)
+    })
+
+    it('returns to the root graph when the undone state removed every ancestor', () => {
+      const tracker = deactivateWithNavigation(['outer', 'inner'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
+
+      tracker.restore()
+
+      expect(restoredNavigation).toEqual([])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
     })
   })
 

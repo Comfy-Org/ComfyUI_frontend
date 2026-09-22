@@ -60,7 +60,7 @@ const translations = {
     en: '{count} models',
     'zh-CN': '{count} 个模型'
   },
-  'workshop.empty': {
+  'workshop.empty.message': {
     en: 'No models match your filters.',
     'zh-CN': '没有符合这些筛选条件的模型。'
   },
@@ -2555,27 +2555,27 @@ Enterprise`
   },
   'learning.categoryNav': { en: 'Category filter', 'zh-CN': '分类筛选' },
   'learning.featuredBadge': { en: 'Featured', 'zh-CN': '精选' },
-  'learning.categories.all': { en: 'All', 'zh-CN': '全部' },
+  'learning.categories.all.label': { en: 'All', 'zh-CN': '全部' },
   'learning.categories.all.blurb': {
     en: 'Every tutorial and workflow',
     'zh-CN': '所有教程与工作流'
   },
-  'learning.categories.basics': { en: 'Basics', 'zh-CN': '基础' },
+  'learning.categories.basics.label': { en: 'Basics', 'zh-CN': '基础' },
   'learning.categories.basics.blurb': {
     en: 'Fundamentals and getting started',
     'zh-CN': '基础入门与上手指南'
   },
-  'learning.categories.vfx': { en: 'VFX', 'zh-CN': 'VFX' },
+  'learning.categories.vfx.label': { en: 'VFX', 'zh-CN': 'VFX' },
   'learning.categories.vfx.blurb': {
     en: 'Compositing, cleanup and shot work',
     'zh-CN': '合成、清理与镜头处理'
   },
-  'learning.categories.animations': { en: 'Animations', 'zh-CN': '动画' },
+  'learning.categories.animations.label': { en: 'Animations', 'zh-CN': '动画' },
   'learning.categories.animations.blurb': {
     en: 'Motion, retiming and character',
     'zh-CN': '运动、变速与角色'
   },
-  'learning.categories.ads': { en: 'Ads', 'zh-CN': '广告' },
+  'learning.categories.ads.label': { en: 'Ads', 'zh-CN': '广告' },
   'learning.categories.ads.blurb': {
     en: 'Product shots and campaign assets',
     'zh-CN': '产品展示与广告素材'
@@ -4290,6 +4290,13 @@ Enterprise`
   'nav.ctaDesktopCore': { en: 'DESKTOP', 'zh-CN': '桌面版' },
   'nav.ctaCloudCore': { en: 'TRY FREE', 'zh-CN': '免费试用' },
   'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
+  'nav.copyLogoSvg': { en: 'Copy logo as SVG', 'zh-CN': '复制 SVG 标志' },
+  'nav.copyLogomarkSvg': {
+    en: 'Copy logomark as SVG',
+    'zh-CN': '复制 SVG 标志符号'
+  },
+  'nav.brandAssets': { en: 'Brand assets', 'zh-CN': '品牌素材' },
+  'nav.copied': { en: 'Copied', 'zh-CN': '已复制' },
   'breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
   'breadcrumb.about': { en: 'About Us', 'zh-CN': '关于我们' },
   'breadcrumb.contact': { en: 'Contact', 'zh-CN': '联系我们' },
@@ -6225,7 +6232,7 @@ Enterprise`
     en: 'Loading interactive demo…',
     'zh-CN': '正在加载互动演示…'
   },
-  'demos.noscript': {
+  'demos.noscript.text': {
     en: 'This interactive demo requires JavaScript.',
     'zh-CN': '此互动演示需要 JavaScript。'
   },
@@ -7855,34 +7862,37 @@ Enterprise`
     en: 'ChatGPT Images 2.5',
     'zh-CN': 'ChatGPT Images 2.5'
   },
-  // Qwen Image 2.1 model page (/qwen-image-2.1)
+  // Qwen-Image 2.1 model page (/qwen-image-2.1)
   'qwenImage21.meta.title': {
-    en: 'Qwen Image 2.1 on Comfy: Open-Weight Image Generation and Editing',
-    'zh-CN': 'Comfy 上的 Qwen Image 2.1：开源权重图像生成与编辑'
+    en: 'Qwen-Image 2.1 on Comfy: Open-Weight Image Generation and Editing',
+    'zh-CN': 'Comfy 上的 Qwen-Image 2.1：开源权重图像生成与编辑'
   },
   'qwenImage21.meta.description': {
-    en: 'Run Qwen Image 2.1 in ComfyUI. Generate high-resolution images with accurate text, edit existing visuals with plain instructions, and keep every step in a repeatable workflow.',
+    en: 'Run Qwen-Image 2.1 in ComfyUI. Generate high-resolution images with accurate text, edit existing visuals with plain instructions, and keep every step in a repeatable workflow.',
     'zh-CN':
-      '在 ComfyUI 中运行 Qwen Image 2.1。生成文字精准的高分辨率图像，用自然语言指令编辑现有视觉内容，并让每一步都留在可复用的工作流中。'
+      '在 ComfyUI 中运行 Qwen-Image 2.1。生成文字精准的高分辨率图像，用自然语言指令编辑现有视觉内容，并让每一步都留在可复用的工作流中。'
   },
   'qwenImage21.breadcrumb.model': {
-    en: 'Qwen Image 2.1',
-    'zh-CN': 'Qwen Image 2.1'
+    en: 'Qwen-Image 2.1',
+    'zh-CN': 'Qwen-Image 2.1'
   },
   'qwenImage21.breadcrumb.updated': {
     en: 'Updated September 2026',
     'zh-CN': '更新于 2026 年 9 月'
   },
   'qwenImage21.hero.title': {
-    en: 'Qwen Image 2.1\nis here',
-    'zh-CN': 'Qwen Image 2.1 已上线'
+    en: 'Qwen-Image 2.1\nis here',
+    'zh-CN': 'Qwen-Image 2.1 已上线'
   },
   'qwenImage21.hero.description': {
-    en: 'Generate posters, infographics, portraits, and scenes with the words exactly where you wrote them, then edit any image with a sentence. Qwen Image 2.1 brings generation and editing into one open-weight model that runs natively in ComfyUI.',
+    en: 'Generate posters, infographics, portraits, and scenes with the words exactly where you wrote them, then edit any image with a sentence. Qwen-Image 2.1 brings generation and editing into one open-weight model that runs natively in ComfyUI.',
     'zh-CN':
-      '生成海报、信息图、人像与场景，文字精准出现在你写下的位置，再用一句话编辑任意图像。Qwen Image 2.1 将生成与编辑合而为一，以开源权重模型在 ComfyUI 中原生运行。'
+      '生成海报、信息图、人像与场景，文字精准出现在你写下的位置，再用一句话编辑任意图像。Qwen-Image 2.1 将生成与编辑合而为一，以开源权重模型在 ComfyUI 中原生运行。'
   },
-  'qwenImage21.hero.tagOpenSource': { en: 'Open Source', 'zh-CN': '开源' },
+  'qwenImage21.hero.tagOpenWeights': {
+    en: 'Open Weights',
+    'zh-CN': '开源权重'
+  },
   'qwenImage21.hero.tagTextToImage': {
     en: 'Text to Image',
     'zh-CN': '文生图'
@@ -7892,16 +7902,16 @@ Enterprise`
     'zh-CN': '图像编辑'
   },
   'qwenImage21.hero.primaryCta': {
-    en: 'RUN QWEN IMAGE 2.1',
-    'zh-CN': '运行 Qwen Image 2.1'
+    en: 'RUN QWEN-IMAGE 2.1',
+    'zh-CN': '运行 Qwen-Image 2.1'
   },
   'qwenImage21.hero.secondaryCta': {
     en: 'READ THE GUIDE',
     'zh-CN': '查看教程'
   },
   'qwenImage21.gallery.heading': {
-    en: 'Made with Qwen Image 2.1',
-    'zh-CN': '由 Qwen Image 2.1 创作'
+    en: 'Made with Qwen-Image 2.1',
+    'zh-CN': '由 Qwen-Image 2.1 创作'
   },
   'qwenImage21.pricing.banner.title': {
     en: "Start Comfy Cloud for free. Upgrade when you're ready.",
@@ -7947,13 +7957,13 @@ Enterprise`
     'zh-CN': '开始使用'
   },
   'qwenImage21.announcement.meta.title': {
-    en: 'Qwen Image 2.1 on Comfy: Coming Soon',
-    'zh-CN': 'Comfy 上的 Qwen Image 2.1：即将上线'
+    en: 'Qwen-Image 2.1 on Comfy: Coming Soon',
+    'zh-CN': 'Comfy 上的 Qwen-Image 2.1：即将上线'
   },
   'qwenImage21.announcement.meta.description': {
-    en: 'Qwen Image 2.1 is coming to ComfyUI and Comfy Cloud. Generation and editing in one open-weight model, with accurate text rendering, ready to run the day it ships.',
+    en: 'Qwen-Image 2.1 is coming to ComfyUI and Comfy Cloud. Generation and editing in one open-weight model, with accurate text rendering, ready to run the day it ships.',
     'zh-CN':
-      'Qwen Image 2.1 即将登陆 ComfyUI 与 Comfy Cloud。生成与编辑合一的开源权重模型，文字渲染精准，发布当天即可运行。'
+      'Qwen-Image 2.1 即将登陆 ComfyUI 与 Comfy Cloud。生成与编辑合一的开源权重模型，文字渲染精准，发布当天即可运行。'
   },
   'qwenImage21.announcement.breadcrumb.updated': {
     en: 'Announced September 2026',
@@ -7964,17 +7974,17 @@ Enterprise`
     'zh-CN': '即将上线'
   },
   'qwenImage21.announcement.hero.description': {
-    en: 'Introducing Qwen Image 2.1, the latest open-weight version of the Qwen-Image models series: image generation and editing in one single model, native 2k resolution, professional typography and support for alpha channel. Coming to ComfyUI and Comfy Cloud the day it ships.',
+    en: 'Introducing Qwen-Image 2.1, the latest open-weight version of the Qwen-Image models series: image generation and editing in one single model, native 2k resolution, professional typography and support for alpha channel. Coming to ComfyUI and Comfy Cloud the day it ships.',
     'zh-CN':
-      '隆重推出 Qwen Image 2.1，Qwen 团队新一代开源权重图像模型：生成与编辑合一，文字精准落在你写下的位置。发布当天即登陆 ComfyUI 与 Comfy Cloud。'
+      '隆重推出 Qwen-Image 2.1，Qwen 团队新一代开源权重图像模型：生成与编辑合一，文字精准落在你写下的位置。发布当天即登陆 ComfyUI 与 Comfy Cloud。'
   },
   'qwenImage21.announcement.hero.primaryCta': {
     en: 'GET NOTIFIED',
     'zh-CN': '获取通知'
   },
   'footer.qwenImage21': {
-    en: 'Qwen Image 2.1',
-    'zh-CN': 'Qwen Image 2.1'
+    en: 'Qwen-Image 2.1',
+    'zh-CN': 'Qwen-Image 2.1'
   },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy: Open-Weight Video Model',
@@ -8970,6 +8980,10 @@ Enterprise`
     en: 'Use state-of-the-art models for image, video, 3D, and audio. Ready for production.',
     'zh-CN': '使用最先进的图像、视频、3D 和音频模型。生产环境就绪。'
   },
+  'platform.modelsHero.getApiKey': {
+    en: 'Get your API key',
+    'zh-CN': '获取 API 密钥'
+  },
   'platform.builderHero.heading': {
     en: 'Package ComfyUI Builds for your team',
     'zh-CN': '为团队打包 ComfyUI Builds'
@@ -9548,7 +9562,7 @@ Enterprise`
   'workshop.task.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.task.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.models.heading': { en: 'Models', 'zh-CN': '模型' },
-  'workshop.proto.version': { en: 'Version', 'zh-CN': '版本' },
+  'workshop.proto.version.label': { en: 'Version', 'zh-CN': '版本' },
   'workshop.proto.version.v1': {
     en: 'Discarded · Categories in tabs',
     'zh-CN': '已弃用 · 标签页分类'
@@ -9966,6 +9980,15 @@ Enterprise`
     en: 'Select or drop up to {count} files',
     'zh-CN': '选择或拖入最多 {count} 个文件'
   },
+  'workshop.field.frameRatioMismatchTitle': {
+    en: 'The frames are different shapes',
+    'zh-CN': '两帧比例不同'
+  },
+  'workshop.field.frameRatioMismatch': {
+    en: 'The video has one shape, so a frame that does not match it will be stretched to fit. Run it as is, or upload frames with the same proportions.',
+    'zh-CN':
+      '视频只有一个宽高比，比例不符的那一帧会被拉伸以适应。可以直接生成，或上传比例相同的两帧。'
+  },
   'workshop.field.file': { en: 'File', 'zh-CN': '文件' },
   'workshop.field.replaceFile': {
     en: 'Replace {name}',
@@ -10044,6 +10067,10 @@ Enterprise`
   'workshop.form.uploadFailed': {
     en: 'Upload failed. Try again, or paste a public link instead.',
     'zh-CN': '上传失败。请重试或粘贴可访问的网址。'
+  },
+  'workshop.form.fileUnreadable': {
+    en: 'This file can no longer be read. Select it again.',
+    'zh-CN': '无法再读取此文件。请重新选择。'
   },
   'workshop.form.draftRestoreFailed': {
     en: 'We could not restore all of your saved inputs. Check the form and pick your files again.',
@@ -10264,6 +10291,10 @@ Enterprise`
   'workshop.error.client': {
     en: 'The page could not complete this request. Keep your inputs unchanged and contact support if this persists.',
     'zh-CN': '页面未能完成此请求。请保持输入不变，若问题持续请联系支持。'
+  },
+  'workshop.error.fileUnreadable': {
+    en: 'The page could not read a selected file. Select it again in the highlighted field. The model has not run.',
+    'zh-CN': '页面无法读取所选文件。请在高亮字段中重新选择。模型尚未运行。'
   },
   'workshop.error.concurrency': {
     en: 'This workspace has reached its simultaneous run limit. Wait for an active run to finish, then retry.',
@@ -10562,7 +10593,7 @@ Enterprise`
     en: 'Show the featured row',
     'zh-CN': '显示精选行'
   },
-  'workshop.proto.session': { en: 'Session', 'zh-CN': '会话' },
+  'workshop.proto.session.label': { en: 'Session', 'zh-CN': '会话' },
   'workshop.proto.session.signedOut': { en: 'Signed out', 'zh-CN': '未登录' },
   'workshop.proto.session.new': {
     en: 'New account (no credits yet)',
@@ -10574,7 +10605,7 @@ Enterprise`
   },
   'workshop.proto.subscribed': { en: 'Subscribed', 'zh-CN': '已订阅' },
   'workshop.proto.zeroBalance': { en: 'Zero balance', 'zh-CN': '零余额' },
-  'workshop.proto.outcome': {
+  'workshop.proto.outcome.label': {
     en: 'Simulate run outcome',
     'zh-CN': '模拟运行结果'
   },
@@ -10595,7 +10626,7 @@ Enterprise`
     en: 'Rate limit (429)',
     'zh-CN': '限流 (429)'
   },
-  'workshop.proto.gate': {
+  'workshop.proto.gate.label': {
     en: 'Simulate model state',
     'zh-CN': '模拟模型状态'
   },

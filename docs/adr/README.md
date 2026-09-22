@@ -10,6 +10,7 @@ An Architecture Decision Record captures an important architectural decision mad
 
 | ADR                                                                                                              | Title                                                                              | Status     | Date       |
 | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------- | ---------- |
+| [AGENT-BINDING-0035](AGENT-BINDING-0035-document-identity-gates-persisted-workflow-tab-bindings.md)              | Document Identity Gates Persisted Workflow Tab Bindings                            | Proposed   | 2026-09-19 |
 | [AGENT-CONTEXT-0028](AGENT-CONTEXT-0028-separate-workflow-references-from-editor-tabs.md)                        | Separate Workflow References from Editor Tabs                                      | Proposed   | 2026-09-07 |
 | [AGENT-SESSION-0028](AGENT-SESSION-0028-compose-turn-origin-and-account-generation.md)                           | Compose Turn Origin and Account Generation                                         | Proposed   | 2026-09-05 |
 | [ASSETS-DRAG-DROP-0035](ASSETS-DRAG-DROP-0035-asset-card-drag-uses-file-url.md)                                  | Asset Card Drag-and-Drop Uses the File URL, Never the Preview URL                  | Proposed   | 2026-09-19 |
@@ -22,9 +23,15 @@ An Architecture Decision Record captures an important architectural decision mad
 | [BILLING-WEB-0031](BILLING-WEB-0031-static-spa-boundary.md)                                                      | Static SPA Boundary for Hosted Billing                                             | Proposed   | 2026-09-10 |
 | [CANVAS-GESTURE-0029](CANVAS-GESTURE-0029-pointer-gesture-state-machine.md)                                      | Pointer Gesture State Machine                                                      | Proposed   | 2026-09-06 |
 | [CANVAS-SELECTION-0028](CANVAS-SELECTION-0028-single-selection-store.md)                                         | Single Selection Store                                                             | Proposed   | 2026-09-04 |
+| [CANVAS-SELECTION-0031](CANVAS-SELECTION-0031-ordered-set-storage.md)                                            | Ordered Set Storage for Selection                                                  | Proposed   | 2026-09-15 |
+| [CRDT-AUTHORITY-0035](CRDT-AUTHORITY-0035-human-canvas-authority-and-draft-reconciliation.md)                    | Human Canvas Authority and Draft Reconciliation                                    | Proposed   | 2026-09-19 |
 | [CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md)      | In-App Agent CRDT Follower and Distribution-Resolved Boundaries                    | Proposed   | 2026-08-21 |
+| [CRDT-FOLLOWER-0035](CRDT-FOLLOWER-0035-bounded-ack-timeout-retry-for-unacknowledged-doc-subscribe.md)           | Bounded Ack-Timeout Retry for Unacknowledged CRDT Doc Subscribe                    | Proposed   | 2026-09-19 |
+| [CRDT-INPUTS-0030](CRDT-INPUTS-0030-preserve-named-input-targets.md)                                             | Project Document Inputs onto Reordered Live Nodes by Name                          | Proposed   | 2026-09-09 |
 | [CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)                                 | CRDT Layout Intent and Local Measurement                                           | Proposed   | 2025-08-27 |
 | [CRDT-MINT-0018](CRDT-MINT-0018-merge-identity-for-node-transfers.md)                                            | Merge Identity for Node Transfers                                                  | Proposed   | 2026-08-25 |
+| [CRDT-PLACEMENT-0035](CRDT-PLACEMENT-0035-agent-inserted-nodes-land-near-existing-content.md)                    | Agent-Inserted Nodes Land Near Existing Content                                    | Proposed   | 2026-09-19 |
+| [CRDT-WRITE-0035](CRDT-WRITE-0035-hold-pending-human-ops-across-tab-suspension.md)                               | Hold Pending Human Ops Across a Tab Suspension                                     | Proposed   | 2026-09-19 |
 | [DEPS-DESIGN-SYSTEM-0004](DEPS-DESIGN-SYSTEM-0004-fork-primevue.md)                                              | Fork PrimeVue                                                                      | Rejected   | 2025-08-27 |
 | [DEPS-LITEGRAPH-0001](DEPS-LITEGRAPH-0001-integrate-litegraph-into-the-frontend.md)                              | Integrate LiteGraph into the Frontend                                              | Accepted   | 2025-08-05 |
 | [DEVEX-BUILD-0010](DEVEX-BUILD-0010-remove-nx-orchestration.md)                                                  | Remove Nx Orchestration                                                            | Accepted   | 2026-05-19 |
@@ -54,6 +61,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [TESTING-E2E-0027](TESTING-E2E-0027-coverage-measurement-and-test-selection.md)                                  | E2E Coverage Measurement and Test Selection                                        | Proposed   | 2026-09-01 |
 | [WEBSITE-REQUESTS-0030](WEBSITE-REQUESTS-0030-creator-widgets-and-router-request-composition.md)                 | Creator widgets and Router request composition                                     | Deprecated | 2026-09-09 |
 | [WIDGET-SERIALIZATION-0006](WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) | PrimitiveNode Widget Restoration Lifecycle                                         | Accepted   | 2026-02-22 |
+| [WORKSHOP-TELEMETRY-0034](WORKSHOP-TELEMETRY-0034-browser-delivery-health.md)                                    | Browser delivery health for Models                                                 | Proposed   | 2026-09-18 |
 
 ## Creating a New ADR
 
