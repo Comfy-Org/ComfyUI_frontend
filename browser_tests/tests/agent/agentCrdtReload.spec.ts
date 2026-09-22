@@ -1,4 +1,5 @@
 import { expect, mergeTests } from '@playwright/test'
+import type { WebSocketRoute } from '@playwright/test'
 
 import type {
   AgentThreadListResponse,
@@ -19,12 +20,24 @@ import {
   readPersistedAgentDocIdentity,
   switchToAgentWorkflowTab
 } from '@e2e/fixtures/agentPanelFixture'
+import { parseClientDocFrame } from '@e2e/fixtures/agentFollowerHostSocket'
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
-import { countDocFrames } from '@e2e/fixtures/utils/countDocFrames'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+
+function countDocFrames(
+  messagesBySocket: Map<WebSocketRoute, string[]>,
+  ws: WebSocketRoute,
+  type: 'doc_subscribe' | 'doc_unsubscribe',
+  workflowId: string
+): number {
+  return (messagesBySocket.get(ws) ?? []).filter((message) => {
+    const frame = parseClientDocFrame(message)
+    return frame?.type === type && frame.workflowId === workflowId
+  }).length
+}
 
 const test = mergeTests(agentTest, webSocketFixture)
 
