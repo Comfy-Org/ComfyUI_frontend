@@ -37,7 +37,7 @@ const BOOT_FEATURES = {
 const TOPUP_OPERATION_ID = 'op-e2e-topup'
 
 const SAVED_CARD = {
-  id: 'pm-1',
+  id: 'pm_e2e_visa',
   type: 'card',
   brand: 'visa',
   last4: '4242',

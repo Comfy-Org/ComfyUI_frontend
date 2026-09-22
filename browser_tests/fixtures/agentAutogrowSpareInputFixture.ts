@@ -7,10 +7,13 @@ import { toNodeId } from '@/types/nodeId'
 
 import {
   agentTest as test,
-  bootAgentApp
+  bootAgentApp,
+  mockAgentTurnApi,
+  mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { parseClientDocFrame } from '@e2e/fixtures/agentFollowerHostSocket'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -53,6 +56,8 @@ const IMAGES_GROUP = 'model.images'
 const IMAGE_1_NAME = `${IMAGES_GROUP}.image_1`
 const IMAGE_2_NAME = `${IMAGES_GROUP}.image_2`
 const IMAGE_2_FRIENDLY_LABEL = 'image_2'
+const MARKER_WIDGET = 'marker'
+const CATCH_UP_MARKER = 'tab return catch-up landed'
 
 const SOURCE_NODE_ID = 1
 const GPT_NODE_ID = 2
@@ -75,8 +80,10 @@ const imageSourceNodeDef: ComfyNodeDef = {
   output: ['IMAGE'],
   output_is_list: [false],
   output_name: ['IMAGE'],
-  input: { required: {} },
-  input_order: { required: [] }
+  input: {
+    required: { [MARKER_WIDGET]: ['STRING', { default: 'before tab switch' }] }
+  },
+  input_order: { required: [MARKER_WIDGET] }
 }
 
 const gptImageNodeDef: ComfyNodeDef = {
@@ -109,7 +116,7 @@ const gptImageNodeDef: ComfyNodeDef = {
 
 const catalog: WidgetCatalog = {
   types: {
-    [IMAGE_SOURCE_NODE_TYPE]: { widget_order: [] },
+    [IMAGE_SOURCE_NODE_TYPE]: { widget_order: [MARKER_WIDGET] },
     [GPT_IMAGE_NODE_TYPE]: { widget_order: [] }
   }
 }
@@ -131,7 +138,7 @@ const seed: WorkflowJSON = {
       inputs: [],
       outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [LINK_ID] }],
       properties: {},
-      widgets_values: []
+      widgets_values: ['before tab switch']
     },
     {
       id: GPT_NODE_ID,
@@ -169,111 +176,36 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
   )
 
   const host = new HostDoc(WORKFLOW_ID, seed, catalog)
-  let socketSend: ((frame: unknown) => void) | null = null
-  let subscribedTo: string | null = null
-  await page.routeWebSocket(/\/ws/, (socket) => {
-    socketSend = (frame) => socket.send(JSON.stringify(frame))
-    socket.onMessage((raw) => {
-      const frame = parseClientDocFrame(raw)
-      if (
-        frame?.type !== 'doc_subscribe' ||
-        frame.workflowId !== WORKFLOW_ID ||
-        frame.stateVector === null
-      )
-        return
-      subscribedTo = frame.workflowId
-      socketSend!(host.subscribed())
-      socketSend!(host.catchUp(frame.stateVector))
-    })
-    socketSend({
-      type: 'status',
-      data: { status: { exec_info: { queue_remaining: 0 } }, sid: 's' }
-    })
-  })
-  await page.route('**/api/agent/threads', (route) =>
-    route.fulfill(jsonRoute({ threads: [] }))
+  const hostSocket = new AgentFollowerHostSocket(
+    page,
+    WORKFLOW_ID,
+    host,
+    'autogrow-e2e'
   )
-  await page.route('**/api/agent/run-mode', (route) =>
-    route.fulfill(jsonRoute({ mode: 'ask_approval', credit_limit: null }))
-  )
-  // The CRDT follower only binds a workflow once a real turn's ack
-  // names one (`bindWorkflow(ack.workflow_id)` in `useAgentSession.ts`)
-  // — picking a target from the switcher alone does not bind it.
-  await page.route('**/api/agent/threads/*/messages', (route) => {
-    if (route.request().method() !== 'POST') return route.fulfill(jsonRoute([]))
-    return route.fulfill({
-      status: 202,
-      contentType: 'application/json',
-      body: JSON.stringify({
+  await hostSocket.install()
+
+  await bootAgentApp(page, true, {
+    objectInfo: 'server',
+    settings: {
+      'Comfy.Graph.CanvasInfo': false
+    },
+    beforeNavigate: async (page) => {
+      // Selecting the target does not itself bind the follower, so the
+      // mocked acknowledgement supplies the seeded workflow id.
+      await mockAgentTurnApi(page, {
         thread_id: THREAD_ID,
         message_id: MESSAGE_ID,
         workflow_id: WORKFLOW_ID
       })
-    })
-  })
-
-  await bootAgentApp(page, true, {
-    objectInfo: 'server',
-    // Only the Vue node renderer projects follower edits onto the
-    // canvas as DOM nodes this test can query.
-    settings: {
-      'Comfy.VueNodes.Enabled': true,
-      'Comfy.Graph.CanvasInfo': false
+      await mockWorkflowPersistence(page, WORKFLOW_ID)
     }
   })
 
-  // Registered only now, same as `AgentConversationHarness.
-  // selectWorkflowTarget`: `bootAgentApp`'s own mocks blanket-match
-  // `**/api/userdata**` for every method, and Playwright runs the
-  // most-recently-registered matching route first, so these have to
-  // come after it to take over the workflow-save round trip.
-  let savedName: string | undefined
-  await page.route('**/api/userdata/*', (route) => {
-    const request = route.request()
-    const path = decodeURIComponent(
-      new URL(request.url()).pathname.split('/userdata/')[1]
-    )
-    if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-      return route.fallback()
-    savedName = path.slice('workflows/'.length, -'.json'.length)
-    return route.fulfill(
-      jsonRoute({
-        path,
-        modified: Date.now(),
-        size: request.postDataBuffer()?.length ?? 0
-      })
-    )
-  })
-  await page.route('**/api/workflows?*', (route) =>
-    route.fulfill(
-      jsonRoute({
-        data:
-          savedName === undefined
-            ? []
-            : [
-                {
-                  id: WORKFLOW_ID,
-                  name: savedName,
-                  created_at: '2026-09-01T00:00:00Z',
-                  updated_at: '2026-09-01T00:00:00Z',
-                  created_by: 'test-user-e2e',
-                  latest_version: 1
-                }
-              ],
-        pagination: {
-          has_more: false,
-          limit: 100,
-          offset: 0,
-          total: savedName === undefined ? 0 : 1
-        }
-      })
-    )
-  )
-
   const topbar = new Topbar(page)
   const vueNodes = new VueNodeHelpers(page)
+  const agentPanel = new AgentPanel(page)
   const gptNodeId = String(GPT_NODE_ID)
-  const panel = page.locator('#agent-panel-root')
+  const panel = agentPanel.root
 
   // The user-facing question this whole case asks: "can I still wire a
   // second image into this node?" — which is a free slot in the
@@ -288,18 +220,23 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
           connected: node!.getInputLink(index) !== null
         }))
     }, toNodeId(GPT_NODE_ID))
+  const readNodeColor = () =>
+    page.evaluate((id) => {
+      const node = window.app!.graph.getNodeById(id)
+      return { color: node?.color, bgcolor: node?.bgcolor }
+    }, toNodeId(GPT_NODE_ID))
+  const readMarker = () =>
+    page.evaluate(
+      ({ id, widget }) =>
+        window
+          .app!.graph.getNodeById(id)
+          ?.widgets?.find(({ name }) => name === widget)?.value,
+      { id: toNodeId(SOURCE_NODE_ID), widget: MARKER_WIDGET }
+    )
 
   await test.step('open the agent panel and target the workflow', async () => {
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton })
-      .click()
-    await expect(panel).toBeVisible()
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
-    await page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
   })
 
   await test.step('send a turn so the session binds the workflow', async () => {
@@ -309,8 +246,8 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
     await composer.fill('hello')
     await panel.getByRole('button', { name: enMessages.agent.send }).click()
     await expect(panel.getByText('hello').first()).toBeVisible()
-    await expect.poll(() => subscribedTo, { timeout: 20_000 }).toBe(WORKFLOW_ID)
-    socketSend!({
+    await hostSocket.waitForSubscribe()
+    hostSocket.send({
       type: 'agent_message_done',
       data: { message_id: MESSAGE_ID, thread_id: THREAD_ID }
     })
@@ -334,8 +271,25 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
     await expect(topbar.workflowTabs.locator('.p-togglebutton')).toHaveCount(1)
     await topbar.newWorkflowButton.click()
     await expect(topbar.workflowTabs.locator('.p-togglebutton')).toHaveCount(2)
+    const subscribes = hostSocket.subscribeCount()
     await topbar.getTab(0).click()
     await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    await expect.poll(() => hostSocket.subscribeCount()).toBe(subscribes + 1)
+    hostSocket.send(
+      host.apply([
+        {
+          op: 'set_widget',
+          node_id: SOURCE_NODE_ID,
+          widget: MARKER_WIDGET,
+          value: CATCH_UP_MARKER
+        }
+      ])
+    )
+    await expect.poll(readMarker).toBe(CATCH_UP_MARKER)
+    await expect.poll(readImageSlots).toEqual([
+      { name: IMAGE_1_NAME, connected: true },
+      { name: IMAGE_2_NAME, connected: false }
+    ])
   })
 
   await page.evaluate((id) => {
@@ -352,7 +306,7 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
     body: await vueNodes.getNodeLocator(gptNodeId).screenshot(),
     contentType: 'image/png'
   })
-  return { vueNodes, gptNodeId, readImageSlots }
+  return { page, panel, vueNodes, gptNodeId, readImageSlots, readNodeColor }
 }
 
 export const autogrowTest = test.extend<{

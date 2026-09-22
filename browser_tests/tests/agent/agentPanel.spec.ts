@@ -244,6 +244,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         ).toBeVisible()
         const ws = await getWebSocket()
         pushEvent(ws, THINKING_EVENT)
+        await expect(
+          agentPanel.root.getByText(THINKING_TEXT, { exact: true })
+        ).toBeVisible()
+
         pushEvent(ws, TOOL_CALL_EVENT)
         await expect(agentPanel.root.getByText('Set widget')).toBeVisible()
       })
