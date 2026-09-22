@@ -186,6 +186,10 @@ jobs:
             core.setOutput('screenshot', screenshotFailures)
             core.setOutput('other', failed.length - screenshotFailures)
 
+      # ⚠️ The verdict wording here is duplicated on `post-result-comment` —
+      # keep them in sync. The shapes deliberately differ: this surface stays
+      # expanded, so it can use `> [!TIP]`-style alerts, which the comment's
+      # collapsed box cannot.
       - name: Write job summary
         if: always() && needs.website-e2e-shard.result != 'cancelled'
         uses: actions/github-script@v9
@@ -291,6 +295,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # ⚠️ The verdict wording here is duplicated from `Write job summary` in
+      # `website-e2e-report` — keep them in sync.
       - name: Build e2e section content
         id: content
         uses: actions/github-script@v9
@@ -347,6 +353,9 @@ jobs:
               ])
             }
 
+            // Ticking this box is what fires pr-update-website-screenshots, so
+            // the `- [x] Update website screenshots` prefix it matches on has
+            // to survive verbatim.
             if (screenshotFailures > 0) {
               const s = screenshotFailures === 1 ? '' : 's'
               blocks.push([`- [ ] Update website screenshots (${screenshotFailures} screenshot diff${s})`])
