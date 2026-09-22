@@ -22,6 +22,7 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import { sentryThirdPartyErrorFilter } from '@/platform/telemetry/thirdPartyErrorNoise'
 import {
   markStoresPending,
   markStoresReady
@@ -114,6 +115,7 @@ sentryInit({
   tracesSampleRate: isCloud ? 1.0 : 0,
   replaysSessionSampleRate: 0,
   replaysOnErrorSampleRate: 0,
+  beforeSend: sentryThirdPartyErrorFilter,
   // Only set these for non-cloud builds
   ...(isCloud
     ? {
