@@ -1,0 +1,56 @@
+{
+  "16": {
+    "inputs": {
+      "filename_prefix": "video/Seedance2.5_video_edit",
+      "format": "auto",
+      "video": ["39", 0],
+      "format.codec": "auto"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "Save Video"
+    }
+  },
+  "35": {
+    "inputs": {
+      "file": "kitten_cop.mp4"
+    },
+    "class_type": "LoadVideo",
+    "_meta": {
+      "title": "Load Video"
+    }
+  },
+  "36": {
+    "inputs": {
+      "start_time": 0,
+      "duration": 5,
+      "strict_duration": false,
+      "video": ["35", 0]
+    },
+    "class_type": "Video Slice",
+    "_meta": {
+      "title": "Trim Video"
+    }
+  },
+  "39": {
+    "inputs": {
+      "model": "Seedance 2.5",
+      "seed": 0,
+      "watermark": false,
+      "model.prompt": "Replace the background with a sunlit city park, leafy trees, and a soft blue sky. Preserve the kitten, its clothing, movement, camera framing, and timing. Change only the background and match its lighting to the subject.",
+      "model.resolution": "720p",
+      "model.ratio": "16:9",
+      "model.duration": 5,
+      "model.generate_audio": true,
+      "model.task_type": "edit",
+      "model.output_format": "mp4",
+      "model.auto_downscale": true,
+      "model.auto_upscale": false,
+      "model.reference_videos.video_1": ["36", 0]
+    },
+    "class_type": "ByteDance2ReferenceNodeV2",
+    "_meta": {
+      "title": "ByteDance Seedance 2.5 Reference to Video"
+    }
+  }
+}

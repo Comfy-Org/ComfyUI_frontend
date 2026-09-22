@@ -1,16 +1,21 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import WorkflowDetail from '../../components/workshop/WorkflowDetail.vue'
+import WorkflowDemoDetail from '../../components/workshop/WorkflowDemoDetail.vue'
+import { deploymentDemo } from '../../config/workflow-demo'
 import { workflows } from '../../config/workflow-catalogue'
 import { workflowGraphSchema } from '../../config/workflow-execution'
 
 export function getStaticPaths() {
-  return workflows.map((workflow) => ({ params: { workflow: workflow.slug }, props: { workflow } }))
+  return [
+    ...[...workflows, deploymentDemo].map((workflow) => ({ params: { workflow: workflow.slug }, props: { workflow } })),
+    { params: { workflow: 'restore-video-api' }, props: { workflow: deploymentDemo } }
+  ]
 }
 const { workflow } = Astro.props
 const graphs = import.meta.glob('../../data/workflows/*.json', { eager: true, import: 'default' })
-const graph = workflowGraphSchema.parse(graphs[`../../data/workflows/${workflow.template}.json`])
+const graph = workflow.execution === 'deployment-demo' ? undefined : workflowGraphSchema.parse(graphs[`../../data/workflows/${workflow.template}.json`])
 ---
 <BaseLayout title={`${workflow.title} - Comfy Workflows`} description={workflow.description} noindex>
-  <WorkflowDetail workflow={workflow} graph={graph} client:load />
+  {graph ? <WorkflowDetail workflow={workflow} graph={graph} client:load /> : <WorkflowDemoDetail workflow={workflow} client:load />}
 </BaseLayout>

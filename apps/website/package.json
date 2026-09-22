@@ -38,6 +38,7 @@
     "@comfyorg/account": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
     "@comfyorg/ingest-types": "workspace:*",
+    "@comfyorg/litegraph": "catalog:",
     "@comfyorg/object-info-parser": "workspace:*",
     "@comfyorg/registry-types": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",

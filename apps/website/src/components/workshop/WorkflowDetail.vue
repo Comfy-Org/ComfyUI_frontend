@@ -21,6 +21,8 @@ import {
 import { useWorkflowRun } from '../../composables/useWorkflowRun'
 import WorkflowGraph from './WorkflowGraph.vue'
 import WorkshopBrowseTabs from './WorkshopBrowseTabs.vue'
+import WorkflowDetailTabs from './WorkflowDetailTabs.vue'
+import WorkflowApiTab from './WorkflowApiTab.vue'
 
 const { workflow, graph } = defineProps<{
   workflow: CuratedWorkflow
@@ -41,6 +43,11 @@ const {
   cancel
 } = useWorkflowRun(workflow, graph)
 const section = ref('playground')
+const selectedFilenames = ref<Record<string, string>>({})
+const snippetValues = computed(() => ({
+  ...values.value,
+  ...selectedFilenames.value
+}))
 const cloudHref = `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(workflow.template)}`
 const statusLabel = computed(() => {
   if (state.value.phase === 'uploading') return 'Uploading inputs…'
@@ -57,18 +64,10 @@ const signInHref =
   encodeURIComponent(`/models/workflows/${workflow.slug}/`)
 function changedFile(key: string, event: Event) {
   const input = event.target
-  if (input instanceof HTMLInputElement && input.files?.[0])
+  if (input instanceof HTMLInputElement && input.files?.[0]) {
     selectFile(key, input.files[0])
-}
-function downloadGraph() {
-  const url = URL.createObjectURL(
-    new Blob([JSON.stringify(graph, null, 2)], { type: 'application/json' })
-  )
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = `${workflow.slug}.api.json`
-  anchor.click()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
+    selectedFilenames.value[key] = input.files[0].name
+  }
 }
 </script>
 
@@ -92,6 +91,19 @@ function downloadGraph() {
       <p class="mt-4 max-w-3xl text-lg text-primary-warm-gray">
         {{ workflow.description }}
       </p>
+      <p
+        v-if="workflow.alternatives?.length"
+        class="mt-4 text-sm text-primary-warm-gray"
+      >
+        Also available in Cloud:
+        <a
+          v-for="alternative in workflow.alternatives"
+          :key="alternative.template"
+          :href="`${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(alternative.template)}`"
+          class="ml-2 text-primary-comfy-yellow underline underline-offset-4"
+          >{{ alternative.name }}</a
+        >
+      </p>
       <div class="mt-5 flex flex-wrap gap-2 text-xs text-primary-warm-gray">
         <span
           v-for="model in metadata.models"
@@ -103,23 +115,7 @@ function downloadGraph() {
       </div>
     </header>
 
-    <div class="mb-6 flex gap-7 border-b border-transparency-white-t8">
-      <button
-        v-for="item in ['playground', 'workflow', 'api']"
-        :key="item"
-        type="button"
-        :aria-pressed="section === item"
-        class="min-h-12 border-b-2 px-1 text-sm font-medium uppercase transition-colors hover:text-primary-comfy-yellow"
-        :class="
-          section === item
-            ? 'border-primary-comfy-yellow text-primary-comfy-canvas'
-            : 'border-transparent text-primary-warm-gray'
-        "
-        @click="section = item"
-      >
-        {{ item }}
-      </button>
-    </div>
+    <WorkflowDetailTabs v-model="section" />
 
     <div
       v-show="section === 'playground'"
@@ -235,11 +231,10 @@ function downloadGraph() {
           <a
             v-else
             :href="signInHref"
-            target="_blank"
-            rel="noopener"
+            data-astro-reload
             class="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary-comfy-yellow px-5 text-sm font-bold text-primary-comfy-ink"
-            >Sign in to run <ArrowUpRight class="size-4"
-          /></a>
+            >Sign in to run</a
+          >
           <a
             :href="cloudHref"
             target="_blank"
@@ -387,8 +382,8 @@ function downloadGraph() {
       </div>
     </div>
 
-    <div v-show="section === 'workflow'" class="space-y-6">
-      <WorkflowGraph :graph />
+    <div v-if="section === 'workflow'" class="space-y-6">
+      <WorkflowGraph :template="workflow.template" />
       <div class="flex flex-wrap items-center gap-5 text-sm">
         <a
           :href="templateAsset('templates', `${workflow.template}.json`)"
@@ -407,40 +402,12 @@ function downloadGraph() {
         >
       </div>
     </div>
-    <section
-      v-show="section === 'api'"
-      class="max-w-3xl rounded-2xl border border-transparency-white-t20 p-7"
-    >
-      <h2 class="text-2xl text-primary-comfy-canvas">
-        Build with this workflow
-      </h2>
-      <p class="mt-3 leading-relaxed text-primary-warm-gray">
-        Download the API-format graph to integrate this workflow into your app.
-        Upload your input files and bind their references before submitting a
-        job.
-      </p>
-      <div class="mt-6 flex flex-wrap gap-4">
-        <button
-          class="min-h-11 rounded-xl border border-transparency-white-t20 px-5 text-sm text-primary-comfy-canvas"
-          @click="downloadGraph"
-        >
-          Download API graph</button
-        ><a
-          href="https://docs.comfy.org/api-reference/v2/overview"
-          target="_blank"
-          rel="noopener"
-          class="inline-flex min-h-11 items-center gap-2 text-sm text-primary-comfy-yellow"
-          >API documentation <ArrowUpRight class="size-4"
-        /></a>
-      </div>
-      <a
-        href="https://platform.comfy.org/profile/builds"
-        target="_blank"
-        rel="noopener"
-        class="mt-6 inline-flex min-h-11 items-center gap-2 text-sm text-primary-comfy-yellow"
-        >Deploy with the Developer Platform <ArrowUpRight class="size-4"
-      /></a>
-    </section>
+    <WorkflowApiTab
+      v-if="section === 'api'"
+      :workflow
+      :graph
+      :values="snippetValues"
+    />
 
     <section class="mt-14">
       <h2 class="mb-5 text-2xl font-light text-primary-comfy-canvas">

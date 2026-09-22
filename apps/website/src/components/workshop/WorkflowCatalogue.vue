@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ChevronRight, Search, Workflow } from '@lucide/vue'
+import { Search, Workflow } from '@lucide/vue'
 import Button from '@/components/ui/button/Button.vue'
 import {
-  workflows,
+  launchWorkflows,
   workflowCategories,
   workflowMetadata,
   workflowPath
@@ -17,8 +17,8 @@ import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 const search = ref('')
 const categories = ref<(typeof workflowCategories)[number][]>([])
 const matchingWorkflows = computed(() =>
-  workflows.filter((workflow) =>
-    `${workflow.title} ${workflow.description}`
+  launchWorkflows.filter((workflow) =>
+    `${workflow.title} ${workflow.description} ${workflowMetadata(workflow).models.join(' ')} ${workflow.execution === 'deployment-demo' ? 'Comfy API custom nodes' : ''}`
       .toLowerCase()
       .includes(search.value.trim().toLowerCase())
   )
@@ -47,9 +47,13 @@ const shelves = computed(() =>
 const resultCount = computed(() =>
   shelves.value.reduce((total, shelf) => total + shelf.items.length, 0)
 )
-const featured = workflows.find(
-  (workflow) => workflow.slug === 'change-material'
-)!
+const highlights = workflowCategories.map((category) =>
+  launchWorkflows.find(
+    (workflow) => workflow.category === category && !workflow.execution
+  )!
+)
+const selectedHighlight = ref(0)
+const featured = computed(() => highlights[selectedHighlight.value])
 const cardClass =
   'w-60 shrink-0 snap-start sm:w-[calc((100cqw-2*1.25rem)/2.5)] md:w-[calc((100cqw-3*1.25rem)/3.5)] lg:w-[calc((100cqw-4*1.25rem)/4.5)] xl:w-[calc((100cqw-5*1.25rem)/5.5)]'
 </script>
@@ -65,7 +69,7 @@ const cardClass =
       subtitle-key="workshop.workflows.subtitle"
     />
     <section
-      aria-label="Featured workflow"
+      aria-label="Featured workflows"
       class="relative isolate mb-10 overflow-hidden rounded-4.5xl border border-transparency-white-t8 short:mb-6"
       data-testid="workflow-featured"
     >
@@ -80,6 +84,7 @@ const cardClass =
           :src="workflowMetadata(featured).examples.at(-1)"
           alt=""
           class="pointer-events-none absolute inset-0 size-full object-cover"
+          :style="{ objectPosition: featured.heroPosition ?? '50% 30%' }"
           decoding="async"
         />
         <div
@@ -95,19 +100,18 @@ const cardClass =
               size="md"
               class="text-primary-comfy-canvas backdrop-blur-md"
             >
-              Material replacement
+              {{ featured.category }}
             </Badge>
           </div>
           <h2
             class="mt-2 text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
           >
-            A new look. The same object.
+            {{ featured.title }}
           </h2>
           <p
             class="line-clamp-2 max-w-prose shrink-0 text-content-secondary max-sm:line-clamp-1 short:hidden"
           >
-            Bring a material reference and see your object in a whole new
-            finish.
+            {{ featured.description }}
           </p>
           <div class="pointer-events-auto flex w-fit items-center gap-3">
             <Button as="a" :href="workflowPath(featured.slug)" class="w-fit">
@@ -115,6 +119,29 @@ const cardClass =
             </Button>
           </div>
         </div>
+      </div>
+      <div
+        class="absolute bottom-5 left-8 flex gap-2 lg:left-12"
+        aria-label="Choose a featured workflow"
+      >
+        <button
+          v-for="(highlight, index) in highlights"
+          :key="highlight.slug"
+          type="button"
+          :aria-label="`${highlight.category}: ${highlight.title}`"
+          :aria-current="selectedHighlight === index ? 'true' : undefined"
+          class="group w-12 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+          @click="selectedHighlight = index"
+        >
+          <span
+            class="block h-1 overflow-hidden rounded-full bg-transparency-white-t20 group-hover:bg-primary-warm-gray"
+          >
+            <span
+              class="block h-full rounded-full bg-primary-warm-white"
+              :style="{ width: selectedHighlight === index ? '100%' : '0%' }"
+            />
+          </span>
+        </button>
       </div>
     </section>
     <div
@@ -152,19 +179,6 @@ const cardClass =
               {{ shelf.name }}
             </h2>
           </template>
-          <template #actions>
-            <button
-              type="button"
-              class="group inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg text-sm font-medium text-primary-warm-gray transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-              @click="categories = [shelf.name]"
-            >
-              <span class="tabular-nums">See all {{ shelf.items.length }}</span>
-              <ChevronRight
-                class="size-4 transition-transform group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
-            </button>
-          </template>
           <li
             v-for="workflow in shelf.items"
             :key="workflow.slug"
@@ -185,15 +199,23 @@ const cardClass =
                   loading="lazy"
                   decoding="async"
                   draggable="false"
-                  class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"
+                  class="size-full object-cover object-top transition-transform duration-300 select-none group-hover:scale-105"
                 />
+                <span
+                  v-if="workflow.execution === 'deployment-demo'"
+                  class="absolute bottom-3 left-3 rounded-full bg-page px-3 py-1.5 text-xs text-primary-comfy-yellow"
+                  >Comfy API · Demo</span
+                >
               </div>
               <div class="flex flex-col gap-2 px-3">
                 <div
-                  class="flex min-w-0 items-center gap-2 text-content-secondary"
+                  class="flex min-h-10 min-w-0 items-start gap-2 text-content-secondary"
                 >
-                  <Workflow class="size-5 shrink-0" aria-hidden="true" />
-                  <h3 class="truncate text-sm font-medium text-content-bright">
+                  <Workflow class="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+                  <h3
+                    class="line-clamp-2 h-10 min-w-0 text-sm/5 font-medium text-content-bright"
+                    :title="workflow.title"
+                  >
                     {{ workflow.title }}
                   </h3>
                 </div>

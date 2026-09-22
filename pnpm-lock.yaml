@@ -27,6 +27,9 @@ catalogs:
     '@comfyorg/comfyui-electron-types':
       specifier: 0.6.2
       version: 0.6.2
+    '@comfyorg/litegraph':
+      specifier: 0.17.2
+      version: 0.17.2
     '@comfyorg/sdk':
       specifier: 0.2.0
       version: 0.2.0
@@ -1035,6 +1038,9 @@ importers:
       '@comfyorg/ingest-types':
         specifier: workspace:*
         version: link:../../packages/ingest-types
+      '@comfyorg/litegraph':
+        specifier: 'catalog:'
+        version: 0.17.2
       '@comfyorg/object-info-parser':
         specifier: workspace:*
         version: link:../../packages/object-info-parser
@@ -1887,6 +1893,10 @@ packages:
     peerDependenciesMeta:
       '@types/three':
         optional: true
+
+  '@comfyorg/litegraph@0.17.2':
+    resolution: {integrity: sha512-6O+PSu80Tycj4NkYyLv/r7tS5V1JDVnSZLUglXCwDTPDJbjqyyNWjSUuLTFpvNOMuK+iPYMmuOWazBcYx/Rd6w==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   '@comfyorg/sdk@0.2.0':
     resolution: {integrity: sha512-x2a9mat9+s6xOACYFnlsAri7ovNaFD2VjwKohsNWJ65RodnLU5Rviq2fd7feQyfQS2C6XKZRjXj81AfypHonTQ==}
@@ -10474,6 +10484,8 @@ snapshots:
       three: 0.184.0
     optionalDependencies:
       '@types/three': 0.184.1
+
+  '@comfyorg/litegraph@0.17.2': {}
 
   '@comfyorg/sdk@0.2.0':
     dependencies:
