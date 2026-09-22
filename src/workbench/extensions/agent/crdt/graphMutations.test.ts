@@ -802,12 +802,9 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
-  // Unit-level regression guard for the color/label preservation fix above (this file had no
-  // unit coverage of it before this commit, only the Playwright spec added
-  // alongside it): a reconcile must not wholesale-replace a live node's
-  // presentation-only `color` or an autogrow input's client-computed
-  // `localized_name` when the CRDT payload omits them, since the document
-  // never carries either field.
+  // A reconcile must not wholesale-replace a live node's presentation-only
+  // `color` or an autogrow input's client-computed `localized_name` when the
+  // CRDT payload omits them, since the document never carries either field.
   it("keeps a live node's color and friendly input label across a reconcile", () => {
     const graph = mutations()
     graph.addNode(node(1), context)
@@ -2297,6 +2294,15 @@ describe('graphMutations', () => {
       })
     ).toThrow('layout port failed')
 
+    // The throwing mutation must not leave node 3 half-committed: its own
+    // graph effect and its (absent) autogrow-memory journal entry share one
+    // outcome, so a store write that ran before the throw would be a bug.
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .find(({ id }) => id === toNodeId(3))
+    ).toBeUndefined()
+
     // Re-introduce 'refs.a' as a live-only leftover directly through the
     // store (bypassing graphMutations' own replace/forget path, which would
     // itself forget the very memory this test is trying to observe), so a
@@ -2501,6 +2507,78 @@ describe('graphMutations', () => {
       .getGraphNodesFor('root', 'root')
       .find(({ id }) => id === toNodeId(2))
     expect(reconciled?.inputs.map(({ name }) => name)).toEqual(['refs.a'])
+  })
+
+  it("does not leak a failed connect's staged autogrow answer to a later connect in the same batch", () => {
+    // 'refs.b' doesn't end in a digit and `Type2` (this node's default,
+    // unregistered type) has no static definition, so only a live or
+    // remembered answer can classify it. Call 1 (the first connect's own
+    // prepare-time resolution) answers 'notMember', dropping 'refs.b' from
+    // its prepared `targetInputs` -- and, since `prepare()` shares one
+    // simulated node across the batch, from the second connect's prepared
+    // `targetInputs` too, so neither needs a prepare-time call of its own.
+    // Both connects therefore re-resolve 'refs.b' again at commit time,
+    // against the still-unchanged live node. Call 2 (the first connect's
+    // commit-time resolution) answers 'member', staging that answer, but
+    // its own `replaceLink` then fails. Call 3 (the second connect's
+    // commit-time resolution) answers 'unavailable': if the first connect's
+    // staged answer were still in the batch's shadow, the second connect
+    // would wrongly inherit it and keep 'refs.b'; with the leak fixed, it
+    // finds no answer and correctly drops 'refs.b' as an unclassifiable
+    // input-set change.
+    let refsBCalls = 0
+    const graph = mutations({
+      autogrowGroupOf: (_scope, _nodeId, name) => {
+        if (name !== 'refs.b') return { kind: 'notMember' }
+        refsBCalls++
+        if (refsBCalls === 1) return { kind: 'notMember' }
+        if (refsBCalls === 2) return { kind: 'member', group: 'refs' }
+        return { kind: 'unavailable' }
+      }
+    })
+
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'refs.a', type: 'IMAGE', link: null },
+          { name: 'refs.b', type: 'IMAGE', link: null }
+        ]
+      })
+    })
+
+    const replaceLinkSpy = vi
+      .spyOn(useLinkStore(), 'replaceLink')
+      .mockReturnValueOnce(undefined)
+    expect(
+      graph.batch({ ...context, opId: 'same-batch-shadow-leak' }, (batch) => {
+        batch.connect({
+          id: 91,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          targetInputs: [{ name: 'refs.a', type: 'IMAGE', link: toLinkId(91) }]
+        })
+        batch.connect({
+          id: 92,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          targetInputs: [{ name: 'refs.a', type: 'IMAGE', link: toLinkId(92) }]
+        })
+      })
+    ).toBe(true)
+    replaceLinkSpy.mockRestore()
+
+    const after = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(after?.inputs.map(({ name }) => name)).toEqual(['refs.a'])
   })
 
   it("does not let one graph scope read another scope's remembered autogrow answer on the same GraphMutations instance", () => {

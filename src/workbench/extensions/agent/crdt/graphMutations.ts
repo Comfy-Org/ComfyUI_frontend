@@ -66,42 +66,31 @@ function isSlotRecord(value: unknown): value is { name?: unknown } {
 type PatchableSlot = INodeInputSlot | INodeOutputSlot
 
 /**
- * `patchSlotFields`'s optional fields -- every one is declared on the shared
- * `INodeSlot` base, so a single loop can copy all of them the same way.
+ * Assigns `value` onto `target[key]` unless it is `undefined`, keeping the
+ * generic parameter monomorphic per call site so the key and value stay
+ * correlated -- unlike a loop over a widened `keyof` union, which would let
+ * any field's value be assigned to any other field's key.
  */
-const OPTIONAL_SLOT_FIELDS = [
-  'localized_name',
-  'label',
-  'dir',
-  'removable',
-  'shape',
-  'color_off',
-  'color_on',
-  'locked',
-  'nameLocked',
-  'hasErrors'
-] as const satisfies readonly (keyof INodeSlot)[]
+function assignIfDefined<T, K extends keyof T>(
+  target: T,
+  key: K,
+  value: T[K] | undefined
+): void {
+  if (value !== undefined) target[key] = value
+}
 
 /**
- * Copies a serialized slot's presentation fields -- `name`, `type`, and
- * `OPTIONAL_SLOT_FIELDS` -- onto the live slot object, so the node keeps its
- * slot identity; an omitted optional field keeps the live value. Building a
- * plain object of the present fields and `Object.assign`-ing it, rather than
- * assigning `live[field] = serialized[field]` per field, sidesteps a
- * TypeScript limitation where indexing both sides by the same widened
- * `keyof` union can no longer prove the assignment sound -- the same reason
- * `nodeDataStore.ts`'s `copyOwnFields` takes this shape. `link`/`links` are
- * handled separately, by `patchLiveInputSlot`/`patchLiveOutputSlot` below:
- * keeping them out of this shared helper (rather than narrowing `live` at
- * runtime with an `in` check, which a live slot missing that own key -- e.g.
- * an output never assigned `links` -- would wrongly fail) means each
- * caller's static type, not a runtime probe, decides which field applies.
+ * Copies a serialized slot's presentation fields onto the live slot,
+ * keeping the live value for any field the serialized slot omits -- the
+ * document never carries some of these (e.g. `localized_name`, which
+ * live-only code derives). `link`/`links` are handled separately by
+ * `patchLiveInputSlot`/`patchLiveOutputSlot` below, since a live slot
+ * missing that own key (e.g. an output never assigned `links`) would fail a
+ * runtime `in` check.
  *
- * `boundingRect` is deliberately excluded: on a real slot instance it is a
- * `Rectangle` (a `Float64Array` subclass) that the renderer measures, and
- * `prepareInputSlot`/`prepareOutputSlots` always stub the serialized side to
- * `[0, 0, 0, 0]`, so copying it would clobber the live measurement with that
- * stub.
+ * `boundingRect` is excluded: it is a `Rectangle` the renderer measures on a
+ * real slot, and callers stub the serialized side to `[0, 0, 0, 0]`, so
+ * copying it would clobber the live measurement.
  */
 function patchSlotFields<T extends PatchableSlot>(
   live: T,
@@ -109,14 +98,16 @@ function patchSlotFields<T extends PatchableSlot>(
 ): void {
   live.name = serialized.name
   live.type = serialized.type
-  Object.assign(
-    live,
-    Object.fromEntries(
-      OPTIONAL_SLOT_FIELDS.flatMap((field) =>
-        serialized[field] !== undefined ? [[field, serialized[field]]] : []
-      )
-    )
-  )
+  assignIfDefined(live, 'localized_name', serialized.localized_name)
+  assignIfDefined(live, 'label', serialized.label)
+  assignIfDefined(live, 'dir', serialized.dir)
+  assignIfDefined(live, 'removable', serialized.removable)
+  assignIfDefined(live, 'shape', serialized.shape)
+  assignIfDefined(live, 'color_off', serialized.color_off)
+  assignIfDefined(live, 'color_on', serialized.color_on)
+  assignIfDefined(live, 'locked', serialized.locked)
+  assignIfDefined(live, 'nameLocked', serialized.nameLocked)
+  assignIfDefined(live, 'hasErrors', serialized.hasErrors)
 }
 
 /**
@@ -146,10 +137,7 @@ function patchLiveOutputSlot(
  * Patches each live output slot the document still names, by document
  * index. Outputs are never autogrown, so a live index past the document's
  * own list is never reused -- doing so would resurrect an output the
- * document dropped, with no later reconcile to remove it again. Split out
- * of `commit`'s `connect` case, whose own complexity is otherwise dominated
- * by this one slot-patching loop rather than by the mutation dispatch it
- * exists to do.
+ * document dropped, with no later reconcile to remove it again.
  */
 function patchLiveOutputSlots(
   liveOutputs: NodeState['outputs'],
@@ -171,8 +159,7 @@ function patchLiveOutputSlots(
  * locally). Litegraph does not enforce unique input names, so each
  * document slot is consumed at most once -- otherwise two live inputs
  * sharing a name would both resolve to the same document index and one
- * live identity would be silently dropped. Split out of `commit`'s
- * `connect` case for the same reason as `patchLiveOutputSlots`.
+ * live identity would be silently dropped.
  */
 function patchLiveInputSlots(
   liveInputs: NodeState['inputs'],
@@ -539,12 +526,13 @@ function prepareOutputSlots(value: unknown): NodeState['outputs'] {
  * for some other reason (a rename, a definition change, or autogrow itself
  * removing a member on disconnect/shrink). `mergeInputSlotsByName` only
  * merges by name on the growth path: every document input still exists
- * live, and any live-only leftover is an unlinked, autogrow-shaped spare.
+ * live, and any live-only leftover is an autogrow-shaped spare that is
+ * either unlinked, or linked and the caller opted into `preserveLinkedAutogrow`.
  * `hasNonGrowthInputSetChange` (below) detects the other path -- the
  * document naming something live doesn't have, or live keeping a leftover
- * that is linked or not autogrow-shaped -- in which case the document is
- * authoritative and the merge falls back to positional preparation, letting
- * stale live slots go.
+ * that is not autogrow-shaped (or is linked without that opt-in) -- in
+ * which case the document is authoritative and the merge falls back to
+ * positional preparation, letting stale live slots go.
  */
 function hasNonGrowthInputSetChange(
   live: NodeState['inputs'],
@@ -651,12 +639,13 @@ function nodeDefAutogrowGroupOf(
  * DEFAULT naming (`group.prefixN`, ending in the member's ordinal) --
  * undefined for anything else.
  *
- * LAST RESORT: used only once both the live node (`SemanticLiveNodeQueryPort`)
- * and the node type's own static definition (`nodeDefAutogrowGroupOf`) have
- * no opinion -- e.g. the type hasn't loaded yet. A `NodeState` input itself
- * carries no autogrow marker, so absent either real answer this is
- * inference from shape alone, and shape is not a reliable signal in either
- * direction:
+ * LAST RESORT: used only once the live node (`SemanticLiveNodeQueryPort`),
+ * this follower's own remembered `member`/`notMember` answer, and the node
+ * type's own static definition (`nodeDefAutogrowGroupOf`) all have no
+ * opinion -- e.g. the type hasn't loaded yet and this is the first time this
+ * follower has ever resolved the name. A `NodeState` input itself carries no
+ * autogrow marker, so absent every real answer this is inference from shape
+ * alone, and shape is not a reliable signal in either direction:
  *
  * - False positive: `group.member` alone is not enough, because
  *   `dynamicWidgets.ts`'s `COMFY_DYNAMICCOMBO_V3` support (`updateWidgets`)
@@ -749,12 +738,43 @@ type ConnectTargetSlotResolution =
     }
 
 /**
+ * How many of `items` before `index` share `name` with the one at `index` --
+ * its occurrence ordinal, so a duplicate name can be re-found after a merge
+ * by "the Nth occurrence" rather than by first match. Shared by `prepare`'s
+ * and `commit`'s own connect-target resolution so the two phases can't
+ * drift on this calculation.
+ */
+function occurrenceIndexOf<T>(
+  items: readonly T[],
+  index: number,
+  name: unknown,
+  nameOf: (item: T) => unknown
+): number {
+  return items.slice(0, index).filter((item) => nameOf(item) === name).length
+}
+
+/** The index within `items` of the `occurrence`-th (0-based) entry named
+ * `name`, or -1 if `items` has fewer than that many. */
+function resolveOccurrenceIndex<T>(
+  items: readonly T[],
+  name: unknown,
+  occurrence: number,
+  nameOf: (item: T) => unknown
+): number {
+  let seen = 0
+  for (const [index, item] of items.entries()) {
+    if (nameOf(item) !== name) continue
+    if (seen === occurrence) return index
+    seen++
+  }
+  return -1
+}
+
+/**
  * Merges a `connect` payload's raw target inputs onto the live target node
  * and resolves which merged slot `rawTargetSlot` (the payload's own index,
  * pre-merge) now corresponds to, or an error string when that slot cannot
- * be identified. Split out of `prepare`'s `connect` case, whose own
- * complexity is otherwise dominated by this one slot's worth of resolution
- * logic rather than by the mutation dispatch it exists to do.
+ * be identified.
  */
 function resolveConnectTargetInputs(
   liveInputs: NodeState['inputs'],
@@ -777,26 +797,23 @@ function resolveConnectTargetInputs(
   // slot is resolved by occurrence -- the Nth slot named `name` up to
   // `rawTargetSlot` in the raw payload maps to the Nth slot named `name` in
   // the merged result -- rather than by first match.
-  const occurrence = rawTargetInputs
-    .slice(0, rawTargetSlot)
-    .filter(
-      (candidate) => isRecord(candidate) && candidate.name === name
-    ).length
+  const occurrence = occurrenceIndexOf(
+    rawTargetInputs,
+    rawTargetSlot,
+    name,
+    (candidate) => (isRecord(candidate) ? candidate.name : undefined)
+  )
   const targetInputs = mergeInputSlotsByName(
     liveInputs,
     rawTargetInputs,
     autogrowGroupOf
   )
-  let seen = 0
-  let resolvedSlot = -1
-  for (const [index, input] of targetInputs.entries()) {
-    if (input.name !== name) continue
-    if (seen === occurrence) {
-      resolvedSlot = index
-      break
-    }
-    seen++
-  }
+  const resolvedSlot = resolveOccurrenceIndex(
+    targetInputs,
+    name,
+    occurrence,
+    (input) => input.name
+  )
   if (resolvedSlot < 0) {
     return { error: `connect target slot ${rawTargetSlot} does not exist` }
   }
@@ -1058,18 +1075,24 @@ type StagedAutogrowWrite =
  * learns) autogrow answers before a later queued mutation can still reject the
  * whole batch: a rejected batch must leave no trace, or a retry that finds the
  * live port `unavailable` classifies slots off an answer the store never
- * accepted. `read` sees this batch's own staged writes (via an O(1) shadow of
- * the real store, not a replay) so resolution stays self-consistent within
- * the batch.
+ * accepted.
  *
- * Each write is also journaled under the mutation index that staged it
- * (`beginMutation` marks the start of a new one), so `applyMutation` can
- * commit exactly the writes one mutation made, in the order they were
- * staged, once -- and only once -- that mutation's own graph effects have
- * actually landed. A batch whose commit throws partway through therefore
- * keeps the memory writes for every mutation that committed before the
- * throw, and drops the rest, instead of an all-or-nothing `apply()` that
- * would discard already-committed mutations' writes too.
+ * Each mutation's writes go into its own pending overlay (`remember`/`forget`
+ * build it lazily off `read`'s current view -- this mutation's own overlay if
+ * already touched, else the batch's confirmed shadow, else the persisted
+ * store) rather than straight onto the batch's shared shadow. `applyMutation`
+ * merges that overlay onto the shadow once that mutation's own graph effect
+ * has actually landed, so a later mutation only ever reads a prior one's
+ * answer once it is confirmed; `rollbackMutation` just discards the overlay,
+ * so a mutation whose effect did not land (e.g. `connect`'s `replaceLink`
+ * refusing a stale or collided target) can never leak its staged answer to a
+ * later mutation in the same batch, no matter how the two interleave on the
+ * same node. Each write is also journaled the same way, so `applyMutation`
+ * can additionally replay it onto the persisted store; a batch whose commit
+ * throws partway through therefore keeps the memory writes for every
+ * mutation that committed before the throw, and drops the rest, instead of
+ * an all-or-nothing `apply()` that would discard already-committed
+ * mutations' writes too.
  */
 interface AutogrowMemoryDraft {
   read(
@@ -1088,6 +1111,7 @@ interface AutogrowMemoryDraft {
   forget(scope: GraphScope, nodeId: NodeId): void
   beginMutation(mutationIndex: number): void
   applyMutation(mutationIndex: number): void
+  rollbackMutation(mutationIndex: number): void
 }
 
 /**
@@ -1115,36 +1139,39 @@ function createAutogrowMemory() {
     Map<string, Map<string, Map<string, RememberedAutogrowGroup>>>
   >()
 
-  const currentNodeDef = (nodeType: string): ComfyNodeDefImpl | undefined =>
-    useNodeDefStore().getNodeDefByName(nodeType)
+  function currentNodeDef(nodeType: string): ComfyNodeDefImpl | undefined {
+    return useNodeDefStore().getNodeDefByName(nodeType)
+  }
 
   // A current, definitive node definition always beats stale memory: an entry
   // recorded against another type, or against a definition object that has
   // since been replaced by a re-registration, reads back as "never resolved"
   // so the caller consults the live definition instead.
-  const readEntry = (
+  function readEntry(
     entry: RememberedAutogrowGroup | undefined,
     nodeType: string
-  ): RememberedAutogrowRead =>
-    entry &&
-    entry.nodeType === nodeType &&
-    entry.nodeDef === currentNodeDef(nodeType)
+  ): RememberedAutogrowRead {
+    return entry &&
+      entry.nodeType === nodeType &&
+      entry.nodeDef === currentNodeDef(nodeType)
       ? { remembered: true, group: entry.group ?? undefined }
       : { remembered: false }
+  }
 
-  const nodeEntries = (
+  function nodeEntries(
     scope: GraphScope,
     nodeId: NodeId
-  ): Map<string, RememberedAutogrowGroup> | undefined =>
-    remembered
+  ): Map<string, RememberedAutogrowGroup> | undefined {
+    return remembered
       .get(scope.rootGraphId)
       ?.get(scope.owningGraphId)
       ?.get(nodeKey(nodeId))
+  }
 
-  const ensureNodeEntries = (
+  function ensureNodeEntries(
     scope: GraphScope,
     nodeId: NodeId
-  ): Map<string, RememberedAutogrowGroup> => {
+  ): Map<string, RememberedAutogrowGroup> {
     let forRoot = remembered.get(scope.rootGraphId)
     if (!forRoot) {
       forRoot = new Map()
@@ -1164,7 +1191,7 @@ function createAutogrowMemory() {
     return forNode
   }
 
-  const deleteNodeEntries = (scope: GraphScope, nodeId: NodeId): void => {
+  function deleteNodeEntries(scope: GraphScope, nodeId: NodeId): void {
     remembered
       .get(scope.rootGraphId)
       ?.get(scope.owningGraphId)
@@ -1173,25 +1200,34 @@ function createAutogrowMemory() {
 
   return {
     draft(): AutogrowMemoryDraft {
-      // A per-node shadow of every staged write already merged in call
-      // order -- present (even as `null`, meaning "forgotten this batch")
-      // once a node has been touched -- so `read` is one lookup instead of a
-      // backward replay of every write the batch has staged so far.
+      // The batch's confirmed shadow -- every write an already-applied
+      // mutation staged, merged in call order -- present (even as `null`,
+      // meaning "forgotten this batch") once a node has been touched, so
+      // `read` is one lookup instead of a backward replay.
       const shadow = new Map<
         string,
         Map<string, RememberedAutogrowGroup> | null
       >()
+      // Each in-flight mutation's own writes, kept out of `shadow` until
+      // `applyMutation` confirms them, so a mutation that never lands (and
+      // is instead rolled back) can be discarded without touching what any
+      // other mutation already sees.
+      const pending = new Map<
+        number,
+        Map<string, Map<string, RememberedAutogrowGroup> | null>
+      >()
       const journal = new Map<number, StagedAutogrowWrite[]>()
       let currentMutationIndex = -1
 
-      const shadowKey = (scope: GraphScope, nodeId: NodeId): string =>
-        JSON.stringify([
+      function shadowKey(scope: GraphScope, nodeId: NodeId): string {
+        return JSON.stringify([
           scope.rootGraphId,
           scope.owningGraphId,
           nodeKey(nodeId)
         ])
+      }
 
-      const stageWrite = (write: StagedAutogrowWrite): void => {
+      function stageWrite(write: StagedAutogrowWrite): void {
         let forMutation = journal.get(currentMutationIndex)
         if (!forMutation) {
           forMutation = []
@@ -1200,56 +1236,92 @@ function createAutogrowMemory() {
         forMutation.push(write)
       }
 
+      // `key`'s value as the current mutation's own writes see it: its own
+      // pending overlay if already touched, else the confirmed shadow (from
+      // mutations that have already applied), else `undefined` to fall
+      // through to the persisted store.
+      function currentView(
+        key: string
+      ): Map<string, RememberedAutogrowGroup> | null | undefined {
+        const ownPending = pending.get(currentMutationIndex)
+        if (ownPending?.has(key)) return ownPending.get(key) ?? null
+        if (shadow.has(key)) return shadow.get(key) ?? null
+        return undefined
+      }
+
+      function setPending(
+        key: string,
+        value: Map<string, RememberedAutogrowGroup> | null
+      ): void {
+        let forMutation = pending.get(currentMutationIndex)
+        if (!forMutation) {
+          forMutation = new Map()
+          pending.set(currentMutationIndex, forMutation)
+        }
+        forMutation.set(key, value)
+      }
+
       return {
         beginMutation(mutationIndex) {
           currentMutationIndex = mutationIndex
         },
         read(scope, nodeId, nodeType, name) {
           const key = shadowKey(scope, nodeId)
-          if (shadow.has(key)) {
-            return readEntry(shadow.get(key)?.get(name), nodeType)
-          }
+          const view = currentView(key)
+          if (view !== undefined) return readEntry(view?.get(name), nodeType)
           return readEntry(nodeEntries(scope, nodeId)?.get(name), nodeType)
         },
         remember(scope, nodeId, nodeType, name, group) {
           const key = shadowKey(scope, nodeId)
-          const forNode = shadow.has(key)
-            ? (shadow.get(key) ?? new Map())
-            : new Map(nodeEntries(scope, nodeId))
+          const view = currentView(key)
+          const forNode = new Map(
+            view === undefined
+              ? nodeEntries(scope, nodeId)
+              : (view ?? undefined)
+          )
           const entry: RememberedAutogrowGroup = {
             nodeType,
             nodeDef: currentNodeDef(nodeType),
             group: group ?? null
           }
           forNode.set(name, entry)
-          shadow.set(key, forNode)
+          setPending(key, forNode)
           stageWrite({ kind: 'remember', scope, nodeId, name, entry })
         },
         forget(scope, nodeId) {
-          shadow.set(shadowKey(scope, nodeId), null)
+          setPending(shadowKey(scope, nodeId), null)
           stageWrite({ kind: 'forget', scope, nodeId })
         },
         applyMutation(mutationIndex) {
           const writes = journal.get(mutationIndex)
-          if (!writes) return
-          journal.delete(mutationIndex)
-          for (const write of writes) {
-            switch (write.kind) {
-              case 'remember':
-                ensureNodeEntries(write.scope, write.nodeId).set(
-                  write.name,
-                  write.entry
-                )
-                break
-              case 'forget':
-                deleteNodeEntries(write.scope, write.nodeId)
-                break
-              default: {
-                const unhandled: never = write
-                return unhandled
+          if (writes) {
+            journal.delete(mutationIndex)
+            for (const write of writes) {
+              switch (write.kind) {
+                case 'remember':
+                  ensureNodeEntries(write.scope, write.nodeId).set(
+                    write.name,
+                    write.entry
+                  )
+                  break
+                case 'forget':
+                  deleteNodeEntries(write.scope, write.nodeId)
+                  break
+                default: {
+                  const unhandled: never = write
+                  return unhandled
+                }
               }
             }
           }
+          const forMutation = pending.get(mutationIndex)
+          if (!forMutation) return
+          pending.delete(mutationIndex)
+          for (const [key, value] of forMutation) shadow.set(key, value)
+        },
+        rollbackMutation(mutationIndex) {
+          journal.delete(mutationIndex)
+          pending.delete(mutationIndex)
         }
       }
     }
@@ -1920,16 +1992,20 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             )
             break
           }
-          nodeStore.registerNode(scope, mutation.node.state, context)
-          for (const widget of placeholderWidgets(mutation.node.widgets)) {
-            registerPlaceholder(scope, mutation.node.state.id, widget, context)
-          }
+          // `layout.createNode` is a fallible renderer-owned effect; it must
+          // run before the node becomes visible in the store, so a throw
+          // here leaves both the store and this mutation's memory journal
+          // untouched instead of registering a node the layout never got.
           deps.layout.createNode(
             scope,
             mutation.node.state.id,
             mutation.node.layout,
             context
           )
+          nodeStore.registerNode(scope, mutation.node.state, context)
+          for (const widget of placeholderWidgets(mutation.node.widgets)) {
+            registerPlaceholder(scope, mutation.node.state.id, widget, context)
+          }
           break
         }
         case 'reconcileNodeFields': {
@@ -1967,9 +2043,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           let targetInputs = mutation.targetInputs
           if (target && targetInputs) {
             const targetName = targetInputs[mutation.topology.targetSlot].name
-            const targetOccurrence = targetInputs
-              .slice(0, mutation.topology.targetSlot)
-              .filter(({ name }) => name === targetName).length
+            const targetOccurrence = occurrenceIndexOf(
+              targetInputs,
+              mutation.topology.targetSlot,
+              targetName,
+              (input) => input.name
+            )
             targetInputs = mergeInputSlotsByName(
               target.inputs,
               targetInputs,
@@ -1983,12 +2062,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 ),
               true
             )
-            let occurrence = 0
-            mutation.topology.targetSlot = targetInputs.findIndex(
-              ({ name }) => {
-                if (name !== targetName) return false
-                return occurrence++ === targetOccurrence
-              }
+            mutation.topology.targetSlot = resolveOccurrenceIndex(
+              targetInputs,
+              targetName,
+              targetOccurrence,
+              (input) => input.name
             )
           }
           const existing = linkStore.getTopology(
@@ -2074,8 +2152,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           break
       }
       // See `AutogrowMemoryDraft` for why this applies per mutation, and
-      // only when that mutation's own graph effect actually landed.
+      // only when that mutation's own graph effect actually landed; a
+      // mutation whose effect did not land rolls its shadow answer back
+      // instead, so a later mutation in this batch cannot read it.
       if (committed) memory.applyMutation(index)
+      else memory.rollbackMutation(index)
     }
   }
 

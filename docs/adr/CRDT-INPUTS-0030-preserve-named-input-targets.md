@@ -67,7 +67,11 @@ of runtime-only metadata such as input widget markers and output labels. That
 preservation gap remains separate follow-up work; this ADR does not claim it is
 fixed by the incoming-connect path.
 
-Outputs remain index-based because their names need not be unique.
+Outputs remain index-based: unlike inputs, they are never autogrown or
+otherwise reordered by growth, so a live index still tracks the same document
+occupant it always did. `patchLiveOutputSlots` also never reuses a live index
+past the document's own output list, so a document that dropped an output
+cannot resurrect it.
 
 ## Explicitly out of scope
 
