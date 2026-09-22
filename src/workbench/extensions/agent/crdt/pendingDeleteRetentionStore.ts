@@ -9,16 +9,8 @@ import type { BatchOutcome } from './opSender'
 const PENDING_DELETE_EXPIRY_MS = STALE_AFTER_MS
 
 /**
- * Retention policy per reason (ADR CRDT-WRITE-0035):
- * - `confirmed-applied`: a known Yjs item was deleted and the host confirmed
- *   it. No expiry - superseded only by a different item later occupying the
- *   node id.
- * - `confirmed-applied-unidentified`: the host confirmed the delete, but no
- *   item identity was captured for it (the node did not yet exist in the
- *   follower doc at admission time, e.g. a local-only add). With no identity
- *   to compare against a later occupant, this is bounded by the same expiry
- *   as `unknown` instead of held forever.
- * - `unknown`: the batch's own outcome was inconclusive. Bounded by expiry.
+ * Local encoding of the three retention reasons; see ADR CRDT-WRITE-0035
+ * for the policy each one implements.
  */
 type RetainedDelete =
   | { reason: 'confirmed-applied'; deletedItemId: string }
@@ -39,12 +31,6 @@ function expiresAtOf(retained: RetainedDelete): number | null {
   return retained.reason === 'confirmed-applied' ? null : retained.expiresAt
 }
 
-function retentionStrength(reason: RetainedDelete['reason']): number {
-  if (reason === 'confirmed-applied') return 2
-  if (reason === 'confirmed-applied-unidentified') return 1
-  return 0
-}
-
 /** A concrete identity mismatch between the two names a later incarnation under the same node id; either side lacking an identity to compare is inconclusive, not a mismatch. */
 function identitiesConflict(
   existing: RetainedDelete,
@@ -55,20 +41,27 @@ function identitiesConflict(
   return existingId !== null && incomingId !== null && existingId !== incomingId
 }
 
-/** The stronger of the two, assuming no identity conflict: the stronger reason wins, and between two equally strong (both bounded) records the later expiry wins. */
+/**
+ * The record to keep, assuming no identity conflict. A permanent record (an
+ * identified `confirmed-applied`) always outranks a bounded one, since it is
+ * released only by a conflicting identity (already ruled out above), never
+ * by time. Between two bounded records, reason strength is not a safe
+ * tiebreak on its own: an identity-less `confirmed-applied-unidentified` and
+ * an `unknown` for a different, real identity are two independent,
+ * non-comparable intents, so picking the "stronger" one by reason alone can
+ * expire the other's own, still-open ambiguity window early. The record
+ * whose own expiry is later - whichever intent's window is open longest -
+ * wins instead, preserving its own identity and deadline.
+ */
 function strongerRetainedDelete(
   existing: RetainedDelete,
   incoming: RetainedDelete
 ): RetainedDelete {
-  const existingStrength = retentionStrength(existing.reason)
-  const incomingStrength = retentionStrength(incoming.reason)
-  if (incomingStrength !== existingStrength)
-    return incomingStrength > existingStrength ? incoming : existing
-  if (existing.reason === 'confirmed-applied') return existing
   const existingExpiry = expiresAtOf(existing)
   const incomingExpiry = expiresAtOf(incoming)
-  if (existingExpiry === null || incomingExpiry === null) return incoming
-  return incomingExpiry < existingExpiry ? existing : incoming
+  if (existingExpiry === null) return existing
+  if (incomingExpiry === null) return incoming
+  return incomingExpiry >= existingExpiry ? incoming : existing
 }
 
 /** Merges a newly settled retention into any existing record for the same node id. */
@@ -140,8 +133,14 @@ function pruneWorkflowDeletes(
     const expiresAt = expiresAtOf(retained)
     const expired = expiresAt !== null && now >= expiresAt
     const deletedItemId = deletedItemIdOf(retained)
+    const currentId = currentItemId(id)
+    // A null current identity is an unreadable read (internal Yjs-shape
+    // failure) or no live doc to read from - never proof a different item
+    // replaced this one. Only a real, differing identity supersedes.
     const superseded =
-      deletedItemId !== null && currentItemId(id) !== deletedItemId
+      deletedItemId !== null &&
+      currentId !== null &&
+      currentId !== deletedItemId
     if (!docNodeIds.has(id) || superseded || expired) deletes.delete(id)
   }
 }

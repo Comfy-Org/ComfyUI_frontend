@@ -221,4 +221,77 @@ describe('createPendingDeleteRetentionStore', () => {
     ).toEqual(new Set())
     vi.useRealTimers()
   })
+
+  it('an unreadable current identity is not proof of supersession, only a real, differing one is', () => {
+    // Regression: `currentItemId` returns null both when the id was never
+    // set and when a real item's identity failed to read (e.g. an internal
+    // Yjs-shape read failure). Treating null as "a different item replaced
+    // this one" would release suppression while the node the confirmed
+    // delete removed may still be sitting there in an unreadable shape,
+    // letting a lagging reconcile resurrect it.
+    const store = createPendingDeleteRetentionStore()
+
+    store.settleBatch(
+      acknowledged(
+        'wf-1',
+        [deleteOp('op-a', '1')],
+        ['op-a'],
+        new Map([['op-a', 'A']])
+      )
+    )
+
+    // The doc still lists id '1' (it exists in some shape) but reading its
+    // identity fails: retention must NOT be released.
+    expect(store.retainedNodeIds('wf-1', new Set(['1']), () => null)).toEqual(
+      new Set(['1'])
+    )
+    // A real, differing identity still releases it as before.
+    expect(
+      store.retainedNodeIds('wf-1', new Set(['1']), () => 'different')
+    ).toEqual(new Set())
+  })
+
+  it('does not let a stronger, earlier-expiring record expire a later, independent delete intent early', () => {
+    // Regression: reason strength (confirmed > unknown) must not override a
+    // later record's own expiry when the two records' identities are not
+    // directly comparable (one carries none). Settle an identity-less
+    // confirmed delete first, then before its deadline settle a later
+    // `unknown` delete for a different, known identity B: B's own later
+    // expiry window must survive, not be replaced by the earlier record's
+    // sooner deadline.
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const store = createPendingDeleteRetentionStore()
+
+    store.settleBatch(
+      acknowledged(
+        'wf-1',
+        [deleteOp('op-a', '1')],
+        ['op-a'],
+        new Map([['op-a', null]])
+      )
+    )
+
+    vi.setSystemTime(1000)
+    store.settleBatch(
+      unconfirmed('wf-1', [deleteOp('op-b', '1')], new Map([['op-b', 'B']]))
+    )
+
+    // Just past the FIRST record's own (earlier) deadline (settled at t=0,
+    // expiring at t=30_000): the merged record must still be retained,
+    // because the second, later delete's own ambiguity window is still
+    // open.
+    vi.setSystemTime(30_000 + 1)
+    expect(store.retainedNodeIds('wf-1', new Set(['1']), () => 'B')).toEqual(
+      new Set(['1'])
+    )
+
+    // Past the SECOND record's own (later) deadline (settled at t=1_000,
+    // expiring at t=31_000): now it expires.
+    vi.setSystemTime(31_000 + 1)
+    expect(store.retainedNodeIds('wf-1', new Set(['1']), () => 'B')).toEqual(
+      new Set()
+    )
+    vi.useRealTimers()
+  })
 })

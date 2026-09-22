@@ -25,6 +25,10 @@ function addNode(id: number): GraphOperation {
   }
 }
 
+function deleteNode(nodeId: string): GraphOperation {
+  return { op: 'delete_node', node_id: nodeId, removed_links: [] }
+}
+
 describe('createOpSender', () => {
   let sent: Array<{ workflowId: string; tab: string; ops: Op[] }>
   let settled: BatchOutcome[]
@@ -692,6 +696,56 @@ describe('createOpSender', () => {
       'acknowledged'
     ])
     expect(sender.pending()).toBe(0)
+  })
+
+  it('binds each of two simultaneously outstanding deletes for the same recreated node to its OWN admission-time identity', () => {
+    // Regression: the sender must key captured identity by each op's own
+    // minted `op_id`, not by node id or FIFO position - two deletes for the
+    // same node id, admitted while it holds different identities, must not
+    // cross-contaminate when their batches settle out of admission order.
+    let currentIdentity: string | null = 'A'
+    const localSettled: BatchOutcome[] = []
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return () => {
+          resultListener = null
+        }
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      deletedItemId: () => currentIdentity,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+
+    // First delete of node '1' admitted while its identity is A.
+    localSender.enqueue([deleteNode('1')])
+    const firstOpId = sent[sent.length - 1].ops[0].op_id
+
+    // The node is deleted, recreated, and deleted again under a NEW
+    // identity B - admitted (and queued, since the first batch is still
+    // in flight) before the first batch's own result arrives.
+    currentIdentity = 'B'
+    localSender.admit([deleteNode('1')])
+    localSender.flush()
+    // Still queued behind the in-flight first batch - read its minted
+    // op_id off pendingOps rather than `sent`, which the second batch has
+    // not reached yet.
+    const secondOpId = localSender.pendingOps()[1].ops[0].op_id
+    expect(secondOpId).not.toBe(firstOpId)
+
+    resultListener?.({ ok: true, applied: [firstOpId], skipped: [] })
+    resultListener?.({ ok: true, applied: [secondOpId], skipped: [] })
+
+    expect(localSettled).toHaveLength(2)
+    expect(localSettled[0].deletedItemIds).toEqual(new Map([[firstOpId, 'A']]))
+    expect(localSettled[1].deletedItemIds).toEqual(new Map([[secondOpId, 'B']]))
   })
 
   describe('suspension', () => {

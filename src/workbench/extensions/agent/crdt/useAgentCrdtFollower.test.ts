@@ -2128,7 +2128,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('a doc_reset drops a pre-existing confirmed retention and an unconsumed capture, retaining only a same-id delete issued after it', async () => {
+  it('a doc_reset drops pre-existing retained delete intent and settles an outstanding sender batch, retaining only a same-id delete issued after it', async () => {
     const { enqueue, unmount } = mountWithHumanOps()
     const intent = requireIntent()
     const doc = new Y.Doc()
@@ -2148,8 +2148,12 @@ describe('useAgentCrdtFollower', () => {
     })
     expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
 
-    // Seed an unconsumed capture: a second delete, admitted and
-    // transmitted, whose own result never arrives before the reset.
+    // Seed an outstanding sender batch: a second delete, admitted and
+    // transmitted, whose own result never arrives before the reset. Its
+    // identity lives in the sender's own capture map (keyed by its op_id,
+    // see opSender.ts) until this batch settles; the reset must settle it
+    // (consuming that capture into a BatchOutcome) rather than leave it
+    // outstanding.
     enqueue([{ op: 'delete_node', node_id: '2', removed_links: [] }])
     await Promise.resolve()
 
@@ -2158,7 +2162,8 @@ describe('useAgentCrdtFollower', () => {
     // Neither survives - the doc object is unchanged (still holds both
     // nodes under their original identities), so this is not merely the
     // usual doc-agrees or superseded-identity release; the reset itself
-    // must have cleared retention.
+    // must have cleared the first delete's retention and settled the
+    // second delete's outstanding batch.
     expect([...intent.pendingDeletes('wf-1')]).toEqual([])
 
     // A same-id delete issued against the replacement doc is retained on
