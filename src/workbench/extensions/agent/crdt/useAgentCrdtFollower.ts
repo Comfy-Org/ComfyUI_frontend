@@ -291,9 +291,8 @@ function startAgentCrdtFollower(
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
     () => bridge.resubscribe(),
-    // main's `onGaveUp` cleared a `connected` ref. Connection is derived from
-    // the acknowledgement here, so dropping the acknowledgement is the same
-    // signal: a subscribe the retry loop gave up on was never confirmed.
+    // Exhausting the retry budget drops the acknowledged binding, so derived
+    // connection status becomes false.
     () => {
       acknowledgedWorkflowId.value = null
       subscriptionFailed.value = true

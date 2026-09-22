@@ -81,6 +81,14 @@ describe('persistedDocId', () => {
       expect(rawRecord()).toBeNull()
     })
 
+    it('drops a record whose expiry exceeds the five-minute bound', () => {
+      writeForeignRecord('wf-1', Date.now() + DOC_ID_TTL_MS + 1)
+      asReloadNavigation()
+
+      expect(reconcilePersistedDocId()).toBeNull()
+      expect(rawRecord()).toBeNull()
+    })
+
     it('drops a pre-FEC-5 bare doc id, which is not valid JSON', () => {
       sessionStorage.setItem(DOC_ID_SESSION_KEY, 'wf-legacy')
 

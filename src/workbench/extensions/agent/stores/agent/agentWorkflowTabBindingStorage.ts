@@ -14,15 +14,20 @@ export type PersistedAgentWorkflowTabBindings = Record<
   PersistedAgentWorkflowTabBinding
 >
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
 function isPersistedBinding(
   value: unknown
 ): value is PersistedAgentWorkflowTabBinding {
-  if (typeof value !== 'object' || value === null) return false
-  const { tabPath, graphId, confirmedAt } = value as Record<string, unknown>
+  if (!isRecord(value)) return false
+  const { tabPath, graphId, confirmedAt } = value
   return (
     typeof tabPath === 'string' &&
     (graphId === null || typeof graphId === 'string') &&
-    typeof confirmedAt === 'number'
+    typeof confirmedAt === 'number' &&
+    Number.isFinite(confirmedAt)
   )
 }
 
@@ -34,6 +39,7 @@ export function liveAgentWorkflowTabBindings(
     Object.entries(bindings).filter(
       (entry): entry is [string, PersistedAgentWorkflowTabBinding] =>
         isPersistedBinding(entry[1]) &&
+        entry[1].confirmedAt <= now &&
         entry[1].confirmedAt + BINDING_TTL_MS >= now
     )
   )
@@ -47,10 +53,8 @@ export function readPersistedAgentWorkflowTabPath(
   if (raw === null) return undefined
   try {
     const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed !== 'object' || parsed === null) return undefined
-    return liveAgentWorkflowTabBindings(parsed as Record<string, unknown>, now)[
-      workflowId
-    ]?.tabPath
+    if (!isRecord(parsed)) return undefined
+    return liveAgentWorkflowTabBindings(parsed, now)[workflowId]?.tabPath
   } catch {
     return undefined
   }
