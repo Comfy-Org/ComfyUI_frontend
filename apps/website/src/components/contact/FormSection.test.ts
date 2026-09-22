@@ -6,7 +6,6 @@ import type { Locale } from '../../i18n/translations'
 import FormSection from './FormSection.vue'
 
 const stubs = {
-  SectionLabel: true,
   SocialProofBarSection: true,
   HubspotFormEmbed: {
     props: ['formId'],

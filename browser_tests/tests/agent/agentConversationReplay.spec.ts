@@ -4,6 +4,13 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
 import { toNodeId } from '@/types/nodeId'
 
+import {
+  BYTEDANCE_REFERENCE_NODE_TYPE,
+  byteDanceReferenceNodeDef
+} from '@e2e/fixtures/data/byteDanceReferenceNodeDef'
+import { referenceGraphOps } from '@e2e/fixtures/data/minimaxAutogrowReload'
+import { wireAndReopen } from '@e2e/fixtures/utils/minimaxAutogrowReload'
+
 // A recording whose second turn wires two nodes; the first turn only adds.
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
 const WIDGET_CASE = 'agent-rec-set-widget-existing'
@@ -81,5 +88,48 @@ test.describe(
         })
       })
     }
+  }
+)
+
+test.describe(
+  'MiniMax-style autogrow reload',
+  { tag: ['@agent', '@cloud', '@vue-nodes'] },
+  () => {
+    // The reference node is not in the recorded core subset, so its definition
+    // is served through the conversation fixture's own /object_info payload.
+    // Routing it separately is shadowed by that route and the node lands
+    // unregistered, which silently disarms this regression.
+    test.use({
+      conversationCase: WIRING_CASE,
+      extraNodeDefs: {
+        [BYTEDANCE_REFERENCE_NODE_TYPE]: byteDanceReferenceNodeDef
+      }
+    })
+
+    // PM-993: the saved document addresses inputs by index, so growing the
+    // next reference image on reopen used to re-target every wire below it.
+    test('keeps widget links after a reference input grows', async ({
+      agentConversation,
+      page
+    }) => {
+      await test.step('Establish the agent conversation', async () => {
+        await agentConversation.runTurns()
+      })
+
+      await test.step('Materialize the reference node and its sources', async () => {
+        await agentConversation.applyGraphOps(referenceGraphOps)
+      })
+
+      await test.step('Connect and reopen without changing named wire targets', async () => {
+        const wiring = await wireAndReopen(page)
+
+        expect(wiring).toEqual({
+          hasNextReference: true,
+          referenceLinked: true,
+          seedLinkBefore: expect.any(Number),
+          seedLinkAfter: wiring.seedLinkBefore
+        })
+      })
+    })
   }
 )
