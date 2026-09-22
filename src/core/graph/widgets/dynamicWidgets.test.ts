@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi
+} from 'vitest'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import {
   addAutogrow,
@@ -386,7 +394,7 @@ describe('Autogrow', () => {
       expect(node.inputs.map((i) => i.name)).toEqual(['0.image_1', '0.image_2'])
 
       const oldLink = node.getInputLink(0)
-      if (!oldLink) throw new Error('slot 0 should be connected')
+      assert.exists(oldLink)
       const oldSource = graph.getNodeById(oldLink.origin_id)
 
       //connectSlots (LGraphNode.ts) fires slot 0's disconnect (the swap's
@@ -409,7 +417,7 @@ describe('Autogrow', () => {
       replacement.addOutput('out', '*')
       graph.add(replacement)
       const newLink = replacement.connect(0, node, 0)
-      if (!newLink) throw new Error('failed to install replacement link')
+      assert.exists(newLink)
 
       expect(sawSwapTail).toBe(true)
       expect(node.getInputLink(0)).toBe(newLink)
