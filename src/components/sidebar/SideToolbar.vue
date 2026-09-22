@@ -12,7 +12,7 @@
           'connected-sidebar pointer-events-auto': isConnected,
           'floating-sidebar': !isConnected,
           'overflowing-sidebar': isOverflowing,
-          'border-r border-(--interface-stroke) shadow-interface': isConnected,
+          'border-r border-interface-stroke/50 shadow-interface': isConnected,
           'pointer-events-none opacity-0': isHidden,
           '-translate-x-8': isHidden && sidebarLocation === 'left',
           'translate-x-8': isHidden && sidebarLocation === 'right'
