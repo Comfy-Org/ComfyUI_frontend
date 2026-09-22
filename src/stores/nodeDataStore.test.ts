@@ -779,17 +779,6 @@ describe('nodeDataStore registration via LGraph', () => {
     expect(registeredState(graph, lgraphNode)).toBeUndefined()
   })
 
-  // Regression test for a module-load-order crash: `LGraph` (deep inside the
-  // litegraph engine) imports `useNodeDataStore`, so this store is part of
-  // the engine's own module graph. If this file (or any of its dependents)
-  // value-imports `NodeInputSlot`/`NodeOutputSlot` via their deep paths
-  // (e.g. '@/lib/litegraph/src/node/NodeInputSlot') instead of the
-  // `litegraph.ts` barrel, it can re-enter the pre-existing
-  // LGraphCanvas -> SubgraphNode -> LGraphNode cycle before `LGraphNode`
-  // finishes evaluating, and `SubgraphNode.ts`'s `extends LGraphNode` reads
-  // an uninitialized binding: "TypeError: Class extends value undefined is
-  // not a constructor or null". Always import litegraph engine values via
-  // the barrel from outside `src/lib/litegraph`.
   it('does not crash the litegraph module graph on load', async () => {
     vi.resetModules()
     await import('@/lib/litegraph/src/LGraphGroup')
