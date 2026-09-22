@@ -362,7 +362,12 @@ describe('useWorkflowPersistenceV2', () => {
       await mountWorkflowPersistence().initializeWorkflow()
 
       expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow)
-      expect(mocks.loadGraphDataMock).toHaveBeenCalled()
+      expect(mocks.loadGraphDataMock).toHaveBeenCalledWith(
+        { nodes: [] },
+        true,
+        true,
+        'Other.json'
+      )
     })
 
     it('prefers draft over saved workflow when draft exists', async () => {

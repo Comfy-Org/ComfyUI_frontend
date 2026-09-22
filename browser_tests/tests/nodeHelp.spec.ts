@@ -449,7 +449,11 @@ This is English documentation.
         )
         await comfyPage.nodeOps.selectNodeWithPan(customNode)
 
+        const localeRequest = comfyPage.page.waitForRequest(
+          '**/extensions/help_fallback_pack/docs/HelpFallbackNode/en.md'
+        )
         const helpPage = await openSelectionToolboxHelp(comfyPage)
+        await localeRequest
         test.fail()
         await expect(helpPage).toContainText('Custom fallback help')
         await expect(helpPage).toContainText('Nonlocalized custom node docs.')

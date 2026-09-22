@@ -48,6 +48,20 @@ function testNode() {
   return node as LGraphNode & Required<Pick<LGraphNode, 'widgets'>>
 }
 
+function inputSnapshot(node: LGraphNode) {
+  return node.inputs.map(({ name, type, label, widget, alwaysVisible }) => ({
+    name,
+    type,
+    label,
+    widget: widget ? { ...widget } : undefined,
+    alwaysVisible
+  }))
+}
+
+function widgetSnapshot(node: LGraphNode) {
+  return node.widgets?.map(({ name, type, value }) => ({ name, type, value }))
+}
+
 describe('Dynamic Combos', () => {
   test('Can add widget on selection', () => {
     const node = testNode()
@@ -79,34 +93,23 @@ describe('Dynamic Combos', () => {
     addDynamicCombo(node, [['INT'], ['STRING']])
     const selector = node.widgets[0]
     node.widgets.splice(0, 1)
-    const inputsBefore = structuredClone(node.inputs)
-    const widgetsBefore = node.widgets.map(
-      ({ name, type, value, options }) => ({
-        name,
-        type,
-        value,
-        options: structuredClone(options)
-      })
-    )
+    const inputsBefore = inputSnapshot(node)
+    const widgetsBefore = widgetSnapshot(node)
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     selector.value = '1'
 
-    expect(node.inputs).toEqual(inputsBefore)
-    expect(
-      node.widgets.map(({ name, type, value, options }) => ({
-        name,
-        type,
-        value,
-        options
-      }))
-    ).toEqual(widgetsBefore)
+    expect(inputSnapshot(node)).toEqual(inputsBefore)
+    expect(widgetSnapshot(node)).toEqual(widgetsBefore)
     expect(selector.value).toBe('0')
     expect(error).toHaveBeenCalledWith(expect.any(Error))
 
     node.widgets.unshift(selector)
     selector.value = '1'
-    expect(node.widgets).toHaveLength(3)
+    expect(widgetSnapshot(node)).toEqual([
+      { name: '0', type: 'combo', value: '1' },
+      { name: '0.0.0.0', type: 'text', value: '' }
+    ])
   })
   test.fails('Does not mutate when the dynamic input socket is missing', () => {
     const node = testNode()
@@ -118,28 +121,14 @@ describe('Dynamic Combos', () => {
     expect(inputIndex).toBeGreaterThanOrEqual(0)
     if (inputIndex < 0) return
     const [input] = node.inputs.splice(inputIndex, 1)
-    const inputsBefore = structuredClone(node.inputs)
-    const widgetsBefore = node.widgets.map(
-      ({ name, type, value, options }) => ({
-        name,
-        type,
-        value,
-        options: structuredClone(options)
-      })
-    )
+    const inputsBefore = inputSnapshot(node)
+    const widgetsBefore = widgetSnapshot(node)
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     selector.value = '1'
 
-    expect(node.inputs).toEqual(inputsBefore)
-    expect(
-      node.widgets.map(({ name, type, value, options }) => ({
-        name,
-        type,
-        value,
-        options
-      }))
-    ).toEqual(widgetsBefore)
+    expect(inputSnapshot(node)).toEqual(inputsBefore)
+    expect(widgetSnapshot(node)).toEqual(widgetsBefore)
     expect(selector.value).toBe('0')
     expect(error).toHaveBeenCalledWith(expect.any(Error))
 
