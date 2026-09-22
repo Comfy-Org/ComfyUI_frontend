@@ -10,7 +10,7 @@ import {
 import type { Ref } from 'vue'
 import * as Y from 'yjs'
 
-import { linksMap, nodesMap } from '@comfyorg/comfy-multi-player'
+import { nodesMap } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { st } from '@/i18n'
@@ -39,6 +39,7 @@ import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { linkWireType, readLinkTuple } from './linkTuple'
 import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
@@ -236,27 +237,31 @@ function deleteNodeEffectPresent(
   return !nodesMap(doc).has(String(op.node_id))
 }
 
-function connectEffectPresent(
-  doc: Y.Doc,
+function connectEndpointsMatch(
+  tuple: readonly unknown[],
   op: Extract<Op, { op: 'connect' }>
 ): boolean {
-  const raw = linksMap(doc).get(String(op.link_id))
-  const tuple = raw instanceof Y.Array ? raw.toArray() : raw
-  // Element 5 (the wire type) must be present: `readSemanticLink` treats it
-  // as authoritative, so a link tuple that hasn't landed it yet cannot prove
-  // this connect's effect is present.
-  if (!Array.isArray(tuple) || tuple.length < 6) return false
   const originMatches =
     String(tuple[1]) === String(op.from_node) &&
     Number(tuple[2]) === op.from_slot
   const targetMatches = String(tuple[3]) === String(op.to_node)
   const slotMatches = op.to_slot == null || Number(tuple[4]) === op.to_slot
-  const wireType =
-    typeof tuple[5] === 'string' || typeof tuple[5] === 'number'
-      ? String(tuple[5])
-      : '*'
-  const typeMatches = wireType === op.link_type
-  return originMatches && targetMatches && slotMatches && typeMatches
+  return originMatches && targetMatches && slotMatches
+}
+
+function connectEffectPresent(
+  doc: Y.Doc,
+  op: Extract<Op, { op: 'connect' }>
+): boolean {
+  const tuple = readLinkTuple(doc, String(op.link_id))
+  // Element 5 (the wire type) must be present: `readSemanticLink` treats it
+  // as authoritative, so a link tuple that hasn't landed it yet cannot prove
+  // this connect's effect is present.
+  if (!tuple || tuple.length < 6) return false
+  return (
+    connectEndpointsMatch(tuple, op) &&
+    String(linkWireType(tuple)) === op.link_type
+  )
 }
 
 export function useAgentCrdtFollower(

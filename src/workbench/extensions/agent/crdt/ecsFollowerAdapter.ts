@@ -26,6 +26,7 @@ import {
 import type { SubgraphDefinitionIndex } from './agentSubgraphHostSlots'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
+import { linkWireType, readLinkTuple } from './linkTuple'
 
 type NodeRootAction = 'add' | 'update' | 'delete'
 
@@ -223,9 +224,8 @@ function readSemanticLink(
   definitions: SubgraphDefinitionIndex,
   reported: Set<string>
 ): SemanticLinkPayload | null {
-  const raw = linksMap(doc).get(id)
-  const tuple = raw instanceof Y.Array ? raw.toArray() : raw
-  if (!Array.isArray(tuple) || tuple.length < 5) return null
+  const tuple = readLinkTuple(doc, id)
+  if (!tuple || tuple.length < 5) return null
   const linkId = Number(tuple[0] ?? id)
   const originSlot = Number(tuple[2])
   const targetSlot = Number(tuple[4])
@@ -252,10 +252,7 @@ function readSemanticLink(
     originNodeId: String(tuple[1]),
     originSlot,
     targetNodeId,
-    type:
-      typeof tuple[5] === 'string' || typeof tuple[5] === 'number'
-        ? tuple[5]
-        : '*',
+    type: linkWireType(tuple),
     originOutputs: readNodeSlots(doc, String(tuple[1]), 'outputs'),
     ...target
   }
