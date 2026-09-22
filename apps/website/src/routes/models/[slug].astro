@@ -5,19 +5,52 @@ import CatalogueBackLink from '../../components/workshop/CatalogueBackLink.vue'
 import ModelHero from '../../components/workshop/ModelHero.astro'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import RelatedModels from '../../components/workshop/RelatedModels.vue'
+import { getRoutes } from '../../config/routes'
 import { routerWorkshopModelPaths } from '../../config/workshop-browse-content'
 import { t } from '../../i18n/translations'
+import { offerForEstimate } from '../../lib/workshop/price-label'
+import {
+  absoluteUrl,
+  jsonLdId,
+  pageContext,
+  softwareApplicationNode
+} from '../../utils/jsonLd'
 import { prepareModelPage } from './model-page'
 
 export const getStaticPaths: GetStaticPaths = () =>
   routerWorkshopModelPaths.map((slug) => ({ params: { slug } }))
 
 const page = await prepareModelPage(Astro.params.slug)
-// Static output uses an immediate meta refresh, not an HTTP 301 response.
-// Pre-launch aliases stay noindex; hosting-level permanent redirects are a
-// separate deployment decision, not a reason to switch this site to SSR.
+// Static output uses an immediate meta refresh, not an HTTP 301 response,
+// and Astro marks the stub noindex; the sitemap lists only the destination.
 if (page.kind === 'redirect') return Astro.redirect(page.href, 301)
 const { model } = page
+
+const description = t('workshop.model.meta.description').replace(
+  '{name}',
+  model.name
+)
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const softwareId = jsonLdId(url, 'software')
+const software = softwareApplicationNode({
+  siteUrl,
+  id: softwareId,
+  name: model.name,
+  url,
+  applicationCategory: 'MultimediaApplication',
+  operatingSystem: 'Any',
+  description: model.summary ?? description,
+  image: model.thumbnailUrl,
+  providerName: model.provider,
+  mainEntityOfPage: url,
+  // The offer is the estimate the page shows for the default inputs, no more:
+  // the catalogue carries no per-model USD price today.
+  offer: offerForEstimate(page.priceEstimate)
+})
 ---
 
 {/* The model is public content: its hero and related models are built into
@@ -25,12 +58,18 @@ const { model } = page
     Workshop flag decides nothing here beyond whether its Run button works. */}
 <BaseLayout
   title={`${model.name} · ${t('workshop.title')} - Comfy`}
-  description={t('workshop.model.meta.description').replace(
-    '{name}',
-    model.name
-  )}
+  description={description}
   ogImage={model.thumbnailUrl}
-  noindex
+  mainEntityId={softwareId}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    {
+      name: t('workshop.title', locale),
+      url: absoluteUrl(Astro.site, getRoutes(locale).workshop)
+    },
+    { name: model.name }
+  ]}
+  extraJsonLd={[software]}
 >
   <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
     <div class="mb-8 sm:px-8 lg:px-10">

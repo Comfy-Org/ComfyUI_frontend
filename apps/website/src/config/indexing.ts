@@ -1,5 +1,6 @@
 import { models } from './models'
-import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
+import { routerModelSlugAliases } from './workshop-browse-content'
+import { isLegacyWorkshopRoute } from './workshop-release'
 
 const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
@@ -40,6 +41,12 @@ const MODEL_REDIRECT_PATHNAMES = new Set(
     )
 )
 
+// An alias is built as a redirect stub to its canonical model page, so the
+// sitemap lists the destination and never the stub.
+const MODEL_ALIAS_PATHNAMES = new Set(
+  [...routerModelSlugAliases.keys()].map((alias) => `/models/${alias}`)
+)
+
 function normalizePathname(pathname: string): string {
   return pathname.replace(/\/$/, '')
 }
@@ -54,6 +61,6 @@ export function isExcludedFromSitemap(page: string): boolean {
     isNoindexPathname(pathname) ||
     isLegacyWorkshopRoute(pathname) ||
     MODEL_REDIRECT_PATHNAMES.has(pathname) ||
-    isWorkshopRoute(pathname)
+    MODEL_ALIAS_PATHNAMES.has(pathname)
   )
 }

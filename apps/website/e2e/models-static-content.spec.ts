@@ -42,6 +42,52 @@ test('static HTML at a model page carries that model, not a showcase', async ({
   expect(html).not.toContain('data-testid="model-detail"')
 })
 
+function jsonLdGraph(html: string): { '@type': string; name?: string }[] {
+  const [, json = '{}'] =
+    html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/) ??
+    []
+  return (JSON.parse(json) as { '@graph': { '@type': string }[] })['@graph']
+}
+
+test('a model page declares itself to search and answer engines', async ({
+  request
+}) => {
+  const html = await (await request.get(MODEL_PATH)).text()
+  const name = textOf(html, /<title>(.+?) · Models - Comfy<\/title>/)
+  expect(html).not.toContain('noindex')
+  const graph = jsonLdGraph(html)
+  expect(graph.map((node) => node['@type'])).toEqual([
+    'Organization',
+    'WebSite',
+    'WebPage',
+    'BreadcrumbList',
+    'SoftwareApplication'
+  ])
+  expect(graph.find((node) => node['@type'] === 'SoftwareApplication')).toEqual(
+    expect.objectContaining({
+      name,
+      offers: expect.objectContaining({ priceCurrency: 'USD' })
+    })
+  )
+  const sitemap = await (await request.get('/sitemap-0.xml')).text()
+  expect(sitemap).toContain(`<loc>https://comfy.org${MODEL_PATH}</loc>`)
+})
+
+test('the catalogue lists every model for search engines', async ({
+  request
+}) => {
+  const html = await (await request.get('/models/')).text()
+  const list = jsonLdGraph(html).find((node) => node['@type'] === 'ItemList')
+  expect(list).toEqual(
+    expect.objectContaining({
+      numberOfItems: expect.any(Number),
+      itemListElement: expect.arrayContaining([
+        expect.objectContaining({ url: `https://comfy.org${MODEL_PATH}` })
+      ])
+    })
+  )
+})
+
 test.describe('enabled workshop', () => {
   test.beforeEach(async ({ context }) => {
     await context.route('**/cdn-cgi/trace', (route) =>

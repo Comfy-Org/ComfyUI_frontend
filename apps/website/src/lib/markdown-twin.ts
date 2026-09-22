@@ -89,7 +89,10 @@ function tag(element: Element): string {
 function isDropped(element: Element): boolean {
   return (
     DROPPED_TAGS.has(tag(element)) ||
-    element.getAttribute('aria-hidden') === 'true'
+    element.getAttribute('aria-hidden') === 'true' ||
+    // A status region is transient by definition (a loading frame, a copied
+    // notice); it is never the page's content.
+    element.getAttribute('role') === 'status'
   )
 }
 

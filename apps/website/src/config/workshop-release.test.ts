@@ -2,8 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   assertWorkshopCloudEnvForBuild,
-  isWorkshopInBuild,
-  isWorkshopRoute
+  isWorkshopInBuild
 } from './workshop-release'
 
 describe('isWorkshopInBuild', () => {
@@ -48,22 +47,6 @@ describe('isWorkshopInBuild', () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', override)
 
     expect(isWorkshopInBuild()).toBe(expected)
-  })
-})
-
-describe('isWorkshopRoute', () => {
-  it('claims the Workshop tree and nothing else', () => {
-    expect(isWorkshopRoute('/workshop')).toBe(true)
-    expect(isWorkshopRoute('/workshop/models/[slug]')).toBe(true)
-    expect(isWorkshopRoute('/models/demo/')).toBe(true)
-    expect(isWorkshopRoute('/models/showcase/')).toBe(true)
-    expect(isWorkshopRoute('/models')).toBe(false)
-    expect(isWorkshopRoute('/models/')).toBe(false)
-
-    expect(isWorkshopRoute('/')).toBe(false)
-    expect(isWorkshopRoute('/pricing')).toBe(false)
-    // A sibling route that merely starts with the same letters must survive.
-    expect(isWorkshopRoute('/workshops-are-elsewhere')).toBe(false)
   })
 })
 
