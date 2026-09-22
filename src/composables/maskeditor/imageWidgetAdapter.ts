@@ -1,3 +1,4 @@
+import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
@@ -19,11 +20,6 @@ export function readImageWidgetValue(node: LGraphNode): unknown {
 }
 
 export function writeImageWidgetValue(node: LGraphNode, value: string): void {
-  const id = imageWidgetId(node)
-  if (!id || !useWidgetValueStore().setValue(id, value)) {
-    const widget = node.widgets?.find((w) => w.name === IMAGE_WIDGET)
-    if (!widget) return
-    widget.value = value
-  }
+  if (!setNodeWidgetValue(node, IMAGE_WIDGET, value)) return
   if (node.properties) node.properties[IMAGE_WIDGET] = value
 }

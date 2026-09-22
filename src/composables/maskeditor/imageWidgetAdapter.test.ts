@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -85,6 +85,21 @@ describe('writeImageWidgetValue', () => {
     expect(storedValue(node)).toBe('masked.png [input]')
     expect(node.widgets?.[0].value).toBe('masked.png [input]')
     expect(node.properties['image']).toBe('masked.png [input]')
+  })
+
+  it('runs an extension value setter for a registered widget', () => {
+    const node = makeNode()
+    const widget = node.widgets?.[0]
+    if (!widget) throw new Error('Expected an image widget')
+    const setter = vi.fn()
+    Object.defineProperty(widget, 'value', {
+      configurable: true,
+      set: setter
+    })
+
+    writeImageWidgetValue(node, 'masked.png [input]')
+
+    expect(setter).toHaveBeenCalledWith('masked.png [input]')
   })
 
   it('falls back to the widget object when the store has no entry', () => {
