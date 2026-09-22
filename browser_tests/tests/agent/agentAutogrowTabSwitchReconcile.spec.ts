@@ -260,8 +260,9 @@ test.describe(
           }
           if (workflow_id !== WORKFLOW_ID) return
           if (type === 'doc_ops' && Array.isArray(ops)) {
-            for (const hostFrame of host.applyClient(ops as Op[]))
-              socketSend!(hostFrame)
+            const { result, update } = host.applyWire(ops as Op[])
+            socketSend!(result)
+            if (update) socketSend!(update)
             return
           }
           if (type !== 'doc_subscribe' || typeof state_vector_b64 !== 'string')
