@@ -137,24 +137,25 @@ const regex = /describe.fixme('not code')/
     ])
   })
 
-  it('finds a parameterized test changed to skip', () => {
+  it.for([
+    {
+      enabled: `it.each([1, 2])('case %s', () => {})\n`,
+      disabled: `it.skip.each([1, 2])('case %s', () => {})\n`
+    },
+    {
+      enabled: `test.for([['a', 1]])('case %s', () => {})\n`,
+      disabled: `test.skip.for([['a', 1]])('case %s', () => {})\n`
+    }
+  ])('finds a parameterized test changed to skip', ({ enabled, disabled }) => {
     const root = createRepository()
-    write(
-      root,
-      'tests/example.test.ts',
-      `it.each([1, 2])('case %s', () => {})\n`
-    )
+    write(root, 'tests/example.test.ts', enabled)
     const base = commit(root, 'base')
 
-    write(
-      root,
-      'tests/example.test.ts',
-      `it.skip.each([1, 2])('case %s', () => {})\n`
-    )
+    write(root, 'tests/example.test.ts', disabled)
     const head = commit(root, 'disable parameterized test')
 
     expect(findViolations(root, base, head)).toEqual([
-      "  tests/example.test.ts:1: it.skip.each([1, 2])('case %s', () => {})"
+      `  tests/example.test.ts:1: ${disabled.trim()}`
     ])
   })
 
