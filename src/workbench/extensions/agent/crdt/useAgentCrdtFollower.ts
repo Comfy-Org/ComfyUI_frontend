@@ -35,8 +35,11 @@ import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { createOpCoalescer } from './opCoalescer'
-import type { BatchOutcome, OpsResultView } from './opSender'
+import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import type { PendingDeleteRetentionStore } from './pendingDeleteRetentionStore'
+import { createPendingDeleteRetentionStore } from './pendingDeleteRetentionStore'
+import { readNodeItemIdentity } from './yjsItemIdentity'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
@@ -100,121 +103,6 @@ function updateNodeIds(update: Uint8Array): NodeId[] {
   } catch {
     return []
   }
-}
-
-/** Only a `'unknown'`-reason retention expires; see ADR CRDT-WRITE-0035. */
-const PENDING_DELETE_EXPIRY_MS = STALE_AFTER_MS
-
-/** Retention policy per reason: see ADR CRDT-WRITE-0035. */
-type RetainedDelete =
-  | { reason: 'confirmed-applied'; deletedItemId: string | null }
-  | { reason: 'unknown'; expiresAt: number; deletedItemId: string | null }
-
-/**
- * The Yjs item identity (`client:clock`) currently occupying `nodeId` in the
- * doc's `nodes` map - present or already tombstoned - or null when absent.
- * A later mismatch against a stored `RetainedDelete.deletedItemId` means the
- * key now names a different incarnation than the one that was deleted:
- * same-id recreation after a delete is supported elsewhere
- * (`layoutMintPort`), and presence alone cannot tell the two apart.
- *
- * `doc` is typed `unknown` because tests stand in a plain object for the
- * follower's real `Y.Doc`; an access failure against such a stand-in is
- * expected and returns null, but one against a genuine `Y.Doc` is not, so
- * it is reported rather than folded into the same "no identity" result.
- */
-function currentNodeItemId(doc: unknown, nodeId: string): string | null {
-  if (!(doc instanceof Y.Doc)) return null
-  try {
-    const item = doc.getMap<unknown>('nodes')._map.get(nodeId)
-    return item ? `${item.id.client}:${item.id.clock}` : null
-  } catch (error) {
-    reportError(error, {
-      errorType: 'failure_reading_agent_crdt_node_item_identity'
-    })
-    return null
-  }
-}
-
-/** Every delete_node op in a settled batch that must keep suppressing its node, paired with the `RetainedDelete` record to store for it. */
-function retainedDeletesFromBatch(
-  outcome: BatchOutcome,
-  currentItemId: (nodeId: string) => string | null
-): Array<[nodeId: string, record: RetainedDelete]> {
-  const retained: Array<[string, RetainedDelete]> = []
-  for (const op of outcome.ops) {
-    if (op.op !== 'delete_node') continue
-    let reason: RetainedDelete['reason'] | null = null
-    if (outcome.state === 'acknowledged') {
-      if (outcome.result.applied.includes(op.op_id))
-        reason = 'confirmed-applied'
-    } else if (
-      outcome.state === 'unconfirmed' ||
-      outcome.state === 'unacknowledged'
-    ) {
-      reason = 'unknown'
-    }
-    if (!reason) continue
-    const nodeId = String(op.node_id)
-    const deletedItemId = currentItemId(nodeId)
-    retained.push([
-      nodeId,
-      reason === 'unknown'
-        ? {
-            reason,
-            expiresAt: Date.now() + PENDING_DELETE_EXPIRY_MS,
-            deletedItemId
-          }
-        : { reason, deletedItemId }
-    ])
-  }
-  return retained
-}
-
-/**
- * Merges a newly settled retention into any existing record for the same
- * node id, but only when both describe the same Yjs item: a node id whose
- * `deletedItemId` differs from the stored record's names a later incarnation
- * under the old id, which needs its own retention decision rather than a
- * strength comparison against a record for a different item. For the same
- * item, `'confirmed-applied'` always wins over `'unknown'` - settling twice
- * must never downgrade a definitive result to an expiring one - and between
- * two `'unknown'` records the later expiry wins, since retaining longer is
- * safe while releasing early is the bug this merge exists to prevent.
- */
-function mergeRetainedDelete(
-  existing: RetainedDelete | undefined,
-  incoming: RetainedDelete
-): RetainedDelete {
-  if (!existing || existing.deletedItemId !== incoming.deletedItemId)
-    return incoming
-  if (existing.reason === 'confirmed-applied') return existing
-  if (incoming.reason === 'confirmed-applied') return incoming
-  return incoming.expiresAt >= existing.expiresAt ? incoming : existing
-}
-
-/** Prunes released retained deletes (ADR CRDT-WRITE-0035); drops an emptied workflow entry too. */
-function pruneConfirmedDeletes(
-  confirmedDeletes: Map<string, Map<string, RetainedDelete>>,
-  workflowId: string,
-  docNodeIds: ReadonlySet<string>,
-  currentItemId: (nodeId: string) => string | null
-): Map<string, RetainedDelete> | undefined {
-  const deletes = confirmedDeletes.get(workflowId)
-  if (!deletes) return undefined
-  const now = Date.now()
-  for (const [id, retained] of deletes) {
-    const expired = retained.reason === 'unknown' && now >= retained.expiresAt
-    const superseded =
-      retained.deletedItemId !== null &&
-      currentItemId(id) !== retained.deletedItemId
-    if (!docNodeIds.has(id) || superseded || expired) deletes.delete(id)
-  }
-  if (deletes.size === 0) {
-    confirmedDeletes.delete(workflowId)
-    return undefined
-  }
-  return deletes
 }
 
 function emitPendingMaterializations(
@@ -315,7 +203,16 @@ export function useAgentCrdtFollower(
    * reconcile without waiting for the next remote frame.
    */
   getGraph: () => MaterializableGraph | null = () => null,
-  events: AgentCrdtFollowerEvents = {}
+  events: AgentCrdtFollowerEvents = {},
+  /**
+   * Owns retained human-delete intent across this composable's own follower
+   * replacements (the `productGate` toggle below) - see
+   * `pendingDeleteRetentionStore.ts`. Defaults to a fresh instance per call
+   * so tests stay isolated; production passes the shared singleton
+   * explicitly so retention also survives a full remount of this composable
+   * (e.g. the docked agent panel closing and reopening).
+   */
+  retentionStore: PendingDeleteRetentionStore = createPendingDeleteRetentionStore()
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -353,7 +250,8 @@ export function useAgentCrdtFollower(
           userId,
           isTargetActive,
           getGraph,
-          events
+          events,
+          retentionStore
         )
       )
     },
@@ -381,7 +279,8 @@ function startAgentCrdtFollower(
   userId: () => string | null,
   isTargetActive: Ref<boolean>,
   getGraph: () => MaterializableGraph | null,
-  events: AgentCrdtFollowerEvents
+  events: AgentCrdtFollowerEvents,
+  retentionStore: PendingDeleteRetentionStore
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -407,17 +306,12 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
-  // Per-workflow retained deletes; scoping and policy: ADR CRDT-WRITE-0035.
-  const confirmedDeletes = new Map<string, Map<string, RetainedDelete>>()
-  const confirmedDeletesFor = (
-    workflowId: string
-  ): Map<string, RetainedDelete> => {
-    let deletes = confirmedDeletes.get(workflowId)
-    if (!deletes) {
-      deletes = new Map()
-      confirmedDeletes.set(workflowId, deletes)
-    }
-    return deletes
+  // The follower's own live doc, narrowed to a real `Y.Doc`: tests stand in
+  // a plain object for it, which readNodeItemIdentity's contract does not
+  // cover (see yjsItemIdentity.ts and the P2 finding on PR #18276).
+  const boundNodeItemId = (nodeId: string): string | null => {
+    const doc = bridge.follower.doc
+    return doc instanceof Y.Doc ? readNodeItemIdentity(doc, nodeId) : null
   }
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
@@ -445,31 +339,18 @@ function startAgentCrdtFollower(
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: (outcome) => {
-      if (outcome.workflowId !== null) {
-        const retained = retainedDeletesFromBatch(
-          outcome,
-          capturedDeletedItemId
-        )
-        if (retained.length > 0) {
-          const deletes = confirmedDeletesFor(outcome.workflowId)
-          for (const [nodeId, record] of retained)
-            deletes.set(
-              nodeId,
-              mergeRetainedDelete(deletes.get(nodeId), record)
-            )
-        }
-      }
+      retentionStore.settleBatch(outcome)
       recordDevEvent('human_ops_settled', outcome)
     }
   })
   const pendingHumanDeletes = (workflowId: string): ReadonlySet<string> => {
-    const deletes = pruneConfirmedDeletes(
-      confirmedDeletes,
-      workflowId,
-      currentDocNodeIds(),
-      (nodeId) => currentNodeItemId(bridge.follower.doc, nodeId)
+    const pending = new Set(
+      retentionStore.retainedNodeIds(
+        workflowId,
+        currentDocNodeIds(),
+        boundNodeItemId
+      )
     )
-    const pending = new Set(deletes?.keys())
     for (const batch of sender.pendingOps()) {
       if (batch.workflowId !== workflowId) continue
       for (const op of batch.ops) {
@@ -477,6 +358,25 @@ function startAgentCrdtFollower(
       }
     }
     return pending
+  }
+  /**
+   * Captures the item identity of every `delete_node` op's target, at the
+   * moment the human issues it - before it reaches `coalescer`/`sender`, and
+   * therefore before any doc_update could react to it (see
+   * `PendingDeleteRetentionStore.captureDeleteIntent`).
+   */
+  const captureDeleteIntents = (operations: GraphOperation[]): void => {
+    const targetWorkflowId = bridge.subscribedWorkflowId
+    if (targetWorkflowId === null) return
+    for (const op of operations) {
+      if (op.op !== 'delete_node') continue
+      const nodeId = String(op.node_id)
+      retentionStore.captureDeleteIntent(
+        targetWorkflowId,
+        nodeId,
+        boundNodeItemId(nodeId)
+      )
+    }
   }
   const projection = new AgentCrdtProjection(
     graphMutations,
@@ -491,21 +391,6 @@ function startAgentCrdtFollower(
   // doc_reset (remint) because the lineage broke.
   let knownDocNodeIds: Set<string> = new Set()
   const pendingLiveNodeIds = new Set<NodeId>()
-  // The identity last seen disappearing from a node id, captured the moment
-  // `trackNodeChanges` observes the removal - not re-read later, because a
-  // `doc_ops_result` for that delete can settle after a second, unrelated
-  // doc_update has already recreated the id under a new identity. Read once
-  // by `onBatchSettled` via `capturedDeletedItemId` below, then cleared: a
-  // later, unrelated delete of a since-recreated id must fall through to a
-  // fresh read rather than reuse this already-consumed capture.
-  const lastDeletedItemId = new Map<string, string | null>()
-  const capturedDeletedItemId = (nodeId: string): string | null => {
-    if (!lastDeletedItemId.has(nodeId))
-      return currentNodeItemId(bridge.follower.doc, nodeId)
-    const captured = lastDeletedItemId.get(nodeId) ?? null
-    lastDeletedItemId.delete(nodeId)
-    return captured
-  }
   const currentDocNodeIds = (): Set<string> => {
     try {
       const doc = bridge.follower.doc as unknown as {
@@ -540,7 +425,6 @@ function startAgentCrdtFollower(
     if (added.length > 0 || removed.length > 0)
       recordDevEvent('doc_nodes_changed', { added, removed })
     for (const id of removed) {
-      lastDeletedItemId.set(id, currentNodeItemId(bridge.follower.doc, id))
       const nodeId = parseNodeId(id)
       if (nodeId) pendingLiveNodeIds.delete(nodeId)
     }
@@ -643,8 +527,7 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
     pendingLiveNodeIds.clear()
-    lastDeletedItemId.clear()
-    confirmedDeletes.delete(detail.workflowId)
+    retentionStore.clearWorkflow(detail.workflowId)
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -665,7 +548,11 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      confirmedDeletes.delete(workflowId)
+      // Also drops any unconsumed delete-intent capture for this workflow:
+      // left in place, a stale old-lineage capture could later be consumed
+      // by a same-id delete in the replacement document (P1, PR #18276
+      // round 7) instead of that delete's own, correctly-timed capture.
+      retentionStore.clearWorkflow(workflowId)
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
@@ -873,7 +760,6 @@ function startAgentCrdtFollower(
       connected.value = false
       knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
-      lastDeletedItemId.clear()
       if (!active) {
         deactivateTarget(next, previous?.[0] ?? null)
         return
@@ -931,7 +817,9 @@ function startAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
-    enqueueHumanOperations: (operations: GraphOperation[]) =>
+    enqueueHumanOperations: (operations: GraphOperation[]) => {
+      captureDeleteIntents(operations)
       coalescer.enqueue(operations)
+    }
   }
 }

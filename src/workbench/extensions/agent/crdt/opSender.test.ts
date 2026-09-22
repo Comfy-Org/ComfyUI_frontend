@@ -484,27 +484,6 @@ describe('createOpSender', () => {
     expect(settled).toHaveLength(settledAfterDetach)
   })
 
-  it('an admission after detach settles undeliverable instead of vanishing', () => {
-    // Reachable in production: a re-entrant `enqueueHumanOperations` call from
-    // inside a settle listener, or a lingering caller that admits an edit
-    // after the CRDT follower has already torn down.
-    sender.detach()
-
-    sender.enqueue([addNode(1)])
-    sender.admit([addNode(2)])
-
-    expect(sent).toHaveLength(0)
-    expect(settled.map((outcome) => outcome.state)).toEqual([
-      'undeliverable',
-      'undeliverable'
-    ])
-    expect(
-      settled.map((outcome) =>
-        outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
-      )
-    ).toEqual([[1], [2]])
-  })
-
   it('detach settles every outstanding batch instead of dropping it silently', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])

@@ -53,9 +53,31 @@ Distinguish a paused subscription from a lost one, and hold rather than drop.
 - `opSender` exposes `pendingOps()`; `EcsFollowerAdapter` takes an optional
   `LocalIntent` port and its full reconcile skips a document node with a
   pending human `delete_node`, including that node's incident links, so the
-  batch still commits. An acknowledged delete stays pending until the document
-  no longer holds the node. The port is the seam a pending `add_node` guard
-  plugs into.
+  batch still commits. The port is the seam a pending `add_node` guard plugs
+  into.
+- Retained delete intent lives in a `PendingDeleteRetentionStore`
+  (`pendingDeleteRetentionStore.ts`), injected into `useAgentCrdtFollower`
+  rather than owned by the follower it backs. A follower instance is
+  disposed and replaced more often than the intent it should keep suppressing
+  survives for: the `productGate` toggle recreates one internally, and the
+  docked agent panel closing and reopening recreates the composable call
+  itself. Production shares one store instance
+  (`getSharedPendingDeleteRetentionStore()`) across every follower
+  `AgentPanelRoot.vue` creates, so a delete retained by a disposed follower
+  still suppresses resurrection on a freshly mounted one's very first
+  reconcile; tests inject a fresh store per case instead.
+- The store captures each `delete_node`'s target identity (the Yjs
+  `client:clock` occupying that node id) at the moment the human issues the
+  op - before it reaches the wire, and therefore before any `doc_update` can
+  react to it. A doc-diff-based capture (observing the id disappear from the
+  document) cannot do this safely: a delete and a same-id recreate arriving
+  in one atomic Yjs transaction never shows up as a removal in that diff, so
+  a doc-diff capture has nothing to attribute a later settle to and falls
+  back to reading whatever identity is current - the newly recreated one,
+  not the deleted one. Capturing at issue time sidesteps this: the follower's
+  live doc still reflects the pre-delete state at that exact synchronous
+  moment, regardless of how the delete's effect and any recreation are later
+  batched on the wire.
 
 Alternatives considered:
 
@@ -84,12 +106,19 @@ Alternatives considered:
   result-silence resend, so the held delete can trail the return by tens of
   seconds.
 - The never-retarget invariant and its tests are untouched.
+- Retained delete intent survives the agent panel closing and reopening (and
+  the product-gate toggle recreating a follower internally): the reconcile
+  that runs on a freshly mounted follower's very first frame still sees a
+  delete retained by the follower it replaced, instead of resurrecting the
+  node before that follower has any state of its own.
 
 ### Negative
 
-- Parked ops live in memory until the tab returns, the session retargets, or
-  the follower is torn down; they die with the page or when the panel
-  unmounts.
+- Parked ops (the sender's own in-flight/queued batches) live in memory until
+  the tab returns, the session retargets, or the follower is torn down; they
+  die with the page or when the panel unmounts. Retained delete intent is
+  the exception, per the positive consequence above: it lives in the
+  injected store, not the follower, so it outlives that teardown.
 - The eager abort on a null subscription is kept for the refusal path, so a
   refused resubscribe on return still drops the held batch.
 - A delayed batch carries the `base_version` it was minted with. The applier
@@ -99,8 +128,8 @@ Alternatives considered:
 - The incremental frame path still upserts a pending-deleted node when another
   actor edits it before the delete lands; only the full reconcile consults
   local intent.
-- Retained delete intent (`useAgentCrdtFollower`'s per-workflow
-  `confirmedDeletes`) is not one policy - the retained reason matters, not
+- Retained delete intent (the injected `PendingDeleteRetentionStore`'s
+  per-workflow records) is not one policy - the retained reason matters, not
   just whether a node id is in the set. An `acknowledged` result naming the
   op `applied` is definitive: the host processed it, and only its own
   removal effect frame lagging behind is left, so this reason stays pending
