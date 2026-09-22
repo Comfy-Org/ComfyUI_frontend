@@ -93,7 +93,17 @@ describe('CRDT-STORES-0036 semantic store architecture guard', () => {
     semanticDocs.destroyAll()
   })
 
+  // Membership and ownership of nodes are projected from the semantic
+  // document. Node content fields are still store-owned (see the store
+  // header), so the projection is partial but the dependency is real.
+  it('nodeDataStore.ts is a projection of a Yjs document', () => {
+    expect(readSource(path.join(STORES_DIR, 'nodeDataStore.ts'))).toMatch(
+      YJS_IMPORT
+    )
+  })
+
   for (const file of SEMANTIC_STORES) {
+    if (file === 'nodeDataStore.ts') continue
     it.fails(`KNOWN GAP: ${file} is a projection of a Yjs document`, () => {
       expect(readSource(path.join(STORES_DIR, file))).toMatch(YJS_IMPORT)
     })

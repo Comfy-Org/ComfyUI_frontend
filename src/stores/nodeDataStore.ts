@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { reactive, toRaw } from 'vue'
+import { getCurrentScope, onScopeDispose, reactive, toRaw } from 'vue'
+import * as Y from 'yjs'
 
 import type {
   INodeInputSlot,
@@ -7,6 +8,8 @@ import type {
   INodeSlot
 } from '@/lib/litegraph/src/interfaces'
 import { NodeInputSlot, NodeOutputSlot } from '@/lib/litegraph/src/litegraph'
+import { ownerNodesMap, semanticDocs } from '@/stores/semanticDoc'
+import type { LocalUpdateOrigin } from '@/stores/semanticDoc'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type {
   GraphScope,
@@ -131,9 +134,31 @@ function mergeSlotsByName<Slot extends { name: string }>(
   }
 }
 
+const DEFINITIONS_ROOT = 'definitions'
+const DEFINITION_NODES_KEY = 'nodes'
+const NODE_TYPE_KEY = 'type'
+
+function localOrigin(context?: RemoteMutationContext): LocalUpdateOrigin {
+  return context
+    ? { source: 'local', actor: context.actor, opId: context.opId }
+    : { source: 'local' }
+}
+
+/** The root graph acting as the owner of its own top-level nodes. */
+function rootOwner(rootGraphId: RootGraphId): OwningGraphId {
+  return toOwningGraphId(rootGraphId)
+}
+
 /**
  * One {@link NodeState} per node in a root-flat, owner-indexed bucket.
  * See docs/architecture/node-data-store.md.
+ *
+ * Node membership and ownership are projected from the root graph's semantic
+ * Yjs document (`semanticDocs`): `idsByOwner` is derived by observing the
+ * `nodes` root and every `definitions.<owner>.nodes` map, and local
+ * registration/deletion writes those keys under a local origin. `byId` stays
+ * the store-local materialisation of the live `NodeState` objects, because
+ * litegraph writes slot and cosmetic fields to them directly.
  */
 export const useNodeDataStore = defineStore('nodeData', () => {
   interface RootNodeBucket {
@@ -142,6 +167,127 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   }
 
   const roots = reactive(new Map<RootGraphId, RootNodeBucket>())
+  const unobserveByRoot = new Map<RootGraphId, () => void>()
+
+  function addOwnerId(
+    bucket: RootNodeBucket,
+    owningGraphId: OwningGraphId,
+    id: NodeId
+  ): void {
+    const ownerIds = bucket.idsByOwner.get(owningGraphId)
+    if (ownerIds) ownerIds.add(id)
+    else bucket.idsByOwner.set(owningGraphId, reactive(new Set([id])))
+  }
+
+  function removeOwnerId(
+    bucket: RootNodeBucket,
+    owningGraphId: OwningGraphId,
+    id: NodeId
+  ): void {
+    const ownerIds = bucket.idsByOwner.get(owningGraphId)
+    if (!ownerIds) return
+    ownerIds.delete(id)
+    if (ownerIds.size === 0) bucket.idsByOwner.delete(owningGraphId)
+  }
+
+  function definitionOwners(doc: Y.Doc): [OwningGraphId, Y.Map<unknown>][] {
+    if (!doc.share.has(DEFINITIONS_ROOT)) return []
+    const owners: [OwningGraphId, Y.Map<unknown>][] = []
+    for (const [definitionId, definition] of doc.getMap(DEFINITIONS_ROOT)) {
+      if (!(definition instanceof Y.Map)) continue
+      const nodes = definition.get(DEFINITION_NODES_KEY)
+      if (nodes instanceof Y.Map)
+        owners.push([toOwningGraphId(definitionId), nodes])
+    }
+    return owners
+  }
+
+  function seedOwner(
+    bucket: RootNodeBucket,
+    owningGraphId: OwningGraphId,
+    nodes: Y.Map<unknown>
+  ): void {
+    for (const id of nodes.keys())
+      addOwnerId(bucket, owningGraphId, id as NodeId)
+  }
+
+  function reseedDefinitionOwners(
+    bucket: RootNodeBucket,
+    rootGraphId: RootGraphId,
+    doc: Y.Doc
+  ): void {
+    for (const owningGraphId of [...bucket.idsByOwner.keys()]) {
+      if ((owningGraphId as string) !== (rootGraphId as string))
+        bucket.idsByOwner.delete(owningGraphId)
+    }
+    for (const [owningGraphId, nodes] of definitionOwners(doc))
+      seedOwner(bucket, owningGraphId, nodes)
+  }
+
+  function applyKeyChanges(
+    bucket: RootNodeBucket,
+    owningGraphId: OwningGraphId,
+    event: Y.YEvent<Y.AbstractType<unknown>>
+  ): void {
+    for (const [key, change] of event.changes.keys) {
+      const id = key as NodeId
+      if (change.action === 'delete') removeOwnerId(bucket, owningGraphId, id)
+      else addOwnerId(bucket, owningGraphId, id)
+    }
+  }
+
+  function projectMembership(
+    bucket: RootNodeBucket,
+    rootGraphId: RootGraphId,
+    doc: Y.Doc,
+    events: readonly Y.YEvent<Y.AbstractType<unknown>>[]
+  ): void {
+    const owner = rootOwner(rootGraphId)
+    const nodesRoot = ownerNodesMap(doc, rootGraphId, owner, true)
+    const definitionsRoot = doc.getMap(DEFINITIONS_ROOT)
+    for (const event of events) {
+      if (event.currentTarget === nodesRoot) {
+        if (event.target === nodesRoot) applyKeyChanges(bucket, owner, event)
+        continue
+      }
+      if (event.currentTarget !== definitionsRoot) continue
+      const path = event.path
+      if (path.length <= 1) {
+        reseedDefinitionOwners(bucket, rootGraphId, doc)
+        continue
+      }
+      if (path.length === 2 && path[1] === DEFINITION_NODES_KEY) {
+        applyKeyChanges(bucket, toOwningGraphId(String(path[0])), event)
+      }
+    }
+  }
+
+  function observeRoot(rootGraphId: RootGraphId, bucket: RootNodeBucket): void {
+    const doc = semanticDocs.ensure(rootGraphId)
+    const owner = rootOwner(rootGraphId)
+    seedOwner(bucket, owner, ownerNodesMap(doc, rootGraphId, owner, true))
+    for (const [owningGraphId, nodes] of definitionOwners(doc))
+      seedOwner(bucket, owningGraphId, nodes)
+    unobserveByRoot.set(
+      rootGraphId,
+      semanticDocs.observeNodes(rootGraphId, (events) =>
+        projectMembership(bucket, rootGraphId, doc, events)
+      )
+    )
+  }
+
+  function dropRoot(rootGraphId: RootGraphId): void {
+    unobserveByRoot.get(rootGraphId)?.()
+    unobserveByRoot.delete(rootGraphId)
+    roots.delete(rootGraphId)
+  }
+
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      for (const rootGraphId of [...unobserveByRoot.keys()])
+        dropRoot(rootGraphId)
+    })
+  }
 
   function rootBucket(rootGraphId: RootGraphId): RootNodeBucket {
     const existing = roots.get(rootGraphId)
@@ -151,6 +297,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
       idsByOwner: new Map()
     })
     roots.set(rootGraphId, created)
+    observeRoot(rootGraphId, created)
     return created
   }
 
@@ -165,11 +312,15 @@ export const useNodeDataStore = defineStore('nodeData', () => {
    * @returns The registered state. Re-registering the same raw state under the
    * same owner returns the incumbent; `undefined` means a distinct state
    * occupies the node ID.
+   *
+   * Membership is written to the semantic document only when the owner's
+   * `nodes` map lacks the key, so registering a state for a node that a merged
+   * remote frame already placed in the document is a pure local materialisation.
    */
   function registerNode(
     graphScope: GraphScope,
     state: NodeState,
-    _context?: RemoteMutationContext
+    context?: RemoteMutationContext
   ): NodeState | undefined {
     const existingBucket = roots.get(graphScope.rootGraphId)
     const incumbent = existingBucket?.byId.get(state.id)
@@ -185,13 +336,23 @@ export const useNodeDataStore = defineStore('nodeData', () => {
       Object.assign(state, { graphId: graphScope.owningGraphId })
     )
     bucket.byId.set(registered.id, registered)
-    const ownerIds = bucket.idsByOwner.get(graphScope.owningGraphId)
-    if (ownerIds) ownerIds.add(registered.id)
-    else
-      bucket.idsByOwner.set(
-        graphScope.owningGraphId,
-        reactive(new Set([registered.id]))
-      )
+    semanticDocs.transactLocal(
+      graphScope.rootGraphId,
+      localOrigin(context),
+      (doc) => {
+        const nodes = ownerNodesMap(
+          doc,
+          graphScope.rootGraphId,
+          graphScope.owningGraphId,
+          true
+        )
+        if (nodes.has(registered.id)) return
+        nodes.set(
+          registered.id,
+          new Y.Map<unknown>([[NODE_TYPE_KEY, registered.type]])
+        )
+      }
+    )
     return registered
   }
 
@@ -224,7 +385,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   function deleteNode(
     graphScope: GraphScope,
     state: NodeState,
-    _context?: RemoteMutationContext
+    context?: RemoteMutationContext
   ): boolean {
     const bucket = roots.get(graphScope.rootGraphId)
     const registered = bucket?.byId.get(state.id)
@@ -235,10 +396,19 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     )
       return false
     bucket.byId.delete(state.id)
-    const ownerIds = bucket.idsByOwner.get(graphScope.owningGraphId)
-    ownerIds?.delete(state.id)
-    if (ownerIds?.size === 0) bucket.idsByOwner.delete(graphScope.owningGraphId)
-    if (bucket.byId.size === 0) roots.delete(graphScope.rootGraphId)
+    semanticDocs.transactLocal(
+      graphScope.rootGraphId,
+      localOrigin(context),
+      (doc) => {
+        ownerNodesMap(
+          doc,
+          graphScope.rootGraphId,
+          graphScope.owningGraphId,
+          false
+        )?.delete(state.id)
+      }
+    )
+    if (bucket.byId.size === 0) dropRoot(graphScope.rootGraphId)
     return true
   }
 
@@ -314,20 +484,43 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     } satisfies Omit<NodeState, 'graphId' | 'id' | 'inputs' | 'outputs'>)
   }
 
+  /**
+   * Drops every node of the root graph, clearing node membership from the
+   * semantic document (root `nodes` and each definition's `nodes`) so a later
+   * bucket for the same root does not re-seed stale ids.
+   */
   function clearGraph(rootGraphId: UUID): void {
-    roots.delete(toRootGraphId(rootGraphId))
+    const root = toRootGraphId(rootGraphId)
+    if (!roots.has(root) && !semanticDocs.has(root)) return
+    semanticDocs.transactLocal(root, localOrigin(), (doc) => {
+      ownerNodesMap(doc, root, rootOwner(root), true).clear()
+      for (const [, nodes] of definitionOwners(doc)) nodes.clear()
+    })
+    dropRoot(root)
   }
 
   function clearOwner(
     graphScope: GraphScope,
-    _context?: RemoteMutationContext
+    context?: RemoteMutationContext
   ): void {
     const bucket = roots.get(graphScope.rootGraphId)
     const ids = bucket?.idsByOwner.get(graphScope.owningGraphId)
     if (!bucket || !ids) return
     for (const id of ids) bucket.byId.delete(id)
+    semanticDocs.transactLocal(
+      graphScope.rootGraphId,
+      localOrigin(context),
+      (doc) => {
+        ownerNodesMap(
+          doc,
+          graphScope.rootGraphId,
+          graphScope.owningGraphId,
+          false
+        )?.clear()
+      }
+    )
     bucket.idsByOwner.delete(graphScope.owningGraphId)
-    if (bucket.byId.size === 0) roots.delete(graphScope.rootGraphId)
+    if (bucket.byId.size === 0) dropRoot(graphScope.rootGraphId)
   }
 
   return {

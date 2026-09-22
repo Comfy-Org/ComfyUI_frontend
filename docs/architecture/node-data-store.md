@@ -267,6 +267,56 @@ existing widgets → mutate `node.widgets` in place; add a plain custom widget �
 use `addCustomWidget` and retain its return value, or read the resulting
 `node.widgets` entry.
 
+## Decision 8: Membership projected from the semantic document (2026-09-22, partial)
+
+The root-graph bucket is no longer the sole owner of node membership. Each
+root graph has one semantic Yjs document in `semanticDocs`
+(`src/stores/semanticDoc.ts`); the store projects `idsByOwner` from it and
+keeps `byId` as the local materialisation of live `NodeState` objects.
+
+```
+┌──────────────────────── semantic document (per root graph) ───────────────┐
+│ nodes.<id>                    -> owned by the root graph                  │
+│ definitions.<owner>.nodes.<id> -> owned by subgraph definition <owner>    │
+└─────────────┬─────────────────────────────────────────────────────────────┘
+              │ observeNodes (deep, on `nodes` + `definitions`)
+              ▼
+┌──────────── nodeDataStore bucket ─────────────┐   ┌─── writers ───────────┐
+│ idsByOwner: Map<OwningGraphId, Set<NodeId>>   │◀──│ registerNode          │
+│   (derived: key added/deleted per doc event)  │   │ deleteNode            │
+│ byId: Map<NodeId, NodeState>                  │   │ clearOwner/clearGraph │
+│   (local: live objects litegraph writes to)   │   │  via transactLocal    │
+└───────────────────────────────────────────────┘   └───────────────────────┘
+```
+
+Rules:
+
+- `getGraphNodesFor` returns doc-ordered ids filtered to ids that also have
+  registered state. A key written to the document before any `NodeState`
+  exists (a remote frame arriving ahead of the host node) stays invisible
+  until `registerNode` supplies the object; a registered object whose key is
+  missing from the document is likewise not listed.
+- Local writes carry a `LocalUpdateOrigin` (`{ source: 'local', actor?,
+  opId? }`) so observers can separate them from `applyRemote`. `registerNode`
+  writes `nodes.<id> = { type }` only if the key is absent, so a merged host
+  node needs no second write.
+- Duplicate-id rejection and owner isolation are unchanged: the store still
+  checks `byId` first and never writes a duplicate key.
+- Root buckets and their document observers are released when the last node
+  of a root graph is deleted or the graph is cleared; the store also drops
+  every observer when its effect scope disposes.
+
+Known gaps (the projection is partial):
+
+- Node content fields (`title`, `mode`, `flags`, slots, ...) remain
+  store-owned because `LGraphNode` setters write `_state` directly. Only
+  membership and ownership come from the document.
+- A document filled only by local registration carries no host
+  `meta.schema_version`; `semanticDocs.readGraph` fails closed on it. The
+  follower does not stamp `meta` (the host owns schema versioning).
+- `linkStore` and `widgetValueStore` are still not projections; the
+  architecture guard keeps those as `KNOWN GAP` expected failures.
+
 ## Scope
 
 Covers node shell state, the `VueNodeData` deletion, and the

@@ -3,10 +3,15 @@ import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { toRootGraphId } from '@/types/graphScopeId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
-import { SemanticDocRegistry, isRemoteUpdateOrigin } from './semanticDoc'
+import {
+  SemanticDocRegistry,
+  isLocalUpdateOrigin,
+  isRemoteUpdateOrigin,
+  ownerNodesMap
+} from './semanticDoc'
 import type { RemoteUpdateOrigin } from './semanticDoc'
 
 const rootA = toRootGraphId('root-a')
@@ -209,5 +214,95 @@ describe('SemanticDocRegistry', () => {
     expect(isRemoteUpdateOrigin(Symbol('local'))).toBe(false)
     expect(isRemoteUpdateOrigin({ source: 'agent-remote' })).toBe(false)
     expect(isRemoteUpdateOrigin({ source: 'human', actor: 'u' })).toBe(false)
+  })
+
+  it('isLocalUpdateOrigin accepts bare and attributed local origins only', () => {
+    expect(isLocalUpdateOrigin({ source: 'local' })).toBe(true)
+    expect(
+      isLocalUpdateOrigin({ source: 'local', actor: 'a', opId: 'op' })
+    ).toBe(true)
+    expect(isLocalUpdateOrigin({ source: 'local', actor: 1 })).toBe(false)
+    expect(isLocalUpdateOrigin(origin)).toBe(false)
+    expect(isLocalUpdateOrigin(null)).toBe(false)
+  })
+
+  it('transactLocal runs one transaction carrying the local origin', () => {
+    const listener = vi.fn()
+    registry.observe(rootA, listener)
+    const local = { source: 'local' as const, actor: 'user', opId: 'op-1' }
+
+    registry.transactLocal(rootA, local, (doc) => {
+      const nodes = ownerNodesMap(doc, rootA, toOwningGraphId('root-a'), true)
+      nodes.set('1', new Y.Map([['type', 'Source']]))
+      nodes.set('2', new Y.Map([['type', 'Sink']]))
+    })
+
+    expect(listener).toHaveBeenCalledTimes(1)
+    const transaction = listener.mock.calls[0][1] as Y.Transaction
+    expect(transaction.origin).toBe(local)
+    expect(isRemoteUpdateOrigin(transaction.origin)).toBe(false)
+    expect([...registry.ensure(rootA).getMap('nodes').keys()]).toEqual([
+      '1',
+      '2'
+    ])
+    // A document filled only locally carries no host `meta.schema_version`,
+    // so the package reader refuses it; slice 2a does not stamp meta.
+    expect(() => registry.readGraph(rootA)).toThrow(/schema_version/)
+  })
+
+  it('ownerNodesMap resolves the root owner to the nodes share', () => {
+    const doc = registry.ensure(rootA)
+    const nodes = ownerNodesMap(doc, rootA, toOwningGraphId('root-a'), false)
+    expect(nodes).toBe(doc.getMap('nodes'))
+    expect(doc.share.has('definitions')).toBe(false)
+  })
+
+  it('ownerNodesMap never materialises a definition path without create', () => {
+    const doc = registry.ensure(rootA)
+    const sub = toOwningGraphId('sub-1')
+
+    expect(ownerNodesMap(doc, rootA, sub, false)).toBeUndefined()
+    expect(doc.share.has('definitions')).toBe(false)
+
+    doc.getMap('definitions').set('sub-1', new Y.Map())
+    expect(ownerNodesMap(doc, rootA, sub, false)).toBeUndefined()
+    expect(registry.readDefinitions(rootA)).toEqual({ 'sub-1': {} })
+
+    const created = ownerNodesMap(doc, rootA, sub, true)
+    expect(created).toBeInstanceOf(Y.Map)
+    expect(ownerNodesMap(doc, rootA, sub, false)).toBe(created)
+    expect(ownerNodesMap(doc, rootA, sub, true)).toBe(created)
+    expect(registry.readDefinitions(rootA)).toEqual({ 'sub-1': { nodes: {} } })
+  })
+
+  it('observeNodes sees definition-owned nodes that observe does not', () => {
+    const onGraph = vi.fn()
+    const onNodes = vi.fn()
+    registry.observe(rootA, onGraph)
+    const stop = registry.observeNodes(rootA, onNodes)
+
+    registry.transactLocal(rootA, { source: 'local' }, (doc) => {
+      ownerNodesMap(doc, rootA, toOwningGraphId('sub-1'), true).set(
+        '5',
+        new Y.Map([['type', 'Sink']])
+      )
+    })
+
+    expect(onGraph).not.toHaveBeenCalled()
+    expect(onNodes).toHaveBeenCalledTimes(1)
+    const events = onNodes.mock.calls[0][0] as Y.YEvent<
+      Y.AbstractType<unknown>
+    >[]
+    expect(events.map((event) => event.path)).toEqual([[]])
+
+    stop()
+    registry.transactLocal(rootA, { source: 'local' }, (doc) => {
+      ownerNodesMap(doc, rootA, toOwningGraphId('root-a'), true).set(
+        '6',
+        new Y.Map([['type', 'Sink']])
+      )
+    })
+    expect(onNodes).toHaveBeenCalledTimes(1)
+    expect(onGraph).toHaveBeenCalledTimes(1)
   })
 })

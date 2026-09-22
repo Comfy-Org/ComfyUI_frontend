@@ -13,8 +13,9 @@
  *   here. Layout stays in `layoutStore`'s own document.
  * - Remote updates enter only through `applyRemote`, which carries provenance
  *   as the Yjs transaction origin, never on an ambient singleton.
- * - The module writes no shared state. The human write path (op-stamped local
- *   origin via `applyOps`) is a later slice.
+ * - Local writes enter only through `transactLocal`, whose `LocalUpdateOrigin`
+ *   carries the op stamp (`actor`, `opId`) when the caller has one. Nothing is
+ *   shipped anywhere; the human write path that stamps ops is a later slice.
  * - Reads never materialise a root: an absent root reads as empty rather than
  *   being created by `doc.getMap`.
  */
@@ -27,10 +28,11 @@ import {
 import type { GraphSnapshot } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
-import type { RootGraphId } from '@/types/graphScopeId'
+import type { OwningGraphId, RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 
 const DEFINITIONS_ROOT = 'definitions'
+const DEFINITION_NODES_KEY = 'nodes'
 
 /**
  * Provenance of a remote update, carried as the Yjs transaction origin so
@@ -49,6 +51,73 @@ export function isRemoteUpdateOrigin(
   return (
     candidate.source === 'agent-remote' && typeof candidate.actor === 'string'
   )
+}
+
+/**
+ * Provenance of a local write, carried as the Yjs transaction origin. The op
+ * stamp is optional until the human write path lands; a store projection that
+ * mirrors an already-stamped mutation forwards `actor` and `opId` unchanged.
+ */
+export interface LocalUpdateOrigin {
+  readonly source: 'local'
+  readonly actor?: string
+  readonly opId?: string
+}
+
+export function isLocalUpdateOrigin(
+  value: unknown
+): value is LocalUpdateOrigin {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Partial<LocalUpdateOrigin>
+  return (
+    candidate.source === 'local' &&
+    (candidate.actor === undefined || typeof candidate.actor === 'string') &&
+    (candidate.opId === undefined || typeof candidate.opId === 'string')
+  )
+}
+
+/**
+ * The `nodes` map that owns nodes of `owningGraphId` inside the document of
+ * `rootGraphId`: the root `nodes` share when the owner is the root graph,
+ * otherwise `definitions.<owner>.nodes`. With `create: false` an absent
+ * definition path reads as `undefined` instead of being materialised.
+ */
+export function ownerNodesMap(
+  doc: Y.Doc,
+  rootGraphId: RootGraphId,
+  owningGraphId: OwningGraphId,
+  create: true
+): Y.Map<unknown>
+export function ownerNodesMap(
+  doc: Y.Doc,
+  rootGraphId: RootGraphId,
+  owningGraphId: OwningGraphId,
+  create: false
+): Y.Map<unknown> | undefined
+export function ownerNodesMap(
+  doc: Y.Doc,
+  rootGraphId: RootGraphId,
+  owningGraphId: OwningGraphId,
+  create: boolean
+): Y.Map<unknown> | undefined {
+  if ((owningGraphId as string) === (rootGraphId as string)) {
+    return nodesMap(doc) as Y.Map<unknown>
+  }
+  if (!create && !doc.share.has(DEFINITIONS_ROOT)) return undefined
+  const definitions = doc.getMap<unknown>(DEFINITIONS_ROOT)
+  let definition = definitions.get(owningGraphId as string)
+  if (!(definition instanceof Y.Map)) {
+    if (!create) return undefined
+    definition = new Y.Map<unknown>()
+    definitions.set(owningGraphId as string, definition)
+  }
+  let nodes = (definition as Y.Map<unknown>).get(DEFINITION_NODES_KEY)
+  if (!(nodes instanceof Y.Map)) {
+    if (!create) return undefined
+    nodes = new Y.Map<unknown>()
+    ;(definition as Y.Map<unknown>).set(DEFINITION_NODES_KEY, nodes)
+  }
+  return nodes as Y.Map<unknown>
 }
 
 /** Deep change notification for the semantic roots of one root graph. */
@@ -110,6 +179,20 @@ export class SemanticDocRegistry {
     Y.applyUpdate(this.ensure(rootGraphId), update, origin)
   }
 
+  /**
+   * Runs `fn` as one local transaction on the document for `rootGraphId`,
+   * with `origin` as the transaction origin. Every local write to a semantic
+   * root goes through here so observers can separate it from `applyRemote`.
+   */
+  transactLocal(
+    rootGraphId: RootGraphId,
+    origin: LocalUpdateOrigin,
+    fn: (doc: Y.Doc) => void
+  ): void {
+    const doc = this.ensure(rootGraphId)
+    doc.transact(() => fn(doc), origin)
+  }
+
   /** Root-graph nodes and links as deep-frozen plain data; empty if unknown. */
   readGraph(rootGraphId: RootGraphId): GraphSnapshot {
     const doc = this.docs.get(rootGraphId)
@@ -140,6 +223,24 @@ export class SemanticDocRegistry {
   observe(rootGraphId: RootGraphId, listener: SemanticDocListener): () => void {
     const doc = this.ensure(rootGraphId)
     const roots = [nodesMap(doc), linksMap(doc)]
+    for (const root of roots) root.observeDeep(listener)
+    return () => {
+      for (const root of roots) root.unobserveDeep(listener)
+    }
+  }
+
+  /**
+   * Observes deep changes under the `nodes` and `definitions` roots, i.e.
+   * every map that can own a node (see `ownerNodesMap`). Unlike `observe`,
+   * this registers an empty `definitions` root locally when absent; like
+   * `observe`, that adds no content and ships nothing. Returns an unsubscribe.
+   */
+  observeNodes(
+    rootGraphId: RootGraphId,
+    listener: SemanticDocListener
+  ): () => void {
+    const doc = this.ensure(rootGraphId)
+    const roots = [nodesMap(doc), doc.getMap<unknown>(DEFINITIONS_ROOT)]
     for (const root of roots) root.observeDeep(listener)
     return () => {
       for (const root of roots) root.unobserveDeep(listener)
