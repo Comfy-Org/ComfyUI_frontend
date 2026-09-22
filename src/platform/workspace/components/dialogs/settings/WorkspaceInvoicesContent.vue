@@ -71,9 +71,11 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useNextInvoice } from '@/composables/billing/useNextInvoice'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { formatUsdCents } from '@/utils/numberUtil'
 
 const { locale } = useI18n()
+const { toastErrorHandler } = useErrorHandling()
 const {
   billingStatus,
   subscription,
@@ -91,8 +93,11 @@ const upcomingAmount = computed(() => {
   return invoice ? formatUsdCents(locale.value, invoice.amountCents) : null
 })
 
+// `manageSubscription` rethrows once the portal request fails, and this panel
+// only renders its own error state before billing has loaded, so the failure
+// would otherwise be silent.
 function openHistory() {
-  void manageSubscription()
+  void manageSubscription().catch(toastErrorHandler)
 }
 
 // `initialize` rethrows so callers can react; the failure is already mirrored

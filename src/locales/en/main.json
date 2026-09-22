@@ -3288,7 +3288,7 @@
       }
     },
     "invoices": {
-      "nextInvoice": "Next month invoice",
+      "nextInvoice": "Next invoice",
       "usd": "USD",
       "fullHistory": "Full invoice history"
     },

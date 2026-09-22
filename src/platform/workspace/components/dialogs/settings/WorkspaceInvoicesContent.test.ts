@@ -30,6 +30,11 @@ const state = vi.hoisted(() => ({
   manageSubscription: vi.fn(async () => {})
 }))
 
+const toastErrorHandler = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
+  useErrorHandling: () => ({ toastErrorHandler })
+}))
+
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     isLoading: computed(() => state.isLoading),
@@ -103,13 +108,14 @@ beforeEach(() => {
   state.currentTeamCreditStop = null
   state.initialize.mockClear()
   state.manageSubscription.mockClear()
+  toastErrorHandler.mockClear()
 })
 
 describe('WorkspaceInvoicesContent', () => {
   it('shows the upcoming charge derived from the active plan', () => {
     renderPanel()
 
-    expect(screen.getByText('Next month invoice')).toBeTruthy()
+    expect(screen.getByText('Next invoice')).toBeTruthy()
     expect(screen.getByText(/\$20\b/)).toBeTruthy()
     expect(historyButton()).toBeTruthy()
   })
@@ -144,7 +150,7 @@ describe('WorkspaceInvoicesContent', () => {
 
     renderPanel()
 
-    expect(screen.queryByText('Next month invoice')).toBeNull()
+    expect(screen.queryByText('Next invoice')).toBeNull()
     expect(historyButton()).toBeTruthy()
   })
 
@@ -153,7 +159,7 @@ describe('WorkspaceInvoicesContent', () => {
 
     renderPanel()
 
-    expect(screen.queryByText('Next month invoice')).toBeNull()
+    expect(screen.queryByText('Next invoice')).toBeNull()
     expect(historyButton()).toBeTruthy()
   })
 
@@ -172,7 +178,7 @@ describe('WorkspaceInvoicesContent', () => {
     renderPanel()
 
     expect(screen.getByText('Loading')).toBeTruthy()
-    expect(screen.queryByText('Next month invoice')).toBeNull()
+    expect(screen.queryByText('Next invoice')).toBeNull()
   })
 
   it('offers a retry when billing data fails to load', async () => {
@@ -193,11 +199,24 @@ describe('WorkspaceInvoicesContent', () => {
     const unhandled = vi.fn()
     process.on('unhandledRejection', unhandled)
 
-    renderPanel()
-    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    process.off('unhandledRejection', unhandled)
+    try {
+      renderPanel()
+      await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+      await new Promise<void>((resolve) => setImmediate(resolve))
+    } finally {
+      process.off('unhandledRejection', unhandled)
+    }
 
     expect(unhandled).not.toHaveBeenCalled()
+  })
+
+  it('toasts when the billing portal fails to open', async () => {
+    state.manageSubscription.mockRejectedValueOnce(new Error('portal down'))
+
+    renderPanel()
+    await userEvent.click(historyButton())
+    await new Promise<void>((resolve) => setImmediate(resolve))
+
+    expect(toastErrorHandler).toHaveBeenCalledWith(expect.any(Error))
   })
 })
