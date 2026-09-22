@@ -25,6 +25,74 @@ const sampler = {
   outputs: [{ name: 'LATENT', type: 'LATENT' }]
 }
 
+const saver = {
+  id: 3,
+  type: 'SaveImage',
+  pos: [800, 60],
+  size: [200, 120],
+  inputs: [{ name: 'images', type: 'IMAGE' }],
+  outputs: []
+}
+
+// A template publishes its own before and after. Hanging them where they
+// belong is what turns a diagram of boxes into a picture of this workflow.
+describe('the template samples', () => {
+  const pictures = (samples: readonly string[]) =>
+    Object.fromEntries(
+      readGraphPicture({ nodes: [loader, sampler, saver] }, samples).nodes.map(
+        (node) => [node.title, node.picture?.href]
+      )
+    )
+
+  it('hangs the before on what takes it and the after on what returns it', () => {
+    expect(pictures(['before.webp', 'after.webp'])).toMatchObject({
+      LoadImage: 'before.webp',
+      SaveImage: 'after.webp',
+      Sampler: undefined
+    })
+  })
+
+  // Most templates publish the result alone, and a result standing in the
+  // node that takes the input would be a lie about what goes in.
+  it('gives a lone picture to the node that returns it', () => {
+    expect(pictures(['result.webp'])).toMatchObject({
+      LoadImage: undefined,
+      SaveImage: 'result.webp'
+    })
+  })
+
+  it('leaves every node bare when the template publishes nothing', () => {
+    expect(pictures([])).toMatchObject({
+      LoadImage: undefined,
+      SaveImage: undefined
+    })
+  })
+
+  // A node saved tall enough to show an image in the editor already has the
+  // room, so the sample fills it rather than stretching the node past it.
+  it.for([[200, 400] as const, [200, 60] as const])(
+    'fits the sample inside a node saved %j',
+    (size) => {
+      const bare = readGraphPicture({ nodes: [{ ...saver, size }] }).nodes[0]
+      const hung = readGraphPicture({ nodes: [{ ...saver, size }] }, ['a.webp'])
+        .nodes[0]
+      const picture = hung.picture!
+
+      expect(hung.height).toBeGreaterThanOrEqual(bare.height)
+      expect(picture.y + picture.height).toBeLessThanOrEqual(hung.height)
+    }
+  )
+
+  it('leaves a node saved with the room it needs at that height', () => {
+    const size = [200, 400] as const
+    const bare = readGraphPicture({ nodes: [{ ...saver, size }] }).nodes[0]
+    const hung = readGraphPicture({ nodes: [{ ...saver, size }] }, ['a.webp'])
+      .nodes[0]
+
+    expect(hung.height).toBe(bare.height)
+  })
+})
+
 describe('readGraphPicture', () => {
   it('reads a saved title over the class name', () => {
     const { nodes } = readGraphPicture({ nodes: [loader, sampler] })

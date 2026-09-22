@@ -45,6 +45,12 @@ interface GraphWidget {
   readonly height: number
 }
 
+/**
+ * What a node is for, where a picture could stand in it: the one that takes a
+ * picture in, and the one that hands the result back.
+ */
+type NodeRole = 'input' | 'output'
+
 export interface GraphNode {
   readonly id: string
   readonly title: string
@@ -61,6 +67,16 @@ export interface GraphNode {
   readonly inputs: readonly GraphSlot[]
   readonly outputs: readonly GraphSlot[]
   readonly widgets: readonly GraphWidget[]
+  readonly role: NodeRole | undefined
+  /** The template's own sample, filling the room the node left for one. */
+  readonly picture: GraphPictureBand | undefined
+}
+
+interface GraphPictureBand {
+  readonly href: string
+  /** Distance from the node's top edge. */
+  readonly y: number
+  readonly height: number
 }
 
 /** A frame somebody drew around part of the graph, and what they called it. */
@@ -143,6 +159,18 @@ function readSlots(value: unknown): readonly { name: string; type: string }[] {
  * The title a reader recognises: whoever saved the graph may have renamed the
  * node, and the class name is the fallback rather than the other way round.
  */
+/** The least room a sample is worth drawing in. */
+const MIN_PICTURE = 120
+const PICTURE_INSET = 8
+
+function roleOf(type: unknown): NodeRole | undefined {
+  if (typeof type !== 'string') return undefined
+  if (/^Load(Image|Video|Audio)/.test(type)) return 'input'
+  if (/^(Save|Preview)(Image|Video|Audio|Animated|WEBM)/.test(type))
+    return 'output'
+  return undefined
+}
+
 function readTitle(record: Record<string, unknown>): string {
   if (typeof record.title === 'string' && record.title.trim())
     return record.title.trim()
@@ -297,7 +325,9 @@ function nodeFrom(value: unknown): GraphNode | undefined {
     dimmed: typeof record.mode === 'number' && record.mode !== 0,
     inputs: drawnSlots(inputs),
     outputs: drawnSlots(outputs),
-    widgets: drawnWidgets(values, rows, box.width, box.height)
+    widgets: drawnWidgets(values, rows, box.width, box.height),
+    role: roleOf(record.type),
+    picture: undefined
   }
 }
 
@@ -405,14 +435,66 @@ function drawnLinks(
   })
 }
 
-export function readGraphPicture(source: unknown): GraphPicture {
+/**
+ * A template publishes its own sample beside itself: two pictures where it has
+ * a before and an after, one where it only has the result. Hanging them in the
+ * nodes that hold them shows what the graph does, without inventing anything
+ * the registry did not already publish.
+ */
+// A node that shows an image in the editor was saved tall enough to hold one,
+// so the sample fills what the node already left empty and only stretches it
+// where the author saved it small.
+function hang(node: GraphNode, href: string): GraphNode {
+  const top =
+    Math.max(
+      node.widgets.at(-1)
+        ? node.widgets.at(-1)!.y + node.widgets.at(-1)!.height
+        : 0,
+      slotY(Math.max(node.inputs.length, node.outputs.length))
+    ) + PICTURE_INSET
+  const room = node.height - top - PICTURE_INSET
+  const height = Math.max(room, MIN_PICTURE)
+  return {
+    ...node,
+    picture: { href, y: top, height },
+    height: Math.max(node.height, top + height + PICTURE_INSET)
+  }
+}
+
+function withSamples(
+  nodes: readonly GraphNode[],
+  samples: readonly string[]
+): readonly GraphNode[] {
+  const hung = new Map<string, string>()
+  const hold = (role: NodeRole, href: string | undefined) => {
+    const held = nodes
+      .filter((node) => node.role === role)
+      .sort((a, b) => a.x - b.x)
+      .at(role === 'input' ? 0 : -1)
+    if (held && href) hung.set(held.id, href)
+  }
+  hold('input', samples.length > 1 ? samples[0] : undefined)
+  hold('output', samples.at(-1))
+  return nodes.map((node) => {
+    const href = hung.get(node.id)
+    return href ? hang(node, href) : node
+  })
+}
+
+export function readGraphPicture(
+  source: unknown,
+  samples: readonly string[] = []
+): GraphPicture {
   const record =
     source && typeof source === 'object'
       ? (source as Record<string, unknown>)
       : {}
-  const nodes = Array.isArray(record.nodes)
-    ? record.nodes.flatMap((entry) => nodeFrom(entry) ?? [])
-    : []
+  const nodes = withSamples(
+    Array.isArray(record.nodes)
+      ? record.nodes.flatMap((entry) => nodeFrom(entry) ?? [])
+      : [],
+    samples
+  )
 
   const groups = Array.isArray(record.groups)
     ? record.groups.flatMap((entry, index) => groupFrom(entry, index) ?? [])

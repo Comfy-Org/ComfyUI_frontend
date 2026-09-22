@@ -93,5 +93,26 @@ const header = (n: GraphNode) =>
         {{ line }}
       </text>
     </g>
+
+    <g v-if="node.picture">
+      <clipPath :id="`sample-${node.id}`">
+        <rect
+          :x="node.x + WIDGET_INSET"
+          :y="node.y + node.picture.y"
+          :width="node.width - WIDGET_INSET * 2"
+          :height="node.picture.height"
+          rx="9"
+        />
+      </clipPath>
+      <image
+        :href="node.picture.href"
+        :x="node.x + WIDGET_INSET"
+        :y="node.y + node.picture.y"
+        :width="node.width - WIDGET_INSET * 2"
+        :height="node.picture.height"
+        preserveAspectRatio="xMidYMid slice"
+        :clip-path="`url(#sample-${node.id})`"
+      />
+    </g>
   </g>
 </template>

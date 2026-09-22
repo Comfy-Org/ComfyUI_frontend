@@ -13,6 +13,7 @@ const {
   runsHere,
   tutorialUrl,
   models,
+  samples,
   author,
   usage,
   produces,
@@ -24,6 +25,8 @@ const {
   cloudUrl: string
   runsHere: boolean
   tutorialUrl: string | undefined
+  /** The template's own pictures, hung in the nodes that hold them. */
+  samples: readonly string[]
   models: readonly { name: string; model: WorkshopModel | undefined }[]
   author: string
   usage: number
@@ -59,7 +62,7 @@ const sectionTitle =
             :locale
           />
         </div>
-        <WorkflowGraph :source="graphUrl" :locale />
+        <WorkflowGraph :source="graphUrl" :samples :locale />
       </section>
     </div>
 

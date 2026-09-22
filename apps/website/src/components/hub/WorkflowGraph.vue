@@ -7,9 +7,15 @@ import WorkflowGraphNode from './WorkflowGraphNode.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { source, locale = 'en' } = defineProps<{
+const {
+  source,
+  samples = [],
+  locale = 'en'
+} = defineProps<{
   /** Where the template JSON is published. */
   source: string
+  /** The template's own pictures: a before and an after, or just the after. */
+  samples?: readonly string[]
   locale?: Locale
 }>()
 
@@ -26,7 +32,7 @@ onMounted(async () => {
   try {
     const response = await fetch(source)
     if (!response.ok) throw new Error(String(response.status))
-    const drawn = readGraphPicture(await response.json())
+    const drawn = readGraphPicture(await response.json(), samples)
     // Nothing to draw reads to the reader exactly as a refusal does.
     if (drawn.nodes.length === 0) throw new Error('empty')
     picture.value = drawn
