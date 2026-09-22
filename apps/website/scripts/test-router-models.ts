@@ -6,6 +6,8 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 
+import { z } from 'zod'
+
 import { authoredWorkshopModels } from '../src/config/workshop-browse-content'
 import { resolveWorkshopCloudEnv } from '../src/config/workshop-cloud-env'
 import { WORKSHOP_ROUTER_BASE_URL } from '../src/config/workshop-env'
@@ -106,6 +108,52 @@ function failureEvidence(error: unknown, token: string) {
   }
 }
 
+function selectSweepModels(options: {
+  slug?: string[]
+  modality?: string
+  'exclude-modality'?: string
+}) {
+  const mediaKind = z.enum(['image', 'video', 'audio']).optional()
+  const excluded = mediaKind.parse(options['exclude-modality'])
+  const selected = selectRouterModels({
+    slugs: options.slug,
+    modality: mediaKind.parse(options.modality)
+  }).filter((model) => model.modality !== excluded)
+  if (!selected.length) throw new Error('No published models selected')
+  return selected
+}
+
+function printSweepPlan(
+  selectedCount: number,
+  maxCases: number,
+  execute: boolean
+) {
+  if (execute) throw new Error('--plan cannot execute paid jobs')
+  const total = Math.ceil(selectedCount / maxCases)
+  process.stdout.write(
+    JSON.stringify({
+      total,
+      shards: Array.from({ length: total }, (_, index) => index),
+      selectedCount
+    }) + '\n'
+  )
+}
+
+function resolveReportPaths(report: string | undefined) {
+  if (!report)
+    return {
+      markdownPath: fileURLToPath(
+        new URL('../MODELS_TEST_RESULTS.md', import.meta.url)
+      ),
+      jsonPath: fileURLToPath(
+        new URL('../testing/models-test-results.json', import.meta.url)
+      )
+    }
+  if (!report.endsWith('.md')) throw new Error('--report must name a .md file')
+  const markdownPath = resolve(report)
+  return { markdownPath, jsonPath: markdownPath.replace(/\.md$/, '.json') }
+}
+
 async function main() {
   const { values } = parseArgs({
     options: {
@@ -132,8 +180,6 @@ async function main() {
   }
   const concurrency = positiveInteger(values.concurrency, 16)
   const startsPerSecond = positiveNumber(values['starts-per-second'], 2)
-  if (values.modality !== undefined && !isMediaKind(values.modality))
-    throw new Error('--modality must be image, video or audio')
   if (concurrency > 128) throw new Error('Concurrency cannot exceed 128')
   const timeoutMs = positiveInteger(values['timeout-seconds'], 2700) * 1000
   const maxBytes = positiveInteger(values['max-artifact-mb'], 256) * 1024 * 1024
@@ -144,27 +190,10 @@ async function main() {
     : fileURLToPath(
         new URL(`../../../temp/router-model-tests/${runId}/`, import.meta.url)
       )
-  if (
-    values['exclude-modality'] !== undefined &&
-    !isMediaKind(values['exclude-modality'])
-  )
-    throw new Error('--exclude-modality must be image, video or audio')
-  const selectedModels = selectRouterModels({
-    slugs: values.slug,
-    modality: values.modality
-  }).filter((model) => model.modality !== values['exclude-modality'])
+  const selectedModels = selectSweepModels(values)
   const maxCases = positiveInteger(values['max-cases'], 1000)
-  if (!selectedModels.length) throw new Error('No published models selected')
   if (values.plan) {
-    if (values.execute) throw new Error('--plan cannot execute paid jobs')
-    const total = Math.ceil(selectedModels.length / maxCases)
-    process.stdout.write(
-      JSON.stringify({
-        total,
-        shards: Array.from({ length: total }, (_, index) => index),
-        selectedCount: selectedModels.length
-      }) + '\n'
-    )
+    printSweepPlan(selectedModels.length, maxCases, values.execute)
     return
   }
   const cases = selectModelShard(
@@ -173,16 +202,7 @@ async function main() {
     positiveInteger(values['shard-total'], 1),
     maxCases
   )
-  if (values.report && !values.report.endsWith('.md'))
-    throw new Error('--report must name a .md file')
-  const markdownPath = values.report
-    ? resolve(values.report)
-    : fileURLToPath(new URL('../MODELS_TEST_RESULTS.md', import.meta.url))
-  const jsonPath = values.report
-    ? markdownPath.replace(/\.md$/, '.json')
-    : fileURLToPath(
-        new URL('../testing/models-test-results.json', import.meta.url)
-      )
+  const { markdownPath, jsonPath } = resolveReportPaths(values.report)
   const environment = resolveWorkshopCloudEnv(
     process.env.PUBLIC_WORKSHOP_CLOUD_ENV
   )

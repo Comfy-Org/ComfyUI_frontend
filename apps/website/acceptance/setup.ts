@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { modelCases } from './cases'
 import { expectedCharge, liveSettings, requiredSetting } from './settings'
 
-export default async function setup() {
+function validateAccountSettings() {
   const settings = liveSettings()
   const checkout = process.env.WORKSHOP_ACCEPTANCE_SCOPE === 'checkout'
   if (checkout && settings.environment !== 'test')
@@ -18,13 +18,27 @@ export default async function setup() {
         'WORKSHOP_WORKSPACE_ID'
       ]
   names.forEach(requiredSetting)
+}
+
+function validateReviewedCharges() {
   const selected =
     process.env.WORKSHOP_ACCEPTANCE_SCOPE === 'release'
       ? modelCases
       : modelCases.filter((model) => model.smoke)
-  for (const model of selected)
-    for (const variant of checkout ? ['own'] : ['defaults', 'own', 'advanced'])
-      expectedCharge(model.slug, variant)
+  const variants =
+    process.env.WORKSHOP_ACCEPTANCE_SCOPE === 'checkout'
+      ? ['own']
+      : ['defaults', 'own', 'advanced']
+  for (const model of selected) validateModelCharges(model.slug, variants)
+}
+
+function validateModelCharges(slug: string, variants: string[]) {
+  for (const variant of variants) expectedCharge(slug, variant)
+}
+
+export default async function setup() {
+  validateAccountSettings()
+  validateReviewedCharges()
   const directory = requiredSetting('WORKSHOP_FIXTURE_DIR')
   await mkdir(directory, { recursive: true })
   execFileSync('ffmpeg', [

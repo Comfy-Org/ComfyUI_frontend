@@ -33,9 +33,9 @@ runs successfully with the configured accounts and environment.
 
 | Design or QA requirement                                                         | Implementation                                                                                                                                                                                                                                                    | Remaining acceptance work                                                                                                                                       |
 | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TDD §7 Journey 1; QA “New visitor to first result”                               | [purchase.spec.ts](purchase.spec.ts): email signup from an edited image page, personal workspace ownership, test purchase, exact credit settlement, prompt restoration, first generation and download                                                             | Browse/search entry, other signup methods, explicit asset/settings restoration assertions, eligibility timing and actual sandbox execution                      |
-| TDD §7 Journey 2; QA “Returning customer” and “Running each kind of model”       | [generation.spec.ts](generation.spec.ts), [cases.ts](cases.ts): six representatives each run defaults, own inputs and advanced settings as three distinct jobs                                                                                                    | All published page/mode combinations, another changed prompt/asset after the own-input run, and visual confirmation of input influence                          |
-| QA “What every successful run must prove”                                        | [fixtures.ts](fixtures.ts): accepted job identity, prompt/advanced request values, terminal success, browser rendering/playback, downloaded media decoding, isolated exact balance delta                                                                          | Every uploaded asset role in sanitized request evidence, requested count/dimensions/duration assertions, per-job ledger reconciliation and human quality review |
+| TDD §7 Journey 1; QA “New visitor to first result”                               | [purchase.spec.ts](../e2e/acceptance/purchase.spec.ts): email signup from an edited image page, personal workspace ownership, test purchase, exact credit settlement, prompt restoration, first generation and download                                           | Browse/search entry, other signup methods, explicit asset/settings restoration assertions, eligibility timing and actual sandbox execution                      |
+| TDD §7 Journey 2; QA “Returning customer” and “Running each kind of model”       | [generation.spec.ts](../e2e/acceptance/generation.spec.ts), [cases.ts](cases.ts): six representatives each run defaults, own inputs and advanced settings as three distinct jobs                                                                                  | All published page/mode combinations, another changed prompt/asset after the own-input run, and visual confirmation of input influence                          |
+| QA “What every successful run must prove”                                        | [fixtures.ts](fixtures.ts): accepted job identity, prompt/advanced request values, terminal success, browser rendering/playback, downloaded media decoding, isolated effective balance delta                                                                      | Every uploaded asset role in sanitized request evidence, requested count/dimensions/duration assertions, per-job ledger reconciliation and human quality review |
 | QA inventory and release gate: every published page/mode                         | [test-router-models.ts](../scripts/test-router-models.ts), [Model Sweep](../../../.github/workflows/workshop-model-sweep.yaml): dynamic published-default inventory, bounded shards and failure on missing results                                                | Own-input/advanced cases for every page, every runnable example and production execution                                                                        |
 | TDD §13; QA deployment smoke and release browser matrix                          | [Live Smoke](../../../.github/workflows/workshop-live-smoke.yaml), [Release Acceptance](../../../.github/workflows/workshop-acceptance.yaml), [Playwright config](../playwright.acceptance.config.ts): separate live runner, Chromium/WebKit and mobile emulation | Actual Actions runs, real-device Safari, keyboard/accessibility checks and external heartbeat monitoring                                                        |
 | TDD §7 Journeys 3–5; QA invalid inputs, policy, retry, concurrency and isolation | No new live acceptance coverage in this slice; existing offline tests retain their own scope                                                                                                                                                                      | Developer hand-off, team-member billing gates, controlled faults, recovery, policy fixtures and account/workspace separation                                    |
@@ -59,19 +59,25 @@ the repository's protected `main` branch. Configure credentials through the
 secret manager/GitHub settings, never in files or chat. Missing settings fail
 preflight rather than producing a skipped green acceptance run.
 
+Before using a staging or test deployment, verify its ownership and backend,
+then add its exact HTTPS origin to the matching `approvedSiteOrigins` entry
+in `settings.ts` through review. Those lists start empty; arbitrary Vercel
+hostnames, non-default ports and unapproved deployments are rejected before
+the browser starts. Setting `WORKSHOP_TEST_SITE_URL` alone is insufficient.
+
 | Setting                          | Kind                          | Purpose                                                                                                                   |
 | -------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `WORKSHOP_ACCOUNT_EMAIL`         | Environment secret            | Dedicated existing external customer for generation acceptance                                                            |
 | `WORKSHOP_ACCOUNT_PASSWORD`      | Environment secret            | Its real sign-in credential                                                                                               |
 | `WORKSHOP_WORKSPACE_ID`          | Environment variable          | Exact personal workspace that sign-in must select                                                                         |
 | `WORKSHOP_ROUTER_API_KEY`        | Production environment secret | Separate funded customer for the catalogue sweep and browser-origin upload probe                                          |
-| `WORKSHOP_EXPECTED_CHARGES_JSON` | Environment variable          | Reviewed USD microamount per `model-page-slug/input-variant`; see below                                                   |
+| `WORKSHOP_EXPECTED_CHARGES_JSON` | Environment variable          | Reviewed US cents per `model-page-slug/input-variant`; see below                                                          |
 | `WORKSHOP_TEST_SITE_URL`         | Test environment variable     | Deployed Vercel website built with `PUBLIC_WORKSHOP_CLOUD_ENV=test`, with its origin allowed by test auth/storage/billing |
 | `WORKSHOP_SIGNUP_EMAIL_DOMAIN`   | Test environment variable     | Team-owned domain for disposable new-customer addresses                                                                   |
 | `WORKSHOP_SIGNUP_PASSWORD`       | Test environment secret       | Password satisfying the signup policy for those disposable customers                                                      |
 
 Use ordinary non-staff customers. The acceptance account must have its normal
-finite concurrency limit, no unrelated activity, no pending charges, enough
+finite concurrency limit, no unrelated activity, enough
 credits, and the real Workshop feature flag enabled. The separate sweep
 customer needs a finite limit of at least two. Do not use the unlimited
 concurrency override from the older manual model-sweep instructions to certify
@@ -80,17 +86,20 @@ accounts and stored/generated assets.
 
 `WORKSHOP_EXPECTED_CHARGES_JSON` is an object whose keys are the slugs in
 `cases.ts`, followed by `/defaults`, `/own`, or `/advanced`, and whose values
-are positive integer USD microamounts. For example, a reviewed $0.045 charge
-would be `45000`; that example is not a claim about any model's actual price.
-Get the amounts from the billing contract for the exact submitted settings,
+are positive US cents, including fractional cents. For example, a reviewed
+$0.045 charge would be `4.5`; that example is not a claim about any model's actual price.
+The API fields named `_micros` carry cents; use `effective_balance_micros`
+with `amount_micros` as its fallback. Pending draft-invoice usage is valid and
+is already subtracted in the effective balance. Get the amounts from the billing
+contract for the exact submitted settings,
 not from a first run that might itself be overcharging. Checkout needs the
 two image models' `/own` entries; smoke needs all three variants for those
 models; release generation needs all eighteen entries.
 
 The browser suite checks the selected workspace, one idempotency key and body
 per intended job, a real accepted job ID, terminal success, browser playback,
-download without losing the page, full media decoding, and the exact settled
-balance delta. The isolated account is essential: the delta is not a
+download without losing the page, full media decoding, and the effective balance
+delta within 0.0000005 cents. The isolated account is essential: the delta is not a
 per-request ledger lookup. A new customer's sandbox $10 top-up must credit
 exactly $10 before the first run. The test verifies `cs_test_` and the Stripe
 checkout origin before entering the documented Stripe test card.

@@ -1,14 +1,14 @@
 import { expect } from '@playwright/test'
 
-import { modelCases } from './cases'
+import { modelCases } from '../../acceptance/cases'
 import {
   runAndVerify,
   signIn,
   test,
   useAdvancedInputs,
   useOwnInputs
-} from './fixtures'
-import { expectedCharge } from './settings'
+} from '../../acceptance/fixtures'
+import { expectedCharge } from '../../acceptance/settings'
 
 for (const model of modelCases) {
   test(`${model.slug}: defaults, own inputs, advanced settings${model.smoke ? ' @smoke' : ''}`, async ({

@@ -4,17 +4,17 @@ import { join } from 'node:path'
 
 import { expect, test as base } from '@playwright/test'
 import type { Page, TestInfo } from '@playwright/test'
-import {
-  zBillingBalanceResponse,
-  zExchangeTokenResponse
-} from '@comfyorg/ingest-types/zod'
+import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 import { validateArtifact } from '../scripts/router-model-artifacts'
+import { readBalanceCents } from './billing'
+import type { BalanceRead } from './billing'
 import type { ModelCase } from './cases'
 import { expectedCharge, liveSettings, requiredSetting } from './settings'
 
 interface LiveBilling {
-  balance: () => Promise<number>
+  balance: () => Promise<BalanceRead>
   submissions: { key: string | undefined; hash: string }[]
 }
 
@@ -62,27 +62,36 @@ export const test = base.extend<{
     await use({
       submissions,
       async balance() {
-        await expect.poll(() => Boolean(authorization)).toBe(true)
         if (!authorization)
-          throw new Error('No browser billing session was observed')
-        const response = await context.request.get(
-          `${settings.cloud}/api/billing/balance`,
-          {
-            headers: { Authorization: authorization }
-          }
-        )
-        expect(response.status(), 'Billing balance read').toBe(200)
-        const balance = zBillingBalanceResponse.parse(await response.json())
-        expect(balance.currency.toLowerCase()).toBe('usd')
-        expect(
-          balance.pending_charges_micros ?? 0,
-          'Charges must be settled'
-        ).toBe(0)
-        return balance.amount_micros
+          return { error: 'No browser billing session was observed' }
+        try {
+          const response = await context.request.get(
+            `${settings.cloud}/api/billing/balance`,
+            { headers: { Authorization: authorization }, timeout: 15_000 }
+          )
+          if (!response.ok())
+            return { error: `Billing balance HTTP ${response.status()}` }
+          return readBalanceCents(await response.json())
+        } catch {
+          return { error: 'Billing balance request failed' }
+        }
       }
     })
   }
 })
+
+export async function waitForBalance(
+  read: LiveBilling['balance'],
+  cents: number
+) {
+  await expect
+    .poll(read, {
+      message: 'Effective balance must reflect the reviewed charge or top-up',
+      timeout: 120_000,
+      intervals: [1000, 2000, 5000]
+    })
+    .toEqual({ cents: expect.closeTo(cents, 6) })
+}
 
 export async function signIn(page: Page, path: string) {
   await page.goto(`/login/?returnTo=${encodeURIComponent(path)}`)
@@ -94,10 +103,12 @@ export async function signIn(page: Page, path: string) {
   const session = page.waitForResponse(
     (response) =>
       response.url() === `${liveSettings().cloud}/api/auth/token` &&
-      response.ok()
+      response.request().method() === 'POST'
   )
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  const identity = zExchangeTokenResponse.parse(await (await session).json())
+  const response = await session
+  expect(response.ok(), `Token exchange HTTP ${response.status()}`).toBe(true)
+  const identity = zExchangeTokenResponse.parse(await response.json())
   expect(identity.workspace.id).toBe(requiredSetting('WORKSHOP_WORKSPACE_ID'))
   await expect(page).toHaveURL(new URL(path, liveSettings().site).href)
   await expect(page.getByTestId('run-button')).toHaveAttribute(
@@ -140,6 +151,39 @@ export async function useAdvancedInputs(page: Page, model: ModelCase) {
   await expect(field).toHaveValue(model.advancedValue)
 }
 
+async function verifyOutputPlayback(page: Page, kind: ModelCase['kind']) {
+  const output = page.getByTestId('playground-output')
+  if (kind === 'image') {
+    await expect(
+      output.getByRole('img', { name: 'Output', exact: true })
+    ).toHaveJSProperty('complete', true)
+    await expect
+      .poll(() =>
+        output
+          .getByRole('img', { name: 'Output', exact: true })
+          .evaluate((element) =>
+            element instanceof HTMLImageElement ? element.naturalWidth : 0
+          )
+      )
+      .toBeGreaterThan(0)
+  } else {
+    const media = output.locator(kind === 'video' ? 'video' : 'audio')
+    await media.evaluate(async (element) => {
+      if (!(element instanceof HTMLMediaElement))
+        throw new Error('Missing media player')
+      element.muted = true
+      await element.play()
+    })
+    await expect
+      .poll(() =>
+        media.evaluate((element) =>
+          element instanceof HTMLMediaElement ? element.currentTime : 0
+        )
+      )
+      .toBeGreaterThan(0)
+  }
+}
+
 export async function runAndVerify(
   page: Page,
   billing: LiveBilling,
@@ -148,7 +192,9 @@ export async function runAndVerify(
   testInfo: TestInfo
 ) {
   const expected = expectedCharge(model.slug, variant)
-  const before = await billing.balance()
+  const balance = await billing.balance()
+  if (!('cents' in balance)) throw new Error(balance.error)
+  const before = balance.cents
   const priorSubmissions = billing.submissions.length
   expect(before).toBeGreaterThanOrEqual(expected)
   const path = new URL(page.url()).pathname
@@ -158,9 +204,7 @@ export async function runAndVerify(
   )
   const accepted = page.waitForResponse(
     (response) =>
-      response.url() === endpoint &&
-      response.request().method() === 'POST' &&
-      response.status() === 201
+      response.url() === endpoint && response.request().method() === 'POST'
   )
   await page.getByTestId('run-button').click()
   const submitted = await request
@@ -175,18 +219,14 @@ export async function runAndVerify(
       variant,
       idempotencyKey: key,
       requestHash,
-      balanceBefore: before
+      balanceBeforeCents: before
     })
   })
-  const handle: unknown = await (await accepted).json()
-  if (
-    !handle ||
-    typeof handle !== 'object' ||
-    !('request_id' in handle) ||
-    typeof handle.request_id !== 'string'
-  )
-    throw new Error('Missing accepted Router job ID')
-  const acceptedId = handle.request_id
+  const response = await accepted
+  expect(response.status(), 'Router submission HTTP status').toBe(201)
+  const { request_id: acceptedId } = z
+    .object({ request_id: z.string().uuid() })
+    .parse(await response.json())
   await testInfo.attach(`${variant}-accepted-job`, {
     contentType: 'application/json',
     body: JSON.stringify({
@@ -195,7 +235,7 @@ export async function runAndVerify(
       requestId: acceptedId,
       idempotencyKey: key,
       requestHash,
-      balanceBefore: before
+      balanceBeforeCents: before
     })
   })
   if (variant !== 'defaults')
@@ -212,36 +252,7 @@ export async function runAndVerify(
       timeout: (model.kind === 'video' ? 40 : 10) * 60_000
     }
   )
-  const output = page.getByTestId('playground-output')
-  if (model.kind === 'image') {
-    await expect(
-      output.getByRole('img', { name: 'Output', exact: true })
-    ).toHaveJSProperty('complete', true)
-    await expect
-      .poll(() =>
-        output
-          .getByRole('img', { name: 'Output', exact: true })
-          .evaluate((element) =>
-            element instanceof HTMLImageElement ? element.naturalWidth : 0
-          )
-      )
-      .toBeGreaterThan(0)
-  } else {
-    const media = output.locator(model.kind === 'video' ? 'video' : 'audio')
-    await media.evaluate(async (element) => {
-      if (!(element instanceof HTMLMediaElement))
-        throw new Error('Missing media player')
-      element.muted = true
-      await element.play()
-    })
-    await expect
-      .poll(() =>
-        media.evaluate((element) =>
-          element instanceof HTMLMediaElement ? element.currentTime : 0
-        )
-      )
-      .toBeGreaterThan(0)
-  }
+  await verifyOutputPlayback(page, model.kind)
   const idText = await page.getByTestId('router-request-id').innerText()
   const requestId = idText.match(/[0-9a-f]{8}-[0-9a-f-]{27,}/i)?.[0]
   expect(
@@ -269,13 +280,7 @@ export async function runAndVerify(
     256 * 1024 * 1024
   ).finally(() => URL.revokeObjectURL(url))
   await expect(page).toHaveURL(new URL(path, liveSettings().site).href)
-  await expect
-    .poll(() => billing.balance(), {
-      message: 'One isolated job must settle to its reviewed charge',
-      timeout: 120_000,
-      intervals: [1000, 2000, 5000]
-    })
-    .toBe(before - expected)
+  await waitForBalance(billing.balance, before - expected)
   const attempts = billing.submissions.slice(priorSubmissions)
   expect([...new Set(attempts.map((attempt) => attempt.key))]).toEqual([key])
   expect([...new Set(attempts.map((attempt) => attempt.hash))]).toEqual([
@@ -289,9 +294,9 @@ export async function runAndVerify(
       requestId,
       idempotencyKey: key,
       requestHash: createHash('sha256').update(body).digest('hex'),
-      balanceBefore: before,
-      balanceAfter: before - expected,
-      chargeMicros: expected,
+      balanceBeforeCents: before,
+      balanceAfterCents: before - expected,
+      chargeCents: expected,
       artifact,
       visualReview: 'Not run: human review of prompt fidelity is required'
     })

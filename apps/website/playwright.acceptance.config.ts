@@ -6,7 +6,7 @@ const scope = z
   .parse(process.env.WORKSHOP_ACCEPTANCE_SCOPE ?? 'smoke')
 
 export default defineConfig({
-  testDir: './acceptance',
+  testDir: './e2e/acceptance',
   testMatch: scope === 'checkout' ? 'purchase.spec.ts' : 'generation.spec.ts',
   grep: scope === 'smoke' ? /@smoke/ : undefined,
   globalSetup: './acceptance/setup.ts',

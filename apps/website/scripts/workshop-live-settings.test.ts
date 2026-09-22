@@ -18,10 +18,17 @@ describe('live acceptance destinations', () => {
     ]
   ])('pairs %s with its own backend', ([environment, site, router]) => {
     expect(
-      liveSettings({
-        PUBLIC_WORKSHOP_CLOUD_ENV: environment,
-        WORKSHOP_SITE_URL: site
-      })
+      liveSettings(
+        {
+          PUBLIC_WORKSHOP_CLOUD_ENV: environment,
+          WORKSHOP_SITE_URL: site
+        },
+        {
+          prod: ['https://comfy.org', 'https://www.comfy.org'],
+          test: ['https://comfy-website-preview-pr-123.vercel.app'],
+          staging: ['https://comfy-website-preview-pr-123.vercel.app']
+        }
+      )
     ).toMatchObject({ site, router })
   })
 
@@ -29,6 +36,9 @@ describe('live acceptance destinations', () => {
     ['test', 'https://comfy.org'],
     ['prod', 'https://preview.vercel.app'],
     ['test', 'https://attacker.example'],
+    ['test', 'https://attacker.vercel.app'],
+    ['test', 'https://comfy-website-preview-pr-123.vercel.app'],
+    ['prod', 'https://comfy.org:444'],
     ['test', 'https://preview.vercel.app.attacker.example'],
     ['prod', 'http://comfy.org'],
     ['prod', 'https://user:password@comfy.org'],
@@ -50,20 +60,18 @@ describe('live acceptance destinations', () => {
 
 describe('reviewed billing expectations', () => {
   it('requires the price for the exact page and input variant', () => {
-    vi.stubEnv('WORKSHOP_EXPECTED_CHARGES_JSON', '{"image/own":45000}')
-    expect(expectedCharge('image', 'own')).toBe(45000)
+    vi.stubEnv('WORKSHOP_EXPECTED_CHARGES_JSON', '{"image/own":4.5}')
+    expect(expectedCharge('image', 'own')).toBe(4.5)
     expect(() => expectedCharge('image', 'advanced')).toThrow(
       'Missing reviewed charge'
     )
   })
 
-  it.for([
-    '{}',
-    '{"image/own":0}',
-    '{"image/own":-1}',
-    '{"image/own":"45000"}'
-  ])('cannot pass with an absent or invalid price: %s', (json) => {
-    vi.stubEnv('WORKSHOP_EXPECTED_CHARGES_JSON', json)
-    expect(() => expectedCharge('image', 'own')).toThrow()
-  })
+  it.for(['{}', '{"image/own":0}', '{"image/own":-1}', '{"image/own":"4.5"}'])(
+    'cannot pass with an absent or invalid price: %s',
+    (json) => {
+      vi.stubEnv('WORKSHOP_EXPECTED_CHARGES_JSON', json)
+      expect(() => expectedCharge('image', 'own')).toThrow()
+    }
+  )
 })

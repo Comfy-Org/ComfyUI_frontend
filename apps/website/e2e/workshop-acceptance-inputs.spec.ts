@@ -1,6 +1,7 @@
-import { copyFile, mkdir } from 'node:fs/promises'
+import { copyFile, mkdir, readFile } from 'node:fs/promises'
 
 import { expect } from '@playwright/test'
+import { z } from 'zod'
 
 import { modelCases } from '../acceptance/cases'
 import { useAdvancedInputs, useOwnInputs } from '../acceptance/fixtures'
@@ -25,14 +26,21 @@ test.beforeEach(async ({ context, page, modelsAccount }, testInfo) => {
     '../../browser_tests/assets/plain_video.mp4',
     testInfo.outputPath('reference.mp4')
   )
-  await context.route('**/customers/storage', (route) =>
-    route.fulfill({
+  await context.route('**/customers/storage', (route) => {
+    const body = z
+      .object({ file_name: z.string() })
+      .parse(route.request().postDataJSON())
+    const name = ['reference.png', 'last-frame.png', 'reference.mp4'].find(
+      (name) => body.file_name.endsWith(`-${name}`)
+    )
+    if (!name) throw new Error('Unexpected uploaded fixture')
+    return route.fulfill({
       json: {
         upload_url: 'https://storage.example/upload',
-        download_url: 'https://storage.example/input'
+        download_url: `https://storage.example/${name}`
       }
     })
-  )
+  })
   await context.route('https://storage.example/upload', (route) =>
     route.fulfill({ status: 204 })
   )
@@ -65,6 +73,32 @@ for (const model of modelCases) {
       model.advancedField,
       Number(model.advancedValue)
     )
+    for (const file of model.files) {
+      if (file.field === 'images') {
+        const bytes = await readFile(testInfo.outputPath(file.fixture))
+        expect(request.postDataJSON()).toHaveProperty(
+          'image',
+          `data:image/png;base64,${bytes.toString('base64')}`
+        )
+      } else {
+        const roles = {
+          first_frame_url: { type: 'image_url', role: 'first_frame' },
+          last_frame_url: { type: 'image_url', role: 'last_frame' },
+          video_url: { type: 'video_url', role: 'reference_video' }
+        }
+        const { type, role } = roles[file.field]
+        expect(request.postDataJSON()).toHaveProperty(
+          'content',
+          expect.arrayContaining([
+            {
+              type,
+              role,
+              [type]: { url: `https://storage.example/${file.fixture}` }
+            }
+          ])
+        )
+      }
+    }
     await expect(page.getByTestId('playground-output')).toHaveAttribute(
       'data-state',
       'failed'

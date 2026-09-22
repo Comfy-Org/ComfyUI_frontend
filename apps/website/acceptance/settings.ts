@@ -12,12 +12,23 @@ const environments = {
   }
 } as const
 
-export function liveSettings(env: NodeJS.ProcessEnv = process.env) {
+const approvedSiteOrigins: Record<
+  keyof typeof environments,
+  readonly string[]
+> = {
+  prod: ['https://comfy.org', 'https://www.comfy.org'],
+  staging: [],
+  test: []
+}
+
+export function liveSettings(
+  env: NodeJS.ProcessEnv = process.env,
+  approvedOrigins = approvedSiteOrigins
+) {
   const environment = z
     .enum(['prod', 'staging', 'test'])
     .parse(env.PUBLIC_WORKSHOP_CLOUD_ENV)
   const url = new URL(z.string().url().parse(env.WORKSHOP_SITE_URL))
-  const production = ['comfy.org', 'www.comfy.org'].includes(url.hostname)
   if (
     url.protocol !== 'https:' ||
     url.username ||
@@ -25,8 +36,7 @@ export function liveSettings(env: NodeJS.ProcessEnv = process.env) {
     url.pathname !== '/' ||
     url.search ||
     url.hash ||
-    production !== (environment === 'prod') ||
-    (!production && !url.hostname.endsWith('.vercel.app'))
+    !approvedOrigins[environment].includes(url.origin)
   )
     throw new Error('Workshop site must match the selected Cloud environment')
   return { environment, site: url.origin, ...environments[environment] }
@@ -40,7 +50,7 @@ export function requiredSetting(name: string): string {
 
 export function expectedCharge(slug: string, variant: string): number {
   const prices = z
-    .record(z.number().int().positive())
+    .record(z.number().finite().positive())
     .parse(JSON.parse(requiredSetting('WORKSHOP_EXPECTED_CHARGES_JSON')))
   const price = prices[`${slug}/${variant}`]
   if (!price) throw new Error(`Missing reviewed charge for ${slug}/${variant}`)

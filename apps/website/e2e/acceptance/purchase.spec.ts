@@ -7,9 +7,20 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { modelCases } from './cases'
-import { runAndVerify, test, useOwnInputs } from './fixtures'
-import { expectedCharge, liveSettings, requiredSetting } from './settings'
+import { modelCases } from '../../acceptance/cases'
+import {
+  runAndVerify,
+  test,
+  useOwnInputs,
+  waitForBalance
+} from '../../acceptance/fixtures'
+import {
+  expectedCharge,
+  liveSettings,
+  requiredSetting
+} from '../../acceptance/settings'
+
+const topupDollars = 10
 
 for (const model of modelCases.filter((model) => model.smoke)) {
   test(`${model.slug}: new visitor signs up, pays, and receives a result`, async ({
@@ -39,30 +50,36 @@ for (const model of modelCases.filter((model) => model.smoke)) {
     const session = page.waitForResponse(
       (response) =>
         response.url() === `${liveSettings().cloud}/api/auth/token` &&
-        response.ok()
+        response.request().method() === 'POST'
     )
     await page.getByRole('button', { name: 'Sign up', exact: true }).click()
-    const identity = zExchangeTokenResponse.parse(await (await session).json())
+    const tokenResponse = await session
+    expect(
+      tokenResponse.ok(),
+      `Token exchange HTTP ${tokenResponse.status()}`
+    ).toBe(true)
+    const identity = zExchangeTokenResponse.parse(await tokenResponse.json())
     expect(identity.role).toBe('owner')
     expect(identity.workspace.type).toBe('personal')
     await expect(page).toHaveURL(new URL(path, liveSettings().site).href)
     await expect(page.getByTestId(`field-${model.promptField}`)).toHaveValue(
       model.prompt
     )
-    await expect.poll(() => billing.balance()).toBe(0)
+    await waitForBalance(billing.balance, 0)
     await page.getByTestId('run-button').click()
     await expect(page.getByTestId('buy-credits-dialog')).toBeVisible()
-    await page.getByTestId('buy-credits-pack-10').click()
+    await page.getByTestId(`buy-credits-pack-${topupDollars}`).click()
     const checkoutResponse = page.waitForResponse(
       (response) =>
         response.url() ===
-          `${liveSettings().cloud}/api/billing/topup/checkout` && response.ok()
+          `${liveSettings().cloud}/api/billing/topup/checkout` &&
+        response.request().method() === 'POST'
     )
     const popup = page.waitForEvent('popup')
     await page.getByTestId('buy-credits-continue').click()
-    const checkout = zCreateTopupCheckoutResponse.parse(
-      await (await checkoutResponse).json()
-    )
+    const response = await checkoutResponse
+    expect(response.ok(), `Checkout HTTP ${response.status()}`).toBe(true)
+    const checkout = zCreateTopupCheckoutResponse.parse(await response.json())
     expect(checkout.session_id).toMatch(/^cs_test_/)
     expect(new URL(checkout.checkout_url).origin).toBe(
       'https://checkout.stripe.com'
@@ -78,9 +95,7 @@ for (const model of modelCases.filter((model) => model.smoke)) {
       .getByLabel('Cardholder name', { exact: true })
       .fill('Workshop Acceptance')
     await payment.getByRole('button', { name: /^Pay/ }).click()
-    await expect
-      .poll(() => billing.balance(), { timeout: 120_000 })
-      .toBe(10_000_000)
+    await waitForBalance(billing.balance, topupDollars * 100)
     await expect(page.getByTestId('buy-credits-resume')).toBeVisible({
       timeout: 120_000
     })
@@ -93,7 +108,7 @@ for (const model of modelCases.filter((model) => model.smoke)) {
       contentType: 'application/json',
       body: JSON.stringify({
         sessionId: checkout.session_id,
-        creditedMicros: 10_000_000
+        creditedCents: topupDollars * 100
       })
     })
   })
