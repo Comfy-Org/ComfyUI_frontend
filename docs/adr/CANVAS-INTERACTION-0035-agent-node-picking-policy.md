@@ -66,12 +66,13 @@ agent store owns the fact; everything else is a projection of it.
    Escape and the workflow, target and graph-change exits.
    `AgentPanelRoot.vue` calls `store.enter()` and `store.exit()` and holds no
    canvas save/restore state of its own. Graph replacement is a projection
-   boundary: `LGraphCanvas.setGraph()` and `openSubgraph()` dispatch
-   `litegraph:set-graph` before they clear the outgoing selection, and the
-   panel exits picking synchronously when `canvasStore.currentGraph` changes,
-   so the outgoing clear runs with the live-selection projection off and
-   every staged reference, including one to a node of another graph scope,
-   survives the switch.
+   boundary: `LGraphCanvas.setGraph()` releases the outgoing items from the
+   canvas before it attaches the new graph, dispatches `litegraph:set-graph`
+   once, and drops the outgoing graph's selection-store scope only after the
+   listeners have run; the panel exits picking synchronously when
+   `canvasStore.currentGraph` changes, so the scope is dropped with the
+   live-selection projection off and every staged reference, including one
+   to a node of another graph scope, survives the switch.
 2. **One pure derivation.** `resolvePickingPolicy({ readOnly, picking })` in
    `src/renderer/core/canvas/interaction/pickingPolicy.ts` returns a
    `PickingPolicy` with `canSelectNodes: !readOnly`,
@@ -241,15 +242,15 @@ agent store owns the fact; everything else is a projection of it.
 - Vue node DOM structure and `data-*` attributes used by e2e tests do not
   change. `shouldHandleNodePointerEvents` keeps its name and meaning.
 - `litegraph:set-graph` keeps its detail and fires exactly once per graph
-  replacement, from `setGraph()` with the new graph attached; `openSubgraph()`
-  delegates to it and `canvas.subgraph` is a plain field that emits nothing,
-  where its setter used to dispatch a second event naming the same subgraph
-  as both `oldGraph` and `newGraph` while the outgoing graph was still
-  attached. The event now fires before the outgoing selection is cleared
-  rather than after, so a listener sees the old selection for the duration
-  of the event. The clear that follows drops the outgoing graph's
-  selection-store scope and resets the outgoing items' `selected` flags, even
-  when a listener deselected during the event.
+  replacement, from `setGraph()` with the new graph attached and the canvas
+  selection already empty; `openSubgraph()` delegates to it and
+  `canvas.subgraph` is a plain field that emits nothing, where its setter
+  used to dispatch a second event naming the same subgraph as both `oldGraph`
+  and `newGraph` while the outgoing graph was still attached. A listener that
+  deselects during the event finds nothing to deselect, so it cannot touch
+  the incoming graph's saved selection. The outgoing graph's selection-store
+  scope is dropped after the event by `setGraph()` itself; `clear()` stays
+  parameterless and operates on the attached graph only.
 
 ### Deferred decisions
 

@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { SelectableKey } from '@/core/selection/selectionState'
+
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -18,6 +20,7 @@ interface Announcement {
   newGraph: LGraph | Subgraph
   attachedGraph: LGraph | null
   selectionSize: number
+  savedOutgoingKeys: readonly SelectableKey[]
 }
 
 function createCanvasWithSelectedNode() {
@@ -40,7 +43,8 @@ function createCanvasWithSelectedNode() {
         oldGraph: event.detail.oldGraph,
         newGraph: event.detail.newGraph,
         attachedGraph: canvas.graph,
-        selectionSize: canvas.selectedItems.size
+        selectionSize: canvas.selectedItems.size,
+        savedOutgoingKeys: useSelectionStore().selectedKeys(graphScopeOf(graph))
       })
     }
   )
@@ -72,9 +76,10 @@ describe('LGraphCanvas graph replacement', () => {
   ]
 
   it.for(replacements)(
-    '$name announces the attached new graph once, before clearing the outgoing selection',
+    '$name announces the attached new graph once, with the outgoing items released and their scope still saved',
     ({ target, replace }) => {
-      const { canvas, graph, announcements } = createCanvasWithSelectedNode()
+      const { canvas, graph, node, announcements } =
+        createCanvasWithSelectedNode()
       const newGraph = target(graph)
 
       replace(canvas, newGraph)
@@ -83,9 +88,13 @@ describe('LGraphCanvas graph replacement', () => {
       expect(announcements[0].oldGraph).toBe(graph)
       expect(announcements[0].newGraph).toBe(newGraph)
       expect(announcements[0].attachedGraph).toBe(newGraph)
-      expect(announcements[0].selectionSize).toBe(1)
+      expect(announcements[0].selectionSize).toBe(0)
+      expect(announcements[0].savedOutgoingKeys).toEqual([
+        selectableKeyOf(node)
+      ])
       expect(canvas.graph).toBe(newGraph)
       expect(canvas.selectedItems.size).toBe(0)
+      expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual([])
     }
   )
 
@@ -98,34 +107,36 @@ describe('LGraphCanvas graph replacement', () => {
     expect(canvas.subgraph).toBe(subgraph)
   })
 
-  it('drops the outgoing selection from the graph being left, not the new graph', () => {
-    const { canvas, graph } = createCanvasWithSelectedNode()
-    const newGraph = new LGraph()
-    const incoming = new LGraphNode('Incoming')
-    newGraph.add(incoming)
-    useSelectionStore().apply(graphScopeOf(newGraph), {
-      type: 'selection.add',
-      key: selectableKeyOf(incoming)
-    })
+  it.for([
+    { name: 'with no listener', deselectDuringEvent: false },
+    {
+      name: 'when a listener deselects during the announcement',
+      deselectDuringEvent: true
+    }
+  ])(
+    'drops the outgoing selection and keeps the incoming graph selection $name',
+    ({ deselectDuringEvent }) => {
+      const { canvas, graph, node } = createCanvasWithSelectedNode()
+      const newGraph = new LGraph()
+      const incoming = new LGraphNode('Incoming')
+      newGraph.add(incoming)
+      useSelectionStore().apply(graphScopeOf(newGraph), {
+        type: 'selection.add',
+        key: selectableKeyOf(incoming)
+      })
+      if (deselectDuringEvent)
+        canvas.canvas.addEventListener('litegraph:set-graph', () =>
+          canvas.deselectAll()
+        )
 
-    canvas.setGraph(newGraph)
+      canvas.setGraph(newGraph)
 
-    expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual([])
-    expect(useSelectionStore().selectedKeys(graphScopeOf(newGraph))).toEqual([
-      selectableKeyOf(incoming)
-    ])
-  })
-
-  it('resets the outgoing selection when a listener deselects during the announcement', () => {
-    const { canvas, graph, node } = createCanvasWithSelectedNode()
-    canvas.canvas.addEventListener('litegraph:set-graph', () =>
-      canvas.deselectAll()
-    )
-
-    canvas.setGraph(new LGraph())
-
-    expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual([])
-    expect(node.selected).toBeFalsy()
-    expect(canvas.selectedItems.size).toBe(0)
-  })
+      expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual([])
+      expect(useSelectionStore().selectedKeys(graphScopeOf(newGraph))).toEqual([
+        selectableKeyOf(incoming)
+      ])
+      expect(node.selected).toBeFalsy()
+      expect(canvas.selectedItems.size).toBe(0)
+    }
+  )
 })

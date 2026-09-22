@@ -46,7 +46,11 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { reportError } from '@/platform/telemetry/reportError'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import {
+  saveSelection,
+  savedSelectionKeys,
+  setCanvasSelection
+} from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   createMockCanvasRenderingContext2D,
@@ -6745,10 +6749,10 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
 
-  it('keeps every staged reference when the viewed graph is replaced while picking', async () => {
+  it('keeps every staged reference and the incoming graph saved selection when the viewed graph is replaced while picking', async () => {
     makeTab()
     mockMessagesEndpoint('wf-42')
-    const { canvas, rootGraph, subgraph, rootNode } =
+    const { canvas, rootGraph, subgraph, rootNode, subgraphNode } =
       setupOwnedSelectionCanvas()
 
     renderWithSelectedTarget()
@@ -6764,6 +6768,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await enterNodeSelectionMode()
     expect(screen.getByText('Root node')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
+    saveSelection(subgraph, subgraphNode)
 
     viewGraph(canvas, subgraph)
     syncFakeSelection()
@@ -6771,6 +6776,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(useAgentNodeSelectionStore().isActive).toBe(false)
     expect(canvas.selectedItems.size).toBe(0)
+    expect(savedSelectionKeys(rootGraph)).toEqual([])
+    expect(savedSelectionKeys(subgraph)).toEqual(['node:12'])
     expect(screen.getByText('Root node')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })

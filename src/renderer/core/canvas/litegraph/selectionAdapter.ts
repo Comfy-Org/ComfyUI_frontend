@@ -78,8 +78,25 @@ export function setCanvasItemSelected(
 
 export function applyCanvasSelection(
   canvas: LGraphCanvas,
-  command: SelectionCommand,
-  graph: LGraphCanvas['graph'] = canvas.graph
+  command: SelectionCommand
+): void {
+  applyGraphSelection(canvas.graph, command)
+}
+
+export function releaseCanvasSelection(canvas: LGraphCanvas): void {
+  for (const item of canvas.selectedItems) item.selected = undefined
+  canvas.selected_nodes = {}
+  canvas.selected_group = null
+  canvas.selectedItems.clear()
+}
+
+export function clearGraphSelection(graph: LGraphCanvas['graph']): void {
+  applyGraphSelection(graph, { type: 'selection.clear' })
+}
+
+function applyGraphSelection(
+  graph: LGraphCanvas['graph'],
+  command: SelectionCommand
 ): void {
   if (!graph) return
   useSelectionStore().apply(graphScopeOf(graph), command)
