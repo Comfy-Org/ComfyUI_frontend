@@ -26,6 +26,18 @@ const defaultRequestTimeoutMs = 120_000
 const maxNetworkRetries = 3
 const maxMalformedResponseRetries = 1
 
+const tokenCountSchema = z.number().int().nonnegative()
+const responseUsageSchema = z.object({
+  input_tokens: tokenCountSchema,
+  output_tokens: tokenCountSchema,
+  total_tokens: tokenCountSchema,
+  input_tokens_details: z.object({
+    cached_tokens: tokenCountSchema,
+    cache_write_tokens: tokenCountSchema.default(0)
+  }),
+  output_tokens_details: z.object({ reasoning_tokens: tokenCountSchema })
+}) satisfies z.ZodType<ResponseUsage, z.ZodTypeDef, unknown>
+
 // Unlike es-toolkit's mapAsync, which dispatches every item up front, this
 // pool stops dispatching once any task fails so a fatal error does not keep
 // spending API requests whose results nobody will consume; in-flight tasks
@@ -128,11 +140,21 @@ type TranslationAttempt =
   | { status: 'truncated' }
   | { status: 'retry' | 'defer'; reason: string }
 
-function getTranslationDeferralReason(
-  response: OpenAiResponse
-): string | undefined {
+function parseTranslationResponse(
+  response: OpenAiResponse,
+  schema: z.ZodType<Record<string, string>>
+): TranslationAttempt {
+  if (
+    response.status === 'incomplete' &&
+    response.incomplete_details?.reason === 'max_output_tokens'
+  ) {
+    return { status: 'truncated' }
+  }
   if (response.status !== 'completed') {
-    return `response status ${response.status}: ${response.incomplete_details?.reason ?? response.error?.code ?? 'no details'}`
+    return {
+      status: 'defer',
+      reason: `response status ${response.status}: ${JSON.stringify(response.incomplete_details ?? response.error ?? 'no details')}`
+    }
   }
   if (
     response.output.some(
@@ -141,8 +163,9 @@ function getTranslationDeferralReason(
         item.content.some((content) => content.type === 'refusal')
     )
   ) {
-    return 'the model refused the translation'
+    return { status: 'defer', reason: 'the model refused the translation' }
   }
+  return parseTranslationOutput(response.output_text, schema)
 }
 
 function parseTranslationOutput(
@@ -204,17 +227,12 @@ export function createOpenAiTranslator(
       options.onUsage?.(undefined)
       return { status: 'retry', reason: error.message }
     }
-    options.onUsage?.(response.usage)
-    if (
-      response.status === 'incomplete' &&
-      response.incomplete_details?.reason === 'max_output_tokens'
-    ) {
-      return { status: 'truncated' }
+    const usage = responseUsageSchema.nullish().safeParse(response.usage)
+    options.onUsage?.(usage.success ? (usage.data ?? undefined) : undefined)
+    if (!usage.success) {
+      return { status: 'retry', reason: 'invalid token usage' }
     }
-    const reason = getTranslationDeferralReason(response)
-    return reason
-      ? { status: 'defer', reason }
-      : parseTranslationOutput(response.output_text, schema)
+    return parseTranslationResponse(response, schema)
   }
 
   async function translateBatch(

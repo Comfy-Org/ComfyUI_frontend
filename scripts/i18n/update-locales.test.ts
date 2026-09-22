@@ -578,7 +578,7 @@ describe('createOpenAiTranslator', () => {
     overrides: Partial<
       Pick<
         Parameters<typeof createOpenAiTranslator>[0],
-        'maxTruncationSplitDepth' | 'onUsage'
+        'maxTruncationSplitDepth' | 'onUsage' | 'glossary'
       >
     > = {}
   ) {
@@ -772,6 +772,74 @@ describe('createOpenAiTranslator', () => {
   })
 
   it.for([
+    { name: 'a string input count', invalid: { input_tokens: '10' } },
+    { name: 'a negative output count', invalid: { output_tokens: -1 } },
+    { name: 'a fractional total', invalid: { total_tokens: 14.5 } },
+    {
+      name: 'an invalid reasoning count',
+      invalid: { output_tokens_details: { reasoning_tokens: '2' } }
+    }
+  ])(
+    'retries usage with $name without corrupting totals',
+    async ({ invalid }) => {
+      const usage = {
+        input_tokens: 10,
+        output_tokens: 4,
+        total_tokens: 14,
+        input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 },
+        output_tokens_details: { reasoning_tokens: 2 }
+      }
+      const usages: OpenAiResponse['usage'][] = []
+      const { translate, callCount } = translatorFor(
+        [
+          new Response(
+            JSON.stringify({
+              object: 'response',
+              status: 'completed',
+              output: [],
+              usage: { ...usage, ...invalid }
+            }),
+            { headers: { 'content-type': 'application/json' } }
+          ),
+          response('{"1":"Bonjour {name}","2":"Au revoir {name}"}', { usage })
+        ],
+        { onUsage: (usage) => usages.push(usage) }
+      )
+      await expect(translate(locale, items)).resolves.toEqual({
+        '1': 'Bonjour {name}',
+        '2': 'Au revoir {name}'
+      })
+      expect(usages).toEqual([undefined, usage])
+      expect(formatUsageSummary(usages, callCount())).toBe(
+        'OpenAI usage: 2 HTTP requests for 2 responses; 10 input, 4 output (2 reasoning), 14 total tokens.'
+      )
+    }
+  )
+
+  it('defers persistently invalid usage after one retry', async () => {
+    const onUsage = vi.fn()
+    const { translate, callCount } = translatorFor(
+      () =>
+        new Response(
+          JSON.stringify({
+            object: 'response',
+            status: 'completed',
+            output: [],
+            usage: 'invalid'
+          }),
+          { headers: { 'content-type': 'application/json' } }
+        ),
+      { onUsage }
+    )
+    await expect(translate(locale, items)).resolves.toEqual({})
+    expect(callCount()).toBe(2)
+    expect(onUsage.mock.calls).toEqual([[undefined], [undefined]])
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('invalid token usage')
+    )
+  })
+
+  it.for([
     {
       name: 'content filtering',
       overrides: {
@@ -843,11 +911,25 @@ describe('createOpenAiTranslator', () => {
   ] satisfies { name: string; overrides: Partial<OpenAiResponse> }[])(
     'defers $name without accepting output text',
     async ({ overrides }) => {
-      const { translate, callCount } = translatorFor(() =>
-        response('{"1":"Bonjour {name}","2":"Au revoir {name}"}', overrides)
+      const usage = {
+        input_tokens: 10,
+        output_tokens: 4,
+        total_tokens: 14,
+        input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 },
+        output_tokens_details: { reasoning_tokens: 2 }
+      }
+      const onUsage = vi.fn()
+      const { translate, callCount } = translatorFor(
+        () =>
+          response('{"1":"Bonjour {name}","2":"Au revoir {name}"}', {
+            ...overrides,
+            usage
+          }),
+        { onUsage }
       )
       await expect(translate(locale, items)).resolves.toEqual({})
       expect(callCount()).toBe(1)
+      expect(onUsage).toHaveBeenCalledExactlyOnceWith(usage)
     }
   )
 
@@ -865,16 +947,20 @@ describe('createOpenAiTranslator', () => {
     async (id) => {
       const batch = [{ ...items[0], id }]
       const translated = { [id]: 'Bonjour {name}' }
-      const { translate, requestBodies, requestUrls } = translatorFor([
-        response(JSON.stringify(translated))
-      ])
-      await expect(translate(locale, batch)).resolves.toEqual(translated)
+      const glossary = 'Keep ComfyUI untranslated.'
+      const targetLocale = { ...locale, guidance: 'Use a formal tone.' }
+      const { translate, requestBodies, requestUrls } = translatorFor(
+        [response(JSON.stringify(translated))],
+        { glossary }
+      )
+      await expect(translate(targetLocale, batch)).resolves.toEqual(translated)
       expect(requestUrls).toEqual(['https://api.openai.com/v1/responses'])
       const request: unknown = JSON.parse(requestBodies[0])
       expect(request).toMatchObject({
         model: 'test-model',
         reasoning: { effort: 'low' },
         store: false,
+        instructions: expect.stringContaining(targetLocale.name),
         input: JSON.stringify({ items: batch }),
         text: {
           format: {
@@ -888,6 +974,12 @@ describe('createOpenAiTranslator', () => {
             }
           }
         }
+      })
+      expect(request).toMatchObject({
+        instructions: expect.stringContaining(glossary)
+      })
+      expect(request).toMatchObject({
+        instructions: expect.stringContaining(targetLocale.guidance)
       })
     }
   )
