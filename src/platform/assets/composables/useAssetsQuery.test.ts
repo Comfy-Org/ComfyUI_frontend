@@ -1,4 +1,4 @@
-import { effectScope, toValue } from 'vue'
+import { effectScope, toValue, watch } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
@@ -226,6 +226,43 @@ describe('useAssetsQuery stale invalidation', () => {
     await Promise.all([loading, invalidatingA, invalidatingB])
 
     expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest', 'older'])
+  })
+
+  it('runs a full invalidation queued behind a stale-item invalidation', async () => {
+    const list = await createList('stale-then-full', ['deleted', 'old'])
+    fetchApiMock.mockResolvedValueOnce(response(['fresh']))
+
+    await Promise.all([list.invalidate(['deleted']), list.invalidate()])
+
+    expect(toValue(list.items).map(({ id }) => id)).toEqual(['fresh'])
+  })
+})
+
+describe('useAssetsQuery joined pagination', () => {
+  it('reports shared progress to a caller joining a completed page task', async () => {
+    const list = await createList('joined-progress', ['newest'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    fetchApiMock.mockResolvedValueOnce(response(['older']))
+    let joinedLoad: Promise<boolean> | undefined
+    const stopWatching = watch(
+      () => toValue(list.items).length,
+      () => {
+        queueMicrotask(() => {
+          joinedLoad = list.loadMore()
+        })
+      },
+      { flush: 'sync' }
+    )
+    onTestFinished(stopWatching)
+
+    const firstLoad = list.loadMore()
+
+    await expect(firstLoad).resolves.toBe(true)
+    await vi.waitFor(() => expect(joinedLoad).toBeDefined())
+    await expect(joinedLoad).resolves.toBe(true)
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
   })
 })
 

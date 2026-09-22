@@ -98,6 +98,7 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
 const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
+const MAX_OUTPUT_LOOKUP_PAGES = 20
 
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
@@ -338,7 +339,12 @@ export const useAssetsStore = defineStore('assets', () => {
     const hasAsset = () =>
       toValue(assets.items).some(({ id }) => id === assetId)
 
-    while (!hasAsset() && toValue(assets.hasMore)) {
+    let pagesLoaded = 0
+    while (
+      !hasAsset() &&
+      toValue(assets.hasMore) &&
+      pagesLoaded++ < MAX_OUTPUT_LOOKUP_PAGES
+    ) {
       if (!(await assets.loadMore())) break
     }
     return hasAsset()

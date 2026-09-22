@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, watch } from 'vue'
+import { nextTick, toValue, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -19,6 +19,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     internalURL: vi.fn((path) => `http://localhost:3000${path}`),
     apiURL: vi.fn((path) => `http://localhost:3000/api${path}`),
     addEventListener: vi.fn(),
+    fetchApi: vi.fn(),
     removeEventListener: vi.fn(),
     getServerFeature: vi.fn(() => false),
     user: 'test-user'
@@ -182,6 +183,39 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     total: assets.length,
     has_more: page.has_more ?? false,
     ...(page.next_cursor === undefined ? {} : { next_cursor: page.next_cursor })
+  })
+
+  it('bounds output lookup when pagination never reports exhaustion', async () => {
+    let outputPage = 0
+    vi.mocked(api.fetchApi).mockImplementation(async (url) => {
+      const isInputQuery = url.includes('tags_any=input')
+      const body: AssetResponse = isInputQuery
+        ? makePage([])
+        : makePage(
+            [
+              fromPartial<AssetItem>({
+                id: `output-${++outputPage}`,
+                name: `output-${outputPage}.png`,
+                loader_path: `output-${outputPage}.png`,
+                tags: ['output'],
+                created_at: '2026-09-22T00:00:00Z',
+                updated_at: '2026-09-22T00:00:00Z'
+              })
+            ],
+            { has_more: true, next_cursor: `page-${outputPage + 1}` }
+          )
+      return new Response(JSON.stringify(body), {
+        headers: { 'Content-Type': 'application/json' }
+      })
+    })
+    const store = useAssetsStore()
+    await vi.waitFor(() =>
+      expect(toValue(store.outputAssets.isLoading)).toBe(false)
+    )
+
+    await expect(store.loadOutputAsset('missing-output')).resolves.toBe(false)
+
+    expect(outputPage).toBe(21)
   })
 
   describe('getAssets cache invalidation', () => {

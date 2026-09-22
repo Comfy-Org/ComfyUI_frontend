@@ -38,6 +38,8 @@ function assetsQueryInternal(
   const items = ref<AssetItem[]>([])
 
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
+  let loadMorePromise: Promise<boolean> | undefined
+  let invalidationQueue = Promise.resolve()
   async function doLoadMore(signal?: AbortSignal) {
     if (!hasMore.value) return
     const requestedCursor = nextCursor ?? params.after
@@ -67,10 +69,17 @@ function assetsQueryInternal(
     loadGeneration++
   }
 
-  async function loadMore() {
-    const startingGeneration = loadGeneration
-    await enqueue('loadMore', doLoadMore)
-    return loadGeneration > startingGeneration
+  function loadMore() {
+    if (!loadMorePromise) {
+      const startingGeneration = loadGeneration
+      const operation = enqueue('loadMore', doLoadMore).then(
+        () => loadGeneration > startingGeneration
+      )
+      loadMorePromise = operation.finally(() => {
+        loadMorePromise = undefined
+      })
+    }
+    return loadMorePromise
   }
 
   function loadNew() {
@@ -103,7 +112,7 @@ function assetsQueryInternal(
     })
   }
 
-  async function invalidate(stale?: string[]) {
+  async function applyInvalidation(stale?: string[]) {
     if (stale) {
       await preempt(() => Promise.resolve())
       const ids = new Set(stale)
@@ -118,6 +127,12 @@ function assetsQueryInternal(
       await until(backingOff).toBe(false)
       await doLoadMore()
     })
+  }
+
+  function invalidate(stale?: string[]) {
+    const operation = invalidationQueue.then(() => applyInvalidation(stale))
+    invalidationQueue = operation
+    return operation
   }
 
   async function doQuery(
