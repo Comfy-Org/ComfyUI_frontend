@@ -244,6 +244,51 @@ describe('useNodeDataStore', () => {
     ])
   })
 
+  it('updateNode refills a slot list long enough to overflow a spread-based splice, without changing array identity', () => {
+    const store = useNodeDataStore()
+    const scope = graphScope(rootA, rootA)
+    const registered = store.registerNode(
+      scope,
+      createNodeState({
+        id: toNodeId(1),
+        graphId: rootA,
+        title: 'Host',
+        inputs: [createMockNodeInputSlot({ name: 'seed', type: 'IMAGE' })],
+        outputs: []
+      })
+    )
+    assert(registered)
+    const liveInputs = registered.inputs
+
+    // Comfortably above this runtime's spread-argument ceiling (measured
+    // around 125k on Node's current V8): `target.splice(0, target.length,
+    // ...source)` throws `RangeError: Maximum call stack size exceeded`
+    // here, while the index-by-index refill does not.
+    const length = 150_000
+    const inputs = Array.from({ length }, (_, i) =>
+      createMockNodeInputSlot({ name: `input-${i}`, type: 'IMAGE' })
+    )
+
+    expect(() =>
+      store.updateNode(
+        scope,
+        registered.id,
+        createNodeState({
+          id: toNodeId(1),
+          graphId: rootA,
+          title: 'Renamed',
+          inputs,
+          outputs: []
+        })
+      )
+    ).not.toThrow()
+
+    expect(registered.inputs).toBe(liveInputs)
+    expect(registered.inputs).toHaveLength(length)
+    expect(registered.inputs[0]?.name).toBe('input-0')
+    expect(registered.inputs[length - 1]?.name).toBe(`input-${length - 1}`)
+  })
+
   it.for([
     {
       slotKind: 'input',

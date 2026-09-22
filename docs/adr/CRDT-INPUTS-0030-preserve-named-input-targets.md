@@ -43,11 +43,18 @@ The current interim implementation applies it at two boundaries:
   (`realignInputLinkSlots`), so a freshly materialized node's adapters follow the
   names the document named rather than the indexes it used.
 - Incoming reconcile and connect resolve the document input name against current
-  live inputs. When every document input name exists in the live list, live
-  order wins: matching inputs take the document's fields and live-only inputs
-  remain in place. If any document input name is absent live,
-  `mergeInputSlotsByName` falls back to positional preparation using the
-  document's input list and order, dropping live-only inputs.
+  live inputs. A live-only input (one no document occurrence matches) is
+  tolerated, and the live list otherwise wins, only when it classifies as an
+  autogrow group member — via a live query answer, this follower's own
+  remembered answer, the node type's static `COMFY_AUTOGROW_V3` definition, or
+  the name-shape heuristic, in that order — and, unless the caller opts into
+  `preserveLinkedAutogrow`, only when it is unlinked; `hasNonGrowthInputSetChange`
+  is the single predicate both `mergeInputSlotsByName` call sites share. Any
+  other live-only input — an ordinary extension-added slot, or a linked one
+  where `preserveLinkedAutogrow` does not apply — means the input set changed,
+  and `mergeInputSlotsByName` falls back to positional preparation using the
+  document's input list and order for the whole node, dropping every live-only
+  input rather than only the disqualifying one.
 
 Incoming connect patches matching runtime slot instances and retains shared
 array references. `LGraphNode` captures `_inputs`/`_outputs` at construction,
@@ -89,17 +96,28 @@ Outputs remain index-based because their names need not be unique.
 - FE-2504 must preserve named input targeting when replacing the current
   implementation. This ADR does not require retaining the store-first apply,
   materializer or reconciliation machinery that migration intends to delete.
-- Existing document nodes preserve named targets through loading, growth, remote
-  updates and save/reopen without rewriting the document.
+- For the document-to-live projection this ADR covers, an existing document
+  node preserves named targets through loading, growth, remote updates and
+  save/reopen without rewriting the document, **provided the persisted
+  document is already correctly named**. This ADR does not cover, and does not
+  claim to fix, the outbound leg: minting a link by live position into the
+  host document while the host document orders inputs by name can itself
+  corrupt a node's persisted addressing before this projection ever reads it
+  back. That corruption is tracked and reproduced separately at #18332.
 - Reconcile semantics change for **every** node whose live inputs differ from the
-  document's, not only autogrow nodes. When the live list contains every document
-  input name, local-only slots persist, including stale or extension-added
-  slots; this condition does not prove that autogrow caused the difference.
-  Otherwise, the document's list and order replace the live list, so local-only
-  slots are removed rather than preserved alongside appended document inputs.
+  document's, not only autogrow nodes. A live-only slot persists only when it
+  classifies as an autogrow group member (see Decision); this condition does
+  not prove that autogrow caused the difference, and the presence of every
+  document name in the live list is not on its own enough to retain a
+  live-only slot that fails classification. Otherwise, the document's list and
+  order replace the live list, so local-only slots are removed rather than
+  preserved alongside appended document inputs.
 - A connect naming an input that cannot be placed is rejected with a diagnostic
   return value rather than reaching the link store at slot `-1`.
-- Duplicate input names on one node resolve to the first match. Nothing enforces
-  name uniqueness at node registration or document ingestion, so this is an
-  assumption, not a guarantee. Subgraph promoted inputs are the plausible source;
-  see workspace `ADR-036`.
+- Duplicate input names on one node are consumed pairwise by occurrence, in
+  document order: the Nth document occurrence of a name resolves against the
+  Nth live occurrence of that name, not against the first live occurrence
+  every time. Nothing enforces name uniqueness at node registration or
+  document ingestion, so relying on more live occurrences of a name than the
+  document supplies is an assumption, not a guarantee. Subgraph promoted
+  inputs are the plausible source; see workspace `ADR-036`.

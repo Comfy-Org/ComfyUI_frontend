@@ -1065,6 +1065,8 @@ describe('graphMutations', () => {
       })
       batch.addNode(node(2))
     })
+    const outputs = useNodeDataStore().getNode('root', toNodeId(1))?.outputs
+    assert.exists(outputs)
 
     expect(
       graph.batch({ ...context, opId: 'connect-onto-kept' }, (batch) => {
@@ -1085,6 +1087,7 @@ describe('graphMutations', () => {
 
     const origin = useNodeDataStore().getNode('root', toNodeId(1))
     assert.exists(origin)
+    expect(origin.outputs).toBe(outputs)
     expect(origin.outputs.map(({ name }) => name)).toEqual(['kept'])
     expect(origin.outputs).toHaveLength(1)
   })
@@ -1247,44 +1250,6 @@ describe('graphMutations', () => {
     expect(
       useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
     ).toBeDefined()
-  })
-
-  it('removes an obsolete leading output without duplicating the retained output', () => {
-    const graph = mutations()
-    graph.addNode(
-      {
-        ...node(1),
-        outputs: [
-          { name: 'removed', type: 'IMAGE', links: [] },
-          { name: 'kept', type: 'IMAGE', links: [] }
-        ]
-      },
-      context
-    )
-    graph.addNode(node(2), context)
-    const source = useNodeDataStore().getNode('root', toNodeId(1))!
-    const outputs = source.outputs
-
-    expect(
-      graph.connect(
-        {
-          id: 9,
-          originNodeId: 1,
-          originSlot: 0,
-          targetNodeId: 2,
-          targetSlot: 0,
-          type: 'IMAGE',
-          originOutputs: [
-            { name: 'kept', type: 'IMAGE', links: [toLinkId(9)] }
-          ],
-          targetInputs: [{ name: 'in', type: 'IMAGE', link: toLinkId(9) }]
-        },
-        context
-      )
-    ).toBe(true)
-
-    expect(source.outputs).toBe(outputs)
-    expect(source.outputs.map(({ name }) => name)).toEqual(['kept'])
   })
 
   it("patches only a target slot's presentation fields, never its boundingRect", () => {
@@ -2379,6 +2344,163 @@ describe('graphMutations', () => {
       .getGraphNodesFor('root', 'root')
       .find(({ id }) => id === toNodeId(2))
     expect(after?.inputs.map(({ name }) => name)).toEqual(['refs.b'])
+  })
+
+  it("journals a connect mutation's commit-time autogrow answer under its own index, not the batch's last-prepared one", () => {
+    // `beginMutation` used to run only in `prepare()`, so by the time
+    // `commit()` reached a resolver call the draft still pointed at
+    // whichever mutation `prepare()` visited last. `refs.b` doesn't end in a
+    // digit, so absent a live or remembered answer `nameShapeAutogrowGroupOf`
+    // can't classify it, and `Type2` (this node's default, unregistered
+    // type) has no static definition either -- only a live or remembered
+    // answer can keep it. The live port answers `unavailable` for the first
+    // (prepare-time) query and `member` for the second (this connect
+    // mutation's own commit-time re-resolution against the live target),
+    // exactly DrJKL's reproduction.
+    let refsBCalls = 0
+    const graph = mutations({
+      autogrowGroupOf: (_scope, _nodeId, name) => {
+        if (name !== 'refs.b') return { kind: 'notMember' }
+        refsBCalls++
+        if (refsBCalls === 1) return { kind: 'unavailable' }
+        if (refsBCalls === 2) return { kind: 'member', group: 'refs' }
+        return { kind: 'unavailable' }
+      }
+    })
+
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'refs.a', type: 'IMAGE', link: null },
+          { name: 'refs.b', type: 'IMAGE', link: null }
+        ]
+      })
+    })
+
+    createLayout.mockImplementationOnce(() => {
+      throw new Error('layout port failed')
+    })
+    expect(() =>
+      graph.batch({ ...context, opId: 'connect-then-throw' }, (batch) => {
+        // Mutation 0: the connect whose commit-time answer must journal
+        // under index 0, not under whatever mutation prepare() visited last.
+        batch.connect({
+          id: 90,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          targetInputs: [{ name: 'refs.a', type: 'IMAGE', link: toLinkId(90) }]
+        })
+        // Mutation 1: throws mid-commit, so whatever the journal attached to
+        // THIS index is never applied.
+        batch.addNode(node(3))
+      })
+    ).toThrow('layout port failed')
+
+    // A later reconcile, with the live node now unreachable, must trust the
+    // 'member' answer the connect mutation committed above instead of
+    // falling through to the name-shape heuristic (which cannot classify
+    // 'refs.b' and would drop it) -- proving that answer was actually
+    // persisted, not lost along with the throwing mutation it was
+    // misattributed to.
+    expect(
+      graph.batch({ ...context, opId: 'reconcile-after-throw' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [{ name: 'refs.a', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+
+    const reconciled = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(reconciled?.inputs.map(({ name }) => name)).toEqual([
+      'refs.a',
+      'refs.b'
+    ])
+  })
+
+  it("does not publish a connect mutation's staged autogrow answer when its own replaceLink fails to land", () => {
+    // `replaceLink` returns `undefined` for a stale expected occupant, an ID
+    // collision, or a newly-occupied target -- in every case the graph
+    // effect did not land. `refs.b` is unclassifiable without a live or
+    // remembered answer (see the test above), so whether the classification
+    // this failed commit staged became authoritative memory is directly
+    // observable: a later `unavailable` reconcile drops it if, and only if,
+    // that write was correctly never published.
+    let live: 'member' | 'unavailable' = 'member'
+    const graph = mutations({
+      autogrowGroupOf: (_scope, _nodeId, name) => {
+        if (name !== 'refs.b') return { kind: 'notMember' }
+        return live === 'member'
+          ? { kind: 'member', group: 'refs' }
+          : { kind: 'unavailable' }
+      }
+    })
+
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        inputs: [
+          { name: 'refs.a', type: 'IMAGE', link: null },
+          { name: 'refs.b', type: 'IMAGE', link: null }
+        ]
+      })
+    })
+
+    const replaceLinkSpy = vi
+      .spyOn(useLinkStore(), 'replaceLink')
+      .mockReturnValueOnce(undefined)
+    expect(
+      graph.batch(
+        { ...context, opId: 'connect-replaceLink-fails' },
+        (batch) => {
+          batch.connect({
+            id: 91,
+            originNodeId: 1,
+            originSlot: 0,
+            targetNodeId: 2,
+            targetSlot: 0,
+            type: 'IMAGE',
+            targetInputs: [
+              { name: 'refs.a', type: 'IMAGE', link: toLinkId(91) }
+            ]
+          })
+        }
+      )
+    ).toBe(true)
+    replaceLinkSpy.mockRestore()
+
+    const afterFailedConnect = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(
+      afterFailedConnect?.inputs.map(({ name, link }) => [name, link])
+    ).toEqual([
+      ['refs.a', null],
+      ['refs.b', null]
+    ])
+
+    live = 'unavailable'
+    expect(
+      graph.batch({ ...context, opId: 'reconcile-after-failure' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [{ name: 'refs.a', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+
+    const reconciled = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(reconciled?.inputs.map(({ name }) => name)).toEqual(['refs.a'])
   })
 
   it("does not let one graph scope read another scope's remembered autogrow answer on the same GraphMutations instance", () => {

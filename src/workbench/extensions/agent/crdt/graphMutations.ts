@@ -65,56 +65,16 @@ function isSlotRecord(value: unknown): value is { name?: unknown } {
 
 type PatchableSlot = INodeInputSlot | INodeOutputSlot
 
-const OPTIONAL_SLOT_FIELD_ASSIGNERS: ReadonlyArray<
-  (live: PatchableSlot, serialized: PatchableSlot) => void
-> = [
-  (live, serialized) => {
-    if (serialized.localized_name !== undefined)
-      live.localized_name = serialized.localized_name
-  },
-  (live, serialized) => {
-    if (serialized.label !== undefined) live.label = serialized.label
-  },
-  (live, serialized) => {
-    if (serialized.dir !== undefined) live.dir = serialized.dir
-  },
-  (live, serialized) => {
-    if (serialized.removable !== undefined)
-      live.removable = serialized.removable
-  },
-  (live, serialized) => {
-    if (serialized.shape !== undefined) live.shape = serialized.shape
-  },
-  (live, serialized) => {
-    if (serialized.color_off !== undefined)
-      live.color_off = serialized.color_off
-  },
-  (live, serialized) => {
-    if (serialized.color_on !== undefined) live.color_on = serialized.color_on
-  },
-  (live, serialized) => {
-    if (serialized.locked !== undefined) live.locked = serialized.locked
-  },
-  (live, serialized) => {
-    if (serialized.nameLocked !== undefined)
-      live.nameLocked = serialized.nameLocked
-  },
-  (live, serialized) => {
-    if (serialized.hasErrors !== undefined)
-      live.hasErrors = serialized.hasErrors
-  }
-]
-
 /**
- * Copies a serialized slot's presentation fields -- `name`, `type`, and the
- * ten optional fields `OPTIONAL_SLOT_FIELD_ASSIGNERS` lists -- onto the live
- * slot object, so the node keeps its slot identity; an omitted field keeps
- * the live value. `link`/`links` are handled separately, by
- * `patchLiveInputSlot`/`patchLiveOutputSlot` below: keeping them out of this
- * shared helper (rather than narrowing `live` at runtime with an `in` check,
- * which a live slot missing that own key -- e.g. an output never assigned
- * `links` -- would wrongly fail) means each caller's static type, not a
- * runtime probe, decides which field applies.
+ * Copies a serialized slot's presentation fields -- `name`, `type`, and ten
+ * optional fields -- onto the live slot object, so the node keeps its slot
+ * identity; an omitted optional field keeps the live value. `link`/`links`
+ * are handled separately, by `patchLiveInputSlot`/`patchLiveOutputSlot`
+ * below: keeping them out of this shared helper (rather than narrowing
+ * `live` at runtime with an `in` check, which a live slot missing that own
+ * key -- e.g. an output never assigned `links` -- would wrongly fail) means
+ * each caller's static type, not a runtime probe, decides which field
+ * applies.
  *
  * `boundingRect` is deliberately excluded: on a real slot instance it is a
  * `Rectangle` (a `Float64Array` subclass) that the renderer measures, and
@@ -126,12 +86,20 @@ function patchSlotFields<T extends PatchableSlot>(
   live: T,
   serialized: T
 ): void {
-  // `name` and `type` are required on `INodeSlot`, so they are always
-  // present and copied unconditionally; every field `OPTIONAL_SLOT_FIELD_
-  // ASSIGNERS` handles is optional, and an omitted one keeps the live value.
   live.name = serialized.name
   live.type = serialized.type
-  for (const assign of OPTIONAL_SLOT_FIELD_ASSIGNERS) assign(live, serialized)
+  if (serialized.localized_name !== undefined)
+    live.localized_name = serialized.localized_name
+  if (serialized.label !== undefined) live.label = serialized.label
+  if (serialized.dir !== undefined) live.dir = serialized.dir
+  if (serialized.removable !== undefined) live.removable = serialized.removable
+  if (serialized.shape !== undefined) live.shape = serialized.shape
+  if (serialized.color_off !== undefined) live.color_off = serialized.color_off
+  if (serialized.color_on !== undefined) live.color_on = serialized.color_on
+  if (serialized.locked !== undefined) live.locked = serialized.locked
+  if (serialized.nameLocked !== undefined)
+    live.nameLocked = serialized.nameLocked
+  if (serialized.hasErrors !== undefined) live.hasErrors = serialized.hasErrors
 }
 
 /**
@@ -1906,6 +1874,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     memory: AutogrowMemoryDraft
   ): void {
     for (const [index, mutation] of prepared.entries()) {
+      memory.beginMutation(index)
+      let committed = true
       switch (mutation.kind) {
         case 'addNode':
         case 'reconcileNode':
@@ -2023,7 +1993,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             mutation.topology,
             context
           )
-          if (!replacement) break
+          if (!replacement) {
+            committed = false
+            break
+          }
           if (occupant) {
             detachLinkSlots(scope, occupant, context)
             linkPresentationStore.take(scope, occupant.id)
@@ -2083,8 +2056,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           nodeStore.clearOwner(scope, context)
           break
       }
-      // See `AutogrowMemoryDraft` for why this applies per mutation.
-      memory.applyMutation(index)
+      // See `AutogrowMemoryDraft` for why this applies per mutation, and
+      // only when that mutation's own graph effect actually landed.
+      if (committed) memory.applyMutation(index)
     }
   }
 

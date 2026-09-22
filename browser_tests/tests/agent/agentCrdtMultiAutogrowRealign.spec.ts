@@ -68,14 +68,18 @@ test.describe(
         await realign.expectEveryLinkOnItsNamedSlot()
       })
 
+      await test.step('fill sentinel scalar values before the resubscribe', async () => {
+        await realign.fillSentinelWidgetValues()
+      })
+
       await test.step('reconciles the same way after a tab-switch resubscribe', async () => {
         await realign.switchTabsAwayAndBack()
         await expect(realign.targetNode).toBeVisible()
         await realign.expectEveryLinkOnItsNamedSlot()
       })
 
-      await test.step('submitted values and the host doc match by name', async () => {
-        await realign.fillSentinelWidgetValues()
+      await test.step('scalars, submitted values and the host doc survived the resubscribe', async () => {
+        await realign.expectSentinelWidgetValues()
         await realign.expectSubmittedValuesNamedCorrectly()
         await realign.expectHostDocHasSentinelValues()
       })
