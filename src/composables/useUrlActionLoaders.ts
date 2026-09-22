@@ -7,15 +7,17 @@ import { useSettingsUrlLoader } from '@/platform/settings/composables/useSetting
 import { reportError } from '@/platform/telemetry/reportError'
 import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
 import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
+import { useWorkspaceUrlLoader } from '@/platform/workspace/composables/useWorkspaceUrlLoader'
 
 /**
  * Aggregates the query-param "deep link" loaders the cloud app checks on mount
- * (`?invite`, `?create_workspace`, `?pricing`, `?topup`, `?settings`), then
- * recovers an interrupted checkout. The loaders are instantiated in setup so
- * their `useRoute`/`useRouter` resolve; call `runUrlActionLoaders()` from
- * `onMounted` once the app is ready.
+ * (`?workspace`, `?invite`, `?create_workspace`, `?pricing`, `?topup`,
+ * `?settings`), then recovers an interrupted checkout. The loaders are
+ * instantiated in setup so their `useRoute`/`useRouter` resolve; call
+ * `runUrlActionLoaders()` from `onMounted` once the app is ready.
  */
 export function useUrlActionLoaders() {
+  const workspaceUrlLoader = isCloud ? useWorkspaceUrlLoader() : null
   const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
   const createWorkspaceUrlLoader = isCloud
     ? useCreateWorkspaceUrlLoader()
@@ -27,6 +29,20 @@ export function useUrlActionLoaders() {
   const subscriptionDialog = isCloud ? useSubscriptionDialog() : null
 
   async function runUrlActionLoaders() {
+    // Open the workspace named by ?workspace= first, so the loaders below
+    // (?settings, ?pricing, ?topup) act on the requested workspace rather
+    // than the one the app happened to load with.
+    if (workspaceUrlLoader) {
+      try {
+        await workspaceUrlLoader.loadWorkspaceFromUrl()
+      } catch (error) {
+        console.error(
+          '[UrlActionLoaders] Failed to load workspace from URL:',
+          error
+        )
+      }
+    }
+
     // Accept workspace invite from URL if present (e.g., ?invite=TOKEN).
     if (inviteUrlLoader) {
       await inviteUrlLoader.loadInviteFromUrl()
