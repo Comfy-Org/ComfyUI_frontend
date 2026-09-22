@@ -39,7 +39,7 @@ const usageEnvelopeSchema = z.object({ usage: responseUsageSchema.nullish() })
 const responseEnvelopeSchema = z.object({
   status: z.string(),
   error: z.object({ code: z.string(), message: z.string() }).nullish(),
-  incomplete_details: z.object({ reason: z.string() }).nullish(),
+  incomplete_details: z.object({ reason: z.string().optional() }).nullish(),
   output: z.array(
     z.discriminatedUnion('type', [
       z.object({ type: z.literal('reasoning') }),

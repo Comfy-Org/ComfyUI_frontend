@@ -941,6 +941,10 @@ describe('createOpenAiTranslator', () => {
       overrides: { status: 'incomplete', incomplete_details: null }
     },
     {
+      name: 'an incomplete response with empty details',
+      overrides: { status: 'incomplete', incomplete_details: {} }
+    },
+    {
       name: 'a permanent failure',
       overrides: {
         status: 'failed',
@@ -1038,37 +1042,43 @@ describe('createOpenAiTranslator', () => {
   it.for([
     {
       name: 'JSON split across text parts',
-      parts: ['{"1":"Bonjour {name}",', '"2":"Au revoir {name}"}'],
+      messages: [['{"1":"Bonjour {name}",', '"2":"Au revoir {name}"}']],
+      expected: { '1': 'Bonjour {name}', '2': 'Au revoir {name}' },
+      calls: 1
+    },
+    {
+      name: 'JSON split across messages',
+      messages: [['{"1":"Bonjour {name}",'], ['"2":"Au revoir {name}"}']],
       expected: { '1': 'Bonjour {name}', '2': 'Au revoir {name}' },
       calls: 1
     },
     {
       name: 'conflicting JSON documents',
-      parts: [
-        '{"1":"Bonjour {name}","2":"Au revoir {name}"}',
-        '{"1":"Salut {name}","2":"Adieu {name}"}'
+      messages: [
+        [
+          '{"1":"Bonjour {name}","2":"Au revoir {name}"}',
+          '{"1":"Salut {name}","2":"Adieu {name}"}'
+        ]
       ],
       expected: {},
       calls: 2
     }
   ])(
     'validates $name as one translation result',
-    async ({ parts, expected, calls }) => {
+    async ({ messages, expected, calls }) => {
       const { translate, callCount } = translatorFor(() =>
         response('', {
-          output: [
-            {
-              type: 'message',
-              id: 'message',
-              role: 'assistant',
-              status: 'completed',
-              content: parts.map((text) => ({
-                type: 'output_text',
-                text,
-                annotations: []
-              }))
-            }
-          ]
+          output: messages.map((parts, index) => ({
+            type: 'message',
+            id: `message-${index}`,
+            role: 'assistant',
+            status: 'completed',
+            content: parts.map((text) => ({
+              type: 'output_text',
+              text,
+              annotations: []
+            }))
+          }))
         })
       )
       await expect(translate(locale, items)).resolves.toEqual(expected)
