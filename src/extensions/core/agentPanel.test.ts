@@ -9,6 +9,9 @@ import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/
 
 import type { ComfyExtension } from '@/types/comfy'
 import type { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import type { EntryPath } from '@/platform/onboarding/onboardingTours'
+import type { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useTelemetry } from '@/platform/telemetry'
 import type { useExtensionService } from '@/services/extensionService'
@@ -66,8 +69,20 @@ const mocks = vi.hoisted(() => ({
   getNodeByLocatorId: vi.fn(),
   flagEnabled: undefined as boolean | undefined,
   flagListener: null as (() => void) | null,
-  registerTracker: vi.fn(() => () => {})
+  registerTracker: vi.fn(() => () => {}),
+  firstRunCandidate: false,
+  activeTour: null as EntryPath | null
 }))
+
+vi.mock(
+  import('@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'),
+  () => ({
+    useFirstRunEntry: () =>
+      fromPartial<ReturnType<typeof useFirstRunEntry>>({
+        isFirstRunCandidate: () => mocks.firstRunCandidate
+      })
+  })
+)
 
 vi.mock(import('@/services/extensionService'), () => ({
   useExtensionService: () =>
@@ -154,6 +169,11 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.isOpen = true
     mocks.flagEnabled = undefined
     mocks.flagListener = null
+    mocks.firstRunCandidate = false
+    mocks.activeTour = null
+    vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
+      () => mocks.activeTour
+    )
     mocks.registerTracker.mockClear()
     localStorage.clear()
     mocks.getNodeByLocatorId.mockReset()
@@ -273,6 +293,51 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     expect(agentStore.open).toHaveBeenCalledOnce()
+  })
+
+  it.for([
+    {
+      surface: 'Getting Started is owed this boot',
+      arrange: () => void (mocks.firstRunCandidate = true)
+    },
+    {
+      surface: 'a coachmark tour is active',
+      arrange: () => void (mocks.activeTour = 'appMode')
+    }
+  ])(
+    'defers the automatic offer while $surface, leaving the auto-shown key untouched',
+    async ({ arrange }) => {
+      mocks.flagEnabled = true
+      arrange()
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      const key = 'Comfy.AgentConsent.AutoShown.account-a.workspace-a'
+
+      await loadEntryAndSetup()
+      mocks.flagListener?.()
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(localStorage.getItem(key)).toBeNull()
+      expect(agentStore.open).not.toHaveBeenCalled()
+    }
+  )
+
+  it('keeps deferring when consent reloads for a new scope while Getting Started is still owed', async () => {
+    mocks.flagEnabled = true
+    mocks.firstRunCandidate = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    mocks.flagListener?.()
+    await flush()
+    Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
+    Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(
+      localStorage.getItem('Comfy.AgentConsent.AutoShown.account-a.workspace-b')
+    ).toBeNull()
   })
 
   it('stays silent when the account already accepted', async () => {

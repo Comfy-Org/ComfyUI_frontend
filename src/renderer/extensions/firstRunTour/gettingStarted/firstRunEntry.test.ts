@@ -114,6 +114,21 @@ describe('useFirstRunEntry', () => {
     ]
   ] as const
 
+  describe('who counts as a first-run candidate', () => {
+    it('is a fresh cloud user with every condition met', () => {
+      expect(useFirstRunEntry().isFirstRunCandidate()).toBe(true)
+    })
+
+    it.for([...permanentDisqualifiers, ...transientDisqualifiers])(
+      'is not %s',
+      ([, disqualify]) => {
+        disqualify()
+
+        expect(useFirstRunEntry().isFirstRunCandidate()).toBe(false)
+      }
+    )
+  })
+
   describe('what a fresh user sees', () => {
     it('shows Getting Started to a candidate', async () => {
       const entry = useFirstRunEntry()

@@ -115,6 +115,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
 
   return {
     gettingStartedVisible: readonly(gettingStartedVisible),
+    isFirstRunCandidate,
     handleStartupOutcome,
     handleUrlWorkflow,
     dismissGettingStarted
