@@ -294,4 +294,61 @@ describe('createPendingDeleteRetentionStore', () => {
     )
     vi.useRealTimers()
   })
+
+  it.for([
+    ['permanent' as const, 'bounded' as const],
+    ['bounded' as const, 'permanent' as const]
+  ])(
+    'keeps a permanent identified record and an independent bounded unidentified record for the same node both alive, settled %s-then-%s',
+    ([first, second]) => {
+      // Regression: a permanent record (an identified `confirmed-applied`)
+      // must not replace an independently live bounded record for the same
+      // node id, and vice versa. Retain identity A permanently, and
+      // separately settle a later unidentified `unknown` delete (bounded
+      // expiry) for the SAME node id. While that bounded window is still
+      // open, a different, real identity B occupies the node - this must
+      // supersede only A's own permanent record (A can never reoccupy the
+      // node), never the still-open, independent bounded intent, which has
+      // no identity of its own to be superseded by anything.
+      vi.useFakeTimers()
+      vi.setSystemTime(0)
+      const store = createPendingDeleteRetentionStore()
+
+      const permanent = () =>
+        store.settleBatch(
+          acknowledged(
+            'wf-1',
+            [deleteOp('op-a', '1')],
+            ['op-a'],
+            new Map([['op-a', 'A']])
+          )
+        )
+      const bounded = () =>
+        store.settleBatch(
+          unconfirmed(
+            'wf-1',
+            [deleteOp('op-b', '1')],
+            new Map([['op-b', null]])
+          )
+        )
+      const settle = { permanent, bounded }
+      settle[first]()
+      settle[second]()
+
+      // Identity B now occupies the node - a real, different identity from
+      // A's permanent record, but the bounded record names no identity at
+      // all, so it cannot be ruled superseded by B and must keep
+      // suppressing the node until its own expiry.
+      expect(store.retainedNodeIds('wf-1', new Set(['1']), () => 'B')).toEqual(
+        new Set(['1'])
+      )
+
+      // Past the bounded record's own 30s deadline: now nothing retains it.
+      vi.setSystemTime(30_000 + 1)
+      expect(store.retainedNodeIds('wf-1', new Set(['1']), () => 'B')).toEqual(
+        new Set()
+      )
+      vi.useRealTimers()
+    }
+  )
 })
