@@ -1,5 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import * as Y from 'yjs'
 
+import { ownerNodesMap, semanticDocs } from '@/stores/semanticDoc'
+import type { LocalUpdateOrigin } from '@/stores/semanticDoc'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { UUID } from '@/utils/uuid'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
@@ -756,5 +760,108 @@ describe('useWidgetValueStore', () => {
       registered.value = 3
       expect(store.isLocallyDirty(seedA)).toBe(true)
     })
+  })
+})
+
+describe('useWidgetValueStore semantic document projection', () => {
+  const rootId = 'graph-a' as UUID
+  const definitionId = 'graph-a-def' as UUID
+  const root = toRootGraphId(rootId)
+  const rootOwner = toOwningGraphId(rootId)
+  const definitionOwner = toOwningGraphId(definitionId)
+  const nodeId = toNodeId('7')
+  const rootSeed = widgetId(rootId, nodeId, 'seed')
+  const definitionSeed = widgetId(definitionId, nodeId, 'seed')
+
+  afterEach(() => {
+    semanticDocs.destroyAll()
+  })
+
+  /** Projects `nodeId` under `owner` the way nodeDataStore does, `type` only. */
+  function projectNode(owner = rootOwner): void {
+    semanticDocs.transactLocal(root, { source: 'local' }, (doc) => {
+      ownerNodesMap(doc, root, owner, true).set(
+        nodeId,
+        new Y.Map<unknown>([['type', 'KSampler']])
+      )
+    })
+  }
+
+  function widgetsOf(owner = rootOwner): Y.Map<unknown> | undefined {
+    const doc = semanticDocs.ensure(root)
+    const node = ownerNodesMap(doc, root, owner, false)?.get(nodeId)
+    const widgets = node instanceof Y.Map ? node.get('widgets') : undefined
+    return widgets instanceof Y.Map ? widgets : undefined
+  }
+
+  it('writes the registered value and every change under the root owner', () => {
+    projectNode()
+    const store = useWidgetValueStore()
+    const registered = store.registerWidget(rootSeed, state('number', 1))!
+
+    expect(widgetsOf()?.get('seed')).toBe(1)
+
+    registered.value = 2
+    expect(widgetsOf()?.get('seed')).toBe(2)
+
+    store.setValue(rootSeed, 3)
+    expect(widgetsOf()?.get('seed')).toBe(3)
+  })
+
+  it('writes a subgraph widget under its definition owner, not the root', () => {
+    semanticDocs.ensure(root)
+    projectNode(definitionOwner)
+    const store = useWidgetValueStore()
+    store.registerWidget(definitionSeed, state('number', 5))
+
+    expect(widgetsOf(definitionOwner)?.get('seed')).toBe(5)
+    expect(widgetsOf(rootOwner)).toBeUndefined()
+  })
+
+  it('never creates a node the node store has not projected', () => {
+    semanticDocs.ensure(root)
+    const store = useWidgetValueStore()
+    const registered = store.registerWidget(rootSeed, state('number', 1))!
+    registered.value = 2
+
+    const doc = semanticDocs.ensure(root)
+    expect(ownerNodesMap(doc, root, rootOwner, false)?.has(nodeId)).not.toBe(
+      true
+    )
+  })
+
+  it('does not create a document for a graph that has none', () => {
+    const store = useWidgetValueStore()
+    const registered = store.registerWidget(rootSeed, state('number', 1))!
+    registered.value = 2
+
+    expect(semanticDocs.has(root)).toBe(false)
+  })
+
+  it('carries the mutation context as local provenance and skips same-value writes', () => {
+    projectNode()
+    const store = useWidgetValueStore()
+    store.registerWidget(rootSeed, state('number', 1))
+    const origins: unknown[] = []
+    semanticDocs
+      .ensure(root)
+      .on('afterTransaction', (transaction: Y.Transaction) => {
+        if (transaction.changed.size > 0) origins.push(transaction.origin)
+      })
+
+    const context: RemoteMutationContext = {
+      source: 'agent-remote',
+      actor: 'agent:1',
+      opId: 'op-9'
+    }
+    store.setValue(rootSeed, 2, context)
+    store.setValue(rootSeed, 2, context)
+    store.setValue(rootSeed, 3)
+
+    expect(origins).toEqual<LocalUpdateOrigin[]>([
+      { source: 'local', actor: 'agent:1', opId: 'op-9' },
+      { source: 'local' }
+    ])
+    expect(widgetsOf()?.get('seed')).toBe(3)
   })
 })

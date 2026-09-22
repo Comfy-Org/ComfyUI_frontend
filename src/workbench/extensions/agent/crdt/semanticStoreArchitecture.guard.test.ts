@@ -111,13 +111,14 @@ describe('CRDT-STORES-0036 semantic store architecture guard', () => {
     )
   })
 
-  const PROJECTED_STORES = new Set(['nodeDataStore.ts', 'linkStore.ts'])
-  for (const file of SEMANTIC_STORES) {
-    if (PROJECTED_STORES.has(file)) continue
-    it.fails(`KNOWN GAP: ${file} is a projection of a Yjs document`, () => {
-      expect(readSource(path.join(STORES_DIR, file))).toMatch(YJS_IMPORT)
-    })
-  }
+  // Widget values are written through to `nodes.<id>.widgets.<name>` on
+  // registration and on every change; the store still reads its own values,
+  // so the projection is write-side only for now.
+  it('widgetValueStore.ts is a projection of a Yjs document', () => {
+    expect(readSource(path.join(STORES_DIR, 'widgetValueStore.ts'))).toMatch(
+      YJS_IMPORT
+    )
+  })
 
   it.fails('KNOWN GAP: a remote update merges without a GraphMutations.batch round trip', () => {
     const mutations = recordingMutations()
