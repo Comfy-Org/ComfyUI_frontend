@@ -148,6 +148,18 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
       }
       return total
     }
+    const firstSocketWithFrameAfterReload = (
+      type: 'doc_subscribe' | 'doc_unsubscribe'
+    ): WebSocketRoute | null => {
+      for (const socket of webSocketMessages.keys()) {
+        if (
+          socket !== ws &&
+          countDocFrames(webSocketMessages, socket, type, workflowId) > 0
+        )
+          return socket
+      }
+      return null
+    }
 
     await test.step('Reload and restore the workflow subscription', async () => {
       // Arm the waiter BEFORE the reload. The replacement socket is routed
@@ -178,7 +190,10 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
 
       await expect.poll(() => countAfterReload('doc_subscribe')).toBe(1)
 
-      reloadedWs.send(
+      const subscribedSocket = firstSocketWithFrameAfterReload('doc_subscribe')
+      if (!subscribedSocket)
+        throw new Error('Reloaded workflow subscription socket is missing')
+      subscribedSocket.send(
         JSON.stringify({
           type: 'doc_subscribed',
           data: { v: 1, workflow_id: workflowId, ok: true, seq: 0 }
