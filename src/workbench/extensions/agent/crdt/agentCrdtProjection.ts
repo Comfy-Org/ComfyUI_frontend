@@ -24,7 +24,15 @@ export class AgentCrdtProjection {
     private readonly getFollowerDoc: () => Y.Doc,
     intent?: LocalIntent
   ) {
-    this.adapter = new EcsFollowerAdapter(mutations, intent)
+    // The adapter's self-driven reconcile retry (a rejected batch armed for
+    // a bounded fast retry, see `EcsFollowerAdapter`) is store-only and has
+    // no notion of the live graph. Route a successful retry through the same
+    // `reconcileLiveGraph` sweep a normally-arriving frame gets via
+    // `applyAndReconcile`, or a retry that commits still leaves stale live
+    // nodes on screen (and savable) with nothing left to re-materialize them.
+    this.adapter = new EcsFollowerAdapter(mutations, intent, (workflowId) =>
+      this.reconcileLiveGraph(workflowId)
+    )
   }
 
   bind(workflowId: string, follower: FollowerDoc): void {

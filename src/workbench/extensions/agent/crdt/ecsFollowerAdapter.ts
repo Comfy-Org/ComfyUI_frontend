@@ -369,6 +369,20 @@ interface TargetSession {
   /** Pending fast-retry of a rejected batch; see {@link RECONCILE_RETRY_LIMIT}. */
   reconcileRetryTimer: ReturnType<typeof setTimeout> | null
   reconcileRetryAttempt: number
+  /**
+   * The frame whose batch was most recently rejected, resubmitted verbatim
+   * (same actor/opIds/seq) by the retry timer instead of a synthetic frame:
+   * the reconcile branch never reads `update.update`, only `frameContext`,
+   * so replaying the original frame is both simpler and correctly attributed.
+   */
+  lastRejectedFrame: DocUpdate | null
+  /**
+   * True while a retry timer's own resubmission is being applied, so the
+   * post-batch bookkeeping can tell "a fresh frame was rejected" (which may
+   * start a new retry episode) apart from "the retry's own attempt was
+   * rejected again" (which must not reset the retry budget).
+   */
+  retryInFlight: boolean
 }
 
 /**
@@ -382,7 +396,18 @@ export class EcsFollowerAdapter {
 
   constructor(
     private readonly mutations: MutationsForTarget,
-    private readonly intent: LocalIntent = NO_LOCAL_INTENT
+    private readonly intent: LocalIntent = NO_LOCAL_INTENT,
+    /**
+     * Called after a self-driven retry's batch commits. The adapter is
+     * store-only and has no notion of the live graph; this is how its owner
+     * (`AgentCrdtProjection`) plugs in the same `reconcileLiveGraph` sweep a
+     * normally-arriving frame gets via `applyAndReconcile`. Without it, a
+     * retry that commits still leaves stale live nodes on screen (and
+     * savable) since nothing ever re-materializes the canvas for it.
+     */
+    private readonly onReconcileRetryCommitted: (
+      workflowId: string
+    ) => void = () => undefined
   ) {}
 
   bind(workflowId: string, follower: FollowerDoc): void {
@@ -429,12 +454,23 @@ export class EcsFollowerAdapter {
     const session = this.targets.get(workflowId)
     if (!session) return false
     this.discardSessionPending(session)
+    // A pending retry (or an armed `reconcileNextFrame`) would otherwise
+    // fire up to `RECONCILE_RETRY_INTERVAL_MS` later and re-project the
+    // pre-reset doc, resurrecting exactly the state this reset clears.
+    this.clearReconcileRetry(session)
+    session.reconcileNextFrame = false
     return session.mutations.clearSemanticGraph(context)
   }
 
   discardPending(workflowId: string): void {
     const session = this.targets.get(workflowId)
-    if (session) this.discardSessionPending(session)
+    if (!session) return
+    this.discardSessionPending(session)
+    // Same reasoning as `clearForReset`: a schema-rejected frame is a
+    // fail-closed gate, and a stale retry firing later would silently
+    // re-apply the very state that gate just refused.
+    this.clearReconcileRetry(session)
+    session.reconcileNextFrame = false
   }
 
   destroy(): void {
@@ -466,6 +502,8 @@ export class EcsFollowerAdapter {
       applying: false,
       reconcileRetryTimer: null,
       reconcileRetryAttempt: 0,
+      lastRejectedFrame: null,
+      retryInFlight: false,
       onNodesChanged: (_events): void => undefined,
       onLinksChanged: (_event): void => undefined
     }
@@ -681,8 +719,28 @@ export class EcsFollowerAdapter {
     // frame so the dropped edits are re-read from the doc instead of falling
     // through to incremental handling that never revisits them.
     session.reconcileNextFrame = !committed
-    if (committed) this.clearReconcileRetry(session)
-    else this.scheduleReconcileRetry(session)
+    if (committed) {
+      this.clearReconcileRetry(session)
+    } else {
+      // A rejection that arrives while no retry is already in flight starts
+      // a new rejection episode: reset the budget so an unrelated later
+      // rejection (or scope staying down longer than the previous episode's
+      // remaining budget) still gets the full retry window, instead of
+      // inheriting whatever was left over from an earlier, unrelated
+      // episode. `retryInFlight` excludes the retry's own resubmission
+      // (already counted against the budget when it was scheduled) from
+      // being mistaken for a new episode.
+      if (!session.retryInFlight && !session.reconcileRetryTimer) {
+        session.reconcileRetryAttempt = 0
+      }
+      session.lastRejectedFrame = update
+      // `batch()` returns false both for a transient scope race and for a
+      // deterministic `prepare()` validation rejection; only the former can
+      // ever be fixed by waiting, so only arm the retry for it.
+      if (session.mutations.hasScope?.() !== true) {
+        this.scheduleReconcileRetry(session)
+      }
+    }
     return committed
   }
 
@@ -701,11 +759,39 @@ export class EcsFollowerAdapter {
       session.reconcileRetryTimer = null
       if (this.targets.get(session.workflowId) !== session) return
       if (!session.reconcileNextFrame) return
-      this.applyFrame({
+      // Resubmit the actual rejected frame (same actor/opIds/seq) rather
+      // than a synthetic one: the reconcile branch below never reads
+      // `update.update`, only `frameContext(update)`, so this both keeps
+      // `seq` in its normal domain and attributes the replayed commit to
+      // whichever op actually got rejected instead of a generic 'replay'.
+      const retryFrame = session.lastRejectedFrame ?? {
         workflowId: session.workflowId,
-        seq: -1,
+        seq: 0,
         update: new Uint8Array()
-      })
+      }
+      session.retryInFlight = true
+      let committed: boolean
+      try {
+        committed = this.applyFrame(retryFrame)
+      } catch (error) {
+        // `applyFrame` deliberately propagates a throw from `batch()` (see
+        // "replays authoritative state through real mutations after a batch
+        // throws"), but this call has no caller to propagate to: it runs
+        // off a timer. Left uncaught it would become an unhandled global
+        // error, `reconcileRetryTimer` is already null, and the throw skips
+        // the `scheduleReconcileRetry` call below, silently killing the
+        // retry chain. Report it and keep retrying on the existing budget
+        // instead.
+        session.retryInFlight = false
+        reportError(error instanceof Error ? error : new Error(String(error)), {
+          errorType: 'error_agent_reconcile_retry_threw',
+          context: { workflowId: session.workflowId }
+        })
+        this.scheduleReconcileRetry(session)
+        return
+      }
+      session.retryInFlight = false
+      if (committed) this.onReconcileRetryCommitted(session.workflowId)
     }, RECONCILE_RETRY_INTERVAL_MS)
   }
 
@@ -713,6 +799,7 @@ export class EcsFollowerAdapter {
     if (session.reconcileRetryTimer) clearTimeout(session.reconcileRetryTimer)
     session.reconcileRetryTimer = null
     session.reconcileRetryAttempt = 0
+    session.lastRejectedFrame = null
   }
 
   private discardSessionPending(session: TargetSession): void {

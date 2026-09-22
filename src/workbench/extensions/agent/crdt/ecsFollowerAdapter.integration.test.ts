@@ -408,7 +408,20 @@ describe('EcsFollowerAdapter integration', () => {
 
       const host = mint({ nodes: [], links: [] }, catalog)
       const follower = new FollowerDoc()
-      const adapter = new EcsFollowerAdapter(mutations)
+      // Store-only: the adapter has no notion of the live graph, so its
+      // owner (`AgentCrdtProjection`) is the one that would route a
+      // successful retry into `reconcileLiveGraph`. Assert the adapter
+      // actually invokes that seam once the retry commits, not just that
+      // the ECS store converges - a retry that only updates stores but
+      // never asks anything to sweep the canvas leaves a stale node
+      // rendered (and savable) even though this test's own store-level
+      // assertions below would still pass.
+      const onReconcileRetryCommitted = vi.fn()
+      const adapter = new EcsFollowerAdapter(
+        mutations,
+        undefined,
+        onReconcileRetryCommitted
+      )
       adapter.bind('wf', follower)
       const update = Y.encodeStateAsUpdate(host)
       follower.applyRemoteUpdate(update)
@@ -425,6 +438,7 @@ describe('EcsFollowerAdapter integration', () => {
           .getGraphNodesFor('root', 'root')
           .map(({ id }) => id)
       ).toEqual([toNodeId(99)])
+      expect(onReconcileRetryCommitted).not.toHaveBeenCalled()
 
       // Scope becomes available again, but no new frame ever arrives (e.g.
       // the user never sends another agent message). The adapter must retry
@@ -439,6 +453,106 @@ describe('EcsFollowerAdapter integration', () => {
         [toNodeId(99)],
         expect.objectContaining({ opId: 'replay' })
       )
+      expect(onReconcileRetryCommitted).toHaveBeenCalledExactlyOnceWith('wf')
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not arm a self-driven retry for a deterministic rejection scope can never fix', () => {
+    vi.useFakeTimers()
+    try {
+      const host = mint(
+        {
+          nodes: [
+            {
+              id: 1,
+              type: 'Source',
+              pos: [0, 0],
+              outputs: [{ name: 'out', type: 'IMAGE', links: [9] }],
+              inputs: []
+            },
+            {
+              id: 2,
+              type: 'Sink',
+              pos: [300, 0],
+              inputs: [{ name: 'in', type: 'IMAGE', link: 9 }],
+              outputs: []
+            }
+          ],
+          links: [[9, 1, 0, 2, 0, 'IMAGE']]
+        },
+        catalog
+      )
+      const follower = new FollowerDoc()
+      const realMutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      const batchCalls: unknown[] = []
+      const mutations: GraphMutations = {
+        ...realMutations,
+        batch: (context, define) => {
+          batchCalls.push(context)
+          return realMutations.batch(context, define)
+        }
+      }
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      const bootstrap = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(bootstrap)
+      expect(
+        adapter.applyFrame({ workflowId: 'wf', seq: 1, update: bootstrap })
+      ).toBe(true)
+      batchCalls.length = 0
+
+      // Retype node 1 to a type with no output, while the doc still carries
+      // link 9 originating from its old output slot 0: `prepare()`'s stale
+      // link revalidation rejects this deterministically (see the "FEC-4"
+      // test below). Scope stays available throughout, so this is exactly
+      // the case `hasScope()` must distinguish from a transient scope race.
+      const before = Y.encodeStateVector(host)
+      const retypeOp = {
+        op_id: 'retype',
+        actor: 'agent:test',
+        base_version: 2,
+        stamp: [2, 'agent:test'],
+        op: 'add_node',
+        node_id: 1,
+        class_type: 'Sink',
+        pos: [0, 0],
+        node: {
+          id: 1,
+          type: 'Sink',
+          pos: [0, 0],
+          inputs: [{ name: 'in', type: 'IMAGE', link: null }],
+          outputs: []
+        }
+      } satisfies Op
+      applyOps(host, [retypeOp], catalog)
+      const update = Y.encodeStateAsUpdate(host, before)
+      follower.applyRemoteUpdate(update)
+      const rejected = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined)
+
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(
+        false
+      )
+      expect(batchCalls).toHaveLength(1)
+      rejected.mockRestore()
+
+      // If the adapter blindly armed a retry for every rejection, this
+      // advance would fire it and call `batch()` again with the identical,
+      // still-invalid doc state - 20 wasted whole-document reconciles at a
+      // fixed interval that retrying can never turn into a commit.
+      vi.advanceTimersByTime(5_000)
+      expect(batchCalls).toHaveLength(1)
 
       adapter.destroy()
       follower.destroy()

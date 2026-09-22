@@ -163,6 +163,16 @@ export interface GraphMutations {
     context: RemoteMutationContext,
     define: (batch: GraphMutationBatch) => void
   ): boolean
+  /**
+   * Cheap, side-effect-free check for whether `batch` would currently be
+   * rejected for lack of scope. Callers that retry a rejected `batch` (e.g.
+   * `EcsFollowerAdapter`'s self-driven reconcile retry) use this to tell a
+   * transient scope race, worth retrying, apart from a deterministic
+   * `prepare()` validation rejection that retrying can never fix. Optional
+   * so a test double that never rejects for scope reasons can omit it; a
+   * caller that only cares about `batch`'s boolean result is unaffected.
+   */
+  hasScope?(): boolean
   addNode(payload: SemanticNodePayload, context: RemoteMutationContext): boolean
   setWidget(
     nodeId: NodeId,
@@ -1353,6 +1363,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   }
 
   const graphMutations: GraphMutations = {
+    hasScope() {
+      return deps.getScope() !== null
+    },
     batch(context, define) {
       const scope = deps.getScope()
       if (!scope) return false

@@ -1,4 +1,4 @@
-import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
+import { linksMap, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
@@ -245,5 +245,88 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
       graph.getNodeById(toNodeId(1))?.widgets?.map((w) => w.value)
     ).toEqual([30, 7])
     destroy()
+  })
+})
+
+describe('AgentCrdtProjection self-driven reconcile retry', () => {
+  it('sweeps the stale live node once a retry recovers from a rejected delete-all, without a new frame arriving', () => {
+    vi.useFakeTimers()
+    try {
+      const { graph, source } = buildLiveGraph()
+      const scope = graphScopeOf(graph)
+      let scopeAvailable = true
+      const mutations = createGraphMutations({
+        getScope: () => (scopeAvailable ? scope : null),
+        layout,
+        placement: inertPlacementPort
+      })
+      const host = mint(
+        toWorkflowJson(structuredClone(graph.serialize())),
+        CATALOG
+      )
+      const follower = new FollowerDoc()
+      const projection = new AgentCrdtProjection(
+        mutations,
+        () => graph,
+        () => follower.doc
+      )
+      projection.bind(WORKFLOW_ID, follower)
+      let seq = 0
+      const deliver = (update: Uint8Array) => {
+        follower.applyRemoteUpdate(update)
+        const applied = projection.applyFrame({
+          workflowId: WORKFLOW_ID,
+          seq: ++seq,
+          update,
+          actor: 'agent:comfy:host',
+          opIds: []
+        })
+        // Mirrors `useAgentCrdtFollower`'s `applyAndReconcile`: the live
+        // graph is only ever swept for a frame that actually applied.
+        if (applied) projection.reconcileLiveGraph(WORKFLOW_ID)
+        return applied
+      }
+
+      // Catch-up frame: the doc starts out matching the live graph, so the
+      // pre-existing `source` node is adopted as the live adapter for
+      // record id 1.
+      deliver(Y.encodeStateAsUpdate(host))
+      expect(graph.getNodeById(toNodeId(1))).toBe(source)
+
+      // The agent deletes every node from the doc (a delete-all), but scope
+      // briefly can't resolve the bound workflow tab, so the batch is
+      // rejected: nothing is swept, and the stale node stays live.
+      const before = Y.encodeStateVector(host)
+      host.transact(() => {
+        for (const id of [...nodesMap(host).keys()]) nodesMap(host).delete(id)
+        for (const id of [...linksMap(host).keys()]) linksMap(host).delete(id)
+      })
+      scopeAvailable = false
+      const deleteAllUpdate = Y.encodeStateAsUpdate(host, before)
+      expect(deliver(deleteAllUpdate)).toBe(false)
+      expect(graph.getNodeById(toNodeId(1))).toBe(source)
+
+      // Scope recovers, but no further frame ever arrives (e.g. the user
+      // never sends another agent message). The self-driven retry must
+      // both commit the store-side reconcile AND sweep the live graph
+      // through the same pipeline a normal frame gets, or the stale node
+      // would still be there to serialize into the next save.
+      scopeAvailable = true
+      vi.advanceTimersByTime(5_000)
+
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+      expect(graph.getNodeById(toNodeId(1))).toBeNull()
+      expect(layout.deleteNodes).toHaveBeenCalledWith(
+        scope,
+        [toNodeId(1)],
+        expect.anything()
+      )
+
+      projection.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
