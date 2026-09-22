@@ -16,6 +16,10 @@ export class AgentPanel {
   public readonly fileInput: Locator
   public readonly composerAssetSection: Locator
   public readonly attachmentChips: Locator
+  public readonly composer: Locator
+  public readonly sendButton: Locator
+  public readonly permissionAllowButton: Locator
+  public readonly permissionDenyButton: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -41,6 +45,19 @@ export class AgentPanel {
     this.fileInput = this.root.getByTestId('agent-file-input')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
+    this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
+    this.sendButton = this.root.getByRole('button', {
+      name: enMessages.agent.send,
+      exact: true
+    })
+    this.permissionAllowButton = this.root.getByRole('button', {
+      name: enMessages.agent.permissionAsk.allow,
+      exact: true
+    })
+    this.permissionDenyButton = this.root.getByRole('button', {
+      name: enMessages.agent.permissionAsk.deny,
+      exact: true
+    })
   }
 
   /**
@@ -75,6 +92,15 @@ export class AgentPanel {
     await this.workflowPicker.click()
     await this.page.getByRole('menuitemradio', { name, exact: true }).click()
     await expect(this.workflowPicker).toHaveText(name)
+  }
+
+  /** Sends `prompt` as a new turn and waits for it to show in the transcript. */
+  async sendPrompt(prompt: string): Promise<void> {
+    await this.composer.fill(prompt)
+    await this.sendButton.click()
+    await expect(
+      this.root.getByText(prompt, { exact: true }).first()
+    ).toBeVisible()
   }
 
   async turnOffOptionalReportSources(): Promise<void> {

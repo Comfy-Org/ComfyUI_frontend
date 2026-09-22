@@ -13,6 +13,7 @@ import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import type {
+  AgentAnswerAccepted,
   AgentCancelAccepted,
   AgentTurnAccepted,
   AgentWsEvent
@@ -35,6 +36,7 @@ const TURN_ACCEPTED: AgentTurnAccepted = {
 }
 
 const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
+const ANSWER_ACCEPTED: AgentAnswerAccepted = { status: 'answered' }
 
 export const THINKING_TEXT =
   "I'll set the positive prompt to your red fox scene."
@@ -129,6 +131,51 @@ export const MESSAGE_DONE_EVENT: AgentWsEvent = {
   }
 }
 
+/** The two options every `permission` ask carries. */
+export const PERMISSION_ASK_OPTIONS = [
+  { id: 'allow', label: 'Allow' },
+  { id: 'deny', label: 'Deny' }
+]
+
+type AgentAskData = Extract<AgentWsEvent, { type: 'agent_ask' }>['data']
+
+/** An `agent_ask` frame for the first turn, with the ask fields to vary. */
+export function agentAskEvent(
+  ask: Pick<
+    AgentAskData,
+    | 'ask_id'
+    | 'kind'
+    | 'context'
+    | 'prompt'
+    | 'options'
+    | 'min_selections'
+    | 'max_selections'
+    | 'allow_other'
+  >
+): AgentWsEvent {
+  return {
+    type: 'agent_ask',
+    data: { ...ask, thread_id: THREAD_ID, message_id: TURN_ID }
+  }
+}
+
+/** The server's canonical resolution of `askId`, which removes its card. */
+export function agentAskResolvedEvent(
+  askId: string,
+  selected: string[]
+): AgentWsEvent {
+  return {
+    type: 'agent_ask_resolved',
+    data: {
+      thread_id: THREAD_ID,
+      message_id: TURN_ID,
+      ask_id: askId,
+      status: 'answered',
+      selected
+    }
+  }
+}
+
 function agentFeatures(agentFlag: boolean): RemoteConfig {
   return {
     posthog_project_token: 'phc_e2e_agent_panel',
@@ -150,6 +197,7 @@ async function mockAgentBoot(
     agentFlagEnabled,
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
+    askAnswers,
     crdtDebugEnabled,
     objectInfo,
     postedMessages
@@ -356,6 +404,16 @@ async function mockAgentBoot(
   await page.route('**/api/agent/threads/*/messages/*/cancel', (route: Route) =>
     route.fulfill(jsonRoute(CANCEL_ACCEPTED))
   )
+
+  await page.route('**/api/agent/threads/*/asks/*/answer', (route: Route) => {
+    const request = route.request()
+    if (request.method() !== 'POST') return route.fulfill({ status: 405 })
+    askAnswers.push({
+      path: new URL(request.url()).pathname,
+      body: request.postDataJSON()
+    })
+    return route.fulfill(jsonRoute(ANSWER_ACCEPTED))
+  })
 }
 
 type AgentFixtures = {
@@ -366,6 +424,8 @@ type AgentFixtures = {
   agentPanel: AgentPanel
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
+  /** Every ask answer the panel POSTed, in order. */
+  askAnswers: { path: string; body: unknown }[]
   crdtDebugEnabled: boolean
   /** `'server'` loads real node definitions instead of the empty catalog. */
   objectInfo: 'server' | undefined
@@ -386,6 +446,9 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   },
   agentPanelInitiallyOpen: [false, { option: true }],
   agentOnboardingCompleted: [true, { option: true }],
+  askAnswers: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use([])
+  },
   crdtDebugEnabled: [false, { option: true }],
   objectInfo: [undefined, { option: true }],
   page: async (
@@ -396,6 +459,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentFlagEnabled,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
+      askAnswers,
       crdtDebugEnabled,
       objectInfo,
       page,
@@ -410,6 +474,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentFlagEnabled,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
+      askAnswers,
       crdtDebugEnabled,
       objectInfo,
       postedMessages
