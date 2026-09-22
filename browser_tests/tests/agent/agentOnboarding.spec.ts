@@ -29,9 +29,7 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
         name: enMessages.onboardingCoachmarks.back
       })
     ).toHaveCount(0)
-    await firstCard
-      .getByRole('button', { name: enMessages.g.next })
-      .click()
+    await firstCard.getByRole('button', { name: enMessages.g.next }).click()
 
     const secondCard = page.getByRole('dialog', {
       name: enMessages.agent.coachWorkflowTitle
