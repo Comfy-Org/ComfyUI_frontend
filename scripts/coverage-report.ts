@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 
-import { renderPrReportSection } from './cicd/prReportSection'
+import { renderPrReportSection } from './cicd/pr-report-section'
 
 interface FileStats {
   lines: number

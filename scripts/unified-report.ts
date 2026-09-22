@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 
-import { renderPrReportSection } from './cicd/prReportSection'
+import { renderPrReportSection } from './cicd/pr-report-section'
 
 const args: string[] = process.argv.slice(2)
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { renderPrReportSection } from './prReportSection'
+import { renderPrReportSection } from './pr-report-section'
 
 describe('renderPrReportSection', () => {
   it('renders the verdict on the heading', () => {
@@ -60,6 +60,26 @@ describe('renderPrReportSection', () => {
 
     expect(lines[lines.indexOf('<summary>Details</summary>') + 1]).toBe('')
     expect(lines[lines.indexOf('</details>') - 1]).toBe('')
+  })
+
+  it('leaves a blank line before the next section once blocks are joined', () => {
+    // upsert-comment-section concatenates section blocks with a blank line.
+    // Without one, the HTML block opened by </details> runs on and swallows
+    // the following `##` into plain text.
+    const bundle = renderPrReportSection({
+      icon: '📦',
+      title: 'Bundle',
+      status: '9.96 MB gzip',
+      body: '**Summary**'
+    })
+    const perf = renderPrReportSection({
+      icon: '⚡',
+      title: 'Performance',
+      status: '✅ No regressions'
+    })
+
+    expect(bundle.endsWith('</details>')).toBe(true)
+    expect(`${bundle}\n\n${perf}`).toContain('</details>\n\n## ⚡')
   })
 
   it('strips body padding so nested sections do not drift apart', () => {

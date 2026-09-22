@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { renderPrReportSection } from './cicd/prReportSection'
+import { renderPrReportSection } from './cicd/pr-report-section'
 import type { MetricStats } from './perf-stats'
 import {
   classifyChange,
@@ -528,11 +528,13 @@ function main() {
   ]
 
   // The per-test target verdict lives in the collapsed summary, so without
-  // this the heading can read ✅ over a hidden ❌.
+  // this the heading can read ✅ over a hidden ❌. It leads, because a reader
+  // scanning the comment takes the verdict from the first glyph and a target
+  // miss outranks "nothing moved since the baseline".
   const belowTarget = countBelowFpsTarget(prGroups)
   const status =
     belowTarget > 0
-      ? `${report.status} · ❌ ${belowTarget} below ${TARGET_P5_FPS} FPS target`
+      ? `❌ ${belowTarget} below ${TARGET_P5_FPS} FPS target · ${report.status}`
       : report.status
 
   process.stdout.write(
