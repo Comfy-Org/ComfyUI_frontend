@@ -486,10 +486,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _readQuarantineHostValuesByName(): Map<string, TWidgetValue> {
     return new Map(
-      parseProxyWidgetErrorQuarantine(
-        this.properties.proxyWidgetErrorQuarantine
-      )
-        .toReversed()
+      [
+        ...parseProxyWidgetErrorQuarantine(
+          this.properties.proxyWidgetErrorQuarantine
+        )
+      ]
+        .reverse()
         .flatMap(({ originalEntry: [sourceNodeId, name], hostValue }) =>
           sourceNodeId === '-1' && hostValue !== undefined
             ? [[name, hostValue] as const]

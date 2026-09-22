@@ -1,11 +1,7 @@
 <template>
   <Message
     :severity="statusSeverity"
-    class="flex w-fit items-center rounded-xl p-0 wrap-break-word"
-    :pt="{
-      text: { class: 'text-xs' },
-      content: { class: 'px-2 py-0.5' }
-    }"
+    class="w-fit rounded-xl px-2 py-0.5 text-xs wrap-break-word"
   >
     <i
       class="pi pi-circle-fill mr-1.5 p-0 text-[0.6rem]"
@@ -16,20 +12,19 @@
 </template>
 
 <script setup lang="ts">
-import Message from 'primevue/message'
 import { computed } from 'vue'
 
+import type { MessageVariants } from '@/components/ui/message/message.variants'
+import Message from '@/components/ui/message/Message.vue'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type PackVersionStatus = components['schemas']['NodeVersionStatus']
 type PackStatus = components['schemas']['NodeStatus']
 type Status = PackVersionStatus | PackStatus
 
-type MessageProps = InstanceType<typeof Message>['$props']
-type MessageSeverity = MessageProps['severity']
 type StatusProps = {
   label: string
-  severity: MessageSeverity
+  severity: MessageVariants['severity']
 }
 
 const { statusType, hasCompatibilityIssues, hasImportFailed } = defineProps<{
@@ -45,7 +40,7 @@ const statusPropsMap: Record<Status, StatusProps> = {
   },
   NodeStatusDeleted: {
     label: 'deleted',
-    severity: 'warn'
+    severity: 'warning'
   },
   NodeStatusBanned: {
     label: 'banned',
@@ -57,11 +52,11 @@ const statusPropsMap: Record<Status, StatusProps> = {
   },
   NodeVersionStatusPending: {
     label: 'pending',
-    severity: 'warn'
+    severity: 'warning'
   },
   NodeVersionStatusDeleted: {
     label: 'deleted',
-    severity: 'warn'
+    severity: 'warning'
   },
   NodeVersionStatusFlagged: {
     label: 'flagged',

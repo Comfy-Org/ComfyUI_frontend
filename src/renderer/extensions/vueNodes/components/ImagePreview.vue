@@ -237,7 +237,6 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile } from '@/base/common/downloadUtil'
 import MediaLightbox from '@/components/common/MediaLightbox.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from '@/renderer/extensions/vueNodes/components/imagePreviewLayout'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useTelemetry } from '@/platform/telemetry'
@@ -255,6 +254,8 @@ import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
 
 interface ImagePreviewProps {
   readonly images: readonly NodeImage[]

@@ -568,6 +568,7 @@ where its tags place it:
 | `@perf`       | Runs in the perf project                               |
 | `@audit`      | Runs in the audit project                              |
 | `@cloud`      | Runs in the cloud project                              |
+| `@desktop`    | Runs against the desktop build                         |
 | `@oss`        | Excluded from the cloud project                        |
 
 Use `@mobile-ios` sparingly — only for regressions that reproduce under
@@ -576,6 +577,10 @@ WebKit engine does not expose embedded-WKWebView globals such as
 `window.webkit.messageHandlers`; inject them via `page.addInitScript()` and set the
 context `userAgent`. See `browser_tests/tests/cloudLoginIosWebview.spec.ts` for the
 reference pattern.
+
+The `@desktop` tag only selects the desktop project. Tests that need Electron
+APIs must import `desktopFixture` from `@e2e/fixtures/desktopFixture` to install
+the mocked bridge before the app starts.
 
 Organizational tags are used for manual `--grep` filtering (not project
 routing). Common ones in the suite: `@smoke`, `@slow`, `@screenshot`, `@canvas`,
