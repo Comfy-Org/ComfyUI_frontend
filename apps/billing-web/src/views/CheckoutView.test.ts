@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type { BillingOperationState } from '@comfyorg/account-core/billing'
@@ -31,7 +31,8 @@ vi.mock<unknown>(import('@/config/env'), () => ({
 }))
 
 vi.mock(import('@/config/stripeKey'), () => ({
-  billingWebStripeKey: () => 'pk_test_example'
+  billingWebStripeKey: () => 'pk_test_example',
+  useBillingWebStripeKey: () => ref('pk_test_example')
 }))
 
 const challengeMocks = vi.hoisted(() => ({
@@ -40,8 +41,8 @@ const challengeMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
-  createStripeChallengePort: (key: string) => {
-    challengeMocks.createPort(key)
+  createDeferredStripeChallengePort: (getKey: () => string | undefined) => {
+    challengeMocks.createPort(getKey())
     return { handleNextAction: challengeMocks.handleNextAction }
   }
 }))

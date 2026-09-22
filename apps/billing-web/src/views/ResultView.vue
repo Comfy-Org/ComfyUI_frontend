@@ -21,7 +21,7 @@ import { billingIntentPath } from '@comfyorg/billing-contract'
 import HostedSurface from '@/components/HostedSurface.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { billingWebStripeKey } from '@/config/stripeKey'
-import { createStripeChallengePort } from '@/session/stripeChallengePort'
+import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
 const { t } = useI18n()
 const { coded } = useHostedCopy()
@@ -29,13 +29,11 @@ const route = useRoute()
 const router = useRouter()
 const { lifecycle } = useBillingClient<'lifecycle'>(undefined)
 
-const stripeKey = billingWebStripeKey()
-
 const checkout = useCheckout({
   openUrl: (url) => window.location.assign(url),
   navigationMode: 'redirect',
-  challengePort:
-    stripeKey === undefined ? undefined : createStripeChallengePort(stripeKey)
+  // Deferred: reads the key at challenge time, not this setup's snapshot.
+  challengePort: createDeferredStripeChallengePort(billingWebStripeKey)
 })
 
 const recovering = ref(true)

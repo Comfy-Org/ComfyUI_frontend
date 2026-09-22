@@ -33,8 +33,8 @@ const challengeMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
-  createStripeChallengePort: (key: string) => {
-    challengeMocks.createPort(key)
+  createDeferredStripeChallengePort: (getKey: () => string | undefined) => {
+    challengeMocks.createPort(getKey())
     return { handleNextAction: challengeMocks.handleNextAction }
   }
 }))

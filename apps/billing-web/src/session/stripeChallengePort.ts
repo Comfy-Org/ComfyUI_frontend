@@ -19,3 +19,26 @@ export function createStripeChallengePort(
     }
   }
 }
+
+/**
+ * A port whose key isn't read until a challenge actually needs it, instead of
+ * at composable setup: `useCheckout` captures the port it's given once, so a
+ * host that resolves the key asynchronously (the server value can arrive
+ * after setup) must defer the read the same way, not resolve it early and
+ * risk a build-time fallback it never gets a chance to update. No key at
+ * call time reports the challenge unavailable rather than silently doing
+ * nothing.
+ */
+export function createDeferredStripeChallengePort(
+  getPublishableKey: () => string | undefined
+): EmbeddedChallengePort {
+  let resolved: EmbeddedChallengePort | undefined
+  return {
+    handleNextAction: async (clientSecret) => {
+      const publishableKey = getPublishableKey()
+      if (!publishableKey) return { error: 'provider_unavailable' }
+      resolved ??= createStripeChallengePort(publishableKey)
+      return resolved.handleNextAction(clientSecret)
+    }
+  }
+}
