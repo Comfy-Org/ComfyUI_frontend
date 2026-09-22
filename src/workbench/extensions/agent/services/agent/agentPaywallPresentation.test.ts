@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  DEFAULT_AGENT_PAYWALL_PRESENTATION,
-  isResolvedAgentPaywall,
   resolveAgentPaywallPresentation,
   toAgentPaywallCta,
   toAgentPaywallReason
@@ -160,24 +158,6 @@ describe('toAgentPaywallReason', () => {
         })
       )
     ).toBe('subscription_inactive')
-  })
-})
-
-describe('isResolvedAgentPaywall', () => {
-  it('treats the pre-bootstrap default as unresolved', () => {
-    expect(isResolvedAgentPaywall(DEFAULT_AGENT_PAYWALL_PRESENTATION)).toBe(
-      false
-    )
-  })
-
-  it.for([
-    { kind: 'subscribed', showUpgrade: false },
-    { kind: 'subscriptionRequired' },
-    { kind: 'member' },
-    { kind: 'salesManaged' },
-    { kind: 'local' }
-  ] as const)('treats $kind as a resolved verdict', (presentation) => {
-    expect(isResolvedAgentPaywall(presentation)).toBe(true)
   })
 })
 

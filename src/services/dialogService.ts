@@ -74,14 +74,21 @@ type TopUpCreditsDialogOptions = {
 
 /**
  * Why the subscription dialog stands in for a top-up the workspace cannot
- * make. A caller that named the surface keeps it; the balance state only
- * decides the reason when nobody did.
+ * make.
+ *
+ * `reason` is not purely an attribution key: the subscription dialog contents
+ * branch on `out_of_credits` to render the insufficient-credits heading and
+ * body (`SubscriptionRequiredDialogContent{,Unified,Workspace}.vue`). So the
+ * balance-derived value wins whenever it would change what the user reads —
+ * letting a caller's surface override it would redirect someone here and then
+ * drop the explanation of why. The surface is only used on the
+ * `top_up_blocked` path, which has no copy branch.
  */
 function topUpFallbackReason(
   options?: TopUpCreditsDialogOptions
 ): PaymentIntentSource {
-  if (options?.source) return options.source
-  return options?.isInsufficientCredits ? 'out_of_credits' : 'top_up_blocked'
+  if (options?.isInsufficientCredits) return 'out_of_credits'
+  return options?.source ?? 'top_up_blocked'
 }
 
 export type ConfirmationDialogType =
@@ -526,15 +533,20 @@ export const useDialogService = () => {
     }
     if (!canTopUp.value) return
 
-    const component =
-      type.value === 'workspace'
-        ? TopUpCreditsDialogContentWorkspace
-        : TopUpCreditsDialogContentLegacy
+    // Only the workspace rail's content declares `source`; the legacy one
+    // takes `isInsufficientCredits` alone, so forwarding the whole options
+    // object there lands `source` in attrs as a stray DOM attribute on its
+    // root rather than as attribution.
+    const isWorkspaceRail = type.value === 'workspace'
 
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component,
-      props: options,
+      component: isWorkspaceRail
+        ? TopUpCreditsDialogContentWorkspace
+        : TopUpCreditsDialogContentLegacy,
+      props: isWorkspaceRail
+        ? options
+        : { isInsufficientCredits: options?.isInsufficientCredits },
       dialogComponentProps: {
         renderer: 'reka',
         headless: true,

@@ -106,7 +106,6 @@ import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
   DEFAULT_AGENT_PAYWALL_PRESENTATION,
-  isResolvedAgentPaywall,
   resolveAgentPaywallPresentation,
   toAgentPaywallCta,
   toAgentPaywallReason
@@ -146,8 +145,12 @@ watch(
   (hasFunds) => conversationStore.setPaywallsResolved(hasFunds === true),
   { immediate: true }
 )
-const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
-  useBillingCapabilities()
+const {
+  canTopUp,
+  canSubscribeSelfServe,
+  hasResolvedCapabilities,
+  snapshotAuthoritative
+} = useBillingCapabilities()
 const paywallPresentation = computed(() => {
   if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
     return DEFAULT_AGENT_PAYWALL_PRESENTATION
@@ -180,7 +183,16 @@ function onPaywallAction(action: AgentPaywallAction): void {
     cta: toAgentPaywallCta(action)
   })
   if (action === 'addCredits') {
-    useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'agent_paywall' })
+    // Only when the click can actually reach a top-up, matching
+    // `useTopUpUrlLoader`. Without capabilities the precondition may open the
+    // subscription dialog or nothing, and counting those would inflate a
+    // pre-existing metric that means "reached a top-up". The CTA itself is
+    // already counted above, unconditionally.
+    if (canTopUp.value) {
+      useTelemetry()?.trackAddApiCreditButtonClicked({
+        source: 'agent_paywall'
+      })
+    }
     openAccountPrecondition('credits', { source: 'agent_paywall' })
     return
   }
@@ -195,15 +207,17 @@ function onPaywallAction(action: AgentPaywallAction): void {
 // billing state changes and would over-count a single impression. The claim
 // is owned by the conversation store because closing the panel unmounts this
 // component while its paywall messages remain.
-const conversationStore = useAgentConversationStore()
 const { messages: conversationMessages } = storeToRefs(conversationStore)
 watch(
   () =>
-    // Withheld until the presentation is a resolved verdict: the reason is
-    // read from it, and emitting during the pre-bootstrap window would
-    // attribute a real paywall to `unknown`. The id stays unclaimed, so the
-    // event still fires exactly once as soon as capabilities and role land.
-    isResolvedAgentPaywall(paywallPresentation.value)
+    // Gated on the capability read having *settled* (resolved or denied, and
+    // always true off-cloud), not on the presentation looking resolved. The
+    // presentation is not a proxy for "capabilities are known" and fails both
+    // ways: mid-outage `canTopUp` falls back to true for an owner while
+    // nothing has resolved, which would report a confident `no_funds`; and a
+    // denied read never resolves, which would withhold a visible paywall
+    // forever. Settling covers both — a denied read still emits, as `unknown`.
+    snapshotAuthoritative.value
       ? conversationMessages.value
           .filter((message) =>
             message.parts.some((part) => part.type === 'paywall')
@@ -211,9 +225,14 @@ watch(
           .map((message) => message.id)
       : [],
   (paywallMessageIds) => {
+    const telemetry = useTelemetry()
+    // Claim only once there is a dispatcher to deliver to. The claim is
+    // permanent, so claiming first would drop the impression for good if
+    // telemetry registration has not completed yet.
+    if (!telemetry) return
     for (const id of paywallMessageIds) {
       if (!conversationStore.claimPaywallImpression(id)) continue
-      useTelemetry()?.trackAgentPaywallShown({
+      telemetry.trackAgentPaywallShown({
         reason: toAgentPaywallReason(paywallPresentation.value)
       })
     }

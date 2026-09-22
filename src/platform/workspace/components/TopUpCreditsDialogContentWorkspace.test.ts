@@ -247,6 +247,51 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
   })
 
+  // This rail passes no tier/cycle, so without keying the journey by surface
+  // any unexpired top-up journey for the same actor and workspace resumes and
+  // keeps its *original* entry source for every later phase — including the
+  // `.succeeded` events revenue attribution reads.
+  it('does not inherit a prior surface when a top-up is opened from a different one', async () => {
+    // Seeded the way this rail used to enter: no intent key, so anything
+    // opened within the journey's 24h lifetime resumed it wholesale.
+    resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'workspace-1',
+      entryFlow: 'topup',
+      entrySource: 'settings_billing',
+      assignment: { status: 'unavailable' }
+    })
+
+    renderDialog({ source: 'agent_paywall' })
+
+    await waitFor(() =>
+      expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'entered',
+          entry_source: 'agent_paywall'
+        })
+      )
+    )
+    expect(getActiveCheckoutJourney()?.entry_source).toBe('agent_paywall')
+  })
+
+  it('still resumes a journey from the same surface rather than restarting it', async () => {
+    const first = resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'workspace-1',
+      entryFlow: 'topup',
+      entrySource: 'settings_billing',
+      intent: 'settings_billing',
+      assignment: { status: 'unavailable' }
+    })
+    assert(first.status === 'active')
+
+    renderDialog()
+    await nextTick()
+
+    expect(getActiveCheckoutJourney()?.journey_id).toBe(first.record.journey_id)
+  })
+
   it('enters a topup journey on mount and correlates the purchase', async () => {
     vi.mocked(mockBillingContext().topup).mockResolvedValue(
       topupResponse('pending')

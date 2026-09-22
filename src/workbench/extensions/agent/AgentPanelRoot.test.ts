@@ -208,7 +208,8 @@ const paywallCapabilities = vi.hoisted(() => ({
   canTopUp: true,
   canSubscribeSelfServe: true,
   isReady: true,
-  hasResolvedCapabilities: true
+  hasResolvedCapabilities: true,
+  snapshotAuthoritative: true
 }))
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
@@ -308,6 +309,9 @@ beforeEach(() => {
       isReady: computed(() => paywallCapabilities.isReady),
       hasResolvedCapabilities: computed(
         () => paywallCapabilities.hasResolvedCapabilities
+      ),
+      snapshotAuthoritative: computed(
+        () => paywallCapabilities.snapshotAuthoritative
       )
     })
   )
@@ -393,6 +397,7 @@ beforeEach(() => {
   paywallCapabilities.canSubscribeSelfServe = true
   paywallCapabilities.isReady = true
   paywallCapabilities.hasResolvedCapabilities = true
+  paywallCapabilities.snapshotAuthoritative = true
   paywallBilling.tier = 'STANDARD'
   paywallHasFunds.value = false
 })
@@ -941,8 +946,10 @@ describe('AgentPanelRoot paywall telemetry', () => {
   let canTopUp: Ref<boolean>
   let canSubscribeSelfServe: Ref<boolean>
   let hasResolvedCapabilities: Ref<boolean>
+  let snapshotAuthoritative: Ref<boolean>
   let workspaceRole: Ref<'owner' | 'member' | undefined>
   let tier: Ref<SubscriptionTier | null>
+  let hasFunds: Ref<boolean>
 
   beforeEach(() => {
     ws.clear()
@@ -954,19 +961,29 @@ describe('AgentPanelRoot paywall telemetry', () => {
     canTopUp = ref(true)
     canSubscribeSelfServe = ref(true)
     hasResolvedCapabilities = ref(true)
+    snapshotAuthoritative = ref(true)
     workspaceRole = ref<'owner' | 'member' | undefined>('owner')
     tier = ref<SubscriptionTier | null>('STANDARD')
+    // Funds present would resolve the paywalls and strip their parts, which is
+    // the state where no impression is expected at all.
+    hasFunds = ref(false)
 
     vi.mocked(useBillingCapabilities).mockReturnValue(
       fromPartial({
         canTopUp,
         canSubscribeSelfServe,
         isReady: ref(true),
-        hasResolvedCapabilities
+        hasResolvedCapabilities,
+        snapshotAuthoritative
       })
     )
     vi.mocked(useWorkspaceUI).mockReturnValue(fromPartial({ workspaceRole }))
-    vi.mocked(useBillingContext).mockReturnValue(fromPartial({ tier }))
+    vi.mocked(useBillingContext).mockReturnValue(
+      fromPartial({
+        subscription: computed(() => fromPartial({ hasFunds: hasFunds.value })),
+        tier
+      })
+    )
   })
 
   function showPaywall(id = 'msg-paywall'): void {
@@ -1102,12 +1119,13 @@ describe('AgentPanelRoot paywall telemetry', () => {
     )
   })
 
-  // Before capabilities resolve the presentation is the `unavailable` default,
-  // which would attribute a real paywall to `unknown`. The impression is held
-  // back rather than dropped, so it still lands exactly once.
-  it('withholds the paywall report until the reason is knowable, then reports it once', async () => {
+  // While the capability read is still in flight the reason is not knowable,
+  // so the impression is held back rather than dropped, and lands exactly once
+  // when the read settles.
+  it('withholds the paywall report until the capability read settles, then reports it once', async () => {
     canTopUp.value = false
     hasResolvedCapabilities.value = false
+    snapshotAuthoritative.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     showPaywall()
@@ -1116,10 +1134,59 @@ describe('AgentPanelRoot paywall telemetry', () => {
     expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
 
     hasResolvedCapabilities.value = true
+    snapshotAuthoritative.value = true
 
     await waitFor(() =>
       expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_inactive'
+      })
+    )
+  })
+
+  // Mid-outage `useBillingCapabilities.canTopUp` falls back to true for an
+  // owner while nothing has resolved. Gating on the presentation kind would
+  // read that as a confident `subscribed` and permanently claim the message id
+  // with `no_funds`; the corrected reason could then never be reported.
+  it('does not report a confident reason from an unsettled read, and reports the real one once it settles', async () => {
+    canTopUp.value = true
+    canSubscribeSelfServe.value = false
+    hasResolvedCapabilities.value = false
+    snapshotAuthoritative.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    showPaywall()
+    await nextTick()
+    await nextTick()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+
+    // The retry settles and the workspace turns out to need a subscription.
+    canTopUp.value = false
+    canSubscribeSelfServe.value = true
+    hasResolvedCapabilities.value = true
+    snapshotAuthoritative.value = true
+
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
+        reason: 'subscription_inactive'
+      })
+    )
+  })
+
+  // A denied read settles without ever resolving, and no refresh is
+  // rescheduled, so the card stays on screen indefinitely. Reporting `unknown`
+  // keeps that impression in the funnel's denominator.
+  it('reports a visible paywall as unknown when the read settles without resolving', async () => {
+    canTopUp.value = false
+    canSubscribeSelfServe.value = false
+    hasResolvedCapabilities.value = false
+    snapshotAuthoritative.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    showPaywall()
+
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
+        reason: 'unknown'
       })
     )
   })

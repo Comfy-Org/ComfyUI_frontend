@@ -152,6 +152,65 @@ describe('showTopUpCreditsDialog', () => {
     expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
   })
 
+  // `reason` selects the dialog's copy, not just its attribution: the
+  // subscription contents branch on `out_of_credits` for the
+  // insufficient-credits heading and body. A caller's surface must not
+  // displace it, or someone redirected here loses the explanation why.
+  it('keeps the insufficient-credits reason when a surface is named', async () => {
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+
+    await useDialogService().showTopUpCreditsDialog({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+
+    expect(showSubscriptionDialog).toHaveBeenCalledWith({
+      reason: 'out_of_credits'
+    })
+  })
+
+  it('attributes the surface on the blocked path, which has no copy branch', async () => {
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+
+    await useDialogService().showTopUpCreditsDialog({
+      source: 'agent_paywall'
+    })
+
+    expect(showSubscriptionDialog).toHaveBeenCalledWith({
+      reason: 'agent_paywall'
+    })
+  })
+
+  it('passes the surface to the workspace rail content', async () => {
+    await useDialogService().showTopUpCreditsDialog({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
+    expect(args.props).toEqual({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+  })
+
+  // The legacy content declares only `isInsufficientCredits`, so forwarding
+  // `source` there lands it in attrs as a stray DOM attribute rather than as
+  // attribution.
+  it('withholds the surface from the legacy rail content', async () => {
+    state.type = 'legacy'
+
+    await useDialogService().showTopUpCreditsDialog({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
+    expect(args.props).toEqual({ isInsufficientCredits: true })
+  })
+
   describe('non-cloud distribution', () => {
     beforeEach(() => {
       mockIsCloud.value = false

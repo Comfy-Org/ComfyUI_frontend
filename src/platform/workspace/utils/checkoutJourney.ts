@@ -76,13 +76,23 @@ const PAYMENT_INTENT_ENTRY_SOURCES: Partial<
   agent_paywall: 'agent_paywall'
 }
 
-/** Entry source for a journey opened with `paymentIntentSource`. */
+/**
+ * Entry source for a journey opened with `paymentIntentSource`.
+ *
+ * Guarded with `Object.hasOwn` like the three lookups above: an unvalidated
+ * key would otherwise resolve inherited `Object.prototype` members truthy
+ * (`'constructor'`, `'toString'`), so `?? fallback` would not fire and a
+ * non-`CheckoutEntrySource` value would reach the record, storage and every
+ * downstream phase.
+ */
 export const resolveEntrySource = (
   paymentIntentSource: PaymentIntentSource | undefined,
   fallback: CheckoutEntrySource
 ): CheckoutEntrySource =>
-  (paymentIntentSource && PAYMENT_INTENT_ENTRY_SOURCES[paymentIntentSource]) ??
-  fallback
+  paymentIntentSource !== undefined &&
+  Object.hasOwn(PAYMENT_INTENT_ENTRY_SOURCES, paymentIntentSource)
+    ? (PAYMENT_INTENT_ENTRY_SOURCES[paymentIntentSource] ?? fallback)
+    : fallback
 
 export interface CheckoutJourneyRecord {
   journey_id: string

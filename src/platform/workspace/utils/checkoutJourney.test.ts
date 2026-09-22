@@ -438,3 +438,18 @@ describe('resolveEntrySource', () => {
     }
   )
 })
+
+describe('resolveEntrySource prototype safety', () => {
+  // The other three lookups in this module were hardened against exactly this:
+  // an unvalidated key resolving an inherited Object.prototype member truthy,
+  // so `?? fallback` never fires and a non-CheckoutEntrySource value reaches
+  // the record, storage and every downstream phase.
+  it.for(['constructor', 'toString', 'hasOwnProperty', '__proto__'])(
+    'falls back rather than resolving the inherited %s member',
+    (key) => {
+      expect(
+        resolveEntrySource(key as unknown as undefined, 'settings_billing')
+      ).toBe('settings_billing')
+    }
+  )
+})

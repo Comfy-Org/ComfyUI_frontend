@@ -840,7 +840,11 @@ export type AgentPaywallReason =
   | 'subscription_inactive'
   | 'member_cannot_pay'
   | 'sales_managed'
-  /** Distribution or capability state that cannot be attributed to a reason. */
+  /**
+   * The capability read settled without resolving (denied), so the paywall is
+   * on screen with no readable capability state. Reported rather than dropped:
+   * a visible paywall missing from the funnel understates its denominator.
+   */
   | 'unknown'
 
 export interface AgentPaywallShownMetadata {

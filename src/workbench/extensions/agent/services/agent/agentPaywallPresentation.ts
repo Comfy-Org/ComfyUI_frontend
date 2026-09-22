@@ -38,9 +38,11 @@ export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
  * between overlapping states is its branch order and cannot drift from a
  * second ordering kept here.
  *
- * `unavailable` is the indeterminate pre-bootstrap state, not a verdict;
- * callers should withhold the event until the presentation resolves rather
- * than report `unknown`, which exists only so this mapping stays total.
+ * `unavailable` is the indeterminate state. Callers should withhold the event
+ * until the capability read has *settled* rather than report a confident
+ * reason from an unsettled snapshot — but a read can settle without resolving
+ * (denied), and the paywall is still on screen in that case, so `unknown` is
+ * a real reported value and not merely padding to keep this mapping total.
  */
 const AGENT_PAYWALL_REASONS = {
   subscribed: 'no_funds',
@@ -54,11 +56,6 @@ const AGENT_PAYWALL_REASONS = {
 export const toAgentPaywallReason = (
   presentation: AgentPaywallPresentation
 ): AgentPaywallReason => AGENT_PAYWALL_REASONS[presentation.kind]
-
-/** Whether the presentation is a resolved verdict rather than the default. */
-export const isResolvedAgentPaywall = (
-  presentation: AgentPaywallPresentation
-): boolean => presentation.kind !== 'unavailable'
 
 const AGENT_PAYWALL_CTAS = {
   addCredits: 'add_credits',
