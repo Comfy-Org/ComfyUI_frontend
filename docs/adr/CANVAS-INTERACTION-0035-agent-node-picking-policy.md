@@ -236,7 +236,9 @@ agent store owns the fact; everything else is a projection of it.
 - `litegraph:set-graph` keeps its detail and still fires once per
   `setGraph()` with the new graph attached; it now fires before the outgoing
   selection is cleared rather than after, so a listener sees the old
-  selection for the duration of the event.
+  selection for the duration of the event. The clear that follows drops the
+  outgoing graph's selection-store scope and resets the outgoing items'
+  `selected` flags, even when a listener deselected during the event.
 
 ### Deferred decisions
 

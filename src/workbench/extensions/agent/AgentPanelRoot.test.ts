@@ -23,11 +23,9 @@ setupInlinePromptEditorDom()
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type {
-  LGraph,
-  LGraphNode,
-  Subgraph
-} from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -51,6 +49,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
+  createMockCanvasRenderingContext2D,
   createMockLoadedWorkflow,
   createMockChangeTracker,
   createMockLGraphNode
@@ -128,6 +127,7 @@ const appMock = vi.hoisted(() => {
     rootGraph: graph,
     isGraphReady: false,
     canvas: undefined as
+      | LGraphCanvas
       | {
           graph: {
             nodes: unknown[]
@@ -199,10 +199,14 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
-  isLGraphNode: (item: unknown) =>
-    (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
-}))
+vi.mock<unknown>(import('@/utils/litegraphUtil'), async () => {
+  const { LGraphNode } = await import('@/lib/litegraph/src/litegraph')
+  return {
+    isLGraphNode: (item: unknown): item is LGraphNode =>
+      item instanceof LGraphNode ||
+      (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
+  }
+})
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -979,6 +983,42 @@ function showRootGraph(
   }
   state.canvas.graph = graph
   canvasStore.currentGraph = fromPartial(graph)
+}
+
+function setupOwnedSelectionCanvas() {
+  const rootGraph = new LGraph()
+  const subgraph = createTestSubgraph({ rootGraph, id: SUBGRAPH_UUID })
+  rootGraph.subgraphs.set(subgraph.id, subgraph)
+  const rootNode = new LGraphNode('Root node')
+  rootNode.id = toNodeId(3)
+  rootGraph.add(rootNode)
+  const subgraphNode = new LGraphNode('KSampler')
+  subgraphNode.id = toNodeId(12)
+  subgraph.add(subgraphNode)
+
+  const canvasElement = document.createElement('canvas')
+  canvasElement.getContext = vi
+    .fn()
+    .mockReturnValue(createMockCanvasRenderingContext2D())
+  canvasElement.getBoundingClientRect = vi
+    .fn()
+    .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
+  const canvas = new LGraphCanvas(canvasElement, rootGraph, {
+    skip_render: true
+  })
+  canvas.onSelectionChange = () => syncFakeSelection()
+
+  appMock.graph.nodes = rootGraph.nodes
+  Object.assign(appMock.rootGraph, { subgraphs: rootGraph.subgraphs })
+  appMock.canvas = canvas
+  canvasStore.canvas = canvas
+  viewGraph(canvas, subgraph)
+  return { canvas, rootGraph, subgraph, rootNode, subgraphNode }
+}
+
+function viewGraph(canvas: LGraphCanvas, graph: LGraph): void {
+  canvas.setGraph(graph)
+  canvasStore.currentGraph = graph
 }
 
 function renderCanvasNodeButtons(
@@ -6681,9 +6721,8 @@ describe('AgentPanelRoot workflow binding', () => {
   it('merges an off-view subgraph reference with the current root selection', async () => {
     makeTab()
     mockMessagesEndpoint('wf-42')
-    const state = setupNodeSelectionCanvas()
-    const subgraphNode = nestSelectionCanvasInSubgraph(state)
-    state.nodes[1].id = toNodeId('shared')
+    const { canvas, rootGraph, rootNode, subgraphNode } =
+      setupOwnedSelectionCanvas()
 
     renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
@@ -6691,30 +6730,17 @@ describe('AgentPanelRoot workflow binding', () => {
     await openMentionPicker()
     await userEvent.click(await screen.findByText('KSampler'))
 
-    const rootNode: LGraphNode = createMockLGraphNode({
-      isNodeFake: true,
-      id: 'shared',
-      title: 'Root node',
-      boundingRect: {}
-    })
-    appMock.graph.nodes = [subgraphNode, rootNode]
-    showRootGraph(state, [rootNode])
-    state.selectedItems.clear()
-    state.selectedItems.add(rootNode)
+    viewGraph(canvas, rootGraph)
+    canvas.select(rootNode)
     syncFakeSelection()
-    state.selectItems.mockClear()
-    state.selectItems.mockImplementation((items: LGraphNode[]) => {
-      state.selectedItems.clear()
-      for (const item of items) {
-        if (item.graph?.isRootGraph !== false) state.selectedItems.add(item)
-      }
-    })
+    const selectItems = vi.spyOn(canvas, 'selectItems')
     await nextTick()
 
     await enterNodeSelectionMode()
 
-    expect(state.selectItems).toHaveBeenCalledWith([rootNode, state.nodes[1]])
-    expect([...state.selectedItems]).toEqual([rootNode])
+    expect(selectItems).toHaveBeenCalledWith([rootNode, subgraphNode])
+    expect([...canvas.selectedItems]).toEqual([rootNode])
+    expect(subgraphNode.selected).toBeFalsy()
     expect(screen.getByText('Root node')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
@@ -6722,10 +6748,8 @@ describe('AgentPanelRoot workflow binding', () => {
   it('keeps every staged reference when the viewed graph is replaced while picking', async () => {
     makeTab()
     mockMessagesEndpoint('wf-42')
-    const state = setupNodeSelectionCanvas()
-    const subgraphNode = nestSelectionCanvasInSubgraph(state)
-    const subgraph = state.canvas.graph
-    state.nodes[1].id = toNodeId('shared')
+    const { canvas, rootGraph, subgraph, rootNode } =
+      setupOwnedSelectionCanvas()
 
     renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
@@ -6733,32 +6757,20 @@ describe('AgentPanelRoot workflow binding', () => {
     await openMentionPicker()
     await userEvent.click(await screen.findByText('KSampler'))
 
-    const rootNode: LGraphNode = createMockLGraphNode({
-      isNodeFake: true,
-      id: 'shared',
-      title: 'Root node',
-      boundingRect: {}
-    })
-    appMock.graph.nodes = [subgraphNode, rootNode]
-    showRootGraph(state, [rootNode])
-    state.selectedItems.clear()
-    state.selectedItems.add(rootNode)
-    canvasStore.updateSelectedItems()
+    viewGraph(canvas, rootGraph)
+    canvas.select(rootNode)
+    syncFakeSelection()
     await nextTick()
     await enterNodeSelectionMode()
     expect(screen.getByText('Root node')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
 
-    canvasStore.currentGraph = fromPartial({
-      ...subgraph,
-      id: SUBGRAPH_UUID,
-      isRootGraph: false
-    })
-    state.selectedItems.clear()
-    canvasStore.updateSelectedItems()
+    viewGraph(canvas, subgraph)
+    syncFakeSelection()
     await nextTick()
 
     expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(canvas.selectedItems.size).toBe(0)
     expect(screen.getByText('Root node')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
@@ -7244,7 +7256,7 @@ describe('AgentPanelRoot workflow binding', () => {
         nodes: [{ id: 12, title: 'KSampler' }],
         getNodeById: () => null
       },
-      selectedItems: new Set(),
+      selectedItems: new Set<LGraphNode>(),
       selectItems: vi.fn(),
       deselect: vi.fn(),
       canvas: document.createElement('canvas')

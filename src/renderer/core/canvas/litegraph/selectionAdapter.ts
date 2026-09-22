@@ -78,9 +78,9 @@ export function setCanvasItemSelected(
 
 export function applyCanvasSelection(
   canvas: LGraphCanvas,
-  command: SelectionCommand
+  command: SelectionCommand,
+  graph: LGraphCanvas['graph'] = canvas.graph
 ): void {
-  const { graph } = canvas
   if (!graph) return
   useSelectionStore().apply(graphScopeOf(graph), command)
 }

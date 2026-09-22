@@ -1847,10 +1847,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   /**
-   * clears all the data inside
-   *
+   * Clears all the data inside.
+   * @param selectionGraph The graph whose stored selection is dropped; defaults to the attached graph.
    */
-  clear(): void {
+  clear(selectionGraph: LGraph | Subgraph | null = this.graph): void {
     this.frame = 0
     this.last_draw_time = 0
     this.render_time = 0
@@ -1864,7 +1864,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.selected_nodes = {}
     this.selected_group = null
     this.selectedItems.clear()
-    applyCanvasSelection(this, { type: 'selection.clear' })
+    applyCanvasSelection(this, { type: 'selection.clear' }, selectionGraph)
     this.state.selectionChanged = true
     this.onSelectionChange?.(this.selected_nodes)
 
@@ -1903,13 +1903,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Drop any in-flight ghost so listeners don't outlive the graph it belongs to
     if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
 
+    const outgoingSelection = [...this.selectedItems]
     newGraph.attachCanvas(this)
 
     // Re-initialize link renderer with new graph
     this.linkRenderer = new LitegraphLinkAdapter(false)
 
     this.dispatch('litegraph:set-graph', { newGraph, oldGraph: graph })
-    this.clear()
+    for (const item of outgoingSelection) item.selected = undefined
+    this.clear(graph)
     this._dirty()
   }
 

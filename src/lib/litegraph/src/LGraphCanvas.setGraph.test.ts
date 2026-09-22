@@ -5,6 +5,9 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
@@ -25,7 +28,7 @@ function createCanvasWithSelectedNode() {
   canvasElement.addEventListener('litegraph:set-graph', () => {
     selectionSizeAtAnnouncement.push(canvas.selectedItems.size)
   })
-  return { canvas, graph, selectionSizeAtAnnouncement }
+  return { canvas, graph, node, selectionSizeAtAnnouncement }
 }
 
 describe('LGraphCanvas graph replacement', () => {
@@ -36,6 +39,37 @@ describe('LGraphCanvas graph replacement', () => {
     canvas.setGraph(new LGraph())
 
     expect(selectionSizeAtAnnouncement).toEqual([1])
+    expect(canvas.selectedItems.size).toBe(0)
+  })
+
+  it('drops the outgoing selection from the graph being left, not the new graph', () => {
+    const { canvas, graph } = createCanvasWithSelectedNode()
+    const newGraph = new LGraph()
+    const incoming = new LGraphNode('Incoming')
+    newGraph.add(incoming)
+    useSelectionStore().apply(graphScopeOf(newGraph), {
+      type: 'selection.add',
+      key: selectableKeyOf(incoming)
+    })
+
+    canvas.setGraph(newGraph)
+
+    expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual([])
+    expect(useSelectionStore().selectedKeys(graphScopeOf(newGraph))).toEqual([
+      selectableKeyOf(incoming)
+    ])
+  })
+
+  it('resets the outgoing selection when a listener deselects during the announcement', () => {
+    const { canvas, graph, node } = createCanvasWithSelectedNode()
+    canvas.canvas.addEventListener('litegraph:set-graph', () =>
+      canvas.deselectAll()
+    )
+
+    canvas.setGraph(new LGraph())
+
+    expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual([])
+    expect(node.selected).toBeFalsy()
     expect(canvas.selectedItems.size).toBe(0)
   })
 
