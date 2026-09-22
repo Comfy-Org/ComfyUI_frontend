@@ -2,8 +2,10 @@ import { storeToRefs } from 'pinia'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
@@ -149,6 +151,8 @@ export function registerAgentPanelExtension(): void {
       const workspaceStore = useTeamWorkspaceStore()
       const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
       const { withConsent } = useAgentConsent()
+      const { isFirstRunCandidate } = useFirstRunEntry()
+      const onboardingTourStore = useOnboardingTourStore()
       registerWorkflowTabActivityTracker(enabled)
 
       watch(
@@ -164,6 +168,10 @@ export function registerAgentPanelExtension(): void {
         if (autoShowInFlight) return
         if (!agentPanelStore.enabled || !isLoggedIn.value) return
         if (consentStore.isChecking || consentStore.accepted) return
+        // Getting Started and coachmark tours own the screen; returning before
+        // prepareAutoShow leaves the one-shot key untouched so the next boot offers.
+        if (isFirstRunCandidate() || onboardingTourStore.activeTour !== null)
+          return
 
         const userId = resolvedUserInfo.value?.id
         const workspaceId = workspaceStore.activeWorkspaceId
