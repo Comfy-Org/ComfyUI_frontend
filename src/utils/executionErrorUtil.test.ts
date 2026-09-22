@@ -74,6 +74,38 @@ describe('executionErrorUtil', () => {
   })
 
   describe('classifyCloudValidationError', () => {
+    it('retains node validation when a sibling entry lacks unused metadata', () => {
+      const nodeErrors = {
+        '3': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Missing',
+              details: 'model'
+            }
+          ]
+        },
+        '6': {
+          class_type: 'SAM3_Detect',
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Missing',
+              details: 'image'
+            }
+          ]
+        }
+      }
+
+      expect(
+        classifyCloudValidationError(
+          `Failed: ${JSON.stringify({ node_errors: nodeErrors })}`
+        )
+      ).toEqual({ kind: 'nodeErrors', nodeErrors })
+    })
+
     it('should classify node errors when node_errors is present', () => {
       const nodeErrors = {
         '11:1': {

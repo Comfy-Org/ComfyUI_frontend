@@ -14,7 +14,7 @@ const SEQUENTIAL_CASE = 'agent-rec-three-sequential-adds'
 // case does not spend a default timeout proving it still fails.
 const SETTLE = 10_000
 
-test.describe('Agent layout quality', { tag: '@cloud' }, () => {
+test.describe('Agent layout quality', { tag: ['@cloud', '@vue-nodes'] }, () => {
   test.describe('batched build', () => {
     test.use({ conversationCase: BATCHED_CASE })
 
