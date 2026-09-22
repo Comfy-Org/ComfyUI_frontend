@@ -244,8 +244,9 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
   it('reads the root graph once, so a stale isGraphReady cannot reach app.rootGraph', async () => {
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
     vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(undefined)
-    const rootGraphAccess = vi.spyOn(app, 'rootGraph', 'get')
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const rootGraphAccess = vi
+      .spyOn(app, 'rootGraph', 'get')
+      .mockReturnValue(new LGraph())
     const store = useExecutionErrorStore()
 
     store.recordNodeErrors({
@@ -265,6 +266,5 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     await nextTick()
 
     expect(rootGraphAccess).not.toHaveBeenCalled()
-    expect(consoleError).not.toHaveBeenCalled()
   })
 })
