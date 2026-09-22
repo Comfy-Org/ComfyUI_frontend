@@ -260,8 +260,8 @@ async function expectResumedSubscribeSettles(page: Page, rail: Rail) {
 
   await expect(
     page
-      .locator('.p-toast-message.p-toast-message-success')
-      .getByText('Subscription updated successfully')
+      .getByRole('alert')
+      .filter({ hasText: 'Subscription updated successfully' })
   ).toBeVisible({ timeout: 45_000 })
   const statusReadsAfterSettle = routes.statusRequests.slice(
     statusReadsBeforeSettle

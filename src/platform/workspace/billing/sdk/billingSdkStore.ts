@@ -338,6 +338,13 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       })
       return
     }
+    if (state.phase === 'timed_out') {
+      toastStore.add({
+        severity: 'error',
+        summary: t('billingOperation.subscriptionTimeout')
+      })
+      return
+    }
     if (state.phase === 'failed') {
       toastStore.add({
         severity: 'error',

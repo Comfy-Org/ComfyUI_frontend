@@ -558,6 +558,21 @@ describe('useBillingSdkStore subscription commands', () => {
     )
   })
 
+  it('reports a reattached subscribe that timed out, without reconciling', () => {
+    useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(settledOperation('timed_out', 'subscription'))
+
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'Subscription verification timed out'
+      })
+    )
+    expect(mockReconcileSubscription).not.toHaveBeenCalled()
+  })
+
   it('leaves a subscribe it issued to the checkout that issued it', async () => {
     useBillingSdkStore()
 
