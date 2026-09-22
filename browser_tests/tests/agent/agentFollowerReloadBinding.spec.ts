@@ -55,6 +55,7 @@ test.describe(
         path: beforePath,
         contentType: 'image/png'
       })
+      const subscribesBeforeReload = agentConversation.subscribeCount()
 
       const restoredContent = page.waitForResponse(
         (response) =>
@@ -79,6 +80,9 @@ test.describe(
       expect((await restoredContent).ok()).toBe(true)
       await expect(prompt).toHaveValue('saved before reload')
       await agentConversation.sendPrompt()
+      await expect
+        .poll(() => agentConversation.subscribeCount())
+        .toBe(subscribesBeforeReload + 1)
 
       // This value was never saved or recorded. Only the post-reload live
       // subscription can deliver it; a stale local canvas cannot satisfy it.
