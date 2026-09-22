@@ -13,8 +13,12 @@ import {
   addDynamicCombo
 } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 
 const originalNamedValuesRestore = LiteGraph.namedValuesRestore
 afterEach(() => {
@@ -621,5 +625,130 @@ describe('Autogrow', () => {
     for (const slot of [2, 5, 6]) {
       expect.soft(newNode.isInputConnected(slot)).toBe(false)
     }
+  })
+})
+
+const RESIZE_NODE_TYPE = 'test/ResizeImageMask'
+const SOURCE_NODE_TYPE = 'test/MultiplierSource'
+
+class SourceNode extends LGraphNode {
+  constructor(title?: string) {
+    super(title ?? 'Source')
+    this.addOutput('out', 'FLOAT')
+  }
+}
+
+/**
+ * A reduced `ResizeImageMaskNode` (FE-258): a dynamic combo whose default
+ * option lays out a `width` child, and whose other option lays out a
+ * `multiplier` child instead.
+ */
+const resizeNodeDef: ComfyNodeDefV1 = {
+  name: RESIZE_NODE_TYPE,
+  display_name: 'Resize Image Mask',
+  category: 'testing',
+  python_module: 'nodes',
+  description: '',
+  input: {
+    required: {
+      image: ['IMAGE', {}],
+      resize_type: [
+        'COMFY_DYNAMICCOMBO_V3',
+        {
+          options: [
+            {
+              key: 'scale dimensions',
+              inputs: { required: { width: ['INT', {}] } }
+            },
+            {
+              key: 'scale by multiplier',
+              inputs: { required: { multiplier: ['FLOAT', {}] } }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  output: ['IMAGE'],
+  output_name: ['resized'],
+  output_node: false
+}
+
+/**
+ * The node saved on `scale by multiplier`, so its serialized inputs carry
+ * `resize_type.multiplier` — a child the node definition does not lay out —
+ * on the slot the definition gives to `resize_type.width`.
+ */
+function savedDynamicComboChildWorkflow(): SerialisableGraph {
+  return {
+    id: 'ab000000-0000-4000-8000-00000000f258',
+    version: 1,
+    revision: 0,
+    state: { lastNodeId: 2, lastLinkId: 1, lastGroupId: 0, lastRerouteId: 0 },
+    nodes: [
+      {
+        id: 1,
+        type: SOURCE_NODE_TYPE,
+        pos: [0, 0],
+        size: [140, 60],
+        flags: {},
+        order: 0,
+        mode: 0,
+        inputs: [],
+        outputs: [{ name: 'out', type: 'FLOAT', links: [1] }],
+        properties: {}
+      },
+      {
+        id: 2,
+        type: RESIZE_NODE_TYPE,
+        pos: [300, 0],
+        size: [200, 120],
+        flags: {},
+        order: 1,
+        mode: 0,
+        inputs: [
+          { name: 'image', type: 'IMAGE', link: null },
+          { name: 'resize_type.multiplier', type: 'FLOAT', link: 1 }
+        ],
+        outputs: [{ name: 'resized', type: 'IMAGE', links: [] }],
+        properties: {},
+        widgets_values: ['scale by multiplier', 4]
+      }
+    ],
+    links: [
+      {
+        id: toLinkId(1),
+        origin_id: 1,
+        origin_slot: 0,
+        target_id: 2,
+        target_slot: 1,
+        type: 'FLOAT'
+      }
+    ]
+  }
+}
+
+describe('Dynamic combo child links on workflow load (FE-258)', () => {
+  beforeEach(async () => {
+    LiteGraph.registerNodeType(SOURCE_NODE_TYPE, SourceNode)
+    await useLitegraphService().registerNodeDef(RESIZE_NODE_TYPE, resizeNodeDef)
+  })
+
+  test('keeps the link on the child the selected option lays out', () => {
+    const graph = new LGraph()
+    graph.configure(savedDynamicComboChildWorkflow())
+
+    const target = graph.getNodeById(toNodeId(2))
+    assert.ok(target, 'configured target node')
+    const multiplierSlot = target.inputs.findIndex(
+      (input) => input.name === 'resize_type.multiplier'
+    )
+    expect({
+      inputNames: target.inputs.map((input) => input.name),
+      multiplierLinkId: target.getInputLink(multiplierSlot)?.id
+    }).toEqual({
+      inputNames: ['image', 'resize_type', 'resize_type.multiplier'],
+      multiplierLinkId: toLinkId(1)
+    })
   })
 })
