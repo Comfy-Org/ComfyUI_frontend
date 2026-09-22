@@ -26,7 +26,6 @@
     "./session": "./src/core/session.ts",
     "./billing": "./src/core/billing/index.ts",
     "./firebase": "./src/firebase/index.ts",
-    "./firebaseConfigSource": "./src/firebase/configSource.ts",
     "./web": "./src/web/crossTabRefresh.ts",
     "./testing": "./src/testing.ts",
     "./customerRecovery": "./src/core/customerRecovery.ts",
@@ -57,10 +56,6 @@
       "./firebase": {
         "types": "./dist/firebase/index.d.ts",
         "import": "./dist/firebase/index.js"
-      },
-      "./firebaseConfigSource": {
-        "types": "./dist/firebase/configSource.d.ts",
-        "import": "./dist/firebase/configSource.js"
       },
       "./web": {
         "types": "./dist/web/crossTabRefresh.d.ts",
