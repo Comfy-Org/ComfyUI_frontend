@@ -195,21 +195,34 @@ function isGroupWidgetChildInput(node: LGraphNode, inputName: string): boolean {
 }
 
 /**
- * Whether a dynamic group that is not a widget owns `inputName`'s slot —
- * autogrow names its children `<group>.<nested>.<ordinal>`, so their group is
- * a nested input spec rather than a widget.
+ * Whether a registered autogrow group owns `inputName`'s slot.
  *
- * Those groups grow and renumber their own slots while the graph configures,
- * and realigning their links by name that early destroys them (see
- * `browser_tests/tests/subgraph/subgraphConvertAutogrowInputs.spec.ts`, "loads
- * with both reference images connected").
+ * Autogrow groups grow and renumber their own slots while the graph
+ * configures, and realigning their links by name that early destroys them
+ * (see `browser_tests/tests/subgraph/subgraphConvertAutogrowInputs.spec.ts`,
+ * "loads with both reference images connected").
+ *
+ * Ownership comes from the registry `applyAutogrow` populates, under the same
+ * key autogrow's own connection handler resolves a slot's group by. A group
+ * is not a widget, so there is no widget name to match a prefix against as
+ * {@link isGroupWidgetChildInput} does, and the dotted name alone will not
+ * serve: `INodeInputSlot.name` is an arbitrary string, so an ordinary input
+ * may be dotted without belonging to any group.
+ *
+ * The registry only covers groups the selected option laid out. Children of
+ * an option that is not selected still reach this filter, because
+ * `ComfyNode.configure` appends every serialized input the definition lacks.
+ * Realigning those is harmless: their group's handler bails on the same
+ * missing key, so nothing renumbers behind the move.
  */
-function isNestedDynamicGroupInput(
-  node: LGraphNode,
-  inputName: string
-): boolean {
+function isAutogrowGroupInput(node: LGraphNode, inputName: string): boolean {
   const groupName = groupNameOf(inputName)
-  return groupName !== undefined && !isGroupWidgetChildInput(node, inputName)
+  if (groupName === undefined) return false
+
+  const autogrowGroups = node.comfyDynamic?.autogrow
+  return (
+    autogrowGroups !== undefined && Object.hasOwn(autogrowGroups, groupName)
+  )
 }
 
 /**
@@ -226,7 +239,7 @@ function isNestedDynamicGroupInput(
  *
  * The node's ordinary inputs join the batch so that a link still occupying a
  * child's destination slot is moved in the same atomic update instead of
- * blocking it. Links owned by a nested dynamic group are left to
+ * blocking it. Links owned by an autogrow group are left to
  * {@link LGraph.configure}'s final pass.
  */
 export function realignGroupWidgetChildLinks(
@@ -237,7 +250,7 @@ export function realignGroupWidgetChildLinks(
   if (!graph) return
 
   const inputs = nodeData.inputs?.filter(
-    (input) => !isNestedDynamicGroupInput(node, input.name)
+    (input) => !isAutogrowGroupInput(node, input.name)
   )
   if (!inputs?.some((input) => isGroupWidgetChildInput(node, input.name)))
     return

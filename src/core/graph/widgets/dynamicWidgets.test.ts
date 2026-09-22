@@ -13,6 +13,7 @@ import {
   addDynamicCombo
 } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { realignGroupWidgetChildLinks } from '@/lib/litegraph/src/linkDeduplication'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -750,5 +751,181 @@ describe('Dynamic combo child links on workflow load (FE-258)', () => {
       inputNames: ['image', 'resize_type', 'resize_type.multiplier'],
       multiplierLinkId: toLinkId(1)
     })
+  })
+})
+
+const REFERENCE_NODE_TYPE = 'test/AutogrowInsideCombo'
+
+/**
+ * Shaped after `ByteDance2ReferenceNode`: a dynamic combo whose option holds
+ * both an ordinary child widget and an autogrow group, so the group's children
+ * are named `model.reference_images.<ordinal>` and its registry key is
+ * `model.reference_images`.
+ */
+const referenceNodeDef: ComfyNodeDefV1 = {
+  name: REFERENCE_NODE_TYPE,
+  display_name: 'Autogrow Inside Combo',
+  category: 'testing',
+  python_module: 'nodes',
+  description: '',
+  input: {
+    required: {
+      model: [
+        'COMFY_DYNAMICCOMBO_V3',
+        {
+          options: [
+            {
+              key: 'Seedance',
+              inputs: {
+                required: {
+                  generate_audio: ['BOOLEAN', { default: true }],
+                  reference_images: [
+                    'COMFY_AUTOGROW_V3',
+                    {
+                      template: {
+                        input: {
+                          required: { reference_image: ['IMAGE', {}] }
+                        },
+                        names: ['image_1', 'image_2', 'image_3'],
+                        min: 2
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  output: ['VIDEO'],
+  output_name: ['VIDEO'],
+  output_node: false
+}
+
+describe('Autogrow nested inside a group widget (FE-258)', () => {
+  beforeEach(async () => {
+    await useLitegraphService().registerNodeDef(
+      REFERENCE_NODE_TYPE,
+      referenceNodeDef
+    )
+  })
+
+  test('leaves an autogrow child link where the group put it', () => {
+    const graph = new LGraph()
+    const node = LiteGraph.createNode(REFERENCE_NODE_TYPE)
+    assert.ok(node, 'reference node')
+    graph.add(node)
+    const slotOf = (name: string) =>
+      node.inputs.findIndex((input) => input.name === name)
+    const connectedSlot = slotOf('model.reference_images.image_1')
+    const nested = connectInput(node, connectedSlot, graph)
+
+    realignGroupWidgetChildLinks(node, {
+      id: node.id,
+      inputs: node.inputs.map((input) => ({
+        name: input.name,
+        type: String(input.type),
+        link: input.name === 'model.reference_images.image_3' ? nested.id : null
+      }))
+    })
+
+    expect(nested.target_slot).toBe(connectedSlot)
+  })
+})
+
+const GROWN_NODE_TYPE = 'test/AutogrowBeforeOrdinaryChild'
+
+/**
+ * Shaped after `OpenAIGPTImageNodeV2`: a dynamic combo option whose autogrow
+ * group is followed by an ordinary child input. Reloading such a node replays
+ * both links, and the group grows a slot while doing so.
+ */
+const grownNodeDef: ComfyNodeDefV1 = {
+  name: GROWN_NODE_TYPE,
+  display_name: 'Autogrow Before Ordinary Child',
+  category: 'testing',
+  python_module: 'nodes',
+  description: '',
+  input: {
+    required: {
+      model: [
+        'COMFY_DYNAMICCOMBO_V3',
+        {
+          options: [
+            {
+              key: 'gpt-image-1',
+              inputs: {
+                required: {
+                  seed: ['INT', { default: 0 }],
+                  images: [
+                    'COMFY_AUTOGROW_V3',
+                    {
+                      template: {
+                        input: { required: { image: ['IMAGE', {}] } },
+                        names: ['image_1', 'image_2', 'image_3', 'image_4'],
+                        min: 0
+                      }
+                    }
+                  ],
+                  mask: ['MASK', { forceInput: true }]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  output: ['IMAGE'],
+  output_name: ['IMAGE'],
+  output_node: false
+}
+
+class ImageMaskSourceNode extends LGraphNode {
+  constructor(title?: string) {
+    super(title ?? 'ImageMaskSource')
+    this.addOutput('image', 'IMAGE')
+    this.addOutput('mask', 'MASK')
+  }
+}
+
+describe('Autogrow followed by an ordinary combo child (FE-258)', () => {
+  beforeEach(async () => {
+    LiteGraph.registerNodeType('test/ImageMaskSource', ImageMaskSourceNode)
+    await useLitegraphService().registerNodeDef(GROWN_NODE_TYPE, grownNodeDef)
+  })
+
+  test('keeps the autogrow slot count across a load', () => {
+    const graph = new LGraph()
+    const source = new ImageMaskSourceNode()
+    graph.add(source)
+    const node = LiteGraph.createNode(GROWN_NODE_TYPE)
+    assert.ok(node, 'gpt image like node')
+    graph.add(node)
+    const slotOf = (name: string) =>
+      node.inputs.findIndex((input) => input.name === name)
+    source.connect(0, node, slotOf('model.images.image_1'))
+    source.connect(1, node, slotOf('model.mask'))
+    const inputNames = (target: LGraphNode) =>
+      target.inputs.map(
+        (input, slot) => `${input.name}${target.getInputLink(slot) ? '*' : ''}`
+      )
+    const before = inputNames(node).filter((name) =>
+      name.startsWith('model.images.')
+    )
+
+    const reloaded = new LGraph()
+    reloaded.configure(structuredClone(graph.serialize()))
+
+    const reloadedNode = reloaded.getNodeById(node.id)
+    assert.ok(reloadedNode, 'reloaded node')
+    expect({
+      images: inputNames(reloadedNode).filter((name) =>
+        name.startsWith('model.images.')
+      ),
+      maskConnected: inputNames(reloadedNode).includes('model.mask*')
+    }).toEqual({ images: before, maskConnected: true })
   })
 })

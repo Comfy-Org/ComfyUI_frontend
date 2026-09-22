@@ -858,6 +858,34 @@ describe('realignGroupWidgetChildLinks (FE-258)', () => {
     }).toEqual({ child: 4, ordinary: 3 })
   })
 
+  it('moves a dotted ordinary input link that holds a child destination slot', () => {
+    const { source, target } = groupWidgetSetup(
+      [
+        'image',
+        'resize_type.width',
+        'resize_type',
+        'metadata.scale',
+        'resize_type.multiplier'
+      ],
+      'resize_type'
+    )
+    const child = source.connect(0, target, 1)!
+    const ordinary = source.connect(0, target, 4)!
+
+    realignGroupWidgetChildLinks(target, {
+      id: target.id,
+      inputs: serializedInputs(target, {
+        'resize_type.multiplier': child.id,
+        'metadata.scale': ordinary.id
+      })
+    })
+
+    expect({
+      child: child.target_slot,
+      ordinary: ordinary.target_slot
+    }).toEqual({ child: 4, ordinary: 3 })
+  })
+
   it('leaves a node that has no group widget child input', () => {
     const { source, target } = groupWidgetSetup(
       ['first', 'second', 'resize_type'],
@@ -871,26 +899,5 @@ describe('realignGroupWidgetChildLinks (FE-258)', () => {
     })
 
     expect(link.target_slot).toBe(0)
-  })
-
-  it('leaves the links of a group nested inside a group widget', () => {
-    const { source, target } = groupWidgetSetup(
-      [
-        'model.reference_images.image_1',
-        'model.generate_audio',
-        'model.reference_images.image_2'
-      ],
-      'model'
-    )
-    const nested = source.connect(0, target, 0)!
-
-    realignGroupWidgetChildLinks(target, {
-      id: target.id,
-      inputs: serializedInputs(target, {
-        'model.reference_images.image_2': nested.id
-      })
-    })
-
-    expect(nested.target_slot).toBe(0)
   })
 })
