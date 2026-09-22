@@ -18,6 +18,7 @@ const {
   cloudUrl,
   runsHere,
   tutorialUrl,
+  description,
   models,
   tags,
   author,
@@ -30,6 +31,8 @@ const {
   cloudUrl: string
   runsHere: boolean
   tutorialUrl: string | undefined
+  /** What the registry says this workflow is for. */
+  description: string | undefined
   models: readonly { name: string; model: WorkshopModel | undefined }[]
   tags: readonly Tag[]
   author: string
@@ -46,6 +49,14 @@ const sectionTitle =
 <template>
   <div class="grid gap-10 lg:grid-cols-12" data-testid="workflow-about">
     <div class="flex flex-col gap-12 lg:col-span-8">
+      <p
+        v-if="description"
+        class="max-w-2xl text-base/relaxed text-primary-comfy-canvas/80"
+        data-testid="workflow-summary"
+      >
+        {{ description }}
+      </p>
+
       <section data-testid="workflow-graph-section">
         <h2 :class="sectionTitle">
           {{ t('workshop.v2.workflow.graph', locale) }}

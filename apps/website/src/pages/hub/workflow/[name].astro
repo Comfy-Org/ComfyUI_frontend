@@ -125,23 +125,6 @@ const pill =
       <p class="text-sm text-content-secondary" data-testid="workflow-author">
         {t('workshop.workflow.by').replace('{author}', author)}
       </p>
-      {details.description && <details
-        class="group max-w-2xl"
-        data-testid="workflow-summary"
-      >
-        <summary class="cursor-pointer list-none sm:cursor-auto">
-          <span
-            class="line-clamp-3 text-base/relaxed text-primary-comfy-canvas/80 group-open:line-clamp-none sm:line-clamp-none"
-          >
-            {details.description}
-          </span>
-          <span
-            class="mt-1 inline-block text-sm text-primary-comfy-yellow group-open:hidden sm:hidden"
-          >
-            {t('ui.readMore')}
-          </span>
-        </summary>
-      </details>}
     </header>
 
     {runnable ? (
@@ -152,6 +135,7 @@ const pill =
           cloudUrl={cloudUrl}
           runsHere={operations.length > 0}
           tutorialUrl={details.tutorialUrl}
+          description={details.description}
           models={runsOn}
           tags={tags}
           author={author}
