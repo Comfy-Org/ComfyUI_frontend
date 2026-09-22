@@ -504,8 +504,8 @@ importers:
         specifier: workspace:*
         version: link:packages/billing-contract
       '@comfyorg/comfy-multi-player':
-        specifier: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/bed3660ea8468630906bc84491ea3b1d390001cc
-        version: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/bed3660ea8468630906bc84491ea3b1d390001cc
+        specifier: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/28d2e6166867f16bc291f2ae60d7f4a6a0c0c9f7
+        version: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/28d2e6166867f16bc291f2ae60d7f4a6a0c0c9f7
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
         version: 0.2.0
@@ -1946,9 +1946,9 @@ packages:
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
 
-  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/bed3660ea8468630906bc84491ea3b1d390001cc':
-    resolution: {gitHosted: true, integrity: sha512-+dbY0TQlOAhXFNc8V8bBqdLNpzGvN4QwPt3AiciWpQt0EfOilUxVyfvG+h8eJHl3x490NEEuNdtJqZWDD9NCng==, tarball: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/bed3660ea8468630906bc84491ea3b1d390001cc}
-    version: 0.3.1
+  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/28d2e6166867f16bc291f2ae60d7f4a6a0c0c9f7':
+    resolution: {gitHosted: true, integrity: sha512-Y9H0LQ5BMvwc1olYGo8dYyttbF7Go73mXm+nRiw7Qs8R71Kx/JNQRVEB/v5Swt6Apa1ysmtR+bFsjcxFoS8uDQ==, tarball: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/28d2e6166867f16bc291f2ae60d7f4a6a0c0c9f7}
+    version: 0.3.2
 
   '@comfyorg/comfyui-desktop-bridge-types@0.2.0':
     resolution: {integrity: sha512-V5Wj5KXDzTDm5GJAa0xBISjmndNIY5P79pRHQbLkkqJxgp/GPb/QGvcI+xG4ogol0ODJ4j/UBnUmkzpSafw8Aw==}
@@ -10588,7 +10588,7 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/bed3660ea8468630906bc84491ea3b1d390001cc':
+  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/28d2e6166867f16bc291f2ae60d7f4a6a0c0c9f7':
     dependencies:
       yjs: 13.6.31
 
