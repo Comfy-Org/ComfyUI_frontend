@@ -59,6 +59,22 @@ function createOutputAsset(
     ...overrides
   }
 }
+/**
+ * A video generated through the Comfy Agent / cloud path: the assets API
+ * only builds `preview_url`/`thumbnail_url` for images, so a video record
+ * carries neither and the card must fall back to the file's own content URL.
+ */
+export const AGENT_VIDEO_ASSET: Asset = createOutputAsset({
+  id: '11111111-1111-4111-a111-111111111111',
+  name: 'agent_generated_video.mp4',
+  job_id: '22222222-2222-4222-a222-222222222222',
+  mime_type: 'video/mp4',
+  size: 6_163,
+  created_at: '2026-09-18T00:00:00.000Z',
+  updated_at: '2026-09-18T00:00:00.000Z',
+  last_access_time: '2026-09-18T00:00:00.000Z'
+})
+
 export const STABLE_CHECKPOINT: Asset = createModelAsset({
   id: 'test-checkpoint-001',
   name: 'sd_xl_base_1.0.safetensors',
@@ -354,3 +370,38 @@ export function generateOutputAssets(count: number): Asset[] {
     })
   )
 }
+
+/**
+ * Two outputs of one job, which the panel groups into a single card with the
+ * second output behind the "See more outputs" stack.
+ *
+ * `unflattenOutputAssets` picks the LAST previewable asset in created-at order
+ * as the card's representative, so `MULTI_OUTPUT_SECOND` is what the collapsed
+ * card shows and `MULTI_OUTPUT_FIRST` is what expanding the stack reveals.
+ * Names are short enough to survive `truncateFilename`'s 20-character rule, so
+ * a test can anchor on the rendered filename.
+ *
+ * Exists for the nested-output drag path (PM-1157/PM-1158): a drag from a
+ * nested row must carry that row's own output, not the representative's.
+ */
+export const MULTI_OUTPUT_JOB_ID = '77777777-7777-4777-a777-777777777777'
+
+export const MULTI_OUTPUT_FIRST: Asset = createOutputAsset({
+  id: '88888888-8888-4888-a888-888888888888',
+  name: 'out_one.png',
+  job_id: MULTI_OUTPUT_JOB_ID,
+  mime_type: 'image/png',
+  created_at: '2026-09-18T00:00:00.000Z',
+  updated_at: '2026-09-18T00:00:00.000Z',
+  last_access_time: '2026-09-18T00:00:00.000Z'
+})
+
+export const MULTI_OUTPUT_SECOND: Asset = createOutputAsset({
+  id: '99999999-9999-4999-a999-999999999999',
+  name: 'out_two.png',
+  job_id: MULTI_OUTPUT_JOB_ID,
+  mime_type: 'image/png',
+  created_at: '2026-09-18T00:00:01.000Z',
+  updated_at: '2026-09-18T00:00:01.000Z',
+  last_access_time: '2026-09-18T00:00:01.000Z'
+})

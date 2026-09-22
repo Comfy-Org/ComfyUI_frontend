@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -16,6 +17,7 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
+import type { SemanticPlacementPort } from './graphMutations'
 import { createGraphMutations } from './graphMutations'
 
 const mockReportError = vi.hoisted(() => vi.fn())
@@ -70,14 +72,59 @@ const noteWidgets: readonly LiveWidget[] = [
     options: { multiline: true }
   }
 ]
+const objectWidgets: readonly LiveWidget[] = [
+  { name: 'config', type: 'legacy', value: { mode: 'auto' }, options: {} }
+]
 
 describe('graphMutations', () => {
   const createLayout = vi.fn()
   const deleteLayouts = vi.fn()
+  const createdLayouts = new Map<
+    string,
+    {
+      position: { x: number; y: number }
+      size: { width: number; height: number }
+    }
+  >()
+  const placement: SemanticPlacementPort = {
+    nodeBounds: (_scope, nodeId) => {
+      const layout = createdLayouts.get(String(nodeId))
+      return layout
+        ? {
+            x: layout.position.x,
+            y: layout.position.y,
+            width: layout.size.width,
+            height: layout.size.height
+          }
+        : null
+    },
+    viewportBounds: () => null
+  }
+  const setLiveWidgetValue = vi.fn(
+    (
+      _scope,
+      _nodeId,
+      _name,
+      value
+    ):
+      | { status: 'skipped' }
+      | {
+          status: 'applied' | 'rolledBack'
+          resolvedValue: typeof value
+        } => ({
+      status: 'applied',
+      resolvedValue: value
+    })
+  )
 
   beforeEach(() => {
+    createdLayouts.clear()
     createLayout.mockReset()
+    createLayout.mockImplementation((_scope, nodeId, layout) => {
+      createdLayouts.set(String(nodeId), layout)
+    })
     deleteLayouts.mockReset()
+    setLiveWidgetValue.mockReset()
     mockReportError.mockReset()
     LiteGraph.registerNodeType('ContractSampler', ContractSampler)
   })
@@ -85,7 +132,9 @@ describe('graphMutations', () => {
   function mutations() {
     return createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      placement,
+      liveWidgets: { setValue: setLiveWidgetValue }
     })
   }
 
@@ -234,6 +283,234 @@ describe('graphMutations', () => {
     )
   })
 
+  describe('reconcileNode does not clobber a locally dirty widget', () => {
+    it('keeps skipping every stale full reconcile until one matches the local value', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, samplerWidgets)
+      const id = widgetId('root', toNodeId(1), 'steps')
+      // A local edit that bypassed this module's commit (a human typing, or
+      // the litegraph widget's own `.value` setter) carries no
+      // RemoteMutationContext, so the store marks it locally dirty.
+      useWidgetValueStore().setValue(id, 99)
+
+      // Two stale full reconciles in a row - e.g. an unbound local edit that
+      // never minted, followed by a rejected duplicate-add echo re-arming
+      // full reconciliation before the genuinely newer value lands - must
+      // not clobber the edit just because the first one was already
+      // skipped: the guard is not one-shot.
+      for (const stale of [21, 22]) {
+        expect(
+          graph.batch(context, (batch) => {
+            batch.reconcileNode({
+              ...node(1),
+              widgets_values: { steps: stale }
+            })
+          })
+        ).toBe(true)
+        expect(useWidgetValueStore().getWidget(id)?.value).toBe(99)
+        expect(useWidgetValueStore().isLocallyDirty(id)).toBe(true)
+      }
+
+      // Once a reconcile's own candidate value already matches the local
+      // edit, the document has caught up: the write lands (and, carrying a
+      // context, clears the mark itself).
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({ ...node(1), widgets_values: { steps: 99 } })
+        })
+      ).toBe(true)
+      expect(useWidgetValueStore().getWidget(id)?.value).toBe(99)
+      expect(useWidgetValueStore().isLocallyDirty(id)).toBe(false)
+    })
+
+    it('also resolves via an explicit single-widget setWidget op regardless of value', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, samplerWidgets)
+      const id = widgetId('root', toNodeId(1), 'steps')
+      useWidgetValueStore().setValue(id, 99)
+
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({ ...node(1), widgets_values: { steps: 21 } })
+        })
+      ).toBe(true)
+      expect(useWidgetValueStore().isLocallyDirty(id)).toBe(true)
+
+      // An intentional remote write for this exact widget bypasses the
+      // guard entirely (it never goes through `applyWidgetValues`), so it
+      // resolves the mark even though its value differs from both the local
+      // edit and the stale snapshot.
+      expect(graph.setWidget(toNodeId(1), 'steps', 30, context)).toBe(true)
+      expect(useWidgetValueStore().getWidget(id)?.value).toBe(30)
+      expect(useWidgetValueStore().isLocallyDirty(id)).toBe(false)
+    })
+
+    it('releases an object-valued named widget by deep equality, not reference equality', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, objectWidgets)
+      const id = widgetId('root', toNodeId(1), 'config')
+      const widgetStore = useWidgetValueStore()
+      widgetStore.setValue(id, { mode: 'manual' })
+
+      // A stale reconcile whose candidate is structurally different keeps
+      // skipping, same as the primitive case.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values: { config: { mode: 'auto' } }
+          })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toEqual({ mode: 'manual' })
+      expect(widgetStore.isLocallyDirty(id)).toBe(true)
+
+      // `parseWidgetValues` clones every object candidate, so the reconcile
+      // that finally "matches" the local edit never delivers the *same*
+      // object instance - only one that is structurally identical. The
+      // guard must compare by value: an Object.is/=== comparison would see
+      // two distinct clones as unequal forever and the mark would never
+      // clear.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values: { config: { mode: 'manual' } }
+          })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toEqual({ mode: 'manual' })
+      expect(widgetStore.isLocallyDirty(id)).toBe(false)
+    })
+
+    it('releases an object-valued positional widget by deep equality, not reference equality', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, objectWidgets)
+      const id = widgetId('root', toNodeId(1), 'config')
+      const widgetStore = useWidgetValueStore()
+      widgetStore.setValue(id, { mode: 'manual' })
+
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values: [{ mode: 'auto' }]
+          })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toEqual({ mode: 'manual' })
+      expect(widgetStore.isLocallyDirty(id)).toBe(true)
+
+      // Same catch-up case as the named path, but through the positional
+      // branch (`applyPositionalWidgetValues`), which shares the same
+      // `skipStaleReconcile` guard.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({
+            ...node(1),
+            widgets_values: [{ mode: 'manual' }]
+          })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toEqual({ mode: 'manual' })
+      expect(widgetStore.isLocallyDirty(id)).toBe(false)
+    })
+  })
+
+  describe('a suppressed structural replay does not arm the guard', () => {
+    // A workflow load (e.g. switching back to a tab) reconfigures the live
+    // node from that tab's own locally-saved snapshot, which can predate a
+    // background CRDT edit made while the tab was unbound. That replay is a
+    // context-less write, indistinguishable from a human edit to the guard
+    // unless the caller (agentPanel's beforeLoadGraph/afterConfigureGraph)
+    // brackets it with local-dirty-tracking suppression.
+    it('lets the next catch-up reconcile land the real value', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, samplerWidgets)
+      const id = widgetId('root', toNodeId(1), 'steps')
+      const widgetStore = useWidgetValueStore()
+      // The agent's edit already landed on canonical state (steps: 20 -> 30)
+      // while this tab was backgrounded.
+      widgetStore.setValue(id, 30, context)
+
+      // The load's own configure() re-applies the tab's stale, pre-edit
+      // snapshot (steps: 20) onto the already-canonical widget, bracketed
+      // the way agentPanel.ts brackets it.
+      widgetStore.beginLocalDirtyTrackingSuppression()
+      widgetStore.setValue(id, 20)
+      widgetStore.endLocalDirtyTrackingSuppression()
+
+      expect(widgetStore.isLocallyDirty(id)).toBe(false)
+
+      // The CRDT rebind's catch-up reconcile, re-delivering the value the
+      // agent set while this tab was backgrounded, is not mistaken for
+      // clobbering a local edit.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({ ...node(1), widgets_values: { steps: 30 } })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toBe(30)
+    })
+
+    it('regression: without suppression, the same replay would strand the widget until the real value matches', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, samplerWidgets)
+      const id = widgetId('root', toNodeId(1), 'steps')
+      const widgetStore = useWidgetValueStore()
+      widgetStore.setValue(id, 30, context)
+
+      // Same stale replay, but unsuppressed: it is indistinguishable from a
+      // human edit, so it arms the guard.
+      widgetStore.setValue(id, 20)
+      expect(widgetStore.isLocallyDirty(id)).toBe(true)
+
+      // The guard keeps skipping every catch-up reconcile that still
+      // doesn't match, stranding the widget at the load's stale snapshot
+      // instead of the agent's edit - not just for the first one.
+      for (let i = 0; i < 2; i++) {
+        expect(
+          graph.batch(context, (batch) => {
+            batch.reconcileNode({ ...node(1), widgets_values: { steps: 30 } })
+          })
+        ).toBe(true)
+        expect(widgetStore.getWidget(id)?.value).toBe(20)
+        expect(widgetStore.isLocallyDirty(id)).toBe(true)
+      }
+
+      // Only an explicit single-widget op, or a reconcile that finally
+      // carries the value already sitting on the widget, resolves it.
+      expect(graph.setWidget(toNodeId(1), 'steps', 30, context)).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toBe(30)
+      expect(widgetStore.isLocallyDirty(id)).toBe(false)
+    })
+  })
+
+  it('reconcileNodeFields does not guard a subgraph host widget the same way', () => {
+    // A host's promoted widgets are wired by SubgraphNode's own projection,
+    // which writes them directly (no RemoteMutationContext) as a routine,
+    // structural part of attaching the host, not a human edit; guarding here
+    // too would leave a host widget stuck at a stale value forever.
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    registerLiveWidgets(1, samplerWidgets)
+    const id = widgetId('root', toNodeId(1), 'steps')
+    useWidgetValueStore().setValue(id, 99)
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNodeFields({ ...node(1), widgets_values: { steps: 21 } })
+      })
+    ).toBe(true)
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe(21)
+  })
+
   it.for([
     { title: undefined, type: 'ContractSampler', expected: 'Contract Sampler' },
     { title: '', type: 'ContractSampler', expected: 'Contract Sampler' },
@@ -281,6 +558,189 @@ describe('graphMutations', () => {
       },
       context
     )
+  })
+
+  it('keeps runtime-only fields out of prepared slots', () => {
+    const graph = mutations()
+    const payload = {
+      ...node(7),
+      inputs: [
+        {
+          name: 'in',
+          type: 'IMAGE',
+          label: 'Input',
+          link: null,
+          _node: { corrupt: true }
+        }
+      ],
+      outputs: [
+        {
+          name: 'out',
+          type: 'IMAGE',
+          label: 'Output',
+          links: [],
+          _data: { corrupt: true }
+        }
+      ]
+    }
+
+    expect(graph.addNode(payload, context)).toBe(true)
+
+    const state = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(7))
+    expect(state?.inputs[0]).toMatchObject({ name: 'in', label: 'Input' })
+    expect(state?.outputs[0]).toMatchObject({ name: 'out', label: 'Output' })
+    expect(state?.inputs[0]).not.toHaveProperty('_node')
+    expect(state?.outputs[0]).not.toHaveProperty('_data')
+  })
+
+  it('repositions a template node placed far from an existing node', () => {
+    const graph = mutations()
+    graph.addNode({ ...node(1), pos: [0, 0] }, context)
+    createLayout.mockClear()
+
+    expect(graph.addNode({ ...node(2), pos: [9000, 9000] }, context)).toBe(true)
+
+    const [, , layout] = createLayout.mock.calls[0]
+    const distanceFromExistingNode = Math.hypot(
+      layout.position.x - 0,
+      layout.position.y - 0
+    )
+    expect(distanceFromExistingNode).toBeLessThan(2000)
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(2))
+        ?.lastSerialization?.pos
+    ).toEqual([layout.position.x, layout.position.y])
+  })
+
+  it('keeps a far batch layout intact, moved by one shared offset', () => {
+    const graph = mutations()
+    graph.addNode({ ...node(1), pos: [0, 0] }, context)
+    createLayout.mockClear()
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode({ ...node(2), pos: [9000, 9000] })
+        batch.addNode({ ...node(3), pos: [9400, 9100] })
+      })
+    ).toBe(true)
+
+    const [first, second] = createLayout.mock.calls.map(
+      ([, , layout]) => layout.position
+    )
+    expect(second.x - first.x).toBe(400)
+    expect(second.y - first.y).toBe(100)
+    expect(Math.hypot(first.x, first.y)).toBeLessThan(2000)
+  })
+
+  it.for(['reconcileNode', 'reconcileNodeFields'] as const)(
+    'keeps doc coordinates when a resync materializes a missing node via %s',
+    (via) => {
+      const graph = mutations()
+      graph.addNode({ ...node(1), pos: [0, 0] }, context)
+      createLayout.mockClear()
+
+      expect(
+        graph.batch(context, (batch) => {
+          batch[via]({ ...node(2), pos: [9000, 9000] })
+        })
+      ).toBe(true)
+
+      const [, , layout] = createLayout.mock.calls[0]
+      expect(layout.position).toEqual({ x: 9000, y: 9000 })
+    }
+  )
+
+  it('projects a remote widget value into the live widget adapter', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(true)
+    setLiveWidgetValue.mockClear()
+
+    expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+      true
+    )
+
+    expect(setLiveWidgetValue).toHaveBeenCalledOnce()
+    expect(setLiveWidgetValue).toHaveBeenCalledWith(
+      scope,
+      toNodeId(7),
+      'image',
+      'after.png',
+      context
+    )
+  })
+
+  it('projects add-node widget values before committing them to the store', () => {
+    setLiveWidgetValue.mockImplementation(() => {
+      expect(
+        useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+      ).toBeUndefined()
+      return { status: 'applied', resolvedValue: 'added.png' }
+    })
+
+    expect(mutations().addNode(node(7, { image: 'added.png' }), context)).toBe(
+      true
+    )
+    expect(setLiveWidgetValue).toHaveBeenCalledWith(
+      scope,
+      toNodeId(7),
+      'image',
+      'added.png',
+      context
+    )
+  })
+
+  it('converges canonical state on the live widget rollback value, not the remote value', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(true)
+    setLiveWidgetValue.mockReset()
+    setLiveWidgetValue.mockReturnValue({
+      status: 'rolledBack',
+      resolvedValue: 'before.png'
+    })
+
+    expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+      true
+    )
+
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+    ).toMatchObject({ value: 'before.png' })
+  })
+
+  it.for([null, undefined])(
+    'preserves a nullish live widget result of %s',
+    (resolvedValue) => {
+      const graph = mutations()
+      expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(
+        true
+      )
+      setLiveWidgetValue.mockReset()
+      setLiveWidgetValue.mockReturnValue({
+        status: 'applied',
+        resolvedValue
+      })
+
+      expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+        true
+      )
+      expect(
+        useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+      ).toMatchObject({ value: resolvedValue })
+    }
+  )
+
+  it('commits the remote value when live projection is skipped', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(true)
+    setLiveWidgetValue.mockReset()
+    setLiveWidgetValue.mockReturnValue({ status: 'skipped' })
+
+    expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+      true
+    )
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+    ).toMatchObject({ value: 'after.png' })
   })
 
   it('retains supplied link ids and atomically displaces the target occupant', () => {
@@ -383,6 +843,47 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
+  // The agent's connect tool used to wire an IMAGE output straight into a
+  // STRING prompt input (Grok Image Edit, GPT Image 2) and have the mutation
+  // accepted as if valid — only ComfyUI's execution-time prompt validator
+  // caught it later, long after the agent had told the user the graph was
+  // built. The interactive canvas never allows this: LGraphNode.connectSlots
+  // gates every human-dragged link on LiteGraph.isValidConnection(output.type,
+  // input.type). This remote/CRDT path is the ONLY way the agent edits the
+  // graph, so `connect` now runs the same isValidConnection check against the
+  // origin output's declared type and the target input's before applying it.
+  it('rejects connecting an incompatible slot type pair', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const graph = mutations()
+    const applied = graph.batch(context, (batch) => {
+      batch.addNode({
+        ...node(1),
+        outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [] }]
+      })
+      batch.addNode({
+        ...node(2),
+        inputs: [{ name: 'prompt', type: 'STRING', link: null }]
+      })
+      batch.connect({
+        id: 1,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'STRING'
+      })
+    })
+
+    // A human dragging this exact link on canvas is refused by
+    // LiteGraph.isValidConnection; the agent's remote mutation path refuses
+    // it too instead of silently wiring IMAGE into a STRING input.
+    expect(applied).toBe(false)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(1))
+    ).toBeUndefined()
+    error.mockRestore()
+  })
+
   it('rejects a sibling-owned node collision before committing earlier writes', () => {
     const siblingScope = {
       rootGraphId: scope.rootGraphId,
@@ -390,7 +891,8 @@ describe('graphMutations', () => {
     }
     const sibling = createGraphMutations({
       getScope: () => siblingScope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      placement
     })
     sibling.addNode(node(9), context)
     createLayout.mockClear()
@@ -419,7 +921,8 @@ describe('graphMutations', () => {
     }
     const sibling = createGraphMutations({
       getScope: () => siblingScope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      placement
     })
     sibling.batch(context, (batch) => {
       batch.addNode(node(8))
@@ -468,6 +971,9 @@ describe('graphMutations', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1, stale: 'old' }), context)
     const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    const liveWidgetState = useWidgetValueStore().getWidget(
+      widgetId('root', toNodeId(1), 'seed')
+    )
     createLayout.mockClear()
     deleteLayouts.mockClear()
 
@@ -485,14 +991,66 @@ describe('graphMutations', () => {
     expect(reconciled.title).toBe('Seeded authority')
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
-        ?.value
-    ).toBe(42)
+    ).toBe(liveWidgetState)
+    expect(liveWidgetState?.value).toBe(42)
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
         ?.value
     ).toBe('old')
+    expect(graph.setWidget(toNodeId(1), 'seed', 84, context)).toBe(true)
+    expect(liveWidgetState?.value).toBe(84)
     expect(deleteLayouts).not.toHaveBeenCalled()
     expect(createLayout).not.toHaveBeenCalled()
+  })
+
+  // Unit-level regression guard for the color/label preservation fix above (this file had no
+  // unit coverage of it before this commit, only the Playwright spec added
+  // alongside it): a reconcile must not wholesale-replace a live node's
+  // presentation-only `color` or an autogrow input's client-computed
+  // `localized_name` when the CRDT payload omits them, since the document
+  // never carries either field.
+  it("keeps a live node's color and friendly input label across a reconcile", () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    existing.color = '#ff0000'
+    existing.inputs[0].localized_name = 'image_1'
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNode({ ...node(1), title: 'Reconciled' })
+      })
+    ).toBe(true)
+
+    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(reconciled.color).toBe('#ff0000')
+    expect(reconciled.inputs[0].localized_name).toBe('image_1')
+  })
+
+  // The merge must still be a merge, not a pin: when the doc payload *does*
+  // carry an explicit color, or the slot at that index is genuinely a
+  // different input (not just a redundant resync of the same one), the fix
+  // must not keep stale values behind the live node's back.
+  it('still applies a color the doc payload sets, and does not carry a stale label onto a genuinely different input at the same slot index', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    existing.color = '#ff0000'
+    existing.inputs[0].localized_name = 'image_1'
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNode({
+          ...node(1),
+          color: '#00ff00',
+          inputs: [{ name: 'a-different-input', type: 'IMAGE', link: null }]
+        })
+      })
+    ).toBe(true)
+
+    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(reconciled.color).toBe('#00ff00')
+    expect(reconciled.inputs[0].localized_name).toBeUndefined()
   })
 
   it('resyncs scalar fields without touching slots, widgets, or layout', () => {
@@ -583,6 +1141,10 @@ describe('graphMutations', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1 }), context)
     const existing = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(existing)
+    existing.color = '#432'
+    existing.bgcolor = '#653'
+    existing.inputs[0].localized_name = 'old display name'
     createLayout.mockClear()
     deleteLayouts.mockClear()
 
@@ -601,6 +1163,9 @@ describe('graphMutations', () => {
     )
     expect(replacement).not.toBe(existing)
     expect(replacement?.type).toBe('Replacement')
+    expect(replacement?.color).toBeUndefined()
+    expect(replacement?.bgcolor).toBeUndefined()
+    expect(replacement?.inputs[0].localized_name).toBeUndefined()
     expect(
       useWidgetValueStore().getWidget(
         widgetId(scope.rootGraphId, toNodeId(1), 'replacement')
@@ -608,6 +1173,52 @@ describe('graphMutations', () => {
     ).toBe(2)
     expect(deleteLayouts).toHaveBeenCalledOnce()
     expect(createLayout).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a document-only input at the prepared link target after replacing the input set', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(
+      {
+        ...node(2),
+        inputs: [
+          { name: 'in', type: 'IMAGE', link: null },
+          { name: 'spare', type: 'IMAGE', link: null }
+        ]
+      },
+      context
+    )
+
+    expect(
+      graph.connect(
+        {
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 1,
+          type: 'IMAGE',
+          targetInputs: [
+            { name: 'in', type: 'IMAGE', link: null },
+            { name: 'new_from_doc', type: 'IMAGE', link: toLinkId(9) }
+          ]
+        },
+        context
+      )
+    ).toBe(true)
+
+    const target = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(2))
+    const topology = useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    assert.exists(target)
+    assert.exists(topology)
+    expect(target.inputs.map(({ name }) => name)).toEqual([
+      'in',
+      'new_from_doc'
+    ])
+    expect(target.inputs[topology.targetSlot]).toMatchObject({
+      name: 'new_from_doc',
+      link: toLinkId(9)
+    })
   })
 
   it('updates endpoint slot records while retaining the supplied link id', () => {
@@ -691,11 +1302,25 @@ describe('graphMutations', () => {
 
   it('lets two connects on one target within a batch both keep their links', () => {
     const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(
+      {
+        ...node(2),
+        inputs: [
+          { name: 'in', type: 'IMAGE', link: null },
+          { name: 'grown', type: 'IMAGE', link: null }
+        ]
+      },
+      context
+    )
+    graph.addNode(node(3), context)
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    const [firstInput, grownInput] = target.inputs
+    Object.assign(firstInput, { label: 'live input' })
+    Object.assign(grownInput, { label: 'live grown input' })
+
     expect(
       graph.batch(context, (batch) => {
-        batch.addNode(node(1))
-        batch.addNode(node(2))
-        batch.addNode(node(3))
         batch.connect({
           id: 5,
           originNodeId: 1,
@@ -723,12 +1348,15 @@ describe('graphMutations', () => {
       })
     ).toBe(true)
 
-    const target = useNodeDataStore()
-      .getGraphNodesFor('root', 'root')
-      .find(({ id }) => id === toNodeId(2))
-    expect(target?.inputs.map(({ link }) => link)).toEqual([
+    expect(target.inputs.map(({ link }) => link)).toEqual([
       toLinkId(5),
       toLinkId(9)
+    ])
+    expect(target.inputs[0]).toBe(firstInput)
+    expect(target.inputs[1]).toBe(grownInput)
+    expect(target.inputs.map(({ label }) => label)).toEqual([
+      'live input',
+      'live grown input'
     ])
   })
 
@@ -864,6 +1492,273 @@ describe('graphMutations', () => {
     expect(find(1)?.inputs.map(({ link }) => link)).toEqual([toLinkId(5), null])
   })
 
+  it('preserves live slots through remote connect, reconnect, and removal', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.id = toNodeId(1)
+    source.addOutput('out', 'IMAGE', { label: 'Current output' })
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.id = toNodeId(2)
+    target.addInput('in', 'IMAGE', { label: 'Current input' })
+    graph.add(target)
+    const output = source.outputs[0]
+    const input = target.inputs[0]
+    const remote = createGraphMutations({
+      getScope: () => graphScopeOf(graph),
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      placement: inertPlacementPort
+    })
+    const link = {
+      id: 9,
+      originNodeId: 1,
+      originSlot: 0,
+      targetNodeId: 2,
+      targetSlot: 0,
+      type: 'IMAGE',
+      originOutputs: [{ name: 'out', type: 'IMAGE', links: [9] }],
+      targetInputs: [{ name: 'in', type: 'IMAGE', link: 9 }]
+    }
+    const store = useNodeDataStore()
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      expect(remote.connect(link, context)).toBe(true)
+      expect(store.getNode(graph.id, source.id)?.outputs).toBe(source.outputs)
+      expect(store.getNode(graph.id, target.id)?.inputs).toBe(target.inputs)
+      expect(source.outputs[0]).toBe(output)
+      expect(target.inputs[0]).toBe(input)
+      expect(output.label).toBe('Current output')
+      expect(input.label).toBe('Current input')
+      expect(source.isOutputConnected(0)).toBe(true)
+      expect(target.isInputConnected(0)).toBe(true)
+    }
+
+    expect(remote.batch(context, (batch) => batch.removeLinks([9]))).toBe(true)
+    expect(source.outputs[0]).toBe(output)
+    expect(target.inputs[0]).toBe(input)
+    expect(source.isOutputConnected(0)).toBe(false)
+    expect(target.isInputConnected(0)).toBe(false)
+  })
+
+  it('preserves grown live inputs when reconciliation precedes a named connect', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(
+      {
+        ...node(2),
+        inputs: [
+          { name: 'image_1', type: 'IMAGE', link: null },
+          { name: 'image_0', type: 'IMAGE', link: null },
+          { name: 'width', type: 'INT', link: null },
+          { name: 'height', type: 'INT', link: null }
+        ]
+      },
+      context
+    )
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    const liveInputs = target.inputs
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [
+            { name: 'image_0', type: 'IMAGE', link: 9 },
+            { name: 'width', type: 'INT', link: null },
+            { name: 'height', type: 'INT', link: null }
+          ]
+        })
+        // Document slot 0 is `image_0`; growth put it at live index 1, so a
+        // correct resolution retargets by name rather than trusting the index.
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          targetInputs: [
+            { name: 'image_0', type: 'IMAGE', link: 9 },
+            { name: 'width', type: 'INT', link: null },
+            { name: 'height', type: 'INT', link: null }
+          ]
+        })
+      })
+    ).toBe(true)
+    expect(target.inputs).toBe(liveInputs)
+    expect(target.inputs.map(({ name }) => name)).toEqual([
+      'image_1',
+      'image_0',
+      'width',
+      'height'
+    ])
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))?.targetSlot
+    ).toBe(1)
+  })
+
+  it('rejects a missing document target without changing endpoint slots', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(node(2), context)
+    const source = useNodeDataStore().getNode('root', toNodeId(1))!
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    const sourceOutputs = source.outputs.map(({ links }) => [...(links ?? [])])
+    const targetInputs = target.inputs.map(({ link }) => link)
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 2,
+          type: 'IMAGE',
+          targetInputs: [{ name: 'in', type: 'IMAGE', link: null }]
+        })
+      })
+    ).toBe(false)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    expect(source.outputs.map(({ links }) => [...(links ?? [])])).toEqual(
+      sourceOutputs
+    )
+    expect(target.inputs.map(({ link }) => link)).toEqual(targetInputs)
+    error.mockRestore()
+  })
+
+  it('rejects a document target removed by slot validation without mutating the graph', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(node(2), context)
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    const input = target.inputs[0]
+    const targetInputs = [{ name: 'invalid', type: 'IMAGE', link: null }]
+    Reflect.set(targetInputs[0], 'type', null)
+
+    expect(
+      graph.connect(
+        {
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          targetInputs
+        },
+        context
+      )
+    ).toBe(false)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    expect(target.inputs).toEqual([input])
+    expect(target.inputs[0]).toBe(input)
+  })
+
+  it('does not mutate endpoint metadata when a later batch mutation fails', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(node(2), context)
+    const source = useNodeDataStore().getNode('root', toNodeId(1))!
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    Object.assign(source.outputs[0], { label: 'live output', links: null })
+    Object.assign(target.inputs[0], { label: 'live input', link: null })
+    const sourceOutput = { ...source.outputs[0] }
+    const targetInput = { ...target.inputs[0] }
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          originOutputs: [{ name: 'out', type: 'IMAGE', links: [toLinkId(9)] }],
+          targetInputs: [{ name: 'in', type: 'IMAGE', link: toLinkId(9) }]
+        })
+        batch.setWidget(toNodeId(99), 'missing', 1)
+      })
+    ).toBe(false)
+    expect(source.outputs[0]).toEqual(sourceOutput)
+    expect(target.inputs[0]).toEqual(targetInput)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    error.mockRestore()
+  })
+
+  it.for([null, 7])(
+    'rejects malformed live input %p during connect preparation',
+    (malformed) => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      graph.addNode(node(2), context)
+      const target = useNodeDataStore().getNode('root', toNodeId(2))!
+      Reflect.set(target, 'inputs', [malformed])
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      expect(
+        graph.connect(
+          {
+            id: 9,
+            originNodeId: 1,
+            originSlot: 0,
+            targetNodeId: 2,
+            targetSlot: 0,
+            type: 'IMAGE',
+            targetInputs: [{ name: 'in', type: 'IMAGE', link: 9 }]
+          },
+          context
+        )
+      ).toBe(false)
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+      ).toBeUndefined()
+      error.mockRestore()
+    }
+  )
+
+  it('updates serialized slots whose optional link mirrors were absent', () => {
+    const graph = mutations()
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode({
+          ...node(1),
+          outputs: [{ name: 'out', type: 'IMAGE' }]
+        })
+        batch.addNode({
+          ...node(2),
+          inputs: [{ name: 'in', type: 'IMAGE' }]
+        })
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          originOutputs: [{ name: 'out', type: 'IMAGE', links: [9] }],
+          targetInputs: [{ name: 'in', type: 'IMAGE', link: 9 }]
+        })
+      })
+    ).toBe(true)
+
+    const store = useNodeDataStore()
+    expect(store.getNode('root', toNodeId(1))?.outputs[0].links).toEqual([9])
+    expect(store.getNode('root', toNodeId(2))?.inputs[0].link).toBe(9)
+    expect(graph.batch(context, (batch) => batch.removeLinks([9]))).toBe(true)
+    expect(store.getNode('root', toNodeId(1))?.outputs[0].links).toEqual([])
+    expect(store.getNode('root', toNodeId(2))?.inputs[0].link).toBeNull()
+  })
+
   it('re-adds a normalized node id as a fresh widget incarnation', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1, stale: 'old' }), context)
@@ -972,7 +1867,8 @@ describe('graphMutations', () => {
     const graph = new LGraph()
     createGraphMutations({
       getScope: () => graphScopeOf(graph),
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      placement
     }).addNode(
       {
         id: 1,

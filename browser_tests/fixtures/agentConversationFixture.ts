@@ -1,48 +1,61 @@
-import type { Locator, Page, WebSocketRoute } from '@playwright/test'
+import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
+import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
-
-import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import { toNodeId } from '@/types/nodeId'
 import type {
   AgentCancelAccepted,
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import {
+  agentTest,
+  bootAgentApp,
+  mockWorkflowPersistence
+} from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import type {
+  ClientDocFrame,
+  HumanOpsHost
+} from '@e2e/fixtures/agentFollowerHostSocket'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type {
   AgentConversation,
   AgentConversationTurn,
+  RecordedGraphOperation,
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
+import { agentHumanAddBlueprint } from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
+import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
+import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
 const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
 const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
+const VUE_NODES_TAG = '@vue-nodes'
 const PANEL_MOUNT_TIMEOUT = 30_000
-const SUBSCRIBE_TIMEOUT = 15_000
 const CANCEL_TIMEOUT = 10_000
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 // The composer names itself with the rendered message, escapes resolved; the
@@ -81,6 +94,27 @@ interface RenderedWidgetRow {
 interface PanelCounts {
   streams: number
   summaries: number
+}
+
+// Three views of "which nodes does this tab hold" (the litegraph adapters,
+// what serialize() emits, the tracker's captured state) plus the in-page
+// observer's record of the rebuilt canvas and every removal since.
+export interface NodeLens {
+  live: string[]
+  serialized: string[]
+  activeState: string[]
+  observer: TabSwitchLens | null
+}
+
+async function attachJson(
+  testInfo: TestInfo,
+  name: string,
+  value: unknown
+): Promise<void> {
+  await testInfo.attach(name, {
+    body: JSON.stringify(value, null, 2),
+    contentType: 'application/json'
+  })
 }
 
 // [id, from, from_slot, to, to_slot, type], as the projection stores a link.
@@ -135,35 +169,42 @@ async function withTimeout(
 }
 
 // Runs one recorded prompt/response through the real panel over a routed /ws socket.
-class AgentConversationHarness {
+export class AgentConversationHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
+  readonly topbar: Topbar
+  readonly composer: Locator
 
   private readonly host: HostDoc
+  private readonly hostSocket: AgentFollowerHostSocket
   private readonly streams: Locator
   private readonly summaries: Locator
   // Every node id the host has held so far, seed included.
   private readonly seenIds: Set<string>
   private readonly expectations: ExpectedTurn[]
-  private socket: WebSocketRoute | null = null
   private postedTurns = 0
-  private subscribes = 0
+  private lastAddGhosted = false
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
-  private resolveSubscribed: (() => void) | null = null
-  private readonly subscribed = new Promise<void>((resolve) => {
-    this.resolveSubscribed = resolve
-  })
 
   constructor(
     private readonly page: Page,
     readonly conversation: AgentConversation,
     readonly replayTiming: ReplayTiming,
-    caseId: string
+    caseId: string,
+    private readonly extraNodeDefs: Record<string, ComfyNodeDef> = {},
+    humanOpsHost: HumanOpsHost = 'hold'
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
+    this.hostSocket = new AgentFollowerHostSocket(
+      page,
+      workflow.id,
+      this.host,
+      SOCKET_SID,
+      humanOpsHost
+    )
     this.seenIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
     const expectations = RECORDED_EXPECTATIONS[caseId]
     const recorded = expectations?.length ?? 0
@@ -174,88 +215,84 @@ class AgentConversationHarness {
     this.expectations = expectations ?? []
     this.panel = page.locator('#agent-panel-root')
     this.streams = this.panel.getByTestId('markdown-stream')
+    this.composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
     this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
+    this.topbar = new Topbar(page)
   }
 
-  async boot(agentFlag: boolean): Promise<void> {
+  addedNodeIds(): string[] {
+    return this.conversation.turns
+      .flatMap((turn) => turn.response)
+      .flatMap((entry) => (entry.kind === 'graph_ops' ? entry.ops : []))
+      .filter((op) => op.op === 'add_node')
+      .map((op) => String(op.node_id))
+  }
+
+  async nodesOutsideVisibleCanvas(ids: readonly string[]): Promise<string[]> {
+    const viewport = this.page.viewportSize()
+    if (!viewport) throw new Error('this assertion needs a sized page')
+    const panelBox = await this.panel.boundingBox()
+    const visible = {
+      right: panelBox ? Math.min(panelBox.x, viewport.width) : viewport.width,
+      bottom: viewport.height
+    }
+    const seen = await Promise.all(
+      ids.map(async (id) => {
+        const box = await this.vueNodes.getNodeLocator(id).boundingBox()
+        const inside =
+          box !== null &&
+          box.x >= 0 &&
+          box.y >= 0 &&
+          box.x + box.width <= visible.right &&
+          box.y + box.height <= visible.bottom
+        return { id, inside }
+      })
+    )
+    return seen
+      .filter((node) => !node.inside)
+      .map((node) => node.id)
+      .sort()
+  }
+
+  async boot(agentFlag: boolean, vueNodes: boolean): Promise<void> {
     await this.mockAgentApi()
-    // The follower re-drives a pending subscribe only on a status frame, which every real connect sends.
-    await this.page.routeWebSocket(/\/ws/, (socket) => {
-      this.socket = socket
-      socket.onMessage((raw) => this.onClientFrame(raw))
-      socket.send(
-        JSON.stringify({
-          type: 'status',
-          data: {
-            status: { exec_info: { queue_remaining: 0 } },
-            sid: SOCKET_SID
-          }
-        })
-      )
-    })
+    await this.hostSocket.install()
     const objectInfo = this.page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith('/api/object_info')
     )
     await bootAgentApp(this.page, agentFlag, {
-      // Only the Vue node renderer projects follower edits onto the canvas.
+      vueNodes,
       settings: {
-        'Comfy.VueNodes.Enabled': true,
-        'Comfy.Graph.CanvasInfo': false
+        'Comfy.Graph.CanvasInfo': false,
+        'Comfy.NodeSearchBoxImpl': 'default',
+        'Comfy.NodeSearchBoxImpl.FollowCursor': true
       },
-      // Replayed nodes materialize from registered node types; the recordings use core nodes only.
-      objectInfo: 'server'
+      // Replayed nodes materialize from registered node types; the recordings use
+      // core nodes only, so a case needing another node supplies its definition
+      // here rather than routing /object_info a second time behind this one.
+      objectInfo: { ...agentReplayNodeDefs, ...this.extraNodeDefs }
     })
     const definitions = (await (await objectInfo).json()) as ObjectInfoResponse
     for (const [type, definition] of Object.entries(definitions))
       this.displayNames.set(type, definition.display_name || definition.name)
+    const unregistered = Object.keys(
+      this.conversation.workflow.catalog.types
+    ).filter((type) => !this.displayNames.has(type))
+    if (unregistered.length > 0)
+      throw new Error(
+        `${this.page.url()} serves no node definitions for ${unregistered.join(', ')}; the replay needs a ComfyUI backend behind the dev server (browser_tests/README.md, "Replay coverage for agent bug fixes")`
+      )
 
-    await this.page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await this.page
+      .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+      .click()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
   }
 
   private async selectWorkflowTarget(): Promise<void> {
-    let savedName: string | undefined
-    await this.page.route('**/api/userdata/*', (route) => {
-      const request = route.request()
-      const path = decodeURIComponent(
-        new URL(request.url()).pathname.split('/userdata/')[1]
-      )
-      if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-        return route.fallback()
-      savedName = path.slice('workflows/'.length, -'.json'.length)
-      const saved: UserDataFullInfo = {
-        path,
-        modified: Date.now(),
-        size: request.postDataBuffer()?.length ?? 0
-      }
-      return route.fulfill(jsonRoute(saved))
-    })
-    await this.page.route('**/api/workflows?*', (route) => {
-      const workflows: WorkflowListResponse = {
-        data:
-          savedName === undefined
-            ? []
-            : [
-                {
-                  id: this.conversation.workflow.id,
-                  name: savedName,
-                  created_at: '2026-09-01T00:00:00Z',
-                  updated_at: '2026-09-01T00:00:00Z',
-                  created_by: 'test-user-e2e',
-                  latest_version: 1
-                }
-              ],
-        pagination: {
-          has_more: false,
-          limit: 100,
-          offset: 0,
-          total: savedName === undefined ? 0 : 1
-        }
-      }
-      return route.fulfill(jsonRoute(workflows))
-    })
+    await mockWorkflowPersistence(this.page, this.conversation.workflow.id)
     const picker = this.panel.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
@@ -266,10 +303,50 @@ class AgentConversationHarness {
     await expect(picker).toHaveText('Unsaved Workflow')
   }
 
+  async persistSavedWorkflow(): Promise<void> {
+    let saved: { info: UserDataFullInfo; content: string } | undefined
+    await this.page.route('**/api/userdata**', (route) => {
+      const request = route.request()
+      const path = decodeURIComponent(
+        new URL(request.url()).pathname.split('/userdata/')[1] ?? ''
+      )
+      if (request.method() !== 'POST' || !path.startsWith('workflows/'))
+        return route.fallback()
+      saved = {
+        info: {
+          path,
+          modified: Date.now(),
+          size: request.postDataBuffer()?.length ?? 0
+        },
+        content: request.postData() ?? '{}'
+      }
+      return route.fallback()
+    })
+    await this.page.route('**/api/userdata**', (route) => {
+      const request = route.request()
+      if (request.method() !== 'GET' || !saved) return route.fallback()
+      const url = new URL(request.url())
+      const path = decodeURIComponent(url.pathname.split('/userdata/')[1] ?? '')
+      if (path === saved.info.path)
+        return route.fulfill({
+          contentType: 'application/json',
+          body: saved.content
+        })
+      if (url.searchParams.get('dir') !== 'workflows') return route.fallback()
+      return route.fulfill(
+        jsonRoute([
+          {
+            ...saved.info,
+            path: saved.info.path.slice('workflows/'.length)
+          }
+        ])
+      )
+    })
+  }
+
   async sendPrompt(turn = 0): Promise<void> {
     const { content } = this.conversation.turns[turn].request
-    const composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
-    await composer.fill(content)
+    await this.composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
     // Replay frames are dropped until the page has applied the ack's thread id.
     // useAgentSession records the user turn straight after storing that id, so
@@ -277,23 +354,37 @@ class AgentConversationHarness {
     await expect(this.panel.getByText(content).first()).toBeVisible()
   }
 
-  async replayResponse(turn = 0): Promise<void> {
+  private async waitForRecordedOffset(
+    startedAt: number,
+    offset: number | undefined
+  ): Promise<void> {
+    if (this.replayTiming !== 'recorded' || offset === undefined) return
+
+    let remaining = offset - (Date.now() - startedAt)
+    // A timer can fire a millisecond early, so wait until the offset has really passed.
+    while (remaining > 0) {
+      await new Promise((resolve) => setTimeout(resolve, remaining))
+      remaining = offset - (Date.now() - startedAt)
+    }
+  }
+
+  async replayResponse(
+    turn = 0,
+    beforeFirstGraphOps?: () => Promise<void>
+  ): Promise<void> {
     const startedAt = Date.now()
-    const entries = this.conversation.turns[turn].response.entries()
-    for (const [index, entry] of entries) {
-      // A timer can fire a millisecond early, so wait until the offset has really passed.
-      while (
-        this.replayTiming === 'recorded' &&
-        entry.at_ms !== undefined &&
-        Date.now() - startedAt < entry.at_ms
-      )
-        await new Promise((resolve) =>
-          setTimeout(resolve, entry.at_ms! - (Date.now() - startedAt))
-        )
-      if (entry.kind === 'event') this.send(this.stampTurn(entry.event, turn))
+    const response = this.conversation.turns[turn].response
+    const firstGraphOps = response.findIndex(
+      (entry) => entry.kind === 'graph_ops'
+    )
+    for (const [index, entry] of response.entries()) {
+      await this.waitForRecordedOffset(startedAt, entry.at_ms)
+      if (entry.kind === 'event')
+        this.hostSocket.send(this.stampTurn(entry.event, turn))
       else {
-        await this.waitForSubscribe()
-        this.send(this.host.apply(entry.ops))
+        await this.hostSocket.waitForSubscribe()
+        if (index === firstGraphOps) await beforeFirstGraphOps?.()
+        this.hostSocket.send(this.host.apply(entry.ops))
         for (const id of Object.keys(this.host.graph().nodes))
           this.seenIds.add(id)
       }
@@ -304,15 +395,32 @@ class AgentConversationHarness {
   }
 
   // Every turn in order, each judged on the panel and the canvas as it lands.
-  async runTurns(): Promise<void> {
+  async runTurns(beforeFirstGraphOps?: () => Promise<void>): Promise<void> {
     for (const turn of this.conversation.turns.keys()) {
       const before = await this.panelCounts()
       await this.sendPrompt(turn)
-      await this.replayResponse(turn)
+      await this.replayResponse(turn, beforeFirstGraphOps)
       await this.waitForTurnComplete()
       await this.expectTurnRendered(turn, before)
       await this.expectCanvasReplayed(turn)
     }
+  }
+
+  async applyGraphOps(ops: RecordedGraphOperation[]): Promise<void> {
+    await this.hostSocket.waitForSubscribe()
+    this.hostSocket.send(this.host.apply(ops))
+    const addedNodeIds = ops.flatMap((op) =>
+      op.op === 'add_node' && op.node_id != null ? [String(op.node_id)] : []
+    )
+    await expect
+      .poll(() =>
+        this.page.evaluate((ids) => {
+          const graph = window.app!.graph
+          const renderedIds = new Set(graph._nodes.map(({ id }) => String(id)))
+          return ids.filter((id) => !renderedIds.has(id))
+        }, addedNodeIds)
+      )
+      .toEqual([])
   }
 
   private async panelCounts(): Promise<PanelCounts> {
@@ -373,17 +481,6 @@ class AgentConversationHarness {
       }
     }
     return [...latest.values()]
-  }
-
-  private displayName(type: string): string {
-    const name = this.displayNames.get(type)
-    if (name === undefined)
-      throw new Error(`the server registers no node type ${type}`)
-    return name
-  }
-
-  private expectedTitle(node: { type: string; title?: string }): string {
-    return node.title || this.displayName(node.type)
   }
 
   // The renderer's link map names the endpoints no DOM surface does; the
@@ -482,9 +579,18 @@ class AgentConversationHarness {
       const id = String(node.id)
       const locator = this.vueNodes.getNodeLocator(id)
       await expect(locator).toBeVisible()
-      await expect(locator.getByTestId('node-title')).toHaveText(
-        this.expectedTitle(node)
+      const materialized = await this.page.evaluate((nodeId) => {
+        const liveNode = window.app?.graph.getNodeById(nodeId)
+        return liveNode
+          ? { type: liveNode.type, hasErrors: liveNode.has_errors === true }
+          : null
+      }, toNodeId(id))
+      const expectedTitle = assertAgentReplayNodeContract(
+        node,
+        this.displayNames.get(node.type),
+        materialized
       )
+      await expect(locator.getByTestId('node-title')).toHaveText(expectedTitle)
     }
     await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.length)
 
@@ -593,51 +699,255 @@ class AgentConversationHarness {
     return parsed.data
   }
 
-  private send(frame: AgentWsEvent | HostFrame): void {
-    // Every host frame must satisfy production's own parser, so a host that
-    // stopped emitting a required field fails here, not silently on the client.
-    if (
-      (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-      parseServerDocFrame(frame) === null
-    )
-      throw new Error(`host frame ${frame.type} is not a valid doc frame`)
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
-    this.socket.send(JSON.stringify(frame))
+  /** Every `doc_*` frame the page has sent so far, oldest first. */
+  clientDocFrames(): ClientDocFrame[] {
+    return this.hostSocket.clientDocFrames()
   }
 
-  private onClientFrame(raw: string | Buffer): void {
-    const frame: unknown = JSON.parse(raw.toString())
-    if (typeof frame !== 'object' || frame === null) return
-    const { type, data } = frame as { type?: unknown; data?: unknown }
-    if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-      return
-    const { workflow_id, state_vector_b64 } = data as {
-      workflow_id?: unknown
-      state_vector_b64?: unknown
-    }
-    if (
-      workflow_id !== this.conversation.workflow.id ||
-      typeof state_vector_b64 !== 'string'
-    )
-      return
-    this.send(this.host.subscribed())
-    this.send(this.host.catchUp(state_vector_b64))
-    this.subscribes += 1
-    this.resolveSubscribed?.()
+  /** The applier's verdict on every human op the host has judged so far. */
+  humanOpOutcomes(): ApplyOutcome[] {
+    return this.hostSocket.humanOpOutcomes()
+  }
+
+  /** Node ids the host document holds right now. */
+  hostNodeIds(): string[] {
+    return Object.keys(this.host.graph().nodes)
+  }
+
+  // A host-side edit outside the recording, pushed as one `doc_update`. The
+  // follower applies frames in order, so a rendered effect of this edit
+  // proves every earlier frame (a catch-up included) has been applied too.
+  pushHostOps(operations: RecordedGraphOperation[]): void {
+    this.hostSocket.send(this.host.apply(operations))
+    for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
   }
 
   // Rises once per follower subscribe; a tab return re-subscribes and the
   // host answers with the catch-up frame this counter has just sent.
   subscribeCount(): number {
-    return this.subscribes
+    return this.hostSocket.subscribeCount()
   }
 
-  private waitForSubscribe(): Promise<void> {
-    return withTimeout(
-      this.subscribed,
-      SUBSCRIBE_TIMEOUT,
-      'the follower never subscribed to the conversation workflow; graph_ops need an agent_active_tab (or a bound tab) first'
+  async disconnectAndApplyRecordedTurn(turn: number): Promise<void> {
+    await this.hostSocket.disconnect()
+    for (const entry of this.conversation.turns[turn].response) {
+      if (entry.kind === 'graph_ops') this.host.apply(entry.ops)
+    }
+    for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
+  }
+
+  private graphNodeIds(): Promise<string[]> {
+    return this.page.evaluate(() =>
+      window.app!.graph.nodes.map((node) => String(node.id))
     )
+  }
+
+  // The ordinary add path: the same createNode + graph.add every node type
+  // takes, whether the search box, the sidebar or a paste drives it.
+  addNodeOfType(type: string, position: [number, number]): Promise<string> {
+    return this.page.evaluate(
+      ([nodeType, pos]) => {
+        const node = window.LiteGraph!.createNode(nodeType)
+        if (!node) throw new Error(`${nodeType} is not a registered node type`)
+        node.pos = [pos[0], pos[1]]
+        window.app!.graph.add(node)
+        return String(node.id)
+      },
+      [type, position] as const
+    )
+  }
+
+  // The blueprint add path (`addNodeOnGraph` for a `SubgraphBlueprint.*` def):
+  // the blueprint's nodes and definitions pasted through `_deserializeItems`.
+  addBlueprint(
+    promoteText: boolean,
+    position: [number, number]
+  ): Promise<string> {
+    return this.page.evaluate(
+      ([bp, pos]) => {
+        const items: object = {
+          nodes: bp.nodes,
+          subgraphs: bp.definitions?.subgraphs
+        }
+        const results = window.app!.canvas._deserializeItems(items, {
+          position: [pos[0], pos[1]]
+        })
+        const node = results?.nodes.values().next().value
+        if (!node) throw new Error('the blueprint paste produced no node')
+        return String(node.id)
+      },
+      [agentHumanAddBlueprint(promoteText), position] as const
+    )
+  }
+
+  // A frontend-only node added the way a person actually adds one: the node
+  // search box, double-clicked open, typed into, Enter — not a direct
+  // LiteGraph.createNode call. The non-Agent baseline
+  // (workflowTabSwitchKeepsAddedNodes.spec.ts) covers this path too.
+  async addNoteThroughSearchBox(position: {
+    x: number
+    y: number
+  }): Promise<string> {
+    const before = new Set(await this.graphNodeIds())
+    await this.page.mouse.dblclick(position.x, position.y, { delay: 5 })
+    const dialog = this.page.getByRole('search')
+    // Scoped by accessible name: the seed workflow already has nodes on the
+    // canvas, and a widget-select trigger (e.g. LoadImage's) is also
+    // role="combobox", so an unnamed query resolves to more than one match.
+    const input = dialog.getByRole('combobox', { name: enMessages.g.addNode })
+    await input.waitFor({ state: 'visible' })
+    await input.fill('Note')
+    const results = dialog.getByTestId(TestIds.searchBoxV2.resultItem)
+    await expect(results.first()).toContainText('Note')
+    await this.page.keyboard.press('Enter')
+    await expect(dialog).toBeHidden()
+
+    this.lastAddGhosted = await this.page.evaluate(() => {
+      const app = window.app!
+      const ghostNodeId = app.canvas.state.ghostNodeId
+      const ghostNode =
+        ghostNodeId === null
+          ? null
+          : app.graph.nodes.find(
+              (node) => String(node.id) === String(ghostNodeId)
+            )
+      return Boolean(ghostNode?.flags.ghost)
+    })
+
+    await this.page.mouse.click(position.x, position.y)
+    const after = await this.graphNodeIds()
+    const [added] = after.filter((id) => !before.has(id))
+    if (!added) throw new Error('the search box add produced no node')
+    return added
+  }
+
+  get placementWasGhosted(): boolean {
+    return this.lastAddGhosted
+  }
+
+  // Records the live node set the moment a tab's canvas finishes rebuilding,
+  // and every node the live graph drops afterwards, so a node present after
+  // configure() and gone later is distinguishable from one never rebuilt.
+  installTabSwitchObserver(): Promise<void> {
+    return this.page.evaluate(() => {
+      const lens: TabSwitchLens = { afterConfigure: [], removed: [] }
+      window.__tabSwitchLens = lens
+      const app = window.app!
+      app.registerExtension({
+        name: 'TabSwitchLens',
+        afterConfigureGraph() {
+          lens.afterConfigure.push(
+            app.graph.nodes.map((node) => String(node.id))
+          )
+        }
+      })
+      app.rootGraph.events.addEventListener('node:removed', (event) => {
+        lens.removed.push(String(event.detail.node.id))
+      })
+    })
+  }
+
+  readNodeLens(): Promise<NodeLens> {
+    return this.page.evaluate(() => {
+      const app = window.app!
+      const store = app.extensionManager as WorkspaceStore
+      return {
+        live: app.graph.nodes.map((node) => String(node.id)),
+        serialized: app.graph.serialize().nodes.map((node) => String(node.id)),
+        activeState:
+          store.workflow.activeWorkflow?.changeTracker.activeState.nodes.map(
+            (node) => String(node.id)
+          ) ?? [],
+        observer: window.__tabSwitchLens ?? null
+      }
+    })
+  }
+
+  // A snapshot of every lens this suite judges a tab switch by, attached to
+  // the test report under `phase` so a failure's evidence is easy to find.
+  async attachEvidence(testInfo: TestInfo, phase: string): Promise<NodeLens> {
+    const lens = await this.readNodeLens()
+    await attachJson(testInfo, `${phase}-node-lens`, lens)
+    await attachJson(testInfo, `${phase}-host-node-ids`, this.hostNodeIds())
+    await attachJson(
+      testInfo,
+      `${phase}-client-doc-frames`,
+      this.clientDocFrames()
+    )
+    await attachJson(
+      testInfo,
+      `${phase}-human-op-outcomes`,
+      this.humanOpOutcomes()
+    )
+    await testInfo.attach(`${phase}.png`, {
+      body: await this.page.screenshot(),
+      contentType: 'image/png'
+    })
+    return lens
+  }
+
+  // The page has minted `count` human batches and the host has judged each.
+  async waitForHumanOps(count: number): Promise<ApplyOutcome[]> {
+    await expect
+      .poll(() => this.humanOpOutcomes().length)
+      .toBeGreaterThanOrEqual(count)
+    return this.humanOpOutcomes()
+  }
+
+  // A host edit pushed after everything under test; once it renders, every
+  // frame queued ahead of it (a tab-return catch-up, an op echo) has applied.
+  async waitForPendingFrames(
+    nodeId: string,
+    widget: string,
+    marker: string
+  ): Promise<void> {
+    this.pushHostOps([
+      { op: 'set_widget', node_id: Number(nodeId), widget, value: marker }
+    ])
+    await expect(
+      this.vueNodes.getNodeLocator(nodeId).getByLabel(widget, { exact: true })
+    ).toHaveValue(marker)
+  }
+
+  async switchAwayAndBack(nodeId: string, widget: string): Promise<void> {
+    const tabs = this.topbar.workflowTabs.locator('.p-togglebutton')
+    await expect(tabs).toHaveCount(1)
+    await this.topbar.newWorkflowButton.click()
+    await expect(tabs).toHaveCount(2)
+    await expect(this.vueNodes.nodes).toHaveCount(0)
+
+    const subscribes = this.subscribeCount()
+    await this.topbar.getTab(0).click()
+    await expect(this.topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    await expect.poll(() => this.subscribeCount()).toBe(subscribes + 1)
+    await this.waitForPendingFrames(
+      nodeId,
+      widget,
+      'tab return catch-up landed'
+    )
+  }
+
+  hostNodePositions(): (number[] | undefined)[] {
+    return this.host.projection().nodes.map((node) => node.pos)
+  }
+
+  async reloadWithoutLocalWorkflow(): Promise<void> {
+    await this.page.evaluate(() => {
+      for (const storage of [localStorage, sessionStorage]) {
+        const workflowKeys = Object.keys(storage).filter((key) =>
+          key.startsWith('Comfy.Workflow.')
+        )
+        for (const key of workflowKeys) storage.removeItem(key)
+      }
+    })
+    await this.page.reload({ waitUntil: 'domcontentloaded' })
+    await this.page.waitForFunction(() => window.app?.extensionManager)
+    await this.page.getByTestId(TestIds.app.loadingOverlay).waitFor({
+      state: 'hidden',
+      timeout: PANEL_MOUNT_TIMEOUT
+    })
+    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    await this.selectWorkflowTarget()
   }
 }
 
@@ -656,6 +966,9 @@ interface ConversationFixtures {
   conversationCase: string
   // 'recorded' replays the fixture's at_ms gaps; the default follows AGENT_REPLAY_TIMING.
   replayTiming: ReplayTiming
+  // Node definitions this case needs beyond the recorded core subset.
+  extraNodeDefs: Record<string, ComfyNodeDef>
+  humanOpsHost: HumanOpsHost
   agentConversation: AgentConversationHarness
 }
 
@@ -665,6 +978,8 @@ const VIEWPORT = { width: 2560, height: 1440 }
 export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   conversationCase: ['', { option: true }],
   replayTiming: [defaultReplayTiming(), { option: true }],
+  extraNodeDefs: [{}, { option: true }],
+  humanOpsHost: ['hold', { option: true }],
   viewport: VIEWPORT,
   video: {
     mode:
@@ -674,18 +989,33 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
     size: VIEWPORT
   },
   agentConversation: async (
-    { page, agentFlagEnabled, conversationCase, replayTiming },
-    use
+    {
+      page,
+      agentFlagEnabled,
+      conversationCase,
+      replayTiming,
+      extraNodeDefs,
+      humanOpsHost
+    },
+    use,
+    testInfo
   ) => {
     if (conversationCase.length === 0)
       throw new Error('test.use({ conversationCase }) names the conversation')
+    const vueNodes = testInfo.tags.includes(VUE_NODES_TAG)
+    if (!vueNodes)
+      throw new Error(
+        `a conversation replay is judged on Vue nodes; tag the test ${VUE_NODES_TAG}`
+      )
     const harness = new AgentConversationHarness(
       page,
       loadAgentConversation(conversationCase),
       replayTiming,
-      conversationCase
+      conversationCase,
+      extraNodeDefs,
+      humanOpsHost
     )
-    await harness.boot(agentFlagEnabled)
+    await harness.boot(agentFlagEnabled, vueNodes)
     await use(harness)
   }
 })

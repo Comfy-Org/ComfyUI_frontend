@@ -65,15 +65,21 @@ tables below follow that grouping.
 
 ### Conditionally Loaded
 
-| Extension                    | Loads when                      | Description                                         |
-| ---------------------------- | ------------------------------- | --------------------------------------------------- |
-| nodeTemplates.ts             | not a Cloud build               | Save/restore node templates (`Comfy.NodeTemplates`) |
-| cloudRemoteConfig.ts         | Cloud build                     | Remote feature configuration                        |
-| agentPanel.ts                | Cloud build                     | In-app agent side panel                             |
-| cloudBadges.ts               | Cloud build                     | Cloud-specific node badges                          |
-| cloudSessionCookie.ts        | Cloud build                     | Session cookie synchronisation                      |
-| cloudFeedbackTopbarButton.ts | Cloud or nightly build          | Feedback button in the top bar                      |
-| nightlyBadges.ts             | nightly build that is not Cloud | Nightly build badges                                |
+| Extension                    | Registered name             | Loads when                                                             |
+| ---------------------------- | --------------------------- | ---------------------------------------------------------------------- |
+| nodeTemplates.ts             | `Comfy.NodeTemplates`       | not a Cloud build                                                      |
+| cloudRemoteConfig.ts         | `Comfy.Cloud.RemoteConfig`  | Cloud build                                                            |
+| agentPanel.ts                | `Comfy.AgentPanel`          | Cloud build, or `VITE_AGENT_STANDALONE=true` in any other distribution |
+| cloudBadges.ts               | `Comfy.Cloud.Badges`        | Cloud build                                                            |
+| cloudSessionCookie.ts        | `Comfy.Cloud.SessionCookie` | Cloud build                                                            |
+| cloudFeedbackTopbarButton.ts | `Comfy.FeedbackButton`      | Cloud or nightly build                                                 |
+| nightlyBadges.ts             | `Comfy.Nightly.Badges`      | nightly build that is not Cloud                                        |
+
+The Cloud block is gated on a literal `__DISTRIBUTION__ === 'cloud'` comparison
+rather than the `isCloud` constant — that literal is what lets the bundler
+dead-code-eliminate the block, and its `posthog-js` import, from OSS builds.
+`agentPanel.ts` registers through an exported `registerAgentPanelExtension()`
+rather than on import.
 
 ### Lazily Loaded (3D)
 

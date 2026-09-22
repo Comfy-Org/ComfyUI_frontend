@@ -28,6 +28,7 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
@@ -75,10 +76,13 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { reportError } from '@/platform/telemetry/reportError'
 import { zeroUuid } from '@/utils/uuid'
 import type { importA1111 } from './pnginfo'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>
+type WorkflowValidation = ReturnType<typeof useWorkflowValidation>
 
 vi.mock(import('firebase/auth'))
 
@@ -86,7 +90,8 @@ const {
   mockExtensionService,
   mockRefreshMissingModelPipeline,
   mockImportA1111,
-  mockWorkflowService
+  mockWorkflowService,
+  mockValidateWorkflow
 } = vi.hoisted(() => ({
   mockExtensionService: {
     invokeExtensions: vi.fn(),
@@ -98,8 +103,19 @@ const {
     beforeLoadNewGraph: vi.fn<WorkflowService['beforeLoadNewGraph']>(),
     afterLoadNewGraph: vi.fn<WorkflowService['afterLoadNewGraph']>(),
     showPendingWarnings: vi.fn<WorkflowService['showPendingWarnings']>()
-  }
+  },
+  mockValidateWorkflow: vi.fn<WorkflowValidation['validateWorkflow']>()
 }))
+
+vi.mock(
+  import('@/platform/workflow/validation/composables/useWorkflowValidation'),
+  () => ({
+    useWorkflowValidation: () =>
+      fromPartial<WorkflowValidation>({
+        validateWorkflow: mockValidateWorkflow
+      })
+  })
+)
 
 vi.mock(import('@/utils/litegraphUtil'), () => ({
   createNode: vi.fn(),
@@ -123,6 +139,8 @@ vi.mock(import('@/scripts/metadata/parser'), () => ({
 }))
 
 vi.mock(import('@/utils/eventUtils'), { spy: true })
+
+vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
 
 vi.mock(import('./pnginfo'), () => ({
   importA1111: mockImportA1111
@@ -268,6 +286,7 @@ describe('ComfyApp', () => {
     mockImportA1111.mockResolvedValue('imported')
     mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
     useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    mockValidateWorkflow.mockReset().mockResolvedValue({ graphData: null })
     vi.mocked(useWorkflowStore().getWorkflowByPath).mockReturnValue(null)
     vi.mocked(useWorkflowStore().isActive).mockReturnValue(false)
     vi.mocked(useSubgraphNavigationStore().updateHash).mockResolvedValue(
@@ -471,6 +490,92 @@ describe('ComfyApp', () => {
       expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
         'onGraphLoadError',
         expect.objectContaining({ message: 'bad workflow json' })
+      )
+    })
+
+    it('resolves false and notifies onGraphLoadError when a pre-configure step fails', async () => {
+      // A failure before `rootGraph.configure` even runs (a `beforeConfigureGraph`
+      // extension hook throwing, here) previously skipped both
+      // `afterConfigureGraph` and `onGraphLoadError` entirely, rejecting the
+      // promise instead and leaking any suppression/loading-state a
+      // `beforeLoadGraph` listener had opened for this same load.
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (hook: string) => {
+          if (hook === 'beforeConfigureGraph') {
+            throw new Error('bad extension')
+          }
+        }
+      )
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+          workflowNavigationId: 9
+        })
+      ).resolves.toBe(false)
+
+      expect(showDialog).toHaveBeenCalledOnce()
+      expect(useSubgraphNavigationStore().updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        9
+      )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ message: 'bad extension' })
+      )
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+    })
+
+    it('resolves false and notifies onGraphLoadError when workflow validation rejects', async () => {
+      // A failure inside `validateWorkflow` - called well before
+      // `beforeConfigureGraph`, let alone `rootGraph.configure` - previously
+      // sat outside any try/catch in `loadGraphData` entirely, so it would
+      // reject the returned promise instead of resolving false, skipping
+      // both `afterConfigureGraph` and `onGraphLoadError` and leaking any
+      // suppression/loading-state a `beforeLoadGraph` listener had opened
+      // for this same load.
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      useSettingStore().settingValues['Comfy.Validation.Workflows'] = true
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+      mockValidateWorkflow.mockRejectedValueOnce(
+        new Error('workflow validation blew up')
+      )
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+          workflowNavigationId: 13
+        })
+      ).resolves.toBe(false)
+
+      expect(showDialog).toHaveBeenCalledOnce()
+      expect(useSubgraphNavigationStore().updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        13
+      )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ message: 'workflow validation blew up' })
+      )
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+
+      // A second, successful load proves the depth counter this rejection
+      // could otherwise have leaked open (see agentPanel.ts) is actually
+      // closed: a subsequent load starts and completes normally.
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+          workflowNavigationId: 14
+        })
+      ).resolves.toBe(true)
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'afterConfigureGraph',
+        expect.anything()
       )
     })
 
@@ -3110,5 +3215,51 @@ describe('ComfyApp', () => {
         releaseOpenWorkflow()
       }
     })
+
+    it.for([
+      {
+        drop: 'an asset card',
+        mime: MIME_ASSET_INFO,
+        alerts: [t('toastMessages.assetDropFailed')],
+        errorTypes: ['asset_drop_load_failure']
+      },
+      {
+        drop: 'a plain link',
+        mime: 'text/uri-list',
+        alerts: [],
+        errorTypes: []
+      }
+    ])(
+      'surfaces a drop that yields no file only for $drop',
+      async ({ mime, alerts, errorTypes }) => {
+        app.canvas = fromPartial<LGraphCanvas>({
+          ...createMockCanvas(),
+          graph_mouse: [0, 0],
+          adjustMouseEvent: vi.fn()
+        })
+        vi.mocked(reportError).mockImplementation(() => {})
+        const noFiles = Promise.resolve<File[]>([])
+        vi.mocked(extractFilesFromDragEvent).mockReturnValue(noFiles)
+        ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+
+        const dataTransfer = new DataTransfer()
+        dataTransfer.setData(mime, 'https://example.com/content')
+        const event = new DragEvent('drop', { cancelable: true })
+        Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+        document.dispatchEvent(event)
+
+        await vi.waitFor(() => {
+          expect(extractFilesFromDragEvent).toHaveBeenCalledWith(event)
+        })
+        await noFiles
+
+        expect(
+          vi.mocked(useToastStore().addAlert).mock.calls.map(([msg]) => msg)
+        ).toEqual(alerts)
+        expect(
+          vi.mocked(reportError).mock.calls.map(([, opts]) => opts.errorType)
+        ).toEqual(errorTypes)
+      }
+    )
   })
 })
