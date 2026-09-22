@@ -6,10 +6,24 @@ and portable examples are implemented in Cloud commit `4d1c96f1ed`, under
 shapes, required idempotency headers, declared auth/cache policy, and withholding
 unimplemented routes from registration and API publication.
 
-Those checks do not prove runtime authorization, publication/default parity,
-media transfer, recovery, cancellation or billing. The matrix below is still the
-verification contract for the [architecture](../architecture/workshop-cloud-workflows.md),
-not a report of completed runtime or staging coverage.
+Cloud commit `1b6c5abdaa` adds real-Postgres receipt and admission tests under
+`services/ingest/server/services/workshop/` and `server/implementation/`.
+They prove one job/allowance debit under sixteen concurrent retries, changed
+identity rejection, transaction and commit failure rollback, retained receipts
+after job deletion, cancel-before-submit fencing, and queue-limit serialization.
+A real job state-machine test checks job-scoped cancellation and terminal
+confirmation. Other tests cover expired/rotated capabilities, credential
+revocation, access removal, identity-header spoofing, both M2M factors, bounded
+JSON and no-store responses. These suites pass with the race detector; the new
+concurrency tests also exposed and fixed an unsynchronized shared PostHog test
+double.
+
+This is Cloud-boundary evidence for parts of R01–R03, R06, R08–R11, R14, R15 and R17.
+It does not prove comfy-api's durable worker/leases, public-operation isolation,
+publication/default parity, media delivery or real caller billing. The matrix
+below remains the verification contract for the
+[architecture](../architecture/workshop-cloud-workflows.md), not a report of
+completed feature or staging acceptance.
 
 ## Test ownership
 
