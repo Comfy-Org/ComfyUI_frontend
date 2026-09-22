@@ -112,24 +112,26 @@ type RetainedDelete =
 
 /**
  * The Yjs item identity (`client:clock`) currently occupying `nodeId` in the
- * doc's `nodes` map - present or already tombstoned - or null when
- * unavailable. A later mismatch against a stored `RetainedDelete.deletedItemId`
- * means the key now names a different incarnation than the one that was
- * deleted: same-id recreation after a delete is supported elsewhere
+ * doc's `nodes` map - present or already tombstoned - or null when absent.
+ * A later mismatch against a stored `RetainedDelete.deletedItemId` means the
+ * key now names a different incarnation than the one that was deleted:
+ * same-id recreation after a delete is supported elsewhere
  * (`layoutMintPort`), and presence alone cannot tell the two apart.
+ *
+ * `doc` is typed `unknown` because tests stand in a plain object for the
+ * follower's real `Y.Doc`; an access failure against such a stand-in is
+ * expected and returns null, but one against a genuine `Y.Doc` is not, so
+ * it is reported rather than folded into the same "no identity" result.
  */
 function currentNodeItemId(doc: unknown, nodeId: string): string | null {
+  if (!(doc instanceof Y.Doc)) return null
   try {
-    const map = (
-      doc as {
-        getMap: (key: string) => {
-          _map?: Map<string, { id: { client: number; clock: number } }>
-        }
-      }
-    ).getMap('nodes')
-    const item = map._map?.get(nodeId)
+    const item = doc.getMap<unknown>('nodes')._map.get(nodeId)
     return item ? `${item.id.client}:${item.id.clock}` : null
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      errorType: 'failure_reading_agent_crdt_node_item_identity'
+    })
     return null
   }
 }
@@ -171,7 +173,11 @@ function retainedDeletesFromBatch(
 
 /**
  * Merges a newly settled retention into any existing record for the same
- * node. `'confirmed-applied'` always wins over `'unknown'` - settling twice
+ * node id, but only when both describe the same Yjs item: a node id whose
+ * `deletedItemId` differs from the stored record's names a later incarnation
+ * under the old id, which needs its own retention decision rather than a
+ * strength comparison against a record for a different item. For the same
+ * item, `'confirmed-applied'` always wins over `'unknown'` - settling twice
  * must never downgrade a definitive result to an expiring one - and between
  * two `'unknown'` records the later expiry wins, since retaining longer is
  * safe while releasing early is the bug this merge exists to prevent.
@@ -180,7 +186,8 @@ function mergeRetainedDelete(
   existing: RetainedDelete | undefined,
   incoming: RetainedDelete
 ): RetainedDelete {
-  if (!existing) return incoming
+  if (!existing || existing.deletedItemId !== incoming.deletedItemId)
+    return incoming
   if (existing.reason === 'confirmed-applied') return existing
   if (incoming.reason === 'confirmed-applied') return incoming
   return incoming.expiresAt >= existing.expiresAt ? incoming : existing
@@ -439,8 +446,9 @@ function startAgentCrdtFollower(
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: (outcome) => {
       if (outcome.workflowId !== null) {
-        const retained = retainedDeletesFromBatch(outcome, (nodeId) =>
-          currentNodeItemId(bridge.follower.doc, nodeId)
+        const retained = retainedDeletesFromBatch(
+          outcome,
+          capturedDeletedItemId
         )
         if (retained.length > 0) {
           const deletes = confirmedDeletesFor(outcome.workflowId)
@@ -483,6 +491,21 @@ function startAgentCrdtFollower(
   // doc_reset (remint) because the lineage broke.
   let knownDocNodeIds: Set<string> = new Set()
   const pendingLiveNodeIds = new Set<NodeId>()
+  // The identity last seen disappearing from a node id, captured the moment
+  // `trackNodeChanges` observes the removal - not re-read later, because a
+  // `doc_ops_result` for that delete can settle after a second, unrelated
+  // doc_update has already recreated the id under a new identity. Read once
+  // by `onBatchSettled` via `capturedDeletedItemId` below, then cleared: a
+  // later, unrelated delete of a since-recreated id must fall through to a
+  // fresh read rather than reuse this already-consumed capture.
+  const lastDeletedItemId = new Map<string, string | null>()
+  const capturedDeletedItemId = (nodeId: string): string | null => {
+    if (!lastDeletedItemId.has(nodeId))
+      return currentNodeItemId(bridge.follower.doc, nodeId)
+    const captured = lastDeletedItemId.get(nodeId) ?? null
+    lastDeletedItemId.delete(nodeId)
+    return captured
+  }
   const currentDocNodeIds = (): Set<string> => {
     try {
       const doc = bridge.follower.doc as unknown as {
@@ -517,6 +540,7 @@ function startAgentCrdtFollower(
     if (added.length > 0 || removed.length > 0)
       recordDevEvent('doc_nodes_changed', { added, removed })
     for (const id of removed) {
+      lastDeletedItemId.set(id, currentNodeItemId(bridge.follower.doc, id))
       const nodeId = parseNodeId(id)
       if (nodeId) pendingLiveNodeIds.delete(nodeId)
     }
@@ -619,6 +643,7 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
     pendingLiveNodeIds.clear()
+    lastDeletedItemId.clear()
     confirmedDeletes.delete(detail.workflowId)
     recordDevEvent(
       'doc_reset',
@@ -848,6 +873,7 @@ function startAgentCrdtFollower(
       connected.value = false
       knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
+      lastDeletedItemId.clear()
       if (!active) {
         deactivateTarget(next, previous?.[0] ?? null)
         return
