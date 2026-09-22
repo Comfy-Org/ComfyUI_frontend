@@ -85,7 +85,7 @@ export type ServerDocFrame =
   | { type: 'doc_reset'; data: DocReset }
   | { type: 'awareness'; data: DocAwareness }
 
-export type ClientDocFrame =
+type ClientDocFrame =
   | {
       type: 'doc_subscribe'
       data: {
