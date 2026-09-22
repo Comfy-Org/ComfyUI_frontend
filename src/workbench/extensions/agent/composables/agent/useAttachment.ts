@@ -64,6 +64,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   const cancelled = new Set<string>()
   const waiting: Array<() => void> = []
   let activeUploads = 0
+  let cancellationGeneration = 0
 
   function stage(name: string): string {
     const id = `upload-${++stagedCount}:${name}`
@@ -162,6 +163,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function cancelAllUploads(): void {
+    cancellationGeneration += 1
     for (const id of [...pending]) cancelUpload(id)
   }
 
@@ -198,10 +200,13 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   async function addFiles(files: Iterable<File>): Promise<void> {
+    const generation = cancellationGeneration
     const staged: Array<{ file: File; id: string }> = []
     for (const file of files) {
       if (isTooLarge(file)) continue
-      if (options.validate && !(await validateFile(file))) continue
+      const valid = !options.validate || (await validateFile(file))
+      if (generation !== cancellationGeneration) return
+      if (!valid) continue
       staged.push({ file, id: stage(file.name) })
     }
     let uploaded = 0
