@@ -66,15 +66,36 @@ function isSlotRecord(value: unknown): value is { name?: unknown } {
 type PatchableSlot = INodeInputSlot | INodeOutputSlot
 
 /**
- * Copies a serialized slot's presentation fields -- `name`, `type`, and ten
- * optional fields -- onto the live slot object, so the node keeps its slot
- * identity; an omitted optional field keeps the live value. `link`/`links`
- * are handled separately, by `patchLiveInputSlot`/`patchLiveOutputSlot`
- * below: keeping them out of this shared helper (rather than narrowing
- * `live` at runtime with an `in` check, which a live slot missing that own
- * key -- e.g. an output never assigned `links` -- would wrongly fail) means
- * each caller's static type, not a runtime probe, decides which field
- * applies.
+ * `patchSlotFields`'s optional fields -- every one is declared on the shared
+ * `INodeSlot` base, so a single loop can copy all of them the same way.
+ */
+const OPTIONAL_SLOT_FIELDS = [
+  'localized_name',
+  'label',
+  'dir',
+  'removable',
+  'shape',
+  'color_off',
+  'color_on',
+  'locked',
+  'nameLocked',
+  'hasErrors'
+] as const satisfies readonly (keyof INodeSlot)[]
+
+/**
+ * Copies a serialized slot's presentation fields -- `name`, `type`, and
+ * `OPTIONAL_SLOT_FIELDS` -- onto the live slot object, so the node keeps its
+ * slot identity; an omitted optional field keeps the live value. Building a
+ * plain object of the present fields and `Object.assign`-ing it, rather than
+ * assigning `live[field] = serialized[field]` per field, sidesteps a
+ * TypeScript limitation where indexing both sides by the same widened
+ * `keyof` union can no longer prove the assignment sound -- the same reason
+ * `nodeDataStore.ts`'s `copyOwnFields` takes this shape. `link`/`links` are
+ * handled separately, by `patchLiveInputSlot`/`patchLiveOutputSlot` below:
+ * keeping them out of this shared helper (rather than narrowing `live` at
+ * runtime with an `in` check, which a live slot missing that own key -- e.g.
+ * an output never assigned `links` -- would wrongly fail) means each
+ * caller's static type, not a runtime probe, decides which field applies.
  *
  * `boundingRect` is deliberately excluded: on a real slot instance it is a
  * `Rectangle` (a `Float64Array` subclass) that the renderer measures, and
@@ -88,18 +109,14 @@ function patchSlotFields<T extends PatchableSlot>(
 ): void {
   live.name = serialized.name
   live.type = serialized.type
-  if (serialized.localized_name !== undefined)
-    live.localized_name = serialized.localized_name
-  if (serialized.label !== undefined) live.label = serialized.label
-  if (serialized.dir !== undefined) live.dir = serialized.dir
-  if (serialized.removable !== undefined) live.removable = serialized.removable
-  if (serialized.shape !== undefined) live.shape = serialized.shape
-  if (serialized.color_off !== undefined) live.color_off = serialized.color_off
-  if (serialized.color_on !== undefined) live.color_on = serialized.color_on
-  if (serialized.locked !== undefined) live.locked = serialized.locked
-  if (serialized.nameLocked !== undefined)
-    live.nameLocked = serialized.nameLocked
-  if (serialized.hasErrors !== undefined) live.hasErrors = serialized.hasErrors
+  Object.assign(
+    live,
+    Object.fromEntries(
+      OPTIONAL_SLOT_FIELDS.flatMap((field) =>
+        serialized[field] !== undefined ? [[field, serialized[field]]] : []
+      )
+    )
+  )
 }
 
 /**
