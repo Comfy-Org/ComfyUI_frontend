@@ -44,6 +44,7 @@ const HEALTH_FIELDS = new Set([
   'http_status',
   'router_error_type',
   'field_error_codes',
+  'field_error_names',
   'exception_name',
   'exception_frames',
   'output_count',
