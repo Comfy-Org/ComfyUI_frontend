@@ -105,11 +105,11 @@ export function ownerNodesMap(
   }
   if (!create && !doc.share.has(DEFINITIONS_ROOT)) return undefined
   const definitions = doc.getMap<unknown>(DEFINITIONS_ROOT)
-  let definition = definitions.get(owningGraphId as string)
+  let definition = definitions.get(owningGraphId)
   if (!(definition instanceof Y.Map)) {
     if (!create) return undefined
     definition = new Y.Map<unknown>()
-    definitions.set(owningGraphId as string, definition)
+    definitions.set(owningGraphId, definition)
   }
   let nodes = (definition as Y.Map<unknown>).get(DEFINITION_NODES_KEY)
   if (!(nodes instanceof Y.Map)) {

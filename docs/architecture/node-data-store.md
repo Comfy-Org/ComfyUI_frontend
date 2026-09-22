@@ -297,7 +297,7 @@ Rules:
   until `registerNode` supplies the object; a registered object whose key is
   missing from the document is likewise not listed.
 - Local writes carry a `LocalUpdateOrigin` (`{ source: 'local', actor?,
-  opId? }`) so observers can separate them from `applyRemote`. `registerNode`
+opId? }`) so observers can separate them from `applyRemote`. `registerNode`
   writes `nodes.<id> = { type }` only if the key is absent, so a merged host
   node needs no second write.
 - Duplicate-id rejection and owner isolation are unchanged: the store still
