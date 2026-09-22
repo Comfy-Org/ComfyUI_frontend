@@ -243,7 +243,7 @@ describe('AgentMessage thinking narration', () => {
       screen
         .getAllByRole('listitem')
         .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
-    ).toEqual(['Inspecting the graph1.4s', 'Set widget0.9s'])
+    ).toEqual(['Inspecting the graph', 'Set widget'])
     expect(
       screen.queryByRole('button', { name: /worked/i })
     ).not.toBeInTheDocument()
@@ -254,7 +254,7 @@ describe('AgentMessage thinking narration', () => {
     })
     await rerender({ message })
 
-    const summary = screen.getByRole('button', { name: /^worked for/i })
+    const summary = screen.getByRole('button', { name: /^worked$/i })
     expect(summary).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('Set widget')).not.toBeInTheDocument()
 
@@ -377,7 +377,7 @@ describe('AgentMessage thinking narration', () => {
     ).toEqual(['Set widget', 'Add node'])
   })
 
-  it('sums the whole turn into one accordion labelled with its duration', async () => {
+  it('folds the whole turn into one timing-free accordion', async () => {
     const message = thinkingMessage()
     message.thinking = false
     message.streaming = false
@@ -416,7 +416,7 @@ describe('AgentMessage thinking narration', () => {
     })
 
     const summary = screen.getByRole('button', { name: /^worked/i })
-    expect(summary.textContent).toContain('Worked for 3.3 seconds')
+    expect(summary).toHaveTextContent('Worked')
     expect(summary).toHaveAttribute('aria-expanded', 'false')
     expect(screen.getByText('The workflow is ready.')).toBeInTheDocument()
 
@@ -426,10 +426,10 @@ describe('AgentMessage thinking narration', () => {
         .getAllByRole('listitem')
         .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
     ).toEqual([
-      'Inspecting the graph1.3s',
-      'List slots0.5s',
-      'Set widget0.8s',
-      'Checking the result0.7s'
+      'Inspecting the graph',
+      'List slots',
+      'Set widget',
+      'Checking the result'
     ])
   })
 })
