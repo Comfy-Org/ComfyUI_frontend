@@ -55,16 +55,3 @@ jobs:
       # catches a cluster that points at a page the build never produced.
       - name: Check hreflang clusters
         run: pnpm --filter @comfyorg/website check:hreflang
-
-      - name: Verify the optional Workshop build exclusion
-        env:
-          WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
-          WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
-          WORKSHOP_IN_BUILD: '0'
-        run: |
-          pnpm --filter @comfyorg/website build
-          if [ -d apps/website/dist/workshop ]; then
-            echo "::error title=Workshop leaked into a release build::apps/website/dist/workshop exists with WORKSHOP_IN_BUILD=0. The retired Workshop routes must not deploy. See apps/website/src/integrations/workshop-release-gate.ts."
-            exit 1
-          fi
-          echo "Release build has no Workshop output."

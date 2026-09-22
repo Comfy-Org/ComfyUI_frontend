@@ -1,0 +1,114 @@
+name: 'CI: MODELS'
+
+on:
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      models: ${{ steps.changes.outputs.models }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d
+        id: changes
+        with:
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.before || github.ref }}
+          filters: .github/filters/models.yaml
+
+  checks:
+    needs: changes
+    if: needs.changes.outputs.models == 'true'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
+    timeout-minutes: 15
+    env:
+      WEBSITE_TEST_SCOPE: models
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+      - name: MODELS unit and input-validation tests
+        run: >-
+          pnpm --filter @comfyorg/website test:coverage
+          --reporter=default --reporter=json
+          --outputFile.json=models-unit-results.json
+      - name: Upload MODELS coverage
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f
+        with:
+          working-directory: ./apps/website
+          files: ./coverage/lcov.info
+          disable_search: true
+          flags: website-models-unit
+          network_prefix: apps/website/
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: ${{ github.event.pull_request.head.repo.fork != true }}
+      - name: Verify the optional Workshop build exclusion
+        env:
+          WORKSHOP_IN_BUILD: '0'
+        run: |
+          pnpm --filter @comfyorg/website build
+          if [ -d apps/website/dist/workshop ]; then
+            echo '::error::Retired Workshop routes leaked into the release build'
+            exit 1
+          fi
+      - name: Build MODELS with RUN enabled
+        env:
+          NODE_ENV: production
+          WORKSHOP_IN_BUILD: '1'
+          PUBLIC_WORKSHOP_ROUTER_RUN: '1'
+          PUBLIC_WORKSHOP_CLOUD_ENV: test
+          WEBSITE_GITHUB_STARS_OVERRIDE: 110000
+          PUBLIC_CUSTOMERIO_WRITE_KEY: test-e2e-write-key
+        run: pnpm --filter @comfyorg/website build
+      - name: MODELS browser tests without provider calls
+        run: pnpm --filter @comfyorg/website test:e2e --workers=4
+      - name: Publish MODELS reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: models-pr-reports
+          path: |
+            apps/website/models-unit-results.json
+            apps/website/playwright-report/
+            apps/website/results.json
+            apps/website/test-results/
+          if-no-files-found: error
+          retention-days: 30
+
+  models-gate:
+    if: ${{ always() }}
+    needs: [changes, checks]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require passing MODELS checks or a verified irrelevant change
+        env:
+          FILTER_RESULT: ${{ needs.changes.result }}
+          MODELS_CHANGED: ${{ needs.changes.outputs.models }}
+          CHECKS_RESULT: ${{ needs.checks.result }}
+        run: |
+          if [ "$FILTER_RESULT" = success ] &&
+             { { [ "$MODELS_CHANGED" = true ] && [ "$CHECKS_RESULT" = success ]; } ||
+               { [ "$MODELS_CHANGED" = false ] && [ "$CHECKS_RESULT" = skipped ]; }; }; then
+            echo "MODELS: $CHECKS_RESULT" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "::error::MODELS gate failed: filter=$FILTER_RESULT changed=$MODELS_CHANGED checks=$CHECKS_RESULT"
+          exit 1

@@ -118,3 +118,6 @@ matrix-proof/
 
 # Raw recorder sidecars (frames, rows, identifiers); only the sanitized conversation JSON is tracked
 browser_tests/fixtures/data/agent/conversations/recordings/
+
+apps/website/models-unit-results.json
+apps/website/validation-results.json

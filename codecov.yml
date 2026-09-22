@@ -12,6 +12,7 @@ coverage:
         informational: true
         flags:
           - website-unit
+          - website-models-unit
         paths:
           - apps/website/src/**
         flag_coverage_not_uploaded_behavior: pass
@@ -37,6 +38,7 @@ coverage:
         informational: true
         flags:
           - website-unit
+          - website-models-unit
         paths:
           - apps/website/src/**
         flag_coverage_not_uploaded_behavior: pass
@@ -81,6 +83,10 @@ flags:
     carryforward: true
   # Do not hide missing website coverage with stale data.
   website-unit:
+    paths:
+      - apps/website/src/**
+    carryforward: false
+  website-models-unit:
     paths:
       - apps/website/src/**
     carryforward: false

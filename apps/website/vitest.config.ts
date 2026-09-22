@@ -2,6 +2,14 @@ import vue from '@vitejs/plugin-vue'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
+import {
+  modelsSource,
+  modelsUnitTests,
+  websiteTestScope
+} from './testing/models-test-scope.ts'
+
+const scope = websiteTestScope(process.env.WEBSITE_TEST_SCOPE)
+
 export default defineConfig({
   plugins: [vue()],
   resolve: {
@@ -28,7 +36,11 @@ export default defineConfig({
         }
       }
     },
-    include: ['src/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'],
+    include:
+      scope === 'models'
+        ? modelsUnitTests
+        : ['src/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'],
+    exclude: scope === 'website' ? modelsUnitTests : [],
     globals: false,
     setupFiles: ['../../vitest.timer.setup.ts', './src/test/setup.ts'],
     coverage: {
@@ -36,8 +48,14 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       reportsDirectory: './coverage',
       // Include untested files so patch coverage counts them as 0%.
-      include: ['src/**/*.{ts,vue}'],
+      include:
+        scope === 'models'
+          ? modelsSource.map((path) =>
+              path.endsWith('/**') ? `${path}/*.{ts,vue}` : `${path}.{ts,vue}`
+            )
+          : ['src/**/*.{ts,vue}'],
       exclude: [
+        ...(scope === 'website' ? modelsSource : []),
         'src/**/*.{test,spec}.ts',
         'src/**/*.stories.ts',
         'src/**/*.d.ts',
