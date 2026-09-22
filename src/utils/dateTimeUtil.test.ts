@@ -210,9 +210,7 @@ describe('formatClockTime', () => {
       hour: 'numeric'
     }).resolvedOptions()
     const applicationLocale =
-      systemHourCycle === 'h11' || systemHourCycle === 'h12'
-        ? 'de-DE'
-        : 'en-US'
+      systemHourCycle === 'h11' || systemHourCycle === 'h12' ? 'de-DE' : 'en-US'
     const expected = new Intl.DateTimeFormat(applicationLocale, {
       hour: 'numeric',
       minute: '2-digit',
