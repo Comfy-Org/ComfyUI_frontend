@@ -17,10 +17,7 @@ import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKSPACE
 
-/** Indirection so this boolean doesn't type-narrow `route.query.workspace`
- * at the call site, which would make later `undefined` checks on the merged
- * query look unreachable to the type-aware linter even though the merge
- * branch can still produce one. */
+/** A plain function, not an inline check, so the type-aware linter doesn't narrow `route.query.workspace` and flag the later `undefined` check as unreachable. */
 function hasWorkspaceParam(query: LocationQueryRaw): boolean {
   return query.workspace !== undefined
 }
@@ -86,14 +83,9 @@ export function useWorkspaceUrlLoader() {
   /** Reads `?workspace=`, strips it, and switches (or explains why not). */
   async function loadWorkspaceFromUrl() {
     hydratePreservedQuery(NAMESPACE)
-    // The live URL is authoritative when it carries the param, including a
-    // repeated value that must read as invalid: mergePreservedQueryIntoQuery
-    // is built for single-value params and overwrites an array-valued live
-    // key with the stashed string (by design, for namespaces like ?template=
-    // that only ever hold one value), which would silently turn an invalid
-    // link into a valid one. Only fall back to the preserved stash — which
-    // exists to survive a login redirect — when the live URL has lost the
-    // param entirely.
+    // Prefer the live URL: mergePreservedQueryIntoQuery collapses a repeated
+    // value to one stashed string (right for single-value params, wrong for
+    // detecting `invalid` here), so only consult it once the param is gone.
     const query = hasWorkspaceParam(route.query)
       ? route.query
       : (mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query)

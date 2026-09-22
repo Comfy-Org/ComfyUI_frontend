@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 import {
   PERSONAL_WORKSPACE_NAME,
@@ -14,45 +14,32 @@ import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFi
  * workspace-switcher fixture: `ws-personal` (owner) and `ws-team` (owner) are
  * both real memberships; any other id is not a member.
  *
- * Scenarios that switch workspace reload the page from `onMounted`, before
- * the app's own `ready` event. Driving that deep link through
- * `comfyPage`'s `initialUrl` races two fixture-internal steps against that
- * reload: `waitForAppReady()`'s overlay-hidden wait can be satisfied by an
- * *earlier*, legitimate hide (the loading overlay hides once the graph
- * bootstraps, before `runUrlActionLoaders` runs), and the very next fixture
- * step for `@cloud` tests (`setServerFlagsPersistent`) then runs
- * `page.evaluate` right as the reload tears down `window.app`. Those
+ * A switch reloads the page from `onMounted`, before the app's own `ready`
+ * event — and before the loading overlay hides, which happens even earlier
+ * (once the graph bootstraps), so waiting on the overlay alone can resolve
+ * on the pre-switch boot. Driving the deep link through `comfyPage`'s
+ * `initialUrl` also races the fixture's own post-boot step for `@cloud`
+ * tests (`setServerFlagsPersistent`) against that reload. Switching
  * scenarios instead let the fixture finish its normal, non-deep-linked boot
- * first, then drive the deep link with a plain `page.goto` from inside the
- * test body and wait for the *specific* combined condition that proves the
- * app is done — not merely that the overlay element is momentarily gone.
+ * first, then drive the deep link with a plain `page.goto` and explicitly
+ * wait for the second `load` event the reload fires, before checking
+ * app-ready.
  */
-
-/** Waits past a workspace-switch reload: `window.app` must exist AND the
- * loading overlay must be hidden, checked together in one poll so a
- * mid-navigation moment (where the overlay is briefly absent from a blank
- * document) can't satisfy it on its own. */
-async function waitForFinalAppReady(page: Page) {
-  await page.waitForFunction(
-    () => {
-      const overlay = document.querySelector(
-        '[data-testid="app-loading-overlay"]'
-      )
-      const overlayHidden =
-        !overlay || getComputedStyle(overlay).display === 'none'
-      return Boolean(window.app?.extensionManager) && overlayHidden
-    },
-    null,
-    { timeout: 60_000 }
-  )
+async function gotoAndWaitThroughSwitch(comfyPage: ComfyPage, path: string) {
+  const page = comfyPage.page
+  await page.goto(new URL(path, comfyPage.url).toString())
+  // The reload may already have fired (and 'load' already resolved) by the
+  // time this listener attaches; either way window.app reflects the final
+  // boot once this settles, so a timeout here is not fatal.
+  await page.waitForEvent('load', { timeout: 30_000 }).catch(() => undefined)
+  await comfyPage.waitForAppReady()
 }
 
 test.describe('Cloud workspace deep link', { tag: '@cloud' }, () => {
   test('switches into the workspace the link names', async ({ comfyPage }) => {
     const page = comfyPage.page
 
-    await page.goto(new URL('/?workspace=ws-team', comfyPage.url).toString())
-    await waitForFinalAppReady(page)
+    await gotoAndWaitThroughSwitch(comfyPage, '/?workspace=ws-team')
 
     await page.getByRole('button', { name: 'Current user' }).click()
     await expect(page.getByTestId('workspace-switcher-trigger')).toContainText(
@@ -86,13 +73,15 @@ test.describe('Cloud workspace deep link', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
 
+    // No switch happens for an invalid link, so no further reload to wait
+    // through — the fixture's own initial boot already settled.
     await page.goto(
       new URL(
         '/?workspace=ws-team&workspace=ws-personal',
         comfyPage.url
       ).toString()
     )
-    await waitForFinalAppReady(page)
+    await comfyPage.waitForAppReady()
 
     await expect(
       page.getByText(`You're still in ${PERSONAL_WORKSPACE_NAME}`)
@@ -115,13 +104,10 @@ test.describe('Cloud workspace deep link', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
 
-    await page.goto(
-      new URL(
-        '/?workspace=ws-team&settings=plan-credits',
-        comfyPage.url
-      ).toString()
+    await gotoAndWaitThroughSwitch(
+      comfyPage,
+      '/?workspace=ws-team&settings=plan-credits'
     )
-    await waitForFinalAppReady(page)
 
     const dialog = page.getByTestId(TestIds.dialogs.settings)
     await expect(dialog).toBeVisible()
