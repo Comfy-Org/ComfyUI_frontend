@@ -209,6 +209,29 @@ test.skip('duplicate title', () => newFixture())
     ])
   })
 
+  it('finds a prepended disabled test before an existing disabled test', () => {
+    const root = createRepository()
+    write(
+      root,
+      'tests/example.spec.ts',
+      `test.skip('existing test', () => existingFixture())\n`
+    )
+    const base = commit(root, 'base')
+
+    write(
+      root,
+      'tests/example.spec.ts',
+      `test.skip('new test', () => newFixture())
+test.skip('existing test', () => existingFixture())
+`
+    )
+    const head = commit(root, 'prepend disabled test')
+
+    expect(findViolations(root, base, head)).toEqual([
+      "  tests/example.spec.ts:1: test.skip('new test', () => newFixture())"
+    ])
+  })
+
   it('finds a prepended disabled test with the same title and context', () => {
     const root = createRepository()
     write(

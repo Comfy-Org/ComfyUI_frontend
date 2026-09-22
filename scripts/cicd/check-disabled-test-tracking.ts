@@ -226,26 +226,39 @@ function compareDeclarationRank(left: number[], right: number[]): number {
 function correspondingBaseDeclarations(
   base: TestDeclaration[],
   head: TestDeclaration[],
-  projectBaseLine: (line: number) => number
+  projectBaseLine: (line: number) => number,
+  isAddedLine: (line: number) => boolean
 ): Map<number, TestDeclaration> {
   const corresponding = new Map<number, TestDeclaration>()
   const matchedBase = new Set<number>()
+  const matchedHead = new Set<number>()
+  const candidates = head.flatMap((headDeclaration, headIndex) =>
+    base.map((baseDeclaration, baseIndex) => ({
+      baseDeclaration,
+      baseIndex,
+      headIndex,
+      rank: [
+        baseDeclaration.title === headDeclaration.title ? 0 : 1,
+        baseDeclaration.context === headDeclaration.context ? 0 : 1,
+        headDeclaration.relevantLines.some(isAddedLine) ? 1 : 0,
+        Math.abs(projectBaseLine(baseDeclaration.line) - headDeclaration.line)
+      ]
+    }))
+  )
 
-  for (const [headIndex, headDeclaration] of head.entries()) {
-    if (matchedBase.size === base.length) break
-    const candidate = base
-      .map((declaration, index) => ({ declaration, index }))
-      .filter(({ index }) => !matchedBase.has(index))
-      .sort((left, right) => {
-        const rank = ({ declaration }: typeof left): number[] => [
-          declaration.title === headDeclaration.title ? 0 : 1,
-          declaration.context === headDeclaration.context ? 0 : 1,
-          Math.abs(projectBaseLine(declaration.line) - headDeclaration.line)
-        ]
-        return compareDeclarationRank(rank(left), rank(right))
-      })[0]
-    matchedBase.add(candidate.index)
-    corresponding.set(headIndex, candidate.declaration)
+  candidates.sort((left, right) =>
+    compareDeclarationRank(left.rank, right.rank)
+  )
+  for (const candidate of candidates) {
+    if (
+      matchedBase.has(candidate.baseIndex) ||
+      matchedHead.has(candidate.headIndex)
+    ) {
+      continue
+    }
+    matchedBase.add(candidate.baseIndex)
+    matchedHead.add(candidate.headIndex)
+    corresponding.set(candidate.headIndex, candidate.baseDeclaration)
   }
 
   return corresponding
@@ -337,7 +350,8 @@ export function findViolations(
     const correspondingBase = correspondingBaseDeclarations(
       testDeclarations(baseSource, path),
       headDeclarations,
-      (line) => projectBaseLine(patch, line)
+      (line) => projectBaseLine(patch, line),
+      (line) => addedLines.has(line)
     )
 
     for (const [index, declaration] of headDeclarations.entries()) {
