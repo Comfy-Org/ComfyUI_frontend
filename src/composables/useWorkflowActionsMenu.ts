@@ -6,6 +6,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
+import { useDeployToComfyApiGate } from '@/platform/workflow/deploy/composables/useDeployToComfyApiGate'
 import { openShareDialog } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -56,6 +57,7 @@ export function useWorkflowActionsMenu(
   const subgraphStore = useSubgraphStore()
   const menuItemStore = useMenuItemStore()
   const { flags } = useFeatureFlags()
+  const deployGate = useDeployToComfyApiGate()
   const appModeStore = useAppModeStore()
   const { enterBuilder, pruneLinearData } = appModeStore
   const { toastErrorHandler } = useErrorHandling()
@@ -207,7 +209,7 @@ export function useWorkflowActionsMenu(
       label: t('deployToComfyApi.buttonLabel'),
       icon: 'icon-[lucide--rocket]',
       command: () => openDeployToComfyApiDialog().catch(toastErrorHandler),
-      visible: isRoot,
+      visible: isRoot && deployGate.enabled.value,
       isNew: true,
       badge: t('g.new')
     })

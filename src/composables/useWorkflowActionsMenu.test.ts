@@ -13,6 +13,7 @@ import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useDeployToComfyApiGate } from '@/platform/workflow/deploy/composables/useDeployToComfyApiGate'
 import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/composables/useWorkflowActionsMenu'
 import en from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -60,6 +61,10 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/composables/useFeatureFlags'))
+
+vi.mock(
+  import('@/platform/workflow/deploy/composables/useDeployToComfyApiGate')
+)
 function useWorkflowActionsMenu(
   ...args: Parameters<typeof useWorkflowActionsMenuComposable>
 ) {
@@ -94,6 +99,7 @@ function findItem(items: MenuItems, label: string): WorkflowMenuAction {
 
 describe('useWorkflowActionsMenu', () => {
   beforeEach(() => {
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({ enabled: ref(false) })
     mockBookmarkStore = useWorkflowBookmarkStore()
     mockWorkflowStore = useWorkflowStore()
     mockCommandStore = useCommandStore()
@@ -371,7 +377,8 @@ describe('useWorkflowActionsMenu', () => {
     expect(bookmark.disabled).toBe(true)
   })
 
-  it('offers Deploy to ComfyAPI as a new root-level item', () => {
+  it('offers Deploy to ComfyAPI as a new root-level item once the platform has distributions on', () => {
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({ enabled: ref(true) })
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const deploy = findItem(menuItems.value, 'deployToComfyApi.buttonLabel')
 
@@ -385,7 +392,16 @@ describe('useWorkflowActionsMenu', () => {
     )
   })
 
+  it('keeps Deploy to ComfyAPI hidden until the platform has distributions on', () => {
+    const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
+
+    expect(menuLabels(menuItems.value)).not.toContain(
+      'deployToComfyApi.buttonLabel'
+    )
+  })
+
   it('deploy command opens the Deploy to ComfyAPI dialog', async () => {
+    vi.mocked(useDeployToComfyApiGate).mockReturnValue({ enabled: ref(true) })
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const deploy = findItem(menuItems.value, 'deployToComfyApi.buttonLabel')
 
