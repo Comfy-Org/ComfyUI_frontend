@@ -46,7 +46,7 @@ jobs:
           package_json_file: pull-request/package.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: pull-request/.nvmrc
 
