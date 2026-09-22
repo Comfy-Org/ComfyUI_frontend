@@ -72,7 +72,12 @@ describe('auditBuiltSite', () => {
     ])
   })
 
-  it.for(['/affiliates/', '/privacy-policy/', '/cloud/enterprise/'])(
+  it.for([
+    '/404.html',
+    '/affiliates/',
+    '/privacy-policy/',
+    '/cloud/enterprise/'
+  ])(
     'allows an empty cluster on standalone route %s',
     (route) => {
       expect(

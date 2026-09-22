@@ -63,6 +63,7 @@ function requiresCluster(route: string, origin: string): boolean {
   const path = unprefixed(route)
   return (
     path !== '/404/' &&
+    path !== '/404.html/' &&
     !isLocaleInvariantPath(path) &&
     !isExcludedFromSitemap(`${origin}${route}`) &&
     !Object.hasOwn(redirects, route.replace(/\/$/, ''))
