@@ -29,6 +29,16 @@ import type { FollowerDoc } from './followerDoc'
 type NodeRootAction = 'add' | 'update' | 'delete'
 
 /**
+ * A rejected batch (no scope available) arms `reconcileNextFrame`, but that
+ * only fires on the next *incoming* frame, which may never arrive (e.g. the
+ * user never sends another agent message). These bound retries give the
+ * scope race a fast, self-driven chance to resolve instead of leaving the
+ * stale doc/live mismatch on screen until some unrelated later frame lands.
+ */
+const RECONCILE_RETRY_LIMIT = 20
+const RECONCILE_RETRY_INTERVAL_MS = 200
+
+/**
  * Node-map keys whose by-key edits trigger a field resync. Structural keys
  * (`inputs`, `outputs`, `pos`, `size`, widget storage) are excluded: slots
  * are handled by link events and autogrow, layout is not resynced in place.
@@ -356,6 +366,9 @@ interface TargetSession {
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
   applying: boolean
+  /** Pending fast-retry of a rejected batch; see {@link RECONCILE_RETRY_LIMIT}. */
+  reconcileRetryTimer: ReturnType<typeof setTimeout> | null
+  reconcileRetryAttempt: number
 }
 
 /**
@@ -383,6 +396,7 @@ export class EcsFollowerAdapter {
   unbind(workflowId: string): void {
     const session = this.targets.get(workflowId)
     if (!session) return
+    this.clearReconcileRetry(session)
     session.nodes.unobserveDeep(session.onNodesChanged)
     session.links.unobserve(session.onLinksChanged)
     this.targets.delete(workflowId)
@@ -450,6 +464,8 @@ export class EcsFollowerAdapter {
       frameQueue: [],
       reconcileNextFrame: true,
       applying: false,
+      reconcileRetryTimer: null,
+      reconcileRetryAttempt: 0,
       onNodesChanged: (_events): void => undefined,
       onLinksChanged: (_event): void => undefined
     }
@@ -665,7 +681,38 @@ export class EcsFollowerAdapter {
     // frame so the dropped edits are re-read from the doc instead of falling
     // through to incremental handling that never revisits them.
     session.reconcileNextFrame = !committed
+    if (committed) this.clearReconcileRetry(session)
+    else this.scheduleReconcileRetry(session)
     return committed
+  }
+
+  /**
+   * Bounded fast-retry for a rejected batch: rather than only reconciling on
+   * whatever frame happens to arrive next (which may be a long time away, or
+   * never), replay the pending reconcile on a short timer until scope
+   * resolves or the retry budget runs out. The ordinary next-frame reconcile
+   * remains the fallback once the budget is exhausted.
+   */
+  private scheduleReconcileRetry(session: TargetSession): void {
+    if (session.reconcileRetryTimer) return
+    if (session.reconcileRetryAttempt >= RECONCILE_RETRY_LIMIT) return
+    session.reconcileRetryAttempt += 1
+    session.reconcileRetryTimer = setTimeout(() => {
+      session.reconcileRetryTimer = null
+      if (this.targets.get(session.workflowId) !== session) return
+      if (!session.reconcileNextFrame) return
+      this.applyFrame({
+        workflowId: session.workflowId,
+        seq: -1,
+        update: new Uint8Array()
+      })
+    }, RECONCILE_RETRY_INTERVAL_MS)
+  }
+
+  private clearReconcileRetry(session: TargetSession): void {
+    if (session.reconcileRetryTimer) clearTimeout(session.reconcileRetryTimer)
+    session.reconcileRetryTimer = null
+    session.reconcileRetryAttempt = 0
   }
 
   private discardSessionPending(session: TargetSession): void {
