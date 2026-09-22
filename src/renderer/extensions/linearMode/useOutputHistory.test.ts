@@ -220,10 +220,14 @@ describe(useOutputHistory, () => {
       const { allOutputs } = useOutputHistory()
       const outputs = allOutputs(asset)
 
-      expect(outputs).toHaveLength(2)
-      // Should be reversed
-      expect(outputs[0].filename).toBe('b.png')
-      expect(outputs[1].filename).toBe('a.png')
+      expect(outputs.map(({ filename }) => filename)).toEqual([
+        'b.png',
+        'a.png'
+      ])
+      expect(results.map(({ filename }) => filename)).toEqual([
+        'a.png',
+        'b.png'
+      ])
     })
 
     it('filters outputs to selected output nodes only', () => {
