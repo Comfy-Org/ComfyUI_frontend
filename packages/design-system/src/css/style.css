@@ -169,7 +169,6 @@
   --interface-menu-surface: var(--color-white);
   --interface-menu-stroke: var(--color-smoke-600);
   --interface-panel-surface: var(--color-white);
-  --interface-floating-panel-shadow: 0 2px 16px 0 rgb(0 0 0 / 0.2);
   --interface-stroke: var(--color-smoke-300);
 
   --interface-builder-mode-background: var(--color-ocean-300);
@@ -270,6 +269,7 @@
 
   --palette-interface-panel-box-shadow: 1px 1px 8px 0 rgb(0 0 0 / 0.4);
   --palette-interface-panel-drop-shadow: 1px 1px 4px rgb(0 0 0 / 0.4);
+  --palette-interface-floating-panel-shadow: 0 2px 16px 0 rgb(0 0 0 / 0.5);
   --palette-interface-panel-hover-surface: color-mix(
     in srgb,
     var(--interface-panel-surface) 92.5%,
@@ -321,7 +321,6 @@
   --interface-menu-surface: var(--color-charcoal-800);
   --interface-menu-stroke: var(--color-ash-800);
   --interface-panel-surface: var(--color-charcoal-800);
-  --interface-floating-panel-shadow: 0 2px 16px 0 rgb(0 0 0 / 0.5);
   --interface-stroke: var(--color-charcoal-400);
 
   --interface-builder-mode-background: var(--color-ocean-900);
