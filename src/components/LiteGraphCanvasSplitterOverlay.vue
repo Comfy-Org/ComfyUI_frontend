@@ -20,6 +20,7 @@
         <Splitter
           :key="splitterRefreshKey"
           class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
+          pt:gutter="[.side-bar-panel+&]:bg-interface-stroke/50 has-[+.side-bar-panel]:bg-interface-stroke/50"
           :state-key="
             isSelectMode
               ? sidebarLocation === 'left'

@@ -1,4 +1,8 @@
-import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
+import type {
+  AgentPostMessageRequest,
+  UploadImageResponse
+} from '@comfyorg/ingest-types'
+import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
 import { api } from '@/scripts/api'
@@ -11,8 +15,7 @@ import {
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
-  zCloudWorkflowIndex,
-  zUploadImageResult
+  zCloudWorkflowIndex
 } from '../../schemas/agentApiSchema'
 import type {
   AgentAnswerAccepted,
@@ -21,8 +24,7 @@ import type {
   AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
-  CloudWorkflowEntry,
-  UploadImageResult
+  CloudWorkflowEntry
 } from '../../schemas/agentApiSchema'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
@@ -51,6 +53,11 @@ export type OpenTabsSnapshot = Pick<
   'open_tabs' | 'current_tab'
 >
 
+// TEMPORARY: current_tab_unbound isn't in the generated ingest-types yet (cloud#10068 unmerged); delete this augmentation and use AgentPostMessageRequest directly once push-ingest-types-to-frontend lands it.
+type AgentPostMessageRequestWithUnboundFlag = AgentPostMessageRequest & {
+  current_tab_unbound?: boolean
+}
+
 /** An omitted `version` makes this content authoritative for the backend CAS. */
 export interface DraftSnapshot {
   content: Record<string, unknown>
@@ -65,6 +72,14 @@ export interface PostMessageInput {
   workflowReferences?: AgentPostMessageRequest['workflow_references']
   tabs?: OpenTabsSnapshot
   draft?: DraftSnapshot
+  /**
+   * The turn's target tab has no cloud id yet (a fresh, unsaved tab) - see
+   * AgentPostMessageRequest['current_tab_unbound']. Tells the server this is
+   * a selected-but-unbound tab rather than no tab at all, so it mints a
+   * workflow for it instead of falling back to the thread's previous one and
+   * presenting the turn to the model as having no workflow selected.
+   */
+  currentTabUnbound?: boolean
 }
 
 interface IngestErrorBody {
@@ -317,7 +332,7 @@ export function createAgentRestClient() {
 
   async function request<T>(
     route: string,
-    init: RequestInit,
+    init: Parameters<typeof api.fetchApi>[1],
     schema: z.ZodType<T>
   ): Promise<T> {
     const response = await api.fetchApi(route, init)
@@ -337,7 +352,9 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body: Record<string, unknown> = { content: req.content }
+    const body: AgentPostMessageRequestWithUnboundFlag = {
+      content: req.content
+    }
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
     if (req.tabs !== undefined) {
       body.open_tabs = req.tabs.open_tabs
@@ -349,6 +366,8 @@ export function createAgentRestClient() {
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
     if (req.draft !== undefined) body.draft = req.draft
+    if (req.currentTabUnbound !== undefined)
+      body.current_tab_unbound = req.currentTabUnbound
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       jsonInit('POST', body),
@@ -440,14 +459,20 @@ export function createAgentRestClient() {
 
   async function uploadImage(
     image: Blob,
-    filename: string
-  ): Promise<UploadImageResult> {
+    filename: string,
+    signal?: AbortSignal
+  ): Promise<UploadImageResponse> {
     const form = new FormData()
     form.append('image', image, filename)
     return request(
       '/upload/image',
-      { method: 'POST', body: form },
-      zUploadImageResult
+      {
+        method: 'POST',
+        body: form,
+        signal,
+        timeoutMs: signal ? null : undefined
+      },
+      zUploadImageResponse
     )
   }
 
