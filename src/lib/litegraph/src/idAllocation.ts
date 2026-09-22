@@ -60,14 +60,34 @@ function mintCrdtDisjointNodeId(): NodeId {
 }
 
 /**
- * `id`'s numeric value if it is a safe-integer `NodeId`, or `undefined` for
- * a nonnumeric legacy id (`"named"`, `"57:3"`). Callers convert THIS value
- * to a `BigInt`, rather than parsing `id` itself with `BigInt(id)`: `Number`
- * accepts exponent-form numeric strings (`Number('2e12')` is a safe
- * integer) but `BigInt`'s string parsing does not, so `BigInt(id)` throws on
- * exactly the ids this already validated as in range.
+ * Whether `text` denotes an EXACT integer, expanding exponent notation by
+ * shifting the decimal point over `text`'s own digits rather than through
+ * `Number`. `Number('4398046511104.0001')` rounds to exactly
+ * `4398046511104` — a float can't distinguish that from a true integer —
+ * so the fractional check has to run on the source digits, not the
+ * coerced value.
+ */
+function isExactIntegerLiteral(text: string): boolean {
+  const match = /^[+-]?(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/i.exec(text)
+  if (!match) return false
+  const [, intPart, fracPart = '', expPart] = match
+  const pointIndex = intPart.length + (expPart ? Number(expPart) : 0)
+  return /^0*$/.test((intPart + fracPart).slice(Math.max(0, pointIndex)))
+}
+
+/**
+ * `id`'s numeric value if it is a `NodeId` denoting an exact, safe-integer
+ * value, or `undefined` for every non-exact or unsafe-integer
+ * representation — a nonnumeric legacy id (`"named"`, `"57:3"`), a
+ * fractional numeral (`"4398046511104.0001"`), or an integer outside the
+ * safe range. Callers convert THIS value to a `BigInt`, rather than parsing
+ * `id` itself with `BigInt(id)`: `Number` accepts exponent-form numeric
+ * strings (`Number('2e12')` is a safe integer) but `BigInt`'s string
+ * parsing does not, so `BigInt(id)` throws on exactly the ids this already
+ * validated as in range.
  */
 function safeIntegerValueOf(id: NodeId): number | undefined {
+  if (!isExactIntegerLiteral(id)) return undefined
   const numeric = Number(id)
   return Number.isSafeInteger(numeric) ? numeric : undefined
 }

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  AGENT_RESERVED_BIT,
   createLGraphState,
+  isReservedBitRangeNodeId,
+  matchesReservedBitConvention,
   mintGroupId,
   mintLinkId,
   mintNodeId,
@@ -65,5 +68,39 @@ describe('idAllocation', () => {
     observeNodeId(state, toNodeId('named'))
 
     expect(state.lastNodeId).toBe(12)
+  })
+
+  describe('isReservedBitRangeNodeId', () => {
+    it.for([
+      { id: toNodeId(AGENT_RESERVED_BIT.toString()), name: 'the agent floor' },
+      { id: toNodeId('2e12'), name: 'an exponent-form integer above the floor' }
+    ])('is true for $name', ({ id }) => {
+      expect(isReservedBitRangeNodeId(id)).toBe(true)
+    })
+
+    it.for([
+      { id: toNodeId('named'), name: 'a nonnumeric legacy id' },
+      { id: toNodeId('57:3'), name: 'a subgraph-scoped address' },
+      {
+        id: toNodeId(`${AGENT_RESERVED_BIT.toString()}.0001`),
+        name: 'a fractional numeral that only coerces to the floor'
+      }
+    ])('is false for $name', ({ id }) => {
+      expect(isReservedBitRangeNodeId(id)).toBe(false)
+    })
+  })
+
+  describe('matchesReservedBitConvention', () => {
+    it('does not throw, and reports no match, for a fractional numeral that coerces to a value carrying neither reserved bit', () => {
+      // `AGENT_RESERVED_BIT << 2n` (bit 42) carries neither the agent's bit
+      // 40 nor this app's disjoint-floor bit 41, so a truthful integer at
+      // this value would fail the convention too — the point here is only
+      // that a fractional string never reaches the bit check at all.
+      const violatingFloor = AGENT_RESERVED_BIT << 2n
+      const id = toNodeId(`${violatingFloor.toString()}.0001`)
+
+      expect(() => matchesReservedBitConvention(id)).not.toThrow()
+      expect(matchesReservedBitConvention(id)).toBe(false)
+    })
   })
 })
