@@ -3,6 +3,7 @@ import type { RumBeforeSend, RumErrorEvent } from '@datadog/browser-rum'
 import { ASSERTION_FAILURE_PREFIX, hasRumAssertReporter } from '@/base/assert'
 
 import { REPORTED_ERROR_PREFIX } from './reportError'
+import { isThirdPartyErrorNoise } from './thirdPartyErrorNoise'
 
 const RUM_NOISE_HOSTS = [
   'facebook.com',
@@ -76,6 +77,7 @@ function shouldKeepRumEvent(event: Parameters<RumBeforeSend>[0]): boolean {
   if (isConsoleEchoOfReportedError(event)) return false
 
   const message = event.error.message
+  if (isThirdPartyErrorNoise(message)) return false
   if (message.startsWith('intervention:')) return false
   if (message.includes('ResizeObserver loop')) return false
 
