@@ -102,8 +102,18 @@ describe('CRDT-STORES-0036 semantic store architecture guard', () => {
     )
   })
 
+  // Non-floating link membership is projected from the document and local
+  // placement writes the LinkTuple; slot indexes and floating topologies are
+  // still store-owned (see docs/architecture/link-topology-store.md).
+  it('linkStore.ts is a projection of a Yjs document', () => {
+    expect(readSource(path.join(STORES_DIR, 'linkStore.ts'))).toMatch(
+      YJS_IMPORT
+    )
+  })
+
+  const PROJECTED_STORES = new Set(['nodeDataStore.ts', 'linkStore.ts'])
   for (const file of SEMANTIC_STORES) {
-    if (file === 'nodeDataStore.ts') continue
+    if (PROJECTED_STORES.has(file)) continue
     it.fails(`KNOWN GAP: ${file} is a projection of a Yjs document`, () => {
       expect(readSource(path.join(STORES_DIR, file))).toMatch(YJS_IMPORT)
     })

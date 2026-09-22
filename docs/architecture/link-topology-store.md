@@ -123,6 +123,82 @@ runtime API. See
 [Link registration migration](../extensions/link-registration-migration.md)
 for extension-facing return-value guidance.
 
+## Decision 6: Link membership projected from the semantic document (2026-09-22, partial)
+
+Amends Decision 2. The root bucket's `byId` map is still the identity
+authority for live `LinkTopology` objects, but non-floating link
+_membership_ (which link ids belong to which owning graph) is no longer
+store-owned. Each root graph has one semantic Yjs document in
+`semanticDocs` (`src/stores/semanticDoc.ts`); the store projects
+`idsByOwner` from it the same way [node-data-store](node-data-store.md)
+Decision 8 projects node membership.
+
+```
+┌──────────────────────── semantic document (per root graph) ───────────────┐
+│ links.<id>                     -> LinkTuple owned by the root graph       │
+│ definitions.<owner>.links.<id> -> LinkTuple owned by definition <owner>   │
+└─────────────┬─────────────────────────────────────────▲───────────────────┘
+              │ projectMembership(root, 'links', sink)  │ links.set/delete
+              │ (seed, key add/delete, reseed on        │ inside transact with
+              │  definition replacement)                │ LocalUpdateOrigin
+              ▼                                         │
+┌──────────── linkStore root bucket ────────────────┐   │
+│ idsByOwner: Map<OwningGraphId, Set<LinkId>>       │   │ placeValidated
+│   (derived from document keys)                    │   │ displace
+│ floatingIdsByOwner: Map<OwningGraphId, Set<LinkId>>│   │ (replaceLink,
+│   (local: reroute-chain state, never in the doc)  │   │  deleteLink,
+│ byId, targetIndex, originIndex                    │───┘  updateEndpoints,
+│   (local materialisation and slot indexes)        │      clearOwner,
+└───────────────────────────────────────────────────┘      clearGraph)
+```
+
+Rules:
+
+- A non-floating topology is written as a `LinkTuple`
+  (`[id, originNodeId, originSlot, targetNodeId, targetSlot, type]`) under
+  key `String(id)` in its owner's `links` map when the key is absent or
+  names different endpoints. Registering a link that a merged remote frame
+  already placed is therefore a pure local materialisation with no second
+  write.
+- Floating topologies (`targetNodeId` or `originNodeId` of `-1`) are
+  reroute-chain state, not links. They live only in `floatingIdsByOwner`
+  and are never written to the document.
+- Every mutation chokepoint (Decision 5) runs inside one document
+  transaction carrying a `LocalUpdateOrigin` so observers can separate
+  local writes from `applyRemote`. Endpoint rewrites replace the tuple
+  under the same key; deletes remove the key.
+- `graphTopologies` yields document-projected ids first, then floating
+  ids, skipping any id without a registered topology in `byId`. A key
+  written to the document before the store has materialised the link (a
+  remote frame ahead of the host object) stays invisible until
+  registration; a remote key delete drops the id from `idsByOwner`
+  immediately.
+- `clearGraph` clears the root `links` map and every definition's
+  `links` map before dropping the bucket and its observer, so a later
+  bucket for the same root does not re-seed stale ids. Observers are also
+  released when the store's effect scope disposes.
+
+Known gaps (the projection is partial):
+
+- `byId`, `targetIndex` and `originIndex` remain store-local. A remote key
+  delete leaves a stale `byId` entry and slot-index entries until the
+  owning graph re-registers or clears; slot connectivity reads may still
+  see the dead link.
+- A document filled only by local registration carries no host
+  `meta.schema_version`, so `semanticDocs.readGraph` fails closed on it;
+  tests read `ownerLinksMap(...).size` instead. The follower never stamps
+  `meta`.
+- `widgetValueStore` is still not a projection; the architecture guard
+  keeps it as a `KNOWN GAP` expected failure.
+
+Glossary: _semantic document_ — the per-root-graph Yjs `Y.Doc` holding
+graph structure (`nodes`, `links`, `definitions`, `meta`); _owning graph_
+— the root graph or subgraph definition a link belongs to; _LinkTuple_ —
+the compact array form of a link shared with the multi-player package;
+_LocalUpdateOrigin_ — the transaction origin `{ source: 'local', actor?,
+opId? }` that marks follower-local writes; _floating topology_ — a
+partially connected link used to anchor a reroute chain.
+
 ## Scope
 
 This design covers link topology (endpoints, type, chain terminus).
