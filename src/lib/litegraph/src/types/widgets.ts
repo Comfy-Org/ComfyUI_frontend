@@ -5,7 +5,10 @@ import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
-import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+import type {
+  WidgetSurfaces,
+  WidgetVisibilityComponent
+} from '@/types/widgetVisibility'
 import type { ColorFormat } from '@/utils/colorUtil'
 
 import type {
@@ -45,7 +48,8 @@ export interface IWidgetOptions<TValues = unknown> {
   property?: string
   /** If `true`, an input socket will not be created for this widget. */
   socketless?: boolean
-  /** If `true`, the widget will not be rendered by the Vue renderer. */
+  surfaces?: WidgetSurfaces
+  /** @deprecated This key stays supported for third-party widgets. */
   canvasOnly?: boolean
   /**
    * If `true`, the widget still renders on the node but is omitted from the
@@ -206,10 +210,10 @@ export interface IStringComboWidget extends IBaseWidget<
   value: string
 }
 
-type ComboWidgetValues =
-  | string[]
+export type ComboWidgetValues =
+  | (string | number)[]
   | Record<string, string>
-  | ((widget?: IComboWidget, node?: LGraphNode) => string[])
+  | ((widget?: IComboWidget, node?: LGraphNode) => (string | number)[])
 
 /** A combo-box widget (dropdown, select, etc) */
 export interface IComboWidget extends IBaseWidget<
@@ -487,6 +491,7 @@ export interface IBaseWidget<
   name: string
   options: TOptions
   syncLiveVisibilityOptions?(): void
+  syncLiveDisabled?(): void
 
   label?: string
   /** Widget type (see {@link TWidgetType}) */

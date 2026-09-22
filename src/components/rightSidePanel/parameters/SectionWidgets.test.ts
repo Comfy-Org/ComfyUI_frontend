@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -23,19 +25,11 @@ import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 import SectionWidgets from './SectionWidgets.vue'
 
-const { mockTrackUiButtonClicked } = vi.hoisted(() => ({
-  mockTrackUiButtonClicked: vi.fn()
-}))
-
 const setDirty = vi.fn()
 const getNodeById = vi.fn()
 const animateToBounds = vi.fn()
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackUiButtonClicked: mockTrackUiButtonClicked
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const WidgetItemStub = defineComponent({
   inheritAttrs: false,
@@ -123,7 +117,11 @@ describe('SectionWidgets', () => {
   beforeEach(() => {
     useCanvasStore().canvas = fromPartial({
       setDirty,
-      graph: fromPartial({ getNodeById }),
+      graph: fromPartial({
+        id: 'root',
+        rootGraph: { id: 'root' },
+        getNodeById
+      }),
       animateToBounds
     })
   })
@@ -147,7 +145,6 @@ describe('SectionWidgets', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          Button: true,
           WidgetItem: WidgetItemStub,
           PropertiesAccordionItem: PropertiesAccordionItemStub
         }
@@ -238,7 +235,9 @@ describe('SectionWidgets', () => {
 
     await user.click(screen.getByRole('button', { name: 'Locate' }))
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
       button_id: 'right_side_panel_locate_node_clicked',
       element_group: 'right_side_panel_nodes'
     })
@@ -270,7 +269,9 @@ describe('SectionWidgets', () => {
 
     await user.click(screen.getByRole('button', { name: 'Reset all' }))
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
       button_id: 'right_side_panel_reset_all_parameters_clicked',
       element_group: 'right_side_panel_nodes'
     })

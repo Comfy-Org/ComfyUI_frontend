@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "description": "使用 Bria 將以純文字描述的物件插入影像中。Bria 會以約 100 萬像素重新渲染整個畫面，因此結果不會與輸入影像的像素對齊。",
+    "display_name": "Bria 新增物件",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "instruction": {
+        "name": "指示",
+        "tooltip": "要新增的內容與位置，例如「在桌上放置一個插著花的紅色花瓶」。"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "Bria 在此不使用種子，且每次呼叫時都會重新構想編輯結果，因此重複執行的結果可能不同。此值永遠不會傳送：它只會變更此節點的快取鍵，讓原本相同的工作流程再次執行編輯，而非傳回快取的結果。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "使用 Bria 從影像中移除以純文字指定的物件。Bria 會以約 100 萬像素重新渲染整個畫面，因此結果不會與輸入影像的像素對齊。",
+    "display_name": "Bria 依文字移除",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "object_name": {
+        "name": "物件名稱",
+        "tooltip": "要移除的物件名稱，例如「檯燈」。可同時指定多個物件，例如「手機和鉛筆」。即使指定的物件不在圖片中，仍會傳回重新渲染的影像並計費。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "使用 Bria 移除影像前景，並在原處生成背景。Bria 判定為前景的所有內容都會被移除，不僅限於人物。未變更的像素會保留，但輸出會以接近 100 萬像素的標準尺寸重新渲染。",
+    "display_name": "Bria 移除前景",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "使用 Bria 從影像中移除由遮罩標示的物件或區域。",
     "display_name": "Bria 擦除",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "使用 Bria 變更影像的光照氛圍與方向。Bria 會以約 100 萬像素重新渲染整個畫面，因此結果不會與輸入影像的像素對齊。",
+    "display_name": "Bria 重新打光",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      },
+      "light_direction": {
+        "name": "光線方向",
+        "tooltip": "光線來源方向。正午、主體聚光燈及強烈棚燈等硬光氛圍對此設定的反應最明顯。"
+      },
+      "light_type": {
+        "name": "光線類型",
+        "tooltip": "要套用的光照氛圍。"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "使用 Bria RMBG 2.0 移除影像的背景。",
     "display_name": "Bria 移除影像背景",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "使用 Bria 替換影像背景，可透過提示詞描述或由參考影像引導。主體的像素會保留，背景則會在其周圍生成。",
+    "display_name": "Bria 替換影像背景",
+    "inputs": {
+      "background": {
+        "name": "背景",
+        "tooltip": "使用提示詞描述新背景，或以參考圖片引導。"
+      },
+      "background_mode": {
+        "name": "模式"
+      },
+      "background_prompt": {
+        "name": "提示詞"
+      },
+      "background_refine_prompt": {
+        "name": "refine_prompt"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "original_quality": {
+        "name": "original_quality",
+        "tooltip": "傳回輸入內容的確切像素尺寸，而非將結果縮放至約 100 萬像素。輸入較大時，傳回的圖片也會較大。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "相同種子通常會產生相同背景；自動提示詞精修仍可能造成差異。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "refined_prompt",
+        "tooltip": "由 Bria 產生的提示詞；使用參考圖片流程時為空白。"
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "使用 Bria 將圖片中的物件替換為以純文字描述的另一個物件。Bria 會以約 100 萬像素重新繪製整個畫面，因此結果不會與輸入內容像素對齊。",
+    "display_name": "Bria 替換物件",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "圖片"
+      },
+      "instruction": {
+        "name": "指令",
+        "tooltip": "要將什麼替換成什麼，例如「將紅蘋果替換為綠梨」。"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "Bria 在此不接受種子，且每次呼叫都會重新構想編輯內容，因此重複執行可能不同。此值絕不會傳送：它只會變更此節點的快取金鑰，讓其他方面相同的工作流程再次執行編輯，而非傳回快取結果。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "已編輯圖片的結構化描述，可用於後續以 Bria FIBO Image Edit 進行編輯。"
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "使用 Bria 將圖片轉換為另一個季節。整個場景會重新繪製，因此景物的變化可能不僅限於季節本身。Bria 會以約 100 萬像素重新繪製整個畫面，因此結果不會與輸入內容像素對齊。",
+    "display_name": "Bria 變換季節",
+    "inputs": {
+      "image": {
+        "name": "圖片"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "season": {
+        "name": "季節",
+        "tooltip": "要套用的季節。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "已編輯圖片的結構化描述，可用於後續以 Bria FIBO Image Edit 進行編輯。"
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "使用 Bria 修復老舊或受損的照片：可去除顆粒、刮痕與模糊，並中和因年代造成的色偏。相片裱卡與攝影棚邊框可能會被裁切移除，且人臉會重新繪製。Bria 會以約 100 萬像素重新繪製整個畫面，因此結果不會與輸入內容像素對齊。若要放大，請改用 Bria Increase Resolution。",
+    "display_name": "Bria 修復照片",
+    "inputs": {
+      "image": {
+        "name": "圖片"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "使用 Bria 移除影片背景，並返回去背後的影格及 alpha 遮罩。可將兩者連接到合成節點，或傳送到『儲存 WEBM』以輸出透明影片。",
     "display_name": "Bria 移除影片背景（透明）",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "遮罩",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "使用 Bria 從影片中移除每個影格 mask 所覆蓋的內容，並填補空缺。mask 中應移除的部分必須為白色，其餘部分為黑色。Bria 最多接受長度 5.1 秒、每秒 20 至 30 個影格且像素尺寸為偶數的片段；預設會保留音訊。回傳的片段可能比輸入短幾個影格。",
+    "display_name": "Bria 影片移除器",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "影片中每個影格各一個 mask，要移除的物件所在處為白色。請提供 mask 或 mask 影片其中之一，不可同時提供。"
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "已編碼的 mask 影片，尺寸和影格數須與影片相同。請提供 mask 或 mask 影片其中之一，不可同時提供。"
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "保留輸入的音訊軌。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要移除內容的片段。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -3065,6 +3326,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "依序串接影片，無須解碼相容的已編碼輸入。",
+    "display_name": "串接影片",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "用於編碼影片張量的編解碼器。自動使用 H.264；已編碼的影片維持不變。"
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "串接後影片的可選完整音軌。會覆寫輸入影片所附帶的音訊。"
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "要依輸入順序串接的影片片段。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "串接後的影片。"
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "條件設定（平均）",
     "inputs": {
@@ -3098,6 +3382,20 @@
       },
       "conditioning_to": {
         "name": "conditioning_to"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "從 embeddings 資料夾載入以「儲存條件」儲存的條件，或任何包含「conditioning」張量的 safetensors 檔案。",
+    "display_name": "載入條件",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3909,6 +4207,10 @@
         "name": "bit_depth",
         "tooltip": "自動模式會對 sRGB 使用 8 位元，對 HDR 使用 10 位元。明確選擇 8 位元或 10 位元時，不受色彩空間影響。"
       },
+      "codec": {
+        "name": "codec",
+        "tooltip": "可選擇立即編碼影片。無會保留影像的張量形式；自動使用 H.264。"
+      },
       "color_space": {
         "name": "color_space",
         "tooltip": "輸入影像的色彩空間。HDR 選用 BT.2020/HLG，HDR PQ 選用 BT.2020/PQ。"
@@ -4700,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "空白 Cosmos 潛在空間視訊",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -4761,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "空白 Hunyuan 影像潛在空間",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -4780,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "EmptyHunyuanLatentVideo",
+    "display_name": "空白 Hunyuan Video 1.0 潛在空間",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -4802,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "空白 HunyuanVideo 1.5 Latent",
+    "display_name": "空白 Hunyuan Video 1.5 潛在空間",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -4841,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo",
+    "display_name": "空白 LTXV 潛在空間視訊",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -4880,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "空白 Hunyuan 3D v2 潛在空間",
     "inputs": {
       "batch_size": {
         "name": "批次大小",
@@ -5021,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "空白 Trellis2 潛在空間結構",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5031,6 +5333,49 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "空白 YuE2 潛空間音訊",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "結束迴圈",
+    "inputs": {
+      "accumulate": {
+        "name": "累積",
+        "tooltip": "啟用時傳回每次迭代的 output_value；否則僅傳回最後一次迭代。"
+      },
+      "next_iteration_value": {
+        "name": "next_iteration_value",
+        "tooltip": "從結束迴圈傳送回開始迴圈，供下一次迭代使用的值。"
+      },
+      "output_value": {
+        "name": "output_value",
+        "tooltip": "結束迴圈傳回的值。它會依據累積設定傳回最後一次迭代或所有迭代。"
+      },
+      "terminations": {
+        "name": "terminations",
+        "tooltip": "連接每次迭代都必須執行的輸出。其值不會傳回。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "輸出",
+        "tooltip": "最後一次迭代的 output_value，或啟用累積時跨迭代累積的值。"
       }
     }
   },
@@ -5898,6 +6243,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "依據文字指示編輯 clip：移除、新增或替換物件、變更場景、重新設定影片風格、變更畫面文字，或替換口語對白。長度、取景、鏡頭運動與音訊皆來自來源 clip。",
+    "display_name": "Flux 影片編輯",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動縮小",
+        "tooltip": "上傳前自動縮小像素面積大於 1280x704 的來源影片。會保留長寬比；較小的影片不會變更。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "以自然語言描述要變更的內容，最多 4096 個字元。未提及的內容會維持原樣。替換的對白必須符合原始語音所佔的時間，且靜音 clip 會維持靜音。"
+      },
+      "safety_tolerance": {
+        "name": "安全容忍度",
+        "tooltip": "內容審核容忍度，0 最嚴格。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於判斷節點是否應重新執行的種子；FLUX 會自行選擇種子，因此實際結果不受此值影響且不具決定性。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "來源 clip 長度須為 0.7 至 15 秒，且至少為 160x160 像素。輸出會以 24 fps 算繪，每個影格上限約為 0.9 百萬像素，因此較大的來源會以較小尺寸傳回。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "使用 FLUX 超解析度將影片放大 1.5 至 3 倍，可精確保留來源內容或創意強化細節。",
     "display_name": "Flux 影片放大",
@@ -6451,14 +6830,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -6471,6 +6844,42 @@
       "system_prompt": {
         "name": "system_prompt",
         "tooltip": "決定模型行為的基礎指令。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV3": {
+    "description": "使用 Google 的 Gemini 模型產生文字回應。提供文字提示詞，並可選擇提供一張或多張圖片、音訊片段、影片或檔案作為多模態內容。",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於產生回應的 Gemini 模型。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_video_processing": {
+        "name": "video_processing"
       }
     },
     "outputs": {
@@ -6666,6 +7075,22 @@
       },
       "2": {
         "name": "批次大小",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "從清單取得項目",
+    "inputs": {
+      "index": {
+        "name": "索引"
+      },
+      "list": {
+        "name": "清單"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7647,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "Hunyuan Video 1.5 使用模型放大潛在空間",
     "inputs": {
       "crop": {
         "name": "crop"
@@ -7985,7 +8410,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "轉換 sRGB (Rec.709)、HDR (Rec.2020 HLG) 與 HDR PQ (Rec.2020 PQ)。使用 203 尼特 SDR 白點與 1000 尼特 HLG 參考顯示器。縮窄會對整個批次的過量亮度進行色調映射，並壓縮超出色域的色彩。轉換會以 float32 計算，並傳回中間裝置與 dtype。直通 alpha 不會進行色彩轉換。",
+    "description": "轉換 sRGB、線性 Rec.709、HDR（Rec.2020 HLG）及 HDR PQ（Rec.2020 PQ）。線性 1.0 使用與 sRGB 相同的 203 尼特參考白；HLG 使用 1000 尼特參考顯示器。線性輸出與線性轉 HDR 的轉換會保留延伸值，不進行色調對應。SDR 輸出及 PQ 轉 HLG 會對整個批次的過量亮度進行色調對應，並壓縮超出色域的色彩。轉換會以 float32 計算，並傳回中介裝置與資料型別。非預乘 alpha 不會進行色彩轉換。",
     "display_name": "轉換影像色彩空間",
     "inputs": {
       "destination": {
@@ -10089,7 +10514,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV 空 latent 音訊",
+    "display_name": "空白 LTXV 潛在空間音訊",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -11280,6 +11705,73 @@
       }
     }
   },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "current_iteration_value"
+      },
+      "is_first": {
+        "name": "is_first"
+      },
+      "is_last": {
+        "name": "is_last"
+      },
+      "iteration_index": {
+        "name": "iteration_index"
+      },
+      "list_item": {
+        "name": "list_item"
+      },
+      "reuse_cache": {
+        "name": "reuse_cache"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "位置"
+      },
+      "start_id": {
+        "name": "start_id"
+      },
+      "total": {
+        "name": "總計"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "close_id"
+      }
+    }
+  },
   "LoraLoader": {
     "description": "LoRA 用於修改 diffusion 和 CLIP 模型，改變 latent 的去噪方式，例如套用風格。多個 LoRA 節點可以串接在一起使用。",
     "display_name": "載入 LoRA",
@@ -12380,6 +12872,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "將解碼後的 Marigold V2 預測轉換為影像：近處較亮的正規化深度、單位表面法線，或 sRGB 反照率。",
+    "display_name": "Marigold V2 後處理",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "遮罩合成",
     "inputs": {
@@ -12725,6 +13234,10 @@
       "ultra_mode": {
         "name": "超高模式",
         "tooltip": "執行額外的細化處理，以取得更高保真度的幾何形狀與更精細的表面細節。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "超高精細處理的解析度：2k 以 2048³ 執行，4k 以 4096³ 執行，提供最細緻的表面細節。4k 需要 meshy-7.1 或更新版本。僅在啟用 ultra_mode 時使用。"
       }
     },
     "outputs": {
@@ -12791,6 +13304,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "以 2048³ 執行額外的精修處理，以獲得保真度更高的幾何結構與更細緻的表面細節。"
       }
     },
     "outputs": {
@@ -12932,6 +13449,10 @@
       "ultra_mode": {
         "name": "超高模式",
         "tooltip": "執行額外的細化處理，以取得更高保真度的幾何形狀與更精細的表面細節。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "超高精細處理的解析度：2k 以 2048³ 執行，4k 以 4096³ 執行，提供最細緻的表面細節。4k 需要 meshy-7.1 或更新版本。僅在啟用 ultra_mode 時使用。"
       }
     },
     "outputs": {
@@ -13690,6 +14211,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "僅限 MoGe-3：對預測深度進行稀疏體積細化。增加處理次數可銳化細節與邊緣，成本約呈線性增加。0 會停用細化。MoGe-1 / MoGe-2 會忽略此設定。"
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = 最快，9 = 最細緻。"
@@ -13720,6 +14245,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "僅限 MoGe-3：對預測深度進行稀疏體積細化。增加處理次數可銳化細節與邊緣，成本約呈線性增加。0 會停用細化。MoGe-1 / MoGe-2 會忽略此設定。"
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -16028,6 +16557,9 @@
       "model": {
         "name": "model"
       },
+      "sampling": {
+        "name": "sampling"
+      },
       "shift": {
         "name": "偏移"
       }
@@ -16910,7 +17442,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Pixal3D 條件化",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -17692,6 +18224,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "使用 Pruna 影片模型將圖片製作成動畫影片，可選擇指定最後一幀、產生的聲音或音訊軌。",
+    "display_name": "Pruna P-Video-2 圖片轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_draft": {
+        "name": "草稿"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "使用 Pruna 影片模型根據文字提示詞生成影片，可選擇生成音效或使用音軌驅動影片。",
+    "display_name": "Pruna P-Video-2 文字轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_draft": {
+        "name": "草稿"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[配方]\n\nhidream: long clip-l、long clip-g、t5xxl、llama_8b_3.1_instruct",
     "display_name": "QuadrupleCLIPLoader",
@@ -17792,6 +18411,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "可設定 KV 快取裝置與量化方式。預設模型使用 auto 選項。記憶體不足時，量化可能加快編輯工作流程。",
+    "display_name": "Qwen Image 2.1 快取",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto 會先使用可用的 VRAM，接著使用 RAM。cpu (RAM) 會在運算期間預先擷取，速度損失極小。off 會在每個步驟重新計算前綴，雖較慢，但可用來排除快取造成的影響。"
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "儲存精度。default 為無損。int8 將快取減半，精度約為 bf16；int4 將其降為四分之一，但每步誤差約增加一倍。"
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -20994,6 +21635,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "將條件以 safetensors 格式儲存至輸出資料夾；將檔案移至 models/embeddings，即可使用「載入條件」載入，例如用於略過文字編碼器。",
+    "display_name": "儲存條件",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "SaveGLB",
     "inputs": {
@@ -21686,6 +22345,28 @@
       }
     }
   },
+  "SheetSage2AudioToABC": {
+    "description": "將音樂中的人聲與樂器旋律轉錄為 ABC 記譜法。將 abc 輸出連接至 YuE2 Generate Music 節點，並使用相符的模式。",
+    "display_name": "SheetSage2 音訊轉 ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full：產生旋律與和弦；melody：僅產生旋律，建議用於翻唱。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
   "ShuffleDataset": {
     "description": "隨機打亂圖像清單中的順序。",
     "display_name": "隨機重排影像資料集",
@@ -22112,7 +22793,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade 空白潛在影像",
+    "display_name": "空白 Stable Cascade 潛在空間影像",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -22155,7 +22836,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade 階段 C VAE 編碼",
+    "display_name": "Stable Cascade C 階段 VAE 編碼",
     "inputs": {
       "compression": {
         "name": "壓縮"
@@ -22292,6 +22973,52 @@
       "2": {
         "name": "潛在空間",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "開始迴圈",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "重複使用先前執行中未變更的迭代結果。停用後將再次執行每次迭代。"
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "在第一次迭代時，作為 current_iteration_value 提供的值。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "迴圈迭代模式。"
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "連接外層「開始迴圈」的 iteration_index，以巢狀化此迴圈。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "目前迴圈迭代的索引。"
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "在迴圈第一次迭代期間為 True。"
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "在迴圈的最後一次迭代期間為 True。"
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "使用清單模式時，清單中的目前項目。在簡易與 For 模式中為無。"
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "目前迭代的迴圈傳遞值：第一次迭代時為 initial_iteration_value，之後每次迭代則為來自結束迴圈的 next_iteration_value。"
       }
     }
   },
@@ -23071,8 +23798,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "文字編碼 Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "文字編碼器可見的參考影像，並會以 VAE 潛在表示形式拼接至序列中。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "參考影像會在保留長寬比的情況下，調整為約 resolution x resolution 像素，且尺寸為 32 的倍數。0 會保留每張參考影像的原始尺寸，並將其調整為 32 的倍數。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "以第一張參考影像的尺寸建立空白潛在空間資料，以便與採樣相符，因為任何其他尺寸都會使編輯結果偏移。"
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "文字編碼 Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23094,7 +23860,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "文字編碼 Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23170,6 +23936,10 @@
       "max_length": {
         "name": "最大長度"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "使用檢查點的多詞元預測頭進行推測式解碼。沒有 MTP 權重時無效。auto 會調整草稿深度；2-5 會固定該深度。採樣輸出仍維持正確分布，但在相同 seed 下會與非 MTP 輸出不同。"
+      },
       "prompt": {
         "name": "提示詞"
       },
@@ -23231,6 +24001,10 @@
       },
       "max_length": {
         "name": "最大長度"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "使用檢查點的多詞元預測頭進行推測式解碼。若無 MTP 權重則無效果。auto 會自動調整草稿深度；2-5 則將其固定。取樣輸出仍維持正確分布，但相同種子下會與非 MTP 輸出不同。"
       },
       "prompt": {
         "name": "提示詞"
@@ -23747,7 +24521,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Trellis2 條件",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -23769,7 +24543,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Trellis2 形狀階段",
     "inputs": {
       "negative": {
         "name": "負向"
@@ -23797,7 +24571,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Trellis2 紋理階段",
     "inputs": {
       "negative": {
         "name": "負向"
@@ -24029,7 +24803,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo：圖像轉模型",
+    "display_name": "Tripo：影像轉模型（舊版）",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24102,6 +24876,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "僅在啟用 quad 時才會填入。"
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo：影像轉模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自動尺寸",
+        "tooltip": "將有紋理的模型按其以公尺為單位的真實尺寸縮放。Tripo 將尺寸儲存為模型的場景變換，並在模型轉換、綁定骨架或重定向時套用；未啟用紋理時會忽略。"
+      },
+      "face_limit": {
+        "name": "面數上限",
+        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約 140 萬面，detailed 為 200 萬面）。Tripo 會自動限制：v2.5 為 500,000，四邊形網格為 150,000。"
+      },
+      "geometry_quality": {
+        "name": "幾何品質"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "model_seed": {
+        "name": "模型種子"
+      },
+      "model_version": {
+        "name": "模型版本",
+        "tooltip": "用於生成的模型版本"
+      },
+      "orientation": {
+        "name": "方向"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 材質貼圖（基礎色、金屬度、粗糙度、法線）。需要啟用紋理。"
+      },
+      "quad": {
+        "name": "四邊形網格",
+        "tooltip": "四邊形網格輸出。Tripo 會以 FBX 提供四邊形網格，因此結果會出現在 FBX 輸出，GLB 輸出會保持空白。"
+      },
+      "smart_low_poly": {
+        "name": "智慧低多邊形",
+        "tooltip": "具有乾淨、手工製作風格拓撲的低多邊形網格（500-20,000 面，四邊形網格 500-10,000 面）。最適合簡單主體；複雜主體可能會失敗。"
+      },
+      "texture": {
+        "name": "紋理",
+        "tooltip": "生成紋理貼圖。關閉時會傳回純幾何模型並忽略 pbr。"
+      },
+      "texture_alignment": {
+        "name": "紋理對齊"
+      },
+      "texture_quality": {
+        "name": "紋理品質",
+        "tooltip": "detailed = HD 紋理，extreme = 8K Ultra 紋理。"
+      },
+      "texture_seed": {
+        "name": "紋理種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "啟用四邊形網格時為空白。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在啟用四邊形網格時填入。"
       }
     }
   },
@@ -24424,6 +25267,192 @@
       }
     }
   },
+  "TripoPSeriesImageToModelNode": {
+    "description": "從影像產生具有乾淨拓撲的低多邊形 3D 模型，可輸出為三角形網格（GLB）或以四邊形為主的網格（FBX）。",
+    "display_name": "Tripo P2：影像轉模型",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Tripo P 系列模型。"
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "方向"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "紋理"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "啟用 quad 時為空。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在啟用 quad 時填入。"
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "從正視圖加上左、後、右視圖中的一至三張，產生具有乾淨拓撲的低多邊形 3D 模型，可輸出為三角形網格（GLB）或以四邊形為主的網格（FBX）。",
+    "display_name": "Tripo P2：多視角轉模型",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Tripo P 系列模型。"
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "方向"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "紋理"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "啟用 quad 時為空。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在啟用 quad 時提供。"
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "根據文字提示詞生成具有乾淨拓撲的低多邊形 3D 模型，可輸出為三角形網格（GLB）或以四邊形為主的網格（FBX）。",
+    "display_name": "Tripo P2：文字轉模型",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "Tripo P 系列模型。"
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quad": {
+        "name": "四邊形"
+      },
+      "model_texture": {
+        "name": "紋理"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "啟用 quad 時為空。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在啟用 quad 時提供。"
+      }
+    }
+  },
   "TripoRetargetNode": {
     "display_name": "Tripo: 重新定位骨架模型",
     "inputs": {
@@ -24433,7 +25462,7 @@
       },
       "animation": {
         "name": "animation",
-        "tooltip": "preset:* 動畫可搭配兩種骨架模型使用；preset:biped:* 動畫需要使用 model v1.0-20240301 建立的骨架。"
+        "tooltip": "preset:* 動畫可搭配兩種骨架模型使用。preset:biped:* 動畫專為模型 v1.0-20240301 的骨架製作；v2.5 骨架僅接受 chop、climb、dive、fall、hurt、idle、jump、run、shoot、slash、turn 和 walk。"
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24597,6 +25626,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "將模型分割為具語意意義的部件並為其命名。若輸入影像，Tripo 會先生成模型。分割 task_id 可傳入 Tripo：完成網格部件、Tripo：重新拓撲、Tripo：紋理模型和 Tripo：轉換模型，其效果如同 Tripo：分割模型的結果。",
+    "display_name": "Tripo：智慧分割",
+    "inputs": {
+      "source": {
+        "name": "來源",
+        "tooltip": "分割現有模型，或從影像生成模型後再分割。"
+      },
+      "source_granularity": {
+        "name": "粒度"
+      },
+      "source_hint": {
+        "name": "提示"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "分割 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型 task_id",
+        "tooltip": "已分割的模型（從影像生成或匯入）。"
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "以逗號分隔的零件名稱。"
+      },
+      "4": {
+        "name": "零件",
+        "tooltip": "Tripo 對其找到的零件所提供的描述。"
+      },
+      "5": {
+        "name": "遮罩",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "使用 DINOv3 與 Flux2 VAE 將圖像編碼為 TripoSplat 正/負條件，並為 KSampler 建立固定大小的噪聲目標（latent + 相機）。",
     "display_name": "TripoSplat 條件編碼",
@@ -24693,7 +25764,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo：文字轉模型",
+    "display_name": "Tripo：文字轉模型（舊版）",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24769,8 +25840,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo：文字轉模型",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "將有紋理的模型依其真實世界尺寸（公尺）進行縮放。Tripo 會將尺寸儲存為模型的場景轉換，並在模型轉換、綁定骨架或重定向時將其烘焙；未啟用 texture 時會忽略。"
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約 140 萬面，detailed 為 200 萬面）。Tripo 會無提示地限制：v2.5 為 500,000，四邊形網格為 150,000。"
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "最多 255 個字元。"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 材質貼圖（基礎色、金屬度、粗糙度、法線）。需要啟用 texture。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "四邊形網格輸出。Tripo 會以 FBX 格式提供四邊形網格，因此結果會出現在 FBX 輸出，而 GLB 輸出會維持空白。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "具備乾淨手工風格拓撲的低多邊形網格（500 至 20,000 面，quad 為 500 至 10,000 面）。最適合簡單主體；複雜主體可能會失敗。"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "產生紋理貼圖。關閉時會傳回純幾何體並忽略 pbr。"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD 紋理，extreme = 8K Ultra 紋理。"
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "啟用 quad 時為空白。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在啟用 quad 時填入。"
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo：紋理模型",
+    "display_name": "Tripo：模型貼圖（舊版）",
     "inputs": {
       "model_task_id": {
         "name": "模型任務ID"
@@ -24830,6 +25970,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "Tripo 會為四邊形網格與 FBX 匯入回傳 FBX；否則為空。"
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo：模型貼圖",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "模型版本",
+        "tooltip": "紋理模型：v3.0 適用於以 v3.x 產生的網格，v2.5 適用於以 v2.5 產生的網格。"
+      },
+      "part_names": {
+        "name": "零件名稱",
+        "tooltip": "要貼圖的 Tripo: Segment Model 零件名稱，以逗號分隔。留空則為所有零件貼圖。"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 材質貼圖（基礎色、金屬度、粗糙度、法線）；關閉時會產生純色紋理。"
+      },
+      "reference": {
+        "name": "參考影像",
+        "tooltip": "用於引導紋理的參考影像。無法與 texture_prompt 或 style_image 搭配使用。"
+      },
+      "style_image": {
+        "name": "風格影像",
+        "tooltip": "用於紋理藝術風格的參考影像。僅與 texture_prompt 一起使用。"
+      },
+      "texture_alignment": {
+        "name": "紋理對齊"
+      },
+      "texture_prompt": {
+        "name": "紋理提示詞",
+        "tooltip": "用於貼圖的可選文字引導。對於匯入的模型（Tripo: Import Model），實務上必須提供，因為其沒有可用來推斷顏色的來源影像。無法與參考影像搭配使用。"
+      },
+      "texture_quality": {
+        "name": "紋理品質",
+        "tooltip": "detailed = HD 紋理，extreme = 8K Ultra 紋理。"
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "當來源為四邊形網格或 FBX 匯入時為空白。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Tripo 會為四邊形網格和 FBX 匯入傳回 FBX；否則為空白。"
       }
     }
   },
@@ -25055,7 +26251,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAE 解碼 Hunyuan3D",
+    "display_name": "Hunyuan 3D VAE 解碼",
     "inputs": {
       "num_chunks": {
         "name": "分塊數量"
@@ -25363,7 +26559,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Trellis2 VAE 解碼形狀",
     "inputs": {
       "samples": {
         "name": "樣本"
@@ -25384,7 +26580,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Trellis2 VAE 解碼結構",
     "inputs": {
       "resolution": {
         "name": "解析度"
@@ -25404,7 +26600,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Trellis2 VAE 解碼紋理",
     "inputs": {
       "samples": {
         "name": "樣本"
@@ -28298,6 +29494,114 @@
     "outputs": {
       "0": {
         "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "根據風格和歌詞產生歌曲的 ABC 記譜法。將 abc 連接至 YuE2 Generate Music 節點。",
+    "display_name": "YuE2 產生 ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "完整：產生旋律和和弦；旋律：僅產生旋律，建議用於翻唱。"
+      },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "用於懲罰重複的近期 ABC token 數量。"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "style": {
+        "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "從風格、歌詞和 ABC 記譜法產生音樂詞元與聲學條件。請將產生的秒數提供給 Empty YuE2 Latent Audio 節點。ABC 輸入留空時會忽略所選模式。",
+    "display_name": "YuE2 生成音樂",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "連接 ABC 產生器或提供編輯過的樂譜。留空即可自動使用關閉模式。"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "用於風格與歌詞的自迴歸引導。1.0 會停用 CFG，與 ABC 工作流程一致。使用 1.01 可符合原始關閉模式的引導。"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "lyrics": {
+        "name": "歌詞"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "最長時長（秒）。較長的提示詞會自動縮短；生成可能會提早停止。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "完整：產生旋律和和弦；旋律：僅產生旋律，建議用於翻唱。"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "style": {
+        "name": "風格"
+      },
+      "temperature": {
+        "name": "溫度"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "秒數",
         "tooltip": null
       }
     }

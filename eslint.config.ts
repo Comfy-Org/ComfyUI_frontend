@@ -3,6 +3,7 @@ import type { Rule } from 'eslint'
 
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
+import { configs as astroConfigs } from 'eslint-plugin-astro'
 import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
@@ -23,6 +24,7 @@ import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
 import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
+import { es2022CompatPlugin } from './tools/eslint-plugins/noEs2023ArrayCopyMethod'
 import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
 
 const extraFileExtensions = ['.vue']
@@ -136,34 +138,6 @@ const primeVueRemovalPlugin = {
   }
 }
 
-const errorAssertionRestrictions = [
-  {
-    // Bans `value as Error` and `value as Error & { ... }`.
-    // Use `error instanceof Error` narrowing or `toError()` from
-    // @/utils/errorUtil instead — see issue #11429.
-    selector: "TSAsExpression TSTypeReference[typeName.name='Error']",
-    message:
-      'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
-  },
-  {
-    // Bans `<Error>value` and `<Error & { ... }>value`.
-    selector: "TSTypeAssertion TSTypeReference[typeName.name='Error']",
-    message:
-      'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
-  }
-] as const
-
-// Bans hand-written Zod schemas for remote (Cloud) API types. Remote API
-// types should come from generated packages (packages/ingest-types, driven
-// by packages/ingest-types/openapi-ts.config.ts) instead of hand-authored
-// Zod. This only blocks *new* usage — existing files are grandfathered via
-// `ignores` where this selector is used below.
-const noZodForRemoteApiTypes = {
-  selector: "ImportDeclaration[source.value='zod']",
-  message:
-    'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".'
-} as const
-
 export default defineConfig([
   {
     ignores: [
@@ -178,12 +152,15 @@ export default defineConfig([
       'playwright-report/*',
       'scripts/registry-census/detection-proof/**',
       'src/__ecs_matrix__/**',
-      'src/extensions/core/*',
-      'src/scripts/*',
       'src/types/generatedManagerTypes.ts',
       'src/types/vue-shim.d.ts',
       'packages/design-system/src/css/lucideStrokePlugin.js',
       'test-results/*',
+      'apps/website/dist/**',
+      'apps/website/.astro/**',
+      'apps/website/coverage/**',
+      'apps/website/playwright-report/**',
+      'apps/website/test-results/**',
       'vitest.setup.ts'
     ]
   },
@@ -196,7 +173,14 @@ export default defineConfig([
         ...commonParserOptions,
         projectService: {
           allowDefaultProject: [
+            'packages/account-core/vitest.config.ts',
+            'packages/account-ui/vite.config.ts',
+            'packages/account-ui/vitest.config.ts',
+            'packages/billing-contract/vitest.config.ts',
+            'packages/design-system/vitest.config.ts',
+            'packages/ingest-types/openapi-ts.config.ts',
             'packages/object-info-parser/vitest.config.ts',
+            'packages/shared-frontend-utils/vitest.config.ts',
             'vite.electron.config.mts',
             'vite.types.config.mts',
             'vitest.matrix.config.mts',
@@ -237,12 +221,37 @@ export default defineConfig([
   tseslintConfigs.recommended,
   // Difference in typecheck on CI vs Local
   pluginVue.configs['flat/recommended'],
+  astroConfigs['flat/recommended'],
+  {
+    files: ['apps/website/**/*.astro'],
+    settings,
+    languageOptions: {
+      parserOptions: {
+        parser: tseslintParser,
+        projectService: false
+      }
+    }
+  },
+  {
+    files: ['apps/website/**/*.astro/*.{js,ts}'],
+    languageOptions: {
+      parserOptions: {
+        projectService: false
+      }
+    },
+    rules: {
+      'no-empty': ['error', { allowEmptyCatch: true }]
+    }
+  },
   // Tailwind CSS v4 linting (class ordering, duplicates, conflicts, etc.)
   betterTailwindcss.configs.recommended,
   {
     settings: {
       'better-tailwindcss': {
-        entryPoint: 'packages/design-system/src/css/style.css'
+        entryPoint: path.resolve(
+          import.meta.dirname,
+          'packages/design-system/src/css/style.css'
+        )
       }
     },
     rules: {
@@ -254,6 +263,17 @@ export default defineConfig([
       'better-tailwindcss/enforce-consistent-class-order': 'error',
       'better-tailwindcss/enforce-canonical-classes': 'error',
       'better-tailwindcss/no-deprecated-classes': 'error'
+    }
+  },
+  {
+    files: ['apps/billing-web/**/*.{ts,vue}'],
+    settings: {
+      'better-tailwindcss': {
+        entryPoint: path.resolve(
+          import.meta.dirname,
+          'apps/billing-web/src/styles.css'
+        )
+      }
     }
   },
   // Disables ESLint rules that conflict with formatters
@@ -275,6 +295,7 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-imports': 'error',
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
+      'import-x/no-named-as-default': 'error',
       'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
       // Prohibit dark-theme: and dark: prefixes
@@ -344,119 +365,13 @@ export default defineConfig([
     }
   },
   {
-    name: 'comfy/no-unsafe-error-assertion',
-    files: [
-      'src/**/*.ts',
-      'src/**/*.tsx',
-      'src/**/*.vue',
-      'apps/*/src/**/*.ts',
-      'apps/*/src/**/*.tsx',
-      'apps/*/src/**/*.vue'
-    ],
-    ignores: [
-      '**/*.test.ts',
-      '**/*.spec.ts',
-      // Re-declared, combined with the Zod restriction, in
-      // comfy/no-new-zod-for-remote-api-types below — flat config replaces
-      // (rather than merges) a rule's options when multiple config objects
-      // matching the same file set it, so this block must not also match
-      // remote files.
-      'src/platform/remote/**/*.ts',
-      'src/platform/remote/**/*.vue'
-    ],
+    files: ['src/**/*.{js,mjs,cjs,ts,mts,cts,vue}'],
+    ignores: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    plugins: {
+      'es2022-compat': es2022CompatPlugin
+    },
     rules: {
-      'no-restricted-syntax': ['error', ...errorAssertionRestrictions]
-    }
-  },
-  // Ban new hand-written Zod schemas for remote (Cloud) API types.
-  // Includes the Error-assertion restrictions above since flat config
-  // replaces a rule's options entirely (last matching config wins) rather
-  // than merging arrays across config objects for the same rule.
-  {
-    name: 'comfy/no-new-zod-for-remote-api-types',
-    files: ['src/platform/remote/**/*.ts', 'src/platform/remote/**/*.vue'],
-    ignores: [
-      '**/*.test.ts',
-      '**/*.spec.ts',
-      'src/platform/remote/comfyui/jobs/jobTypes.ts'
-    ],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        ...errorAssertionRestrictions,
-        noZodForRemoteApiTypes
-      ]
-    }
-  },
-  // A layout read inside a derivation runs on every recompute, and a derivation
-  // that measures the DOM cannot be tested without one. See
-  // docs/guidance/state-and-effects.md.
-  //
-  // 'warn' rather than 'error' because four pre-existing instances remain, in
-  // BrushCursor.vue, WorkflowTabs.vue and SubgraphBreadcrumb.vue. Promote to
-  // 'error' once those are derived from stores instead.
-  {
-    files: ['src/**/*.ts', 'src/**/*.vue'],
-    ignores: ['**/*.test.ts', '**/*.spec.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'warn',
-        {
-          selector:
-            "CallExpression[callee.name='computed'] CallExpression[callee.property.name='getBoundingClientRect']",
-          message:
-            'Do not measure the DOM inside a computed - every recompute becomes a layout read. Derive from a store instead. See docs/guidance/state-and-effects.md.'
-        },
-        {
-          selector:
-            "CallExpression[callee.name='computed'] CallExpression[callee.property.name=/^(getComputedStyle|querySelector|querySelectorAll)$/]",
-          message:
-            'Do not inspect the DOM inside a computed. Derive from a store instead. See docs/guidance/state-and-effects.md.'
-        }
-      ]
-    }
-  },
-  {
-    files: ['**/*.spec.ts'],
-    ignores: ['browser_tests/tests/**/*.spec.ts', 'apps/*/e2e/**/*.spec.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'Program',
-          message:
-            '.spec.ts files are only allowed under browser_tests/tests/ or apps/*/e2e/'
-        }
-      ]
-    }
-  },
-  // fixtures/data/ must contain only static data — no executable code or
-  // Playwright imports. This enforces the architectural separation documented
-  // in browser_tests/AGENTS.md.
-  {
-    files: ['browser_tests/fixtures/data/**/*.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'ImportDeclaration[source.value=/^@playwright/]',
-          message:
-            'fixtures/data/ must contain only static data. No Playwright imports allowed.'
-        }
-      ]
-    }
-  },
-  {
-    files: ['browser_tests/tests/**/*.test.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'Program',
-          message:
-            '.test.ts files are not allowed in browser_tests/tests/; use .spec.ts instead'
-        }
-      ]
+      'es2022-compat/no-array-copy-method': 'error'
     }
   },
   {
@@ -532,8 +447,6 @@ export default defineConfig([
       'src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**',
       'src/**/{generated,vendor}/**',
       'src/__ecs_matrix__/**',
-      'src/extensions/core/**',
-      'src/scripts/**',
       'src/types/generatedManagerTypes.ts',
       'src/types/vue-shim.d.ts'
     ],
@@ -546,9 +459,22 @@ export default defineConfig([
   },
 
   // Turn off ESLint rules that are already handled by oxlint
-  ...oxlint.buildFromOxlintConfigFile(
-    path.resolve(import.meta.dirname, '.oxlintrc.json')
-  ),
+  oxlint
+    .buildFromOxlintConfigFile(
+      path.resolve(import.meta.dirname, '.oxlintrc.json')
+    )
+    .map((config) =>
+      config.rules
+        ? {
+            ...config,
+            ignores: [
+              ...(config.ignores ?? []),
+              'apps/website/**/*.astro',
+              'apps/website/**/*.astro/**'
+            ]
+          }
+        : config
+    ),
   {
     rules: {
       'import-x/default': 'off',
@@ -644,6 +570,14 @@ export default defineConfig([
     }
   },
 
+  {
+    files: ['apps/website/**/*.{astro,ts,mts,vue}'],
+    settings: {
+      'better-tailwindcss': {
+        entryPoint: 'apps/website/src/styles/global.css'
+      }
+    }
+  },
   // The website app is a marketing site with no vue-i18n setup
   {
     files: ['apps/website/**/*.vue'],
@@ -655,7 +589,7 @@ export default defineConfig([
   // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
   // TypeScript resolver cannot see but are valid at build time.
   {
-    files: ['apps/website/**/*.{ts,mts,vue}'],
+    files: ['apps/website/**/*.{astro,ts,mts,vue}'],
     rules: {
       'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
     }
@@ -832,57 +766,6 @@ export default defineConfig([
                 'browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead.'
             }
           ]
-        }
-      ]
-    }
-  },
-
-  // Deprecate @/schemas/apiSchema — use generated types from
-  // @comfyorg/ingest-types instead. Uses no-restricted-syntax so it
-  // composes with other file-scoped no-restricted-imports blocks above
-  // (flat-config rules of the same key override rather than merge).
-  // Warn severity: ~80 files still import apiSchema during migration;
-  // elevate to error once the count is near zero. Scoped to src/ to
-  // avoid overriding the stricter no-restricted-syntax rules on
-  // browser_tests/fixtures/data and .spec/.test files.
-  {
-    files: ['src/**/*.{ts,vue}'],
-    ignores: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'src/**/*.stories.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'warn',
-        {
-          selector:
-            "ImportDeclaration[source.value='@/schemas/apiSchema'], ExportNamedDeclaration[source.value='@/schemas/apiSchema'], ExportAllDeclaration[source.value='@/schemas/apiSchema']",
-          message:
-            'apiSchema is deprecated. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
-        }
-      ]
-    }
-  },
-
-  // Deprecate new hand-written zod server-response schemas under
-  // src/schemas/. Local-state / form / UI-config schemas
-  // (colorPaletteSchema, signInSchema) are not server responses and
-  // are explicitly exempted. Server response shapes should come from
-  // @comfyorg/ingest-types generated types. Warn severity so existing
-  // response schemas don't break CI; new additions get nudged at PR
-  // review.
-  {
-    files: ['src/schemas/**/*.ts'],
-    ignores: [
-      'src/schemas/**/*.test.ts',
-      'src/schemas/colorPaletteSchema.ts',
-      'src/schemas/signInSchema.ts'
-    ],
-    rules: {
-      'no-restricted-syntax': [
-        'warn',
-        {
-          selector:
-            "ImportDeclaration[source.value='zod'], ExportNamedDeclaration[source.value='zod'], ExportAllDeclaration[source.value='zod']",
-          message:
-            'Avoid introducing new hand-written zod schemas under src/schemas/ for server responses. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
         }
       ]
     }

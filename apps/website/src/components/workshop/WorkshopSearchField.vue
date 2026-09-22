@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Search, X } from '@lucide/vue'
+import { useMounted } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 
@@ -7,13 +8,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { filterWorkshopModels } from '../../config/models-catalogue'
+import { useVisualViewport } from '../../composables/useVisualViewport'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
 
-// One search for the whole prototype: the same field, the same panel of
-// popular models and the same provider and capability chips, wherever a
-// catalogue is listed.
 const {
   models,
   inputId = 'workshop-search',
@@ -29,47 +28,30 @@ const {
 }>()
 
 const query = defineModel<string>({ required: true })
-const providers = defineModel<string[]>('providers', { required: true })
-const capabilities = defineModel<string[]>('capabilities', { required: true })
+const mounted = useMounted()
 
-const open = ref(false)
 const sheetOpen = ref(false)
 const sheetInput = useTemplateRef<HTMLInputElement>('sheetInput')
 const sheetTrigger = useTemplateRef<HTMLButtonElement>('sheetTrigger')
-
-// Focus moving to the clear button or into the panel itself is still inside
-// the search, so only a move out of the wrapper closes it.
-function closeOnLeave(event: FocusEvent) {
-  const wrapper = event.currentTarget
-  const moved = event.relatedTarget
-  if (
-    wrapper instanceof HTMLElement &&
-    (!(moved instanceof Node) || !wrapper.contains(moved))
-  )
-    open.value = false
-}
+const { height: screen, offsetTop: screenTop } = useVisualViewport()
+const sheetStyle = computed(() =>
+  screen.value === null
+    ? { bottom: '0' }
+    : {
+        height: `${screen.value}px`,
+        transform: `translateY(${screenTop.value}px)`
+      }
+)
 
 // The sheet applies as you tap, so its button is a way out that says what is
 // waiting behind it.
 const matches = computed(
-  () =>
-    filterWorkshopModels(models, {
-      query: query.value,
-      providers: providers.value,
-      capabilities: capabilities.value
-    }).length
+  () => filterWorkshopModels(models, { query: query.value }).length
 )
 
 function clearSheet() {
   query.value = ''
-  providers.value = []
-  capabilities.value = []
 }
-
-const toggled = (list: readonly string[], value: string) =>
-  list.includes(value)
-    ? list.filter((entry) => entry !== value)
-    : [...list, value]
 
 // iOS zooms the page into any field it considers too small to read, which
 // leaves the sheet's own controls off screen, so on a phone the text is 16px.
@@ -84,16 +66,17 @@ const clearButtonClass =
 </script>
 
 <template>
-  <div class="relative" @focusout="closeOnLeave">
+  <div class="relative">
     <button
       v-if="compact"
       ref="sheetTrigger"
       type="button"
+      :disabled="!mounted"
       :aria-label="t('workshop.search.label', locale)"
       data-testid="workshop-search-button"
       :class="
         cn(
-          'focus-visible:ring-brand flex h-10 w-full cursor-pointer items-center gap-2 rounded-xl bg-white/8 px-3 text-left text-sm outline-none hover:bg-white/12 focus-visible:ring-2 sm:hidden',
+          'flex h-10 w-full cursor-pointer items-center gap-2 rounded-xl bg-white/8 px-3 text-left text-sm outline-none hover:bg-white/12 focus-visible:ring-2 focus-visible:ring-brand sm:hidden',
           query ? 'text-primary-warm-white' : 'text-primary-warm-gray'
         )
       "
@@ -114,17 +97,13 @@ const clearButtonClass =
         :id="inputId"
         v-model="query"
         type="search"
+        :disabled="!mounted"
         :placeholder="
           t(compact ? 'workshop.search.short' : 'workshop.search.label', locale)
         "
         :aria-label="t('workshop.search.label', locale)"
         data-testid="workshop-search"
         :class="fieldClass"
-        role="combobox"
-        :aria-controls="`${inputId}-panel`"
-        :aria-expanded="open"
-        @focus="open = true"
-        @keydown.escape="open = false"
       />
       <button
         v-if="query"
@@ -136,27 +115,13 @@ const clearButtonClass =
       >
         <X class="size-4" aria-hidden="true" />
       </button>
-
-      <WorkshopSearchPanel
-        v-if="open"
-        :id="`${inputId}-panel`"
-        :models
-        :query
-        :providers
-        :capabilities
-        :locale
-        @pick="(model) => (query = model.name)"
-        @toggle-provider="(value) => (providers = toggled(providers, value))"
-        @toggle-capability="
-          (value) => (capabilities = toggled(capabilities, value))
-        "
-      />
     </div>
 
     <DialogRoot v-model:open="sheetOpen">
       <DialogPortal>
         <DialogContent
-          class="bg-page fixed inset-0 z-50 flex flex-col sm:hidden"
+          class="fixed inset-x-0 top-0 z-50 flex flex-col bg-page sm:hidden"
+          :style="sheetStyle"
           :aria-describedby="undefined"
           data-testid="workshop-search-sheet"
           @open-auto-focus.prevent="sheetInput?.focus()"
@@ -203,8 +168,6 @@ const clearButtonClass =
           <WorkshopSearchPanel
             :models
             :query
-            :providers
-            :capabilities
             :locale
             variant="sheet"
             @pick="
@@ -213,19 +176,13 @@ const clearButtonClass =
                 sheetOpen = false
               }
             "
-            @toggle-provider="
-              (value) => (providers = toggled(providers, value))
-            "
-            @toggle-capability="
-              (value) => (capabilities = toggled(capabilities, value))
-            "
           />
 
           <div
             class="flex items-center gap-3 border-t border-transparency-white-t8 p-3"
           >
             <button
-              v-if="query || providers.length || capabilities.length"
+              v-if="query"
               type="button"
               class="shrink-0 cursor-pointer px-2 text-sm text-primary-warm-gray hover:text-primary-warm-white"
               data-testid="workshop-search-sheet-clear"
@@ -235,7 +192,7 @@ const clearButtonClass =
             </button>
             <button
               type="button"
-              class="bg-primary-comfy-yellow hover:bg-primary-comfy-yellow/90 h-11 flex-1 cursor-pointer rounded-2xl text-sm font-bold text-primary-comfy-ink"
+              class="h-11 flex-1 cursor-pointer rounded-2xl bg-primary-comfy-yellow text-sm font-bold text-primary-comfy-ink hover:bg-primary-comfy-yellow/90"
               data-testid="workshop-search-sheet-apply"
               @click="sheetOpen = false"
             >

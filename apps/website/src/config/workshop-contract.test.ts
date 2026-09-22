@@ -8,8 +8,10 @@ import {
 import packedContracts from '../content/workshop-router-contracts.json'
 import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
 import rawBindings from '../data/workshop-router-bindings.json'
-import { workshopModels } from './models-catalogue'
-import { routerContentBySlug } from './workshop-browse-content'
+import {
+  authoredRouterContentBySlug,
+  authoredWorkshopModels
+} from './workshop-browse-content'
 import {
   formForContract,
   workshopContractRecordSchema,
@@ -23,7 +25,7 @@ import { validateWorkshopInput } from './workshop-json-schema'
 import type { FormValues } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { parseRouterResponse, releaseRouterOutputs } from './workshop-response'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import { parseRouterOpenApiSnapshot } from './workshop-router-openapi'
 
 const contracts = packedContracts.map((entry) =>
@@ -218,22 +220,26 @@ describe('schema-driven Router coverage', () => {
       )
     ).toEqual([])
   })
-  it('enables every authored input without requiring a presentation binding', () => {
-    const generated = z
-      .array(workshopContractRecordSchema)
-      .parse(JSON.parse(compileWorkshopContracts(rawSnapshots)))
-    expect(generated.map((entry) => entry.id).sort()).toEqual(
-      snapshots
-        .filter((entry) => entry.document['x-comfy-input-schema-authored'])
-        .map((entry) => entry.id)
-        .sort()
-    )
-    expect(
-      generated.some(
-        (entry) => entry.output.format === 'auto' && !entry.output.schema
+  it(
+    'enables every authored input without requiring a presentation binding',
+    { timeout: 15_000 },
+    () => {
+      const generated = z
+        .array(workshopContractRecordSchema)
+        .parse(JSON.parse(compileWorkshopContracts(rawSnapshots)))
+      expect(generated.map((entry) => entry.id).sort()).toEqual(
+        snapshots
+          .filter((entry) => entry.document['x-comfy-input-schema-authored'])
+          .map((entry) => entry.id)
+          .sort()
       )
-    ).toBe(true)
-  })
+      expect(
+        generated.some(
+          (entry) => entry.output.format === 'auto' && !entry.output.schema
+        )
+      ).toBe(true)
+    }
+  )
 
   it(
     'generates the committed packed contracts deterministically',
@@ -267,10 +273,10 @@ describe('schema-driven Router coverage', () => {
 
   it.for(
     contracts.filter((contract) =>
-      workshopModels.some((model) => model.routerId === contract.id)
+      authoredWorkshopModels.some((model) => model.routerId === contract.id)
     )
   )('connects the matched Router model $id to its page', (contract) => {
-    const card = workshopModels.find(
+    const card = authoredWorkshopModels.find(
       (model) => model.routerId === contract.id && !model.incompleteReason
     )
     expect(card).toBeDefined()
@@ -279,7 +285,7 @@ describe('schema-driven Router coverage', () => {
     expect(card.incompleteReason).toBeUndefined()
     expect(detail?.incompleteReason).toBeUndefined()
     const { creatorVariants, ...base } = workshopContractSchema.parse(contract)
-    const content = routerContentBySlug.get(card.slug)
+    const content = authoredRouterContentBySlug.get(card.slug)
     if (!content) throw new Error('Missing content record')
     const creator = creatorVariants?.[content.overlay.id] ?? base.creator
     expect(detail?.execution).toEqual({

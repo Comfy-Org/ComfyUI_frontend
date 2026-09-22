@@ -5,28 +5,9 @@ import { renderToString } from 'vue/server-renderer'
 
 import HeaderAccount from './HeaderAccount.vue'
 
-vi.mock<unknown>(import('../../scripts/posthog'), async () => {
-  const { ref } = await import('vue')
-  return { useWorkshopAuthFlag: () => ref(true) }
-})
-
-vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
-  const { ref } = await import('vue')
-  return {
-    useWorkshopSession: () => ({
-      user: ref(null),
-      session: ref(undefined),
-      sessionFailure: ref(undefined),
-      ensureFresh: vi.fn(),
-      signOut: vi.fn()
-    })
-  }
-})
-
-vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
-  const { ref } = await import('vue')
-  return { useWorkshopCredits: () => ({ balance: ref({ status: 'unknown' }) }) }
-})
+vi.mock(import('../../scripts/posthog'))
+vi.mock(import('../../config/workshop-session-state'))
+vi.mock(import('../../config/workshop-credits'))
 
 describe('HeaderAccount on the server', () => {
   it('renders the plain sign-in href, since hydration would never repair a mismatched one', async () => {

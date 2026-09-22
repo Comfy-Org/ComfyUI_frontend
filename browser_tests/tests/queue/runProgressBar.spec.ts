@@ -9,8 +9,7 @@ const wstest = mergeTests(test, webSocketFixture)
 wstest.describe('Docked actionbar run progress bar', { tag: ['@ui'] }, () => {
   wstest.use({
     initialSettings: {
-      'Comfy.Queue.QPOV2': true,
-      'Comfy.Queue.ShowRunProgressBar': true
+      'Comfy.Queue.QPOV2': true
     }
   })
 

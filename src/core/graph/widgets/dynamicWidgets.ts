@@ -33,10 +33,6 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 
-function setCanvasDirty(canvas: typeof app.canvas | undefined) {
-  canvas?.setDirty(true, true)
-}
-
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
     comfyDynamic: { matchType: Record<string, Record<string, string>> }
@@ -255,14 +251,14 @@ function dynamicComboWidget(
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
-    setCanvasDirty(app.canvas)
+    node.graph.setDirtyCanvas(true, true)
   }
   //Refit height on the callback channel: interaction fires it after the value
   //setter, while configure (load, clone, paste) only fires the setter and must
   //keep the serialised height.
   widget.callback = useChainCallback(widget.callback, () => {
     node.size = [node.size[0], node.computeSize([...node.size])[1]]
-    setCanvasDirty(app.canvas)
+    node.graph?.setDirtyCanvas(true, true)
   })
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
@@ -360,14 +356,15 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       linf: LLink | null | undefined
     ) {
       const input = this.inputs.at(slot)
-      if (contype !== LiteGraph.INPUT || !this.graph || !input) return
+      const { graph } = this
+      if (contype !== LiteGraph.INPUT || !graph || !input) return
       if (app.configuringGraph) return
       const [matchKey, matchGroup] = Object.entries(
         this.comfyDynamic.matchType
       ).find(([, group]) => input.name in group) ?? ['', undefined]
       if (!matchGroup) return
       if (iscon && linf) {
-        const { output, subgraphInput } = linf.resolve(this.graph)
+        const { output, subgraphInput } = linf.resolve(graph)
         const connectingType = (output ?? subgraphInput)?.type
         if (connectingType) linf.type = connectingType
       }
@@ -378,7 +375,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       const connectedTypes = groupInputs.map((inp) => {
         const link = this.getInputLink(this.inputs.indexOf(inp))
         if (!link) return '*'
-        const { output, subgraphInput } = link.resolve(this.graph!)
+        const { output, subgraphInput } = link.resolve(graph)
         return (output ?? subgraphInput)?.type ?? '*'
       })
       //An input slot can accept a connection that is
@@ -404,7 +401,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
         if (!(outputGroups?.[idx] == matchKey)) return
         changeOutputType(this, idx, outputType)
       })
-      setCanvasDirty(app.canvas)
+      graph.setDirtyCanvas(true, true)
     }
   )
 }
@@ -512,7 +509,7 @@ function addAutogrowGroup(
   node.inputs.splice(insertionIndex, 0, ...newInputs)
   const result = commitMutatedInputs(node, previous, inputLinks)
   if (!result.ok) return
-  setCanvasDirty(app.canvas)
+  node.graph?.setDirtyCanvas(true, true)
 }
 
 const ORDINAL_REGEX = /\d+$/
@@ -550,6 +547,20 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
     return
   addAutogrowGroup(ordinal + 1, groupName, node)
 }
+
+export function reconcileAutogrowInputs(node: LGraphNode): void {
+  if (!node.comfyDynamic?.autogrow) return
+  withComfyAutogrow(node)
+  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
+    const slot = node.inputs.findLastIndex(
+      (input, index) =>
+        input.name.slice(0, input.name.lastIndexOf('.')) === groupName &&
+        node.getInputLink(index)
+    )
+    if (slot !== -1) autogrowInputConnected(slot, node)
+  }
+}
+
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const input = node.inputs.at(index)
   if (!input) return
@@ -575,7 +586,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     console.error('Failed to group multi-input autogrow inputs')
     return
   }
-  setCanvasDirty(app.canvas)
+  node.graph?.setDirtyCanvas(true, true)
   const previous = captureInputLayout(node)
   const inputLinks = new Map(previous.links)
   const transplants: { input: INodeInputSlot; link: LLink }[] = []

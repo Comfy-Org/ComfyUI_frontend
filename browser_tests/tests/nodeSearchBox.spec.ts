@@ -14,24 +14,14 @@ async function waitForSearchInsertion(
     .toBe(initialNodeCount + 1)
 }
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
 test.describe('Node search box', { tag: '@node' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.Action',
-      'search box'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.ActionShift',
-      'search box'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Disabled',
+      'Comfy.LinkRelease.Action': 'search box',
+      'Comfy.LinkRelease.ActionShift': 'search box',
+      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+    }
   })
 
   test(`Can trigger on empty canvas double click`, async ({ comfyPage }) => {
@@ -130,7 +120,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
       const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
       await comfyPage.canvasOps.disconnectEdge()
       await expect(comfyPage.searchBox.input).toHaveCount(1)
-      await comfyPage.page.locator('.p-chip-remove-icon').click()
+      await comfyPage.searchBox.removeFilter(0)
       await comfyPage.searchBox.fillAndSelectFirstNode('KSampler', {
         exact: true
       })
@@ -203,13 +193,58 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await comfyPage.searchBox.filterButton.click()
       const panel = comfyPage.searchBox.filterSelectionPanel
       await panel.header.waitFor({ state: 'visible' })
-      await comfyPage.page.keyboard.press('Escape')
+      await comfyPage.page
+        .locator('.p-dialog-mask')
+        .filter({ has: panel.header })
+        .click({ position: { x: 10, y: 10 } })
 
       // Verify the filter selection panel is hidden
       await expect(panel.header).toBeHidden()
 
       // Verify the node search dialog is still visible
       await expect(comfyPage.searchBox.input).toBeVisible()
+    })
+
+    test.describe('Escape dismissal', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.searchBox.filterButton.click()
+        await expect(
+          comfyPage.searchBox.filterSelectionPanel.root.getByRole('button', {
+            name: 'Close'
+          })
+        ).toBeFocused()
+      })
+
+      test('keeps search open when the filter has keyboard focus', async ({
+        comfyPage
+      }) => {
+        await comfyPage.page.keyboard.press('Escape')
+
+        await expect(
+          comfyPage.searchBox.filterSelectionPanel.header
+        ).toBeHidden()
+        await expect(comfyPage.searchBox.input).toBeVisible()
+        await expect(comfyPage.searchBox.input).toBeFocused()
+      })
+
+      test('keeps search open after clicking the filter heading', async ({
+        comfyPage
+      }) => {
+        await comfyPage.searchBox.filterSelectionPanel.root
+          .getByRole('heading', { name: 'Add node filter condition' })
+          .click()
+        await comfyPage.page.keyboard.press('Escape')
+
+        await expect(
+          comfyPage.searchBox.filterSelectionPanel.header
+        ).toBeHidden()
+        await expect(comfyPage.searchBox.input).toBeVisible()
+        await expect(comfyPage.searchBox.input).toBeFocused()
+
+        await comfyPage.searchBox.filterButton.focus()
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(comfyPage.searchBox.input).toBeHidden()
+      })
     })
 
     test('Can add multiple filters', async ({ comfyPage }) => {
@@ -279,19 +314,13 @@ test.describe('Node search box', { tag: '@node' }, () => {
 })
 
 test.describe('Release context menu', { tag: '@node' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.Action',
-      'context menu'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.ActionShift',
-      'search box'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Disabled',
+      'Comfy.LinkRelease.Action': 'context menu',
+      'Comfy.LinkRelease.ActionShift': 'search box',
+      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+    }
   })
 
   test(

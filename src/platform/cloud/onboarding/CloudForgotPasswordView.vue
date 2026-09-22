@@ -70,12 +70,12 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import {
   CLOUD_AUTH_FIELD_CLASS,
@@ -91,6 +91,8 @@ const loading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
+let redirectTimer: ReturnType<typeof setTimeout> | undefined
+
 const navigateToLogin = () => {
   void router.push({ name: 'cloud-login' })
 }
@@ -105,21 +107,17 @@ const handleSubmit = async () => {
   errorMessage.value = ''
   successMessage.value = ''
 
-  try {
-    // sendPasswordReset is already wrapped and returns a promise
-    await authActions.sendPasswordReset(email.value)
+  const sent = await authActions.sendPasswordReset(email.value)
+  loading.value = false
 
-    successMessage.value = t('cloudForgotPassword_passwordResetSent')
-
-    // Optionally redirect to login after a delay
-    setTimeout(() => {
-      navigateToLogin()
-    }, 3000)
-  } catch (error) {
-    console.error('Password reset error:', error)
+  if (!sent) {
     errorMessage.value = t('cloudForgotPassword_passwordResetError')
-  } finally {
-    loading.value = false
+    return
   }
+
+  successMessage.value = t('cloudForgotPassword_passwordResetSent')
+  redirectTimer = setTimeout(navigateToLogin, 3000)
 }
+
+onUnmounted(() => clearTimeout(redirectTimer))
 </script>

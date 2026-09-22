@@ -6,15 +6,16 @@ import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
 import catalog from '../content/workshop-models.json'
 import display from '../content/workshop-display.json'
 import packedAliases from '../content/workshop-router-aliases.json'
+import { filterWorkshopModels, countByModality } from './models-catalogue'
+import type { WorkshopModelDetail } from './models-catalogue'
 import {
   workshopModels,
-  filterWorkshopModels,
-  countByModality
-} from './models-catalogue'
-import { routerWorkshopModelPaths } from './workshop-browse-content'
+  routerWorkshopModelPaths
+} from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopContentInputs } from './workshop-content-inputs'
+import { isWorkshopModelDisabled } from './workshop-model-availability'
 import {
   defaultValues,
   schemaForModel,
@@ -28,74 +29,173 @@ import {
 const audit = workshopIdentityAuditSchema.parse(rawAudit)
 const aliases = workshopRouterAliasesSchema.parse(packedAliases)
 const aliasesById = new Map(aliases.map((alias) => [alias.id, alias]))
+const auditById = new Map(
+  audit.records.map((record) => [record.legacyId, record])
+)
+
+function isPublishablePage(entry: { id: string; slug: string }): boolean {
+  return (
+    !workshopContentInputs.get(entry.id)?.unavailableReason &&
+    !isWorkshopModelDisabled(entry.slug)
+  )
+}
+
+function routerIdForPage(entry: { id: string; modelId: string }) {
+  return (
+    workshopContentInputs.get(entry.id)?.routerId ??
+    aliasesById.get(entry.modelId)?.routerId
+  )
+}
+
+type IdentityAuditRecord = (typeof audit.records)[number]
+
+function legacyEntryFor(record: IdentityAuditRecord) {
+  const entry = catalog.find((candidate) => candidate.id === record.legacyId)
+  if (!entry) throw new Error(`Unknown legacy entry: ${record.legacyId}`)
+  return entry
+}
+
+function pageTargetsFor(record: IdentityAuditRecord) {
+  return display
+    .filter(
+      (entry) => entry.modelId === record.legacyId && isPublishablePage(entry)
+    )
+    .flatMap((entry) => {
+      const routerId = routerIdForPage(entry)
+      return routerId && workshopContract(routerId) ? [{ entry, routerId }] : []
+    })
+}
+
+function expectValidExamples(detail: WorkshopModelDetail | undefined) {
+  if (!detail) throw new Error('Missing model detail')
+  for (const example of detail.examples) {
+    const populated = schemaForModel(detail).filter((field) =>
+      Object.hasOwn(example.values, field.name)
+    )
+    expect(populated).toHaveLength(Object.keys(example.values).length)
+    expect(
+      validateForm(populated, defaultValues(populated, example.values))
+    ).toEqual({})
+    expect(example.sampleOnly).toBe(Object.keys(example.values).length === 0)
+  }
+}
+
+const unresolvedIdentityRecords = audit.records.filter(
+  (record) => record.status !== 'verified' || record.matches.length !== 1
+)
+const pageBoundIdentityRecords = unresolvedIdentityRecords.filter(
+  (record) => pageTargetsFor(record).length > 0
+)
+const unboundIdentityRecords = unresolvedIdentityRecords.filter(
+  (record) => pageTargetsFor(record).length === 0
+)
+const singleTargetIdentityRecords = audit.records.filter(
+  (record) => record.status === 'verified' && record.matches.length === 1
+)
+
+function hasPublishableSingleTarget(record: IdentityAuditRecord): boolean {
+  const match = record.matches.at(0)
+  if (!match || !workshopContract(match.routerId)) return false
+  return (
+    !Object.hasOwn(availability, match.routerId) &&
+    display.some(
+      (entry) => entry.modelId === record.legacyId && isPublishablePage(entry)
+    )
+  )
+}
+
+const publishedSingleTargetRecords = singleTargetIdentityRecords.filter(
+  hasPublishableSingleTarget
+)
+const unpublishedSingleTargetRecords = singleTargetIdentityRecords.filter(
+  (record) => !hasPublishableSingleTarget(record)
+)
 
 describe('legacy content identity repairs', () => {
-  it.for(audit.records)(
-    'retains $legacyId without guessing an identity',
+  it.for(unboundIdentityRecords)(
+    'keeps $legacyId unpublished rather than guessing an identity',
     (record) => {
-      const old = catalog.find((entry) => entry.id === record.legacyId)
-      if (!old) throw new Error('Unknown legacy entry')
+      const old = legacyEntryFor(record)
+      const detail = getRouterWorkshopModelDetail(old.slug)
+      expect(aliasesById.get(record.legacyId)).toBeUndefined()
+      expect(detail).toBeUndefined()
+      expect(routerWorkshopModelPaths).not.toContain(old.slug)
+    }
+  )
+
+  it.for(pageBoundIdentityRecords)(
+    'publishes $legacyId only through verified page bindings',
+    (record) => {
+      const old = legacyEntryFor(record)
+      const detail = getRouterWorkshopModelDetail(old.slug)
+      expect(aliasesById.get(record.legacyId)).toBeUndefined()
+      const pageTargets = pageTargetsFor(record)
+      expect(record.status).toBe('verified')
+      expect(
+        pageTargets.every(({ routerId }) =>
+          record.matches.some((match) => match.routerId === routerId)
+        )
+      ).toBe(true)
+      expect(pageTargets.map(({ routerId }) => routerId)).toContain(
+        detail?.routerId
+      )
+      expect(routerWorkshopModelPaths).toContain(old.slug)
+    }
+  )
+
+  it.for(unpublishedSingleTargetRecords)(
+    'keeps unavailable single target $legacyId unpublished',
+    (record) => {
+      const old = legacyEntryFor(record)
+      const match = record.matches[0]
+      expect(aliasesById.get(record.legacyId)?.routerId).toBe(match.routerId)
+      expect(getRouterWorkshopModelDetail(old.slug)).toBeUndefined()
+      expect(routerWorkshopModelPaths).not.toContain(old.slug)
+    }
+  )
+
+  it.for(publishedSingleTargetRecords)(
+    'publishes $legacyId through its verified identity',
+    (record) => {
+      const old = legacyEntryFor(record)
       const detail = getRouterWorkshopModelDetail(old.slug)
       const alias = aliasesById.get(record.legacyId)
-      if (record.status !== 'verified' || record.matches.length !== 1) {
-        expect(alias).toBeUndefined()
-        expect(detail).toBeUndefined()
-        expect(routerWorkshopModelPaths).not.toContain(old.slug)
-        return
-      }
       const match = record.matches[0]
       expect(alias?.routerId).toBe(match.routerId)
       const contract = workshopContract(match.routerId)
-      if (!contract || Object.hasOwn(availability, match.routerId)) {
-        expect(detail).toBeUndefined()
-        expect(routerWorkshopModelPaths).not.toContain(old.slug)
-        return
-      }
-      expect(detail?.routerId).toBe(match.routerId)
-      expect(detail?.slug.startsWith(`${old.slug}--`)).toBe(true)
-      expect(detail?.href).toBe(`/models/${detail?.slug}/`)
+      if (!contract || !detail)
+        throw new Error('Missing published model detail')
+      expect(detail.routerId).toBe(match.routerId)
+      expect(detail.slug.startsWith(`${old.slug}--`)).toBe(true)
+      expect(detail.href).toBe(`/models/${detail.slug}/`)
       expect(routerWorkshopModelPaths).toContain(old.slug)
-      expect(detail?.incompleteReason).toBeUndefined()
-      expect(detail?.execution?.inputSchema).toEqual(contract.inputSchema)
-      expect(detail?.execution?.creator).toEqual(
-        contract.creatorVariants?.[detail?.slug ?? ''] ?? contract.creator
+      expect(detail.incompleteReason).toBeUndefined()
+      expect(detail.execution?.inputSchema).toEqual(contract.inputSchema)
+      expect(detail.execution?.creator).toEqual(
+        contract.creatorVariants?.[detail.slug] ?? contract.creator
       )
-      expect(detail?.form?.source).toBe('router')
-      for (const example of detail?.examples ?? []) {
-        if (!detail) throw new Error('Missing model detail')
-        const populated = schemaForModel(detail).filter((field) =>
-          Object.hasOwn(example.values, field.name)
-        )
-        expect(populated).toHaveLength(Object.keys(example.values).length)
-        expect(
-          validateForm(populated, defaultValues(populated, example.values))
-        ).toEqual({})
-        expect(example.sampleOnly).toBe(
-          Object.keys(example.values).length === 0
-        )
-      }
+      expect(detail.form?.source).toBe('router')
+      expectValidExamples(detail)
     }
   )
 
   it('publishes only verified Router joins with one distinct card per content record', () => {
     const nativeIds = new Set(rawSnapshots.map((entry) => entry.id))
-    const publishedAliases = aliases.filter(
-      (alias) =>
-        workshopContract(alias.routerId) &&
-        !Object.hasOwn(availability, alias.routerId)
-    )
-    const joinedIds = new Set(publishedAliases.map((alias) => alias.routerId))
+    const content = display.flatMap((entry) => {
+      const routerId = routerIdForPage(entry)
+      return routerId &&
+        workshopContract(routerId) &&
+        !Object.hasOwn(availability, routerId) &&
+        isPublishablePage(entry)
+        ? [{ entry, routerId }]
+        : []
+    })
+    const joinedIds = new Set(content.map(({ routerId }) => routerId))
     expect(new Set(workshopModels.map((model) => model.routerId))).toEqual(
       joinedIds
     )
-    const publishedIds = new Set(publishedAliases.map((alias) => alias.id))
-    const content = display.filter(
-      (entry) =>
-        publishedIds.has(entry.modelId) &&
-        !workshopContentInputs.get(entry.id)?.unavailableReason
-    )
     expect(workshopModels.map((model) => model.slug).sort()).toEqual(
-      content.map((entry) => entry.slug).sort()
+      content.map(({ entry }) => entry.slug).sort()
     )
     expect(new Set(workshopModels.map((model) => model.slug)).size).toBe(
       content.length
@@ -120,6 +220,59 @@ describe('legacy content identity repairs', () => {
     expect(
       getRouterWorkshopModelDetail('bria--image-edit-erase')?.execution?.id
     ).toBe('bria/image-edit-erase')
+  })
+
+  it('binds every role-specific page only to a verified family target', () => {
+    for (const [id, binding] of workshopContentInputs) {
+      const page = display.find((entry) => entry.id === id)
+      if (!page) throw new Error(`Missing content page: ${id}`)
+      const record = auditById.get(page.modelId)
+      expect({ id, status: record?.status }).toMatchObject({
+        status: 'verified'
+      })
+      expect(record?.matches.map((match) => match.routerId)).toContain(
+        binding.routerId
+      )
+    }
+  })
+
+  it('requires every active page for a multi-target model to declare its Router target', () => {
+    const multiTargetIds = new Set(
+      audit.records
+        .filter(
+          (record) => record.status === 'verified' && record.matches.length > 1
+        )
+        .map((record) => record.legacyId)
+    )
+    const missing = display
+      .filter(
+        (entry) =>
+          multiTargetIds.has(entry.modelId) &&
+          !isWorkshopModelDisabled(entry.slug) &&
+          !workshopContentInputs.has(entry.id)
+      )
+      .map((entry) => entry.id)
+    expect(missing).toEqual([])
+  })
+
+  it('does not silently drop active content with a verified available target', () => {
+    const published = new Set(workshopModels.map((model) => model.slug))
+    const missing = display
+      .filter((entry) => {
+        if (!isPublishablePage(entry)) return false
+        const record = auditById.get(entry.modelId)
+        return (
+          record?.status === 'verified' &&
+          record.matches.some(
+            (match) =>
+              workshopContract(match.routerId) &&
+              !Object.hasOwn(availability, match.routerId)
+          ) &&
+          !published.has(entry.slug)
+        )
+      })
+      .map((entry) => entry.slug)
+    expect(missing).toEqual([])
   })
 
   it('keeps disabled models in the authored content without publishing their URLs', () => {
@@ -185,15 +338,22 @@ describe('legacy content identity repairs', () => {
     })
   })
 
-  it('quarantines the incorrect Starfish media without deleting Rob’s source record', () => {
+  it('keeps the withheld HeyGen video-translate media off the Starfish page while showing its own speech example', () => {
     const original = display.find(
       (entry) => entry.modelId === 'heygen/starfish-tts'
     )
-    expect(original?.withheldContent?.media.thumbnail).toBeDefined()
+    // The legacy video-translate thumbnail and example stay quarantined in
+    // withheldContent; the page renders the speech example authored for it.
+    expect(original?.withheldContent?.media.thumbnail?.url).toContain(
+      'api_heygen_video_translate'
+    )
     expect(original?.withheldContent?.examples.length).toBeGreaterThan(0)
     const model = getRouterWorkshopModelDetail('heygen--starfish-tts')
     expect(model?.execution?.id).toBe('heygen/starfish')
-    expect(model?.thumbnail).toBeUndefined()
-    expect(model?.examples).toEqual([])
+    expect(model?.thumbnail?.url).toBe(original?.media.thumbnail?.url)
+    expect(model?.thumbnail?.url).not.toContain('api_heygen_video_translate')
+    expect(model?.examples.map((example) => example.title)).toEqual(
+      original?.examples.map((example) => example.title)
+    )
   })
 })
