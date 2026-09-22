@@ -133,6 +133,20 @@ describe('useWorkspaceUrlLoader', () => {
     expect(callOrder).toEqual(['strip', 'switch'])
   })
 
+  it('resolves normally when the strip replace rejects, instead of throwing', async () => {
+    mockRouteQuery.value = { workspace: 'workspace-2' }
+    mockRouterReplace.mockRejectedValueOnce(new Error('navigation cancelled'))
+
+    const { loadWorkspaceFromUrl } = useWorkspaceUrlLoader()
+
+    // Throwing here (instead of resolving) would fail the test on its own.
+    await loadWorkspaceFromUrl()
+
+    expect(useTeamWorkspaceStore().switchWorkspace).toHaveBeenCalledWith(
+      'workspace-2'
+    )
+  })
+
   it('stays on the active workspace and shows a toast when the switch is refused', async () => {
     mockRouteQuery.value = { workspace: 'workspace-2' }
     vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockRejectedValue(

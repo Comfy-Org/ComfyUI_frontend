@@ -182,6 +182,21 @@ describe('useUrlActionLoaders', () => {
     expect(router.currentRoute.value.query).toEqual({})
   })
 
+  // The workspace loader's own strip catches a rejected router.replace and
+  // returns normally, so a failed strip must not leave ?workspace= stranded
+  // with no retry — the sweep is the backstop.
+  it('clears a workspace param the loader itself failed to strip', async () => {
+    await router.replace({
+      path: '/',
+      query: { workspace: 'w-1', workflow: 'keep-me' }
+    })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
+  })
+
   it('keeps a query that carries no deep-link param', async () => {
     await router.replace({ path: '/', query: { workflow: 'keep-me' } })
 
@@ -272,6 +287,19 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadSettings).not.toHaveBeenCalled()
     expect(mocks.loadAssets).not.toHaveBeenCalled()
     expect(mocks.loadPaymentReturn).not.toHaveBeenCalled()
+  })
+
+  // A successful switch reloads the page, so the sweep step must never run
+  // on this path either — it would otherwise strip whatever the reload
+  // needs to re-read once the new page loads.
+  it('does not run the param sweep when a switch reload is in flight', async () => {
+    await router.replace({ path: '/', query: { workspace: 'w-1' } })
+    mocks.loadWorkspace.mockResolvedValueOnce(true)
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({ workspace: 'w-1' })
   })
 
   it('skips checkout recovery when a switch reload is in flight', async () => {

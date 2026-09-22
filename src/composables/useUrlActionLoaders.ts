@@ -43,9 +43,14 @@ type UrlActionLoaders = {
  * loader has had its turn. The Stripe ones are already gone from the address
  * bar by then, but only through `history.replaceState`, which leaves the
  * router's own query holding them — so a replace built from that query would
- * hand them back.
+ * hand them back. `workspace` is included too: its own strip catches a
+ * rejected `router.replace` and returns normally, so a failed strip needs
+ * this backstop rather than leaving the link live with no retry. A
+ * successful switch reloads the page and stops the loop before this step
+ * runs, so it never re-strips a live workspace switch.
  */
 const HANDLED_PARAMS = [
+  'workspace',
   'invite',
   'create_workspace',
   'pricing',
