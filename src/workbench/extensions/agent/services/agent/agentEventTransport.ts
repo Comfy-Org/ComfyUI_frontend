@@ -94,6 +94,10 @@ export interface AgentEventTransport {
   dispose: () => void
 }
 
+function updateSkill(part: ToolPart, skill: string | undefined): void {
+  if (skill !== undefined) part.skill = skill
+}
+
 export function createAgentEventTransport(
   message: AssistantMessage,
   emit: (m: AssistantMessage) => void,
@@ -284,7 +288,7 @@ export function createAgentEventTransport(
       canvasSyncBaseline.set(part, canvasSyncOutcomeWatermark)
     }
     part.name = data.tool_name
-    if (data.skill !== undefined) part.skill = data.skill
+    updateSkill(part, data.skill)
     if (data.status !== 'running') {
       resolveToolCallState(part, data.status, data.duration_ms)
     }
