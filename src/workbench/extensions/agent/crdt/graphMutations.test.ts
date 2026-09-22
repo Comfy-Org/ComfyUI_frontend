@@ -1053,6 +1053,42 @@ describe('graphMutations', () => {
     })
   })
 
+  it('drops a removed leading output instead of duplicating the surviving one', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode({
+        ...node(1),
+        outputs: [
+          { name: 'removed', type: 'IMAGE', links: [] },
+          { name: 'kept', type: 'IMAGE', links: [] }
+        ]
+      })
+      batch.addNode(node(2))
+    })
+
+    expect(
+      graph.batch({ ...context, opId: 'connect-onto-kept' }, (batch) => {
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          // The document has already dropped 'removed' by the time this
+          // snapshot was taken, so 'kept' (live index 1) is its sole,
+          // index-0 output.
+          originOutputs: [{ name: 'kept', type: 'IMAGE', links: [toLinkId(9)] }]
+        })
+      })
+    ).toBe(true)
+
+    const origin = useNodeDataStore().getNode('root', toNodeId(1))
+    assert.exists(origin)
+    expect(origin.outputs.map(({ name }) => name)).toEqual(['kept'])
+    expect(origin.outputs).toHaveLength(1)
+  })
+
   it('keeps the live link on target slots whose supplied record omits link', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
