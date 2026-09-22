@@ -149,14 +149,9 @@ export const useAgentConversationStore = defineStore(
     }
 
     function ingest(event: AgentChatEvent): void {
-      if (transport && event.data.message_id === activeTurnId.value) {
-        if (event.type === 'agent_message_done') {
-          transport.settle()
-          settledActiveTransport = transport
-          clearActive()
-          return
-        }
-        transport.ingest(event)
+      const activeTransport = transport
+      if (activeTransport && event.data.message_id === activeTurnId.value) {
+        ingestActiveTurnEvent(event, activeTransport)
         return
       }
       const eventThreadId = event.data.thread_id
@@ -166,12 +161,47 @@ export const useAgentConversationStore = defineStore(
         event.type === 'agent_active_tab' &&
         event.data.message_id === undefined
       ) {
-        if (eventThreadId === undefined || eventThreadId === threadId.value)
-          transport?.ingest(event)
-        else backgroundTurns.get(eventThreadId)?.transport.ingest(event)
+        ingestActiveTabEvent(event, eventThreadId)
         return
       }
       if (eventThreadId === undefined) return
+      ingestBackgroundTurnEvent(event, eventThreadId)
+    }
+
+    function ingestActiveTurnEvent(
+      event: AgentChatEvent,
+      activeTransport: AgentEventTransport
+    ): void {
+      if (event.type === 'agent_message_done') {
+        settleActiveTurn(activeTransport)
+        return
+      }
+      activeTransport.ingest(event)
+    }
+
+    // PM-1575: capture the transport before clearActive() drops the
+    // `transport` slot, so notifyCanvasCaughtUp() can still reach it while a
+    // tool-call part is held pending canvas catch-up (see
+    // settledActiveTransport above).
+    function settleActiveTurn(activeTransport: AgentEventTransport): void {
+      activeTransport.settle()
+      settledActiveTransport = activeTransport
+      clearActive()
+    }
+
+    function ingestActiveTabEvent(
+      event: AgentChatEvent,
+      eventThreadId: string | undefined
+    ): void {
+      if (eventThreadId === undefined || eventThreadId === threadId.value)
+        transport?.ingest(event)
+      else backgroundTurns.get(eventThreadId)?.transport.ingest(event)
+    }
+
+    function ingestBackgroundTurnEvent(
+      event: AgentChatEvent,
+      eventThreadId: string
+    ): void {
       const entry = backgroundTurns.get(eventThreadId)
       if (!entry || entry.messageId !== event.data.message_id) return
       if (event.type === 'agent_message_done') {
