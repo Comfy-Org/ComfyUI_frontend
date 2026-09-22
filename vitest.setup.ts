@@ -6,6 +6,7 @@ import 'vue'
 
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
 import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
+import { semanticDocs } from '@/stores/semanticDoc'
 
 beforeEach(() => {
   vi.stubGlobal('__VUE_DEVTOOLS_GLOBAL_HOOK__', { emit: vi.fn() })
@@ -17,6 +18,10 @@ afterEach(() => {
   const pinia = getActivePinia()
   if (pinia) disposePinia(pinia)
   clearRegisteredLiteGraphTypes()
+  // The semantic document registry is process-wide and outlives the per-test
+  // pinia. A stale document from an earlier test would otherwise reseed the
+  // next test's membership projection.
+  semanticDocs.destroyAll()
 })
 
 /**

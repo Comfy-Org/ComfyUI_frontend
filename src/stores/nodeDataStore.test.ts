@@ -1,5 +1,6 @@
-import { assert, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
+import * as Y from 'yjs'
 
 import { transferReplacementOwnership } from '@/core/graph/nodeShell/nodeShellState'
 import {
@@ -9,6 +10,7 @@ import {
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import { ownerNodesMap, semanticDocs } from '@/stores/semanticDoc'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
@@ -36,6 +38,10 @@ function graphScope(rootGraphId: UUID, owningGraphId: UUID): GraphScope {
     owningGraphId: toOwningGraphId(owningGraphId)
   }
 }
+
+afterEach(() => {
+  semanticDocs.destroyAll()
+})
 
 describe('useNodeDataStore', () => {
   it('re-runs consumers when membership changes', () => {
@@ -300,6 +306,114 @@ describe('useNodeDataStore', () => {
       expect(read(registered)).toEqual(['new-1', 'new-2'])
     }
   )
+})
+
+describe('nodeDataStore membership projected from the semantic document', () => {
+  const root = toRootGraphId(rootA)
+  const sub: UUID = 'sub-1'
+
+  function docKeys(owningGraphId: UUID): string[] {
+    const doc = semanticDocs.get(root)
+    if (!doc) return []
+    const nodes = ownerNodesMap(
+      doc,
+      root,
+      toOwningGraphId(owningGraphId),
+      false
+    )
+    return nodes ? [...nodes.keys()] : []
+  }
+
+  it('writes root and definition membership into the document', () => {
+    const store = useNodeDataStore()
+    store.registerNode(graphScope(rootA, rootA), node(1))
+    store.registerNode(graphScope(rootA, sub), node(2, sub))
+
+    expect(docKeys(rootA)).toEqual(['1'])
+    expect(docKeys(sub)).toEqual(['2'])
+    const doc = semanticDocs.get(root)
+    assert(doc)
+    const entry = ownerNodesMap(doc, root, toOwningGraphId(rootA), true).get(
+      '1'
+    )
+    expect(entry).toBeInstanceOf(Y.Map)
+    expect((entry as Y.Map<unknown>).get('type')).toBe(node(1).type)
+  })
+
+  it('removes the document key when the node is deleted or its owner cleared', () => {
+    const store = useNodeDataStore()
+    const first = node(1)
+    store.registerNode(graphScope(rootA, rootA), first)
+    store.registerNode(graphScope(rootA, sub), node(2, sub))
+    store.registerNode(graphScope(rootA, sub), node(3, sub))
+
+    store.deleteNode(graphScope(rootA, rootA), first)
+    expect(docKeys(rootA)).toEqual([])
+    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([])
+
+    store.clearOwner(graphScope(rootA, sub))
+    expect(docKeys(sub)).toEqual([])
+    expect(store.getGraphNodesFor(rootA, sub)).toEqual([])
+  })
+
+  it('keeps a document-first key invisible until matching state registers', () => {
+    const store = useNodeDataStore()
+    const ids = computed(() =>
+      store.getGraphNodesFor(rootA, rootA).map((n) => n.id)
+    )
+    expect(ids.value).toEqual([])
+
+    const doc = semanticDocs.ensure(root)
+    doc.transact(
+      () => {
+        ownerNodesMap(doc, root, toOwningGraphId(rootA), true).set(
+          '7',
+          new Y.Map([['type', 'remote/Node']])
+        )
+      },
+      { source: 'agent-remote', actor: 'agent', opId: 'op-1' }
+    )
+    expect(ids.value).toEqual([])
+
+    const registered = store.registerNode(graphScope(rootA, rootA), node(7))
+    expect(registered?.id).toBe('7')
+    expect(ids.value).toEqual(['7'])
+    expect(docKeys(rootA)).toEqual(['7'])
+  })
+
+  it('orders members by document key order, not by registration order', () => {
+    const store = useNodeDataStore()
+    const doc = semanticDocs.ensure(root)
+    doc.transact(
+      () => {
+        const nodes = ownerNodesMap(doc, root, toOwningGraphId(rootA), true)
+        nodes.set('2', new Y.Map([['type', 'remote/Node']]))
+        nodes.set('1', new Y.Map([['type', 'remote/Node']]))
+      },
+      { source: 'agent-remote', actor: 'agent', opId: 'op-2' }
+    )
+
+    store.registerNode(graphScope(rootA, rootA), node(1))
+    store.registerNode(graphScope(rootA, rootA), node(2))
+
+    expect(store.getGraphNodesFor(rootA, rootA).map((n) => n.id)).toEqual([
+      '2',
+      '1'
+    ])
+  })
+
+  it('clears every owner of a root graph from the document', () => {
+    const store = useNodeDataStore()
+    store.registerNode(graphScope(rootA, rootA), node(1))
+    store.registerNode(graphScope(rootA, sub), node(2, sub))
+
+    store.clearGraph(rootA)
+
+    expect(docKeys(rootA)).toEqual([])
+    expect(docKeys(sub)).toEqual([])
+    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([])
+    expect(store.getGraphNodesFor(rootA, sub)).toEqual([])
+  })
 })
 
 describe('nodeDataStore registration via LGraph', () => {
