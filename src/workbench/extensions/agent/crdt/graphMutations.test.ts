@@ -534,6 +534,28 @@ describe('graphMutations', () => {
     }
   )
 
+  // A canvas rename (`useNodeEventHandlers.ts`
+  // `handleNodeTitleUpdate`) only ever writes the live node store; it never
+  // reaches the CRDT doc. `prepareNode` -> `nodeTitle()` then always derives
+  // the reconciled title from the (still pre-rename) doc payload instead of
+  // falling back to the incumbent's live title, so the very next agent-driven
+  // update reverts the user's rename.
+  it.fails('keeps a live-renamed title across a reconcile the doc never learned about', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    existing.title = 'My Renamed Sampler'
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNode({ ...node(1), title: undefined })
+      })
+    ).toBe(true)
+
+    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(reconciled.title).toBe('My Renamed Sampler')
+  })
+
   it('adds the authoritative payload directly to node, widget, and layout stores', () => {
     expect(mutations().addNode(node(7, { seed: 42 }), context)).toBe(true)
 

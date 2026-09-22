@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 // Five wired nodes, one renamed, whose recorded turn sets widget values on
@@ -226,6 +227,71 @@ test.describe(
         await returnToTabA()
         await expectTabA(tabAViewport)
       })
+    })
+  }
+)
+
+// A canvas rename (`useNodeEventHandlers.ts`
+// `handleNodeTitleUpdate`) only ever writes the live node store; it never
+// reaches the CRDT doc. The same tab-switch trigger as above re-derives the
+// node's title from that (still pre-rename) doc payload instead of falling
+// back to the incumbent's live title (`graphMutations.ts` `prepareNode` ->
+// `nodePayload.ts` `nodeTitle()`), so a user's rename is gone the moment the
+// tab is left and revisited. See `nodePayload.test.ts` and
+// `graphMutations.test.ts` for the same defect proven directly against
+// `nodeTitle()`/`prepareNode`.
+const RENAMED_CASE = EDITED_CASE
+const RENAMED_NODE_ID = '3' // KSampler; the recorded turn only edits its widgets.
+const USER_TITLE = 'My Custom Sampler'
+
+test.describe(
+  'Agent workflow tab switch drops a user-set node title',
+  { tag: ['@cloud', '@agent'] },
+  () => {
+    test.use({ conversationCase: RENAMED_CASE })
+
+    test('keeps a user-renamed node title after switching away and back with Agent open', async ({
+      agentConversation,
+      page
+    }, testInfo) => {
+      test.setTimeout(90_000)
+      const topbar = new Topbar(page)
+      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
+      const node = new VueNodeFixture(
+        agentConversation.vueNodes.getNodeLocator(RENAMED_NODE_ID)
+      )
+
+      await agentConversation.runTurns()
+      await expect(node.title).toHaveText('KSampler')
+
+      await test.step('user renames the node on the canvas', async () => {
+        await node.setTitle(USER_TITLE)
+        await expect(node.title).toHaveText(USER_TITLE)
+      })
+
+      await test.step('user opens a new blank workflow', async () => {
+        await expect(tabs).toHaveCount(1)
+        await topbar.newWorkflowButton.click()
+        await expect(tabs).toHaveCount(2)
+        await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
+      })
+
+      await test.step('user returns to the renamed workflow, forcing a full reconcile', async () => {
+        await topbar.getTab(0).click()
+        await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+        await agentConversation.expectCanvasReplayed(0)
+      })
+
+      await testInfo.attach('title-after-reconcile.png', {
+        body: await page.screenshot(),
+        contentType: 'image/png'
+      })
+
+      test.fail(
+        true,
+        'the reconcile triggered by returning to the tab re-derives the title from the CRDT doc, which never learned about the canvas rename, reverting it'
+      )
+      await expect(node.title).toHaveText(USER_TITLE)
     })
   }
 )
