@@ -221,7 +221,7 @@ test.describe('Manager pack status', { tag: '@ui' }, () => {
   }) => {
     const panel = await openInfoPanel(comfyPage, 'Banned Pack')
 
-    // The status badge renders as a PrimeVue Message, which carries role=alert.
+    // The status badge renders with role=alert.
     // Targeting the badge itself rather than the panel's text matters: a banned
     // pack also trips compatibility detection, so the word "Conflicting" does
     // legitimately appear elsewhere in the panel. The claim under test is
@@ -235,6 +235,6 @@ test.describe('Manager pack status', { tag: '@ui' }, () => {
     // to read as an error rather than the warning flagged gets. This is the
     // half a text assertion cannot see, and the half that made the two states
     // indistinguishable on screen.
-    await expect(statusBadge).toHaveClass(/p-message-error/)
+    await expect(statusBadge).toHaveClass(/bg-destructive-background\/10/)
   })
 })
