@@ -355,9 +355,12 @@ function materialize(
   if (!added) return rollback('LGraph.add returned no node')
 
   try {
-    withNamedValuesRestore(() => {
-      node.configure(withNamedWidgetValues(serialised, widgets))
-    })
+    const configuration = withNamedWidgetValues(serialised, widgets)
+    if (node.isSubgraphNode()) {
+      node.configure(configuration)
+    } else {
+      withNamedValuesRestore(() => node.configure(configuration))
+    }
     replayUpdatedWidgetCallbacks(node, serialised, widgets)
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here

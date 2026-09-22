@@ -5,7 +5,7 @@ import {
   nodesMap
 } from '@comfyorg/comfy-multi-player'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from './graphMutations'
@@ -72,11 +72,7 @@ class WidgetNode extends LGraphNode {
   }
 }
 
-/**
- * Live widget types the op layer's placeholder records never match:
- * `widgetType()` derives `'string'` from a string seed, while the node
- * registers `'text'` and `'combo'` widgets for the same values.
- */
+/** String seeds use live text/combo widgets, unlike op-layer placeholders. */
 class MixedWidgetNode extends LGraphNode {
   constructor() {
     super('mixed-widget-node')
@@ -417,14 +413,17 @@ describe('reconcileAgentAdapters', () => {
       reconcileAgentAdapters(graph)
 
       const node = graph.getNodeById(toNodeId(1))
-      for (const [name, value] of Object.entries(seeded)) {
-        expect(node?.widgets?.find((w) => w.name === name)?.value).toBe(value)
-        expect(
+      expect(node?.widgets?.map(({ name, value }) => [name, value])).toEqual(
+        Object.entries(seeded)
+      )
+      expect(
+        node?.widgets?.map(({ name }) => [
+          name,
           useWidgetValueStore().getWidget(
             widgetId(scope.rootGraphId, toNodeId(1), name)
           )?.value
-        ).toBe(value)
-      }
+        ])
+      ).toEqual(Object.entries(seeded))
       expect(LiteGraph.namedValuesRestore).toBe(false)
     })
 
@@ -1138,6 +1137,46 @@ describe('reconcileAgentAdapters', () => {
       const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
       const interior = instance.subgraph.getNodeById(toNodeId(7))
       expect(interior?.widgets?.[0]?.value).toBe(42)
+    })
+
+    it('preserves a quarantined host value when materializing a subgraph instance', () => {
+      const source = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const interior = new WidgetNode()
+      interior.addInput('value', 'number').widget = { name: 'value' }
+      source.add(interior)
+      source.inputNode.slots[0].connect(interior.inputs[0], interior)
+      const definition = source.asSerialisable()
+      const { follower } = seedDocument(graph, {
+        nodes: [
+          {
+            ...nodePayload(1, definition.id),
+            widgets_values: { value: 7 },
+            properties: {
+              proxyWidgetErrorQuarantine: [
+                {
+                  originalEntry: ['-1', 'value'],
+                  reason: 'missingSourceNode',
+                  hostValue: 42,
+                  attemptedAtVersion: 1
+                }
+              ]
+            }
+          }
+        ],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      const promotedWidgetId = instance.inputs[0]?.widgetId
+      assert.exists(promotedWidgetId)
+      expect(
+        useWidgetValueStore().getWidget(promotedWidgetId)?.value
+      ).toBe(42)
     })
 
     /**
