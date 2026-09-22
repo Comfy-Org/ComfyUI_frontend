@@ -1,24 +1,32 @@
 {
   "name": "@comfyorg/account-core",
   "version": "1.0.0-alpha.0",
-  "private": true,
-  "description": "Shared account layer: a framework-free session core that exchanges a signed-in identity for the workspace-scoped Cloud JWT with valid-on-read freshness, the package-owned Firebase identity entry, and an optional Vue subpath for the shared sign-in pieces",
+  "description": "Shared account layer: a framework-free session core that exchanges a signed-in identity for the workspace-scoped Cloud JWT with valid-on-read freshness, plus the package-owned Firebase identity entry. It has no view layer and no Vue dependency; the composables and unstyled components ship from @comfyorg/account-ui",
   "keywords": [],
+  "homepage": "https://comfy.org",
   "license": "MIT",
+  "author": {
+    "name": "Comfy Org",
+    "email": "support@comfy.org",
+    "url": "https://www.comfy.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
+    "directory": "packages/account-core"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
+  "sideEffects": false,
   "exports": {
     "./boundedOperation": "./src/core/boundedOperation.ts",
+    "./lazyIdentity": "./src/core/lazyIdentity.ts",
     "./session": "./src/core/session.ts",
     "./billing": "./src/core/billing/index.ts",
     "./firebase": "./src/firebase/index.ts",
     "./web": "./src/web/crossTabRefresh.ts",
-    "./vue/PasswordRules": "./src/vue/PasswordRules.vue",
-    "./vue/SocialAuthButtons": "./src/vue/SocialAuthButtons.vue",
-    "./vue/TurnstileWidget": "./src/vue/TurnstileWidget.vue",
-    "./vue/regionGate": "./src/vue/regionGate.ts",
-    "./vue/turnstileGate": "./src/vue/turnstileGate.ts",
-    "./vue/lifecycleScope": "./src/vue/lifecycleScope.ts",
-    "./vue/useGenerationGuard": "./src/vue/useGenerationGuard.ts",
     "./testing": "./src/testing.ts",
     "./customerRecovery": "./src/core/customerRecovery.ts",
     "./signInSchemas": "./src/signInSchemas.ts",
@@ -28,44 +36,99 @@
     "./provisioning": "./src/provisioning.ts",
     "./redirect": "./src/redirect.ts",
     "./telemetry": "./src/telemetry.ts",
-    "./webviewDetection": "./src/webviewDetection.ts"
+    "./webviewDetection": "./src/webviewDetection.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      "./boundedOperation": {
+        "types": "./dist/core/boundedOperation.d.ts",
+        "import": "./dist/core/boundedOperation.js"
+      },
+      "./session": {
+        "types": "./dist/core/session.d.ts",
+        "import": "./dist/core/session.js"
+      },
+      "./billing": {
+        "types": "./dist/core/billing/index.d.ts",
+        "import": "./dist/core/billing/index.js"
+      },
+      "./firebase": {
+        "types": "./dist/firebase/index.d.ts",
+        "import": "./dist/firebase/index.js"
+      },
+      "./web": {
+        "types": "./dist/web/crossTabRefresh.d.ts",
+        "import": "./dist/web/crossTabRefresh.js"
+      },
+      "./testing": {
+        "types": "./dist/testing.d.ts",
+        "import": "./dist/testing.js"
+      },
+      "./customerRecovery": {
+        "types": "./dist/core/customerRecovery.d.ts",
+        "import": "./dist/core/customerRecovery.js"
+      },
+      "./signInSchemas": {
+        "types": "./dist/signInSchemas.d.ts",
+        "import": "./dist/signInSchemas.js"
+      },
+      "./turnstile": {
+        "types": "./dist/turnstile.d.ts",
+        "import": "./dist/turnstile.js"
+      },
+      "./turnstileScript": {
+        "types": "./dist/turnstileScript.d.ts",
+        "import": "./dist/turnstileScript.js"
+      },
+      "./firebaseAuthError": {
+        "types": "./dist/firebaseAuthError.d.ts",
+        "import": "./dist/firebaseAuthError.js"
+      },
+      "./provisioning": {
+        "types": "./dist/provisioning.d.ts",
+        "import": "./dist/provisioning.js"
+      },
+      "./redirect": {
+        "types": "./dist/redirect.d.ts",
+        "import": "./dist/redirect.js"
+      },
+      "./telemetry": {
+        "types": "./dist/telemetry.d.ts",
+        "import": "./dist/telemetry.js"
+      },
+      "./webviewDetection": {
+        "types": "./dist/webviewDetection.d.ts",
+        "import": "./dist/webviewDetection.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
   },
   "scripts": {
+    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "check:pack": "tsx scripts/checkPublishable.ts",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
+    "prepack": "pnpm run build",
     "lint": "oxlint src --type-aware && eslint src",
+    "smoke:pack": "tsx scripts/smokePack.ts",
     "test": "vitest run",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p scripts/tsconfig.json"
   },
   "dependencies": {
-    "@comfyorg/ingest-types": "workspace:*",
-    "@comfyorg/shared-frontend-utils": "workspace:*",
-    "@comfyorg/tailwind-utils": "workspace:*",
-    "zod": "catalog:"
+    "@comfyorg/ingest-types": "workspace:^"
   },
   "devDependencies": {
-    "@testing-library/user-event": "catalog:",
-    "@testing-library/vue": "catalog:",
     "@types/node": "catalog:",
-    "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "@vueuse/core": "catalog:",
     "firebase": "catalog:",
     "happy-dom": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "vue": "catalog:",
-    "vue-tsc": "catalog:"
+    "zod": "catalog:"
   },
   "peerDependencies": {
-    "@vueuse/core": "^14.4.0",
     "firebase": "^11.6.0",
-    "vue": "^3.5.40"
-  },
-  "peerDependenciesMeta": {
-    "@vueuse/core": {
-      "optional": true
-    },
-    "vue": {
-      "optional": true
-    }
+    "zod": "catalog:"
   }
 }

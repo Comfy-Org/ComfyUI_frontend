@@ -40,11 +40,6 @@ const i18n = createI18n({
   messages: { en: { g: { import: 'Import', upload: 'Upload' } } }
 })
 
-const ButtonStub = {
-  inheritAttrs: false,
-  template: '<button v-bind="$attrs"><slot /></button>'
-}
-
 const options: FilterOption[] = [
   { value: 'all', name: 'All' },
   { value: 'mine', name: 'Mine' },
@@ -68,8 +63,7 @@ function renderMenu(
   })
   const utils = render(Harness, {
     global: {
-      plugins: [i18n],
-      stubs: { Button: ButtonStub }
+      plugins: [i18n]
     }
   })
   return { ...utils, value, onShowPicker }

@@ -176,7 +176,7 @@ export const noUnitTestFilesInBrowserTests = reportProgram(
 
 export const noDeprecatedApiSchema = restrictModules(
   '@/schemas/apiSchema',
-  'apiSchema is deprecated. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
+  'This module was removed. Use a generated or domain-owned contract as documented in browser_tests/README.md.'
 )
 
 export const noNewZodServerResponseSchema = restrictModules(

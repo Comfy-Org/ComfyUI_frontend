@@ -1,5 +1,5 @@
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
-import type { SystemStats } from '@/schemas/apiSchema'
+import type { SystemStats } from '@/platform/remote/comfyui/types'
 import type { SerializedNodeId } from '@/types/nodeId'
 
 export interface ErrorReportData {

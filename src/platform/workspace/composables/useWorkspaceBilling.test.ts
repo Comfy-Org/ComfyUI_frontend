@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { billingOperation } from './billingOperationTestUtils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -57,13 +58,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   WorkspaceApiError: mockWorkspaceApiError
 }))
 
-const mockCapabilitiesRefresh = vi.hoisted(() => vi.fn(async () => undefined))
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: mockCapabilitiesRefresh })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useBillingPlans'),
@@ -85,7 +80,24 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
+const mockRail = vi.hoisted(() => ({
+  enabled: false,
+  openPaymentPortal: vi.fn()
+}))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useSubscriptionRail'),
+  () => ({
+    useSubscriptionRail: () => (mockRail.enabled ? mockRail : null)
+  })
+)
+
 vi.mock(import('@/platform/telemetry'))
+
+// Pins the billing family the hosted route derives; an unmapped one fails closed to the provider.
+vi.mock(import('@/config/comfyApi'), () => ({
+  getComfyCloudBaseUrl: () => 'https://testcloud.comfy.org'
+}))
 
 let scope: ReturnType<typeof effectScope> | undefined
 
@@ -843,6 +855,8 @@ describe('useWorkspaceBilling', () => {
     })
 
     afterEach(() => {
+      mockRail.enabled = false
+      localStorage.clear()
       Object.defineProperty(window, 'location', {
         configurable: true,
         writable: true,
@@ -887,6 +901,132 @@ describe('useWorkspaceBilling', () => {
       expect(openSpy).not.toHaveBeenCalled()
     })
 
+    // Layer C is independent of Layer A: the destination decides the URL, so
+    // neither rail is asked for a portal link the customer will not open.
+    it.for([
+      ['the legacy client', false],
+      ['the SDK rail', true]
+    ] as const)(
+      'opens the hosted payment-methods route on %s',
+      async ([, railEnabled]) => {
+        const openSpy = vi.fn(() => window)
+        vi.stubGlobal('open', openSpy)
+        vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
+        localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
+        mockRail.enabled = railEnabled
+
+        const billing = setupBilling()
+        await billing.manageSubscription()
+
+        expect(openSpy).toHaveBeenCalledWith(
+          'https://billing.comfy.org/v1/payment-methods?product=comfyui&return_to=comfyui_workspace',
+          '_blank'
+        )
+        expect(mockWorkspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()
+        expect(mockRail.openPaymentPortal).not.toHaveBeenCalled()
+
+        mockWorkspaceApi.getBillingStatus.mockClear()
+        document.dispatchEvent(new Event('visibilitychange'))
+        expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
+      }
+    )
+
+    it.for([
+      ['the legacy client', false, 'https://billing.example/portal'],
+      ['the SDK rail', true, 'https://billing.example/sdk-portal']
+    ] as const)(
+      'attempts %s when the hosted tab is blocked',
+      async ([, railEnabled, fallbackUrl]) => {
+        const openSpy = vi.fn(() => null)
+        vi.stubGlobal('open', openSpy)
+        vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
+        localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
+        mockRail.enabled = railEnabled
+        mockRail.openPaymentPortal.mockResolvedValue({
+          status: 'ok',
+          value: 'https://billing.example/sdk-portal'
+        })
+        mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
+          url: 'https://billing.example/portal'
+        })
+
+        const billing = setupBilling()
+        await billing.manageSubscription()
+
+        expect(openSpy).toHaveBeenCalledWith(
+          'https://billing.comfy.org/v1/payment-methods?product=comfyui&return_to=comfyui_workspace',
+          '_blank'
+        )
+        expect(openSpy).toHaveBeenCalledWith(fallbackUrl, '_blank')
+      }
+    )
+
+    it('reaches the legacy portal when the hosted tab and the rail are both blocked', async () => {
+      const openSpy = vi.fn(() => null)
+      vi.stubGlobal('open', openSpy)
+      vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
+      localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
+      mockRail.enabled = true
+      mockRail.openPaymentPortal.mockResolvedValue({
+        status: 'ok',
+        value: 'https://billing.example/sdk-portal'
+      })
+      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
+        url: 'https://billing.example/portal'
+      })
+
+      const billing = setupBilling()
+      await billing.manageSubscription()
+
+      expect(mockWorkspaceApi.getPaymentPortalUrl).toHaveBeenCalledTimes(1)
+      expect(openSpy).toHaveBeenLastCalledWith(
+        'https://billing.example/portal',
+        '_blank'
+      )
+    })
+
+    it('clears a failure from the previous attempt when the hosted route opens', async () => {
+      vi.stubGlobal(
+        'open',
+        vi.fn(() => window)
+      )
+      localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
+      mockWorkspaceApi.getPaymentPortalUrl.mockRejectedValue(
+        new Error('portal down')
+      )
+
+      const billing = setupBilling()
+      await expect(billing.manageSubscription()).rejects.toThrow('portal down')
+      expect(billing.error.value).toBe('portal down')
+
+      vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
+      await billing.manageSubscription()
+
+      expect(billing.error.value).toBeNull()
+    })
+
+    it('opens the portal URL the SDK rail returns while the server says stripe', async () => {
+      const openSpy = vi.fn(() => window)
+      vi.stubGlobal('open', openSpy)
+      mockRail.enabled = true
+      mockRail.openPaymentPortal.mockResolvedValue({
+        status: 'ok',
+        value: 'https://billing.example/sdk-portal'
+      })
+
+      const billing = setupBilling()
+      await billing.manageSubscription()
+
+      expect(mockRail.openPaymentPortal).toHaveBeenCalledWith(
+        'https://app.example/settings'
+      )
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://billing.example/sdk-portal',
+        '_blank'
+      )
+      expect(mockWorkspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()
+    })
+
     it('records error when API call fails', async () => {
       mockWorkspaceApi.getPaymentPortalUrl.mockRejectedValue(
         new Error('portal down')
@@ -912,12 +1052,14 @@ describe('useWorkspaceBilling', () => {
 
       mockWorkspaceApi.getBillingStatus.mockClear()
       mockWorkspaceApi.getBillingBalance.mockClear()
-      mockCapabilitiesRefresh.mockClear()
+      vi.mocked(useBillingCapabilities().refresh).mockClear()
 
       document.dispatchEvent(new Event('visibilitychange'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
       expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
-      expect(mockCapabilitiesRefresh).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledTimes(
+        1
+      )
 
       // One-shot: switching tabs later must not keep refetching.
       document.dispatchEvent(new Event('visibilitychange'))
@@ -938,12 +1080,14 @@ describe('useWorkspaceBilling', () => {
 
       mockWorkspaceApi.getBillingStatus.mockClear()
       mockWorkspaceApi.getBillingBalance.mockClear()
-      mockCapabilitiesRefresh.mockClear()
+      vi.mocked(useBillingCapabilities().refresh).mockClear()
 
       window.dispatchEvent(new Event('focus'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
       expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
-      expect(mockCapabilitiesRefresh).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledTimes(
+        1
+      )
 
       document.dispatchEvent(new Event('visibilitychange'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
@@ -987,12 +1131,14 @@ describe('useWorkspaceBilling', () => {
 
       mockWorkspaceApi.getBillingStatus.mockClear()
       mockWorkspaceApi.getBillingBalance.mockClear()
-      mockCapabilitiesRefresh.mockClear()
+      vi.mocked(useBillingCapabilities().refresh).mockClear()
 
       window.dispatchEvent(new Event('focus'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
       expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
-      expect(mockCapabilitiesRefresh).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledTimes(
+        1
+      )
     })
 
     it('removes pending return listeners when its scope is disposed', async () => {
@@ -1010,12 +1156,12 @@ describe('useWorkspaceBilling', () => {
       scope = undefined
 
       mockWorkspaceApi.getBillingStatus.mockClear()
-      mockCapabilitiesRefresh.mockClear()
+      vi.mocked(useBillingCapabilities().refresh).mockClear()
       window.dispatchEvent(new Event('focus'))
       document.dispatchEvent(new Event('visibilitychange'))
 
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(mockCapabilitiesRefresh).not.toHaveBeenCalled()
+      expect(vi.mocked(useBillingCapabilities().refresh)).not.toHaveBeenCalled()
     })
 
     it('does not watch for a return when the portal window is blocked', async () => {
@@ -1031,12 +1177,12 @@ describe('useWorkspaceBilling', () => {
       await billing.manageSubscription()
 
       mockWorkspaceApi.getBillingStatus.mockClear()
-      mockCapabilitiesRefresh.mockClear()
+      vi.mocked(useBillingCapabilities().refresh).mockClear()
       window.dispatchEvent(new Event('focus'))
       document.dispatchEvent(new Event('visibilitychange'))
 
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(mockCapabilitiesRefresh).not.toHaveBeenCalled()
+      expect(vi.mocked(useBillingCapabilities().refresh)).not.toHaveBeenCalled()
     })
 
     it('does not watch for a return when no portal was opened', async () => {
@@ -1047,11 +1193,11 @@ describe('useWorkspaceBilling', () => {
       await billing.manageSubscription()
 
       mockWorkspaceApi.getBillingStatus.mockClear()
-      mockCapabilitiesRefresh.mockClear()
+      vi.mocked(useBillingCapabilities().refresh).mockClear()
 
       document.dispatchEvent(new Event('visibilitychange'))
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(mockCapabilitiesRefresh).not.toHaveBeenCalled()
+      expect(vi.mocked(useBillingCapabilities().refresh)).not.toHaveBeenCalled()
     })
   })
 

@@ -89,7 +89,7 @@ describe('useFirstRunEntry', () => {
     vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = true
     useSettingStore().settingValues = {}
     vi.mocked(useSettingStore().set).mockImplementation(async (key, value) => {
-      useSettingStore().settingValues[key] = value
+      Object.assign(useSettingStore().settingValues, { [key]: value })
     })
     sharedComposable.reset()
     // beginTour reports whether a tour actually started; default to the

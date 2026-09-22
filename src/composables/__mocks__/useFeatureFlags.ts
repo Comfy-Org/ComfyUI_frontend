@@ -34,6 +34,8 @@ const defaultFlags: FeatureFlags = {
   embeddedCheckoutEnabled: false,
   billingSdkTopupEnabled: false,
   billingSdkTopupRailEnabled: false,
+  billingSdkSubscriptionEnabled: false,
+  billingSdkSubscriptionRailEnabled: false,
   v1PaymentRecovery: false,
   freeTierJobAllowanceEnabled: false,
   churnkeyAppId: '',

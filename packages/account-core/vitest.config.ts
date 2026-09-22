@@ -1,4 +1,3 @@
-import vue from '@vitejs/plugin-vue'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
@@ -7,16 +6,6 @@ const TEST_SYSTEM_TIME = Date.parse('2024-06-15T12:00:00Z')
 const timerSetup = fileURLToPath(
   new URL('../../vitest.timer.setup.ts', import.meta.url)
 )
-
-const happyDomOptions = {
-  happyDOM: {
-    settings: {
-      disableIframePageLoading: true,
-      disableCSSFileLoading: true,
-      disableJavaScriptFileLoading: true
-    }
-  }
-}
 
 const sharedTest = {
   mockReset: true,
@@ -45,21 +34,26 @@ export default defineConfig({
           include: [
             'src/core/**/*.{test,spec}.ts',
             'src/web/**/*.{test,spec}.ts',
-            'src/*.{test,spec}.ts'
+            'src/*.{test,spec}.ts',
+            'scripts/*.{test,spec}.ts'
           ]
         }
       },
       {
-        plugins: [vue()],
         test: {
           ...sharedTest,
-          name: 'account-vue',
+          name: 'account-firebase',
           environment: 'happy-dom',
-          environmentOptions: happyDomOptions,
-          include: [
-            'src/vue/**/*.{test,spec}.ts',
-            'src/firebase/**/*.{test,spec}.ts'
-          ]
+          environmentOptions: {
+            happyDOM: {
+              settings: {
+                disableIframePageLoading: true,
+                disableCSSFileLoading: true,
+                disableJavaScriptFileLoading: true
+              }
+            }
+          },
+          include: ['src/firebase/**/*.{test,spec}.ts']
         }
       }
     ]

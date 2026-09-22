@@ -2,11 +2,15 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { BillingReturn } from '@comfyorg/billing-contract'
 import { buildReturnUrl } from '@comfyorg/billing-contract'
 
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
+
+/** What the trip back should say, when the surface has a result to report. */
+const { returnResult } = defineProps<{ returnResult?: BillingReturn }>()
 
 const { t } = useI18n()
 const { coded } = useHostedCopy()
@@ -19,7 +23,8 @@ const returnLink = computed(() => {
   if (!arrival) return undefined
   const url = buildReturnUrl({
     target: arrival.returnTo,
-    environment: BILLING_WEB_ENV
+    environment: BILLING_WEB_ENV,
+    ...returnResult
   })
   if (!url) return undefined
   return {

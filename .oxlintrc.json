@@ -8,7 +8,6 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
-    "scripts/patch-playwright-agents.js",
     "scripts/registry-census/detection-proof/**",
     "src/__ecs_matrix__/**",
     "src/types/generatedManagerTypes.ts",
@@ -178,6 +177,7 @@
       "excludeFiles": [
         "**/*.test.ts",
         "**/*.spec.ts",
+        "src/platform/remote/comfyui/execution/types.ts",
         "src/platform/remote/comfyui/jobs/jobTypes.ts"
       ],
       "rules": {
@@ -207,14 +207,9 @@
       }
     },
     {
-      "files": ["src/**/*.{ts,vue}"],
-      "excludeFiles": [
-        "src/**/*.test.ts",
-        "src/**/*.spec.ts",
-        "src/**/*.stories.ts"
-      ],
+      "files": ["**/*.{ts,tsx,vue}"],
       "rules": {
-        "comfy/no-deprecated-api-schema": "warn"
+        "comfy/no-deprecated-api-schema": "error"
       }
     },
     {
@@ -232,6 +227,20 @@
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
+      }
+    },
+    {
+      "files": [
+        "src/scripts/api.ts",
+        "src/scripts/changeTracker.test.ts",
+        "src/scripts/changeTracker.ts",
+        "src/scripts/ui.ts",
+        "src/scripts/ui/components/button.ts",
+        "src/scripts/ui/draggableList.ts",
+        "src/scripts/ui/utils.ts"
+      ],
+      "rules": {
+        "typescript/no-unnecessary-condition": "off"
       }
     },
     {
@@ -254,7 +263,7 @@
       }
     },
     {
-      "files": ["tools/test-recorder/**/*.ts"],
+      "files": ["scripts/**", "tools/test-recorder/**/*.ts"],
       "rules": {
         "no-console": "allow"
       }
@@ -352,86 +361,6 @@
         "playwright/valid-expect": "error",
         "playwright/valid-expect-in-promise": "error",
         "playwright/valid-title": "error"
-      }
-    },
-    {
-      "files": [
-        "src/extensions/core/agentPanel.test.ts",
-        "src/extensions/core/electronAdapter.ts",
-        "src/extensions/core/groupOptions.test.ts",
-        "src/extensions/core/load3d.ts",
-        "src/extensions/core/nodeTemplates.ts",
-        "src/extensions/core/webcamCapture.ts",
-        "src/extensions/core/widgetInputs.test.ts",
-        "src/scripts/api.ts",
-        "src/scripts/app.test.ts",
-        "src/scripts/app.ts",
-        "src/scripts/changeTracker.ts",
-        "src/scripts/ui.ts",
-        "src/scripts/ui/settings.ts"
-      ],
-      "rules": {
-        "typescript/no-floating-promises": "off"
-      }
-    },
-    {
-      "files": [
-        "src/extensions/core/agentPanel.ts",
-        "src/extensions/core/clipspace.ts",
-        "src/extensions/core/cloudFeedbackTopbarButton.test.ts",
-        "src/extensions/core/contextMenuFilter.ts",
-        "src/extensions/core/customWidgets.ts",
-        "src/extensions/core/groupNode.ts",
-        "src/extensions/core/groupOptions.ts",
-        "src/extensions/core/imageCompositor.ts",
-        "src/extensions/core/layerEditor.ts",
-        "src/extensions/core/load3d.ts",
-        "src/extensions/core/load3d/AnimationManager.ts",
-        "src/extensions/core/load3d/CameraManager.ts",
-        "src/extensions/core/load3d/EventManager.ts",
-        "src/extensions/core/load3d/Load3DConfiguration.ts",
-        "src/extensions/core/load3d/Load3d.ts",
-        "src/extensions/core/load3d/PointCloudModelAdapter.ts",
-        "src/extensions/core/load3d/RecordingManager.ts",
-        "src/extensions/core/load3d/SceneManager.ts",
-        "src/extensions/core/load3d/SceneModelManager.ts",
-        "src/extensions/core/load3d/ViewHelperManager.ts",
-        "src/extensions/core/load3d/load3dContextMenuGuard.test.ts",
-        "src/extensions/core/load3dPreviewExtensions.ts",
-        "src/extensions/core/maskeditor.ts",
-        "src/extensions/core/nodeTemplates.ts",
-        "src/extensions/core/noteNode.ts",
-        "src/extensions/core/rerouteNode.ts",
-        "src/extensions/core/saveImageExtraOutput.ts",
-        "src/extensions/core/saveMesh.ts",
-        "src/extensions/core/simpleTouchSupport.ts",
-        "src/extensions/core/uploadAudio.test.ts",
-        "src/extensions/core/uploadAudio.ts",
-        "src/extensions/core/uploadImage.ts",
-        "src/extensions/core/widgetInputs.ts",
-        "src/extensions/core/widgetValuePropagation.ts",
-        "src/scripts/api.ts",
-        "src/scripts/app.test.ts",
-        "src/scripts/app.ts",
-        "src/scripts/changeTracker.test.ts",
-        "src/scripts/changeTracker.ts",
-        "src/scripts/domWidget.ts",
-        "src/scripts/metadata/json.ts",
-        "src/scripts/metadata/mp3.ts",
-        "src/scripts/metadata/ogg.ts",
-        "src/scripts/metadata/parser.ts",
-        "src/scripts/metadata/ply.ts",
-        "src/scripts/metadata/png.test.ts",
-        "src/scripts/metadata/png.ts",
-        "src/scripts/pnginfo.ts",
-        "src/scripts/ui.ts",
-        "src/scripts/ui/components/button.ts",
-        "src/scripts/ui/draggableList.ts",
-        "src/scripts/ui/utils.ts",
-        "src/scripts/widgets.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
       }
     }
   ]

@@ -5,6 +5,7 @@
  */
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { authErrorMessage } from '@comfyorg/account-core/firebaseAuthError'
+import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
 import type { User, UserCredential } from 'firebase/auth'
 import { computed, ref, watch } from 'vue'
 
@@ -14,11 +15,14 @@ import type {
   SignInState
 } from '@/auth/signInState'
 import { signInTransition } from '@/auth/signInState'
+import en from '@/locales/en/main.json' with { type: 'json' }
 import { billingWebIdentity } from '@/config/firebase'
 import {
   billingWebSessionClient,
   useBillingWebSession
 } from '@/session/billingWebSession'
+
+const AUTH_ERROR_COPY: AuthErrorCopy = en.auth.errors
 
 export function useSignInController(onSignedIn: () => void) {
   const { user } = useBillingWebSession()
@@ -40,7 +44,7 @@ export function useSignInController(onSignedIn: () => void) {
   })
   const errorMessage = computed(() =>
     state.value.step === 'error'
-      ? authErrorMessage(state.value.classification, 'en')
+      ? authErrorMessage(state.value.classification, AUTH_ERROR_COPY)
       : ''
   )
 

@@ -17,7 +17,9 @@ const IDENTITY = {
 } as const
 
 function pending(
-  overrides: Partial<PendingBillingOperation> = {}
+  overrides: Partial<
+    Omit<PendingBillingOperation, 'presentation' | 'hostedDestination'>
+  > = {}
 ): BillingOperationState {
   return {
     ...IDENTITY,

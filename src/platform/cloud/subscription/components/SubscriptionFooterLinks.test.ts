@@ -28,13 +28,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
-  useExternalLink: () => ({
-    buildDocsUrl: vi.fn(() => 'https://docs.comfy.org/partner-nodes'),
-    docsPaths: { partnerNodesPricing: 'partner-nodes' }
-  })
-}))
-
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionActions'),
   () => ({
@@ -68,14 +61,7 @@ function renderComponent(
   return render(SubscriptionFooterLinks, {
     props,
     global: {
-      plugins: [i18n],
-      stubs: {
-        Button: {
-          props: ['loading'],
-          emits: ['click'],
-          template: '<button @click="$emit(\'click\')"><slot /></button>'
-        }
-      }
+      plugins: [i18n]
     }
   })
 }
@@ -121,7 +107,7 @@ describe('SubscriptionFooterLinks', () => {
       screen.getByRole('button', { name: 'Partner Nodes pricing' })
     )
     expect(openSpy).toHaveBeenCalledWith(
-      'https://docs.comfy.org/partner-nodes',
+      'https://docs.comfy.org/tutorials/partner-nodes/pricing',
       '_blank'
     )
   })

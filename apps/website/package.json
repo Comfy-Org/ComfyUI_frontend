@@ -13,6 +13,7 @@
     "typecheck": "astro check && vue-tsc --noEmit -p tsconfig.json",
     "test:unit": "vitest run",
     "test:router-models": "tsx ./scripts/test-router-models.ts",
+    "test:workshop-upload": "tsx ./scripts/test-workshop-upload.ts",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:local": "cross-env PLAYWRIGHT_LOCAL=1 playwright test",
@@ -38,6 +39,7 @@
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
     "@comfyorg/account-core": "workspace:*",
+    "@comfyorg/account-ui": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
     "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/object-info-parser": "workspace:*",
@@ -45,6 +47,7 @@
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
     "@customerio/cdp-analytics-browser": "catalog:",
+    "@datadog/browser-logs": "catalog:",
     "@lucide/vue": "catalog:",
     "@vercel/analytics": "catalog:",
     "@vueuse/core": "catalog:",

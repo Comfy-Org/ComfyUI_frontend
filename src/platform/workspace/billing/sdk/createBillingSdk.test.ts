@@ -176,6 +176,7 @@ function harness(overrides: Partial<BillingSdkOptions> = {}) {
       removeItem: (key) => void storage.delete(key)
     },
     embeddedCheckoutAvailable: () => false,
+    hostedDestination: () => 'stripe',
     onTelemetry: (event) => events.push(event),
     challengePort: async () => undefined,
     fetchImpl,
@@ -255,6 +256,19 @@ describe('createBillingSdk', () => {
       })
     }
   )
+
+  it('hands the host destination to the operation it routes hosted', async () => {
+    const { sdk } = harness({ hostedDestination: () => 'billing_web' })
+
+    void sdk.topup.createTopupCheckout({ amountCents: 1000 })
+
+    await vi.waitFor(() =>
+      expect(sdk.lifecycle.get('op-1')).toMatchObject({
+        presentation: 'hosted',
+        hostedDestination: 'billing_web'
+      })
+    )
+  })
 
   it('keeps the tab pointer in the supplied storage while the operation is open', async () => {
     const { sdk, storage, requireChallenge } = harness()

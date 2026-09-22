@@ -46,7 +46,7 @@ class ManageTemplates extends ComfyDialog {
 
   constructor() {
     super()
-    this.load().then((v) => {
+    void this.load().then((v) => {
       this.templates = v
     })
 
@@ -220,7 +220,7 @@ class ManageTemplates extends ComfyDialog {
                       }
                       el.dataset.id = i.toString()
                     })
-                  this.store()
+                  void this.store()
                 },
                 // @ts-expect-error fixme ts strict error
                 ondragover: (e) => {
@@ -272,7 +272,7 @@ class ManageTemplates extends ComfyDialog {
                         const row = el.parentNode.parentNode
                         this.templates[row.dataset.id].name =
                           el.value.trim() || 'untitled'
-                        this.store()
+                        void this.store()
                         el.style.backgroundColor = 'rgb(40, 95, 40)'
                         el.style.transitionDuration = '0s'
                         this.saveVisualCue = setTimeout(function () {
@@ -321,7 +321,7 @@ class ManageTemplates extends ComfyDialog {
                       const item = e.target.parentNode.parentNode
                       item.parentNode.removeChild(item)
                       this.templates.splice(item.dataset.id * 1, 1)
-                      this.store()
+                      void this.store()
                       // update the rows index, setTimeout ensures that the list is updated
                       const that = this
                       setTimeout(function () {
@@ -366,7 +366,7 @@ const ext: ComfyExtension = {
     items.push(null)
     items.push({
       content: `Save Selected as Template`,
-      disabled: !Object.keys(app.canvas.selected_nodes || {}).length,
+      disabled: !Object.keys(app.canvas.selected_nodes).length,
       callback: async () => {
         const name = await useDialogService().prompt({
           title: t('nodeTemplates.saveAsTemplate'),
@@ -375,7 +375,7 @@ const ext: ComfyExtension = {
         })
         if (!name?.trim()) return
 
-        clipboardAction(() => {
+        await clipboardAction(async () => {
           app.canvas.copyToClipboard()
           const data = localStorage.getItem('litegrapheditor_clipboard')
 
@@ -383,7 +383,7 @@ const ext: ComfyExtension = {
             name,
             data: data || '{}'
           })
-          manage.store()
+          await manage.store()
         })
       }
     })
@@ -392,8 +392,8 @@ const ext: ComfyExtension = {
     const subItems = manage.templates.map((template) => {
       return {
         content: template.name,
-        callback: () => {
-          clipboardAction(() => {
+        callback: async () => {
+          await clipboardAction(() => {
             let data: { reroutes?: unknown }
             try {
               data = JSON.parse(template.data)

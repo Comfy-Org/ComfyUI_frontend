@@ -1,3 +1,14 @@
+import type {
+  GetEmbeddingsResponse,
+  GetExtensionsResponse,
+  GetI18nResponse,
+  PostAssetsFromWorkflowResponse
+} from '@comfyorg/ingest-types'
+import {
+  zGetEmbeddingsResponse,
+  zGetExtensionsResponse,
+  zPostAssetsFromWorkflowResponse
+} from '@comfyorg/ingest-types/zod'
 import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
 import { storeToRefs } from 'pinia'
@@ -20,12 +31,10 @@ import { isCloud } from '@/platform/distribution/types'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
-  ShareableAssetsResponse,
   AssetDownloadWsMessage,
   AssetExportWsMessage,
-  CustomNodesI18n,
-  EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
@@ -33,27 +42,24 @@ import type {
   ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
-  ExtensionsResponse,
   FeatureFlagsWsMessage,
   LogsRawResponse,
   LogsWsMessage,
   NotificationWsMessage,
-  PreviewMethod,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
-  PromptResponse,
-  Settings,
   StatusWsMessage,
-  StatusWsMessageStatus,
+  StatusWsMessageStatus
+} from '@/platform/remote/comfyui/execution/types'
+import type {
+  PromptFailureResponse,
+  PromptResponse,
   SystemStats,
-  User,
+  UserConfigResponse,
   UserDataFullInfo
-} from '@/schemas/apiSchema'
-import {
-  zEmbeddingsResponse,
-  zShareableAssetsResponse
-} from '@/schemas/apiSchema'
+} from '@/platform/remote/comfyui/types'
+import type { PreviewMethod, Settings } from '@/platform/settings/types'
 import type {
   TemplateIncludeOnDistributionEnum,
   WorkflowTemplates
@@ -257,7 +263,10 @@ interface BackendApiCalls {
 }
 
 /** Dictionary of all api calls */
-interface ApiCalls extends BackendApiCalls, FrontendApiCalls {}
+interface ApiCalls extends BackendApiCalls, FrontendApiCalls {
+  'cm-task-started': ManagerComponents['schemas']['MessageTaskStarted']
+  'cm-task-completed': ManagerComponents['schemas']['MessageTaskDone']
+}
 
 /** Used to create a discriminating union on type value. */
 interface ApiMessage<T extends keyof ApiCalls> {
@@ -375,10 +384,10 @@ export interface ComfyApi extends EventTarget {
 }
 
 export class PromptExecutionError extends Error {
-  response: PromptResponse
+  response: PromptFailureResponse
   status?: number
 
-  constructor(response: PromptResponse, status?: number) {
+  constructor(response: PromptFailureResponse, status?: number) {
     super('Prompt execution failed')
     this.response = response
     this.status = status
@@ -1028,8 +1037,8 @@ export class ComfyApi extends EventTarget {
   /**
    * Initialises sockets and realtime updates
    */
-  init() {
-    this.createSocket()
+  async init() {
+    await this.createSocket()
   }
 
   /**
@@ -1065,9 +1074,9 @@ export class ComfyApi extends EventTarget {
   /**
    * Gets a list of extension urls
    */
-  async getExtensions(): Promise<ExtensionsResponse> {
+  async getExtensions(): Promise<GetExtensionsResponse> {
     const resp = await this.fetchApi('/extensions', { cache: 'no-store' })
-    return await resp.json()
+    return zGetExtensionsResponse.parse(await resp.json())
   }
 
   /**
@@ -1111,12 +1120,12 @@ export class ComfyApi extends EventTarget {
    * Gets a list of embedding names
    * @throws When the request fails or the response does not match the schema
    */
-  async getEmbeddings(): Promise<EmbeddingsResponse> {
+  async getEmbeddings(): Promise<GetEmbeddingsResponse> {
     const resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
     if (!resp.ok) {
       throw new Error(`Failed to fetch /embeddings: ${resp.status}`)
     }
-    return zEmbeddingsResponse.parse(await resp.json())
+    return zGetEmbeddingsResponse.parse(await resp.json())
   }
 
   /**
@@ -1201,7 +1210,7 @@ export class ComfyApi extends EventTarget {
   async getShareableAssets(
     prompt: ComfyApiWorkflow,
     options?: { owned?: boolean }
-  ): Promise<ShareableAssetsResponse> {
+  ): Promise<PostAssetsFromWorkflowResponse> {
     const body: Record<string, unknown> = { workflow_api_json: prompt }
     if (options?.owned !== undefined) {
       body.owned = options.owned
@@ -1215,7 +1224,7 @@ export class ComfyApi extends EventTarget {
       throw new Error(`Failed to fetch shareable assets: ${res.status}`)
     }
     const data = await res.json()
-    return zShareableAssetsResponse.parse(data)
+    return zPostAssetsFromWorkflowResponse.parse(data)
   }
 
   /**
@@ -1449,7 +1458,7 @@ export class ComfyApi extends EventTarget {
   /**
    * Gets user configuration data and where data should be stored
    */
-  async getUserConfig(): Promise<User> {
+  async getUserConfig(): Promise<UserConfigResponse> {
     return (await this.fetchApi('/users')).json()
   }
 
@@ -1711,7 +1720,7 @@ export class ComfyApi extends EventTarget {
    *
    * @returns The custom nodes i18n data
    */
-  async getCustomNodesI18n(): Promise<CustomNodesI18n> {
+  async getCustomNodesI18n(): Promise<GetI18nResponse> {
     return (await axios.get(this.apiURL('/i18n'))).data
   }
 

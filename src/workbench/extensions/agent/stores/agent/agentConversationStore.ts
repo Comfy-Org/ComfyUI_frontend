@@ -10,16 +10,12 @@ import { createAgentEventTransport } from '../../services/agent/agentEventTransp
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
+import type { UserAttachment } from '../../services/agent/agentTranscript'
 import type { WorkflowReference } from '../../types/workflowReference'
 
-export type ConversationStatus = 'idle' | 'thinking' | 'streaming'
+export type { UserAttachment }
 
-export interface UserAttachment {
-  name: string
-  previewUrl?: string
-  /** Uploaded input filename; resolves the sent file for grid previews. */
-  ref?: string
-}
+type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
 interface UserEntry {
   id: TurnId
@@ -100,23 +96,28 @@ export const useAgentConversationStore = defineStore(
     function recordFailedSend(
       turnId: TurnId,
       text: string,
-      noticeText: string
+      noticeText: string,
+      retryAfterSeconds?: number
     ): void {
       recordSettledReply(turnId, text, [
-        { type: 'notice', level: 'error', text: noticeText }
+        { type: 'notice', level: 'error', text: noticeText, retryAfterSeconds }
       ])
     }
 
-    function recordPaywall(turnId: TurnId, text: string): void {
-      recordSettledReply(turnId, text, [{ type: 'paywall' }])
+    function recordPaywall(
+      turnId: TurnId,
+      text: string,
+      message?: string
+    ): void {
+      recordSettledReply(turnId, text, [{ type: 'paywall', message }])
     }
 
     function startTurn(turnId: TurnId): void {
       if (transport) abortActiveTurn()
       const message = createAssistantMessage(turnId)
       liveMessage = message
-      activeIndex.value = messages.value.push(message) - 1
       activeTurnId.value = turnId
+      activeIndex.value = messages.value.push(message) - 1
       transport = createAgentEventTransport(message, replaceActive)
     }
 
@@ -185,19 +186,7 @@ export const useAgentConversationStore = defineStore(
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
       const kept = messages.value.filter((m) => m.id !== entry.message.id)
-      const last = kept.at(-1)
-      let poppedHydratedCopy = false
-      if (
-        kept.length === messages.value.length &&
-        last &&
-        !hydratedAssistantTurnIds.has(last.id) &&
-        entry.userText !== undefined &&
-        userTexts.value.get(last.id) === entry.userText
-      ) {
-        kept.pop()
-        userTexts.value.delete(last.id)
-        poppedHydratedCopy = true
-      }
+      const poppedHydratedCopy = removeHydratedCopy(entry, kept)
       if (
         entry.settled &&
         !poppedHydratedCopy &&
@@ -212,10 +201,27 @@ export const useAgentConversationStore = defineStore(
       const index = kept.push(entry.message) - 1
       messages.value = kept
       if (entry.settled) return
-      activeIndex.value = index
       activeTurnId.value = entry.messageId
+      activeIndex.value = index
       transport = entry.transport
       liveMessage = entry.message
+    }
+
+    function removeHydratedCopy(
+      entry: BackgroundTurn,
+      kept: AssistantMessage[]
+    ): boolean {
+      if (kept.length !== messages.value.length) return false
+      const last = kept.at(-1)
+      if (!last || hydratedAssistantTurnIds.has(last.id)) return false
+      if (
+        entry.userText === undefined ||
+        userTexts.value.get(last.id) !== entry.userText
+      )
+        return false
+      kept.pop()
+      userTexts.value.delete(last.id)
+      return true
     }
 
     function settleBackgroundTurn(turnId: string): void {
@@ -272,10 +278,11 @@ export const useAgentConversationStore = defineStore(
       hydratedMessageIds = transcript.rowIds
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
+      userAttachments.value = transcript.userAttachments
       if (transcript.pending) {
         liveMessage = transcript.pending.message
-        activeIndex.value = messages.value.indexOf(transcript.pending.message)
         activeTurnId.value = transcript.pending.messageId
+        activeIndex.value = messages.value.indexOf(transcript.pending.message)
         transport = createAgentEventTransport(
           transcript.pending.message,
           replaceActive

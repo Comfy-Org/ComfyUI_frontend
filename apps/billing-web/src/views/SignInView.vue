@@ -4,7 +4,7 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import SocialAuthButtons from '@comfyorg/account-core/vue/SocialAuthButtons'
+import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
 
 import { safeReturnTo } from '@/auth/returnTo'
 import { useSignInController } from '@/auth/useSignInController'

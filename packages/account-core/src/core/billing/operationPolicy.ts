@@ -3,6 +3,7 @@
  * app's `billingOperationStore` rather than invented, so a consumer moving
  * onto the SDK sees the same request rate and the same give-up points.
  */
+import { isBlockedOnCustomerPhase } from './operationState.js'
 import type { PendingBillingOperation } from './operationState.js'
 
 export const OPERATION_POLL_TIMING = {
@@ -23,14 +24,16 @@ export const OPERATION_POLL_BUDGET = {
 
 /**
  * Waiting on the customer, not on the backend: a challenge to complete
- * elsewhere, a hosted page to finish, or a declined attempt awaiting their
- * retry. Once this tab's own challenge completes the state reads processing
- * and nothing waits on the customer anymore.
+ * elsewhere, a hosted page to finish, a phase the server reports as blocked on
+ * them, or a declined attempt awaiting their retry. Once this tab's own
+ * challenge completes the state reads processing and nothing waits on the
+ * customer anymore.
  */
 export function isParkedOnCustomer(state: PendingBillingOperation): boolean {
   return (
     state.authenticationState === 'requires_action' ||
     state.actionUrl !== undefined ||
+    isBlockedOnCustomerPhase(state.serverPhase) ||
     (state.authenticationState === 'failed_retryable' &&
       state.customerActionSeen)
   )

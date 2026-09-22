@@ -15,6 +15,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
+import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
 import { sameFormValues } from '../../lib/workshop/form-values'
 import { leaveForSignIn } from '../../config/workshop-return'
 import { useSignInHref } from '../../composables/useSignInHref'
@@ -45,7 +46,10 @@ import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import type { RouterRenderResult } from '../../config/router-render'
 import { router_render } from '../../config/router-render'
 import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
-import { WorkshopRouterError } from '../../config/workshop-router-errors'
+import {
+  WorkshopRouterError,
+  workshopRunMayStillSettle
+} from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
 import { reportWorkshopRun } from '../../config/workshop-run-state'
@@ -63,12 +67,13 @@ import {
 } from '../../scripts/posthog'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
 import {
-  workshopHttpStatus,
-  workshopModelAnalytics,
-  workshopRouterErrorType
+  workshopFailureAnalytics,
+  workshopFieldErrorCodes,
+  workshopModelAnalytics
 } from '../../scripts/workshop-analytics'
 import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
+import { frameRatioRule } from '../../config/workshop-model-restrictions'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
@@ -90,6 +95,7 @@ const {
 
 const slots = useSlots()
 const modelAnalytics = workshopModelAnalytics(model)
+const frameRatio = frameRatioRule(model.slug)
 
 type Section = 'playground' | 'details' | 'api'
 const sections = computed<readonly Section[]>(() =>
@@ -364,6 +370,11 @@ interface ActiveRun {
 }
 
 let activeRun: ActiveRun | undefined
+const credentialFailures = new WeakSet<ActiveRun>()
+const delivery = useWorkshopDelivery()
+watch(activeSection, (section) => {
+  if (section !== 'playground') delivery.cancel()
+})
 let pendingRequest: { fingerprint: string; key: string } | undefined
 const uploadUrl = createWorkshopUrlUploader()
 
@@ -377,6 +388,7 @@ watch(isRunning, (running) =>
 onScopeDispose(() => reportWorkshopRun(undefined))
 
 function cancelRun() {
+  delivery.cancel()
   if (activeRun) {
     activeRun.controller.abort()
     captureWorkshopEvent({
@@ -388,6 +400,7 @@ function cancelRun() {
       }
     })
     activeRun = undefined
+    pendingRequest = undefined
   }
   runState.value = transition(runState.value, { type: 'cancel' })
 }
@@ -452,8 +465,10 @@ async function freshCredentialFor(
     credential?.status !== 'ok' ||
     credential.session.uid !== startedFor.uid ||
     credential.session.workspace.id !== startedFor.workspace.id
-  )
+  ) {
+    credentialFailures.add(attempt)
     throw new WorkshopRouterError('unavailable')
+  }
   return credential.session
 }
 
@@ -494,7 +509,10 @@ async function renderRun(
           signal
         )
       },
-      idempotencyKey: (body) => idempotencyKeyFor(startedFor, body)
+      idempotencyKey: (body) => idempotencyKeyFor(startedFor, body),
+      onRequestId: (id) => {
+        if (runIsActive(attempt)) requestId.value = id
+      }
     }
   )
 }
@@ -507,7 +525,14 @@ function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
   pendingRequest = undefined
   requestId.value = result.requestId
   const [output, ...attachments] = result.outputs
-  if (!output) throw new WorkshopRouterError('provider', result.requestId)
+  if (!output)
+    throw new WorkshopRouterError(
+      'response',
+      result.requestId,
+      {},
+      undefined,
+      'response'
+    )
   const { retained, discarded } = retainRunHistory([
     { output, attachments },
     ...runs.value
@@ -516,6 +541,8 @@ function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
   releaseRouterOutputs(
     discarded.flatMap((run) => [run.output, ...run.attachments])
   )
+  delivery.start(attempt.analytics, result.requestId, output)
+  if (activeSection.value !== 'playground') delivery.cancel()
   runState.value = transition(runState.value, {
     type: 'complete',
     at: Date.now(),
@@ -539,9 +566,10 @@ function failRun(error: unknown, attempt: ActiveRun): void {
   const failure =
     error instanceof WorkshopRouterError
       ? error
-      : new WorkshopRouterError('provider')
-  const httpStatus = workshopHttpStatus(failure.response?.status)
-  const routerErrorType = workshopRouterErrorType(failure.response?.errorType)
+      : new WorkshopRouterError('client', null, {}, undefined, undefined, {
+          cause: error
+        })
+  if (!workshopRunMayStillSettle(failure)) pendingRequest = undefined
   requestId.value = failure.requestId
   runState.value = transition(runState.value, {
     type: 'fail',
@@ -553,13 +581,11 @@ function failRun(error: unknown, attempt: ActiveRun): void {
     properties: {
       ...attempt.analytics,
       status: 'failed',
-      reason: failure.reason,
       duration_ms: Date.now() - attempt.startedAt,
-      request_id: failure.requestId ?? undefined,
-      ...(httpStatus === undefined ? {} : { http_status: httpStatus }),
-      ...(routerErrorType === undefined
-        ? {}
-        : { router_error_type: routerErrorType })
+      ...workshopFailureAnalytics(failure),
+      ...(credentialFailures.has(attempt)
+        ? { failure_stage: 'credential' }
+        : {})
     }
   })
 }
@@ -571,7 +597,10 @@ async function run() {
   if (Object.keys(fieldErrors).length) {
     captureWorkshopEvent({
       name: 'run_validation_failed',
-      properties: modelAnalytics
+      properties: {
+        ...modelAnalytics,
+        field_error_codes: workshopFieldErrorCodes(fieldErrors)
+      }
     })
     runState.value = transition(runState.value, {
       type: 'fail',
@@ -581,6 +610,7 @@ async function run() {
     return
   }
   const startedAt = Date.now()
+  delivery.cancel()
   const analytics: WorkshopRunAnalytics = {
     ...modelAnalytics,
     user_id: startedFor.uid,
@@ -619,6 +649,7 @@ function reset() {
 }
 
 function applyExample(example: PlaygroundExample) {
+  delivery.cancel()
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
@@ -751,6 +782,7 @@ function useInCode() {
             v-model="values"
             :schema
             :errors
+            :frame-ratio
             :locale
             :disabled="isRunning || draftPending"
             :file-uploads-disabled="!mounted"
@@ -905,6 +937,8 @@ function useInCode() {
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"
           @download="captureOutputDownload"
+          @delivery="delivery.settle"
+          @playback-started="delivery.beginPlayback"
         />
         <div
           v-if="runState.status === 'succeeded' || requestId"
@@ -982,7 +1016,12 @@ function useInCode() {
       role="tabpanel"
       aria-labelledby="tab-api"
     >
-      <ApiTab :contract="model.execution" :values :locale />
+      <ApiTab
+        :contract="model.execution"
+        :values
+        :locale
+        :model-slug="model.slug"
+      />
     </section>
 
     <RunLeaveDialog

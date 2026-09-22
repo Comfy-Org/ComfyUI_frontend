@@ -47,6 +47,8 @@ import type {
   BillingOperationKind,
   BillingOperationState,
   BillingPresentation,
+  BillingPresentationState,
+  HostedBillingDestination,
   PendingBillingOperation
 } from './operationState.js'
 import {
@@ -111,6 +113,8 @@ export interface BillingOperationLifecycleOptions {
   readonly pointerStorage?: BillingOperationPointerStorage
   /** Whether the host can drive an in-page challenge right now. Absent routes everything hosted. */
   readonly embeddedCheckoutAvailable?: () => boolean
+  /** Which origin serves a hosted page right now. Absent keeps every hosted operation on the provider page. */
+  readonly hostedDestination?: () => HostedBillingDestination
   readonly onTelemetry?: (event: BillingOperationTelemetryEvent) => void
   readonly now?: () => number
 }
@@ -230,7 +234,8 @@ function pendingFromStatus(
 
 function initialPendingState(
   input: AdoptInput,
-  observedAt: number
+  observedAt: number,
+  presentation: BillingPresentationState
 ): PendingBillingOperation {
   const actionUrl = validateActionUrl(input.actionUrl)
   const challenge =
@@ -241,7 +246,7 @@ function initialPendingState(
     id: input.id,
     kind: input.kind,
     scope: input.context.scope,
-    presentation: input.presentation,
+    ...presentation,
     observedAt,
     attemptStartedAt: input.attemptStartedAt,
     phase: 'pending',
@@ -285,6 +290,7 @@ export function createBillingOperationLifecycle(
     scopeSource,
     statusReader,
     embeddedCheckoutAvailable = () => false,
+    hostedDestination = () => 'stripe',
     onTelemetry,
     now = Date.now
   } = options
@@ -452,6 +458,15 @@ export function createBillingOperationLifecycle(
     }
   }
 
+  /** Read at every adoption, so an operation recovered from the pointer lands on today's destination. */
+  function destinationFor(
+    presentation: BillingPresentation
+  ): BillingPresentationState {
+    return presentation === 'hosted'
+      ? { presentation, hostedDestination: hostedDestination() }
+      : { presentation }
+  }
+
   function adopt(input: AdoptInput): OperationRecord {
     const existing = operations.get(input.id)
     if (
@@ -462,7 +477,11 @@ export function createBillingOperationLifecycle(
       return existing
     }
 
-    const state = initialPendingState(input, now())
+    const state = initialPendingState(
+      input,
+      now(),
+      destinationFor(input.presentation)
+    )
 
     let resolveSettled: (state: BillingOperationState) => void = () => {}
     const settled = new Promise<BillingOperationState>((resolve) => {
@@ -695,6 +714,31 @@ export function createBillingOperationLifecycle(
     }
   }
 
+  function refusedSwitch(
+    state: PendingBillingOperation,
+    presentation: BillingPresentation
+  ): PresentationSwitchOutcome | undefined {
+    if (state.presentation === presentation) return 'unchanged'
+    if (presentation === 'hosted') {
+      return state.actionUrl === undefined ? 'no_hosted_url' : undefined
+    }
+    return !embeddedCheckoutAvailable() || state.challenge === undefined
+      ? 'embedded_unavailable'
+      : undefined
+  }
+
+  function switchEvent(
+    presentation: BillingPresentation
+  ): BillingOperationEvent {
+    return presentation === 'hosted'
+      ? {
+          type: 'presentation_switched',
+          presentation,
+          hostedDestination: hostedDestination()
+        }
+      : { type: 'presentation_switched', presentation }
+  }
+
   function switchPresentation(
     operationId: string,
     presentation: BillingPresentation
@@ -703,17 +747,9 @@ export function createBillingOperationLifecycle(
     if (record === undefined) return 'unknown_operation'
     const state = record.state
     if (state.phase !== 'pending') return 'not_pending'
-    if (state.presentation === presentation) return 'unchanged'
-    if (presentation === 'hosted' && state.actionUrl === undefined) {
-      return 'no_hosted_url'
-    }
-    if (
-      presentation === 'embedded' &&
-      (!embeddedCheckoutAvailable() || state.challenge === undefined)
-    ) {
-      return 'embedded_unavailable'
-    }
-    dispatch(record, { type: 'presentation_switched', presentation })
+    const refusal = refusedSwitch(state, presentation)
+    if (refusal !== undefined) return refusal
+    dispatch(record, switchEvent(presentation))
     writePointer(record.context.scope, record.state)
     record.delayMs = undefined
     schedule(record)

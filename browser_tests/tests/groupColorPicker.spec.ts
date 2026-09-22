@@ -12,6 +12,7 @@ import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 // setColorOption, producing a visibly different shade from the toolbar
 // circle-swatch picker for the same color choice.
 const RED_GROUP_COLOR = '#A88'
+const RED_NODE_COLOR = 'rgb(85, 51, 51)'
 
 test.describe(
   'Group Color - right-click menu matches toolbar swatch',
@@ -117,6 +118,51 @@ test.describe(
       await expect(comfyPage.canvas).toHaveScreenshot(
         'group-color-right-click-matches-toolbar-swatch.png'
       )
+    })
+
+    test('refreshes the selected group toolbar swatch after menu color change', async ({
+      comfyPage
+    }) => {
+      const groupPos = await getGroupTitlePosition(
+        comfyPage,
+        'Right-Click Menu Group'
+      )
+
+      await test.step('Select the group and show its toolbar', async () => {
+        await comfyPage.page.mouse.click(groupPos.x, groupPos.y)
+        await comfyPage.nextFrame()
+        await expect(comfyPage.selectionToolbox).toBeVisible()
+      })
+
+      await test.step('Change the group color through its context menu', async () => {
+        await comfyPage.page.mouse.click(groupPos.x, groupPos.y, {
+          button: 'right'
+        })
+        await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+        await comfyPage.page.getByText('Color', { exact: true }).click()
+        const redSwatch = comfyPage.page.getByTitle('Red').first()
+        await expect(redSwatch).toBeVisible()
+        await redSwatch.click()
+      })
+
+      await test.step('Refresh the toolbar swatch without reselecting the group', async () => {
+        await expect(comfyPage.selectionToolbox).toBeVisible()
+        await expect(
+          comfyPage.page.getByTestId(
+            TestIds.selectionToolbox.colorPickerCurrentColor
+          )
+        ).toHaveCSS('color', RED_NODE_COLOR)
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(
+              () =>
+                window.app!.graph.groups.find(
+                  (group) => group.title === 'Right-Click Menu Group'
+                )?.color
+            )
+          )
+          .toBe(RED_GROUP_COLOR)
+      })
     })
   }
 )

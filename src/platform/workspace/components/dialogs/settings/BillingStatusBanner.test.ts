@@ -1,3 +1,5 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDialogService } from '@/services/dialogService'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
@@ -33,12 +35,8 @@ const state = vi.hoisted(() => ({
   workspaceType: 'team' as WorkspaceType,
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
-  canReactivate: true,
   canReactivatePlan: true,
   shouldUseWorkspaceBilling: true,
-  canTopUp: true,
-  canSubscribeSelfServe: false,
-  showTopUpCreditsDialog: vi.fn(),
   manageSubscription: vi.fn(),
   handleResubscribe: vi.fn()
 }))
@@ -85,16 +83,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canTopUp: computed(() => state.canTopUp),
-      canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
-      canReactivate: computed(() => state.canReactivate)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/workspace/composables/useResubscribe'), () => ({
   useResubscribe: () => ({
@@ -103,11 +92,7 @@ vi.mock(import('@/platform/workspace/composables/useResubscribe'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showTopUpCreditsDialog: state.showTopUpCreditsDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 const i18n = createI18n({
   legacy: false,
@@ -165,15 +150,7 @@ const i18n = createI18n({
 })
 
 const globalOptions = {
-  plugins: [i18n],
-  stubs: {
-    Button: {
-      template:
-        '<button v-bind="$attrs" @click="$emit(\'click\')"><slot/></button>',
-      props: ['variant', 'size', 'loading'],
-      emits: ['click']
-    }
-  }
+  plugins: [i18n]
 }
 
 function renderBanner() {
@@ -231,11 +208,9 @@ describe('BillingStatusBanner', () => {
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = true
+    useBillingCapabilities().canReactivate = computed(() => true)
     state.canReactivatePlan = true
     state.shouldUseWorkspaceBilling = true
-    state.canTopUp = true
-    state.canSubscribeSelfServe = false
   })
 
   it('renders nothing for a healthy funded team', () => {
@@ -266,13 +241,13 @@ describe('BillingStatusBanner', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
     await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
-    expect(state.showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
   })
 
   it('offers an upgrade when self-serve subscription is available', () => {
     exhausted()
-    state.canTopUp = false
-    state.canSubscribeSelfServe = true
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
     renderBanner()
 
@@ -295,7 +270,7 @@ describe('BillingStatusBanner', () => {
       scheduledChange: null
     }
     state.canManageSubscription = false
-    state.canTopUp = false
+    useBillingCapabilities().canTopUp = computed(() => false)
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -347,7 +322,7 @@ describe('BillingStatusBanner', () => {
   it('shows the paused member notice without an action', () => {
     pausedState()
     state.canManageSubscription = false
-    state.canTopUp = false
+    useBillingCapabilities().canTopUp = computed(() => false)
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -432,7 +407,7 @@ describe('BillingStatusBanner', () => {
     // Cloud personal on legacy_stripe: handleResubscribe skips its capability
     // guard, so the affordance must follow the client permission instead.
     state.shouldUseWorkspaceBilling = false
-    state.canReactivate = false
+    useBillingCapabilities().canReactivate = computed(() => false)
     state.canManageSubscriptionLifecycle = true
     state.subscription = {
       hasFunds: true,
@@ -457,7 +432,7 @@ describe('BillingStatusBanner', () => {
     }
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
-    state.canReactivate = false
+    useBillingCapabilities().canReactivate = computed(() => false)
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()

@@ -6,21 +6,23 @@
  * stay in the lifecycle. `previewSubscribe` sits beside them without a
  * lifecycle: it only quotes a change.
  *
- * Eligibility is decided from the server's own status fields, never from a
- * client-side notion of the plan (`docs/billing-command-eligibility.md`).
- * Server codes are matched against the closed set named here; a code outside
- * it reaches the caller only as the transport's coded failure.
+ * No command decides for the server whether a transition is allowed
+ * (`../../../docs/billing-command-eligibility.md`). Server codes are matched
+ * against the closed set named here; a code outside it reaches the caller only
+ * as the transport's coded failure.
  */
 import {
   zCancelSubscriptionResponse2,
   zPaymentPortalResponse,
+  zPreviewPlanInfo,
   zPreviewSubscribeRequest,
   zPreviewSubscribeResponse,
   zResubscribeResponse,
   zSubscribeRequest,
-  zSubscribeResponse
+  zSubscribeResponse,
+  zSubscriptionDiscount
 } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import { z } from 'zod'
 
 import type { BillingFailure, BillingTransport } from './billingContracts.js'
 import { matchesServerCode } from './billingContracts.js'
@@ -37,7 +39,7 @@ import type {
 } from './operationState.js'
 import { validateActionUrl } from './operationState.js'
 import { readValidatedBillingResponse } from './sharedRead.js'
-import type { BillingStatusData, BillingStatusReader } from './status.js'
+import type { BillingStatusReader } from './status.js'
 
 export const SUBSCRIBE_ROUTE = '/billing/subscribe'
 export const RESUBSCRIBE_ROUTE = '/billing/subscription/resubscribe'
@@ -76,10 +78,24 @@ export type SubscriptionCommandFailure =
   | BillingFailure
   | { readonly status: 'error'; readonly code: SubscriptionCommandCode }
 
+/** What the subscribe route answered before the lifecycle drove the operation on. */
+type SubscribeIssuedStatus = z.infer<typeof zSubscribeResponse>['status']
+
 export interface SubscriptionCommandOutcome {
   readonly phase: TerminalBillingOperation['phase']
   /** Absent when the requested state already held and nothing was issued. */
   readonly operation?: TerminalBillingOperation
+  /**
+   * The `status` the subscribe response carried, before the lifecycle settled
+   * the operation: `subscribed` is a plan the server activated on the spot,
+   * the other two are payment steps it could not complete without the
+   * customer. Absent for every other command, and whenever this call read no
+   * subscribe response at all: `begin` adopted an operation the server was
+   * already settling, or joined one another `subscription` command had in
+   * flight. Both land on `requiredPayment: true`, the side an operation the
+   * server is mid-payment on belongs to.
+   */
+  readonly issuedStatus?: SubscribeIssuedStatus
 }
 
 export type SubscriptionCommandResult =
@@ -91,6 +107,40 @@ export type PaymentPortalResult =
   | BillingFailure
 
 /**
+ * The generated schema coerces every int64 to a `bigint`, which no caller can
+ * add to a price or hand to a currency formatter — and the generated *type*
+ * for the same field is a `number`. Money on this route is bounded to cents
+ * well inside the JavaScript-safe range, so the cents are read as numbers, the
+ * way `capabilities` reads `revision` — as whole units of currency that
+ * survive arithmetic, since these amounts are displayed as prices and
+ * confirmed as charges.
+ */
+const cents = z.number().int().safe()
+
+const PlanInfoSchema = zPreviewPlanInfo.extend({
+  credits_cents: cents,
+  price_cents: cents,
+  seat_summary: zPreviewPlanInfo.shape.seat_summary.extend({
+    total_cost_cents: cents,
+    total_credits_cents: cents
+  })
+})
+
+const PreviewSchema = zPreviewSubscribeResponse.extend({
+  amount_due_cents: cents.optional(),
+  cost_next_period_cents: cents,
+  cost_today_cents: cents,
+  credits_next_period_cents: cents,
+  credits_today_cents: cents,
+  renewal_amount_cents: cents.optional(),
+  current_plan: PlanInfoSchema.optional(),
+  new_plan: PlanInfoSchema,
+  discounts: z
+    .array(zSubscriptionDiscount.extend({ amount_off_cents: cents.optional() }))
+    .optional()
+})
+
+/**
  * The quote the server returns for a plan change, in the generated field names.
  *
  * Its strings are product copy, not `serverCode`'s kind of machine identifier:
@@ -98,7 +148,7 @@ export type PaymentPortalResult =
  * `promotion` one carries back the very `promotionCode` the caller sent, so a
  * host renders `code` and `name` rather than matching them.
  */
-export type SubscriptionPreview = z.infer<typeof zPreviewSubscribeResponse>
+export type SubscriptionPreview = z.infer<typeof PreviewSchema>
 
 export interface PreviewSubscribeInput {
   readonly planSlug: string
@@ -146,8 +196,14 @@ export interface BillingCommands {
   }) => Promise<PaymentPortalResult>
 }
 
+interface IssuedOutcome {
+  readonly status: 'ok'
+  readonly value: IssuedBillingOperation
+  readonly issuedStatus?: SubscribeIssuedStatus
+}
+
 type IssueOutcome =
-  | { readonly status: 'ok'; readonly value: IssuedBillingOperation }
+  | IssuedOutcome
   /** The server refused because the requested state already holds. */
   | { readonly status: 'already_held' }
   | SubscriptionCommandFailure
@@ -159,17 +215,6 @@ const ALREADY_HELD: SubscriptionCommandResult = {
 
 function coded(code: SubscriptionCommandCode): SubscriptionCommandFailure {
   return { status: 'error', code }
-}
-
-type Eligibility = 'free' | 'active' | 'canceled'
-
-function eligibilityOf(status: BillingStatusData): Eligibility {
-  const paid =
-    status.is_active &&
-    status.subscription_tier !== undefined &&
-    status.subscription_tier !== 'FREE'
-  if (!paid) return 'free'
-  return status.subscription_status === 'canceled' ? 'canceled' : 'active'
 }
 
 /**
@@ -259,11 +304,18 @@ export function createBillingCommands(
     issue: () => Promise<IssueOutcome>
   ): Promise<SubscriptionCommandResult> {
     // The lifecycle carries only the shared codes; the command's own verdict
-    // waits here for `begin` to return.
+    // and what it read off the issuing response wait here for `begin` to
+    // return. Both stay unset whenever `begin` never ran this caller's issue:
+    // it adopted an operation the server was already settling, or joined one
+    // another command of the same kind had in flight.
     const verdict: { value?: Exclude<IssueOutcome, { status: 'ok' }> } = {}
+    const issued: { value?: IssuedOutcome } = {}
     const began = await lifecycle.begin(kind, async () => {
       const outcome = await issue()
-      if (outcome.status === 'ok') return outcome
+      if (outcome.status === 'ok') {
+        issued.value = outcome
+        return outcome
+      }
       verdict.value = outcome
       return { status: 'error', code: 'REQUEST_FAILED' }
     })
@@ -280,7 +332,15 @@ export function createBillingCommands(
       return { status: 'error', code: 'SUPERSEDED' }
     }
     if (operation.phase === 'succeeded') await refreshAfterSuccess()
-    return { status: 'ok', value: { phase: operation.phase, operation } }
+    const issuedStatus = issued.value?.issuedStatus
+    return {
+      status: 'ok',
+      value: {
+        phase: operation.phase,
+        operation,
+        ...(issuedStatus === undefined ? {} : { issuedStatus })
+      }
+    }
   }
 
   async function issueSubscribe(input: SubscribeInput): Promise<IssueOutcome> {
@@ -301,14 +361,19 @@ export function createBillingCommands(
     }
     const { billing_op_id, status, payment_method_url } = response.value.data
     if (status !== 'needs_payment_method') {
-      return { status: 'ok', value: { operationId: billing_op_id } }
+      return {
+        status: 'ok',
+        value: { operationId: billing_op_id },
+        issuedStatus: status
+      }
     }
     if (payment_method_url === undefined) {
       return coded('MISSING_PAYMENT_METHOD_URL')
     }
     return {
       status: 'ok',
-      value: { operationId: billing_op_id, actionUrl: payment_method_url }
+      value: { operationId: billing_op_id, actionUrl: payment_method_url },
+      issuedStatus: status
     }
   }
 
@@ -367,16 +432,7 @@ export function createBillingCommands(
       return coded('INVALID_REQUEST')
     }
 
-    const status = await statusReader.read()
-    if (status.status === 'error') return status
-    switch (eligibilityOf(status.value.status)) {
-      case 'active':
-        return ALREADY_HELD
-      case 'canceled':
-        return resubscribe()
-      case 'free':
-        return settle('subscription', () => issueSubscribe(request))
-    }
+    return settle('subscription', () => issueSubscribe(request))
   }
 
   async function previewSubscribe(
@@ -398,7 +454,7 @@ export function createBillingCommands(
           ? {}
           : { timeoutMs: options.timeoutMs })
       },
-      (raw) => zPreviewSubscribeResponse.safeParse(raw)
+      (raw) => PreviewSchema.safeParse(raw)
     )
     return response.status === 'error'
       ? response

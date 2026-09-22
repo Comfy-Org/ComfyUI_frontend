@@ -18,7 +18,7 @@ const { sharedProps, sharedReset, sharedEmit } = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(
-  import('@comfyorg/account-core/vue/TurnstileWidget'),
+  import('@comfyorg/account-ui/auth/TurnstileWidget'),
   async () => {
     const { defineComponent, h } = await import('vue')
     return {

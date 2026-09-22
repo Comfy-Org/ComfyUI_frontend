@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { computed, ref } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { fromAny } from '@total-typescript/shoehorn'
@@ -51,9 +52,6 @@ const mockTeamCreditStops = ref<TeamCreditStops | null>(null)
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 const mockCanOpenPricingSurface = vi.hoisted(() => ({ value: true }))
-const mockInitializeCapabilities = vi.hoisted(() =>
-  vi.fn(async () => undefined)
-)
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -65,14 +63,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      initialize: mockInitializeCapabilities
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 const TEAM_CREDIT_STOPS = {
   default_stop_index: 2,
@@ -99,8 +90,7 @@ describe('usePricingTableUrlLoader', () => {
     mockRouteQuery.value = {}
     mockPermissions.value = { canManageSubscription: true }
     mockCanOpenPricingSurface.value = true
-    mockInitializeCapabilities.mockClear()
-    mockInitializeCapabilities.mockResolvedValue(undefined)
+
     mockTeamCreditStops.value = TEAM_CREDIT_STOPS
     vi.mocked(billing.fetchPlans).mockResolvedValue(undefined)
     mockShowPricingTable.mockResolvedValue(undefined)
@@ -143,14 +133,18 @@ describe('usePricingTableUrlLoader', () => {
   it('resolves the capability snapshot before deciding', async () => {
     mockRouteQuery.value = { pricing: '1' }
     mockCanOpenPricingSurface.value = true
-    mockInitializeCapabilities.mockImplementation(async () => {
-      mockCanOpenPricingSurface.value = false
-    })
+    vi.mocked(useBillingCapabilities().initialize).mockImplementation(
+      async () => {
+        mockCanOpenPricingSurface.value = false
+      }
+    )
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockInitializeCapabilities).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(useBillingCapabilities().initialize)
+    ).toHaveBeenCalledOnce()
     expect(mockShowPricingTable).not.toHaveBeenCalled()
   })
 
