@@ -330,7 +330,7 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
       expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
       expect(agentStore.open).not.toHaveBeenCalled()
-      expect(consentStore.load).toHaveBeenCalled()
+      expect(consentStore.load).toHaveBeenCalledTimes(2)
     }
   )
 
@@ -365,6 +365,20 @@ describe('AgentPanel extension flag gate', () => {
     )
   })
 
+  it('skips the automatic offer for the session when the boot never reports', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    startupDecision = Promise.resolve(false)
+
+    await loadEntryAndSetup()
+    mocks.flagListener?.()
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
+    expect(consentStore.load).toHaveBeenCalledTimes(2)
+  })
+
   it('offers once the tour that held it ends', async () => {
     mocks.flagEnabled = true
     activeTour.value = 'appMode'
@@ -380,6 +394,55 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
+  it('waits for the startup decision before re-offering after a tour ends', async () => {
+    mocks.flagEnabled = true
+    activeTour.value = 'appMode'
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let decide = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decide = resolve
+    })
+
+    await loadEntryAndSetup()
+    mocks.flagListener?.()
+    await flush()
+    activeTour.value = null
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+    decide(true)
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+  })
+
+  it('does not re-offer while an offer is still in flight', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let finish = () => {}
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async () => {
+        await pending
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    activeTour.value = 'appMode'
+    await flush()
+    activeTour.value = null
+    await flush()
+
+    expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    finish()
+    await flush()
   })
 
   it('keeps withholding after a tour ends when Getting Started took the screen', async () => {

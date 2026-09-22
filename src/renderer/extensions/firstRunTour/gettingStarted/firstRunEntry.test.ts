@@ -133,26 +133,27 @@ describe('useFirstRunEntry', () => {
     })
 
     it.for([
-      [
-        'restored work',
-        async (entry: FirstRunEntry) => entry.handleStartupOutcome('restored')
-      ],
-      [
-        'a boot that only deferred',
-        async (entry: FirstRunEntry) => {
+      {
+        label: 'restored work',
+        boot: async (entry: FirstRunEntry) =>
+          entry.handleStartupOutcome('restored')
+      },
+      {
+        label: 'a boot that only deferred',
+        boot: async (entry: FirstRunEntry) => {
           mocks.isDesktopWidth = false
           await entry.handleStartupOutcome('fresh')
         }
-      ],
-      [
-        'a url-intent boot whose tour did not start',
-        async (entry: FirstRunEntry) => {
+      },
+      {
+        label: 'a url-intent boot whose tour did not start',
+        boot: async (entry: FirstRunEntry) => {
           mocks.beginTour.mockResolvedValue(false)
           await entry.handleStartupOutcome('url-intent')
           await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
         }
-      ]
-    ] as const)('reports no first-run screen for %s', async ([, boot]) => {
+      }
+    ])('reports no first-run screen for $label', async ({ boot }) => {
       const entry = useFirstRunEntry()
 
       await boot(entry)
@@ -162,31 +163,82 @@ describe('useFirstRunEntry', () => {
 
     it('settles the startup decision only once the url stage has run', async () => {
       const entry = useFirstRunEntry()
-      let settled = false
-      void entry.whenStartupDecided().then(() => {
-        settled = true
+      let decided: boolean | undefined
+      void entry.whenStartupDecided().then((value) => {
+        decided = value
       })
 
       await entry.handleStartupOutcome('fresh')
-      await Promise.resolve()
-      expect(settled).toBe(false)
+      await new Promise((resolve) => setTimeout(resolve))
+      expect(decided).toBeUndefined()
 
       await entry.handleUrlWorkflow('fresh')
-      await vi.waitFor(() => expect(settled).toBe(true))
+      await vi.waitFor(() => expect(decided).toBe(true))
     })
 
-    it('settles the startup decision after the grace period if the boot never reports', async () => {
+    it('resolves at once for a subscriber that arrives after the boot reported', async () => {
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
+      await entry.handleUrlWorkflow('fresh')
+
+      await expect(entry.whenStartupDecided()).resolves.toBe(true)
+    })
+
+    it('stays undecided while a url-intent tour is still starting', async () => {
+      const entry = useFirstRunEntry()
+      let start = (_: boolean) => {}
+      mocks.beginTour.mockReturnValue(
+        new Promise<boolean>((resolve) => {
+          start = resolve
+        })
+      )
+      let decided: boolean | undefined
+      void entry.whenStartupDecided().then((value) => {
+        decided = value
+      })
+
+      await entry.handleStartupOutcome('url-intent')
+      const urlStage = entry.handleUrlWorkflow(
+        'url-intent',
+        'image_z_image_turbo'
+      )
+      await new Promise((resolve) => setTimeout(resolve))
+      expect(decided).toBeUndefined()
+      expect(entry.firstRunTookScreen.value).toBe(false)
+
+      start(true)
+      await urlStage
+      await vi.waitFor(() => expect(decided).toBe(true))
+      expect(entry.firstRunTookScreen.value).toBe(true)
+    })
+
+    it('settles the startup decision even when the tour fails to start', async () => {
+      const entry = useFirstRunEntry()
+      mocks.beginTour.mockRejectedValue(new Error('offline'))
+
+      await entry.handleStartupOutcome('url-intent')
+      await expect(
+        entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+      ).rejects.toThrow('offline')
+
+      await expect(entry.whenStartupDecided()).resolves.toBe(true)
+      expect(entry.firstRunTookScreen.value).toBe(false)
+    })
+
+    it('gives up with false only once the grace period has fully passed', async () => {
       vi.useFakeTimers()
       try {
         const entry = useFirstRunEntry()
-        let settled = false
-        void entry.whenStartupDecided().then(() => {
-          settled = true
+        let decided: boolean | undefined
+        void entry.whenStartupDecided().then((value) => {
+          decided = value
         })
 
-        await vi.advanceTimersByTimeAsync(15_000)
+        await vi.advanceTimersByTimeAsync(59_999)
+        expect(decided).toBeUndefined()
 
-        expect(settled).toBe(true)
+        await vi.advanceTimersByTimeAsync(1)
+        expect(decided).toBe(false)
       } finally {
         vi.useRealTimers()
       }
