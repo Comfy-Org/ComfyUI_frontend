@@ -41,10 +41,9 @@ function expectedAlternates(
   pages: ReadonlyMap<string, Alternate[]>
 ): Map<string, string> {
   const path = unprefixed(route)
-  const policyPath = path === '/' ? path : path.slice(0, -1)
   const publishedLocales = LOCALE_CODES.filter(
     (locale) =>
-      localeHasRoute(locale, policyPath) ||
+      localeHasRoute(locale, path) ||
       pages.has(`${LOCALES[locale].prefix}${path}`)
   )
   const expected = new Map<string, string>(

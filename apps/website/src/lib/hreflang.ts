@@ -81,6 +81,8 @@ export function ogLocaleAlternates(
   return LOCALE_CODES.filter(
     (code) =>
       code !== currentLocale &&
-      alternates.some((alternate) => alternate.hreflang === code)
+      alternates.some(
+        (alternate) => alternate.hreflang === LOCALES[code].hreflang
+      )
   ).map((code) => LOCALES[code].ogLocale)
 }

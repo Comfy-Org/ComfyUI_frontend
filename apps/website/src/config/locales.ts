@@ -46,5 +46,5 @@ const PARTIAL_LOCALE_ROUTES: Partial<Record<Locale, ReadonlySet<string>>> = {
 
 export function localeHasRoute(locale: Locale, route: string): boolean {
   const served = PARTIAL_LOCALE_ROUTES[locale]
-  return served === undefined || served.has(route)
+  return served === undefined || served.has(route.replace(/\/+$/, '') || '/')
 }

@@ -3,10 +3,11 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { expect, it, onTestFinished } from 'vitest'
 
 const script = join(import.meta.dirname, 'check-hreflang.ts')
-const loader = createRequire(import.meta.url).resolve('tsx')
+const loader = pathToFileURL(createRequire(import.meta.url).resolve('tsx')).href
 it.for([
   [
     '/about/',
