@@ -21,4 +21,17 @@ describe('EmptyState', () => {
 
     expect(emitted().insert).toEqual([[prompt]])
   })
+
+  it('keeps the first three suggestions visible in narrow panels', () => {
+    render(EmptyState, {
+      global: { plugins: [i18n] }
+    })
+
+    const suggestions = screen.getAllByRole('button')
+    expect(
+      suggestions.map((suggestion) =>
+        suggestion.classList.contains('@max-[459px]:hidden')
+      )
+    ).toEqual([false, false, false, true, true])
+  })
 })
