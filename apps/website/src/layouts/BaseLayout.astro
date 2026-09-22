@@ -85,7 +85,8 @@ const bannerVisible =
     currentLocale: locale,
     currentSection: 'sitewide',
     now: new Date()
-  }) && !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
+  }) &&
+  !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
 
 const structuredData = shouldNoindex

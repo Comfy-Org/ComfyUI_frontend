@@ -18,12 +18,12 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       {{ t('brand.hero.label', locale) }}
     </p>
     <h1
-      class="mx-auto mt-6 max-w-4xl text-4xl leading-[1.3] font-light tracking-[-0.03em] text-primary-comfy-canvas md:text-5xl lg:text-6.5xl"
+      class="mx-auto mt-6 max-w-4xl text-4xl/[1.3] font-light tracking-[-0.03em] text-primary-comfy-canvas md:text-5xl lg:text-6.5xl"
     >
       {{ t('brand.hero.heading', locale) }}
     </h1>
     <p
-      class="mx-auto mt-6 max-w-2xl text-[17px] leading-[1.6] font-light text-primary-comfy-canvas/80"
+      class="mx-auto mt-6 max-w-2xl text-[17px]/[1.6] font-light text-primary-comfy-canvas/80"
     >
       {{ t('brand.hero.subheading', locale) }}
     </p>

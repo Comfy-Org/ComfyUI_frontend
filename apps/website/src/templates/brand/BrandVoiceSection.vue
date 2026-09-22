@@ -42,7 +42,7 @@ const dontExamples = [
       {{ t('brand.voice.heading', locale) }}
     </SectionHeader>
 
-    <dl class="mt-10 flex max-w-4xl flex-col gap-3.5 text-sm leading-[1.6]">
+    <dl class="mt-10 flex max-w-4xl flex-col gap-3.5 text-sm/[1.6]">
       <div v-for="principle in principles" :key="principle.title">
         <dt class="text-primary-comfy-yellow">{{ principle.title }}</dt>
         <dd class="text-primary-warm-gray">{{ principle.body }}</dd>
