@@ -497,6 +497,7 @@ describe('AgentPanel', () => {
     })
 
     expect(screen.queryByRole('note')).toBeNull()
+    await nextTick()
     await fireEvent.focusIn(screen.getByRole('textbox'))
     await vi.advanceTimersByTimeAsync(500)
 
