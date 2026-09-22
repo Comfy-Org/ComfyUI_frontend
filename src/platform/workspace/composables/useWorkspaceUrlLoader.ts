@@ -18,19 +18,26 @@ import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKSPACE
 
-/** Reads the `workspace` link from a merged query: a repeated value (still
- * possible when the stash predates router.ts's `rejectRepeated`, or from a
- * caller that bypasses the tracker) joins with `,`, outside any real
- * workspace id's charset, so it still resolves to `invalid`. `undefined`
- * when the key itself is absent. */
+/**
+ * Reads the `workspace` link from a merged query. `undefined` only when the
+ * key itself is absent. A repeated value (still possible when the stash
+ * predates router.ts's `rejectRepeated`, or from a caller that bypasses the
+ * tracker) joins with `,`, outside any real workspace id's charset, so it
+ * still resolves to `invalid`. A bare `?workspace` (no `=`) reaches the
+ * router as `null` — present but empty — which readWorkspaceLink can't tell
+ * apart from truly absent (both serialize to `''` in a URLSearchParams
+ * value), so it's classified `invalid` directly here instead.
+ */
 function readWorkspaceLinkFromQuery(
   query: LocationQueryRaw
 ): WorkspaceLinkRead | undefined {
   const raw = query.workspace
   if (raw === undefined) return undefined
-  const value = Array.isArray(raw) ? raw.join(',') : raw
-  if (typeof value !== 'string') return undefined
-  return readWorkspaceLink(new URLSearchParams({ workspace: value }))
+
+  const values = Array.isArray(raw) ? raw : [raw]
+  if (values.includes(null)) return { status: 'invalid' }
+
+  return readWorkspaceLink(new URLSearchParams({ workspace: values.join(',') }))
 }
 
 /**

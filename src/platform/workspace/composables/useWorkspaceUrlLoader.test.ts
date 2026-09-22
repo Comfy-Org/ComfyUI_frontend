@@ -165,6 +165,39 @@ describe('useWorkspaceUrlLoader', () => {
     })
   })
 
+  it('stays on the active workspace and shows a toast for a bare ?workspace with no value', async () => {
+    // A bare `?workspace` (no `=`) reaches the router as null, distinct from
+    // a genuinely missing param (undefined) — the former is present but
+    // empty and must read as invalid, not absent.
+    mockRouteQuery.value = { workspace: null }
+
+    const { loadWorkspaceFromUrl } = useWorkspaceUrlLoader()
+    await loadWorkspaceFromUrl()
+
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
+    expect(useToastStore().add).toHaveBeenCalledWith({
+      severity: 'info',
+      summary: "Couldn't open that workspace. You're still in Home Base."
+    })
+  })
+
+  it('treats a repeated link with one bare entry as invalid', async () => {
+    mockRouteQuery.value = fromAny<Record<string, string>, unknown>({
+      workspace: [null, 'workspace-2']
+    })
+
+    const { loadWorkspaceFromUrl } = useWorkspaceUrlLoader()
+    await loadWorkspaceFromUrl()
+
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
+    expect(useToastStore().add).toHaveBeenCalledWith({
+      severity: 'info',
+      summary: "Couldn't open that workspace. You're still in Home Base."
+    })
+  })
+
   it('treats a joined stash value from a repeated login-redirect link as invalid', async () => {
     // router.ts's `rejectRepeated` stashes a repeated value joined with `,`
     // (outside any real workspace id's charset) instead of just the first,

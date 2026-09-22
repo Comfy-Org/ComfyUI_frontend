@@ -261,4 +261,39 @@ describe('installPreservedQueryTracker', () => {
       'otc_A'
     )
   })
+
+  it('stashes a bare rejectRepeated param (no value) as a bare comma', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [rejectRepeatedDefinition])
+
+    await router.push('/?workspace')
+
+    expect(getPreservedQueryParam(REJECT_REPEATED_NAMESPACE, 'workspace')).toBe(
+      ','
+    )
+  })
+
+  it('stashes a repeated rejectRepeated value with a bare entry joined with a comma', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [rejectRepeatedDefinition])
+
+    await router.push('/?workspace&workspace=ws-team')
+
+    expect(getPreservedQueryParam(REJECT_REPEATED_NAMESPACE, 'workspace')).toBe(
+      ',ws-team'
+    )
+  })
+
+  it('drops a bare param of a non-rejectRepeated namespace like any empty value', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [
+      { namespace: PLAIN_NAMESPACE, keys: ['plain_code'] }
+    ])
+
+    await router.push('/?plain_code')
+
+    expect(
+      getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_code')
+    ).toBeUndefined()
+  })
 })

@@ -198,6 +198,15 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadPaymentReturn).not.toHaveBeenCalled()
   })
 
+  it('skips checkout recovery when a switch reload is in flight', async () => {
+    mocks.loadWorkspace.mockResolvedValueOnce(true)
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(mocks.resumePendingPricingFlow).not.toHaveBeenCalled()
+  })
+
   it('recovers an interrupted checkout after handling the payment return', async () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()

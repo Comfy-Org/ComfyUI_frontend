@@ -100,15 +100,18 @@ function buildUrlActionSteps(loaders: UrlActionLoaders): UrlActionStep[] {
  * Runs each step in order; one loader's failure never blocks the rest. Stops
  * immediately when a step reports a reload already in flight — no further
  * step's URL cleanup should run on a page that's about to be torn down.
+ * Returns whether a reload is in flight, so the caller can skip work that
+ * would otherwise run against the workspace the app is switching away from.
  */
-async function runUrlActionSteps(steps: UrlActionStep[]) {
+async function runUrlActionSteps(steps: UrlActionStep[]): Promise<boolean> {
   for (const step of steps) {
     try {
-      if (await step.run()) return
+      if (await step.run()) return true
     } catch (error) {
       console.error(`[UrlActionLoaders] ${step.failureMessage}`, error)
     }
   }
+  return false
 }
 
 /**
@@ -167,7 +170,12 @@ export function useUrlActionLoaders() {
   })
 
   async function runUrlActionLoaders() {
-    await runUrlActionSteps(steps)
+    const reloading = await runUrlActionSteps(steps)
+    // A switch reload is already in flight: activeWorkspaceId and its auth
+    // context are already stale, so starting recovery here could adopt or
+    // poll the old workspace's pending checkout. The next boot, once the
+    // reload lands, gets a clean pass at it.
+    if (reloading) return
     schedulePendingCheckoutRecovery(subscriptionDialog)
   }
 
