@@ -149,7 +149,10 @@ const runNoticeEngaged = ref(false)
 const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
 
 useEventListener(panelRef, 'focusin', (event) => {
-  if ((event.target as Element).closest('#agent-composer')) {
+  if (
+    event.target instanceof Element &&
+    event.target.closest('#agent-composer')
+  ) {
     runNoticeEngaged.value = true
   }
 })
