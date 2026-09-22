@@ -6,7 +6,9 @@ import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { CardView } from '../../lib/hub/catalogue-card'
+import HubCardMark from './HubCardMark.vue'
 import HubTypeBadge from './HubTypeBadge.vue'
+import TagRow from './TagRow.vue'
 
 const { view, locale = 'en' } = defineProps<{
   view: CardView
@@ -36,6 +38,12 @@ const previewSrc = usePreviewVideo(video, () =>
       class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface-hover"
     >
       <HubTypeBadge :kind="view.kind" :locale />
+
+      <HubCardMark
+        v-if="view.mark.label"
+        :label="view.mark.label"
+        :logo="view.mark.logo"
+      />
 
       <!-- Said on the card rather than on the page, because it is the one
         thing that decides whether the download is worth starting. -->
@@ -100,38 +108,15 @@ const previewSrc = usePreviewVideo(video, () =>
         {{ view.title }}
       </h3>
 
-      <!-- The title names the job, so the model is what tells one card from
-        the next. It stands where the maker would, which on a workflow reads
-        `ComfyUI` on every card and so marks none of them. -->
-      <span
-        v-if="view.model"
-        class="inline-flex h-6 w-fit max-w-full items-center rounded-lg bg-transparency-white-t8 px-2 text-xs text-content-secondary"
-        data-testid="catalogue-card-model"
-      >
-        <span class="truncate">{{ view.model }}</span>
-      </span>
-
-      <div v-else class="flex items-center gap-3 text-content-secondary">
-        <span
-          class="flex min-w-0 items-center gap-2"
-          data-testid="catalogue-card-maker"
-        >
-          <span
-            v-if="view.maker.logo"
-            class="size-4 shrink-0 bg-content-secondary mask-contain mask-center mask-no-repeat"
-            :style="{ maskImage: `url(${view.maker.logo})` }"
-            aria-hidden="true"
-          />
-          <span
-            v-else
-            class="grid size-4 shrink-0 place-items-center rounded-full bg-brand text-2xs font-bold text-page"
-            aria-hidden="true"
-          >
-            {{ view.maker.label.charAt(0).toUpperCase() }}
-          </span>
-          <span class="truncate text-xs">{{ view.maker.label }}</span>
-        </span>
-      </div>
+      <!-- The mark over the artwork already names who answers for this, so the
+        line under the title says what it can do, in the same chips production
+        uses. -->
+      <TagRow
+        :tags="view.badges"
+        :link-tags="false"
+        :fallback-label="view.maker.label"
+        data-testid="catalogue-card-badges"
+      />
     </div>
   </div>
 </template>

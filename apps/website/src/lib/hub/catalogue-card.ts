@@ -1,6 +1,9 @@
+import type { Locale } from '../../i18n/translations'
+import { taskLabelFor } from '../workshop/task-label'
 import type { CatalogueEntry, EntryKind } from './catalogue-entries'
 import { hubWorkflowPath, modelGroupPath } from './catalogue-entries'
 import { getLogoPath } from './model-logos'
+import { usefulTags } from './tag-aliases'
 import { workflowDisplayTitle } from './workflow-title'
 
 interface CardMedia {
@@ -20,16 +23,24 @@ export interface CardView {
   readonly media: CardMedia | undefined
   readonly hoverMedia: string | undefined
   readonly maker: { readonly label: string; readonly logo: string | undefined }
-  /** The model a workflow runs on. A model card is already the model. */
-  readonly model: string | undefined
+  /**
+   * Who answers for the thing: the provider of a model, the model a workflow
+   * runs on. It rides over the artwork, because it is what tells one card from
+   * the next once the title has named the job.
+   */
+  readonly mark: { readonly label: string; readonly logo: string | undefined }
+  /** What it can do, in the words the catalogue filters by. */
+  readonly badges: readonly string[]
   readonly needsCustomNodes: boolean
 }
 
 function modelCard(
-  entry: Extract<CatalogueEntry, { kind: 'model' }>
+  entry: Extract<CatalogueEntry, { kind: 'model' }>,
+  locale: Locale
 ): CardView {
   const { model } = entry
   const provider = model.provider ?? ''
+  const logo = getLogoPath(provider) ?? getLogoPath(model.name) ?? undefined
   return {
     kind: 'model',
     // One card per name, so it opens the name rather than one of the rows the
@@ -38,11 +49,9 @@ function modelCard(
     title: model.name,
     media: model.thumbnail,
     hoverMedia: undefined,
-    maker: {
-      label: provider,
-      logo: getLogoPath(provider) ?? getLogoPath(model.name) ?? undefined
-    },
-    model: undefined,
+    maker: { label: provider, logo },
+    mark: { label: provider, logo },
+    badges: [taskLabelFor(model, locale), ...model.capabilities],
     needsCustomNodes: false
   }
 }
@@ -63,16 +72,18 @@ function workflowCard(
       : undefined,
     hoverMedia: template.thumbnails[1],
     maker: { label: template.username || 'ComfyUI', logo: undefined },
-    model: entry.runsOn?.name,
+    mark: { label: entry.runsOn?.name ?? '', logo: undefined },
+    badges: usefulTags(template.tags),
     needsCustomNodes: needsCustomNodes.has(template.name)
   }
 }
 
 export function cardViewFor(
   entry: CatalogueEntry,
-  needsCustomNodes: ReadonlySet<string>
+  needsCustomNodes: ReadonlySet<string>,
+  locale: Locale = 'en'
 ): CardView {
   return entry.kind === 'model'
-    ? modelCard(entry)
+    ? modelCard(entry, locale)
     : workflowCard(entry, needsCustomNodes)
 }

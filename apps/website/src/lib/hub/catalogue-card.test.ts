@@ -99,16 +99,16 @@ describe('cardViewFor', () => {
     ).toBe('workflow')
   })
 
-  // Once the title names the job, the model is what tells one card from the
-  // next, so the card carries it rather than spending the title on it.
-  it('carries the model a workflow runs on', () => {
-    expect(cardViewFor(workflowEntry({ runsOn: model() }), noNodes).model).toBe(
-      'Flux'
-    )
+  // Once the title names the job, who answers for it is what tells one card
+  // from the next, so it rides over the artwork rather than in the title.
+  it('marks a workflow with the model it runs on', () => {
+    expect(
+      cardViewFor(workflowEntry({ runsOn: model() }), noNodes).mark.label
+    ).toBe('Flux')
   })
 
-  it('leaves a model card without one, being the model itself', () => {
-    expect(cardViewFor(modelEntry(), noNodes).model).toBeUndefined()
+  it('marks a model with its provider', () => {
+    expect(cardViewFor(modelEntry(), noNodes).mark.label).toBe('BFL')
   })
 
   it('shows no media for a workflow with no thumbnail', () => {
