@@ -216,6 +216,18 @@ We've also included a list of recommended extensions in `.vscode/extensions.json
 
 Playwright tests verify the whole app. See [browser_tests/README.md](browser_tests/README.md) for details. The snapshots are generated in the GH actions runner, not locally.
 
+### Temporarily Disabled Tests
+
+Delete retired tests instead of skipping them. If a pull request must
+temporarily add a `skip` or `fixme` modifier to a test or suite, its description
+must put explicit restoration intent and a tracking issue or follow-up pull
+request on the same line, for example:
+
+```text
+Re-enabled by #12345
+Test restoration tracked in https://linear.app/comfyorg/issue/FE-1234
+```
+
 ### Running All Tests
 
 Before submitting a PR, ensure all tests pass:
