@@ -177,20 +177,6 @@ test.describe('V2 catalogue', () => {
     ).toHaveAttribute('href', /workflow_templates/)
   })
 
-  // The endpoint is offered beside the graph but answers on the API tab, so
-  // asking for it has to open the tab that holds the answer.
-  test('the endpoint route opens the tab it points into', async ({ page }) => {
-    await page.goto('/hub/workflow/api_nano_banana_pro/')
-    await page.getByTestId('tab-details').click()
-
-    await page.getByTestId('workflow-endpoint').click()
-
-    await expect(page.getByTestId('tab-api')).toHaveAttribute(
-      'aria-selected',
-      'true'
-    )
-  })
-
   // A workflow that is one call to a model the catalogue carries is that
   // model with its graph around it, so the page runs rather than sending the
   // reader somewhere else.

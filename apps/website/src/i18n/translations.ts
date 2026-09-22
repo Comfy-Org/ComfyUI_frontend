@@ -10727,14 +10727,6 @@ Enterprise`
     en: 'The graph as a file, to open in ComfyUI on your own machine.',
     'zh-CN': '以文件形式下载该图，可在本机的 ComfyUI 中打开。'
   },
-  'workshop.v2.workflow.endpoint': {
-    en: 'Take the endpoint',
-    'zh-CN': '获取该端点'
-  },
-  'workshop.v2.workflow.endpointNote': {
-    en: 'The call this workflow makes, ready to copy into your own code.',
-    'zh-CN': '此工作流发起的调用，可直接复制到你自己的代码中。'
-  },
   'workshop.v2.workflow.tutorialNote': {
     en: 'A written walkthrough of what this graph does, step by step.',
     'zh-CN': '这张图的逐步图文讲解。'

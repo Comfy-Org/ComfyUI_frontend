@@ -5,7 +5,6 @@ import WorkflowActions from './WorkflowActions.vue'
 
 const props = (overrides = {}) => ({
   cloudUrl: 'https://cloud.example.test/?template=poster',
-  runsHere: false,
   downloadUrl: 'https://example.test/graph.json',
   tutorialUrl: undefined,
   ...overrides
@@ -43,27 +42,13 @@ describe('WorkflowActions', () => {
     )
   })
 
-  // A workflow that is one call to a model we carry has an endpoint to hand
-  // over; one that needs local weights has nothing to hand over.
-  it.for([
-    [true, ['workflow-open-cloud', 'workflow-download', 'workflow-endpoint']],
-    [false, ['workflow-open-cloud', 'workflow-download']]
-  ] as const)(
-    'offers the endpoint only where it runs here',
-    ([runsHere, ids]) => {
-      render(WorkflowActions, { props: props({ runsHere }) })
+  // The API tab is in the same row of tabs, so a route that only opened it
+  // would be a second door onto the same room.
+  it('leaves the endpoint to the tab that holds it', () => {
+    render(WorkflowActions, { props: props() })
 
-      expect(routes()).toEqual([...ids])
-    }
-  )
-
-  it('points the endpoint at the playground that answers it', () => {
-    render(WorkflowActions, { props: props({ runsHere: true }) })
-
-    expect(screen.getByTestId('workflow-endpoint')).toHaveAttribute(
-      'href',
-      '#api'
-    )
+    expect(routes()).toEqual(['workflow-open-cloud', 'workflow-download'])
+    expect(screen.queryByTestId('workflow-endpoint')).toBeNull()
   })
 
   it('links a tutorial only where the registry has one', () => {

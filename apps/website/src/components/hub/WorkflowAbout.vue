@@ -74,7 +74,6 @@ const sectionTitle =
         <div class="mt-4">
           <WorkflowActions
             :cloud-url="cloudUrl"
-            :runs-here="runsHere"
             :download-url="graphUrl"
             :tutorial-url="tutorialUrl"
             :locale

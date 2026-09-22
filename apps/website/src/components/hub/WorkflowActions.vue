@@ -1,23 +1,18 @@
 <script setup lang="ts">
 import { ChevronRight } from '@lucide/vue'
 
-import { WORKSHOP_API_HASH } from '../../config/workshop-api-anchor'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const {
   cloudUrl,
   downloadUrl,
-  runsHere,
   tutorialUrl,
   locale = 'en'
 } = defineProps<{
   /** Comfy Cloud, opened on this template. */
   cloudUrl: string
   downloadUrl: string
-  /** Whether the model runs on this page, which then has an endpoint to hand
-    over. A workflow that needs local weights has nothing to hand over. */
-  runsHere: boolean
   tutorialUrl: string | undefined
   locale?: Locale
 }>()
@@ -29,21 +24,12 @@ interface Route {
   readonly note: TranslationKey
   readonly download?: boolean
   readonly external?: boolean
-  readonly fragment?: boolean
 }
 
-/**
- * The playground listens for the fragment, but the site router answers a
- * same-page link with a pushState, which fires no hashchange. Assigning the
- * fragment is what makes the ask arrive.
- */
-function askForPanel(event: MouseEvent) {
-  event.preventDefault()
-  window.location.hash = WORKSHOP_API_HASH
-}
-
-// Three ways to leave with this workflow, each reading as what it gives you.
+// The ways to leave with this workflow, each reading as what it gives you.
 // None of them is the page's action: that is Run, and it is on the other tab.
+// The endpoint is not among them: the API tab sits in the same row of tabs, so
+// a row that only opened it would be a second door onto the same room.
 const routes: readonly Route[] = [
   {
     id: 'workflow-open-cloud',
@@ -59,17 +45,6 @@ const routes: readonly Route[] = [
     note: 'workshop.v2.workflow.downloadNote',
     download: true
   },
-  ...(runsHere
-    ? ([
-        {
-          id: 'workflow-endpoint',
-          href: WORKSHOP_API_HASH,
-          label: 'workshop.v2.workflow.endpoint',
-          note: 'workshop.v2.workflow.endpointNote',
-          fragment: true
-        }
-      ] as const)
-    : []),
   ...(tutorialUrl
     ? ([
         {
@@ -94,7 +69,6 @@ const routes: readonly Route[] = [
         :rel="route.external ? 'noopener' : undefined"
         :data-testid="route.id"
         class="group flex items-center gap-4 rounded-2xl border border-transparency-white-t8 px-5 py-4 transition-colors outline-none hover:border-transparency-white-t20 hover:bg-transparency-white-t4 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-        @click="route.fragment ? askForPanel($event) : undefined"
       >
         <span class="min-w-0 flex-1">
           <span
