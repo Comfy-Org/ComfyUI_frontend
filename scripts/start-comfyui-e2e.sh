@@ -47,8 +47,8 @@ unreadable="$(
 )"
 if [[ -n "$unreadable" ]]; then
   echo "Staged devtools path is unreadable by the container user: $unreadable" >&2
-  echo 'The browser tests would fail at the' >&2
-  echo 'ComfyPage fixture with an unrelated HTTP error. Aborting.' >&2
+  echo 'Tests using the ComfyPage fixture would fail with an unrelated' >&2
+  echo 'HTTP error. Aborting.' >&2
   exit 1
 fi
 
