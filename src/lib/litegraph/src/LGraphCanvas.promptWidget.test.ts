@@ -18,13 +18,6 @@ import {
   registerTestSubgraphNodeTypes
 } from './subgraph/__fixtures__/subgraphHelpers'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
-
 const INTERIOR_TYPE = 'test/prompt-interior'
 
 /** Mirrors the app's INT callback: a plain function using widget `this`. */
@@ -74,13 +67,15 @@ function centerClickEvent(node: LGraphNode) {
 
 describe('prompt dialog opened from a promoted widget', () => {
   let host: SubgraphNode
+  let previousActiveCanvas: LGraphCanvas
 
   beforeEach(() => {
+    previousActiveCanvas = LGraphCanvas.active_canvas
     LiteGraph.registerNodeType(INTERIOR_TYPE, InteriorNode)
   })
 
   afterEach(() => {
-    LiteGraph.unregisterNodeType(INTERIOR_TYPE)
+    LGraphCanvas.active_canvas = previousActiveCanvas
     document.body.innerHTML = ''
     for (const canvas of canvases.splice(0)) {
       canvas.unbindEvents()

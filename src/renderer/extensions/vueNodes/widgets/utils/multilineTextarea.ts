@@ -242,6 +242,7 @@ export function createPromotedDomWidget(
       getValue: () => sourceWidget.value as string,
       setValue: (value: string) => {
         sourceWidget.value = value
+        widgetStore.setValue(widgetId, value)
       },
       getHeight: () => sourceWidget.computedHeight ?? ''
     }

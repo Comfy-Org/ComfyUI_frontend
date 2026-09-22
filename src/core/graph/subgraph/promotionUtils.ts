@@ -287,11 +287,9 @@ export function promoteValueWidgetViaSubgraphInput(
 
   let sourceSlot = sourceNode.getSlotFromWidget(sourceWidget)
   if (!sourceSlot) {
-    sourceSlot = sourceNode.addInput(
-      sourceWidgetName,
-      String(sourceWidget.type ?? '*'),
-      { widget: { name: sourceWidgetName } }
-    )
+    sourceSlot = sourceNode.addInput(sourceWidgetName, sourceWidget.type, {
+      widget: { name: sourceWidgetName }
+    })
   }
 
   const existingNames = subgraphNode.subgraph.inputs.map((input) => input.name)

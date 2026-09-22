@@ -194,12 +194,18 @@ describe('createPromotedDomWidget', () => {
       options: {},
       value: 'live'
     })
+    useWidgetValueStore().registerWidget(WIDGET_ID, {
+      type: 'kj_preview',
+      value: 'live',
+      options: {}
+    })
 
     const widget = promote(source) as unknown as DOMWidget<HTMLElement, string>
 
     expect(widget.value).toBe('live')
     widget.value = 'next'
     expect(source.value).toBe('next')
+    expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe('next')
   })
 
   it('delegates textarea sources to the multiline host widget', () => {

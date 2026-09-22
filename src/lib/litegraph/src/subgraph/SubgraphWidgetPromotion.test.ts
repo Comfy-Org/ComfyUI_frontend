@@ -582,6 +582,55 @@ describe('SubgraphWidgetPromotion', () => {
 
       expect(promotedWidgetStateByName(host, 'value').value).toBe('host edited')
     })
+
+    it('syncs an interior label rewrite into the host store and slot', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'text' }]
+      })
+      subgraph.inputs[0].label = 'Seeded Label'
+      const { node, widget } = createNodeWithWidget(
+        'Preview',
+        'text',
+        'initial',
+        'text'
+      )
+      widget.label = 'Seeded Label'
+      const host = setupPromotedWidget(subgraph, node)
+      const input = host.inputs[0]
+
+      widget.label = 'Rewritten Label'
+      host.arrange()
+
+      expect(input.label).toBe('Rewritten Label')
+      expect(promotedWidgetStateByName(host, 'value').label).toBe(
+        'Rewritten Label'
+      )
+      expect(host.widgets[0]?.label).toBe('Rewritten Label')
+    })
+
+    it('keeps a renamed slot label over interior label rewrites', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'text' }]
+      })
+      subgraph.inputs[0].label = 'Seeded Label'
+      const { node, widget } = createNodeWithWidget(
+        'Preview',
+        'text',
+        'initial',
+        'text'
+      )
+      widget.label = 'Seeded Label'
+      const host = setupPromotedWidget(subgraph, node)
+      const input = host.inputs[0]
+
+      subgraph.renameInput(subgraph.inputs[0], 'User Rename')
+      widget.label = 'Rewritten Label'
+      host.arrange()
+
+      expect(input.label).toBe('User Rename')
+      expect(promotedWidgetStateByName(host, 'value').label).toBe('User Rename')
+      expect(host.widgets[0]?.label).toBe('User Rename')
+    })
   })
 
   describe('Nested Subgraph Widget Promotion', () => {

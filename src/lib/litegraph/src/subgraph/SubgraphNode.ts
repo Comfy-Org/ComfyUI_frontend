@@ -736,7 +736,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const before: [INodeInputSlot, IBaseWidget, unknown][] = []
         for (const hostInput of this.inputs) {
           if (!hostInput._subgraphSlot) continue
-          const linkId = hostInput._subgraphSlot.linkIds[0]
+          const linkId = hostInput._subgraphSlot.linkIds.at(0)
           if (linkId === undefined) continue
           const resolved = this.subgraph.getLink(linkId)?.resolve(this.subgraph)
           if (!resolved?.inputNode || !resolved.input) continue
@@ -897,6 +897,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         state.label !== interior.label
       ) {
         state.label = interior.label
+        input.label = interior.label
       }
       // Display-only widgets never reach the prompt, so the interior is
       // authoritative for their value (e.g. PreviewAny writes it on execute).
