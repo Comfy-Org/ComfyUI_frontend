@@ -102,12 +102,15 @@ export const crdtTest = baseTest.extend<CrdtFixtures>({
       }
     })
 
+    const cleanupErrors: unknown[] = []
     for (const cleanup of cleanups.reverse()) {
       try {
         cleanup()
       } catch (error) {
-        console.error('[agent-crdt] fixture cleanup failed', error)
+        cleanupErrors.push(error)
       }
     }
+    if (cleanupErrors.length > 0)
+      throw new AggregateError(cleanupErrors, 'CRDT session cleanup failed')
   }
 })
