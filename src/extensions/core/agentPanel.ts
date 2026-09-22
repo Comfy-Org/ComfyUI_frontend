@@ -168,8 +168,8 @@ export function registerAgentPanelExtension(): void {
         if (autoShowInFlight) return
         if (!agentPanelStore.enabled || !isLoggedIn.value) return
         if (consentStore.isChecking || consentStore.accepted) return
-        // Before prepareAutoShow: the one-shot key stays untouched, so the
-        // next boot offers.
+        // Must precede prepareAutoShow, which burns the one-shot key. A tour
+        // that auto-opens after this check still paints under the card.
         if (firstRunTookScreen.value || onboardingTourStore.activeTour !== null)
           return
 
@@ -196,11 +196,20 @@ export function registerAgentPanelExtension(): void {
         })
       }
 
+      const offerWhenStartupDecided = (): void => {
+        // A boot that never reports forfeits this session's automatic offer
+        // rather than landing it on a late first-run screen.
+        void whenStartupDecided().then((decided) => {
+          if (decided) offerConsentUnprompted()
+        })
+      }
+
       const loadConsentIfEligible = (): void => {
         if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
-        void Promise.all([consentStore.load(), whenStartupDecided()])
-          .then(([isAccepted]) => {
-            if (!isAccepted) offerConsentUnprompted()
+        void consentStore
+          .load()
+          .then((isAccepted) => {
+            if (!isAccepted) offerWhenStartupDecided()
           })
           .catch((error: unknown) => {
             reportError(error, {
@@ -213,11 +222,10 @@ export function registerAgentPanelExtension(): void {
         loadConsentIfEligible,
         { immediate: true }
       )
-      // A tour that held the offer hands the screen back when it ends.
       watch(
         () => onboardingTourStore.activeTour,
-        (tour, previous) => {
-          if (tour === null && previous !== null) offerConsentUnprompted()
+        (tour) => {
+          if (tour === null) offerWhenStartupDecided()
         }
       )
       return setupFlagGate(loadConsentIfEligible)

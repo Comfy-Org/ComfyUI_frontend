@@ -17,8 +17,8 @@ import { useCommandStore } from '@/stores/commandStore'
 
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 
-/** A boot that never reports its decision must not hold other surfaces forever. */
-const STARTUP_DECISION_TIMEOUT_MS = 15_000
+/** Waiters give up after this; a healthy boot settles well inside it. */
+const STARTUP_DECISION_TIMEOUT_MS = 60_000
 
 /**
  * Decides what a first-time user sees once startup reports its outcome: the
@@ -112,7 +112,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
     }
   }
 
-  /** Settles once this boot's first-run stages have run, or after the grace period. */
+  /** True once this boot's first-run stages have run, false if the grace period passes first. */
   function whenStartupDecided(): Promise<boolean> {
     return until(startupDecided).toBe(true, {
       timeout: STARTUP_DECISION_TIMEOUT_MS,
