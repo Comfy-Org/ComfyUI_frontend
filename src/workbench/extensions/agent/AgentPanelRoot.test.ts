@@ -116,6 +116,7 @@ const appMock = vi.hoisted(() => {
     loadGraphData: vi.fn(),
     graph,
     rootGraph: graph,
+    isGraphReady: false,
     canvas: undefined as
       | {
           graph: {
@@ -259,6 +260,17 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import { attachMintPortWiring } from './crdt/mintPortWiring'
+import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
+
+const mintPortWiringDeps = vi.hoisted(() => ({
+  current: null as MintPortWiringDeps | null
+}))
+vi.mock(import('./crdt/mintPortWiring'), { spy: true })
+vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
+  mintPortWiringDeps.current = deps
+  return fromPartial<MintPortWiring>({ detach: vi.fn() })
+})
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
@@ -329,8 +341,14 @@ beforeEach(() => {
   canvasStore.currentGraph = null
   appMock.graph.nodes = []
   appMock.graph.arrange.mockClear()
-  Object.assign(appMock.rootGraph, { subgraphs: new Map() })
+  Object.assign(appMock.rootGraph, { subgraphs: new Map(), id: undefined })
+  appMock.isGraphReady = false
   appMock.canvas = undefined
+  mintPortWiringDeps.current = null
+  vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
+    mintPortWiringDeps.current = deps
+    return fromPartial<MintPortWiring>({ detach: vi.fn() })
+  })
   workflowService.saveWorkflow.mockClear()
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
@@ -1102,6 +1120,40 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
   })
 
+  it('uses the submitted filename when the upload response omits a name', async () => {
+    const messageBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/upload/image')) {
+          return json(200, { subfolder: '', type: 'input' })
+        }
+        messageBodies.push(JSON.parse(String(init?.body)))
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+      })
+    )
+
+    renderWithSelectedTarget()
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.attachFiles')
+      })
+    )
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['x'], 'cat.png', { type: 'image/png' })
+    )
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('describe it')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(messageBodies).toHaveLength(1)
+    expect(messageBodies[0]).toMatchObject({ attachments: ['cat.png'] })
+  })
+
   it('uploads a picked video above 20MB when the server permits it', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
@@ -1199,13 +1251,13 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({
         severity: 'warn',
-        detail: 'movie.mp4 is larger than 24MB'
+        detail: 'movie.mp4 is larger than 24 MB'
       })
     )
     expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
   })
 
-  it('keeps the image limit at 20MB when the server permits more', async () => {
+  it('uses a larger server limit for non-video attachments', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
@@ -1213,15 +1265,13 @@ describe('AgentPanelRoot attach flow', () => {
 
     const image = fileOfSize('huge.png', MAX_ATTACHMENT_BYTES + 1, 'image/png')
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [image] })
-    await nextTick()
 
-    expect(uploaded).toEqual([])
-    expect(useToastStore().messagesToAdd).toContainEqual(
-      expect.objectContaining({
-        severity: 'warn',
-        detail: 'huge.png is larger than 20MB'
-      })
-    )
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'huge.png'
+      )
+    ).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual(['huge.png']))
   })
 
   it('uploads a dropped video above 20MB when the server permits it', async () => {
@@ -1313,13 +1363,142 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
   })
 
-  it('keeps the 20MB limit for an oversize audio file', async () => {
-    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+  it('refreshes the input asset library once for a dropped batch', async () => {
+    // Overlapping refreshes coalesce into the in-flight query without a
+    // trailing run, so an asset committing mid-refresh would be dropped.
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      files: [
+        new File(['x'], 'a.png', { type: 'image/png' }),
+        new File(['x'], 'b.png', { type: 'image/png' }),
+        new File(['x'], 'c.png', { type: 'image/png' })
+      ]
+    })
+
+    await vi.waitFor(() => expect(uploaded).toHaveLength(3))
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
+    expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it('chains input asset refreshes across overlapping batches', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    let releaseFirstRefresh: () => void = () => {}
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockImplementationOnce(
+        () =>
+          new Promise<undefined>((resolve) => {
+            releaseFirstRefresh = () => resolve(undefined)
+          })
+      )
+      .mockResolvedValue(undefined)
+
+    const textbox = screen.getByRole('textbox')
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'a.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'b.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(uploaded).toEqual(['a.png', 'b.png']))
+    await expect(
+      vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2), {
+        timeout: 250,
+        interval: 10
+      })
+    ).rejects.toThrow()
+
+    releaseFirstRefresh()
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+  })
+
+  it('keeps refreshing later batches after a refresh fails', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockRejectedValueOnce(new Error('asset fetch failed'))
+      .mockResolvedValue(undefined)
+
+    const textbox = screen.getByRole('textbox')
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'a.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'b.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(uploaded).toEqual(['a.png', 'b.png']))
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+  })
+
+  it('lets a removed upload finish without reattaching until Undo', async () => {
+    const signals: AbortSignal[] = []
+    let finishUpload: (response: Response) => void = () => {}
+    const upload = new Promise<Response>((resolve) => {
+      finishUpload = resolve
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (!String(input).includes('/upload/'))
+          return json(200, agentThreadList())
+        if (init?.signal) signals.push(init.signal)
+        return upload
+      })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      files: [new File(['x'], 'cat.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(signals).toHaveLength(1))
+    const composer = useAgentComposerStore()
+    const prompt = composer.prompt
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: i18n.global.t('agent.remove') })
+    )
+
+    expect(signals[0].aborted).toBe(false)
+    finishUpload(
+      json(200, { name: 'uploaded-cat.png', subfolder: '', type: 'input' })
+    )
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+    expect(composer.attachments).toEqual([])
+    composer.applyEditorPrompt(prompt)
+    expect(composer.attachments).toEqual([
+      expect.objectContaining({
+        name: 'cat.png',
+        ref: 'uploaded-cat.png',
+        uploading: false
+      })
+    ])
+  })
+
+  it('uses the server limit for audio rejection copy', async () => {
+    getServerFeature.mockReturnValue(24 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
 
-    const song = fileOfSize('big.mp3', MAX_ATTACHMENT_BYTES + 1, 'audio/mpeg')
+    const song = fileOfSize('big.mp3', 25 * 1024 * 1024, 'audio/mpeg')
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [song] })
     await nextTick()
 
@@ -1327,7 +1506,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({
         severity: 'warn',
-        detail: 'big.mp3 is larger than 20MB'
+        detail: 'big.mp3 is larger than 24 MB'
       })
     )
   })
@@ -1583,6 +1762,49 @@ describe('AgentPanelRoot attach flow', () => {
         screen.queryByLabelText(i18n.global.t('agent.uploading'))
       ).not.toBeInTheDocument()
     )
+  })
+
+  it('does not warn after closing the panel during a deferred asset fetch', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((input) => {
+        const url = String(input)
+        if (url.includes('/api/view')) return new Promise(() => {})
+        if (url.includes('/assets'))
+          return Promise.resolve(
+            json(200, { assets: [], total: 0, has_more: false })
+          )
+        if (url.includes('/workflows'))
+          return Promise.resolve(
+            json(200, { data: [], total: 0, has_more: false })
+          )
+        return Promise.resolve(json(200, agentThreadList()))
+      })
+    )
+    const { unmount } = renderWithSelectedTarget()
+    await nextTick()
+    const toast = useToastStore()
+    vi.useFakeTimers()
+    try {
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'gen.png', type: 'input' })
+            : 'http://localhost/api/view?filename=gen.png'
+      })
+      await nextTick()
+      expect(
+        screen.getByLabelText(i18n.global.t('agent.uploading'))
+      ).toBeInTheDocument()
+
+      unmount()
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(toast.messagesToAdd).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('attaches dropped assets and leaves other files to the graph loader', async () => {
@@ -4802,6 +5024,100 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).not.toHaveProperty('open_tabs')
   })
 
+  // PM-1429/PM-1430: a brand-new tab plus a brand-new chat session displays
+  // the tab as bound (renderAndSend's target is the active workflow), but
+  // the turn used to go out with neither workflow_id NOR any signal that a
+  // tab was selected at all - indistinguishable, server-side, from no tab
+  // being selected. The agent then refused to edit: "I can't because you
+  // don't have a workflow selected to edit."
+  it('flags a freshly created, unsaved tab as unbound rather than unselected', async () => {
+    const tab = makeTab()
+    Object.assign(tab, {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        nodes: [{ id: 1, type: 'TextInput' }],
+        links: []
+      })
+    })
+    const bodies = mockMessagesEndpoint('wf-fresh')
+
+    await renderAndSend('add one text input node')
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
+  })
+
+  // A restored/existing thread (no turn of THIS session has bound anything
+  // yet - `New Chat` is what puts the session into that state here) whose
+  // target tab is still unbound must flag it AND still send its draft -
+  // dropping the draft here would hand the server's mint an empty canvas
+  // instead of the node already on the tab.
+  it('flags an unbound tab as unbound on a restored thread, with its draft attached', async () => {
+    const tab = makeTab()
+    Object.assign(tab, {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        nodes: [{ id: 1, type: 'TextInput' }],
+        links: []
+      })
+    })
+    const bodies = mockMessagesEndpoint('wf-fresh')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    useAgentConversationStore().setThreadId('th-existing')
+
+    await sendFromComposer('add one text input node')
+
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
+    expect(bodies[0]).toHaveProperty('draft')
+  })
+
+  // Companion to the test above: this is the happy path a page reload
+  // relies on. boundWorkflowId (module state, the session's own memory of
+  // having bound something) resets on reload, but the tab-binding store
+  // persists to localStorage and survives it. As long as that persisted
+  // record's graphId still matches the tab's own graph id - guaranteed for
+  // any tab created through workflowStore.createTemporary/createNewWorkflow,
+  // which always mint one via ensureWorkflowId before the tab is ever open -
+  // cloudIdFor resolves the bound id from that persisted record alone, so
+  // the turn never re-flags the tab as unbound or re-mints a second
+  // workflow for it.
+  it('resolves a workflow bound before reload from persisted storage, without re-flagging the tab as unbound', async () => {
+    const tab = makeTab()
+    Object.assign(tab, {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        id: 'graph-abc',
+        nodes: [{ id: 1, type: 'TextInput' }],
+        links: []
+      })
+    })
+    localStorage.setItem(
+      'Comfy.Agent.WorkflowTabBindings.v2',
+      JSON.stringify({
+        'wf-from-before-reload': {
+          tabPath: tab.path,
+          graphId: 'graph-abc',
+          confirmedAt: Date.now()
+        }
+      })
+    )
+    const bodies = mockMessagesEndpoint('wf-from-before-reload')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    useAgentConversationStore().setThreadId('th-existing')
+
+    await sendFromComposer('add one text input node')
+
+    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-from-before-reload' })
+    expect(bodies[0]).not.toHaveProperty('current_tab_unbound')
+  })
+
   it('agent_active_tab with a cloud id activates the open saved tab without minting', async () => {
     makeTab()
     addTab('workflows/temp/duck.json', { isTemporary: true })
@@ -6873,5 +7189,80 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it("reports the bound workflow's own stored root graph id once bound", async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add an upscaler')
+
+    await vi.waitFor(() =>
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+        toRootGraphId('wf-42')
+      )
+    )
+  })
+
+  it('leaves the bound root graph id null while no workflow is bound and active', () => {
+    renderWithSelectedTarget()
+
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBeNull()
+  })
+
+  it("reports the newly bound workflow's root graph id after an active-tab switch, even though the previously bound workflow stayed correct while its tab was inactive", async () => {
+    makeTab('wf-a')
+    const tabB = addTab('workflows/b.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-b' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-b', tabB.path)
+    mockMessagesEndpoint('wf-a')
+
+    await renderAndSend('start on A')
+
+    await vi.waitFor(() =>
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+        toRootGraphId('wf-a')
+      )
+    )
+
+    // A stays bound but leaves the screen; a write-once latch would also
+    // still report wf-a here, so this alone would not catch a regression.
+    workflowStore.activeWorkflow = addTab('workflows/elsewhere.json')
+    await nextTick()
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      toRootGraphId('wf-a')
+    )
+
+    // The agent moves the session onto B's own tab.
+    ws.emit('agent_active_tab', { workflow_id: 'wf-b', thread_id: 'th-1' })
+
+    await vi.waitFor(() =>
+      expect(workflowStore.activeWorkflow?.path).toBe(tabB.path)
+    )
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      toRootGraphId('wf-b')
+    )
+  })
+
+  it("reflects the bound workflow's own root graph id rotating without a rebind (regression)", async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add an upscaler')
+
+    await vi.waitFor(() =>
+      expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+        toRootGraphId('wf-42')
+      )
+    )
+
+    // The same bound workflow's own graph id rotates in place (LGraph.clear
+    // mints a fresh uuid) without boundWorkflowId itself ever changing.
+    tab.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'wf-42-rotated' })
+
+    expect(mintPortWiringDeps.current?.boundRootGraphId()).toBe(
+      toRootGraphId('wf-42-rotated')
+    )
   })
 })
