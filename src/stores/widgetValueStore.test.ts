@@ -578,4 +578,76 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)?.value).toBe(8)
     })
   })
+
+  describe('local-dirty-tracking suppression', () => {
+    it('a context-less write is locally dirty by default', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(seedA, state('number', 1))!
+
+      registered.value = 2
+
+      expect(store.isLocallyDirty(seedA)).toBe(true)
+    })
+
+    it('withLocalDirtyTrackingSuppressed keeps a context-less write clean', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(seedA, state('number', 1))!
+
+      store.withLocalDirtyTrackingSuppressed(() => {
+        registered.value = 2
+      })
+
+      expect(store.getWidget(seedA)?.value).toBe(2)
+      expect(store.isLocallyDirty(seedA)).toBe(false)
+    })
+
+    it('begin/end brackets an async window the same way', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(seedA, state('number', 1))!
+
+      store.beginLocalDirtyTrackingSuppression()
+      registered.value = 2
+      store.endLocalDirtyTrackingSuppression()
+
+      expect(store.isLocallyDirty(seedA)).toBe(false)
+
+      // Once closed, an ordinary context-less write is dirty again.
+      registered.value = 3
+      expect(store.isLocallyDirty(seedA)).toBe(true)
+    })
+
+    it('nests: an inner suppression ending early does not lift the outer one', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(seedA, state('number', 1))!
+
+      store.beginLocalDirtyTrackingSuppression()
+      store.withLocalDirtyTrackingSuppressed(() => {
+        registered.value = 2
+      })
+      // The inner bracket closed; the outer one, opened first, is still open.
+      registered.value = 3
+      expect(store.isLocallyDirty(seedA)).toBe(false)
+
+      store.endLocalDirtyTrackingSuppression()
+      registered.value = 4
+      expect(store.isLocallyDirty(seedA)).toBe(true)
+    })
+
+    it('endLocalDirtyTrackingSuppression never goes negative', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(seedA, state('number', 1))!
+
+      // An unmatched end (e.g. a load whose beforeLoadGraph never ran) must
+      // not leave the counter negative, where a single legitimate begin
+      // later would fail to suppress anything.
+      store.endLocalDirtyTrackingSuppression()
+      store.beginLocalDirtyTrackingSuppression()
+      registered.value = 2
+      expect(store.isLocallyDirty(seedA)).toBe(false)
+
+      store.endLocalDirtyTrackingSuppression()
+      registered.value = 3
+      expect(store.isLocallyDirty(seedA)).toBe(true)
+    })
+  })
 })

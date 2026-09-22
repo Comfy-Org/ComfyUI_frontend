@@ -12,6 +12,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import {
@@ -41,6 +42,46 @@ function prepareAutoShow(key: string): boolean {
 
 let registered = false
 
+/**
+ * Owns the local-dirty-tracking suppression window(s) graph loads open in
+ * `beforeLoadGraph`. Two loads can genuinely overlap - e.g. two rapid tab
+ * switches, each an async `loadGraphData` call - and each one's
+ * `beforeLoadGraph` opens the same underlying suppression before either
+ * finishes. A single boolean flag cannot tell those apart: whichever load
+ * finishes first (success or error) would close the flag while the other is
+ * still mid-`configure`, and that other load's own structural writes would
+ * then get misread as a human edit and wrongly marked dirty.
+ *
+ * A depth counter fixes that: every `beforeLoadGraph` increments it and
+ * opens the store's suppression only on the 0 -> 1 transition; every
+ * matching completion (`afterConfigureGraph` or `onGraphLoadError`, in
+ * either order) decrements it and closes the suppression only once the
+ * count is back at 0, i.e. once every overlapping load that opened it has
+ * also finished. `app.ts`'s `loadGraphData` mirrors this: a single try
+ * wraps its entire body from right after `beforeLoadGraph` through
+ * `rootGraph.configure` succeeding (asset-scan resets, `clean()`, workflow
+ * cloning, `validateWorkflow`, reroute-migration inspection, subgraph
+ * loading, a `beforeConfigureGraph` extension hook throwing, or a
+ * node-replacement load failure), so every one of those paths also routes
+ * through `onGraphLoadError` and this counter's decrement is never skipped.
+ * A leaked-open suppression would misread every later context-less user
+ * edit as structural and never mark it dirty again.
+ */
+let widgetDirtySuppressionDepth = 0
+
+function openWidgetDirtySuppression(): void {
+  widgetDirtySuppressionDepth++
+  if (widgetDirtySuppressionDepth > 1) return
+  useWidgetValueStore().beginLocalDirtyTrackingSuppression()
+}
+
+function closeWidgetDirtySuppression(): void {
+  if (widgetDirtySuppressionDepth === 0) return
+  widgetDirtySuppressionDepth--
+  if (widgetDirtySuppressionDepth > 0) return
+  useWidgetValueStore().endLocalDirtyTrackingSuppression()
+}
+
 export function registerAgentPanelExtension(): void {
   if (registered) return
   registered = true
@@ -49,6 +90,7 @@ export function registerAgentPanelExtension(): void {
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
       notifyMintPortsBeforeGraphLoad()
+      openWidgetDirtySuppression()
       const agentPanelStore = useAgentPanelStore()
       if (!agentPanelStore.isVisible) return
 
@@ -92,6 +134,7 @@ export function registerAgentPanelExtension(): void {
       }
     },
     onGraphLoadError() {
+      closeWidgetDirtySuppression()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (nodeSelectionStore.isLoadingWorkflow) {
         nodeSelectionStore.finishWorkflowLoad()
@@ -99,6 +142,7 @@ export function registerAgentPanelExtension(): void {
     },
     afterConfigureGraph() {
       notifyMintPortsAfterGraphConfigure()
+      closeWidgetDirtySuppression()
     },
     setup() {
       const agentPanelStore = useAgentPanelStore()
