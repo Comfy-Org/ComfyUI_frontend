@@ -385,21 +385,10 @@ function prepareOutputSlots(value: unknown): NodeState['outputs'] {
 }
 
 /**
- * Merges supplied input slots onto the live list by NAME, but only when the
- * difference is local growth.
- *
- * Autogrow only ever ADDS inputs locally, so "every document input also exists
- * live" is exactly the growth signature. In that case a live slot the document
- * also names takes the document's fields, a live slot the document omits (the
- * grown one) stays where it is, and live order wins — which is what keeps a
- * wire on its named input after growth reordered the node (CRDT-INPUTS-0030).
- *
- * If the document names an input the live node does not have, the node's input
- * SET changed rather than merely its order: the definition moved, an input was
- * renamed, or the node is genuinely different. The document is authoritative
- * there, so fall back to positional preparation and let stale live slots go.
- * Preserving them would carry a dead slot (and its stale label) onto a node
- * that no longer has it.
+ * Preserves live input order and live-only slots when every document input
+ * name exists live. This also admits stale or extension-added slots; it does
+ * not identify autogrow as the cause. Otherwise the document list and order
+ * replace the live inputs (CRDT-INPUTS-0030).
  */
 function mergeInputSlotsByName(
   live: NodeState['inputs'],
@@ -411,8 +400,6 @@ function mergeInputSlotsByName(
   const liveByName = documentInputs.map((slot) =>
     live.find((input) => input.name === slot.name)
   )
-  // The document names something this node does not have: its input set
-  // changed, so the document decides the list positionally.
   if (liveByName.some((match) => match === undefined)) {
     return prepareInputSlots(documentInputs, live)
   }
