@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { PullRequestSummary } from './release-sheriff'
 import {
@@ -241,29 +241,127 @@ describe('fetchOnCallEmails', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('warns on a non-ok response', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 503,
-        statusText: 'Service Unavailable'
-      })
-    )
+  it.for([401, 403, 404])('does not retry HTTP %i', async (status) => {
+    const fetchSpy = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(null, { status }))
+    vi.stubGlobal('fetch', fetchSpy)
 
     const result = await fetchOnCallEmails(datadog, creds)
 
-    expect(result.emails).toEqual([])
-    expect(result.warning).toMatch(/503 Service Unavailable/)
+    expect(result).toEqual({
+      emails: [],
+      warning: `Datadog On-Call current responders lookup failed after 1 attempt(s): HTTP ${status}.`
+    })
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('warns when the request is rejected', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('boom')))
+  describe('transient failures', () => {
+    const failures = [
+      {
+        name: 'network failure',
+        response: () =>
+          Promise.reject(
+            new TypeError('fetch failed', {
+              cause: { code: 'ECONNRESET', message: 'private detail' }
+            })
+          )
+      },
+      {
+        name: 'timeout',
+        response: () =>
+          Promise.reject(new DOMException('private detail', 'TimeoutError'))
+      },
+      {
+        name: 'rate limit',
+        response: () => Promise.resolve(new Response(null, { status: 429 }))
+      },
+      {
+        name: 'server failure',
+        response: () => Promise.resolve(new Response(null, { status: 503 }))
+      }
+    ]
+
+    it.for(failures)(
+      'recovers from $name without degrading',
+      async ({ response }) => {
+        vi.useFakeTimers()
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const fetchSpy = vi
+          .fn<typeof fetch>()
+          .mockImplementationOnce(response)
+          .mockResolvedValue(
+            Response.json({
+              included: [
+                { type: 'users', attributes: { email: 'sheriff@comfy.org' } }
+              ]
+            })
+          )
+        vi.stubGlobal('fetch', fetchSpy)
+
+        const result = fetchOnCallEmails(datadog, creds)
+        await vi.advanceTimersByTimeAsync(999)
+        expect(fetchSpy).toHaveBeenCalledTimes(1)
+        await vi.advanceTimersByTimeAsync(1)
+
+        expect(await result).toEqual({
+          emails: ['sheriff@comfy.org'],
+          warning: null
+        })
+      }
+    )
+
+    it.for([
+      { code: 'ECONNRESET', detail: ' (ECONNRESET)' },
+      { code: 'private detail', detail: '' }
+    ])(
+      'bounds rotation retries and sanitizes cause code $code',
+      async ({ code, detail }) => {
+        vi.useFakeTimers()
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const fetchSpy = vi.fn<typeof fetch>().mockRejectedValue(
+          new TypeError('fetch failed', {
+            cause: { code, message: 'private detail' }
+          })
+        )
+        vi.stubGlobal('fetch', fetchSpy)
+
+        const result = fetchDirectory(datadog, creds, '[]')
+        await vi.advanceTimersByTimeAsync(2999)
+        expect(fetchSpy).toHaveBeenCalledTimes(2)
+        await vi.advanceTimersByTimeAsync(1)
+
+        expect(await result).toEqual({
+          githubLoginByUser: {},
+          rotation: [],
+          unmappedMembers: [],
+          warnings: [
+            `Datadog On-Call rotation lookup failed after 3 attempt(s): request or response failed${detail}.`
+          ]
+        })
+        expect(fetchSpy).toHaveBeenCalledTimes(3)
+      }
+    )
+  })
+
+  it('does not retry or expose an invalid response body', async () => {
+    const fetchSpy = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response('private detail'))
+    vi.stubGlobal('fetch', fetchSpy)
 
     const result = await fetchOnCallEmails(datadog, creds)
 
-    expect(result.emails).toEqual([])
-    expect(result.warning).toMatch(/lookup failed \(Error: boom\)/)
+    expect(result).toEqual({
+      emails: [],
+      warning:
+        'Datadog On-Call current responders lookup failed after 1 attempt(s): request or response failed.'
+    })
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
   })
 
   it('returns the parsed on-call emails and no warning on success', async () => {
@@ -375,7 +473,9 @@ describe('fetchOnCallEmails', () => {
 
     expect(result.rotation).toEqual([])
     expect(result.unmappedMembers).toEqual([])
-    expect(result.warnings).toEqual([expect.stringMatching(/lookup failed/)])
+    expect(result.warnings).toEqual([
+      'Datadog On-Call rotation lookup failed after 1 attempt(s): request or response failed.'
+    ])
   })
 
   // Datadog going down and the secret going missing are separate failures and
