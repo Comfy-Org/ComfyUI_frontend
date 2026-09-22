@@ -116,6 +116,34 @@ describe('SemanticDocRegistry', () => {
     expect(registry.readGraph(rootB).nodes).toEqual({})
   })
 
+  it('rootFor resolves root owners, definition owners, and nothing else', () => {
+    const sub = toOwningGraphId('sub-1')
+    expect(registry.rootFor(toOwningGraphId('root-a'))).toBeUndefined()
+    expect(registry.rootFor(sub)).toBeUndefined()
+
+    const docA = registry.ensure(rootA)
+    const docB = registry.ensure(rootB)
+    expect(registry.rootFor(toOwningGraphId('root-a'))).toBe(rootA)
+    expect(registry.rootFor(toOwningGraphId('root-b'))).toBe(rootB)
+    expect(registry.rootFor(sub)).toBeUndefined()
+    // Scanning must not register a `definitions` root on documents without one.
+    expect(docA.share.has('definitions')).toBe(false)
+    expect(docB.share.has('definitions')).toBe(false)
+
+    docB.getMap('definitions').set('sub-1', new Y.Map())
+    expect(registry.rootFor(sub)).toBe(rootB)
+    expect(docA.share.has('definitions')).toBe(false)
+
+    // Derived, not cached: removing the definition drops the mapping.
+    docB.getMap('definitions').delete('sub-1')
+    expect(registry.rootFor(sub)).toBeUndefined()
+
+    docA.getMap('definitions').set('sub-1', new Y.Map())
+    expect(registry.rootFor(sub)).toBe(rootA)
+    registry.destroy(rootA)
+    expect(registry.rootFor(sub)).toBeUndefined()
+  })
+
   it('carries the remote origin as the transaction origin', () => {
     const doc = registry.ensure(rootA)
     const origins: unknown[] = []

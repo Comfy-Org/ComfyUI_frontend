@@ -28,7 +28,7 @@ import {
 import type { GraphSnapshot } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
-import { toOwningGraphId } from '@/types/graphScopeId'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { OwningGraphId, RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 
@@ -260,6 +260,24 @@ export class SemanticDocRegistry {
 
   has(rootGraphId: RootGraphId): boolean {
     return this.docs.has(rootGraphId)
+  }
+
+  /**
+   * The root graph whose document owns `owningGraphId`: the root itself, or
+   * the root whose `definitions` map has an entry for it. Derived by scanning
+   * the (small) registry rather than stored, so a definition that moves or is
+   * removed cannot leave a stale mapping behind. `undefined` when no document
+   * owns it. Callers keyed by owning graph only (widget values) use this to
+   * reach the document without carrying a `GraphScope`.
+   */
+  rootFor(owningGraphId: OwningGraphId): RootGraphId | undefined {
+    const asRoot = toRootGraphId(owningGraphId)
+    if (this.docs.has(asRoot)) return asRoot
+    for (const [rootGraphId, doc] of this.docs) {
+      if (!doc.share.has(DEFINITIONS_ROOT)) continue
+      if (doc.getMap(DEFINITIONS_ROOT).has(owningGraphId)) return rootGraphId
+    }
+    return undefined
   }
 
   /** Destroys the document for `rootGraphId`, detaching every observer. */
