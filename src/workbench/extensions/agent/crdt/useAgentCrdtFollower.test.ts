@@ -173,7 +173,10 @@ import {
   SUBSCRIBE_CATCHUP_GRACE_MS,
   useAgentCrdtFollower
 } from './useAgentCrdtFollower'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type {
+  AgentCrdtFollowerEvents,
+  AgentCrdtStatus
+} from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
@@ -211,7 +214,7 @@ function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
   getGraph: () => MaterializableGraph | null = () => null,
-  events: Parameters<typeof useAgentCrdtFollower>[5] = {}
+  events: AgentCrdtFollowerEvents = {}
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -223,14 +226,11 @@ function mountFollower(
   let exposedStatus!: () => AgentCrdtStatus
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(
-        workflowId,
-        graphMutations,
-        () => null,
+      const { status } = useAgentCrdtFollower(workflowId, graphMutations, {
         isTargetActive,
         getGraph,
         events
-      )
+      })
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
     }
@@ -1478,13 +1478,14 @@ describe('useAgentCrdtFollower', () => {
     vi.useFakeTimers()
     const { enqueue, unmount } = mountWithHumanOps()
     const intent = requireIntent()
-    // The doc's own removal effect frame is merely slow, not absent - unlike
-    // the 'unknown' case, this delete is definitively applied, so it must
-    // outlive PENDING_DELETE_EXPIRY_MS rather than expire on the same timer.
-    let docHasNode = true
-    bridge().follower.doc.getMap = () => ({
-      toJSON: () => (docHasNode ? { '1': {} } : {})
-    })
+    // A KNOWN identity was captured at issue time (a real Y.Doc item), and
+    // the doc's own removal effect frame is merely slow, not absent - unlike
+    // the 'unknown' or identity-less case, this delete is definitively
+    // applied on a known identity, so it must outlive
+    // PENDING_DELETE_EXPIRY_MS rather than expire on the same timer.
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('1', { type: 'KSampler' })
+    bridge().follower.doc = doc
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
@@ -1500,7 +1501,7 @@ describe('useAgentCrdtFollower', () => {
     vi.advanceTimersByTime(STALE_AFTER_MS * 2)
     expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
 
-    docHasNode = false
+    doc.getMap('nodes').delete('1')
     expect([...intent.pendingDeletes('wf-1')]).toEqual([])
     unmount()
   })
@@ -1677,7 +1678,11 @@ describe('useAgentCrdtFollower', () => {
     vi.useFakeTimers()
     const { enqueue, unmount } = mountWithHumanOps()
     const intent = requireIntent()
-    bridge().follower.doc.getMap = () => ({ toJSON: () => ({ '1': {} }) })
+    // A KNOWN identity, so the first delete's retention is unbounded and
+    // must win the merge over the second delete's bounded 'unknown' one.
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('1', { type: 'KSampler' })
+    bridge().follower.doc = doc
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
@@ -1816,11 +1821,7 @@ describe('useAgentCrdtFollower', () => {
           const { enqueueHumanOperations } = useAgentCrdtFollower(
             workflowId,
             graphMutations,
-            () => null,
-            ref(true),
-            () => null,
-            {},
-            store
+            { retentionStore: store }
           )
           enqueue = enqueueHumanOperations
           return () => null
@@ -1869,11 +1870,7 @@ describe('useAgentCrdtFollower', () => {
         const { enqueueHumanOperations } = useAgentCrdtFollower(
           workflowId,
           graphMutations,
-          () => null,
-          ref(true),
-          () => null,
-          {},
-          store
+          { retentionStore: store }
         )
         enqueue = enqueueHumanOperations
         return () => null
@@ -2216,8 +2213,7 @@ describe('useAgentCrdtFollower', () => {
           const { enqueueHumanOperations } = useAgentCrdtFollower(
             workflowId,
             graphMutations,
-            () => null,
-            isTargetActive
+            { isTargetActive }
           )
           enqueue = enqueueHumanOperations
           return () => null

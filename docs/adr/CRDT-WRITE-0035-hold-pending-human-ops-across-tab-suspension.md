@@ -66,35 +66,38 @@ Distinguish a paused subscription from a lost one, and hold rather than drop.
   `AgentPanelRoot.vue` creates, so a delete retained by a disposed follower
   still suppresses resurrection on a freshly mounted one's very first
   reconcile; tests inject a fresh store per case instead.
-- The store captures each `delete_node`'s target identity (the Yjs
-  `client:clock` occupying that node id) at the moment the human issues the
-  op - before it reaches the wire, and therefore before any `doc_update` can
-  react to it. A doc-diff-based capture (observing the id disappear from the
-  document) cannot do this safely: a delete and a same-id recreate arriving
-  in one atomic Yjs transaction never shows up as a removal in that diff, so
-  a doc-diff capture has nothing to attribute a later settle to and falls
-  back to reading whatever identity is current - the newly recreated one,
-  not the deleted one. Capturing at issue time sidesteps this: the follower's
-  live doc still reflects the pre-delete state at that exact synchronous
-  moment, regardless of how the delete's effect and any recreation are later
-  batched on the wire. Each capture is a one-shot slot queued FIFO per
-  workflow, not a single slot keyed by node id: admission can mint a second
-  delete for a recreated node before the first one's own result settles, and
-  a per-node-id slot would let the later capture overwrite the earlier one's
-  identity. A settling batch consumes exactly one queued capture per
-  `delete_node` op it carries, in mint order, whether or not that op ends up
-  retained - an outcome that does not retain still owns a slot, and leaving
-  it unconsumed would let a later, unrelated op consume it instead.
+- `opSender` reads each `delete_node`'s target identity (the Yjs
+  `client:clock` occupying that node id) at admission time, when the op's
+  `op_id` is minted - before the op reaches the wire, and therefore before
+  any `doc_update` can react to it. A doc-diff-based capture (observing the
+  id disappear from the document) cannot do this safely: a delete and a
+  same-id recreate arriving in one atomic Yjs transaction never shows up as a
+  removal in that diff, so a doc-diff capture has nothing to attribute a
+  later settle to and falls back to reading whatever identity is current -
+  the newly recreated one, not the deleted one. The identity is stored keyed
+  by that exact `op_id` and handed back on the batch's `BatchOutcome`
+  (`deletedItemIds`), so a settling batch binds each `delete_node` op to the
+  identity captured for THAT op, never to a position in a shared queue.
 - The retention policy is a state machine keyed by how a `delete_node` op
-  settled, not something to read off the Consequences section below:
-  - `confirmed-applied` (`acknowledged`, the op id is in `applied`): retained
-    until the document no longer holds the node, or a different Yjs item
-    identity now occupies that node id. No expiry - the outcome is already
-    certain.
+  settled and whether an identity was captured for it, not something to read
+  off the Consequences section below:
+  - `confirmed-applied`, with a captured identity (`acknowledged`, the op id
+    is in `applied`): retained until the document no longer holds the node,
+    or a different Yjs item identity now occupies that node id. No expiry -
+    the outcome is already certain.
+  - `confirmed-applied`, with no captured identity: the op's target did not
+    yet exist in the follower's own doc at admission time (typically a
+    locally-added node whose `add_node` had not yet reached this doc), so
+    there is nothing to compare a later occupant of the id against. Without
+    that comparison, "the document still holds the deleted node" and "a
+    different item now occupies that id" are indistinguishable, so this is
+    bounded by the same expiry as `unknown` instead of held forever - an
+    unbounded, identity-less record would risk suppressing an unrelated
+    later node at that id indefinitely.
   - `unknown` (`unconfirmed` or `unacknowledged`): retained under the same
-    two release conditions, plus a bounded expiry (`PENDING_DELETE_EXPIRY_MS`,
-    reusing `STALE_AFTER_MS`) that releases it on its own if the document
-    never agrees.
+    document-agrees release condition, plus a bounded expiry
+    (`PENDING_DELETE_EXPIRY_MS`, reusing `STALE_AFTER_MS`) that releases it
+    on its own if the document never agrees.
   - `undeliverable`, and `acknowledged` with the op id in `skipped`: never
     retained. The transport never carried the op, or the host explicitly
     rejected it, so there is no delete to protect from resurrection.
@@ -156,33 +159,13 @@ Alternatives considered:
 - The incremental frame path still upserts a pending-deleted node when another
   actor edits it before the delete lands; only the full reconcile consults
   local intent.
-- Retained delete intent (the injected `PendingDeleteRetentionStore`'s
-  per-workflow records) is not one policy - the retained reason matters, not
-  just whether a node id is in the set. An `acknowledged` result naming the
-  op `applied` is definitive: the host processed it, and only its own
-  removal effect frame lagging behind is left, so this reason stays pending
-  until the document itself no longer holds the node, or a different Yjs
-  item identity now occupies that node id (a same-id recreation) - no other
-  exit, because the outcome is already known and the lag is not bounded. Terminal
-  `unacknowledged` or `unconfirmed` deletes are the opposite: the transport
-  carried the batch at least once, so the host may have applied it even
-  without a confirming result, but nothing here certifies that it did.
-  These retain the same document-agrees exit, plus a hard expiry
-  (`PENDING_DELETE_EXPIRY_MS`, reusing the channel's own `STALE_AFTER_MS`
-  recency budget) that releases on its own if the doc never agrees - no
-  frame in this doc-sync system certifies "the host's answer to this
-  specific op is now settled" sooner. Applying that same expiry to the
-  `acknowledged` reason was tried and was wrong: a definitive delete whose
-  removal effect frame lags past the expiry would get pruned while the doc
-  still (correctly, if slowly) held the node, resurrecting it on the next
-  reconcile - the failure this ADR exists to prevent. `undeliverable`
-  deletes are excluded from retention entirely: the transport never carried
-  them, so there is no evidence this specific delete was applied - that says
-  nothing about whether some other actor or operation deleted the node by
-  other means, so retaining one on that basis alone would hide its node
-  forever, not for a bounded window. Immediate catch-up and lost-write
-  feedback for a genuinely lost `undeliverable` delete remain follow-up
-  work; unknown outcomes are not hidden indefinitely.
+- A bounded retention (`unknown`, and `confirmed-applied` with no captured
+  identity) suppresses its node for up to `PENDING_DELETE_EXPIRY_MS` even
+  when the delete never actually reached the host, so a node a lagging
+  reconcile would otherwise restore stays hidden past the doc's own answer
+  for that window. `undeliverable` deletes get no suppression and no
+  feedback that the delete was lost; immediate catch-up and lost-write
+  feedback for a genuinely lost `undeliverable` delete remain follow-up work.
 
 ## Notes
 

@@ -163,7 +163,12 @@ describe('createOpSender', () => {
 
     expect(sent).toHaveLength(1)
     expect(settled).toEqual([
-      { state: 'unconfirmed', ops: expect.any(Array), workflowId: WORKFLOW }
+      {
+        state: 'unconfirmed',
+        ops: expect.any(Array),
+        workflowId: WORKFLOW,
+        deletedItemIds: new Map()
+      }
     ])
   })
 
@@ -174,7 +179,12 @@ describe('createOpSender', () => {
     sender.abortIfUnbound()
 
     expect(settled).toEqual([
-      { state: 'unconfirmed', ops: expect.any(Array), workflowId: WORKFLOW }
+      {
+        state: 'unconfirmed',
+        ops: expect.any(Array),
+        workflowId: WORKFLOW,
+        deletedItemIds: new Map()
+      }
     ])
     // No resend was burned reaching this outcome.
     expect(sent).toHaveLength(1)
@@ -262,7 +272,12 @@ describe('createOpSender', () => {
     vi.advanceTimersByTime(500 * 6)
 
     expect(settled).toEqual([
-      { state: 'undeliverable', ops: expect.any(Array), workflowId: WORKFLOW }
+      {
+        state: 'undeliverable',
+        ops: expect.any(Array),
+        workflowId: WORKFLOW,
+        deletedItemIds: new Map()
+      }
     ])
   })
 
@@ -289,7 +304,8 @@ describe('createOpSender', () => {
       {
         state: 'unacknowledged',
         ops: expect.any(Array),
-        workflowId: WORKFLOW
+        workflowId: WORKFLOW,
+        deletedItemIds: new Map()
       }
     ])
   })
@@ -385,7 +401,8 @@ describe('createOpSender', () => {
       {
         state: 'unacknowledged',
         ops: expect.any(Array),
-        workflowId: WORKFLOW
+        workflowId: WORKFLOW,
+        deletedItemIds: new Map()
       }
     ])
 
@@ -451,6 +468,40 @@ describe('createOpSender', () => {
     sender.enqueue([addNode(2)])
 
     expect(sent).toHaveLength(1)
+  })
+
+  it('an admission after detach settles undeliverable at once instead of getting stuck in the queue forever', () => {
+    sender.detach()
+
+    sender.enqueue([addNode(1)])
+
+    expect(sent).toHaveLength(0)
+    expect(sender.pending()).toBe(0)
+    expect(settled).toEqual([
+      {
+        state: 'undeliverable',
+        ops: expect.any(Array),
+        workflowId: WORKFLOW,
+        deletedItemIds: new Map()
+      }
+    ])
+  })
+
+  it('admit after detach settles undeliverable even without a bound workflow', () => {
+    sender.detach()
+    boundWorkflow = null
+
+    sender.admit([addNode(1)])
+
+    expect(sender.pending()).toBe(0)
+    expect(settled).toEqual([
+      {
+        state: 'undeliverable',
+        ops: expect.any(Array),
+        workflowId: null,
+        deletedItemIds: new Map()
+      }
+    ])
   })
 
   it('detach clears the armed result-timeout timer so no late resend or settlement follows', () => {
