@@ -10630,10 +10630,6 @@ Enterprise`
     en: 'Only {type} can be ordered this way',
     'zh-CN': '只有{type}支持这种排序'
   },
-  'workshop.v2.search': {
-    en: 'Search models, workflows, creators',
-    'zh-CN': '搜索模型、工作流、创作者'
-  },
   'workshop.v2.showing': {
     en: 'Showing {shown} of {total}',
     'zh-CN': '显示 {shown} / {total}'

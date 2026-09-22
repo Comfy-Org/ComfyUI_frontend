@@ -182,6 +182,22 @@ const browsing = computed(
   () => useCase.value !== 'all' || narrowed.value || wholeList.value
 )
 
+// What the models page does: the hero introduces the catalogue and steps aside
+// once the reader has chosen a section or asked for the half entire, and the
+// featured strip stands only while nothing at all has been asked.
+const inSection = computed(() => useCase.value !== 'all' || wholeList.value)
+
+// The two halves are searched apart, so the field says which one it is in,
+// in the words each already had on its own page.
+const searchPlaceholder = computed(() =>
+  t(
+    type.value === 'workflow'
+      ? 'workshop.hub.search'
+      : 'workshop.search.placeholder',
+    locale
+  )
+)
+
 function backToShelves() {
   clearNarrowing()
   useCase.value = 'all'
@@ -252,6 +268,7 @@ const heading = computed(() =>
 <template>
   <section class="pb-32" data-testid="catalogue-browse">
     <WorkshopHero
+      v-if="!inSection"
       eyebrow-key="workshop.v2.eyebrow"
       heading-key="workshop.v2.heading"
       subtitle-key="workshop.v2.subtitle"
@@ -279,8 +296,8 @@ const heading = computed(() =>
             id="catalogue-search"
             v-model="query"
             type="search"
-            :placeholder="t('workshop.v2.search', locale)"
-            :aria-label="t('workshop.v2.search', locale)"
+            :placeholder="searchPlaceholder"
+            :aria-label="searchPlaceholder"
             class="h-11 w-full rounded-2xl bg-transparency-white-t4 ps-9 pe-3 text-sm text-content transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           />
         </div>
@@ -297,7 +314,7 @@ const heading = computed(() =>
     </div>
 
     <FeaturedBanner
-      v-if="featured.length"
+      v-if="!browsing && featured.length"
       :slides="featured"
       :locale
       class="mb-10 short:mb-6"
