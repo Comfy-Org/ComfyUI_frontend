@@ -239,6 +239,10 @@ export interface SoftwareAppInput {
   sameAs?: string[]
   mainEntityOfPage?: string
   isBasedOnId?: string
+  /** The organisation that makes the software when it is not a person. */
+  providerName?: string
+  /** A paid offer in USD; wins over `isFree`. */
+  offer?: { price: number; description?: string }
 }
 
 export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
@@ -266,14 +270,25 @@ export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
     sameAs: input.sameAs,
     mainEntityOfPage: input.mainEntityOfPage,
     isBasedOn: input.isBasedOnId ? { '@id': input.isBasedOnId } : undefined,
-    offers: input.isFree
+    provider: input.providerName
+      ? { '@type': 'Organization', name: input.providerName }
+      : undefined,
+    offers: input.offer
       ? {
           '@type': 'Offer',
-          price: 0,
+          price: input.offer.price,
           priceCurrency: 'USD',
-          seller: input.firstParty ? orgRef : undefined
+          description: input.offer.description,
+          seller: orgRef
         }
-      : undefined
+      : input.isFree
+        ? {
+            '@type': 'Offer',
+            price: 0,
+            priceCurrency: 'USD',
+            seller: input.firstParty ? orgRef : undefined
+          }
+        : undefined
   }
 }
 

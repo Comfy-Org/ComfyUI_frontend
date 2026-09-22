@@ -23,6 +23,7 @@ const PAGE = `<!doctype html>
       <p>Generate from <a href="/cloud/">Comfy Cloud</a> or <a href="#setup">your own GPU</a> with <strong>comfy-cli</strong>.</p>
       <div aria-hidden="true"><p>Claude Code Codex Cursor</p></div>
       <div aria-hidden="true"><p>Claude Code Codex Cursor</p></div>
+      <div role="status" aria-label="Loading"><p>Loading the playground</p></div>
       <img src="/img/hero.webp" alt="Terminal session generating a cat">
       <img src="/img/hero.webp" alt="Terminal session generating a cat">
       <img src="/img/decoration.svg" alt="">
@@ -101,6 +102,10 @@ describe('htmlToTwin', () => {
 
   it('drops aria-hidden duplicates such as marquee copies', () => {
     expect(page.body).not.toContain('Claude Code Codex Cursor')
+  })
+
+  it('drops transient status regions such as a loading frame', () => {
+    expect(page.body).not.toContain('Loading the playground')
   })
 
   it('renders nested lists, code, tables, and quotes', () => {

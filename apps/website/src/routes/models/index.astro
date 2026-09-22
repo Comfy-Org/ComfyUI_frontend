@@ -4,14 +4,37 @@ import ModelsDirectory from '../../components/workshop/ModelsDirectory.vue'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import WorkshopHero from '../../components/workshop/WorkshopHero.vue'
 import { workshopModels } from '../../config/workshop-browse-content'
+import { t } from '../../i18n/translations'
+import { absoluteUrl, itemListNode, pageContext } from '../../utils/jsonLd'
+
+const title = 'Models - Comfy'
+const { locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const modelList = itemListNode(
+  url,
+  t('workshop.title', locale),
+  workshopModels.map((model) => ({
+    url: absoluteUrl(Astro.site, model.href),
+    name: model.name
+  }))
+)
 ---
 
 {/* The catalogue is public content. The server renders every model as a
     plain link under its shelf; the island swaps in the searchable grid once
     it has loaded, and the Workshop flag decides nothing about this page. */}
 <BaseLayout
-  title="Models - Comfy"
+  title={title}
   description="Run the world's leading AI models in ComfyUI. Browse every supported model with community workflow templates ready to run."
+  pageType="CollectionPage"
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    { name: t('workshop.title', locale) }
+  ]}
+  extraJsonLd={[modelList]}
 >
   <div
     class="mx-auto max-w-10xl px-6 pt-8 pb-16 max-sm:pt-5 max-sm:pb-10 lg:px-8 lg:pt-12 lg:pb-24"

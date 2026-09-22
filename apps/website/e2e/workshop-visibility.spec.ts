@@ -20,6 +20,7 @@ test('public HTML carries the catalogue and the model, never the island markup',
     }
     if (path === MODEL_PATH) {
       expect(html).toContain('data-testid="model-hero"')
+      expect(html).not.toContain('noindex')
     }
   }
 })

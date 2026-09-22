@@ -140,6 +140,31 @@ describe('softwareApplicationNode', () => {
     })
   })
 
+  it('prices a paid model as a Comfy Org offer from its provider', () => {
+    const node = softwareApplicationNode({
+      siteUrl,
+      id: 'https://comfy.org/models/foo/#software',
+      name: 'Foo Model',
+      url: 'https://comfy.org/models/foo/',
+      applicationCategory: 'MultimediaApplication',
+      providerName: 'Foo Labs',
+      isFree: true,
+      offer: { price: 0.12, description: '~9.5 credits/Image' }
+    })
+    expect(node.provider).toEqual({
+      '@type': 'Organization',
+      name: 'Foo Labs'
+    })
+    expect(node.author).toBeUndefined()
+    expect(node.offers).toEqual({
+      '@type': 'Offer',
+      price: 0.12,
+      priceCurrency: 'USD',
+      description: '~9.5 credits/Image',
+      seller: { '@id': organizationId(siteUrl) }
+    })
+  })
+
   it('does not name Comfy Org as seller on a third-party free offer', () => {
     const node = softwareApplicationNode({
       siteUrl,

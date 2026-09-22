@@ -1,20 +1,30 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { isExcludedFromSitemap, isNoindexPathname } from './indexing'
+import { routerModelSlugAliases } from './workshop-browse-content'
 
 describe('indexing policy', () => {
-  it('excludes render pages while keeping the public Models marketing routes', () => {
-    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
+  it('lists the catalogue and every canonical model page, but no render page', () => {
     expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
     expect(isExcludedFromSitemap('https://comfy.org/models/example/')).toBe(
-      true
+      false
     )
     expect(isExcludedFromSitemap('https://comfy.org/models/showcase/')).toBe(
       true
     )
     expect(isNoindexPathname('/models/showcase/')).toBe(true)
     expect(isNoindexPathname('/zh-CN/models/showcase')).toBe(true)
-    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
-    expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
+  })
+
+  it('lists an alias only under its canonical model page', () => {
+    const [alias, canonical] = [...routerModelSlugAliases.entries()][0] ?? []
+    assert.exists(alias)
+    assert.exists(canonical)
+    expect(isExcludedFromSitemap(`https://comfy.org/models/${alias}/`)).toBe(
+      true
+    )
+    expect(
+      isExcludedFromSitemap(`https://comfy.org/models/${canonical}/`)
+    ).toBe(false)
   })
   it.for(['0', '1'])(
     'excludes retired Workshop in either build (%s)',
