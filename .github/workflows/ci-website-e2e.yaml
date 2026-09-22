@@ -335,12 +335,15 @@ jobs:
 
             // A clean run has nothing the heading does not already say, so it
             // gets no box to expand.
+            //
+            // Emphasis is inline rather than a `> [!CAUTION]` alert: GitHub's
+            // alert extension does not fire inside an HTML block, so nested in
+            // <details> it degrades to a quote reading literally "[!CAUTION]".
             const blocks = []
 
             if (infrastructure) {
               blocks.push([
-                '> [!CAUTION]',
-                '> A shard failed before producing a report, so the suite did not fully run. No pass/fail counts are available.'
+                '**💥 A shard failed before producing a report.** The suite did not fully run, so no pass/fail counts are available.'
               ])
             }
 
@@ -350,9 +353,9 @@ jobs:
             }
 
             if (otherFailures > 0) {
+              const s = otherFailures === 1 ? '' : 's'
               blocks.push([
-                '> [!WARNING]',
-                `> ${otherFailures} non-screenshot failure${otherFailures === 1 ? '' : 's'} — these require manual review.`
+                `**⚠️ ${otherFailures} non-screenshot failure${s}.** These require manual review.`
               ])
             }
 

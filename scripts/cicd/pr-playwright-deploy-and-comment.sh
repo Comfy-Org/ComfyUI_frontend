@@ -337,12 +337,11 @@ else
     fi
 
     # Extract and display failed tests from all browsers (flaky tests are treated as passing)
+    # The count and the names come from different fields, and the index.html
+    # fallback in extract-playwright-counts.ts reports a count with no names —
+    # so collect first and only open the box if there is something to show.
     if [ $total_failed -gt 0 ]; then
-        comment="$comment
-
-<details>
-<summary>❌ Failed Tests</summary>
-"
+        failed_test_lines=""
 
         for counts_json in "${agg_counts_array[@]}"; do
             [ -z "$counts_json" ] || [ "$counts_json" = "{}" ] && continue
@@ -365,16 +364,22 @@ else
                             test_line="$test_line: [View trace]($trace_url)"
                         fi
                         
-                        comment="$comment
+                        failed_test_lines="$failed_test_lines
 $test_line"
                     done <<< "$failures"
                 fi
             fi
         done
 
-        comment="$comment
+        if [ -n "$failed_test_lines" ]; then
+            comment="$comment
+
+<details>
+<summary>❌ Failed Tests</summary>
+$failed_test_lines
 
 </details>"
+        fi
     fi
     
     # Add browser reports in collapsible section

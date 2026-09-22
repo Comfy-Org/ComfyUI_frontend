@@ -219,6 +219,15 @@ function frameTimeToFps(ms: number): number {
   return ms > 0 ? 1000 / ms : 0
 }
 
+function countBelowFpsTarget(prGroups: Map<string, PerfMeasurement[]>): number {
+  let below = 0
+  for (const prSamples of prGroups.values()) {
+    const p95Frame = medianMetric(prSamples, 'p95FrameDurationMs')
+    if (p95Frame !== null && frameTimeToFps(p95Frame) < TARGET_P5_FPS) below++
+  }
+  return below
+}
+
 function renderHeadlineSummary(
   prGroups: Map<string, PerfMeasurement[]>
 ): string[] {
@@ -518,11 +527,19 @@ function main() {
     '</details>'
   ]
 
+  // The per-test target verdict lives in the collapsed summary, so without
+  // this the heading can read ✅ over a hidden ❌.
+  const belowTarget = countBelowFpsTarget(prGroups)
+  const status =
+    belowTarget > 0
+      ? `${report.status} · ❌ ${belowTarget} below ${TARGET_P5_FPS} FPS target`
+      : report.status
+
   process.stdout.write(
     renderPrReportSection({
       icon: '⚡',
       title: 'Performance',
-      status: report.status,
+      status,
       body: body.join('\n')
     }) + '\n'
   )
