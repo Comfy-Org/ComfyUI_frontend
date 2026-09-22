@@ -2,7 +2,10 @@ import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationF
 
 import type { UserDataFullInfo } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type {
+  AgentTurnAccepted,
+  CloudWorkflowEntry
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -12,6 +15,7 @@ type WorkflowSelection = {
   postedMessages: string[]
   finishSave: (success: boolean) => void
   pauseWorkflowLookups: () => void
+  refuseNextWorkflowMessage: () => void
   resumeWorkflowLookups: () => void
   workflowLookups: () => number
 }
@@ -34,6 +38,7 @@ export const workflowSelectionTest = base.extend<{
     let pendingLookup: Promise<void> | undefined
     let resumeWorkflowLookups = () => {}
     let lookupCount = 0
+    let refuseNextWorkflowMessage = false
     await page.route('**/api/workflows?*', async (route) => {
       lookupCount++
       await pendingLookup
@@ -50,8 +55,28 @@ export const workflowSelectionTest = base.extend<{
       )
     })
     await page.route('**/api/agent/threads**', (route) => {
-      if (route.request().method() === 'POST')
+      const request = route.request()
+      if (
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname.endsWith('/messages')
+      ) {
         postedMessages.push(route.request().postData() ?? '')
+        if (refuseNextWorkflowMessage) {
+          refuseNextWorkflowMessage = false
+          const refusedId = route.request().postDataJSON().workflow_id
+          const refusedIndex = workflows.findIndex(({ id }) => id === refusedId)
+          if (refusedIndex !== -1) workflows.splice(refusedIndex, 1)
+          return route.fulfill({
+            ...jsonRoute({ error: 'workflow not found or access denied' }),
+            status: 403
+          })
+        }
+        const accepted: AgentTurnAccepted = {
+          thread_id: '6f4b1e2a-7c3d-4e5f-8a9b-0c1d2e3f4a5b',
+          message_id: `0a1b2c3d-4e5f-4a6b-8c7d-${String(postedMessages.length).padStart(12, '0')}`
+        }
+        return route.fulfill({ ...jsonRoute(accepted), status: 202 })
+      }
       return route.fulfill(
         jsonRoute({
           threads: [],
@@ -110,6 +135,9 @@ export const workflowSelectionTest = base.extend<{
         pendingLookup = new Promise<void>((resolve) => {
           resumeWorkflowLookups = resolve
         })
+      },
+      refuseNextWorkflowMessage: () => {
+        refuseNextWorkflowMessage = true
       },
       resumeWorkflowLookups: () => resumeWorkflowLookups(),
       workflowLookups: () => lookupCount
