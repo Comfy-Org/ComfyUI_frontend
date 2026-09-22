@@ -7,12 +7,15 @@
  */
 import type { Alternate } from './hreflangRoutes'
 
+import { isExcludedFromSitemap } from '../config/indexing'
 import {
   DEFAULT_LOCALE,
   LOCALE_CODES,
   LOCALES,
   localeHasRoute
 } from '../config/locales'
+import { redirects } from '../config/redirects'
+import { isLocaleInvariantPath } from '../config/routes'
 import { unprefixed } from './hreflangRoutes'
 
 export interface BuiltSite {
@@ -56,6 +59,16 @@ function expectedAlternates(
   return expected
 }
 
+function requiresCluster(route: string, origin: string): boolean {
+  const path = unprefixed(route)
+  return (
+    path !== '/404/' &&
+    !isLocaleInvariantPath(path) &&
+    !isExcludedFromSitemap(`${origin}${route}`) &&
+    !Object.hasOwn(redirects, route.replace(/\/$/, ''))
+  )
+}
+
 /**
  * The rules a cluster must satisfy wherever it is declared.
  *
@@ -97,7 +110,7 @@ function clusterErrors(
 
   // Reciprocity alone accepts a cluster whose two locales are swapped: each
   // side still lists the other, so every link resolves while the labels lie.
-  if (alternates.length > 0) {
+  if (alternates.length > 0 || requiresCluster(route, origin)) {
     for (const [hreflang, href] of expected) {
       if (
         !alternates.some(
@@ -158,8 +171,11 @@ export function auditBuiltSite({
   // Comparing only the sitemap's own entries never sees a clustered page the
   // sitemap leaves out, which is the direction this actually drifted.
   for (const [route, alternates] of pages) {
-    if (alternates.length > 0 && !sitemap.has(route)) {
-      errors.push(`${route}: advertises alternates but the sitemap omits it`)
+    if (
+      (alternates.length > 0 || requiresCluster(route, origin)) &&
+      !sitemap.has(route)
+    ) {
+      errors.push(`${route}: language cluster missing from sitemap`)
     }
   }
 
@@ -204,7 +220,7 @@ export function auditBuiltSite({
  *
  * `@astrojs/sitemap` chunks at 45k URLs. Reading only `sitemap-0.xml` is correct
  * at today's ~600 pages, but the moment a second chunk exists every route inside
- * it would be reported as "advertises alternates but the sitemap omits it", which
+ * it would be reported as "language cluster missing from sitemap", which
  * names the wrong problem entirely. The index is the only thing that knows how
  * many chunks there are.
  *

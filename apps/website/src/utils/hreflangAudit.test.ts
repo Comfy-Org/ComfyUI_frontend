@@ -37,6 +37,54 @@ describe('auditBuiltSite', () => {
     expect(auditBuiltSite(healthySite())).toEqual([])
   })
 
+  it('rejects a translated page and sitemap that omit every alternate', () => {
+    const pages = new Map<string, Alternate[]>([
+      ['/about/', []],
+      ['/affiliates/', []]
+    ])
+    const errors = auditBuiltSite({
+      origin: ORIGIN,
+      pages,
+      sitemap: new Map(pages)
+    })
+
+    expect(errors).toHaveLength(6)
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        '/about/: page expects en -> https://comfy.org/about/, but does not declare it',
+        '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
+        '/about/: page expects x-default -> https://comfy.org/about/, but does not declare it',
+        '/about/: sitemap expects en -> https://comfy.org/about/, but does not declare it',
+        '/about/: sitemap expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
+        '/about/: sitemap expects x-default -> https://comfy.org/about/, but does not declare it'
+      ])
+    )
+  })
+
+  it('rejects an omitted sitemap entry even when the page has no alternates', () => {
+    const pages = new Map<string, Alternate[]>([['/about/', []]])
+
+    expect(auditBuiltSite({ origin: ORIGIN, pages, sitemap: new Map() })).toEqual([
+      '/about/: page expects en -> https://comfy.org/about/, but does not declare it',
+      '/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
+      '/about/: page expects x-default -> https://comfy.org/about/, but does not declare it',
+      '/about/: language cluster missing from sitemap'
+    ])
+  })
+
+  it.for(['/affiliates/', '/privacy-policy/', '/cloud/enterprise/'])(
+    'allows an empty cluster on standalone route %s',
+    (route) => {
+      expect(
+        auditBuiltSite({
+          origin: ORIGIN,
+          pages: new Map<string, Alternate[]>([[route, []]]),
+          sitemap: new Map()
+        })
+      ).toEqual([])
+    }
+  )
+
   it('rejects a cluster whose two locales are swapped', () => {
     // Every link still resolves and each page lists the other, so reciprocity
     // is satisfied; only the labels are wrong. Google would be told the English
@@ -59,7 +107,7 @@ describe('auditBuiltSite', () => {
     site.sitemap.delete('/zh-CN/about/')
 
     expect(auditBuiltSite(site)).toEqual([
-      '/zh-CN/about/: advertises alternates but the sitemap omits it'
+      '/zh-CN/about/: language cluster missing from sitemap'
     ])
   })
 
@@ -253,11 +301,16 @@ describe('Japanese publication', () => {
     site.pages.set('/ja/about/', [])
 
     const errors = auditBuiltSite(site)
-    expect(errors).toHaveLength(4)
+    expect(errors).toHaveLength(9)
     expect(errors).toEqual(
       expect.arrayContaining([
         '/about/: page expects ja -> https://comfy.org/ja/about/, but does not declare it',
         '/zh-CN/about/: page expects ja -> https://comfy.org/ja/about/, but does not declare it',
+        '/ja/about/: page expects en -> https://comfy.org/about/, but does not declare it',
+        '/ja/about/: page expects zh-CN -> https://comfy.org/zh-CN/about/, but does not declare it',
+        '/ja/about/: page expects ja -> https://comfy.org/ja/about/, but does not declare it',
+        '/ja/about/: page expects x-default -> https://comfy.org/about/, but does not declare it',
+        '/ja/about/: language cluster missing from sitemap',
         '/about/: sitemap expects ja -> https://comfy.org/ja/about/, but does not declare it',
         '/zh-CN/about/: sitemap expects ja -> https://comfy.org/ja/about/, but does not declare it'
       ])
