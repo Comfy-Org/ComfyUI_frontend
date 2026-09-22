@@ -10741,6 +10741,11 @@ Enterprise`
     en: 'Run this workflow, or look at how it is built',
     'zh-CN': '运行此工作流，或查看它的构成'
   },
+  'workshop.v2.workflow.factWhere': { en: 'Where', 'zh-CN': '运行位置' },
+  'workshop.v2.workflow.factOutput': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.v2.workflow.factRuns': { en: 'Runs', 'zh-CN': '运行次数' },
+  'workshop.v2.workflow.factAuthor': { en: 'Author', 'zh-CN': '作者' },
+  'workshop.v2.workflow.factAdded': { en: 'Added', 'zh-CN': '收录于' },
   'workshop.v2.workflow.tags': { en: 'Good for', 'zh-CN': '适用于' },
   'workshop.v2.workflow.related': {
     en: 'Workflows like this one',
