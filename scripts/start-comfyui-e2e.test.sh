@@ -6,11 +6,17 @@ test_root="$(mktemp -d)"
 trap 'rm -rf "$test_root"' EXIT
 
 fixture="$test_root/repo"
-mkdir -p "$fixture/scripts" "$fixture/tools/devtools" "$test_root/bin"
+mkdir -p \
+  "$fixture/scripts" \
+  "$fixture/tools/devtools/nested" \
+  "$test_root/bin"
 cp "$repo_root/scripts/start-comfyui-e2e.sh" "$fixture/scripts/"
 printf '%s\n' 'fixture' > "$fixture/tools/devtools/fixture.txt"
+printf '\000\377nested\n' > "$fixture/tools/devtools/nested/fixture.bin"
 chmod 750 "$fixture/tools/devtools"
 chmod 640 "$fixture/tools/devtools/fixture.txt"
+chmod 750 "$fixture/tools/devtools/nested"
+chmod 640 "$fixture/tools/devtools/nested/fixture.bin"
 
 cat > "$test_root/bin/docker" <<'EOF'
 #!/usr/bin/env bash
@@ -35,6 +41,7 @@ case "${1:-}" in
     [[ "$mount_source" != "$SOURCE_DEVTOOLS" ]]
     [[ -z "$(find "$mount_source" \( \( -type f ! -perm -o=r \) -o \( -type d ! -perm -o=rx \) \) -print -quit)" ]]
     [[ "$(cat "$mount_source/fixture.txt")" == fixture ]]
+    cmp "$SOURCE_DEVTOOLS/nested/fixture.bin" "$mount_source/nested/fixture.bin"
     printf '%s\n' "$mount_source" > "$CAPTURE_MOUNT"
     exit "${DOCKER_RUN_STATUS:-0}"
     ;;
