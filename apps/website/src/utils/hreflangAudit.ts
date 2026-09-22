@@ -63,7 +63,7 @@ function requiresCluster(route: string, origin: string): boolean {
   const path = unprefixed(route)
   return (
     path !== '/404/' &&
-    path !== '/404.html/' &&
+    !path.endsWith('.html/') &&
     !isLocaleInvariantPath(path) &&
     !isExcludedFromSitemap(`${origin}${route}`) &&
     !Object.hasOwn(redirects, route.replace(/\/$/, ''))
@@ -127,21 +127,22 @@ function clusterErrors(
   return errors
 }
 
-export function auditBuiltSite({
-  pages,
-  sitemap,
-  origin
-}: BuiltSite): string[] {
-  const errors: string[] = []
-  const routeOfHref = (href: string) => href.slice(origin.length) || '/'
+function routeOfHref(href: string, origin: string): string {
+  return href.slice(origin.length) || '/'
+}
 
+function pageErrors(
+  pages: ReadonlyMap<string, Alternate[]>,
+  origin: string
+): string[] {
+  const errors: string[] = []
   for (const [route, alternates] of pages) {
     errors.push(...clusterErrors(route, alternates, origin, 'page', pages))
 
     // Only the pages can be checked against what was actually built.
     for (const { hreflang, href } of alternates) {
       if (!href.startsWith(origin)) continue
-      const target = routeOfHref(href)
+      const target = routeOfHref(href, origin)
       if (!pages.has(target)) {
         errors.push(
           `${route}: alternate ${hreflang} -> ${target} was not built (404)`
@@ -149,26 +150,36 @@ export function auditBuiltSite({
       }
     }
   }
+  return errors
+}
 
+function reciprocityErrors(
+  pages: ReadonlyMap<string, Alternate[]>,
+  origin: string
+): string[] {
+  const errors: string[] = []
   // Reciprocity: if A lists B, B must list A. A one-way cluster is discarded.
   for (const [route, alternates] of pages) {
     for (const { hreflang, href } of alternates) {
       if (hreflang === 'x-default') continue
-      const target = routeOfHref(href)
+      const target = routeOfHref(href, origin)
       if (target === route) continue
       const back = pages.get(target)
       if (!back) continue // already reported as unbuilt
-      if (!back.some((entry) => routeOfHref(entry.href) === route)) {
+      if (!back.some((entry) => routeOfHref(entry.href, origin) === route)) {
         errors.push(`${route}: lists ${target}, which does not list it back`)
       }
     }
   }
+  return errors
+}
 
-  if (!sitemap) {
-    errors.push('sitemap-0.xml is missing, so its alternates cannot be checked')
-    return errors
-  }
-
+function missingSitemapClusters(
+  pages: ReadonlyMap<string, Alternate[]>,
+  sitemap: ReadonlyMap<string, Alternate[]>,
+  origin: string
+): string[] {
+  const errors: string[] = []
   // Comparing only the sitemap's own entries never sees a clustered page the
   // sitemap leaves out, which is the direction this actually drifted.
   for (const [route, alternates] of pages) {
@@ -179,7 +190,15 @@ export function auditBuiltSite({
       errors.push(`${route}: language cluster missing from sitemap`)
     }
   }
+  return errors
+}
 
+function sitemapEntryErrors(
+  pages: ReadonlyMap<string, Alternate[]>,
+  sitemap: ReadonlyMap<string, Alternate[]>,
+  origin: string
+): string[] {
+  const errors: string[] = []
   for (const [route, sitemapAlternates] of sitemap) {
     // A sitemap URL with no page behind it is a 404 offered to a crawler. Report
     // that and stop: the language comparison below would otherwise diff against
@@ -214,6 +233,28 @@ export function auditBuiltSite({
   }
 
   return errors
+}
+
+export function auditBuiltSite({
+  pages,
+  sitemap,
+  origin
+}: BuiltSite): string[] {
+  const errors = [
+    ...pageErrors(pages, origin),
+    ...reciprocityErrors(pages, origin)
+  ]
+  if (!sitemap) {
+    return [
+      ...errors,
+      'sitemap-0.xml is missing, so its alternates cannot be checked'
+    ]
+  }
+  return [
+    ...errors,
+    ...missingSitemapClusters(pages, sitemap, origin),
+    ...sitemapEntryErrors(pages, sitemap, origin)
+  ]
 }
 
 /**

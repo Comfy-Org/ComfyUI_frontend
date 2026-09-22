@@ -74,6 +74,7 @@ describe('auditBuiltSite', () => {
 
   it.for([
     '/404.html',
+    '/baidu_verify_codeva-SdpTW0h62C.html',
     '/affiliates/',
     '/privacy-policy/',
     '/cloud/enterprise/'
