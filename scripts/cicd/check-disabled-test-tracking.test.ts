@@ -317,6 +317,24 @@ test.skip('newly disabled', () => {})
     ])
   })
 
+  it('compares against the merge base when the target branch advances', () => {
+    const root = createRepository()
+    write(root, 'tests/example.spec.ts', `test('example', () => {})\n`)
+    commit(root, 'common ancestor')
+
+    git(root, 'switch', '-qc', 'feature')
+    write(root, 'tests/example.spec.ts', `test.skip('example', () => {})\n`)
+    const head = commit(root, 'disable test on feature')
+
+    git(root, 'switch', '-q', 'main')
+    write(root, 'tests/example.spec.ts', `test.skip('example', () => {})\n`)
+    const base = commit(root, 'disable test independently on main')
+
+    expect(findViolations(root, base, head)).toEqual([
+      "  tests/example.spec.ts:1: test.skip('example', () => {})"
+    ])
+  })
+
   it.for([
     { body: 'Re-enabled by #12345', expected: true },
     {

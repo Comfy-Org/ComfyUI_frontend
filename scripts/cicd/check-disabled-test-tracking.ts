@@ -333,7 +333,10 @@ export function findViolations(
   baseSha: string,
   headSha: string
 ): string[] {
-  const revision = `${baseSha}...${headSha}`
+  const mergeBase = git(cwd, 'merge-base', baseSha, headSha)
+    .toString('utf8')
+    .trim()
+  const revision = `${mergeBase}..${headSha}`
   const changed = changedFiles(
     git(
       cwd,
@@ -362,7 +365,7 @@ export function findViolations(
     ).toString('utf8')
     const source = git(cwd, 'show', `${headSha}:${path}`).toString('utf8')
     const baseSource = basePath
-      ? git(cwd, 'show', `${baseSha}:${basePath}`).toString('utf8')
+      ? git(cwd, 'show', `${mergeBase}:${basePath}`).toString('utf8')
       : ''
     const sourceLines = source.split('\n')
     const addedLines = addedTargetLines(patch)
