@@ -11,6 +11,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import {
@@ -48,6 +49,7 @@ export function registerAgentPanelExtension(): void {
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
       notifyMintPortsBeforeGraphLoad()
+      useWidgetValueStore().beginLocalDirtyTrackingSuppression()
       const agentPanelStore = useAgentPanelStore()
       if (!agentPanelStore.isVisible) return
 
@@ -88,6 +90,7 @@ export function registerAgentPanelExtension(): void {
     },
     afterConfigureGraph() {
       notifyMintPortsAfterGraphConfigure()
+      useWidgetValueStore().endLocalDirtyTrackingSuppression()
     },
     setup() {
       const agentPanelStore = useAgentPanelStore()

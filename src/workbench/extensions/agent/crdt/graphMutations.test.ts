@@ -309,6 +309,75 @@ describe('graphMutations', () => {
     })
   })
 
+  describe('a suppressed structural replay does not arm the guard', () => {
+    // A workflow load (e.g. switching back to a tab) reconfigures the live
+    // node from that tab's own locally-saved snapshot, which can predate a
+    // background CRDT edit made while the tab was unbound. That replay is a
+    // context-less write, indistinguishable from a human edit to the guard
+    // unless the caller (agentPanel's beforeLoadGraph/afterConfigureGraph)
+    // brackets it with local-dirty-tracking suppression.
+    it('lets the next catch-up reconcile land the real value', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, samplerWidgets)
+      const id = widgetId('root', toNodeId(1), 'steps')
+      const widgetStore = useWidgetValueStore()
+      // The agent's edit already landed on canonical state (steps: 20 -> 30)
+      // while this tab was backgrounded.
+      widgetStore.setValue(id, 30, context)
+
+      // The load's own configure() re-applies the tab's stale, pre-edit
+      // snapshot (steps: 20) onto the already-canonical widget, bracketed
+      // the way agentPanel.ts brackets it.
+      widgetStore.beginLocalDirtyTrackingSuppression()
+      widgetStore.setValue(id, 20)
+      widgetStore.endLocalDirtyTrackingSuppression()
+
+      expect(widgetStore.isLocallyDirty(id)).toBe(false)
+
+      // The CRDT rebind's catch-up reconcile, re-delivering the value the
+      // agent set while this tab was backgrounded, is not mistaken for
+      // clobbering a local edit.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({ ...node(1), widgets_values: { steps: 30 } })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toBe(30)
+    })
+
+    it('regression: without suppression, the same replay would strand the widget', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, samplerWidgets)
+      const id = widgetId('root', toNodeId(1), 'steps')
+      const widgetStore = useWidgetValueStore()
+      widgetStore.setValue(id, 30, context)
+
+      // Same stale replay, but unsuppressed: it is indistinguishable from a
+      // human edit, so it arms the guard.
+      widgetStore.setValue(id, 20)
+      expect(widgetStore.isLocallyDirty(id)).toBe(true)
+
+      // The one-shot guard skips the real catch-up value once, stranding the
+      // widget at the load's stale snapshot instead of the agent's edit.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({ ...node(1), widgets_values: { steps: 30 } })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toBe(20)
+
+      // One-shot: the guard trusts the reconcile after that.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({ ...node(1), widgets_values: { steps: 31 } })
+        })
+      ).toBe(true)
+      expect(widgetStore.getWidget(id)?.value).toBe(31)
+    })
+  })
+
   it('reconcileNodeFields does not guard a subgraph host widget the same way', () => {
     // A host's promoted widgets are wired by SubgraphNode's own projection,
     // which writes them directly (no RemoteMutationContext) as a routine,

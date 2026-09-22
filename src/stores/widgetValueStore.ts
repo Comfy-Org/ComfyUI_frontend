@@ -102,6 +102,20 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
    */
   const locallyDirtyWidgets = new Set<WidgetId>()
 
+  /**
+   * Depth counter for {@link withLocalDirtyTrackingSuppressed} and the
+   * {@link beginLocalDirtyTrackingSuppression}/
+   * {@link endLocalDirtyTrackingSuppression} pair. A context-less write made
+   * while this is above zero is a structural replay - e.g.
+   * `agentNodeMaterializer`'s `node.configure()` catch-up (which legitimately
+   * re-applies a stale positional snapshot before immediately correcting it),
+   * or any workflow load's `LGraphNode.configure()` re-applying a tab's own
+   * locally-saved (possibly pre-edit) snapshot onto widgets already aliased
+   * to newer canonical state - rather than a human edit, so it must not arm
+   * the one-shot stale-reconcile guard.
+   */
+  let dirtyTrackingSuppressed = 0
+
   function observeValue<TValue extends WidgetValue>(
     state: WidgetState<TValue>,
     graphId: UUID
@@ -119,12 +133,44 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         if (getWidget(widgetId) !== state) return
         const context = valueMutationContexts.get(state)
         valueMutationContexts.delete(state)
-        if (!context) locallyDirtyWidgets.add(widgetId)
+        if (!context && dirtyTrackingSuppressed === 0) {
+          locallyDirtyWidgets.add(widgetId)
+        }
         for (const listener of valueChangeListeners) {
           listener({ widgetId, value, oldValue, context })
         }
       }
     })
+  }
+
+  /**
+   * Runs `fn` with local-dirty tracking suppressed: every context-less write
+   * inside it is treated as a structural adapter replay, never as a human
+   * edit that needs {@link isLocallyDirty} protection. Reentrant-safe.
+   */
+  function withLocalDirtyTrackingSuppressed<T>(fn: () => T): T {
+    beginLocalDirtyTrackingSuppression()
+    try {
+      return fn()
+    } finally {
+      endLocalDirtyTrackingSuppression()
+    }
+  }
+
+  /**
+   * Opens a local-dirty-tracking-suppressed window without a matching
+   * synchronous callback, for a caller that must pair with
+   * {@link endLocalDirtyTrackingSuppression} across an async boundary (e.g.
+   * an extension's `beforeLoadGraph`/`afterConfigureGraph` hooks around a
+   * workflow load). Reentrant: nests with any other suppression in effect.
+   */
+  function beginLocalDirtyTrackingSuppression(): void {
+    dirtyTrackingSuppressed++
+  }
+
+  /** Closes one suppression opened by {@link beginLocalDirtyTrackingSuppression}. */
+  function endLocalDirtyTrackingSuppression(): void {
+    dirtyTrackingSuppressed = Math.max(0, dirtyTrackingSuppressed - 1)
   }
 
   function onValueChange(
@@ -563,6 +609,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setValue,
     isLocallyDirty,
     clearLocallyDirty,
+    withLocalDirtyTrackingSuppressed,
+    beginLocalDirtyTrackingSuppression,
+    endLocalDirtyTrackingSuppression,
     setLabel,
     updateOptions,
     deleteWidget,
