@@ -94,7 +94,7 @@ const previewSrc = usePreviewVideo(video, () =>
 
     <div class="flex flex-col gap-1 px-3">
       <h3
-        class="truncate text-sm font-medium text-content-bright lg:text-base"
+        class="line-clamp-2 text-sm font-medium text-content-bright lg:text-base"
         data-testid="catalogue-card-title"
       >
         {{ view.title }}
