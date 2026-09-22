@@ -184,6 +184,48 @@ describe('resolveCheckoutJourney', () => {
     expect(getActiveCheckoutJourney()?.billing_op_id).toBe('op-1')
   })
 
+  // Reaching the replacement path means the live journey does not match this
+  // entry. If it is bound to an in-flight operation, replacing it strands that
+  // operation: terminal cleanup keys on billing_op_id, so it can no longer
+  // clear its own journey and the replacement stays active indefinitely.
+  it('blocks a same-rail entry under a different intent rather than evicting a bound journey', () => {
+    const first = activeJourney({
+      ...baseInput,
+      entryFlow: 'topup',
+      intent: 'settings_billing'
+    })
+    bindOperationToCheckoutJourney('op-1')
+
+    const second = resolveCheckoutJourney({
+      ...baseInput,
+      entryFlow: 'topup',
+      intent: 'agent_paywall'
+    })
+
+    expect(second.status).toBe('blocked')
+    expect(getActiveCheckoutJourney()?.journey_id).toBe(first.record.journey_id)
+    expect(getActiveCheckoutJourney()?.intent).toBe('settings_billing')
+    expect(getActiveCheckoutJourney()?.billing_op_id).toBe('op-1')
+  })
+
+  it('starts a new journey under a different intent once nothing is bound', () => {
+    const first = activeJourney({
+      ...baseInput,
+      entryFlow: 'topup',
+      intent: 'settings_billing'
+    })
+
+    const second = activeJourney({
+      ...baseInput,
+      entryFlow: 'topup',
+      intent: 'agent_paywall'
+    })
+
+    expect(second.resumed).toBe(false)
+    expect(second.record.journey_id).not.toBe(first.record.journey_id)
+    expect(second.record.intent).toBe('agent_paywall')
+  })
+
   it('still starts a fresh journey for a different rail when none is bound', () => {
     const subscription = activeJourney(baseInput)
     const topup = activeJourney({ ...baseInput, entryFlow: 'topup' })

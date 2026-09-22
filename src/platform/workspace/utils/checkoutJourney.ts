@@ -252,16 +252,18 @@ export function resolveCheckoutJourney(
     return { status: 'active', record: existing, resumed: true }
   }
 
-  // A different rail's operation is in flight and still owns the single journey
-  // slot — its poller gates the terminal clear on this record's billing_op_id.
-  // A single storage slot can't isolate two concurrent rails, so the bound
-  // journey keeps the slot and this rail goes uninstrumented until it resolves.
-  // See ADR-BILLING-CHECKOUT-0031.
-  if (
-    live &&
-    existing.billing_op_id !== undefined &&
-    existing.entry_flow !== input.entryFlow
-  ) {
+  // Control has reached here, so the live journey does not match this entry and
+  // would be replaced. A journey bound to an in-flight operation must not be:
+  // its poller gates the terminal clear on this record's billing_op_id, so
+  // evicting it leaves the operation unable to close its own journey and the
+  // replacement active indefinitely. A single storage slot cannot isolate two
+  // journeys, so the bound one keeps it and this entry goes uninstrumented
+  // until the operation resolves. See ADR-BILLING-CHECKOUT-0031.
+  //
+  // This covers a different rail *and* the same rail entered under a different
+  // intent — a top-up reopened from another surface, or a tier changed
+  // mid-operation. Both replace a bound journey, and neither is safe.
+  if (live && existing.billing_op_id !== undefined) {
     return { status: 'blocked' }
   }
 
