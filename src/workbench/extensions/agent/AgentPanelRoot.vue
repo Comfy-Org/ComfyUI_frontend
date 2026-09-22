@@ -889,11 +889,28 @@ async function refreshHistory(): Promise<void> {
   }
 }
 
-watch(threadId, (id) => history.setActive(id), { immediate: true })
+const provisionalTitle = ref<string>()
+
+watch(
+  threadId,
+  (id, previousId) => {
+    history.setActive(id)
+    if (
+      id === null ||
+      previousId !== null ||
+      provisionalTitle.value === undefined
+    )
+      return
+    history.rename(id, provisionalTitle.value)
+    provisionalTitle.value = undefined
+  },
+  { immediate: true }
+)
 
 void refreshHistory()
 
 async function onSelectHistory(id: string): Promise<void> {
+  provisionalTitle.value = undefined
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   agentPanelStore.resetWorkflowTarget()
@@ -977,7 +994,8 @@ function onStop(): void {
 }
 
 function onRenameChat(title: string): void {
-  if (threadId.value !== null) history.rename(threadId.value, title)
+  if (threadId.value === null) provisionalTitle.value = title
+  else history.rename(threadId.value, title)
 }
 
 function onRenameHistory(id: string, title: string): void {
@@ -991,6 +1009,7 @@ function onDeleteHistory(id: string): void {
 }
 
 function onNewChat(): void {
+  provisionalTitle.value = undefined
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   exitNodeSelectionMode()
@@ -1295,7 +1314,7 @@ function onPanelDrop(event: DragEvent): void {
       :is-maximized="agentPanelStore.isMaximized"
       :history-groups="history.grouped"
       :session-id="threadId"
-      :custom-title="history.titleFor(threadId)"
+      :custom-title="history.titleFor(threadId) ?? provisionalTitle"
       :selection-tags="selectionTags"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
       :select-workflow-reference="onSelectWorkflowReference"
