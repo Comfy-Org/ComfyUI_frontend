@@ -37,7 +37,7 @@ const responseUsageSchema = z.object({
 
 const usageEnvelopeSchema = z.object({ usage: responseUsageSchema.nullish() })
 const responseEnvelopeSchema = z.object({
-  status: z.string(),
+  status: z.string().optional(),
   error: z.object({ code: z.string(), message: z.string() }).nullish(),
   incomplete_details: z.object({ reason: z.string().optional() }).nullish(),
   output: z.array(
@@ -168,7 +168,7 @@ function classifyResponseStatus(
   ) {
     return { status: 'truncated' }
   }
-  if (response.status !== 'completed') {
+  if (response.status !== undefined && response.status !== 'completed') {
     return {
       status:
         response.status === 'failed' && response.error?.code === 'server_error'
