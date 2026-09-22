@@ -50,9 +50,13 @@ function searchParamsOf(
 
 /**
  * Reads the link out of a URL, a `URLSearchParams`, or a string (a full URL
- * or the path-and-query form a router hands over). A missing or empty value
- * is `absent`; a repeated parameter is `invalid` rather than picking one, so
- * a caller cannot be pointed at two different workspaces by ambiguity.
+ * or the path-and-query form a router hands over). A missing parameter is
+ * `absent`; a present-but-empty value is `invalid`, the same as any other
+ * value outside the shared charset — an empty `workspace=` is a producer
+ * bug, not "no link," and a payment destination has to fail closed on it
+ * rather than treat it as though the link were never there. A repeated
+ * parameter is also `invalid` rather than picking one, so a caller cannot be
+ * pointed at two different workspaces by ambiguity.
  */
 export function readWorkspaceLink(
   source: URL | URLSearchParams | string
@@ -65,7 +69,6 @@ export function readWorkspaceLink(
   if (values.length > 1) return { status: 'invalid' }
 
   const [value] = values
-  if (value === '') return { status: 'absent' }
   if (!isWorkspaceId(value)) return { status: 'invalid' }
 
   return { status: 'ok', workspaceId: value }

@@ -53,13 +53,13 @@ describe('readWorkspaceLink', () => {
 
   it.for([
     ['no query at all', 'https://cloud.comfy.org/'],
-    ['an empty value', 'https://cloud.comfy.org/?workspace='],
     ['a different param', 'https://cloud.comfy.org/?workspace_id=ws-team']
   ] as const)('reports absent for %s', ([, source]) => {
     expect(readWorkspaceLink(source)).toEqual({ status: 'absent' })
   })
 
   it.for([
+    ['an empty value', 'https://cloud.comfy.org/?workspace='],
     ['an invalid charset', 'https://cloud.comfy.org/?workspace=ws/1'],
     [
       'a repeated parameter',

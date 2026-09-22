@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { WORKSPACE_LINK_PARAM } from '@comfyorg/account-core/workspaceLink'
+import {
+  WORKSPACE_LINK_PARAM,
+  readWorkspaceLink
+} from '@comfyorg/account-core/workspaceLink'
 
 import { BILLING_INTENTS, BILLING_PRODUCTS } from './contract'
 import { OPTIONAL_ENTRY_FIELDS } from './entryFields'
@@ -176,5 +179,16 @@ describe('the workspace query parameter', () => {
       (field) => field.key === 'workspaceId'
     )
     expect(workspaceField?.param).toBe(WORKSPACE_LINK_PARAM)
+  })
+
+  it('agrees with the auth SDK that an empty value is rejected, not absent', () => {
+    const url =
+      '/v1/checkout?product=platform&return_to=platform_account&workspace='
+
+    expect(parseBillingEntry(url)).toEqual({
+      status: 'error',
+      code: 'INVALID_WORKSPACE_ID'
+    })
+    expect(readWorkspaceLink(url)).toEqual({ status: 'invalid' })
   })
 })
