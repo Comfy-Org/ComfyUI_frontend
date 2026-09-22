@@ -78,13 +78,12 @@ export class AgentPanel {
   }
 
   async resizeTo(width: number): Promise<void> {
-    const dock = this.page.getByTestId('docked-agent-panel')
     const resizeHandle = this.page.getByTestId('agent-panel-resize-handle')
-    const [dockBox, handleBox] = await Promise.all([
-      dock.boundingBox(),
+    const [panelBox, handleBox] = await Promise.all([
+      this.root.boundingBox(),
       resizeHandle.boundingBox()
     ])
-    if (!dockBox || !handleBox) {
+    if (!panelBox || !handleBox) {
       throw new Error('Agent panel and resize handle must be visible')
     }
 
@@ -92,9 +91,12 @@ export class AgentPanel {
     const handleY = handleBox.y + 20
     await this.page.mouse.move(handleCenterX, handleY)
     await this.page.mouse.down()
-    await this.page.mouse.move(handleCenterX - (width - dockBox.width), handleY)
+    await this.page.mouse.move(
+      handleCenterX - (width - panelBox.width),
+      handleY
+    )
     await this.page.mouse.up()
-    await expect(dock).toHaveCSS('width', `${width}px`)
+    await expect(this.root).toHaveCSS('width', `${width}px`)
   }
 
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
