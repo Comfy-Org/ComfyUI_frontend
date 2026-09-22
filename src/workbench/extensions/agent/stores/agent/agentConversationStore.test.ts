@@ -561,4 +561,29 @@ describe('useAgentConversationStore', () => {
     expect(partTexts(store)).toEqual(['persisted reply'])
     expect(store.isStreaming).toBe(false)
   })
+
+  it('resolves existing paywalls without resurrecting them after funds run out again', () => {
+    const store = useAgentConversationStore()
+    store.recordPaywall(T1, 'subscribe')
+
+    store.setPaywallsResolved(true)
+    store.setPaywallsResolved(false)
+
+    expect(store.messages[0].parts).toEqual([])
+    expect(store.entries[0]).toMatchObject({ role: 'user', text: 'subscribe' })
+
+    store.recordPaywall(T2, 'top up')
+    expect(store.messages[1].parts).toEqual([
+      { type: 'paywall', message: undefined }
+    ])
+  })
+
+  it('suppresses a paywall recorded after funds are already available', () => {
+    const store = useAgentConversationStore()
+    store.setPaywallsResolved(true)
+
+    store.recordPaywall(T1, 'continue')
+
+    expect(store.messages[0].parts).toEqual([])
+  })
 })
