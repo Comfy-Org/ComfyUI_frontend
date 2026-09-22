@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Извлекает значение ключа из первого допустимого объекта JSON в тексте, включая блоки кода Markdown.",
     "display_name": "Извлечь строку из JSON",
     "inputs": {
       "json_string": {
