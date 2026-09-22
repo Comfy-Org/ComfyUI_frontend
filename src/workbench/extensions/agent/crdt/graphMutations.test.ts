@@ -279,6 +279,55 @@ describe('graphMutations', () => {
     )
   })
 
+  describe('reconcileNode does not clobber a locally dirty widget', () => {
+    it('skips the doc snapshot once, then trusts the next reconcile again', () => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      registerLiveWidgets(1, samplerWidgets)
+      const id = widgetId('root', toNodeId(1), 'steps')
+      // A local edit that bypassed this module's commit (a human typing, or
+      // the litegraph widget's own `.value` setter) carries no
+      // RemoteMutationContext, so the store marks it locally dirty.
+      useWidgetValueStore().setValue(id, 99)
+
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({ ...node(1), widgets_values: { steps: 21 } })
+        })
+      ).toBe(true)
+      // The stale doc snapshot (21) does not clobber the fresher local edit.
+      expect(useWidgetValueStore().getWidget(id)?.value).toBe(99)
+
+      // The guard is one-shot: it protected against the snapshot that
+      // predated the edit, not every reconcile from now on.
+      expect(
+        graph.batch(context, (batch) => {
+          batch.reconcileNode({ ...node(1), widgets_values: { steps: 22 } })
+        })
+      ).toBe(true)
+      expect(useWidgetValueStore().getWidget(id)?.value).toBe(22)
+    })
+  })
+
+  it('reconcileNodeFields does not guard a subgraph host widget the same way', () => {
+    // A host's promoted widgets are wired by SubgraphNode's own projection,
+    // which writes them directly (no RemoteMutationContext) as a routine,
+    // structural part of attaching the host, not a human edit; guarding here
+    // too would leave a host widget stuck at a stale value forever.
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    registerLiveWidgets(1, samplerWidgets)
+    const id = widgetId('root', toNodeId(1), 'steps')
+    useWidgetValueStore().setValue(id, 99)
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNodeFields({ ...node(1), widgets_values: { steps: 21 } })
+      })
+    ).toBe(true)
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe(21)
+  })
+
   it.for([
     { title: undefined, type: 'ContractSampler', expected: 'Contract Sampler' },
     { title: '', type: 'ContractSampler', expected: 'Contract Sampler' },

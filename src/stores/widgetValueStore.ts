@@ -90,6 +90,18 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     RemoteMutationContext
   >()
 
+  /**
+   * Widgets whose value last changed without a `RemoteMutationContext` -
+   * a human edit, or any other write that bypassed `setValue`'s context
+   * param. A CRDT catch-up reconcile reads its doc snapshot on its own
+   * schedule and must not replay a value over one of these: the snapshot
+   * predates the edit by definition, and clobbering it silently discards
+   * work in progress (PM-1303/PM-1310 "hypothesis C"). `setValue` clears an
+   * id once its own context-carrying write lands, whether or not that write
+   * changes the value.
+   */
+  const locallyDirtyWidgets = new Set<WidgetId>()
+
   function observeValue<TValue extends WidgetValue>(
     state: WidgetState<TValue>,
     graphId: UUID
@@ -107,6 +119,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         if (getWidget(widgetId) !== state) return
         const context = valueMutationContexts.get(state)
         valueMutationContexts.delete(state)
+        if (!context) locallyDirtyWidgets.add(widgetId)
         for (const listener of valueChangeListeners) {
           listener({ widgetId, value, oldValue, context })
         }
@@ -319,7 +332,31 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     } finally {
       valueMutationContexts.delete(state)
     }
+    // Setting the same value `state.value` already holds short-circuits
+    // `observeValue`'s setter before it can clear the id, so clear it here
+    // too: this write is still an authoritative context-carrying one.
+    if (context) locallyDirtyWidgets.delete(widgetId)
     return true
+  }
+
+  /**
+   * Whether `widgetId`'s live value was last set without a
+   * `RemoteMutationContext`, i.e. a local edit a doc snapshot reconcile has
+   * not yet reflected. See {@link locallyDirtyWidgets}.
+   */
+  function isLocallyDirty(widgetId: WidgetId): boolean {
+    return locallyDirtyWidgets.has(widgetId)
+  }
+
+  /**
+   * Clears `widgetId`'s dirty mark without writing a value. A reconcile that
+   * skips this id because {@link isLocallyDirty} caught it calls this once
+   * it has skipped: that one skip is the edit's protection against the
+   * snapshot that predated it, and it must not also block every later,
+   * possibly genuinely newer, reconcile forever.
+   */
+  function clearLocallyDirty(widgetId: WidgetId): void {
+    locallyDirtyWidgets.delete(widgetId)
   }
 
   function setLabel(widgetId: WidgetId, label: string): boolean {
@@ -356,6 +393,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
     const { graphId } = parseWidgetId(widgetId)
     removeNodeWidgetOrder(widgetId)
+    locallyDirtyWidgets.delete(widgetId)
     return graphWidgets.value.get(graphId)?.delete(widgetId) ?? false
   }
 
@@ -477,6 +515,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (discardValues) {
       for (const widgetId of order) {
         graphWidgets.value.get(graphId)?.delete(widgetId)
+        locallyDirtyWidgets.delete(widgetId)
       }
     }
     graphOrders.delete(localNodeId)
@@ -493,6 +532,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       for (const [id, entity] of widgets) {
         if (entity.state.nodeId !== nodeId) continue
         widgets.delete(id)
+        locallyDirtyWidgets.delete(id)
       }
       if (widgets.size === 0) graphWidgets.value.delete(graphId)
     }
@@ -503,6 +543,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearGraph(graphId: UUID): void {
+    for (const id of graphWidgets.value.get(graphId)?.keys() ?? []) {
+      locallyDirtyWidgets.delete(id)
+    }
     graphWidgets.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
     graphWidgetRestorations.delete(graphId)
@@ -518,6 +561,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidgetVisibility,
     onValueChange,
     setValue,
+    isLocallyDirty,
+    clearLocallyDirty,
     setLabel,
     updateOptions,
     deleteWidget,
