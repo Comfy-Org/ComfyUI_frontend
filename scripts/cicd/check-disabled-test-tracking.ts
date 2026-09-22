@@ -1,5 +1,4 @@
 import { execFileSync } from 'node:child_process'
-import { pathToFileURL } from 'node:url'
 
 import type {
   Expression,
@@ -19,6 +18,8 @@ import {
   ScriptTarget,
   SyntaxKind
 } from 'typescript'
+
+import { isMainModule } from '../isMainModule'
 
 type DisabledDeclaration = {
   line: number
@@ -364,7 +365,6 @@ export function main(
   }
 }
 
-const entryPoint = process.argv[1]
-if (entryPoint && import.meta.url === pathToFileURL(entryPoint).href) {
+if (isMainModule(import.meta.url)) {
   process.exitCode = main(process.argv.slice(2))
 }
