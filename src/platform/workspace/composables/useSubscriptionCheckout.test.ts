@@ -5137,26 +5137,6 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleResubscribe', () => {
-    it('fires a started event before resubscribe resolves', async () => {
-      const checkout = await setup('subscribe_to_run')
-      mockResubscribe.mockResolvedValueOnce({
-        billing_op_id: 'op-4',
-        status: 'active'
-      })
-      mockFetchStatus.mockResolvedValueOnce(undefined)
-      mockFetchBalance.mockResolvedValueOnce(undefined)
-
-      await checkout.handleResubscribe()
-
-      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
-        operation: 'resubscribe',
-        stage: 'started',
-        outcome: 'pending',
-        source: 'pricing_dialog',
-        payment_intent_source: 'subscribe_to_run'
-      })
-    })
-
     it('emits close on success', async () => {
       const checkout = await setup('subscribe_to_run')
       mockResubscribe.mockResolvedValueOnce({
@@ -5287,7 +5267,7 @@ describe('useSubscriptionCheckout', () => {
       expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
     })
 
-    it('emits started before the awaited resubscribe call resolves', async () => {
+    it('emits the started payload before invoking resubscribe', async () => {
       const callOrder: string[] = []
       mockResubscribe.mockImplementationOnce(async () => {
         callOrder.push('resubscribe')
@@ -5302,6 +5282,13 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleResubscribe()
 
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'resubscribe',
+        stage: 'started',
+        outcome: 'pending',
+        source: 'pricing_dialog',
+        payment_intent_source: 'subscribe_to_run'
+      })
       expect(callOrder.indexOf('trackBillingEvent:started')).toBeLessThan(
         callOrder.indexOf('resubscribe')
       )
