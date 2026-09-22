@@ -167,7 +167,10 @@ async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
     agentPanelStore.gateSettled = true
   }
   // The local agent harness has no cloud account, so no PostHog flag either:
-  // the panel is on without waiting for (or depending on) PostHog.
+  // the panel is on without waiting for (or depending on) PostHog. The harness
+  // is the opt-in: the panel is tree-shaken out of every other non-cloud build
+  // (see extensions/core/index.ts), and vite.config.mts refuses a cloud bundle
+  // built with VITE_AGENT_STANDALONE, which would force it on for every user.
   if (isAgentStandalone()) {
     agentPanelStore.enabled = true
     settle()

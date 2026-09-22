@@ -114,6 +114,9 @@ async function loadEntryAndSetup({
     (e) => e.name === 'Comfy.AgentPanel'
   )
   expect(ext).toBeDefined()
+  // setup() returns the flag gate's promise; awaiting it is the completion
+  // signal, so no polling is needed. It runs inside a scope so the watchers
+  // it installs are torn down between tests.
   await setupScope.run(() =>
     ext!.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
   )

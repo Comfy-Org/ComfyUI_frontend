@@ -129,6 +129,16 @@ export type CloudWorkflowEntry = z.infer<
 
 export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
 
+/**
+ * The 403 body the agent service returns when it will not serve the turn's
+ * `workflow_id` to the caller's workspace, whether the row is gone or belongs
+ * elsewhere. The message is the only discriminator on the wire: a 403 refusing
+ * the thread or the message carries the same shape with a different subject.
+ */
+export const zDisownedWorkflowError = z.object({
+  error: z.literal('workflow not found or access denied')
+})
+
 export const zUploadImageResult = z.object({
   name: z.string(),
   subfolder: z.string(),
@@ -264,3 +274,9 @@ export function parseAgentWsEvent(
 ): z.SafeParseReturnType<unknown, AgentWsEvent> {
   return zAgentWsEvent.safeParse(value)
 }
+
+/** GET /agent/identity — the identity the agent authenticated this client as. */
+export const zAgentIdentityWire = z.object({
+  workspace_id: z.string().min(1),
+  user_id: z.string().min(1)
+})
