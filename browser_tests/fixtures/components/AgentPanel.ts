@@ -3,6 +3,8 @@ import type { Locator, Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
+import type { AgentAdmissionDenialMock } from '@e2e/fixtures/data/agent/agentAdmissionDenials'
+
 export class AgentPanel {
   public readonly root: Locator
   public readonly openButton: Locator
@@ -83,11 +85,11 @@ export class AgentPanel {
     await expect(this.workflowPicker).toHaveText(name)
   }
 
-  async rejectNextTurn(
-    status: number,
-    body: unknown,
-    retryAfterSeconds: number
-  ): Promise<void> {
+  async rejectNextTurn({
+    status,
+    body,
+    retryAfterSeconds
+  }: AgentAdmissionDenialMock): Promise<void> {
     let rejected = false
     // Scoped to POST so the agent fixture's GET handler still serves history.
     await this.page.route('**/api/agent/threads/*/messages', async (route) => {
