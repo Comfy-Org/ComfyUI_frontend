@@ -55,4 +55,18 @@ describe('third-party error noise', () => {
 
     expect(sentryThirdPartyErrorFilter(event, {})).toBe(event)
   })
+
+  it('keeps a first-party exception that wraps extension noise', () => {
+    const event = {
+      type: undefined,
+      exception: {
+        values: [
+          { value: EXTENSION_ERROR },
+          { value: 'Application failed while sending a message' }
+        ]
+      }
+    } satisfies ErrorEvent
+
+    expect(sentryThirdPartyErrorFilter(event, {})).toBe(event)
+  })
 })

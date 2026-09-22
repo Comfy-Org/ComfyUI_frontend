@@ -29,10 +29,15 @@ export function sentryThirdPartyErrorFilter(
   event: ErrorEvent,
   hint: EventHint
 ): ErrorEvent | null {
-  const messages = [
-    messageFrom(hint.originalException),
-    event.message,
-    ...(event.exception?.values?.map(({ value }) => value) ?? [])
-  ]
-  return messages.some(isThirdPartyErrorNoise) ? null : event
+  if (
+    isThirdPartyErrorNoise(messageFrom(hint.originalException)) ||
+    isThirdPartyErrorNoise(event.message)
+  )
+    return null
+  const exceptionMessages =
+    event.exception?.values?.map(({ value }) => value) ?? []
+  return exceptionMessages.length > 0 &&
+    exceptionMessages.every(isThirdPartyErrorNoise)
+    ? null
+    : event
 }
