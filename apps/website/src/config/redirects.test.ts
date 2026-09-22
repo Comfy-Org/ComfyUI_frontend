@@ -109,19 +109,19 @@ describe('legacy Enterprise redirects', () => {
     { source: `${source}/`, destination }
   ])
 
-  it.for(vercelCases)('sends $source to $destination permanently', ({
-    source,
-    destination
-  }) => {
-    const redirect = findRedirect(source)
+  it.for(vercelCases)(
+    'sends $source to $destination permanently',
+    ({ source, destination }) => {
+      const redirect = findRedirect(source)
 
-    if (!redirect) {
-      throw new Error(`${source} is missing from vercel.json`)
+      if (!redirect) {
+        throw new Error(`${source} is missing from vercel.json`)
+      }
+
+      expect(redirect.destination).toBe(destination)
+      expect(redirect.permanent).toBe(true)
     }
-
-    expect(redirect.destination).toBe(destination)
-    expect(redirect.permanent).toBe(true)
-  })
+  )
 
   it.for(cases)(
     'sets the Astro redirect for $source',

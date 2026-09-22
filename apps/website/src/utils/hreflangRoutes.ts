@@ -29,9 +29,7 @@ export interface Alternate {
 
 function withRouteSlash(path: string): string {
   const trimmed = path.replace(/\/+$/, '') || '/'
-  return trimmed === '/' || trimmed.endsWith('.html')
-    ? trimmed
-    : `${trimmed}/`
+  return trimmed === '/' || trimmed.endsWith('.html') ? trimmed : `${trimmed}/`
 }
 
 /**

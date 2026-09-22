@@ -242,14 +242,14 @@ describe('the emitter agrees with the page tree', () => {
     }
   })
 
-  it.for(cases)('advertises exactly the published locales on $pathname', ({
-    pathname,
-    expected
-  }) => {
-    expect(
-      hreflangAlternates(pathname, ORIGIN).filter(
-        (alternate) => alternate.hreflang !== 'x-default'
-      )
-    ).toEqual(expected)
-  })
+  it.for(cases)(
+    'advertises exactly the published locales on $pathname',
+    ({ pathname, expected }) => {
+      expect(
+        hreflangAlternates(pathname, ORIGIN).filter(
+          (alternate) => alternate.hreflang !== 'x-default'
+        )
+      ).toEqual(expected)
+    }
+  )
 })
