@@ -1566,6 +1566,7 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: true })
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
     const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
     expect(opId).toBeDefined()
     if (!opId) throw new Error('Expected a sent operation')
@@ -1600,7 +1601,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it("ADR-CRDT-RECONCILE-0035 (c): pendingAddType reports the class_type only while the ledger holds that node's add_node", () => {
+  it("ADR-CRDT-RECONCILE-0035 (c): pendingAddType reports the class_type only while the ledger holds that node's add_node", async () => {
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
       typeof useAgentCrdtFollower
@@ -1631,6 +1632,7 @@ describe('useAgentCrdtFollower', () => {
         node: { id: 7, type: 'Test', inputs: [], outputs: [] }
       }
     ])
+    await Promise.resolve()
 
     expect(pendingAddType('7')).toBe('Test')
     expect(pendingAddType('some-other-id')).toBeUndefined()
@@ -1674,6 +1676,7 @@ describe('useAgentCrdtFollower', () => {
       },
       { op: 'delete_node', node_id: '6', removed_links: [] }
     ])
+    await Promise.resolve()
     const sentOps = clientState.sendOps.mock.lastCall?.[2] as Array<{
       op_id: string
     }>
@@ -1732,6 +1735,7 @@ describe('useAgentCrdtFollower', () => {
         node: { id: 5, type: 'Test', inputs: [], outputs: [] }
       }
     ])
+    await Promise.resolve()
     const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
 
     vi.advanceTimersByTime(10_000)
@@ -1789,6 +1793,7 @@ describe('useAgentCrdtFollower', () => {
         node: { id: 5, type: 'Test', inputs: [], outputs: [] }
       }
     ])
+    await Promise.resolve()
     const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
 
     vi.advanceTimersByTime(10_000)
@@ -1837,6 +1842,7 @@ describe('useAgentCrdtFollower', () => {
         node: { id: 5, type: 'Test', inputs: [], outputs: [] }
       }
     ])
+    await Promise.resolve()
     const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
 
     vi.advanceTimersByTime(10_000)
@@ -1895,6 +1901,7 @@ describe('useAgentCrdtFollower', () => {
         link_type: 'IMAGE'
       }
     ])
+    await Promise.resolve()
     const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
 
     vi.advanceTimersByTime(10_000)
