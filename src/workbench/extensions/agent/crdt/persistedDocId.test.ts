@@ -5,6 +5,7 @@ import {
   clearAllWorkflowStorage,
   clearWorkflowRestoreState
 } from '@/platform/workflow/persistence/base/storageIO'
+import { MAX_AGENT_STORAGE_CLOCK_SKEW_MS } from '@/workbench/extensions/agent/persistenceTime'
 
 import {
   DOC_ID_SESSION_KEY,
@@ -82,7 +83,10 @@ describe('persistedDocId', () => {
     })
 
     it('drops a record whose expiry exceeds the five-minute bound', () => {
-      writeForeignRecord('wf-1', Date.now() + DOC_ID_TTL_MS + 1)
+      writeForeignRecord(
+        'wf-1',
+        Date.now() + DOC_ID_TTL_MS + MAX_AGENT_STORAGE_CLOCK_SKEW_MS + 1_000
+      )
       asReloadNavigation()
 
       expect(reconcilePersistedDocId()).toBeNull()
@@ -105,6 +109,14 @@ describe('persistedDocId', () => {
   })
 
   describe('reload adoption', () => {
+    it('keeps a fresh record after a small backward clock adjustment', () => {
+      vi.useFakeTimers()
+      persistDocId('wf-1')
+      vi.setSystemTime(Date.now() - 60_000)
+
+      expect(reconcilePersistedDocId()).toBe('wf-1')
+    })
+
     it('adopts an inherited record and takes ownership of it', () => {
       const expiresAt = Date.now() + DOC_ID_TTL_MS
       writeForeignRecord('wf-1', expiresAt)
