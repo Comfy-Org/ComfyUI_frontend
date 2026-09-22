@@ -161,7 +161,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   async function addDeferredFile(
     name: string,
     resolve: () => Promise<File | undefined>
-  ): Promise<'uploaded' | 'unsupported' | 'cancelled' | 'failed'> {
+  ): Promise<'uploaded' | 'unsupported' | 'invalid' | 'cancelled' | 'failed'> {
     const id = stage(name)
     try {
       const file = await withDeadline(resolve(), DEFERRED_FETCH_TIMEOUT_MS)
@@ -177,7 +177,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       if (options.validate && !(await options.validate(file))) {
         options.remove(id)
         options.onInvalid?.(file)
-        return 'unsupported'
+        return 'invalid'
       }
       if (!(await uploadStagedFile(id, file))) return 'failed'
       options.onUploaded?.()

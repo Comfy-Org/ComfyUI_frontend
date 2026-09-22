@@ -1696,6 +1696,47 @@ describe('AgentPanelRoot attach flow', () => {
     }
   )
 
+  it('warns once when a Media-card video has invalid contents', async () => {
+    const fetchSpy = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/view'))
+        return new Response(new Blob(['plain text']), {
+          headers: { 'Content-Type': 'video/mp4' }
+        })
+      return new Response('{"threads":[]}', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+    renderWithSelectedTarget()
+    await nextTick()
+
+    expect(
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'renamed.mp4', type: 'input' })
+            : 'http://localhost/api/view?filename=renamed.mp4'
+      })
+    ).toBe(true)
+
+    await vi.waitFor(() =>
+      expect(
+        useToastStore().messagesToAdd.filter(
+          ({ detail }) => detail === i18n.global.t('agent.assetNotAttachable')
+        )
+      ).toHaveLength(1)
+    )
+    expect(screen.queryByText('renamed.mp4')).not.toBeInTheDocument()
+    expect(
+      fetchSpy.mock.calls.some(([url]) =>
+        String(url).endsWith('/api/upload/image')
+      )
+    ).toBe(false)
+  })
+
   it.for([
     { mime: 'image/png', filename: 'gen.png' },
     { mime: 'video/mp4', filename: 'movie.mp4' }
