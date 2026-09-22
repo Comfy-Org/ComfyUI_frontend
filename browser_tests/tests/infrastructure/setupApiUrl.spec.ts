@@ -27,8 +27,7 @@ test('normalizes the setup API base used by ComfyPage requests', async ({
     const trailingSlashPage = new ComfyPage(page, observedRequest)
     await trailingSlashPage.setupSettings({ userId: comfyPage.id })
   } finally {
-    if (setupApiUrl === undefined)
-      delete process.env.PLAYWRIGHT_SETUP_API_URL
+    if (setupApiUrl === undefined) delete process.env.PLAYWRIGHT_SETUP_API_URL
     else process.env.PLAYWRIGHT_SETUP_API_URL = setupApiUrl
   }
 
