@@ -1,3 +1,7 @@
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
+
+export type { RemoteMutationContext } from '@/types/graphMutationContext'
+
 export interface FixtureNode {
   readonly id: number | string
   readonly type: string
@@ -101,12 +105,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-export interface RemoteMutationContext {
-  readonly source: 'agent-remote'
-  readonly actor: string
-  readonly op_id: string
-}
-
 export interface AgentFixtureAdapter {
   readonly graphMutations: {
     batch(context: RemoteMutationContext, apply: () => void): void
@@ -126,7 +124,7 @@ export function replayAgentFixture(
     const context: RemoteMutationContext = {
       source: 'agent-remote',
       actor,
-      op_id: frame.data.message_id
+      opId: frame.data.message_id
     }
 
     adapter.graphMutations.batch(context, () => {
