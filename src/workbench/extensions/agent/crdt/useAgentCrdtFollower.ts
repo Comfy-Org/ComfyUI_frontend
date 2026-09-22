@@ -287,8 +287,6 @@ function startAgentCrdtFollower(
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
     () => bridge.resubscribe(),
-    // Exhausting the retry budget drops the acknowledged binding, so derived
-    // connection status becomes false.
     () => {
       acknowledgedWorkflowId.value = null
     }
@@ -491,8 +489,6 @@ function startAgentCrdtFollower(
     projection.clearForReset(detail.workflowId, context)
     sender.abortAll()
     events.onReset?.(detail.workflowId)
-    // A lineage reset drops the acknowledged binding, which disconnects the
-    // follower: `status.connected` is derived from this ref.
     acknowledgedWorkflowId.value = null
     updatesApplied.value = 0
     lastFrameType.value = event.type
