@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { useIntersectionObserver } from '@vueuse/core'
+import { computed, useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -23,6 +24,18 @@ const {
 }>()
 
 const emit = defineEmits<{ more: [] }>()
+
+// The list ends where the catalogue ends, not where a button does: reaching
+// the foot of what is drawn is itself the request for the rest.
+const foot = useTemplateRef<HTMLElement>('foot')
+
+useIntersectionObserver(
+  foot,
+  ([entry]) => {
+    if (entry?.isIntersecting) emit('more')
+  },
+  { rootMargin: '600px' }
+)
 
 const showingText = computed(() =>
   t('workshop.v2.showing', locale)
@@ -54,16 +67,13 @@ const showingText = computed(() =>
     <p class="mt-2 text-sm">{{ t('workshop.v2.emptyHint', locale) }}</p>
   </div>
 
-  <div v-if="visible.length < total" class="flex justify-center pt-10 pb-4">
-    <button
-      type="button"
-      class="inline-flex h-10 cursor-pointer items-center justify-center rounded-2xl border border-brand px-12 text-sm font-semibold tracking-wider text-brand uppercase transition-colors hover:bg-brand hover:text-page"
-      data-testid="catalogue-load-more"
-      @click="emit('more')"
-    >
-      {{ t('workshop.v2.loadMore', locale) }}
-    </button>
-  </div>
+  <div
+    v-if="visible.length < total"
+    ref="foot"
+    class="h-px"
+    aria-hidden="true"
+    data-testid="catalogue-foot"
+  />
 
   <p
     v-if="visible.length > 0"
