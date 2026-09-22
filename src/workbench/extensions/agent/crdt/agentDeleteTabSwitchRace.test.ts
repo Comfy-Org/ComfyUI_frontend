@@ -129,7 +129,8 @@ function setupRaceUntilReturn() {
           .filter((op) => op.op === 'delete_node')
           .map((op) => String(op.node_id))
       ),
-    pendingAdds: () => new Set()
+    pendingAdds: () => new Set(),
+    pendingConnects: () => new Set()
   })
   adapter.bind(WORKFLOW, follower)
 

@@ -314,20 +314,18 @@ describe('createPendingOpTracker', () => {
         type: 'reverted',
         reason: 'failed',
         opIds: ['op-2'],
-        ops: [ops[1]],
-        undone: true
+        ops: [ops[1]]
       },
       {
         type: 'reverted',
         reason: 'unprocessed',
         opIds: ['op-3'],
-        ops: [ops[2]],
-        undone: true
+        ops: [ops[2]]
       }
     ])
   })
 
-  it('claims undone for a mixed-kind unprocessed sweep that includes a reverted add_node', () => {
+  it('reverts a mixed-kind unprocessed sweep as one event carrying every op', () => {
     const mixed = [
       setWidget('op-1', 9),
       addNode('op-2', 1),
@@ -350,24 +348,22 @@ describe('createPendingOpTracker', () => {
         type: 'reverted',
         reason: 'failed',
         opIds: ['op-1'],
-        ops: [mixed[0]],
-        undone: false
+        ops: [mixed[0]]
       },
       // A single sweep reverts BOTH the unreached add_node and the unreached
-      // connect together: `undone` must be true here so a consumer pairing
-      // it with `removedNodeIds` (pendingOpRevert.ts) can still report the
-      // add's removal, instead of the mixed kinds masking it as `false`.
+      // connect together, in one event carrying both ops: a consumer
+      // (pendingOpRevert.ts) derives "could this undo an add" from `ops`
+      // itself, so the mixed kinds cannot mask the add's removal.
       {
         type: 'reverted',
         reason: 'unprocessed',
         opIds: ['op-2', 'op-3'],
-        ops: [mixed[1], mixed[2]],
-        undone: true
+        ops: [mixed[1], mixed[2]]
       }
     ])
   })
 
-  it('an anonymous ok:false names nothing, so the whole in-flight batch is reverted', () => {
+  it('an anonymous ok:false names nothing, so the whole in-flight batch is reverted and reported', () => {
     tracker.onBatchMinted(ops)
     tracker.onBatchTransmitted(ops)
     tracker.onBatchSettled(
@@ -380,10 +376,27 @@ describe('createPendingOpTracker', () => {
         type: 'reverted',
         reason: 'unattributed',
         opIds: ['op-1', 'op-2', 'op-3'],
-        ops,
-        undone: true
+        ops
       }
     ])
+    // ADR-CRDT-RECONCILE-0035 (a): every host rejection is reported, even an
+    // anonymous batch-level one with no per-op failure detail to draw a code
+    // from — `unattributed` stands in for it.
+    expect(reportError).toHaveBeenCalledTimes(ops.length)
+    for (const op of ops) {
+      expect(reportError).toHaveBeenCalledWith(
+        new Error('Agent host rejected a human operation'),
+        {
+          errorType: 'agent_crdt_human_op_rejected',
+          context: {
+            opId: op.op_id,
+            opKind: op.op,
+            nodeId: 'node_id' in op ? String(op.node_id) : undefined,
+            failureCode: 'unattributed'
+          }
+        }
+      )
+    }
   })
 
   it('reverts an undeliverable batch even though it never flew (no doc bound)', () => {
@@ -396,8 +409,7 @@ describe('createPendingOpTracker', () => {
         type: 'reverted',
         reason: 'undeliverable',
         opIds: ['op-1', 'op-2', 'op-3'],
-        ops,
-        undone: true
+        ops
       }
     ])
   })
@@ -465,15 +477,13 @@ describe('createPendingOpTracker', () => {
         type: 'reverted',
         reason: 'failed',
         opIds: ['op-2'],
-        ops: [ops[1]],
-        undone: true
+        ops: [ops[1]]
       },
       {
         type: 'reverted',
         reason: 'unprocessed',
         opIds: ['op-3'],
-        ops: [ops[2]],
-        undone: true
+        ops: [ops[2]]
       }
     ])
   })
@@ -663,8 +673,7 @@ describe('createPendingOpTracker', () => {
         type: 'reverted',
         reason: 'diverged',
         opIds: ['op-1'],
-        ops: [op],
-        undone: true
+        ops: [op]
       })
     })
 
@@ -684,8 +693,7 @@ describe('createPendingOpTracker', () => {
         type: 'reverted',
         reason: 'diverged',
         opIds: ['op-1'],
-        ops: [op],
-        undone: false
+        ops: [op]
       })
     })
 
@@ -861,8 +869,7 @@ describe('createPendingOpTracker', () => {
         type: 'reverted',
         reason: 'undeliverable',
         opIds: ['op-2'],
-        ops: [opB],
-        undone: true
+        ops: [opB]
       }
     ])
     expect(tracker.entries().map((entry) => entry.opId)).toEqual(['op-1'])

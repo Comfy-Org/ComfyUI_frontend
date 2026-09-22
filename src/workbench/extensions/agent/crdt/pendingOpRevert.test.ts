@@ -45,16 +45,12 @@ function deleteNode(opId: string, nodeId: number): Op {
   }
 }
 
-function reverted(
-  ops: Op[],
-  undone = ops.every((op) => op.op === 'add_node')
-): PendingOpTrackerEvent {
+function reverted(ops: Op[]): PendingOpTrackerEvent {
   return {
     type: 'reverted',
     reason: 'failed',
     opIds: ops.map((op) => op.op_id),
-    ops,
-    undone
+    ops
   }
 }
 
@@ -250,11 +246,12 @@ describe('createRevertNotifier', () => {
     const notify = vi.fn()
     const onReverted = createRevertNotifier(notify)
 
-    // A single unprocessed sweep reverting both kinds together: `undone` is
-    // `true` (some(add_node)) per pendingOpTracker.ts, and the add really
-    // was removed, so the user must see the "undone" wording, not the
-    // generic "couldn't be synced" one a mixed batch used to fall back to.
-    onReverted(reverted([addNode('op-1', 1), deleteNode('op-2', 2)], true), [1])
+    // A single unprocessed sweep reverting both kinds together: the notifier
+    // derives "could this batch have undone an add" from `event.ops`
+    // (some(add_node)), and the add really was removed, so the user must
+    // see the "undone" wording, not the generic "couldn't be synced" one a
+    // mixed batch used to fall back to.
+    onReverted(reverted([addNode('op-1', 1), deleteNode('op-2', 2)]), [1])
     await Promise.resolve()
 
     expect(notify).toHaveBeenCalledExactlyOnceWith(true)
@@ -264,9 +261,10 @@ describe('createRevertNotifier', () => {
     const notify = vi.fn()
     const onReverted = createRevertNotifier(notify)
 
-    // event.undone is kind-derived (false for delete_node); a nonzero
-    // removedNodeIds must not override that (F7).
-    onReverted(reverted([deleteNode('op-1', 1)], false), [1])
+    // "Could have undone an add" is derived from event.ops (false for a
+    // delete_node-only batch); a nonzero removedNodeIds must not override
+    // that (F7).
+    onReverted(reverted([deleteNode('op-1', 1)]), [1])
     await Promise.resolve()
 
     expect(notify).toHaveBeenCalledExactlyOnceWith(false)

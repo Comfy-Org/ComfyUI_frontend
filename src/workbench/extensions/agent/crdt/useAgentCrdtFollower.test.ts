@@ -1805,23 +1805,15 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('F2: a resubscribe that completes already-current resolves parked entries with no catch-up frame', async () => {
+  it('F2: an already-current ack keeps a parked entry until the forced reconcile commits, then repairs the live graph before settling it', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')
-    const workflowId = ref<string | null>('wf-1')
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        enqueue = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        ).enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
+    const fakeGraph = {
+      rootGraph: { subgraphs: new Map() },
+      _nodes_by_id: {},
+      setDirtyCanvas: vi.fn()
+    } as unknown as MaterializableGraph
+    const { unmount, enqueue } = mountFollower('wf-1', true, () => fakeGraph)
 
     const doc = new Y.Doc()
     doc.getMap('nodes').set('5', new Y.Map([['type', 'Test']]))
@@ -1829,6 +1821,7 @@ describe('useAgentCrdtFollower', () => {
     // Establishes the projected watermark at seq 2 before anything is
     // pending, so it is not itself the resolving catch-up.
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+    materializerState.reconcileAgentAdapters.mockClear()
 
     enqueue([
       {
@@ -1849,20 +1842,42 @@ describe('useAgentCrdtFollower', () => {
       opIds: [opId]
     })
 
+    // Stateful fixture (s3-opt-6 review, "F2"): the adapter's session is
+    // busy/missing on the FIRST forced-reconcile attempt, so this ack alone
+    // must neither repair the live graph nor settle the parked entry.
+    let committed = false
+    adapterState.reconcileFromDoc.mockImplementation(() => committed)
+
     // The host sends no catch-up doc_update at all when this follower's
     // state vector is already current -- the ack seq equalling the
     // watermark is the only signal that a resubscribe completed.
     dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 2 })
 
-    // ADR-CRDT-RECONCILE-0035 (a): the adapter's authoritative full
-    // reconcile runs BEFORE settlement, so a delete_node/connect whose
-    // effect silently never landed still gets repaired even though no
-    // catch-up frame is coming to drive it.
     expect(adapterState.reconcileFromDoc).toHaveBeenCalledWith('wf-1', 2)
-    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
-      type: 'cleared',
-      opIds: [opId]
+    expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'cleared' })
+    )
+
+    // The reconcile now commits; the retry pass on the next applied frame
+    // must repair the live graph BEFORE the ledger settles the parked entry.
+    committed = true
+    const order: string[] = []
+    materializerState.reconcileAgentAdapters.mockImplementationOnce(() => {
+      order.push('materialized')
+      return []
     })
+    vi.mocked(recordDevEvent).mockImplementation((event, detail) => {
+      if (
+        event === 'pending_ops' &&
+        (detail as { type?: string } | null)?.type === 'cleared'
+      )
+        order.push('cleared')
+    })
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+
+    expect(order).toEqual(['materialized', 'cleared'])
     unmount()
   })
 
@@ -1917,8 +1932,7 @@ describe('useAgentCrdtFollower', () => {
       type: 'reverted',
       reason: 'diverged',
       opIds: [opId],
-      ops: expect.anything(),
-      undone: true
+      ops: expect.anything()
     })
     unmount()
   })
@@ -1972,8 +1986,7 @@ describe('useAgentCrdtFollower', () => {
       type: 'reverted',
       reason: 'diverged',
       opIds: [opId],
-      ops: expect.anything(),
-      undone: false
+      ops: expect.anything()
     })
     unmount()
   })
@@ -2027,8 +2040,7 @@ describe('useAgentCrdtFollower', () => {
       type: 'reverted',
       reason: 'diverged',
       opIds: [opId],
-      ops: expect.anything(),
-      undone: false
+      ops: expect.anything()
     })
     unmount()
   })
@@ -2514,6 +2526,21 @@ describe('useAgentCrdtFollower', () => {
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
       expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
       unmount()
+    })
+
+    it('C4: scope disposal settles every held batch instead of dropping it, the transmitted one parked unconfirmed', async () => {
+      const { unmount, enqueue } = mountWriter('wf-1')
+      // Transmitted, no result yet: settles `unconfirmed` (parked) on
+      // abortAll(), not silently dropped by a plain `sender.detach()`.
+      enqueue([deleteNode('1')])
+      await Promise.resolve()
+      // Admitted after the first, so it queues behind it (one in-flight
+      // batch at a time): settles `undeliverable` on abortAll().
+      enqueue([deleteNode('2')])
+
+      unmount()
+
+      expect(await settledStates()).toEqual(['unconfirmed', 'undeliverable'])
     })
   })
 

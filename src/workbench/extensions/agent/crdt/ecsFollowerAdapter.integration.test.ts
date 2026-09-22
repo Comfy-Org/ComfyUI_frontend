@@ -45,7 +45,7 @@ interface TestLayout {
   size: { width: number; height: number }
 }
 
-function op(id: string, baseVersion: number, payload: object) {
+function op(id: string, baseVersion: number, payload: GraphOperation): Op {
   return {
     op_id: id,
     actor: 'agent:test',
@@ -742,7 +742,10 @@ describe('EcsFollowerAdapter integration', () => {
 
     let seq = 0
     let first = true
-    const deliver = (operation: object, expectedOutcome = 'applied') => {
+    const deliver = (
+      operation: GraphOperation,
+      expectedOutcome = 'applied'
+    ) => {
       const before = Y.encodeStateVector(host)
       const operationId = `disconnect-${++seq}`
       const result = applyOps(
@@ -845,7 +848,7 @@ describe('EcsFollowerAdapter integration', () => {
 
     let seq = 0
     let first = true
-    const deliver = (operation: object) => {
+    const deliver = (operation: GraphOperation) => {
       const before = Y.encodeStateVector(host)
       const operationId = `op-${++seq}`
       const result = applyOps(
@@ -1418,19 +1421,8 @@ describe('EcsFollowerAdapter integration', () => {
   })
 
   it('populates node slot arrays identically whether add+connect ops arrive in one combined frame or separate singleton frames (R-96)', () => {
-    const buildOp = (
-      id: string,
-      baseVersion: number,
-      payload: GraphOperation
-    ): Op => ({
-      op_id: id,
-      actor: 'agent:test',
-      base_version: baseVersion,
-      stamp: [baseVersion, 'agent:test'],
-      ...payload
-    })
     const buildOps = (prefix: string): Op[] => [
-      buildOp(`${prefix}-1`, 1, {
+      op(`${prefix}-1`, 1, {
         op: 'add_node',
         node_id: 1,
         class_type: 'Source',
@@ -1442,7 +1434,7 @@ describe('EcsFollowerAdapter integration', () => {
           outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
         }
       }),
-      buildOp(`${prefix}-2`, 2, {
+      op(`${prefix}-2`, 2, {
         op: 'add_node',
         node_id: 2,
         class_type: 'Sink',
@@ -1454,7 +1446,7 @@ describe('EcsFollowerAdapter integration', () => {
           outputs: []
         }
       }),
-      buildOp(`${prefix}-3`, 3, {
+      op(`${prefix}-3`, 3, {
         op: 'connect',
         link_id: 9,
         from_node: 1,
@@ -1761,7 +1753,8 @@ describe('EcsFollowerAdapter integration', () => {
       const follower = new FollowerDoc()
       const adapter = new EcsFollowerAdapter(mutations, undefined, {
         pendingDeletes: () => pendingDeletes,
-        pendingAdds: () => new Set()
+        pendingAdds: () => new Set(),
+        pendingConnects: () => new Set()
       })
       adapter.bind('wf', follower)
       const update = Y.encodeStateAsUpdate(host)
@@ -1810,6 +1803,11 @@ describe('EcsFollowerAdapter integration', () => {
         layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
       })
       const adapter = new EcsFollowerAdapter(mutations)
+      onTestFinished(() => {
+        adapter.destroy()
+        follower.destroy()
+        host.destroy()
+      })
       adapter.bind('wf', follower)
       const bootstrap = Y.encodeStateAsUpdate(host)
       follower.applyRemoteUpdate(bootstrap)
@@ -1838,10 +1836,6 @@ describe('EcsFollowerAdapter integration', () => {
           .getGraphNodesFor('root', 'root')
           .map(({ id }) => id)
       ).toEqual([toNodeId(1)])
-
-      adapter.destroy()
-      follower.destroy()
-      host.destroy()
     })
 
     it('retires a link whose connect never reached the doc', () => {
@@ -1870,6 +1864,11 @@ describe('EcsFollowerAdapter integration', () => {
         layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
       })
       const adapter = new EcsFollowerAdapter(mutations)
+      onTestFinished(() => {
+        adapter.destroy()
+        follower.destroy()
+        host.destroy()
+      })
       adapter.bind('wf', follower)
       const bootstrap = Y.encodeStateAsUpdate(host)
       follower.applyRemoteUpdate(bootstrap)
@@ -1902,10 +1901,6 @@ describe('EcsFollowerAdapter integration', () => {
       expect(
         useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
       ).toBeUndefined()
-
-      adapter.destroy()
-      follower.destroy()
-      host.destroy()
     })
   })
 })

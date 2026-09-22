@@ -1189,7 +1189,7 @@ describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
     bridge.subscribe(WORKFLOW_ID)
     bridge.reconcile()
 
-    expect(sent).toEqual([{ workflowId: WORKFLOW_ID }])
+    expect(sent).toEqual([{ workflowId: WORKFLOW_ID, generation: 1 }])
   })
 
   it('is not dispatched while the frame cannot leave a closed socket', () => {
@@ -1202,7 +1202,7 @@ describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
 
     transport.open = true
     bridge.reconcile()
-    expect(sent).toEqual([{ workflowId: WORKFLOW_ID }])
+    expect(sent).toEqual([{ workflowId: WORKFLOW_ID, generation: 1 }])
   })
 
   it.for([
@@ -1243,8 +1243,8 @@ describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
     provoke(wired)
 
     expect(sent).toEqual([
-      { workflowId: WORKFLOW_ID },
-      { workflowId: WORKFLOW_ID }
+      { workflowId: WORKFLOW_ID, generation: 1 },
+      { workflowId: WORKFLOW_ID, generation: 2 }
     ])
     expect(wired.transport.framesOfType('doc_subscribe')).toHaveLength(2)
   })

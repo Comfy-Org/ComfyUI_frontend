@@ -3,38 +3,27 @@
  * and `DocFrameClient` (only the wire transport and the ECS adapter are
  * doubled — see `followerSubscription.test.ts` for the same boundary), what
  * `useAgentCrdtFollower.test.ts`'s fully-mocked-bridge suite cannot: whether a
- * `doc_reset` for the tracked workflow that lands while a tab is inactive
- * ever reaches this composable's `pendingCorrelation.resetIfTracked`.
- *
- * It does not, today. `deactivateTarget` (`useAgentCrdtFollower.ts`) calls
- * `bridge.unsubscribe()`, which clears `LayoutFollowerBridge`'s
- * `sentWorkflowId` (`layoutFollowerBridge.ts`'s `reconcile()`); its
- * `onDocReset` then drops any reset whose `workflowId !== this.sentWorkflowId`
- * before it is ever re-dispatched as a `doc_reset` CustomEvent. A reset for
- * the still-bound workflow that the server sends while this tab is
- * unsubscribed therefore never reaches `useAgentCrdtFollower.ts` at all.
- *
- * Detecting that break on return would need a signal the current wire
- * protocol does not carry: `DocSubscribed`/`DocReset` have only
- * `workflow_id`/`seq`/`ok`/`code`/`message` (`common/websocket/docframes/
- * docframes.gen.go` in `Comfy-Org/cloud`), and `seq` is a single counter that
- * a re-mint only ever ADVANCES, never resets (`common/websocket/messages/
- * crdt.go`'s `DocUpdateFrame`/`DocResetFrame` docs; `services/agent/internal/
- * shadowdiff/remint.go`'s `RemintResult.ToSeq` > `FromSeq`). So neither the
- * resubscribe ack nor the first post-reactivation frame carries anything this
- * follower could compare against what it tracked before deactivating —
- * closing this gap for real needs a backend wire change (e.g. a per-lineage
- * generation id on `doc_subscribed`), which is out of scope for this
- * frontend-only PR and is left as a followup.
+ * `doc_reset` for the tracked workflow that lands while a tab is inactive ever
+ * reaches this composable's `pendingCorrelation.resetIfTracked` (it does not:
+ * `LayoutFollowerBridge.onDocReset` filters any reset whose `workflowId`
+ * disagrees with its own `sentWorkflowId`, which `unsubscribe()` already
+ * cleared), and how `pendingCorrelation.ts`'s reactivation continuity rule
+ * and subscribe-generation barrier behave against the real bridge's own
+ * subscribe/unsubscribe/ack sequencing once a resubscribe's ack arrives. The
+ * backend dependency and protocol gap this leaves open are recorded in
+ * ADR-CRDT-RECONCILE-0035, not here.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mint } from '@comfyorg/comfy-multi-player'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
+import * as Y from 'yjs'
 
 import { render } from '@testing-library/vue'
 
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
 
+import { encodeBase64 } from './docFrameClient'
 import type { GraphMutations } from './graphMutations'
 import type { GraphOperation } from './graphOperations'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -47,11 +36,25 @@ const adapterState = vi.hoisted(() => ({
   reconcileFromDoc: vi.fn(() => true),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
-  destroy: vi.fn()
+  destroy: vi.fn(),
+  // Captured so a test can read `LocalIntent.pendingAdds`/`pendingConnects`
+  // at reconcile time — the coordination boundary's own guard against
+  // retaining old-lineage ids while continuity is still unknown.
+  intent: null as {
+    pendingAdds(workflowId: string): ReadonlySet<string>
+    pendingConnects(workflowId: string): ReadonlySet<string>
+  } | null
 }))
 
 vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   EcsFollowerAdapter: class {
+    constructor(
+      _mutations: unknown,
+      _pendingAddType: unknown,
+      intent?: (typeof adapterState)['intent']
+    ) {
+      adapterState.intent = intent ?? null
+    }
     bind = adapterState.bind
     unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
@@ -104,6 +107,14 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
  * always-open socket that records outbound frames and lets a test deliver an
  * inbound one by dispatching the wire event `DocFrameClient` listens for.
  */
+function parseWireFrame(frame: string): { type: string; data: unknown } | null {
+  const parsed: unknown = JSON.parse(frame)
+  if (typeof parsed !== 'object' || parsed === null) return null
+  const { type } = parsed as { type?: unknown }
+  if (typeof type !== 'string') return null
+  return { type, data: (parsed as { data?: unknown }).data }
+}
+
 const transportState = vi.hoisted(() => {
   class FakeTransport extends EventTarget {
     readonly sent: string[] = []
@@ -116,14 +127,18 @@ const transportState = vi.hoisted(() => {
     }
     framesOfType(type: string): { type: string; data: unknown }[] {
       return this.sent
-        .map((frame) => JSON.parse(frame) as { type: string; data: unknown })
-        .filter((frame) => frame.type === type)
+        .map((frame) => parseWireFrame(frame))
+        .filter(
+          (frame): frame is { type: string; data: unknown } =>
+            frame !== null && frame.type === type
+        )
     }
   }
-  return {
-    FakeTransport,
-    current: null as InstanceType<typeof FakeTransport> | null
-  }
+  const state: {
+    FakeTransport: typeof FakeTransport
+    current: InstanceType<typeof FakeTransport> | null
+  } = { FakeTransport, current: null }
+  return state
 })
 
 vi.mock<unknown>(import('./agentCrdtTransport'), () => ({
@@ -137,7 +152,19 @@ vi.mock<unknown>(import('./agentCrdtTransport'), () => ({
 
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
-const graphMutations = {} as GraphMutations
+// A complete typed fake, not `{} as GraphMutations`: the ECS adapter is
+// mocked away in this file (nothing here ever calls these), but a real
+// interface implementation still catches a newly exercised mutation at
+// compile time instead of as an indirect runtime property-access error.
+const graphMutations: GraphMutations = {
+  batch: vi.fn(() => true),
+  addNode: vi.fn(() => true),
+  setWidget: vi.fn(() => true),
+  connect: vi.fn(() => true),
+  deleteNode: vi.fn(() => true),
+  clearSemanticGraph: vi.fn(() => true),
+  getNodeType: vi.fn(() => undefined)
+}
 
 function transport(): InstanceType<(typeof transportState)['FakeTransport']> {
   const current = transportState.current
@@ -166,7 +193,7 @@ function mountFollower(
   unmount: () => void
 } {
   const workflowId = ref<string | null>(initial)
-  let enqueue!: (operations: GraphOperation[]) => void
+  let enqueue: ((operations: GraphOperation[]) => void) | undefined
   const host = defineComponent({
     setup() {
       enqueue = useAgentCrdtFollower(
@@ -179,15 +206,33 @@ function mountFollower(
     }
   })
   const { unmount } = render(host)
+  onTestFinished(unmount)
+  if (!enqueue)
+    throw new Error('useAgentCrdtFollower setup() did not run during render')
   return { enqueue, unmount }
+}
+
+/** A real, schema-valid catch-up `doc_update` wire frame at `seq`. */
+function hostUpdateFrame(workflowId: string, seq: number) {
+  const doc = mint({ nodes: [], links: [] }, { types: {} })
+  return {
+    v: 1,
+    workflow_id: workflowId,
+    seq,
+    update_b64: encodeBase64(Y.encodeStateAsUpdate(doc))
+  }
 }
 
 describe('useAgentCrdtFollower — lineage break through the real bridge/transport boundary', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
     transportState.current = null
-    for (const fn of Object.values(adapterState)) fn.mockClear()
+    for (const value of Object.values(adapterState)) {
+      if (typeof value === 'function' && 'mockClear' in value) value.mockClear()
+    }
     adapterState.applyFrame.mockReturnValue(true)
+    adapterState.reconcileFromDoc.mockReturnValue(true)
+    adapterState.intent = null
   })
 
   it('F4: a same-workflow doc_reset that lands while the tab is inactive never reaches the composable (unreachable via the real bridge)', async () => {
@@ -235,5 +280,133 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
     isTargetActive.value = true
     await nextTick()
     unmount()
+  })
+
+  it('C3(i)/(iii): a resubscribe ack matching the projected watermark establishes continuity, and a duplicate ack is not a second barrier', async () => {
+    const isTargetActive = ref(true)
+    mountFollower('wf-1', isTargetActive)
+
+    transport().deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 1
+    })
+    transport().deliver('doc_update', hostUpdateFrame('wf-1', 1))
+    expect(adapterState.applyFrame).toHaveBeenCalledTimes(1)
+
+    // Tab away, then back: this is a reactivation, so the resume's ack is
+    // checked for continuity with what was last projected (seq 1).
+    isTargetActive.value = false
+    await nextTick()
+    isTargetActive.value = true
+    await nextTick()
+    expect(transport().framesOfType('doc_subscribe')).toHaveLength(2)
+
+    adapterState.reconcileFromDoc.mockClear()
+    transport().deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 1
+    })
+    expect(adapterState.reconcileFromDoc).toHaveBeenCalledWith('wf-1', 1)
+
+    // A duplicate/delayed-retry ack for the SAME resubscribe (same
+    // generation) must not act as a second barrier.
+    adapterState.reconcileFromDoc.mockClear()
+    transport().deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 1
+    })
+    expect(adapterState.reconcileFromDoc).not.toHaveBeenCalled()
+  })
+
+  it('C3(ii): an ack whose seq diverges after reactivation conservatively invalidates instead of trusting the ledger', async () => {
+    const isTargetActive = ref(true)
+    mountFollower('wf-1', isTargetActive)
+
+    transport().deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 1
+    })
+    transport().deliver('doc_update', hostUpdateFrame('wf-1', 1))
+
+    isTargetActive.value = false
+    await nextTick()
+    isTargetActive.value = true
+    await nextTick()
+    expect(transport().framesOfType('doc_subscribe')).toHaveLength(2)
+
+    adapterState.reconcileFromDoc.mockClear()
+    // A remint under the SAME workflow id while this tab was away (the gap
+    // this frontend has no generation token to detect directly): the ack's
+    // seq no longer matches what this correlation last projected.
+    transport().deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 9
+    })
+
+    // Continuity failed: the forced reconcile an already-current ack would
+    // otherwise run must NOT run against a doc this ack cannot vouch for.
+    expect(adapterState.reconcileFromDoc).not.toHaveBeenCalled()
+  })
+
+  it("C3: pendingAdds/pendingConnects retain nothing while a reactivation's continuity is still unknown (a frame can outrun its own resume's ack)", async () => {
+    const isTargetActive = ref(true)
+    const { enqueue } = mountFollower('wf-1', isTargetActive)
+
+    transport().deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 1
+    })
+    transport().deliver('doc_update', hostUpdateFrame('wf-1', 1))
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+    await Promise.resolve()
+    expect(transport().framesOfType('doc_ops')).toHaveLength(1)
+
+    const intent = adapterState.intent
+    if (!intent) throw new Error('the adapter was never constructed')
+    expect([...intent.pendingAdds('wf-1')]).toEqual(['5'])
+
+    isTargetActive.value = false
+    await nextTick()
+    isTargetActive.value = true
+    await nextTick()
+    expect(transport().framesOfType('doc_subscribe')).toHaveLength(2)
+
+    // The resume's own subscribe left the transport, but its ack has not
+    // arrived yet: continuity with what this correlation last projected is
+    // unknown, so a live/catch-up frame that outran the ack — exactly the
+    // race `layoutFollowerBridge.ts` already documents for its OWN ack —
+    // must not see the ledger's real, possibly wrong-lineage ids.
+    expect([...intent.pendingAdds('wf-1')]).toEqual([])
+
+    // Continuity established once the ack lands (same seq as projected):
+    // the real ids are retained again for every reconcile from here on.
+    transport().deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 1
+    })
+    expect([...intent.pendingAdds('wf-1')]).toEqual(['5'])
   })
 })
