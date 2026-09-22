@@ -1077,11 +1077,50 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   }
 
   /**
+   * The `named` half of `applyWidgetValues`: values keyed by widget name,
+   * applied in whatever order the doc map iterates.
+   */
+  function applyNamedWidgetValues(
+    scope: GraphScope,
+    nodeId: NodeId,
+    values: ReadonlyMap<string, WidgetValue>,
+    context: RemoteMutationContext,
+    guardLocalEdits: boolean
+  ): void {
+    for (const [name, value] of values) {
+      if (guardLocalEdits && skipStaleReconcile(scope, nodeId, name)) continue
+      setWidgetValue(scope, nodeId, name, value, context)
+    }
+  }
+
+  /**
+   * The `positional` half of `applyWidgetValues`: values bind to the live
+   * node's serialized widgets in order, the same order `LGraphNode.serialize`
+   * wrote them in.
+   */
+  function applyPositionalWidgetValues(
+    scope: GraphScope,
+    nodeId: NodeId,
+    values: readonly WidgetValue[],
+    context: RemoteMutationContext,
+    guardLocalEdits: boolean
+  ): void {
+    const serialized = widgetStore
+      .getNodeWidgets(scope.rootGraphId, nodeId)
+      .filter((widget) => widget.serialize !== false)
+      .slice(0, values.length)
+    for (const [index, widget] of serialized.entries()) {
+      if (guardLocalEdits && skipStaleReconcile(scope, nodeId, widget.name)) {
+        continue
+      }
+      setWidgetValue(scope, nodeId, widget.name, values[index], context)
+    }
+  }
+
+  /**
    * A doc entry for a node that is already live is a value patch: the live
    * widgets keep their registered type, options, and state identity, and a
-   * value the payload omits keeps its current value. Positional values bind
-   * to the serialized widgets in order, the same order `LGraphNode.serialize`
-   * wrote them in.
+   * value the payload omits keeps its current value.
    *
    * `guardLocalEdits` skips a widget via {@link skipStaleReconcile}; it is only set
    * for a plain node's `reconcileNode`. A subgraph host's `reconcileNodeFields`
@@ -1102,35 +1141,23 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       case 'omitted':
         return
       case 'named':
-        for (const [name, value] of widgets.values) {
-          if (guardLocalEdits && skipStaleReconcile(scope, nodeId, name)) {
-            continue
-          }
-          setWidgetValue(scope, nodeId, name, value, context)
-        }
+        applyNamedWidgetValues(
+          scope,
+          nodeId,
+          widgets.values,
+          context,
+          guardLocalEdits
+        )
         return
-      case 'positional': {
-        const serialized = widgetStore
-          .getNodeWidgets(scope.rootGraphId, nodeId)
-          .filter((widget) => widget.serialize !== false)
-          .slice(0, widgets.values.length)
-        for (const [index, widget] of serialized.entries()) {
-          if (
-            guardLocalEdits &&
-            skipStaleReconcile(scope, nodeId, widget.name)
-          ) {
-            continue
-          }
-          setWidgetValue(
-            scope,
-            nodeId,
-            widget.name,
-            widgets.values[index],
-            context
-          )
-        }
+      case 'positional':
+        applyPositionalWidgetValues(
+          scope,
+          nodeId,
+          widgets.values,
+          context,
+          guardLocalEdits
+        )
         return
-      }
       default: {
         const unhandled: never = widgets
         return unhandled
