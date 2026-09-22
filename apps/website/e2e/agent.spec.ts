@@ -73,9 +73,7 @@ test.describe('Agent landing — desktop @smoke', () => {
     )
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
     await expect(
-      page
-        .getByRole('link', { name: 'Try on Comfy Cloud', exact: true })
-        .first()
+      page.getByRole('link', { name: 'Try Comfy Agent', exact: true }).first()
     ).toHaveAttribute('href', 'https://cloud.comfy.org')
     await expect(
       page.getByRole('heading', { name: 'One canvas, every industry' })
