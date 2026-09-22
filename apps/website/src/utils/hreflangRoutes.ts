@@ -8,14 +8,6 @@
  * Kept free of `import.meta.glob` so a plain Node script can import it.
  */
 
-/**
- * Prefixes and hreflang values come from `config/locales.ts` rather than being
- * restated here. Sharing them is deliberate and is what #15488 asked for: there
- * must be exactly one definition of what the Chinese twin of a URL is, or the
- * pages and the sitemap can disagree about it. What this module keeps to itself
- * is which ROUTES cluster, which is the part that has to stay independent of
- * the emitter.
- */
 import { LOCALE_PREFIXES, LOCALES } from '../config/locales'
 
 /** The value the marketing site publishes for Simplified Chinese. */
@@ -63,5 +55,5 @@ export function unprefixed(pathname: string): string {
 
 /** The URL of `path` in a locale, given that locale's prefix. */
 export function localizedHref(prefix: string, path: string): string {
-  return `${prefix}${path === '/' ? '/' : path}`
+  return `${prefix}${path}`
 }

@@ -16,13 +16,17 @@ const alternates = [
 ]
 
 it.for([
-  ['https://comfy.org/ja/about/', 0],
-  ['https://other.example/ja/about/', 1],
-  ['https://comfy.org/ja/about/?preview=true', 1],
-  ['https://comfy.org/ja/about/#section', 1]
+  ['https://comfy.org/ja/about/', 0, 'every cluster is reciprocal'],
+  ['https://other.example/ja/about/', 1, '/ja/about/: canonical must be'],
+  [
+    'https://comfy.org/ja/about/?preview=true',
+    1,
+    '/ja/about/: canonical must be'
+  ],
+  ['https://comfy.org/ja/about/#section', 1, '/ja/about/: canonical must be']
 ] as const)(
   'audits the complete Japanese canonical %s',
-  async ([canonical, status]) => {
+  async ([canonical, status, diagnostic]) => {
     const directory = await mkdtemp(join(tmpdir(), 'hreflang-canonical-'))
     onTestFinished(() => rm(directory, { recursive: true, force: true }))
     const links = alternates
@@ -57,5 +61,6 @@ it.for([
 
     expect(result.error).toBeUndefined()
     expect(result.status).toBe(status)
+    expect(result.stderr).toContain(diagnostic)
   }
 )

@@ -28,9 +28,7 @@ function healthySite() {
       ['/about/', cluster('/about/')],
       ['/zh-CN/about/', cluster('/about/')],
       ['/affiliates/', []]
-    ]),
-    // No Japanese page claims to be an original in these fixtures.
-    selfCanonical: new Set<string>()
+    ])
   }
 }
 
@@ -233,81 +231,36 @@ describe('sitemapChunkNames', () => {
   })
 })
 
-describe('a locale that is built but not ready', () => {
-  /**
-   * Astro's i18n fallback builds a page for EVERY route in a fallback locale,
-   * so /ja/ went from one page to 560. "The file exists" therefore stopped
-   * meaning "this language is published here", and the audit had been reading
-   * exactly that: it demanded every English page advertise a Japanese twin, and
-   * the check failed on 1,124 routes.
-   *
-   * The signal it reads now is the Japanese page's OWN canonical. A page that
-   * points at the English original is declaring itself not the original, which
-   * is precisely "built but not ready". That keeps the audit independent of the
-   * emitter's config — it cross-checks two things the built site says.
-   */
-  function siteWithFallbackJapanese() {
-    return {
-      origin: ORIGIN,
-      pages: new Map<string, Alternate[]>([
-        ['/about/', cluster('/about/')],
-        ['/zh-CN/about/', cluster('/about/')],
-        // Built by the fallback: canonical points home to English, and it
-        // advertises no cluster of its own.
-        ['/ja/about/', []]
-      ]),
-      sitemap: new Map<string, Alternate[]>([
-        ['/about/', cluster('/about/')],
-        ['/zh-CN/about/', cluster('/about/')]
-      ]),
-      selfCanonical: new Set<string>()
-    }
-  }
+describe('Japanese publication', () => {
+  it('requires a built Japanese page in the page and sitemap clusters', () => {
+    const site = healthySite()
+    site.pages.set('/ja/about/', [])
 
-  it('does not demand a cluster name a Japanese page that points at English', () => {
-    expect(auditBuiltSite(siteWithFallbackJapanese())).toEqual([])
+    const errors = auditBuiltSite(site)
+    expect(errors).toHaveLength(4)
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        '/about/: page expects ja -> https://comfy.org/ja/about/, but does not declare it',
+        '/zh-CN/about/: page expects ja -> https://comfy.org/ja/about/, but does not declare it',
+        '/about/: sitemap expects ja -> https://comfy.org/ja/about/, but does not declare it',
+        '/zh-CN/about/: sitemap expects ja -> https://comfy.org/ja/about/, but does not declare it'
+      ])
+    )
   })
 
-  it('still demands it once the Japanese page canonicals to itself', () => {
-    const site = siteWithFallbackJapanese()
-    site.selfCanonical = new Set(['/ja/about/'])
-
-    expect(auditBuiltSite(site)).toEqual([
-      '/about/: page expects ja -> https://comfy.org/ja/about/, but does not declare it',
-      '/zh-CN/about/: page expects ja -> https://comfy.org/ja/about/, but does not declare it',
-      '/about/: sitemap expects ja -> https://comfy.org/ja/about/, but does not declare it',
-      '/zh-CN/about/: sitemap expects ja -> https://comfy.org/ja/about/, but does not declare it'
-    ])
-  })
-
-  /**
-   * The passing case, without which the two above prove less than they look.
-   * One asserts nothing is demanded of a page that declares no cluster, the
-   * other asserts failures — so a rule that rejected every `ja` cluster
-   * outright, a route-key mismatch between `localizedHref` and the `pages`
-   * keys for instance, would satisfy both and never be noticed.
-   */
-  it('accepts a Japanese page that is genuinely published', () => {
-    const withJapanese = (path: string): Alternate[] => [
+  it.for(['/', '/about/'])('accepts a published Japanese route %s', (path) => {
+    const alternates = [
       ...cluster(path),
       { hreflang: 'ja', href: `${ORIGIN}/ja${path}` }
     ]
+    const pages = new Map([
+      [path, alternates],
+      [`/zh-CN${path}`, alternates],
+      [`/ja${path}`, alternates]
+    ])
 
     expect(
-      auditBuiltSite({
-        origin: ORIGIN,
-        pages: new Map<string, Alternate[]>([
-          ['/about/', withJapanese('/about/')],
-          ['/zh-CN/about/', withJapanese('/about/')],
-          ['/ja/about/', withJapanese('/about/')]
-        ]),
-        sitemap: new Map<string, Alternate[]>([
-          ['/about/', withJapanese('/about/')],
-          ['/zh-CN/about/', withJapanese('/about/')],
-          ['/ja/about/', withJapanese('/about/')]
-        ]),
-        selfCanonical: new Set(['/ja/about/'])
-      })
+      auditBuiltSite({ origin: ORIGIN, pages, sitemap: new Map(pages) })
     ).toEqual([])
   })
 })

@@ -1,4 +1,4 @@
-type Locale = 'en' | 'zh-CN' | 'ja'
+import type { Locale } from '../config/locales'
 
 const translations = {
   'home.workshop.heading': {

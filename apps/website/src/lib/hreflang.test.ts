@@ -9,7 +9,6 @@ import { redirects } from '../config/redirects'
 import { routeOf, ZH_PREFIX } from '../utils/hreflangRoutes'
 import type { Alternate } from './hreflang'
 import {
-  canonicalPath,
   hreflangAlternates,
   ogLocale,
   ogLocaleAlternate,
@@ -66,13 +65,14 @@ describe('hreflangAlternates', () => {
 
   // Japanese has exactly one page. A blanket rule like Chinese's would
   // advertise a Japanese URL for every route on the site.
-  it('offers no ja alternate for routes that have no Japanese page', () => {
-    for (const pathname of ['/cli/', '/zh-CN/cli/', '/mcp/']) {
+  it.for(['/cli/', '/zh-CN/cli/', '/mcp/', '/zh-CN/pricing/'])(
+    'offers no ja alternate for unpublished route %s',
+    (pathname) => {
       expect(
         hreflangAlternates(pathname, ORIGIN).map((a) => a.hreflang)
       ).toEqual(['en', 'zh-CN', 'x-default'])
     }
-  })
+  )
 
   it('covers dynamic routes that exist in both locales', () => {
     expect(
@@ -230,84 +230,5 @@ describe('the emitter agrees with the page tree', () => {
       (route) => clusters(`${ZH_PREFIX}${route}`) && !english.has(route)
     )
     expect(lying, 'the English twin was moved or removed').toEqual([])
-  })
-})
-
-describe('a page whose own locale is held back', () => {
-  /**
-   * Astro's i18n fallback builds /ja/<route> for every route, but only / is on
-   * the Japanese allowlist. Those pages canonical to English, which is right.
-   * They were also emitting the English cluster, which is not: nothing in that
-   * cluster lists them back, so the site advertised a one-way relationship, and
-   * the pages appeared to claim membership of a group they are held out of.
-   *
-   * A page that is not published in its own locale belongs in no cluster.
-   */
-  it('emits no alternates for a Japanese page that is not indexable', () => {
-    // The English pathname is deliberate: that is what Astro reports during a
-    // rewritten fallback render. Only the locale argument reveals it is ja.
-    expect(hreflangAlternates('/mcp/', ORIGIN, 'ja')).toEqual([])
-  })
-
-  it('still emits them for the Japanese page that IS indexable', () => {
-    expect(
-      hreflangAlternates('/ja/', ORIGIN, 'ja').map((a) => a.hreflang)
-    ).toContain('ja')
-  })
-
-  it('leaves Chinese alone when Japanese is the one held back', () => {
-    expect(
-      hreflangAlternates('/zh-CN/mcp/', ORIGIN, 'zh-CN').map((a) => a.hreflang)
-    ).toEqual(['en', 'zh-CN', 'x-default'])
-  })
-
-  it('does not advertise Japanese pricing before publication', () => {
-    expect(
-      hreflangAlternates('/zh-CN/pricing/', ORIGIN, 'zh-CN').map(
-        (a) => a.hreflang
-      )
-    ).toEqual(['en', 'zh-CN', 'x-default'])
-  })
-})
-
-describe('canonicalPath', () => {
-  /**
-   * THE most dangerous line in the localization work.
-   *
-   * Deleting the Chinese page files makes every /zh-CN/ URL a rewritten
-   * fallback render, and Astro reports the ENGLISH pathname during those. A
-   * canonical built from that pathname told Google the English page was the
-   * original for a fully translated Chinese page. Shipped across all 47 files
-   * it would have de-indexed the entire Chinese site.
-   *
-   * The canonical must follow whether the page is PUBLISHED in its locale, not
-   * whatever path Astro happens to report.
-   */
-  it.for(['/pricing/'])(
-    'points the published Chinese page %s at itself',
-    (path) => {
-      expect(canonicalPath(path, 'zh-CN')).toBe(`/zh-CN${path}`)
-      expect(canonicalPath(`/zh-CN${path}`, 'zh-CN')).toBe(`/zh-CN${path}`)
-    }
-  )
-
-  it('points a held-back Japanese page at the English original', () => {
-    expect(canonicalPath('/mcp/', 'ja')).toBe('/mcp/')
-  })
-
-  it('holds Japanese pricing at its English original', () => {
-    expect(canonicalPath('/pricing/', 'ja')).toBe('/pricing/')
-  })
-
-  it('points the published Japanese home page at itself', () => {
-    expect(canonicalPath('/ja/', 'ja')).toBe('/ja/')
-  })
-
-  it('points a Chinese copy of an English-only route at English', () => {
-    expect(canonicalPath('/enterprise-msa/', 'zh-CN')).toBe('/enterprise-msa/')
-  })
-
-  it('leaves English alone', () => {
-    expect(canonicalPath('/pricing/', 'en')).toBe('/pricing/')
   })
 })
