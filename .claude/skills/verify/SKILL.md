@@ -185,7 +185,7 @@ Everything goes under `temp/verify-evidence/<scenario>/` (`/temp/` is gitignored
 
 Capture, per run:
 
-- **Rail attribution.** A HAR or a request table showing resourceType and path for every `/api/billing/*` call, and `Idempotency-Key` for every write, including the _first_ `status` and `balance` of the page load. The rail is decided before the first read, so a late check proves nothing.
+- **Rail attribution.** A HAR or a request table showing resourceType and path for every `/api/billing/*` call, and `Idempotency-Key` for every write, including the _first_ `status` and `balance` of the page load. The rail is decided before the first read, so a late check proves nothing. Prefer the request table. If you save a HAR, strip `Authorization`, `Cookie`, `Set-Cookie` and any token headers or query values before writing it to disk; if the capture tool cannot redact, record only whether each header was present.
 - **The numbers.** Credits total, plan name, renewal date, and the first three usage-log rows. These are the parity baseline; a migration is only correct if a customer cannot tell which rail they are on.
 - **Screenshots.** The action and the resulting state, not just the final screen.
 - **Console.** Error count with the rail off vs on. A new error that only appears on one rail is a finding.
