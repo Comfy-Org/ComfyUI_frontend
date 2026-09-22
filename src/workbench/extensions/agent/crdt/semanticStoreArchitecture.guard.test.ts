@@ -3,7 +3,8 @@
  *
  * The ADR's end state is that the three semantic stores are Yjs-backed and a
  * remote update merges into them directly, without being re-derived through
- * `GraphMutations.batch`. Those two assertions are marked `it.fails` until the
+ * `GraphMutations.batch`, and the delivered content is readable from the
+ * per-root semantic document. Those assertions are marked `it.fails` until the
  * slices that deliver them land; the slice that flips them must drop the
  * marker in the same change. The remaining assertions hold today and protect
  * the boundaries the migration must not move.
@@ -11,8 +12,11 @@
 import { mint } from '@comfyorg/comfy-multi-player'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
+
+import { semanticDocs } from '@/stores/semanticDoc'
+import { toRootGraphId } from '@/types/graphScopeId'
 
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
@@ -82,7 +86,13 @@ function deliverSeed(mutations: GraphMutations) {
   return { committed, roots }
 }
 
+const WORKFLOW_ROOT = toRootGraphId('wf')
+
 describe('CRDT-STORES-0036 semantic store architecture guard', () => {
+  afterEach(() => {
+    semanticDocs.destroyAll()
+  })
+
   for (const file of SEMANTIC_STORES) {
     it.fails(`KNOWN GAP: ${file} is a projection of a Yjs document`, () => {
       expect(readSource(path.join(STORES_DIR, file))).toMatch(YJS_IMPORT)
@@ -93,6 +103,16 @@ describe('CRDT-STORES-0036 semantic store architecture guard', () => {
     const mutations = recordingMutations()
     deliverSeed(mutations)
     expect(mutations.batch).not.toHaveBeenCalled()
+  })
+
+  // Result assertion: skipping `batch` is not enough, the delivered content
+  // must actually land in the per-root semantic document the stores project.
+  it.fails('KNOWN GAP: a delivered update lands in the semantic document projection', () => {
+    const { committed } = deliverSeed(recordingMutations())
+    expect(committed).toBe(true)
+    const graph = semanticDocs.readGraph(WORKFLOW_ROOT)
+    expect(Object.keys(graph.nodes).sort()).toEqual(['1', '2'])
+    expect(Object.keys(graph.links)).toEqual(['9'])
   })
 
   it('layoutStore keeps its own Yjs document', () => {
