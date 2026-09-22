@@ -119,7 +119,7 @@ import {
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { createLiveWidgetProjection } from './crdt/liveWidgetProjection'
-import { getSharedPendingDeleteRetentionStore } from './crdt/pendingDeleteRetentionStore'
+import { sharedPendingDeleteRetentionStore } from './crdt/pendingDeleteRetentionStore'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -621,10 +621,8 @@ const {
     },
     onReset: graphActivity.resetWorkflow
   },
-  // Shared across this panel's own mount/unmount cycles, so a retained human
-  // delete survives the docked panel closing and reopening (ADR
-  // CRDT-WRITE-0035) instead of starting over with each fresh follower.
-  getSharedPendingDeleteRetentionStore()
+  // See ADR CRDT-WRITE-0035.
+  sharedPendingDeleteRetentionStore
 )
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,

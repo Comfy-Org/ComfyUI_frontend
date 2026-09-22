@@ -86,9 +86,7 @@ export interface OpSender {
   /**
    * Mint and target-pin operations into the open admission group without
    * starting transport delivery. Consecutive admissions for one workflow
-   * share the group until `flush()` seals it. After `detach()`, an admission
-   * settles at once as `'undeliverable'` instead of joining a group that
-   * will never flush.
+   * share the group until `flush()` seals it.
    */
   admit(operations: GraphOperation[]): void
   /** Seal the open admission group into wire batches and start delivery. */
@@ -251,10 +249,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   /**
-   * Drains the queue, the open group and the in-flight batch (in that mint
-   * order) and reports each through `notify`, which owns only whether a
-   * settlement failure is caught: {@link abortAll} lets one propagate,
-   * {@link detach} reports and continues to the next.
+   * Drains the in-flight batch, the queue, then the open group, and reports
+   * each through `notify`, which owns only whether a settlement failure is
+   * caught: {@link abortAll} lets one propagate, {@link detach} reports and
+   * continues to the next.
    */
   function drainOutstanding(notify: (outcome: BatchOutcome) => void): void {
     const queued = queue.splice(0)

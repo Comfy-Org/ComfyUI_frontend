@@ -1,16 +1,10 @@
 /**
  * Owns retained human-delete intent (ADR CRDT-WRITE-0035) at a scope wider
- * than any single follower instance. `useAgentCrdtFollower`'s `productGate`
- * watch and `AgentPanelRoot.vue`'s own mount/unmount both dispose a follower
- * (bridge, client, sender, projection) and can create a brand new one for
- * the same workflow; a map owned by the disposed follower cannot answer that
- * new follower's first reconcile, which is exactly the window an unconfirmed
- * delete could get resurrected in. Callers inject one instance and thread
- * every workflow's ops through it rather than owning the maps directly, so
- * retention survives replacement: production shares one instance across
- * remounts via {@link getSharedPendingDeleteRetentionStore}, while tests
- * construct a fresh one per case via {@link createPendingDeleteRetentionStore}.
+ * than any single follower instance; see the ADR for why and for the
+ * retention state machine this module implements.
  */
+import { reportError } from '@/platform/telemetry/reportError'
+
 import { STALE_AFTER_MS } from './agentCrdtDocLifecycle'
 import type { BatchOutcome } from './opSender'
 
@@ -21,6 +15,12 @@ const PENDING_DELETE_EXPIRY_MS = STALE_AFTER_MS
 type RetainedDelete =
   | { reason: 'confirmed-applied'; deletedItemId: string | null }
   | { reason: 'unknown'; expiresAt: number; deletedItemId: string | null }
+
+/** One `captureDeleteIntent` call awaiting the terminal outcome of its op. */
+interface PendingCapture {
+  nodeId: string
+  itemId: string | null
+}
 
 /**
  * Merges a newly settled retention into any existing record for the same
@@ -42,37 +42,81 @@ function mergeRetainedDelete(
   return incoming.expiresAt >= existing.expiresAt ? incoming : existing
 }
 
-/** Every delete_node op in a settled batch that must keep suppressing its node, paired with the `RetainedDelete` record to store for it. */
+/** The retention reason a settled `delete_node` op's own outcome names, or `null` when it does not retain (skipped, undeliverable). */
+function retentionReason(
+  outcome: BatchOutcome,
+  opId: string
+): RetainedDelete['reason'] | null {
+  if (outcome.state === 'acknowledged')
+    return outcome.result.applied.includes(opId) ? 'confirmed-applied' : null
+  if (outcome.state === 'unconfirmed' || outcome.state === 'unacknowledged')
+    return 'unknown'
+  return null
+}
+
+/**
+ * Consumes and returns `nodeId`'s own captured identity, one FIFO slot per
+ * `delete_node` op regardless of its outcome - see
+ * {@link retainedDeletesFromBatch}. A capture whose node id does not match
+ * `nodeId` means the FIFO invariant this depends on broke; reported and
+ * treated as no capture rather than trusted.
+ */
+function consumeDeletedItemId(
+  workflowId: string | null,
+  nodeId: string,
+  consumeNextCapture: (workflowId: string) => PendingCapture | undefined
+): string | null {
+  const capture =
+    workflowId === null ? undefined : consumeNextCapture(workflowId)
+  if (!capture) return null
+  if (capture.nodeId !== nodeId) {
+    reportError(
+      new Error('pending delete capture order does not match its op'),
+      { errorType: 'failure_matching_agent_pending_delete_capture' }
+    )
+    return null
+  }
+  return capture.itemId
+}
+
+function buildRetainedDelete(
+  reason: RetainedDelete['reason'],
+  deletedItemId: string | null
+): RetainedDelete {
+  return reason === 'unknown'
+    ? {
+        reason,
+        expiresAt: Date.now() + PENDING_DELETE_EXPIRY_MS,
+        deletedItemId
+      }
+    : { reason, deletedItemId }
+}
+
+/**
+ * Every `delete_node` op in a settled batch that must keep suppressing its
+ * node, paired with the `RetainedDelete` record to store for it.
+ * `consumeNextCapture` is called for every `delete_node` op in the batch,
+ * including one whose outcome does not retain (skipped, or undeliverable) -
+ * a capture is a one-shot slot for exactly one minted op, and an outcome that
+ * does not consume its own slot leaves it to be wrongly consumed by whatever
+ * later op happens to ask next.
+ */
 function retainedDeletesFromBatch(
   outcome: BatchOutcome,
-  capturedItemId: (nodeId: string) => string | null
+  consumeNextCapture: (workflowId: string) => PendingCapture | undefined
 ): Array<[nodeId: string, record: RetainedDelete]> {
   const retained: Array<[string, RetainedDelete]> = []
   for (const op of outcome.ops) {
     if (op.op !== 'delete_node') continue
-    let reason: RetainedDelete['reason'] | null = null
-    if (outcome.state === 'acknowledged') {
-      if (outcome.result.applied.includes(op.op_id))
-        reason = 'confirmed-applied'
-    } else if (
-      outcome.state === 'unconfirmed' ||
-      outcome.state === 'unacknowledged'
-    ) {
-      reason = 'unknown'
-    }
-    if (!reason) continue
     const nodeId = String(op.node_id)
-    const deletedItemId = capturedItemId(nodeId)
-    retained.push([
+    const deletedItemId = consumeDeletedItemId(
+      outcome.workflowId,
       nodeId,
-      reason === 'unknown'
-        ? {
-            reason,
-            expiresAt: Date.now() + PENDING_DELETE_EXPIRY_MS,
-            deletedItemId
-          }
-        : { reason, deletedItemId }
-    ])
+      consumeNextCapture
+    )
+    const reason = retentionReason(outcome, op.op_id)
+    if (reason)
+      retained.push([nodeId, buildRetainedDelete(reason, deletedItemId)])
   }
   return retained
 }
@@ -101,9 +145,9 @@ export interface PendingDeleteRetentionStore {
    * than inferring the deleted identity from a later doc-diff, is what
    * keeps a same-tick atomic delete-and-recreate in one Yjs transaction
    * (which never appears as a `removed` id in that diff) from being
-   * attributed to the wrong incarnation. Overwrites any earlier, unconsumed
-   * capture for the same node id: the most recently issued delete is always
-   * the one a later settle should describe.
+   * attributed to the wrong incarnation. Queued FIFO per workflow: a
+   * recreate-then-delete admitted before an earlier delete's own result
+   * settles gets its own slot instead of overwriting the earlier one's.
    */
   captureDeleteIntent(
     workflowId: string,
@@ -124,37 +168,33 @@ export interface PendingDeleteRetentionStore {
 
 export function createPendingDeleteRetentionStore(): PendingDeleteRetentionStore {
   const confirmedDeletes = new Map<string, Map<string, RetainedDelete>>()
-  const pendingCaptures = new Map<string, Map<string, string | null>>()
+  const pendingCaptures = new Map<string, PendingCapture[]>()
 
-  const capturesFor = (workflowId: string): Map<string, string | null> => {
+  function captureQueueFor(workflowId: string): PendingCapture[] {
     let captures = pendingCaptures.get(workflowId)
     if (!captures) {
-      captures = new Map()
+      captures = []
       pendingCaptures.set(workflowId, captures)
     }
     return captures
   }
-  const consumeCapturedItemId = (
-    workflowId: string,
-    nodeId: string
-  ): string | null => {
+
+  function consumeNextCapture(workflowId: string): PendingCapture | undefined {
     const captures = pendingCaptures.get(workflowId)
-    if (!captures?.has(nodeId)) return null
-    const captured = captures.get(nodeId) ?? null
-    captures.delete(nodeId)
-    return captured
+    if (!captures || captures.length === 0) return undefined
+    const capture = captures.shift()
+    if (captures.length === 0) pendingCaptures.delete(workflowId)
+    return capture
   }
 
   return {
     captureDeleteIntent(workflowId, nodeId, itemId) {
-      capturesFor(workflowId).set(nodeId, itemId)
+      captureQueueFor(workflowId).push({ nodeId, itemId })
     },
     settleBatch(outcome) {
       if (outcome.workflowId === null) return
       const workflowId = outcome.workflowId
-      const retained = retainedDeletesFromBatch(outcome, (nodeId) =>
-        consumeCapturedItemId(workflowId, nodeId)
-      )
+      const retained = retainedDeletesFromBatch(outcome, consumeNextCapture)
       if (retained.length === 0) return
       let deletes = confirmedDeletes.get(workflowId)
       if (!deletes) {
@@ -181,17 +221,12 @@ export function createPendingDeleteRetentionStore(): PendingDeleteRetentionStore
   }
 }
 
-let sharedStore: PendingDeleteRetentionStore | undefined
-
 /**
  * The production owner: one instance per page load, shared across every
  * `useAgentCrdtFollower` call so retention survives a follower being
- * disposed and a new one mounted for the same workflow (a docked-panel
- * close/reopen, or the product-gate toggle). Tests inject their own instance
- * via {@link createPendingDeleteRetentionStore} instead, so state never
+ * disposed and a new one mounted for the same workflow. Tests inject their
+ * own instance via {@link createPendingDeleteRetentionStore} so state never
  * leaks between cases.
  */
-export function getSharedPendingDeleteRetentionStore(): PendingDeleteRetentionStore {
-  sharedStore ??= createPendingDeleteRetentionStore()
-  return sharedStore
-}
+export const sharedPendingDeleteRetentionStore: PendingDeleteRetentionStore =
+  createPendingDeleteRetentionStore()

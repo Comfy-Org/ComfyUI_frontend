@@ -17,67 +17,54 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: telemetryState.reportError
 }))
 
-import { readNodeItemIdentity, readYjsMapItemIdentity } from './yjsItemIdentity'
-
-describe('readYjsMapItemIdentity', () => {
-  it('returns null for a key that was never set', () => {
-    const map = new Y.Doc().getMap('nodes')
-    expect(readYjsMapItemIdentity(map, '1')).toBeNull()
-  })
-
-  it('returns a stable client:clock identity for a present entry', () => {
-    const map = new Y.Doc().getMap('nodes')
-    map.set('1', { type: 'KSampler' })
-    const identity = readYjsMapItemIdentity(map, '1')
-    expect(identity).toMatch(/^\d+:\d+$/)
-    expect(readYjsMapItemIdentity(map, '1')).toBe(identity)
-  })
-
-  it('keeps returning the tombstoned identity right after delete', () => {
-    const map = new Y.Doc().getMap('nodes')
-    map.set('1', { type: 'KSampler' })
-    const beforeDelete = readYjsMapItemIdentity(map, '1')
-    map.delete('1')
-    expect(readYjsMapItemIdentity(map, '1')).toBe(beforeDelete)
-  })
-
-  it('reports a different identity for a value recreated under the same key across separate transactions', () => {
-    const map = new Y.Doc().getMap('nodes')
-    map.set('1', { type: 'KSampler' })
-    const original = readYjsMapItemIdentity(map, '1')
-    map.delete('1')
-    map.set('1', { type: 'SaveImage' })
-    expect(readYjsMapItemIdentity(map, '1')).not.toBe(original)
-  })
-
-  it('reports a different identity for a delete-and-recreate inside one atomic transaction', () => {
-    const doc = new Y.Doc()
-    const map = doc.getMap('nodes')
-    map.set('1', { type: 'KSampler' })
-    const original = readYjsMapItemIdentity(map, '1')
-    doc.transact(() => {
-      map.delete('1')
-      map.set('1', { type: 'SaveImage' })
-    })
-    expect(readYjsMapItemIdentity(map, '1')).not.toBe(original)
-  })
-})
+import { readNodeItemIdentity } from './yjsItemIdentity'
 
 describe('readNodeItemIdentity', () => {
   beforeEach(() => {
     telemetryState.reportError.mockClear()
   })
 
-  it('reads the nodes map of a real Y.Doc', () => {
-    const doc = new Y.Doc()
-    doc.getMap('nodes').set('1', { type: 'KSampler' })
-    expect(readNodeItemIdentity(doc, '1')).toMatch(/^\d+:\d+$/)
-  })
-
-  it('returns null without reporting for an id never set', () => {
+  it('returns null for a node id that was never set', () => {
     const doc = new Y.Doc()
     expect(readNodeItemIdentity(doc, '1')).toBeNull()
     expect(telemetryState.reportError).not.toHaveBeenCalled()
+  })
+
+  it('returns a stable client:clock identity for a present node', () => {
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('1', { type: 'KSampler' })
+    const identity = readNodeItemIdentity(doc, '1')
+    expect(identity).toMatch(/^\d+:\d+$/)
+    expect(readNodeItemIdentity(doc, '1')).toBe(identity)
+  })
+
+  it('keeps returning the tombstoned identity right after delete', () => {
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('1', { type: 'KSampler' })
+    const beforeDelete = readNodeItemIdentity(doc, '1')
+    doc.getMap('nodes').delete('1')
+    expect(readNodeItemIdentity(doc, '1')).toBe(beforeDelete)
+  })
+
+  it('reports a different identity for a value recreated under the same node id across separate transactions', () => {
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('1', { type: 'KSampler' })
+    const original = readNodeItemIdentity(doc, '1')
+    doc.getMap('nodes').delete('1')
+    doc.getMap('nodes').set('1', { type: 'SaveImage' })
+    expect(readNodeItemIdentity(doc, '1')).not.toBe(original)
+  })
+
+  it('reports a different identity for a delete-and-recreate inside one atomic transaction', () => {
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('1', { type: 'KSampler' })
+    const original = readNodeItemIdentity(doc, '1')
+    doc.transact(() => {
+      const nodes = doc.getMap('nodes')
+      nodes.delete('1')
+      nodes.set('1', { type: 'SaveImage' })
+    })
+    expect(readNodeItemIdentity(doc, '1')).not.toBe(original)
   })
 
   it('reports and returns null when the internal shape this module assumes is missing', () => {

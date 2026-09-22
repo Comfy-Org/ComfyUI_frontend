@@ -1758,27 +1758,32 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it("does not let an old lineage's unconsumed delete-intent capture leak into a new lineage's delete of the same node id", async () => {
+  it("does not let an old lineage's unknown-outcome retention block a new lineage's delete of the same recreated node id", async () => {
+    vi.useFakeTimers()
     const { enqueue, unmount } = mountWithHumanOps()
     const intent = requireIntent()
     const oldDoc = new Y.Doc()
     oldDoc.getMap('nodes').set('1', { type: 'KSampler' })
     bridge().follower.doc = oldDoc
 
-    // The old lineage's delete is issued and its removal effect is observed,
-    // but the op's own result never arrives before `follower_replaced`.
+    // The old lineage's delete is transmitted, but its own result never
+    // arrives: it settles 'unknown' (unacknowledged) once the sender gives
+    // up on it, which is what frees the sender for the next batch below.
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
-    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
-    oldDoc.getMap('nodes').delete('1')
-    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
 
+    // The lineage is replaced (a workflow switch, or a reset) and the node
+    // id is recreated under a new incarnation.
     dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
     const newDoc = new Y.Doc()
     newDoc.getMap('nodes').set('1', { type: 'SaveImage' })
     bridge().follower.doc = newDoc
 
-    // A delete for the same node id in the new lineage settles confirmed.
+    // A delete for the same node id in the new lineage settles confirmed,
+    // on its own freshly captured identity.
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
     await Promise.resolve()
     const opId = requireSentOpId()
@@ -1789,9 +1794,9 @@ describe('useAgentCrdtFollower', () => {
       skipped: []
     })
 
-    // A leaked stale capture would attribute this settle to the old
-    // lineage's incarnation, which the new doc no longer holds, and prune
-    // it away immediately (superseded) instead of retaining it.
+    // The old lineage's identity no longer matches what the new doc holds
+    // under the same node id, so the fresh delete's own retention is the
+    // only one left standing.
     expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
     unmount()
   })
@@ -1853,6 +1858,68 @@ describe('useAgentCrdtFollower', () => {
     // it on the remounted follower's very first reconcile.
     expect([...second.intent.pendingDeletes('wf-1')]).toEqual(['1'])
     second.unmount()
+  })
+
+  it("preserves a workflow's own confirmed retention across a local switch to a different workflow and back, through the shared store", async () => {
+    const store = createPendingDeleteRetentionStore()
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: HumanEnqueue
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          () => null,
+          ref(true),
+          () => null,
+          {},
+          store
+        )
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    const intent = requireIntent()
+    bridge().subscribe.mockImplementation((next: string) => {
+      bridge().subscribedWorkflowId = next
+    })
+
+    const docB = new Y.Doc()
+    docB.getMap('nodes').set('1', { type: 'KSampler' })
+    bridge().follower.doc = docB
+
+    // A human delete in workflow B (wf-1) settles confirmed-applied.
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const opId = requireSentOpId()
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [opId],
+      skipped: []
+    })
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+    // Switch to workflow A (wf-2): an ordinary lineage break from a local
+    // subscribe, never a `doc_reset`.
+    workflowId.value = 'wf-2'
+    await nextTick()
+    dispatchFrame('follower_replaced', { workflowId: 'wf-2' })
+    bridge().follower.doc = new Y.Doc()
+
+    // Switch back to workflow B: another local lineage break, landing on
+    // the SAME doc object - the host has not caught up, so it still shows
+    // the deleted incarnation.
+    workflowId.value = 'wf-1'
+    await nextTick()
+    dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+    bridge().follower.doc = docB
+
+    // Visiting A and returning must not have erased B's own confirmed
+    // delete: neither switch was a `doc_reset` for B's lineage.
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+    unmount()
   })
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {
@@ -1954,13 +2021,6 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  /**
-   * `adapterState.intent` is only ever set by the mocked `EcsFollowerAdapter`
-   * constructor, so it is populated the moment a follower is mounted - but a
-   * bare `!` would turn a future regression (the composable no longer
-   * constructing it with an intent port) into an opaque "Cannot read
-   * properties of null" deep inside a test instead of a clear failure here.
-   */
   function requireIntent(): {
     pendingDeletes(workflowId: string): ReadonlySet<string>
   } {
@@ -1973,12 +2033,6 @@ describe('useAgentCrdtFollower', () => {
     return intent
   }
 
-  /**
-   * The op_id `sendOps` was last called with, after asserting a call
-   * actually happened - so a regression where the required send never
-   * occurs fails here with a clear message instead of deep inside an
-   * `undefined` index.
-   */
   function requireSentOpId(): string {
     const call = clientState.sendOps.mock.calls.at(-1)
     if (!call) {
@@ -2062,6 +2116,58 @@ describe('useAgentCrdtFollower', () => {
 
     expect(clientState.sendOps).not.toHaveBeenCalled()
     expect(await settledHumanOpStates()).toEqual(['undeliverable'])
+    unmount()
+  })
+
+  it('a doc_reset drops a pre-existing confirmed retention and an unconsumed capture, retaining only a same-id delete issued after it', async () => {
+    const { enqueue, unmount } = mountWithHumanOps()
+    const intent = requireIntent()
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('1', { type: 'KSampler' })
+    doc.getMap('nodes').set('2', { type: 'LoadImage' })
+    bridge().follower.doc = doc
+
+    // Seed retained state: a confirmed-applied delete for node '1'.
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const firstOpId = requireSentOpId()
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [firstOpId],
+      skipped: []
+    })
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+
+    // Seed an unconsumed capture: a second delete, admitted and
+    // transmitted, whose own result never arrives before the reset.
+    enqueue([{ op: 'delete_node', node_id: '2', removed_links: [] }])
+    await Promise.resolve()
+
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 9, actor: 'agent:x' })
+
+    // Neither survives - the doc object is unchanged (still holds both
+    // nodes under their original identities), so this is not merely the
+    // usual doc-agrees or superseded-identity release; the reset itself
+    // must have cleared retention.
+    expect([...intent.pendingDeletes('wf-1')]).toEqual([])
+
+    // A same-id delete issued against the replacement doc is retained on
+    // its own, fresh identity - unaffected by anything the reset left
+    // behind.
+    doc.getMap('nodes').delete('1')
+    doc.getMap('nodes').set('1', { type: 'SaveImage' })
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const opId = requireSentOpId()
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: true,
+      applied: [opId],
+      skipped: []
+    })
+
+    expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
     unmount()
   })
 
