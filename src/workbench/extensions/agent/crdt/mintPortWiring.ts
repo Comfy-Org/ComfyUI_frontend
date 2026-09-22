@@ -114,6 +114,37 @@ const MINTABLE_NODE_MODES = new Set<number>([
   LGraphEventMode.BYPASS
 ])
 
+type NodeFieldMintCandidate =
+  | { field: 'title'; value: string }
+  | { field: 'mode'; value: number }
+
+/** Bounds a pasted node's title to `MAX_MINTED_TITLE_LENGTH` (see its own doc). */
+function resolveTitleMint(newValue: unknown): NodeFieldMintCandidate | null {
+  if (typeof newValue !== 'string') return null
+  return { field: 'title', value: newValue.slice(0, MAX_MINTED_TITLE_LENGTH) }
+}
+
+/** Narrows to `LGraphEventMode`'s finite members (see `MINTABLE_NODE_MODES`). */
+function resolveModeMint(newValue: unknown): NodeFieldMintCandidate | null {
+  if (typeof newValue !== 'number' || !MINTABLE_NODE_MODES.has(newValue))
+    return null
+  return { field: 'mode', value: newValue }
+}
+
+/**
+ * Validates and shapes a `node:property:changed` event into a mintable
+ * `title`/`mode` field, or null when the property or value isn't one this
+ * port mints (see this file's header comment for why title/mode are special).
+ */
+function resolveMintableField(
+  property: string,
+  newValue: unknown
+): NodeFieldMintCandidate | null {
+  if (property === 'title') return resolveTitleMint(newValue)
+  if (property === 'mode') return resolveModeMint(newValue)
+  return null
+}
+
 const activeWirings = new Set<MintPortWiring>()
 const bufferedEnqueues: Array<Array<() => void>> = []
 
@@ -346,20 +377,11 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     // already-attached node as routine upkeep, not a human edit.
     if (oldValue === newValue) return
 
-    if (property === 'title' && typeof newValue === 'string') {
-      if (!firedByBoundRootGraph()) return
-      const title = newValue.slice(0, MAX_MINTED_TITLE_LENGTH)
-      for (const listener of nodeFieldListeners)
-        listener({ nodeId, field: 'title', value: title })
-    } else if (
-      property === 'mode' &&
-      typeof newValue === 'number' &&
-      MINTABLE_NODE_MODES.has(newValue)
-    ) {
-      if (!firedByBoundRootGraph()) return
-      for (const listener of nodeFieldListeners)
-        listener({ nodeId, field: 'mode', value: newValue })
-    }
+    const field = resolveMintableField(property, newValue)
+    if (!field) return
+    if (!firedByBoundRootGraph()) return
+
+    for (const listener of nodeFieldListeners) listener({ nodeId, ...field })
   }
 
   let attachedGraphEvents: MintableGraph['events'] | null = null
