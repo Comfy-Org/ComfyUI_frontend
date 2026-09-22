@@ -54,7 +54,7 @@ function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' ? value : null
 }
 
-export function parseClientDocFrame(
+function parseClientDocFrame(
   raw: string | Buffer
 ): ParsedClientDocFrame | null {
   const envelope = docFrameEnvelope(raw)
