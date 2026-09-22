@@ -104,7 +104,7 @@ function buildExecutionNodeLookup(
     Object.entries(promptOutput).map(([executionId, node]) => [
       executionId,
       {
-        title: node._meta.title,
+        title: node._meta?.title ?? node.class_type,
         type: node.class_type
       }
     ])
