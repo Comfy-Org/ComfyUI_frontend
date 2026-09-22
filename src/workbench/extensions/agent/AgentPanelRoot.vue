@@ -654,7 +654,22 @@ const { activeTurnId: conversationTurnId } = storeToRefs(agentConversationStore)
 // Gate the transport's tool-call "done" affordance on canvas catch-up only
 // while the CRDT follower is actually active, and re-check any parts it held
 // back every time the bound workflow applies a fresh update.
-agentConversationStore.setCanvasSyncGate(() => agentPanelStore.enabled)
+//
+// `agentPanelStore.enabled` alone is NOT that signal: it is the product
+// feature flag ("is the agent panel available at all"), which is on in any
+// environment or test that exercises the panel, whether or not a CRDT doc
+// subscription for the bound workflow actually exists yet. Gating on it
+// alone deferred every mutating tool call (add_node, set_widget, ...) to
+// 'streaming' even when no doc_subscribed frame had ever been received --
+// e.g. in agentPanel.spec.ts and every other spec that drives chat events
+// without also standing up a doc host -- so nothing was ever going to call
+// notifyCanvasCaughtUp() to rescue it, and the row (and the composing
+// "Working..." status derived from every part being settled) stayed stuck
+// until the 30s STALE_AFTER_MS fallback. `crdtStatus.value.connected` is the
+// actual "the follower is subscribed and could receive a doc_update" signal
+// (flipped true only by a real `doc_subscribed { ok: true }` frame); a
+// disabled panel never starts the follower, so this implies `enabled` too.
+agentConversationStore.setCanvasSyncGate(() => crdtStatus.value.connected)
 watch(
   () => crdtStatus.value.outcomes.applied,
   () => agentConversationStore.notifyCanvasCaughtUp()
