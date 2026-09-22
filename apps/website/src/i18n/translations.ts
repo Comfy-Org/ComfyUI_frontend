@@ -19,6 +19,9 @@ const translations = {
     en: 'Could not load your assets.',
     'zh-CN': '无法加载你的素材。'
   },
+  'workshop.assets.previous': { en: 'Previous asset', 'zh-CN': '上一个素材' },
+  'workshop.assets.next': { en: 'Next asset', 'zh-CN': '下一个素材' },
+  'workshop.assets.go': { en: 'Show asset {n}', 'zh-CN': '显示第 {n} 个素材' },
   'workshop.assets.cancelError': {
     en: 'Could not request cancellation. Your generation may still be running.',
     'zh-CN': '无法请求取消。生成可能仍在进行。'

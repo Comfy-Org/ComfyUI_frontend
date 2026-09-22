@@ -10,22 +10,26 @@ import type { SavedAssetTile } from '../../lib/workshop/saved-assets'
 import { t } from '../../i18n/translations'
 import type { Locale } from '../../i18n/translations'
 import SavedAssetMedia from './SavedAssetMedia.vue'
+import SavedAssetPager from './SavedAssetPager.vue'
 
 const {
   tile,
   url,
+  position = { index: 0, total: 1 },
   cancelling = false,
   cancelFailed = false,
   locale = 'en'
 } = defineProps<{
   tile?: SavedAssetTile
   url?: string
+  /** Where the shown asset sits among the saved ones, for the pager. */
+  position?: { index: number; total: number }
   cancelling?: boolean
   cancelFailed?: boolean
   locale?: Locale
 }>()
 
-const emit = defineEmits<{ close: []; cancel: [] }>()
+const emit = defineEmits<{ close: []; cancel: []; step: [delta: number] }>()
 
 const downloadFailed = ref(false)
 watch(
@@ -68,6 +72,25 @@ async function download(event: MouseEvent) {
 function setOpen(open: boolean) {
   if (!open) emit('close')
 }
+
+// A swipe is how the strip is read on a phone, where the arrows are a small
+// target beside a full-bleed picture.
+const SWIPE_THRESHOLD_PX = 45
+let touchStartX: number | undefined
+
+function touchStart(event: TouchEvent) {
+  touchStartX = event.changedTouches[0]?.clientX
+}
+
+function touchEnd(event: TouchEvent) {
+  const startX = touchStartX
+  touchStartX = undefined
+  const endX = event.changedTouches[0]?.clientX
+  if (startX === undefined || endX === undefined) return
+  const travelled = endX - startX
+  if (Math.abs(travelled) > SWIPE_THRESHOLD_PX)
+    emit('step', travelled < 0 ? 1 : -1)
+}
 </script>
 
 <template>
@@ -79,6 +102,10 @@ function setOpen(open: boolean) {
         :aria-describedby="undefined"
         data-testid="saved-asset-preview"
         @click.self="emit('close')"
+        @keydown.left="emit('step', -1)"
+        @keydown.right="emit('step', 1)"
+        @touchstart.passive="touchStart"
+        @touchend.passive="touchEnd"
       >
         <DialogTitle class="sr-only">
           {{ t('workshop.assets.title', locale) }}
@@ -114,6 +141,14 @@ function setOpen(open: boolean) {
           >
             {{ downloadLabel }}
           </Button>
+
+          <SavedAssetPager
+            v-if="position.total > 1"
+            :index="position.index"
+            :total="position.total"
+            :locale
+            @step="(delta: number) => emit('step', delta)"
+          />
         </template>
 
         <template v-else-if="generating">

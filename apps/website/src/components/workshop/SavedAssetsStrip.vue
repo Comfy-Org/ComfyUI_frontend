@@ -73,6 +73,18 @@ const viewing = computed(
 const viewingUrl = computed(() =>
   viewing.value ? urlFor(viewing.value) : undefined
 )
+const viewingIndex = computed(() =>
+  savedTiles.value.findIndex((tile) => tile.key === viewing.value?.key)
+)
+const position = computed(() => ({
+  index: Math.max(0, viewingIndex.value),
+  total: savedTiles.value.length
+}))
+
+function step(delta: number) {
+  const next = savedTiles.value[viewingIndex.value + delta]
+  if (next) viewingKey.value = next.key
+}
 
 function urlFor(tile: SavedAssetTileData): string | undefined {
   return tile.state === 'saved'
@@ -297,9 +309,11 @@ const tileClass =
       :url="viewingUrl"
       :cancelling
       :cancel-failed="cancelFailed"
+      :position
       :locale
       @close="viewingKey = undefined"
       @cancel="cancel"
+      @step="step"
     />
   </section>
 </template>

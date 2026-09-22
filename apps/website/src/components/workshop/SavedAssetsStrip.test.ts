@@ -35,6 +35,23 @@ const saved: SavedGeneration = {
     { index: 0, kind: 'image', status: 'saved', asset_id: assetId }
   ]
 }
+const savedPair: SavedGeneration[] = [
+  saved,
+  {
+    ...saved,
+    request_id: '28655193-3f73-4abf-b49c-1c6a058355bd',
+    created_at: '2026-09-20T11:00:00Z',
+    asset_outputs: [
+      {
+        index: 0,
+        kind: 'image',
+        status: 'saved',
+        asset_id: 'b1c2d3e4-c94f-4e83-bffa-84be407b0441'
+      }
+    ]
+  }
+]
+
 const props = {
   modelId: 'bfl/flux-2-pro',
   activeRequestId: null,
@@ -230,6 +247,42 @@ describe('SavedAssetsStrip', () => {
       await screen.findByTestId('saved-asset-0'),
       'the run the reader is waiting on must not vanish while the listing lags'
     ).toBeVisible()
+  })
+
+  it('pages from one saved asset to the next without going back to the strip', async () => {
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({
+      requests: savedPair
+    })
+    vi.mocked(accessWorkshopAsset)
+      .mockResolvedValueOnce({
+        content_url: 'https://assets.example/first.png',
+        expires_at: new Date(Date.now() + 900_000).toISOString()
+      })
+      .mockResolvedValue({
+        content_url: 'https://assets.example/second.png',
+        expires_at: new Date(Date.now() + 900_000).toISOString()
+      })
+    render(SavedAssetsStrip, { props })
+
+    await openFirstTile()
+    await userEvent.click(screen.getByTestId('saved-asset-next'))
+
+    expect(
+      (await screen.findByAltText('Your assets')).getAttribute('src'),
+      'the reader opened one asset to browse them, not to reopen the strip for each'
+    ).toBe('https://assets.example/second.png')
+  })
+
+  it('stops the pager at the ends of the strip', async () => {
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({
+      requests: savedPair
+    })
+    render(SavedAssetsStrip, { props })
+
+    await openFirstTile()
+
+    expect(screen.getByTestId('saved-asset-previous')).toBeDisabled()
+    expect(screen.getByTestId('saved-asset-next')).toBeEnabled()
   })
 
   it('reports a listing it could not load instead of looking empty', async () => {
