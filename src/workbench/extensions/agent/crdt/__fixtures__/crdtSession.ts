@@ -37,7 +37,7 @@ interface CrdtFixtures {
 export type CreateCrdtSession = CrdtFixtures['createCrdtSession']
 
 export const crdtTest = baseTest.extend<CrdtFixtures>({
-  createCrdtSession: async ({}, use) => {
+  createCrdtSession: async ({ task }, use) => {
     const cleanups: Array<() => void> = []
     await use(({ workflowId, seed, catalog }) => {
       const graph = new LGraph()
@@ -111,6 +111,9 @@ export const crdtTest = baseTest.extend<CrdtFixtures>({
       }
     }
     if (cleanupErrors.length > 0)
-      throw new AggregateError(cleanupErrors, 'CRDT session cleanup failed')
+      throw new AggregateError(
+        cleanupErrors,
+        `CRDT session cleanup failed in "${task.name}"`
+      )
   }
 })
