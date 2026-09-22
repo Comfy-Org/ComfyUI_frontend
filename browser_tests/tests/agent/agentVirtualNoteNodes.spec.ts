@@ -128,9 +128,33 @@ test.describe(
         await agentConversation.panel.hover()
       })
 
-      await test.step('both survive save, reload and reopen', async () => {
+      // The saved file has to carry both nodes and their text itself: a
+      // serializer that dropped an uncatalogued node, or wrote its widget
+      // value out of position, would still render fine while the host lives.
+      await test.step('the saved workflow file carries both notes', async () => {
         await topbar.saveWorkflowAs(SAVED_NAME)
         await expect(topbar.getActiveTab()).toContainText(SAVED_NAME)
+        await expect
+          .poll(() => agentConversation.savedWorkflowPath())
+          .toContain(SAVED_NAME)
+        const savedNodes = agentConversation.savedWorkflowContent().nodes
+        expect(savedNodes.find((node) => node.id === NOTE_ID)).toMatchObject({
+          type: 'Note',
+          widgets_values: [NOTE_TEXT]
+        })
+        expect(
+          savedNodes.find((node) => node.id === MARKDOWN_ID)
+        ).toMatchObject({
+          type: 'MarkdownNote',
+          widgets_values: [MARKDOWN_TEXT]
+        })
+      })
+
+      // After the reload the host refuses the follower's re-subscribe, so no
+      // catch-up can replay the note adds: whatever renders came from the
+      // saved workflow alone.
+      await test.step('both survive reload and reopen without host replay', async () => {
+        agentConversation.refuseHostSubscribes()
         await page.reload({ waitUntil: 'domcontentloaded' })
         await expect(agentConversation.panel).toBeVisible({ timeout: 30_000 })
         const picker = agentConversation.panel.getByRole('button', {

@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import type {
@@ -184,6 +185,9 @@ export class AgentConversationHarness {
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
+  // The last workflow file the app saved through `persistSavedWorkflow`.
+  private savedWorkflow: { info: UserDataFullInfo; content: string } | null =
+    null
 
   constructor(
     private readonly page: Page,
@@ -289,7 +293,6 @@ export class AgentConversationHarness {
   }
 
   async persistSavedWorkflow(): Promise<void> {
-    let saved: { info: UserDataFullInfo; content: string } | undefined
     await this.page.route('**/api/userdata**', (route) => {
       const request = route.request()
       const path = decodeURIComponent(
@@ -297,7 +300,7 @@ export class AgentConversationHarness {
       )
       if (request.method() !== 'POST' || !path.startsWith('workflows/'))
         return route.fallback()
-      saved = {
+      this.savedWorkflow = {
         info: {
           path,
           modified: Date.now(),
@@ -309,6 +312,7 @@ export class AgentConversationHarness {
     })
     await this.page.route('**/api/userdata**', (route) => {
       const request = route.request()
+      const saved = this.savedWorkflow
       if (request.method() !== 'GET' || !saved) return route.fallback()
       const url = new URL(request.url())
       const path = decodeURIComponent(url.pathname.split('/userdata/')[1] ?? '')
@@ -327,6 +331,27 @@ export class AgentConversationHarness {
         ])
       )
     })
+  }
+
+  /** Userdata path of the workflow the app last saved, or null before any save. */
+  savedWorkflowPath(): string | null {
+    return this.savedWorkflow?.info.path ?? null
+  }
+
+  /** The workflow JSON the app last saved, parsed; throws before any save. */
+  savedWorkflowContent(): ComfyWorkflowJSON {
+    if (!this.savedWorkflow)
+      throw new Error('the app has not saved a workflow yet')
+    return JSON.parse(this.savedWorkflow.content) as ComfyWorkflowJSON
+  }
+
+  /**
+   * Make the host refuse every subscribe from now on. A follower that
+   * re-subscribes after this gets no catch-up, so whatever the canvas shows
+   * came from somewhere other than the host document.
+   */
+  refuseHostSubscribes(reason = 'overloaded'): void {
+    this.hostSocket.refuseSubscribes(reason)
   }
 
   async sendPrompt(turn = 0): Promise<void> {
