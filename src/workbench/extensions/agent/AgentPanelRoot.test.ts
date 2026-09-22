@@ -241,7 +241,7 @@ const paywallCapabilities = vi.hoisted(() => ({
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
 }))
-let paywallHasFunds = ref(false)
+const paywallHasFunds = ref(false)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -375,7 +375,7 @@ beforeEach(() => {
   paywallCapabilities.isReady = true
   paywallCapabilities.hasResolvedCapabilities = true
   paywallBilling.tier = 'STANDARD'
-  paywallHasFunds = ref(false)
+  paywallHasFunds.value = false
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
