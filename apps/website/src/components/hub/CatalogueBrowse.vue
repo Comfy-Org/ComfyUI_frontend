@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, Search } from '@lucide/vue'
+import { ChevronLeft, Search, X } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import type { UseCase } from '../../config/models-catalogue'
@@ -69,6 +69,14 @@ const ORDERS: readonly OrderOption[] = [
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[^a-z0-9]/g, '')
 
+// The registry writes `text-to-image` and a reader types `text to image`, so
+// neither side keeps the punctuation that tells them apart.
+const searchable = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+
 // Built once from what the card already carries, rather than shipped a second
 // time as its own field.
 const haystacks = computed(
@@ -76,9 +84,14 @@ const haystacks = computed(
     new Map(
       entries.map((entry) => [
         entry.key,
-        [entry.title, entry.card.maker.label, ...entry.models, ...entry.tags]
-          .join(' ')
-          .toLowerCase()
+        searchable(
+          [
+            entry.title,
+            entry.card.maker.label,
+            ...entry.models,
+            ...entry.tags
+          ].join(' ')
+        )
       ])
     )
 )
@@ -102,7 +115,7 @@ const usesTheModel = (entry: BrowseEntry, name: string) =>
 // Everything but the tab, which is not a narrowing of the catalogue but a
 // choice of which catalogue you are in.
 const narrowings = computed<((entry: BrowseEntry) => boolean)[]>(() => {
-  const text = query.value.trim().toLowerCase()
+  const text = searchable(query.value)
   return [
     (entry) =>
       useCase.value === 'all' || entry.useCases.includes(useCase.value),
@@ -299,8 +312,18 @@ const heading = computed(() =>
             type="search"
             :placeholder="searchPlaceholder"
             :aria-label="searchPlaceholder"
-            class="h-11 w-full rounded-2xl bg-transparency-white-t4 ps-9 pe-3 text-sm text-content transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+            class="h-11 w-full rounded-2xl bg-transparency-white-t4 ps-9 pe-10 text-sm text-content transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 [&::-webkit-search-cancel-button]:hidden"
           />
+          <button
+            v-if="query"
+            type="button"
+            class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-primary-warm-gray transition-colors outline-none hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+            :aria-label="t('workshop.search.clear', locale)"
+            data-testid="catalogue-search-clear"
+            @click="query = ''"
+          >
+            <X class="size-4" aria-hidden="true" />
+          </button>
         </div>
 
         <CatalogueModelFilter
