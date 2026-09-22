@@ -46,6 +46,12 @@ import {
   createPendingRevertRemoveNode,
   createRevertNotifier
 } from './pendingOpRevert'
+import type { PendingShadow, ShadowTarget } from './pendingOpShadow'
+import { createPendingOpShadowSurface } from './pendingOpShadow'
+import {
+  createPendingOpShadowBinding,
+  rootGraphTargetsForOp
+} from './pendingOpShadowBinding'
 import { createPendingOpTracker } from './pendingOpTracker'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
@@ -269,7 +275,11 @@ export function useAgentCrdtFollower(
         schemaError: null
       }),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      follower.value?.enqueueHumanOperations(operations)
+      follower.value?.enqueueHumanOperations(operations),
+    pendingShadows: (): PendingShadow[] =>
+      follower.value?.pendingShadows() ?? [],
+    isPendingShadow: (target: ShadowTarget): boolean =>
+      follower.value?.isPendingShadow(target) ?? false
   }
 }
 
@@ -329,6 +339,15 @@ function startAgentCrdtFollower(
   // s3-opt-6: every minted human op is registered here before it flies and
   // leaves only on its authoritative doc_update effect, on revert, or — for
   // a skipped duplicate — on a projection at/after its ack seq (s3-opt-2).
+  // s3-opt-3: the presentation shadow follows the tracker one-to-one — shown
+  // on mint, cleared only by the doc effect (KA-9) or an authoritative
+  // projection, reverted on refusal, dropped whole on lineage break (FEB-5).
+  // Presentation only: nothing here reaches Yjs (FORECLOSE #5).
+  const pendingShadows = createPendingOpShadowSurface()
+  const bindPendingShadow = createPendingOpShadowBinding({
+    surface: pendingShadows,
+    targetsForOp: rootGraphTargetsForOp(() => getGraph()?.id ?? null)
+  })
   const pendingOps = createPendingOpTracker({
     // Applied seq only, never the ack fallback: between doc_subscribed(seq=N)
     // and the catch-up doc_update(seq=N) the canvas still shows pre-subscribe
@@ -338,6 +357,7 @@ function startAgentCrdtFollower(
     // effect frame never reached this follower, so one is coming.
     currentSeq: () => lastProjectedSequence ?? 0,
     onEvent: (event) => {
+      bindPendingShadow(event)
       notifyReverted(event, applyPendingOpRevert(event, removeRevertedNode))
       recordDevEvent('pending_ops', event)
     }
@@ -884,6 +904,10 @@ function startAgentCrdtFollower(
     status: readonly(status),
     debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      coalescer.enqueue(operations)
+      coalescer.enqueue(operations),
+    /** Read-only view of the pending presentation overlay (s3-opt-3). */
+    pendingShadows: (): PendingShadow[] => pendingShadows.pendingShadows(),
+    isPendingShadow: (target: ShadowTarget): boolean =>
+      pendingShadows.isPending(target)
   }
 }

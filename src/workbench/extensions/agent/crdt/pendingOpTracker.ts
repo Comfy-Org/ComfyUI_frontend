@@ -14,6 +14,8 @@ type PendingOpRevertReason =
   | 'undeliverable'
 
 export type PendingOpTrackerEvent =
+  /** Ops just minted locally: their optimistic effect is now pending. */
+  | { type: 'pending'; opIds: string[]; ops: Op[] }
   | {
       type: 'reverted'
       reason: PendingOpRevertReason
@@ -161,9 +163,17 @@ export function createPendingOpTracker(
 
   return {
     onBatchMinted(ops) {
+      const minted: Op[] = []
       for (const op of ops) {
-        ledger.enqueue(op.op_id, op)
+        // A re-minted id is refused by the ledger, so it is not newly pending.
+        if (ledger.enqueue(op.op_id, op)) minted.push(op)
       }
+      if (minted.length > 0)
+        emit({
+          type: 'pending',
+          opIds: minted.map((op) => op.op_id),
+          ops: minted
+        })
     },
     onBatchTransmitted(ops) {
       const ids = ops.map((op) => op.op_id)
