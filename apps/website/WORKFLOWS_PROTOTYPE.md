@@ -1,27 +1,59 @@
 # Workshop Phase 2: workflow prototype
 
-Review entry: `/models/workflows/`. Twenty-four outcome-led workflow pages extend the
-existing Models catalog. Primary action: run with editable inputs on the page.
-Secondary action: open the original template in the Cloud canvas. The prototype
-has no marketplace, clone fees, creator earnings, ratings, or publishing tools.
+Review entry: `/models/workflows/`. The launch catalog has **30 outcome cards**,
+six in each category, following the [launch specification](https://app.notion.com/p/3de6d73d365081d0b5bafdb9d9ffbf12):
 
-Categories, in popularity order: Animate characters, Create product photos & ads,
-Upscale & restore, Edit & clean up photos. Shelf order is a snapshot of distinct
-Cloud users triggering `execution_start` for any of the shelf's included templates
-from August 17 to September 16, 2026 (America/Los_Angeles), with template-only and
-production-host filters and configured test-account exclusions. Users are
-deduplicated within each shelf; per-template counts are not summed. Re-query when
-the included templates change. This orders the current curated set, not the full
-template catalog. The catalog shares the Models hero and horizontal
-card rows, with matching banner dimensions, card proportions, and typography.
-The shortlist combines popular editing/animation templates with concrete product
-photography use cases. Cards within each shelf are also ordered by full-period
-distinct template starters, using the same window and filters. These are start
-attempts, not successful runs. Shelf sizes are 6 character workflows, 6 product
-workflows, 6 upscaling/restoration workflows, and 6 photo-editing workflows.
-The filter reuses the Models component: multi-select, search, clear, keyboard
-dismissal, and a mobile bottom sheet. The category
-labels and customer-facing descriptions are editorial proposals for review.
+1. Create & edit videos
+2. Animate characters
+3. Create product photos & ads
+4. Upscale & restore
+5. Edit & clean up photos
+
+This is an editorial category order, not a measured popularity ranking. The
+adoption ordering is stored in `src/data/workflow-popularity.json` without internal
+usage counts. Template starts are not successful generations. The four existing
+shelves retain their adoption ordering.
+
+The hero starts with **Turn an image into a video** and offers five selectable
+category highlights. Media uses individual hero focal points; card titles have
+a fixed two-line height with ellipsis overflow. Discovery reuses Models search
+and filtering, without See all.
+
+## September 21 video category
+
+- Turn an image into a video — LTX-2.3; MiniMax H3 is linked as an alternative in
+  the same detail page, not a duplicate card. LTX is the provisional prototype
+  default; runtime quality, latency, and cost still need launch validation.
+- Create a video from references — MiniMax H3, with two image inputs. The prompt
+  was adapted to the actual two references, removing the unbound audio request.
+- Connect two images with motion — LTX-2.3; start image 31 and end image 39 are
+  traced through preprocessing to guide frame indices 0 and -1.
+- Change a video’s background — Seedance 2.5; editable background-change prompt
+  replaces the template’s clay-style example instruction. Its existing preview
+  remains a general editing example, not proof of this new default’s output.
+- Remove an object from a video — simulated Comfy API deployment using LTX-2.3,
+  the object-removal LoRA, and the catalog’s declared custom-node dependencies.
+- Expand a video’s frame — LTX-2.3; video, reference frame, target aspect ratio, and scene prompt.
+
+Five additional API graphs were exported using Comfy CLI 1.20.0
+`run --print-prompt --where cloud` against the same pinned template revision.
+All five pass the CLI graph validator against its Cloud node definitions; the
+outpainting graph has two unused decoder warnings, pruned by the backend.
+No new live generation was submitted. Structural validation does not prove
+runtime compatibility, availability, output quality, latency, or cost.
+
+The object-removal demo replaces the restoration demo, restoring the sixth real
+upscaling card. `/models/workflows/restore-video-api/` remains a compatibility
+alias; the catalog links `/models/workflows/remove-object-from-video/`.
+The demo simulates sign-in, server startup, model loading, generation, cancellation,
+and Copy to Comfy API. It uploads nothing and creates no deployment.
+Its input is the official piano clip. `public/workflows/object-removal-sample.mp4`
+is a format conversion of the official animated template preview at the pinned
+revision: original on top, object removed below. The demo always returns that
+labeled sample, regardless of the local file or prompt.
+
+The execution and validation notes below describe the original 24 templates
+unless otherwise specified above.
 
 ## Run locally
 
@@ -107,3 +139,24 @@ noindex and use the existing Workshop build gate. This is a review prototype.
 
 Suggested implementation review split after prototype feedback: catalog and
 content, execution/auth/billing integration, and graph/Cloud handoff.
+
+### Read-only ComfyUI graph preview
+
+- The Comfy API object-removal demo leads the video shelf. Hero selections exclude deployment demos, so the video hero continues to feature image-to-video.
+- Both regular workflows and the deployment demo use the same lazy-loaded canvas viewer. Both use the same Playground, Workflow, and API tab layout.
+- `public/workflows/graphs/` contains the original editor JSON for all 30 launch templates, pinned to workflow_templates revision `90c71fb78b3726392d010ff62a8e79e92d7296ad`. These preserve the layout and subgraph definitions that API execution JSON omits.
+- The viewer uses Comfy Org's MIT-licensed `@comfyorg/litegraph` 0.17.2 package. This standalone package is deprecated; current renderer development lives inside ComfyUI_frontend. Keep this integration isolated for the prototype and review a maintained renderer strategy before production.
+- Connection colors in `src/data/workflow-node-colors.json` are copied from ComfyUI_frontend’s `src/assets/palettes/dark.json` node-slot palette.
+- Display-only nodes preserve positions, sizes, connections, groups, and saved values. A graph-level selector opens nested generation graphs. Custom node code, media preview widgets, and editable controls are not installed or executed. Full saved values remain available in Node details.
+- Pan, zoom, fit, keyboard navigation, resize handling, and renderer cleanup are supported. Viewing a graph does not authenticate or submit a job.
+
+### API code examples
+
+All 30 launch pages now share a Models-style API panel with Python, TypeScript,
+cURL, syntax highlighting, Copy snippet, and a downloadable API graph. Examples
+use actual curated node IDs and current prompt/settings. The 29 regular templates
+target the shared Cloud v2 jobs endpoint; the deployment demo requires the user's
+own deployed base URL. SDK examples upload inputs, submit a job, wait, and save
+outputs. The Bash example submits once and reads status, with polling guidance.
+See [the per-workflow API assessment](WORKFLOW_API_COVERAGE.md) for inputs,
+primary sources, validation evidence, and unverified live-runtime requirements.

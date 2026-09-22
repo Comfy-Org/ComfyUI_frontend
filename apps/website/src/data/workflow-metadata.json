@@ -208,5 +208,53 @@
     "examples": [
       "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/template_ltx2_3_ic_lora_ingredients-1.webp"
     ]
+  },
+  {
+    "name": "video_ltx2_3_i2v",
+    "models": ["LTX-2.3", "Lightricks"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/video_ltx2_3_i2v-1.webp"
+    ]
+  },
+  {
+    "name": "video_minimax_h3_r2v",
+    "models": ["MiniMax H3"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/video_minimax_h3_r2v-1.webp"
+    ]
+  },
+  {
+    "name": "video_ltx2_3_flf2v",
+    "models": ["LTX-2.3"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/video_ltx2_3_flf2v-1.webp"
+    ]
+  },
+  {
+    "name": "api_seedance2_5_video_editing",
+    "models": ["Seedance 2.5"],
+    "author": "ComfyUI",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/api_seedance2_5_video_editing-1.webp"
+    ]
+  },
+  {
+    "name": "template_ltx2_3_lora_video_outpainting",
+    "models": ["LTX-2.3"],
+    "author": "PurzBeats",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/template_ltx2_3_lora_video_outpainting-1.webp"
+    ]
+  },
+  {
+    "name": "template_ltx2_3_obscura_remova_lora_remove_object_from_video",
+    "models": ["LTX-2.3"],
+    "author": "hellorob",
+    "examples": [
+      "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/90c71fb78b3726392d010ff62a8e79e92d7296ad/templates/template_ltx2_3_obscura_remova_lora_remove_object_from_video-1.webp"
+    ]
   }
 ]

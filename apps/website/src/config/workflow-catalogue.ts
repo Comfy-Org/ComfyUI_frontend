@@ -1,4 +1,7 @@
 import templates from '../data/workflow-metadata.json'
+import popularity from '../data/workflow-popularity.json'
+import { deploymentDemo } from './workflow-demo'
+import { videoWorkflows } from './workflow-video-catalogue'
 
 export const TEMPLATE_REVISION = '90c71fb78b3726392d010ff62a8e79e92d7296ad'
 export const templateAsset = (folder: string, file: string) =>
@@ -22,9 +25,13 @@ export interface CuratedWorkflow {
   description: string
   category: (typeof workflowCategories)[number]
   fields: WorkflowField[]
+  heroPosition?: string
+  alternatives?: { name: string; template: string }[]
+  execution?: 'deployment-demo'
 }
 
 export const workflowCategories = [
+  'Create & edit videos',
   'Animate characters',
   'Create product photos & ads',
   'Upscale & restore',
@@ -34,8 +41,10 @@ export const workflowCategories = [
 // Ordered by distinct Cloud template starters, August 17–September 16, 2026.
 // See WORKFLOWS_PROTOTYPE.md for filters and shelf deduplication.
 export const workflows: CuratedWorkflow[] = [
+  ...videoWorkflows,
   {
     slug: 'change-material',
+    heroPosition: '50% 65%',
     template: 'image_qwen_image_edit_2511',
     title: 'Change a material',
     category: 'Create product photos & ads',
@@ -64,6 +73,7 @@ export const workflows: CuratedWorkflow[] = [
   },
   {
     slug: 'copy-movement',
+    heroPosition: '50% 23%',
     template: 'video_wan_animate2',
     title: 'Copy movement from a video',
     category: 'Animate characters',
@@ -127,6 +137,7 @@ export const workflows: CuratedWorkflow[] = [
   },
   {
     slug: 'upscale-image',
+    heroPosition: '50% 35%',
     template: 'utility_seedvr2_image_upscale',
     title: 'Upscale and restore detail',
     category: 'Upscale & restore',
@@ -189,6 +200,7 @@ export const workflows: CuratedWorkflow[] = [
   },
   {
     slug: 'edit-selected-region',
+    heroPosition: '50% 25%',
     template: 'flux_fill_inpaint_example',
     title: 'Edit a selected region',
     description:
@@ -535,6 +547,19 @@ export const workflows: CuratedWorkflow[] = [
     ]
   }
 ]
+
+export const launchWorkflows = [
+  deploymentDemo,
+  ...videoWorkflows,
+  ...workflows
+    .filter((workflow) => workflow.category !== 'Create & edit videos')
+    .sort((a, b) => templateRank(a.template) - templateRank(b.template))
+]
+
+function templateRank(template: string): number {
+  const rank = popularity.indexOf(template)
+  return rank === -1 ? Number.POSITIVE_INFINITY : rank
+}
 
 export function workflowMetadata(workflow: CuratedWorkflow) {
   const template = templates.find((item) => item.name === workflow.template)

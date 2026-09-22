@@ -1,0 +1,18 @@
+{
+  "CLIP": "#FFD500",
+  "CLIP_VISION": "#A8DADC",
+  "CLIP_VISION_OUTPUT": "#ad7452",
+  "CONDITIONING": "#FFA931",
+  "CONTROL_NET": "#6EE7B7",
+  "IMAGE": "#64B5F6",
+  "LATENT": "#FF9CF9",
+  "MASK": "#81C784",
+  "MODEL": "#B39DDB",
+  "STYLE_MODEL": "#C2FFAE",
+  "VAE": "#FF6E6E",
+  "NOISE": "#B0B0B0",
+  "GUIDER": "#66FFFF",
+  "SAMPLER": "#ECB4B4",
+  "SIGMAS": "#CDFFCD",
+  "TAESD": "#DCC274"
+}

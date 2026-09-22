@@ -8,6 +8,23 @@ const graphs = import.meta.glob('../data/workflows/*.json', {
 })
 
 describe('curated workflow contracts', () => {
+  it('connects separate start and end frames to the correct video guides', () => {
+    const graph = workflowGraphSchema.parse(
+      graphs['../data/workflows/video_ltx2_3_flf2v.json']
+    )
+    expect(graph['129:124'].inputs.input).toEqual(['31', 0])
+    expect(graph['129:125'].inputs.input).toEqual(['39', 0])
+    expect(graph['129:104'].inputs.image).toEqual(['129:124', 0])
+    expect(graph['129:99'].inputs.image).toEqual(['129:125', 0])
+    expect(graph['129:115'].inputs).toMatchObject({
+      frame_idx: 0,
+      image: ['129:104', 0]
+    })
+    expect(graph['129:111'].inputs).toMatchObject({
+      frame_idx: -1,
+      image: ['129:99', 0]
+    })
+  })
   it.for(workflows)(
     '$slug exposes only inputs in its pinned execution graph',
     (workflow) => {
