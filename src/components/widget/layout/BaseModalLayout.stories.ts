@@ -24,6 +24,7 @@ interface StoryArgs {
   hasHeader: boolean
   hasContentFilter: boolean
   hasHeaderRightArea: boolean
+  headerPadding: 'default' | 'symmetric'
   cardCount: number
 }
 
@@ -45,6 +46,11 @@ const meta: Meta<StoryArgs> = {
     hasHeader: {
       control: 'boolean',
       description: 'Toggle header visibility'
+    },
+    headerPadding: {
+      control: 'select',
+      options: ['default', 'symmetric'],
+      description: 'Header bar spacing; symmetric matches the settings dialog'
     },
     hasContentFilter: {
       control: 'boolean',
@@ -172,7 +178,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
   },
   template: `
     <div>
-      <BaseModalLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
+      <BaseModalLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'" :header-padding="args.headerPadding">
         <!-- Left Panel Header Title -->
         <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
           <i class="icon-[lucide--puzzle] size-4 text-neutral" />
@@ -294,7 +300,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
         </template>
       </BaseModalLayout>
 
-      <BaseModalLayout v-else :content-title="args.contentTitle || 'Content Title'">
+      <BaseModalLayout v-else :content-title="args.contentTitle || 'Content Title'" :header-padding="args.headerPadding">
         <!-- Same content but WITH right panel -->
         <!-- Left Panel Header Title -->
         <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
@@ -421,6 +427,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 export const Default: Story = {
   render: (args: StoryArgs) => createStoryTemplate(args),
   args: {
+    headerPadding: 'default',
     contentTitle: 'Content Title',
     hasLeftPanel: true,
     hasRightPanel: true,
