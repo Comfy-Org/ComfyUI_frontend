@@ -241,7 +241,8 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     expect(subgraphNode.has_errors).toBe(true)
   })
 
-  it('skips reconciliation without touching app.rootGraph before the root graph exists', async () => {
+  it('reads the root graph once, so a stale isGraphReady cannot reach app.rootGraph', async () => {
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
     vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(undefined)
     const rootGraphAccess = vi.spyOn(app, 'rootGraph', 'get')
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
