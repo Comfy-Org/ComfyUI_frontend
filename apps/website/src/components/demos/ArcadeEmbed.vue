@@ -55,7 +55,7 @@ const loaded = ref(false)
 
     <noscript>
       <p class="text-primary-warm-gray mt-4 text-sm">
-        {{ t('demos.noscript', locale) }}
+        {{ t('demos.noscript.text', locale) }}
         <a
           class="text-primary-comfy-yellow ml-2 underline"
           :href="`https://demo.arcade.software/${arcadeId}`"
