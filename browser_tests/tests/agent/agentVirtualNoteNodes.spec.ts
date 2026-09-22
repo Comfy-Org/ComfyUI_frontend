@@ -151,11 +151,21 @@ test.describe(
       })
 
       // After the reload the host refuses the follower's re-subscribe, so no
-      // catch-up can replay the note adds: whatever renders came from the
-      // saved workflow alone.
+      // catch-up can replay the note adds, and reopening the tab has to fetch
+      // the saved file from the server: whatever renders came from that file
+      // alone, not from local state. (`reloadWithoutLocalWorkflow` cannot be
+      // used here: it drops the open tab the workflow picker lists.)
       await test.step('both survive reload and reopen without host replay', async () => {
         agentConversation.refuseHostSubscribes()
-        await agentConversation.reloadWithoutLocalWorkflow()
+        const restoredContent = page.waitForResponse(
+          (response) =>
+            response.request().method() === 'GET' &&
+            decodeURIComponent(new URL(response.url()).pathname) ===
+              `/api/userdata/workflows/${SAVED_NAME}.json`,
+          { timeout: 60_000 }
+        )
+        await page.reload({ waitUntil: 'domcontentloaded' })
+        await expect(agentConversation.panel).toBeVisible({ timeout: 30_000 })
         const picker = agentConversation.panel.getByRole('button', {
           name: enMessages.agent.switchWorkflow
         })
@@ -164,6 +174,7 @@ test.describe(
           .getByRole('menuitemradio', { name: SAVED_NAME, exact: true })
           .click()
         await expect(picker).toHaveText(SAVED_NAME)
+        expect((await restoredContent).ok()).toBe(true)
         await expectBothNotes()
         const afterPath = testInfo.outputPath('after-reload.png')
         await page.screenshot({ path: afterPath })
