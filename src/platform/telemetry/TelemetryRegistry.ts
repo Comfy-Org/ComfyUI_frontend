@@ -205,10 +205,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackCheckoutJourneyEvent?.(event))
   }
 
+  // Reached through TelemetryDispatcher, so the call site is an interface
+  // member rather than a reference to this class.
+  // fallow-ignore-next-line unused-class-member
   trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {
     this.dispatch((provider) => provider.trackAgentPaywallShown?.(metadata))
   }
 
+  // fallow-ignore-next-line unused-class-member
   trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
     this.dispatch((provider) =>
       provider.trackAgentPaywallCtaClicked?.(metadata)
