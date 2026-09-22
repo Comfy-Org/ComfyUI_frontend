@@ -2548,7 +2548,7 @@ describe('useSubscriptionCheckout', () => {
     })
 
     describe('hosted billing handoff', () => {
-      it('opens billing-web with the team plan slug and closes without subscribing', async () => {
+      it('opens billing-web with the team plan slug and credit stop, and closes without subscribing', async () => {
         mockOpenHostedBillingTab.mockReturnValue(true)
         const checkout = await setup()
 
@@ -2559,7 +2559,8 @@ describe('useSubscriptionCheckout', () => {
         })
 
         expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
-          plan: 'team_per_credit_annual'
+          plan: 'team_per_credit_annual',
+          teamCreditStopId: 'team_1400'
         })
         expect(mockPreviewSubscribe).not.toHaveBeenCalled()
         expect(emit).toHaveBeenCalledWith('close', false)
@@ -2576,10 +2577,39 @@ describe('useSubscriptionCheckout', () => {
         })
 
         expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
-          plan: 'team_per_credit_monthly'
+          plan: 'team_per_credit_monthly',
+          teamCreditStopId: 'team_1400'
         })
         expect(mockPreviewSubscribe).toHaveBeenCalledOnce()
         expect(checkout.checkoutStep.value).toBe('preview')
+      })
+
+      it("never hands off a stop with no server-assigned id, and keeps today's fallback toast", async () => {
+        const checkout = await setup(undefined, 'team', false)
+
+        await checkout.handleSubscribeTeamClick({
+          stop: { ...teamStop, id: undefined },
+          billingCycle: 'monthly',
+          isChange: true
+        })
+
+        expect(mockOpenHostedBillingTab).not.toHaveBeenCalled()
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ detail: 'Team plan unavailable' })
+        )
+      })
+
+      it('never hands off a stop with no server-assigned id on the embedded path either', async () => {
+        const checkout = await setup()
+
+        await checkout.handleSubscribeTeamClick({
+          stop: { ...teamStop, id: undefined },
+          billingCycle: 'monthly',
+          isChange: true
+        })
+
+        expect(mockOpenHostedBillingTab).not.toHaveBeenCalled()
+        expect(checkout.checkoutStep.value).toBe('pricing')
       })
     })
   })

@@ -932,8 +932,10 @@ export function useSubscriptionCheckout(
     enterCheckoutJourney(`team:${payload.stop.id}:${payload.billingCycle}`)
 
     if (
+      payload.stop.id &&
       openHostedBillingTab('checkout', {
-        plan: getTeamPlanSlug(payload.billingCycle)
+        plan: getTeamPlanSlug(payload.billingCycle),
+        teamCreditStopId: payload.stop.id
       })
     ) {
       emit('close', false)

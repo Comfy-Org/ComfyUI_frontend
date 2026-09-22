@@ -16,6 +16,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 export interface OpenHostedBillingTabOptions {
   readonly plan?: string
+  readonly teamCreditStopId?: string
 }
 
 /**
@@ -64,6 +65,7 @@ export function openHostedBillingTab(
   const workspaceId = useTeamWorkspaceStore().activeWorkspaceId ?? undefined
   const route = hostedBillingRoute(flags.hostedBillingDestination, intent, {
     plan: options.plan,
+    teamCreditStopId: options.teamCreditStopId,
     workspaceId
   })
   if (route.kind !== 'billing_web' || !openDisownedTab(route.url)) {

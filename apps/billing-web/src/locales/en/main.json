@@ -114,7 +114,8 @@
       "UNKNOWN_RETURN_TARGET": "That link doesn't name a place we can send you back to.",
       "INVALID_PLAN": "That link names a plan we can't read.",
       "INVALID_CORRELATION_ID": "That link carries a reference we can't read.",
-      "INVALID_WORKSPACE_ID": "That link names a workspace we can't read."
+      "INVALID_WORKSPACE_ID": "That link names a workspace we can't read.",
+      "INVALID_TEAM_CREDIT_STOP_ID": "That link names a credit amount we can't read."
     },
     "failure": {
       "unknown": "Something went wrong. Please try again.",

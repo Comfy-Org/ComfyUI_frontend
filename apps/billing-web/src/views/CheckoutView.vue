@@ -42,6 +42,7 @@ const router = useRouter()
 const { entry } = useBillingEntry()
 
 const planSlug = computed(() => entry.value?.plan)
+const teamCreditStopId = computed(() => entry.value?.teamCreditStopId)
 
 const {
   preview,
@@ -63,26 +64,39 @@ const checkout = useCheckout({
 })
 
 const quotedPlan = ref<string | undefined>()
+const quotedTeamCreditStopId = ref<string | undefined>()
 
-function quotePlan(slug: string | undefined) {
+function quotePlan(slug: string | undefined, stopId: string | undefined) {
   quotedPlan.value = slug
-  if (slug !== undefined) void quote({ planSlug: slug })
+  quotedTeamCreditStopId.value = stopId
+  if (slug !== undefined) {
+    void quote({
+      planSlug: slug,
+      ...(stopId === undefined ? {} : { teamCreditStopId: stopId })
+    })
+  }
 }
 
-onMounted(() => quotePlan(planSlug.value))
+onMounted(() => quotePlan(planSlug.value, teamCreditStopId.value))
 
-// The route record is shared, so arriving with a different plan reuses the
-// view. A payment in flight outranks the new link — repricing under it would
-// show one plan's summary beside another plan's steps — but that deferral has
-// to be made good the moment the operation is dismissed, or the form returns
-// pricing the plan the customer left. Watching the operation is what closes
-// that gap; `quotedPlan` is what tells the two apart.
+// The route record is shared, so arriving with a different plan (or, for a
+// team plan, a different credit stop) reuses the view. A payment in flight
+// outranks the new link — repricing under it would show one plan's summary
+// beside another plan's steps — but that deferral has to be made good the
+// moment the operation is dismissed, or the form returns pricing what the
+// customer left. Watching the operation is what closes that gap;
+// `quotedPlan`/`quotedTeamCreditStopId` are what tell the two apart.
 watch(
-  [planSlug, () => checkout.operation.value !== undefined],
-  ([slug, busy]) => {
-    if (busy || slug === quotedPlan.value) return
+  [planSlug, teamCreditStopId, () => checkout.operation.value !== undefined],
+  ([slug, stopId, busy]) => {
+    if (
+      busy ||
+      (slug === quotedPlan.value && stopId === quotedTeamCreditStopId.value)
+    ) {
+      return
+    }
     resetQuote()
-    quotePlan(slug)
+    quotePlan(slug, stopId)
   }
 )
 
@@ -179,7 +193,10 @@ function resultUrl(): string | undefined {
     intent: 'result',
     product: arrival.product,
     returnTo: arrival.returnTo,
-    ...(arrival.plan === undefined ? {} : { plan: arrival.plan })
+    ...(arrival.plan === undefined ? {} : { plan: arrival.plan }),
+    ...(arrival.teamCreditStopId === undefined
+      ? {}
+      : { teamCreditStopId: arrival.teamCreditStopId })
   })
   return built.status === 'ok' ? built.url.href : undefined
 }
@@ -194,6 +211,9 @@ function subscribeRequest(
   return {
     plan_slug: plan,
     confirmation_token: confirmationToken,
+    ...(teamCreditStopId.value === undefined
+      ? {}
+      : { team_credit_stop_id: teamCreditStopId.value }),
     ...(quoted.quote_id === undefined ? {} : { quote_id: quoted.quote_id }),
     ...(quoted.quote_version === undefined
       ? {}

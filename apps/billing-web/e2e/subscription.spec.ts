@@ -61,6 +61,30 @@ test('choosing a plan quotes it from the server and continues to checkout', asyn
   ).toBeVisible()
 })
 
+test('a checkout link naming a team credit stop quotes it along with the plan', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await signIn(
+    entryPath('checkout', {
+      plan: 'pro_monthly',
+      team_credit_stop_id: 'stop_700'
+    })
+  )
+
+  await expect(
+    page.getByRole('heading', { name: 'Confirm your payment' })
+  ).toBeVisible()
+  const preview = cloud.requests.find(
+    (request) => request.path === '/billing/preview-subscribe'
+  )
+  expect(preview?.body).toStrictEqual({
+    plan_slug: 'pro_monthly',
+    team_credit_stop_id: 'stop_700'
+  })
+})
+
 test('a checkout link that names no plan sends the customer to choose one', async ({
   page,
   signIn
