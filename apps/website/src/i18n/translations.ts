@@ -8980,6 +8980,10 @@ Enterprise`
     en: 'Use state-of-the-art models for image, video, 3D, and audio. Ready for production.',
     'zh-CN': '使用最先进的图像、视频、3D 和音频模型。生产环境就绪。'
   },
+  'platform.modelsHero.getApiKey': {
+    en: 'Get your API key',
+    'zh-CN': '获取 API 密钥'
+  },
   'platform.builderHero.heading': {
     en: 'Package ComfyUI Builds for your team',
     'zh-CN': '为团队打包 ComfyUI Builds'
