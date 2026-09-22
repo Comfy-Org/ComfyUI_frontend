@@ -1,4 +1,4 @@
-import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
+import { applyOps, linksMap, mint, project } from '@comfyorg/comfy-multi-player'
 import type {
   DeleteNodeOp,
   InsertWorkflowOp,
@@ -103,6 +103,22 @@ function readInputOrigins(node: LGraphNode) {
   }))
 }
 
+function docLinkIds(doc: Y.Doc): unknown[] {
+  return [...linksMap(doc).values()].map((link) =>
+    link instanceof Y.Array ? link.get(0) : Array.isArray(link) ? link[0] : null
+  )
+}
+
+function expectSafeNumericLinkIds(doc: Y.Doc, count: number): void {
+  const ids = docLinkIds(doc)
+  expect(ids).toHaveLength(count)
+  expect(
+    ids.every(
+      (id) => typeof id === 'number' && id >= 0 && Number.isSafeInteger(id)
+    )
+  ).toBe(true)
+}
+
 function findByType(graph: LGraph, type: string): LGraphNode {
   const node = graph._nodes.find((candidate) => candidate.type === type)
   if (!node) throw new Error(`no live node of type ${type} was materialized`)
@@ -149,6 +165,7 @@ describe('a plain insert_workflow batch materializes its links', () => {
     expect(applyOps(host, [op], CATALOG).outcomes).toEqual([
       { op_id: op.op_id, outcome: 'applied' }
     ])
+    expectSafeNumericLinkIds(host, 2)
 
     const deliver = bindProjection(WORKFLOW_ID, graph)
     expect(deliver(Y.encodeStateAsUpdate(host), [op.op_id])).toBe(true)
@@ -164,6 +181,13 @@ describe('a plain insert_workflow batch materializes its links', () => {
       { name: 'images', origin: reference.id }
     ])
     expect(graph.serialize().links).toHaveLength(2)
+
+    const reloadedGraph = new LGraph()
+    const reload = bindProjection('wf-reloaded', reloadedGraph)
+    expect(reload(Y.encodeStateAsUpdate(host), [op.op_id])).toBe(true)
+    expect(reloadedGraph.serialize().links.map(([id]) => id)).toEqual(
+      graph.serialize().links.map(([id]) => id)
+    )
   })
 
   it('wires a link inserted after the graph is already open, on the incremental path', () => {
@@ -204,6 +228,7 @@ describe('a plain insert_workflow batch materializes its links', () => {
     expect(applyOps(host, [secondOp], CATALOG).outcomes).toEqual([
       { op_id: secondOp.op_id, outcome: 'applied' }
     ])
+    expectSafeNumericLinkIds(host, 1)
     expect(deliver(Y.encodeStateAsUpdate(host, before), [secondOp.op_id])).toBe(
       true
     )
@@ -216,7 +241,92 @@ describe('a plain insert_workflow batch materializes its links', () => {
     expect(graph.serialize().links).toHaveLength(1)
   })
 
-  it('removes then reinserts a derived-id link', () => {
+  it('keeps formerly colliding insertions distinct from a persisted id', () => {
+    const graph = new LGraph()
+    const persistedLinkId = 13_181_811_759
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'TestLoadImage',
+            outputs: [
+              { name: 'IMAGE', type: 'IMAGE', links: [persistedLinkId] }
+            ]
+          },
+          {
+            id: 2,
+            type: 'TestSaveVideo',
+            inputs: [{ name: 'images', type: 'IMAGE', link: persistedLinkId }]
+          }
+        ],
+        links: [[persistedLinkId, 1, 0, 2, 0, 'IMAGE']]
+      },
+      CATALOG
+    )
+    const workflow = {
+      nodes: [
+        {
+          id: 101,
+          type: 'TestLoadImage',
+          outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [201] }]
+        },
+        {
+          id: 102,
+          type: 'TestSaveVideo',
+          inputs: [{ name: 'images', type: 'IMAGE', link: 201 }]
+        }
+      ],
+      links: [[201, 101, 0, 102, 0, 'IMAGE']]
+    }
+    const firstOp = insertOp(workflow, 'd7b0c03fe2abc909a5c84a6e02d80cdd')
+    const secondOp = insertOp(workflow, '589889ae708156b3e33fdf39e3cfb931')
+    expect(applyOps(host, [firstOp, secondOp], CATALOG).outcomes).toEqual([
+      { op_id: firstOp.op_id, outcome: 'applied' },
+      { op_id: secondOp.op_id, outcome: 'applied' }
+    ])
+
+    expectSafeNumericLinkIds(host, 3)
+    expect(new Set(docLinkIds(host)).size).toBe(3)
+    const deliver = bindProjection('wf-colliding-links', graph)
+    expect(
+      deliver(Y.encodeStateAsUpdate(host), [firstOp.op_id, secondOp.op_id])
+    ).toBe(true)
+    expect(graph.serialize().links).toHaveLength(3)
+  })
+
+  it.for(['-1', '1.5', '9007199254740992'])(
+    'rejects malformed link id %s',
+    (linkId) => {
+      const graph = new LGraph()
+      const host = mint(
+        {
+          nodes: [
+            {
+              id: 1,
+              type: 'TestLoadImage',
+              outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [linkId] }]
+            },
+            {
+              id: 2,
+              type: 'TestSaveVideo',
+              inputs: [{ name: 'images', type: 'IMAGE', link: linkId }]
+            }
+          ],
+          links: []
+        },
+        CATALOG
+      )
+      linksMap(host).set(linkId, [linkId, 1, 0, 2, 0, 'IMAGE'])
+
+      const deliver = bindProjection('wf-malformed-link', graph)
+      expect(deliver(Y.encodeStateAsUpdate(host), [])).toBe(true)
+      expect(graph._nodes).toHaveLength(2)
+      expect(graph.serialize().links).toHaveLength(0)
+    }
+  )
+
+  it('removes then reinserts a numeric-id link', () => {
     const graph = new LGraph()
     const host = mint({ nodes: [], links: [] }, CATALOG)
 
@@ -241,6 +351,8 @@ describe('a plain insert_workflow batch materializes its links', () => {
     expect(applyOps(host, [firstOp], CATALOG).outcomes).toEqual([
       { op_id: firstOp.op_id, outcome: 'applied' }
     ])
+    const firstLinkId = docLinkIds(host)[0]
+    expectSafeNumericLinkIds(host, 1)
 
     const deliver = bindProjection('wf-replay', graph)
     expect(deliver(Y.encodeStateAsUpdate(host), [firstOp.op_id])).toBe(true)
@@ -286,6 +398,7 @@ describe('a plain insert_workflow batch materializes its links', () => {
       ])
     ).toBe(true)
     expect(graph._nodes).toHaveLength(0)
+    expect(docLinkIds(host)).toEqual([])
 
     const beforeReplay = Y.encodeStateVector(host)
     const replayOp = insertOp(
@@ -309,6 +422,9 @@ describe('a plain insert_workflow batch materializes its links', () => {
     expect(applyOps(host, [replayOp], CATALOG).outcomes).toEqual([
       { op_id: replayOp.op_id, outcome: 'applied' }
     ])
+    const replayedLinkId = docLinkIds(host)[0]
+    expectSafeNumericLinkIds(host, 1)
+    expect(replayedLinkId).not.toBe(firstLinkId)
     expect(
       deliver(Y.encodeStateAsUpdate(host, beforeReplay), [replayOp.op_id])
     ).toBe(true)
