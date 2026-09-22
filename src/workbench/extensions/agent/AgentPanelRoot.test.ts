@@ -6718,9 +6718,8 @@ describe('AgentPanelRoot workflow binding', () => {
     setupNodeSelectionCanvas()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
-    const action = screen.getByRole('button', {
-      name: 'mention nodes'
-    })
+    await openAddMenu()
+    let action = screen.getByRole('menuitem', { name: 'Nodes' })
     expect(action).toHaveAttribute('aria-disabled', 'true')
     expect(action).toHaveAccessibleDescription('Please select a workflow first')
     await userEvent.click(action)
@@ -6728,6 +6727,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     useAgentPanelStore().setWorkflowTarget(fromPartial<ComfyWorkflow>(target))
     await nextTick()
+    action = screen.getByRole('menuitem', { name: 'Nodes' })
     expect(action).not.toHaveAttribute('aria-disabled', 'true')
     await userEvent.click(action)
     expect(useAgentNodeSelectionStore().isActive).toBe(true)
@@ -6735,6 +6735,8 @@ describe('AgentPanelRoot workflow binding', () => {
     workflowStore.activeWorkflow = addTab('workflows/other.json')
     await nextTick()
     expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    await openAddMenu()
+    action = screen.getByRole('menuitem', { name: 'Nodes' })
     expect(action).toHaveAttribute('aria-disabled', 'true')
     expect(action).toHaveAccessibleDescription(
       'Switch to current to add nodes.'
@@ -6743,6 +6745,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentNodeSelectionStore().isActive).toBe(false)
     workflowStore.activeWorkflow = target
     await nextTick()
+    action = screen.getByRole('menuitem', { name: 'Nodes' })
     expect(action).not.toHaveAttribute('aria-disabled', 'true')
   })
 
