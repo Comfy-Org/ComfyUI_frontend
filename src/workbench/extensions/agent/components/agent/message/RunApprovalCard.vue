@@ -6,9 +6,14 @@ import Button from '@/components/ui/button/Button.vue'
 
 import type { RunApprovalPart } from '../../../services/agent/agentMessageParts'
 
-const { part, answering = false } = defineProps<{
+const {
+  part,
+  answering = false,
+  hideWorkflowName = false
+} = defineProps<{
   part: RunApprovalPart
   answering?: boolean
+  hideWorkflowName?: boolean
 }>()
 const emit = defineEmits<{
   answer: [askId: string, selection: 'run' | 'cancel']
@@ -30,9 +35,18 @@ const workflowLabel = computed(
   >
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
       <p class="m-0 font-medium text-base-foreground">
-        {{ t('agent.runApproval.lead') }}
+        {{
+          t(
+            hideWorkflowName
+              ? 'agent.runApproval.leadBound'
+              : 'agent.runApproval.lead'
+          )
+        }}
       </p>
-      <ul class="m-0 min-w-0 list-disc pl-5 text-muted-foreground">
+      <ul
+        v-if="!hideWorkflowName"
+        class="m-0 min-w-0 list-disc pl-5 text-muted-foreground"
+      >
         <li>
           <Button
             v-if="part.workflowId"

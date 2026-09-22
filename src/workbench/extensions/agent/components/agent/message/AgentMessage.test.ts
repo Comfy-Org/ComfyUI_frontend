@@ -649,6 +649,22 @@ describe('AgentMessage run approval', () => {
     }
   })
 
+  it('omits the redundant workflow name for a 1:1 bound chat', () => {
+    render(AgentMessage, {
+      props: {
+        message: approvalMessage(),
+        boundWorkflowId: 'workflow-1'
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('This tool wants to run this workflow.')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Portrait workflow')).not.toBeInTheDocument()
+    expect(screen.getByText('Do you approve?')).toBeInTheDocument()
+  })
+
   it.for([
     {
       approval: { workflowName: '  ' },

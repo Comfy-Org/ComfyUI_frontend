@@ -24,12 +24,14 @@ const {
   entries,
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   editableTurnId = null,
-  answeringAskIds = new Set<string>()
+  answeringAskIds = new Set<string>(),
+  boundWorkflowId
 } = defineProps<{
   entries: ConversationEntry[]
   paywallPresentation?: AgentPaywallPresentation
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
+  boundWorkflowId?: string
 }>()
 const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
@@ -115,6 +117,7 @@ watch(
               :message="entry"
               :answering-ask-ids
               :paywall-presentation
+              :bound-workflow-id
               @feedback="emit('feedback', entry.id, $event)"
               @answer-ask="
                 (askId: string, selection: 'run' | 'cancel') =>
