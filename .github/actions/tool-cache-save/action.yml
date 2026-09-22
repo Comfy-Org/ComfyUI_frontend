@@ -1,15 +1,15 @@
-name: 'Save lint caches'
+name: 'Save tool caches'
 description: >
-  Saves tool caches under the key computed by lint-cache-restore. Run with
+  Saves tool caches under the key computed by tool-cache-restore. Run with
   `if: always()` so a failing run still publishes results for the files that
   passed.
 
 inputs:
   cache-key:
-    description: Key returned by lint-cache-restore
+    description: Key returned by tool-cache-restore
     required: true
   path:
-    description: Newline-separated cache paths (same value passed to lint-cache-restore)
+    description: Newline-separated cache paths (same value passed to tool-cache-restore)
     required: true
 
 runs:

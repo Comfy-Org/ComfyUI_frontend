@@ -33,6 +33,9 @@ env:
     .eslintcache
     .stylelintcache
     node_modules/.cache/eslint-website
+  TYPECHECK_CACHE_PATHS: |
+    node_modules/.cache/tsbuildinfo
+    packages/*/node_modules/.cache/tsbuildinfo
 
 jobs:
   lint:
@@ -46,7 +49,7 @@ jobs:
 
       - name: Restore lint caches
         id: lint-cache
-        uses: ./.github/actions/lint-cache-restore
+        uses: ./.github/actions/tool-cache-restore
         with:
           scope: lint
           path: ${{ env.LINT_CACHE_PATHS }}
@@ -59,7 +62,7 @@ jobs:
 
       - name: Save lint caches
         if: always()
-        uses: ./.github/actions/lint-cache-save
+        uses: ./.github/actions/tool-cache-save
         with:
           cache-key: ${{ steps.lint-cache.outputs.cache-key }}
           path: ${{ env.LINT_CACHE_PATHS }}
@@ -73,8 +76,22 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
+      - name: Restore incremental typecheck cache
+        id: typecheck-cache
+        uses: ./.github/actions/tool-cache-restore
+        with:
+          scope: typecheck
+          path: ${{ env.TYPECHECK_CACHE_PATHS }}
+
       - name: Typecheck application and packages
         run: pnpm typecheck
+
+      - name: Save incremental typecheck cache
+        if: always()
+        uses: ./.github/actions/tool-cache-save
+        with:
+          cache-key: ${{ steps.typecheck-cache.outputs.cache-key }}
+          path: ${{ env.TYPECHECK_CACHE_PATHS }}
 
   typecheck-aux:
     runs-on: ubuntu-latest
@@ -85,8 +102,22 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
+      - name: Restore incremental typecheck cache
+        id: typecheck-cache
+        uses: ./.github/actions/tool-cache-restore
+        with:
+          scope: typecheck-aux
+          path: ${{ env.TYPECHECK_CACHE_PATHS }}
+
       - name: Typecheck browser tests, scripts and tools
         uses: ./.github/actions/typecheck-aux
+
+      - name: Save incremental typecheck cache
+        if: always()
+        uses: ./.github/actions/tool-cache-save
+        with:
+          cache-key: ${{ steps.typecheck-cache.outputs.cache-key }}
+          path: ${{ env.TYPECHECK_CACHE_PATHS }}
 
   repo-checks:
     runs-on: ubuntu-latest
