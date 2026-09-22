@@ -109,7 +109,7 @@ function passiveReferenceView(node: Node, iconClass: string) {
   dom.contentEditable = 'false'
   dom.dataset.testid = `${reference.kind}-reference-chip`
   dom.className =
-    'inline rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset [&.ProseMirror-selectednode]:outline-1'
+    'inline-block rounded-sm bg-primary-background/30 px-1 py-0.5 font-inter text-xs/[15px] font-normal whitespace-nowrap text-primary-background-hover ring-1 ring-primary-background/30 ring-inset [&.ProseMirror-selectednode]:outline-1'
   const icon = document.createElement('span')
   icon.className = `${iconClass} mr-1 inline-block size-3 align-middle`
   icon.setAttribute('aria-hidden', 'true')
@@ -297,7 +297,7 @@ onMounted(() => {
         dom.contentEditable = 'false'
         dom.dataset.testid = 'workflow-reference-chip'
         dom.className =
-          'group/workflow inline selection:bg-transparent selection:text-inherit'
+          'group/workflow inline-block whitespace-nowrap selection:bg-transparent selection:text-inherit'
         const open = document.createElement('span')
         open.setAttribute('role', 'button')
         open.tabIndex = 0
@@ -318,7 +318,7 @@ onMounted(() => {
           open.title = reason
         }
         open.className =
-          'inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset group-data-selected/workflow:bg-primary-background/60 group-data-selected/workflow:text-base-foreground group-data-selected/workflow:ring-primary-background hover:bg-primary-background/40 group-data-selected/workflow:hover:bg-primary-background/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50'
+          'inline cursor-pointer rounded-sm bg-primary-background/30 px-1 py-0.5 font-inter text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset group-data-selected/workflow:bg-primary-background/60 group-data-selected/workflow:text-base-foreground group-data-selected/workflow:ring-primary-background hover:bg-primary-background/40 group-data-selected/workflow:hover:bg-primary-background/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50'
         const icon = document.createElement('span')
         icon.className =
           'icon-[comfy--workflow] mr-1 inline-block size-3 align-middle'
