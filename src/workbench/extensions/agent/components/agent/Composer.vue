@@ -88,6 +88,7 @@ const emit = defineEmits<{
   selectNodes: []
   removeTag: [id: string]
   mentionPick: [node: SelectedNode]
+  mentionHighlight: [node: SelectedNode | null]
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
@@ -228,6 +229,15 @@ watch(mentionActive, async () => {
     ?.querySelector('[data-active="true"]')
     ?.scrollIntoView?.({ block: 'nearest' })
 })
+
+watch(
+  [mentionVisible, mentionActive, mentionMatches],
+  ([visible, active, matches]) => {
+    const match = visible ? matches[active] : undefined
+    emit('mentionHighlight', match?.kind === 'node' ? match.node : null)
+  },
+  { immediate: true }
+)
 
 const placeholderHint = computed(() => {
   const [text = '', mentionNodes = ''] = t('agent.placeholder').split('\n')

@@ -121,6 +121,18 @@ export const useCanvasStore = defineStore('canvas', () => {
     () =>
       new Set(selectedItems.value.filter(isLGraphNode).map((item) => item.id))
   )
+  const highlightedNodeIds = ref<Set<NodeId>>(new Set())
+
+  /** Emphasizes nodes without mutating the user's graph selection. */
+  const setHighlightedNodeIds = (ids: Iterable<NodeId>) => {
+    highlightedNodeIds.value = new Set(ids)
+    const currentCanvas = canvas.value
+    if (!currentCanvas) return
+    currentCanvas.highlighted_node_ids = new Set(
+      [...highlightedNodeIds.value].map(String)
+    )
+    currentCanvas.setDirty(true, false)
+  }
 
   whenever(
     () => canvas.value,
@@ -187,6 +199,8 @@ export const useCanvasStore = defineStore('canvas', () => {
     canvas,
     selectedItems,
     selectedNodeIds,
+    highlightedNodeIds,
+    setHighlightedNodeIds,
     appScalePercentage,
     linearMode,
     isReadOnly,

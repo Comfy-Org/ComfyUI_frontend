@@ -54,7 +54,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
-import { parseNodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -839,6 +839,7 @@ void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
   mintPortWiring.detach()
+  canvasStore.setHighlightedNodeIds([])
   exitNodeSelectionMode()
   stop()
   tabActivity.setEditing(null)
@@ -1055,6 +1056,7 @@ watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
 watch(
   selectedTarget,
   (target, previous) => {
+    canvasStore.setHighlightedNodeIds([])
     exitNodeSelectionMode()
     composerStore.setNodeScope(target?.path ?? null)
     nodeReferenceWorkflow = null
@@ -1067,6 +1069,7 @@ watch(
 watch(
   () => canvasStore.currentGraph,
   () => {
+    canvasStore.setHighlightedNodeIds([])
     if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
   }
 )
@@ -1160,11 +1163,16 @@ function onMentionPick(node: SelectedNode): void {
     useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
 }
 
+function onMentionHighlight(node: SelectedNode | null): void {
+  canvasStore.setHighlightedNodeIds(node ? [toNodeId(node.id)] : [])
+}
+
 function onRemoveSelectionTag(id: string): void {
   removeSelectionTag(id)
 }
 
 function onClosePanel(): void {
+  canvasStore.setHighlightedNodeIds([])
   exitNodeSelectionMode()
   useTelemetry()?.trackAgentCloseButtonClicked()
   agentPanelStore.close('close_button')
@@ -1317,6 +1325,7 @@ function onPanelDrop(event: DragEvent): void {
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
       @mention-pick="onMentionPick"
+      @mention-highlight="onMentionHighlight"
       @request-workflow-references="onRequestWorkflowReferences"
       @remove-workflow-reference="composerStore.removeWorkflowReference"
       @feedback="onFeedback"
