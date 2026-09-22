@@ -753,7 +753,7 @@ export class AgentConversationHarness {
     if (!outer) {
       throw new Error('nested subgraph fixture is missing its outer definition')
     }
-    const inner = outer.definitions?.subgraphs.at(0)
+    const inner = outer.definitions?.subgraphs?.at(0)
     if (!inner) {
       throw new Error('nested subgraph fixture is incomplete')
     }
