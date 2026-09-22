@@ -18,10 +18,15 @@ deleted without anyone being told. All four were confirmed by reading current
 [#18063](https://github.com/Comfy-Org/ComfyUI_frontend/pull/18063).
 
 1. **A host-rejected human op is swallowed.** `useAgentCrdtFollower.ts` wires
-   `onBatchSettled` to `recordDevEvent('human_ops_settled', ...)` and nothing
-   else. `pendingOpLedger.ts` has a complete `failed` / `unprocessed` state
-   machine and no production caller. A rejected `add_node` leaves a node that
-   is live locally and permanently absent from the document.
+   `onBatchSettled` to `recordDevEvent('human_ops_settled', ...)` and, since
+   #18078, to a `confirmedDeletes` set: an acknowledged `delete_node` stays
+   pending until the document frame removes its node, and
+   `pendingHumanDeletes()` unions that set with `sender.pendingOps()` into the
+   adapter's `LocalIntent.pendingDeletes`, which the reconcile upsert already
+   filters out. That covers pending-delete intent only. The rejection half is
+   still missing: `pendingOpLedger.ts` has a complete `failed` / `unprocessed`
+   state machine and no production caller. A rejected `add_node` leaves a node
+   that is live locally and permanently absent from the document.
 2. **The first frame after a follower rebind deletes every local node the
    document lacks.** `EcsFollowerAdapter.createSession` sets
    `reconcileNextFrame: true`; the first `doc_update` after a tab return runs
@@ -91,7 +96,11 @@ in flight per transmit, reconciled per outcome on settle, and leaves only on
 its authoritative effect, on an explicit revert, or on a lineage reset. Its
 states are the ledger's own (`queued`, `inflight`, `applied`, `skipped`,
 `failed`, `unprocessed`); this ADR adds one, `delivery_unknown`, for parked
-entries. Its revert-and-toast for a host-rejected `add_node` stands, as does
+entries. Terminal states are `skipped`, and `failed` and `unprocessed` once
+their revert has run, and `applied` once seq coverage or the effect frame
+clears the entry. Everything else (`queued`, `inflight`, `applied` awaiting
+clearance, `delivery_unknown`) is non-terminal, and is what (b) and (c) mean
+by a pending entry. Its revert-and-toast for a host-rejected `add_node` stands, as does
 its first-pass scope (non-add reverts are toast-only). The deltas, decided
 here and landed in PR A:
 
@@ -120,16 +129,69 @@ here and landed in PR A:
   closes only the tab-deactivation gap; hoisting its ownership to
   workflow/document scope is the following PR in the stack, and this ADR's
   guarantee does not hold for panel close/reopen until that PR lands.
-- **`unconfirmed` joins `unacknowledged` in the parked set.** Both mean the
-  host may have applied the batch. Parked entries enter `delivery_unknown`
-  and resolve at the next same-lineage catch-up by a per-kind effect check:
-  `add_node`, the node id is present in the document's nodes map;
-  `delete_node`, it is absent; `connect`, the link id is present in the links
-  map; `set_widget` clears on seq coverage only, since last-writer-wins makes
-  a value comparison meaningless; `clear` is not parked and settles as #16309
-  settles it. Present clears the entry; absent reverts it with #16309's
-  existing toast (an `add_node` removes the node, other kinds toast only).
-  Nothing is re-enqueued. `undeliverable` reverts as #16309 does today.
+
+  Hoisting the ledger alone is not enough. `createOpSender`'s `detach()`, run
+  from the follower's scope-dispose list, drops queued, open and in-flight
+  batches without settling them, so their entries would outlive the mount in
+  a non-terminal state with no outcome to resolve them. PR A therefore makes
+  the follower call `abortAll()` before `detach()`: queued and open batches
+  settle `undeliverable` (revert and toast) and an in-flight one settles
+  `unconfirmed` (parked, resolved at the next barrier). A1 moves the sender
+  into the same lineage-scoped registry as the ledger, so an unmount no
+  longer interrupts delivery at all. The registry records the lineage id
+  each ledger was created for; `bind()` compares it with the document's, and
+  a mismatch (a `doc_reset` or `follower_replaced` that happened while no
+  follower was mounted) clears that ledger and its known-id set before the
+  first frame. Entries are evicted with their workflow: the registry drops a
+  lineage when its workflow closes, so it cannot grow without bound; every
+  lineage ends in a close or a break.
+
+- **The ledger is the only source of pending-delete intent.**
+  `pendingHumanDeletes()` becomes a read over the ledger: a `delete_node` in
+  any non-terminal state, including `applied` until its effect frame lands,
+  is a pending delete. #18078's `confirmedDeletes` set is deleted in PR A,
+  not kept alongside; two sources of pending-delete intent that can disagree
+  (the ledger clears on seq coverage, `confirmedDeletes` holds until the
+  node leaves the document) is the bug this section removes, and the ledger
+  keeps the stronger of the two rules by holding an `applied` delete until
+  either the effect frame or seq coverage clears it.
+- **`unconfirmed` joins `unacknowledged` in the parked set, and parking has a
+  deadline.** Both mean the host may have applied the batch. Parked entries
+  enter `delivery_unknown` and resolve at the **catch-up barrier**: the
+  first authoritative frame the follower applies after (re)binding the same
+  lineage, or, when the resubscribe finds the preserved state vector already
+  current and no frame follows, the `doc_subscribed {ok:true}` ack itself,
+  since the local document then equals the host's. The barrier always
+  arrives once the tab is bound again. While the tab is away nothing is
+  projected, so a parked entry retaining its node is inert, and a lineage
+  break clears it with the rest of the ledger. Resolution is per kind,
+  evaluated against the document as of the barrier: `add_node`, the node id
+  is present and the document node's type equals the ledger entry's minted
+  type; `delete_node`, the id is absent; `connect`, the link id is present;
+  `set_widget` clears unconditionally at the barrier, since it has no ack
+  seq to cover and last-writer-wins makes whatever value the document holds
+  a valid outcome; `clear` is not parked and settles as #16309 settles it.
+  Present-and-same-type clears the entry. Absent reverts it with #16309's
+  existing toast (an `add_node` removes the node, other kinds toast only);
+  the revert removes a node only when the document does not hold its id, so
+  it can never delete an authoritative node. Present-but-different-type is
+  an id collision and is handled as (c) handles it. Present-and-same-type
+  under an id another actor minted while ours never landed is
+  indistinguishable from our own landed add without op ids on `doc_update`;
+  this ADR accepts that residual, since local and document nodes then agree
+  on id and type and the projection converges, and names the per-op frame
+  upgrade below as what closes it. Nothing is re-enqueued. `undeliverable`
+  and `unprocessed` revert as #16309 does today; its tracker already
+  reverts `unprocessed` with the same toast as `failed`.
+- **Per-frame order is fixed: resolve, apply, clear.** For each
+  authoritative frame the follower (1) resolves parked entries against the
+  document state the frame produces and marks them terminal, (2) applies the
+  frame's projection with the ledger as it stands after step 1, so (b)'s
+  pending-delete filter no longer hides a node whose delete just reverted
+  and (c)'s echo gate still sees the `add_node` entry the frame echoes, then
+  (3) clears the entries whose ack seq the frame's `seq` covers. Clearing
+  before applying would strip the echo gate's entry in the very frame that
+  echoes it and misreport every accepted human add as a collision.
 - **Every host rejection is reported.** A `failed` outcome additionally calls
   `reportError` with a stable `errorType` (`agent_crdt_human_op_rejected`) and
   the host's failure `code`, op kind and node id in `context`, never the
@@ -148,7 +210,7 @@ here and landed in PR A:
 For #18063's shape (a `delete_node` still queued when the tab switches) this
 means: the delete is parked, (b) keeps the node out of the reconcile upsert
 while it is parked, and if the host still holds the node after the catch-up
-the delete reverts and the toast fires. The divergence is surfaced, not
+barrier the delete reverts and the toast fires. The divergence is surfaced, not
 silent.
 
 ### Durable guarantee vs. interim mechanism
@@ -161,7 +223,7 @@ durable and should outlive any one mechanism below:
   discarded by a reconcile;
 - a human op the host rejects is reported to the user;
 - an outcome whose delivery is unknown is resolved at the next same-lineage
-  catch-up rather than left ambiguous indefinitely;
+  catch-up barrier rather than left ambiguous indefinitely;
 - any collision between local and document state is reported rather than
   resolved silently, with the document winning.
 
@@ -200,13 +262,25 @@ Both scopes apply; neither alone covers the two repros.
   state is retained by `removeMissing` and by the materializer's orphan
   sweep. A node with a non-terminal `delete_node` is not re-created by a
   reconcile upsert. This keeps #18063's deleted node deleted and #18078's
-  never-landed node alive until the ledger resolves.
-- **Lineage-aware.** A session records the document's node and link ids at
-  `bind()` (the bridge keeps the `FollowerDoc` across a same-workflow
-  resubscribe, so this is the document as of leaving) and every id a later
-  frame adds. `removeMissing` removes only ids in that set that the document
-  no longer holds. An id the document never held is retained and reported
-  once per session (`reportError`, `agent_crdt_local_only_node_retained`, dev
+  never-landed node alive until the ledger resolves. A widget with a
+  non-terminal `set_widget` keeps its local value through a full reconcile;
+  the upsert projects every other field and every other widget, the entry
+  resolves by seq coverage or at the barrier, and last-writer-wins then
+  decides.
+- **Lineage-aware.** The session keeps a lineage-scoped **known-id set** in
+  the same registry as the ledger (per follower until A1 lands): the node
+  and link ids the document holds now, plus ids it held whose removal
+  `removeMissing` has not yet applied locally. Ids enter the set at `bind()`
+  and as frames add them; an id leaves the set only when a local sweep has
+  removed it, never merely because the document dropped it. `removeMissing`
+  removes exactly the ids in the set that the document no longer holds, so
+  the rule is never vacuous, and an id the document once held and later
+  reissued to a never-minted local node is retained, because the earlier
+  sweep took it out of the set. Because the set outlives a panel unmount, a
+  node deleted remotely while the panel was closed is still in the set at
+  the next `bind()` and is swept as stale rather than retained as
+  local-only. An id the document never held is retained and reported once
+  per session (`reportError`, `agent_crdt_local_only_node_retained`, dev
   event `local_only_retained`).
 
 The genuine "stale local canvas" case is a lineage break. `doc_reset` and
@@ -220,19 +294,30 @@ at bind time knows nothing and removes nothing.
 
 ### (c) An echo of an own add is a reconcile; any other collision is reported
 
-The adapter's incremental path treats an `add` action whose node id is already
-registered in the store as `reconcileNode`, not `addNode`, only when the
-ledger holds an `add_node` for that node id in any state; the batch commits
-and `reconcileNextFrame` stays false. The ledger survives deactivation per
-(a), so the echo case is always covered. Otherwise the `add` is an id
-collision between a retained local-only node and a document node minted under
-the same graph-local integer (the document never saw the local node, so it
-hands the id out again). The adapter reports it (`reportError`,
+The adapter treats an `add` action whose node id is already registered in the
+store as the echo of an own add (`reconcileNode`, not `addNode`; the batch
+commits and `reconcileNextFrame` stays false) only when the ledger holds an
+`add_node` for that node id in a state the host can have seen: `inflight`,
+`applied` or `delivery_unknown`. A `queued` or `unprocessed` entry has never
+reached the host and cannot have produced an echo, so an incoming add under
+its id is a collision, and `agent_crdt_node_id_collision` fires. The same
+gate runs in the full-reconcile path: a document node whose id the store
+already holds, with no qualifying ledger entry and no known-id-set
+membership, is a collision there too, so (b)'s retention holds on the
+rebind frame as well as on incremental ones. The ledger survives
+deactivation per (a), so the echo case is always covered. A collision is a
+retained local-only node and a document node minted under the same
+graph-local integer (the document never saw the local node, so it hands the
+id out again). The adapter reports it (`reportError`,
 `agent_crdt_node_id_collision`, with node id, local type and document type)
-and the document wins: the existing `replaceNode` path applies. This is the
-one case in which a node (b) retained leaves the canvas, and it is reported,
-never silent. The frame's `actor` stays advisory and is not a filter: the
-catch-up frame folds many actors.
+and shows the user the same toast a revert gets, since this is the one path
+in this ADR that removes a node the user created. The document wins by an
+explicit replace, `deleteNode` then `addNode` from the document payload
+under `layoutStore.withActor` with mint ports suppressed, whatever the
+types: `prepare()`'s `reconcileNode` picks `replaceNode` only when the types
+differ and merges same-type nodes, which would leave the retained local
+node's links and widget identity in place. The frame's `actor` stays
+advisory and is not a filter: the catch-up frame folds many actors.
 
 ### (d) Blueprint definitions: mint `define_subgraph` on the human insert path
 
@@ -311,9 +396,9 @@ general availability before the revert path has soaked.
   if its entry-condition test cannot be made to fail first.
 - **PR A**, after #18071 and #16309: the (a) deltas and (c), with the ledger
   still owned inside the follower (survives tab deactivation, not yet panel
-  unmount). Acceptance: a rejected human add is reverted and reported, and
-  an echo of the page's own accepted add reconciles instead of forcing a
-  full resync.
+  unmount). Acceptance: a rejected human add is reverted and reported, an
+  echo of the page's own accepted add reconciles instead of forcing a full
+  resync, and queued and open batches settle before the sender detaches.
 - **PR A1**, after A: hoists the ledger's ownership from the follower to the
   bound workflow/document, per the delta decided in (a). Acceptance: the
   panel close/reopen case in (a) — closing the panel with a pending human
@@ -341,8 +426,8 @@ actors (for C).
 
 - A human edit the host refuses is visible (toast, `reportError`) and, for an
   add, undone; it can no longer sit on the canvas as a permanent orphan.
-- A rebind or same-lineage catch-up removes only state the document once
-  held; local-only state is retained and reported. The one exception, an id
+- A rebind or catch-up barrier removes only state the document once held;
+  local-only state is retained and reported. The one exception, an id
   collision under (c), is reported too.
 - Ordinary editing stops arming a full reconcile on every accepted add, which
   also shrinks the blast radius of the sibling reconcile-overwrite bugs.
@@ -361,13 +446,16 @@ actors (for C).
   initial-sync mint of local-only state at first bind, or an explicit prompt.
 - The known-id set and the longer-lived ledger add state that must reset on
   every lineage break; a missed reset retains stale state.
-- Parking `delivery_unknown` entries until the next catch-up delays the toast
-  for a batch the host actually rejected while the tab was away.
+- Parking `delivery_unknown` entries until the next catch-up barrier delays
+  the toast for a batch the host actually rejected while the tab was away.
 - Seq-based clearing, like effect clearing, trusts an `applied` list that
   counts `lww-dropped` and `no-op`; until the host frame carries per-op
   outcomes some divergence stays unreported.
 - The human-path `define_subgraph` mint is blocked on the (d) chain, so gap 4
   keeps its interim behaviour for a while.
+- The same-type, same-id collision under a never-landed add clears as an
+  echo until `doc_update` carries op ids; the projection converges but the
+  user's node has been replaced by the document's without a report.
 
 ## Notes
 
