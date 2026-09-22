@@ -91,6 +91,13 @@ export function useAttachment(options: UseAttachmentOptions) {
     return true
   }
 
+  async function validateFile(file: File): Promise<boolean> {
+    if (!options.validate) return true
+    const valid = await options.validate(file)
+    if (!valid) options.onInvalid?.(file)
+    return valid
+  }
+
   function failAttachment(id: string, name: string, errorType: string) {
     return (): undefined => {
       reportError(new Error('Agent attachment upload failed'), {
@@ -174,9 +181,8 @@ export function useAttachment(options: UseAttachmentOptions) {
         options.remove(id)
         return 'failed'
       }
-      if (options.validate && !(await options.validate(file))) {
+      if (!(await validateFile(file))) {
         options.remove(id)
-        options.onInvalid?.(file)
         return 'invalid'
       }
       if (!(await uploadStagedFile(id, file))) return 'failed'
@@ -195,10 +201,7 @@ export function useAttachment(options: UseAttachmentOptions) {
     const staged: Array<{ file: File; id: string }> = []
     for (const file of files) {
       if (isTooLarge(file)) continue
-      if (options.validate && !(await options.validate(file))) {
-        options.onInvalid?.(file)
-        continue
-      }
+      if (options.validate && !(await validateFile(file))) continue
       staged.push({ file, id: stage(file.name) })
     }
     let uploaded = 0

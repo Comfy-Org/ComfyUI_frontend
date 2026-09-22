@@ -238,6 +238,26 @@ describe('useAttachment', () => {
     expect(upload).not.toHaveBeenCalled()
   })
 
+  it('returns invalid and removes a deferred file that fails validation', async () => {
+    const upload = vi.fn()
+    const onInvalid = vi.fn()
+    const registry = chipRegistry()
+    const invalid = fileOfSize('renamed.mp4', 1024, 'video/mp4')
+    const { addDeferredFile } = useAttachment({
+      upload,
+      validate: async () => false,
+      onInvalid,
+      ...registry
+    })
+
+    await expect(
+      addDeferredFile(invalid.name, async () => invalid)
+    ).resolves.toBe('invalid')
+    expect(onInvalid).toHaveBeenCalledWith(invalid)
+    expect(registry.chips).toEqual([])
+    expect(upload).not.toHaveBeenCalled()
+  })
+
   it('removes an oversized deferred chip and reports the resolved limit', async () => {
     const upload = vi.fn()
     const onError = vi.fn()
