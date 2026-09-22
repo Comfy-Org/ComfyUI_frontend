@@ -13,6 +13,7 @@ import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
 import { clampSpotlight } from '@/platform/onboarding/coachmarkLayout'
+import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
 import { useOnboarding } from '../../composables/agent/useOnboarding'
 
@@ -25,6 +26,10 @@ const { active, index, step, isLast, next, finish } = useOnboarding(
   () => steps,
   storageKey
 )
+
+// Let surfaces like the What's New popup defer while these coach marks run.
+// The store drops the source with this component's scope on unmount.
+useOnboardingOverlayStore().registerSource(() => active.value)
 const titleId = useId()
 const bodyId = useId()
 const target = ref<HTMLElement | null>(null)
