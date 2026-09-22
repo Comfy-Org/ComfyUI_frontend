@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
@@ -89,6 +90,7 @@ beforeEach(() => {
   stubAccountIdentityPort()
   flagState.embeddedCheckoutEnabled = false
   flagState.hostedBillingDestination = 'stripe'
+  remoteConfig.value = {}
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockImplementation((sdkOptions) => {
     options = sdkOptions
@@ -359,6 +361,53 @@ describe('useBillingSdkStore', () => {
       await expect(options.challengePort()).resolves.toBeUndefined()
     }
   )
+
+  it('prefers the server-configured publishable key over the build-time one', async () => {
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
+    remoteConfig.value = { stripe_publishable_key: 'pk_server' }
+    mockLoadStripe.mockResolvedValue({})
+    useBillingSdkStore()
+
+    await options.challengePort()
+
+    expect(mockLoadStripe).toHaveBeenCalledWith('pk_server')
+  })
+
+  it('falls back to the build-time key when the server has none configured', async () => {
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
+    remoteConfig.value = {}
+    mockLoadStripe.mockResolvedValue({})
+    useBillingSdkStore()
+
+    await options.challengePort()
+
+    expect(mockLoadStripe).toHaveBeenCalledWith('pk_build_time')
+  })
+
+  it.for(['', 42] as const)(
+    'treats a malformed server key (%j) as absent',
+    async (malformed) => {
+      vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
+      remoteConfig.value = {
+        stripe_publishable_key: malformed as unknown as string
+      }
+      mockLoadStripe.mockResolvedValue({})
+      useBillingSdkStore()
+
+      await options.challengePort()
+
+      expect(mockLoadStripe).toHaveBeenCalledWith('pk_build_time')
+    }
+  )
+
+  it('reports checkout unavailable when neither source configures a key', () => {
+    flagState.embeddedCheckoutEnabled = true
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', undefined)
+    remoteConfig.value = {}
+    useBillingSdkStore()
+
+    expect(options.embeddedCheckoutAvailable()).toBe(false)
+  })
 
   it('polls every pending operation when the tab returns', () => {
     useBillingSdkStore()
