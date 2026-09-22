@@ -389,7 +389,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
     expect(tab.location.href).toBe(
-      'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace&workspace_id=ws-team-1'
+      'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace&workspace=ws-team-1'
     )
   })
 

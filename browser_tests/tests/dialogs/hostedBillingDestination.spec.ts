@@ -240,7 +240,7 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     await expect
       .poll(() => openedUrl(page))
       .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/payment-methods?product=comfyui&return_to=comfyui_workspace&workspace_id=ws-personal`
+        `${BILLING_WEB_ORIGIN}/v1/payment-methods?product=comfyui&return_to=comfyui_workspace&workspace=ws-personal`
       )
     expect(portalRequests).toHaveLength(0)
   })
@@ -277,7 +277,7 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     await expect
       .poll(() => openedUrl(page))
       .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/payment-methods?product=comfyui&return_to=comfyui_workspace&workspace_id=ws-personal`
+        `${BILLING_WEB_ORIGIN}/v1/payment-methods?product=comfyui&return_to=comfyui_workspace&workspace=ws-personal`
       )
 
     const requestsBeforeReturn = statusRequests.length
@@ -316,7 +316,7 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     await expect
       .poll(() => openedUrl(page))
       .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/pricing?product=comfyui&return_to=comfyui_workspace&workspace_id=ws-personal`
+        `${BILLING_WEB_ORIGIN}/v1/pricing?product=comfyui&return_to=comfyui_workspace&workspace=ws-personal`
       )
     await expect(pricingDialog(page)).toHaveCount(0)
     await expect(pricingHeading(page)).toBeHidden()
@@ -351,7 +351,7 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     await expect
       .poll(() => openedUrl(page))
       .toBe(
-        `${BILLING_WEB_ORIGIN}/v1/pricing?product=comfyui&return_to=comfyui_workspace&workspace_id=ws-personal`
+        `${BILLING_WEB_ORIGIN}/v1/pricing?product=comfyui&return_to=comfyui_workspace&workspace=ws-personal`
       )
 
     const requestsBeforeReturn = statusRequests.length

@@ -86,7 +86,7 @@ describe('hostedBillingRoute', () => {
     ).toEqual({ kind: 'provider' })
   })
 
-  it('mints workspace_id and plan when both are supplied', () => {
+  it('mints workspace and plan when both are supplied', () => {
     expect(
       hostedBillingRoute(
         'billing_web',
@@ -98,7 +98,7 @@ describe('hostedBillingRoute', () => {
     ).toEqual({
       kind: 'billing_web',
       url: new URL(
-        'https://billing.comfy.org/v1/pricing?product=comfyui&return_to=comfyui_workspace&plan=pro-monthly&workspace_id=ws-team'
+        'https://billing.comfy.org/v1/pricing?product=comfyui&return_to=comfyui_workspace&plan=pro-monthly&workspace=ws-team'
       )
     })
   })
