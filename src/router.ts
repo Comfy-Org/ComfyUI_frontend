@@ -138,7 +138,8 @@ installPreservedQueryTracker(router, [
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.WORKSPACE,
-    keys: ['workspace']
+    keys: ['workspace'],
+    rejectRepeated: true
   }
 ])
 

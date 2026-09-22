@@ -1,4 +1,5 @@
 import { readWorkspaceLink } from '@comfyorg/account-core/workspaceLink'
+import type { WorkspaceLinkRead } from '@comfyorg/account-core/workspaceLink'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import type { LocationQueryRaw } from 'vue-router'
@@ -17,20 +18,19 @@ import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKSPACE
 
-/** A plain function, not an inline check, so the type-aware linter doesn't narrow `route.query.workspace` and flag the later `undefined` check as unreachable. */
-function hasWorkspaceParam(query: LocationQueryRaw): boolean {
-  return query.workspace !== undefined
-}
-
-/** Builds the `URLSearchParams` `readWorkspaceLink` expects from just the `workspace` key, preserving a repeated value so it still reads as `invalid`. */
-function workspaceSearchParams(query: LocationQueryRaw): URLSearchParams {
-  const params = new URLSearchParams()
-  const value = query.workspace
-  const values = Array.isArray(value) ? value : [value]
-  for (const entry of values) {
-    if (typeof entry === 'string') params.append('workspace', entry)
-  }
-  return params
+/** Reads the `workspace` link from a merged query: a repeated value (still
+ * possible when the stash predates router.ts's `rejectRepeated`, or from a
+ * caller that bypasses the tracker) joins with `,`, outside any real
+ * workspace id's charset, so it still resolves to `invalid`. `undefined`
+ * when the key itself is absent. */
+function readWorkspaceLinkFromQuery(
+  query: LocationQueryRaw
+): WorkspaceLinkRead | undefined {
+  const raw = query.workspace
+  if (raw === undefined) return undefined
+  const value = Array.isArray(raw) ? raw.join(',') : raw
+  if (typeof value !== 'string') return undefined
+  return readWorkspaceLink(new URLSearchParams({ workspace: value }))
 }
 
 /**
@@ -43,7 +43,9 @@ function workspaceSearchParams(query: LocationQueryRaw): URLSearchParams {
  * workspace, but always says which one that is via a toast, per the
  * workspace deep-link contract (`@comfyorg/account-core/workspaceLink`).
  * Absent is a silent no-op. Survives the login redirect via the
- * preserved-query system, like the other loaders.
+ * preserved-query system, like the other loaders — a repeated value is
+ * stashed joined with `,` (router.ts's `rejectRepeated`), so it still reads
+ * as invalid rather than picking one of the colliding values.
  */
 export function useWorkspaceUrlLoader() {
   const route = useRoute()
@@ -90,20 +92,10 @@ export function useWorkspaceUrlLoader() {
    */
   async function loadWorkspaceFromUrl(): Promise<boolean> {
     hydratePreservedQuery(NAMESPACE)
-    const live = hasWorkspaceParam(route.query)
-    // Prefer the live URL: mergePreservedQueryIntoQuery collapses a repeated
-    // value to one stashed string (right for single-value params, wrong for
-    // detecting `invalid` here), so only consult it once the param is gone.
-    const query = live
-      ? route.query
-      : (mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query)
-    if (query.workspace === undefined) return false
-
-    // Classify from the raw URL when live: the exact form readWorkspaceLink
-    // parses itself, avoiding any array/string shape mismatch in route.query.
-    const link = live
-      ? readWorkspaceLink(route.fullPath)
-      : readWorkspaceLink(workspaceSearchParams(query))
+    const query =
+      mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query
+    const link = readWorkspaceLinkFromQuery(query)
+    if (!link) return false
 
     if (link.status === 'absent') {
       await stripParam(query)

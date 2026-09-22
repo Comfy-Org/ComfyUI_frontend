@@ -25,27 +25,9 @@ const mockRouteQuery = vi.hoisted(() => ({
 }))
 const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
-/** Mirrors vue-router's own fullPath serialization closely enough for
- * readWorkspaceLink to parse: a repeated array value becomes a repeated
- * query key. */
-function fullPathOf(query: Record<string, unknown>): string {
-  const params = new URLSearchParams()
-  for (const [key, value] of Object.entries(query)) {
-    const values = Array.isArray(value) ? value : [value]
-    for (const entry of values) {
-      if (typeof entry === 'string') params.append(key, entry)
-    }
-  }
-  const search = params.toString()
-  return search ? `/?${search}` : '/'
-}
-
 vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
-    query: mockRouteQuery.value,
-    get fullPath() {
-      return fullPathOf(mockRouteQuery.value)
-    }
+    query: mockRouteQuery.value
   }),
   useRouter: () => ({
     replace: mockRouterReplace
@@ -183,24 +165,20 @@ describe('useWorkspaceUrlLoader', () => {
     })
   })
 
-  it('treats a repeated param as invalid even when the preserved stash holds a single value', async () => {
-    // mergePreservedQueryIntoQuery collapses an array-valued live key to its
-    // stashed single string by design (for namespaces that only ever hold
-    // one value, like ?template=); consulting it here would silently turn
-    // this invalid, repeated link into a valid switch to workspace-2.
-    mockRouteQuery.value = fromAny<Record<string, string>, unknown>({
-      workspace: ['workspace-2', 'workspace-1']
-    })
+  it('treats a joined stash value from a repeated login-redirect link as invalid', async () => {
+    // router.ts's `rejectRepeated` stashes a repeated value joined with `,`
+    // (outside any real workspace id's charset) instead of just the first,
+    // so a link that was invalid before the redirect reads as invalid after
+    // it too, rather than resolving to one of the colliding values.
+    mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
-      workspace: 'workspace-2'
+      workspace: 'workspace-2,workspace-3'
     })
 
     const { loadWorkspaceFromUrl } = useWorkspaceUrlLoader()
     await loadWorkspaceFromUrl()
 
-    expect(
-      preservedQueryMocks.mergePreservedQueryIntoQuery
-    ).not.toHaveBeenCalled()
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(useTeamWorkspaceStore().switchWorkspace).not.toHaveBeenCalled()
     expect(useToastStore().add).toHaveBeenCalledWith({
       severity: 'info',
