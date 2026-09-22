@@ -7,7 +7,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { HubPortSummary } from '../../lib/hub/workflow-detail'
 import IconModel from './IconModel.vue'
-import { mediaLabel } from './mediaIcon'
+import { mediaLabel } from './mediaLabel'
 
 const {
   models,
