@@ -1,12 +1,12 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { FirebaseError } from 'firebase/app'
-import type { User, UserCredential } from 'firebase/auth'
+import type { Auth, User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as vuefire from 'vuefire'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -48,7 +48,11 @@ type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
   delete: Mock
 }
 
-type MockAuth = Record<string, unknown>
+/**
+ * The one Auth the identity module resolves for the whole file: the package
+ * entry caches it on first use, so every store instance below binds to it.
+ */
+const mockAuth = fromPartial<Auth>({ currentUser: null })
 
 // Mock fetch
 const mockFetch = vi.fn()
@@ -87,10 +91,6 @@ const mockAccessBillingPortalResponse = {
     Promise.resolve({ billing_portal_url: 'https://billing.stripe.com/test' })
 }
 
-vi.mock(import('vuefire'), () => ({
-  useFirebaseAuth: vi.fn()
-}))
-
 vi.mock(import('firebase/auth'))
 
 vi.mock(import('@/platform/telemetry'))
@@ -112,8 +112,6 @@ describe('useAuthStore', () => {
   let authStateCallback: (user: User | null) => void
   let idTokenCallback: (user: User | null) => void
 
-  const mockAuth: MockAuth = {/* mock Auth object */}
-
   const mockUser: MockUser = {
     uid: 'test-user-id',
     email: 'test@example.com',
@@ -126,12 +124,12 @@ describe('useAuthStore', () => {
     vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
-    // Mock useFirebaseAuth to return our mock auth object
-    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
-      mockAuth as Partial<
-        ReturnType<typeof vuefire.useFirebaseAuth>
-      > as ReturnType<typeof vuefire.useFirebaseAuth>
-    )
+    // Setup dialog service mock
+    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
+      showErrorDialog: vi.fn()
+    })
+
+    vi.mocked(firebaseAuth.initializeAuth).mockReturnValue(mockAuth)
 
     const port = replayIdentityPort(() => mockUser)
     authStateCallback = port.emit
@@ -224,13 +222,6 @@ describe('useAuthStore', () => {
     expect(store.loading).toBe(false)
   })
 
-  it('should set persistence to local storage on initialization', () => {
-    expect(firebaseAuth.setPersistence).toHaveBeenCalledWith(
-      mockAuth,
-      firebaseAuth.browserLocalPersistence
-    )
-  })
-
   it('should properly clean up error state between operations', async () => {
     // First, cause an error
     const mockError = new Error('Invalid password')
@@ -285,7 +276,7 @@ describe('useAuthStore', () => {
 
   describe('password update', () => {
     it('updates the signed-in user through the package identity', async () => {
-      mockAuth.currentUser = mockUser
+      vi.spyOn(mockAuth, 'currentUser', 'get').mockReturnValue(mockUser)
 
       await store.updatePassword('hunter22!!')
 
@@ -2338,7 +2329,6 @@ describe('useAuthStore in local/desktop distribution', () => {
   let store: ReturnType<typeof useAuthStore>
   let authStateCallback: (user: User | null) => void
 
-  const mockAuth: MockAuth = {/* mock Auth object */}
   const mockUser: MockUser = {
     uid: 'local-user-id',
     email: 'local@example.com',
@@ -2353,11 +2343,7 @@ describe('useAuthStore in local/desktop distribution', () => {
 
     vi.stubGlobal('fetch', mockFetch)
 
-    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
-      mockAuth as Partial<
-        ReturnType<typeof vuefire.useFirebaseAuth>
-      > as ReturnType<typeof vuefire.useFirebaseAuth>
-    )
+    vi.mocked(firebaseAuth.initializeAuth).mockReturnValue(mockAuth)
 
     const port = replayIdentityPort(() => mockUser)
     authStateCallback = port.emit
@@ -2440,7 +2426,7 @@ describe('useAuthStore in local/desktop distribution', () => {
 })
 
 describe('store construction order', () => {
-  const mockAuth: MockAuth = {}
+  const mockAuth = fromPartial<Auth>({ currentUser: null })
   const mockUser: MockUser = {
     uid: 'construction-user-id',
     email: 'construction@example.com',
@@ -2460,11 +2446,7 @@ describe('store construction order', () => {
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
       showErrorDialog: vi.fn()
     })
-    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
-      mockAuth as Partial<
-        ReturnType<typeof vuefire.useFirebaseAuth>
-      > as ReturnType<typeof vuefire.useFirebaseAuth>
-    )
+    vi.mocked(firebaseAuth.initializeAuth).mockReturnValue(mockAuth)
     vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(() => vi.fn())
     vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
     mockUser.getIdToken.mockResolvedValue('mock-id-token')

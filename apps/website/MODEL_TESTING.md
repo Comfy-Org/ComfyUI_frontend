@@ -235,14 +235,21 @@ disables it. Entries are keyed by page slug:
 ```
 
 A disabled page leaves the catalogue, search, its detail route and every
-legacy redirect, and the tester no longer selects it. The build fails if an
-entry names a page that does not exist. The grid keeps a disabled page's last
-result and marks it `Disabled` with the reason.
+legacy redirect, and the tester omits it from default sweeps. An explicit
+`--slug` still selects a disabled authored page so it can be verified before
+re-enabling. The build fails if an entry names a page that does not exist. The
+grid keeps a disabled page's last result and marks it `Disabled` with the
+reason.
+
+Availability is publication state only. Authored model details, contracts,
+examples and canonical template joins remain testable while a page is
+disabled. Toggling an otherwise valid page requires only this JSON file; do
+not remove its content or contract, update tests, or regenerate derived data.
 
 Disable any page whose initial defaults do not produce a decoded artifact. To
-re-enable one, set `disabled` to `false` or delete its entry, run the tester for
-that slug with `--execute --slug <slug>`, and commit the manifest together with
-the updated grid only after the page passes.
+re-enable one, first run the tester for that slug with `--execute --slug
+<slug>`. After it passes, set `disabled` to `false` or delete its entry and
+commit the manifest change.
 
 Private evidence goes into a new, ignored `temp/router-model-tests/<run-id>/`
 directory at repository root. It includes the manifest, append-only events,

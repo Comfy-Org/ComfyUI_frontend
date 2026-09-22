@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
-vi.mock(import('firebase/auth'))
-vi.mock<unknown>(import('vuefire'), () => ({
-  useFirebaseAuth: vi.fn(() => ({}))
-}))
+vi.mock(import('firebase/auth'), { spy: true })
 
 import type { BillingTelemetryEvent } from '@/platform/telemetry/types'
 import type {
@@ -23,6 +20,7 @@ import {
 import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingSdk'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const flagState = vi.hoisted(() => ({
   billingSdkSubscriptionEnabled: false,
@@ -155,6 +153,7 @@ function setupBilling() {
 }
 
 beforeEach(() => {
+  stubFirebaseAuthHarness()
   trackBillingEvent.mockClear()
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
@@ -235,9 +234,12 @@ describe('cancel subscription on the billing SDK rail', () => {
   it.for([
     [
       { status: 'error', code: 'REQUEST_FAILED', httpStatus: 500 },
-      'REQUEST_FAILED (500)'
+      "We couldn't update your subscription. Please try again."
     ],
-    [{ status: 'error', code: 'SUPERSEDED' }, 'SUPERSEDED']
+    [
+      { status: 'error', code: 'SUPERSEDED' },
+      "We couldn't update your subscription. Please try again."
+    ]
   ] as const)(
     'reports %o as its own detail instead of retrying on legacy',
     async ([failure, detail]) => {

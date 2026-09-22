@@ -16,7 +16,10 @@ test.describe(
       workflowSelection
     }, testInfo) => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       const panel = page.locator('#agent-panel-root')
       await panel
@@ -56,7 +59,10 @@ test.describe(
       workflowSelection
     }) => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       const panel = page.locator('#agent-panel-root')
       const targetPicker = panel.getByRole('button', {
@@ -110,7 +116,10 @@ test.describe(
       workflowSelection
     }, testInfo) => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       const panel = page.locator('#agent-panel-root')
       const targetPicker = panel.getByRole('button', {
@@ -163,7 +172,10 @@ test.describe(
       await panel.getByRole('button', { name: enMessages.g.close }).click()
       await expect(panel).toHaveCount(0)
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       await expect(composer).toHaveText(
         'Unsaved Workflow Use this workflow as inspiration'
@@ -224,7 +236,10 @@ test.describe(
       workflowSelection
     }, testInfo) => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       const panel = page.locator('#agent-panel-root')
       const reason = enMessages.agent.selectWorkflowForNodes
@@ -314,7 +329,10 @@ test.describe(
       await expect(editorTabs).toHaveCount(2)
       await editorTabs.first().click()
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       await page
         .getByRole('button', { name: enMessages.agent.switchWorkflow })
@@ -361,7 +379,10 @@ test.describe(
       workflowSelection
     }, testInfo) => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })
@@ -470,7 +491,10 @@ test.describe(
       await panel.getByRole('button', { name: enMessages.g.close }).click()
       await expect(targetMarker).toBeVisible()
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       await expect(
         panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
@@ -521,7 +545,10 @@ test.describe(
       workflowSelection
     }) => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })

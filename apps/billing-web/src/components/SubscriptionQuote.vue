@@ -12,6 +12,8 @@ const { preview, loading, failureCode } = defineProps<{
   failureCode?: string
 }>()
 
+const emit = defineEmits<{ checkout: [] }>()
+
 const { t } = useI18n()
 const { coded, date, money } = useHostedCopy()
 
@@ -91,13 +93,11 @@ const blockedReason = computed(() =>
     </dl>
     <button
       type="button"
-      disabled
-      class="mt-4 h-11 w-full rounded-lg bg-base-foreground px-4 font-semibold text-base-background disabled:cursor-not-allowed disabled:opacity-40"
+      :disabled="loading || !preview?.allowed"
+      class="mt-4 h-11 w-full cursor-pointer rounded-lg bg-base-foreground px-4 font-semibold text-base-background disabled:cursor-not-allowed disabled:opacity-40"
+      @click="emit('checkout')"
     >
-      {{ t('checkout.payAndSubscribe') }}
+      {{ t('hosted.quote.continue') }}
     </button>
-    <p class="mt-2 mb-0 text-center text-xs text-muted-foreground">
-      {{ t('checkout.sdkPending') }}
-    </p>
   </section>
 </template>

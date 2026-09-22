@@ -8,7 +8,6 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
-    "scripts/patch-playwright-agents.js",
     "scripts/registry-census/detection-proof/**",
     "src/__ecs_matrix__/**",
     "src/types/generatedManagerTypes.ts",
@@ -167,12 +166,6 @@
       }
     },
     {
-      "files": ["src/extensions/core/groupNode.ts"],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["src/**/*.ts", "src/**/*.vue"],
       "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": {
@@ -210,18 +203,6 @@
       }
     },
     {
-      "files": [
-        "src/extensions/core/customWidgets.ts",
-        "src/extensions/core/widgetInputs.ts",
-        "src/extensions/core/widgetValuePropagation.ts",
-        "src/scripts/domWidget.ts",
-        "src/scripts/widgets.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["**/*.spec.ts"],
       "excludeFiles": [
         "browser_tests/tests/**/*.spec.ts",
@@ -235,21 +216,6 @@
       "files": ["**/*.{ts,tsx,vue}"],
       "rules": {
         "comfy/no-deprecated-api-schema": "error"
-      }
-    },
-    {
-      "files": [
-        "src/scripts/metadata/json.ts",
-        "src/scripts/metadata/mp3.ts",
-        "src/scripts/metadata/ogg.ts",
-        "src/scripts/metadata/parser.ts",
-        "src/scripts/metadata/ply.ts",
-        "src/scripts/metadata/png.test.ts",
-        "src/scripts/metadata/png.ts",
-        "src/scripts/pnginfo.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
       }
     },
     {
@@ -303,7 +269,7 @@
       }
     },
     {
-      "files": ["tools/test-recorder/**/*.ts"],
+      "files": ["scripts/**", "tools/test-recorder/**/*.ts"],
       "rules": {
         "no-console": "allow"
       }

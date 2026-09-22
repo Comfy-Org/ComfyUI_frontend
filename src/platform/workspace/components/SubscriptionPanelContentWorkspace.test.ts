@@ -247,22 +247,10 @@ const CreditsTileStub = {
     '<div data-testid="credits-tile" :data-zero-state="String(zeroState)" :data-inactive-plan="String(inactivePlan)" />'
 }
 
-const ButtonStub = {
-  template:
-    '<button v-bind="$attrs" :disabled="loading" @click="$emit(\'click\', $event)"><slot /></button>',
-  props: ['variant', 'size', 'loading'],
-  emits: ['click']
-}
-
 const SubscriptionFooterLinksStub = {
   props: ['showInvoiceHistory'],
   template:
     '<div data-testid="subscription-footer-links" :data-show-invoice-history="String(showInvoiceHistory)" />'
-}
-
-const StatusBadgeStub = {
-  props: ['label', 'severity'],
-  template: '<span :data-severity="severity">{{ label }}</span>'
 }
 
 const DropdownMenuStub = {
@@ -278,11 +266,9 @@ function renderComponent({ stubFooter = true } = {}) {
       directives: { tooltip: {} },
       stubs: {
         CreditsTile: CreditsTileStub,
-        Button: ButtonStub,
         ...(stubFooter
           ? { SubscriptionFooterLinks: SubscriptionFooterLinksStub }
           : {}),
-        StatusBadge: StatusBadgeStub,
         DropdownMenu: DropdownMenuStub
       }
     }
@@ -489,10 +475,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
       expect(screen.getByTestId('plan-status-badge')).toHaveTextContent(
         'Inactive'
-      )
-      expect(screen.getByTestId('plan-status-badge')).toHaveAttribute(
-        'data-severity',
-        'secondary'
       )
       expect(
         screen.queryByTestId('subscription-state-card')

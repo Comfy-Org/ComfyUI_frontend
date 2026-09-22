@@ -62,6 +62,13 @@ jobs:
           EXPECTED_DISTRIBUTION: desktop
           VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
 
+      - name: Upload desktop frontend
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: frontend-dist-desktop
+          path: dist/
+          retention-days: 1
+
       - name: Build cloud frontend
         uses: ./.github/actions/build-cloud-frontend
         with:
@@ -143,15 +150,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser:
-          [chromium-2x, chromium-0.5x, mobile-chrome, cloud, mobile-safari]
+        include:
+          - browser: chromium-2x
+            artifact: frontend-dist
+          - browser: chromium-0.5x
+            artifact: frontend-dist
+          - browser: mobile-chrome
+            artifact: frontend-dist
+          - browser: cloud
+            artifact: frontend-dist-cloud
+          - browser: mobile-safari
+            artifact: frontend-dist-cloud
+          - browser: desktop
+            artifact: frontend-dist-desktop
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Download built frontend
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ${{ (matrix.browser == 'cloud' || matrix.browser == 'mobile-safari') && 'frontend-dist-cloud' || 'frontend-dist' }}
+          name: ${{ matrix.artifact }}
           path: dist/
 
       - name: Start ComfyUI server
@@ -266,7 +284,7 @@ jobs:
     needs: setup
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     container:
       image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
       credentials:

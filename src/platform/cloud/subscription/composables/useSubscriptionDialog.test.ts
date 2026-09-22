@@ -1,5 +1,8 @@
 import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { BillingOperationRecordView } from '@/platform/workspace/billing/sdk/operationRecordView'
+import { fakeBillingSdk } from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
+import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -59,6 +62,12 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 vi.mock(import('@/composables/billing/useBillingRouting'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+// The store is real; only the composition root it builds is faked, so the
+// testing Pinia still owns the store and its actions.
+const mockCreateBillingSdk = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
+  createBillingSdk: mockCreateBillingSdk
+}))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
@@ -85,6 +94,24 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
+/** A settled operation as the SDK store projects it for a recovery caller. */
+function recoveredOperation(
+  status: BillingOperationRecordView['status']
+): BillingOperationRecordView {
+  return {
+    opId: 'op-parked',
+    kind: 'subscription',
+    workspaceId: 'workspace-1',
+    status,
+    actionUrl: null,
+    phase: null,
+    authenticationState: null,
+    isAuthenticating: false,
+    canRetryAuthentication: false,
+    errorMessage: null
+  }
+}
+
 function expectRekaPricingDialogProps(
   dialogComponentProps: Record<string, unknown>
 ) {
@@ -104,6 +131,7 @@ beforeEach(() => {
   vi.mocked(useBillingOperationStore().startOperation).mockImplementation(
     mockStartOperation
   )
+  mockCreateBillingSdk.mockReturnValue(fakeBillingSdk().sdk)
 })
 
 describe('useSubscriptionDialog', () => {
@@ -693,6 +721,93 @@ describe('useSubscriptionDialog', () => {
       expect(
         sessionStorage.getItem('comfy:pending-subscription-checkout')
       ).toBeNull()
+    })
+
+    // One behaviour, two entry points: a pending checkout is adopted by
+    // whichever rail owns the operation. Half-railed recovery is the ambiguity
+    // FE-2484 and FE-2483 exist together to remove.
+    it.for([
+      { rail: 'SDK', railEnabled: true },
+      { rail: 'legacy', railEnabled: false }
+    ])(
+      'resumes a parked checkout on the $rail rail and reopens it on failure',
+      async ({ railEnabled }) => {
+        const recoverPendingOperationSpy = vi.mocked(
+          useBillingSdkStore().recoverPendingOperation
+        )
+        vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled =
+          railEnabled
+        useBillingRouting().type = computed(() => 'workspace')
+        useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+        useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
+        mockStartOperation.mockResolvedValueOnce({ status: 'failed' })
+        recoverPendingOperationSpy.mockResolvedValueOnce(
+          recoveredOperation('failed')
+        )
+        savePendingSubscriptionCheckout({
+          operationId: 'op-parked',
+          workspaceId: 'workspace-1',
+          ownerUid: 'user-1',
+          selection: {
+            planMode: 'personal',
+            tierKey: 'creator',
+            billingCycle: 'monthly'
+          },
+          attemptedAt: Date.now()
+        })
+
+        const { resumePendingPricingFlow } = useSubscriptionDialog()
+        await resumePendingPricingFlow()
+
+        expect(recoverPendingOperationSpy).toHaveBeenCalledTimes(
+          railEnabled ? 1 : 0
+        )
+        expect(mockStartOperation).toHaveBeenCalledTimes(railEnabled ? 0 : 1)
+        if (railEnabled) {
+          expect(recoverPendingOperationSpy).toHaveBeenCalledWith('op-parked')
+        }
+        // Whichever rail adopted it, the host pointer still restores the
+        // tier/cycle the pricing dialog reopens on.
+        expect(mockShowLayoutDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            props: expect.objectContaining({
+              initialCheckout: {
+                planMode: 'personal',
+                tierKey: 'creator',
+                billingCycle: 'monthly'
+              }
+            })
+          })
+        )
+      }
+    )
+
+    it('drops a stale pointer the SDK rail finds nothing to adopt for', async () => {
+      const recoverPendingOperationSpy = vi.mocked(
+        useBillingSdkStore().recoverPendingOperation
+      )
+      vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled =
+        true
+      recoverPendingOperationSpy.mockResolvedValueOnce(undefined)
+      savePendingSubscriptionCheckout({
+        operationId: 'op-stale',
+        workspaceId: 'workspace-1',
+        ownerUid: 'user-1',
+        selection: {
+          planMode: 'personal',
+          tierKey: 'creator',
+          billingCycle: 'monthly'
+        },
+        attemptedAt: Date.now()
+      })
+
+      const { resumePendingPricingFlow } = useSubscriptionDialog()
+      await resumePendingPricingFlow()
+
+      expect(
+        sessionStorage.getItem('comfy:pending-subscription-checkout')
+      ).toBeNull()
+      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     })
 
     it('completes a succeeded redirect silently', async () => {

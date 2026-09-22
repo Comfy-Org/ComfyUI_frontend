@@ -62,9 +62,13 @@ function scrollToLatest(): void {
 
 const latestContentSignal = computed(() => {
   const last = entries.at(-1)
-  if (!last) return '0'
-  const size = 'parts' in last ? JSON.stringify(last.parts).length : 0
-  return `${entries.length}:${size}`
+  if (!last || !('parts' in last)) return `${entries.length}`
+  const tail = last.parts.at(-1)
+  const tailText = tail && 'text' in tail ? tail.text.length : 0
+  const settled = last.parts.filter(
+    (part) => 'state' in part && part.state === 'done'
+  ).length
+  return `${entries.length}:${last.streaming}:${last.parts.length}:${settled}:${tailText}`
 })
 
 watch(

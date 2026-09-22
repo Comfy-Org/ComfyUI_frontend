@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { buildSnippet } from '../../config/models-snippets'
 import { workshopContract } from '../../config/workshop-contract-catalog'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
 import ApiTab from './ApiTab.vue'
 
@@ -181,6 +181,25 @@ describe('ApiTab', () => {
       expect(snippet.textContent).toContain(source)
       expect(snippet.textContent).not.toContain('Path(')
       expect(network).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    {
+      modelSlug: 'bfl--flux-2-pro',
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-2-pro'
+    },
+    {
+      modelSlug: undefined,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=models'
+    }
+  ])(
+    'sends the get-key link as a models onboarding arrival, naming the model page when given one: $modelSlug',
+    async ({ modelSlug, href }) => {
+      render(ApiTab, { props: { contract, values, modelSlug } })
+      expect(
+        (await screen.findByTestId('api-get-key')).getAttribute('href')
+      ).toBe(href)
     }
   )
 })

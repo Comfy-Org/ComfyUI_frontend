@@ -1,7 +1,7 @@
 import { assert, describe, expect, it } from 'vitest'
 
 import { initialWorkshopPageState } from './workshop-page-state'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import { validateForm } from './workshop-playground'
 import type { FieldSchema } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'

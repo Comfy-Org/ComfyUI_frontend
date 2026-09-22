@@ -74,5 +74,16 @@ export const CLOUD_BASE_URL = cloudBaseUrlFor(BILLING_WEB_ENV)
 
 export const FIREBASE_OPTIONS = readFirebaseOptions(import.meta.env)
 
+/**
+ * Absent in a deployment that configures no key: the checkout form then
+ * reports itself unavailable and no payment can be started from this app. The
+ * lifecycle's hosted continuation resumes an operation that already exists; it
+ * is not a way to open one.
+ */
+export const STRIPE_PUBLISHABLE_KEY = readString(
+  import.meta.env,
+  'VITE_STRIPE_PUBLISHABLE_KEY'
+)
+
 /** Password recovery stays a single flow, owned by the Cloud app's own page. */
 export const CLOUD_FORGOT_PASSWORD_URL = `${CLOUD_BASE_URL}/cloud/forgot-password`

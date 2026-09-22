@@ -122,13 +122,7 @@ function renderComponent(
   return render(CancelSubscriptionDialogContent, {
     props,
     global: {
-      plugins: [i18n],
-      stubs: {
-        Button: {
-          template: '<button :disabled="disabled"><slot /></button>',
-          props: ['disabled', 'variant', 'size', 'loading']
-        }
-      }
+      plugins: [i18n]
     }
   })
 }

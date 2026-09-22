@@ -95,12 +95,7 @@ function renderOverlay(props: { appMode?: boolean } = {}) {
   return render(ErrorOverlay, {
     props,
     global: {
-      plugins: [createTestI18n()],
-      stubs: {
-        Button: {
-          template: '<button v-bind="$attrs"><slot /></button>'
-        }
-      }
+      plugins: [createTestI18n()]
     }
   })
 }

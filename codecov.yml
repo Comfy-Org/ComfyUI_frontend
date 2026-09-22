@@ -59,6 +59,8 @@ coverage:
 ignore:
   - 'tools/**'
   - 'scripts/**'
+  - 'apps/website/src/**/__mocks__/**'
+  - 'apps/website/src/**/__fixtures__/**'
 
 comment:
   layout: 'header, diff, flags, files'

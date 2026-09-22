@@ -1,7 +1,13 @@
-import type { User } from 'firebase/auth'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { Auth, User } from 'firebase/auth'
+import {
+  initializeAuth,
+  onAuthStateChanged,
+  onIdTokenChanged
+} from 'firebase/auth'
 import { vi } from 'vitest'
 
-import { useAuthStore } from '@/stores/authStore'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 
 export type IdentityObserver = (user: User | null) => void
 
@@ -13,7 +19,17 @@ export type IdentityObserver = (user: User | null) => void
  * `useWorkspaceAuthStore()`.
  */
 export function stubAccountIdentityPort(): void {
-  vi.spyOn(useAuthStore().identity, 'onUserChanged').mockReturnValue(() => {})
+  vi.spyOn(firebaseIdentity, 'onUserChanged').mockReturnValue(() => {})
+}
+
+/**
+ * Lets the real `authStore` construct under a mocked `firebase/auth`: the
+ * identity resolves a bare `Auth` double and neither listener ever fires.
+ */
+export function stubFirebaseAuthHarness() {
+  vi.mocked(initializeAuth).mockReturnValue(fromPartial<Auth>({}))
+  vi.mocked(onAuthStateChanged).mockReturnValue(() => {})
+  vi.mocked(onIdTokenChanged).mockReturnValue(() => {})
 }
 
 /**

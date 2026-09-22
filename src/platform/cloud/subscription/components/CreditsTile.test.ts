@@ -169,16 +169,7 @@ function renderTile(props: Record<string, unknown> = {}) {
     props,
     global: {
       plugins: [i18n],
-      directives: { tooltip: () => {} },
-      stubs: {
-        Button: {
-          template:
-            '<button v-bind="$attrs" :data-variant="variant" :disabled="loading" @click="$emit(\'click\')"><slot/></button>',
-          props: ['variant', 'size', 'loading'],
-          emits: ['click']
-        },
-        Skeleton: { template: '<div role="status" aria-label="Loading"></div>' }
-      }
+      directives: { tooltip: () => {} }
     }
   })
 }
@@ -576,7 +567,10 @@ describe('CreditsTile', () => {
       "You're now spending additional credits."
     )
     expect(screen.getByText('In use')).toBeTruthy()
-    expect(screen.getByText('Add credits').dataset.variant).toBe('secondary')
+    expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
+      'bg-interface-menu-component-surface-selected',
+      'hover:bg-secondary-background-hover'
+    )
   })
 
   it('emphasizes add-credits when fully out of credits', () => {
@@ -594,7 +588,9 @@ describe('CreditsTile', () => {
       'Add more credits to continue generating.'
     )
     expect(screen.queryByText('In use')).toBeNull()
-    expect(screen.getByText('Add credits').dataset.variant).toBe('inverted')
+    expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
+      'bg-base-foreground'
+    )
   })
 
   it('suppresses the depletion notice until the balance has loaded', () => {
