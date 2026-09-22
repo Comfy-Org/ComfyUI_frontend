@@ -16,9 +16,11 @@ import { reportError } from '@/platform/telemetry/reportError'
  * The Yjs item identity (`client:clock`) of `key` in `map` - present or
  * already tombstoned - or null when `key` was never set. Throws if Yjs's
  * internal shape doesn't match what this module assumes; callers use
- * {@link readNodeItemIdentity} for a reported, non-throwing boundary.
+ * {@link readNodeItemIdentity} for a reported, non-throwing boundary. Kept
+ * module-private: production and test code both go through
+ * {@link readNodeItemIdentity} instead.
  */
-export function readYjsMapItemIdentity(
+function readYjsMapItemIdentity(
   map: Y.Map<unknown>,
   key: string
 ): string | null {

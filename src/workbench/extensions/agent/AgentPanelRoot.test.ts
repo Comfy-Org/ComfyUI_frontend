@@ -248,6 +248,8 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
   spy: true
 })
 
+vi.mock(import('./crdt/useAgentCrdtFollower'), { spy: true })
+
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
@@ -259,6 +261,8 @@ import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 
+import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import { sharedPendingDeleteRetentionStore } from './crdt/pendingDeleteRetentionStore'
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
 
@@ -6844,5 +6848,26 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+})
+
+describe('AgentPanelRoot CRDT retention store wiring', () => {
+  it('passes the module-level shared retention store into useAgentCrdtFollower on every mount', () => {
+    vi.mocked(useAgentCrdtFollower).mockClear()
+
+    const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    first.unmount()
+    const second = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    second.unmount()
+
+    const calls = vi.mocked(useAgentCrdtFollower).mock.calls
+    expect(calls).toHaveLength(2)
+    // The 7th positional argument (index 6) is the retention store; a future
+    // change that drops it or swaps it for a fresh instance per mount would
+    // reintroduce resurrection after an actual panel close/reopen even
+    // though every composable-level test (which injects its own store
+    // explicitly) stays green.
+    expect(calls[0][6]).toBe(sharedPendingDeleteRetentionStore)
+    expect(calls[1][6]).toBe(sharedPendingDeleteRetentionStore)
   })
 })

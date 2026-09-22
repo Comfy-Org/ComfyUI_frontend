@@ -61,8 +61,8 @@ Distinguish a paused subscription from a lost one, and hold rather than drop.
   disposed and replaced more often than the intent it should keep suppressing
   survives for: the `productGate` toggle recreates one internally, and the
   docked agent panel closing and reopening recreates the composable call
-  itself. Production shares one store instance
-  (`getSharedPendingDeleteRetentionStore()`) across every follower
+  itself. Production shares one eagerly-created instance
+  (`sharedPendingDeleteRetentionStore`) across every follower
   `AgentPanelRoot.vue` creates, so a delete retained by a disposed follower
   still suppresses resurrection on a freshly mounted one's very first
   reconcile; tests inject a fresh store per case instead.
@@ -77,7 +77,35 @@ Distinguish a paused subscription from a lost one, and hold rather than drop.
   not the deleted one. Capturing at issue time sidesteps this: the follower's
   live doc still reflects the pre-delete state at that exact synchronous
   moment, regardless of how the delete's effect and any recreation are later
-  batched on the wire.
+  batched on the wire. Each capture is a one-shot slot queued FIFO per
+  workflow, not a single slot keyed by node id: admission can mint a second
+  delete for a recreated node before the first one's own result settles, and
+  a per-node-id slot would let the later capture overwrite the earlier one's
+  identity. A settling batch consumes exactly one queued capture per
+  `delete_node` op it carries, in mint order, whether or not that op ends up
+  retained - an outcome that does not retain still owns a slot, and leaving
+  it unconsumed would let a later, unrelated op consume it instead.
+- The retention policy is a state machine keyed by how a `delete_node` op
+  settled, not something to read off the Consequences section below:
+  - `confirmed-applied` (`acknowledged`, the op id is in `applied`): retained
+    until the document no longer holds the node, or a different Yjs item
+    identity now occupies that node id. No expiry - the outcome is already
+    certain.
+  - `unknown` (`unconfirmed` or `unacknowledged`): retained under the same
+    two release conditions, plus a bounded expiry (`PENDING_DELETE_EXPIRY_MS`,
+    reusing `STALE_AFTER_MS`) that releases it on its own if the document
+    never agrees.
+  - `undeliverable`, and `acknowledged` with the op id in `skipped`: never
+    retained. The transport never carried the op, or the host explicitly
+    rejected it, so there is no delete to protect from resurrection.
+- `follower_replaced` alone never clears a workflow's retained deletes -
+  only `doc_reset` does (whose handler runs first and always precedes
+  `follower_replaced` for a true lineage break). `follower_replaced` also
+  fires, with no preceding `doc_reset`, on an ordinary local switch to a
+  DIFFERENT workflow's lineage (`LayoutFollowerBridge.subscribe`); clearing
+  retention there would erase a destination workflow's already-confirmed
+  delete before its first post-switch reconcile can consult it, on nothing
+  more than the coincidence of revisiting a workflow that was active before.
 
 Alternatives considered:
 

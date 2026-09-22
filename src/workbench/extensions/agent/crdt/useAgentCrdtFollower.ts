@@ -204,14 +204,7 @@ export function useAgentCrdtFollower(
    */
   getGraph: () => MaterializableGraph | null = () => null,
   events: AgentCrdtFollowerEvents = {},
-  /**
-   * Owns retained human-delete intent across this composable's own follower
-   * replacements (the `productGate` toggle below) - see
-   * `pendingDeleteRetentionStore.ts`. Defaults to a fresh instance per call
-   * so tests stay isolated; production passes the shared singleton
-   * explicitly so retention also survives a full remount of this composable
-   * (e.g. the docked agent panel closing and reopening).
-   */
+  /** See `pendingDeleteRetentionStore.ts` and ADR CRDT-WRITE-0035. */
   retentionStore: PendingDeleteRetentionStore = createPendingDeleteRetentionStore()
 ) {
   const productGate = useAgentPanelStore()
@@ -308,8 +301,8 @@ function startAgentCrdtFollower(
   const tabId = createUuidv4()
   // The follower's own live doc, narrowed to a real `Y.Doc`: tests stand in
   // a plain object for it, which readNodeItemIdentity's contract does not
-  // cover (see yjsItemIdentity.ts and the P2 finding on PR #18276).
-  const boundNodeItemId = (nodeId: string): string | null => {
+  // cover (see yjsItemIdentity.ts).
+  function boundNodeItemId(nodeId: string): string | null {
     const doc = bridge.follower.doc
     return doc instanceof Y.Doc ? readNodeItemIdentity(doc, nodeId) : null
   }
@@ -365,7 +358,7 @@ function startAgentCrdtFollower(
    * therefore before any doc_update could react to it (see
    * `PendingDeleteRetentionStore.captureDeleteIntent`).
    */
-  const captureDeleteIntents = (operations: GraphOperation[]): void => {
+  function captureDeleteIntents(operations: GraphOperation[]): void {
     const targetWorkflowId = bridge.subscribedWorkflowId
     if (targetWorkflowId === null) return
     for (const op of operations) {
@@ -548,11 +541,15 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      // Also drops any unconsumed delete-intent capture for this workflow:
-      // left in place, a stale old-lineage capture could later be consumed
-      // by a same-id delete in the replacement document (P1, PR #18276
-      // round 7) instead of that delete's own, correctly-timed capture.
-      retentionStore.clearWorkflow(workflowId)
+      // Retention is NOT cleared here. `follower_replaced` fires both for a
+      // true same-workflow server lineage reset (always preceded by this
+      // bridge's own `doc_reset` event, whose handler below already clears
+      // this workflow's retention) and for an ordinary local switch away
+      // from a different workflow's lineage (no `doc_reset` at all) - the
+      // two are indistinguishable from this event alone, but only the first
+      // should erase retained state. Clearing it here would erase a
+      // confirmed delete this very workflow already earned on an earlier
+      // visit, right before its first post-switch reconcile needs it.
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
