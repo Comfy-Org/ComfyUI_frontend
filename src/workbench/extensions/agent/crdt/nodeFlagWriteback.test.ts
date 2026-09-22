@@ -3,6 +3,7 @@ import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { GraphOperation } from './graphOperations'
@@ -88,7 +89,8 @@ describe('node flag write-back', () => {
         return () => layoutListeners.delete(listener)
       },
       localActorPrefix: 'user-',
-      getGraph: () => graph
+      getGraph: () => graph,
+      boundRootGraphId: () => toRootGraphId(ROOT_ID)
     })
   })
 
