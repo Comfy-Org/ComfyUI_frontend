@@ -722,6 +722,30 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it.fails('KNOWN BUG: a doc_reset minted for the very first time (actor system:mint) should not clear the live graph, since nothing was tracked by the CRDT doc yet', () => {
+    // `system:mint` is the backend's actor for `ensureDoc`'s lazy,
+    // first-ever doc creation (cloud `crdt.go:2094-2096`), broadcast to
+    // an already-subscribed ("early") follower with no accompanying
+    // `doc_update` (`TestLazyMintBroadcastsDocResetToEarlyFollowers`,
+    // `crdt_premint_follower_test.go:15-55`). There is no prior
+    // CRDT-tracked content to lose in that case, so this reset should be
+    // a no-op for the live graph. `onDocReset`
+    // (`useAgentCrdtFollower.ts` ~473-503) currently calls
+    // `clearForReset` unconditionally, with no carve-out for this actor
+    // -- the same gap `agentCrdtProjection.ts:55-59`'s `clearForReset`
+    // has at the sweep itself.
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_reset', {
+      workflowId: 'wf-1',
+      actor: 'system:mint',
+      seq: 1
+    })
+
+    expect(adapterState.clearForReset).not.toHaveBeenCalled()
+    unmount()
+  })
+
   it('re-drives subscription intent on every status frame', () => {
     const { unmount } = mountFollower('wf-1')
 
