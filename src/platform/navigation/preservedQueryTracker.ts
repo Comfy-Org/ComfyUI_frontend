@@ -6,7 +6,7 @@ import {
   hydratePreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 
-interface PreservedQueryDefinition {
+export interface PreservedQueryDefinition {
   namespace: string
   keys: string[]
   requiredKey?: string

@@ -175,9 +175,7 @@ function renderComponent(
       stubs: {
         WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
         SubscribeButton: SubscribeButtonStub,
-        UserAvatar: true,
         WorkspaceProfilePic: true,
-        Skeleton: true,
         Divider: true
       }
     }

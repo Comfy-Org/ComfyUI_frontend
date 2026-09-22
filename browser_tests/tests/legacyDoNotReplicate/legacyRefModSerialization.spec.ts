@@ -36,10 +36,11 @@ test.describe(
         )
         const selected = await node.getWidgetByName('mod_1')
         const strength = await node.getWidgetByName('strength_1')
+        const softExpect = expect.configure({ soft: true })
 
-        await expect.poll(() => selected.getValue()).toBe('voice.refmod')
-        await expect.poll(() => strength.getValue()).toBe(0.65)
-        await expect(unused).toBeHidden()
+        await softExpect.poll(() => selected.getValue()).toBe('voice.refmod')
+        await softExpect.poll(() => strength.getValue()).toBe(0.65)
+        await softExpect(unused).toBeHidden()
       })
     })
   }

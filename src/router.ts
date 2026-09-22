@@ -17,8 +17,8 @@ import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
+import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
-import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { unmatchedRouteRedirect } from '@/platform/navigation/unmatchedRoute'
 import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 
@@ -97,51 +97,7 @@ const router = createRouter({
   }
 })
 
-installPreservedQueryTracker(router, [
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,
-    keys: ['template', 'source', 'mode']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.SHARE,
-    keys: ['share']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.INVITE,
-    keys: ['invite']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE,
-    keys: ['create_workspace']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.OAUTH,
-    keys: ['oauth_request_id']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.PRICING,
-    keys: ['pricing', 'stop', 'cycle'],
-    requiredKey: 'pricing'
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.TOPUP,
-    keys: ['topup']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.SETTINGS,
-    keys: ['settings']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
-    keys: ['desktop_login_code'],
-    stripAfterCapture: true
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.WORKSPACE,
-    keys: ['workspace'],
-    rejectRepeated: true
-  }
-])
+installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
 
 router.beforeEach((to, _from, next) => {
   captureOAuthRequestId(to.query)

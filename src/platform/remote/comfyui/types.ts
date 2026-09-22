@@ -26,7 +26,7 @@ export type PromptResponse = IngestPromptResponse & {
 export type PromptFailureResponse = {
   node_errors?: Record<string, NodeError>
   exec_info?: { queue_remaining?: number }
-  error: string | NodeError['errors'][number]
+  error?: string | NodeError['errors'][number] | null
 }
 
 export type DeviceStats = Required<SystemStatsResponse['devices'][number]> & {

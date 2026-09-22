@@ -1,7 +1,11 @@
+import { useRouter } from 'vue-router'
+
+import { useAssetsUrlLoader } from '@/platform/assets/composables/useAssetsUrlLoader'
 import { usePaymentReturnUrlLoader } from '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'
 import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTopUpUrlLoader } from '@/platform/cloud/subscription/composables/useTopUpUrlLoader'
+import { STRIPE_RETURN_PARAMS } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -27,16 +31,42 @@ type UrlActionLoaders = {
   pricingTableUrlLoader: ReturnType<typeof usePricingTableUrlLoader> | null
   topUpUrlLoader: ReturnType<typeof useTopUpUrlLoader> | null
   settingsUrlLoader: ReturnType<typeof useSettingsUrlLoader> | null
+  assetsUrlLoader: ReturnType<typeof useAssetsUrlLoader> | null
   paymentReturnUrlLoader: ReturnType<typeof usePaymentReturnUrlLoader> | null
 }
 
 /**
- * Orders the deep-link loaders: workspace first, so `?invite`,
- * `?create_workspace`, `?pricing`, `?topup`, `?settings` all act on the
- * requested workspace rather than the one the app happened to load with.
- * Only the loaders present (cloud-gated by the caller) become steps.
+ * Every param a loader below consumes, stripped centrally as a backstop. Most
+ * loaders fire their own cleanup replace without waiting for it, so with two
+ * deep links in one URL the later navigation can cancel the earlier one and
+ * leave its param behind; this sweep removes whatever survived once every
+ * loader has had its turn. The Stripe ones are already gone from the address
+ * bar by then, but only through `history.replaceState`, which leaves the
+ * router's own query holding them — so a replace built from that query would
+ * hand them back.
  */
-function buildUrlActionSteps(loaders: UrlActionLoaders): UrlActionStep[] {
+const HANDLED_PARAMS = [
+  'invite',
+  'create_workspace',
+  'pricing',
+  'stop',
+  'cycle',
+  'topup',
+  'settings',
+  'assets',
+  ...STRIPE_RETURN_PARAMS
+]
+
+/**
+ * Orders the deep-link loaders: workspace first, so `?invite`,
+ * `?create_workspace`, `?pricing`, `?topup`, `?settings`, `?assets` all act
+ * on the requested workspace rather than the one the app happened to load
+ * with. Only the loaders present (cloud-gated by the caller) become steps.
+ */
+function buildUrlActionSteps(
+  loaders: UrlActionLoaders,
+  router: ReturnType<typeof useRouter>
+): UrlActionStep[] {
   const steps: UrlActionStep[] = []
 
   if (loaders.workspaceUrlLoader) {
@@ -82,6 +112,13 @@ function buildUrlActionSteps(loaders: UrlActionLoaders): UrlActionStep[] {
       run: () => loader.loadSettingsFromUrl()
     })
   }
+  if (loaders.assetsUrlLoader) {
+    const loader = loaders.assetsUrlLoader
+    steps.push({
+      failureMessage: 'Failed to open assets panel from URL:',
+      run: () => loader.loadAssetsFromUrl()
+    })
+  }
   // Handles the return leg of a redirect payment (Stripe appends
   // payment_intent/redirect_status params): strips the params and refreshes
   // billing status so the pending checkout resumes polling immediately.
@@ -92,6 +129,16 @@ function buildUrlActionSteps(loaders: UrlActionLoaders): UrlActionStep[] {
       run: () => loader.loadPaymentReturnFromUrl()
     })
   }
+
+  steps.push({
+    failureMessage: 'Failed to clear handled deep-link params from the URL:',
+    run: async () => {
+      const query = { ...router.currentRoute.value.query }
+      if (!HANDLED_PARAMS.some((param) => param in query)) return
+      for (const param of HANDLED_PARAMS) delete query[param]
+      await router.replace({ query })
+    }
+  })
 
   return steps
 }
@@ -145,29 +192,38 @@ function useIfCloud<T>(create: () => T): T | null {
 /**
  * Aggregates the query-param "deep link" loaders the cloud app checks on mount
  * (`?workspace`, `?invite`, `?create_workspace`, `?pricing`, `?topup`,
- * `?settings`), then recovers an interrupted checkout. The loaders are
- * instantiated in setup so their `useRoute`/`useRouter` resolve; call
+ * `?settings`, `?assets`), then recovers an interrupted checkout. The loaders
+ * are instantiated in setup so their `useRoute`/`useRouter` resolve; call
  * `runUrlActionLoaders()` from `onMounted` once the app is ready.
  */
 export function useUrlActionLoaders() {
+  const router = useRouter()
+
   const workspaceUrlLoader = useIfCloud(useWorkspaceUrlLoader)
   const inviteUrlLoader = useIfCloud(useInviteUrlLoader)
   const createWorkspaceUrlLoader = useIfCloud(useCreateWorkspaceUrlLoader)
   const pricingTableUrlLoader = useIfCloud(usePricingTableUrlLoader)
   const topUpUrlLoader = useIfCloud(useTopUpUrlLoader)
   const settingsUrlLoader = useIfCloud(useSettingsUrlLoader)
+  const assetsUrlLoader = useIfCloud(useAssetsUrlLoader)
   const paymentReturnUrlLoader = useIfCloud(usePaymentReturnUrlLoader)
   const subscriptionDialog = useIfCloud(useSubscriptionDialog)
 
-  const steps = buildUrlActionSteps({
-    workspaceUrlLoader,
-    inviteUrlLoader,
-    createWorkspaceUrlLoader,
-    pricingTableUrlLoader,
-    topUpUrlLoader,
-    settingsUrlLoader,
-    paymentReturnUrlLoader
-  })
+  const steps = isCloud
+    ? buildUrlActionSteps(
+        {
+          workspaceUrlLoader,
+          inviteUrlLoader,
+          createWorkspaceUrlLoader,
+          pricingTableUrlLoader,
+          topUpUrlLoader,
+          settingsUrlLoader,
+          assetsUrlLoader,
+          paymentReturnUrlLoader
+        },
+        router
+      )
+    : []
 
   async function runUrlActionLoaders() {
     const reloading = await runUrlActionSteps(steps)
