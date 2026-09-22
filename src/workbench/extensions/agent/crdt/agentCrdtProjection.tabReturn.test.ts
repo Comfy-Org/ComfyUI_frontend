@@ -4,7 +4,7 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import type { LLink } from '@/lib/litegraph/src/LLink'
@@ -113,6 +113,10 @@ function nodeIds(graph: LGraph) {
 function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
   const host = mint(toWorkflowJson(saved), CATALOG)
   const follower = new FollowerDoc()
+  onTestFinished(() => {
+    follower.destroy()
+    host.destroy()
+  })
   const pendingOps = createPendingOpTracker()
   const projection = new AgentCrdtProjection(
     remoteMutations(graphScopeOf(graph)),
@@ -125,6 +129,7 @@ function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
       pendingConnects: () => pendingOps.pendingConnectLinkIds()
     }
   )
+  onTestFinished(() => projection.destroy())
   let seq = 0
   /** Delivers one host frame; returns whether the adapter committed it. */
   const deliver = (update: Uint8Array): boolean => {
@@ -156,11 +161,6 @@ function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
     projection.bind(WORKFLOW_ID, follower)
     return deliver(Y.encodeStateAsUpdate(host, follower.stateVector()))
   }
-  const destroy = () => {
-    projection.destroy()
-    follower.destroy()
-    host.destroy()
-  }
   /**
    * Registers a human op as pending in one of the two states a batch can sit
    * in before any result comes back — `queued` (minted, never even handed
@@ -175,7 +175,7 @@ function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
     pendingOps.onBatchMinted(ops)
     if (state === 'inflight') pendingOps.onBatchTransmitted(ops)
   }
-  return { hostApplies, tabReturn, destroy, registerPendingOps }
+  return { hostApplies, tabReturn, registerPendingOps }
 }
 
 function addNodeOp(node: LGraphNode, widgetsValues: unknown[]): Op {
@@ -234,7 +234,7 @@ describe('AgentCrdtProjection after a tab return', () => {
     'keeps a node the user added whose add_node never reached the doc (%s)',
     (state) => {
       const { graph, source } = buildLiveGraph()
-      const { tabReturn, destroy, registerPendingOps } = bindFollower(
+      const { tabReturn, registerPendingOps } = bindFollower(
         graph,
         structuredClone(graph.serialize())
       )
@@ -252,7 +252,6 @@ describe('AgentCrdtProjection after a tab return', () => {
         serialized: [String(source.id), String(added.id)]
       })
       expect(layout.deleteNodes).not.toHaveBeenCalled()
-      destroy()
     }
   )
 
@@ -263,7 +262,7 @@ describe('AgentCrdtProjection after a tab return', () => {
   // optimistic edge even though the node it wired survived.
   it('keeps a node and its edge when both the add_node and the connect never reached the doc', () => {
     const { graph, source } = buildLiveGraph()
-    const { tabReturn, destroy, registerPendingOps } = bindFollower(
+    const { tabReturn, registerPendingOps } = bindFollower(
       graph,
       structuredClone(graph.serialize())
     )
@@ -279,7 +278,6 @@ describe('AgentCrdtProjection after a tab return', () => {
     expect(nodeIds(graph).live).toEqual([String(source.id), String(added.id)])
     expect(added.getInputLink(0)?.id).toBe(link.id)
     expect(layout.deleteNodes).not.toHaveBeenCalled()
-    destroy()
   })
 
   it.for([
@@ -297,7 +295,7 @@ describe('AgentCrdtProjection after a tab return', () => {
     'keeps $name the user added once its add_node landed in the doc',
     ({ type, widgetsValues }) => {
       const { graph, source } = buildLiveGraph()
-      const { hostApplies, tabReturn, destroy } = bindFollower(
+      const { hostApplies, tabReturn } = bindFollower(
         graph,
         structuredClone(graph.serialize())
       )
@@ -314,13 +312,12 @@ describe('AgentCrdtProjection after a tab return', () => {
         serialized: [String(source.id), String(added.id)]
       })
       expect(layout.deleteNodes).not.toHaveBeenCalled()
-      destroy()
     }
   )
 
   it('keeps a node the doc never took when a later accepted add is echoed, without any tab return', () => {
     const { graph, source } = buildLiveGraph()
-    const { hostApplies, destroy } = bindFollower(
+    const { hostApplies } = bindFollower(
       graph,
       structuredClone(graph.serialize())
     )
@@ -349,6 +346,5 @@ describe('AgentCrdtProjection after a tab return', () => {
     })
     expect(layout.deleteNodes).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
-    destroy()
   })
 })
