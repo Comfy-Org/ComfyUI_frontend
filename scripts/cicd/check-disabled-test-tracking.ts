@@ -54,7 +54,7 @@ function changedFiles(output: Buffer): ChangedFile[] {
   const fields = output.toString('utf8').split('\0')
   const files: ChangedFile[] = []
 
-  for (let index = 0; fields[index]; ) {
+  for (let index = 0; fields[index];) {
     const status = fields[index++]
     if (status.startsWith('R') || status.startsWith('C')) {
       files.push({ basePath: fields[index++], path: fields[index++] })
@@ -132,7 +132,9 @@ function testDeclarations(source: string, path: string): TestDeclaration[] {
             (candidate) =>
               candidate !== title && (!modifier || candidate !== argument)
           )
-          .map((candidate) => candidate.getText(sourceFile).replace(/\s+/g, ' '))
+          .map((candidate) =>
+            candidate.getText(sourceFile).replace(/\s+/g, ' ')
+          )
           .join('|'),
         disabled: Boolean(
           modifier && node.arguments.length > 0 && isDisablingArgument(argument)
@@ -166,79 +168,44 @@ export function disabledDeclarations(
     .map(({ line, relevantLines }) => ({ line, relevantLines }))
 }
 
+function compareDeclarationRank(left: number[], right: number[]): number {
+  for (const [index, value] of left.entries()) {
+    const difference = value - right[index]
+    if (difference !== 0) return difference
+  }
+  return 0
+}
+
 function correspondingBaseDeclarations(
   base: TestDeclaration[],
   head: TestDeclaration[],
   projectBaseLine: (line: number) => number
 ): Map<number, TestDeclaration> {
-  const costs = Array.from({ length: base.length + 1 }, (_, baseIndex) =>
-    Array.from(
-      { length: head.length + 1 },
-      (_, headIndex) => baseIndex + headIndex
-    )
-  )
-
-  for (let baseIndex = 1; baseIndex <= base.length; baseIndex += 1) {
-    for (let headIndex = 1; headIndex <= head.length; headIndex += 1) {
-      const substitution =
-        costs[baseIndex - 1][headIndex - 1] +
-        (base[baseIndex - 1].title === head[headIndex - 1].title ? 0 : 1)
-      costs[baseIndex][headIndex] = Math.min(
-        substitution,
-        costs[baseIndex - 1][headIndex] + 1,
-        costs[baseIndex][headIndex - 1] + 1
-      )
-    }
-  }
-
   const corresponding = new Map<number, TestDeclaration>()
-  let baseIndex = base.length
-  let headIndex = head.length
-  while (baseIndex > 0 && headIndex > 0) {
-    const baseDeclaration = base[baseIndex - 1]
-    const headDeclaration = head[headIndex - 1]
-    const substitution =
-      costs[baseIndex - 1][headIndex - 1] +
-      (baseDeclaration.title === headDeclaration.title ? 0 : 1)
-    const projectedLine = projectBaseLine(baseDeclaration.line)
-    const currentRank = [
-      baseDeclaration.context === headDeclaration.context ? 0 : 1,
-      Math.abs(projectedLine - headDeclaration.line)
-    ]
-    const earlierMatch = head
-      .slice(0, headIndex - 1)
-      .filter(({ title }) => title === baseDeclaration.title)
-      .some((candidate) => {
-        const candidateRank = [
-          baseDeclaration.context === candidate.context ? 0 : 1,
-          Math.abs(projectedLine - candidate.line)
+  const matchedBase = new Set<number>()
+
+  for (const [headIndex, headDeclaration] of head.entries()) {
+    if (matchedBase.size === base.length) break
+    const candidate = base
+      .map((declaration, index) => ({ declaration, index }))
+      .filter(({ index }) => !matchedBase.has(index))
+      .sort((left, right) => {
+        const rank = ({ declaration }: typeof left): number[] => [
+          declaration.title === headDeclaration.title ? 0 : 1,
+          declaration.context === headDeclaration.context ? 0 : 1,
+          Math.abs(projectBaseLine(declaration.line) - headDeclaration.line)
         ]
-        return (
-          candidateRank[0] < currentRank[0] ||
-          (candidateRank[0] === currentRank[0] &&
-            candidateRank[1] < currentRank[1])
-        )
-      })
-    if (
-      costs[baseIndex][headIndex] ===
-        costs[baseIndex][headIndex - 1] + 1 &&
-      costs[baseIndex][headIndex] === substitution &&
-      earlierMatch
-    ) {
-      headIndex -= 1
-    } else if (costs[baseIndex][headIndex] === substitution) {
-      corresponding.set(headIndex - 1, base[baseIndex - 1])
-      baseIndex -= 1
-      headIndex -= 1
-    } else if (
-      costs[baseIndex][headIndex] ===
-      costs[baseIndex - 1][headIndex] + 1
-    ) {
-      baseIndex -= 1
-    }
+        return compareDeclarationRank(rank(left), rank(right))
+      })[0]
+    matchedBase.add(candidate.index)
+    corresponding.set(headIndex, candidate.declaration)
   }
 
   return corresponding
+}
+
+function captureNumber(value: string | undefined, fallback: number): number {
+  return value === undefined ? fallback : Number(value)
 }
 
 function projectBaseLine(patch: string, baseLine: number): number {
@@ -249,10 +216,9 @@ function projectBaseLine(patch: string, baseLine: number): number {
     if (!hunk) continue
 
     const baseStart = Number(hunk[1])
-    const baseCount = hunk[2] === undefined ? 1 : Number(hunk[2])
+    const baseCount = captureNumber(hunk[2], 1)
     const targetStart = Number(hunk[3])
-    const targetCount = hunk[4] === undefined ? 1 : Number(hunk[4])
-    if (baseCount === 0 && baseLine <= baseStart) return baseLine + offset
+    const targetCount = captureNumber(hunk[4], 1)
     if (baseLine < baseStart) return baseLine + offset
     if (baseCount > 0 && baseLine < baseStart + baseCount) {
       return targetStart + Math.min(baseLine - baseStart, targetCount - 1)
@@ -289,7 +255,15 @@ export function findViolations(
 ): string[] {
   const revision = `${baseSha}...${headSha}`
   const changed = changedFiles(
-    git(cwd, 'diff', '--name-status', '-z', '-M', '--diff-filter=d', revision)
+    git(
+      cwd,
+      'diff',
+      '--name-status',
+      '-z',
+      '-M20%',
+      '--diff-filter=d',
+      revision
+    )
   ).filter(({ path }) => TEST_SOURCE_PATTERN.test(path))
   const violations: string[] = []
 
@@ -297,7 +271,7 @@ export function findViolations(
     const patch = git(
       cwd,
       'diff',
-      '-M',
+      '-M20%',
       '--unified=0',
       '--no-color',
       '--no-ext-diff',

@@ -197,7 +197,7 @@ test.skip('duplicate title', () => sameFixture())
     const head = commit(root, 'prepend duplicate title')
 
     expect(findViolations(root, base, head)).toEqual([
-      "  tests/example.spec.ts:1: test.skip('duplicate title', () => sameFixture())"
+      "  tests/example.spec.ts:2: test.skip('duplicate title', () => sameFixture())"
     ])
   })
 
