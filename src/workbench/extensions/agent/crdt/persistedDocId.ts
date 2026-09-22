@@ -2,16 +2,9 @@ import { createUuidv4 } from '@/utils/uuid'
 import { AGENT_CRDT_DOC_ID_SESSION_KEY } from '@/platform/workflow/persistence/base/storageKeyConstants'
 import { MAX_AGENT_STORAGE_CLOCK_SKEW_MS } from '@/workbench/extensions/agent/persistenceTime'
 
-// FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
-// panel remount or reload loses the binding until the next turn ack. Persist it
-// per-tab in sessionStorage so the follower can rebind immediately.
-//
-// FEC-5: a bare doc id has no owner and no lifetime, so the record carries a
-// per-page-load nonce and a short expiry. Browser-tab duplication clones
-// sessionStorage, but the cloud dock mount reconciles this record before its
-// lazy panel boundary: a duplicated tab gets a fresh nonce and consumes the
-// inherited record on its first load, even when the panel stays closed. An
-// explicit reload may adopt the previous page load's unexpired record.
+// The per-tab record restores the in-memory doc binding after reload. Its
+// per-page-load nonce prevents a duplicated tab from inheriting ownership,
+// while the short expiry bounds how long an explicit reload may adopt it.
 export const DOC_ID_SESSION_KEY = AGENT_CRDT_DOC_ID_SESSION_KEY
 export const DOC_ID_TTL_MS = 5 * 60 * 1000
 
@@ -65,7 +58,7 @@ export function reconcilePersistedDocId(): string | null {
     const parsed: unknown = JSON.parse(raw)
     // Every rejection below also drops the key. Leaving a rejected record in
     // place would break the invariant the dock-mount reconcile relies on: a
-    // duplicated tab that inherits a lapsed or pre-FEC-5 record would keep
+    // duplicated tab that inherits a lapsed or legacy record would keep
     // re-reading and re-rejecting it on every reconcile instead of consuming it
     // once.
     // `Number.isFinite`, not `typeof === 'number'`: `JSON.parse` turns an
@@ -117,7 +110,7 @@ export function reconcilePersistedDocId(): string | null {
     }
     return record.docId
   } catch {
-    // A pre-FEC-5 bare doc id is not valid JSON, so it lands here rather than
+    // A legacy bare doc id is not valid JSON, so it lands here rather than
     // in the shape check above; drop it so it is consumed exactly once.
     clearPersistedDocId()
     return null
