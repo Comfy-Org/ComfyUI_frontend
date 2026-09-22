@@ -8,14 +8,9 @@
 import type { Alternate } from './hreflangRoutes'
 
 import { isExcludedFromSitemap } from '../config/indexing'
-import {
-  DEFAULT_LOCALE,
-  LOCALE_CODES,
-  LOCALES,
-  localeHasRoute
-} from '../config/locales'
+import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
 import { redirects } from '../config/redirects'
-import { isLocaleInvariantPath } from '../config/routes'
+import { supportsLocaleRoute } from '../config/routes'
 import { unprefixed } from './hreflangRoutes'
 
 export interface BuiltSite {
@@ -48,7 +43,7 @@ function expectedAlternates(
   const path = unprefixed(route)
   const publishedLocales = LOCALE_CODES.filter(
     (locale) =>
-      localeHasRoute(locale, path) ||
+      supportsLocaleRoute(locale, path) ||
       pages.has(`${LOCALES[locale].prefix}${path}`)
   )
   const expected = new Map<string, string>(
@@ -74,8 +69,7 @@ function isClustered(
   // cannot evade the audit by omitting every link.
   return (
     alternates.length > 0 ||
-    (path !== '/404.html' &&
-      !isLocaleInvariantPath(path) &&
+    (LOCALE_CODES.some((locale) => supportsLocaleRoute(locale, path)) &&
       !isExcludedFromSitemap(`${origin}${route}`) &&
       !Object.hasOwn(redirects, route.replace(/\/$/, '')))
   )

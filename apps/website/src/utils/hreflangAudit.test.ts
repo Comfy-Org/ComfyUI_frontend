@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import type { Alternate } from './hreflangRoutes'
 
-import { auditBuiltSite, sitemapChunkNames } from './hreflangAudit'
+import { hreflangAlternates } from '../lib/hreflang'
+import { auditBuiltSite, routeOfHref, sitemapChunkNames } from './hreflangAudit'
 
 const ORIGIN = 'https://comfy.org'
 
@@ -254,6 +255,7 @@ describe('auditBuiltSite', () => {
     site.sitemap.set('/affiliates/', cluster('/affiliates/'))
 
     expect(auditBuiltSite(site)).toEqual([
+      '/affiliates/: sitemap declares hreflang="zh-CN", which is not one of en, x-default',
       '/affiliates/: sitemap advertises en, zh-CN, x-default that the page does not'
     ])
   })
@@ -421,6 +423,32 @@ describe('canonical URLs', () => {
 
     expect(auditBuiltSite(site)).toEqual([])
   })
+})
+
+describe('emitter agreement', () => {
+  it.for(['/', '/about/', '/affiliates/', '/login/', '/404', '/404.html'])(
+    'accepts the cluster the emitter builds for %s',
+    (route) => {
+      const alternates = hreflangAlternates(route, ORIGIN)
+      const twins = alternates
+        .filter(({ hreflang }) => hreflang !== 'x-default')
+        .map(({ href }) => routeOfHref(href, ORIGIN))
+      const pages = new Map(
+        (twins.length > 0 ? twins : [route]).map(
+          (twin): [string, Alternate[]] => [twin, alternates]
+        )
+      )
+
+      expect(
+        auditBuiltSite({
+          origin: ORIGIN,
+          pages,
+          canonicals: canonicalsFor(pages),
+          sitemap: alternates.length > 0 ? new Map(pages) : new Map()
+        })
+      ).toEqual([])
+    }
+  )
 })
 
 describe('sitemapChunkNames', () => {

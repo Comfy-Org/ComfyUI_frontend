@@ -126,15 +126,17 @@ const LOCALE_INVARIANT_PATHS = new Set<string>([
 ])
 
 /** True for a locale-invariant route or anything nested under one. */
-export function isLocaleInvariantPath(pathname: string): boolean {
+function isLocaleInvariantPath(pathname: string): boolean {
   return [...LOCALE_INVARIANT_PATHS].some(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
   )
 }
 
+const NOT_FOUND_PATHS = new Set(['/404', '/404.html'])
+
 export function supportsLocaleRoute(locale: Locale, pathname: string): boolean {
   return (
-    pathname.replace(/\/+$/, '') !== '/404' &&
+    !NOT_FOUND_PATHS.has(pathname.replace(/\/+$/, '')) &&
     !isLocaleInvariantPath(pathname) &&
     localeHasRoute(locale, pathname)
   )
