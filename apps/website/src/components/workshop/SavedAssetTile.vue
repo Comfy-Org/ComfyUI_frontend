@@ -14,7 +14,7 @@ const emit = defineEmits<{ mediaError: [] }>()
 
 const media = computed(() =>
   tile.state === 'saved' && url && tile.kind !== 'audio'
-    ? { kind: tile.kind, url }
+    ? { kind: tile.kind, url, assetId: tile.assetId }
     : undefined
 )
 </script>
@@ -24,6 +24,7 @@ const media = computed(() =>
     v-if="media"
     :kind="media.kind"
     :url="media.url"
+    :asset-id="media.assetId"
     class="size-full object-cover"
     data-testid="saved-asset-media"
     @media-error="emit('mediaError')"

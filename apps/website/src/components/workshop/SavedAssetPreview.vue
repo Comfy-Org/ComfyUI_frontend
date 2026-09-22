@@ -42,6 +42,7 @@ const media = computed(() =>
     ? {
         kind: tile.kind,
         url,
+        assetId: tile.assetId,
         fileName: savedAssetFileName(tile.assetId, tile.kind, url)
       }
     : undefined
@@ -124,6 +125,7 @@ function touchEnd(event: TouchEvent) {
           <SavedAssetMedia
             :kind="media.kind"
             :url="media.url"
+            :asset-id="media.assetId"
             :alt="t('workshop.assets.title', locale)"
             controls
             class="max-h-[80dvh] w-auto max-w-full rounded-2xl object-contain"
