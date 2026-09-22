@@ -45,6 +45,35 @@ function renderComposer() {
 describe('inline node and asset references', () => {
   beforeEach(() => vi.useRealTimers())
 
+  it('keeps reference chips atomic when the editor wraps', async () => {
+    const { store, selected } = renderComposer()
+    selected.value = [{ id: '12', title: 'KSampler' }]
+    store.addAttachment({
+      id: 'image',
+      name: 'source.png',
+      ref: 'uploaded.png'
+    })
+    store.setWorkflowReferences([
+      { id: 'wf-b', name: 'Reference B', textOffset: 0 }
+    ])
+
+    const passiveChips = await Promise.all([
+      screen.findByTestId('node-reference-chip'),
+      screen.findByTestId('asset-reference-chip')
+    ])
+    for (const chip of passiveChips) {
+      expect(chip).toHaveClass('inline-block', 'whitespace-nowrap')
+      expect(chip).not.toHaveClass('break-all', 'whitespace-normal')
+    }
+
+    const workflowChip = await screen.findByTestId('workflow-reference-chip')
+    expect(workflowChip).toHaveClass('inline-block', 'whitespace-nowrap')
+    expect(workflowChip).not.toHaveClass('break-all', 'whitespace-normal')
+    expect(
+      within(workflowChip).getByRole('button', { name: 'Open Reference B' })
+    ).not.toHaveClass('break-all', 'whitespace-normal', 'box-decoration-clone')
+  })
+
   it('keeps upper-row removal and Undo synchronized with inline references', async () => {
     const { store, selected, editor, send } = renderComposer()
     await userEvent.type(editor, 'Use ')
