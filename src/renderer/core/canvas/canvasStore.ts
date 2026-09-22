@@ -19,6 +19,7 @@ import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
@@ -166,7 +167,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     const currentCanvas = canvas.value
     if (!currentCanvas) return
     currentCanvas.highlighted_node_ids = new Set(
-      [...highlightedNodeIds.value].map(String)
+      [...highlightedNodeIds.value].map(serializeNodeId)
     )
     currentCanvas.setDirty(true, false)
   }
