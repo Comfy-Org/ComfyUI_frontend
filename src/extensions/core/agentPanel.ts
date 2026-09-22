@@ -8,7 +8,10 @@ import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-import { isAgentStandalone } from '@/workbench/extensions/agent/agentDistribution'
+import {
+  agentConsentScope,
+  isAgentStandalone
+} from '@/workbench/extensions/agent/agentDistribution'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
@@ -109,17 +112,27 @@ export function registerAgentPanelExtension(): void {
         { immediate: true, flush: 'sync' }
       )
 
+      // Account-scoped consent (cloud) lives on the signed-in account and team
+      // workspace, so it waits for both. Device-scoped consent (the local
+      // agent) has neither to wait for: it loads and is offered signed out.
+      const autoShownKey = (): string | null => {
+        if (agentConsentScope() === 'device')
+          return `${CONSENT_AUTO_SHOWN_PREFIX}.device`
+        if (!isLoggedIn.value) return null
+        const userId = resolvedUserInfo.value?.id
+        const workspaceId = workspaceStore.activeWorkspaceId
+        if (!userId || !workspaceId || workspaceStore.isSwitching) return null
+        return `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
+      }
+
       let autoShowInFlight = false
       const offerConsentUnprompted = (): void => {
         if (autoShowInFlight) return
-        if (!agentPanelStore.enabled || !isLoggedIn.value) return
+        if (!agentPanelStore.enabled) return
         if (consentStore.isChecking || consentStore.accepted) return
 
-        const userId = resolvedUserInfo.value?.id
-        const workspaceId = workspaceStore.activeWorkspaceId
-        if (!userId || !workspaceId || workspaceStore.isSwitching) return
-        const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
-        if (!prepareAutoShow(key)) return
+        const key = autoShownKey()
+        if (key === null || !prepareAutoShow(key)) return
 
         const offeredIdentity = consentStore.identity
         autoShowInFlight = true
@@ -139,7 +152,8 @@ export function registerAgentPanelExtension(): void {
       }
 
       const loadConsentIfEligible = (): void => {
-        if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
+        if (!agentPanelStore.enabled) return
+        if (agentConsentScope() === 'account' && !resolvedUserInfo.value) return
         void consentStore
           .load()
           .then((isAccepted) => {
