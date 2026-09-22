@@ -658,20 +658,23 @@ describe('SubgraphConversion', () => {
       innerLink.origin_slot = 9999
       expectUnpackRejected(graph, subgraphNode)
     })
-    it('Should leave the graph untouched when a subgraph link has an invalid target slot', () => {
-      const subgraph = createTestSubgraph()
-      const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
-      graph.add(subgraphNode)
+    it.for([9999, 0.5])(
+      'Should leave the graph untouched when a subgraph link has invalid target slot %s',
+      (invalidSlot) => {
+        const subgraph = createTestSubgraph()
+        const subgraphNode = createTestSubgraphNode(subgraph)
+        const graph = subgraphNode.graph!
+        graph.add(subgraphNode)
 
-      const innerNode1 = createTestNode(subgraph, [], ['number'])
-      const innerNode2 = createTestNode(subgraph, ['number'], [])
-      const innerLink = innerNode1.connect(0, innerNode2, 0)
-      assert(innerLink)
+        const innerNode1 = createTestNode(subgraph, [], ['number'])
+        const innerNode2 = createTestNode(subgraph, ['number'], [])
+        const innerLink = innerNode1.connect(0, innerNode2, 0)
+        assert(innerLink)
 
-      innerLink.target_slot = 9999
-      expectUnpackRejected(graph, subgraphNode)
-    })
+        innerLink.target_slot = invalidSlot
+        expectUnpackRejected(graph, subgraphNode)
+      }
+    )
     it.for([9999, 0.5])(
       'Should leave the graph untouched when a subgraph input link has invalid boundary slot %s',
       (invalidSlot) => {
