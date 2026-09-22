@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -7,20 +8,11 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 describe('promoted subgraph widget options reassignment', () => {
   // https://comfy-org.sentry.io/issues/FRONTEND-80
-  //
-  // comfyui-combofilter (and other legacy extensions that filter COMBO
-  // values) blindly reassign `widget.options = {...}` for every widget it
-  // finds on a node. `SubgraphNode.widgets` projects each promoted input
-  // through `promotedInputWidget`/`createPromotedWidgetStoreProjection`,
-  // which now has a setter for `options` that writes through to the
-  // widget-value store, so the reassignment is applied instead of throwing.
-  it('reassigning options on a promoted subgraph widget does not throw', () => {
+  it('replaces options through the app-layer projection', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
 
@@ -34,13 +26,13 @@ describe('promoted subgraph widget options reassignment', () => {
       promoteValueWidgetViaSubgraphInput(host, interior, interiorWidget).ok
     ).toBe(true)
 
-    const promotedWidget = host.widgets[0]
-    expect(promotedWidget.name).toBe('text')
+    const promotedWidget = promotedInputWidget(host.inputs[0])
+    expect(promotedWidget?.name).toBe('text')
+    if (!promotedWidget) throw new Error('Expected promoted widget')
 
-    expect(() => {
-      promotedWidget.options = { ...promotedWidget.options, multiline: true }
-    }).not.toThrow()
+    promotedWidget.options = { min: 0 }
+    promotedWidget.options = { multiline: true }
 
-    expect(promotedWidget.options.multiline).toBe(true)
+    expect(promotedWidget.options).toEqual({ multiline: true })
   })
 })

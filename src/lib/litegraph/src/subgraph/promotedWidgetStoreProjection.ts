@@ -34,7 +34,7 @@ export function createPromotedWidgetStoreProjection(
       return store.getWidget(id)?.options ?? {}
     },
     set options(next) {
-      store.updateOptions(id, next)
+      store.setOptions(id, next)
     },
     get value() {
       return store.getWidget(id)?.value
