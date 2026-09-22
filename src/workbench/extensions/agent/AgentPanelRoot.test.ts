@@ -443,7 +443,8 @@ function renderWithSelectedTarget() {
 async function sendFromComposer(text: string): Promise<void> {
   const textbox = screen.getByRole('textbox')
   await userEvent.click(textbox)
-  await userEvent.keyboard('{ArrowRight}')
+  window.getSelection()?.collapseToEnd()
+  document.dispatchEvent(new Event('selectionchange'))
   await userEvent.keyboard(text)
   await userEvent.click(screen.getByRole('button', { name: 'Send' }))
   await screen.findByRole('button', { name: 'Stop' })
