@@ -44,6 +44,11 @@ export type PaymentIntentSource =
   | 'upload_model_upgrade'
   | 'team_upgrade_resume'
   | 'free_tier_quota'
+  /**
+   * The agent panel's paywall card. Distinct from `free_tier_quota`, which
+   * attributes the free-tier *job* allowance surface, not the agent panel.
+   */
+  | 'agent_paywall'
 
 export type SubscriptionCheckoutType = 'new' | 'change'
 export type SubscriptionCheckoutTier = TierKey | 'team'
@@ -805,6 +810,47 @@ export interface AddCreditsClickMetadata {
     | 'avatar_menu'
     | 'settings_billing_panel'
     | 'deep_link'
+    | 'agent_paywall'
+}
+
+/**
+ * Why the agent panel showed its paywall card.
+ *
+ * Derived from the single `AgentPaywallPresentation` kind the resolver
+ * produced, so precedence between overlapping states (an inactive
+ * subscription *and* a zero balance) is the resolver's own branch order rather
+ * than a second ordering here that could drift from it. That order yields
+ * `subscription_inactive` ahead of `no_funds`.
+ *
+ * `member_cannot_pay` and `sales_managed` extend the three reasons named in
+ * the spec so that every paywall the resolver can show emits exactly one
+ * event: a state that renders a paywall but emits nothing would understate the
+ * conversion funnel's denominator rather than merely omit a segment.
+ *
+ * The spec's `allowance_exhausted` is deliberately absent. The agent gratis
+ * allowance is a Metronome scoped credit at a burn priority, not a
+ * client-visible counter, so a spent allowance with no paid credits reaches
+ * the frontend as `hasFunds: false` and a zero balance — indistinguishable
+ * from a plain out-of-credits user. It needs a `funding_class` or
+ * allowance-remaining field on billing status first (PM-1467 A11/A12,
+ * PM-1484 M3).
+ */
+export type AgentPaywallReason =
+  | 'no_funds'
+  | 'subscription_inactive'
+  | 'member_cannot_pay'
+  | 'sales_managed'
+  /** Distribution or capability state that cannot be attributed to a reason. */
+  | 'unknown'
+
+export interface AgentPaywallShownMetadata {
+  reason: AgentPaywallReason
+}
+
+export type AgentPaywallCta = 'subscribe' | 'add_credits' | 'upgrade'
+
+export interface AgentPaywallCtaMetadata {
+  cta: AgentPaywallCta
 }
 
 export interface SubscriptionCancellationMetadata {
@@ -1085,6 +1131,13 @@ export type CheckoutEntrySource =
   | 'settings_billing'
   | 'other'
   | 'unknown'
+  /**
+   * Checkout entered from the agent panel's paywall card. Note that
+   * `entry_source` is also a property name on the cloud-side
+   * `agent_session_started` event with an unrelated value space, so a funnel
+   * over this value must scope by event name.
+   */
+  | 'agent_paywall'
 type CheckoutElementPhase = 'init' | 'mount' | 'update'
 /** Which Stripe element in the shared group the observation came from. */
 type CheckoutElementKind = 'payment' | 'address'
@@ -1281,6 +1334,10 @@ export interface TelemetryProvider {
   /** Emit a checkout-journey lifecycle event to this provider. */
   trackCheckoutJourneyEvent?(event: CheckoutJourneyTelemetryEvent): void
 
+  // Agent paywall events
+  trackAgentPaywallShown?(metadata: AgentPaywallShownMetadata): void
+  trackAgentPaywallCtaClicked?(metadata: AgentPaywallCtaMetadata): void
+
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
 
@@ -1437,6 +1494,10 @@ export const TelemetryEvents = {
   WORKSPACE_INVITE_SENT: 'app:workspace_invite_sent',
   WORKSPACE_INVITE_FAILED: 'app:workspace_invite_failed',
   BEGIN_CHECKOUT: 'begin_checkout',
+
+  // Agent Paywall
+  AGENT_PAYWALL_SHOWN: 'app:agent_paywall_shown',
+  AGENT_PAYWALL_CTA_CLICKED: 'app:agent_paywall_cta_clicked',
 
   // Canonical Billing Lifecycle
   BILLING_SUBSCRIPTION_CHECKOUT_STARTED:
@@ -1658,4 +1719,6 @@ export type TelemetryEventProperties =
   | WorkspaceInviteFailedMetadata
   | BillingTelemetryEvent
   | CheckoutJourneyTelemetryEventPayload
+  | AgentPaywallShownMetadata
+  | AgentPaywallCtaMetadata
   | FetchTimeoutMetadata

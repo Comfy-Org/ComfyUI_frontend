@@ -1,5 +1,9 @@
 import type { SubscriptionTier } from '@comfyorg/ingest-types'
 
+import type {
+  AgentPaywallCta,
+  AgentPaywallReason
+} from '@/platform/telemetry/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 export type AgentPaywallAction = 'addCredits' | 'subscribe' | 'upgrade'
@@ -23,6 +27,48 @@ interface AgentPaywallPresentationInput {
 export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
   kind: 'unavailable'
 } as const satisfies AgentPaywallPresentation
+
+/**
+ * Telemetry reason for each presentation the resolver can produce.
+ *
+ * Every paywall card ultimately comes from a `no_funds` admission refusal, so
+ * the presentation kind contributes the remediation-relevant state on top of
+ * that: whether the workspace can top up, needs a subscription, or cannot pay
+ * at all. Keying off the resolver's single verdict also means the precedence
+ * between overlapping states is its branch order and cannot drift from a
+ * second ordering kept here.
+ *
+ * `unavailable` is the indeterminate pre-bootstrap state, not a verdict;
+ * callers should withhold the event until the presentation resolves rather
+ * than report `unknown`, which exists only so this mapping stays total.
+ */
+const AGENT_PAYWALL_REASONS = {
+  subscribed: 'no_funds',
+  local: 'no_funds',
+  subscriptionRequired: 'subscription_inactive',
+  member: 'member_cannot_pay',
+  salesManaged: 'sales_managed',
+  unavailable: 'unknown'
+} satisfies Record<AgentPaywallPresentation['kind'], AgentPaywallReason>
+
+export const toAgentPaywallReason = (
+  presentation: AgentPaywallPresentation
+): AgentPaywallReason => AGENT_PAYWALL_REASONS[presentation.kind]
+
+/** Whether the presentation is a resolved verdict rather than the default. */
+export const isResolvedAgentPaywall = (
+  presentation: AgentPaywallPresentation
+): boolean => presentation.kind !== 'unavailable'
+
+const AGENT_PAYWALL_CTAS = {
+  addCredits: 'add_credits',
+  subscribe: 'subscribe',
+  upgrade: 'upgrade'
+} satisfies Record<AgentPaywallAction, AgentPaywallCta>
+
+export const toAgentPaywallCta = (
+  action: AgentPaywallAction
+): AgentPaywallCta => AGENT_PAYWALL_CTAS[action]
 
 export function resolveAgentPaywallPresentation({
   distribution,

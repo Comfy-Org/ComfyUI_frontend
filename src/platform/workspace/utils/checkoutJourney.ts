@@ -5,7 +5,8 @@ import type {
   CheckoutEntrySource,
   CheckoutJourneyArm,
   CheckoutJourneyContext,
-  CheckoutUiMode
+  CheckoutUiMode,
+  PaymentIntentSource
 } from '@/platform/telemetry/types'
 
 /**
@@ -25,31 +26,63 @@ const CHECKOUT_JOURNEY_STORAGE_KEY = 'comfy.checkout.journey'
 const EMBEDDED_CHECKOUT_FLAG_KEY: `${ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED}` =
   'embedded_checked_enabled'
 
-const ENTRY_FLOWS: ReadonlySet<CheckoutEntryFlow> = new Set([
-  'initial_subscription',
-  'paid_upgrade',
-  'topup',
-  'other',
-  'unknown'
-])
-const ENTRY_SOURCES: ReadonlySet<CheckoutEntrySource> = new Set([
-  'pricing',
-  'deep_link',
-  'recovery',
-  'settings_billing',
-  'other',
-  'unknown'
-])
+// These three allowlists guard the persisted-record rehydration path, which is
+// the *primary* path for hosted checkout: the user leaves the page for Stripe
+// and the journey resumes from storage on return, so every post-redirect phase
+// — including the `.succeeded` events revenue attribution reads — takes its
+// entry context from here. A `ReadonlySet<T>` constrains element types only and
+// does not require every union member, so a value added to one of these unions
+// but forgotten here used to compile clean and then silently degrade to
+// `'unknown'` at runtime. Written as `satisfies Record<T, true>` (the pattern
+// `VALID_PAYMENT_INTENT_SOURCES` already uses) so the omission is a build error
+// instead.
+const ENTRY_FLOWS = {
+  initial_subscription: true,
+  paid_upgrade: true,
+  topup: true,
+  other: true,
+  unknown: true
+} satisfies Record<CheckoutEntryFlow, true>
+const ENTRY_SOURCES = {
+  pricing: true,
+  deep_link: true,
+  recovery: true,
+  settings_billing: true,
+  other: true,
+  unknown: true,
+  agent_paywall: true
+} satisfies Record<CheckoutEntrySource, true>
 
 const toEntryFlow = (value: unknown): CheckoutEntryFlow =>
-  ENTRY_FLOWS.has(value as CheckoutEntryFlow)
+  typeof value === 'string' && Object.hasOwn(ENTRY_FLOWS, value)
     ? (value as CheckoutEntryFlow)
     : 'unknown'
 
 const toEntrySource = (value: unknown): CheckoutEntrySource =>
-  ENTRY_SOURCES.has(value as CheckoutEntrySource)
+  typeof value === 'string' && Object.hasOwn(ENTRY_SOURCES, value)
     ? (value as CheckoutEntrySource)
     : 'unknown'
+
+/**
+ * Entry sources that a payment-intent source pins directly. Both checkout
+ * rails already thread a `PaymentIntentSource` from the surface that opened
+ * them, so the journey's entry source is derived from it rather than plumbed
+ * separately. A source absent from this map keeps its rail's own default,
+ * which is what holds every pre-existing surface's attribution byte-identical.
+ */
+const PAYMENT_INTENT_ENTRY_SOURCES: Partial<
+  Record<PaymentIntentSource, CheckoutEntrySource>
+> = {
+  agent_paywall: 'agent_paywall'
+}
+
+/** Entry source for a journey opened with `paymentIntentSource`. */
+export const resolveEntrySource = (
+  paymentIntentSource: PaymentIntentSource | undefined,
+  fallback: CheckoutEntrySource
+): CheckoutEntrySource =>
+  (paymentIntentSource && PAYMENT_INTENT_ENTRY_SOURCES[paymentIntentSource]) ??
+  fallback
 
 export interface CheckoutJourneyRecord {
   journey_id: string
@@ -392,11 +425,11 @@ function readPersistedJourney(): CheckoutJourneyRecord | null {
   }
 }
 
-const UI_MODES: ReadonlySet<CheckoutUiMode> = new Set([
-  'embedded',
-  'hosted',
-  'unknown'
-])
+const UI_MODES = {
+  embedded: true,
+  hosted: true,
+  unknown: true
+} satisfies Record<CheckoutUiMode, true>
 
 type PersistedJourneyIdentity = Pick<
   CheckoutJourneyRecord,
@@ -453,9 +486,10 @@ function readOptionalFields(candidate: Record<string, unknown>) {
   const { intent, ui_mode, billing_op_id } = candidate
   return {
     ...(typeof intent === 'string' && { intent }),
-    ...(UI_MODES.has(ui_mode as CheckoutUiMode) && {
-      ui_mode: ui_mode as CheckoutUiMode
-    }),
+    ...(typeof ui_mode === 'string' &&
+      Object.hasOwn(UI_MODES, ui_mode) && {
+        ui_mode: ui_mode as CheckoutUiMode
+      }),
     ...(typeof billing_op_id === 'string' && { billing_op_id })
   }
 }

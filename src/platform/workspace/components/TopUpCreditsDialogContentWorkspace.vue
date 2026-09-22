@@ -302,7 +302,10 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
-import type { CheckoutJourneyPhaseEvent } from '@/platform/telemetry/types'
+import type {
+  CheckoutJourneyPhaseEvent,
+  PaymentIntentSource
+} from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -318,6 +321,7 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
+  resolveEntrySource,
   toCheckoutJourneyContext
 } from '@/platform/workspace/utils/checkoutJourney'
 import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
@@ -326,8 +330,14 @@ import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { isInsufficientCredits = false } = defineProps<{
+const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
+  /**
+   * Surface that opened this dialog, used to attribute the top-up journey.
+   * Absent keeps the settings-billing default this dialog assumed when every
+   * caller was the billing panel.
+   */
+  source?: PaymentIntentSource
 }>()
 
 const { n, t } = useI18n()
@@ -360,7 +370,7 @@ function enterTopupJourney(): void {
     actorUid: ownerUid,
     workspaceId,
     entryFlow: 'topup',
-    entrySource: 'settings_billing',
+    entrySource: resolveEntrySource(source, 'settings_billing'),
     assignment: resolveCheckoutAssignment(api.getServerFeatures())
   })
   if (resolved.status === 'blocked' || resolved.resumed) return

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveAgentPaywallPresentation } from './agentPaywallPresentation'
+import {
+  DEFAULT_AGENT_PAYWALL_PRESENTATION,
+  isResolvedAgentPaywall,
+  resolveAgentPaywallPresentation,
+  toAgentPaywallCta,
+  toAgentPaywallReason
+} from './agentPaywallPresentation'
 
 describe('resolveAgentPaywallPresentation', () => {
   it.for([
@@ -109,5 +115,78 @@ describe('resolveAgentPaywallPresentation', () => {
         canSubscribeSelfServe: false
       })
     ).toEqual({ kind: 'local' })
+  })
+})
+
+describe('toAgentPaywallReason', () => {
+  // Every paywall card originates in a `no_funds` admission refusal, so the
+  // presentation contributes the remediation-relevant state on top of that.
+  it.for([
+    {
+      presentation: { kind: 'subscribed', showUpgrade: true },
+      expected: 'no_funds'
+    },
+    {
+      presentation: { kind: 'subscribed', showUpgrade: false },
+      expected: 'no_funds'
+    },
+    { presentation: { kind: 'local' }, expected: 'no_funds' },
+    {
+      presentation: { kind: 'subscriptionRequired' },
+      expected: 'subscription_inactive'
+    },
+    { presentation: { kind: 'member' }, expected: 'member_cannot_pay' },
+    { presentation: { kind: 'salesManaged' }, expected: 'sales_managed' },
+    { presentation: { kind: 'unavailable' }, expected: 'unknown' }
+  ] as const)(
+    'reports $expected for $presentation.kind',
+    ({ presentation, expected }) => {
+      expect(toAgentPaywallReason(presentation)).toBe(expected)
+    }
+  )
+
+  // Precedence is the resolver's own branch order rather than a second
+  // ordering: a workspace that cannot top up reads as needing a subscription
+  // even though its balance is also empty.
+  it('prefers subscription_inactive over no_funds when both apply', () => {
+    expect(
+      toAgentPaywallReason(
+        resolveAgentPaywallPresentation({
+          distribution: 'cloud',
+          role: 'owner',
+          tier: null,
+          canTopUp: false,
+          canSubscribeSelfServe: true
+        })
+      )
+    ).toBe('subscription_inactive')
+  })
+})
+
+describe('isResolvedAgentPaywall', () => {
+  it('treats the pre-bootstrap default as unresolved', () => {
+    expect(isResolvedAgentPaywall(DEFAULT_AGENT_PAYWALL_PRESENTATION)).toBe(
+      false
+    )
+  })
+
+  it.for([
+    { kind: 'subscribed', showUpgrade: false },
+    { kind: 'subscriptionRequired' },
+    { kind: 'member' },
+    { kind: 'salesManaged' },
+    { kind: 'local' }
+  ] as const)('treats $kind as a resolved verdict', (presentation) => {
+    expect(isResolvedAgentPaywall(presentation)).toBe(true)
+  })
+})
+
+describe('toAgentPaywallCta', () => {
+  it.for([
+    { action: 'addCredits', expected: 'add_credits' },
+    { action: 'subscribe', expected: 'subscribe' },
+    { action: 'upgrade', expected: 'upgrade' }
+  ] as const)('maps $action to $expected', ({ action, expected }) => {
+    expect(toAgentPaywallCta(action)).toBe(expected)
   })
 })

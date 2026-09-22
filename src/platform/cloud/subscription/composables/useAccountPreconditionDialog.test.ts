@@ -49,6 +49,47 @@ describe('useAccountPreconditionDialog', () => {
     ).not.toHaveBeenCalled()
   })
 
+  // A caller that names no source must keep emitting exactly what it emitted
+  // before the source existed, or threading the agent paywall through this
+  // shared seam silently re-attributes the execution-error and
+  // prompt-precondition callers in app.ts.
+  it('attributes a subscription precondition to subscription_required when no source is named', () => {
+    useAccountPreconditionDialog().open('subscription')
+
+    expect(
+      useDialogService().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledWith({ reason: 'subscription_required' })
+  })
+
+  it('omits a source from the top-up dialog when none is named', () => {
+    useAccountPreconditionDialog().open('credits')
+
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledWith({
+      isInsufficientCredits: true
+    })
+  })
+
+  it('attributes a subscription precondition to the source that triggered it', () => {
+    useAccountPreconditionDialog().open('subscription', {
+      source: 'agent_paywall'
+    })
+
+    expect(
+      useDialogService().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledWith({ reason: 'agent_paywall' })
+  })
+
+  it('carries the triggering source into the top-up dialog', () => {
+    useAccountPreconditionDialog().open('credits', {
+      source: 'agent_paywall'
+    })
+
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledWith({
+      isInsufficientCredits: true,
+      source: 'agent_paywall'
+    })
+  })
+
   it('refreshes the billing snapshot on a credit precondition so exhausted-state surfaces converge', () => {
     const billing = mockBillingContext()
     useAccountPreconditionDialog().open('credits')

@@ -80,6 +80,7 @@ export const useAgentConversationStore = defineStore(
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedMessageIds = new Set<string>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
+    const reportedPaywallImpressions = new Set<TurnId>()
     const activeIndex = ref(-1)
 
     function replaceActive(message: AssistantMessage): void {
@@ -155,6 +156,23 @@ export const useAgentConversationStore = defineStore(
 
     function setPaywallsResolved(resolved: boolean): void {
       if (resolved) resolvePaywalls()
+    }
+
+    /**
+     * Claim a paywall message for impression reporting, returning false when
+     * it has already been reported.
+     *
+     * The record lives here rather than in the panel because the panel is
+     * unmounted every time it is closed while these messages stay in the
+     * conversation. Panel-scoped bookkeeping would forget what it reported
+     * and count the same refused send again on reopen. It also outlives
+     * `resolvePaywalls` stripping the parts, so a resolved-then-reshown
+     * paywall is not double-counted against the same message.
+     */
+    function claimPaywallImpression(turnId: TurnId): boolean {
+      if (reportedPaywallImpressions.has(turnId)) return false
+      reportedPaywallImpressions.add(turnId)
+      return true
     }
 
     function startTurn(turnId: TurnId): void {
@@ -414,6 +432,7 @@ export const useAgentConversationStore = defineStore(
       threadId.value = null
       hydratedMessageIds = new Set()
       hydratedAssistantTurnIds = new Set()
+      reportedPaywallImpressions.clear()
       clearActive()
     }
 
@@ -485,6 +504,7 @@ export const useAgentConversationStore = defineStore(
       recordFailedSend,
       recordPaywall,
       setPaywallsResolved,
+      claimPaywallImpression,
       startTurn,
       ingest,
       setCanvasSyncGate,

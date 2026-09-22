@@ -28,6 +28,7 @@ import type {
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
 
@@ -470,6 +471,12 @@ export const useDialogService = () => {
 
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
+    /**
+     * Surface that asked for the top-up, threaded on to the top-up journey and
+     * preserved across the subscription-required fall-through below so a
+     * caller's attribution is not rewritten by an internal redirect.
+     */
+    source?: PaymentIntentSource
   }) {
     const { type } = useBillingContext()
     const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
@@ -480,9 +487,9 @@ export const useDialogService = () => {
     if (!isReady.value) return
     if (!canTopUp.value && canSubscribeSelfServe.value) {
       await showSubscriptionRequiredDialog({
-        reason: options?.isInsufficientCredits
-          ? 'out_of_credits'
-          : 'top_up_blocked'
+        reason:
+          options?.source ??
+          (options?.isInsufficientCredits ? 'out_of_credits' : 'top_up_blocked')
       })
       return
     }

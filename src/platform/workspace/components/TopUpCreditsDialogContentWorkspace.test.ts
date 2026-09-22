@@ -100,9 +100,14 @@ function topupResponse(
   }
 }
 
-function renderDialog() {
+function renderDialog(
+  props: Partial<
+    InstanceType<typeof TopUpCreditsDialogContentWorkspace>['$props']
+  > = {}
+) {
   mockBillingContext()
   return render(TopUpCreditsDialogContentWorkspace, {
+    props,
     global: {
       plugins: [i18n],
       stubs: {
@@ -210,6 +215,36 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       outcome: 'pending',
       operation_type: 'topup'
     })
+  })
+
+  // This dialog assumed the billing panel was its only caller and hardcoded
+  // `settings_billing`, so a top-up opened from the agent paywall was
+  // attributed to the settings panel.
+  it('attributes the topup journey to the surface that opened the dialog', async () => {
+    renderDialog({ source: 'agent_paywall' })
+
+    await waitFor(() =>
+      expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'entered',
+          entry_flow: 'topup',
+          entry_source: 'agent_paywall'
+        })
+      )
+    )
+  })
+
+  it('keeps the settings-billing attribution when no source is named', async () => {
+    renderDialog()
+
+    await waitFor(() =>
+      expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'entered',
+          entry_source: 'settings_billing'
+        })
+      )
+    )
   })
 
   it('enters a topup journey on mount and correlates the purchase', async () => {

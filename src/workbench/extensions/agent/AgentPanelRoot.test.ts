@@ -10,6 +10,7 @@ import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
 vi.mock(import('firebase/auth'))
@@ -731,13 +732,14 @@ describe('AgentPanelRoot paywall actions', () => {
       await screen.findByRole('button', { name: 'Upgrade plan' })
     )
     expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
-      'subscription'
+      'subscription',
+      { source: 'agent_paywall' }
     )
 
     await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
     expect(openAccountPrecondition.mock.calls).toEqual([
-      ['subscription'],
-      ['credits']
+      ['subscription', { source: 'agent_paywall' }],
+      ['credits', { source: 'agent_paywall' }]
     ])
   })
 
@@ -757,7 +759,8 @@ describe('AgentPanelRoot paywall actions', () => {
     )
 
     expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
-      'subscription'
+      'subscription',
+      { source: 'agent_paywall' }
     )
   })
 
@@ -927,6 +930,251 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallWorkspace.role = undefined
 
     await expectWithheldPurchaseActions()
+  })
+})
+
+describe('AgentPanelRoot paywall telemetry', () => {
+  // The shared `paywallCapabilities` fixture is a plain object read through a
+  // computed, so mutating it after render changes nothing. These tests turn on
+  // billing state changing *while* a paywall is on screen, so they own
+  // reactive refs instead.
+  let canTopUp: Ref<boolean>
+  let canSubscribeSelfServe: Ref<boolean>
+  let hasResolvedCapabilities: Ref<boolean>
+  let workspaceRole: Ref<'owner' | 'member' | undefined>
+  let tier: Ref<SubscriptionTier | null>
+
+  beforeEach(() => {
+    ws.clear()
+    openAccountPrecondition.mockClear()
+    telemetry.trackAgentPaywallShown.mockClear()
+    telemetry.trackAgentPaywallCtaClicked.mockClear()
+    telemetry.trackAddApiCreditButtonClicked.mockClear()
+
+    canTopUp = ref(true)
+    canSubscribeSelfServe = ref(true)
+    hasResolvedCapabilities = ref(true)
+    workspaceRole = ref<'owner' | 'member' | undefined>('owner')
+    tier = ref<SubscriptionTier | null>('STANDARD')
+
+    vi.mocked(useBillingCapabilities).mockReturnValue(
+      fromPartial({
+        canTopUp,
+        canSubscribeSelfServe,
+        isReady: ref(true),
+        hasResolvedCapabilities
+      })
+    )
+    vi.mocked(useWorkspaceUI).mockReturnValue(fromPartial({ workspaceRole }))
+    vi.mocked(useBillingContext).mockReturnValue(fromPartial({ tier }))
+  })
+
+  function showPaywall(id = 'msg-paywall'): void {
+    useAgentConversationStore().messages.push({
+      id: toTurnId(id),
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+  }
+
+  it.for([
+    {
+      name: 'an owner who can top up',
+      topUp: true,
+      selfServe: true,
+      role: 'owner' as const,
+      reason: 'no_funds'
+    },
+    {
+      name: 'an owner who must subscribe first',
+      topUp: false,
+      selfServe: true,
+      role: 'owner' as const,
+      reason: 'subscription_inactive'
+    },
+    {
+      name: 'a member without billing permissions',
+      topUp: false,
+      selfServe: false,
+      role: 'member' as const,
+      reason: 'member_cannot_pay'
+    },
+    {
+      name: 'a sales-managed workspace',
+      topUp: false,
+      selfServe: false,
+      role: 'owner' as const,
+      reason: 'sales_managed'
+    }
+  ])(
+    'reports the paywall shown to $name as $reason',
+    async ({ topUp, selfServe, role, reason }) => {
+      canTopUp.value = topUp
+      canSubscribeSelfServe.value = selfServe
+      workspaceRole.value = role
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      showPaywall()
+
+      await waitFor(() =>
+        expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledWith({
+          reason
+        })
+      )
+    }
+  )
+
+  it('does not report a paywall that was never shown', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+  })
+
+  // Closing the panel unmounts this component (DockedAgentPanel's `v-if`) but
+  // leaves the conversation intact, so reopening re-observes the same paywall
+  // message. That is the same impression, not a new one.
+  it('does not report the same paywall again after the panel is closed and reopened', async () => {
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    showPaywall()
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    await nextTick()
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports a paywall raised after the panel is closed and reopened', async () => {
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    showPaywall('msg-paywall-1')
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    showPaywall('msg-paywall-2')
+
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
+    )
+  })
+
+  // The reason is read from a computed over billing state, so a re-evaluation
+  // of that state must not turn one impression into several.
+  it('reports one impression per paywall even as billing state re-evaluates', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    showPaywall()
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    tier.value = 'PRO'
+    await nextTick()
+    canSubscribeSelfServe.value = false
+    await nextTick()
+    canTopUp.value = false
+    await nextTick()
+    await nextTick()
+
+    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports a second paywall later in the conversation', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    showPaywall('msg-paywall-1')
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    )
+
+    showPaywall('msg-paywall-2')
+
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
+    )
+  })
+
+  // Before capabilities resolve the presentation is the `unavailable` default,
+  // which would attribute a real paywall to `unknown`. The impression is held
+  // back rather than dropped, so it still lands exactly once.
+  it('withholds the paywall report until the reason is knowable, then reports it once', async () => {
+    canTopUp.value = false
+    hasResolvedCapabilities.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    showPaywall()
+    await nextTick()
+    await nextTick()
+    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+
+    hasResolvedCapabilities.value = true
+
+    await waitFor(() =>
+      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
+        reason: 'subscription_inactive'
+      })
+    )
+  })
+
+  it.for([
+    { button: 'Add credits', cta: 'add_credits' },
+    { button: 'Upgrade plan', cta: 'upgrade' }
+  ])('reports the $button CTA as $cta', async ({ button, cta }) => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    showPaywall()
+
+    await userEvent.click(await screen.findByRole('button', { name: button }))
+
+    expect(
+      telemetry.trackAgentPaywallCtaClicked
+    ).toHaveBeenCalledExactlyOnceWith({ cta })
+  })
+
+  it('reports the Subscribe CTA as subscribe', async () => {
+    canTopUp.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    showPaywall()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    )
+
+    expect(
+      telemetry.trackAgentPaywallCtaClicked
+    ).toHaveBeenCalledExactlyOnceWith({ cta: 'subscribe' })
+  })
+
+  it('attributes the add-credits click to the agent paywall', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    showPaywall()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add credits' })
+    )
+
+    expect(
+      telemetry.trackAddApiCreditButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'agent_paywall' })
+  })
+
+  it('does not report an add-credits click for a subscribe CTA', async () => {
+    canTopUp.value = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    showPaywall()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    )
+
+    expect(telemetry.trackAddApiCreditButtonClicked).not.toHaveBeenCalled()
   })
 })
 

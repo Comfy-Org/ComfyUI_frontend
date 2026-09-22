@@ -46,6 +46,7 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
+  resolveEntrySource,
   toCheckoutJourneyContext
 } from '@/platform/workspace/utils/checkoutJourney'
 import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
@@ -1332,7 +1333,7 @@ export function useSubscriptionCheckout(
       actorUid: ownerUid,
       workspaceId,
       entryFlow: currentSubscriptionEntryFlow(),
-      entrySource: 'pricing',
+      entrySource: resolveEntrySource(paymentIntentSource, 'pricing'),
       intent,
       uiMode: embeddedCheckoutEnabled ? 'embedded' : 'hosted',
       assignment: resolveCheckoutAssignment(api.getServerFeatures())

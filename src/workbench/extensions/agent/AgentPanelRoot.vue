@@ -106,7 +106,10 @@ import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
   DEFAULT_AGENT_PAYWALL_PRESENTATION,
-  resolveAgentPaywallPresentation
+  isResolvedAgentPaywall,
+  resolveAgentPaywallPresentation,
+  toAgentPaywallCta,
+  toAgentPaywallReason
 } from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
@@ -173,8 +176,50 @@ const events =
     : createAgentEventSource(api)
 
 function onPaywallAction(action: AgentPaywallAction): void {
-  openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
+  useTelemetry()?.trackAgentPaywallCtaClicked({
+    cta: toAgentPaywallCta(action)
+  })
+  if (action === 'addCredits') {
+    useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'agent_paywall' })
+    openAccountPrecondition('credits', { source: 'agent_paywall' })
+    return
+  }
+  openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
+
+// A paywall part only ever enters the conversation through `recordPaywall`, on
+// a send this session refused — `normalizeAgentTranscript` produces none — so
+// a message id claimed here for the first time is always a fresh impression
+// and never history replayed on thread load. Keyed on that id rather than on
+// `paywallPresentation`, which is a computed that re-evaluates whenever
+// billing state changes and would over-count a single impression. The claim
+// is owned by the conversation store because closing the panel unmounts this
+// component while its paywall messages remain.
+const conversationStore = useAgentConversationStore()
+const { messages: conversationMessages } = storeToRefs(conversationStore)
+watch(
+  () =>
+    // Withheld until the presentation is a resolved verdict: the reason is
+    // read from it, and emitting during the pre-bootstrap window would
+    // attribute a real paywall to `unknown`. The id stays unclaimed, so the
+    // event still fires exactly once as soon as capabilities and role land.
+    isResolvedAgentPaywall(paywallPresentation.value)
+      ? conversationMessages.value
+          .filter((message) =>
+            message.parts.some((part) => part.type === 'paywall')
+          )
+          .map((message) => message.id)
+      : [],
+  (paywallMessageIds) => {
+    for (const id of paywallMessageIds) {
+      if (!conversationStore.claimPaywallImpression(id)) continue
+      useTelemetry()?.trackAgentPaywallShown({
+        reason: toAgentPaywallReason(paywallPresentation.value)
+      })
+    }
+  },
+  { immediate: true }
+)
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
