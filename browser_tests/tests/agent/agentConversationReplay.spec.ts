@@ -8,10 +8,8 @@ import {
   BYTEDANCE_REFERENCE_NODE_TYPE,
   byteDanceReferenceNodeDef
 } from '@e2e/fixtures/data/byteDanceReferenceNodeDef'
-import {
-  referenceGraphOps,
-  wireAndReopen
-} from '@e2e/fixtures/minimaxAutogrowReload'
+import { referenceGraphOps } from '@e2e/fixtures/data/minimaxAutogrowReload'
+import { wireAndReopen } from '@e2e/fixtures/utils/minimaxAutogrowReload'
 
 // A recording whose second turn wires two nodes; the first turn only adds.
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
