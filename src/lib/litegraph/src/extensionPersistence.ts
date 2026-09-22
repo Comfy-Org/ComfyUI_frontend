@@ -34,6 +34,18 @@ function safeCloneExtensionValue(value: unknown): JsonValue | undefined {
   return isJsonValue(clonedValue) ? clonedValue : undefined
 }
 
+/**
+ * Reads and clones one extension entry inside its own failure boundary, so a
+ * throwing accessor (top-level or nested) omits only that entry.
+ */
+function readClonedEntry(source: object, key: string): JsonValue | undefined {
+  try {
+    return safeCloneExtensionValue(Reflect.get(source, key))
+  } catch {
+    return undefined
+  }
+}
+
 const nodeCanonicalFields = {
   title: true,
   id: true,
@@ -128,19 +140,20 @@ const readPayload = (value: unknown): ExtensionPayload => {
     console.warn('LiteGraph: ignoring non-serializable extension payload')
     return {}
   }
-  // Clone each namespaced entry on its own so one uncloneable extension does
-  // not discard the payloads of every sibling extension.
-  let entries: [string, unknown][]
+  // Enumerate keys without reading values, then read and clone each entry on
+  // its own so one throwing or uncloneable extension does not discard the
+  // payloads of every sibling extension.
+  let keys: string[]
   try {
-    entries = Object.entries(value)
+    keys = Object.keys(value)
   } catch {
     console.warn('LiteGraph: ignoring non-serializable extension payload')
     return {}
   }
   const payload: ExtensionPayload = {}
-  for (const [key, entry] of entries) {
+  for (const key of keys) {
     if (!isSafeExtensionKey(key)) continue
-    const clonedEntry = safeCloneExtensionValue(entry)
+    const clonedEntry = readClonedEntry(value, key)
     if (clonedEntry !== undefined) {
       payload[key] = clonedEntry
     } else {
@@ -155,7 +168,7 @@ function copyExtensionFields(
   source: Record<string, unknown>,
   canonicalFields: ReadonlySet<string>
 ): void {
-  for (const [key, value] of Object.entries(source)) {
+  for (const key of Object.keys(source)) {
     if (
       !isSafeExtensionKey(key) ||
       canonicalFields.has(key) ||
@@ -163,7 +176,7 @@ function copyExtensionFields(
     ) {
       continue
     }
-    const clonedValue = safeCloneExtensionValue(value)
+    const clonedValue = readClonedEntry(source, key)
     if (clonedValue !== undefined) {
       target[key] = clonedValue
     } else {

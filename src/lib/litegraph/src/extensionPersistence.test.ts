@@ -193,8 +193,29 @@ describe('LGraphNode extension payload fallbacks', () => {
     )
     node.onSerialize = (data) => {
       Reflect.set(data, 'extensions', {
-        healthyExt: { note: 'kept' },
-        brokenExt: brokenValue
+        brokenExt: brokenValue,
+        healthyExt: { note: 'kept' }
+      })
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toEqual({ healthyExt: { note: 'kept' } })
+  })
+
+  it('omits only the entries whose accessors throw while serializing', () => {
+    const node = new LGraphNode('TestNode')
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'extensions', {
+        get brokenGetter(): never {
+          throw new Error('accessor failed')
+        },
+        nestedBroken: {
+          get inner(): never {
+            throw new Error('nested accessor failed')
+          }
+        },
+        healthyExt: { note: 'kept' }
       })
     }
 
