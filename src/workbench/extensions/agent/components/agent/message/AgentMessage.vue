@@ -56,7 +56,15 @@ const groups = computed<Group[]>(() => {
       tracePlaced = true
       out.push({ kind: 'trace' })
     } else if (part.type === 'text') {
-      out.push({ kind: 'text', part })
+      const prev = out.at(-1)
+      if (prev?.kind === 'text') {
+        prev.part = {
+          ...part,
+          text: `${prev.part.text}\n\n${part.text}`
+        }
+      } else {
+        out.push({ kind: 'text', part })
+      }
     } else if (part.type === 'tabLink') {
       const prev = out.at(-1)
       if (prev?.kind === 'tabLinks') prev.parts.push(part)
