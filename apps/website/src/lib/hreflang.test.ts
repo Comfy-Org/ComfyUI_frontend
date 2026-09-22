@@ -5,8 +5,11 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { isNoindexPathname } from '../config/indexing'
+import type { Locale } from '../config/locales'
+import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
 import { redirects } from '../config/redirects'
-import { routeOf, ZH_PREFIX } from '../utils/hreflangRoutes'
+import { isLocaleInvariantPath } from '../config/routes'
+import { routeOf } from '../utils/hreflangRoutes'
 import type { Alternate } from './hreflang'
 import {
   hreflangAlternates,
@@ -182,15 +185,7 @@ describe('ogLocaleAlternates', () => {
   })
 })
 
-/**
- * `isLocaleInvariantPath` is a hand-maintained list, and the page tree is the
- * thing it is meant to describe. Reading the tree back catches the entry nobody
- * added: an English page whose Chinese twin does not exist still advertises one,
- * which is a cluster pointing at a 404.
- *
- * Static routes only. A dynamic route's two `getStaticPaths` are free to produce
- * different slug sets, which the file tree cannot see.
- */
+/** Static routes only; dynamic `getStaticPaths` output needs the built-site audit. */
 describe('the emitter agrees with the page tree', () => {
   const pagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'pages')
 
@@ -201,43 +196,54 @@ describe('the emitter agrees with the page tree', () => {
       return entry.name.endsWith('.astro') ? [full] : []
     })
 
-  const english = new Set<string>()
-  const chinese = new Set<string>()
-  for (const file of astroFiles(pagesDir)) {
-    const rel = relative(pagesDir, file).split(sep).join('/')
-    if (rel.includes('[')) continue
-    const route = routeOf(`/src/pages/${rel}`)
-    if (route.startsWith(`${ZH_PREFIX}/`)) {
-      chinese.add(route.slice(ZH_PREFIX.length) || '/')
-    } else if (!route.startsWith('/ja/')) {
-      english.add(route)
-    }
-  }
-
   const redirected = new Set(
     Object.keys(redirects).map((source) => source.replace(/\/$/, ''))
   )
 
-  /** What `BaseLayout` ends up emitting for a route that was actually built. */
-  const clusters = (pathname: string): boolean =>
-    !redirected.has(pathname.replace(/\/$/, '')) &&
-    !isNoindexPathname(pathname) &&
-    hreflangAlternates(pathname, ORIGIN).length > 0
-
-  it('never advertises a zh-CN page that does not exist', () => {
-    const lying = [...english].filter(
-      (route) => clusters(route) && !chinese.has(route)
+  const publishedPages = astroFiles(pagesDir)
+    .map((file) => relative(pagesDir, file).split(sep).join('/'))
+    .filter((file) => !file.includes('['))
+    .map((file) => {
+      const pathname = routeOf(`/src/pages/${file}`)
+      const locale: Locale =
+        LOCALE_CODES.find(
+          (code) =>
+            code !== DEFAULT_LOCALE &&
+            pathname.startsWith(`${LOCALES[code].prefix}/`)
+        ) ?? DEFAULT_LOCALE
+      const unprefixed = pathname.slice(LOCALES[locale].prefix.length) || '/'
+      return { locale, pathname, unprefixed }
+    })
+    .filter(
+      ({ pathname, unprefixed }) =>
+        unprefixed !== '/404/' &&
+        !isLocaleInvariantPath(unprefixed) &&
+        !isNoindexPathname(pathname) &&
+        !redirected.has(pathname.replace(/\/$/, ''))
     )
+
+  const cases = publishedPages.map(({ pathname, unprefixed }) => ({
+    pathname,
+    expected: LOCALE_CODES.flatMap((locale) =>
+      publishedPages
+        .filter(
+          (page) => page.locale === locale && page.unprefixed === unprefixed
+        )
+        .map((page) => ({
+          hreflang: LOCALES[locale].hreflang,
+          href: new URL(page.pathname, ORIGIN).href
+        }))
+    )
+  }))
+
+  it.for(cases)('advertises exactly the published locales on $pathname', ({
+    pathname,
+    expected
+  }) => {
     expect(
-      lying,
-      'add a zh-CN page or mark the route locale-invariant'
-    ).toEqual([])
-  })
-
-  it('never advertises an English page that does not exist', () => {
-    const lying = [...chinese].filter(
-      (route) => clusters(`${ZH_PREFIX}${route}`) && !english.has(route)
-    )
-    expect(lying, 'the English twin was moved or removed').toEqual([])
+      hreflangAlternates(pathname, ORIGIN).filter(
+        (alternate) => alternate.hreflang !== 'x-default'
+      )
+    ).toEqual(expected)
   })
 })

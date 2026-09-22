@@ -25,6 +25,7 @@ export const LOCALES = {
 } as const satisfies Record<string, LocaleConfig>
 
 export type Locale = keyof typeof LOCALES
+export type Hreflang = (typeof LOCALES)[Locale]['hreflang']
 
 export function isLocale(value: string | undefined): value is Locale {
   return value !== undefined && Object.hasOwn(LOCALES, value)
@@ -40,11 +41,15 @@ export const NON_DEFAULT_LOCALE_PREFIXES = LOCALE_CODES.filter(
   (code) => code !== DEFAULT_LOCALE
 ).map((code) => LOCALES[code].prefix)
 
+function normalizeRoute(route: string): string {
+  return route.replace(/\/+$/, '') || '/'
+}
+
 const PARTIAL_LOCALE_ROUTES: Partial<Record<Locale, ReadonlySet<string>>> = {
-  ja: new Set(['/'])
+  ja: new Set(['/'].map(normalizeRoute))
 }
 
 export function localeHasRoute(locale: Locale, route: string): boolean {
   const served = PARTIAL_LOCALE_ROUTES[locale]
-  return served === undefined || served.has(route.replace(/\/+$/, '') || '/')
+  return served === undefined || served.has(normalizeRoute(route))
 }

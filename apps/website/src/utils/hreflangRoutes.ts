@@ -1,17 +1,12 @@
 /**
- * The route model `hreflangAudit.ts` checks the built site against, and the
- * page-tree oracle `hreflang.test.ts` checks the emitter's route list against.
- *
- * Deliberately independent of the production builder: `routeOf` maps files
- * in the page tree, and the audit compares emitted links with built routes.
- * Locale prefixes are shared policy, but neither check calls the emitter.
- * That catches link construction defects. Kept free of `import.meta.glob`
- * so a plain Node script can import it.
+ * Route helpers shared by the page-tree oracle and built-site audit.
+ * The oracle derives published routes from Astro files independently of
+ * `localeHasRoute`. The audit checks built pages against both publication
+ * policy and emitted links. Both use the configured locale prefixes.
+ * Kept free of `import.meta.glob` so a plain Node script can import it.
  */
 
-import { LOCALES, NON_DEFAULT_LOCALE_PREFIXES } from '../config/locales'
-
-export const ZH_PREFIX = LOCALES['zh-CN'].prefix
+import { NON_DEFAULT_LOCALE_PREFIXES } from '../config/locales'
 
 /**
  * `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory.

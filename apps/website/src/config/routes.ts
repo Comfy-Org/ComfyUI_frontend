@@ -59,8 +59,9 @@ type RouteKey = keyof typeof baseRoutes
 type Routes = Readonly<Record<RouteKey, string>>
 
 // Navigation and language metadata keep these routes on the English path.
-// Prefixing an English-only route can create a dead link; routes with a
-// translated page need a deliberate policy update before it is advertised.
+// A blind locale prefix would create dead links on English-only routes.
+// Translated variants enter navigation and language metadata when this policy
+// is updated.
 //
 // affiliateTerms: legal-reviewed English-only document. See the comment
 // header in src/pages/affiliates/terms.astro and the affiliate-terms i18n

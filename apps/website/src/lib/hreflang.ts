@@ -1,4 +1,4 @@
-import type { Locale } from '../config/locales'
+import type { Hreflang } from '../config/locales'
 import {
   LOCALE_CODES,
   LOCALES,
@@ -9,7 +9,7 @@ import {
 import { isLocaleInvariantPath } from '../config/routes'
 
 export interface Alternate {
-  hreflang: Locale | 'x-default'
+  hreflang: Hreflang | 'x-default'
   href: string
 }
 
