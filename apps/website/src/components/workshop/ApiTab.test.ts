@@ -183,4 +183,24 @@ describe('ApiTab', () => {
       expect(network).not.toHaveBeenCalled()
     }
   )
+
+  describe('API key link', () => {
+    it('stays plain with no workspace prop', () => {
+      render(ApiTab, { props: { contract, values } })
+
+      expect(screen.getByTestId('api-get-key')).toHaveAttribute(
+        'href',
+        'https://platform.comfy.org/profile/api-keys'
+      )
+    })
+
+    it('carries the given workspace', () => {
+      render(ApiTab, { props: { contract, values, workspaceId: 'ws-team' } })
+
+      expect(screen.getByTestId('api-get-key')).toHaveAttribute(
+        'href',
+        'https://platform.comfy.org/profile/api-keys?workspace=ws-team'
+      )
+    })
+  })
 })
