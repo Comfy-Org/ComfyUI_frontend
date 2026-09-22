@@ -249,10 +249,11 @@ interface SemanticLiveWidgetMutationPort {
  * `member`/`notMember` are the node's own real provenance from its
  * `comfyDynamic.autogrow` registration. Callers must never treat
  * `unavailable` as an authoritative "no"; `resolveAutogrowGroup` (in
- * `createGraphMutations`) falls back first to its own remembered answer
- * from an earlier `member`/`notMember` for the same node and name, and only
- * to `nameShapeAutogrowGroupOf`'s inference when it has never resolved that
- * name definitively either.
+ * `createGraphMutations`) falls back first to its own remembered answer from
+ * an earlier `member`/`notMember` for the same node and name, then to
+ * `nodeDefAutogrowGroupOf`'s read of the node TYPE's own static definition,
+ * and only to `nameShapeAutogrowGroupOf`'s inference when neither has ever
+ * resolved that name definitively.
  */
 export type LiveAutogrowGroupAnswer =
   | { readonly kind: 'unavailable' }
@@ -972,11 +973,16 @@ type RememberedAutogrowRead =
 type StagedAutogrowWrite =
   | {
       readonly kind: 'remember'
-      readonly key: string
+      readonly scope: GraphScope
+      readonly nodeId: NodeId
       readonly name: string
       readonly entry: RememberedAutogrowGroup
     }
-  | { readonly kind: 'forget'; readonly key: string }
+  | {
+      readonly kind: 'forget'
+      readonly scope: GraphScope
+      readonly nodeId: NodeId
+    }
 
 /**
  * The writes one batch wants to make to the follower's autogrow memory. They
@@ -984,9 +990,18 @@ type StagedAutogrowWrite =
  * learns) autogrow answers before a later queued mutation can still reject the
  * whole batch: a rejected batch must leave no trace, or a retry that finds the
  * live port `unavailable` classifies slots off an answer the store never
- * accepted. `read` sees this batch's own staged writes so resolution stays
- * self-consistent within the batch; `apply` is called once, after the batch
- * has both validated and committed.
+ * accepted. `read` sees this batch's own staged writes (via an O(1) shadow of
+ * the real store, not a replay) so resolution stays self-consistent within
+ * the batch.
+ *
+ * Each write is also journaled under the mutation index that staged it
+ * (`beginMutation` marks the start of a new one), so `applyMutation` can
+ * commit exactly the writes one mutation made, in the order they were
+ * staged, once -- and only once -- that mutation's own graph effects have
+ * actually landed. A batch whose commit throws partway through therefore
+ * keeps the memory writes for every mutation that committed before the
+ * throw, and drops the rest, instead of an all-or-nothing `apply()` that
+ * would discard already-committed mutations' writes too.
  */
 interface AutogrowMemoryDraft {
   read(
@@ -1003,7 +1018,8 @@ interface AutogrowMemoryDraft {
     group: string | undefined
   ): void
   forget(scope: GraphScope, nodeId: NodeId): void
-  apply(): void
+  beginMutation(mutationIndex: number): void
+  applyMutation(mutationIndex: number): void
 }
 
 /**
@@ -1019,13 +1035,17 @@ interface AutogrowMemoryDraft {
  * retained across graph scopes (production keeps one per cloud workflow while
  * resolving the current local workflow state on every batch), so the graph
  * scope is part of every key: the same node id, type and input name in another
- * root is a different node.
+ * root is a different node. The store nests a nested `Map` per scope field and
+ * node id rather than joining them into one composite string key: those are
+ * all plain strings whose constructors do not reject or escape an embedded
+ * NUL, so a joined key can alias two different tuples, while a `Map` compares
+ * each field by value with no such collision.
  */
 function createAutogrowMemory() {
-  const remembered = new Map<string, Map<string, RememberedAutogrowGroup>>()
-
-  const memoryKey = (scope: GraphScope, nodeId: NodeId): string =>
-    `${scope.rootGraphId}\u0000${scope.owningGraphId}\u0000${nodeKey(nodeId)}`
+  const remembered = new Map<
+    string,
+    Map<string, Map<string, Map<string, RememberedAutogrowGroup>>>
+  >()
 
   const currentNodeDef = (nodeType: string): ComfyNodeDefImpl | undefined =>
     useNodeDefStore().getNodeDefByName(nodeType)
@@ -1044,49 +1064,124 @@ function createAutogrowMemory() {
       ? { remembered: true, group: entry.group ?? undefined }
       : { remembered: false }
 
+  const nodeEntries = (
+    scope: GraphScope,
+    nodeId: NodeId
+  ): Map<string, RememberedAutogrowGroup> | undefined =>
+    remembered
+      .get(scope.rootGraphId)
+      ?.get(scope.owningGraphId)
+      ?.get(nodeKey(nodeId))
+
+  const ensureNodeEntries = (
+    scope: GraphScope,
+    nodeId: NodeId
+  ): Map<string, RememberedAutogrowGroup> => {
+    let forRoot = remembered.get(scope.rootGraphId)
+    if (!forRoot) {
+      forRoot = new Map()
+      remembered.set(scope.rootGraphId, forRoot)
+    }
+    let forOwning = forRoot.get(scope.owningGraphId)
+    if (!forOwning) {
+      forOwning = new Map()
+      forRoot.set(scope.owningGraphId, forOwning)
+    }
+    const key = nodeKey(nodeId)
+    let forNode = forOwning.get(key)
+    if (!forNode) {
+      forNode = new Map()
+      forOwning.set(key, forNode)
+    }
+    return forNode
+  }
+
+  const deleteNodeEntries = (scope: GraphScope, nodeId: NodeId): void => {
+    remembered
+      .get(scope.rootGraphId)
+      ?.get(scope.owningGraphId)
+      ?.delete(nodeKey(nodeId))
+  }
+
   return {
     draft(): AutogrowMemoryDraft {
-      const staged: StagedAutogrowWrite[] = []
+      // A per-node shadow of every staged write already merged in call
+      // order -- present (even as `null`, meaning "forgotten this batch")
+      // once a node has been touched -- so `read` is one lookup instead of a
+      // backward replay of every write the batch has staged so far.
+      const shadow = new Map<
+        string,
+        Map<string, RememberedAutogrowGroup> | null
+      >()
+      const journal = new Map<number, StagedAutogrowWrite[]>()
+      let currentMutationIndex = -1
+
+      const shadowKey = (scope: GraphScope, nodeId: NodeId): string =>
+        JSON.stringify([
+          scope.rootGraphId,
+          scope.owningGraphId,
+          nodeKey(nodeId)
+        ])
+
+      const stageWrite = (write: StagedAutogrowWrite): void => {
+        let forMutation = journal.get(currentMutationIndex)
+        if (!forMutation) {
+          forMutation = []
+          journal.set(currentMutationIndex, forMutation)
+        }
+        forMutation.push(write)
+      }
+
       return {
+        beginMutation(mutationIndex) {
+          currentMutationIndex = mutationIndex
+        },
         read(scope, nodeId, nodeType, name) {
-          const key = memoryKey(scope, nodeId)
-          for (let index = staged.length - 1; index >= 0; index--) {
-            const write = staged[index]
-            if (write.key !== key) continue
-            if (write.kind === 'forget') return { remembered: false }
-            if (write.name === name) return readEntry(write.entry, nodeType)
+          const key = shadowKey(scope, nodeId)
+          if (shadow.has(key)) {
+            return readEntry(shadow.get(key)?.get(name), nodeType)
           }
-          return readEntry(remembered.get(key)?.get(name), nodeType)
+          return readEntry(nodeEntries(scope, nodeId)?.get(name), nodeType)
         },
         remember(scope, nodeId, nodeType, name, group) {
-          staged.push({
-            kind: 'remember',
-            key: memoryKey(scope, nodeId),
-            name,
-            entry: {
-              nodeType,
-              nodeDef: currentNodeDef(nodeType),
-              group: group ?? null
-            }
-          })
+          const key = shadowKey(scope, nodeId)
+          const forNode = shadow.has(key)
+            ? (shadow.get(key) ?? new Map())
+            : new Map(nodeEntries(scope, nodeId))
+          const entry: RememberedAutogrowGroup = {
+            nodeType,
+            nodeDef: currentNodeDef(nodeType),
+            group: group ?? null
+          }
+          forNode.set(name, entry)
+          shadow.set(key, forNode)
+          stageWrite({ kind: 'remember', scope, nodeId, name, entry })
         },
         forget(scope, nodeId) {
-          staged.push({ kind: 'forget', key: memoryKey(scope, nodeId) })
+          shadow.set(shadowKey(scope, nodeId), null)
+          stageWrite({ kind: 'forget', scope, nodeId })
         },
-        apply() {
-          for (const write of staged) {
-            if (write.kind === 'forget') {
-              remembered.delete(write.key)
-              continue
+        applyMutation(mutationIndex) {
+          const writes = journal.get(mutationIndex)
+          if (!writes) return
+          journal.delete(mutationIndex)
+          for (const write of writes) {
+            switch (write.kind) {
+              case 'remember':
+                ensureNodeEntries(write.scope, write.nodeId).set(
+                  write.name,
+                  write.entry
+                )
+                break
+              case 'forget':
+                deleteNodeEntries(write.scope, write.nodeId)
+                break
+              default: {
+                const unhandled: never = write
+                return unhandled
+              }
             }
-            let forNode = remembered.get(write.key)
-            if (!forNode) {
-              forNode = new Map()
-              remembered.set(write.key, forNode)
-            }
-            forNode.set(write.name, write.entry)
           }
-          staged.length = 0
         }
       }
     }
@@ -1188,7 +1283,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     }
 
     const prepared: PreparedMutation[] = []
-    for (const mutation of queued) {
+    for (const [mutationIndex, mutation] of queued.entries()) {
+      memory.beginMutation(mutationIndex)
       switch (mutation.kind) {
         case 'addNode':
         case 'reconcileNode': {
@@ -1711,9 +1807,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   function commit(
     scope: GraphScope,
     prepared: readonly PreparedMutation[],
-    context: RemoteMutationContext
+    context: RemoteMutationContext,
+    memory: AutogrowMemoryDraft
   ): void {
-    for (const mutation of prepared) {
+    for (const [index, mutation] of prepared.entries()) {
       switch (mutation.kind) {
         case 'addNode':
         case 'reconcileNode':
@@ -1871,6 +1968,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           nodeStore.clearOwner(scope, context)
           break
       }
+      // Commits this mutation's own staged autogrow-memory writes now that
+      // its graph effects have landed, so a later mutation in the same
+      // batch throwing keeps every earlier mutation's writes instead of
+      // losing them to one all-or-nothing apply at the end of the batch.
+      memory.applyMutation(index)
     }
   }
 
@@ -1919,8 +2021,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       const prepared = prepare(memory, scope, queued)
       if (typeof prepared === 'string') return fail(prepared)
       offsetInsertedBatch(scope, existingIds, prepared)
-      commit(scope, prepared, context)
-      memory.apply()
+      commit(scope, prepared, context, memory)
       return true
     },
     addNode(payload, context) {

@@ -1889,15 +1889,14 @@ describe('graphMutations', () => {
 
   it("classifies an explicit-names autogrow spare and a numeric DynamicCombo child correctly on this GraphMutations instance's very first reconcile of each node, with pre-existing store state and the live port answering 'unavailable' from the start", () => {
     // No prior reconcile ever ran on this `graph` before the ones under
-    // test, so `rememberedAutogrowGroups` starts (and stays) empty -- the
-    // "activate/resubscribe" case where this follower's memory has nothing
-    // to fall back on yet, addressed in review comment 4065689832. Absent
-    // `nodeDefAutogrowGroupOf`, both nodes below would fall straight to
-    // `nameShapeAutogrowGroupOf` and get the WRONG answer for each: the
-    // explicit-names spare dropped (the false negative documented on
-    // `nameShapeAutogrowGroupOf`) and the DynamicCombo child kept (the
-    // false positive documented there) -- exactly the bug this whole fix
-    // chain exists to close.
+    // test, so its autogrow memory starts (and stays) empty for both nodes
+    // -- the "activate/resubscribe" case where this follower has nothing to
+    // fall back on yet. Absent `nodeDefAutogrowGroupOf`, both nodes below
+    // would fall straight to `nameShapeAutogrowGroupOf` and get the WRONG
+    // answer for each: the explicit-names spare dropped (the false negative
+    // documented on `nameShapeAutogrowGroupOf`) and the DynamicCombo child
+    // kept (the false positive documented there) -- exactly the bug this
+    // whole fix chain exists to close.
     useNodeDefStore().updateNodeDefs([
       mockNodeDef({
         name: 'AutogrowRefsNode',
@@ -1978,6 +1977,16 @@ describe('graphMutations', () => {
   })
 
   it('forgets a remembered autogrow answer when it commits a replacement of the node id it was answered for', () => {
+    // `RefsNode` is registered exactly once and never re-registered, so its
+    // `ComfyNodeDefImpl` identity stays fixed across the whole test: a stale
+    // memory entry recorded against it cannot be invalidated by the
+    // definition-identity check, only by an actual `memory.forget()`. The
+    // live port deliberately answers 'notMember' for 'refs.a' during the
+    // prime step below, contradicting `RefsNode`'s own static definition
+    // (which lists 'a' as a real member) -- a lie only the test's mock can
+    // tell, so that a surviving stale answer is observable as a WRONG
+    // classification, not one that coincidentally agrees with the correct,
+    // freshly-computed one from `nodeDefAutogrowGroupOf`.
     useNodeDefStore().updateNodeDefs([
       mockNodeDef({
         name: 'RefsNode',
@@ -1985,7 +1994,7 @@ describe('graphMutations', () => {
           required: {
             refs: [
               'COMFY_AUTOGROW_V3',
-              { template: { input: {} }, names: ['a', 'b'] }
+              { template: { input: {}, names: ['a', 'b'] } }
             ]
           }
         }
@@ -1997,9 +2006,11 @@ describe('graphMutations', () => {
     ])
 
     let liveReachable = true
+    let lieAboutRefsA = false
     const graph = mutations({
       autogrowGroupOf: (_scope, _nodeId, name) => {
         if (!liveReachable) return { kind: 'unavailable' }
+        if (lieAboutRefsA && name === 'refs.a') return { kind: 'notMember' }
         return name.startsWith('refs.')
           ? { kind: 'member', group: 'refs' }
           : { kind: 'notMember' }
@@ -2010,10 +2021,16 @@ describe('graphMutations', () => {
       batch.addNode({
         ...node(2),
         type: 'RefsNode',
-        inputs: [{ name: 'refs.b', type: 'IMAGE', link: null }]
+        inputs: [
+          { name: 'refs.b', type: 'IMAGE', link: null },
+          { name: 'refs.a', type: 'IMAGE', link: null }
+        ]
       })
     })
 
+    // Prime: 'refs.a' is a live-only leftover the document doesn't name, so
+    // it is classified (and, per the lie above, remembered as `notMember`).
+    lieAboutRefsA = true
     expect(
       graph.batch({ ...context, opId: 'prime' }, (batch) => {
         batch.reconcileNode({
@@ -2024,8 +2041,11 @@ describe('graphMutations', () => {
       })
     ).toBe(true)
 
+    // Replace away from `RefsNode` and back to it, re-growing 'refs.a' live
+    // each time -- an identity that must be forgotten twice on this node id,
+    // once per type change, or the primed lie above outlives both.
     expect(
-      graph.batch({ ...context, opId: 'replace-type' }, (batch) => {
+      graph.batch({ ...context, opId: 'replace-away' }, (batch) => {
         batch.reconcileNode({
           ...node(2),
           type: 'PlainNode',
@@ -2036,16 +2056,33 @@ describe('graphMutations', () => {
         })
       })
     ).toBe(true)
+    expect(
+      graph.batch({ ...context, opId: 'replace-back' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          type: 'RefsNode',
+          inputs: [
+            { name: 'refs.b', type: 'IMAGE', link: null },
+            { name: 'refs.a', type: 'IMAGE', link: null }
+          ]
+        })
+      })
+    ).toBe(true)
 
+    // Back on `RefsNode` (the identical, never-re-registered definition),
+    // with the live port unavailable and 'refs.a' live-only again: a correct
+    // forget falls through to `nodeDefAutogrowGroupOf`, which says 'refs.a'
+    // really is a member, so it is kept. A surviving stale `notMember` from
+    // the prime step drops it instead.
     liveReachable = false
     expect(
       graph.batch(
-        { ...context, opId: 'unavailable-after-replace' },
+        { ...context, opId: 'unavailable-after-round-trip' },
         (batch) => {
           batch.reconcileNode({
             ...node(2),
-            type: 'PlainNode',
-            inputs: [{ name: 'keep', type: 'IMAGE' }]
+            type: 'RefsNode',
+            inputs: [{ name: 'refs.b', type: 'IMAGE' }]
           })
         }
       )
@@ -2054,7 +2091,123 @@ describe('graphMutations', () => {
     const target = useNodeDataStore()
       .getGraphNodesFor('root', 'root')
       .find(({ id }) => id === toNodeId(2))
-    expect(target?.inputs.map(({ name }) => name)).toEqual(['keep'])
+    expect(target?.inputs.map(({ name }) => name)).toEqual(['refs.b', 'refs.a'])
+  })
+
+  it("keeps an earlier mutation's remembered autogrow answer when a later mutation in the same batch throws", () => {
+    // `commit()` is not atomic -- it drives independent stores and an
+    // injected layout port across every prepared mutation in order. A
+    // memory write is committed to the real store right after ITS OWN
+    // mutation's graph effects land, not deferred to a single apply-them-all
+    // step at the end of the batch, so a later mutation throwing keeps this
+    // one's write instead of discarding it along with everything the throw
+    // itself prevented. The live port again lies about 'refs.a' (a real
+    // member per `RefsNode`'s own definition) so the memory write is
+    // observable: if the throw had discarded it, resolution would fall
+    // through to the correct, contradicting answer instead.
+    useNodeDefStore().updateNodeDefs([
+      mockNodeDef({
+        name: 'RefsNode',
+        input: {
+          required: {
+            refs: [
+              'COMFY_AUTOGROW_V3',
+              { template: { input: {}, names: ['a', 'b'] } }
+            ]
+          }
+        }
+      })
+    ])
+
+    let liveReachable = true
+    const graph = mutations({
+      autogrowGroupOf: (_scope, _nodeId, name) => {
+        if (!liveReachable) return { kind: 'unavailable' }
+        if (name === 'refs.a') return { kind: 'notMember' }
+        return name.startsWith('refs.')
+          ? { kind: 'member', group: 'refs' }
+          : { kind: 'notMember' }
+      }
+    })
+    graph.batch(context, (batch) => {
+      batch.addNode(node(1))
+      batch.addNode({
+        ...node(2),
+        type: 'RefsNode',
+        inputs: [
+          { name: 'refs.b', type: 'IMAGE', link: null },
+          { name: 'refs.a', type: 'IMAGE', link: null }
+        ]
+      })
+    })
+
+    createLayout.mockImplementationOnce(() => {
+      throw new Error('layout port failed')
+    })
+    expect(() =>
+      graph.batch({ ...context, opId: 'throwing-batch' }, (batch) => {
+        // First mutation: commits and remembers the lie for 'refs.a'. Its
+        // own reconcile also drops 'refs.a' from the live node (consistent
+        // with the lie) -- that drop is a real, unconditional graph effect,
+        // not what this test is about.
+        batch.reconcileNode({
+          ...node(2),
+          type: 'RefsNode',
+          inputs: [{ name: 'refs.b', type: 'IMAGE' }]
+        })
+        // Second mutation: its own layout call throws, so the batch never
+        // finishes and the store never registers node 3.
+        batch.addNode(node(3))
+      })
+    ).toThrow('layout port failed')
+
+    // Re-introduce 'refs.a' as a live-only leftover directly through the
+    // store (bypassing graphMutations' own replace/forget path, which would
+    // itself forget the very memory this test is trying to observe), so a
+    // later reconcile has the same classification question to answer again
+    // -- this time reading memory instead of the live port, which is now
+    // unavailable.
+    const target = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    assert(target)
+    useNodeDataStore().updateNodeSlots(
+      scope,
+      target.id,
+      {
+        inputs: [
+          ...target.inputs,
+          {
+            name: 'refs.a',
+            type: 'IMAGE',
+            link: null,
+            boundingRect: [0, 0, 0, 0]
+          }
+        ],
+        outputs: target.outputs
+      },
+      context
+    )
+
+    liveReachable = false
+    expect(
+      graph.batch({ ...context, opId: 'after-throw' }, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          type: 'RefsNode',
+          inputs: [{ name: 'refs.b', type: 'IMAGE' }]
+        })
+      })
+    ).toBe(true)
+
+    // The mutation that committed before the throw kept its remembered lie
+    // ('refs.a' is `notMember`), so this later, live-unavailable reconcile
+    // trusts it and drops 'refs.a' again instead of falling through to
+    // `nodeDefAutogrowGroupOf`'s correct (and here, contradicting) answer.
+    const after = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(2))
+    expect(after?.inputs.map(({ name }) => name)).toEqual(['refs.b'])
   })
 
   it("does not let one graph scope read another scope's remembered autogrow answer on the same GraphMutations instance", () => {
