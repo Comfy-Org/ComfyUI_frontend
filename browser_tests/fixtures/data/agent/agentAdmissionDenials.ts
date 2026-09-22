@@ -1,7 +1,14 @@
-import type { AgentAdmissionError } from '@comfyorg/ingest-types'
+import type {
+  AgentAdmissionError,
+  AgentPostMessageErrors
+} from '@comfyorg/ingest-types'
 
 export type AgentAdmissionDenialMock = {
-  status: number
+  status: {
+    [Status in keyof AgentPostMessageErrors]: AgentPostMessageErrors[Status] extends AgentAdmissionError
+      ? Status
+      : never
+  }[keyof AgentPostMessageErrors]
   body: AgentAdmissionError
   retryAfterSeconds: number
 }
