@@ -183,6 +183,7 @@ export class AgentConversationHarness {
   private readonly seenIds: Set<string>
   private readonly expectations: ExpectedTurn[]
   private postedTurns = 0
+  private lastAddGhosted = false
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
@@ -261,9 +262,11 @@ export class AgentConversationHarness {
       new URL(response.url()).pathname.endsWith('/api/object_info')
     )
     await bootAgentApp(this.page, agentFlag, {
+      vueNodes,
       settings: {
-        'Comfy.VueNodes.Enabled': vueNodes,
-        'Comfy.Graph.CanvasInfo': false
+        'Comfy.Graph.CanvasInfo': false,
+        'Comfy.NodeSearchBoxImpl': 'default',
+        'Comfy.NodeSearchBoxImpl.FollowCursor': true
       },
       // Replayed nodes materialize from registered node types; the recordings use
       // core nodes only, so a case needing another node supplies its definition
@@ -798,11 +801,28 @@ export class AgentConversationHarness {
     await expect(results.first()).toContainText('Note')
     await this.page.keyboard.press('Enter')
     await expect(dialog).toBeHidden()
+
+    this.lastAddGhosted = await this.page.evaluate(() => {
+      const app = window.app!
+      const ghostNodeId = app.canvas.state.ghostNodeId
+      const ghostNode =
+        ghostNodeId === null
+          ? null
+          : app.graph.nodes.find(
+              (node) => String(node.id) === String(ghostNodeId)
+            )
+      return Boolean(ghostNode?.flags.ghost)
+    })
+
     await this.page.mouse.click(position.x, position.y)
     const after = await this.graphNodeIds()
     const [added] = after.filter((id) => !before.has(id))
     if (!added) throw new Error('the search box add produced no node')
     return added
+  }
+
+  get placementWasGhosted(): boolean {
+    return this.lastAddGhosted
   }
 
   // Records the live node set the moment a tab's canvas finishes rebuilding,
