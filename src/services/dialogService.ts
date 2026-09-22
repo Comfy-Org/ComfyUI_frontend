@@ -60,6 +60,30 @@ const HUG_CONTENT_CLASS =
  */
 const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
 
+// A type alias, not an interface: `showDialog`'s props are index-signature
+// typed, and only object literal types get an implicit index signature.
+type TopUpCreditsDialogOptions = {
+  isInsufficientCredits?: boolean
+  /**
+   * Surface that asked for the top-up, threaded on to the top-up journey and
+   * preserved across the subscription-required fall-through so a caller's
+   * attribution is not rewritten by an internal redirect.
+   */
+  source?: PaymentIntentSource
+}
+
+/**
+ * Why the subscription dialog stands in for a top-up the workspace cannot
+ * make. A caller that named the surface keeps it; the balance state only
+ * decides the reason when nobody did.
+ */
+function topUpFallbackReason(
+  options?: TopUpCreditsDialogOptions
+): PaymentIntentSource {
+  if (options?.source) return options.source
+  return options?.isInsufficientCredits ? 'out_of_credits' : 'top_up_blocked'
+}
+
 export type ConfirmationDialogType =
   | 'default'
   | 'overwrite'
@@ -469,15 +493,7 @@ export const useDialogService = () => {
     return enqueuePrompt<boolean | null>(key, show)
   }
 
-  async function showTopUpCreditsDialog(options?: {
-    isInsufficientCredits?: boolean
-    /**
-     * Surface that asked for the top-up, threaded on to the top-up journey and
-     * preserved across the subscription-required fall-through below so a
-     * caller's attribution is not rewritten by an internal redirect.
-     */
-    source?: PaymentIntentSource
-  }) {
+  async function showTopUpCreditsDialog(options?: TopUpCreditsDialogOptions) {
     const { type } = useBillingContext()
     const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
       useBillingCapabilities()
@@ -487,9 +503,7 @@ export const useDialogService = () => {
     if (!isReady.value) return
     if (!canTopUp.value && canSubscribeSelfServe.value) {
       await showSubscriptionRequiredDialog({
-        reason:
-          options?.source ??
-          (options?.isInsufficientCredits ? 'out_of_credits' : 'top_up_blocked')
+        reason: topUpFallbackReason(options)
       })
       return
     }
