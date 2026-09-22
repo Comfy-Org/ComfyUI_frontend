@@ -20,22 +20,19 @@ describe('ES2023 array method restrictions', () => {
     ['toSorted', 'items.toSorted()'],
     ['toSpliced', 'items.toSpliced(0, 1)'],
     ['with', 'items.with(0, 1)']
-  ] as const)(
-    'rejects %s calls in runtime files',
-    async ([_name, code]) => {
-      const [result] = await eslint.lintText(`const items = [1, 2]\n${code}`, {
-        filePath: runtimeFilePath
-      })
+  ] as const)('rejects %s calls in runtime files', async ([_name, code]) => {
+    const [result] = await eslint.lintText(`const items = [1, 2]\n${code}`, {
+      filePath: runtimeFilePath
+    })
 
-      expect(result.messages).toEqual([
-        expect.objectContaining({
-          ruleId: 'es2022-compat/no-array-copy-method',
-          severity: 2,
-          message: restrictionMessage
-        })
-      ])
-    }
-  )
+    expect(result.messages).toEqual([
+      expect.objectContaining({
+        ruleId: 'es2022-compat/no-array-copy-method',
+        severity: 2,
+        message: restrictionMessage
+      })
+    ])
+  })
 
   it.for([
     ['dotted', 'items.toSorted()'],

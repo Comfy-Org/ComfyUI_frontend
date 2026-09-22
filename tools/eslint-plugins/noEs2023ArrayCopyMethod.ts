@@ -1,6 +1,6 @@
 import { ESLintUtils } from '@typescript-eslint/utils'
 import type { TSESTree } from '@typescript-eslint/utils'
-import type { ESLint } from 'eslint'
+import type { ESLint, Rule } from 'eslint'
 import type ts from 'typescript'
 
 const es2023ArrayCopyMethods = new Set([
@@ -56,7 +56,23 @@ function getTemplateName(
   if (!member.computed) return
   if (member.property.type !== 'TemplateLiteral') return
   if (member.property.expressions.length !== 0) return
-  return member.property.quasis[0].value.cooked ?? undefined
+  return normalizeCooked(member.property.quasis[0].value.cooked)
+}
+
+function normalizeCooked(cooked: string | null): string | undefined {
+  return cooked ?? undefined
+}
+
+function getStaticMethodName(member: TSESTree.MemberExpression) {
+  return (
+    getIdentifierName(member) ??
+    getLiteralName(member) ??
+    getTemplateName(member)
+  )
+}
+
+function isArrayCopyMethod(methodName: string | undefined): boolean {
+  return methodName !== undefined && es2023ArrayCopyMethods.has(methodName)
 }
 
 const typedRule = ESLintUtils.RuleCreator.withoutDocs({
@@ -82,20 +98,19 @@ const typedRule = ESLintUtils.RuleCreator.withoutDocs({
       return propertyType.isStringLiteral() ? propertyType.value : undefined
     }
 
+    function getMethodName(member: TSESTree.MemberExpression) {
+      return getStaticMethodName(member) ?? getComputedIdentifierName(member)
+    }
+
+    function hasArrayReceiver(member: TSESTree.MemberExpression): boolean {
+      const receiver = services.esTreeNodeToTSNodeMap.get(member.object)
+      return isArrayType(checker, checker.getTypeAtLocation(receiver))
+    }
+
     function reportArrayCopyMethod(node: TSESTree.CallExpression) {
       if (node.callee.type !== 'MemberExpression') return
-      const methodName =
-        getIdentifierName(node.callee) ??
-        getLiteralName(node.callee) ??
-        getTemplateName(node.callee) ??
-        getComputedIdentifierName(node.callee)
-      if (
-        methodName === undefined ||
-        !es2023ArrayCopyMethods.has(methodName)
-      )
-        return
-      const receiver = services.esTreeNodeToTSNodeMap.get(node.callee.object)
-      if (!isArrayType(checker, checker.getTypeAtLocation(receiver))) return
+      if (!isArrayCopyMethod(getMethodName(node.callee))) return
+      if (!hasArrayReceiver(node.callee)) return
       context.report({ node, messageId: 'unsupported' })
     }
 
@@ -106,5 +121,9 @@ const typedRule = ESLintUtils.RuleCreator.withoutDocs({
 })
 
 export const es2022CompatPlugin: ESLint.Plugin = {
-  rules: { 'no-array-copy-method': typedRule }
+  // ESLint 10 and @typescript-eslint/utils expose structurally incompatible
+  // RuleModule context types even though ESLint accepts this rule at runtime.
+  rules: {
+    'no-array-copy-method': typedRule as unknown as Rule.RuleModule
+  }
 }
