@@ -43,8 +43,11 @@ import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { zComfyWorkflow, zComfyWorkflow1 } from '@/platform/workflow/validation/schemas/workflowSchema';
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema';
+import {
+  zComfyWorkflow,
+  zComfyWorkflow1
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -503,18 +506,23 @@ function temporaryWorkflowContent(
   if (!workflow.isTemporary || workflow.content === null) return undefined
   try {
     const parsed: unknown = JSON.parse(workflow.content)
-    const result =
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      !Array.isArray(parsed) &&
-      'version' in parsed &&
-      parsed.version === 1
-        ? zComfyWorkflow1.safeParse(parsed)
-        : zComfyWorkflow.safeParse(parsed)
+    const schema = hasWorkflowV1Version(parsed)
+      ? zComfyWorkflow1
+      : zComfyWorkflow
+    const result = schema.safeParse(parsed)
     return result.success ? result.data : undefined
   } catch {
     return undefined
   }
+}
+
+function hasWorkflowV1Version(value: unknown): value is { version: 1 } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'version' in value &&
+    value.version === 1
+  )
 }
 
 const selectedTargetTab = computed<ActiveTab | null>(() => {
