@@ -1051,23 +1051,61 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   }
 
   /**
+   * A reconcile's doc snapshot predates a widget whose live value already
+   * changed locally (a human edit, or any write that reached the widget
+   * without going through this module's own commit) since it was last read
+   * from the doc. Overwriting it here would replay stale text over what the
+   * user is looking at (PM-1303/PM-1310 "hypothesis C"); an explicit
+   * single-widget `setWidget` op is unaffected, since it calls
+   * `setWidgetValue` directly rather than through this function.
+   *
+   * The mark is one-shot: a hit here clears it. This one skip is the local
+   * edit's whole protection against the snapshot that predated it - not a
+   * standing "never reconcile this widget again", which would leave a widget
+   * a human once touched unable to ever pick up a genuinely newer remote
+   * value.
+   */
+  function skipStaleReconcile(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string
+  ): boolean {
+    const id = widgetId(scope.rootGraphId, nodeId, name)
+    if (!isWidgetId(id) || !widgetStore.isLocallyDirty(id)) return false
+    widgetStore.clearLocallyDirty(id)
+    return true
+  }
+
+  /**
    * A doc entry for a node that is already live is a value patch: the live
    * widgets keep their registered type, options, and state identity, and a
    * value the payload omits keeps its current value. Positional values bind
    * to the serialized widgets in order, the same order `LGraphNode.serialize`
    * wrote them in.
+   *
+   * `guardLocalEdits` skips a widget via {@link skipStaleReconcile}; it is only set
+   * for a plain node's `reconcileNode`. A subgraph host's `reconcileNodeFields`
+   * leaves it off: a host's promoted widgets are wired by `SubgraphNode`'s own
+   * projection (`promotedWidgetStoreProjection.ts`), which writes them
+   * directly (no `RemoteMutationContext`) as a routine, structural part of
+   * (re)attaching the host - not a human edit - so the same signal that
+   * catches a stale reconcile on a plain widget would misfire here.
    */
   function applyWidgetValues(
     scope: GraphScope,
     nodeId: NodeId,
     widgets: WidgetValuePayload,
-    context: RemoteMutationContext
+    context: RemoteMutationContext,
+    guardLocalEdits: boolean
   ): void {
     switch (widgets.kind) {
       case 'omitted':
         return
       case 'named':
         for (const [name, value] of widgets.values) {
+          if (guardLocalEdits && skipStaleReconcile(scope, nodeId, name)) {
+            continue
+          }
           setWidgetValue(scope, nodeId, name, value, context)
         }
         return
@@ -1077,6 +1115,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           .filter((widget) => widget.serialize !== false)
           .slice(0, widgets.values.length)
         for (const [index, widget] of serialized.entries()) {
+          if (
+            guardLocalEdits &&
+            skipStaleReconcile(scope, nodeId, widget.name)
+          ) {
+            continue
+          }
           setWidgetValue(
             scope,
             nodeId,
@@ -1123,7 +1167,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               scope,
               mutation.node.state.id,
               mutation.node.widgets,
-              context
+              context,
+              true
             )
             break
           }
@@ -1146,7 +1191,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             mutation.state,
             context
           )
-          applyWidgetValues(scope, mutation.state.id, mutation.widgets, context)
+          applyWidgetValues(
+            scope,
+            mutation.state.id,
+            mutation.widgets,
+            context,
+            false
+          )
           break
         }
         case 'setWidget': {
