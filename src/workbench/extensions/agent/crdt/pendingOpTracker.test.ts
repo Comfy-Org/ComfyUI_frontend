@@ -42,7 +42,12 @@ describe('createPendingOpTracker', () => {
 
   beforeEach(() => {
     events = []
-    tracker = createPendingOpTracker({ onEvent: (event) => events.push(event) })
+    // These cases are about settlement; `pending` is covered on its own below.
+    tracker = createPendingOpTracker({
+      onEvent: (event) => {
+        if (event.type !== 'pending') events.push(event)
+      }
+    })
     ops = [addNode('op-1', 1), addNode('op-2', 2), addNode('op-3', 3)]
   })
 
@@ -54,6 +59,28 @@ describe('createPendingOpTracker', () => {
       'queued',
       'queued'
     ])
+  })
+
+  it('s3-opt-3: announces newly minted ops as pending, once per op id', () => {
+    const all: PendingOpTrackerEvent[] = []
+    const announcing = createPendingOpTracker({
+      onEvent: (event) => all.push(event)
+    })
+
+    announcing.onBatchMinted(ops)
+    expect(all).toEqual([
+      { type: 'pending', opIds: ['op-1', 'op-2', 'op-3'], ops }
+    ])
+
+    // A re-minted id is refused by the ledger, so only the new op is pending.
+    const op4 = addNode('op-4', 4)
+    announcing.onBatchMinted([ops[1], op4])
+    expect(all).toHaveLength(2)
+    expect(all[1]).toEqual({ type: 'pending', opIds: ['op-4'], ops: [op4] })
+
+    // Nothing new: no event at all.
+    announcing.onBatchMinted([ops[0]])
+    expect(all).toHaveLength(2)
   })
 
   it('marks transmitted ops in flight and counts each attempt', () => {
@@ -128,7 +155,9 @@ describe('createPendingOpTracker', () => {
     it('clears immediately when the projected seq already covers the ack seq', () => {
       tracker = createPendingOpTracker({
         currentSeq: () => 42,
-        onEvent: (event) => events.push(event)
+        onEvent: (event) => {
+          if (event.type !== 'pending') events.push(event)
+        }
       })
       tracker.onBatchMinted(ops)
       tracker.onBatchTransmitted(ops)
