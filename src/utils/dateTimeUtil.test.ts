@@ -210,14 +210,21 @@ describe('formatClockTime', () => {
       hour: 'numeric'
     }).resolvedOptions()
     const applicationLocale =
-      systemHourCycle === 'h11' || systemHourCycle === 'h12' ? 'de-DE' : 'en-US'
+      systemHourCycle === 'h11' || systemHourCycle === 'h12' ? 'ja-JP' : 'ar-EG'
     const expected = new Intl.DateTimeFormat(applicationLocale, {
       hour: 'numeric',
       minute: '2-digit',
       second: '2-digit',
       hourCycle: systemHourCycle
     }).format(ts)
+    const systemFormatted = new Intl.DateTimeFormat(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: systemHourCycle
+    }).format(ts)
 
+    expect(expected).not.toBe(systemFormatted)
     expect(formatClockTime(ts, applicationLocale)).toBe(expected)
   })
 })
