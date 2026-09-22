@@ -154,11 +154,14 @@ agent store owns the fact; everything else is a projection of it.
    and the selection toolbox share one check and a command body carries no
    policy of its own. The sync in decision 4 writes that flag from a second
    owner set, the module-level `graphMutationLockOwners` in
-   `useCanvasPickingPolicySync.ts`, which shares owner identities and release
-   semantics with each canvas pin's `owners`: the flag reads `true` while
-   any live sync owner projects picking, and only the last owner to release,
-   because picking ended or its scope was disposed, clears it, so disposing
-   one of several live owners cannot unlock the others.
+   `useCanvasPickingPolicySync.ts`. It holds the same owner symbols as each
+   canvas pin's `owners`, but the two sets do not release alike: on canvas
+   replacement `pinSelectOnly()` releases the owner from the old canvas's pin
+   and acquires it on the new one, while `graphMutationLockOwners` keeps the
+   owner continuously until picking ends or the sync scope is disposed. The flag
+   reads `true` while any live sync owner projects picking, and only the last
+   owner to release clears it, so disposing one of several live owners cannot
+   unlock the others.
    `commandPolicyStore` holds nothing else and imports no
    canvas or app module, so the command store reads the policy synchronously
    and the decision, the predicate and the command body all run in the
@@ -233,11 +236,12 @@ agent store owns the fact; everything else is a projection of it.
   every reader. A value written to it during picking is recorded and becomes
   the value restored when picking ends; a value it held before picking is
   restored otherwise. The restore happens exactly once, when the last sync
-  owner releases. `commandPolicyStore.graphMutationsLocked` reads `true`
-  while `graphMutationLockOwners`, a second set with the same owner
-  identities and release semantics as the pin's `owners`, is non-empty, and
-  is cleared by the last owner to release, so a disposed scope never leaves
-  mutating commands refused.
+  owner releases. `commandPolicyStore.graphMutationsLocked` reads `true` while
+  `graphMutationLockOwners` is non-empty and is cleared by the last owner to
+  release, so a disposed scope never leaves mutating commands refused. That set
+  holds the same owner symbols as the pin's `owners` but is not released on
+  canvas replacement: the pin owner moves from the old canvas to the new one,
+  while the lock owner stays until picking ends or the scope is disposed.
 - Classic picking keeps node selection, empty-canvas preservation, panning
   and the selection rectangle; alt-click clone, reroute and link drags from
   the canvas, link menus, group title-bar drags, click-to-front reordering,
