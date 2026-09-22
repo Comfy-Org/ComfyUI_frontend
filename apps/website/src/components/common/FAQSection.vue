@@ -7,44 +7,36 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import SafeRichText from './SafeRichTextContent'
 
-export interface FaqItem {
-  question: string
-  answer: string
-}
-
 const {
   locale = 'en',
-  heading,
-  items,
   headingKey,
   faqPrefix,
-  faqCount = 0,
+  faqCount,
   footerKey
 } = defineProps<{
   locale?: Locale
-  /** Copy already resolved by a page that keeps its own translations. */
-  heading?: string
-  items?: readonly FaqItem[]
-  headingKey?: TranslationKey
-  faqPrefix?: string
-  faqCount?: number
+  headingKey: TranslationKey
+  faqPrefix: string
+  faqCount: number
   footerKey?: TranslationKey
 }>()
 
-const title = computed(
-  () => heading ?? (headingKey === undefined ? '' : t(headingKey, locale))
+const faqKeys: Array<{ q: TranslationKey; a: TranslationKey }> = Array.from(
+  { length: faqCount },
+  (_, i) => ({
+    q: `${faqPrefix}.${i + 1}.q` as TranslationKey,
+    a: `${faqPrefix}.${i + 1}.a` as TranslationKey
+  })
 )
 
-const faqs = computed<readonly FaqItem[]>(
-  () =>
-    items ??
-    Array.from({ length: faqCount }, (_, i) => ({
-      question: t(`${faqPrefix}.${i + 1}.q` as TranslationKey, locale),
-      answer: t(`${faqPrefix}.${i + 1}.a` as TranslationKey, locale)
-    }))
+const faqs = computed(() =>
+  faqKeys.map(({ q, a }) => ({
+    question: t(q, locale),
+    answer: t(a, locale)
+  }))
 )
 
-const expanded = reactive(faqs.value.map(() => false))
+const expanded = reactive(faqKeys.map(() => false))
 
 function toggle(index: number) {
   expanded[index] = !expanded[index]
@@ -58,7 +50,7 @@ function toggle(index: number) {
         class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 md:top-28 md:w-80 md:py-0"
       >
         <h2 class="text-4xl font-light text-primary-comfy-canvas md:text-5xl">
-          {{ title }}
+          {{ t(headingKey, locale) }}
         </h2>
       </div>
 

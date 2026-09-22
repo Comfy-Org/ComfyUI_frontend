@@ -58,30 +58,12 @@ export const modelsGalleryCards: ModelsGalleryCard[] = [
     media: [{ src: `${AI_MODELS_BASE}/nano-banana-pro.webp` }]
   },
   {
-    titleKey: 'cloud.aiModels.card.chatgptImages25',
+    titleKey: 'cloud.aiModels.card.gptImage2',
     badgeIcon: '/icons/ai-models/openai.svg',
     media: [
       {
         src: `${AI_MODELS_BASE}/gpt-image-2.webm`,
         trackSrc: `${AI_MODELS_BASE}/gpt-image-2.vtt`
-      }
-    ]
-  },
-  {
-    titleKey: 'cloud.aiModels.card.klingAi30',
-    badgeIcon: '/icons/ai-models/kling.svg',
-    media: [
-      {
-        src: 'https://media.comfy.org/website/router/kling-3-video.webp'
-      }
-    ]
-  },
-  {
-    titleKey: 'cloud.aiModels.card.flux3',
-    badgeIcon: '/icons/ai-models/bfl.svg',
-    media: [
-      {
-        src: 'https://media.comfy.org/website/router/flux-3-t2v.webp'
       }
     ]
   }
