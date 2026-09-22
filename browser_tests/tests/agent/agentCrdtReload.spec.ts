@@ -5,6 +5,7 @@ import type {
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
 
+import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 import { AGENT_CRDT_DOC_ID_SESSION_KEY } from '@/platform/workflow/persistence/base/storageKeyConstants'
 import {
   AGENT_WORKFLOW_TAB_BINDINGS_STORAGE_KEY,
@@ -44,8 +45,9 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     await page.route('**/api/internal/cloud_analytics', (route) =>
       route.fulfill(jsonRoute({}))
     )
+    const folders: ModelFolderInfo[] = []
     await page.route('**/api/experiment/models', (route) =>
-      route.fulfill(jsonRoute([]))
+      route.fulfill(jsonRoute(folders))
     )
     await page.route(/\/api\/workflows\?limit=100$/, (route) =>
       route.fulfill(jsonRoute(workflows))
