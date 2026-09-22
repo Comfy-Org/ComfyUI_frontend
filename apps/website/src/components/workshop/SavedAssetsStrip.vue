@@ -1,15 +1,7 @@
 <script setup lang="ts">
-import {
-  Download,
-  ExternalLink,
-  File as FileIcon,
-  Loader2,
-  X
-} from '@lucide/vue'
+import { ExternalLink } from '@lucide/vue'
 import { computed, onMounted, onScopeDispose, ref, watch } from 'vue'
-import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 
-import Button from '@/components/ui/button/Button.vue'
 import {
   accessWorkshopAsset,
   cancelWorkshopGeneration,
@@ -20,15 +12,18 @@ import {
 } from '../../config/workshop-generation-assets'
 import type { SavedGeneration } from '../../config/workshop-generation-assets'
 import { WORKSHOP_ASSETS_URL } from '../../config/workshop-env'
-import { downloadOutput } from '../../config/workshop-output-download'
 import {
   mergeGenerations,
-  savedAssetFileName,
   savedAssetTiles
 } from '../../lib/workshop/saved-assets'
-import type { SavedAsset } from '../../lib/workshop/saved-assets'
+import type {
+  SavedAsset,
+  SavedAssetTile as SavedAssetTileData
+} from '../../lib/workshop/saved-assets'
 import { t } from '../../i18n/translations'
 import type { Locale } from '../../i18n/translations'
+import SavedAssetPreview from './SavedAssetPreview.vue'
+import SavedAssetTile from './SavedAssetTile.vue'
 
 const {
   modelId,
@@ -53,7 +48,6 @@ const failed = ref(false)
 const viewingKey = ref<string>()
 const cancelling = ref(false)
 const cancelFailed = ref(false)
-const downloadFailed = ref(false)
 
 const retried = new Set<string>()
 const controller = new AbortController()
@@ -77,86 +71,109 @@ const viewing = computed(
     savedTiles.value.find((tile) => tile.requestId === viewingKey.value)
 )
 const viewingUrl = computed(() =>
-  viewing.value?.state === 'saved'
-    ? access.value.get(viewing.value.assetId)?.url
-    : undefined
+  viewing.value ? urlFor(viewing.value) : undefined
 )
 
-function urlFor(tile: SavedAsset): string | undefined {
-  return access.value.get(tile.assetId)?.url
+function urlFor(tile: SavedAssetTileData): string | undefined {
+  return tile.state === 'saved'
+    ? access.value.get(tile.assetId)?.url
+    : undefined
+}
+
+function tileLabel(tile: SavedAssetTileData): string {
+  return t(
+    tile.state === 'pending'
+      ? 'workshop.assets.generating'
+      : 'workshop.assets.open',
+    locale
+  )
+}
+
+function current(attempt: number): boolean {
+  return !controller.signal.aborted && attempt === sequence
+}
+
+// The run just started is the one the reader is waiting on, so it is worth a
+// second call when the list has not caught up with it yet.
+async function listWithActive(credential: string) {
+  const page = await listWorkshopGenerations(
+    credential,
+    controller.signal,
+    modelId
+  )
+  if (
+    !activeRequestId ||
+    page.requests.some((request) => request.request_id === activeRequestId)
+  )
+    return page.requests
+  const active = await getWorkshopGeneration(
+    modelId,
+    activeRequestId,
+    credential,
+    controller.signal
+  )
+  return active ? [active, ...page.requests] : page.requests
+}
+
+function schedulePoll() {
+  if (!failed.value && !generations.value.some(generationPending)) return
+  listTimer = setTimeout(
+    () => void refresh(),
+    failed.value ? FAILED_POLL_MS : PENDING_POLL_MS
+  )
 }
 
 async function refresh() {
   const attempt = ++sequence
   clearTimeout(listTimer)
   try {
-    const credential = await token()
-    const page = await listWorkshopGenerations(
-      credential,
-      controller.signal,
-      modelId
-    )
-    // The run just started is the one the reader is waiting on, so it is worth
-    // a second call when the list has not caught up with it yet.
-    if (
-      activeRequestId &&
-      !page.requests.some((request) => request.request_id === activeRequestId)
-    ) {
-      const active = await getWorkshopGeneration(
-        modelId,
-        activeRequestId,
-        credential,
-        controller.signal
-      )
-      if (active) page.requests.unshift(active)
-    }
-    if (controller.signal.aborted || attempt !== sequence) return
-    generations.value = mergeGenerations(generations.value, page.requests)
+    const requests = await listWithActive(await token())
+    if (!current(attempt)) return
+    generations.value = mergeGenerations(generations.value, requests)
     failed.value = false
   } catch {
-    if (controller.signal.aborted || attempt !== sequence) return
+    if (!current(attempt)) return
     failed.value = true
   } finally {
-    if (!controller.signal.aborted && attempt === sequence) {
-      if (failed.value || generations.value.some(generationPending))
-        listTimer = setTimeout(
-          () => void refresh(),
-          failed.value ? FAILED_POLL_MS : PENDING_POLL_MS
-        )
+    if (current(attempt)) {
+      schedulePoll()
       void resolveAccess()
     }
   }
 }
 
+function gone(error: unknown): boolean {
+  return (
+    error instanceof GenerationAccessError &&
+    (error.status === 404 || error.status === 410)
+  )
+}
+
+async function grantAccess(tile: SavedAsset) {
+  try {
+    const granted = await accessWorkshopAsset(
+      tile.assetId,
+      await token(),
+      controller.signal
+    )
+    if (controller.signal.aborted) return
+    access.value.set(tile.assetId, {
+      url: granted.content_url,
+      expiresAt: Date.parse(granted.expires_at)
+    })
+  } catch (error) {
+    if (controller.signal.aborted || !gone(error)) return
+    unavailable.value.add(tile.assetId)
+    access.value.delete(tile.assetId)
+  }
+}
+
 async function resolveAccess() {
   const now = Date.now()
-  const wanted = savedTiles.value.filter(
-    (tile) => (access.value.get(tile.assetId)?.expiresAt ?? 0) <= now
-  )
   await Promise.all(
-    wanted.map(async (tile) => {
-      try {
-        const granted = await accessWorkshopAsset(
-          tile.assetId,
-          await token(),
-          controller.signal
-        )
-        if (controller.signal.aborted) return
-        access.value.set(tile.assetId, {
-          url: granted.content_url,
-          expiresAt: Date.parse(granted.expires_at)
-        })
-      } catch (error) {
-        if (controller.signal.aborted) return
-        if (
-          error instanceof GenerationAccessError &&
-          (error.status === 404 || error.status === 410)
-        ) {
-          unavailable.value.add(tile.assetId)
-          access.value.delete(tile.assetId)
-        }
-      }
-    })
+    savedTiles.value
+      .filter((tile) => (access.value.get(tile.assetId)?.expiresAt ?? 0) <= now)
+      .map(grantAccess)
   )
   scheduleRenewal()
 }
@@ -173,23 +190,27 @@ function scheduleRenewal() {
   )
 }
 
-function mediaError(tile: SavedAsset) {
-  if (retried.has(tile.assetId)) return
+function mediaError(tile: SavedAssetTileData) {
+  if (tile.state !== 'saved' || retried.has(tile.assetId)) return
   retried.add(tile.assetId)
   access.value.delete(tile.assetId)
   void resolveAccess()
 }
 
-async function cancel(generation: SavedGeneration) {
-  if (cancelling.value) return
+async function cancel() {
+  const tile = viewing.value
+  if (cancelling.value || tile?.state !== 'pending') return
   cancelling.value = true
   cancelFailed.value = false
   try {
-    await cancelWorkshopGeneration(generation, await token(), controller.signal)
-    if (!controller.signal.aborted) {
-      viewingKey.value = undefined
-      await refresh()
-    }
+    await cancelWorkshopGeneration(
+      tile.generation,
+      await token(),
+      controller.signal
+    )
+    if (controller.signal.aborted) return
+    viewingKey.value = undefined
+    await refresh()
   } catch {
     if (!controller.signal.aborted) cancelFailed.value = true
   } finally {
@@ -197,22 +218,11 @@ async function cancel(generation: SavedGeneration) {
   }
 }
 
-async function download(event: MouseEvent) {
-  const tile = viewing.value
-  const url = viewingUrl.value
-  if (tile?.state !== 'saved' || !url) return
-  if (downloadFailed.value) return
-  event.preventDefault()
-  downloadFailed.value = !(await downloadOutput(
-    url,
-    savedAssetFileName(tile.assetId, tile.kind, url)
-  ))
+function open(key: string) {
+  cancelFailed.value = false
+  viewingKey.value = key
 }
 
-watch(viewingKey, () => {
-  downloadFailed.value = false
-  cancelFailed.value = false
-})
 watch(
   () => activeRequestId,
   () => void refresh()
@@ -263,147 +273,27 @@ const tileClass =
         v-for="(tile, index) in tiles"
         :key="tile.key"
         type="button"
-        :aria-label="
-          t(
-            tile.state === 'pending'
-              ? 'workshop.assets.generating'
-              : 'workshop.assets.open',
-            locale
-          )
-        "
+        :aria-label="tileLabel(tile)"
         :class="tileClass"
         :data-testid="`saved-asset-${index}`"
-        @click="viewingKey = tile.key"
+        @click="open(tile.key)"
       >
-        <template v-if="tile.state === 'saved'">
-          <video
-            v-if="tile.kind === 'video' && urlFor(tile)"
-            :src="urlFor(tile)"
-            class="size-full object-cover"
-            muted
-            playsinline
-            preload="metadata"
-            @error="mediaError(tile)"
-          />
-          <img
-            v-else-if="tile.kind === 'image' && urlFor(tile)"
-            :src="urlFor(tile)"
-            alt=""
-            class="size-full object-cover"
-            @error="mediaError(tile)"
-          />
-          <FileIcon v-else class="size-5" aria-hidden="true" />
-        </template>
-        <Loader2
-          v-else
-          class="size-5 text-primary-comfy-yellow motion-safe:animate-spin"
-          aria-hidden="true"
+        <SavedAssetTile
+          :tile
+          :url="urlFor(tile)"
+          @media-error="mediaError(tile)"
         />
       </button>
     </div>
 
-    <DialogRoot
-      :open="viewing !== undefined"
-      @update:open="(open: boolean) => !open && (viewingKey = undefined)"
-    >
-      <DialogPortal>
-        <DialogContent
-          v-if="viewing"
-          class="fixed inset-0 z-100 flex flex-col items-center justify-center gap-4 bg-primary-comfy-ink/90 p-6 backdrop-blur-sm"
-          :aria-describedby="undefined"
-          data-testid="saved-asset-preview"
-          @click.self="viewingKey = undefined"
-        >
-          <DialogTitle class="sr-only">
-            {{ t('workshop.assets.title', locale) }}
-          </DialogTitle>
-          <button
-            type="button"
-            :aria-label="t('workshop.output.collapse', locale)"
-            class="absolute top-6 right-6 grid size-8 cursor-pointer place-items-center rounded-lg bg-primary-comfy-ink/70 text-primary-warm-white transition-colors hover:text-primary-comfy-yellow"
-            data-testid="saved-asset-close"
-            @click="viewingKey = undefined"
-          >
-            <X class="size-4" aria-hidden="true" />
-          </button>
-
-          <template v-if="viewing.state === 'saved' && viewingUrl">
-            <img
-              v-if="viewing.kind === 'image'"
-              :src="viewingUrl"
-              :alt="t('workshop.assets.title', locale)"
-              class="max-h-[80dvh] max-w-full rounded-2xl object-contain"
-            />
-            <video
-              v-else-if="viewing.kind === 'video'"
-              :src="viewingUrl"
-              class="max-h-[80dvh] max-w-full rounded-2xl"
-              controls
-              autoplay
-              loop
-              playsinline
-            />
-            <audio v-else :src="viewingUrl" class="w-full max-w-md" controls />
-            <Button
-              as="a"
-              :href="viewingUrl"
-              :download="
-                downloadFailed
-                  ? undefined
-                  : savedAssetFileName(
-                      viewing.assetId,
-                      viewing.kind,
-                      viewingUrl
-                    )
-              "
-              :prepend-icon="downloadFailed ? ExternalLink : Download"
-              target="_blank"
-              rel="noopener"
-              size="sm"
-              data-testid="saved-asset-download"
-              @click="download"
-            >
-              {{
-                t(
-                  downloadFailed
-                    ? 'workshop.output.openOriginal'
-                    : 'workshop.output.download',
-                  locale
-                )
-              }}
-            </Button>
-          </template>
-
-          <template v-else-if="viewing.state === 'pending'">
-            <Loader2
-              class="size-8 text-primary-comfy-yellow motion-safe:animate-spin"
-              aria-hidden="true"
-            />
-            <p class="text-sm text-primary-warm-white">
-              {{ t('workshop.assets.generating', locale) }}
-            </p>
-            <p
-              v-if="cancelFailed"
-              role="alert"
-              class="text-xs text-primary-comfy-red"
-            >
-              {{ t('workshop.assets.cancelError', locale) }}
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="cancelling"
-              @click="cancel(viewing.generation)"
-            >
-              {{ t('workshop.run.cancel', locale) }}
-            </Button>
-          </template>
-
-          <p v-else role="status" class="text-sm text-primary-warm-gray">
-            {{ t('workshop.assets.loadingMedia', locale) }}
-          </p>
-        </DialogContent>
-      </DialogPortal>
-    </DialogRoot>
+    <SavedAssetPreview
+      :tile="viewing"
+      :url="viewingUrl"
+      :cancelling
+      :cancel-failed="cancelFailed"
+      :locale
+      @close="viewingKey = undefined"
+      @cancel="cancel"
+    />
   </section>
 </template>
