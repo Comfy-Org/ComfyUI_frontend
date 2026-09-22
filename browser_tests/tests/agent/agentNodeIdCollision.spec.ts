@@ -58,7 +58,7 @@ test.describe(
       'wipes a duplicated node and replaces it with a phantom node when ' +
         "the agent's write lands on the same id",
       async ({ idCollision }, testInfo) => {
-        const { nodeId, agentApply } = await driveCollision(idCollision)
+        const { nodeId, agentUpdate } = await driveCollision(idCollision)
 
         await testInfo.attach('before-collision-duplicate-visible', {
           body: await idCollision.page.screenshot(),
@@ -67,7 +67,7 @@ test.describe(
 
         // The agent's winning write reaches the client exactly as a live
         // `doc_update` broadcast would.
-        idCollision.deliver(agentApply.frame)
+        idCollision.deliver(agentUpdate)
 
         // PR #17963 fixed the incremental
         // live-update path to patch a still-live node in place instead of

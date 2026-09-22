@@ -41,11 +41,19 @@ export const AdmissionError: Story = {
   render: renderAtMinimumWidth
 }
 
-export const Unavailable: Story = {
+// The service-error copy arrives as a `message` override, so this exercises the
+// override path rather than the `unavailable` presentation below.
+export const ServiceErrorMessage: Story = {
   args: {
     presentation: { kind: 'member' },
     message: 'The agent is temporarily unavailable. Try again shortly.'
   },
+  render: renderAtMinimumWidth
+}
+
+// The default presentation. No `message`, so its own body key renders.
+export const Unavailable: Story = {
+  args: { presentation: { kind: 'unavailable' } },
   render: renderAtMinimumWidth
 }
 
