@@ -1,6 +1,12 @@
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -488,7 +494,11 @@ describe('AgentPanel', () => {
     const pinia = getActivePinia()
     if (pinia === undefined) throw new Error('Expected an active testing Pinia')
     render(AgentPanel, {
-      props: { entries: [], historyGroups, workflowDetached: true },
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        workflowDetached: true
+      },
       global: {
         plugins: [pinia, i18n],
         directives: { tooltip: {} },
