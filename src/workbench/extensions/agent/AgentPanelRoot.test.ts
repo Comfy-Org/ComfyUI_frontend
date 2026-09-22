@@ -1304,7 +1304,8 @@ describe('AgentPanelRoot attach flow', () => {
     ['sound.wav', ''],
     ['mesh.glb', ''],
     ['notes.md', ''],
-    ['prompt.txt', 'text/plain']
+    ['prompt.txt', 'text/plain'],
+    ['prompts.csv', 'text/csv']
   ])('attaches a dropped %s and uploads it', async ([name, type]) => {
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
@@ -1341,7 +1342,8 @@ describe('AgentPanelRoot attach flow', () => {
       '.wav',
       '.glb',
       '.md',
-      '.txt'
+      '.txt',
+      '.csv'
     ]) {
       expect(accept).toContain(extension)
     }
