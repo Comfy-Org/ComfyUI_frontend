@@ -66,6 +66,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [WIDGET-SERIALIZATION-0006](WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) | PrimitiveNode Widget Restoration Lifecycle                                         | Accepted   | 2026-02-22 |
 | [WORKSHOP-TELEMETRY-0034](WORKSHOP-TELEMETRY-0034-browser-delivery-health.md)                                    | Browser delivery health for Models                                                 | Proposed   | 2026-09-18 |
 | [WORKSHOP-VALIDATION-0036](WORKSHOP-VALIDATION-0036-declarative-input-constraints.md)                            | Declarative input constraints                                                      | Proposed   | 2026-09-22 |
+| [WORKSHOP-WORKFLOWS-0036](WORKSHOP-WORKFLOWS-0036-published-app-definitions-and-durable-cloud-runs.md)           | Published APP definitions and durable Cloud runs                                   | Proposed   | 2026-09-22 |
 
 ## Creating a New ADR
 
