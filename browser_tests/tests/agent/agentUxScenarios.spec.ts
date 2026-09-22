@@ -13,19 +13,23 @@ test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
     await agentPanel.open()
     const suggestions = agentPanel.suggestedPrompts
 
-    await agentPanel.resizeTo(459)
-    await expect.soft(suggestions[0]).toBeVisible()
-    await expect.soft(suggestions[1]).toBeVisible()
-    await expect.soft(suggestions[2]).toBeVisible()
-    await expect.soft(suggestions[3]).toBeHidden()
-    await expect.soft(suggestions[4]).toBeHidden()
+    await test.step('Resize below the breakpoint', async () => {
+      await agentPanel.resizeTo(459)
+      await expect.soft(suggestions[0]).toBeVisible()
+      await expect.soft(suggestions[1]).toBeVisible()
+      await expect.soft(suggestions[2]).toBeVisible()
+      await expect.soft(suggestions[3]).toBeHidden()
+      await expect.soft(suggestions[4]).toBeHidden()
+    })
 
-    await agentPanel.resizeTo(460)
-    await expect.soft(suggestions[0]).toBeVisible()
-    await expect.soft(suggestions[1]).toBeVisible()
-    await expect.soft(suggestions[2]).toBeVisible()
-    await expect.soft(suggestions[3]).toBeVisible()
-    await expect.soft(suggestions[4]).toBeVisible()
+    await test.step('Resize to the expanded breakpoint', async () => {
+      await agentPanel.resizeTo(460)
+      await expect.soft(suggestions[0]).toBeVisible()
+      await expect.soft(suggestions[1]).toBeVisible()
+      await expect.soft(suggestions[2]).toBeVisible()
+      await expect.soft(suggestions[3]).toBeVisible()
+      await expect.soft(suggestions[4]).toBeVisible()
+    })
   })
 
   for (const width of [480, 640]) {
