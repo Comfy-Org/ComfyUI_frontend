@@ -112,16 +112,23 @@ test.describe(
       agentConversation,
       page
     }) => {
-      await agentConversation.runTurns()
-      await agentConversation.applyGraphOps(referenceGraphOps)
+      await test.step('Establish the agent conversation', async () => {
+        await agentConversation.runTurns()
+      })
 
-      const wiring = await wireAndReopen(page)
+      await test.step('Materialize the reference node and its sources', async () => {
+        await agentConversation.applyGraphOps(referenceGraphOps)
+      })
 
-      expect(wiring).toEqual({
-        hasNextReference: true,
-        referenceLinked: true,
-        seedLinkBefore: expect.any(Number),
-        seedLinkAfter: wiring.seedLinkBefore
+      await test.step('Connect and reopen without changing named wire targets', async () => {
+        const wiring = await wireAndReopen(page)
+
+        expect(wiring).toEqual({
+          hasNextReference: true,
+          referenceLinked: true,
+          seedLinkBefore: expect.any(Number),
+          seedLinkAfter: wiring.seedLinkBefore
+        })
       })
     })
   }
