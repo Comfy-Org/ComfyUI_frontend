@@ -29,8 +29,12 @@
  * `removeLinks`, so `graphMutations.ts`'s `prepare()` rejects the WHOLE
  * batch, including the node adds sharing it.
  */
-import { applyOps, mint } from '@comfyorg/comfy-multi-player'
-import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
+import type {
+  DeleteNodeOp,
+  Op,
+  WidgetCatalog
+} from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
@@ -81,15 +85,49 @@ const CATALOG: WidgetCatalog = {
   }
 }
 
-function insertOp(workflow: object): Op {
+function insertOp(workflow: object, opId = 'insert-plain-chain-op'): Op {
   return {
-    op_id: 'insert-plain-chain-op'.padEnd(32, '0'),
+    op_id: opId.padEnd(32, '0'),
     actor: 'agent:test',
     base_version: 1,
     stamp: [1, 'agent:test'],
     op: 'insert_workflow',
     workflow
   } as unknown as Op
+}
+
+/** Binds a fresh projection over its own graph and doc, and returns a
+ * `deliver` function that applies one host update and reconciles, exactly
+ * as `useAgentCrdtFollower.ts`'s `applyAndReconcile` does. The first call
+ * lands on the full-reconcile path; every later call on the same binding
+ * lands on the incremental path once the prior frame committed. */
+function bindProjection(workflowId: string, graph: LGraph) {
+  const follower = new FollowerDoc()
+  const projection = new AgentCrdtProjection(
+    createGraphMutations({
+      getScope: () => graphScopeOf(graph),
+      layout: { createNode: () => {}, deleteNodes: () => {} },
+      placement: inertPlacementPort
+    }),
+    () => graph,
+    () => follower.doc
+  )
+  projection.bind(workflowId, follower)
+
+  let seq = 0
+  const deliver = (update: Uint8Array, opIds: string[]): boolean => {
+    follower.applyRemoteUpdate(update)
+    const committed = projection.applyFrame({
+      workflowId,
+      seq: ++seq,
+      update,
+      actor: 'agent:test',
+      opIds
+    })
+    projection.reconcileLiveGraph(workflowId)
+    return committed
+  }
+  return deliver
 }
 
 /** Links read back from a node's live inputs, in slot order. */
@@ -192,5 +230,171 @@ describe('a plain insert_workflow batch materializes its links', () => {
     // The symptom reported against the live graph: a fresh serialize() of the
     // just-inserted batch should carry both links, not an empty array.
     expect(graph.serialize().links).toHaveLength(2)
+  })
+
+  it('wires a link inserted after the graph is already open, on the incremental path', () => {
+    const graph = new LGraph()
+    const host = mint({ nodes: [], links: [] }, CATALOG)
+
+    // Seed frame: an unrelated node, so this session's full reconcile
+    // finishes and `reconcileNextFrame` clears before the batch under test.
+    const seedOp = insertOp(
+      { nodes: [{ id: 999, type: 'TestSaveVideo' }] },
+      'insert-incremental-seed-op'
+    )
+    expect(applyOps(host, [seedOp], CATALOG).outcomes).toEqual([
+      { op_id: seedOp.op_id, outcome: 'applied' }
+    ])
+
+    const deliver = bindProjection('wf-incremental', graph)
+    expect(deliver(Y.encodeStateAsUpdate(host), [seedOp.op_id])).toBe(true)
+    expect(graph._nodes).toHaveLength(1)
+
+    // Second turn: a brand-new node pair AND the brand-new link between
+    // them (an `insert_workflow` batch never links to a node outside its
+    // own payload -- cmp drops that link as dangling), landing on an
+    // ALREADY-OPEN graph. This batch takes the incremental path, not the
+    // full-reconcile path test 1 covers.
+    const before = Y.encodeStateVector(host)
+    const secondOp = insertOp(
+      {
+        nodes: [
+          {
+            id: 111,
+            type: 'TestLoadImage',
+            outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [301] }]
+          },
+          {
+            id: 112,
+            type: 'TestReferenceNode',
+            inputs: [{ name: 'image', type: 'IMAGE', link: 301 }]
+          }
+        ],
+        links: [[301, 111, 0, 112, 0, 'IMAGE']]
+      },
+      'insert-incremental-second-op'
+    )
+    expect(applyOps(host, [secondOp], CATALOG).outcomes).toEqual([
+      { op_id: secondOp.op_id, outcome: 'applied' }
+    ])
+    expect(deliver(Y.encodeStateAsUpdate(host, before), [secondOp.op_id])).toBe(
+      true
+    )
+
+    const loadImage = findByType(graph, 'TestLoadImage')
+    const reference = findByType(graph, 'TestReferenceNode')
+    expect(readInputOrigins(reference)).toEqual([
+      { name: 'image', origin: loadImage.id }
+    ])
+    expect(graph.serialize().links).toHaveLength(1)
+  })
+
+  it('removing then replaying such a link does not crash or silently drop it', () => {
+    const graph = new LGraph()
+    const host = mint({ nodes: [], links: [] }, CATALOG)
+
+    const firstOp = insertOp(
+      {
+        nodes: [
+          {
+            id: 121,
+            type: 'TestLoadImage',
+            outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [401] }]
+          },
+          {
+            id: 122,
+            type: 'TestReferenceNode',
+            inputs: [{ name: 'image', type: 'IMAGE', link: 401 }]
+          }
+        ],
+        links: [[401, 121, 0, 122, 0, 'IMAGE']]
+      },
+      'insert-replay-first-op'
+    )
+    expect(applyOps(host, [firstOp], CATALOG).outcomes).toEqual([
+      { op_id: firstOp.op_id, outcome: 'applied' }
+    ])
+
+    const deliver = bindProjection('wf-replay', graph)
+    expect(deliver(Y.encodeStateAsUpdate(host), [firstOp.op_id])).toBe(true)
+
+    const loadImage = findByType(graph, 'TestLoadImage')
+    const reference = findByType(graph, 'TestReferenceNode')
+    expect(readInputOrigins(reference)).toEqual([
+      { name: 'image', origin: loadImage.id }
+    ])
+
+    // Undo: delete both nodes cmp's own `insert_workflow` derived-id link
+    // depends on. Deleting an endpoint also retires the link doc-side
+    // (`applier.ts`'s `applyDeleteNode`), so this is the incremental
+    // link-removal path, keyed by the SAME derived string id.
+    const projected = project(host, CATALOG)
+    const loadNode = projected.nodes.find((n) => n.type === 'TestLoadImage')!
+    const refNode = projected.nodes.find((n) => n.type === 'TestReferenceNode')!
+    const beforeDelete = Y.encodeStateVector(host)
+    const deleteLoad = {
+      op_id: 'insert-replay-delete-load-op'.padEnd(32, '0'),
+      actor: 'agent:test',
+      base_version: 1,
+      stamp: [2, 'agent:test'],
+      op: 'delete_node',
+      node_id: loadNode.id,
+      removed_links: []
+    } as unknown as DeleteNodeOp
+    const deleteRef = {
+      op_id: 'insert-replay-delete-ref-op'.padEnd(32, '0'),
+      actor: 'agent:test',
+      base_version: 1,
+      stamp: [2, 'agent:test'],
+      op: 'delete_node',
+      node_id: refNode.id,
+      removed_links: []
+    } as unknown as DeleteNodeOp
+    expect(applyOps(host, [deleteLoad, deleteRef], CATALOG).outcomes).toEqual([
+      { op_id: deleteLoad.op_id, outcome: 'applied' },
+      { op_id: deleteRef.op_id, outcome: 'applied' }
+    ])
+    expect(
+      deliver(Y.encodeStateAsUpdate(host, beforeDelete), [
+        deleteLoad.op_id,
+        deleteRef.op_id
+      ])
+    ).toBe(true)
+    expect(graph._nodes).toHaveLength(0)
+
+    // Redo: a fresh `insert_workflow` op mints a fresh derived id for the
+    // "same" link, exactly as a regenerated/re-pasted batch would.
+    const beforeReplay = Y.encodeStateVector(host)
+    const replayOp = insertOp(
+      {
+        nodes: [
+          {
+            id: 121,
+            type: 'TestLoadImage',
+            outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [401] }]
+          },
+          {
+            id: 122,
+            type: 'TestReferenceNode',
+            inputs: [{ name: 'image', type: 'IMAGE', link: 401 }]
+          }
+        ],
+        links: [[401, 121, 0, 122, 0, 'IMAGE']]
+      },
+      'insert-replay-second-op'
+    )
+    expect(applyOps(host, [replayOp], CATALOG).outcomes).toEqual([
+      { op_id: replayOp.op_id, outcome: 'applied' }
+    ])
+    expect(
+      deliver(Y.encodeStateAsUpdate(host, beforeReplay), [replayOp.op_id])
+    ).toBe(true)
+
+    const replayedLoadImage = findByType(graph, 'TestLoadImage')
+    const replayedReference = findByType(graph, 'TestReferenceNode')
+    expect(readInputOrigins(replayedReference)).toEqual([
+      { name: 'image', origin: replayedLoadImage.id }
+    ])
+    expect(graph.serialize().links).toHaveLength(1)
   })
 })

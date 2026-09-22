@@ -11,6 +11,7 @@ import type {
   SemanticNodePayload
 } from './graphMutations'
 import { isIncompatibleLinkType } from './graphMutations'
+import { fnv1a } from '@/platform/workflow/persistence/base/hashUtil'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
@@ -216,6 +217,30 @@ function reportInvalidHostTarget(
   )
 }
 
+const INTEGER_ID_PATTERN = /^\d+$/
+
+/**
+ * Comfortably past any `last_link_id` a real workflow could reach, so a
+ * hashed derived id can never collide with a genuine persisted link id.
+ */
+const DERIVED_LINK_ID_BASE = 10_000_000_000
+
+/**
+ * `insert_workflow` mints a fresh, non-numeric doc id for every link it
+ * inserts (comfy-multi-player's `remap.ts`'s `derivedId`, e.g.
+ * `insert:<opId>:root:link:201`) so a re-pasted/re-generated batch can never
+ * collide with an existing id. LiteGraph's own link ids are plain numbers,
+ * so a derived id is hashed into a large integer, well outside the range any
+ * real persisted link id can reach, instead of being treated as unreadable.
+ */
+function resolveLinkId(raw: unknown): number {
+  if (typeof raw === 'number' && Number.isInteger(raw)) return raw
+  const value = String(raw)
+  return INTEGER_ID_PATTERN.test(value)
+    ? Number(value)
+    : DERIVED_LINK_ID_BASE + fnv1a(value)
+}
+
 function readSemanticLink(
   doc: Y.Doc,
   id: string,
@@ -225,11 +250,10 @@ function readSemanticLink(
   const raw = linksMap(doc).get(id)
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
   if (!Array.isArray(tuple) || tuple.length < 5) return null
-  const linkId = Number(tuple[0] ?? id)
+  const linkId = resolveLinkId(tuple[0] ?? id)
   const originSlot = Number(tuple[2])
   const targetSlot = Number(tuple[4])
   if (
-    !Number.isInteger(linkId) ||
     tuple[1] == null ||
     tuple[3] == null ||
     !Number.isInteger(originSlot) ||
@@ -512,7 +536,7 @@ export class EcsFollowerAdapter {
       ])
     )
     const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
-      link && !isIncompatibleLinkType(link) ? [] : [Number(id)]
+      link && !isIncompatibleLinkType(link) ? [] : [resolveLinkId(id)]
     )
     const committed = session.mutations.batch(frameContext(update), (batch) => {
       // A SubgraphNode host that is already live must never be rebuilt from
