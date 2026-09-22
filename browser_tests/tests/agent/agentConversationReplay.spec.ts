@@ -8,137 +8,147 @@ import { toNodeId } from '@/types/nodeId'
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'
 const WIDGET_CASE = 'agent-rec-set-widget-existing'
 
-test.describe('Agent conversation replay', { tag: '@cloud' }, () => {
-  test.describe('wire evidence', () => {
-    test.use({ conversationCase: WIRING_CASE })
+test.describe(
+  'Agent conversation replay',
+  { tag: ['@cloud', '@vue-nodes'] },
+  () => {
+    test.describe('wire evidence', () => {
+      test.use({ conversationCase: WIRING_CASE })
 
-    // The second turn's only edit is a connect, so what the canvas shows after
-    // it is the wire itself: the app's own render loop paints it, and the
-    // expectation is the picture, not a reconstruction of the renderer.
-    test('paints the wire the second turn connects @screenshot', async ({
-      agentConversation,
-      page
-    }) => {
-      test.setTimeout(90_000)
-      await agentConversation.runTurns()
+      // The second turn's only edit is a connect, so what the canvas shows after
+      // it is the wire itself: the app's own render loop paints it, and the
+      // expectation is the picture, not a reconstruction of the renderer.
+      test('paints the wire the second turn connects @screenshot', async ({
+        agentConversation,
+        page
+      }) => {
+        test.setTimeout(90_000)
+        await agentConversation.runTurns()
 
-      await expect(page.locator('#graph-canvas')).toHaveScreenshot(
-        'two-turn-dependent-edit-wired.png',
-        { mask: [agentConversation.panel] }
-      )
+        await expect(page.locator('#graph-canvas')).toHaveScreenshot(
+          'two-turn-dependent-edit-wired.png',
+          { mask: [agentConversation.panel] }
+        )
+      })
     })
-  })
 
-  test.describe('live widget effects', () => {
-    test.use({ conversationCase: WIDGET_CASE })
+    test.describe('live widget effects', () => {
+      test.use({ conversationCase: WIDGET_CASE })
 
-    test('refreshes dependent combo options after an agent widget edit', async ({
-      agentConversation,
-      page
-    }) => {
-      test.setTimeout(90_000)
-      await agentConversation.runTurns(() =>
-        page.evaluate((nodeId) => {
-          const node = window.app!.graph.getNodeById(nodeId)
-          const steps = node?.widgets?.find((widget) => widget.name === 'steps')
-          if (!steps) throw new Error('KSampler steps widget not found')
-          steps.callback = (_value, _canvas, owner) => {
-            const sampler = owner?.widgets?.find(
-              (widget) => widget.name === 'sampler_name'
+      test('refreshes dependent combo options after an agent widget edit', async ({
+        agentConversation,
+        page
+      }) => {
+        test.setTimeout(90_000)
+        await agentConversation.runTurns(() =>
+          page.evaluate((nodeId) => {
+            const node = window.app!.graph.getNodeById(nodeId)
+            const steps = node?.widgets?.find(
+              (widget) => widget.name === 'steps'
             )
-            if (!sampler) throw new Error('KSampler sampler widget not found')
-            sampler.options.values = ['euler', 'heun']
-          }
-        }, toNodeId(3))
-      )
+            if (!steps) throw new Error('KSampler steps widget not found')
+            steps.callback = (_value, _canvas, owner) => {
+              const sampler = owner?.widgets?.find(
+                (widget) => widget.name === 'sampler_name'
+              )
+              if (!sampler) throw new Error('KSampler sampler widget not found')
+              sampler.options.values = ['euler', 'heun']
+            }
+          }, toNodeId(3))
+        )
 
-      const sampler = agentConversation.vueNodes
-        .getNodeLocator('3')
-        .getByRole('combobox', { name: 'sampler_name', exact: true })
-      await sampler.click()
-      await expect(page.getByRole('option', { name: 'heun' })).toBeVisible()
-      await expect(sampler).not.toHaveAttribute('aria-invalid')
-    })
-  })
-
-  test.describe('remote apply acceptance', () => {
-    test.describe('manual title', () => {
-      test.use({ conversationCase: 'agent-rec-clarifying-question' })
-
-      test('keeps a manual rename across an unrelated agent widget update', async ({
-        agentConversation
-      }) => {
-        test.setTimeout(90_000)
-        const customTitle = 'My renamed sampler'
-
-        await agentConversation.sendPrompt(0)
-        await agentConversation.replayResponse(0)
-        await agentConversation.waitForTurnComplete()
-        const sampler =
-          await agentConversation.vueNodes.getFixtureByTitle('KSampler')
-        await sampler.setTitle(customTitle)
-        await expect(sampler.title).toHaveText(customTitle)
-
-        await agentConversation.sendPrompt(1)
-        await agentConversation.replayResponse(1)
-        await agentConversation.waitForTurnComplete()
-
-        await expect(sampler.title).toHaveText(customTitle)
+        const sampler = agentConversation.vueNodes
+          .getNodeLocator('3')
+          .getByRole('combobox', { name: 'sampler_name', exact: true })
+        await sampler.click()
+        await expect(page.getByRole('option', { name: 'heun' })).toBeVisible()
+        await expect(sampler).not.toHaveAttribute('aria-invalid')
       })
     })
 
-    test.describe('active widget edit', () => {
-      test.use({
-        conversationCase: 'agent-rec-replace-prompt-encoder',
-        humanOpsHost: 'apply'
+    test.describe('remote apply acceptance', () => {
+      test.describe('manual title', () => {
+        test.use({ conversationCase: 'agent-rec-clarifying-question' })
+
+        test('keeps a manual rename across an unrelated agent widget update', async ({
+          agentConversation
+        }) => {
+          test.setTimeout(90_000)
+          const customTitle = 'My renamed sampler'
+
+          await agentConversation.sendPrompt(0)
+          await agentConversation.replayResponse(0)
+          await agentConversation.waitForTurnComplete()
+          const sampler =
+            await agentConversation.vueNodes.getFixtureByTitle('KSampler')
+          await sampler.setTitle(customTitle)
+          await expect(sampler.title).toHaveText(customTitle)
+
+          await agentConversation.sendPrompt(1)
+          await agentConversation.replayResponse(1)
+          await agentConversation.waitForTurnComplete()
+
+          await expect(sampler.title).toHaveText(customTitle)
+        })
       })
 
-      test('keeps prompt keystrokes when a doc frame resyncs the widget', async ({
-        agentConversation
-      }) => {
-        test.setTimeout(60_000)
-        const nodeId = '4181654812796082'
-        const appended = ' at sunset, golden hour, cinematic lighting'
-        await agentConversation.runTurns()
-        await expect(
-          agentConversation.resyncWidget(nodeId, 'missing-widget')
-        ).rejects.toThrow(`Host widget ${nodeId}.missing-widget does not exist`)
+      test.describe('active widget edit', () => {
+        test.use({
+          conversationCase: 'agent-rec-replace-prompt-encoder',
+          humanOpsHost: 'apply'
+        })
 
-        const field = agentConversation.vueNodes
-          .getNodeLocator(nodeId)
-          .getByLabel('text', { exact: true })
-        await expect(field).toHaveValue('a photo of a pier')
-        await field.click()
-        await field.press('End')
-        await field.pressSequentially(appended.slice(0, 5), { delay: 20 })
+        test('keeps prompt keystrokes when a doc frame resyncs the widget', async ({
+          agentConversation
+        }) => {
+          test.setTimeout(60_000)
+          const nodeId = '4181654812796082'
+          const appended = ' at sunset, golden hour, cinematic lighting'
+          await agentConversation.runTurns()
+          await expect(
+            agentConversation.resyncWidget(nodeId, 'missing-widget')
+          ).rejects.toThrow(
+            `Host widget ${nodeId}.missing-widget does not exist`
+          )
 
-        const typing = field.pressSequentially(appended.slice(5), { delay: 20 })
-        const resync = agentConversation.resyncWidget(nodeId, 'text')
-        await typing
-        await resync
+          const field = agentConversation.vueNodes
+            .getNodeLocator(nodeId)
+            .getByLabel('text', { exact: true })
+          await expect(field).toHaveValue('a photo of a pier')
+          await field.click()
+          await field.press('End')
+          await field.pressSequentially(appended.slice(0, 5), { delay: 20 })
 
-        test.fail()
-        await expect(field).toHaveValue(`a photo of a pier${appended}`)
-      })
-    })
-  })
-
-  for (const conversationCase of listRecordedConversations()) {
-    test.describe(`recorded ${conversationCase}`, () => {
-      test.use({ conversationCase })
-
-      test('replays every recorded turn onto the panel and the canvas', async ({
-        agentConversation
-      }) => {
-        test.setTimeout(90_000)
-        await agentConversation.runTurns()
-
-        await expect(
-          agentConversation.panel.getByRole('button', {
-            name: `Open ${agentConversation.conversation.workflow.name}`
+          const typing = field.pressSequentially(appended.slice(5), {
+            delay: 20
           })
-        ).toBeVisible()
+          const resync = agentConversation.resyncWidget(nodeId, 'text')
+          await typing
+          await resync
+
+          test.fail()
+          await expect(field).toHaveValue(`a photo of a pier${appended}`)
+        })
       })
     })
+
+    for (const conversationCase of listRecordedConversations()) {
+      test.describe(`recorded ${conversationCase}`, () => {
+        test.use({ conversationCase })
+
+        test('replays every recorded turn onto the panel and the canvas', async ({
+          agentConversation
+        }) => {
+          test.setTimeout(90_000)
+          await agentConversation.runTurns()
+
+          await expect(
+            agentConversation.panel.getByRole('button', {
+              name: `Open ${agentConversation.conversation.workflow.name}`
+            })
+          ).toBeVisible()
+        })
+      })
+    }
   }
-})
+)

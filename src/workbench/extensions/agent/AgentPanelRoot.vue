@@ -179,6 +179,7 @@ const workflowResolver = useAgentWorkflowResolver({
 })
 const {
   refreshCloudWorkflowIds,
+  forgetCloudWorkflowId,
   cloudIdFor,
   boundOrOpenWorkflowFor,
   storedWorkflowFor,
@@ -571,6 +572,7 @@ const {
     prepare: async () => {
       await refreshCloudWorkflowIds()
     },
+    disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
     draft: targetWorkflowDraft
@@ -952,7 +954,10 @@ const { submit: onSend } = useAgentDraftSubmission({
       attachment_count: attachments.length,
       node_tag_count: nodes.length
     })
-    return sendMessage(text, attachments, nodes, references)
+    const selectionWorkflow = selectedTarget.value
+    return sendMessage(text, attachments, nodes, references, () =>
+      selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
+    )
   },
   stop: stopTurn
 })
@@ -1025,7 +1030,6 @@ function exitNodeSelectionMode(): void {
   if (agentNodeSelectionStore.isActive) agentNodeSelectionStore.exit()
   if (canvas) {
     canvas.deselectAll()
-    canvasStore.updateSelectedItems()
   }
 }
 
@@ -1074,7 +1078,6 @@ function onSelectNodes(): void {
   }
   if (merged.size) {
     canvas.selectItems([...merged.values()])
-    canvasStore.updateSelectedItems()
   }
   restoreAllowDragNodes = canvas.allow_dragnodes
   restoreSelectOnly = canvas.selectOnly

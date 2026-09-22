@@ -15,7 +15,7 @@ const EMPTY_CANVAS_SPOT = { x: 1050, y: 1075 }
 
 test.describe(
   'Agent workflow tab switch',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: EDITED_CASE })
 
@@ -56,6 +56,7 @@ test.describe(
         await topbar.newWorkflowButton.click()
         await expect(tabs).toHaveCount(2)
         await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
+        await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
         await expect(panel).toBeVisible()
       })
 
@@ -129,7 +130,7 @@ const TAB_B = {
 
 test.describe(
   'Agent workflow tab switch between two workflows',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: WIRING_CASE })
 
