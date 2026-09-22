@@ -1,10 +1,17 @@
+import type {
+  browserApiErrorsIntegration as sentryBrowserApiErrorsIntegration,
+  init as sentryInitContract
+} from '@sentry/vue'
 import { createApp } from 'vue'
 import { expect, it, vi } from 'vitest'
 
-const sentryInit = vi.hoisted(() => vi.fn())
+const { sentryInit, browserApiErrorsIntegration } = vi.hoisted(() => ({
+  sentryInit: vi.fn<typeof sentryInitContract>(),
+  browserApiErrorsIntegration: vi.fn<typeof sentryBrowserApiErrorsIntegration>()
+}))
 
 vi.mock(import('@sentry/vue'), () => ({
-  browserApiErrorsIntegration: vi.fn(),
+  browserApiErrorsIntegration,
   init: sentryInit
 }))
 
