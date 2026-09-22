@@ -538,7 +538,8 @@ test.describe(
 
     test('waits behind Getting Started instead of stacking on it', async ({
       comfyPage,
-      agentPanel
+      agentPanel,
+      agentConsentReads
     }) => {
       const page = comfyPage.page
       const gettingStarted = page.getByRole('dialog', {
@@ -553,12 +554,13 @@ test.describe(
       })
 
       await test.step('The automatic offer runs and stays silent', async () => {
-        await expect(
-          page.getByTestId('integrated-tab-bar-actions'),
-          'the automatic offer only runs once the flag gate settles; asserting absence before that would pass vacuously'
-        ).toHaveAttribute('data-agent-gate-settled', 'true', {
-          timeout: 15_000
-        })
+        await expect
+          .poll(() => agentConsentReads.length, {
+            message:
+              'the automatic offer only runs after consent is read; asserting absence before that would pass vacuously',
+            timeout: 15_000
+          })
+          .toBeGreaterThan(0)
         await expect(consent).toHaveCount(0)
         await expect(agentPanel.root).toHaveCount(0)
         expect(

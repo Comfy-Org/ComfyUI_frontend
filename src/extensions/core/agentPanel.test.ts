@@ -319,6 +319,7 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
       expect(localStorage.getItem(key)).toBeNull()
       expect(agentStore.open).not.toHaveBeenCalled()
+      expect(consentStore.load).toHaveBeenCalled()
     }
   )
 
