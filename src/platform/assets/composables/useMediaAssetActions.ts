@@ -130,10 +130,18 @@ export function useMediaAssetActions() {
   }
 
   function createAssetDownload(asset: AssetItem): AssetDownload {
+    const url = getAssetFileUrl(asset)
+    const filename = getAssetDisplayName(asset)
+    if (!isCloud) return { mode: 'direct', url, filename }
+
+    // Required: a bare fetch sends no Authorization header and authenticates by
+    // session cookie, which resolves to the personal workspace — an asset owned
+    // by any other workspace then reads as missing.
     return {
-      mode: isCloud ? 'fetch' : 'direct',
-      url: getAssetFileUrl(asset),
-      filename: getAssetDisplayName(asset)
+      mode: 'fetch',
+      url,
+      filename,
+      fetch: (route) => api.fetchApi(route)
     }
   }
 
