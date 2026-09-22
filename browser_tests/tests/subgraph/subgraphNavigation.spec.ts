@@ -1,8 +1,15 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import {
+  nestedSubgraphTopologies,
+  outerSubgraphBreadcrumbId
+} from '@e2e/fixtures/data/subgraphTopologies'
+import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { toNodeId } from '@/types/nodeId'
+
+const test = mergeTests(comfyPageFixture, subgraphBreadcrumbFixture)
 
 const UPDATED_SUBGRAPH_TITLE = 'Updated Subgraph Title'
 
@@ -335,4 +342,53 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         .toEqual({ exists: true, progress: undefined })
     })
   })
+
+  for (const renderer of [
+    { name: 'LiteGraph', tag: '@ui' },
+    { name: 'Vue', tag: ['@ui', '@vue-nodes'] }
+  ]) {
+    test.describe(`${renderer.name} renderer`, { tag: renderer.tag }, () => {
+      test('nested controls and breadcrumbs preserve exact topology', async ({
+        comfyPage,
+        subgraphBreadcrumb
+      }) => {
+        await comfyPage.workflow.loadWorkflow('subgraphs/nested-subgraph')
+        await comfyPage.subgraph.expectActiveTopology(
+          nestedSubgraphTopologies.root
+        )
+
+        const outer = await comfyPage.nodeOps.getNodeRefById('10')
+
+        await test.step('Open the outer subgraph', async () => {
+          await comfyPage.subgraph.enterSubgraph(outer)
+          await comfyPage.subgraph.expectActiveTopology(
+            nestedSubgraphTopologies.outer
+          )
+        })
+
+        const inner = await comfyPage.nodeOps.getNodeRefById('11')
+
+        await test.step('Open the inner subgraph', async () => {
+          await comfyPage.subgraph.enterSubgraph(inner)
+          await comfyPage.subgraph.expectActiveTopology(
+            nestedSubgraphTopologies.inner
+          )
+        })
+
+        await test.step('Return to the outer subgraph', async () => {
+          await subgraphBreadcrumb.clickItem(outerSubgraphBreadcrumbId)
+          await comfyPage.subgraph.expectActiveTopology(
+            nestedSubgraphTopologies.outer
+          )
+        })
+
+        await test.step('Return to the root graph', async () => {
+          await subgraphBreadcrumb.clickItem('root')
+          await comfyPage.subgraph.expectActiveTopology(
+            nestedSubgraphTopologies.root
+          )
+        })
+      })
+    })
+  }
 })

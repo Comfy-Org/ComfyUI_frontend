@@ -276,6 +276,9 @@ export class NodeReference {
       return !!node
     }, this.id)
   }
+  async expectExists(expected = true): Promise<void> {
+    await expect.poll(() => this.exists()).toBe(expected)
+  }
   getType(): Promise<string> {
     return this.getProperty('type')
   }
@@ -406,6 +409,76 @@ export class NodeReference {
 
     return new NodeWidgetReference(index, this)
   }
+  async getPromotedTextWidget(name: string) {
+    const vueNode = this.comfyPage.vueNodes.getNodeLocator(String(this.id))
+    if (this.comfyPage.isVueNodes) {
+      return vueNode.getByRole('textbox', { name, exact: true })
+    }
+
+    const position = await (await this.getWidgetByName(name)).getPosition()
+    const textboxes = this.comfyPage.page.getByRole('textbox', {
+      name,
+      exact: true
+    })
+    const boxes = await textboxes.evaluateAll((elements) =>
+      elements.map((element) => {
+        const { x, y, width, height } = element.getBoundingClientRect()
+        return { x, y, width, height }
+      })
+    )
+    const closestIndex = boxes.reduce(
+      (best, box, index) => {
+        const distance = Math.hypot(
+          box.x + box.width / 2 - position.x,
+          box.y + box.height / 2 - position.y
+        )
+        return distance < best.distance ? { index, distance } : best
+      },
+      { index: -1, distance: Number.POSITIVE_INFINITY }
+    ).index
+    if (closestIndex < 0) {
+      throw new Error(
+        `Text widget "${name}" for node ${this.id} was not rendered`
+      )
+    }
+    return textboxes.nth(closestIndex)
+  }
+  async fillPromotedTextWidget(name: string, value: string): Promise<void> {
+    const widget = await this.getPromotedTextWidget(name)
+    await widget.fill(value)
+    await expect(widget).toHaveValue(value)
+    await expect
+      .poll(async () => (await this.getWidgetByName(name)).getValue())
+      .toBe(value)
+  }
+  async expectPromotedTextWidgetValue(
+    name: string,
+    value: string
+  ): Promise<void> {
+    const widget = await this.getPromotedTextWidget(name)
+    await expect(widget).toHaveValue(value)
+    await expect
+      .poll(async () => (await this.getWidgetByName(name)).getValue())
+      .toBe(value)
+  }
+  async expectPromotedWidgetCount(expected: number): Promise<void> {
+    await expect
+      .poll(async () => (await this.getProperty<unknown[]>('widgets')).length)
+      .toBe(expected)
+  }
+  async select(): Promise<void> {
+    if (this.comfyPage.isVueNodes) {
+      await this.comfyPage.vueNodes.selectNode(String(this.id))
+    } else {
+      await this.comfyPage.page.evaluate((id) => {
+        const node = window.app!.canvas.graph?.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+        window.app!.canvas.deselectAll()
+        window.app!.canvas.selectNode(node)
+      }, this.id)
+      await this.comfyPage.nextFrame()
+    }
+  }
   async click(
     position: 'title' | 'collapse',
     options?: {
@@ -442,10 +515,26 @@ export class NodeReference {
     await this.click('title')
     await this.comfyPage.clipboard.copy()
   }
+  async duplicate(): Promise<NodeReference> {
+    const getNodeIds = () =>
+      this.comfyPage.page.evaluate(() =>
+        window.app!.canvas.graph!.nodes.map((node) => String(node.id))
+      )
+    const existingIds = new Set(await getNodeIds())
+
+    await this.copy()
+    await this.comfyPage.clipboard.paste()
+
+    const getAddedIds = async () =>
+      (await getNodeIds()).filter((id) => !existingIds.has(id))
+    await expect.poll(getAddedIds).toHaveLength(1)
+    const [addedId] = await getAddedIds()
+    if (!addedId) throw new Error(`Copy of node ${this.id} was not created`)
+    return this.comfyPage.nodeOps.getNodeRefById(addedId)
+  }
   async delete(): Promise<void> {
-    await this.click('title')
-    await this.comfyPage.page.keyboard.press('Delete')
-    await this.comfyPage.nextFrame()
+    await this.select()
+    await this.comfyPage.keyboard.delete()
   }
   async connectWidget(
     originSlotIndex: number,
