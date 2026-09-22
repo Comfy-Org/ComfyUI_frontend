@@ -213,7 +213,6 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
-import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from '@/renderer/extensions/vueNodes/components/imagePreviewLayout'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useTelemetry } from '@/platform/telemetry'
@@ -225,6 +224,8 @@ import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */

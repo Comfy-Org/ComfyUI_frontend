@@ -1989,10 +1989,12 @@ export class LGraphNode
 
     if (graph) {
       const previous = captureInputLayout(this)
+      const nextInputs = [...previous.inputs]
+      nextInputs.splice(slot, 1)
       const result = replaceNodeInputs(
         this,
         previous,
-        previous.inputs.toSpliced(slot, 1),
+        nextInputs,
         previous.links,
         true
       )
@@ -3692,6 +3694,9 @@ export class LGraphNode
 
   /* Forces to redraw or the main canvas (LGraphNode) or the bg canvas (links) */
   setDirtyCanvas(dirty_foreground: boolean, dirty_background?: boolean): void {
+    if (dirty_foreground && LiteGraph.vueNodesMode) {
+      for (const widget of this.widgets ?? []) widget.syncLiveDisabled?.()
+    }
     this.graph?.canvasAction((c) =>
       c.setDirty(dirty_foreground, dirty_background)
     )

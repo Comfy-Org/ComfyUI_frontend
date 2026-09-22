@@ -239,6 +239,11 @@ export class AgentFollowerHostSocket {
     return this.subscribes
   }
 
+  async disconnect(): Promise<void> {
+    if (!this.socket) throw new Error('the app has not opened /ws yet')
+    await this.socket.close()
+  }
+
   /** Every `doc_*` frame the page has sent so far, oldest first. */
   clientDocFrames(): ClientDocFrame[] {
     return [...this.clientFrames]

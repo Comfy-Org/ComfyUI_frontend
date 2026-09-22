@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia'
 import { reactive, toRaw } from 'vue'
 
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlot
+} from '@/lib/litegraph/src/interfaces'
+import { NodeInputSlot, NodeOutputSlot } from '@/lib/litegraph/src/litegraph'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type {
   GraphScope,
@@ -11,6 +17,154 @@ import type { NodeFlagsPatch, NodeState } from '@/types/nodeState'
 import type { NodeId } from '@/types/nodeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { UUID } from '@/utils/uuid'
+
+const SERIALISABLE_SLOT_FIELDS = [
+  'name',
+  'localized_name',
+  'label',
+  'type',
+  'dir',
+  'removable',
+  'shape',
+  'color_off',
+  'color_on',
+  'locked',
+  'nameLocked',
+  'pos'
+] as const satisfies readonly (keyof INodeSlot)[]
+
+function copyOwnFields<T extends object>(
+  target: T,
+  source: T,
+  fields: readonly (keyof T)[]
+): void {
+  Object.assign(
+    target,
+    Object.fromEntries(
+      fields.flatMap((field) =>
+        Object.hasOwn(source, field) ? [[field, source[field]]] : []
+      )
+    )
+  )
+}
+
+function patchInputSlot(
+  target: INodeInputSlot,
+  incoming: INodeInputSlot
+): void {
+  copyOwnFields(target, incoming, SERIALISABLE_SLOT_FIELDS)
+  copyOwnFields(target, incoming, ['widget'])
+  if (
+    !(toRaw(target) instanceof NodeInputSlot) &&
+    Object.hasOwn(incoming, 'link')
+  ) {
+    target.link = incoming.link
+  }
+}
+
+function patchOutputSlot(
+  target: INodeOutputSlot,
+  incoming: INodeOutputSlot
+): void {
+  copyOwnFields(target, incoming, SERIALISABLE_SLOT_FIELDS)
+  copyOwnFields(target, incoming, ['slot_index'])
+  if (
+    !(toRaw(target) instanceof NodeOutputSlot) &&
+    Object.hasOwn(incoming, 'links')
+  ) {
+    target.links = incoming.links
+  }
+}
+
+function copyInputSlot(incoming: INodeInputSlot): INodeInputSlot {
+  const slot: INodeInputSlot = {
+    name: incoming.name,
+    type: incoming.type,
+    boundingRect: incoming.boundingRect
+  }
+  patchInputSlot(slot, incoming)
+  return slot
+}
+
+function copyOutputSlot(incoming: INodeOutputSlot): INodeOutputSlot {
+  const slot: INodeOutputSlot = {
+    name: incoming.name,
+    type: incoming.type,
+    boundingRect: incoming.boundingRect
+  }
+  patchOutputSlot(slot, incoming)
+  return slot
+}
+
+function matchSlotsByName<Slot extends { name: string }>(
+  existing: readonly Slot[],
+  incoming: readonly Slot[]
+): Array<{ index: number; slot: Slot } | undefined> {
+  const used = new Set<number>()
+  return incoming.map((incomingSlot) => {
+    const index = existing.findIndex(
+      (slot, candidate) =>
+        !used.has(candidate) && slot.name === incomingSlot.name
+    )
+    if (index === -1) return undefined
+    used.add(index)
+    return { index, slot: existing[index] }
+  })
+}
+
+function mergeSlotsByName<Slot extends { name: string }>(
+  existing: Slot[],
+  incoming: readonly Slot[],
+  patch: (target: Slot, incoming: Slot) => void,
+  copy: (incoming: Slot) => Slot
+): void {
+  const matches = matchSlotsByName(existing, incoming)
+  const insertions: number[] = []
+
+  for (const [incomingIndex, incomingSlot] of incoming.entries()) {
+    const match = matches[incomingIndex]
+    if (match) {
+      patch(match.slot, incomingSlot)
+      continue
+    }
+
+    const anchor =
+      matches.slice(incomingIndex + 1).find((candidate) => candidate)?.index ??
+      existing.length - insertions.length
+    const insertionIndex =
+      anchor + insertions.filter((prior) => prior <= anchor).length
+    existing.splice(insertionIndex, 0, copy(incomingSlot))
+    insertions.push(anchor)
+  }
+}
+
+/**
+ * Rewrites `existing` in place to hold exactly `incoming`, in `incoming`'s
+ * own order: a slot `incoming` still names by name keeps its live identity
+ * (patched with `incoming`'s fields), and one it drops is removed outright.
+ * Unlike {@link mergeSlotsByName}'s incremental, append-only merge -- which
+ * must never drop a slot a live node still has just because one particular
+ * sync payload omitted it -- this is for a caller whose own `incoming` list
+ * is already the authoritative final shape, e.g. a document reconcile that
+ * has already decided the exact slot set the live node should end up with.
+ */
+function replaceSlotsByName<Slot extends { name: string }>(
+  existing: Slot[],
+  incoming: readonly Slot[],
+  patch: (target: Slot, incoming: Slot) => void,
+  copy: (incoming: Slot) => Slot
+): void {
+  const matches = matchSlotsByName(existing, incoming)
+  const next = incoming.map((incomingSlot, index) => {
+    const target = matches[index]?.slot
+    if (!target) return copy(incomingSlot)
+    patch(target, incomingSlot)
+    return target
+  })
+  const length = next.length
+  for (let i = 0; i < length; i++) existing[i] = next[i]
+  existing.length = length
+}
 
 /**
  * One {@link NodeState} per node in a root-flat, owner-indexed bucket.
@@ -131,8 +285,44 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   ): boolean {
     const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
     if (!state || state.graphId !== graphScope.owningGraphId) return false
-    state.inputs = slots.inputs
-    state.outputs = slots.outputs
+    mergeSlotsByName(state.inputs, slots.inputs, patchInputSlot, copyInputSlot)
+    mergeSlotsByName(
+      state.outputs,
+      slots.outputs,
+      patchOutputSlot,
+      copyOutputSlot
+    )
+    return true
+  }
+
+  /**
+   * As {@link updateNodeSlots}, but `slots` replaces the node's input and
+   * output lists exactly -- in `slots`' own order, dropping any slot it
+   * does not name -- rather than merging into them additively. For a
+   * caller (e.g. an agent CRDT reconcile) whose own `slots` is already the
+   * document-authoritative final shape, so a slot it drops is a real
+   * removal, not a live edit this store must not clobber.
+   */
+  function replaceNodeSlots(
+    graphScope: GraphScope,
+    nodeId: NodeId,
+    slots: Pick<NodeState, 'inputs' | 'outputs'>,
+    _context?: RemoteMutationContext
+  ): boolean {
+    const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
+    if (!state || state.graphId !== graphScope.owningGraphId) return false
+    replaceSlotsByName(
+      state.inputs,
+      slots.inputs,
+      patchInputSlot,
+      copyInputSlot
+    )
+    replaceSlotsByName(
+      state.outputs,
+      slots.outputs,
+      patchOutputSlot,
+      copyOutputSlot
+    )
     return true
   }
 
@@ -145,8 +335,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
     if (!state || state.graphId !== graphScope.owningGraphId) return false
 
-    state.inputs.splice(0, state.inputs.length, ...replacement.inputs)
-    state.outputs.splice(0, state.outputs.length, ...replacement.outputs)
+    replaceSlotsInPlace(state, replacement)
     assignNodeFields(state, replacement)
     return true
   }
@@ -167,6 +356,33 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     if (!state || state.graphId !== graphScope.owningGraphId) return false
     assignNodeFields(state, replacement)
     return true
+  }
+
+  /**
+   * Refills `target` with `source`'s elements without changing `target`'s
+   * identity. A spread into `splice`/`push` turns the element count into an
+   * argument count and can throw `RangeError: Maximum call stack size
+   * exceeded` for a pathologically long slot list; an index-by-index copy
+   * has no such limit.
+   */
+  function refillArray<T>(target: T[], source: readonly T[]): void {
+    const length = source.length
+    for (let i = 0; i < length; i++) target[i] = source[i]
+    target.length = length
+  }
+
+  /**
+   * Refills the registered slot arrays in place so every holder of the live
+   * array (a node's own `inputs`/`outputs`, a reactive view over them) keeps
+   * the identity it was handed. Reassigning the properties instead would
+   * strand those holders on the previous arrays.
+   */
+  function replaceSlotsInPlace(
+    state: NodeState,
+    slots: Pick<NodeState, 'inputs' | 'outputs'>
+  ): void {
+    refillArray(state.inputs, slots.inputs)
+    refillArray(state.outputs, slots.outputs)
   }
 
   /**
@@ -239,6 +455,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     getNode,
     ownsNode,
     registerNode,
+    replaceNodeSlots,
     setNodeFlags,
     updateNode,
     updateNodeFields,

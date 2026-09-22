@@ -4,6 +4,7 @@ import { WorkshopRouterError } from './workshop-router-errors'
 import { isHttpImageSource } from './workshop-image-source'
 import { workshopExampleFile } from './workshop-example-file'
 import { loadWorkshopExampleFile } from './workshop-example-file-loader'
+import { readWorkshopFile } from './workshop-file-encoding'
 
 const downloadedSources = new Map<string, FileValue>()
 const formSources = new WeakMap<FormValues, ReadonlyMap<string, FileValue>>()
@@ -97,6 +98,12 @@ async function uploadUrlInput(
     return url
   } catch (error) {
     signal.throwIfAborted()
+    if (
+      error instanceof WorkshopRouterError &&
+      error.stage === 'upload_put' &&
+      !error.response
+    )
+      await readWorkshopFile(file.slice(0, 1), signal, field.name)
     const failure =
       error instanceof WorkshopRouterError
         ? error

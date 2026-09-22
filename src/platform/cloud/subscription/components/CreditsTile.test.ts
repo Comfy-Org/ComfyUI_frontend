@@ -169,10 +169,7 @@ function renderTile(props: Record<string, unknown> = {}) {
     props,
     global: {
       plugins: [i18n],
-      directives: { tooltip: () => {} },
-      stubs: {
-        Skeleton: { template: '<div role="status" aria-label="Loading"></div>' }
-      }
+      directives: { tooltip: () => {} }
     }
   })
 }

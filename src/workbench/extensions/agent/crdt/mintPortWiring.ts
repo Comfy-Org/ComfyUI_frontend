@@ -8,6 +8,7 @@
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
@@ -49,6 +50,16 @@ export interface MintPortWiringDeps {
   localActorPrefix: string
   /** The live root graph, or null when no workflow is open. */
   getGraph(): MintableGraph | null
+  /**
+   * The bound workflow's own stored root graph id, or null when no workflow
+   * is bound. Read from the workflow's serialized state rather than the live
+   * canvas graph, so it names the bound document's graph even while a
+   * different tab is on screen or a tab switch is loading another workflow
+   * into the shared canvas graph. Scopes layout mints to that graph so a load
+   * already in flight when the binding flips cannot mint the new graph's
+   * nodes into the old document.
+   */
+  boundRootGraphId(): RootGraphId | null
 }
 
 export interface MintPortWiring {
@@ -216,6 +227,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     localActorPrefix: deps.localActorPrefix,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
+    boundRootGraphId: deps.boundRootGraphId,
     source: {
       serializeNode,
       nodeIds() {
