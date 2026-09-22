@@ -44,7 +44,9 @@ const ACCESS_RETRY_MS = 15_000
 const ACCESS_PASSES = 8
 
 const generations = ref<SavedGeneration[]>([])
-const access = ref(new Map<string, { url?: string; renewAt: number }>())
+const access = ref(
+  new Map<string, { url?: string; expiresAt: number; renewAt: number }>()
+)
 const unavailable = ref(new Set<string>())
 const failed = ref(false)
 const viewingKey = ref<string>()
@@ -171,9 +173,11 @@ async function grantAccess(tile: SavedAsset) {
       controller.signal
     )
     if (controller.signal.aborted) return
+    const expiresAt = Date.parse(granted.expires_at)
     access.value.set(tile.assetId, {
       url: granted.content_url,
-      renewAt: renewAt(Date.parse(granted.expires_at))
+      expiresAt,
+      renewAt: renewAt(expiresAt)
     })
   } catch (error) {
     if (controller.signal.aborted) return
@@ -182,9 +186,16 @@ async function grantAccess(tile: SavedAsset) {
       access.value.delete(tile.assetId)
       return
     }
-    // A timeout or a 503 leaves the tile with no URL. Without a deadline of its
-    // own nothing would ask again, and the reader waits on a spinner forever.
-    access.value.set(tile.assetId, { renewAt: Date.now() + ACCESS_RETRY_MS })
+    // A failed renewal must not take away a grant that still has time on it:
+    // the headroom is there so the old URL covers the retry, and dropping it
+    // unmounts the player mid-playback. Without a deadline nothing asks again.
+    const held = access.value.get(tile.assetId)
+    const kept = held && held.expiresAt > Date.now() ? held : undefined
+    access.value.set(tile.assetId, {
+      url: kept?.url,
+      expiresAt: kept?.expiresAt ?? 0,
+      renewAt: Date.now() + ACCESS_RETRY_MS
+    })
   }
 }
 
