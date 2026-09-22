@@ -11,40 +11,40 @@ import type {
 
 type Canvas = Pick<
   RealComfyApp['canvas'],
-  | 'graph'
-  | 'ds'
   | 'canvas'
-  | 'selected_nodes'
-  | 'selectedItems'
-  | 'subgraph'
+  | 'ds'
   | 'graph_mouse'
+  | 'graph'
+  | 'isDragging'
+  | 'linkConnector'
   | 'mouse'
   | 'node_over'
   | 'read_only'
+  | 'selected_nodes'
+  | 'selectedItems'
   | 'selectOnly'
-  | 'isDragging'
-  | 'linkConnector'
+  | 'subgraph'
 > &
   Pick<RealComfyApp['canvas'], keyof typeof canvasActions>
 
 const canvasActions = vi.mockObject<
   Pick<
     RealComfyApp['canvas'],
-    | 'setDirty'
-    | 'setGraph'
     | '_deserializeItems'
     | 'copyToClipboard'
-    | 'pasteFromClipboard'
-    | 'selectItems'
     | 'deleteSelected'
-    | 'processSelect'
+    | 'emitAfterChange'
+    | 'emitBeforeChange'
+    | 'getWidgetAtCursor'
+    | 'pasteFromClipboard'
     | 'processMouseDown'
     | 'processMouseMove'
     | 'processMouseUp'
     | 'processMouseWheel'
-    | 'emitBeforeChange'
-    | 'emitAfterChange'
-    | 'getWidgetAtCursor'
+    | 'processSelect'
+    | 'selectItems'
+    | 'setDirty'
+    | 'setGraph'
   >
 >(
   {
@@ -74,19 +74,19 @@ const canvasActions = vi.mockObject<
 const actions = vi.mockObject<
   Pick<
     RealComfyApp,
-    | 'setup'
-    | 'loadGraphData'
-    | 'queuePrompt'
-    | 'graphToPrompt'
-    | 'registerExtension'
-    | 'registerNodeDef'
-    | 'refreshMissingModels'
-    | 'refreshComboInNodes'
     | 'clean'
-    | 'openClipspace'
     | 'getPreviewFormatParam'
     | 'getRandParam'
+    | 'graphToPrompt'
     | 'handleFile'
+    | 'loadGraphData'
+    | 'openClipspace'
+    | 'queuePrompt'
+    | 'refreshComboInNodes'
+    | 'refreshMissingModels'
+    | 'registerExtension'
+    | 'registerNodeDef'
+    | 'setup'
     | 'showErrorOnFileLoad'
   >
 >(
@@ -146,11 +146,11 @@ const uiActions: Pick<RealComfyApp['ui'], 'restoreMenuPosition'> = {
 
 type AppState = {
   -readonly [K in
+    | 'configuringGraph'
+    | 'lastExecutionError'
     | 'nodeOutputs'
     | 'nodePreviewImages'
-    | 'vueAppReady'
-    | 'configuringGraph'
-    | 'lastExecutionError']: RealComfyApp[K]
+    | 'vueAppReady']: RealComfyApp[K]
 } & {
   rootGraph: RealComfyApp['rootGraphOrUndefined']
   canvas: Canvas
@@ -162,7 +162,7 @@ type AppState = {
     typeof uiActions & { settings: typeof settings }
   menu: Pick<RealComfyApp['menu'], 'element'>
   extensionManager: Pick<RealComfyApp['extensionManager'], 'setting'>
-  clipspace: Pick<typeof RealComfyApp, 'clipspace' | 'clipspace_return_node'>
+  clipspace: Pick<typeof RealComfyApp, 'clipspace_return_node' | 'clipspace'>
 }
 
 function createState(): AppState {
@@ -299,9 +299,9 @@ export const ComfyApp = {
     Pick<
       typeof RealComfyApp,
       | 'copyToClipspace'
-      | 'pasteFromClipspace'
-      | 'onClipspaceEditorSave'
       | 'onClipspaceEditorClosed'
+      | 'onClipspaceEditorSave'
+      | 'pasteFromClipspace'
     >
   >(
     {
