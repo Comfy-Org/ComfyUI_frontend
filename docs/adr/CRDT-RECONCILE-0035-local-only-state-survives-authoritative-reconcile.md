@@ -329,24 +329,25 @@ Both scopes apply; neither alone covers the two repros.
   the upsert projects every other field and every other widget, the entry
   resolves by seq coverage or at the barrier, and last-writer-wins then
   decides.
-- **Lineage-aware.** The session keeps a lineage-scoped **known-id set** in
-  the same registry as the ledger (per follower until A1 lands): the node
-  and link ids the document holds now, plus ids it held whose removal
-  `removeMissing` has not yet applied locally. Ids enter the set at `bind()`
-  and as frames add them; an id leaves the set only when a local sweep has
-  removed it, never merely because the document dropped it. `removeMissing`
-  removes exactly the ids in the set that the document no longer holds, so
-  the rule is never vacuous, and an id the document once held and later
-  reissued to a never-minted local node is retained, because the earlier
-  sweep took it out of the set. This set is per-follower until A1 lands
-  (same as the ledger); ONLY once A1 hoists it to the workflow/document
-  registry does it outlive a panel unmount, so a node deleted remotely
-  while the panel was closed is still in the set at the next `bind()` and is
-  swept as stale rather than retained as local-only. Before A1, a follower
-  mount starts this set empty, so that case is not yet covered. An id the
-  document never held is retained and reported once
+- **Lineage-aware, in PR A now.** The session keeps a lineage-scoped
+  **known-id set** in the same registry as the ledger: the node and link ids
+  the document holds now, plus ids it held whose removal `removeMissing` has
+  not yet applied locally. Ids enter the set at `bind()` and as frames add
+  them; an id leaves the set only when a local sweep has removed it, never
+  merely because the document dropped it. `removeMissing` removes exactly
+  the ids in the set that the document no longer holds, so the rule is
+  never vacuous, and an id the document once held and later reissued to a
+  never-minted local node is retained, because the earlier sweep took it out
+  of the set. An id the document never held is retained and reported once
   per session (`reportError`, `agent_crdt_local_only_node_retained`, dev
   event `local_only_retained`).
+  - **Lifetime, deferred to A1.** This known-id set is per-follower, in the
+    same registry as the ledger, until A1 hoists both to the workflow/document
+    lifetime described in (a). Only once A1 lands does the set outlive a
+    panel unmount, so a node deleted remotely while the panel was closed is
+    still in the set at the next `bind()` and is swept as stale rather than
+    retained as local-only. Before A1, a follower mount starts this set
+    empty, so that case is not yet covered.
 
 The genuine "stale local canvas" case is a lineage break. `doc_reset` and
 `follower_replaced` already run `clearForReset` plus the sweep; that path is
@@ -398,25 +399,9 @@ The frontend cannot fix gap 4 alone. When the human insert path
 the bound document lacks, the layout mint port emits `define_subgraph` for
 that definition (nested definitions first) ahead of the host's `add_node`, in
 mint order, so the applier registers the type before the node that uses it.
-The op itself was #17454's, but that chain is now closed, not merely stale:
-#16644 (the workspace move meant to give the frontend its own writable copy
-of `packages/comfy-multi-player`) closed unmerged on 2026-09-17, and #17454
-(the `define_subgraph` op itself, stacked on #16644) closed unmerged in
-turn on 2026-09-22 — `main` still consumes the npm-published
-`@comfyorg/comfy-multi-player@0.2.1`, which has no `define_subgraph`.
-#17458 — the FRONTEND PROJECTION half, which strips the applier's private
-conflict-resolution bookkeeping from a projected definition before LiteGraph
-consumes it — merged on 2026-09-22 anyway: it reads the definition shape the
-op WOULD write directly off the raw Yjs doc, so it needed no dependency on
-#17454 actually existing at runtime, only on the shape agreeing. **PR C is
-therefore still blocked, but on a narrower remaining gap than before**: the
-frontend projection side is done; what remains is (a) a live successor to
-the closed op PR that actually adds `define_subgraph` to the package this
-frontend consumes, and (b) the doc host admitting it from human actors —
-the host still pins its own copy of the package separately, so a package
-release carrying the op is required regardless of which frontend copy this
-repo consumes. Nothing in PR A, the ledger-ownership follow-up, or PR B
-depends on this chain. Until it closes, the host lands as an opaque
+This requires the package-integration chain named in Dependencies below and
+detailed in Rollout status; nothing in PR A, the ledger-ownership follow-up,
+or PR B depends on it. Until it closes, the host lands as an opaque
 positional node (#18078) and the port reports once per definition id
 (`agent_crdt_blueprint_definition_not_in_doc`).
 
@@ -487,24 +472,38 @@ general availability before the revert path has soaked.
 - **PR C**, blocked on a new define_subgraph package-integration plan (see
   (d)); nothing in A, A1 or B waits on it.
 
-Coordination and the file/test-level rollout checklist for this stack (exact
-files touched, test names, fixture wiring, which open PRs are in flight) are
-tracked outside this ADR, since that detail changes independently of the
-architecture decision and goes stale quickly. Server dependencies named, not
-owned here: per-op outcomes on `doc_ops_result` or op ids on `doc_update`
-(for effect-correlated clearing), a per-lineage generation or reset counter
-on the subscribe acknowledgement (for the reactivation-continuity gap in
-(a)'s parked-entry bullet above), and `define_subgraph` admission from human
-actors (for C).
+The file/test-level rollout checklist for this stack (exact files touched,
+test names, fixture wiring) is tracked outside this ADR. Server dependencies
+named, not owned here: per-op outcomes on `doc_ops_result` or op ids on
+`doc_update` (for effect-correlated clearing), a per-lineage generation or
+reset counter on the subscribe acknowledgement (for the
+reactivation-continuity gap in (a)'s parked-entry bullet above), and
+`define_subgraph` admission from human actors (for PR C). See "Rollout
+status" below for which open PRs are in flight and their current state.
 
-### Status
+## Rollout status
 
-The one snapshot in this ADR that goes stale independently of the
-architecture it decides: PR C's remaining blocker, as (d) records it, is
-narrower than it was — the frontend projection half landed, and what is left
-is a live successor to the closed op change plus doc-host admission. This
-paragraph, not the decision prose in (d), is where that fact is expected to
-need updating again.
+This section, not the decision prose above, is where PR topology and dated
+package/branch status are expected to need updating as the stack moves —
+none of it changes the durable decision, invariants or dependencies recorded
+above.
+
+- **PR C's package-integration chain (blocks (d)).** The op itself was
+  #17454's, stacked on the workspace-move PR #16644 (giving the frontend its
+  own writable copy of `packages/comfy-multi-player`); both closed unmerged
+  (#16644 on 2026-09-17, #17454 on 2026-09-22) — `main` still consumes the
+  npm-published `@comfyorg/comfy-multi-player@0.2.1`, which has no
+  `define_subgraph`. #17458, the frontend PROJECTION half (stripping the
+  applier's private conflict-resolution bookkeeping from a projected
+  definition before LiteGraph consumes it), merged on 2026-09-22 anyway: it
+  reads the definition shape the op WOULD write directly off the raw Yjs doc,
+  so it needed no runtime dependency on #17454, only shape agreement. PR C is
+  therefore blocked on a narrower remaining gap than before: a live successor
+  to the closed op PR that actually adds `define_subgraph` to the package
+  this frontend consumes, plus the doc host admitting it from human actors —
+  the host pins its own copy of the package separately, so a package release
+  carrying the op is required regardless of which frontend copy this repo
+  consumes.
 
 ## Consequences
 
