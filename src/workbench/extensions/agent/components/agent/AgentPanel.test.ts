@@ -1,5 +1,6 @@
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -90,6 +91,7 @@ describe('AgentPanel', () => {
     })
 
     expect(screen.queryByRole('note')).toBeNull()
+    await nextTick()
     await fireEvent.focusIn(screen.getByRole('textbox'))
     await vi.advanceTimersByTimeAsync(500)
 
