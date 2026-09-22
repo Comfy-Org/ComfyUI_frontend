@@ -1,3 +1,4 @@
+import { useAssetsUrlLoader } from '@/platform/assets/composables/useAssetsUrlLoader'
 import { usePaymentReturnUrlLoader } from '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'
 import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -10,7 +11,8 @@ import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUr
 
 /**
  * Aggregates the query-param "deep link" loaders the cloud app checks on mount
- * (`?invite`, `?create_workspace`, `?pricing`, `?topup`, `?settings`), then
+ * (`?invite`, `?create_workspace`, `?pricing`, `?topup`, `?settings`,
+ * `?assets`), then
  * recovers an interrupted checkout. The loaders are instantiated in setup so
  * their `useRoute`/`useRouter` resolve; call `runUrlActionLoaders()` from
  * `onMounted` once the app is ready.
@@ -23,6 +25,7 @@ export function useUrlActionLoaders() {
   const pricingTableUrlLoader = isCloud ? usePricingTableUrlLoader() : null
   const topUpUrlLoader = isCloud ? useTopUpUrlLoader() : null
   const settingsUrlLoader = isCloud ? useSettingsUrlLoader() : null
+  const assetsUrlLoader = isCloud ? useAssetsUrlLoader() : null
   const paymentReturnUrlLoader = isCloud ? usePaymentReturnUrlLoader() : null
   const subscriptionDialog = isCloud ? useSubscriptionDialog() : null
 
@@ -76,6 +79,18 @@ export function useUrlActionLoaders() {
       } catch (error) {
         console.error(
           '[UrlActionLoaders] Failed to load settings panel from URL:',
+          error
+        )
+      }
+    }
+
+    // Open the Assets sidebar panel from URL if present (e.g. ?assets=1).
+    if (assetsUrlLoader) {
+      try {
+        assetsUrlLoader.loadAssetsFromUrl()
+      } catch (error) {
+        console.error(
+          '[UrlActionLoaders] Failed to open assets panel from URL:',
           error
         )
       }
