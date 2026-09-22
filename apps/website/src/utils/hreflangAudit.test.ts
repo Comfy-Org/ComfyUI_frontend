@@ -136,9 +136,9 @@ describe('auditBuiltSite', () => {
       })
     ).toEqual([
       '/article.html: canonical must be https://comfy.org/article.html',
-      '/article.html: page expects en -> https://comfy.org/article.html/, but does not declare it',
-      '/article.html: page expects zh-CN -> https://comfy.org/zh-CN/article.html/, but does not declare it',
-      '/article.html: page expects x-default -> https://comfy.org/article.html/, but does not declare it',
+      '/article.html: page expects en -> https://comfy.org/article.html, but does not declare it',
+      '/article.html: page expects zh-CN -> https://comfy.org/zh-CN/article.html, but does not declare it',
+      '/article.html: page expects x-default -> https://comfy.org/article.html, but does not declare it',
       '/article.html: language cluster missing from sitemap'
     ])
   })

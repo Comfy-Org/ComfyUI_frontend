@@ -1,12 +1,10 @@
-import type { Hreflang } from '../config/locales'
+import type { Hreflang, Locale } from '../config/locales'
 import {
   LOCALE_CODES,
   LOCALES,
-  NON_DEFAULT_LOCALE_PREFIXES,
-  localeHasRoute,
-  resolveLocale
+  NON_DEFAULT_LOCALE_PREFIXES
 } from '../config/locales'
-import { isLocaleInvariantPath } from '../config/routes'
+import { supportsLocaleRoute } from '../config/routes'
 
 export interface Alternate {
   hreflang: Hreflang | 'x-default'
@@ -19,7 +17,9 @@ function trimSlash(pathname: string): string {
 }
 
 function withSlash(pathname: string): string {
-  return pathname === '/' ? '/' : `${pathname}/`
+  return pathname === '/' || pathname.endsWith('.html')
+    ? pathname
+    : `${pathname}/`
 }
 
 function englishPath(pathname: string): string {
@@ -36,12 +36,13 @@ export function hreflangAlternates(
   origin: string
 ): Alternate[] {
   const en = englishPath(pathname)
-  if (en === '/404' || isLocaleInvariantPath(en)) return []
+  const locales = LOCALE_CODES.filter((locale) =>
+    supportsLocaleRoute(locale, en)
+  )
+  if (locales.length === 0) return []
 
   const enHref = new URL(withSlash(en), origin).href
-  const alternates: Alternate[] = LOCALE_CODES.filter((locale) =>
-    localeHasRoute(locale, en)
-  ).map((locale) => ({
+  const alternates: Alternate[] = locales.map((locale) => ({
     hreflang: LOCALES[locale].hreflang,
     href: new URL(
       withSlash(`${LOCALES[locale].prefix}${en === '/' ? '' : en}`),
@@ -65,18 +66,17 @@ export function sitemapAlternates(
     : undefined
 }
 
-export function ogLocale(locale: string): string {
-  return LOCALES[resolveLocale(locale)].ogLocale
+export function ogLocale(locale: Locale): string {
+  return LOCALES[locale].ogLocale
 }
 
 export function ogLocaleAlternates(
-  locale: string,
+  locale: Locale,
   alternates: Alternate[]
 ): string[] {
-  const currentLocale = resolveLocale(locale)
   return LOCALE_CODES.filter(
     (code) =>
-      code !== currentLocale &&
+      code !== locale &&
       alternates.some(
         (alternate) => alternate.hreflang === LOCALES[code].hreflang
       )

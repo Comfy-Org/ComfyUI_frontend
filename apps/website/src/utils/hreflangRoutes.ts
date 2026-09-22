@@ -19,7 +19,7 @@ import { NON_DEFAULT_LOCALE_PREFIXES } from '../config/locales'
 export function routeOf(file: string): string {
   const withoutRoot = file.replace(/^\/src\/pages/, '').replace(/\.astro$/, '')
   const withoutIndex = withoutRoot.replace(/\/index$/, '')
-  return withoutIndex === '' ? '/' : `${withoutIndex}/`
+  return withRouteSlash(withoutIndex || '/')
 }
 
 export interface Alternate {
@@ -28,18 +28,25 @@ export interface Alternate {
 }
 
 /**
- * The path with any locale prefix removed, always with a trailing slash.
+ * The path with any locale prefix removed, with a slash for directory routes.
  *
  * The prefix has to be a whole segment. A bare `startsWith` also matches a route
  * like `/zh-CN-guide/`, which would be stripped to `-guide/` and clustered with
  * whatever page happens to own that path.
  */
+function withRouteSlash(path: string): string {
+  const trimmed = path.replace(/\/+$/, '') || '/'
+  return trimmed === '/' || trimmed.endsWith('.html')
+    ? trimmed
+    : `${trimmed}/`
+}
+
 export function unprefixed(pathname: string): string {
   for (const prefix of NON_DEFAULT_LOCALE_PREFIXES) {
     if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
       const path = pathname.slice(prefix.length) || '/'
-      return path.endsWith('/') ? path : `${path}/`
+      return withRouteSlash(path)
     }
   }
-  return pathname.endsWith('/') ? pathname : `${pathname}/`
+  return withRouteSlash(pathname)
 }

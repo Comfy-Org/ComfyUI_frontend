@@ -134,6 +134,14 @@ export function isLocaleInvariantPath(pathname: string): boolean {
   )
 }
 
+export function supportsLocaleRoute(locale: Locale, pathname: string): boolean {
+  return (
+    pathname.replace(/\/+$/, '') !== '/404' &&
+    !isLocaleInvariantPath(pathname) &&
+    localeHasRoute(locale, pathname)
+  )
+}
+
 /**
  * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
  * URLs and locale-invariant routes pass through unchanged.
@@ -145,7 +153,7 @@ export function localizeHref(
   if (locale === DEFAULT_LOCALE || !href.startsWith('/')) return href
   const suffixAt = href.search(/[?#]/)
   const path = suffixAt === -1 ? href : href.slice(0, suffixAt)
-  if (isLocaleInvariantPath(path) || !localeHasRoute(locale, path)) return href
+  if (!supportsLocaleRoute(locale, path)) return href
   return `${LOCALES[locale].prefix}${href}`
 }
 

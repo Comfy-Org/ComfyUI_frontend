@@ -70,9 +70,11 @@ function isClustered(
   origin: string
 ): boolean {
   const path = unprefixed(route)
+  // Observed links still get audited on exempt routes, and crawlable pages
+  // cannot evade the audit by omitting every link.
   return (
     alternates.length > 0 ||
-    (path !== '/404.html/' &&
+    (path !== '/404.html' &&
       !isLocaleInvariantPath(path) &&
       !isExcludedFromSitemap(`${origin}${route}`) &&
       !Object.hasOwn(redirects, route.replace(/\/$/, '')))

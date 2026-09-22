@@ -85,6 +85,14 @@ describe('hreflangAlternates', () => {
     ).toContain('https://comfy.org/zh-CN/customers/moment-factory/')
   })
 
+  it('keeps file routes without a trailing slash', () => {
+    expect(hreflangAlternates('/article.html', ORIGIN)).toEqual([
+      { hreflang: 'en', href: 'https://comfy.org/article.html' },
+      { hreflang: 'zh-CN', href: 'https://comfy.org/zh-CN/article.html' },
+      { hreflang: 'x-default', href: 'https://comfy.org/article.html' }
+    ])
+  })
+
   it.for([
     '/affiliates/',
     '/affiliates/terms/',
@@ -156,12 +164,6 @@ describe('ogLocaleAlternates', () => {
 
   it('names the Chinese twin when the page has one', () => {
     expect(ogLocaleAlternates('en', alt('en', 'zh-CN', 'x-default'))).toEqual([
-      'zh_CN'
-    ])
-  })
-
-  it('treats an unrecognized locale as English', () => {
-    expect(ogLocaleAlternates('fr', alt('en', 'zh-CN', 'x-default'))).toEqual([
       'zh_CN'
     ])
   })
