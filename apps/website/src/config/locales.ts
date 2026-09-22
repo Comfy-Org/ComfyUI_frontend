@@ -46,7 +46,7 @@ function normalizeRoute(route: string): string {
 }
 
 const PARTIAL_LOCALE_ROUTES: Partial<Record<Locale, ReadonlySet<string>>> = {
-  ja: new Set(['/'].map(normalizeRoute))
+  ja: new Set(['/'])
 }
 
 export function localeHasRoute(locale: Locale, route: string): boolean {

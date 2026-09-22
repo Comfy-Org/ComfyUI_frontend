@@ -27,13 +27,6 @@ export interface Alternate {
   href: string
 }
 
-/**
- * The path with any locale prefix removed, with a slash for directory routes.
- *
- * The prefix has to be a whole segment. A bare `startsWith` also matches a route
- * like `/zh-CN-guide/`, which would be stripped to `-guide/` and clustered with
- * whatever page happens to own that path.
- */
 function withRouteSlash(path: string): string {
   const trimmed = path.replace(/\/+$/, '') || '/'
   return trimmed === '/' || trimmed.endsWith('.html')
@@ -41,6 +34,13 @@ function withRouteSlash(path: string): string {
     : `${trimmed}/`
 }
 
+/**
+ * The path with any locale prefix removed, with a slash for directory routes.
+ *
+ * The prefix has to be a whole segment. A bare `startsWith` also matches a route
+ * like `/zh-CN-guide/`, which would be stripped to `-guide/` and clustered with
+ * whatever page happens to own that path.
+ */
 export function unprefixed(pathname: string): string {
   for (const prefix of NON_DEFAULT_LOCALE_PREFIXES) {
     if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {

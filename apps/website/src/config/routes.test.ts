@@ -55,9 +55,12 @@ describe('localizeHref', () => {
 
   it('never prefixes locale-invariant routes', () => {
     expect(localizeHref('/terms-of-service', 'zh-CN')).toBe('/terms-of-service')
-    expect(localizeHref('/enterprise', 'zh-CN')).toBe('/enterprise')
+  })
+
+  it('links to translated enterprise pages', () => {
+    expect(localizeHref('/enterprise', 'zh-CN')).toBe('/zh-CN/enterprise')
     expect(localizeHref('/enterprise/managed-builds', 'zh-CN')).toBe(
-      '/enterprise/managed-builds'
+      '/zh-CN/enterprise/managed-builds'
     )
   })
 

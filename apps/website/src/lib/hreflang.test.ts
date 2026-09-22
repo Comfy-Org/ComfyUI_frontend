@@ -8,7 +8,6 @@ import { isNoindexPathname } from '../config/indexing'
 import type { Locale } from '../config/locales'
 import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
 import { redirects } from '../config/redirects'
-import { isLocaleInvariantPath } from '../config/routes'
 import { routeOf } from '../utils/hreflangRoutes'
 import type { Alternate } from './hreflang'
 import {
@@ -219,24 +218,29 @@ describe('the emitter agrees with the page tree', () => {
     .filter(
       ({ pathname, unprefixed }) =>
         unprefixed !== '/404/' &&
-        !isLocaleInvariantPath(unprefixed) &&
         !isNoindexPathname(pathname) &&
         !redirected.has(pathname.replace(/\/$/, ''))
     )
 
-  const cases = publishedPages.map(({ pathname, unprefixed }) => ({
-    pathname,
-    expected: LOCALE_CODES.flatMap((locale) =>
-      publishedPages
-        .filter(
-          (page) => page.locale === locale && page.unprefixed === unprefixed
-        )
-        .map((page) => ({
-          hreflang: LOCALES[locale].hreflang,
-          href: new URL(page.pathname, ORIGIN).href
-        }))
+  const cases = publishedPages.map(({ pathname, unprefixed }) => {
+    const twins = publishedPages.filter(
+      (page) => page.unprefixed === unprefixed
     )
-  }))
+    return {
+      pathname,
+      expected:
+        twins.length < 2
+          ? []
+          : LOCALE_CODES.flatMap((locale) =>
+              twins
+                .filter((page) => page.locale === locale)
+                .map((page) => ({
+                  hreflang: LOCALES[locale].hreflang,
+                  href: new URL(page.pathname, ORIGIN).href
+                }))
+            )
+    }
+  })
 
   it.for(cases)('advertises exactly the published locales on $pathname', ({
     pathname,
