@@ -233,22 +233,24 @@ describe('GettingStartedScreen', () => {
       )
     }
 
-    it('shows each tutorial its own bundled cover while the catalog is still loading', async () => {
-      useWorkflowTemplatesStore().isLoaded = false
+    it.for([[true], [false]])(
+      'shows each tutorial its own bundled cover, catalog loaded: %s',
+      async ([isLoaded]) => {
+        useWorkflowTemplatesStore().isLoaded = isLoaded
 
-      await openTutorials()
+        await openTutorials()
 
-      const sources = tutorialCards.map((tutorial) =>
-        screen
-          .getByAltText(i18n.global.t(tutorial.titleKey))
-          .getAttribute('src')
-      )
+        const sources = tutorialCards.map((tutorial) =>
+          screen
+            .getByAltText(i18n.global.t(tutorial.titleKey))
+            .getAttribute('src')
+        )
 
-      expect(
-        sources,
-        'the covers ship with the app, so a catalog that never loads must not leave the tutorials blank or borrowing template art'
-      ).toEqual(tutorialCards.map((tutorial) => tutorial.thumbnail))
-    })
+        expect(sources).toEqual(
+          tutorialCards.map((tutorial) => tutorial.thumbnail)
+        )
+      }
+    )
   })
 
   describe('exits', () => {
