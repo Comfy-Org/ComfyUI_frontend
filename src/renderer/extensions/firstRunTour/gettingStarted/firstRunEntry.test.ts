@@ -114,19 +114,83 @@ describe('useFirstRunEntry', () => {
     ]
   ] as const
 
-  describe('who counts as a first-run candidate', () => {
-    it('is a fresh cloud user with every condition met', () => {
-      expect(useFirstRunEntry().isFirstRunCandidate()).toBe(true)
+  describe('what the boot reports to surfaces that must yield to it', () => {
+    it('records that Getting Started took the screen', async () => {
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(entry.firstRunTookScreen.value).toBe(true)
     })
 
-    it.for([...permanentDisqualifiers, ...transientDisqualifiers])(
-      'is not a candidate: %s',
-      ([, disqualify]) => {
-        disqualify()
+    it('records that a url-intent tour took the screen', async () => {
+      const entry = useFirstRunEntry()
 
-        expect(useFirstRunEntry().isFirstRunCandidate()).toBe(false)
+      await entry.handleStartupOutcome('url-intent')
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(entry.firstRunTookScreen.value).toBe(true)
+    })
+
+    it.for([
+      [
+        'restored work',
+        async (entry: FirstRunEntry) => entry.handleStartupOutcome('restored')
+      ],
+      [
+        'a boot that only deferred',
+        async (entry: FirstRunEntry) => {
+          mocks.isDesktopWidth = false
+          await entry.handleStartupOutcome('fresh')
+        }
+      ],
+      [
+        'a url-intent boot whose tour did not start',
+        async (entry: FirstRunEntry) => {
+          mocks.beginTour.mockResolvedValue(false)
+          await entry.handleStartupOutcome('url-intent')
+          await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+        }
+      ]
+    ] as const)('reports no first-run screen for %s', async ([, boot]) => {
+      const entry = useFirstRunEntry()
+
+      await boot(entry)
+
+      expect(entry.firstRunTookScreen.value).toBe(false)
+    })
+
+    it('settles the startup decision only once the url stage has run', async () => {
+      const entry = useFirstRunEntry()
+      let settled = false
+      void entry.whenStartupDecided().then(() => {
+        settled = true
+      })
+
+      await entry.handleStartupOutcome('fresh')
+      await Promise.resolve()
+      expect(settled).toBe(false)
+
+      await entry.handleUrlWorkflow('fresh')
+      await vi.waitFor(() => expect(settled).toBe(true))
+    })
+
+    it('settles the startup decision after the grace period if the boot never reports', async () => {
+      vi.useFakeTimers()
+      try {
+        const entry = useFirstRunEntry()
+        let settled = false
+        void entry.whenStartupDecided().then(() => {
+          settled = true
+        })
+
+        await vi.advanceTimersByTimeAsync(15_000)
+
+        expect(settled).toBe(true)
+      } finally {
+        vi.useRealTimers()
       }
-    )
+    })
   })
 
   describe('what a fresh user sees', () => {
