@@ -13234,6 +13234,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Daha ince yüzey ayrıntılarına sahip, daha yüksek doğruluklu geometri için ek bir iyileştirme geçişi çalıştırın."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Ultra geçişinin çözünürlüğü: 2k, en ince yüzey ayrıntıları için 2048³; 4k ise 4096³ olarak çalıştırır. 4k, meshy-7.1 veya daha yenisini gerektirir. Yalnızca ultra_mode etkinleştirildiğinde kullanılır."
       }
     },
     "outputs": {
@@ -13300,6 +13304,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Daha ince yüzey ayrıntılarına sahip, daha yüksek doğruluklu geometri için 2048³ çözünürlükte ek bir iyileştirme geçişi çalıştırın."
       }
     },
     "outputs": {
@@ -13441,6 +13449,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Daha ince yüzey ayrıntılarına sahip, daha yüksek doğruluklu geometri için ek bir iyileştirme geçişi çalıştırın."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Ultra geçişinin çözünürlüğü: 2k, en ince yüzey ayrıntıları için 2048³; 4k ise 4096³ olarak çalıştırır. 4k, meshy-7.1 veya daha yenisini gerektirir. Yalnızca ultra_mode etkinleştirildiğinde kullanılır."
       }
     },
     "outputs": {

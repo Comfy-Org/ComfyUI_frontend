@@ -347,6 +347,11 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.disabled = value ?? false
   }
 
+  syncLiveDisabled(): void {
+    if (Object.getOwnPropertyDescriptor(this, 'disabled')?.get)
+      this._state.disabled = this.disabled ?? false
+  }
+
   // fallow-ignore-next-line unused-class-member
   element?: HTMLElement
   callback?(
