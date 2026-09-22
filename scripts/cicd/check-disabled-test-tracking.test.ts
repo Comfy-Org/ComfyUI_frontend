@@ -138,6 +138,27 @@ const regex = /describe.fixme('not code')/
     ])
   })
 
+  it('finds a disabled test with an interpolated title', () => {
+    const root = createRepository()
+    write(root, 'tests/example.test.ts', `const variant = 'fast'\n`)
+    const base = commit(root, 'base')
+
+    write(
+      root,
+      'tests/example.test.ts',
+      [
+        "const variant = 'fast'",
+        'test.skip(`case ${variant}`, () => {})',
+        ''
+      ].join('\n')
+    )
+    const head = commit(root, 'disable interpolated test')
+
+    expect(findViolations(root, base, head)).toEqual([
+      '  tests/example.test.ts:2: test.skip(`case ${variant}`, () => {})'
+    ])
+  })
+
   it.for([
     {
       enabled: `it.each([1, 2])('case %s', () => {})\n`,

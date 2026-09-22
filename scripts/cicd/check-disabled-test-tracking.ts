@@ -7,7 +7,8 @@ import type {
   Node,
   NoSubstitutionTemplateLiteral,
   StringLiteral,
-  SourceFile
+  SourceFile,
+  TemplateExpression
 } from 'typescript'
 import {
   createSourceFile,
@@ -17,6 +18,7 @@ import {
   isNoSubstitutionTemplateLiteral,
   isPropertyAccessExpression,
   isStringLiteral,
+  isTemplateExpression,
   ScriptTarget,
   SyntaxKind
 } from 'typescript'
@@ -43,6 +45,11 @@ type TestCall = {
   factory: boolean
   modifier?: MemberName
 }
+
+type TestTitle =
+  | StringLiteral
+  | NoSubstitutionTemplateLiteral
+  | TemplateExpression
 
 const HUNK_PATTERN = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/
 const TEST_SOURCE_PATTERN = /\.(?:spec|test)\.[cm]?[jt]sx?$/
@@ -100,6 +107,7 @@ function isDisablingArgument(argument: Expression): boolean {
   return (
     isStringLiteral(argument) ||
     isNoSubstitutionTemplateLiteral(argument) ||
+    isTemplateExpression(argument) ||
     argument.kind === SyntaxKind.TrueKeyword
   )
 }
@@ -131,10 +139,18 @@ function testCall(expression: LeftHandSideExpression): TestCall | undefined {
   }
 }
 
-function isTitle(
-  argument: Expression
-): argument is StringLiteral | NoSubstitutionTemplateLiteral {
-  return isStringLiteral(argument) || isNoSubstitutionTemplateLiteral(argument)
+function isTitle(argument: Expression): argument is TestTitle {
+  return (
+    isStringLiteral(argument) ||
+    isNoSubstitutionTemplateLiteral(argument) ||
+    isTemplateExpression(argument)
+  )
+}
+
+function titleText(title: TestTitle, sourceFile: SourceFile): string {
+  return isTemplateExpression(title)
+    ? title.getText(sourceFile).replace(/\s+/g, ' ')
+    : title.text
 }
 
 function declarationContext(
@@ -188,7 +204,7 @@ function testDeclaration(
       modifier,
       sourceFile
     ),
-    title: title?.text ?? ''
+    title: title ? titleText(title, sourceFile) : ''
   }
 }
 
