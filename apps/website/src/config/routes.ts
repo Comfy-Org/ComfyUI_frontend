@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, localeHasRoute, localePrefix } from './locales'
+import { DEFAULT_LOCALE, LOCALES, localeHasRoute } from './locales'
 import type { Locale } from './locales'
 
 const baseRoutes = {
@@ -58,10 +58,9 @@ type RouteKey = keyof typeof baseRoutes
 
 type Routes = Readonly<Record<RouteKey, string>>
 
-// Routes that are served only at their canonical path regardless of the
-// active locale. Localized variants of these routes intentionally do not
-// exist, so getRoutes(<non-en>) must not prefix them — emitting
-// /zh-CN/<route> would produce a dead link.
+// Navigation and language metadata keep these routes on the English path.
+// Prefixing an English-only route can create a dead link; routes with a
+// translated page need a deliberate policy update before it is advertised.
 //
 // affiliateTerms: legal-reviewed English-only document. See the comment
 // header in src/pages/affiliates/terms.astro and the affiliate-terms i18n
@@ -127,10 +126,6 @@ const LOCALE_INVARIANT_PATHS = new Set<string>([
   ...LOCALE_INVARIANT_EXTRA_PATHS
 ])
 
-/**
- * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
- * URLs and locale-invariant routes pass through unchanged.
- */
 /** True for a locale-invariant route or anything nested under one. */
 export function isLocaleInvariantPath(pathname: string): boolean {
   return [...LOCALE_INVARIANT_PATHS].some(
@@ -138,18 +133,19 @@ export function isLocaleInvariantPath(pathname: string): boolean {
   )
 }
 
+/**
+ * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
+ * URLs and locale-invariant routes pass through unchanged.
+ */
 export function localizeHref(
   href: string,
   locale: Locale = DEFAULT_LOCALE
 ): string {
   if (locale === DEFAULT_LOCALE || !href.startsWith('/')) return href
   const suffixAt = href.search(/[?#]/)
-  if (suffixAt !== -1) {
-    return `${localizeHref(href.slice(0, suffixAt), locale)}${href.slice(suffixAt)}`
-  }
-  if (isLocaleInvariantPath(href)) return href
-  if (!localeHasRoute(locale, href)) return href
-  return `${localePrefix(locale)}${href}`
+  const path = suffixAt === -1 ? href : href.slice(0, suffixAt)
+  if (isLocaleInvariantPath(path) || !localeHasRoute(locale, path)) return href
+  return `${LOCALES[locale].prefix}${href}`
 }
 
 export function getRoutes(locale: Locale = DEFAULT_LOCALE): Routes {

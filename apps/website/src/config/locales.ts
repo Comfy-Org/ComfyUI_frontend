@@ -30,15 +30,15 @@ export function isLocale(value: string | undefined): value is Locale {
   return value !== undefined && Object.hasOwn(LOCALES, value)
 }
 
+export function resolveLocale(value: string | undefined): Locale {
+  return isLocale(value) ? value : DEFAULT_LOCALE
+}
+
 export const LOCALE_CODES = Object.keys(LOCALES).filter(isLocale)
 
-export const LOCALE_PREFIXES = LOCALE_CODES.filter(
+export const NON_DEFAULT_LOCALE_PREFIXES = LOCALE_CODES.filter(
   (code) => code !== DEFAULT_LOCALE
 ).map((code) => LOCALES[code].prefix)
-
-export function localePrefix(locale: Locale): string {
-  return LOCALES[locale].prefix
-}
 
 const PARTIAL_LOCALE_ROUTES: Partial<Record<Locale, ReadonlySet<string>>> = {
   ja: new Set(['/'])

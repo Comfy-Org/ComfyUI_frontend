@@ -2,13 +2,14 @@
  * The route model `hreflangAudit.ts` checks the built site against, and the
  * page-tree oracle `hreflang.test.ts` checks the emitter's route list against.
  *
- * Deliberately NOT the production builder. `src/lib/hreflang.ts` decides what a
- * page emits; this restates the rule from the file tree independently, so a
- * defect in the emitter is caught rather than mirrored by its own checker.
- * Kept free of `import.meta.glob` so a plain Node script can import it.
+ * Deliberately independent of the production builder: `routeOf` maps files
+ * in the page tree, and the audit compares emitted links with built routes.
+ * Locale prefixes are shared policy, but neither check calls the emitter.
+ * That catches link construction defects. Kept free of `import.meta.glob`
+ * so a plain Node script can import it.
  */
 
-import { LOCALE_PREFIXES, LOCALES } from '../config/locales'
+import { LOCALES, NON_DEFAULT_LOCALE_PREFIXES } from '../config/locales'
 
 export const ZH_PREFIX = LOCALES['zh-CN'].prefix
 
@@ -39,7 +40,7 @@ export interface Alternate {
  * whatever page happens to own that path.
  */
 export function unprefixed(pathname: string): string {
-  for (const prefix of LOCALE_PREFIXES) {
+  for (const prefix of NON_DEFAULT_LOCALE_PREFIXES) {
     if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
       const path = pathname.slice(prefix.length) || '/'
       return path.endsWith('/') ? path : `${path}/`

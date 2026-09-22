@@ -1,12 +1,10 @@
 import type { Locale } from '../config/locales'
 import {
-  DEFAULT_LOCALE,
   LOCALE_CODES,
-  LOCALE_PREFIXES,
   LOCALES,
-  isLocale,
+  NON_DEFAULT_LOCALE_PREFIXES,
   localeHasRoute,
-  localePrefix
+  resolveLocale
 } from '../config/locales'
 import { isLocaleInvariantPath } from '../config/routes'
 
@@ -26,7 +24,7 @@ function withSlash(pathname: string): string {
 
 function englishPath(pathname: string): string {
   const path = trimSlash(pathname)
-  for (const prefix of LOCALE_PREFIXES) {
+  for (const prefix of NON_DEFAULT_LOCALE_PREFIXES) {
     if (path === prefix) return '/'
     if (path.startsWith(`${prefix}/`)) return path.slice(prefix.length)
   }
@@ -46,7 +44,7 @@ export function hreflangAlternates(
   ).map((locale) => ({
     hreflang: LOCALES[locale].hreflang,
     href: new URL(
-      withSlash(`${localePrefix(locale)}${en === '/' ? '' : en}`),
+      withSlash(`${LOCALES[locale].prefix}${en === '/' ? '' : en}`),
       origin
     ).href
   }))
@@ -68,16 +66,14 @@ export function sitemapAlternates(
 }
 
 export function ogLocale(locale: string): string {
-  return isLocale(locale)
-    ? LOCALES[locale].ogLocale
-    : LOCALES[DEFAULT_LOCALE].ogLocale
+  return LOCALES[resolveLocale(locale)].ogLocale
 }
 
 export function ogLocaleAlternates(
   locale: string,
   alternates: Alternate[]
 ): string[] {
-  const currentLocale = isLocale(locale) ? locale : DEFAULT_LOCALE
+  const currentLocale = resolveLocale(locale)
   return LOCALE_CODES.filter(
     (code) =>
       code !== currentLocale &&

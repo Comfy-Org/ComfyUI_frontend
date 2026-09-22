@@ -1,5 +1,5 @@
 import type { Locale } from '../config/locales'
-import { DEFAULT_LOCALE, isLocale } from '../config/locales'
+import { resolveLocale } from '../config/locales'
 import { externalLinks } from '../config/routes'
 
 export type JsonLdNode = Record<string, unknown> & { '@type': string }
@@ -56,7 +56,7 @@ export function pageContext(
   pathname: string,
   currentLocale: string | undefined
 ): PageContext & { url: string } {
-  const locale = isLocale(currentLocale) ? currentLocale : DEFAULT_LOCALE
+  const locale = resolveLocale(currentLocale)
   return {
     siteUrl: siteUrlFrom(site),
     locale,
