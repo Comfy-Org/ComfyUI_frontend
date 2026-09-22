@@ -201,13 +201,11 @@ describe('Composer', () => {
     expect(emitted().mentionPick).toBeUndefined()
   })
 
-  it('hints at ideas, references and dragged assets without skills', () => {
+  it('uses one primary action in the empty composer placeholder', () => {
     mount()
 
-    const text = screen.getByText(
-      'Describe ideas, @ add references, drag in assets'
-    )
-    expect(text).toBeVisible()
+    expect(screen.getByText('Describe what you want to create')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Reference' })).toBeVisible()
   })
 
   it.for([
@@ -224,7 +222,7 @@ describe('Composer', () => {
       mount()
       const box = screen.getByRole('textbox')
       expect(
-        screen.getByText('Describe ideas, @ add references, drag in assets')
+        screen.getByText('Describe what you want to create')
       ).toBeVisible()
 
       await userEvent.click(box)
@@ -232,15 +230,14 @@ describe('Composer', () => {
 
       expect(store.draft).toBe('hello')
       expect(
-        isInaccessible(
-          screen.getByText('Describe ideas, @ add references, drag in assets')
-        )
+        isInaccessible(screen.getByText('Describe what you want to create'))
       ).toBe(true)
+      expect(screen.getByRole('button', { name: 'Reference' })).toBeVisible()
 
       await userEvent.keyboard('{Control>}a{/Control}{Backspace}')
       expect(store.draft).toBe('')
       expect(
-        screen.getByText('Describe ideas, @ add references, drag in assets')
+        screen.getByText('Describe what you want to create')
       ).toBeVisible()
       expect(store.attachments).toEqual(attachments)
     }
@@ -255,6 +252,18 @@ describe('Composer', () => {
 
     expect(emitted().selectNodes).toHaveLength(1)
     expect(getMentionNodes).not.toHaveBeenCalled()
+  })
+
+  it('opens the node and workflow reference picker from the @ control', async () => {
+    const getMentionNodes = vi.fn(() => [{ id: '7', title: 'KSampler' }])
+    mount({ getMentionNodes })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }))
+
+    expect(useAgentComposerStore().draft).toBe('@')
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
+    expect(getMentionNodes).toHaveBeenCalled()
   })
 
   it('enters graph selection mode from a click in Add to prompt', async () => {
@@ -1718,9 +1727,7 @@ describe('Composer', () => {
   it('keeps the empty prompt hint visible when only nodes are selected', () => {
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    expect(
-      screen.getByText('Describe ideas, @ add references, drag in assets')
-    ).toBeVisible()
+    expect(screen.getByText('Describe what you want to create')).toBeVisible()
   })
 
   it('hides the conditional entries from the add menu by default', async () => {
