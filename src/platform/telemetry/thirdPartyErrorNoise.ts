@@ -49,9 +49,7 @@ export function sentryThirdPartyErrorFilter(
     )
       return null
     const exceptionMessages =
-      (event.exception?.values as unknown[] | undefined)?.flatMap(
-        exceptionValueFrom
-      ) ?? []
+      event.exception?.values?.flatMap(exceptionValueFrom) ?? []
     return exceptionMessages.length > 0 &&
       exceptionMessages.every(isThirdPartyErrorNoise)
       ? null

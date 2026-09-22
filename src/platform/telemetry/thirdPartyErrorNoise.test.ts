@@ -72,6 +72,25 @@ describe('third-party error noise', () => {
     expect(sentryThirdPartyErrorFilter(event, {})).toBe(event)
   })
 
+  it('ignores malformed linked entries while dropping extension noise', () => {
+    const event = {
+      type: undefined,
+      exception: { values: [] }
+    } satisfies ErrorEvent
+    const throwingException = Object.defineProperty({}, 'value', {
+      get: () => {
+        throw new Error('blocked value access')
+      }
+    })
+    Reflect.set(event.exception, 'values', [
+      null,
+      throwingException,
+      { value: EXTENSION_ERROR }
+    ])
+
+    expect(sentryThirdPartyErrorFilter(event, {})).toBeNull()
+  })
+
   it('keeps the event when inspecting an exception throws', () => {
     const event = { type: undefined } satisfies ErrorEvent
     const originalException = new Proxy(
