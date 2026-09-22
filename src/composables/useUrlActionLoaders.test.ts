@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createMemoryHistory, createRouter, useRouter } from 'vue-router'
+
 import { useUrlActionLoaders } from './useUrlActionLoaders'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
@@ -11,6 +13,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 const mocks = vi.hoisted(() => ({
   reportError: vi.fn(),
+  loadAssets: vi.fn(async () => undefined),
+  useAssets: vi.fn(),
   loadInvite: vi.fn(async () => undefined),
   loadCreateWorkspace: vi.fn(async () => undefined),
   loadPricingTable: vi.fn(async () => undefined),
@@ -46,6 +50,22 @@ mocks.usePaymentReturn.mockImplementation(() => ({
 }))
 mocks.useSubscriptionDialog.mockImplementation(() => ({
   resumePendingPricingFlow: mocks.resumePendingPricingFlow
+}))
+mocks.useAssets.mockImplementation(() => ({
+  loadAssetsFromUrl: mocks.loadAssets
+}))
+
+// A real router rather than a stub: the assertion is the URL a reader is left
+// looking at, and only the real thing resolves and merges a query the way the
+// app does.
+vi.mock(import('vue-router'), { spy: true })
+
+const router = createRouter({
+  history: createMemoryHistory(),
+  routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
+})
+vi.mock(import('@/platform/assets/composables/useAssetsUrlLoader'), () => ({
+  useAssetsUrlLoader: mocks.useAssets
 }))
 
 vi.mock(import('@/platform/workspace/composables/useInviteUrlLoader'), () => ({
@@ -106,6 +126,34 @@ describe('useUrlActionLoaders', () => {
     mocks.useSubscriptionDialog.mockImplementation(() => ({
       resumePendingPricingFlow: mocks.resumePendingPricingFlow
     }))
+    mocks.useAssets.mockImplementation(() => ({
+      loadAssetsFromUrl: mocks.loadAssets
+    }))
+    vi.mocked(useRouter).mockReturnValue(router)
+  })
+
+  // Most loaders fire their cleanup replace without waiting for it, so with two
+  // deep links in one URL the later navigation cancels the earlier one and its
+  // param survives. The sweep at the end is what the reader actually sees.
+  it('clears a param an earlier loader raced away, leaving the rest alone', async () => {
+    await router.replace({
+      path: '/',
+      query: { topup: '1', assets: '1', workflow: 'keep-me' }
+    })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
+  })
+
+  it('keeps a query that carries no deep-link param', async () => {
+    await router.replace({ path: '/', query: { workflow: 'keep-me' } })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
   })
 
   it('does not instantiate or run any loader off cloud', async () => {

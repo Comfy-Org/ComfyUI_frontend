@@ -1,3 +1,5 @@
+import { useRouter } from 'vue-router'
+
 import { useAssetsUrlLoader } from '@/platform/assets/composables/useAssetsUrlLoader'
 import { usePaymentReturnUrlLoader } from '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'
 import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
@@ -26,7 +28,21 @@ async function attempt(what: string, run: () => void | Promise<void>) {
  * instantiated in setup so their `useRoute`/`useRouter` resolve; call
  * `runUrlActionLoaders()` from `onMounted` once the app is ready.
  */
+/** Every param a loader above consumes, stripped centrally as a backstop. */
+const HANDLED_PARAMS = [
+  'invite',
+  'create_workspace',
+  'pricing',
+  'stop',
+  'cycle',
+  'topup',
+  'settings',
+  'assets'
+]
+
 export function useUrlActionLoaders() {
+  const router = useRouter()
+
   // Every one of these is cloud-only, so they are created and guarded together.
   const cloud = isCloud
     ? {
@@ -79,6 +95,17 @@ export function useUrlActionLoaders() {
     await attempt('handle payment return from URL', () =>
       cloud.paymentReturn.loadPaymentReturnFromUrl()
     )
+
+    // Most loaders issue their own cleanup replace and do not wait for it, so
+    // two deep links in one URL can race: the later navigation cancels the
+    // earlier one and leaves its param behind. Whatever survived that, this
+    // removes once every loader has had its turn.
+    await attempt('clear handled deep-link params from the URL', async () => {
+      const query = { ...router.currentRoute.value.query }
+      if (!HANDLED_PARAMS.some((param) => param in query)) return
+      for (const param of HANDLED_PARAMS) delete query[param]
+      await router.replace({ query })
+    })
 
     // Reopen a checkout that was interrupted by a redirect payment. Runs here,
     // not during workspace init, so the first-run and Templates overlays are
