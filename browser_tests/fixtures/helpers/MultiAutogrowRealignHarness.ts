@@ -1,4 +1,4 @@
-import type { Page, TestInfo } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type {
@@ -7,7 +7,10 @@ import type {
 } from '@comfyorg/ingest-types'
 import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 import type { PromptResponse } from '@/platform/remote/comfyui/types'
-import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyApiWorkflow,
+  WorkflowJSON04
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   zComfyApiWorkflow,
   zComfyWorkflow
@@ -76,6 +79,11 @@ function getQueuedPrompt(body: unknown): ComfyApiWorkflow {
   return zComfyApiWorkflow.parse(body.prompt)
 }
 
+type ParsedSavedNode = WorkflowJSON04['nodes'][number]
+
+/** `[targetNodeId, inputName]` for one saved link, once resolved. */
+type SavedLinkTarget = readonly [ParsedSavedNode['id'], string | undefined]
+
 /**
  * Owns the lifecycle the multi-autogrow realign scenarios share: the routed
  * `/ws` host, the agent thread/run-mode/messages endpoints, the boot mocks,
@@ -88,6 +96,13 @@ export class MultiAutogrowRealignHarness {
   readonly topbar: Topbar
   readonly vueNodes: VueNodeHelpers
   readonly agentPanel: AgentPanel
+
+  /** These locator chains depend on nothing runtime, so they are built once. */
+  readonly panel: Locator
+  readonly targetNode: Locator
+  readonly promptField: Locator
+  readonly widthInput: Locator
+  readonly heightInput: Locator
 
   private submittedPrompt: ComfyApiWorkflow | undefined
   private persistence:
@@ -105,28 +120,14 @@ export class MultiAutogrowRealignHarness {
     this.topbar = new Topbar(page)
     this.vueNodes = new VueNodeHelpers(page)
     this.agentPanel = new AgentPanel(page)
-  }
 
-  get panel() {
-    return this.agentPanel.root
-  }
-
-  get targetNode() {
-    return this.vueNodes.getNodeLocator(TARGET_ID)
-  }
-
-  get promptField() {
-    return this.targetNode.getByRole('textbox', { name: 'prompt' })
-  }
-
-  get widthInput() {
-    return this.vueNodes.getInputNumberControls(
+    this.panel = this.agentPanel.root
+    this.targetNode = this.vueNodes.getNodeLocator(TARGET_ID)
+    this.promptField = this.targetNode.getByRole('textbox', { name: 'prompt' })
+    this.widthInput = this.vueNodes.getInputNumberControls(
       this.targetNode.getByLabel('width', { exact: true }).first()
     ).input
-  }
-
-  get heightInput() {
-    return this.vueNodes.getInputNumberControls(
+    this.heightInput = this.vueNodes.getInputNumberControls(
       this.targetNode.getByLabel('height', { exact: true }).first()
     ).input
   }
@@ -146,8 +147,10 @@ export class MultiAutogrowRealignHarness {
       )
     )
 
-    // The reattach scenario sends a second turn, which re-renders chrome the
-    // boot mocks in `cloudBootMocks.ts` don't cover.
+    // Neither route is registered by `bootAgentApp`'s own boot mocks: the
+    // model-folder list is read while the panel chrome renders, and
+    // `queueStore`'s background job poll runs for the lifetime of every one
+    // of this file's tests, not only a scenario that sends a second turn.
     const folders: ModelFolderInfo[] = []
     await page.route('**/api/experiment/models', (route) =>
       route.fulfill(jsonRoute(folders))
@@ -265,6 +268,20 @@ export class MultiAutogrowRealignHarness {
   async targetActiveWorkflow(): Promise<void> {
     await this.agentPanel.open()
     await this.agentPanel.selectWorkflow()
+  }
+
+  /**
+   * The ready state every scenario in this fixture starts from: the panel
+   * bound to the active workflow, a first turn sent and settled, the CRDT
+   * follower subscribed, and the target node visible on canvas. Each
+   * `test()` body's own acts and assertions begin from here, not from this
+   * bootstrap, which all three scenarios shared identically.
+   */
+  async bindAndAwaitFirstTurn(): Promise<void> {
+    await this.targetActiveWorkflow()
+    await this.sendTurn('hello')
+    await this.hostSocket.waitForSubscribe()
+    await expect(this.targetNode).toBeVisible()
   }
 
   /**
@@ -435,8 +452,8 @@ export class MultiAutogrowRealignHarness {
    * scalar and link correctly independent of what the reopen reads back.
    */
   async saveAndReadPostedGraph(): Promise<{
-    widgetValues: unknown
-    linkTargets: unknown[]
+    widgetValues: ParsedSavedNode['widgets_values'] | undefined
+    linkTargets: readonly (SavedLinkTarget | undefined)[]
   }> {
     const saveResponse = this.page.waitForResponse(
       (response) =>
@@ -460,7 +477,13 @@ export class MultiAutogrowRealignHarness {
       widgetValues: target?.widgets_values,
       linkTargets: EXPECTED_TARGETS.map(({ linkId }) => {
         const link = workflow.links.find(([id]) => id === linkId)
-        return link && [link[3], target?.inputs?.[link[4]]?.name]
+        return (
+          link &&
+          ([
+            link[3],
+            target?.inputs?.[link[4]]?.name
+          ] as const satisfies SavedLinkTarget)
+        )
       })
     }
   }
@@ -515,11 +538,5 @@ export class MultiAutogrowRealignHarness {
         timeout: RELOAD_READY_TIMEOUT
       })
       .toBeGreaterThan(getsBeforeReload)
-  }
-
-  async attachScreenshot(testInfo: TestInfo, name: string): Promise<void> {
-    const path = testInfo.outputPath(`${name}.png`)
-    await this.page.screenshot({ path })
-    await testInfo.attach(name, { path, contentType: 'image/png' })
   }
 }
