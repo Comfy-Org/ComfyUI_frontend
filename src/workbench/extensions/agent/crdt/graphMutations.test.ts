@@ -328,6 +328,39 @@ describe('graphMutations', () => {
     )
   })
 
+  it('keeps runtime-only fields out of prepared slots', () => {
+    const graph = mutations()
+    const payload = {
+      ...node(7),
+      inputs: [
+        {
+          name: 'in',
+          type: 'IMAGE',
+          label: 'Input',
+          link: null,
+          _node: { corrupt: true }
+        }
+      ],
+      outputs: [
+        {
+          name: 'out',
+          type: 'IMAGE',
+          label: 'Output',
+          links: [],
+          _data: { corrupt: true }
+        }
+      ]
+    }
+
+    expect(graph.addNode(payload, context)).toBe(true)
+
+    const state = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(7))
+    expect(state?.inputs[0]).toMatchObject({ name: 'in', label: 'Input' })
+    expect(state?.outputs[0]).toMatchObject({ name: 'out', label: 'Output' })
+    expect(state?.inputs[0]).not.toHaveProperty('_node')
+    expect(state?.outputs[0]).not.toHaveProperty('_data')
+  })
+
   it('repositions a template node placed far from an existing node', () => {
     const graph = mutations()
     graph.addNode({ ...node(1), pos: [0, 0] }, context)
