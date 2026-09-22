@@ -37,7 +37,9 @@ describe('ModelsApiHero', () => {
 
     expect(
       screen
-        .getByRole('link', { name: t('platform.modelsHero.getApiKey', 'en') })
+        .getByRole('link', {
+          name: routerT('platform.router.cta.getApiKey', 'en')
+        })
         .getAttribute('href')
     ).toBe('https://platform.comfy.org/profile/api-keys?onboarding=router')
   })
