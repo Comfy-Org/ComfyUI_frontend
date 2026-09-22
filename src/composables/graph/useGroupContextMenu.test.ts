@@ -6,8 +6,16 @@ import type {
   CanvasPointerEvent,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphGroup,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 
 const { mockShowNodeOptions, mockGetCanvasContextMenuTarget } = vi.hoisted(
   () => ({
@@ -30,7 +38,7 @@ vi.mock<unknown>(
 )
 
 interface StubCanvas {
-  graph: object
+  graph: LGraph
   deselectAll: ReturnType<typeof vi.fn>
   selectedItems: Set<unknown>
   state: { selectionChanged: boolean }
@@ -38,17 +46,17 @@ interface StubCanvas {
 
 describe('useGroupContextMenu', () => {
   const event = fromPartial<CanvasPointerEvent>({ canvasX: 10, canvasY: 20 })
-  let group: {
-    id: number
-    selected?: boolean
-    recomputeInsideNodes: ReturnType<typeof vi.fn>
-  }
+  let group: LGraphGroup
+  let recomputeInsideNodes: ReturnType<typeof vi.spyOn>
   let legacyMenuMock: ReturnType<typeof vi.fn>
   let stubCanvas: StubCanvas
 
   beforeEach(() => {
     LiteGraph.vueNodesMode = true
-    group = { id: 1, recomputeInsideNodes: vi.fn() }
+    const graph = createTestSubgraph({ rootGraph: new LGraph() })
+    group = new LGraphGroup()
+    graph.add(group)
+    recomputeInsideNodes = vi.spyOn(group, 'recomputeInsideNodes')
     mockGetCanvasContextMenuTarget.mockReturnValue({ group })
 
     legacyMenuMock = vi.fn()
@@ -57,7 +65,7 @@ describe('useGroupContextMenu', () => {
     useGroupContextMenu()
 
     stubCanvas = {
-      graph: {},
+      graph,
       deselectAll: vi.fn(),
       selectedItems: new Set(),
       state: { selectionChanged: false }
@@ -81,16 +89,18 @@ describe('useGroupContextMenu', () => {
     expect(stubCanvas.deselectAll).toHaveBeenCalledOnce()
     expect(group.selected).toBe(true)
     expect(stubCanvas.selectedItems.has(group)).toBe(true)
+    expect(
+      useSelectionStore().isSelected(
+        graphScopeOf(stubCanvas.graph),
+        selectableKeyOf(group)
+      )
+    ).toBe(true)
     expect(stubCanvas.state.selectionChanged).toBe(true)
-    expect(group.recomputeInsideNodes).toHaveBeenCalledOnce()
-    expect(
-      vi.mocked(useCanvasStore().updateSelectedItems)
-    ).toHaveBeenCalledOnce()
+    expect(recomputeInsideNodes).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
-    expect(
-      vi.mocked(useCanvasStore().updateSelectedItems).mock
-        .invocationCallOrder[0]
-    ).toBeLessThan(mockShowNodeOptions.mock.invocationCallOrder[0])
+    expect(stubCanvas.deselectAll.mock.invocationCallOrder[0]).toBeLessThan(
+      mockShowNodeOptions.mock.invocationCallOrder[0]
+    )
     expect(legacyMenuMock).not.toHaveBeenCalled()
   })
 
@@ -159,9 +169,6 @@ describe('useGroupContextMenu', () => {
     expect(stubCanvas.selectedItems.has(group)).toBe(true)
     expect(stubCanvas.state.selectionChanged).toBe(false)
     expect(group.recomputeInsideNodes).not.toHaveBeenCalled()
-    expect(
-      vi.mocked(useCanvasStore().updateSelectedItems)
-    ).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
     expect(legacyMenuMock).not.toHaveBeenCalled()
   })
@@ -179,9 +186,6 @@ describe('useGroupContextMenu', () => {
     expect(stubCanvas.selectedItems.has(group)).toBe(true)
     expect(stubCanvas.state.selectionChanged).toBe(true)
     expect(group.recomputeInsideNodes).toHaveBeenCalledOnce()
-    expect(
-      vi.mocked(useCanvasStore().updateSelectedItems)
-    ).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
     expect(legacyMenuMock).not.toHaveBeenCalled()
   })
