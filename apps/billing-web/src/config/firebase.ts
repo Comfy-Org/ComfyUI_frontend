@@ -18,7 +18,8 @@ import { fetchFirebaseConfig } from '@comfyorg/account-core/firebaseConfigSource
 
 import { CLOUD_BASE_URL, FIREBASE_OPTIONS } from '@/config/env'
 
-const APP_NAME = 'billing-web'
+const RUNTIME_APP_NAME = 'billing-web-runtime'
+const FALLBACK_APP_NAME = 'billing-web-fallback'
 const CONFIG_FETCH_TIMEOUT_MS = 4000
 
 let resolution: Promise<FirebaseIdentity | undefined> | undefined
@@ -28,12 +29,19 @@ let resolution: Promise<FirebaseIdentity | undefined> | undefined
  * an app-name collision with a different project), and that only surfaces
  * once `initialize()` forces the app/Auth resolution eagerly, here, instead
  * of leaving it to whichever caller first touches the identity.
+ *
+ * The runtime and fallback candidates get distinct app names so a runtime
+ * app that registers successfully but then fails `initialize()` can't shadow
+ * the fallback retry: reusing one name would leave the failed app registered
+ * under it, and the fallback's `assertSameProject` check would then reject a
+ * build-time config that (by design) targets a different project.
  */
 function tryCreateIdentity(
-  options: FirebaseOptions
+  options: FirebaseOptions,
+  appName: string
 ): FirebaseIdentity | undefined {
   try {
-    const identity = createFirebaseIdentity({ options, appName: APP_NAME })
+    const identity = createFirebaseIdentity({ options, appName })
     identity.initialize()
     return identity
   } catch {
@@ -54,10 +62,12 @@ export function resolveBillingWebIdentity(): Promise<
   resolution ??= fetchFirebaseConfig(CLOUD_BASE_URL, {
     timeoutMs: CONFIG_FETCH_TIMEOUT_MS
   }).then((runtimeOptions) => {
-    const runtimeIdentity = runtimeOptions && tryCreateIdentity(runtimeOptions)
+    const runtimeIdentity =
+      runtimeOptions && tryCreateIdentity(runtimeOptions, RUNTIME_APP_NAME)
     return (
       runtimeIdentity ??
-      (FIREBASE_OPTIONS && tryCreateIdentity(FIREBASE_OPTIONS))
+      (FIREBASE_OPTIONS &&
+        tryCreateIdentity(FIREBASE_OPTIONS, FALLBACK_APP_NAME))
     )
   })
   return resolution

@@ -1,28 +1,52 @@
+import type {
+  FirebaseIdentity,
+  FirebaseIdentityConfig
+} from '@comfyorg/account-core/firebase'
+import type { RuntimeFirebaseOptions } from '@comfyorg/account-core/firebaseConfigSource'
+
 const h = vi.hoisted(() => ({
-  fetchFirebaseConfig: vi.fn(),
-  fallbackOptions: undefined as
-    | { apiKey: string; authDomain: string; projectId: string; appId: string }
-    | undefined,
-  failInitializeFor: new Set<string>()
+  fetchFirebaseConfig:
+    vi.fn<() => Promise<RuntimeFirebaseOptions | undefined>>(),
+  fallbackOptions: undefined as RuntimeFirebaseOptions | undefined,
+  failInitializeFor: new Set<string>(),
+  // Mirrors the real SDK: an app name that already has a different
+  // project's options registered rejects, same as `assertSameProject`.
+  registeredApps: new Map<string, string>()
 }))
 
-vi.mock<unknown>(import('@comfyorg/account-core/firebaseConfigSource'), () => ({
+vi.mock(import('@comfyorg/account-core/firebaseConfigSource'), () => ({
   fetchFirebaseConfig: h.fetchFirebaseConfig
 }))
 
-vi.mock<unknown>(import('@comfyorg/account-core/firebase'), () => ({
-  createFirebaseIdentity: (config: { options: { apiKey: string } }) => ({
-    kind: 'identity',
-    options: config.options,
-    initialize: () => {
-      if (h.failInitializeFor.has(config.options.apiKey)) {
-        throw new Error(`invalid config: ${config.options.apiKey}`)
-      }
+vi.mock(import('@comfyorg/account-core/firebase'), () => ({
+  createFirebaseIdentity: (
+    config: FirebaseIdentityConfig
+  ): FirebaseIdentity => {
+    if (!('options' in config) || typeof config.options === 'function') {
+      throw new Error('test mock only supports direct Firebase options')
     }
-  })
+    const options = config.options as RuntimeFirebaseOptions
+    const appName = config.appName ?? 'comfy-account'
+    return {
+      kind: 'identity',
+      options,
+      initialize: () => {
+        const existingProject = h.registeredApps.get(appName)
+        if (existingProject && existingProject !== options.projectId) {
+          throw new Error(
+            `Firebase app "${appName}" already exists for a different project`
+          )
+        }
+        h.registeredApps.set(appName, options.projectId)
+        if (h.failInitializeFor.has(options.apiKey)) {
+          throw new Error(`invalid config: ${options.apiKey}`)
+        }
+      }
+    } as unknown as FirebaseIdentity
+  }
 }))
 
-vi.mock<unknown>(import('@/config/env'), () => ({
+vi.mock(import('@/config/env'), () => ({
   CLOUD_BASE_URL: 'https://testcloud.comfy.org',
   get FIREBASE_OPTIONS() {
     return h.fallbackOptions
@@ -46,6 +70,7 @@ const FALLBACK_OPTIONS = {
 beforeEach(() => {
   h.fallbackOptions = undefined
   h.failInitializeFor.clear()
+  h.registeredApps.clear()
 })
 
 async function freshFirebase() {
@@ -98,7 +123,7 @@ describe('resolveBillingWebIdentity', () => {
     expect(h.fetchFirebaseConfig).toHaveBeenCalledOnce()
   })
 
-  it('falls back to the build-time options when the runtime config fails to construct', async () => {
+  it('falls back to a different-project build-time config when the runtime config fails to construct', async () => {
     h.fetchFirebaseConfig.mockResolvedValue(RUNTIME_OPTIONS)
     h.fallbackOptions = FALLBACK_OPTIONS
     h.failInitializeFor.add(RUNTIME_OPTIONS.apiKey)
