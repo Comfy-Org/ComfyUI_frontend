@@ -488,6 +488,10 @@ function prepareNode(
   const [width, height] = readPair(payload.size, [270, 100])
   const mode = Number(payload.mode)
   const flags = cloneNodeFlags(payload.flags)
+  // The doc never carries `ghost` (see `cloneNodeFlags`), so an echo of the
+  // page's own accepted add for a node still in ghost placement must not
+  // clear it early: the placement click is the only thing that may.
+  if (incumbent?.flags.ghost) flags.ghost = true
   const state: NodeState = {
     id,
     graphId: scope.owningGraphId,
