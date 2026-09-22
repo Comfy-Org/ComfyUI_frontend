@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import type { BillingReturn } from '@comfyorg/billing-contract'
 import { buildReturnUrl } from '@comfyorg/billing-contract'
 
+import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
@@ -17,6 +18,7 @@ const { t } = useI18n()
 const { coded } = useHostedCopy()
 const { entry, error } = useBillingEntry()
 const { session } = useBillingWebSession()
+const billedWorkspace = useBilledWorkspace()
 
 const title = computed(() => coded('title', entry.value?.intent))
 
@@ -33,6 +35,7 @@ const returnLink = computed(() => {
   const url = buildReturnUrl({
     target: arrival.returnTo,
     environment: BILLING_WEB_ENV,
+    workspace: billedWorkspace(),
     ...returnResult
   })
   if (!url) return undefined

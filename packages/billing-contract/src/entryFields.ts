@@ -7,6 +7,8 @@
 /** Names are provisional; see `contract.ts`. */
 export const ENTRY_PARAM_PRODUCT = 'product'
 export const ENTRY_PARAM_RETURN_TO = 'return_to'
+/** Also what a return URL names the billed workspace under. */
+export const ENTRY_PARAM_WORKSPACE = 'workspace'
 
 export type OptionalEntryKey =
   | 'plan'
@@ -33,7 +35,11 @@ export const OPTIONAL_ENTRY_FIELDS: readonly OptionalEntryField[] = [
     param: 'correlation_id',
     code: 'INVALID_CORRELATION_ID'
   },
-  { key: 'workspaceId', param: 'workspace', code: 'INVALID_WORKSPACE_ID' },
+  {
+    key: 'workspaceId',
+    param: ENTRY_PARAM_WORKSPACE,
+    code: 'INVALID_WORKSPACE_ID'
+  },
   {
     key: 'teamCreditStopId',
     param: 'team_credit_stop_id',
