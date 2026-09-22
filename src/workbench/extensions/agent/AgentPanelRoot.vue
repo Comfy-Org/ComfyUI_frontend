@@ -1413,11 +1413,15 @@ async function onSelectHistory(
   return opened
 }
 
+const activeWorkflowId = computed(() => {
+  const workflow = workflowStore.activeWorkflow
+  return workflow ? cloudIdFor(workflow) : undefined
+})
+
 watch(
-  [() => workflowStore.activeWorkflow, threadSummaries],
-  ([workflow, threads]) => {
+  [() => workflowStore.activeWorkflow, activeWorkflowId, threadSummaries],
+  ([workflow, workflowId, threads]) => {
     if (workflow === null) return
-    const workflowId = cloudIdFor(workflow)
     if (workflowId === undefined) return
     const matchingThread = threads.find(
       (thread) => thread.workflow_id === workflowId
