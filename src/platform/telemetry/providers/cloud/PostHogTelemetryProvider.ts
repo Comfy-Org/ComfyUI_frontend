@@ -9,6 +9,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 
 import type {
@@ -671,6 +672,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.captureRaw(TelemetryEvents.EXECUTION_START, {
       ...getExecutionContext(),
       trigger_source: this.lastTriggerSource ?? 'unknown',
+      agent_panel_open: getAgentPanelOpen(),
       event_source: EXECUTION_EVENT_SOURCE
     })
     this.lastTriggerSource = undefined

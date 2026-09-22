@@ -52,6 +52,7 @@ const hoisted = vi.hoisted(() => {
     mockRegister,
     mockReset,
     executionContext,
+    agentPanelOpen: false,
     refs,
     mockPosthog: {
       default: {
@@ -74,6 +75,10 @@ vi.mock<unknown>(import('posthog-js'), () => hoisted.mockPosthog)
 
 vi.mock(import('@/platform/telemetry/utils/getExecutionContext'), () => ({
   getExecutionContext: () => hoisted.executionContext
+}))
+
+vi.mock(import('@/platform/telemetry/utils/getAgentPanelOpen'), () => ({
+  getAgentPanelOpen: () => hoisted.agentPanelOpen
 }))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
@@ -560,7 +565,8 @@ describe('PostHogTelemetryProvider', () => {
         trigger_source: 'keybinding',
         view_mode: 'graph',
         is_app_mode: false,
-        dock_state: 'docked'
+        dock_state: 'docked',
+        agent_panel_open: false
       })
       provider.trackWorkflowExecution()
 
@@ -569,6 +575,7 @@ describe('PostHogTelemetryProvider', () => {
         {
           ...hoisted.executionContext,
           trigger_source: 'keybinding',
+          agent_panel_open: false,
           event_source: 'web-sdk'
         }
       )
@@ -580,9 +587,27 @@ describe('PostHogTelemetryProvider', () => {
         {
           ...hoisted.executionContext,
           trigger_source: 'unknown',
+          agent_panel_open: false,
           event_source: 'web-sdk'
         }
       )
+    })
+
+    it('captures the agent panel state on execution start', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      hoisted.agentPanelOpen = true
+
+      try {
+        provider.trackWorkflowExecution()
+
+        expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+          TelemetryEvents.EXECUTION_START,
+          expect.objectContaining({ agent_panel_open: true })
+        )
+      } finally {
+        hoisted.agentPanelOpen = false
+      }
     })
 
     it('captures execution outcomes with client attribution', async () => {
