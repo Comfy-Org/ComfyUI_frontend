@@ -201,16 +201,16 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
       )
     })
 
-    await test.step('Switching away suspends the follower and returning resumes it', async () => {
+    await test.step('Switching away unsubscribes and returning requests a subscription', async () => {
       expect(countAfterReload('doc_unsubscribe')).toBe(0)
       await command.executeCommand('Comfy.NewBlankWorkflow')
       await expect.poll(() => countAfterReload('doc_unsubscribe')).toBe(1)
-      const subscribeCountBeforeResume = countAfterReload('doc_subscribe')
+      const subscribeCountBeforeReturn = countAfterReload('doc_subscribe')
 
       await switchToAgentWorkflowTab(page, boundPath)
       await expect
         .poll(() => countAfterReload('doc_subscribe'))
-        .toBe(subscribeCountBeforeResume + 1)
+        .toBe(subscribeCountBeforeReturn + 1)
     })
   })
 })
