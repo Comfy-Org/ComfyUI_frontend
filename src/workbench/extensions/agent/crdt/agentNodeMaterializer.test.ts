@@ -1562,6 +1562,11 @@ describe('reserved-bit mint-convention guard', () => {
     { bound: true, id: '2e12', name: 'an agent-minted id in exponent form' },
     {
       bound: true,
+      id: '2.0e12',
+      name: 'an agent-minted id in decimal-mantissa exponent form'
+    },
+    {
+      bound: true,
       id: `${VIOLATING_ID}.0001`,
       name: 'a fractional id that only coerces to the violating floor'
     }
@@ -1594,25 +1599,38 @@ describe('reserved-bit mint-convention guard', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('reports a large remote id carrying neither reserved bit', () => {
-    const graph = new LGraph()
-    const unbind = bindGraph(graph)
-    const id = toNodeId(VIOLATING_ID)
-    seedRemoteNode(graph, id)
+  it.for([
+    { rawId: VIOLATING_ID, name: 'the canonical integer spelling' },
+    {
+      rawId: `${VIOLATING_ID}.`,
+      name: 'a trailing decimal point with no fractional digits'
+    },
+    {
+      rawId: `.${VIOLATING_ID}e13`,
+      name: 'a leading decimal point with an exponent'
+    }
+  ])(
+    'reports a large remote id carrying neither reserved bit, spelled as $name',
+    ({ rawId }) => {
+      const graph = new LGraph()
+      const unbind = bindGraph(graph)
+      const id = toNodeId(rawId)
+      seedRemoteNode(graph, id)
 
-    expect(reconcileAgentAdapters(graph)).toEqual([id])
-    unbind()
+      expect(reconcileAgentAdapters(graph)).toEqual([id])
+      unbind()
 
-    expect(graph.getNodeById(id)).toBeTruthy()
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
-      errorType: 'agent_node_id_reserved_bit_violation',
-      tags: expect.objectContaining({
-        feature_area: 'agent',
-        outcome: 'degraded'
-      }),
-      context: { graphId: graph.id, nodeId: String(VIOLATING_ID) }
-    })
-  })
+      expect(graph.getNodeById(id)).toBeTruthy()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        errorType: 'agent_node_id_reserved_bit_violation',
+        tags: expect.objectContaining({
+          feature_area: 'agent',
+          outcome: 'degraded'
+        }),
+        context: { graphId: graph.id, nodeId: String(rawId) }
+      })
+    }
+  )
 })
 
 describe('node id write-drop guard', () => {

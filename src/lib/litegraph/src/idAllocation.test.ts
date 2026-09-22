@@ -73,7 +73,26 @@ describe('idAllocation', () => {
   describe('isReservedBitRangeNodeId', () => {
     it.for([
       { id: toNodeId(AGENT_RESERVED_BIT.toString()), name: 'the agent floor' },
-      { id: toNodeId('2e12'), name: 'an exponent-form integer above the floor' }
+      {
+        id: toNodeId('2e12'),
+        name: 'an exponent-form integer above the floor'
+      },
+      {
+        id: toNodeId('4398046511104.'),
+        name: 'a trailing decimal point with no fractional digits'
+      },
+      {
+        id: toNodeId('.4398046511104e13'),
+        name: 'a leading decimal point with an exponent'
+      },
+      {
+        id: toNodeId('2.0e12'),
+        name: 'a decimal-mantissa exponent literal above the floor'
+      },
+      {
+        id: toNodeId('20000000000000e-1'),
+        name: 'a negative-exponent literal above the floor'
+      }
     ])('is true for $name', ({ id }) => {
       expect(isReservedBitRangeNodeId(id)).toBe(true)
     })
