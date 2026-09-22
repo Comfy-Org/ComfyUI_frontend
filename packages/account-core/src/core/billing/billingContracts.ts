@@ -3,15 +3,16 @@
  * by design, the same way `sessionContracts` is: the transport and the typed
  * operations depend on this module, never back on each other.
  *
- * Billing reports failures as coded results rather than thrown errors, so a
- * caller cannot accidentally surface a server or payment-provider string to a
- * user. The codes carry no server text; the copy that belongs to each code is
- * owned by the billing core and localized by the host. The one server value
- * that crosses this boundary is `serverCode`, a machine identifier and never
- * copy: a command matches it against its own closed set, and a host stores it
- * where it already keeps `WorkspaceApiError.code`. Its brand makes it
- * unforgeable: only the response decoder mints one, and `unwrapServerCode`
- * names the one sanctioned widening.
+ * Billing reports failures as coded results rather than thrown errors. The
+ * codes carry no text; the copy that belongs to each code is owned by the
+ * billing core and localized by the host. Two server values cross this
+ * boundary. `serverCode` is a machine identifier and never copy: a command
+ * matches it against its own closed set, and a host stores it where it
+ * already keeps `WorkspaceApiError.code`. Its brand makes it unforgeable:
+ * only the response decoder mints one, and `unwrapServerCode` names the one
+ * sanctioned widening. `serverMessage` is the sentence the server wrote for
+ * the customer, carried so a host can show it the way the legacy client does;
+ * nothing in the core branches on it.
  */
 import type { SessionClient } from '../session.js'
 
@@ -67,12 +68,17 @@ export type BillingFailure = {
   readonly httpStatus?: number
   /**
    * The coded `code` of a generated `ErrorResponse` body, when the server
-   * sent one. Its `message` is dropped on purpose: a command acts on codes
-   * it names, never on server text. Compare it through `matchesServerCode`,
-   * and widen it through `unwrapServerCode` at a host's error-store
-   * boundary. Never render it.
+   * sent one. It is the only server value a command branches on. Compare it
+   * through `matchesServerCode`, and widen it through `unwrapServerCode` at
+   * a host's error-store boundary. Never render it.
    */
   readonly serverCode?: BillingServerCode
+  /**
+   * The `message` of that same `ErrorResponse`, present when the server sent
+   * a non-empty one. This is what a host shows the customer; the legacy
+   * client shows the same string.
+   */
+  readonly serverMessage?: string
 }
 
 /** Whether a failure carries the server code a command names. */
