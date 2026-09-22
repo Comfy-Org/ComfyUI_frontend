@@ -263,7 +263,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     wfContext: WorkflowTurnContext | undefined,
     attachments?: SentAttachment[],
     tags?: SentTag[],
-    workflowReferences?: WorkflowReference[]
+    workflowReferences?: WorkflowReference[],
+    selectionWorkflowId?: () => string | undefined
   ): Promise<AgentTurnAccepted> {
     const input = buildPostInput(
       threadId,
@@ -272,7 +273,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       wfContext,
       attachments,
       tags,
-      workflowReferences
+      workflowReferences,
+      selectionWorkflowId
     )
     if (wfContext?.id === undefined) return rest.postMessage(threadId, input)
     return rest.postMessage(threadId, { ...input, workflowId: wfContext.id })
@@ -285,9 +287,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     wfContext: WorkflowTurnContext | undefined,
     attachments?: SentAttachment[],
     tags?: SentTag[],
-    workflowReferences?: WorkflowReference[]
+    workflowReferences?: WorkflowReference[],
+    selectionWorkflowId?: () => string | undefined
   ): PostMessageInput {
     const draft = workflow?.draft?.(origin)
+    // Resolved here rather than at the call site: `buildPostInput` runs after
+    // `prepareWorkflow()`, so a tab whose cloud id was still unresolved on
+    // mount has one by now (QAF-19).
+    const selectedWorkflowId = selectionWorkflowId?.()
     return {
       content: serializeWorkflowReferences(text, workflowReferences ?? []),
       tabs: workflow?.tabs?.(origin),
@@ -295,7 +302,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflowReferences,
         wfContext?.id
       ),
-      selection: selectedNodes(tags),
+      selection: selectedNodes(tags, selectedWorkflowId),
       attachments: attachments?.map((attachment) => attachment.ref),
       ...(canSendDraft(threadId, wfContext, draft) ? { draft } : {})
     }
@@ -313,9 +320,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }))
   }
 
-  function selectedNodes(tags: SentTag[] | undefined) {
+  function selectedNodes(
+    tags: SentTag[] | undefined,
+    selectedWorkflowId: string | undefined
+  ) {
     if (tags === undefined || tags.length === 0) return undefined
-    return { node_ids: tags.map((tag) => tag.id) }
+    return {
+      node_ids: tags.map((tag) => tag.id),
+      ...(selectedWorkflowId !== undefined
+        ? { workflow_id: selectedWorkflowId }
+        : {})
+    }
   }
 
   function canSendDraft(
@@ -425,7 +440,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     text: string,
     attachments?: SentAttachment[],
     tags?: SentTag[],
-    workflowReferences?: WorkflowReference[]
+    workflowReferences?: WorkflowReference[],
+    selectionWorkflowId?: () => string | undefined
   ): Promise<boolean> {
     const generation = loadGeneration
     const threadAtSend = conversationStore.threadId ?? 'new'
@@ -449,7 +465,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         wfContext,
         attachments,
         tags,
-        workflowReferences
+        workflowReferences,
+        selectionWorkflowId
       )
       if (generation !== loadGeneration) return false
       acceptTurn(ack, text, wfContext, attachments, tags, workflowReferences)
@@ -477,7 +494,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     text: string,
     attachments?: SentAttachment[],
     tags?: SentTag[],
-    workflowReferences?: WorkflowReference[]
+    workflowReferences?: WorkflowReference[],
+    selectionWorkflowId?: () => string | undefined
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -491,7 +509,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sending.value = true
     stopRequestedWhileSending.value = false
     try {
-      return await performSend(text, attachments, tags, workflowReferences)
+      return await performSend(
+        text,
+        attachments,
+        tags,
+        workflowReferences,
+        selectionWorkflowId
+      )
     } finally {
       sending.value = false
     }
