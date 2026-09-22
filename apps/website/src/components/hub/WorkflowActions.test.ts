@@ -29,15 +29,15 @@ describe('WorkflowActions', () => {
     ).toHaveProperty('href', 'https://example.test/graph.json')
   })
 
-  // Each route says what it gives you rather than only where it goes, because
-  // three verbs side by side read as three versions of the same offer.
+  // Sitting on the graph's header the routes are two words each, so what they
+  // give you is still there for anyone who stops on one.
   it('says what each route gives the reader', () => {
     render(WorkflowActions, { props: props() })
 
-    expect(screen.getByTestId('workflow-open-cloud')).toHaveTextContent(
+    expect(screen.getByTestId('workflow-open-cloud').title).toMatch(
       /ready to run and to edit/
     )
-    expect(screen.getByTestId('workflow-download')).toHaveTextContent(
+    expect(screen.getByTestId('workflow-download').title).toMatch(
       /on your own machine/
     )
   })

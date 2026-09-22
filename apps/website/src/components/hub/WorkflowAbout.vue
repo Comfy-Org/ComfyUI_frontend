@@ -57,27 +57,26 @@ const sectionTitle =
       </p>
 
       <section data-testid="workflow-graph-section">
-        <h2 :class="sectionTitle">
-          {{ t('workshop.v2.workflow.graph', locale) }}
-        </h2>
-        <p class="mt-2 mb-4 text-sm text-content-muted">
-          {{ t('workshop.v2.workflow.graphNote', locale) }}
-        </p>
-        <WorkflowGraph :source="graphUrl" :locale />
-      </section>
-
-      <section>
-        <h2 :class="sectionTitle">
-          {{ t('workshop.v2.workflow.takeaways', locale) }}
-        </h2>
-        <div class="mt-4">
+        <div
+          class="mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 sm:flex-nowrap"
+        >
+          <div class="min-w-0 flex-1">
+            <h2 :class="sectionTitle">
+              {{ t('workshop.v2.workflow.graph', locale) }}
+            </h2>
+            <p class="mt-2 text-sm text-content-muted">
+              {{ t('workshop.v2.workflow.graphNote', locale) }}
+            </p>
+          </div>
           <WorkflowActions
             :cloud-url="cloudUrl"
             :download-url="graphUrl"
             :tutorial-url="tutorialUrl"
             :locale
+            class="shrink-0"
           />
         </div>
+        <WorkflowGraph :source="graphUrl" :locale />
       </section>
     </div>
 

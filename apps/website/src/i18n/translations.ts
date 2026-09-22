@@ -10548,6 +10548,7 @@ Enterprise`
   },
   'workshop.v2.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
   'workshop.v2.back': { en: 'Back to hub', 'zh-CN': '返回 Hub' },
+  'workshop.v2.allOf': { en: 'All {kind}', 'zh-CN': '全部{kind}' },
   'workshop.v2.browseAll': {
     en: 'Browse all {n} {kind}',
     'zh-CN': '浏览全部 {n} 个{kind}'
@@ -10730,10 +10731,6 @@ Enterprise`
   'workshop.v2.workflow.tutorialNote': {
     en: 'A written walkthrough of what this graph does, step by step.',
     'zh-CN': '这张图的逐步图文讲解。'
-  },
-  'workshop.v2.workflow.takeaways': {
-    en: 'Take it with you',
-    'zh-CN': '带走这个工作流'
   },
   'workshop.v2.workflow.tabRun': { en: 'Playground', 'zh-CN': '演练场' },
   'workshop.v2.workflow.tabAbout': { en: 'Details', 'zh-CN': '详情' },

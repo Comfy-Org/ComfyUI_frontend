@@ -72,7 +72,7 @@ const control =
 <template>
   <div
     ref="frame"
-    class="relative h-96 touch-none overflow-hidden rounded-2xl bg-hub-surface select-none"
+    class="relative h-112 touch-none overflow-hidden rounded-2xl bg-hub-surface select-none lg:h-128"
     :class="dragging ? 'cursor-grabbing' : 'cursor-grab'"
     data-testid="workflow-graph"
     @pointerdown="onPointerDown"

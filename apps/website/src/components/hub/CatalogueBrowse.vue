@@ -256,11 +256,12 @@ function openOutcome(asked: WorkshopOutcome) {
   outcome.value = asked
 }
 
-// The tab says which half this is, so a heading repeating it would say the
-// same thing twice. Only a use case, which the tabs do not name, gets one.
 const heading = computed(() =>
   useCase.value === 'all'
-    ? undefined
+    ? t('workshop.v2.allOf', locale).replace(
+        '{kind}',
+        t(kindLabelKey[type.value], locale).toLowerCase()
+      )
     : t(useCaseLabelKey[useCase.value], locale)
 )
 </script>
@@ -332,11 +333,11 @@ const heading = computed(() =>
     <div v-else class="min-w-0">
       <div
         v-if="useCase !== 'all' || wholeList"
-        class="mb-6 flex flex-wrap items-baseline gap-4"
+        class="mb-6 flex flex-col items-start gap-1"
       >
         <button
           type="button"
-          class="inline-flex cursor-pointer items-center gap-1 rounded-lg text-sm text-content-muted transition-colors outline-none hover:text-content-bright focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+          class="-ms-1 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm text-content-muted transition-colors outline-none hover:text-content-bright focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           data-testid="catalogue-back"
           @click="backToShelves"
         >
@@ -344,7 +345,6 @@ const heading = computed(() =>
           {{ t('workshop.v2.back', locale) }}
         </button>
         <h2
-          v-if="heading"
           class="text-xl font-medium text-primary-warm-white"
           data-testid="catalogue-heading"
         >
