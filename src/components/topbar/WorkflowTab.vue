@@ -4,7 +4,7 @@
       <div
         ref="workflowTabRef"
         data-testid="workflow-tab"
-        class="workflow-tab group flex h-9 items-center justify-center gap-2 px-4 py-2"
+        class="workflow-tab group flex h-8 items-center justify-center gap-2 py-2 pr-2 pl-3"
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
