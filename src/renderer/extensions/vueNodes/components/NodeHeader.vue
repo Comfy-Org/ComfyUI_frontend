@@ -22,6 +22,7 @@
             size="icon-sm"
             variant="textonly"
             class="hover:bg-transparent"
+            :disabled="!canEditNodes"
             data-testid="node-collapse-button"
             @click.stop="handleCollapse"
             @dblclick.stop
