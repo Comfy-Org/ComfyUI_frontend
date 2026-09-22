@@ -80,36 +80,34 @@ function resolveRef(ref: string): string {
   return sha
 }
 
+function validateDraftFile(): void {
+  const path = `${planDirectory}/release-qa.md`
+  if (!lstatSync(path).isFile()) throw new Error('Draft must be a regular file')
+  const base = process.env.QA_BASE_SHA
+  const target = process.env.QA_TARGET_SHA
+  if (!base || !target) throw new Error('Resolved SHAs are required')
+  validateDraft(readFileSync(path, 'utf8'), base, target)
+}
+
+async function readProductionRef(): Promise<string> {
+  const response = await fetch('https://cloud.comfy.org/', {
+    method: 'HEAD',
+    redirect: 'error',
+    signal: AbortSignal.timeout(30_000)
+  })
+  if (!response.ok)
+    throw new Error(`Production version lookup failed: HTTP ${response.status}`)
+  const ref = response.headers.get('x-frontend-version') ?? ''
+  if (!/^[a-f0-9]{7,40}$/.test(ref))
+    throw new Error(
+      'Production did not return a valid frontend SHA; supply base explicitly'
+    )
+  return ref
+}
+
 async function main(): Promise<void> {
-  if (process.argv[2] === 'validate') {
-    const path = `${planDirectory}/release-qa.md`
-    if (!lstatSync(path).isFile())
-      throw new Error('Draft must be a regular file')
-    const base = process.env.QA_BASE_SHA
-    const target = process.env.QA_TARGET_SHA
-    if (!base || !target) throw new Error('Resolved SHAs are required')
-    validateDraft(readFileSync(path, 'utf8'), base, target)
-    return
-  }
   const target = resolveRef(process.env.TARGET_REF ?? '')
-  let baseRef = process.env.BASE_REF
-  if (!baseRef) {
-    const response = await fetch('https://cloud.comfy.org/', {
-      method: 'HEAD',
-      redirect: 'error',
-      signal: AbortSignal.timeout(30_000)
-    })
-    if (!response.ok)
-      throw new Error(
-        `Production version lookup failed: HTTP ${response.status}`
-      )
-    baseRef = response.headers.get('x-frontend-version') ?? ''
-    if (!/^[a-f0-9]{7,40}$/.test(baseRef))
-      throw new Error(
-        'Production did not return a valid frontend SHA; supply base explicitly'
-      )
-  }
-  const base = resolveRef(baseRef)
+  const base = resolveRef(process.env.BASE_REF || (await readProductionRef()))
   const environment = qaOrigin(process.env.QA_ENVIRONMENT ?? 'testcloud')
   const version = releaseVersion(git('show', `${target}:package.json`))
   mkdirSync(planDirectory, { recursive: true })
@@ -158,4 +156,7 @@ async function main(): Promise<void> {
     )
 }
 
-if (import.meta.main) await main()
+if (import.meta.main) {
+  if (process.argv[2] === 'validate') validateDraftFile()
+  else await main()
+}
