@@ -215,9 +215,7 @@ describe('formatClockTime', () => {
     const applicationNumberingSystem =
       systemNumberingSystem === 'latn' ? 'arab' : 'latn'
     const applicationLocale = `${
-      systemHourCycle === 'h11' || systemHourCycle === 'h12'
-        ? 'ja-JP'
-        : 'en-US'
+      systemHourCycle === 'h11' || systemHourCycle === 'h12' ? 'ja-JP' : 'en-US'
     }-u-nu-${applicationNumberingSystem}`
     const expected = new Intl.DateTimeFormat(applicationLocale, {
       hour: 'numeric',
