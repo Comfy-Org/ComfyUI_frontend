@@ -299,6 +299,7 @@ watch(
         forEachNode(graph.rootGraph, (node) => {
           for (const widget of node.widgets ?? []) {
             widget.syncLiveVisibilityOptions?.()
+            widget.syncLiveDisabled?.()
           }
         })
       }

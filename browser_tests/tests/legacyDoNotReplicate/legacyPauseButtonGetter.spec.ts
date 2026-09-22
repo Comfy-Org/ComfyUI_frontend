@@ -97,4 +97,37 @@ test.describe('WAS Pause live disabled getter', { tag: '@widget' }, () => {
       })
     }
   )
+
+  test(
+    'Resume becomes enabled after pausing in classic mode and switching to Vue',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      const node = await comfyPage.nodeOps.getNodeRefByType(NODE_TYPE)
+      const button = comfyPage.vueNodes
+        .getNodeLocator(node.id)
+        .getByRole('button', { name: 'Resume', exact: true })
+
+      await test.step('Pause execution in classic mode', async () => {
+        await comfyPage.menu.topbar.setVueNodesEnabled(false)
+        await comfyPage.page.evaluate(
+          (id) =>
+            window.dispatchEvent(
+              new CustomEvent('devtools-was-pause', { detail: String(id) })
+            ),
+          node.id
+        )
+        await comfyPage.nextFrame()
+      })
+
+      await test.step('Switch to Vue and resume execution', async () => {
+        await comfyPage.menu.topbar.setVueNodesEnabled(true)
+        await expect(button).toBeEnabled()
+        await button.click()
+        await expect
+          .poll(() => node.getProperty('properties'))
+          .toMatchObject({ resumed: true })
+        await expect(button).toBeDisabled()
+      })
+    }
+  )
 })
