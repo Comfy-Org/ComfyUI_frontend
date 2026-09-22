@@ -17,12 +17,9 @@ describe('ES2023 array method restrictions', () => {
   ] as const)(
     'rejects %s calls in runtime files',
     async ([_name, code]) => {
-      const [result] = await eslint.lintText(
-        `const items = [1, 2]\n${code}`,
-        {
-          filePath: runtimeFilePath
-        }
-      )
+      const [result] = await eslint.lintText(`const items = [1, 2]\n${code}`, {
+        filePath: runtimeFilePath
+      })
 
       expect(result.messages).toEqual([
         expect.objectContaining({
