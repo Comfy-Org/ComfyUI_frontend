@@ -1620,10 +1620,14 @@ describe('node id write-drop guard', () => {
     })
   })
 
-  // The same collision between two writes of the SAME class leaves the record
-  // reconciled in place, so the live node is never orphaned and there is
-  // nothing for the guard to see: a drop whose winner and loser agree on the
-  // class is invisible here, by design rather than by oversight.
+  // The same collision between two writes of the SAME class leaves the
+  // record reconciled in place (`nodeStore.updateNode` keeps the existing
+  // state object's identity), so the live node still reads as owned and
+  // never becomes an orphan this guard can see. That is a genuine gap in the
+  // guard's coverage, not a deliberate design choice: telling a same-class
+  // collision apart from an ordinary remote update of that same node would
+  // need op provenance this function does not have, not just a different
+  // check here.
   it('stays silent when the record at a live id keeps its class', () => {
     const graph = new LGraph()
     const kept = addLiveNode(graph, 'dummy')
@@ -1632,6 +1636,61 @@ describe('node id write-drop guard', () => {
 
     expect(reconcileAgentAdapters(graph)).toEqual([])
     expect(graph.getNodeById(toNodeId(COLLIDED_ID))).toBe(kept)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  /**
+   * Unlike `deliverCompetingAdds`, this drives the real follower path for
+   * both writes rather than placing the first node by hand: a legitimate
+   * `delete_node` + `add_node` pair reusing an id, delivered and reconciled
+   * as the separate frames they would arrive as, must not be mistaken for a
+   * dropped LWW write just because the id's class changed.
+   */
+  it('does not report a legitimate delete-then-add reusing an id with a different class', () => {
+    const graph = new LGraph()
+    const scope = graphScopeOf(graph)
+    const host = mint({ nodes: [], links: [] }, CATALOG)
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(remoteMutations(scope))
+    adapter.bind('workflow', follower)
+
+    let sequence = 0
+    let initialFrame = true
+    const deliver = (payload: GraphOperation) => {
+      const stateVector = Y.encodeStateVector(host)
+      const opId = `op-${++sequence}`
+      const result = applyOps(
+        host,
+        [agentOperation(opId, sequence, payload)],
+        CATALOG
+      )
+      expect(result.outcomes).toEqual([{ op_id: opId, outcome: 'applied' }])
+      const update = initialFrame
+        ? Y.encodeStateAsUpdate(host)
+        : Y.encodeStateAsUpdate(host, stateVector)
+      initialFrame = false
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'workflow',
+          seq: sequence,
+          update,
+          actor: 'agent:test',
+          opIds: [opId]
+        })
+      ).toBe(true)
+      reconcileAgentAdapters(graph)
+    }
+
+    deliver(addNodeAt('dummy'))
+    expect(graph.getNodeById(toNodeId(COLLIDED_ID))?.type).toBe('dummy')
+
+    deliver({ op: 'delete_node', node_id: COLLIDED_ID, removed_links: [] })
+    expect(graph.getNodeById(toNodeId(COLLIDED_ID))).toBeFalsy()
+
+    deliver(addNodeAt('widget-node'))
+
+    expect(graph.getNodeById(toNodeId(COLLIDED_ID))?.type).toBe('widget-node')
     expect(reportError).not.toHaveBeenCalled()
   })
 })
