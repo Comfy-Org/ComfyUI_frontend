@@ -3,6 +3,8 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+
 // Investigates https://github.com/Comfy-Org/ComfyUI_frontend/issues/18441,
 // which reports node mode (bypass/mute) resetting to ALWAYS for all nodes
 // when switching workflow tabs. Driving the real Ctrl+B/Ctrl+M shortcuts and
@@ -26,12 +28,7 @@ test.describe(
       await comfyPage.keyboard.bypass()
       await expect(node!).toBeBypassed()
 
-      const topbar = comfyPage.menu.topbar
-      await topbar.newWorkflowButton.click()
-      await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
-
-      await topbar.getTab(0).click()
-      await expect(topbar.getActiveTab()).not.toContainText('(2)')
+      await comfyPage.workflow.openNewTabThenReturn()
 
       await expect(node!).toBeBypassed()
     })
@@ -47,20 +44,19 @@ test.describe(
 
       await node!.click('title')
       await comfyPage.keyboard.ctrlSend('KeyM')
-      await expect
-        .poll(() => node!.getProperty<number>('mode'))
-        .toBe(2 /* LGraphEventMode.NEVER (mute) */)
+      await expect(async () => {
+        expect(await node!.getProperty<number>('mode')).toBe(
+          LGraphEventMode.NEVER
+        )
+      }).toPass({ timeout: 5000 })
 
-      const topbar = comfyPage.menu.topbar
-      await topbar.newWorkflowButton.click()
-      await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
+      await comfyPage.workflow.openNewTabThenReturn()
 
-      await topbar.getTab(0).click()
-      await expect(topbar.getActiveTab()).not.toContainText('(2)')
-
-      await expect
-        .poll(() => node!.getProperty<number>('mode'))
-        .toBe(2 /* LGraphEventMode.NEVER (mute) */)
+      await expect(async () => {
+        expect(await node!.getProperty<number>('mode')).toBe(
+          LGraphEventMode.NEVER
+        )
+      }).toPass({ timeout: 5000 })
     })
   }
 )
