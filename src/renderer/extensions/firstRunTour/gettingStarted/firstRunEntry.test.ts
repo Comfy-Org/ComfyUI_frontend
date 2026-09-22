@@ -5,6 +5,7 @@ import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 
@@ -13,14 +14,12 @@ const mocks = vi.hoisted<{
   isDesktopWidth: boolean
   subscriptionEnabled: boolean
   isNewUser: boolean | null
-  tourFlag: boolean
   beginTour: ReturnType<typeof vi.fn>
 }>(() => ({
   isCloud: true,
   isDesktopWidth: true,
   subscriptionEnabled: true,
   isNewUser: true,
-  tourFlag: true,
 
   beginTour: vi.fn()
 }))
@@ -63,16 +62,7 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => ({ isNewUser: () => mocks.isNewUser })
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get onboardingTourEnabled() {
-        return mocks.tourFlag
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
 }))
@@ -96,10 +86,10 @@ describe('useFirstRunEntry', () => {
     mocks.isDesktopWidth = true
     mocks.subscriptionEnabled = true
     mocks.isNewUser = true
-    mocks.tourFlag = true
+    vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = true
     useSettingStore().settingValues = {}
     vi.mocked(useSettingStore().set).mockImplementation(async (key, value) => {
-      useSettingStore().settingValues[key] = value
+      Object.assign(useSettingStore().settingValues, { [key]: value })
     })
     sharedComposable.reset()
     // beginTour reports whether a tour actually started; default to the
@@ -116,7 +106,12 @@ describe('useFirstRunEntry', () => {
     ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
     ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
     ['new-user state undetermined', () => void (mocks.isNewUser = null)],
-    ['the tour flag off', () => void (mocks.tourFlag = false)]
+    [
+      'the tour flag off',
+      () => {
+        vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = false
+      }
+    ]
   ] as const
 
   describe('what a fresh user sees', () => {
@@ -467,7 +462,6 @@ describe('useFirstRunEntry', () => {
     await entry.handleStartupOutcome('fresh')
 
     mocks.isDesktopWidth = false
-    mocks.tourFlag = false
     mocks.subscriptionEnabled = false
 
     expect(

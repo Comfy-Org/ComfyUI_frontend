@@ -74,11 +74,6 @@ const MockFormDropdownInput = {
     '<button ref="triggerButton" class="mock-dropdown-trigger" @click="$emit(\'select-click\', $event)">Open</button>'
 }
 
-const MockPopover = {
-  name: 'Popover',
-  template: '<div><slot /></div>'
-}
-
 interface MountDropdownOptions {
   searcher?: (
     query: string,
@@ -115,7 +110,6 @@ function mountDropdown(
       plugins: [PrimeVue, i18n, getActivePinia()!],
       stubs: {
         FormDropdownInput: MockFormDropdownInput,
-        Popover: MockPopover,
         FormDropdownMenu: MockFormDropdownMenu
       }
     }
@@ -140,7 +134,7 @@ function getCandidateLabel(): string {
 
 async function openDropdown(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Open' }))
-  await flushPromises()
+  await screen.findByTestId('dropdown-menu')
 }
 
 beforeEach(() => {
@@ -156,11 +150,11 @@ describe('FormDropdown', () => {
 
   describe('filteredItems updates when items prop changes', () => {
     it('updates displayed items when items prop changes', async () => {
-      const { rerender } = mountDropdown([
+      const { rerender, user } = mountDropdown([
         createItem('input-0', 'video1.mp4'),
         createItem('input-1', 'video2.mp4')
       ])
-      await flushPromises()
+      await openDropdown(user)
 
       expect(getMenuItems()).toHaveLength(2)
 
@@ -178,8 +172,8 @@ describe('FormDropdown', () => {
     })
 
     it('updates when items change but IDs stay the same', async () => {
-      const { rerender } = mountDropdown([createItem('1', 'alpha')])
-      await flushPromises()
+      const { rerender, user } = mountDropdown([createItem('1', 'alpha')])
+      await openDropdown(user)
 
       await rerender({ items: [createItem('1', 'beta')] })
       await flushPromises()
@@ -188,8 +182,8 @@ describe('FormDropdown', () => {
     })
 
     it('updates when switching between empty and non-empty items', async () => {
-      const { rerender } = mountDropdown([])
-      await flushPromises()
+      const { rerender, user } = mountDropdown([])
+      await openDropdown(user)
 
       expect(getMenuItems()).toHaveLength(0)
 
@@ -233,7 +227,7 @@ describe('FormDropdown', () => {
     await flushPromises()
 
     expect(searcher).not.toHaveBeenCalled()
-    expect(getMenuItems().map((item) => item.id)).toEqual(['3', '4'])
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
   })
 
   it('runs filtering when dropdown opens', async () => {
@@ -325,10 +319,9 @@ describe('FormDropdown', () => {
     )
     await flushPromises()
 
-    expect(getCandidateIndex()).toBe(-1)
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Search enter' }))
-    await flushPromises()
+    await user.keyboard('{Enter}')
 
     expect(onUpdateSelected).not.toHaveBeenCalled()
   })

@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Canvas-Position und Zoomstufe in Workflows speichern und wiederherstellen"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "Fehlende Modelle im Probleme-Tab anzeigen",
+    "tooltip": "Wenn deaktiviert, werden nicht gefundene Modelldateien nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "Methode für Live-Vorschau",
     "options": {
@@ -461,8 +465,13 @@
   "Comfy_Workflow_Persist": {
     "name": "Workflow-Status beibehalten und beim (Neu-)Laden der Seite wiederherstellen"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Warnung bei fehlenden Modellen anzeigen"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Fehlende Medien im Probleme-Tab anzeigen",
+    "tooltip": "Wenn deaktiviert, werden nicht gefundene Eingabebilder, Videos und Audiodateien nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "Fehlende Nodes im Probleme-Tab anzeigen",
+    "tooltip": "Wenn deaktiviert, werden fehlende Node-Pakete nicht im Probleme-Tab aufgeführt und ihre Nodes nicht hervorgehoben. Der Workflow kann weiterhin nicht ausgeführt werden, bis sie installiert sind."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Node-IDs beim Speichern des Workflows sortieren"

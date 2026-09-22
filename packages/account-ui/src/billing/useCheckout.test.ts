@@ -5,7 +5,7 @@ import {
   PAYMENT_PORTAL_ROUTE,
   SUBSCRIBE_ROUTE,
   operationRoute
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 
 import {
   NOW,

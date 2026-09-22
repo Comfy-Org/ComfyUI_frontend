@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -407,12 +409,72 @@ describe('useWidgetSelectItems', () => {
     })
   })
 
-  describe('missing-media placeholder suppression', () => {
+  describe('FE-230 missing-media filtering', () => {
+    it.for([
+      {
+        name: 'drops missing input items with warnings enabled',
+        showWarning: true,
+        inputs: DEFAULT_INPUTS,
+        outputs: [],
+        missing: 'photo_abc.jpg',
+        expected: ['img_001.png', 'hash789.png']
+      },
+      {
+        name: 'still drops missing input items with warnings disabled',
+        showWarning: false,
+        inputs: DEFAULT_INPUTS,
+        outputs: [],
+        missing: 'photo_abc.jpg',
+        expected: ['img_001.png', 'hash789.png']
+      },
+      {
+        name: 'drops output items by their annotated path',
+        showWarning: true,
+        inputs: [],
+        outputs: [
+          makeOutput('out-gone', 'gone.png'),
+          makeOutput('out-kept', 'kept.png')
+        ],
+        missing: 'gone.png [output]',
+        expected: ['kept.png [output]']
+      },
+      {
+        name: 'does not cross-match basenames across input and output sources',
+        showWarning: true,
+        inputs: [makeInput('input-photo', 'photo_abc.jpg')],
+        outputs: [makeOutput('out-photo', 'photo_abc.jpg')],
+        missing: 'photo_abc.jpg',
+        expected: ['photo_abc.jpg [output]']
+      }
+    ])('$name', ({ showWarning, inputs, outputs, missing, expected }) => {
+      storeAssets.input = inputs
+      storeAssets.flatOutput = outputs
+      useMissingMediaStore().setMissingMedia([
+        {
+          nodeId: '1',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: missing,
+          isMissing: true
+        }
+      ])
+      useSettingStore().settingValues[
+        'Comfy.Workflow.ShowMissingMediaWarning'
+      ] = showWarning
+
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({ modelValue: ref(undefined) })
+      )
+
+      expect(pagedItems(dropdownItems.value).map((i) => i.name)).toEqual(
+        expected
+      )
+    })
+
     it('does not surface a missing-value placeholder when the modelValue is confirmed missing', async () => {
       const modelValue = ref<string | undefined>('gone.png [output]')
 
-      const { useMissingMediaStore } =
-        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {

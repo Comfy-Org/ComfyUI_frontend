@@ -57,10 +57,7 @@ function renderWidget() {
   return render(WidgetCompositor, {
     props: { nodeId },
     global: {
-      plugins: [i18n],
-      stubs: {
-        Button: { template: '<button v-bind="$attrs"><slot /></button>' }
-      }
+      plugins: [i18n]
     }
   })
 }

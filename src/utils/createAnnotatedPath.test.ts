@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ResultItem } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 
 const resultItemCases = [

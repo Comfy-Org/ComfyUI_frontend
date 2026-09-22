@@ -1131,4 +1131,4 @@ export type {
   WorkspaceApiKeyInfo,
   WorkspaceSummary,
   WorkspaceWithRole
-} from './types.gen'
+} from './types.gen.js'

@@ -60,13 +60,6 @@ function renderComponent(props: {
     props,
     global: {
       plugins: [i18n],
-      stubs: {
-        Button: {
-          template:
-            '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
-          props: ['disabled', 'variant', 'size', 'aria-label']
-        }
-      },
       directives: {
         tooltip: () => {}
       }

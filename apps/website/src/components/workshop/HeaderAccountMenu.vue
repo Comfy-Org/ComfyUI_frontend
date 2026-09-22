@@ -141,7 +141,7 @@ const surfaceClass =
           balance is never read as the reader's own. -->
         <div class="bg-site-dropdown pb-3">
           <div
-            class="flex items-center gap-3 p-3"
+            class="flex items-center gap-3 p-4"
             data-testid="account-workspace-current"
           >
             <!-- The mark is the workspace's own colour here, where it stands
@@ -203,7 +203,7 @@ const surfaceClass =
         </div>
 
         <div
-          class="group/footer flex items-center gap-3 bg-transparency-white-t4 p-4"
+          class="group/footer flex items-center gap-3 bg-transparency-white-t4 px-4 py-2"
           data-testid="account-identity"
         >
           <span
@@ -216,10 +216,15 @@ const surfaceClass =
             <button
               type="button"
               :aria-label="t('nav.signOut', locale)"
-              class="grid size-8 shrink-0 cursor-pointer place-items-center rounded-md text-primary-warm-gray transition-colors outline-none hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
+              class="flex h-8 shrink-0 cursor-pointer items-center gap-2 rounded-md px-2 text-sm text-primary-warm-gray transition-colors outline-none hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
               data-testid="account-sign-out"
               @click="emit('signOut')"
             >
+              <span
+                class="hidden group-focus-within/footer:inline group-hover/footer:inline"
+              >
+                {{ t('nav.signOut', locale) }}
+              </span>
               <LogOut class="size-4" aria-hidden="true" />
             </button>
           </DropdownMenuItem>

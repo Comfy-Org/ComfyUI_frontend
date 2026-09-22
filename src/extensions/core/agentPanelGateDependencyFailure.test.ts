@@ -1,6 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -69,7 +68,16 @@ describe('the agent panel gate under a dependency-chunk failure', () => {
     expect(store.gateSettled).toBe(true)
     expect(store.enabled).toBe(false)
     expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
-      errorType: 'agent_flag_gate_load_failure'
+      errorType: 'agent_flag_gate_load_failure',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'load',
+        outcome: 'failed',
+        feature_flag: 'agent_panel',
+        feature_flag_state: 'unknown',
+        project_context: 'application_bootstrap'
+      }
     })
     expect(consoleError).not.toHaveBeenCalled()
   })

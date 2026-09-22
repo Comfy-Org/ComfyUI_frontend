@@ -44,11 +44,29 @@ export function useTopupOperation() {
     else operationStore.dismissOperation(operationId)
   }
 
+  /**
+   * Adopt a top-up the purchase left pending, so the caller is told when it
+   * settles. On the SDK rail the lifecycle adopted it when the command was
+   * issued, so there is nothing to register and a second registration would be
+   * a second poller on one operation.
+   */
+  async function adoptPendingOperation(
+    operationId: string,
+    metadata: { attemptStartedAt: number }
+  ): Promise<void> {
+    if (sdkStore) return
+    await operationStore.startOperation(operationId, 'topup', {
+      ...metadata,
+      autoHandleRequiresAction: true
+    })
+  }
+
   return {
     isAddingCredits,
     topupOperation,
     topup,
     retryPaymentAuthentication,
-    dismissOperation
+    dismissOperation,
+    adoptPendingOperation
   }
 }

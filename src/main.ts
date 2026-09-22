@@ -1,29 +1,28 @@
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
-import {
-  browserApiErrorsIntegration,
-  captureMessage,
-  init as sentryInit
-} from '@sentry/vue'
-import { initializeApp } from 'firebase/app'
+import { captureMessage } from '@sentry/vue'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
-import { VueFire, VueFireAuth } from 'vuefire'
 
 import { setAssertReporter } from '@/base/assert'
-import { getFirebaseConfig } from '@/config/firebase'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import { initSentry } from '@/platform/telemetry/initSentry'
+import {
+  markStoresPending,
+  markStoresReady
+} from '@/platform/telemetry/storeReadiness'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
@@ -46,13 +45,15 @@ if (isCloud) stripPaymentReturnParams()
 
 bootstrapTracer.armWatchdog()
 
-// Load remote config before initializeApp() below, so getFirebaseConfig() resolves
-// against the server's runtime values instead of the build-time defaults.
+// Load remote config before the Firebase app resolves below, so getFirebaseConfig()
+// resolves against the server's runtime values instead of the build-time defaults.
 await bootstrapTracer.settle('startup/remote-config', async () => {
   const { refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false })
 })
+
+markStoresPending()
 
 if (isCloud) {
   await bootstrapTracer.settle('startup/telemetry-init', async () => {
@@ -80,8 +81,12 @@ const ComfyUIPreset = definePreset(Aura, {
 })
 
 const phaseFirebase = bootstrapTracer.startPhase('startup/firebase-init')
-const firebaseApp = initializeApp(getFirebaseConfig())
-phaseFirebase.stop()
+// Throws unless remote config has settled; the awaited remote-config phase above guarantees it has.
+try {
+  firebaseIdentity.initialize()
+} finally {
+  phaseFirebase.stop()
+}
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -97,31 +102,7 @@ const sentryDsn = isCloud
 const sentryEnabled = !import.meta.env.DEV && !!sentryDsn
 
 const phaseSentry = bootstrapTracer.startPhase('startup/sentry-init')
-sentryInit({
-  app,
-  dsn: sentryDsn,
-  enabled: sentryEnabled,
-  release: __COMFYUI_FRONTEND_VERSION__,
-  normalizeDepth: 8,
-  tracesSampleRate: isCloud ? 1.0 : 0,
-  replaysSessionSampleRate: 0,
-  replaysOnErrorSampleRate: 0,
-  // Only set these for non-cloud builds
-  ...(isCloud
-    ? {
-        integrations: [
-          // Disable event target wrapping to reduce overhead on high-frequency
-          // DOM events (pointermove, mousemove, wheel). Sentry still captures
-          // errors via window.onerror and unhandledrejection.
-          browserApiErrorsIntegration({ eventTarget: false })
-        ]
-      }
-    : {
-        integrations: [],
-        autoSessionTracking: false,
-        defaultIntegrations: false
-      })
-})
+initSentry({ app, dsn: sentryDsn, enabled: sentryEnabled, isCloud })
 phaseSentry.stop()
 
 flushErrorReports()
@@ -177,10 +158,8 @@ app
   .use(ToastService)
   .use(pinia)
   .use(i18n)
-  .use(VueFire, {
-    firebaseApp,
-    modules: [VueFireAuth()]
-  })
+
+markStoresReady()
 
 if (isCloud && hasHostTelemetryBridge) {
   syncHostUserIdWithFirebaseAuth()

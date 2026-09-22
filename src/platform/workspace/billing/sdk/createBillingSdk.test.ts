@@ -1,25 +1,33 @@
 import type {
   BillingOperationTelemetryEvent,
+  BillingResult,
   BillingSession
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import {
   BILLING_STATUS_ROUTE,
   CAPABILITIES_ROUTE,
   CREDITS_ROUTE,
+  PAYMENT_METHODS_ROUTE,
+  PLANS_ROUTE,
   TOPUP_ROUTE,
   operationPointerKey,
   operationRoute
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import type {
   AccountCredential,
   SessionSnapshot
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import type { BillingSdkOptions } from './createBillingSdk'
+import type { BillingSdk, BillingSdkOptions } from './createBillingSdk'
 import { createBillingSdk } from './createBillingSdk'
 
 const BASE = 'https://cloud.test/api'
+
+interface ScopedReader {
+  read: () => Promise<BillingResult<unknown>>
+  getSnapshot: () => unknown
+}
 
 const CREDENTIAL: AccountCredential = {
   token: 'workspace-jwt',
@@ -65,6 +73,30 @@ const CAPABILITIES = {
     can_top_up: false
   }
 }
+
+const PLANS = {
+  current_plan_slug: 'free',
+  plans: [
+    {
+      availability: { available: true },
+      credits_cents: 2000,
+      duration: 'MONTHLY',
+      max_seats: 1,
+      price_cents: 2000,
+      seat_summary: {
+        seat_count: 1,
+        total_cost_cents: 2000,
+        total_credits_cents: 2000
+      },
+      slug: 'creator_monthly',
+      tier: 'CREATOR'
+    }
+  ]
+}
+
+const PAYMENT_METHODS = [
+  { brand: 'visa', id: 'pm_1', is_default: true, last4: '4242', type: 'card' }
+]
 
 const TOPUP_RESPONSE = {
   amount_cents: 1000,
@@ -122,6 +154,8 @@ function harness(overrides: Partial<BillingSdkOptions> = {}) {
 
   answer('GET', CAPABILITIES_ROUTE, () => CAPABILITIES)
   answer('GET', BILLING_STATUS_ROUTE, () => STATUS)
+  answer('GET', PLANS_ROUTE, () => PLANS)
+  answer('GET', PAYMENT_METHODS_ROUTE, () => PAYMENT_METHODS)
   answer('GET', CREDITS_ROUTE, () => ({
     amount_micros: balance,
     currency: 'USD'
@@ -142,6 +176,7 @@ function harness(overrides: Partial<BillingSdkOptions> = {}) {
       removeItem: (key) => void storage.delete(key)
     },
     embeddedCheckoutAvailable: () => false,
+    hostedDestination: () => 'stripe',
     onTelemetry: (event) => events.push(event),
     challengePort: async () => undefined,
     fetchImpl,
@@ -194,6 +229,45 @@ describe('createBillingSdk', () => {
       'billing.operation.succeeded'
     ])
     expect(storage.size).toBe(0)
+  })
+
+  it.for([
+    { reader: 'status', select: (sdk: BillingSdk) => sdk.status },
+    { reader: 'credits', select: (sdk: BillingSdk) => sdk.credits },
+    { reader: 'capabilities', select: (sdk: BillingSdk) => sdk.capabilities },
+    { reader: 'plans', select: (sdk: BillingSdk) => sdk.plans },
+    {
+      reader: 'paymentMethods',
+      select: (sdk: BillingSdk) => sdk.paymentMethods
+    }
+  ])(
+    'stops the $reader reader serving the disposed scope',
+    async ({ select }) => {
+      const { sdk } = harness()
+      const reader: ScopedReader = select(sdk)
+      await expect(reader.read()).resolves.toMatchObject({ status: 'ok' })
+
+      sdk.dispose()
+
+      expect(reader.getSnapshot()).toBeUndefined()
+      await expect(reader.read()).resolves.toEqual({
+        status: 'error',
+        code: 'SUPERSEDED'
+      })
+    }
+  )
+
+  it('hands the host destination to the operation it routes hosted', async () => {
+    const { sdk } = harness({ hostedDestination: () => 'billing_web' })
+
+    void sdk.topup.createTopupCheckout({ amountCents: 1000 })
+
+    await vi.waitFor(() =>
+      expect(sdk.lifecycle.get('op-1')).toMatchObject({
+        presentation: 'hosted',
+        hostedDestination: 'billing_web'
+      })
+    )
   })
 
   it('keeps the tab pointer in the supplied storage while the operation is open', async () => {

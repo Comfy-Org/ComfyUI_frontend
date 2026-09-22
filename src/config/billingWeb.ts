@@ -1,11 +1,9 @@
+import type { HostedBillingDestination } from '@comfyorg/account-core/billing'
+
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]'])
 
-/**
- * Which origin serves a hosted billing page: the provider page behind the
- * backend's `action_url` / `checkout_url`, or the hosted billing app. The
- * server resolves it per user through the `hosted_billing_destination` flag.
- */
-export type HostedBillingDestination = 'stripe' | 'billing_web'
+/** The SDK owns the vocabulary; the server resolves it per user through the `hosted_billing_destination` flag. */
+export type { HostedBillingDestination }
 
 /**
  * The single narrowing boundary for the raw wire value. Anything but the

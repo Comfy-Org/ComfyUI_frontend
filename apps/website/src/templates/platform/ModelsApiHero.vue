@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
-import { externalLinks } from '../../config/routes'
+import { apiKeysLink, externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import CodeTabs from './CodeTabs.vue'
@@ -23,6 +23,11 @@ const ctas = platformCtas(locale)
     :primary-cta="{
       label: ctas.getStarted.label,
       href: externalLinks.docsComfyRouter,
+      target: '_blank'
+    }"
+    :secondary-cta="{
+      label: t('platform.modelsHero.getApiKey', locale),
+      href: apiKeysLink({ onboarding: 'router' }),
       target: '_blank'
     }"
   >

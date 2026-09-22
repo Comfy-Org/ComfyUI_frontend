@@ -240,6 +240,7 @@ export function curateWorkshopInputs(
       ...(rule.unit ? { unit: rule.unit } : {}),
       ...(rule.optionLabels ? { optionLabels: rule.optionLabels } : {}),
       ...(rule.imageSource ? { imageSource: rule.imageSource } : {}),
+      ...(rule.maxUploadBytes ? { maxUploadBytes: rule.maxUploadBytes } : {}),
       ...(rule.urlUpload ? { urlUpload: rule.urlUpload } : {})
     })
     return [name, effective] as const

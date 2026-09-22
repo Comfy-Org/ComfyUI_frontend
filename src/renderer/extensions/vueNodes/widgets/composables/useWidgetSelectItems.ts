@@ -206,7 +206,10 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       getMediaTypeFromFilename(asset.name) === targetMediaType
 
     const base = baseAssets.value
-    const baseItems = pagedItems(base).filter(kindFilter).map(assetToForm)
+    const baseItems = pagedItems(base)
+      .filter(kindFilter)
+      .map(assetToForm)
+      .filter((item) => !missingMediaValues.value.has(item.name))
     const mapped = [...missingItems.value, ...baseItems]
     return isPaged(base) ? new WrappedList(base, () => mapped) : mapped
   })

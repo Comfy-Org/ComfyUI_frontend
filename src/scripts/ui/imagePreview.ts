@@ -58,9 +58,6 @@ export function createImageHost(node: LGraphNode) {
   let first = true
 
   function updateSize() {
-    let w = null
-    let h = null
-
     // @ts-expect-error fixme ts strict error
     if (currentImgs) {
       let elH = el.clientHeight
@@ -76,20 +73,13 @@ export function createImageHost(node: LGraphNode) {
       }
 
       const nw = node.size[0]
-      ;({ cellWidth: w, cellHeight: h } = calculateImageGrid(
+      const { cellWidth, cellHeight } = calculateImageGrid(
         currentImgs,
         nw - 20,
         elH
-      ))
-      // @ts-expect-error fixme ts strict error
-      w += 'px'
-      // @ts-expect-error fixme ts strict error
-      h += 'px'
-
-      // @ts-expect-error fixme ts strict error
-      el.style.setProperty('--comfy-img-preview-width', w)
-      // @ts-expect-error fixme ts strict error
-      el.style.setProperty('--comfy-img-preview-height', h)
+      )
+      el.style.setProperty('--comfy-img-preview-width', `${cellWidth}px`)
+      el.style.setProperty('--comfy-img-preview-height', `${cellHeight}px`)
     }
   }
   return {

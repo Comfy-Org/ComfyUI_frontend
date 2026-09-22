@@ -6,11 +6,12 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 
-import { workshopModels } from '../src/config/workshop-browse-content'
+import { authoredWorkshopModels } from '../src/config/workshop-browse-content'
 import { resolveWorkshopCloudEnv } from '../src/config/workshop-cloud-env'
 import { WORKSHOP_ROUTER_BASE_URL } from '../src/config/workshop-env'
 import { releaseRouterOutputs } from '../src/config/workshop-response'
 import { WorkshopRouterError } from '../src/config/workshop-router-errors'
+import { getAuthoredRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
 import type { RunOutput } from '../src/config/workshop-run'
 import type { MediaKind } from './router-model-artifacts'
 import { checkMediaDecoders, validateArtifact } from './router-model-artifacts'
@@ -19,7 +20,8 @@ import { captureRouterOutputs } from './router-model-evidence'
 import { openRouterModelReport } from './router-model-report'
 import { routerReportUpdate } from './router-model-report-events'
 import { openRouterModelTransport } from './router-model-transport'
-import { resolveRouterRender, router_render } from './router-render'
+import { selectRouterModels } from './router-model-selection'
+import { createRouterRenderHelpers } from './router-render'
 import { openRouterSvgRasterizer } from './router-model-svg'
 
 const HELP = `Test every published image, video and audio page with its initial defaults.
@@ -27,7 +29,7 @@ const HELP = `Test every published image, video and audio page with its initial 
 pnpm --filter @comfyorg/website test:router-models [options]
 
   --execute                Make paid Router calls after preflight (default: dry)
-  --slug SLUG              Test one page; repeat to select more pages
+  --slug SLUG              Test one authored page; repeat; disabled is allowed
   --modality KIND          Select image, video or audio pages
   --concurrency N          Simultaneous cases, 1–128 (default: 16)
   --starts-per-second N    Pace new requests; fractions allowed (default: 2)
@@ -37,9 +39,12 @@ pnpm --filter @comfyorg/website test:router-models [options]
   --report PATH.md         Persistent public results grid (default: MODELS_TEST_RESULTS.md)
   --help                   Show this help
 
---execute requires COMFY_KEY, PUBLIC_WORKSHOP_CLOUD_ENV=prod|staging|test,
+--execute requires COMFY_API_KEY, PUBLIC_WORKSHOP_CLOUD_ENV=prod|staging|test,
 and ffprobe/ffmpeg on PATH. A request is repeated only to collect a generation
-Router parked at its deadline, with the same key and body; nothing else retries.
+Router parked at its deadline, follows bounded in-flight retry advice, or recovers
+one interrupted connection, always with the same key and body. HTTP failures
+otherwise do not retry. This Node grid does not certify browser upload CORS.
+Use test:workshop-upload separately to verify the live browser upload path.
 Preflight validates defaults without network calls; ready is not a generation pass.
 Each run writes manifest.json, append-only events.jsonl, summary.json and artifacts.
 Parsed outputs and full JSON/text attachments are saved before media verification.
@@ -65,6 +70,10 @@ function isMediaKind(value: unknown): value is MediaKind {
   return value === 'image' || value === 'video' || value === 'audio'
 }
 
+const { resolveRouterRender, router_render } = createRouterRenderHelpers(
+  getAuthoredRouterWorkshopModelDetail
+)
+
 function failureEvidence(error: unknown, token: string) {
   const message = error instanceof Error ? error.message : 'Unknown failure'
   return {
@@ -75,6 +84,7 @@ function failureEvidence(error: unknown, token: string) {
       ? {
           requestId: error.requestId,
           fieldErrors: error.fieldErrors,
+          stage: error.stage,
           ...(error.response
             ? {
                 response: {
@@ -116,24 +126,17 @@ async function main() {
   if (concurrency > 128) throw new Error('Concurrency cannot exceed 128')
   const timeoutMs = positiveInteger(values['timeout-seconds'], 2700) * 1000
   const maxBytes = positiveInteger(values['max-artifact-mb'], 256) * 1024 * 1024
-  const token = process.env.COMFY_KEY ?? ''
+  const token = process.env.COMFY_API_KEY ?? ''
   const runId = `${new Date().toISOString().replaceAll(':', '-')}-${randomUUID()}`
   const directory = values.output
     ? resolve(values.output)
     : fileURLToPath(
         new URL(`../../../temp/router-model-tests/${runId}/`, import.meta.url)
       )
-  const models = workshopModels.filter(
-    (model) =>
-      isMediaKind(model.modality) &&
-      (!values.modality || model.modality === values.modality)
-  )
-  const selected = new Set(values.slug ?? models.map((model) => model.slug))
-  for (const slug of selected)
-    if (!models.some((model) => model.slug === slug))
-      throw new Error(`Not a published media page: ${slug}`)
-  const cases = models.filter((model) => selected.has(model.slug))
-  if (!cases.length) throw new Error('No published media pages selected')
+  const cases = selectRouterModels({
+    slugs: values.slug,
+    modality: values.modality
+  })
   if (values.report && !values.report.endsWith('.md'))
     throw new Error('--report must name a .md file')
   const markdownPath = values.report
@@ -163,7 +166,7 @@ async function main() {
   }
   const report = openRouterModelReport({ jsonPath, markdownPath })
   try {
-    for (const model of workshopModels) {
+    for (const model of authoredWorkshopModels) {
       report.update({
         slug: model.slug,
         routerId: model.routerId,
@@ -255,7 +258,7 @@ async function main() {
     )
     let results: string[] = []
     if (values.execute && ready.length) {
-      if (!token) throw new Error('Set COMFY_KEY before using --execute')
+      if (!token) throw new Error('Set COMFY_API_KEY before using --execute')
       if (
         !['prod', 'staging', 'test'].includes(
           process.env.PUBLIC_WORKSHOP_CLOUD_ENV ?? ''
@@ -437,6 +440,6 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-  console.error(failureEvidence(error, process.env.COMFY_KEY ?? '').message)
+  console.error(failureEvidence(error, process.env.COMFY_API_KEY ?? '').message)
   process.exitCode = 1
 })

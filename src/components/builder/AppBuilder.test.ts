@@ -1,29 +1,20 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 import AppBuilder from './AppBuilder.vue'
 
-vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
-  const { ref } = await import('vue')
-  return {
-    useAppMode: () => ({
-      isSelectMode: ref(true),
-      isSelectInputsMode: ref(true),
-      isSelectOutputsMode: ref(false),
-      isArrangeMode: ref(false),
-      isAppMode: ref(false),
-      isBuilderMode: ref(true),
-      mode: ref('builder:inputs'),
-      setMode: vi.fn()
-    })
-  }
+beforeEach(async () => {
+  const workflow = await useWorkflowStore().createTemporary('test.json').load()
+  workflow.activeMode = 'builder:inputs'
+  useWorkflowStore().activeWorkflow = workflow
 })
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
