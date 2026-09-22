@@ -54,7 +54,7 @@ function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' ? value : null
 }
 
-function parseClientDocFrame(
+export function parseClientDocFrame(
   raw: string | Buffer
 ): ParsedClientDocFrame | null {
   const envelope = docFrameEnvelope(raw)
@@ -237,6 +237,11 @@ export class AgentFollowerHostSocket {
   /** Rises once per follower subscribe, after the catch-up frame was sent. */
   subscribeCount(): number {
     return this.subscribes
+  }
+
+  async disconnect(): Promise<void> {
+    if (!this.socket) throw new Error('the app has not opened /ws yet')
+    await this.socket.close()
   }
 
   /** Every `doc_*` frame the page has sent so far, oldest first. */

@@ -568,6 +568,7 @@ where its tags place it:
 | `@perf`       | Runs in the perf project                               |
 | `@audit`      | Runs in the audit project                              |
 | `@cloud`      | Runs in the cloud project                              |
+| `@desktop`    | Runs against the desktop build                         |
 | `@oss`        | Excluded from the cloud project                        |
 
 Use `@mobile-ios` sparingly — only for regressions that reproduce under
@@ -576,6 +577,10 @@ WebKit engine does not expose embedded-WKWebView globals such as
 `window.webkit.messageHandlers`; inject them via `page.addInitScript()` and set the
 context `userAgent`. See `browser_tests/tests/cloudLoginIosWebview.spec.ts` for the
 reference pattern.
+
+The `@desktop` tag only selects the desktop project. Tests that need Electron
+APIs must import `desktopFixture` from `@e2e/fixtures/desktopFixture` to install
+the mocked bridge before the app starts.
 
 Organizational tags are used for manual `--grep` filtering (not project
 routing). Common ones in the suite: `@smoke`, `@slow`, `@screenshot`, `@canvas`,
@@ -1008,6 +1013,14 @@ pnpm test:browser:local --update-snapshots
 3. CI generates and commits the Linux baselines.
 
 Fork PRs can't auto-commit screenshots — a maintainer commits them for you.
+
+### Canvas baselines: pin the viewport instead of re-baselining
+
+If a canvas screenshot diff is only a viewport translation (same image size,
+the whole graph shifted), the baseline is not stale: pin the pan/zoom in the
+test before the shot rather than regenerating. Regenerate only when the
+product changed, and open the diff to confirm the change is the one you made
+rather than a viewport shift.
 
 ## Debugging in CI
 
