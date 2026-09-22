@@ -1,5 +1,7 @@
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
+import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -20,50 +22,25 @@ function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
 
-interface PostedMessageBody {
-  workflow_id?: string
-  current_tab?: string
-  open_tabs?: { workflow_id: string; name: string }[]
-  draft?: { content?: { nodes?: unknown[] } }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function isPostedMessageBody(value: unknown): value is PostedMessageBody {
-  if (!isRecord(value)) return false
-
-  const { workflow_id, current_tab, open_tabs, draft } = value
-  if (workflow_id !== undefined && typeof workflow_id !== 'string') return false
-  if (current_tab !== undefined && typeof current_tab !== 'string') return false
-  if (
-    open_tabs !== undefined &&
-    (!Array.isArray(open_tabs) ||
-      !open_tabs.every(
-        (tab) =>
-          isRecord(tab) &&
-          typeof tab.workflow_id === 'string' &&
-          typeof tab.name === 'string'
-      ))
-  ) {
-    return false
-  }
-  if (draft === undefined) return true
-  if (!isRecord(draft) || !isRecord(draft.content)) return false
-  return Array.isArray(draft.content.nodes)
-}
-
-function parsePosted(raw: string | undefined): PostedMessageBody {
+function parsePosted(raw: string | undefined): AgentPostMessageRequest {
   expect(raw, 'a message body must have been POSTed').toBeTruthy()
   const parsed: unknown = JSON.parse(raw ?? '{}')
+  const result = zAgentPostMessageRequest.safeParse(parsed)
   expect(
-    isPostedMessageBody(parsed),
-    'posted message body must match the expected serialized shape'
+    result.success,
+    'posted message body must match the generated request schema'
   ).toBe(true)
-  if (!isPostedMessageBody(parsed))
-    throw new Error('Invalid posted message body')
-  return parsed
+  if (!result.success) throw new Error('Invalid posted message body')
+  return result.data
+}
+
+function draftNodeCount(body: AgentPostMessageRequest): number {
+  const nodes = body.draft?.content?.nodes
+  expect(nodes, 'posted draft nodes must be an array').toEqual(
+    expect.any(Array)
+  )
+  if (!Array.isArray(nodes)) throw new Error('Invalid posted draft nodes')
+  return nodes.length
 }
 
 /**
@@ -117,7 +94,7 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
     const first = parsePosted(postedMessages[0])
     expect(first.workflow_id).toBeUndefined()
     expect(
-      first.draft?.content?.nodes?.length,
+      draftNodeCount(first),
       'turn 1 draft must carry the populated graph'
     ).toBeGreaterThanOrEqual(3)
 
@@ -142,7 +119,7 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
       'open_tabs must include the bound id'
     ).toContain(BOUND_WORKFLOW_ID)
     expect(
-      second.draft?.content?.nodes?.length,
+      draftNodeCount(second),
       'turn 2 draft must still carry the populated graph (GM-12: reads empty)'
     ).toBeGreaterThanOrEqual(nodeCount)
   })
@@ -192,7 +169,7 @@ test.describe('Agent bound-canvas read path', { tag: '@cloud' }, () => {
       BOUND_WORKFLOW_ID
     )
     expect(
-      second.draft?.content?.nodes?.length,
+      draftNodeCount(second),
       'draft after tab switch must reflect the bound populated tab'
     ).toBeGreaterThanOrEqual(nodeCount)
   })
