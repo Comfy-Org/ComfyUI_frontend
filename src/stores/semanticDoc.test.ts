@@ -382,12 +382,12 @@ describe('SemanticDocRegistry', () => {
     const members = new Map<string, Set<string>>()
     const sink: MembershipSink = {
       add: (owner, id) => {
-        const ids = members.get(owner as string) ?? new Set()
+        const ids = members.get(owner) ?? new Set()
         ids.add(id)
-        members.set(owner as string, ids)
+        members.set(owner, ids)
       },
       remove: (owner, id) => {
-        members.get(owner as string)?.delete(id)
+        members.get(owner)?.delete(id)
       },
       resetDefinitionOwners: vi.fn(() => {
         for (const owner of [...members.keys()])
