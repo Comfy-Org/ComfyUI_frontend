@@ -16,7 +16,7 @@ test('normalizes the setup API base used by ComfyPage requests', async ({
       if (property !== 'post') return Reflect.get(target, property, receiver)
 
       return async (...args: Parameters<typeof request.post>) => {
-        observedUrls.push(args[0].toString())
+        observedUrls.push(args[0])
         return await target.post(...args)
       }
     }
