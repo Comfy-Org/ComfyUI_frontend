@@ -7,14 +7,12 @@ interface ToolRow {
   state: PartState
   ok?: boolean
   count: number
-  durationMs?: number
 }
 
 interface ThinkingRow {
   kind: 'thinking'
   text: string
   state: PartState
-  durationMs?: number
 }
 
 export type ActivityRow = ToolRow | ThinkingRow
@@ -42,8 +40,7 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
       rows.push({
         kind: 'thinking',
         text: part.text,
-        state: part.state,
-        durationMs: part.durationMs
+        state: part.state
       })
       continue
     }
@@ -52,8 +49,6 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
       previous.count += 1
       if (part.state === 'streaming') previous.state = 'streaming'
       if (part.ok === false) previous.ok = false
-      if (part.durationMs !== undefined)
-        previous.durationMs = (previous.durationMs ?? 0) + part.durationMs
     } else {
       rows.push({
         kind: 'tool',
@@ -61,14 +56,9 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
         skill: part.skill,
         state: part.state,
         ok: part.ok,
-        count: 1,
-        durationMs: part.durationMs
+        count: 1
       })
     }
   }
   return rows
-}
-
-export function totalDurationMs(parts: readonly ActivityPart[]): number {
-  return parts.reduce((total, part) => total + (part.durationMs ?? 0), 0)
 }

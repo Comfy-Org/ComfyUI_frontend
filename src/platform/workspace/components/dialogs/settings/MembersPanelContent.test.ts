@@ -171,21 +171,11 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-const SearchInputStub = {
-  name: 'SearchInput',
-  template:
-    '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-  props: ['modelValue', 'placeholder', 'size'],
-  emits: ['update:modelValue']
-}
-
 function renderComponent() {
   return render(MembersPanelContent, {
     global: {
       plugins: [i18n],
       stubs: {
-        SearchInput: SearchInputStub,
-        UserAvatar: true,
         WorkspaceMenuButton: true
       },
       directives: { tooltip: () => {} }

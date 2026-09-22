@@ -228,7 +228,7 @@ function syncPromotedComboHostOptions(rootGraph: LGraph): void {
       const state = widgetValueStore.getWidget(input.widgetId)
       if (!state) continue
 
-      state.options = { ...(sourceWidget.options ?? {}) }
+      state.options = { ...sourceWidget.options }
     }
   })
 }
@@ -241,7 +241,7 @@ type Clipspace = {
   selectedIndex: number
   img_paste_mode: string
   paintedIndex: number
-  combinedIndex: number
+  combinedIndex?: number
 }
 
 /**
@@ -637,21 +637,19 @@ export class ComfyApp {
           useNodeOutputStore().setNodeOutputImages(node, images)
         }
 
-        if (ComfyApp.clipspace.imgs) {
-          // deep-copy to cut link with clipspace
-          if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
-            const img = new Image()
-            img.src =
-              ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
-            node.imgs = [img]
-            node.imageIndex = 0
-          } else {
-            const imgs = []
-            for (let i = 0; i < ComfyApp.clipspace.imgs.length; i++) {
-              imgs[i] = new Image()
-              imgs[i].src = ComfyApp.clipspace.imgs[i].src
-              node.imgs = imgs
-            }
+        // deep-copy to cut link with clipspace
+        if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
+          const img = new Image()
+          img.src =
+            ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
+          node.imgs = [img]
+          node.imageIndex = 0
+        } else {
+          const imgs = []
+          for (let i = 0; i < ComfyApp.clipspace.imgs.length; i++) {
+            imgs[i] = new Image()
+            imgs[i].src = ComfyApp.clipspace.imgs[i].src
+            node.imgs = imgs
           }
         }
       }
@@ -668,11 +666,7 @@ export class ComfyApp {
       }
 
       // Store only combined image inside the node if it exists
-      if (
-        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex] &&
-        node.imgs &&
-        combinedImgSrc
-      ) {
+      if (node.imgs && combinedImgSrc) {
         const combinedImg = new Image()
         combinedImg.src = combinedImgSrc
         node.imgs = [combinedImg]
@@ -698,7 +692,7 @@ export class ComfyApp {
             }
           }
         }
-        if (ComfyApp.clipspace.widgets && node.widgets) {
+        if (ComfyApp.clipspace.widgets) {
           ComfyApp.clipspace.widgets.forEach(({ type, name, value }) => {
             const prop = node.widgets?.find(
               (obj) => obj.type === type && obj.name === name
@@ -917,8 +911,8 @@ export class ComfyApp {
 
     api.addEventListener('execution_error', ({ detail }) => {
       const precondition = resolveAccountPrecondition({
-        exceptionType: detail.exception_type ?? '',
-        exceptionMessage: detail.exception_message ?? ''
+        exceptionType: detail.exception_type,
+        exceptionMessage: detail.exception_message
       })
       if (precondition) {
         useAccountPreconditionDialog().open(precondition, {
@@ -1121,7 +1115,7 @@ export class ComfyApp {
     canvas.width = Math.round(width * scale)
     canvas.height = Math.round(height * scale)
     canvas.getContext('2d')?.scale(scale, scale)
-    this.canvas?.draw(true, true)
+    this.canvas.draw(true, true)
   }
 
   private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDefV1>) {
@@ -1236,14 +1230,14 @@ export class ComfyApp {
   loadTemplateData(templateData: {
     templates?: { name?: string; data?: string }[]
   }): void {
-    if (!templateData?.templates) {
+    if (!templateData.templates) {
       return
     }
 
     const old = localStorage.getItem('litegrapheditor_clipboard')
 
     for (const template of templateData.templates) {
-      if (!template?.data) {
+      if (!template.data) {
         continue
       }
 
@@ -2023,10 +2017,7 @@ export class ComfyApp {
               // Show a clear message instead of a generic error or sign-in prompt.
               // The response may be middleware JSON {"message": "..."} or the
               // standard {"error": {"message": "..."}} shape, so check both.
-              const raw =
-                error.response && typeof error.response === 'object'
-                  ? (error.response as Record<string, unknown>)
-                  : {}
+              const raw: Record<string, unknown> = error.response
               const rawError =
                 raw.error && typeof raw.error === 'object'
                   ? (raw.error as Record<string, unknown>)
@@ -2179,10 +2170,10 @@ export class ComfyApp {
     // when both are present (e.g., in ComfyUI-generated PNGs)
     if (workflow) {
       try {
-        const workflowObj =
+        const workflowObj: unknown =
           typeof workflow === 'string'
-            ? parseJsonWithNonFinite<ComfyWorkflowJSON>(workflow)
-            : (workflow as ComfyWorkflowJSON)
+            ? parseJsonWithNonFinite(workflow)
+            : workflow
 
         // Only load workflow if parsing succeeded AND validation passed
         if (
@@ -2190,7 +2181,8 @@ export class ComfyApp {
           typeof workflowObj === 'object' &&
           !Array.isArray(workflowObj)
         ) {
-          await this.loadGraphData(workflowObj, true, true, fileName, {
+          const graphData = workflowObj as ComfyWorkflowJSON
+          await this.loadGraphData(graphData, true, true, fileName, {
             openSource,
             deferWarnings: options?.deferWarnings
           })
@@ -2453,7 +2445,7 @@ export class ComfyApp {
         const widgetValues: TWidgetValue[] = []
         const widgetValuesNamed: Record<string, TWidgetValue> =
           Object.create(null)
-        for (const [input, value] of Object.entries(data.inputs ?? {})) {
+        for (const [input, value] of Object.entries(data.inputs)) {
           if (value instanceof Array) {
             node.addInput(input, '*')
           } else {
@@ -2504,7 +2496,7 @@ export class ComfyApp {
       if (!node) return
       const targetNode = node
 
-      for (const input in data.inputs ?? {}) {
+      for (const input in data.inputs) {
         const value = data.inputs[input]
         if (value instanceof Array) {
           function connectInput() {
@@ -2512,10 +2504,11 @@ export class ComfyApp {
             const fromNode = app.rootGraph.getNodeById(
               importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
             )
-            if (!fromNode?.outputs?.[fromSlot]) return false
+            if (!fromNode?.outputs[fromSlot]) return false
 
-            let toSlot =
-              targetNode.inputs?.findIndex((inp) => inp.name === input) ?? -1
+            let toSlot = targetNode.inputs.findIndex(
+              (inp) => inp.name === input
+            )
             if (toSlot === -1) {
               try {
                 const widget = targetNode.widgets?.find((w) => w.name === input)
@@ -2526,9 +2519,9 @@ export class ComfyApp {
                 ).convertWidgetToInput
                 if (widget && convertFn?.(widget)) {
                   // Re-find the target slot by name after conversion
-                  toSlot =
-                    targetNode.inputs?.findIndex((inp) => inp.name === input) ??
-                    -1
+                  toSlot = targetNode.inputs.findIndex(
+                    (inp) => inp.name === input
+                  )
                 }
               } catch (_error) {
                 // Ignore conversion errors
@@ -2628,7 +2621,7 @@ export class ComfyApp {
     // Refresh combo widgets in all nodes including those in subgraphs
     const nodeOutputStore = useNodeOutputStore()
     forEachNode(this.rootGraph, (node) => {
-      const def = defs[node.type]
+      const def = defs[node.type] as ComfyNodeDefV1 | undefined
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
 
@@ -2734,12 +2727,12 @@ export class ComfyApp {
 
     // Subgraph does not properly implement `clear` and the parent class's
     // (`LGraph`) `clear` breaks the subgraph structure.
-    if (this.rootGraph && !this.canvas.subgraph) {
+    if (!this.canvas.subgraph) {
       this.rootGraph.clear()
       ensureNonZeroUuid(this.rootGraph)
     }
 
-    executionErrorStore.setActiveGraph(this.rootGraph?.id ?? null)
+    executionErrorStore.setActiveGraph(this.rootGraph.id)
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {

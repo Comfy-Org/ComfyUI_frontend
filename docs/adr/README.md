@@ -62,6 +62,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [WEBSITE-REQUESTS-0030](WEBSITE-REQUESTS-0030-creator-widgets-and-router-request-composition.md)                 | Creator widgets and Router request composition                                     | Deprecated | 2026-09-09 |
 | [WIDGET-SERIALIZATION-0006](WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) | PrimitiveNode Widget Restoration Lifecycle                                         | Accepted   | 2026-02-22 |
 | [WORKSHOP-TELEMETRY-0034](WORKSHOP-TELEMETRY-0034-browser-delivery-health.md)                                    | Browser delivery health for Models                                                 | Proposed   | 2026-09-18 |
+| [WORKSHOP-VALIDATION-0036](WORKSHOP-VALIDATION-0036-declarative-input-constraints.md)                            | Declarative input constraints                                                      | Proposed   | 2026-09-22 |
 
 ## Creating a New ADR
 
