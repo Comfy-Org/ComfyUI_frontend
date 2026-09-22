@@ -21,31 +21,32 @@ change any of those owners or treat a raw Yjs update as an observability primiti
 
 Define the frontend-owned observation seam before defining an executable event. The first emitter
 will expose only `frontend_semantic_effect.observed`: an authoritative document delta was accepted
-and its semantic graph mutation completed through the frontend command path. It does not attest
-pixels, accessibility state, persistence, or reload.
+and the corresponding authoritative semantic graph mutation completed. It does not attest pixels,
+accessibility state, persistence, or reload.
 
-| Fact                     | Owner                        | Version-one success signal                         |
-| ------------------------ | ---------------------------- | -------------------------------------------------- |
-| Backend acceptance       | Merge authority              | Outside this frontend contract                     |
-| Frontend semantic effect | Frontend follower            | Semantic graph mutation completes through commands |
-| Pixels and accessibility | Renderer / black-box harness | Outside this contract                              |
-| Persistence              | Persistence owner            | Outside this contract                              |
-| Reload recovery          | Black-box harness            | Outside this contract                              |
+| Fact                     | Owner                        | Version-one success signal                      |
+| ------------------------ | ---------------------------- | ----------------------------------------------- |
+| Backend acceptance       | Merge authority              | Outside this frontend contract                  |
+| Frontend semantic effect | Frontend follower            | Authoritative semantic graph mutation completes |
+| Pixels and accessibility | Renderer / black-box harness | Outside this contract                           |
+| Persistence              | Persistence owner            | Outside this contract                           |
+| Reload recovery          | Black-box harness            | Outside this contract                           |
 
 ```mermaid
 flowchart LR
   A[Backend acceptance] --> B[Authoritative document delta]
-  B --> C[Frontend command path]
-  C --> D[Semantic graph mutation completes]
-  D --> E[Frontend semantic effect observed]
-  E -. does not prove .-> F[Pixels and accessibility]
-  E -. does not prove .-> G[Persistence]
-  G -. does not prove .-> H[Reload recovery]
+  B --> C[Authoritative semantic graph mutation]
+  C --> D[Frontend semantic effect observed]
+  D -. does not prove .-> E[Pixels and accessibility]
+  D -. does not prove .-> F[Persistence]
+  F -. does not prove .-> G[Reload recovery]
 ```
 
-The current follower reaches that effect through a store-first projection followed by live-graph
-reconciliation. That sequence is a transitional implementation detail, not part of the event's
-durable meaning; replacing it with a unified semantic mutation path does not change this contract.
+The contract does not require a particular implementation path. The current follower reaches that
+effect through a store-first projection followed by live-graph reconciliation; the intended
+architecture routes it through the unified frontend command path. Either seam conforms only when
+it attests the operation-specific semantic mutation. Replacing the transitional path therefore
+does not change the event's durable meaning.
 
 Host-side `applied`, `skipped`, and `failed` results retain their generated `DocOpsResultData`
 meaning. Follower-side inactive-target and projection results are not remapped onto those names.
@@ -94,12 +95,11 @@ Alternatives rejected:
 
 ```mermaid
 flowchart TD
-  A[Self-contained frontend ADR] --> B[Observed emitter at semantic mutation seam]
+  A[Self-contained frontend ADR] --> B[Observed emitter plus visible-effect harness]
   B --> C[Sink adapter and query contract]
   C --> D[Ingestion and deployment evidence]
-  B --> E[Visible-effect black-box harness]
-  D --> F[Persistence and reload-recovery harness]
-  B --> G[Additional outcomes only after authoritative owners exist]
+  D --> E[Persistence and reload-recovery harness]
+  B --> F[Additional outcomes only after authoritative owners exist]
 ```
 
 ## Notes
