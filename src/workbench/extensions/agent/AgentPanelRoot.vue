@@ -1428,7 +1428,9 @@ watch(
     )
     if (matchingThread === undefined || matchingThread.id === threadId.value)
       return
-    void onSelectHistory(matchingThread.id)
+    // Following the active tab carries no navigation intent to invalidate;
+    // loadThread's own generation guard already drops a superseded load.
+    void onSelectHistory(matchingThread.id, () => true)
   }
 )
 

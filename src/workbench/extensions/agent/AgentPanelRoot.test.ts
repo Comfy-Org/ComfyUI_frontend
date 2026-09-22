@@ -4444,12 +4444,13 @@ describe('AgentPanelRoot history', () => {
   it('switches to the chat bound to the active workflow tab', async () => {
     const first = addTab('workflows/first.json')
     const second = addTab('workflows/second.json')
-    const bindings = useAgentWorkflowTabBindingStore()
-    bindings.bind('wf-first', first.path)
-    bindings.bind('wf-second', second.path)
     workflowStore.activeWorkflow = first
 
     const loadedThreads: string[] = []
+    let resolveWorkflows!: (response: Response) => void
+    const workflowsResponse = new Promise<Response>((resolve) => {
+      resolveWorkflows = resolve
+    })
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
       if (url.endsWith('/api/agent/threads'))
@@ -4470,6 +4471,7 @@ describe('AgentPanelRoot history', () => {
             })
           ])
         )
+      if (url.includes('/api/workflows')) return workflowsResponse
       const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
       if (match) {
         loadedThreads.push(match[1])
@@ -4479,6 +4481,21 @@ describe('AgentPanelRoot history', () => {
     })
 
     renderWithSelectedTarget()
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().sessions).toHaveLength(2)
+    )
+    expect(useAgentConversationStore().threadId).toBeNull()
+
+    resolveWorkflows(
+      json(200, {
+        data: [
+          { id: 'wf-first', name: 'first' },
+          { id: 'wf-second', name: 'second' }
+        ],
+        pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+      })
+    )
+
     await vi.waitFor(() =>
       expect(useAgentConversationStore().threadId).toBe('th-first')
     )
