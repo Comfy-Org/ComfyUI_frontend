@@ -83,6 +83,7 @@ const emit = defineEmits<{
   selectNodes: []
   removeTag: [id: string]
   mentionPick: [node: SelectedNode]
+  mentionHighlight: [node: SelectedNode | null]
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
@@ -329,6 +330,15 @@ const mentionMenuHeading = computed(() => {
   if (mentionSection.value === 'skills') return t('agent.skills')
   return mentionSection.value === 'root' ? t('agent.reference') : undefined
 })
+
+watch(
+  [mentionVisible, mentionActive, mentionMatches],
+  ([visible, active, matches]) => {
+    const match = visible ? matches[active] : undefined
+    emit('mentionHighlight', match?.kind === 'node' ? match.node : null)
+  },
+  { immediate: true }
+)
 const skillsRetryVisible = computed(
   () => mentionSection.value === 'skills' && skills.loadFailed
 )

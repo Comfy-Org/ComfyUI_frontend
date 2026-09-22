@@ -901,6 +901,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.selectItems([...items].filter((item) => ownsSelectable(this, item)))
   }
 
+  /** Nodes transiently emphasized by UI affordances without changing selection. */
+  highlighted_node_ids: Set<SerializedNodeId> = new Set()
+
   /** The group currently being resized. */
   resizingGroup: LGraphGroup | null = null
   /** @deprecated See {@link LGraphCanvas.selectedItems} */
@@ -5704,7 +5707,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // draw shape
-    this.drawNodeShape(node, ctx, size, color, bgcolor, node.selected)
+    this.drawNodeShape(
+      node,
+      ctx,
+      size,
+      color,
+      bgcolor,
+      !!node.selected || this.highlighted_node_ids.has(serializeNodeId(node.id))
+    )
 
     // Render title buttons (if not collapsed)
     if (!node.flags.collapsed) {
