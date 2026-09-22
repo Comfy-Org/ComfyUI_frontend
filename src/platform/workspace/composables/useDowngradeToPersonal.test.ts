@@ -1,8 +1,10 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { getActivePinia } from 'pinia'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
@@ -16,7 +18,6 @@ import {
   useDowngradeToPersonal
 } from './useDowngradeToPersonal'
 
-const mockUserEmail = ref<string | null>(null)
 const mockSubscription = ref<{ isCancelled: boolean } | null>(null)
 const mockIsInitialized = ref(true)
 const mockRemoveMember = vi.fn<(userId: string) => Promise<void>>()
@@ -32,7 +33,6 @@ const mockPermissions = vi.hoisted(() => ({
     canDowngradeToPersonal: true
   }
 }))
-const mockCanDowngradeToPersonal = vi.hoisted(() => ({ value: true }))
 
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
   activeWorkspaceId: string | null
@@ -71,14 +71,7 @@ vi.mock<unknown>(
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canDowngradeToPersonal: mockCanDowngradeToPersonal
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -90,11 +83,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    userEmail: mockUserEmail
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, params?: Record<string, unknown>) =>
@@ -134,6 +123,7 @@ function teamWithOwnerAnd(...memberIds: string[]) {
 }
 
 beforeEach(() => {
+  useCurrentUser().userEmail = computed(() => null)
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
     billingOperation()
   )
@@ -150,7 +140,6 @@ describe('useDowngradeToPersonal', () => {
     mockMembers.value = []
     mockRemoveMember.mockResolvedValue()
     mockFetchMembers.mockResolvedValue([])
-    mockUserEmail.value = null
     // Once loaded (isInitialized true), subscription is never null in
     // production — it's at least a FREE-tier record. Default to that
     // loaded-and-active shape; tests that need "not loaded yet" set
@@ -167,7 +156,7 @@ describe('useDowngradeToPersonal', () => {
       canManageSubscription: true,
       canDowngradeToPersonal: true
     }
-    mockCanDowngradeToPersonal.value = true
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
     windowOpen = vi.spyOn(window, 'open').mockReturnValue({} as Window)
   })
 
@@ -202,7 +191,7 @@ describe('useDowngradeToPersonal', () => {
     })
 
     it('falls back to protecting owners and the current user when the flag is absent', () => {
-      mockUserEmail.value = 'me@example.com'
+      useCurrentUser().userEmail = computed(() => 'me@example.com')
       mockMembers.value = [
         createMember({
           id: 'owner',
@@ -231,7 +220,7 @@ describe('useDowngradeToPersonal', () => {
   describe('downgradeToPersonal', () => {
     it('rejects a promoted owner before previewing or removing members', async () => {
       mockPermissions.value.canDowngradeToPersonal = false
-      mockCanDowngradeToPersonal.value = false
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       mockMembers.value = teamWithOwnerAnd('m1')
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
@@ -245,7 +234,7 @@ describe('useDowngradeToPersonal', () => {
 
     it('rejects a client-side owner when the server denies the downgrade', async () => {
       mockPermissions.value.canDowngradeToPersonal = true
-      mockCanDowngradeToPersonal.value = false
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       mockMembers.value = teamWithOwnerAnd('m1')
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
@@ -258,10 +247,15 @@ describe('useDowngradeToPersonal', () => {
     })
 
     it('stops before member removal when downgrade access is revoked during preview', async () => {
+      const canDowngradeToPersonal = ref(true)
+      useBillingCapabilities().canDowngradeToPersonal = computed(
+        () => canDowngradeToPersonal.value
+      )
+
       mockMembers.value = teamWithOwnerAnd('m1')
       mockPreviewSubscribe.mockImplementation(async () => {
         mockPermissions.value.canDowngradeToPersonal = false
-        mockCanDowngradeToPersonal.value = false
+        canDowngradeToPersonal.value = false
         return { allowed: true }
       })
       const { downgradeToPersonal } = useDowngradeToPersonal()
@@ -274,10 +268,15 @@ describe('useDowngradeToPersonal', () => {
     })
 
     it('stops before submit when downgrade access is revoked during member removal', async () => {
+      const canDowngradeToPersonal = ref(true)
+      useBillingCapabilities().canDowngradeToPersonal = computed(
+        () => canDowngradeToPersonal.value
+      )
+
       mockMembers.value = teamWithOwnerAnd('m1', 'm2')
       mockRemoveMember.mockImplementation(async () => {
         mockPermissions.value.canDowngradeToPersonal = false
-        mockCanDowngradeToPersonal.value = false
+        canDowngradeToPersonal.value = false
       })
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
@@ -672,6 +671,11 @@ describe('useDowngradeToPersonal', () => {
       await downgradeToPersonal('founder-monthly')
 
       expect(windowOpen).not.toHaveBeenCalled()
+      // One poller, whichever rail the flag names: `subscribe` is already
+      // railed upstream in `useWorkspaceBilling`, and a rail subscribe settles
+      // before it returns, so a `pending_payment` here came off the legacy
+      // transport and this registration is its only one.
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledOnce()
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-4',
         'subscription',
@@ -975,7 +979,7 @@ describe('useDowngradeToPersonal', () => {
         canManageSubscription: false,
         canDowngradeToPersonal: false
       }
-      mockCanDowngradeToPersonal.value = false
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       const { refreshMembers } = useDowngradeToPersonal()
 
       await expect(refreshMembers()).rejects.toThrow(
@@ -986,7 +990,7 @@ describe('useDowngradeToPersonal', () => {
 
     it('rejects a promoted owner after refreshing the original-owner signal', async () => {
       mockPermissions.value.canDowngradeToPersonal = false
-      mockCanDowngradeToPersonal.value = false
+      useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
       const { refreshMembers } = useDowngradeToPersonal()
 
       await expect(refreshMembers()).rejects.toThrow(

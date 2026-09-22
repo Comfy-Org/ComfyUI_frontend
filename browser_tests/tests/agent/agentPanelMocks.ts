@@ -9,7 +9,7 @@ import type {
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import type {
@@ -17,6 +17,7 @@ import type {
   AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -35,6 +36,16 @@ const TURN_ACCEPTED: AgentTurnAccepted = {
 }
 
 const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
+
+export const FUNDS_UNAVAILABLE_MESSAGE =
+  'Billing status is temporarily unavailable; please retry.'
+const FUNDS_UNAVAILABLE = zAgentAdmissionError.parse({
+  error: {
+    message: FUNDS_UNAVAILABLE_MESSAGE,
+    reason: 'funds_unavailable',
+    type: 'SERVICE_UNAVAILABLE'
+  }
+})
 
 export const THINKING_TEXT =
   "I'll set the positive prompt to your red fox scene."
@@ -149,33 +160,53 @@ async function mockAgentBoot(
     agentConsentWrites,
     agentFlagEnabled,
     agentPanelInitiallyOpen,
+    agentOnboardingCompleted,
+    agentRetryAfter,
     crdtDebugEnabled,
+    objectInfo,
     postedMessages
   }: Omit<AgentFixtures, 'agentPanel'>
 ): Promise<void> {
   let consentAccepted = agentConsentAccepted
 
   await page.addInitScript(
-    ({ initiallyOpen, debugEnabled }) => {
+    ({ initiallyOpen, onboardingCompleted, debugEnabled }) => {
       if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
         localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
+      }
+      if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
+        localStorage.setItem(
+          'Comfy.AgentPanel.onboarded',
+          String(onboardingCompleted)
+        )
       }
       if (debugEnabled) {
         localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
         localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
       }
     },
-    { initiallyOpen: agentPanelInitiallyOpen, debugEnabled: crdtDebugEnabled }
+    {
+      initiallyOpen: agentPanelInitiallyOpen,
+      onboardingCompleted: agentOnboardingCompleted,
+      debugEnabled: crdtDebugEnabled
+    }
   )
 
   await mockBilling(page)
   await page.route(
-    'https://media.comfy.org/website/mcp/launch-film.mp4',
-    (route) =>
-      route.fulfill({
-        contentType: 'video/mp4',
-        path: assetPath('plain_video.mp4')
-      })
+    'https://media.comfy.org/website/comfy-agent/**',
+    (route) => {
+      const url = route.request().url()
+      if (url.endsWith('.mp4')) {
+        return route.fulfill({ path: assetPath('plain_video.mp4') })
+      }
+      if (url.endsWith('.webm')) {
+        return route.fulfill({
+          path: assetPath('video/video-preview-wide.webm')
+        })
+      }
+      return route.fulfill({ path: assetPath('image64x64.webp') })
+    }
   )
   await page.route('**/api/assets**', (r) =>
     r.fulfill(jsonRoute({ assets: [] }))
@@ -186,7 +217,8 @@ async function mockAgentBoot(
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false
-    }
+    },
+    objectInfo
   })
   let savedWorkflow: UserDataFullInfo | undefined
   let savedContent: string | undefined
@@ -317,6 +349,15 @@ async function mockAgentBoot(
     const request = route.request()
     if (request.method() === 'POST') {
       postedMessages.push(request.postData() ?? '')
+      if (agentRetryAfter !== undefined)
+        return route.fulfill({
+          status: 503,
+          headers: {
+            'content-type': 'application/json',
+            'retry-after': agentRetryAfter
+          },
+          body: JSON.stringify(FUNDS_UNAVAILABLE)
+        })
       const accepted: AgentTurnAccepted = {
         ...TURN_ACCEPTED,
         message_id:
@@ -345,7 +386,11 @@ type AgentFixtures = {
   agentFlagEnabled: boolean
   agentPanel: AgentPanel
   agentPanelInitiallyOpen: boolean
+  agentOnboardingCompleted: boolean
+  agentRetryAfter: string | undefined
   crdtDebugEnabled: boolean
+  /** `'server'` loads real node definitions instead of the empty catalog. */
+  objectInfo: 'server' | undefined
   postedMessages: string[]
 }
 
@@ -362,7 +407,10 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use(new AgentPanel(comfyPage.page))
   },
   agentPanelInitiallyOpen: [false, { option: true }],
+  agentOnboardingCompleted: [true, { option: true }],
+  agentRetryAfter: [undefined, { option: true }],
   crdtDebugEnabled: [false, { option: true }],
+  objectInfo: [undefined, { option: true }],
   page: async (
     {
       agentConsentAccepted,
@@ -370,7 +418,10 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentWrites,
       agentFlagEnabled,
       agentPanelInitiallyOpen,
+      agentOnboardingCompleted,
+      agentRetryAfter,
       crdtDebugEnabled,
+      objectInfo,
       page,
       postedMessages
     },
@@ -382,7 +433,10 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentConsentWrites,
       agentFlagEnabled,
       agentPanelInitiallyOpen,
+      agentOnboardingCompleted,
+      agentRetryAfter,
       crdtDebugEnabled,
+      objectInfo,
       postedMessages
     })
     await use(page)

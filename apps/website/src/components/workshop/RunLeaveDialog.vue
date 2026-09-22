@@ -4,10 +4,28 @@ import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
 import DialogTitle from '../ui/dialog/DialogTitle.vue'
-import type { Locale } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+// The same run, and the same two choices, whichever way out of it the reader
+// took: off the page, or off the workspace that is paying for it.
+const COPY = {
+  leave: {
+    body: 'workshop.run.leaveBody',
+    stay: 'workshop.run.leaveStay',
+    confirm: 'workshop.run.leaveAnyway'
+  },
+  switchWorkspace: {
+    body: 'workshop.run.switchBody',
+    stay: 'workshop.run.switchStay',
+    confirm: 'workshop.run.switchAnyway'
+  }
+} as const satisfies Record<string, Record<string, TranslationKey>>
+
+const { action = 'leave', locale = 'en' } = defineProps<{
+  action?: keyof typeof COPY
+  locale?: Locale
+}>()
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ leave: [] }>()
 </script>
@@ -15,7 +33,7 @@ const emit = defineEmits<{ leave: [] }>()
 <template>
   <Dialog v-model:open="open">
     <DialogContent
-      :close-label="t('workshop.run.leaveStay', locale)"
+      :close-label="t(COPY[action].stay, locale)"
       class="flex flex-col gap-6 sm:max-w-xl"
       data-testid="run-leave-dialog"
     >
@@ -24,7 +42,7 @@ const emit = defineEmits<{ leave: [] }>()
           {{ t('workshop.run.leaveTitle', locale) }}
         </DialogTitle>
         <DialogDescription class="text-base text-primary-comfy-canvas/70">
-          {{ t('workshop.run.leaveBody', locale) }}
+          {{ t(COPY[action].body, locale) }}
         </DialogDescription>
       </div>
 
@@ -38,7 +56,7 @@ const emit = defineEmits<{ leave: [] }>()
           data-testid="run-leave-stay"
           @click="open = false"
         >
-          {{ t('workshop.run.leaveStay', locale) }}
+          {{ t(COPY[action].stay, locale) }}
         </Button>
         <Button
           size="lg"
@@ -46,7 +64,7 @@ const emit = defineEmits<{ leave: [] }>()
           data-testid="run-leave-confirm"
           @click="emit('leave')"
         >
-          {{ t('workshop.run.leaveAnyway', locale) }}
+          {{ t(COPY[action].confirm, locale) }}
         </Button>
       </div>
     </DialogContent>

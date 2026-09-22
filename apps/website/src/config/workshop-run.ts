@@ -6,6 +6,12 @@ export const OUTPUT_TTL_MS = 24 * 60 * 60 * 1000
 export type RunFailure =
   | 'validation'
   | 'provider'
+  | 'upload'
+  | 'network'
+  | 'response'
+  | 'client'
+  | 'concurrency'
+  | 'conflict'
   | 'rateLimit'
   | 'policy'
   | 'noCredits'

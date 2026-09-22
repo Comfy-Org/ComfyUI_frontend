@@ -63,7 +63,7 @@ const ext: ComfyExtension = {
 
     items.push({
       content: 'Add Selected Nodes To Group',
-      disabled: !canvas.selectedItems?.size,
+      disabled: !canvas.selectedItems.size,
       callback: () => {
         addNodesToGroup(group, canvas.selectedItems)
         // @ts-expect-error fixme ts strict error

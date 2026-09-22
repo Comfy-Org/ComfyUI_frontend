@@ -5,6 +5,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   INTERMEDIATE_MESSAGE_EVENT,
@@ -25,13 +26,23 @@ function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
 
+// Parsed through the generated admission contract so a server-side rename of a
+// `reason` or `type` breaks this fixture instead of silently passing.
+const NO_FUNDS_ERROR = zAgentAdmissionError.parse({
+  error: {
+    message: 'Add credits to continue.',
+    reason: 'no_funds',
+    type: 'PAYMENT_REQUIRED'
+  }
+})
+
 test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
 
   test.describe('flag off', () => {
     test.use({ agentFlagEnabled: false })
 
-    test('does not expose the Ask Comfy Agent button', async ({
+    test('does not expose the Agent button', async ({
       agentPanel,
       postedMessages
     }) => {
@@ -163,15 +174,57 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
+  test('shows an admission paywall without losing the rejected prompt', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    const panel = agentPanel.root
+    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const prompt = 'Build a product photo workflow'
+
+    await test.step('reject the next turn with a no-funds admission error', async () => {
+      // Scoped to POST so the fixture's GET handler for the same URL still
+      // serves the thread's message history.
+      await page.route('**/api/agent/threads/*/messages', async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        await route.fulfill({
+          status: 402,
+          contentType: 'application/json',
+          body: JSON.stringify(NO_FUNDS_ERROR)
+        })
+      })
+    })
+
+    await test.step('open the agent panel on a workflow', async () => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+    })
+
+    await test.step('send a prompt the server will reject', async () => {
+      await composer.fill(prompt)
+      await panel.getByRole('button', { name: 'Send' }).click()
+    })
+
+    await test.step('keep the rejected prompt and surface the paywall', async () => {
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
+      await expect(composer).toHaveText(prompt)
+      const paywall = panel.getByRole('alert')
+      await expect(paywall).toContainText(enMessages.agent.paywall.title)
+      await expect(paywall).toContainText('Add credits to continue.')
+    })
+  })
+
   test.describe('diagnostic report', () => {
     test.use({
       permissions: ['clipboard-read', 'clipboard-write'],
       crdtDebugEnabled: true
     })
 
-    test('copies with privacy sources turned off', async ({
+    test('copies retained tool metadata with privacy sources turned off', async ({
       agentPanel,
-      comfyPage
+      comfyPage,
+      getWebSocket
     }) => {
       await test.step('turn off every optional privacy source', async () => {
         await agentPanel.open()
@@ -179,7 +232,27 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         await agentPanel.turnOffOptionalReportSources()
       })
 
-      await test.step('copy a report that marks every source turned off', async () => {
+      await test.step('retain tool metadata without conversation content', async () => {
+        await agentPanel.selectWorkflow()
+        const composer = agentPanel.root.getByRole('textbox', {
+          name: /^Describe ideas/
+        })
+        await composer.fill('private diagnostic prompt')
+        await agentPanel.root.getByRole('button', { name: 'Send' }).click()
+        await expect(
+          agentPanel.root.getByRole('button', { name: 'Stop' })
+        ).toBeVisible()
+        const ws = await getWebSocket()
+        pushEvent(ws, THINKING_EVENT)
+        await expect(
+          agentPanel.root.getByText(THINKING_TEXT, { exact: true })
+        ).toBeVisible()
+
+        pushEvent(ws, TOOL_CALL_EVENT)
+        await expect(agentPanel.root.getByText('Set widget')).toBeVisible()
+      })
+
+      await test.step('copy a report with bounded tool metadata', async () => {
         await agentPanel.copyReportButton.click()
         await expect(agentPanel.copiedButton).toBeVisible()
         await expect
@@ -188,10 +261,22 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
             return {
               serverLogs: report.includes('- Server logs: turned off'),
               settings: report.includes('- Settings: turned off'),
-              workflow: report.includes('- Workflow: turned off')
+              workflow: report.includes('- Workflow: turned off'),
+              toolStatus: report.includes(
+                '- Agent tool calls: collected (1/1 retained calls)'
+              ),
+              toolName: report.includes('"name": "set_widget"'),
+              privateThinking: report.includes(THINKING_TEXT)
             }
           })
-          .toEqual({ serverLogs: true, settings: true, workflow: true })
+          .toEqual({
+            serverLogs: true,
+            settings: true,
+            workflow: true,
+            toolStatus: true,
+            toolName: true,
+            privateThinking: false
+          })
       })
     })
   })
@@ -319,6 +404,62 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         return Math.abs(leftInset - rightInset)
       })
       .toBeLessThanOrEqual(1)
+  })
+
+  test('uses the server upload limit for Agent file attachments', async ({
+    comfyPage,
+    agentPanel
+  }) => {
+    test.setTimeout(60_000)
+    const page = comfyPage.page
+    let uploadCount = 0
+    await page.route('**/api/upload/image', async (route) => {
+      uploadCount += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          name: 'uploaded_movie.mp4',
+          subfolder: '',
+          type: 'input'
+        })
+      })
+    })
+    await page.evaluate(() => {
+      window.app!.api.serverFeatureFlags.value = {
+        ...window.app!.api.serverFeatureFlags.value,
+        max_upload_size: 24 * 1024 * 1024
+      }
+    })
+
+    await agentPanel.open()
+    const panel = page.locator('#agent-panel-root')
+    const fileInput = panel.getByTestId('agent-file-input')
+
+    const uploadResponse = page.waitForResponse('**/api/upload/image')
+    await fileInput.setInputFiles({
+      name: 'movie.mp4',
+      mimeType: 'video/mp4',
+      buffer: Buffer.alloc(21 * 1024 * 1024)
+    })
+    expect((await uploadResponse).ok()).toBe(true)
+    await expect(
+      panel.getByTestId('composer-asset-section').getByText('movie.mp4')
+    ).toBeVisible()
+    await expect.poll(() => uploadCount).toBe(1)
+
+    await fileInput.setInputFiles({
+      name: 'too-large.mp4',
+      mimeType: 'video/mp4',
+      buffer: Buffer.alloc(25 * 1024 * 1024)
+    })
+    await expect(
+      page.getByText('too-large.mp4 is larger than 24 MB')
+    ).toBeVisible()
+    await expect(panel.getByText('too-large.mp4', { exact: true })).toHaveCount(
+      0
+    )
+    await expect.poll(() => uploadCount).toBe(1)
   })
 
   test('exits node selection when the active workflow changes', async ({

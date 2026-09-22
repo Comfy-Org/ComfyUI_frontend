@@ -1,5 +1,18 @@
 import path from 'node:path'
 
+// lint-staged calls this config once per concurrent chunk in one process.
+// Claim each fixed-scope command once so only its first matching chunk runs it.
+const claimed = new Set<string>()
+
+function repoWide(command: string) {
+  if (claimed.has(command)) {
+    return []
+  }
+
+  claimed.add(command)
+  return [command]
+}
+
 export default function lintStaged(stagedFiles: string[]) {
   const relativePaths = stagedFiles.map(toRelativePath)
 
@@ -18,8 +31,9 @@ export default function lintStaged(stagedFiles: string[]) {
   const styleFiles = relativePaths.filter((fileName) =>
     /\.(css|vue)$/.test(fileName)
   )
-  const astroFiles = relativePaths.filter((fileName) =>
-    fileName.endsWith('.astro')
+  const astroFiles = relativePaths.filter(
+    (fileName) =>
+      fileName.startsWith('apps/website/src/') && fileName.endsWith('.astro')
   )
   const typecheckFiles = relativePaths.filter((fileName) =>
     /\.(astro|ts|tsx|vue|mts)$/.test(fileName)
@@ -31,6 +45,10 @@ export default function lintStaged(stagedFiles: string[]) {
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
     ...lintCommands(codeFiles, styleFiles, astroFiles),
+    ...commandsWithFiles(
+      astroFiles.map((fileName) => fileName.slice('apps/website/'.length)),
+      'pnpm --dir apps/website exec prettier --write'
+    ),
     ...typecheckCommands(typecheckFiles)
   ]
 }
@@ -41,7 +59,7 @@ function lintCommands(
   astroFiles: string[]
 ) {
   if (new Set([...codeFiles, ...styleFiles, ...astroFiles]).size > 10) {
-    return ['pnpm lint']
+    return repoWide('pnpm lint')
   }
 
   return [
@@ -63,12 +81,12 @@ function typecheckCommands(fileNames: string[]) {
   }
 
   return [
-    'pnpm typecheck',
+    ...repoWide('pnpm typecheck'),
     ...(fileNames.some((fileName) => fileName.startsWith('browser_tests/'))
-      ? ['pnpm typecheck:browser']
+      ? repoWide('pnpm typecheck:browser')
       : []),
     ...(fileNames.some((fileName) => fileName.startsWith('apps/website/'))
-      ? ['pnpm typecheck:website']
+      ? repoWide('pnpm typecheck:website')
       : [])
   ]
 }

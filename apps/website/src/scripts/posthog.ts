@@ -3,22 +3,23 @@ import { posthog } from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { SessionRefreshOutcome } from '@comfyorg/account/session'
+import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
 import {
   AUTH_TELEMETRY_EVENT,
   SESSION_TELEMETRY_EVENT
-} from '@comfyorg/account/telemetry'
+} from '@comfyorg/account-core/telemetry'
 import type {
   AuthCompletedMetadata,
   AuthErrorMetadata
-} from '@comfyorg/account/telemetry'
+} from '@comfyorg/account-core/telemetry'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
-import { normalizeTurnstileMode } from '@comfyorg/account/turnstile'
-import type { TurnstileMode } from '@comfyorg/account/turnstile'
+import { normalizeTurnstileMode } from '@comfyorg/account-core/turnstile'
+import type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
 import type { WorkshopAnalyticsEvent } from './workshop-analytics'
+import { captureWorkshopHealth } from './workshop-datadog'
 
 const POSTHOG_KEY =
   import.meta.env.PUBLIC_POSTHOG_KEY ??
@@ -302,6 +303,7 @@ export function capturePageview(): void {
 }
 
 export function captureWorkshopEvent(event: WorkshopAnalyticsEvent): void {
+  captureWorkshopHealth(event)
   captureEvent({
     name: `website:workshop_${event.name}`,
     properties: event.properties
