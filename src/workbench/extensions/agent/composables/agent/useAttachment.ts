@@ -17,9 +17,11 @@ interface UploadResult {
 
 export interface UseAttachmentOptions {
   upload: (file: File, signal: AbortSignal) => Promise<UploadResult>
+  validate?: (file: File) => Promise<boolean>
   uploadTimeoutMs?: number
   maxBytes?: (file: File) => number
   onError?: (message: string) => void
+  onInvalid?: (file: File) => void
   onUploaded?: () => void
   stage: (attachment: ComposerAttachment) => void
   update: (id: string, patch: Partial<ComposerAttachment>) => void
@@ -172,6 +174,11 @@ export function useAttachment(options: UseAttachmentOptions) {
         options.remove(id)
         return 'failed'
       }
+      if (options.validate && !(await options.validate(file))) {
+        options.remove(id)
+        options.onInvalid?.(file)
+        return 'unsupported'
+      }
       if (!(await uploadStagedFile(id, file))) return 'failed'
       options.onUploaded?.()
       return 'uploaded'
@@ -185,9 +192,15 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   async function addFiles(files: Iterable<File>): Promise<void> {
-    const staged = [...files]
-      .filter((file) => !isTooLarge(file))
-      .map((file) => ({ file, id: stage(file.name) }))
+    const staged: Array<{ file: File; id: string }> = []
+    for (const file of files) {
+      if (isTooLarge(file)) continue
+      if (options.validate && !(await options.validate(file))) {
+        options.onInvalid?.(file)
+        continue
+      }
+      staged.push({ file, id: stage(file.name) })
+    }
     let uploaded = 0
     await Promise.all(
       staged.map(async ({ id, file }) => {
