@@ -277,8 +277,8 @@ describe('resolveOutputAssetItems', () => {
       excludeOutputKey: getOutputKey(outputB) ?? undefined
     })
 
-    // outputB excluded, remaining reversed: [C, A]
     expect(results.map((asset) => asset.name)).toEqual(['c.png', 'a.png'])
+    expect(metadata.allOutputs).toEqual([outputA, outputB, outputC])
   })
 
   it('returns empty array when all outputs are excluded', async () => {
