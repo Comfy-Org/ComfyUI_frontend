@@ -71,7 +71,7 @@ function expectApplied(outcomes: ApplyOutcome[], adds: number): void {
 
 test.describe(
   'Human-added node across a workflow tab switch with Agent bound',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: CASE, humanOpsHost: 'apply' })
 
