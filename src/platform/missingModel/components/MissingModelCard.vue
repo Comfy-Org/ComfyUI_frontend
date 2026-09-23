@@ -103,6 +103,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useMissingModelDownload } from '@/platform/missingModel/composables/useMissingModelDownload'
 import { isTrustedHuggingFaceUrl } from '@/platform/missingModel/missingModelDownload'
 import { toDownloadableModel } from '@/platform/missingModel/missingModelViewUtils'
+import type { ModelDownloadStatus } from '@/platform/missingModel/modelDownloadApi'
 import { usePortableModelDownloadStore } from '@/platform/missingModel/portableModelDownloadStore'
 import { formatSize } from '@/utils/formatUtil'
 
@@ -224,28 +225,37 @@ const downloadFeedback = computed(() => {
         ? 'rightSidePanel.missingModels.downloadBatchUnavailable'
         : 'rightSidePanel.missingModels.downloadBatchFailed'
     )
+  return state.phase === 'finished'
+    ? finishedDownloadFeedback(state.models)
+    : runningDownloadFeedback(state.models)
+})
 
-  const completed = state.models.filter(
+function finishedDownloadFeedback(models: ModelDownloadStatus[]) {
+  const completed = models.filter(
     (model) => model.status === 'completed'
   ).length
-  const total = state.models.length
-  if (state.phase === 'finished') {
-    const failed = state.models
-      .filter((model) => model.status === 'failed')
-      .map((model) => model.name)
-    if (failed.length > 0)
-      return t('rightSidePanel.missingModels.downloadBatchPartial', {
-        completed,
-        total,
-        failed: failed.join(', ')
-      })
-    return t('rightSidePanel.missingModels.downloadBatchFinished', {
+  const total = models.length
+  const failed = models
+    .filter((model) => model.status === 'failed')
+    .map((model) => model.name)
+  if (failed.length > 0)
+    return t('rightSidePanel.missingModels.downloadBatchPartial', {
       completed,
-      total
+      total,
+      failed: failed.join(', ')
     })
-  }
+  return t('rightSidePanel.missingModels.downloadBatchFinished', {
+    completed,
+    total
+  })
+}
 
-  const current = state.models.find((model) => model.status === 'running')
+function runningDownloadFeedback(models: ModelDownloadStatus[]) {
+  const completed = models.filter(
+    (model) => model.status === 'completed'
+  ).length
+  const total = models.length
+  const current = models.find((model) => model.status === 'running')
   if (!current)
     return t('rightSidePanel.missingModels.downloadBatchQueued', { total })
 
@@ -258,7 +268,7 @@ const downloadFeedback = computed(() => {
       : 'rightSidePanel.missingModels.downloadBatchProgressPercent',
     { name: current.name, completed, total, progress }
   )
-})
+}
 
 function downloadAllModels() {
   if (portableDownloadStore) {
