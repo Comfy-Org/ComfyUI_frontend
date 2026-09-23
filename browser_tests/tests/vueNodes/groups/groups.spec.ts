@@ -3,6 +3,8 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 
 const CREATE_GROUP_HOTKEY = 'Control+g'
 
@@ -113,10 +115,6 @@ async function getNodeGroupCenteringErrors(
 }
 
 test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Minimap.ShowGroups', true)
-  })
-
   test('should allow creating groups with hotkey', async ({ comfyPage }) => {
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.page.getByText('KSampler').click({ modifiers: ['Control'] })
@@ -175,11 +173,100 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     }).toPass({ timeout: 5000 })
   })
 
+  test('undoing a group drag restores the group and its member nodes', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
+
+    const memberNode = await comfyPage.nodeOps.getNodeRefById('17')
+    async function readMemberPos() {
+      const geometry = await comfyPage.canvasOps.getNodeGeometry(memberNode.id)
+      return geometry.pos
+    }
+
+    const groupBefore =
+      await comfyPage.canvasOps.getGroupPosition('Outer Group')
+    const memberBefore = await readMemberPos()
+
+    await comfyPage.canvasOps.dragGroup({
+      name: 'Outer Group',
+      deltaX: 120,
+      deltaY: 90
+    })
+
+    // Confirm the drag actually displaced both, otherwise "restored by undo"
+    // would hold trivially for anything that never moved.
+    await expect(async () => {
+      const groupMoved =
+        await comfyPage.canvasOps.getGroupPosition('Outer Group')
+      expect(groupMoved).not.toEqual(groupBefore)
+      expect(await readMemberPos()).not.toEqual(memberBefore)
+    }).toPass({ timeout: 5000 })
+
+    await comfyPage.keyboard.undo()
+
+    await expect(async () => {
+      const groupAfter =
+        await comfyPage.canvasOps.getGroupPosition('Outer Group')
+      expect(groupAfter).toEqual(groupBefore)
+      expect(await readMemberPos()).toEqual(memberBefore)
+    }).toPass({ timeout: 5000 })
+  })
+
+  test('does not drag contents when control is held', async ({ comfyPage }) => {
+    await comfyPage.keyboard.selectAll()
+    await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
+    const groupCount = () => comfyPage.page.evaluate(() => graph!.groups.length)
+    await expect.poll(groupCount, 'create group').toBe(1)
+    await comfyPage.page.mouse.click(100, 100)
+
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    const initialNodeBounds = await ksampler.boundingBox()
+    expect(initialNodeBounds).toBeTruthy()
+
+    const groupPos = await getGroupTitlePosition(comfyPage, 'Group')
+    await comfyPage.page.mouse.move(groupPos.x, groupPos.y)
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.keyboard.down('Control')
+    await comfyPage.page.mouse.move(groupPos.x + 100, groupPos.y)
+    await comfyPage.page.mouse.up()
+    await comfyPage.page.keyboard.up('Control')
+    await expect
+      .poll(() => getGroupTitlePosition(comfyPage, 'Group'))
+      .not.toEqual(groupPos)
+    expect(await ksampler.boundingBox()).toEqual(initialNodeBounds)
+  })
+
+  test('does not drag contents when meta (Cmd) is held', async ({
+    comfyPage
+  }) => {
+    await comfyPage.keyboard.selectAll()
+    await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
+    const groupCount = () => comfyPage.page.evaluate(() => graph!.groups.length)
+    await expect.poll(groupCount, 'create group').toBe(1)
+    await comfyPage.page.mouse.click(100, 100)
+
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    const initialNodeBounds = await ksampler.boundingBox()
+    expect(initialNodeBounds).toBeTruthy()
+
+    const groupPos = await getGroupTitlePosition(comfyPage, 'Group')
+    await comfyPage.page.mouse.move(groupPos.x, groupPos.y)
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.keyboard.down('Meta')
+    await comfyPage.page.mouse.move(groupPos.x + 100, groupPos.y)
+    await comfyPage.page.mouse.up()
+    await comfyPage.page.keyboard.up('Meta')
+    await expect
+      .poll(() => getGroupTitlePosition(comfyPage, 'Group'))
+      .not.toEqual(groupPos)
+    expect(await ksampler.boundingBox()).toEqual(initialNodeBounds)
+  })
+
   test('should keep groups aligned after loading legacy Vue workflows', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
-    await comfyPage.vueNodes.waitForNodes(1)
 
     await expect
       .poll(() =>
@@ -217,4 +304,73 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
       )
     }).toPass({ timeout: 5000 })
   })
+
+  test('Bypassing a group bypasses contents', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+    await comfyPage.keyboard.selectAll()
+    await comfyPage.page.keyboard.press('.')
+    await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
+
+    const toggleBypass = () =>
+      comfyPage.page.getByTestId(TestIds.selectionToolbox.bypass).click()
+    const bypassCount = () =>
+      comfyPage.page.evaluate(
+        () => graph!.nodes.filter((node) => node.mode === 4).length
+      )
+    expect(await bypassCount()).toBe(0)
+    const groupCount = () => comfyPage.page.evaluate(() => graph!.groups.length)
+    await expect.poll(groupCount, 'create group').toBe(1)
+
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await ksampler.select()
+    await toggleBypass()
+    await expect.poll(bypassCount, 'setup bypass of single node').toBe(1)
+
+    const groupPos = await getGroupTitlePosition(comfyPage, 'Group')
+    await comfyPage.page.mouse.click(groupPos.x, groupPos.y)
+    await toggleBypass()
+    await expect.poll(bypassCount, 'all nodes are set to bypassed').toBe(7)
+    await toggleBypass()
+    await expect.poll(bypassCount, 'all nodes are unbypassed').toBe(0)
+
+    await comfyPage.page.keyboard.down('Shift')
+    await ksampler.select()
+    await comfyPage.page.keyboard.up('Shift')
+
+    await toggleBypass()
+    await expect.poll(bypassCount, "won't toggle double selected node").toBe(7)
+  })
 })
+
+test.describe(
+  'Vue Node Group Context Menu',
+  { tag: ['@vue-nodes', '@canvas'] },
+  () => {
+    test('right-clicking a group opens the Vue context menu instead of the legacy menu', async ({
+      comfyPage
+    }) => {
+      // Deselect so the right-click selects the group itself.
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
+      await expect
+        .poll(() => comfyPage.page.evaluate(() => graph!.groups.length))
+        .toBe(1)
+      await comfyPage.page.mouse.click(100, 100)
+      await comfyPage.nextFrame()
+
+      const groupPos = await getGroupTitlePosition(comfyPage, 'Group')
+      await comfyPage.page.mouse.click(groupPos.x, groupPos.y, {
+        button: 'right'
+      })
+
+      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.litegraphContextMenu).toBeHidden()
+      await expect(comfyPage.contextMenu.litegraphMenu).toBeHidden()
+
+      // Group-only action confirms it is the group menu.
+      await expect(
+        comfyPage.contextMenu.primeVueMenu.getByText('Fit Group To Nodes')
+      ).toBeVisible()
+    })
+  }
+)

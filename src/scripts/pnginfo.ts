@@ -1,4 +1,5 @@
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { api } from './api'
@@ -29,19 +30,11 @@ function parseExifData(exifData: Uint8Array) {
     isLittleEndian: boolean,
     length: 2 | 4
   ): number {
-    let arr = exifData.slice(offset, offset + length)
-    if (length === 2) {
-      return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint16(
-        0,
-        isLittleEndian
-      )
-    } else if (length === 4) {
-      return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint32(
-        0,
-        isLittleEndian
-      )
-    }
-    return 0
+    const arr = exifData.slice(offset, offset + length)
+    const view = new DataView(arr.buffer, arr.byteOffset, arr.byteLength)
+    return length === 2
+      ? view.getUint16(0, isLittleEndian)
+      : view.getUint32(0, isLittleEndian)
   }
 
   // Read the offset to the first IFD (Image File Directory)
@@ -180,22 +173,43 @@ interface LoraEntry {
   weight: number
 }
 
+const A1111_NEGATIVE_PROMPT_PREFIX = '\nNegative prompt:'
+
+function normalizeA1111Parameters(parameters: string): string {
+  const stepsIndex = parameters.lastIndexOf('\nSteps:')
+  if (
+    stepsIndex === -1 ||
+    parameters.lastIndexOf(A1111_NEGATIVE_PROMPT_PREFIX, stepsIndex) > -1
+  ) {
+    return parameters
+  }
+
+  return `${parameters.slice(0, stepsIndex)}${A1111_NEGATIVE_PROMPT_PREFIX}${parameters.slice(stepsIndex)}`
+}
+
+export type A1111ImportOutcome =
+  | 'imported'
+  | 'imported-without-embeddings'
+  | 'not-a1111'
+  | 'core-nodes-unavailable'
+
 export async function importA1111(
   graph: LGraph,
-  parameters: string
-): Promise<void> {
-  const p = parameters.lastIndexOf('\nSteps:')
+  parameters: string,
+  beforeGraphClear?: () => void | Promise<void>
+): Promise<A1111ImportOutcome> {
+  const normalizedParameters = normalizeA1111Parameters(parameters)
+  const p = normalizedParameters.lastIndexOf('\nSteps:')
   if (p > -1) {
-    const embeddings = await api.getEmbeddings()
-    const matchResult = parameters
+    const matchResult = normalizedParameters
       .substr(p)
       .split('\n')[1]
       .match(
         new RegExp('\\s*([^:]+:\\s*([^"\\{].*?|".*?"|\\{.*?\\}))\\s*(,|$)', 'g')
       )
-    if (!matchResult) return
+    if (!matchResult) return 'not-a1111'
 
-    const opts: Record<string, string> = matchResult.reduce(
+    const opts: Partial<Record<string, string>> = matchResult.reduce(
       (acc: Record<string, string>, n: string) => {
         const s = n.split(':')
         if (s[1].endsWith(',')) {
@@ -206,10 +220,12 @@ export async function importA1111(
       },
       {}
     )
-    const p2 = parameters.lastIndexOf('\nNegative prompt:', p)
+    const p2 = normalizedParameters.lastIndexOf(A1111_NEGATIVE_PROMPT_PREFIX, p)
     if (p2 > -1) {
-      let positive = parameters.substr(0, p2).trim()
-      let negative = parameters.substring(p2 + 18, p).trim()
+      let positive = normalizedParameters.substr(0, p2).trim()
+      let negative = normalizedParameters
+        .substring(p2 + A1111_NEGATIVE_PROMPT_PREFIX.length, p)
+        .trim()
 
       const ckptNode = LiteGraph.createNode('CheckpointLoaderSimple')
       const clipSkipNode = LiteGraph.createNode('CLIPSetLastLayer')
@@ -231,11 +247,12 @@ export async function importA1111(
         !saveNode
       ) {
         console.error('Failed to create required nodes for A1111 import')
-        return
+        return 'core-nodes-unavailable'
       }
 
-      let hrSamplerNode: LGraphNode | null = null
-      let hrSteps: string | null = null
+      const hires: { samplerNode: LGraphNode | null; steps?: string } = {
+        samplerNode: null
+      }
 
       const ceil64 = (v: number) => Math.ceil(v / 64) * 64
 
@@ -303,8 +320,8 @@ export async function importA1111(
 
         prevClip.node.connect(1, clipNode, 0)
         prevModel.node.connect(0, targetSamplerNode, 0)
-        if (hrSamplerNode) {
-          prevModel.node.connect(0, hrSamplerNode, 0)
+        if (hires.samplerNode) {
+          prevModel.node.connect(0, hires.samplerNode, 0)
         }
 
         return { text, prevModel, prevClip }
@@ -331,6 +348,15 @@ export async function importA1111(
         return v
       }
 
+      const { embeddings, embeddingsLoaded } = await api
+        .getEmbeddings()
+        .then((embeddings) => ({ embeddings, embeddingsLoaded: true }))
+        .catch((error: unknown) => {
+          console.error('Failed to load embeddings for A1111 import:', error)
+          return { embeddings: [], embeddingsLoaded: false }
+        })
+
+      await beforeGraphClear?.()
       graph.clear()
       graph.add(ckptNode)
       graph.add(clipSkipNode)
@@ -352,7 +378,7 @@ export async function importA1111(
       samplerNode.connect(0, vaeNode, 0)
       ckptNode.connect(2, vaeNode, 1)
 
-      const handlers: Record<string, (v: string) => void> = {
+      const handlers: Partial<Record<string, (v: string) => void>> = {
         model(v: string) {
           setWidgetValue(ckptNode, 'ckpt_name', v, true)
         },
@@ -384,7 +410,7 @@ export async function importA1111(
           const h = ceil64(+wxh[1])
           const hrUp = popOpt('hires upscale')
           const hrSz = popOpt('hires resize')
-          hrSteps = popOpt('hires steps') ?? null
+          hires.steps = popOpt('hires steps')
           let hrMethod = popOpt('hires upscaler')
 
           setWidgetValue(imageNode, 'width', w)
@@ -460,8 +486,9 @@ export async function importA1111(
             setWidgetValue(upscaleNode, 'width', ceil64(uw))
             setWidgetValue(upscaleNode, 'height', ceil64(uh))
 
-            hrSamplerNode = LiteGraph.createNode('KSampler')
+            const hrSamplerNode = LiteGraph.createNode('KSampler')
             if (!hrSamplerNode || !latentNode) return
+            hires.samplerNode = hrSamplerNode
             graph.add(hrSamplerNode)
             ckptNode.connect(0, hrSamplerNode, 0)
             positiveNode.connect(0, hrSamplerNode, 1)
@@ -486,6 +513,7 @@ export async function importA1111(
         }
       }
 
+      const { samplerNode: hrSamplerNode, steps: hrSteps } = hires
       if (hrSamplerNode) {
         setWidgetValue(
           hrSamplerNode,
@@ -550,7 +578,11 @@ export async function importA1111(
         delete opts[opt]
       }
 
-      console.warn('Unhandled parameters:', opts)
+      if (Object.keys(opts).length) {
+        console.warn('Unhandled parameters:', opts)
+      }
+      return embeddingsLoaded ? 'imported' : 'imported-without-embeddings'
     }
   }
+  return 'not-a1111'
 }

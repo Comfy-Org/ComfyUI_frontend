@@ -1,41 +1,39 @@
+import type { ComfyApp } from '@/scripts/app'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   findOutputAsset,
   findServerPreviewUrl,
   isAssetPreviewSupported,
-  persistThumbnail
+  persistThumbnail,
+  resolvePreviewUrl
 } from '@/platform/assets/utils/assetPreviewUtil'
 
 const mockFetchApi = vi.hoisted(() => vi.fn())
 const mockApiURL = vi.hoisted(() =>
   vi.fn((path: string) => `http://localhost:8188${path}`)
 )
-const mockGetServerFeature = vi.hoisted(() => vi.fn(() => false))
-const mockIsAssetAPIEnabled = vi.hoisted(() => vi.fn(() => false))
 const mockUploadAssetFromBase64 = vi.hoisted(() => vi.fn())
 const mockUpdateAsset = vi.hoisted(() => vi.fn())
-const mockSetAssetPreview = vi.hoisted(() => vi.fn())
+const mockInvalidateOutputAssets = vi.hoisted(() => vi.fn())
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
+    addEventListener: vi.fn(),
     fetchApi: mockFetchApi,
     apiURL: mockApiURL,
-    api_base: '',
-    getServerFeature: mockGetServerFeature
+    api_base: ''
   }
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
-    isAssetAPIEnabled: mockIsAssetAPIEnabled,
     uploadAssetFromBase64: mockUploadAssetFromBase64,
     updateAsset: mockUpdateAsset
   }
-}))
-
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({ setAssetPreview: mockSetAssetPreview })
 }))
 
 function mockFetchResponse(assets: Record<string, unknown>[]) {
@@ -81,29 +79,55 @@ const localAssetWithPreview = {
   preview_url: '/api/view?type=output&filename=preview.png'
 }
 
+beforeEach(() => {
+  vi.spyOn(useAssetsStore().outputAssets, 'invalidate').mockImplementation(
+    mockInvalidateOutputAssets
+  )
+})
+
 describe('isAssetPreviewSupported', () => {
-  beforeEach(() => vi.clearAllMocks())
-
-  it('returns true when asset API is enabled (cloud)', () => {
-    mockIsAssetAPIEnabled.mockReturnValue(true)
+  it('returns true when the assets feature flag is enabled', () => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
     expect(isAssetPreviewSupported()).toBe(true)
   })
 
-  it('returns true when server assets feature is enabled (local)', () => {
-    mockGetServerFeature.mockReturnValue(true)
-    expect(isAssetPreviewSupported()).toBe(true)
-  })
-
-  it('returns false when neither is enabled', () => {
-    mockIsAssetAPIEnabled.mockReturnValue(false)
-    mockGetServerFeature.mockReturnValue(false)
+  it('returns false when the assets feature flag is disabled', () => {
     expect(isAssetPreviewSupported()).toBe(false)
   })
 })
 
-describe('findOutputAsset', () => {
-  beforeEach(() => vi.clearAllMocks())
+describe('resolvePreviewUrl', () => {
+  it.for([
+    {
+      kind: 'a preview_url',
+      asset: cloudAssetWithPreview,
+      url: 'http://localhost:8188/api/view?type=output&filename=preview.png'
+    },
+    {
+      kind: 'a preview_id without preview_url',
+      asset: { ...cloudAsset, preview_id: 'aaaa-bbbb' },
+      url: 'http://localhost:8188/assets/aaaa-bbbb/content'
+    },
+    {
+      kind: 'a job-grouped card with no preview',
+      asset: {
+        ...cloudAsset,
+        id: 'job-1',
+        user_metadata: { jobId: 'job-1', subfolder: '', assetId: 'file-1' }
+      },
+      url: 'http://localhost:8188/assets/file-1/content'
+    },
+    {
+      kind: 'an ungrouped card with no preview',
+      asset: cloudAsset,
+      url: `http://localhost:8188/assets/${cloudAsset.id}/content`
+    }
+  ])('resolves $kind', ({ asset, url }) => {
+    expect(resolvePreviewUrl(asset)).toBe(url)
+  })
+})
 
+describe('findOutputAsset', () => {
   it('finds asset by hash (cloud)', async () => {
     mockFetchResponse([cloudAsset])
 
@@ -155,8 +179,6 @@ describe('findOutputAsset', () => {
 })
 
 describe('findServerPreviewUrl', () => {
-  beforeEach(() => vi.clearAllMocks())
-
   it('returns null when asset has no preview_id', async () => {
     mockFetchResponse([cloudAsset])
 
@@ -200,8 +222,6 @@ describe('findServerPreviewUrl', () => {
 })
 
 describe('persistThumbnail', () => {
-  beforeEach(() => vi.clearAllMocks())
-
   it('uploads thumbnail and links preview_id', async () => {
     mockFetchEmpty()
     mockFetchResponse([localAsset])
@@ -268,7 +288,7 @@ describe('persistThumbnail', () => {
     })
   })
 
-  it('patches the assets store by name with the new preview after upload', async () => {
+  it('invalidates output assets after successful upload', async () => {
     mockFetchEmpty()
     mockFetchResponse([localAsset])
     mockUploadAssetFromBase64.mockResolvedValue({ id: 'new-preview-id' })
@@ -277,14 +297,10 @@ describe('persistThumbnail', () => {
     const blob = new Blob(['fake-png'], { type: 'image/png' })
     await persistThumbnail('ComfyUI_00081_.glb', blob)
 
-    expect(mockSetAssetPreview).toHaveBeenCalledWith(
-      localAsset.name,
-      'new-preview-id',
-      'http://localhost:8188/assets/new-preview-id/content'
-    )
+    expect(mockInvalidateOutputAssets).toHaveBeenCalledOnce()
   })
 
-  it('uses the cloud asset name (not the hash) when patching the store', async () => {
+  it('invalidates output assets for cloud asset after upload', async () => {
     mockFetchResponse([cloudAsset])
     mockUploadAssetFromBase64.mockResolvedValue({ id: 'new-preview-id' })
     mockUpdateAsset.mockResolvedValue({})
@@ -292,11 +308,7 @@ describe('persistThumbnail', () => {
     const blob = new Blob(['fake-png'], { type: 'image/png' })
     await persistThumbnail('c6cadcee57dd.glb', blob)
 
-    expect(mockSetAssetPreview).toHaveBeenCalledWith(
-      cloudAsset.name,
-      'new-preview-id',
-      'http://localhost:8188/assets/new-preview-id/content'
-    )
+    expect(mockInvalidateOutputAssets).toHaveBeenCalledOnce()
   })
 
   it('does not patch the store when the asset already has a preview', async () => {
@@ -306,7 +318,7 @@ describe('persistThumbnail', () => {
     const blob = new Blob(['fake-png'], { type: 'image/png' })
     await persistThumbnail('ComfyUI_00081_.glb', blob)
 
-    expect(mockSetAssetPreview).not.toHaveBeenCalled()
+    expect(mockInvalidateOutputAssets).not.toHaveBeenCalled()
   })
 
   it('does not patch the store when no asset is found', async () => {
@@ -316,7 +328,7 @@ describe('persistThumbnail', () => {
     const blob = new Blob(['fake-png'], { type: 'image/png' })
     await persistThumbnail('nonexistent.glb', blob)
 
-    expect(mockSetAssetPreview).not.toHaveBeenCalled()
+    expect(mockInvalidateOutputAssets).not.toHaveBeenCalled()
   })
 
   it('does not patch the store when upload fails', async () => {
@@ -327,6 +339,11 @@ describe('persistThumbnail', () => {
     const blob = new Blob(['fake-png'], { type: 'image/png' })
     await persistThumbnail('ComfyUI_00081_.glb', blob)
 
-    expect(mockSetAssetPreview).not.toHaveBeenCalled()
+    expect(mockInvalidateOutputAssets).not.toHaveBeenCalled()
   })
+})
+
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({}) }
 })

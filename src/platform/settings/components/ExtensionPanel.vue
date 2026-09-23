@@ -4,12 +4,7 @@
       v-model="filters['global'].value"
       :placeholder="$t('g.searchPlaceholder', { subject: $t('g.extensions') })"
     />
-    <Message
-      v-if="hasChanges"
-      severity="info"
-      pt:text="w-full"
-      class="max-h-96 overflow-y-auto"
-    >
+    <Message v-if="hasChanges" severity="info" class="max-h-96 overflow-y-auto">
       <ul>
         <li v-for="ext in changedExtensions" :key="ext.name">
           <span>
@@ -45,11 +40,10 @@
       <Column :header="$t('g.extensionName')" sortable field="name">
         <template #body="slotProps">
           {{ slotProps.data.name }}
-          <Tag
-            v-if="extensionStore.isCoreExtension(slotProps.data.name)"
-            :value="$t('g.core')"
-          />
-          <Tag v-else :value="$t('g.custom')" severity="info" />
+          <Badge v-if="extensionStore.isCoreExtension(slotProps.data.name)">
+            {{ $t('g.core') }}
+          </Badge>
+          <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
         </template>
       </Column>
       <Column
@@ -69,10 +63,13 @@
           <ContextMenu ref="menu" :model="contextMenuItems" />
         </template>
         <template #body="slotProps">
-          <ToggleSwitch
-            v-model="editingEnabledExtensions[slotProps.data.name]"
+          <Switch
+            :model-value="editingEnabledExtensions[slotProps.data.name]"
             :disabled="extensionStore.isExtensionReadOnly(slotProps.data.name)"
-            @change="updateExtensionStatus"
+            :aria-label="slotProps.data.name"
+            @update:model-value="
+              (enabled) => setExtensionEnabled(slotProps.data.name, enabled)
+            "
           />
         </template>
       </Column>
@@ -85,15 +82,15 @@ import { FilterMatchMode } from '@primevue/core/api'
 import Column from 'primevue/column'
 import ContextMenu from 'primevue/contextmenu'
 import DataTable from 'primevue/datatable'
-import Message from 'primevue/message'
 import SelectButton from 'primevue/selectbutton'
-import Tag from 'primevue/tag'
-import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import Message from '@/components/ui/message/Message.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import Switch from '@/components/ui/switch/Switch.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -166,6 +163,11 @@ const updateExtensionStatus = async () => {
     ...extensionStore.inactiveDisabledExtensionNames,
     ...editingDisabledExtensionNames
   ])
+}
+
+async function setExtensionEnabled(name: string, enabled: boolean) {
+  editingEnabledExtensions.value[name] = enabled
+  await updateExtensionStatus()
 }
 
 const enableAllExtensions = async () => {

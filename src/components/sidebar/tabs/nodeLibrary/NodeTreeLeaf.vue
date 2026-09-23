@@ -7,16 +7,12 @@
   >
     <TreeExplorerTreeNode :node="node" @contextmenu="handleContextMenu">
       <template #before-label>
-        <Tag
-          v-if="nodeDef.experimental"
-          :value="$t('g.experimental')"
-          severity="primary"
-        />
-        <Tag
-          v-if="nodeDef.deprecated"
-          :value="$t('g.deprecated')"
-          severity="danger"
-        />
+        <Badge v-if="nodeDef.experimental" severity="primary">
+          {{ $t('g.experimental') }}
+        </Badge>
+        <Badge v-if="nodeDef.deprecated" severity="danger">
+          {{ $t('g.deprecated') }}
+        </Badge>
       </template>
       <template v-if="isUserBlueprint" #actions>
         <Button
@@ -78,13 +74,13 @@
 <script setup lang="ts">
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
-import Tag from 'primevue/tag'
 import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -92,6 +88,7 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { BLUEPRINT_TYPE_PREFIX, isBlueprintType } from '@/utils/blueprintUtils'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -118,24 +115,25 @@ const toggleBookmark = async () => {
 
 const onHelpClick = () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'node_library_help_button'
+    button_id: 'node_library_help_button',
+    element_group: 'node_library'
   })
   props.openNodeHelp(nodeDef.value)
 }
 const editBlueprint = async () => {
-  if (!props.node.data)
-    throw new Error(
-      'Failed to edit subgraph blueprint lacking backing node data'
-    )
+  if (!props.node.data) {
+    console.error('Failed to edit subgraph blueprint lacking backing node data')
+    return
+  }
   await useSubgraphStore().editBlueprint(props.node.data.name)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const subgraphStore = useSubgraphStore()
 const isUserBlueprint = computed(() => {
   const name = nodeDef.value.name
-  if (!name.startsWith(subgraphStore.typePrefix)) return false
+  if (!isBlueprintType(name)) return false
   return !subgraphStore.isGlobalBlueprint(
-    name.slice(subgraphStore.typePrefix.length)
+    name.slice(BLUEPRINT_TYPE_PREFIX.length)
   )
 })
 const menuItems = computed<MenuItem[]>(() => {

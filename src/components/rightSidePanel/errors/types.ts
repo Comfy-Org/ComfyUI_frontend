@@ -1,4 +1,5 @@
 import type { ResolvedErrorMessage } from '@/platform/errorCatalog/types'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 export interface ErrorItem extends ResolvedErrorMessage {
   /** Raw source/API-compatible message. */
@@ -12,19 +13,25 @@ export interface ErrorItem extends ResolvedErrorMessage {
 export interface ErrorCardData {
   id: string
   title: string
-  nodeId?: string
+  nodeId?: NodeExecutionId
+  rawNodeId?: string
   nodeTitle?: string
   graphNodeId?: string
-  isSubgraphNode?: boolean
   errors: ErrorItem[]
 }
+
+export type ErrorGroupSeverity = 'error' | 'missing'
 
 interface ErrorGroupBase extends Omit<ResolvedErrorMessage, 'displayTitle'> {
   /** Stable structural key used for rendering, collapse state, and cache identity. */
   groupKey: string
   /** Human-friendly title resolved for UI display. */
   displayTitle: string
+  count: number
   priority: number
+  severity: ErrorGroupSeverity
+  /** Derived per render: a diagnostic from the last failed run was absorbed into this group. */
+  blockedLastRun: boolean
 }
 
 export type ErrorGroup =

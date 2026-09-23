@@ -8,6 +8,7 @@
         v-model="filters['global'].value"
         class="max-w-96"
         size="lg"
+        autofocus
         :placeholder="
           $t('g.searchPlaceholder', { subject: $t('g.keybindings') })
         "
@@ -428,7 +429,7 @@ const commandsData = computed<ICommandData[]>(() => {
     id: command.id,
     label: t(
       `commands.${normalizeI18nKey(command.id)}.label`,
-      command.label ?? ''
+      command.label ?? command.id
     ),
     keybindings: keybindingStore.getKeybindingsByCommandId(command.id),
     source: command.source,

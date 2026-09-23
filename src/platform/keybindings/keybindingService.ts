@@ -2,8 +2,10 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { isModalOpen } from '@/utils/modalUtil'
 
 import { CORE_KEYBINDINGS } from './defaults'
+import { consultEscapeOverride } from './escapeOverride'
 import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingStore } from './keybindingStore'
@@ -21,6 +23,14 @@ export function useKeybindingService() {
     }
 
     const target = event.composedPath()[0] as HTMLElement
+    // Let the active menu own Escape without also triggering the global shortcut.
+    if (
+      event.key === 'Escape' &&
+      target.closest('[role="menu"], [role="menubar"]')
+    ) {
+      return
+    }
+
     if (
       keyCombo.isReservedByTextInput &&
       (target.tagName === 'TEXTAREA' ||
@@ -44,15 +54,21 @@ export function useKeybindingService() {
           return
         }
       }
-      if (
-        event.key === 'Escape' &&
-        !event.ctrlKey &&
-        !event.altKey &&
-        !event.metaKey
-      ) {
-        if (dialogStore.dialogStack.length > 0) {
-          return
+      if (isModalOpen(dialogStore.dialogStack.length)) {
+        // Bare keys still have to reach inputs inside the dialog.
+        if (keyCombo.ctrl) {
+          event.preventDefault()
         }
+        return
+      }
+
+      // A registered override (e.g. the agent composer owning Escape while a
+      // turn is running) wins over the default keybinding, but only once an
+      // open menu or dialog has already had first refusal above - those are
+      // more specific to the moment than "some feature elsewhere is running".
+      if (event.key === 'Escape' && consultEscapeOverride(event)) {
+        if (!event.defaultPrevented) event.preventDefault()
+        return
       }
 
       event.preventDefault()
@@ -109,6 +125,9 @@ export function useKeybindingService() {
   function registerUserKeybindings() {
     const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
     for (const keybinding of unsetBindings) {
+      if (!commandStore.isRegistered(keybinding.commandId)) {
+        continue
+      }
       keybindingStore.unsetKeybinding(new KeybindingImpl(keybinding))
     }
     const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
@@ -125,12 +144,9 @@ export function useKeybindingService() {
 
   async function persistUserKeybindings() {
     await settingStore.setMany({
-      'Comfy.Keybinding.NewBindings': Object.values(
-        keybindingStore.getUserKeybindings()
-      ),
-      'Comfy.Keybinding.UnsetBindings': Object.values(
-        keybindingStore.getUserUnsetKeybindings()
-      )
+      'Comfy.Keybinding.NewBindings': keybindingStore.getUserKeybindingValues(),
+      'Comfy.Keybinding.UnsetBindings':
+        keybindingStore.getUserUnsetKeybindingValues()
     })
   }
 

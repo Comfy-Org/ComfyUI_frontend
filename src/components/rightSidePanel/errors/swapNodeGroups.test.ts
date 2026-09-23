@@ -1,11 +1,22 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/types/comfy'
 
-vi.mock('@/scripts/app', () => ({
+import { useErrorGroups } from './useErrorGroups'
+vi.mock(import('@/services/comfyRegistryService'), () => ({
+  useComfyRegistryService: () =>
+    fromAny<ReturnType<typeof useComfyRegistryService>, unknown>({
+      inferPackFromNodeName: vi.fn(async () => null),
+      listAllPacks: vi.fn(async () => ({ nodes: [] })),
+      getPackById: vi.fn()
+    })
+}))
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: {
       serialize: vi.fn(() => ({})),
@@ -14,7 +25,7 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: vi.fn(),
   getExecutionIdByNode: vi.fn(),
   getRootParentNode: vi.fn(() => null),
@@ -22,36 +33,23 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   mapAllNodes: vi.fn(() => [])
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   te: vi.fn(() => false),
   t: vi.fn((key: string) => key),
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
-vi.mock('@/stores/comfyRegistryStore', () => ({
-  useComfyRegistryStore: () => ({
-    inferPackFromNodeName: vi.fn()
-  })
-}))
-
-vi.mock('@/utils/nodeTitleUtil', () => ({
+vi.mock(import('@/utils/nodeTitleUtil'), () => ({
   resolveNodeDisplayName: vi.fn(() => '')
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(() => false)
 }))
-
-vi.mock('@/utils/executableGroupNodeDto', () => ({
-  isGroupNode: vi.fn(() => false)
-}))
-
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { useErrorGroups } from './useErrorGroups'
 
 function makeMissingNodeType(
   type: string,
@@ -78,10 +76,6 @@ function makeMissingNodeType(
 }
 
 describe('swapNodeGroups computed', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   function getSwapNodeGroups(nodeTypes: MissingNodeType[]) {
     useMissingNodesErrorStore().surfaceMissingNodes(nodeTypes)
 

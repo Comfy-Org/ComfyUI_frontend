@@ -1,22 +1,20 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
 
 // Mock dependencies
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    currentGraph: null
-  })
-}))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: null
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getActiveGraphNodeIds: () => new Set<string>()
 }))
 
@@ -36,15 +34,29 @@ function makeCandidate(
 }
 
 describe('useMissingMediaStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('starts with no missing media', () => {
     const store = useMissingMediaStore()
     expect(store.missingMediaCandidates).toBeNull()
     expect(store.hasMissingMedia).toBe(false)
     expect(store.missingMediaCount).toBe(0)
+  })
+
+  it('hides derived state while the missing media warning is off', () => {
+    const settingStore = useSettingStore()
+    const store = useMissingMediaStore()
+    store.setMissingMedia([makeCandidate('1', 'photo.png')])
+    expect(store.hasMissingMedia).toBe(true)
+
+    settingStore.settingValues['Comfy.Workflow.ShowMissingMediaWarning'] = false
+
+    expect(store.missingMediaCandidates).toHaveLength(1)
+    expect(store.visibleMissingMediaCandidates).toBeNull()
+    expect(store.hasMissingMedia).toBe(false)
+    expect(store.missingMediaNodeIds.size).toBe(0)
+
+    settingStore.settingValues['Comfy.Workflow.ShowMissingMediaWarning'] = true
+
+    expect(store.hasMissingMedia).toBe(true)
   })
 
   it('setMissingMedia populates candidates', () => {
@@ -94,14 +106,6 @@ describe('useMissingMediaStore', () => {
     expect(store.missingMediaNodeIds.size).toBe(2)
     expect(store.missingMediaNodeIds.has('1')).toBe(true)
     expect(store.missingMediaNodeIds.has('2')).toBe(true)
-  })
-
-  it('hasMissingMediaOnNode checks node presence', () => {
-    const store = useMissingMediaStore()
-    store.setMissingMedia([makeCandidate('42', 'photo.png')])
-
-    expect(store.hasMissingMediaOnNode('42')).toBe(true)
-    expect(store.hasMissingMediaOnNode('99')).toBe(false)
   })
 
   it('removeMissingMediaByWidget removes matching node+widget entry', () => {
@@ -219,6 +223,19 @@ describe('useMissingMediaStore', () => {
       store.removeMissingMediaByNodeId('1')
       expect(store.missingMediaCandidates).toBeNull()
     })
+
+    it('does not remove a node whose id only shares a numeric prefix', () => {
+      const store = useMissingMediaStore()
+      store.setMissingMedia([
+        makeCandidate('65', 'matching.png'),
+        makeCandidate('650', 'numeric-sibling.png')
+      ])
+
+      store.removeMissingMediaByNodeId('65')
+
+      expect(store.missingMediaCandidates).toHaveLength(1)
+      expect(store.missingMediaCandidates![0].name).toBe('numeric-sibling.png')
+    })
   })
 
   describe('removeMissingMediaByPrefix', () => {
@@ -296,7 +313,7 @@ describe('useMissingMediaStore', () => {
       expect(store.missingMediaCandidates).toBeNull()
     })
 
-    it('preserves candidates with a nullish nodeId (defensive)', () => {
+    it('preserves candidates with a nullish toNodeId(defensive)', () => {
       const store = useMissingMediaStore()
       const orphan = {
         nodeId: undefined as unknown as string,
@@ -312,6 +329,24 @@ describe('useMissingMediaStore', () => {
 
       expect(store.missingMediaCandidates).toHaveLength(1)
       expect(store.missingMediaCandidates![0].name).toBe('orphan.png')
+    })
+  })
+
+  describe('promoted host identity', () => {
+    it('finds missing media by the promoted host widget identity', () => {
+      const store = useMissingMediaStore()
+      const hostExecutionId = createNodeExecutionId([65])
+      store.setMissingMedia([
+        {
+          ...makeCandidate('65', 'host.png'),
+          widgetName: 'outer_image'
+        }
+      ])
+
+      expect(store.isWidgetMissingMedia(hostExecutionId, 'outer_image')).toBe(
+        true
+      )
+      expect(store.isWidgetMissingMedia(hostExecutionId, 'other')).toBe(false)
     })
   })
 })

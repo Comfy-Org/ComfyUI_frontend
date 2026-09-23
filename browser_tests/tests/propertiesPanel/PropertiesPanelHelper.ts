@@ -9,14 +9,18 @@ export class PropertiesPanelHelper {
   readonly panelTitle: Locator
   readonly searchBox: Locator
   readonly closeButton: Locator
+  readonly errorsTab: Locator
   readonly titleEditor: TitleEditor
+  readonly pinnedSwitch: Locator
 
   constructor(readonly page: Page) {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
     this.panelTitle = this.root.locator('h3')
     this.searchBox = this.root.getByPlaceholder(/^Search/)
     this.closeButton = this.root.locator('button[aria-pressed]')
+    this.errorsTab = this.root.getByTestId(TestIds.propertiesPanel.errorsTab)
     this.titleEditor = new TitleEditor(this.root)
+    this.pinnedSwitch = this.root.getByRole('switch', { name: 'Pinned' })
   }
 
   get tabs(): Locator {
@@ -31,16 +35,16 @@ export class PropertiesPanelHelper {
     return this.panelTitle.locator('i[class*="lucide--pencil"]')
   }
 
+  get sectionWidgetsList(): Locator {
+    return this.root.getByTestId('section-widgets-list').first()
+  }
+
   getNodeStateButton(state: 'Normal' | 'Bypass' | 'Mute'): Locator {
     return this.root.locator('button', { hasText: state })
   }
 
   getColorSwatch(colorName: string): Locator {
     return this.root.locator(`[data-testid="${colorName}"]`)
-  }
-
-  get pinnedSwitch(): Locator {
-    return this.root.locator('[data-p-checked]').first()
   }
 
   get subgraphEditButton(): Locator {
@@ -51,8 +55,47 @@ export class PropertiesPanelHelper {
     return this.root.locator('.scrollbar-thin')
   }
 
+  /** Draggable widget rows of the first widgets section in the panel. */
+  get sectionWidgetRows(): Locator {
+    return this.sectionWidgetsList.locator('.widget-item')
+  }
+
+  /**
+   * Drag the widget row at `fromIndex` down onto the row at `toIndex`.
+   * Grabs the row by its header strip (`y + 8`): the widget body owns its own
+   * pointer events, but the header is pointer-events-none so the grab lands on
+   * the draggable row itself.
+   */
+  async dragSectionWidgetRow(
+    fromIndex: number,
+    toIndex: number
+  ): Promise<void> {
+    await expect(this.sectionWidgetsList).toHaveAttribute(
+      'data-draggable-ready',
+      'true'
+    )
+
+    const rows = this.sectionWidgetRows
+    const from = await rows.nth(fromIndex).boundingBox()
+    const to = await rows.nth(toIndex).boundingBox()
+    if (!from || !to) throw new Error('widget row not visible')
+
+    const { mouse } = this.page
+    const grabOffsetY = 8
+    const viewport = this.page.viewportSize()
+    if (!viewport) throw new Error('page has no viewport')
+    const dropY = Math.min(to.y + to.height * 0.95, viewport.height - 1)
+
+    await mouse.move(from.x + from.width / 2, from.y + grabOffsetY)
+    await mouse.down()
+    await mouse.move(to.x + to.width / 2, dropY, {
+      steps: 20
+    })
+    await mouse.up()
+  }
+
   get errorsTabIcon(): Locator {
-    return this.root.locator('nav i[class*="lucide--octagon-alert"]')
+    return this.errorsTab.getByTestId('panel-tab-icon')
   }
 
   get viewAllSettingsButton(): Locator {

@@ -2,19 +2,50 @@ import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
+import {
+  authErrorMessage,
+  classifyAuthError,
+  severityForAuthError
+} from '@comfyorg/account-core/firebaseAuthError'
+import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
+
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import {
+  clearAllWorkflowStorage,
+  prepareWorkflowLogoutTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
+
+/**
+ * The app's own auth.errors table, read through vue-i18n at resolution time.
+ * The key set is the app's, so a code added to main.json renders without the
+ * package having to know it.
+ */
+export const localizedAuthErrorCopy = (): AuthErrorCopy => ({
+  ...Object.fromEntries(
+    Object.keys(enMessages.auth.errors).map((key) => [
+      key,
+      st(`auth.errors.${key}`, t('auth.errors.generic'))
+    ])
+  ),
+  generic: t('auth.errors.generic'),
+  signupBlocked: st('auth.errors.signupBlocked', t('auth.errors.generic'))
+})
 
 /**
  * Service for Firebase Auth actions.
@@ -28,26 +59,39 @@ export const useAuthActions = () => {
 
   const accessError = ref(false)
 
+  const reportAuthFlowError =
+    (authAction: AuthFlowAction) => (error: unknown) => {
+      useTelemetry()?.trackAuthFailed({
+        error_code: error instanceof FirebaseError ? error.code : 'unknown',
+        auth_action: authAction
+      })
+      reportError(error)
+    }
+
   const reportError = (error: unknown) => {
+    const classification = classifyAuthError(error)
     // Ref: https://firebase.google.com/docs/auth/admin/errors
-    if (
-      error instanceof FirebaseError &&
-      [
-        'auth/unauthorized-domain',
-        'auth/invalid-dynamic-link-domain',
-        'auth/unauthorized-continue-uri'
-      ].includes(error.code)
-    ) {
+    const severity = severityForAuthError(classification)
+    const summary = t(severity === 'warn' ? 'g.warning' : 'g.error')
+    if (classification.kind === 'unauthorized-domain') {
       accessError.value = true
       toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
+        severity,
+        summary,
         detail: t('toastMessages.unauthorizedDomain', {
           domain: window.location.hostname,
           email: 'support@comfy.org'
         })
       })
+    } else if (classification.kind !== 'unknown') {
+      toastStore.add({
+        severity,
+        summary,
+        detail: authErrorMessage(classification, localizedAuthErrorCopy())
+      })
     } else if (error instanceof FirebaseError) {
+      // classifyAuthError only knows auth/ codes; an app/ or installations/
+      // FirebaseError still gets the localized copy, never the raw SDK text.
       toastStore.add({
         severity: 'error',
         summary: t('g.error'),
@@ -59,34 +103,41 @@ export const useAuthActions = () => {
   }
 
   const logout = wrapWithErrorHandlingAsync(async () => {
-    const workflowStore = useWorkflowStore()
-    const modifiedWorkflows = workflowStore.modifiedWorkflows
-    if (modifiedWorkflows.length > 0) {
-      const dialogService = useDialogService()
-      const confirmed = await dialogService.confirm({
-        title: t('auth.signOut.unsavedChangesTitle'),
-        message: t('auth.signOut.unsavedChangesMessage'),
-        type: 'dirtyClose',
-        denyLabel: t('auth.signOut.signOutAnyway')
-      })
-      if (confirmed === null) return
+    if (isCloud) {
+      const workflowStore = useWorkflowStore()
+      const modifiedWorkflows = workflowStore.modifiedWorkflows
+      if (modifiedWorkflows.length > 0) {
+        const dialogService = useDialogService()
+        const confirmed = await dialogService.confirm({
+          title: t('auth.signOut.unsavedChangesTitle'),
+          message: t('auth.signOut.unsavedChangesMessage'),
+          type: 'dirtyClose',
+          denyLabel: t('auth.signOut.signOutAnyway')
+        })
+        if (confirmed === null) return
 
-      if (confirmed === true) {
-        const workflowService = useWorkflowService()
-        for (const workflow of modifiedWorkflows) {
-          try {
-            const saved = await workflowService.saveWorkflow(workflow)
-            if (!saved) return
-          } catch {
-            throw new Error(
-              t('auth.signOut.saveFailed', { workflow: workflow.path })
-            )
+        if (confirmed) {
+          const workflowService = useWorkflowService()
+          for (const workflow of modifiedWorkflows) {
+            try {
+              const saved = await workflowService.saveWorkflow(workflow)
+              if (!saved) return
+            } catch {
+              throw new Error(
+                t('auth.signOut.saveFailed', { workflow: workflow.path })
+              )
+            }
           }
         }
       }
     }
 
     await authStore.logout()
+    if (isCloud) {
+      prepareWorkflowLogoutTransition()
+      clearAllWorkflowStorage()
+    }
+
     toastStore.add({
       severity: 'success',
       summary: t('auth.signOut.success'),
@@ -113,13 +164,20 @@ export const useAuthActions = () => {
         detail: t('auth.login.passwordResetSentDetail'),
         life: 5000
       })
+      return true
     },
-    reportError
+    reportAuthFlowError('password_reset')
   )
 
-  const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
-    const { isActiveSubscription } = useBillingContext()
-    if (!isActiveSubscription.value) return
+  /**
+   * Raw (unwrapped) credit purchase. Exposed separately from `purchaseCredits`
+   * so callers that need to observe a rejection directly (e.g. to fire failure
+   * telemetry) aren't routed through `wrapWithErrorHandlingAsync`, which
+   * resolves instead of re-throwing on failure.
+   */
+  const purchaseCreditsDirect = async (amount: number): Promise<void> => {
+    const { canAccessSubscriptionFeatures } = useBillingContext()
+    if (!canAccessSubscriptionFeatures.value) return
 
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
@@ -134,9 +192,17 @@ export const useAuthActions = () => {
       )
     }
 
-    useTelemetry()?.startTopupTracking()
+    // Mark the pending top-up directly, not via telemetry, so the balance
+    // refresh on return still fires when telemetry consent is off.
+    usePendingTopup().startPendingTopup()
     window.open(response.checkout_url, '_blank')
-  }, reportError)
+    watchForTopupBalanceUpdate()
+  }
+
+  const purchaseCredits = wrapWithErrorHandlingAsync(
+    purchaseCreditsDirect,
+    reportError
+  )
 
   const accessBillingPortal = wrapWithErrorHandlingAsync<
     [targetTier?: BillingPortalTargetTier, openInNewTab?: boolean],
@@ -164,32 +230,34 @@ export const useAuthActions = () => {
     return result
   }, reportError)
 
-  const signInWithGoogle = wrapWithErrorHandlingAsync(
-    async (options?: { isNewUser?: boolean }) => {
-      return await authStore.loginWithGoogle(options)
-    },
-    reportError
-  )
+  const signInWithGoogle = async (options?: { isNewUser?: boolean }) =>
+    await wrapWithErrorHandlingAsync(
+      async () => await authStore.loginWithGoogle(options),
+      reportAuthFlowError(
+        options?.isNewUser ? 'google_sign_up' : 'google_sign_in'
+      )
+    )()
 
-  const signInWithGithub = wrapWithErrorHandlingAsync(
-    async (options?: { isNewUser?: boolean }) => {
-      return await authStore.loginWithGithub(options)
-    },
-    reportError
-  )
+  const signInWithGithub = async (options?: { isNewUser?: boolean }) =>
+    await wrapWithErrorHandlingAsync(
+      async () => await authStore.loginWithGithub(options),
+      reportAuthFlowError(
+        options?.isNewUser ? 'github_sign_up' : 'github_sign_in'
+      )
+    )()
 
   const signInWithEmail = wrapWithErrorHandlingAsync(
     async (email: string, password: string) => {
       return await authStore.login(email, password)
     },
-    reportError
+    reportAuthFlowError('email_sign_in')
   )
 
   const signUpWithEmail = wrapWithErrorHandlingAsync(
-    async (email: string, password: string) => {
-      return await authStore.register(email, password)
+    async (email: string, password: string, turnstileToken?: string) => {
+      return await authStore.register(email, password, turnstileToken)
     },
-    reportError
+    reportAuthFlowError('email_sign_up')
   )
 
   /**
@@ -252,6 +320,7 @@ export const useAuthActions = () => {
     logout,
     sendPasswordReset,
     purchaseCredits,
+    purchaseCreditsDirect,
     accessBillingPortal,
     fetchBalance,
     signInWithGoogle,

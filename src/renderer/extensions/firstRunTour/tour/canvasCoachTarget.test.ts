@@ -1,0 +1,244 @@
+import type * as Litegraph from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import * as VueUse from '@vueuse/core'
+import {
+  computed,
+  effectScope,
+  nextTick,
+  onScopeDispose,
+  reactive,
+  shallowRef
+} from 'vue'
+
+import { toNodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
+
+import { canvasNodeTarget } from './canvasCoachTarget'
+
+const TITLE_HEIGHT = 30
+
+const state = vi.hoisted(() => ({
+  camera: null as Record<string, number> | null,
+
+  collapsed: new Set<string>(),
+  layout: null as { value: unknown } | null,
+  layoutReads: vi.fn(),
+  canvasOffset: { left: 0, top: 0 },
+  releaseBounds: vi.fn()
+}))
+
+function graph(id: string) {
+  return fromPartial<Litegraph.LGraph>({
+    id,
+    rootGraph: { id: createUuidv4() },
+    getNodeById: (nodeId: unknown) =>
+      fromPartial<Litegraph.LGraphNode>({
+        constructor: {},
+        collapsed: state.collapsed.has(String(nodeId))
+      })
+  })
+}
+
+vi.mock(import('@vueuse/core'), { spy: true })
+
+vi.mock<unknown>(
+  import('@/renderer/core/layout/transform/useTransformState'),
+  () => {
+    state.camera = { x: 0, y: 0, z: 1 }
+    return { useTransformState: () => ({ camera: state.camera }) }
+  }
+)
+
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => {
+  state.layout = { value: null }
+  return {
+    layoutStore: {
+      getNodeLayoutRef: (graphId: unknown, nodeId: unknown) => {
+        state.layoutReads(graphId, nodeId)
+        return state.layout
+      }
+    }
+  }
+})
+function placeNode(bounds = { x: 100, y: 200, width: 80, height: 40 }) {
+  state.layout!.value = { bounds }
+}
+
+beforeEach(() => {
+  state.camera = reactive({ x: 0, y: 0, z: 1 })
+  state.layout = shallowRef<unknown>(null)
+  vi.mocked(VueUse.useElementBounding).mockImplementation(() => {
+    onScopeDispose(state.releaseBounds)
+    return {
+      bottom: computed(() => 0),
+      height: computed(() => 0),
+      left: computed(() => state.canvasOffset.left),
+      right: computed(() => 0),
+      top: computed(() => state.canvasOffset.top),
+      width: computed(() => 0),
+      x: computed(() => 0),
+      y: computed(() => 0),
+      update: vi.fn()
+    }
+  })
+  useCanvasStore().canvas = fromPartial({
+    graph: graph('root'),
+    canvas: document.createElement('canvas')
+  })
+  useCanvasStore().currentGraph = useCanvasStore().canvas!.graph
+})
+
+describe('canvasNodeTarget', () => {
+  afterEach(() => {
+    useCanvasStore().currentGraph = graph('root')
+    state.collapsed.clear()
+    state.canvasOffset = { left: 0, top: 0 }
+    if (state.camera) Object.assign(state.camera, { x: 0, y: 0, z: 1 })
+    if (state.layout) state.layout.value = null
+    state.layoutReads.mockClear()
+    state.releaseBounds.mockClear()
+  })
+
+  it('releases what it watches when the tour drops it', () => {
+    useCanvasStore().currentGraph = graph('root')
+    const target = canvasNodeTarget(toNodeId(1))
+    expect(state.releaseBounds).not.toHaveBeenCalled()
+
+    target.dispose?.()
+
+    expect(
+      state.releaseBounds,
+      'nothing here runs from a component, so unreleased observers outlive every tour'
+    ).toHaveBeenCalledTimes(1)
+  })
+
+  it('places the rect over the node, title bar included', () => {
+    useCanvasStore().currentGraph = graph('root')
+    placeNode({ x: 100, y: 200, width: 80, height: 40 })
+
+    expect(
+      canvasNodeTarget(toNodeId(6)).getRect(),
+      'layout holds the body box, but the node renders its title above it'
+    ).toEqual(new DOMRect(100, 200 - TITLE_HEIGHT, 80, 40 + TITLE_HEIGHT))
+  })
+
+  it('carries the node through pan and zoom', () => {
+    useCanvasStore().currentGraph = graph('root')
+    placeNode({ x: 100, y: 200, width: 80, height: 40 })
+    Object.assign(state.camera!, { x: 10, y: 20, z: 2 })
+    state.canvasOffset = { left: 5, top: 7 }
+
+    expect(
+      canvasNodeTarget(toNodeId(6)).getRect(),
+      'the ring has to land on the node wherever the camera puts it'
+    ).toEqual(
+      new DOMRect(
+        (100 + 10) * 2 + 5,
+        (200 - TITLE_HEIGHT + 20) * 2 + 7,
+        80 * 2,
+        (40 + TITLE_HEIGHT) * 2
+      )
+    )
+  })
+
+  it('withholds a rect until the node has a layout', () => {
+    useCanvasStore().currentGraph = graph('root')
+    const rootGraphId = useCanvasStore().currentGraph!.rootGraph.id
+    const nodeId = toNodeId(6)
+
+    expect(
+      canvasNodeTarget(nodeId).getRect(),
+      'a step must wait for its target rather than spotlight nothing'
+    ).toBeNull()
+    expect(state.layoutReads).toHaveBeenCalledWith(rootGraphId, nodeId)
+  })
+
+  it('withholds a rect once the graph it resolved against is gone', () => {
+    useCanvasStore().currentGraph = graph('root')
+    placeNode()
+    const target = canvasNodeTarget(toNodeId(6))
+    expect(target.getRect()).not.toBeNull()
+
+    useCanvasStore().currentGraph = graph('another-workflow')
+
+    expect(
+      target.getRect(),
+      'node ids are graph-local, so id 6 elsewhere is a different node'
+    ).toBeNull()
+  })
+
+  it('withholds a rect for a collapsed node, which renders no widget', () => {
+    useCanvasStore().currentGraph = graph('root')
+    placeNode()
+    state.collapsed.add('6')
+
+    expect(
+      canvasNodeTarget(toNodeId(6)).getRect(),
+      'a collapsed node hides the widget the card asks the user to use'
+    ).toBeNull()
+  })
+
+  it('reports the node itself changing, which the camera never announces', async () => {
+    const scope = effectScope()
+    const notify = vi.fn()
+    scope.run(() => canvasNodeTarget(toNodeId(1)).onMove(notify))
+
+    placeNode({ x: 40, y: 60, width: 80, height: 30 })
+    await nextTick()
+
+    expect(
+      notify,
+      'a node moved or resized under a still camera leaves the ring behind'
+    ).toHaveBeenCalled()
+    scope.stop()
+  })
+
+  it('reports a resize, which moves the canvas under a still camera', () => {
+    const scope = effectScope()
+    const notify = vi.fn()
+    scope.run(() => canvasNodeTarget(toNodeId(1)).onMove(notify))
+
+    window.dispatchEvent(new Event('resize'))
+
+    expect(
+      notify,
+      'the canvas offset changes without the camera moving'
+    ).toHaveBeenCalled()
+    scope.stop()
+  })
+
+  it('reports the camera moving, which fires no scroll or resize event', async () => {
+    const scope = effectScope()
+    const notify = vi.fn()
+    scope.run(() => canvasNodeTarget(toNodeId(1)).onMove(notify))
+
+    state.camera!.x = 250
+    await nextTick()
+
+    expect(
+      notify,
+      'a node the camera carries moves with nothing to announce it'
+    ).toHaveBeenCalled()
+    scope.stop()
+  })
+
+  it('stops reporting once the step that subscribed has gone', async () => {
+    const scope = effectScope()
+    const notify = vi.fn()
+    const stop = scope.run(() => canvasNodeTarget(toNodeId(1)).onMove(notify))!
+    stop()
+
+    state.camera!.x = 120
+    placeNode({ x: 1, y: 2, width: 3, height: 4 })
+    await nextTick()
+    window.dispatchEvent(new Event('resize'))
+
+    expect(
+      notify,
+      'a subscription outliving its step repositions a card that is gone'
+    ).not.toHaveBeenCalled()
+    scope.stop()
+  })
+})

@@ -1,10 +1,13 @@
-import { createTestingPinia } from '@pinia/testing'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { api } from '@/scripts/api'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import {
   LGraphNode as LGraphNodeClass,
   SubgraphNode
@@ -25,7 +28,11 @@ import { ComfyWorkflow as ComfyWorkflowClass } from '@/platform/workflow/managem
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockChangeTracker,
+  createNodeState
+} from '@/utils/__tests__/litegraphTestUtils'
+import { resolveNode } from '@/utils/litegraphUtil'
 import type { WidgetId } from '@/types/widgetId'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
@@ -40,49 +47,24 @@ const mockEmptyWorkflowDialog = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() }
+    rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() },
+    get isGraphReady() {
+      return Boolean(this.rootGraph)
+    }
   }
 }))
 
-const mockResolveNode = vi.hoisted(() =>
-  vi.fn<(id: NodeId) => LGraphNode | undefined>(() => undefined)
-)
-vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
-  ...(await importOriginal()),
-  resolveNode: mockResolveNode
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => ({ read_only: false })
-  })
-}))
-
-vi.mock('@/components/builder/useEmptyWorkflowDialog', () => ({
+vi.mock(import('@/components/builder/useEmptyWorkflowDialog'), () => ({
   useEmptyWorkflowDialog: () => mockEmptyWorkflowDialog
 }))
 
-const mockSettings = vi.hoisted(() => {
-  const store: Record<string, unknown> = {}
-  return {
-    store,
-    get: vi.fn((key: string) => store[key] ?? false),
-    set: vi.fn(async (key: string, value: unknown) => {
-      store[key] = value
-    }),
-    reset() {
-      for (const key of Object.keys(store)) delete store[key]
-    }
-  }
-})
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => mockSettings
-}))
-
 import { useAppModeStore } from './appModeStore'
+
+const mockResolveNode = vi.mocked(resolveNode)
 
 function createBuilderWorkflow(
   activeMode: string = 'builder:inputs'
@@ -104,10 +86,10 @@ function createBuilderWorkflowWithOutputs(
 ): LoadedComfyWorkflow {
   mockResolveNode.mockReturnValue(fromAny({ id: 1 }))
   const workflow = createBuilderWorkflow(activeMode)
-  workflow.changeTracker!.activeState!.extra ??= {}
+  workflow.changeTracker.activeState.extra ??= {}
   workflow.changeTracker.activeState.extra.linearData = {
     inputs: [],
-    outputs: [1]
+    outputs: [toNodeId(1)]
   }
   return workflow
 }
@@ -115,7 +97,7 @@ function createBuilderWorkflowWithOutputs(
 function createWorkflowWithLinearData(
   activeMode: string,
   inputs: LinearInput[],
-  outputs: NodeId[]
+  outputs: SerializedNodeId[]
 ): LoadedComfyWorkflow {
   const workflow = createBuilderWorkflow(activeMode)
   workflow.changeTracker = createMockChangeTracker(
@@ -155,19 +137,16 @@ describe('appModeStore', () => {
   let store: ReturnType<typeof useAppModeStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.mocked(app.rootGraph).extra = {}
     ChangeTracker.isLoadingGraph = false
     mockResolveNode.mockReturnValue(undefined)
-    mockSettings.reset()
-    vi.mocked(app.rootGraph).nodes = [{ id: 1 } as LGraphNode]
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+    vi.mocked(useCanvasStore().getCanvas).mockReturnValue(
+      fromPartial({ read_only: false })
+    )
+    vi.mocked(app.rootGraph).nodes = [{ id: toNodeId(1) } as LGraphNode]
     workflowStore = useWorkflowStore()
     store = useAppModeStore()
-    vi.clearAllMocks()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('enterBuilder', () => {
@@ -176,7 +155,7 @@ describe('appModeStore', () => {
 
       store.enterBuilder()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:arrange')
+      expect(workflowStore.activeWorkflow.activeMode).toBe('builder:arrange')
     })
 
     it('navigates to builder:inputs when in app mode without outputs', () => {
@@ -184,16 +163,16 @@ describe('appModeStore', () => {
 
       store.enterBuilder()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:inputs')
+      expect(workflowStore.activeWorkflow.activeMode).toBe('builder:inputs')
     })
 
     it('navigates to builder:inputs when in graph mode with outputs', () => {
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
-      store.selectedOutputs.push(1)
+      store.selectedOutputs.push(toNodeId(1))
 
       store.enterBuilder()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:inputs')
+      expect(workflowStore.activeWorkflow.activeMode).toBe('builder:inputs')
     })
 
     it('navigates to builder:inputs when in graph mode without outputs', () => {
@@ -201,7 +180,7 @@ describe('appModeStore', () => {
 
       store.enterBuilder()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:inputs')
+      expect(workflowStore.activeWorkflow.activeMode).toBe('builder:inputs')
     })
 
     it('shows empty workflow dialog when graph has no nodes', () => {
@@ -216,7 +195,7 @@ describe('appModeStore', () => {
           onDismiss: expect.any(Function)
         })
       )
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('graph')
+      expect(workflowStore.activeWorkflow.activeMode).toBe('graph')
     })
 
     it('prunes selections from workflow state on entry', () => {
@@ -224,24 +203,26 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
-        id == 1 ? node1 : null
+        id === toNodeId(1) ? node1 : null
       )
-      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : undefined))
+      mockResolveNode.mockImplementation((id) =>
+        id === toNodeId(1) ? node1 : undefined
+      )
       workflowStore.activeWorkflow = createWorkflowWithLinearData(
         'graph',
         [
           [1, 'seed'],
           [99, 'steps']
         ],
-        [1, 99]
+        [toNodeId(1), toNodeId(99)]
       )
       store.selectedInputs = [[42, 'prompt']]
-      store.selectedOutputs = [42]
+      store.selectedOutputs = [toNodeId(42)]
 
       store.enterBuilder()
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
-      expect(store.selectedOutputs).toEqual([1])
+      expect(store.selectedOutputs).toEqual([toNodeId(1)])
     })
   })
 
@@ -265,7 +246,7 @@ describe('appModeStore', () => {
     })
 
     it('onEnterBuilder enters builder when nodes exist', () => {
-      const options = getDialogOptions([{ id: 1 } as LGraphNode])
+      const options = getDialogOptions([{ id: toNodeId(1) } as LGraphNode])
 
       options.onEnterBuilder()
 
@@ -288,25 +269,27 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
-        id == 1 ? node1 : null
+        id === toNodeId(1) ? node1 : null
       )
-      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : undefined))
+      mockResolveNode.mockImplementation((id) =>
+        id === toNodeId(1) ? node1 : undefined
+      )
       workflowStore.activeWorkflow = createWorkflowWithLinearData(
         'builder:inputs',
         [
           [1, 'seed'],
           [99, 'steps']
         ],
-        [1, 99]
+        [toNodeId(1), toNodeId(99)]
       )
       store.selectedInputs = [[42, 'prompt']]
-      store.selectedOutputs = [42]
+      store.selectedOutputs = [toNodeId(42)]
 
       store.exitBuilder()
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
-      expect(store.selectedOutputs).toEqual([1])
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('graph')
+      expect(store.selectedOutputs).toEqual([toNodeId(1)])
+      expect(workflowStore.activeWorkflow.activeMode).toBe('graph')
     })
   })
 
@@ -319,7 +302,7 @@ describe('appModeStore', () => {
       const node1 = nodeWithWidgets(1, ['prompt'])
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
-        id == 1 ? node1 : null
+        id === toNodeId(1) ? node1 : null
       )
 
       store.loadSelections({
@@ -336,7 +319,7 @@ describe('appModeStore', () => {
       const node1 = nodeWithWidgets(1, ['prompt'])
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
-        id == 1 ? node1 : null
+        id === toNodeId(1) ? node1 : null
       )
 
       store.loadSelections({
@@ -363,7 +346,7 @@ describe('appModeStore', () => {
       const node1 = nodeWithWidgets(1, ['prompt'])
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
-        id == 1 ? node1 : null
+        id === toNodeId(1) ? node1 : null
       )
 
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -388,9 +371,9 @@ describe('appModeStore', () => {
         id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
       )
 
-      store.loadSelections({ outputs: [1, 99] })
+      store.loadSelections({ outputs: [toNodeId(1), toNodeId(99)] })
 
-      expect(store.selectedOutputs).toEqual([1])
+      expect(store.selectedOutputs).toEqual([toNodeId(1)])
     })
 
     it('reloads selections on configured event', async () => {
@@ -415,16 +398,18 @@ describe('appModeStore', () => {
       // After graph configures, nodes become resolvable
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
-        id == 1 ? node1 : null
+        id === toNodeId(1) ? node1 : null
       )
-      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : undefined))
+      mockResolveNode.mockImplementation((id) =>
+        id === toNodeId(1) ? node1 : undefined
+      )
       ;(app.rootGraph.events as EventTarget).dispatchEvent(
         new Event('configured')
       )
       await nextTick()
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
-      expect(store.selectedOutputs).toEqual([1])
+      expect(store.selectedOutputs).toEqual([toNodeId(1)])
     })
 
     it('hasOutputs is false when all output nodes are deleted', () => {
@@ -440,7 +425,7 @@ describe('appModeStore', () => {
   describe('loadSelections edge cases', () => {
     it('clears existing selections on undefined or empty data', () => {
       store.selectedInputs = [[1, 'seed']]
-      store.selectedOutputs = [1]
+      store.selectedOutputs = [toNodeId(1)]
 
       store.loadSelections(undefined)
 
@@ -448,7 +433,7 @@ describe('appModeStore', () => {
       expect(store.selectedOutputs).toEqual([])
 
       store.selectedInputs = [[1, 'seed']]
-      store.selectedOutputs = [1]
+      store.selectedOutputs = [toNodeId(1)]
 
       store.loadSelections({})
 
@@ -473,11 +458,11 @@ describe('appModeStore', () => {
         expect(
           store.pruneLinearData({
             inputs: [[1, 'seed']],
-            outputs: [1]
+            outputs: [toNodeId(1)]
           })
         ).toEqual({
           inputs: [[1, 'seed']],
-          outputs: [1]
+          outputs: [toNodeId(1)]
         })
       } finally {
         Object.defineProperty(app, 'rootGraph', {
@@ -485,6 +470,173 @@ describe('appModeStore', () => {
           writable: true
         })
       }
+    })
+
+    it('resolves mixed int/string node ids to the same node', () => {
+      const node3 = nodeWithWidgets(3, ['file'])
+      const node5 = nodeWithWidgets(5, [
+        'upscaler_model',
+        'upscaler_resolution',
+        'upscaler_creativity'
+      ])
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [node3, node5]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(3) ? node3 : id === toNodeId(5) ? node5 : null
+      )
+      mockResolveNode.mockImplementation((id) =>
+        id === toNodeId(5) ? node5 : undefined
+      )
+
+      const result = store.pruneLinearData({
+        inputs: [
+          [3, 'file'],
+          [5, 'upscaler_model'],
+          [5, 'upscaler_resolution'],
+          ['5', 'upscaler_creativity']
+        ],
+        outputs: [5, '5']
+      })
+
+      expect(result.inputs).toEqual([
+        [`${rootGraphId}:3:file`, 'file'],
+        [`${rootGraphId}:5:upscaler_model`, 'upscaler_model'],
+        [`${rootGraphId}:5:upscaler_resolution`, 'upscaler_resolution'],
+        [`${rootGraphId}:5:upscaler_creativity`, 'upscaler_creativity']
+      ])
+      // intentional: the same node is referenced in both int and string form;
+      // duplicates are preserved and left for downstream consumers to dedupe
+      expect(result.outputs).toEqual([toNodeId(5), toNodeId(5)])
+    })
+  })
+
+  describe('loadSelections app-config warning', () => {
+    it('warns when non-empty linearData resolves to nothing', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [nodeWithWidgets(1, ['seed'])]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
+      mockResolveNode.mockReturnValue(undefined)
+
+      store.loadSelections({ inputs: [[99, 'gone']], outputs: [99] })
+
+      expect(store.selectedInputs).toEqual([])
+      expect(store.selectedOutputs).toEqual([])
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('app config could not be interpreted'),
+        expect.anything()
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('does not warn when the config resolves', () => {
+      const node1 = nodeWithWidgets(1, ['seed'])
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(1) ? node1 : null
+      )
+      mockResolveNode.mockImplementation((id) =>
+        id === toNodeId(1) ? node1 : undefined
+      )
+
+      store.loadSelections({ inputs: [[1, 'seed']], outputs: [toNodeId(1)] })
+
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('app config could not be interpreted'),
+        expect.anything()
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('does not warn when only inputs resolve (partial resolution is success)', () => {
+      const node1 = nodeWithWidgets(1, ['seed'])
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(1) ? node1 : null
+      )
+      mockResolveNode.mockImplementation((id) =>
+        id === toNodeId(1) ? node1 : undefined
+      )
+
+      store.loadSelections({ inputs: [[1, 'seed']], outputs: [99] })
+
+      expect(store.selectedInputs.length).toBeGreaterThan(0)
+      expect(store.selectedOutputs).toEqual([])
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('app config could not be interpreted'),
+        expect.anything()
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('does not warn when only outputs resolve (partial resolution is success)', () => {
+      const node1 = nodeWithWidgets(1, ['seed'])
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(1) ? node1 : null
+      )
+      mockResolveNode.mockImplementation((id) =>
+        id === toNodeId(1) ? node1 : undefined
+      )
+
+      store.loadSelections({ inputs: [[99, 'gone']], outputs: [1] })
+
+      expect(store.selectedInputs).toEqual([])
+      expect(store.selectedOutputs.length).toBeGreaterThan(0)
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('app config could not be interpreted'),
+        expect.anything()
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('does not warn for empty config', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(app.rootGraph).nodes = [nodeWithWidgets(1, ['seed'])]
+
+      store.loadSelections({})
+
+      expect(warnSpy).not.toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+
+    it('does not warn while a graph is still loading', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      ChangeTracker.isLoadingGraph = true
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = [nodeWithWidgets(1, ['seed'])]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
+      mockResolveNode.mockReturnValue(undefined)
+
+      store.loadSelections({ inputs: [[99, 'gone']], outputs: [99] })
+
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('app config could not be interpreted'),
+        expect.anything()
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('does not warn when the graph has no nodes', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(app.rootGraph).id = rootGraphId
+      vi.mocked(app.rootGraph).nodes = []
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
+      mockResolveNode.mockReturnValue(undefined)
+
+      store.loadSelections({ inputs: [[99, 'gone']], outputs: [99] })
+
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('app config could not be interpreted'),
+        expect.anything()
+      )
+      warnSpy.mockRestore()
     })
   })
 
@@ -494,7 +646,7 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
-        id == 1 ? node1 : null
+        id === toNodeId(1) ? node1 : null
       )
       ChangeTracker.isLoadingGraph = true
 
@@ -507,7 +659,7 @@ describe('appModeStore', () => {
       })
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
-      expect(store.selectedOutputs).toEqual([1, 999])
+      expect(store.selectedOutputs).toEqual([toNodeId(1), toNodeId(999)])
     })
 
     it('prunes entries for deleted nodes when not loading', () => {
@@ -515,9 +667,11 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
-        id == 1 ? node1 : null
+        id === toNodeId(1) ? node1 : null
       )
-      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : undefined))
+      mockResolveNode.mockImplementation((id) =>
+        id === toNodeId(1) ? node1 : undefined
+      )
 
       store.loadSelections({
         inputs: [
@@ -528,7 +682,7 @@ describe('appModeStore', () => {
       })
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
-      expect(store.selectedOutputs).toEqual([1])
+      expect(store.selectedOutputs).toEqual([toNodeId(1)])
     })
   })
 
@@ -538,9 +692,11 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
-        id == 1 ? node1 : null
+        id === toNodeId(1) ? node1 : null
       )
-      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : undefined))
+      mockResolveNode.mockImplementation((id) =>
+        id === toNodeId(1) ? node1 : undefined
+      )
     }
 
     it('falls back to initialState when activeState has no linearData', () => {
@@ -550,7 +706,7 @@ describe('appModeStore', () => {
       workflow.changeTracker.initialState = fromAny({
         ...workflow.changeTracker.activeState,
         extra: {
-          linearData: { inputs: [[1, 'seed']], outputs: [1] }
+          linearData: { inputs: [[1, 'seed']], outputs: [toNodeId(1)] }
         }
       })
       workflowStore.activeWorkflow = workflow
@@ -558,19 +714,19 @@ describe('appModeStore', () => {
       store.resetSelectedToWorkflow()
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
-      expect(store.selectedOutputs).toEqual([1])
+      expect(store.selectedOutputs).toEqual([toNodeId(1)])
     })
 
     it('prefers activeState linearData when available', () => {
       setupNodeWithSeedAndSteps()
       const workflow = createBuilderWorkflow('app')
       workflow.changeTracker.activeState.extra = {
-        linearData: { inputs: [[1, 'steps']], outputs: [1] }
+        linearData: { inputs: [[1, 'steps']], outputs: [toNodeId(1)] }
       }
       workflow.changeTracker.initialState = fromAny({
         ...workflow.changeTracker.activeState,
         extra: {
-          linearData: { inputs: [[1, 'seed']], outputs: [1] }
+          linearData: { inputs: [[1, 'seed']], outputs: [toNodeId(1)] }
         }
       })
       workflowStore.activeWorkflow = workflow
@@ -578,7 +734,7 @@ describe('appModeStore', () => {
       store.resetSelectedToWorkflow()
 
       expect(store.selectedInputs).toEqual([[entitySteps, 'steps']])
-      expect(store.selectedOutputs).toEqual([1])
+      expect(store.selectedOutputs).toEqual([toNodeId(1)])
     })
   })
 
@@ -587,12 +743,12 @@ describe('appModeStore', () => {
       workflowStore.activeWorkflow = createBuilderWorkflow()
       await nextTick()
 
-      store.selectedOutputs.push(1)
+      store.selectedOutputs.push(toNodeId(1))
       await nextTick()
 
       expect(app.rootGraph.extra.linearData).toEqual({
         inputs: [],
-        outputs: [1]
+        outputs: [toNodeId(1)]
       })
     })
 
@@ -600,7 +756,7 @@ describe('appModeStore', () => {
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
       await nextTick()
 
-      store.selectedOutputs.push(1)
+      store.selectedOutputs.push(toNodeId(1))
       await nextTick()
 
       expect(app.rootGraph.extra.linearData).toBeUndefined()
@@ -617,7 +773,7 @@ describe('appModeStore', () => {
       Object.defineProperty(app, 'rootGraph', { value: null, writable: true })
 
       try {
-        store.selectedOutputs.push(1)
+        store.selectedOutputs.push(toNodeId(1))
         await nextTick()
       } finally {
         Object.defineProperty(app, 'rootGraph', {
@@ -633,12 +789,12 @@ describe('appModeStore', () => {
       const workflow = createBuilderWorkflow()
       workflowStore.activeWorkflow = workflow
       await nextTick()
-      vi.mocked(workflow.changeTracker!.captureCanvasState).mockClear()
+      vi.mocked(workflow.changeTracker.captureCanvasState).mockClear()
 
       store.selectedInputs.push([42, 'prompt'])
       await nextTick()
 
-      expect(workflow.changeTracker!.captureCanvasState).toHaveBeenCalled()
+      expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalled()
     })
 
     it('calls captureCanvasState when input is deselected', async () => {
@@ -646,12 +802,12 @@ describe('appModeStore', () => {
       workflowStore.activeWorkflow = workflow
       store.selectedInputs.push([42, 'prompt'])
       await nextTick()
-      vi.mocked(workflow.changeTracker!.captureCanvasState).mockClear()
+      vi.mocked(workflow.changeTracker.captureCanvasState).mockClear()
 
       store.selectedInputs.splice(0, 1)
       await nextTick()
 
-      expect(workflow.changeTracker!.captureCanvasState).toHaveBeenCalled()
+      expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalled()
     })
 
     it('reflects input changes in linearData', async () => {
@@ -747,34 +903,36 @@ describe('appModeStore', () => {
 
   describe('autoEnableVueNodes', () => {
     it('enables Vue nodes when entering select mode with them disabled', async () => {
-      mockSettings.store['Comfy.VueNodes.Enabled'] = false
+      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
 
       store.enterBuilder()
       await nextTick()
 
-      expect(mockSettings.set).toHaveBeenCalledWith(
+      expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledWith(
         'Comfy.VueNodes.Enabled',
         true
       )
     })
 
     it('does not enable Vue nodes when already enabled', async () => {
-      mockSettings.store['Comfy.VueNodes.Enabled'] = true
+      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = true
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
 
       store.enterBuilder()
       await nextTick()
 
-      expect(mockSettings.set).not.toHaveBeenCalledWith(
+      expect(vi.mocked(useSettingStore().set)).not.toHaveBeenCalledWith(
         'Comfy.VueNodes.Enabled',
         expect.anything()
       )
     })
 
     it('shows popup when Vue nodes are switched on and not dismissed', async () => {
-      mockSettings.store['Comfy.VueNodes.Enabled'] = false
-      mockSettings.store['Comfy.AppBuilder.VueNodeSwitchDismissed'] = false
+      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
+      useSettingStore().settingValues[
+        'Comfy.AppBuilder.VueNodeSwitchDismissed'
+      ] = false
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
 
       store.enterBuilder()
@@ -784,8 +942,10 @@ describe('appModeStore', () => {
     })
 
     it('does not show popup when previously dismissed', async () => {
-      mockSettings.store['Comfy.VueNodes.Enabled'] = false
-      mockSettings.store['Comfy.AppBuilder.VueNodeSwitchDismissed'] = true
+      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
+      useSettingStore().settingValues[
+        'Comfy.AppBuilder.VueNodeSwitchDismissed'
+      ] = true
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
 
       store.enterBuilder()
@@ -795,17 +955,81 @@ describe('appModeStore', () => {
     })
 
     it('does not enable Vue nodes when entering builder:arrange', async () => {
-      mockSettings.store['Comfy.VueNodes.Enabled'] = false
+      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
       workflowStore.activeWorkflow = createBuilderWorkflowWithOutputs('app')
 
       store.enterBuilder()
       await nextTick()
 
-      expect(workflowStore.activeWorkflow!.activeMode).toBe('builder:arrange')
-      expect(mockSettings.set).not.toHaveBeenCalledWith(
+      expect(workflowStore.activeWorkflow.activeMode).toBe('builder:arrange')
+      expect(vi.mocked(useSettingStore().set)).not.toHaveBeenCalledWith(
         'Comfy.VueNodes.Enabled',
         expect.anything()
       )
+    })
+  })
+
+  describe('displayViewMode', () => {
+    const rafQueue = new Map<number, FrameRequestCallback>()
+    let nextHandle: number
+
+    const advanceFrame = () => {
+      const callbacks = [...rafQueue.values()]
+      rafQueue.clear()
+      for (const cb of callbacks) cb(0)
+    }
+
+    beforeEach(() => {
+      rafQueue.clear()
+      nextHandle = 0
+      vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+        const handle = ++nextHandle
+        rafQueue.set(handle, cb)
+        return handle
+      })
+      vi.stubGlobal('cancelAnimationFrame', (handle: number) => {
+        rafQueue.delete(handle)
+      })
+    })
+
+    it('lags the view mode by two frames so the toggle can animate the switch', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
+      await nextTick()
+      expect(store.displayViewMode).toBe('graph')
+
+      workflowStore.activeWorkflow.activeMode = 'app'
+      await nextTick()
+
+      // The real mode has flipped, but the displayed mode still lags so a toggle
+      // that mounts now renders the old order before animating to the new one.
+      expect(store.viewMode).toBe('app')
+      expect(store.displayViewMode).toBe('graph')
+
+      // First frame only schedules the second; the displayed mode must not move.
+      advanceFrame()
+      expect(store.displayViewMode).toBe('graph')
+
+      // The second frame is the one that flips the displayed mode.
+      advanceFrame()
+      expect(store.displayViewMode).toBe('app')
+    })
+
+    it('cancels a stale frame chain so a rapid toggle has no transient flash', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow('graph')
+      workflowStore.activeWorkflow.activeMode = 'app'
+      await nextTick()
+      advanceFrame()
+
+      workflowStore.activeWorkflow.activeMode = 'graph'
+      await nextTick()
+
+      // The pending second frame from the first toggle is cancelled, so it can
+      // no longer flip the displayed mode to 'app' before settling on 'graph'.
+      advanceFrame()
+      expect(store.displayViewMode).toBe('graph')
+
+      advanceFrame()
+      expect(store.displayViewMode).toBe('graph')
     })
   })
 
@@ -839,11 +1063,11 @@ describe('appModeStore', () => {
 
       vi.mocked(app.rootGraph).id = rootGraph.id
       vi.mocked(app.rootGraph).nodes = rootGraph.nodes
-      vi.mocked(app.rootGraph).getNodeById = vi.fn(
-        (id: NodeId | null | undefined) => rootGraph.getNodeById(id as NodeId)
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        rootGraph.getNodeById(id)
       )
 
-      expect(rootGraph.getNodeById(interior.id)).toBeUndefined()
+      expect(rootGraph.getNodeById(interior.id)).toBeNull()
 
       const result = store.pruneLinearData({
         inputs: [[interior.id, sourceWidgetName, { height: 120 }]],
@@ -871,9 +1095,10 @@ describe('appModeStore', () => {
         sourceWidgetName,
         widgetId: `${rootGraphId}:${hostId}:Prompt` as WidgetId
       }
+      const hostState = createNodeState({ id: toNodeId(hostId) })
       const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
-        id: hostId,
-        inputs: [{ name: 'Prompt', _widget: hostWidget }],
+        _state: hostState,
+        _inputs: [{ name: 'Prompt', _widget: hostWidget }],
         widgets: [hostWidget],
         isSubgraphNode: () => true
       }) as SubgraphNode
@@ -881,7 +1106,7 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [rootNode, hostNode]
       vi.mocked(app.rootGraph).getNodeById = vi.fn(
-        (id: NodeId | null | undefined) =>
+        (id: SerializedNodeId | null | undefined) =>
           id == sourceNodeId ? rootNode : id == hostId ? hostNode : null
       )
 
@@ -902,7 +1127,7 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
 
       const result = store.pruneLinearData({
-        inputs: [[42 as NodeId, 'widget-name', { height: 42 }]],
+        inputs: [[42, 'widget-name', { height: 42 }]],
         outputs: []
       })
 
@@ -932,7 +1157,8 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [hostNode]
       vi.mocked(app.rootGraph).getNodeById = vi.fn(
-        (id: NodeId | null | undefined) => (id == hostId ? hostNode : null)
+        (id: SerializedNodeId | null | undefined) =>
+          id == hostId ? hostNode : null
       )
 
       const result = store.pruneLinearData({

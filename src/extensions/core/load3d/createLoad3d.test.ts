@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { fromAny } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as THREE from 'three'
 
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { ModelAdapter, ModelAdapterCapabilities } from './ModelAdapter'
@@ -8,121 +10,141 @@ const { rendererCtor } = vi.hoisted(() => ({
   rendererCtor: vi.fn()
 }))
 
-vi.mock('three', async () => {
-  const actual = await vi.importActual<typeof import('three')>('three')
-  return {
-    ...actual,
-    WebGLRenderer: class {
-      domElement = document.createElement('canvas')
-      autoClear = false
-      outputColorSpace = ''
-      constructor(opts: unknown) {
-        rendererCtor(opts)
-      }
-      setSize() {}
-      setClearColor() {}
+vi.mock(import('three'), { spy: true })
+
+beforeEach(() => {
+  function MockWebGLRenderer(opts: unknown) {
+    rendererCtor(opts)
+    return {
+      domElement: document.createElement('canvas'),
+      autoClear: false,
+      outputColorSpace: '',
+      setSize() {},
+      setPixelRatio() {},
+      setClearColor() {},
+      getSize(target: { set(x: number, y: number): unknown }) {
+        target.set(300, 300)
+        return target
+      },
+      forceContextLoss() {},
+      dispose() {}
     }
   }
+  vi.spyOn(THREE, 'WebGLRenderer').mockImplementation(MockWebGLRenderer)
 })
 
-vi.mock('./SceneManager', () => ({
-  SceneManager: class {
-    scene = { __scene: true }
-  }
+vi.mock(import('./SceneManager'), () => ({
+  SceneManager: fromAny(
+    class {
+      scene = { __scene: true }
+    }
+  )
 }))
 
-vi.mock('./CameraManager', () => ({
-  CameraManager: class {
-    activeCamera = { __camera: true }
-    setControls = vi.fn()
-    setupForModel = vi.fn()
-  }
+vi.mock(import('./CameraManager'), () => ({
+  CameraManager: fromAny(
+    class {
+      activeCamera = { __camera: true }
+      setControls = vi.fn()
+      setupForModel = vi.fn()
+    }
+  )
 }))
 
-vi.mock('./ControlsManager', () => ({
-  ControlsManager: class {
-    controls = { __controls: true }
-  }
+vi.mock(import('./ControlsManager'), () => ({
+  ControlsManager: fromAny(
+    class {
+      controls = { __controls: true }
+    }
+  )
 }))
 
-vi.mock('./LightingManager', () => ({
-  LightingManager: class {}
+vi.mock(import('./LightingManager'), () => ({
+  LightingManager: fromAny(class {})
 }))
 
-vi.mock('./HDRIManager', () => ({
-  HDRIManager: class {}
+vi.mock(import('./HDRIManager'), () => ({
+  HDRIManager: fromAny(class {})
 }))
 
-vi.mock('./ViewHelperManager', () => ({
-  ViewHelperManager: class {}
+vi.mock(import('./ViewHelperManager'), () => ({
+  ViewHelperManager: fromAny(class {})
 }))
 
-vi.mock('./SceneModelManager', () => ({
-  SceneModelManager: class {
-    getCurrentCapabilities: () => unknown
-    getBoundsFromAdapter: (model: unknown) => unknown
-    disposeModelViaAdapter: (model: unknown) => unknown
-    getDefaultCameraPose: () => unknown
-    constructor(
-      _scene: unknown,
-      _renderer: unknown,
-      _eventManager: unknown,
-      _getActiveCamera: unknown,
-      _setupCamera: unknown,
-      _setupGizmo: unknown,
-      getCurrentCapabilities: () => unknown,
-      getBoundsFromAdapter: (model: unknown) => unknown,
-      disposeModelViaAdapter: (model: unknown) => unknown,
+vi.mock(import('./SceneModelManager'), () => ({
+  SceneModelManager: fromAny(
+    class {
+      getCurrentCapabilities: () => unknown
+      getBoundsFromAdapter: (model: unknown) => unknown
+      disposeModelViaAdapter: (model: unknown) => unknown
       getDefaultCameraPose: () => unknown
-    ) {
-      this.getCurrentCapabilities = getCurrentCapabilities
-      this.getBoundsFromAdapter = getBoundsFromAdapter
-      this.disposeModelViaAdapter = disposeModelViaAdapter
-      this.getDefaultCameraPose = getDefaultCameraPose
+      constructor(
+        _scene: unknown,
+        _renderer: unknown,
+        _eventManager: unknown,
+        _getActiveCamera: unknown,
+        _setupCamera: unknown,
+        _setupGizmo: unknown,
+        getCurrentCapabilities: () => unknown,
+        getBoundsFromAdapter: (model: unknown) => unknown,
+        disposeModelViaAdapter: (model: unknown) => unknown,
+        getDefaultCameraPose: () => unknown
+      ) {
+        this.getCurrentCapabilities = getCurrentCapabilities
+        this.getBoundsFromAdapter = getBoundsFromAdapter
+        this.disposeModelViaAdapter = disposeModelViaAdapter
+        this.getDefaultCameraPose = getDefaultCameraPose
+      }
     }
-  }
+  )
 }))
 
-vi.mock('./LoaderManager', () => ({
-  LoaderManager: class {
-    adapterRefArg: unknown
-    constructor(
-      _modelManager: unknown,
-      _eventManager: unknown,
-      _adapters: unknown,
-      adapterRef: unknown
-    ) {
-      this.adapterRefArg = adapterRef
+vi.mock(import('./LoaderManager'), () => ({
+  LoaderManager: fromAny(
+    class {
+      adapterRefArg: unknown
+      constructor(
+        _modelManager: unknown,
+        _eventManager: unknown,
+        _adapters: unknown,
+        adapterRef: unknown
+      ) {
+        this.adapterRefArg = adapterRef
+      }
     }
-  }
+  )
 }))
 
-vi.mock('./RecordingManager', () => ({
-  RecordingManager: class {}
+vi.mock(import('./RecordingManager'), () => ({
+  RecordingManager: fromAny(class {})
 }))
 
-vi.mock('./AnimationManager', () => ({
-  AnimationManager: class {}
+vi.mock(import('./AnimationManager'), () => ({
+  AnimationManager: fromAny(class {})
 }))
 
-vi.mock('./GizmoManager', () => ({
-  GizmoManager: class {
-    setupForModel = vi.fn()
-    getTransform = vi.fn(() => ({}))
-    isEnabled = vi.fn(() => false)
-    getMode = vi.fn(() => 'translate')
-  }
-}))
-
-vi.mock('./Load3d', () => ({
-  default: class {
-    deps: unknown
-    options: unknown
-    constructor(_container: unknown, deps: unknown, options: unknown) {
-      this.deps = deps
-      this.options = options
+vi.mock(import('./GizmoManager'), () => ({
+  GizmoManager: fromAny(
+    class {
+      setupForModel = vi.fn()
+      getTransform = vi.fn(() => ({}))
+      isEnabled = vi.fn(() => false)
+      getMode = vi.fn(() => 'translate')
     }
-  }
+  )
+}))
+
+vi.mock(import('./Load3d'), () => ({
+  default: fromAny(
+    class {
+      deps: unknown
+      options: unknown
+      constructor(_container: unknown, deps: unknown, options: unknown) {
+        this.deps = deps
+        this.options = options
+      }
+    }
+  )
 }))
 
 type FakeAdapterRef = {
@@ -163,6 +185,12 @@ function makeAdapter(overrides: Partial<ModelAdapter> = {}): ModelAdapter {
 }
 
 describe('createLoad3d', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage: vi.fn()
+    } as unknown as ReturnType<HTMLCanvasElement['getContext']>)
+  })
+
   it('constructs the renderer with alpha + antialias and appends it to the container', () => {
     rendererCtor.mockClear()
     const container = createContainer()
@@ -204,15 +232,13 @@ describe('createLoad3d', () => {
 
     it('getBoundsFromAdapter returns null', () => {
       const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
-      expect(
-        instance.deps.modelManager.getBoundsFromAdapter({} as never)
-      ).toBeNull()
+      expect(instance.deps.modelManager.getBoundsFromAdapter({})).toBeNull()
     })
 
     it('disposeModelViaAdapter is a no-op', () => {
       const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
       expect(() =>
-        instance.deps.modelManager.disposeModelViaAdapter({} as never)
+        instance.deps.modelManager.disposeModelViaAdapter({})
       ).not.toThrow()
     })
 
@@ -246,9 +272,7 @@ describe('createLoad3d', () => {
       const instance = withAdapter(makeAdapter({ computeBounds }))
       const model = { fake: 'model' }
 
-      const result = instance.deps.modelManager.getBoundsFromAdapter(
-        model as never
-      )
+      const result = instance.deps.modelManager.getBoundsFromAdapter(model)
 
       expect(computeBounds).toHaveBeenCalledWith(model)
       expect(result).toBe('bbox-result')
@@ -256,9 +280,7 @@ describe('createLoad3d', () => {
 
     it('getBoundsFromAdapter returns null when adapter has no computeBounds', () => {
       const instance = withAdapter(makeAdapter())
-      expect(
-        instance.deps.modelManager.getBoundsFromAdapter({} as never)
-      ).toBeNull()
+      expect(instance.deps.modelManager.getBoundsFromAdapter({})).toBeNull()
     })
 
     it('disposeModelViaAdapter delegates to adapter.disposeModel', () => {
@@ -266,7 +288,7 @@ describe('createLoad3d', () => {
       const instance = withAdapter(makeAdapter({ disposeModel }))
       const model = { fake: 'model' }
 
-      instance.deps.modelManager.disposeModelViaAdapter(model as never)
+      instance.deps.modelManager.disposeModelViaAdapter(model)
 
       expect(disposeModel).toHaveBeenCalledWith(model)
     })

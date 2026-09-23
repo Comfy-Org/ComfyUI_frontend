@@ -2,11 +2,31 @@
 import { ClientRouter } from 'astro:transitions'
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
-import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
-import SiteNav from '../components/common/SiteNav.vue'
-import { escapeJsonLd } from '../utils/escapeJsonLd'
+import GoogleTagManager from '../components/common/GoogleTagManager.astro'
+import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
+import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
+import { bannerConfig, getBannerData } from '../config/banner'
+import { getRoutes } from '../config/routes'
+import { isNoindexPathname } from '../config/indexing'
+import { isWorkshopInBuild } from '../config/workshop-release'
+import {
+  hreflangAlternates,
+  ogLocale,
+  ogLocaleAlternate
+} from '../lib/hreflang'
+import { markdownTwinPath } from '../lib/markdown-twin-path'
+import { isHrefActive } from '../composables/useCurrentPath'
+import {
+  BANNER_DISMISS_ATTR,
+  BANNER_STORAGE_KEY,
+  createBannerVersion,
+  evaluateBannerVisibility
+} from '../utils/banner'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
+import { buildPageGraph, pageContext } from '../utils/jsonLd'
+import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
+import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
 interface Props {
   title: string
@@ -14,6 +34,11 @@ interface Props {
   keywords?: string[]
   ogImage?: string
   noindex?: boolean
+  pageType?: WebPageType
+  breadcrumbs?: Crumb[]
+  mainEntityId?: string
+  extraJsonLd?: (JsonLdNode | null | undefined)[]
+  minimal?: boolean
 }
 
 const {
@@ -22,55 +47,87 @@ const {
   keywords,
   ogImage = 'https://media.comfy.org/website/comfy.webp',
   noindex = false,
+  pageType,
+  breadcrumbs,
+  mainEntityId,
+  extraJsonLd,
+  minimal = false
 } = Astro.props
 
-const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
+const keywordsContent =
+  keywords && keywords.length > 0 ? keywords.join(', ') : undefined
 
-const siteBase = Astro.site ?? 'https://comfy.org'
-const canonicalURL = new URL(Astro.url.pathname, siteBase)
-const ogImageURL = new URL(ogImage, siteBase)
-const rawLocale = Astro.currentLocale ?? 'en'
-const locale: Locale = rawLocale === 'zh-CN' ? 'zh-CN' : 'en'
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const canonicalURL = new URL(url)
+const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
+const alternates = shouldNoindex
+  ? []
+  : hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
+const openGraphLocale = ogLocale(locale)
+const openGraphLocaleAlternate = ogLocaleAlternate(locale, alternates)
+const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
 
-const gtmId = 'GTM-NP9JM6K7'
-const gtmEnabled = import.meta.env.PROD
+// Announcement banner — build-time visibility gate + content-hash version key.
+// A promo never advertises the page you are already on, so the banner is
+// suppressed when its CTA points at the current path.
+const bannerData = getBannerData(bannerConfig, locale)
+const bannerVisible =
+  evaluateBannerVisibility(bannerConfig, {
+    currentLocale: locale,
+    currentSection: 'sitewide',
+    now: new Date()
+  }) && !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
+const bannerVersion = createBannerVersion(bannerData, locale)
 
-const organizationJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'Comfy Org',
-  url: 'https://comfy.org',
-  logo: 'https://comfy.org/icons/logomark.svg',
-  sameAs: [
-    'https://github.com/comfyanonymous/ComfyUI',
-    'https://discord.gg/comfyorg',
-    'https://x.com/comaboratory',
-    'https://reddit.com/r/comfyui',
-    'https://linkedin.com/company/comfyorg',
-    'https://instagram.com/comfyorg',
-  ],
-}
-
-const websiteJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'Comfy',
-  url: 'https://comfy.org',
-}
+const structuredData = shouldNoindex
+  ? undefined
+  : buildPageGraph(
+      { siteUrl, locale },
+      {
+        url,
+        name: title,
+        description,
+        imageUrl: ogImageURL.href,
+        type: pageType,
+        crumbs: breadcrumbs,
+        mainEntityId
+      },
+      ...(extraJsonLd ?? [])
+    )
 ---
 
 <!doctype html>
-<html lang={locale} class="overflow-x-clip">
+{/* <html> must stay overflow: visible — body's overflow (incl. reka-ui's
+     dialog scroll lock) only propagates to the viewport when the root is
+     visible. The horizontal clip lives on <body>. */}
+<html lang={locale} class="ppformula-metric-fallback">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     {keywordsContent && <meta name="keywords" content={keywordsContent} />}
-    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    {shouldNoindex && <meta name="robots" content="noindex, nofollow" />}
     <title>{title}</title>
 
+    <!-- Safari through 26.6 ignores @font-face metric overrides. Keep the
+         component-level fallback only where the browser cannot apply them. -->
+    <script is:inline>
+      try {
+        const probe = new FontFace('__ppformula_metric_probe', 'local(Arial)', {
+          ascentOverride: '50%'
+        })
+        if (probe.ascentOverride === '50%')
+          document.documentElement.classList.remove('ppformula-metric-fallback')
+      } catch {
+        // The class already present on <html> supplies the legacy fallback.
+      }
+    </script>
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" sizes="48x48" />
@@ -78,8 +135,51 @@ const websiteJsonLd = {
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
-    <link rel="preconnect" href="https://www.googletagmanager.com" />
-    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+
+    <!-- Preload the PP Formula faces used on first paint (body copy, headings,
+         and the narrow display face) so they're ready before CSS requests
+         them, avoiding a visible swap from the fallback font mid-load. -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/PPFormula-Regular.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/PPFormula-Bold.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/PPFormula-NarrowSemibold.woff2"
+      crossorigin
+    />
+    {!shouldNoindex && (
+      <link
+        rel="alternate"
+        type="text/markdown"
+        href={markdownTwinPath(canonicalURL.pathname)}
+      />
+    )}
+    {alternates.map((alternate) => (
+      <link
+        rel="alternate"
+        hreflang={alternate.hreflang}
+        href={alternate.href}
+      />
+    ))}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -89,7 +189,10 @@ const websiteJsonLd = {
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:url" content={canonicalURL.href} />
-    <meta property="og:locale" content={locale} />
+    <meta property="og:locale" content={openGraphLocale} />
+    {openGraphLocaleAlternate && (
+      <meta property="og:locale:alternate" content={openGraphLocaleAlternate} />
+    )}
     <meta property="og:site_name" content="Comfy" />
 
     <!-- Twitter -->
@@ -100,48 +203,81 @@ const websiteJsonLd = {
     <meta name="twitter:image" content={ogImageURL.href} />
 
     <!-- Structured Data -->
-    <script is:inline type="application/ld+json" set:html={escapeJsonLd(organizationJsonLd)} />
-    <script is:inline type="application/ld+json" set:html={escapeJsonLd(websiteJsonLd)} />
+    {structuredData && <JsonLdGraph graph={structuredData} />}
     <slot name="head" />
 
-    <slot name="head" />
-
-    <!-- Google Tag Manager -->
-    {gtmEnabled && (
-      <script is:inline define:vars={{ gtmId }}>
-        ;(function (w, d, s, l, i) {
-          w[l] = w[l] || []
-          w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
-          var f = d.getElementsByTagName(s)[0],
-            j = d.createElement(s),
-            dl = l != 'dataLayer' ? '&l=' + l : ''
-          j.async = true
-          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
-          f.parentNode.insertBefore(j, f)
-        })(window, document, 'script', 'dataLayer', gtmId)
-      </script>
-    )}
+    <GoogleTagManager part="head" />
 
     <ClientRouter />
-    <slot name="head" />
-  </head>
-  <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
-    {gtmEnabled && (
-      <noscript>
-        <iframe
-          src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
-          height="0"
-          width="0"
-          style="display:none;visibility:hidden"
-        ></iframe>
-      </noscript>
-    )}
 
-    <SiteNav locale={locale} github-stars={githubStars} client:load />
-    <main class="mt-20 lg:mt-32">
+    <!-- Chrome initializes a video's muted state from the `muted` attribute
+         only during document parsing, not for the DOMParser-built pages the
+         ClientRouter swaps in — re-assert it before paint or autoplaying
+         videos come back with sound. -->
+    <script>
+      document.addEventListener('astro:after-swap', () => {
+        document.querySelectorAll('video').forEach((video) => {
+          if (video.hasAttribute('muted')) video.muted = true
+        })
+      })
+    </script>
+    <!-- Hide an already-dismissed announcement banner before first paint (no flash/shift). -->
+    {bannerVisible && <script
+      is:inline
+      define:vars={{
+        bannerVersion,
+        storageKey: BANNER_STORAGE_KEY,
+        dismissAttr: BANNER_DISMISS_ATTR
+      }}
+    >
+      try {
+        const dismissed = JSON.parse(localStorage.getItem(storageKey) || '{}')
+        if (dismissed && dismissed[bannerVersion] === true) {
+          document.documentElement.setAttribute(dismissAttr, '')
+        }
+      } catch (e) {}
+    </script>}
+  </head>
+  <body
+    class="overflow-x-clip bg-primary-comfy-ink font-formula text-white antialiased"
+  >
+    <GoogleTagManager part="noscript" />
+
+    {bannerVisible && !minimal && (
+      <AnnouncementBanner
+        data={bannerData}
+        version={bannerVersion}
+        locale={locale}
+        client:load
+      />
+    )}
+    {minimal ? (
+      <div class="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+        <a
+          href={getRoutes(locale).home}
+          class="inline-block"
+          aria-label="Comfy"
+        >
+          <img src="/icons/logo.svg" alt="Comfy" class="h-9 w-auto" />
+        </a>
+      </div>
+    ) : (
+      <HeaderMain
+        locale={locale}
+        github-stars={githubStars}
+        workshop-in-build={isWorkshopInBuild()}
+        client:load
+      />
+    )}
+    <!-- Horizontal clip lives here (not on <html>, which must stay overflow:
+         visible for reka-ui's dialog scroll lock). <body>'s clip does not
+         contain overflow once <html> is visible, because the root propagates
+         body overflow to the viewport; clipping <main> keeps the page from
+         exceeding the viewport width. -->
+    <main class="overflow-x-clip">
       <slot />
     </main>
-    <SiteFooter locale={locale} client:load />
+    {!minimal && <SiteFooter locale={locale} client:load />}
 
     <Analytics />
 
@@ -149,6 +285,7 @@ const websiteJsonLd = {
       import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'
       import { ScrollTrigger } from '../scripts/gsapSetup'
       import { initPostHog, capturePageview } from '../scripts/posthog'
+      import { reifyMediaElements } from '../scripts/reifyMediaElements'
 
       initSmoothScroll()
 
@@ -163,6 +300,11 @@ const websiteJsonLd = {
 
       document.addEventListener('astro:before-preparation', () => {
         cancelScroll()
+      })
+
+      // Synchronous, so it runs before island hydration touches the DOM.
+      document.addEventListener('astro:after-swap', () => {
+        reifyMediaElements(document.body)
       })
     </script>
   </body>

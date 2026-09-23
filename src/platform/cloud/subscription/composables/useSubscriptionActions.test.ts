@@ -1,41 +1,50 @@
+import { useDialogService } from '@/services/dialogService'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
-// Mock dependencies
-const mockFetchBalance = vi.fn()
-const mockFetchStatus = vi.fn()
-const mockShowTopUpCreditsDialog = vi.fn()
-const mockExecute = vi.fn()
+const mockExecute = vi.fn<ReturnType<typeof useCommandStore>['execute']>(
+  async () => undefined
+)
+const mockToastAdd = vi.fn()
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: () => ({
-    fetchBalance: mockFetchBalance
-  })
+const { mockReportError } = vi.hoisted(() => ({
+  mockReportError: vi.fn()
 }))
 
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
-    fetchStatus: mockFetchStatus
-  })
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    fetchStatus: mockFetchStatus
-  })
+vi.mock(import('@/composables/auth/useAuthActions'))
+
+vi.mock(import('@/composables/billing/useBillingContext'))
+
+vi.mock(import('@/services/dialogService'))
+
+// useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
+const {
+  mockIsCloud,
+  mockTrackHelpResourceClicked,
+  mockTrackAddApiCreditButtonClicked
+} = vi.hoisted(() => ({
+  mockIsCloud: { value: true },
+  mockTrackHelpResourceClicked: vi.fn(),
+  mockTrackAddApiCreditButtonClicked: vi.fn()
 }))
 
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({
-    showTopUpCreditsDialog: mockShowTopUpCreditsDialog
-  })
-}))
-
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    execute: mockExecute
-  })
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () =>
+    mockIsCloud.value
+      ? {
+          trackHelpResourceClicked: mockTrackHelpResourceClicked,
+          trackAddApiCreditButtonClicked: mockTrackAddApiCreditButtonClicked
+        }
+      : null
 }))
 
 // Mock window.open
@@ -45,16 +54,24 @@ Object.defineProperty(window, 'open', {
   value: mockOpen
 })
 
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
+  vi.mocked(useCommandStore().execute).mockImplementation(mockExecute)
+})
+
 describe('useSubscriptionActions', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    mockIsCloud.value = true
   })
 
   describe('handleAddApiCredits', () => {
     it('should call showTopUpCreditsDialog', () => {
       const { handleAddApiCredits } = useSubscriptionActions()
       handleAddApiCredits()
-      expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+      expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+      expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
+        source: 'settings_billing_panel'
+      })
     })
   })
 
@@ -73,31 +90,91 @@ describe('useSubscriptionActions', () => {
       expect(isLoadingSupport.value).toBe(false)
     })
 
-    it('should handle errors gracefully', async () => {
+    it('tracks help-resource telemetry when messaging support in cloud', async () => {
+      const { handleMessageSupport } = useSubscriptionActions()
+
+      await handleMessageSupport()
+
+      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith({
+        resource_type: 'help_feedback',
+        is_external: true,
+        source: 'subscription'
+      })
+    })
+
+    it('does not fire telemetry when messaging support in OSS builds', async () => {
+      mockIsCloud.value = false
+      const { handleMessageSupport } = useSubscriptionActions()
+
+      await handleMessageSupport()
+
+      expect(mockTrackHelpResourceClicked).not.toHaveBeenCalled()
+    })
+
+    it('tells the user when contacting support fails, and stops loading', async () => {
       mockExecute.mockRejectedValueOnce(new Error('Command failed'))
       const { handleMessageSupport, isLoadingSupport } =
         useSubscriptionActions()
 
       await handleMessageSupport()
+
       expect(isLoadingSupport.value).toBe(false)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'Command failed'
+        })
+      )
+    })
+
+    it('reports a failed support request so it is visible without the user', async () => {
+      const failure = new Error('Command failed')
+      mockExecute.mockRejectedValueOnce(failure)
+      const { handleMessageSupport } = useSubscriptionActions()
+
+      await handleMessageSupport()
+
+      expect(mockReportError).toHaveBeenCalledWith(failure, {
+        errorType: 'contact_support_failed'
+      })
+    })
+
+    // Commands run arbitrary registered functions, including ones contributed
+    // by extensions, so the rejected value is not guaranteed to be an Error.
+    // Normalizing it is reportError's job, covered in reportError.test.ts; what
+    // matters here is that the raw cause reaches the reporter at all.
+    it('reports a thrown non-Error', async () => {
+      mockExecute.mockRejectedValueOnce('Command failed')
+      const { handleMessageSupport } = useSubscriptionActions()
+
+      await handleMessageSupport()
+
+      expect(mockReportError).toHaveBeenCalledWith('Command failed', {
+        errorType: 'contact_support_failed'
+      })
     })
   })
 
   describe('handleRefresh', () => {
-    it('should call both fetchBalance and fetchStatus', async () => {
+    it('should refresh balance and status through the billing facade', async () => {
+      const billing = mockBillingContext()
       const { handleRefresh } = useSubscriptionActions()
       await handleRefresh()
 
-      expect(mockFetchBalance).toHaveBeenCalledOnce()
-      expect(mockFetchStatus).toHaveBeenCalledOnce()
+      expect(billing.fetchBalance).toHaveBeenCalledOnce()
+      expect(billing.fetchStatus).toHaveBeenCalledOnce()
+      expect(useAuthActions().fetchBalance).not.toHaveBeenCalled()
     })
 
-    it('should handle errors gracefully', async () => {
-      mockFetchBalance.mockRejectedValueOnce(new Error('Fetch failed'))
+    it('swallows refresh failures without surfacing a toast', async () => {
+      const billing = mockBillingContext()
+      vi.mocked(billing.fetchBalance).mockRejectedValueOnce(
+        new Error('Fetch failed')
+      )
       const { handleRefresh } = useSubscriptionActions()
 
-      // Should not throw
       await expect(handleRefresh()).resolves.toBeUndefined()
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })
 

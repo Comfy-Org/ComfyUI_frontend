@@ -1,28 +1,13 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import { usePacksSelection } from '@/workbench/extensions/manager/composables/nodePack/usePacksSelection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
-vi.mock('vue-i18n', async () => {
-  const actual = await vi.importActual('vue-i18n')
-  return {
-    ...actual,
-    useI18n: () => ({
-      t: vi.fn((key) => key)
-    })
-  }
-})
-
 type NodePack = components['schemas']['Node']
 
 describe('usePacksSelection', () => {
-  let managerStore: ReturnType<typeof useComfyManagerStore>
-  let mockIsPackInstalled: (packName: string | undefined) => boolean
-
   const createMockPack = (id: string): NodePack => ({
     id,
     name: `Pack ${id}`,
@@ -35,22 +20,6 @@ describe('usePacksSelection', () => {
     status: 'NodeStatusActive'
   })
 
-  beforeEach(() => {
-    vi.clearAllMocks()
-    const pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
-
-    managerStore = useComfyManagerStore()
-
-    // Mock the isPackInstalled method
-    mockIsPackInstalled = vi.fn()
-    managerStore.isPackInstalled = mockIsPackInstalled
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('installedPacks', () => {
     it('should filter and return only installed packs', () => {
       const nodePacks = ref<NodePack[]>([
@@ -59,16 +28,18 @@ describe('usePacksSelection', () => {
         createMockPack('pack3')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockImplementation((id) => {
-        return id === 'pack1' || id === 'pack3'
-      })
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockImplementation(
+        (id) => {
+          return id === 'pack1' || id === 'pack3'
+        }
+      )
 
       const { installedPacks } = usePacksSelection(nodePacks)
 
       expect(installedPacks.value).toHaveLength(2)
       expect(installedPacks.value[0].id).toBe('pack1')
       expect(installedPacks.value[1].id).toBe('pack3')
-      expect(mockIsPackInstalled).toHaveBeenCalledTimes(3)
+      expect(useComfyManagerStore().isPackInstalled).toHaveBeenCalledTimes(3)
     })
 
     it('should return empty array when no packs are installed', () => {
@@ -77,7 +48,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
 
       const { installedPacks } = usePacksSelection(nodePacks)
 
@@ -86,7 +57,7 @@ describe('usePacksSelection', () => {
 
     it('should update when nodePacks ref changes', () => {
       const nodePacks = ref<NodePack[]>([createMockPack('pack1')])
-      vi.mocked(mockIsPackInstalled).mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
 
       const { installedPacks } = usePacksSelection(nodePacks)
       expect(installedPacks.value).toHaveLength(1)
@@ -110,9 +81,11 @@ describe('usePacksSelection', () => {
         createMockPack('pack3')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockImplementation((id) => {
-        return id === 'pack1'
-      })
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockImplementation(
+        (id) => {
+          return id === 'pack1'
+        }
+      )
 
       const { notInstalledPacks } = usePacksSelection(nodePacks)
 
@@ -127,7 +100,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
 
       const { notInstalledPacks } = usePacksSelection(nodePacks)
 
@@ -142,7 +115,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
 
       const { isAllInstalled } = usePacksSelection(nodePacks)
 
@@ -155,7 +128,9 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockImplementation((id) => id === 'pack1')
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockImplementation(
+        (id) => id === 'pack1'
+      )
 
       const { isAllInstalled } = usePacksSelection(nodePacks)
 
@@ -178,7 +153,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
 
       const { isNoneInstalled } = usePacksSelection(nodePacks)
 
@@ -191,7 +166,9 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockImplementation((id) => id === 'pack1')
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockImplementation(
+        (id) => id === 'pack1'
+      )
 
       const { isNoneInstalled } = usePacksSelection(nodePacks)
 
@@ -215,9 +192,11 @@ describe('usePacksSelection', () => {
         createMockPack('pack3')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockImplementation((id) => {
-        return id === 'pack1' || id === 'pack2'
-      })
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockImplementation(
+        (id) => {
+          return id === 'pack1' || id === 'pack2'
+        }
+      )
 
       const { isMixed } = usePacksSelection(nodePacks)
 
@@ -230,7 +209,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
 
       const { isMixed } = usePacksSelection(nodePacks)
 
@@ -243,7 +222,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
 
       const { isMixed } = usePacksSelection(nodePacks)
 
@@ -266,7 +245,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
 
       const { selectionState } = usePacksSelection(nodePacks)
 
@@ -279,7 +258,7 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
 
       const { selectionState } = usePacksSelection(nodePacks)
 
@@ -293,7 +272,9 @@ describe('usePacksSelection', () => {
         createMockPack('pack3')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockImplementation((id) => id === 'pack1')
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockImplementation(
+        (id) => id === 'pack1'
+      )
 
       const { selectionState } = usePacksSelection(nodePacks)
 
@@ -306,13 +287,13 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
 
       const { selectionState } = usePacksSelection(nodePacks)
       expect(selectionState.value).toBe('none-installed')
 
       // Change mock to simulate installation
-      vi.mocked(mockIsPackInstalled).mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
 
       // Force reactivity update
       nodePacks.value = [...nodePacks.value]
@@ -328,7 +309,9 @@ describe('usePacksSelection', () => {
         createMockPack('pack2')
       ])
 
-      vi.mocked(mockIsPackInstalled).mockImplementation((id) => id === 'pack2')
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockImplementation(
+        (id) => id === 'pack2'
+      )
 
       const { installedPacks, notInstalledPacks } = usePacksSelection(nodePacks)
 
@@ -348,7 +331,7 @@ describe('usePacksSelection', () => {
         pack2: false
       }
 
-      vi.mocked(mockIsPackInstalled).mockImplementation(
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockImplementation(
         (id) => (id && installationStatus[id]) || false
       )
 

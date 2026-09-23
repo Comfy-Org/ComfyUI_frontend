@@ -1,10 +1,50 @@
+import type { UploadImageResponse } from '@comfyorg/ingest-types'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
+  test.describe('media selection', { tag: '@widget' }, () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+    })
+
+    test('keeps a selected image loaded when it is selected again', async ({
+      comfyPage
+    }) => {
+      const loadImageNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+      expect(loadImageNodes, 'Workflow has one Load Image node').toHaveLength(1)
+      const [loadImageNode] = loadImageNodes
+
+      const imageWidget = await loadImageNode.getWidgetByName('image')
+      await expect.poll(() => imageWidget.getValue()).toBe('example.png')
+
+      const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
+      const imageLoadError = node.getByTestId(TestIds.errors.imageLoadError)
+      const selectedImageButton = node.getByRole('button', {
+        name: 'example.png',
+        exact: true
+      })
+      await expect(selectedImageButton).toBeVisible()
+      await expect(imageLoadError).toBeHidden()
+
+      await WidgetSelectDropdownFixture.fromTrigger(
+        selectedImageButton
+      ).selectOption('example.png')
+
+      await expect(selectedImageButton).toBeFocused()
+      await expect(selectedImageButton).toBeVisible()
+      await expect.poll(() => imageWidget.getValue()).toBe('example.png')
+      await expect(imageLoadError).toBeHidden()
+    })
+  })
+
   test('should hide canvas-only upload buttons', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('widgets/all_load_widgets')
 
@@ -22,5 +62,67 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
         comfyPage.page.getByTestId(TestIds.errors.videoLoadError).count()
       )
       .toBeGreaterThan(0)
+  })
+
+  test('uploads an EXR image', async ({ comfyPage, comfyFiles }) => {
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+
+    const [loadImageNode] =
+      await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    const imageWidget = await loadImageNode.getWidgetByName('image')
+    const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
+    const filename = 'test_upload_image.exr'
+    const uploadResponse = comfyPage.page.waitForResponse(
+      (response) =>
+        response.url().includes('/upload/image') && response.status() === 200
+    )
+
+    await node.locator('input[type="file"]').setInputFiles(assetPath(filename))
+    comfyFiles.deleteAfterTest({ filename, type: 'input' })
+    await uploadResponse
+
+    await expect.poll(() => imageWidget.getValue()).toBe(filename)
+    await expect(
+      node.getByRole('button', { name: filename, exact: true })
+    ).toBeVisible()
+    await expect(node.getByTestId(TestIds.errors.imageLoadError)).toBeHidden()
+  })
+
+  test('shows a spinner during upload', async ({ comfyPage }) => {
+    let releaseUpload: () => void = () => {}
+    const uploadResponse: UploadImageResponse = { name: 'spinner-test.png' }
+
+    await comfyPage.page.route('**/upload/image', async (route) => {
+      await new Promise<void>((resolve) => {
+        releaseUpload = resolve
+      })
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(uploadResponse)
+      })
+    })
+    for (const nodeName of ['Load Image', 'Load Video', 'Load Audio']) {
+      await test.step(`for ${nodeName}`, async () => {
+        await comfyPage.menu.topbar.newWorkflowButton.click()
+        await comfyPage.nextFrame()
+        await comfyPage.searchBoxV2.addNode(nodeName)
+
+        const node = comfyPage.vueNodes.getNodeByTitle(nodeName)
+        const fileInput = node.locator('input[type="file"]')
+        const spinner = node.getByRole('status')
+
+        await expect(spinner).toBeHidden()
+        await fileInput.setInputFiles({
+          name: 'spinner-test.png',
+          mimeType: 'image/png',
+          buffer: Buffer.from('test')
+        })
+
+        await expect(spinner).toBeVisible()
+        releaseUpload()
+        await expect(spinner).toBeHidden()
+      })
+    }
   })
 })

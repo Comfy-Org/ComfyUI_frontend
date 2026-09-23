@@ -2,6 +2,7 @@ import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import type { ComfyExtension } from '@/types/comfy'
@@ -10,7 +11,6 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
-import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:
@@ -40,13 +40,13 @@ interface NodeTemplate {
 class ManageTemplates extends ComfyDialog {
   templates: NodeTemplate[] = []
   draggedEl: HTMLElement | null
-  saveVisualCue: number | null
+  saveVisualCue: ReturnType<typeof setTimeout> | null
   emptyImg: HTMLImageElement
   importInput: HTMLInputElement
 
   constructor() {
     super()
-    this.load().then((v) => {
+    void this.load().then((v) => {
       this.templates = v
     })
 
@@ -65,7 +65,7 @@ class ManageTemplates extends ComfyDialog {
       style: { display: 'none' },
       parent: document.body,
       onchange: () => this.importAll()
-    }) as HTMLInputElement
+    })
   }
 
   override createButtons() {
@@ -101,7 +101,18 @@ class ManageTemplates extends ComfyDialog {
     if (res.status === 200) {
       try {
         templates = await res.json()
-      } catch (error) {}
+      } catch (error) {
+        reportError(error, {
+          errorType: 'failure_loading_node_templates',
+          tags: {
+            failure_kind: 'caught_unexpected',
+            feature_area: 'extensions',
+            operation: 'load',
+            outcome: 'recovered'
+          },
+          level: 'error'
+        })
+      }
     } else if (res.status !== 404) {
       console.error(res.status + ' ' + res.statusText)
     }
@@ -198,7 +209,7 @@ class ManageTemplates extends ComfyDialog {
                     // @ts-expect-error fixme ts strict error
                     .forEach((el: HTMLElement, i) => {
                       // @ts-expect-error fixme ts strict error
-                      var prev_i = Number.parseInt(el.dataset.id)
+                      const prev_i = Number.parseInt(el.dataset.id)
 
                       if (el == this.draggedEl && prev_i != i) {
                         this.templates.splice(
@@ -209,14 +220,14 @@ class ManageTemplates extends ComfyDialog {
                       }
                       el.dataset.id = i.toString()
                     })
-                  this.store()
+                  void this.store()
                 },
                 // @ts-expect-error fixme ts strict error
                 ondragover: (e) => {
                   e.preventDefault()
                   if (e.currentTarget == this.draggedEl) return
 
-                  let rect = e.currentTarget.getBoundingClientRect()
+                  const rect = e.currentTarget.getBoundingClientRect()
                   if (e.clientY > rect.top + rect.height / 2) {
                     e.currentTarget.parentNode.insertBefore(
                       this.draggedEl,
@@ -257,15 +268,13 @@ class ManageTemplates extends ComfyDialog {
                       onchange: (e) => {
                         // @ts-expect-error fixme ts strict error
                         clearTimeout(this.saveVisualCue)
-                        var el = e.target
-                        var row = el.parentNode.parentNode
+                        const el = e.target
+                        const row = el.parentNode.parentNode
                         this.templates[row.dataset.id].name =
                           el.value.trim() || 'untitled'
-                        this.store()
+                        void this.store()
                         el.style.backgroundColor = 'rgb(40, 95, 40)'
                         el.style.transitionDuration = '0s'
-                        // @ts-expect-error
-                        // In browser env the return value is number.
                         this.saveVisualCue = setTimeout(function () {
                           el.style.transitionDuration = '.7s'
                           el.style.backgroundColor = 'var(--comfy-input-bg)'
@@ -273,7 +282,7 @@ class ManageTemplates extends ComfyDialog {
                       },
                       // @ts-expect-error fixme ts strict error
                       onkeypress: (e) => {
-                        var el = e.target
+                        const el = e.target
                         // @ts-expect-error fixme ts strict error
                         clearTimeout(this.saveVisualCue)
                         el.style.transitionDuration = '0s'
@@ -312,9 +321,9 @@ class ManageTemplates extends ComfyDialog {
                       const item = e.target.parentNode.parentNode
                       item.parentNode.removeChild(item)
                       this.templates.splice(item.dataset.id * 1, 1)
-                      this.store()
+                      void this.store()
                       // update the rows index, setTimeout ensures that the list is updated
-                      var that = this
+                      const that = this
                       setTimeout(function () {
                         that.element
                           .querySelectorAll('.templateManagerRow')
@@ -357,7 +366,7 @@ const ext: ComfyExtension = {
     items.push(null)
     items.push({
       content: `Save Selected as Template`,
-      disabled: !Object.keys(app.canvas.selected_nodes || {}).length,
+      disabled: !Object.keys(app.canvas.selected_nodes).length,
       callback: async () => {
         const name = await useDialogService().prompt({
           title: t('nodeTemplates.saveAsTemplate'),
@@ -366,58 +375,39 @@ const ext: ComfyExtension = {
         })
         if (!name?.trim()) return
 
-        clipboardAction(() => {
+        await clipboardAction(async () => {
           app.canvas.copyToClipboard()
-          let data = localStorage.getItem('litegrapheditor_clipboard')
-          data = JSON.parse(data || '{}')
-          const nodeIds = Object.keys(app.canvas.selected_nodes)
-          for (let i = 0; i < nodeIds.length; i++) {
-            const node = app.canvas.graph?.getNodeById(nodeIds[i])
-            const nodeData = node?.constructor.nodeData
-
-            if (!node) continue
-            const groupConfig = GroupNodeHandler.getGroupData(node)
-            if (groupConfig) {
-              const groupData = groupConfig.nodeData
-              // @ts-expect-error
-              if (!data.groupNodes) {
-                // @ts-expect-error
-                data.groupNodes = {}
-              }
-              if (nodeData == null) throw new TypeError('nodeData is not set')
-              // @ts-expect-error
-              data.groupNodes[nodeData.name] = groupData
-              // @ts-expect-error
-              data.nodes[i].type = nodeData.name
-            }
-          }
+          const data = localStorage.getItem('litegrapheditor_clipboard')
 
           manage.templates.push({
             name,
-            data: JSON.stringify(data)
+            data: data || '{}'
           })
-          manage.store()
+          await manage.store()
         })
       }
     })
 
     // Map each template to a menu item
-    const subItems = manage.templates.map((t) => {
+    const subItems = manage.templates.map((template) => {
       return {
-        content: t.name,
-        callback: () => {
-          clipboardAction(async () => {
-            const data = JSON.parse(t.data)
-            await GroupNodeConfig.registerFromWorkflow(
-              data.groupNodes ?? {},
-              []
-            )
+        content: template.name,
+        callback: async () => {
+          await clipboardAction(() => {
+            let data: { reroutes?: unknown }
+            try {
+              data = JSON.parse(template.data)
+            } catch (error) {
+              console.error('Failed to parse node template data', error)
+              useToastStore().addAlert(t('toastMessages.invalidTemplateData'))
+              return
+            }
 
             // Check for old clipboard format
             if (!data.reroutes) {
-              deserialiseAndCreate(t.data, app.canvas)
+              deserialiseAndCreate(template.data, app.canvas)
             } else {
-              localStorage.setItem('litegrapheditor_clipboard', t.data)
+              localStorage.setItem('litegrapheditor_clipboard', template.data)
               app.canvas.pasteFromClipboard()
             }
           })

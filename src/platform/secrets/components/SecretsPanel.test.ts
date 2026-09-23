@@ -1,6 +1,6 @@
+import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -12,6 +12,7 @@ import type { SecretMetadata } from '@/platform/secrets/types'
 const DIALOG_HANDLE = { key: 'confirm-delete-secret' }
 const mockDeleteSecret = vi.fn().mockResolvedValue(undefined)
 const mockFetchSecrets = vi.fn().mockResolvedValue(undefined)
+const mockFetchProviders = vi.fn().mockResolvedValue(undefined)
 const mockCloseDialog = vi.fn()
 
 const mockSecret: SecretMetadata = {
@@ -22,28 +23,27 @@ const mockSecret: SecretMetadata = {
   updated_at: '2024-01-15T10:00:00Z'
 }
 
-vi.mock('@/platform/secrets/composables/useSecrets', () => ({
+vi.mock<unknown>(import('@/platform/secrets/composables/useSecrets'), () => ({
   useSecrets: () => ({
     loading: ref(false),
     secrets: ref<SecretMetadata[]>([mockSecret]),
+    availableProviders: ref<string[]>([]),
     operatingSecretId: ref(null),
     existingProviders: ref([]),
     fetchSecrets: mockFetchSecrets,
+    fetchProviders: mockFetchProviders,
     deleteSecret: mockDeleteSecret
   })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({
-    closeDialog: mockCloseDialog
+vi.mock(import('@/components/dialog/confirm/confirmDialog'))
+
+vi.mock<unknown>(
+  import('@/platform/secrets/components/SecretFormDialog.vue'),
+  () => ({
+    default: { name: 'SecretFormDialog', template: '<div />' }
   })
-}))
-
-vi.mock('@/components/dialog/confirm/confirmDialog')
-
-vi.mock('@/platform/secrets/components/SecretFormDialog.vue', () => ({
-  default: { name: 'SecretFormDialog', template: '<div />' }
-}))
+)
 
 const mockShowConfirmDialog = vi.mocked(showConfirmDialog)
 
@@ -84,19 +84,12 @@ const i18n = createI18n({
 })
 
 function renderPanel() {
-  setActivePinia(createPinia())
   return render(SecretsPanel, {
     global: {
       plugins: [i18n],
       stubs: {
         TabPanel: { template: '<div><slot /></div>' },
         Divider: true,
-        ProgressSpinner: true,
-        Button: {
-          template:
-            '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
-          props: ['disabled']
-        },
         SecretListItem: {
           template:
             '<button data-testid="delete-trigger" @click="$emit(\'delete\')">delete</button>',
@@ -108,9 +101,12 @@ function renderPanel() {
   })
 }
 
+beforeEach(() => {
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(mockCloseDialog)
+})
+
 describe('SecretsPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockShowConfirmDialog.mockReturnValue(
       DIALOG_HANDLE as ReturnType<typeof showConfirmDialog>
     )

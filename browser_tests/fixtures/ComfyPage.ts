@@ -1,17 +1,41 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
-import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+import {
+  ENTRY_PATHS,
+  TOUR_SEEN_SETTING
+} from '@/platform/onboarding/onboardingTours'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import {
+  EMPTY_BILLING_BALANCE,
+  EMPTY_BILLING_PLANS,
+  LEGACY_PERSONAL_BILLING_STATUS
+} from '@e2e/fixtures/data/cloudWorkspace'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import {
+  UNSUBSCRIBED,
+  ZERO_BALANCE
+} from '@e2e/fixtures/data/subscriptionFixtures'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
+import {
+  installCustomNodeBlankStartup,
+  runWithCollectedCleanup
+} from '@e2e/fixtures/utils/customNodeSuite'
+import {
+  collectConsoleErrors,
+  recordStartupConsoleErrors
+} from '@e2e/fixtures/utils/consoleErrorCollector'
+import { trackVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
+import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
@@ -28,6 +52,7 @@ import {
   ModelLibrarySidebarTab,
   NodeLibrarySidebarTab,
   NodeLibrarySidebarTabV2,
+  SidebarTab,
   WorkflowsSidebarTab
 } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
@@ -56,16 +81,21 @@ class ComfyPropertiesPanel {
   readonly panelTitle: Locator
   readonly searchBox: Locator
   readonly titleEditor: TitleEditor
+  readonly toggleButton: Locator
 
   constructor(readonly page: Page) {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
     this.panelTitle = this.root.locator('h3')
     this.searchBox = this.root.getByPlaceholder(/^Search/)
     this.titleEditor = new TitleEditor(this.root)
+    this.toggleButton = page.getByRole('button', {
+      name: 'Toggle properties panel'
+    })
   }
 }
 
 class ComfyMenu {
+  private _appsTab: SidebarTab | null = null
   private _assetsTab: AssetsSidebarTab | null = null
   private _modelLibraryTab: ModelLibrarySidebarTab | null = null
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
@@ -100,6 +130,11 @@ class ComfyMenu {
     return this._nodeLibraryTabV2
   }
 
+  get appsTab() {
+    this._appsTab ??= new SidebarTab(this.page, 'apps')
+    return this._appsTab
+  }
+
   get assetsTab() {
     this._assetsTab ??= new AssetsSidebarTab(this.page)
     return this._assetsTab
@@ -120,7 +155,7 @@ class ComfyMenu {
     await this.modeToggleButton.click()
     await this.page.waitForFunction(
       (prevTheme) => {
-        const settings = window.app?.ui?.settings
+        const settings = window.app?.ui.settings
         return (
           settings &&
           settings.getSettingValue('Comfy.ColorPalette') !== prevTheme
@@ -264,17 +299,48 @@ export class ComfyPage {
       data: { username }
     })
 
-    if (resp.status() !== 200)
-      throw new Error(`Failed to create user: ${await resp.text()}`)
+    if (resp.status() !== 200) {
+      const body = await resp.text()
+      // Persistent backends (Comfy Desktop server user storage) keep the user
+      // across runs and do not list it via GET /api/users, so a duplicate means
+      // it already exists. Returns the username since the generated id is not
+      // retrievable here; only reached on single-user / default-resolving backends.
+      if (resp.status() === 400 && body.includes('Duplicate username.'))
+        return username
+      throw new Error(`Failed to create user: ${body}`)
+    }
 
     return await resp.json()
   }
 
-  async setupSettings(settings: Record<string, unknown>) {
+  async setupSettings({
+    userId,
+    settings = {}
+  }: {
+    userId: string
+    settings?: Record<string, unknown>
+  }) {
     const resp = await this.request.post(
       `${this.apiUrl}/api/devtools/set_settings`,
       {
-        data: settings
+        data: {
+          'Comfy.UseNewMenu': 'Top',
+          'Comfy.VueNodes.Enabled': false,
+          'Comfy.Graph.CanvasInfo': false,
+          'Comfy.Graph.CanvasMenu': false,
+          'Comfy.Canvas.SelectionToolbox': false,
+          'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
+          'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
+          'Comfy.EnableTooltips': false,
+          'Comfy.TutorialCompleted': true,
+          [TOUR_SEEN_SETTING]: [...ENTRY_PATHS],
+          'Comfy.Queue.MaxHistoryItems': 64,
+          'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
+          'Comfy.VersionCompatibility.DisableWarnings': true,
+          'Comfy.RightSidePanel.ShowErrorsTab': false,
+          ...settings,
+          'Comfy.userId': userId
+        }
       }
     )
 
@@ -285,10 +351,12 @@ export class ComfyPage {
 
   async setup({
     clearStorage = true,
+    initialLocalStorage = {},
     mockReleases = true,
     url
   }: {
     clearStorage?: boolean
+    initialLocalStorage?: Record<string, string>
     mockReleases?: boolean
     url?: string
   } = {}) {
@@ -306,7 +374,7 @@ export class ComfyPage {
             body: JSON.stringify([])
           })
         } else {
-          await route.continue()
+          await route.fallback()
         }
       })
     }
@@ -320,6 +388,9 @@ export class ComfyPage {
         sessionStorage.clear()
         localStorage.setItem('Comfy.userId', id)
       }, this.id)
+
+      for (const [k, v] of Object.entries(initialLocalStorage))
+        await this.page.localStorage.setItem(k, v)
     }
 
     await this.goto({ url })
@@ -330,18 +401,69 @@ export class ComfyPage {
 
   /**
    * Wait for the app to finish initializing after navigation/reload:
-   * `window.app.extensionManager` is present, the PrimeVue block-UI mask is
-   * hidden, and one animation frame has elapsed. Shared by `setup()` and
+   * `window.app.extensionManager` is present, the app loading overlay is hidden,
+   * and one animation frame has elapsed. Shared by `setup()` and
    * `WorkflowHelper.reloadAndWaitForApp()`.
    */
   async waitForAppReady() {
-    await this.page.waitForFunction(
-      // window.app => GraphCanvas ready
-      // window.app.extensionManager => GraphView ready
-      () => window.app?.extensionManager
-    )
-    await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
+    const readyFuseMs = 300_000
+    try {
+      await this.page.waitForFunction(
+        // window.app => GraphCanvas ready
+        // window.app.extensionManager => GraphView ready
+        () => window.app?.extensionManager,
+        null,
+        { timeout: readyFuseMs }
+      )
+      const loadingOverlay = this.page.getByTestId(TestIds.app.loadingOverlay)
+      await loadingOverlay.waitFor({
+        state: 'attached',
+        timeout: readyFuseMs
+      })
+      await loadingOverlay.waitFor({ state: 'hidden', timeout: readyFuseMs })
+    } catch (error) {
+      const state = await this.describeUnreadyApp()
+      throw new Error(`app never became ready: ${state}`, { cause: error })
+    }
     await this.nextFrame()
+  }
+
+  /**
+   * Why the app is not ready, in one line, for the failure message. A bare
+   * "timeout exceeded" cannot tell a stalled sign-in from a crashed boot from
+   * a backend that never answered, which is the difference between a
+   * five-minute fix and a day of guessing - so every unready-app failure
+   * carries this. Best-effort by construction: it runs on an already-failing
+   * page, so it reports what it could not read rather than throwing over it.
+   */
+  private async describeUnreadyApp(): Promise<string> {
+    try {
+      const state = await this.page.evaluate(
+        (loadingOverlayTestId) => ({
+          url: location.href,
+          title: document.title,
+          hasApp: !!window.app,
+          hasExtensionManager: !!window.app?.extensionManager,
+          loadingOverlayVisible:
+            document
+              .querySelector(`[data-testid="${loadingOverlayTestId}"]`)
+              ?.getAttribute('aria-busy') === 'true',
+          signInVisible: !!document.querySelector(
+            '[data-testid*="sign-in"], [class*="SignIn"], form[action*="signin"]'
+          ),
+          bodyText: document.body.innerText.slice(0, 300)
+        }),
+        TestIds.app.loadingOverlay
+      )
+      return (
+        `url=${state.url} title=${JSON.stringify(state.title)} ` +
+        `window.app=${state.hasApp} extensionManager=${state.hasExtensionManager} ` +
+        `loadingOverlay=${state.loadingOverlayVisible} signInView=${state.signInVisible} ` +
+        `body=${JSON.stringify(state.bodyText)}`
+      )
+    } catch (probeError) {
+      return `page state unreadable (${probeError instanceof Error ? probeError.message : String(probeError)})`
+    }
   }
 
   /** @deprecated Use standalone `assetPath` from `browser_tests/fixtures/utils/assetPath` directly. */
@@ -472,7 +594,10 @@ const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 
 export const comfyPageFixture = base.extend<{
   initialFeatureFlags: Record<string, unknown>
+  initialLocalStorage: Record<string, string>
   initialSettings: Record<string, unknown>
+  initialUrl: string | undefined
+  mockReleases: boolean
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
   comfyFiles: ComfyFiles
@@ -480,10 +605,14 @@ export const comfyPageFixture = base.extend<{
   // Allows configuring feature flags for tests with before initial setup:
   // `test.use({ initialFeatureFlags: { my_flag: true } })`.
   initialFeatureFlags: [{}, { option: true }],
+
+  initialLocalStorage: [{}, { option: true }],
   // Allows seeding user settings before initial page load:
   // `test.use({ initialSettings: { 'Comfy.Locale': 'zh' } })`. Merged on top of
   // the fixture's defaults so per-test values win.
   initialSettings: [{}, { option: true }],
+  initialUrl: [undefined, { option: true }],
+  mockReleases: [true, { option: true }],
 
   page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
@@ -492,6 +621,8 @@ export const comfyPageFixture = base.extend<{
 
     await page.coverage.startJSCoverage({ resetOnNavigation: false })
     await use(page)
+    // A closed page has no coverage to collect
+    if (page.isClosed()) return
     const coverage = await page.coverage.stopJSCoverage()
 
     const mcr = MCR({
@@ -502,7 +633,15 @@ export const comfyPageFixture = base.extend<{
   },
 
   comfyPage: async (
-    { page, request, initialFeatureFlags, initialSettings },
+    {
+      page,
+      request,
+      initialFeatureFlags,
+      initialLocalStorage,
+      initialSettings,
+      initialUrl,
+      mockReleases
+    },
     use,
     testInfo
   ) => {
@@ -510,64 +649,106 @@ export const comfyPageFixture = base.extend<{
 
     const { parallelIndex } = testInfo
     const username = `playwright-test-${parallelIndex}`
-    const userId = await comfyPage.setupUser(username)
-    comfyPage.userIds[parallelIndex] = userId
-
-    const isVueNodes = testInfo.tags.includes('@vue-nodes')
-    comfyPage.isVueNodes = isVueNodes
-
-    try {
-      await comfyPage.setupSettings({
-        'Comfy.UseNewMenu': 'Top',
-        // Hide canvas menu/info/selection toolbox by default.
-        'Comfy.Graph.CanvasInfo': false,
-        'Comfy.Graph.CanvasMenu': false,
-        'Comfy.Canvas.SelectionToolbox': false,
-        // Hide all badges by default.
-        'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
-        'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
-        // Disable tooltips by default to avoid flakiness.
-        'Comfy.EnableTooltips': false,
-        'Comfy.userId': userId,
-        // Set tutorial completed to true to avoid loading the tutorial workflow.
-        'Comfy.TutorialCompleted': true,
-        'Comfy.Queue.MaxHistoryItems': 64,
-        'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
-        'Comfy.VueNodes.AutoScaleLayout': false,
-        // Disable toast warning about version compatibility, as they may or
-        // may not appear - depending on upstream ComfyUI dependencies
-        'Comfy.VersionCompatibility.DisableWarnings': true,
-        // Disable errors tab to prevent missing model detection from
-        // rendering error indicators on nodes during unrelated tests.
-        'Comfy.RightSidePanel.ShowErrorsTab': false,
-        ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
-        ...initialSettings
-      })
-    } catch (e) {
-      console.error(e)
-    }
-
-    if (testInfo.tags.includes('@cloud')) {
-      await comfyPage.cloudAuth.mockAuth()
-    }
-
-    if (Object.keys(initialFeatureFlags).length > 0) {
-      await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
-    }
-
-    await comfyPage.setup()
-
-    if (isVueNodes) {
-      await comfyPage.vueNodes.waitForNodes()
-    }
-
+    const isCustomNodes = testInfo.project.name === 'custom-nodes'
     const needsPerf =
       testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')
-    if (needsPerf) await comfyPage.perf.init()
+    const startupErrorCollector = isCustomNodes
+      ? collectConsoleErrors(page)
+      : undefined
+    let perfStarted = false
+    const cleanups: (() => Promise<void>)[] = []
+    if (needsPerf)
+      cleanups.push(async () => {
+        if (perfStarted) await comfyPage.perf.dispose()
+      })
+    if (startupErrorCollector)
+      cleanups.push(async () => startupErrorCollector.stop())
 
-    await use(comfyPage)
+    const run = async () => {
+      const userId = await comfyPage.setupUser(username)
+      comfyPage.userIds[parallelIndex] = userId
 
-    if (needsPerf) await comfyPage.perf.dispose()
+      const isVueNodes = testInfo.tags.includes('@vue-nodes')
+      comfyPage.isVueNodes = isVueNodes
+
+      await comfyPage.setupSettings({
+        userId,
+        settings: {
+          ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
+          ...initialSettings
+        }
+      })
+      if (testInfo.tags.includes('@cloud')) {
+        const context = page.context()
+        await context.route('**/api/auth/session', (route) =>
+          route.fulfill({ status: 204 })
+        )
+        await context.route('**/api/billing/status', (route) =>
+          route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
+        )
+        await context.route('**/api/billing/capabilities', (route) =>
+          route.fulfill({ json: createBillingCapabilities('ws-personal') })
+        )
+        await context.route('**/api/billing/balance', (route) =>
+          route.fulfill({ json: EMPTY_BILLING_BALANCE })
+        )
+        await context.route('**/api/billing/plans', (route) =>
+          route.fulfill({ json: EMPTY_BILLING_PLANS })
+        )
+        await context.route('**/customers/cloud-subscription-status', (route) =>
+          route.fulfill({ json: UNSUBSCRIBED })
+        )
+        await context.route('**/customers/balance', (route) =>
+          route.fulfill({ json: ZERO_BALANCE })
+        )
+        await mockWorkspace(context, workspace('personal', 'owner'), [])
+      }
+      if (testInfo.tags.includes('@cloud') || testInfo.tags.includes('@auth')) {
+        await comfyPage.cloudAuth.mockAuth()
+      }
+
+      if (isCustomNodes) await installCustomNodeBlankStartup(page)
+      if (isCustomNodes) await trackVisibleErrors(page)
+
+      if (Object.keys(initialFeatureFlags).length > 0) {
+        await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
+      }
+
+      await comfyPage.setup({
+        initialLocalStorage,
+        url: initialUrl,
+        mockReleases
+      })
+
+      if (startupErrorCollector) {
+        startupErrorCollector.stop()
+        recordStartupConsoleErrors(page, startupErrorCollector.errors)
+      }
+
+      if (isCustomNodes) {
+        await comfyExpect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .toBe(0)
+      }
+
+      if (testInfo.tags.includes('@cloud')) {
+        await comfyPage.featureFlags.setServerFlagsPersistent({
+          asset_deletion_enabled: true
+        })
+      }
+
+      if (isVueNodes) {
+        await comfyPage.vueNodes.waitForNodes()
+      }
+
+      if (needsPerf) {
+        await comfyPage.perf.init()
+        perfStarted = true
+      }
+
+      await use(comfyPage)
+    }
+    await runWithCollectedCleanup(run, cleanups)
   },
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)

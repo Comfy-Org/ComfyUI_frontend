@@ -1,105 +1,215 @@
-import { describe, expect, it } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { effectScope } from 'vue'
+import { useCopy } from './useCopy'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { fromPartial } from '@total-typescript/shoehorn'
 
-/**
- * Encodes a UTF-8 string to base64 (same logic as useCopy.ts)
- */
-function encodeClipboardData(data: string): string {
-  return btoa(
-    String.fromCharCode(...Array.from(new TextEncoder().encode(data)))
-  )
+const copyMocks = {
+  canvas: {
+    selectedItems: new Set<object>([{}]),
+    copyToClipboard: vi.fn()
+  }
 }
 
-/**
- * Decodes base64 to UTF-8 string (same logic as usePaste.ts)
- */
-function decodeClipboardData(base64: string): string {
-  const binaryString = atob(base64)
-  const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
+const multiChunkPayloadLength = 0x8000 * 6 + 123
+const canvasClipboardKey = 'litegrapheditor_clipboard'
+const canvasClipboardIdKey = 'litegrapheditor_clipboard_id'
+
+function mountCopy(): void {
+  const scope = effectScope()
+  scope.run(useCopy)
+  onTestFinished(() => scope.stop())
+}
+
+function dispatchCopy(target: EventTarget = document): DataTransfer {
+  const dataTransfer = new DataTransfer()
+  target.dispatchEvent(
+    new ClipboardEvent('copy', { clipboardData: dataTransfer, bubbles: true })
+  )
+
+  return dataTransfer
+}
+
+function copySerializedData(serializedData: string): DataTransfer {
+  copyMocks.canvas.copyToClipboard.mockReturnValue(serializedData)
+  return dispatchCopy()
+}
+
+function selectDocumentText(selectedCharacters: number): void {
+  const paragraph = document.createElement('p')
+  const text = document.createTextNode('Transcript text')
+  paragraph.append(text)
+  document.body.append(paragraph)
+  const range = document.createRange()
+  range.setStart(text, 0)
+  range.setEnd(text, selectedCharacters)
+  const selection = window.getSelection()
+  assert.exists(selection)
+  selection.addRange(range)
+  onTestFinished(() => {
+    selection.removeAllRanges()
+    paragraph.remove()
+  })
+}
+
+function readSerializedClipboardMetadata(dataTransfer: DataTransfer): string {
+  const match = dataTransfer
+    .getData('text/html')
+    .match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
+  expect(match).toBeDefined()
+  if (!match) throw new Error('Expected clipboard metadata to be written')
+
+  const binaryString = atob(match)
+  const bytes = Uint8Array.from(binaryString, (char) => char.charCodeAt(0))
   return new TextDecoder().decode(bytes)
 }
 
-describe('Clipboard UTF-8 base64 encoding/decoding', () => {
-  it('should handle ASCII-only strings', () => {
-    const original = '{"nodes":[{"id":1,"type":"LoadImage"}]}'
-    const encoded = encodeClipboardData(original)
-    const decoded = decodeClipboardData(encoded)
-    expect(decoded).toBe(original)
+describe('useCopy', () => {
+  beforeEach(() => {
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>(copyMocks.canvas)
+    mountCopy()
   })
 
-  it('should handle Chinese characters in localized_name', () => {
-    const original =
-      '{"nodes":[{"id":1,"type":"LoadImage","localized_name":"图像"}]}'
-    const encoded = encodeClipboardData(original)
-    const decoded = decodeClipboardData(encoded)
-    expect(decoded).toBe(original)
-  })
-
-  it('should handle Japanese characters', () => {
-    const original = '{"localized_name":"画像を読み込む"}'
-    const encoded = encodeClipboardData(original)
-    const decoded = decodeClipboardData(encoded)
-    expect(decoded).toBe(original)
-  })
-
-  it('should handle Korean characters', () => {
-    const original = '{"localized_name":"이미지 불러오기"}'
-    const encoded = encodeClipboardData(original)
-    const decoded = decodeClipboardData(encoded)
-    expect(decoded).toBe(original)
-  })
-
-  it('should handle mixed ASCII and Unicode characters', () => {
-    const original =
-      '{"nodes":[{"id":1,"type":"LoadImage","localized_name":"加载图像","label":"Load Image 图片"}]}'
-    const encoded = encodeClipboardData(original)
-    const decoded = decodeClipboardData(encoded)
-    expect(decoded).toBe(original)
-  })
-
-  it('should handle emoji characters', () => {
-    const original = '{"title":"Test Node 🎨🖼️"}'
-    const encoded = encodeClipboardData(original)
-    const decoded = decodeClipboardData(encoded)
-    expect(decoded).toBe(original)
-  })
-
-  it('should handle empty string', () => {
-    const original = ''
-    const encoded = encodeClipboardData(original)
-    const decoded = decodeClipboardData(encoded)
-    expect(decoded).toBe(original)
-  })
-
-  it('should handle complex node data with multiple Unicode fields', () => {
-    const original = JSON.stringify({
+  it('should write large serialized node data to clipboard metadata', () => {
+    const serializedData = JSON.stringify({
       nodes: [
         {
           id: 1,
-          type: 'LoadImage',
-          localized_name: '图像',
-          inputs: [{ localized_name: '图片', name: 'image' }],
-          outputs: [{ localized_name: '输出', name: 'output' }]
+          type: 'Subgraph',
+          title: 'Large Subgraph',
+          localized_name: '이미지 그룹 图像 🎨',
+          payload: 'x'.repeat(multiChunkPayloadLength)
         }
       ],
       groups: [{ title: '预处理组 🔧' }],
-      links: []
+      reroutes: [],
+      links: [],
+      subgraphs: []
     })
-    const encoded = encodeClipboardData(original)
-    const decoded = decodeClipboardData(encoded)
-    expect(decoded).toBe(original)
-    expect(JSON.parse(decoded)).toEqual(JSON.parse(original))
+
+    const dataTransfer = copySerializedData(serializedData)
+
+    expect(readSerializedClipboardMetadata(dataTransfer)).toBe(serializedData)
   })
 
-  it('should produce valid base64 output', () => {
-    const original = '{"localized_name":"中文测试"}'
-    const encoded = encodeClipboardData(original)
-    // Base64 should only contain valid characters
-    expect(encoded).toMatch(/^[A-Za-z0-9+/=]+$/)
-  })
+  describe('copy on a target the canvas ignores', () => {
+    const keyboardNode = '{"nodes":[{"type":"LoadImage"}]}'
+    const contextMenuNode = '{"nodes":[{"type":"SaveImage"}]}'
+    let copyId = 0
 
-  it('should fail with plain btoa for non-Latin1 characters', () => {
-    const original = '{"localized_name":"图像"}'
-    // This demonstrates why we need TextEncoder - plain btoa fails
-    expect(() => btoa(original)).toThrow()
+    function writeCanvasClipboard(serializedData: string): void {
+      localStorage.setItem(canvasClipboardKey, serializedData)
+      localStorage.setItem(canvasClipboardIdKey, String(++copyId))
+    }
+
+    function copyNodeWithKeyboard(): void {
+      copyMocks.canvas.copyToClipboard.mockImplementation(() => {
+        writeCanvasClipboard(keyboardNode)
+        return keyboardNode
+      })
+      dispatchCopy()
+    }
+
+    function copyNodeFromContextMenu(
+      serializedData: string = contextMenuNode
+    ): void {
+      writeCanvasClipboard(serializedData)
+    }
+
+    beforeEach(() => {
+      copyId = 0
+      onTestFinished(() => {
+        localStorage.removeItem(canvasClipboardKey)
+        localStorage.removeItem(canvasClipboardIdKey)
+      })
+    })
+
+    it.for([
+      {
+        slot: 'a keyboard node copy',
+        writeSlot: [copyNodeWithKeyboard],
+        selection: 'selected document text',
+        selectedCharacters: 'Transcript'.length,
+        slotAfter: null
+      },
+      {
+        slot: 'a keyboard node copy',
+        writeSlot: [copyNodeWithKeyboard],
+        selection: 'a collapsed caret',
+        selectedCharacters: 0,
+        slotAfter: keyboardNode
+      },
+      {
+        slot: 'a context-menu copy',
+        writeSlot: [copyNodeFromContextMenu],
+        selection: 'selected document text',
+        selectedCharacters: 'Transcript'.length,
+        slotAfter: contextMenuNode
+      },
+      {
+        slot: 'a context-menu copy after a keyboard node copy',
+        writeSlot: [copyNodeWithKeyboard, copyNodeFromContextMenu],
+        selection: 'selected document text',
+        selectedCharacters: 'Transcript'.length,
+        slotAfter: contextMenuNode
+      },
+      {
+        slot: 'an equal context-menu copy after a keyboard node copy',
+        writeSlot: [
+          copyNodeWithKeyboard,
+          () => copyNodeFromContextMenu(keyboardNode)
+        ],
+        selection: 'selected document text',
+        selectedCharacters: 'Transcript'.length,
+        slotAfter: keyboardNode
+      }
+    ])(
+      'with $selection after $slot leaves the canvas clipboard slot as $slotAfter',
+      ({ writeSlot, selectedCharacters, slotAfter }) => {
+        for (const write of writeSlot) write()
+        copyMocks.canvas.copyToClipboard.mockClear()
+        selectDocumentText(selectedCharacters)
+        const textarea = document.createElement('textarea')
+        document.body.append(textarea)
+        onTestFinished(() => textarea.remove())
+
+        const dataTransfer = dispatchCopy(textarea)
+
+        expect(localStorage.getItem(canvasClipboardKey)).toBe(slotAfter)
+        expect(dataTransfer.getData('text/html')).toBe('')
+        expect(copyMocks.canvas.copyToClipboard).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      { name: 'textarea', make: () => document.createElement('textarea') },
+      {
+        name: 'search input',
+        make: () =>
+          Object.assign(document.createElement('input'), { type: 'search' })
+      }
+    ])(
+      'clears a keyboard node copy after copying selected $name text',
+      ({ make }) => {
+        copyNodeWithKeyboard()
+        const input = make()
+        input.value = 'selected text'
+        document.body.append(input)
+        input.setSelectionRange(0, 'selected'.length)
+
+        dispatchCopy(input)
+
+        expect(localStorage.getItem(canvasClipboardKey)).toBeNull()
+      }
+    )
   })
 })

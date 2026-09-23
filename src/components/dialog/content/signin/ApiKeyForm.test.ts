@@ -1,34 +1,18 @@
 import { Form } from '@primevue/forms'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import Button from '@/components/ui/button/Button.vue'
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { useAuthStore } from '@/stores/authStore'
 
 import ApiKeyForm from './ApiKeyForm.vue'
-
-const mockStoreApiKey = vi.fn()
-const mockLoadingRef = ref(false)
-
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => ({
-    get loading() {
-      return mockLoadingRef.value
-    }
-  }))
-}))
-
-vi.mock('@/stores/apiKeyAuthStore', () => ({
-  useApiKeyAuthStore: vi.fn(() => ({
-    storeApiKey: mockStoreApiKey
-  }))
-}))
+vi.mock(import('firebase/auth'))
 
 const i18n = createI18n({
   legacy: false,
@@ -58,9 +42,7 @@ const i18n = createI18n({
 
 describe('ApiKeyForm', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockStoreApiKey.mockReset()
-    mockLoadingRef.value = false
+    useAuthStore().loading = false
   })
 
   function renderComponent(props: Record<string, unknown> = {}) {
@@ -93,7 +75,7 @@ describe('ApiKeyForm', () => {
   })
 
   it('shows loading state when submitting', () => {
-    mockLoadingRef.value = true
+    useAuthStore().loading = true
     const { container } = renderComponent()
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
@@ -110,6 +92,12 @@ describe('ApiKeyForm', () => {
     expect(screen.getByRole('link', { name: 'Get one here' })).toHaveAttribute(
       'href',
       `${getComfyPlatformBaseUrl()}/login`
+    )
+    expect(
+      screen.getByRole('link', { name: 'About non-whitelisted sites' })
+    ).toHaveAttribute(
+      'href',
+      'https://docs.comfy.org/tutorials/partner-nodes/overview#log-in-with-comfyui-account-api-key-on-non-whitelisted-websites'
     )
   })
 })

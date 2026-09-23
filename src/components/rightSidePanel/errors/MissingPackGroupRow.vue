@@ -1,6 +1,14 @@
 <template>
   <div class="mb-1 flex w-full flex-col gap-0.5 last:mb-0">
-    <div class="flex min-h-8 w-full items-center gap-1">
+    <div
+      :aria-current="highlighted ? 'true' : undefined"
+      :class="
+        cn(
+          'flex min-h-8 items-center gap-1',
+          selectionEmphasisClass(highlighted)
+        )
+      "
+    >
       <Button
         v-if="hasMultipleNodeTypes"
         data-testid="missing-node-pack-expand"
@@ -12,17 +20,17 @@
             : t('rightSidePanel.missingNodePacks.expand')
         "
         :aria-expanded="expanded"
-        :class="
-          cn(
-            'h-8 w-4 shrink-0 p-0 transition-transform duration-200 hover:bg-transparent',
-            expanded && 'rotate-90'
-          )
-        "
+        class="h-8 w-4 shrink-0 p-0 hover:bg-transparent focus-visible:ring-inset"
         @click="toggleExpand"
       >
         <i
           aria-hidden="true"
-          class="icon-[lucide--chevron-right] size-4 text-muted-foreground"
+          :class="
+            cn(
+              'icon-[lucide--chevron-right] size-4 text-muted-foreground transition-transform duration-200',
+              expanded && 'rotate-90'
+            )
+          "
         />
       </Button>
       <i
@@ -64,7 +72,7 @@
           </button>
           <span
             v-else
-            class="min-w-0 truncate text-sm/relaxed font-normal"
+            class="min-w-0 truncate text-xs/relaxed font-normal"
             :class="
               isUnknownPack ? 'text-warning-background' : 'text-base-foreground'
             "
@@ -80,7 +88,7 @@
             v-if="showInfoButton && group.packId !== null"
             variant="textonly"
             size="icon-sm"
-            class="size-7 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground"
+            class="size-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
             :aria-label="t('rightSidePanel.missingNodePacks.viewInManager')"
             @click="emit('openManagerInfo', group.packId ?? '')"
           >
@@ -89,7 +97,7 @@
           <span
             v-if="showNodeCount"
             data-testid="missing-node-pack-count"
-            class="flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary-background-selected text-xs font-bold text-muted-foreground"
+            class="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-sm bg-secondary-background-hover px-1 text-2xs font-semibold text-base-foreground"
           >
             {{ group.nodeTypes.length }}
           </span>
@@ -99,7 +107,7 @@
         <Button
           variant="secondary"
           size="sm"
-          class="h-8 shrink-0 rounded-lg text-sm"
+          class="shrink-0 focus-visible:ring-inset"
           :disabled="isPackInstalled || isInstalling"
           @click="handlePackInstallClick"
         >
@@ -122,10 +130,10 @@
       </div>
       <div
         v-else-if="showLoadingAction"
-        class="ml-auto flex h-8 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-lg bg-secondary-background px-2 py-1 text-sm opacity-60 select-none"
+        class="ml-auto flex h-6 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-sm bg-secondary-background px-2 py-1 text-xs opacity-60 select-none"
       >
         <DotSpinner duration="1s" :size="12" class="mr-1.5 shrink-0" />
-        <span class="text-foreground min-w-0 truncate text-sm">
+        <span class="text-foreground min-w-0 truncate text-xs">
           {{ t('g.loading') }}
         </span>
       </div>
@@ -133,7 +141,7 @@
         <Button
           variant="secondary"
           size="sm"
-          class="h-8 shrink-0 rounded-lg text-sm"
+          class="shrink-0 focus-visible:ring-inset"
           @click="
             openManager({
               initialTab: ManagerTab.All,
@@ -146,16 +154,19 @@
           </span>
         </Button>
       </div>
-      <Button
+      <LocateNodeButton
         v-if="primaryLocatableNodeType"
-        variant="textonly"
-        size="icon-sm"
-        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
-        :aria-label="t('rightSidePanel.locateNode')"
-        @click="handleLocateNode(primaryLocatableNodeType)"
-      >
-        <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
-      </Button>
+        :label="
+          t(
+            'rightSidePanel.locateNodeFor',
+            {
+              item: getLabel(primaryLocatableNodeType)
+            },
+            { escapeParameter: false }
+          )
+        "
+        @locate="handleLocateNode(primaryLocatableNodeType)"
+      />
     </div>
 
     <TransitionCollapse>
@@ -163,7 +174,7 @@
         v-if="showNodeTypeList"
         :class="
           cn(
-            'm-0 list-none space-y-1 p-0',
+            'm-0 list-none p-0',
             (hasMultipleNodeTypes || isUnknownPack) && 'pl-5'
           )
         "
@@ -190,21 +201,22 @@
               </button>
               <span
                 v-else
-                class="text-sm/relaxed wrap-break-word text-muted-foreground"
+                class="text-xs/relaxed wrap-break-word text-muted-foreground"
               >
                 {{ getLabel(nodeType) }}
               </span>
             </span>
-            <Button
+            <LocateNodeButton
               v-if="isLocatableNodeType(nodeType)"
-              variant="textonly"
-              size="icon-sm"
-              class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
-              :aria-label="t('rightSidePanel.locateNode')"
-              @click="handleLocateNode(nodeType)"
-            >
-              <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
-            </Button>
+              :label="
+                t(
+                  'rightSidePanel.locateNodeFor',
+                  { item: getLabel(nodeType) },
+                  { escapeParameter: false }
+                )
+              "
+              @locate="handleLocateNode(nodeType)"
+            />
           </div>
         </li>
       </ul>
@@ -216,8 +228,11 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import { selectionEmphasisClass } from './selectionEmphasis'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
+import LocateNodeButton from '@/components/rightSidePanel/errors/LocateNodeButton.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
@@ -227,9 +242,11 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 import type { MissingNodeType } from '@/types/comfy'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
-const { group, showInfoButton } = defineProps<{
+const { group, showInfoButton, highlighted } = defineProps<{
   group: MissingPackGroup
   showInfoButton: boolean
+  /** Emphasize the header row (pack containing the canvas selection). */
+  highlighted?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -241,7 +258,7 @@ const { t } = useI18n()
 const expandedOverride = ref<boolean | null>(null)
 
 const packTextButtonClass =
-  'm-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word outline-none focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none'
+  'm-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word outline-none focus:outline-none rounded-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset focus-visible:outline-none'
 
 const { missingNodePacks, isLoading } = useMissingNodes()
 const comfyManagerStore = useComfyManagerStore()

@@ -5,25 +5,22 @@ import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const { openNodeInfoMock, trackUiButtonClickedMock } = vi.hoisted(() => ({
-  openNodeInfoMock: vi.fn(),
-  trackUiButtonClickedMock: vi.fn()
+const { openNodeInfoMock } = vi.hoisted(() => ({
+  openNodeInfoMock: vi.fn()
 }))
 
-vi.mock('@/composables/graph/useSelectionState', () => ({
+vi.mock<unknown>(import('@/composables/graph/useSelectionState'), () => ({
   useSelectionState: () => ({
     openNodeInfo: openNodeInfoMock
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({
-    trackUiButtonClicked: trackUiButtonClickedMock
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 describe('InfoButton', () => {
   const i18n = createI18n({
@@ -39,7 +36,6 @@ describe('InfoButton', () => {
   })
 
   beforeEach(() => {
-    vi.clearAllMocks()
     openNodeInfoMock.mockReturnValue(true)
   })
 
@@ -64,8 +60,9 @@ describe('InfoButton', () => {
     await clickNodeInfoButton()
 
     expect(openNodeInfoMock).toHaveBeenCalled()
-    expect(trackUiButtonClickedMock).toHaveBeenCalledWith({
-      button_id: 'selection_toolbox_node_info_opened'
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
+      button_id: 'selection_toolbox_node_info_opened',
+      element_group: 'selection_toolbox'
     })
   })
 
@@ -76,6 +73,6 @@ describe('InfoButton', () => {
     await clickNodeInfoButton()
 
     expect(openNodeInfoMock).toHaveBeenCalled()
-    expect(trackUiButtonClickedMock).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
   })
 })

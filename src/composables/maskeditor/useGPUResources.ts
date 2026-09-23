@@ -207,7 +207,8 @@ export function useGPUResources() {
   async function initTypeGPU(): Promise<void> {
     if (store.tgpuRoot) {
       /* c8 ignore start */
-      device = store.tgpuRoot.device
+      // typegpu vendors its own WebGPU types; align with @webgpu/types
+      device = store.tgpuRoot.device as GPUDevice
       return
       /* c8 ignore stop */
     }
@@ -494,7 +495,7 @@ export function useGPUResources() {
 
     renderer.renderStrokeToAccumulator(strokePoints, {
       size: effectiveSize,
-      opacity: 0.5,
+      coverage: 1,
       hardness: effectiveHardness,
       color,
       width: store.maskCanvas!.width,
@@ -526,7 +527,7 @@ export function useGPUResources() {
           brushShape,
           isErasing
         },
-        targetTex ?? undefined
+        targetTex
       )
     }
     /* c8 ignore stop */
@@ -558,7 +559,7 @@ export function useGPUResources() {
       [{ x: point.x, y: point.y, pressure: opacity }],
       {
         size: effectiveSize,
-        opacity: 0.5,
+        coverage: 1,
         hardness: effectiveHardness,
         color: [1, 1, 1],
         width,
@@ -596,7 +597,7 @@ export function useGPUResources() {
       const c = parseToRgb(store.rgbColor)
       return [c.r / 255, c.g / 255, c.b / 255]
     }
-    const c = store.maskColor as { r: number; g: number; b: number }
+    const c = store.maskColor
     return [c.r / 255, c.g / 255, c.b / 255]
   }
   /* c8 ignore stop */

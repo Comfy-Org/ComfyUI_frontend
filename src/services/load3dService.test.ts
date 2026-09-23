@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -12,15 +12,15 @@ const { nodeMap, useLoad3dViewerMock, skeletonCloneMock } = vi.hoisted(() => ({
   skeletonCloneMock: vi.fn()
 }))
 
-vi.mock('@/composables/useLoad3d', () => ({
+vi.mock(import('@/composables/useLoad3d'), () => ({
   nodeToLoad3dMap: nodeMap
 }))
 
-vi.mock('@/composables/useLoad3dViewer', () => ({
+vi.mock(import('@/composables/useLoad3dViewer'), () => ({
   useLoad3dViewer: useLoad3dViewerMock
 }))
 
-vi.mock('three/examples/jsm/utils/SkeletonUtils', () => ({
+vi.mock(import('three/examples/jsm/utils/SkeletonUtils'), () => ({
   clone: skeletonCloneMock
 }))
 
@@ -52,15 +52,10 @@ function makeViewer(overrides: Record<string, unknown> = {}) {
 
 describe('load3dService', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     nodeMap.clear()
     const svc = useLoad3dService()
     for (const node of createdNodes) svc.removeViewer(node)
     createdNodes.clear()
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
   })
 
   describe('singleton', () => {
@@ -198,14 +193,8 @@ describe('load3dService', () => {
       const viewer = makeViewer()
       const factory = vi.fn().mockReturnValue(viewer)
 
-      const first = svc.getOrCreateViewerSync(
-        node,
-        factory as unknown as typeof useLoad3dViewerMock
-      )
-      const second = svc.getOrCreateViewerSync(
-        node,
-        factory as unknown as typeof useLoad3dViewerMock
-      )
+      const first = svc.getOrCreateViewerSync(node, factory)
+      const second = svc.getOrCreateViewerSync(node, factory)
 
       expect(first).toBe(viewer)
       expect(second).toBe(viewer)
@@ -428,7 +417,7 @@ describe('load3dService', () => {
         scene.add(o)
       })
       const modelManager = {
-        currentModel: existingModel as THREE.Object3D | null,
+        currentModel: existingModel,
         originalModel: null as unknown,
         materialMode: 'original',
         currentUpDirection: 'original',
@@ -453,7 +442,7 @@ describe('load3dService', () => {
             remove: sceneRemove
           } as unknown as THREE.Scene
         }),
-        loadModel: vi.fn().mockResolvedValue(undefined),
+        loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
         setMaterialMode: vi.fn(),
         setUpDirection: vi.fn(),
         applyGizmoTransform: vi.fn(),
@@ -512,6 +501,26 @@ describe('load3dService', () => {
         'http://example.com/scan.splat'
       )
       expect(skeletonCloneMock).not.toHaveBeenCalled()
+    })
+
+    it('does not apply stale scene state after a rejected splat load', async () => {
+      const source = makeSource({
+        currentModel: makeModel(),
+        isSplat: true,
+        originalURL: 'http://example.com/scan.splat'
+      })
+      const { target } = makeTarget()
+      vi.mocked(target.loadModel).mockResolvedValue(false)
+
+      await useLoad3dService().copyLoad3dState(source, target)
+
+      expect(target.toggleCamera).not.toHaveBeenCalled()
+      expect(target.setCameraState).not.toHaveBeenCalled()
+      expect(target.setBackgroundColor).not.toHaveBeenCalled()
+      expect(target.toggleGrid).not.toHaveBeenCalled()
+      expect(target.setBackgroundImage).not.toHaveBeenCalled()
+      expect(target.setLightIntensity).not.toHaveBeenCalled()
+      expect(target.setFOV).not.toHaveBeenCalled()
     })
 
     it('skips loadModel for splat models when originalURL is null', async () => {

@@ -1,8 +1,10 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   downloadFile,
+  downloadFileAsBlob,
   extractFilenameFromContentDisposition,
   openFileInNewTab
 } from '@/base/common/downloadUtil'
@@ -11,33 +13,33 @@ const { mockIsCloud } = vi.hoisted(() => ({
   mockIsCloud: { value: false }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  }
-}))
+vi.mock(
+  import('@/platform/distribution/types'), // eslint-disable-line import-x/no-restricted-paths
+  () => ({
+    get isCloud() {
+      return mockIsCloud.value
+    }
+  })
+)
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({ addAlert: vi.fn() }))
-}))
-
-// Global stubs
-const createObjectURLSpy = vi
-  .spyOn(URL, 'createObjectURL')
-  .mockReturnValue('blob:mock-url')
-const revokeObjectURLSpy = vi
-  .spyOn(URL, 'revokeObjectURL')
-  .mockImplementation(() => {})
+let createObjectURLSpy: MockInstance<typeof URL.createObjectURL>
+let revokeObjectURLSpy: MockInstance<typeof URL.revokeObjectURL>
 
 describe('downloadUtil', () => {
   let mockLink: HTMLAnchorElement
   let fetchMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
+    createObjectURLSpy = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:mock-url')
+    revokeObjectURLSpy = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {})
     mockIsCloud.value = false
     fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
@@ -55,10 +57,6 @@ describe('downloadUtil', () => {
     vi.spyOn(document, 'createElement').mockReturnValue(mockLink)
     vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink)
     vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   describe('downloadFile', () => {
@@ -312,16 +310,42 @@ describe('downloadUtil', () => {
     })
   })
 
+  describe('downloadFileAsBlob', () => {
+    it('rejects a non-OK response without starting a download', async () => {
+      const fetchFile = vi
+        .fn<(url: string) => Promise<Response>>()
+        .mockResolvedValue(new Response(null, { status: 503 }))
+
+      await expect(
+        downloadFileAsBlob('/api/asset', {
+          filename: 'asset.png',
+          fetch: fetchFile
+        })
+      ).rejects.toThrow('Failed to fetch /api/asset: 503')
+      expect(mockLink.click).not.toHaveBeenCalled()
+    })
+
+    it('propagates a rejected fetch without starting a download', async () => {
+      const networkError = new Error('network unavailable')
+      const fetchFile = vi
+        .fn<(url: string) => Promise<Response>>()
+        .mockRejectedValue(networkError)
+
+      await expect(
+        downloadFileAsBlob('/api/asset', {
+          filename: 'asset.png',
+          fetch: fetchFile
+        })
+      ).rejects.toBe(networkError)
+      expect(mockLink.click).not.toHaveBeenCalled()
+    })
+  })
+
   describe('openFileInNewTab', () => {
     let windowOpenSpy: ReturnType<typeof vi.spyOn>
 
     beforeEach(() => {
-      vi.useFakeTimers()
       windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
     })
 
     it('opens URL directly when not in cloud mode', async () => {
@@ -353,6 +377,47 @@ describe('downloadUtil', () => {
       expect(fetchMock).toHaveBeenCalledWith(testUrl)
       expect(createObjectURLSpy).toHaveBeenCalledWith(blob)
       expect(mockTab.location.href).toBe('blob:mock-url')
+    })
+
+    it('neutralizes non-media content types before creating the blob URL', async () => {
+      mockIsCloud.value = true
+      const htmlBlob = new Blob(
+        ['<script>globalThis.__pwned = true</script>'],
+        {
+          type: 'text/html'
+        }
+      )
+      const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
+      windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
+      fetchMock.mockResolvedValue(
+        fromPartial<Response>({
+          ok: true,
+          blob: vi.fn().mockResolvedValue(htmlBlob)
+        })
+      )
+
+      await openFileInNewTab('https://storage.googleapis.com/bucket/evil.png')
+
+      expect(createObjectURLSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'application/octet-stream' })
+      )
+    })
+
+    it('preserves a media type carrying codec parameters', async () => {
+      mockIsCloud.value = true
+      const audioBlob = new Blob(['test'], { type: 'audio/ogg; codecs=opus' })
+      const mockTab = { location: { href: '' }, closed: false, close: vi.fn() }
+      windowOpenSpy.mockReturnValue(fromAny<Window, unknown>(mockTab))
+      fetchMock.mockResolvedValue(
+        fromPartial<Response>({
+          ok: true,
+          blob: vi.fn().mockResolvedValue(audioBlob)
+        })
+      )
+
+      await openFileInNewTab('https://storage.googleapis.com/bucket/clip.ogg')
+
+      expect(createObjectURLSpy).toHaveBeenCalledWith(audioBlob)
     })
 
     it('revokes blob URL after timeout in cloud mode', async () => {

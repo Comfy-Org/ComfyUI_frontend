@@ -218,7 +218,8 @@ onMounted(() => {
  */
 const onMinimapToggleClick = () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'graph_menu_minimap_toggle_clicked'
+    button_id: 'graph_menu_minimap_toggle_clicked',
+    element_group: 'graph_menu'
   })
   void commandStore.execute('Comfy.Canvas.ToggleMinimap')
 }
@@ -228,7 +229,8 @@ const onMinimapToggleClick = () => {
  */
 const onLinkVisibilityToggleClick = () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'graph_menu_hide_links_toggle_clicked'
+    button_id: 'graph_menu_hide_links_toggle_clicked',
+    element_group: 'graph_menu'
   })
   void commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')
 }

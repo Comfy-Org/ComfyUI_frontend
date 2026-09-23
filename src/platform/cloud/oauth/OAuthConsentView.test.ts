@@ -4,23 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
-import { OAuthApiError } from '@/platform/cloud/oauth/oauthApi'
-import type * as oauthApi from '@/platform/cloud/oauth/oauthApi'
+import {
+  OAuthApiError,
+  submitOAuthConsentDecision
+} from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
-const submitOAuthConsentDecision = vi.fn()
-
-vi.mock('@/platform/cloud/oauth/oauthApi', async () => {
-  const actual = await vi.importActual<typeof oauthApi>(
-    '@/platform/cloud/oauth/oauthApi'
-  )
-  return {
-    ...actual,
-    submitOAuthConsentDecision: (
-      ...args: Parameters<typeof actual.submitOAuthConsentDecision>
-    ) => submitOAuthConsentDecision(...args)
-  }
-})
+vi.mock(import('@/platform/cloud/oauth/oauthApi'), { spy: true })
+const mockSubmitOAuthConsentDecision = vi.mocked(submitOAuthConsentDecision)
 
 const i18n = createI18n({
   legacy: false,
@@ -40,9 +31,9 @@ const i18n = createI18n({
           noWorkspaces: 'No eligible workspaces are available.',
           title: '{client} wants access',
           subtitle: 'Sign in to {resource} to continue',
-          workspaceLabel: 'Workspace',
+          workspaceLabel: 'Your Workspaces',
+          detailsHeader: 'Details',
           permissionsHeader: 'Permissions',
-          workspaceHelp: 'Permissions apply to this workspace only.',
           redirectNotice: "You'll be redirected to",
           appTypeNative: 'Native app',
           appTypeWeb: 'Web app',
@@ -50,7 +41,8 @@ const i18n = createI18n({
             'This consent request has expired or has already been used.',
           errorScopeBroadening:
             "The previously approved permissions don't cover this request.",
-          errorUnavailable: "This feature isn't available right now."
+          errorUnavailable: "This feature isn't available right now.",
+          sessionError: 'Failed to establish session. Please try again.'
         },
         scopes: {
           'mcp:tools:read': {
@@ -104,7 +96,14 @@ const renderConsent = (overrides: Partial<OAuthConsentChallenge> = {}) =>
 
 describe('OAuthConsentView', () => {
   beforeEach(() => {
-    submitOAuthConsentDecision.mockReset().mockResolvedValue(undefined)
+    mockSubmitOAuthConsentDecision.mockReset().mockResolvedValue(undefined)
+  })
+
+  it('shows the generic app icon regardless of client_display_name', () => {
+    renderConsent({ client_display_name: 'Anthropic Verified ✓' })
+    expect(screen.getByTestId('client-icon')).toHaveClass(
+      'icon-[lucide--app-window]'
+    )
   })
 
   it('renders title, subtitle, and scope checklist', () => {
@@ -114,7 +113,8 @@ describe('OAuthConsentView', () => {
     // to continue". Both are short and avoid repeating any brand name twice.
     expect(screen.getByText('Comfy Desktop wants access')).toBeVisible()
     expect(screen.getByText('Sign in to Comfy Cloud to continue')).toBeVisible()
-    // Permissions section header is just the static word "Permissions".
+    // Permissions and the redirect notice sit under the "Details" group.
+    expect(screen.getByText('Details')).toBeVisible()
     expect(screen.getByText('Permissions')).toBeVisible()
     // Known scopes render their human-readable labels. We deliberately
     // avoid MCP jargon ("tools", "metadata") — the user thinks in
@@ -143,11 +143,12 @@ describe('OAuthConsentView', () => {
     // sole workspace_id.
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
-    expect(submitOAuthConsentDecision).toHaveBeenCalledWith({
+    expect(mockSubmitOAuthConsentDecision).toHaveBeenCalledWith({
       oauthRequestId: '550e8400-e29b-41d4-a716-446655440000',
       csrfToken: 'csrf-token',
       decision: 'allow',
-      workspaceId: 'personal-workspace'
+      workspaceId: 'personal-workspace',
+      expectedRedirectUri: 'http://127.0.0.1:50632/cb'
     })
   })
 
@@ -163,7 +164,7 @@ describe('OAuthConsentView', () => {
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
-    expect(submitOAuthConsentDecision).toHaveBeenCalledWith(
+    expect(mockSubmitOAuthConsentDecision).toHaveBeenCalledWith(
       expect.objectContaining({
         decision: 'deny',
         workspaceId: 'personal-workspace'
@@ -171,14 +172,24 @@ describe('OAuthConsentView', () => {
     )
   })
 
-  it('disables both buttons when no workspaces are available', () => {
+  it('disables Allow but keeps Deny enabled when no workspaces are available', () => {
     renderConsent({ workspaces: [] })
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled()
+  })
+
+  it('shows an error when Deny is clicked with no eligible workspaces', async () => {
+    const user = userEvent.setup()
+    renderConsent({ workspaces: [] })
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.getByRole('alert')).toBeVisible()
+    expect(mockSubmitOAuthConsentDecision).not.toHaveBeenCalled()
   })
 
   it('maps OAuthApiError(400) to the expired-request message', async () => {
-    submitOAuthConsentDecision.mockRejectedValue(
+    mockSubmitOAuthConsentDecision.mockRejectedValue(
       new OAuthApiError('expired', 400)
     )
     const user = userEvent.setup()
@@ -195,8 +206,24 @@ describe('OAuthConsentView', () => {
     })
   })
 
+  it('maps OAuthApiError(401) to the session-expired message', async () => {
+    mockSubmitOAuthConsentDecision.mockRejectedValue(
+      new OAuthApiError('session expired', 401)
+    )
+    const user = userEvent.setup()
+    renderConsent({ workspaces: [challenge.workspaces[0]] })
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Failed to establish session. Please try again.')
+      ).toBeVisible()
+    })
+  })
+
   it('maps OAuthApiError(403) to the scope-broadening re-prompt message', async () => {
-    submitOAuthConsentDecision.mockRejectedValue(
+    mockSubmitOAuthConsentDecision.mockRejectedValue(
       new OAuthApiError('scope broadening', 403)
     )
     const user = userEvent.setup()
@@ -214,7 +241,7 @@ describe('OAuthConsentView', () => {
   })
 
   it('maps OAuthApiError(404) to the feature-unavailable message', async () => {
-    submitOAuthConsentDecision.mockRejectedValue(
+    mockSubmitOAuthConsentDecision.mockRejectedValue(
       new OAuthApiError('disabled', 404)
     )
     const user = userEvent.setup()

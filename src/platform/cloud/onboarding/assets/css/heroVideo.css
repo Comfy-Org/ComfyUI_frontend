@@ -1,0 +1,6 @@
+/* Hide iOS Safari's native play button (shown when autoplay is blocked, e.g. Low Power Mode) for .cloud-hero-video only. Needs !important to override WebKit UA styles. Kept global for .vue compatibility. */
+.cloud-hero-video::-webkit-media-controls-start-playback-button,
+.cloud-hero-video::-webkit-media-controls-panel {
+  display: none !important;
+  appearance: none;
+}

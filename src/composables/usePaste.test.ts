@@ -1,4 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
+import type { EffectScope } from 'vue'
 import type {
   LGraphCanvas,
   LGraph,
@@ -7,12 +11,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import {
-  createNode,
-  isAudioNode,
-  isImageNode,
-  isVideoNode
-} from '@/utils/litegraphUtil'
+import { createNode } from '@/utils/litegraphUtil'
 import {
   cloneDataTransfer,
   pasteAudioNode,
@@ -21,8 +20,10 @@ import {
   pasteImageNodes,
   pasteVideoNode,
   pasteVideoNodes,
-  usePaste
+  usePaste as usePasteImpl
 } from './usePaste'
+
+vi.mock(import('firebase/auth'))
 
 function createMockNode(): LGraphNode {
   return createMockLGraphNode({
@@ -70,57 +71,45 @@ const mockCanvas = {
   _deserializeItems: vi.fn()
 } as Partial<LGraphCanvas> as LGraphCanvas
 
-const mockCanvasStore = {
-  canvas: mockCanvas,
-  getCanvas: vi.fn(() => mockCanvas)
+let mockCanvasStore: ReturnType<typeof useCanvasStore>
+
+let mockWorkspaceStore: ReturnType<typeof useWorkspaceStore>
+let scope: EffectScope
+
+function usePaste() {
+  scope.run(usePasteImpl)
 }
 
-const mockWorkspaceStore = {
-  shiftDown: false
-}
+afterEach(() => scope.stop())
 
-vi.mock('@vueuse/core', () => ({
-  useEventListener: vi.fn((target, event, handler) => {
-    target.addEventListener(event, handler)
-    return () => target.removeEventListener(event, handler)
-  })
-}))
+beforeEach(() => {
+  scope = effectScope()
+  mockWorkspaceStore = useWorkspaceStore()
+  mockCanvasStore = useCanvasStore()
+  mockCanvasStore.canvas = mockCanvas
+})
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => mockCanvasStore
-}))
-
-vi.mock('@/stores/workspaceStore', () => ({
-  useWorkspaceStore: () => mockWorkspaceStore
-}))
-
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
+    nodeOutputs: {},
+    nodePreviewImages: {},
     loadGraphData: vi.fn()
   }
 }))
 
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => ({
-  ...(await importOriginal()),
-  LiteGraph: {
-    createNode: vi.fn()
-  }
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
-vi.mock('@/utils/litegraphUtil', () => ({
-  createNode: vi.fn(),
-  isAudioNode: vi.fn(),
-  isImageNode: vi.fn(),
-  isVideoNode: vi.fn()
-}))
+vi.mock(
+  import('@/workbench/eventHelpers'),
 
-vi.mock('@/workbench/eventHelpers', () => ({
-  shouldIgnoreCopyPaste: vi.fn()
-}))
+  () => ({
+    shouldIgnoreCopyPaste: vi.fn()
+  })
+)
 
 describe('pasteImageNode', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.mocked(createNode).mockImplementation(vi.fn())
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
@@ -186,10 +175,6 @@ describe('pasteImageNode', () => {
 })
 
 describe('pasteImageNodes', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create multiple nodes for multiple files', async () => {
     const mockNode1 = createMockNode()
     const mockNode2 = createMockNode()
@@ -219,10 +204,6 @@ describe('pasteImageNodes', () => {
 })
 
 describe('pasteAudioNode', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create new LoadAudio node when no audio node provided', async () => {
     const mockNode = createMockNode()
     vi.mocked(createNode).mockResolvedValue(mockNode)
@@ -271,10 +252,6 @@ describe('pasteAudioNode', () => {
 })
 
 describe('pasteAudioNodes', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create multiple nodes for multiple audio files', async () => {
     const mockNode1 = createMockNode()
     const mockNode2 = createMockNode()
@@ -315,10 +292,6 @@ describe('pasteAudioNodes', () => {
 })
 
 describe('pasteVideoNode', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create new LoadVideo node when no video node provided', async () => {
     const mockNode = createMockNode()
     vi.mocked(createNode).mockResolvedValue(mockNode)
@@ -367,10 +340,6 @@ describe('pasteVideoNode', () => {
 })
 
 describe('pasteVideoNodes', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should create multiple nodes for multiple video files', async () => {
     const mockNode1 = createMockNode()
     const mockNode2 = createMockNode()
@@ -412,9 +381,8 @@ describe('pasteVideoNodes', () => {
 
 describe('usePaste', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockCanvas.current_node = null
-    mockWorkspaceStore.shiftDown = false
+    Object.assign(mockWorkspaceStore, { shiftDown: false })
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
@@ -461,7 +429,7 @@ describe('usePaste', () => {
       pasteFiles: vi.fn()
     })
     mockCanvas.current_node = mockNode
-    vi.mocked(isAudioNode).mockReturnValue(true)
+    mockNode.previewMediaType = 'audio'
 
     usePaste()
 
@@ -500,7 +468,7 @@ describe('usePaste', () => {
       pasteFiles: vi.fn()
     })
     mockCanvas.current_node = mockNode
-    vi.mocked(isVideoNode).mockReturnValue(true)
+    mockNode.previewMediaType = 'video'
 
     usePaste()
 
@@ -531,8 +499,48 @@ describe('usePaste', () => {
     })
   })
 
+  it.for([
+    { version: '1.0', extra: {} },
+    { version: '1.0', nodes: [] },
+    { version: '1.0', nodes: {}, extra: {} }
+  ])('does not load malformed workflow JSON', async (workflow) => {
+    usePaste()
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/plain', JSON.stringify(workflow))
+
+    document.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    )
+
+    await vi.waitFor(() => {
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+  })
+
+  it('preserves text input paste for malformed workflow JSON', async () => {
+    usePaste()
+    const input = document.createElement('input')
+    input.type = 'text'
+    document.body.append(input)
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/plain', JSON.stringify({ version: '1.0' }))
+
+    input.dispatchEvent(
+      new ClipboardEvent('paste', {
+        bubbles: true,
+        clipboardData: dataTransfer
+      })
+    )
+
+    await vi.waitFor(() => {
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+    })
+  })
+
   it('should ignore paste when shift is down', () => {
-    mockWorkspaceStore.shiftDown = true
+    Object.assign(mockWorkspaceStore, { shiftDown: true })
 
     usePaste()
 
@@ -551,7 +559,7 @@ describe('usePaste', () => {
       pasteFiles: vi.fn()
     })
     mockCanvas.current_node = mockNode
-    vi.mocked(isImageNode).mockReturnValue(true)
+    mockNode.previewMediaType = 'image'
 
     usePaste()
 
@@ -603,7 +611,7 @@ describe('usePaste', () => {
       pasteFiles: vi.fn()
     })
     mockCanvas.current_node = mockNode
-    vi.mocked(isImageNode).mockReturnValue(true)
+    mockNode.previewMediaType = 'image'
 
     usePaste()
 
@@ -637,15 +645,13 @@ describe('cloneDataTransfer', () => {
     expect(cloned.getData('text/html')).toBe('<p>test html</p>')
   })
 
-  it('should clone files', () => {
+  it('should preserve file identities', () => {
     const file1 = createImageFile('test1.png')
     const file2 = createImageFile('test2.jpg', 'image/jpeg')
     const original = createDataTransfer([file1, file2])
 
     const cloned = cloneDataTransfer(original)
 
-    // Files are added from both .files and .items, causing duplicates
-    expect(cloned.files.length).toBeGreaterThanOrEqual(2)
     expect(Array.from(cloned.files)).toContain(file1)
     expect(Array.from(cloned.files)).toContain(file2)
   })
@@ -678,8 +684,6 @@ describe('cloneDataTransfer', () => {
     const cloned = cloneDataTransfer(original)
 
     expect(cloned.getData('text/plain')).toBe('test')
-    // Files are added from both .files and .items
-    expect(cloned.files.length).toBeGreaterThanOrEqual(1)
     expect(Array.from(cloned.files)).toContain(file)
   })
 })

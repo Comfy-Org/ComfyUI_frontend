@@ -3,9 +3,14 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
+import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { toNodeId } from '@/types/nodeId'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+
+const GRAPH_SIZE_GROWTH: [number, number] = [90, 100]
 
 export class VueNodeHelpers {
   /**
@@ -43,7 +48,7 @@ export class VueNodeHelpers {
       .locator('.lg-slot--input')
       .filter({
         has: this.page.locator(
-          `[data-slot-key="${getSlotKey(nodeId, slotIndex, true)}"]`
+          `[data-slot-key="${getSlotKey(toNodeId(nodeId), slotIndex, true)}"]`
         )
       })
   }
@@ -54,12 +59,28 @@ export class VueNodeHelpers {
     )
   }
 
+  getOutputSlotRow(nodeId: string, slotIndex: number): Locator {
+    return this.getNodeLocator(nodeId)
+      .locator('.lg-slot--output')
+      .filter({
+        has: this.page.locator(
+          `[data-slot-key="${getSlotKey(toNodeId(nodeId), slotIndex, false)}"]`
+        )
+      })
+  }
+
+  getOutputSlotConnectionDot(nodeId: string, slotIndex: number): Locator {
+    return this.getOutputSlotRow(nodeId, slotIndex).getByTestId(
+      TestIds.node.slotConnectionDot
+    )
+  }
+
   /**
    * Get locator for Vue nodes by the node's title (displayed name in the header).
    * Matches against the actual title element, not the full node body.
    * Use `.first()` for unique titles, `.nth(n)` for duplicates.
    */
-  getNodeByTitle(title: string): Locator {
+  getNodeByTitle(title: string | RegExp): Locator {
     return this.page.locator('[data-node-id]').filter({
       has: this.page.getByTestId('node-title').filter({ hasText: title })
     })
@@ -81,6 +102,32 @@ export class VueNodeHelpers {
         .map((n) => n.getAttribute('data-node-id'))
         .filter((id): id is string => id !== null)
     )
+  }
+
+  async expectGraphSizeGrowth(nodeId: string, label: string): Promise<void> {
+    const node = this.getNodeLocator(nodeId)
+    const before = await node.boundingBox()
+    if (!before) throw new Error(`${label}: node is not rendered`)
+
+    const scale = await this.page.evaluate(
+      ({ id, growth }) => {
+        const node = window.app?.canvas.graph?.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found`)
+
+        node.setSize([
+          node.renderingSize[0] + growth[0],
+          node.renderingSize[1] + growth[1]
+        ])
+        return window.app!.canvas.ds.scale
+      },
+      { id: toNodeId(nodeId), growth: GRAPH_SIZE_GROWTH }
+    )
+
+    await expect(node, label).toHaveBounds({
+      ...before,
+      width: before.width + GRAPH_SIZE_GROWTH[0] * scale,
+      height: before.height + GRAPH_SIZE_GROWTH[1] * scale
+    })
   }
 
   /**
@@ -145,7 +192,7 @@ export class VueNodeHelpers {
   /**
    * Resolve the data-node-id of the first rendered node matching the title.
    */
-  async getNodeIdByTitle(title: string): Promise<string> {
+  async getNodeIdByTitle(title: string | RegExp): Promise<string> {
     const node = this.getNodeByTitle(title).first()
     await node.waitFor({ state: 'visible' })
 
@@ -163,22 +210,35 @@ export class VueNodeHelpers {
    * Return a DOM-focused VueNodeFixture for the first node matching the title.
    * Resolves the node id up front so subsequent interactions survive title changes.
    */
-  async getFixtureByTitle(title: string): Promise<VueNodeFixture> {
+  async getFixtureByTitle(title: string | RegExp): Promise<VueNodeFixture> {
     const nodeId = await this.getNodeIdByTitle(title)
     return new VueNodeFixture(this.getNodeLocator(nodeId))
+  }
+
+  async setEnabled(enabled: boolean): Promise<void> {
+    const settings = new SettingsHelper(this.page)
+    if ((await settings.getSetting('Comfy.VueNodes.Enabled')) !== enabled) {
+      await settings.setSetting('Comfy.VueNodes.Enabled', enabled)
+    }
+    await this.waitForNodes()
   }
 
   /**
    * Wait for Vue nodes to be rendered
    */
-  async waitForNodes(expectedCount?: number): Promise<void> {
-    if (expectedCount !== undefined) {
-      await this.page.waitForFunction(
-        (count) => document.querySelectorAll('[data-node-id]').length >= count,
-        expectedCount
-      )
+  async waitForNodes(): Promise<void> {
+    await this.page.waitForFunction(
+      () => window.app?.extensionManager && window.app.canvas.graph
+    )
+    const expectsNodes = await this.page.evaluate(
+      () =>
+        window.app!.extensionManager.setting.get('Comfy.VueNodes.Enabled') &&
+        window.app!.canvas.graph!.nodes.length > 0
+    )
+    if (expectsNodes) {
+      await expect(this.nodes.first()).toBeVisible()
     } else {
-      await this.page.locator('[data-node-id]').first().waitFor()
+      await expect(this.nodes).toHaveCount(0)
     }
   }
 
@@ -189,6 +249,23 @@ export class VueNodeHelpers {
     return this.getNodeByTitle(nodeTitle).getByLabel(widgetName, {
       exact: true
     })
+  }
+
+  getWidgetRowByLabel(nodeTitle: string, widgetName: string): Locator {
+    const widgetLabel = this.page
+      .getByTestId(TestIds.widgets.layoutFieldLabel)
+      .and(this.page.getByText(widgetName, { exact: true }))
+
+    return this.getNodeByTitle(nodeTitle)
+      .getByTestId(TestIds.widgets.widget)
+      .filter({ has: widgetLabel })
+  }
+
+  /**
+   * Get the visible widget tooltip text element (PrimeVue tooltip portal).
+   */
+  getVisibleWidgetTooltip(): Locator {
+    return this.page.locator('.p-tooltip-text:visible')
   }
 
   /**
@@ -251,14 +328,18 @@ export class VueNodeHelpers {
     const key = await slot.getByTestId('slot-dot').getAttribute('data-slot-key')
     if (!key) return false
 
-    return await this.page.evaluate((key) => {
-      const [nodeId, type, slotId] = key.split('-')
-      const node = app?.canvas?.graph?.getNodeById(nodeId)
-      if (!node) return false
+    const [rawNodeId, type, slotId] = key.split('-')
+    const nodeId = toNodeId(rawNodeId)
+    return await this.page.evaluate(
+      ([nodeId, type, slotId]) => {
+        const node = app?.canvas.graph?.getNodeById(nodeId)
+        if (!node) return false
 
-      return type === 'in'
-        ? node.inputs[Number(slotId)]?.link !== null
-        : !!node.outputs[Number(slotId)].links?.length
-    }, key)
+        return type === 'in'
+          ? node.inputs[Number(slotId)]?.link !== null
+          : !!node.outputs[Number(slotId)]?.links?.length
+      },
+      [nodeId, type, slotId] as const
+    )
   }
 }

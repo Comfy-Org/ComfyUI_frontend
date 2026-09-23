@@ -1,14 +1,14 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
 }))
 
@@ -41,10 +41,6 @@ describe('VideoPreview', () => {
     ]
   }
 
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
   function renderVideoPreview(
     props: Partial<ComponentProps<typeof VideoPreview>> = {}
   ) {
@@ -53,10 +49,7 @@ describe('VideoPreview', () => {
         typeof VideoPreview
       >,
       global: {
-        plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
-        stubs: {
-          Skeleton: true
-        }
+        plugins: [getActivePinia()!, i18n]
       }
     })
   }

@@ -8,18 +8,22 @@ const {
   title,
   image,
   href,
-  locale = 'en'
+  locale = 'en',
+  ctaLabel
 } = defineProps<{
   title: string
   image: string
   href: string
   locale?: Locale
+  /** CTA label under the title; defaults to the written-story "VIEW ARTICLE"
+   * wording so existing callers are unaffected. */
+  ctaLabel?: string
 }>()
 </script>
 
 <template>
   <section class="px-4 py-16 lg:px-20 lg:py-24">
-    <h2 class="text-primary-comfy-canvas mb-10 text-2xl font-light lg:text-3xl">
+    <h2 class="mb-10 text-2xl font-light text-primary-comfy-canvas lg:text-3xl">
       {{ t('customers.story.whatsNext' as TranslationKey, locale) }}
     </h2>
 
@@ -30,25 +34,30 @@ const {
         <img
           :src="image"
           :alt="title"
-          class="w-full rounded-4xl object-cover"
+          loading="lazy"
+          decoding="async"
+          class="aspect-video w-full rounded-4xl object-cover"
         />
       </a>
 
       <div class="flex flex-col gap-6">
-        <h3 class="text-primary-comfy-canvas text-xl font-light lg:text-2xl">
+        <h3 class="text-xl font-light text-primary-comfy-canvas lg:text-2xl">
           {{ title }}
         </h3>
 
         <a :href="href" class="flex items-center gap-3">
           <span
-            class="bg-primary-comfy-yellow text-primary-comfy-ink flex size-10 items-center justify-center rounded-full"
+            class="flex size-10 items-center justify-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
           >
             <span class="text-lg font-bold">›</span>
           </span>
           <span
-            class="text-primary-comfy-canvas ppformula-text-center text-sm font-semibold tracking-wider uppercase"
+            class="ppformula-text-center inline-block text-sm font-semibold tracking-wider text-primary-comfy-canvas uppercase"
           >
-            {{ t('customers.story.viewArticle' as TranslationKey, locale) }}
+            {{
+              ctaLabel ??
+              t('customers.story.viewArticle' as TranslationKey, locale)
+            }}
           </span>
         </a>
       </div>

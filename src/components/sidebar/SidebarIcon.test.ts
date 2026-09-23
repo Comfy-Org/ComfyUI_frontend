@@ -3,17 +3,12 @@ import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { describe, expect, it } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import SidebarIcon from './SidebarIcon.vue'
 
-type SidebarIconProps = {
-  icon: string
-  selected: boolean
-  tooltip?: string
-  class?: string
-  iconBadge?: string | (() => string | null)
-}
+type SidebarIconProps = ComponentProps<typeof SidebarIcon>
 
 const i18n = createI18n({
   legacy: false,
@@ -82,6 +77,22 @@ describe('SidebarIcon', () => {
     expect(screen.getByRole('button')).toHaveAttribute(
       'aria-label',
       tooltipText
+    )
+  })
+
+  it('falls back to label for tooltip when no tooltip is provided', async () => {
+    const labelText = 'WASNodeSuitePreprocessors'
+    const { user } = renderSidebarIcon({ label: labelText })
+
+    expect(screen.getByRole('button')).toHaveAttribute('aria-label', labelText)
+
+    await user.hover(screen.getByRole('button'))
+
+    await waitFor(
+      () => {
+        expect(screen.getByRole('tooltip')).toHaveTextContent(labelText)
+      },
+      { timeout: 1000 }
     )
   })
 })

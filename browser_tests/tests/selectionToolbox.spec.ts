@@ -6,10 +6,6 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 const test = comfyPageFixture
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
 const BLUE_COLOR = 'rgb(51, 51, 85)'
 const RED_COLOR = 'rgb(85, 51, 51)'
 
@@ -25,8 +21,11 @@ const getColorPickerGroup = (comfyPage: { page: Page }) =>
   })
 
 test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Disabled',
+      'Comfy.Canvas.SelectionToolbox': true
+    }
   })
 
   test('shows selection toolbox', async ({ comfyPage }) => {
@@ -129,23 +128,18 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
   }) => {
     // A group + a KSampler node
     await comfyPage.workflow.loadWorkflow('groups/single_group')
+    const bypass = comfyPage.page.getByTestId(TestIds.selectionToolbox.bypass)
 
     // Select group + node should show bypass button
     await comfyPage.canvas.focus()
-    await comfyPage.page.keyboard.press('Control+A')
-    await expect(
-      comfyPage.page.locator(
-        '.selection-toolbox *[data-testid="bypass-button"]'
-      )
-    ).toBeVisible()
-
-    // Deselect node (Only group is selected) should hide bypass button
     await comfyPage.nodeOps.selectNodes(['KSampler'])
-    await expect(
-      comfyPage.page.locator(
-        '.selection-toolbox *[data-testid="bypass-button"]'
-      )
-    ).toBeHidden()
+    await expect(bypass).toBeVisible()
+    await comfyPage.keyboard.delete()
+
+    // (Only empty group is selected) should hide bypass button
+    await comfyPage.keyboard.selectAll()
+    await expect(comfyPage.selectionToolbox).toBeVisible()
+    await expect(bypass).toBeHidden()
   })
 
   test.describe('Color Picker', () => {

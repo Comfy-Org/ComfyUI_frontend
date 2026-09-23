@@ -8,5 +8,5 @@ export const WidgetInputBaseClass = cn([
   // Outline
   'border-none',
   // Rounded
-  'rounded-lg'
+  'rounded-md'
 ])

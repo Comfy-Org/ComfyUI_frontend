@@ -1,9 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen } from '@testing-library/vue'
+import { useTelemetry } from '@/platform/telemetry'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useDialogStore } from '@/stores/dialogStore'
 
 import CancelSubscriptionDialogContent from './CancelSubscriptionDialogContent.vue'
 
@@ -31,7 +36,7 @@ function withStrictMillisecondParser<T>(run: () => T): T {
     }
   }
 
-  vi.stubGlobal('Date', StrictDate as DateConstructor)
+  vi.stubGlobal('Date', StrictDate)
 
   try {
     return run()
@@ -41,30 +46,73 @@ function withStrictMillisecondParser<T>(run: () => T): T {
 }
 
 const mockSubscription = vi.hoisted(() => ({
-  value: null as { endDate: string | null } | null
+  value: null as {
+    endDate: string | null
+    duration?: 'ANNUAL' | 'MONTHLY' | null
+  } | null
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+const mockCancelSubscription = vi.hoisted(() => vi.fn())
+const mockFetchStatus = vi.hoisted(() => vi.fn())
+
+const mockToastAdd = vi.hoisted(() => vi.fn())
+const mockTier = vi.hoisted(() => ({ value: 'STANDARD' as string | null }))
+
+const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
+
+const mockCanManageSubscriptionLifecycle = vi.hoisted(() => ({ value: true }))
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => ({
-    cancelSubscription: vi.fn(),
-    fetchStatus: vi.fn(),
-    subscription: mockSubscription
+    cancelSubscription: mockCancelSubscription,
+    fetchStatus: mockFetchStatus,
+    subscription: mockSubscription,
+    tier: mockTier
   }))
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: vi.fn(() => ({
-    closeDialog: vi.fn()
-  }))
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: mockShouldUseWorkspaceBilling
+  })
 }))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: vi.fn(() => ({
-    add: vi.fn()
-  }))
-}))
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-function renderComponent(props: { cancelAt?: string } = {}) {
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: {
+        get value() {
+          return {
+            canManageSubscriptionLifecycle:
+              mockCanManageSubscriptionLifecycle.value
+          }
+        }
+      }
+    })
+  })
+)
+
+vi.mock(import('@/platform/telemetry'))
+
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+
+  () => ({
+    useToast: vi.fn(() => ({
+      add: mockToastAdd
+    }))
+  })
+)
+
+function renderComponent(
+  props: { cancelAt?: string; flowAlreadyOpened?: boolean } = {}
+) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -74,18 +122,280 @@ function renderComponent(props: { cancelAt?: string } = {}) {
   return render(CancelSubscriptionDialogContent, {
     props,
     global: {
-      plugins: [i18n],
-      stubs: {
-        Button: {
-          template: '<button :disabled="disabled"><slot /></button>',
-          props: ['disabled', 'variant', 'size', 'loading']
-        }
-      }
+      plugins: [i18n]
     }
   })
 }
 
 describe('CancelSubscriptionDialogContent', () => {
+  beforeEach(() => {
+    mockTier.value = 'STANDARD'
+    mockShouldUseWorkspaceBilling.value = false
+    useBillingCapabilities().canCancel = computed(() => true)
+    mockCanManageSubscriptionLifecycle.value = true
+    mockDistributionTypes.isCloud = true
+  })
+
+  describe('cancellation telemetry', () => {
+    it('tracks flow_opened with tier and end date when the dialog mounts', () => {
+      mockSubscription.value = {
+        duration: 'ANNUAL',
+        endDate: '2026-08-01T00:00:00.000Z'
+      }
+
+      renderComponent()
+
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).toHaveBeenCalledWith('flow_opened', {
+        source: 'cancel_plan_menu',
+        current_tier: 'standard',
+        cycle: 'yearly',
+        end_date: '2026-08-01T00:00:00.000Z'
+      })
+    })
+
+    it('does not repeat flow_opened when continuing a fallback flow', () => {
+      mockSubscription.value = null
+
+      renderComponent({ flowAlreadyOpened: true })
+
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).not.toHaveBeenCalledWith('flow_opened', expect.anything())
+    })
+
+    it('tracks confirmed before the cancel request and no abandoned on success', async () => {
+      mockSubscription.value = null
+      mockCancelSubscription.mockResolvedValueOnce(undefined)
+
+      const { unmount } = renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      await waitFor(() =>
+        expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalled()
+      )
+      unmount()
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).toHaveBeenCalledWith(
+        'confirmed',
+        expect.objectContaining({ current_tier: 'standard' })
+      )
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).not.toHaveBeenCalledWith('abandoned', expect.anything())
+    })
+
+    it('tracks confirmed and failed with message-carrying rejection values', async () => {
+      mockSubscription.value = null
+      mockCancelSubscription.mockRejectedValueOnce({ message: 'timed out' })
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      await waitFor(() =>
+        expect(
+          useTelemetry()?.trackSubscriptionCancellation
+        ).toHaveBeenCalledWith(
+          'failed',
+          expect.not.objectContaining({ error_message: expect.anything() })
+        )
+      )
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).toHaveBeenCalledWith('confirmed', expect.anything())
+    })
+
+    it('leaves workspace terminal failure telemetry to the billing poller', async () => {
+      mockSubscription.value = null
+      mockShouldUseWorkspaceBilling.value = true
+      mockCancelSubscription.mockRejectedValueOnce({ message: 'timed out' })
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      await waitFor(() =>
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error' })
+        )
+      )
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).not.toHaveBeenCalledWith('failed', expect.anything())
+    })
+
+    it('tracks abandoned when the user keeps the subscription', async () => {
+      mockSubscription.value = null
+
+      const { unmount } = renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /keep subscription/i })
+      )
+
+      expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+        key: 'cancel-subscription'
+      })
+      unmount()
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).toHaveBeenCalledWith(
+        'abandoned',
+        expect.objectContaining({ current_tier: 'standard' })
+      )
+      expect(mockCancelSubscription).not.toHaveBeenCalled()
+    })
+
+    it('tracks abandoned when the dialog is dismissed by the shell', () => {
+      mockSubscription.value = null
+
+      const { unmount } = renderComponent()
+      vi.mocked(useTelemetry()?.trackSubscriptionCancellation)?.mockClear()
+      unmount()
+
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).toHaveBeenCalledWith(
+        'abandoned',
+        expect.objectContaining({ current_tier: 'standard' })
+      )
+    })
+  })
+
+  describe('cancel flow', () => {
+    it('shows an error toast and keeps the dialog open when cancellation fails', async () => {
+      mockSubscription.value = null
+      mockCancelSubscription.mockRejectedValueOnce(
+        new Error('Subscription cancellation timed out')
+      )
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      await waitFor(() =>
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({
+            severity: 'error',
+            detail: 'Subscription cancellation timed out'
+          })
+        )
+      )
+      expect(vi.mocked(useDialogStore().closeDialog)).not.toHaveBeenCalled()
+    })
+
+    it('closes the dialog and shows a success toast when cancellation succeeds', async () => {
+      mockSubscription.value = null
+      mockCancelSubscription.mockResolvedValueOnce(undefined)
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      await waitFor(() =>
+        expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+          key: 'cancel-subscription'
+        })
+      )
+      expect(mockFetchStatus).toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
+
+    it('does not cancel after the workspace role loses permission', async () => {
+      const canCancel = ref(true)
+      useBillingCapabilities().canCancel = computed(() => canCancel.value)
+
+      mockSubscription.value = null
+      mockShouldUseWorkspaceBilling.value = true
+
+      renderComponent()
+      canCancel.value = false
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      expect(mockCancelSubscription).not.toHaveBeenCalled()
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).not.toHaveBeenCalledWith('confirmed', expect.anything())
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(vi.mocked(useDialogStore().closeDialog)).not.toHaveBeenCalled()
+    })
+
+    it('cancels off Cloud on the workspace permission, ignoring the Cloud-only capability', async () => {
+      mockSubscription.value = null
+      mockShouldUseWorkspaceBilling.value = true
+      mockDistributionTypes.isCloud = false
+      useBillingCapabilities().canCancel = computed(() => false)
+      mockCanManageSubscriptionLifecycle.value = true
+      mockCancelSubscription.mockResolvedValueOnce(undefined)
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      await waitFor(() => expect(mockCancelSubscription).toHaveBeenCalled())
+    })
+
+    it('blocks cancelling off Cloud when the workspace permission is missing', async () => {
+      mockSubscription.value = null
+      mockShouldUseWorkspaceBilling.value = true
+      mockDistributionTypes.isCloud = false
+      mockCanManageSubscriptionLifecycle.value = false
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      expect(mockCancelSubscription).not.toHaveBeenCalled()
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).not.toHaveBeenCalledWith('confirmed', expect.anything())
+    })
+
+    it('does not track cancellation failure when status refresh fails after cancellation succeeds', async () => {
+      mockSubscription.value = null
+      mockCancelSubscription.mockResolvedValueOnce(undefined)
+      mockFetchStatus.mockRejectedValueOnce(new Error('Refresh failed'))
+
+      const { unmount } = renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      await waitFor(() =>
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'success' })
+        )
+      )
+      expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+        key: 'cancel-subscription'
+      })
+      expect(
+        vi
+          .mocked(useTelemetry()?.trackSubscriptionCancellation)
+          ?.mock.calls.some(([stage]) => stage === 'failed')
+      ).toBe(false)
+
+      unmount()
+      expect(
+        useTelemetry()?.trackSubscriptionCancellation
+      ).not.toHaveBeenCalledWith('abandoned', expect.anything())
+    })
+  })
+
   describe('formattedEndDate fallbacks', () => {
     it('uses the localized fallback when no cancel timestamp is available', () => {
       mockSubscription.value = { endDate: null }

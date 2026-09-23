@@ -24,7 +24,7 @@ export class MeshModelAdapter implements ModelAdapter {
     gizmoTransform: true,
     lighting: true,
     exportable: true,
-    materialModes: ['original', 'normal', 'wireframe'],
+    materialModes: ['original', 'clay', 'normal', 'wireframe'],
     fitTargetSize: 5
   }
 
@@ -114,7 +114,7 @@ export class MeshModelAdapter implements ModelAdapter {
           MtlObjBridge.addMaterialsFromMtlLoader(materials)
         this.objLoader.setMaterials(materialsFromMtl)
       } catch {
-        console.log(
+        console.warn(
           'No MTL file found or error loading it, continuing without materials'
         )
       }

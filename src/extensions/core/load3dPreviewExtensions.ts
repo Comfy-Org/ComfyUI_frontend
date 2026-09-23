@@ -5,6 +5,7 @@ import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper
 import type {
   CameraConfig,
   CameraState,
+  LoadFolder,
   Model3DInfo
 } from '@/extensions/core/load3d/interfaces'
 import type Load3d from '@/extensions/core/load3d/Load3d'
@@ -13,7 +14,10 @@ import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { NodeExecutionOutput, NodeOutputWith } from '@/schemas/apiSchema'
+import type {
+  NodeExecutionOutput,
+  NodeOutputWith
+} from '@/platform/remote/comfyui/execution/types'
 import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
@@ -29,7 +33,9 @@ function applyResultToLoad3d(
   node: LGraphNode,
   load3d: Load3d,
   filePath: string,
-  cameraState: CameraState | undefined
+  cameraState: CameraState | undefined,
+  modelTransform: Model3DInfo[number] | undefined,
+  loadFolder: LoadFolder
 ): void {
   const normalizedPath = filePath.replaceAll('\\', '/')
   node.properties['Last Time Model File'] = normalizedPath
@@ -46,7 +52,7 @@ function applyResultToLoad3d(
   }
 
   const config = new Load3DConfiguration(load3d, node.properties)
-  config.configureForSaveMesh('temp', normalizedPath, {
+  config.configureForSaveMesh(loadFolder, normalizedPath, {
     silentOnNotFound: true
   })
 
@@ -54,13 +60,15 @@ function applyResultToLoad3d(
   void load3d.whenLoadIdle().then(() => {
     if (load3d.currentLoadGeneration !== targetGeneration) return
     if (cameraState) load3d.setCameraState(cameraState)
+    if (modelTransform) load3d.applyModelTransform(modelTransform)
     load3d.forceRender()
   })
 }
 
 function createPreview3DExtension(
   comfyClass: string,
-  extensionName: string
+  extensionName: string,
+  loadFolder: LoadFolder
 ): ComfyExtension {
   const applyPreviewOutput = (
     node: LGraphNode,
@@ -68,10 +76,18 @@ function createPreview3DExtension(
   ): void => {
     const filePath = result[0]
     const cameraState = result[1]
+    const modelTransform = result[2]?.[0]
     if (!filePath) return
 
     useLoad3d(node).waitForLoad3d((load3d) => {
-      applyResultToLoad3d(node, load3d, filePath, cameraState)
+      applyResultToLoad3d(
+        node,
+        load3d,
+        filePath,
+        cameraState,
+        modelTransform,
+        loadFolder
+      )
     })
   }
 
@@ -119,7 +135,7 @@ function createPreview3DExtension(
         if (!lastTimeModelFile) return
 
         const config = new Load3DConfiguration(load3d, node.properties)
-        config.configureForSaveMesh('temp', lastTimeModelFile as string, {
+        config.configureForSaveMesh(loadFolder, lastTimeModelFile as string, {
           silentOnNotFound: true
         })
 
@@ -136,6 +152,8 @@ function createPreview3DExtension(
       })
 
       waitForLoad3d((load3d) => {
+        const resolveLoad3d = () => nodeToLoad3dMap.get(node) ?? load3d
+
         const sceneWidget = node.widgets?.find(
           (w) => w.name === 'viewport_state'
         )
@@ -148,10 +166,10 @@ function createPreview3DExtension(
             heightWidget.value as number
           )
           widthWidget.callback = (value: number) => {
-            load3d.setTargetSize(value, heightWidget.value as number)
+            resolveLoad3d().setTargetSize(value, heightWidget.value as number)
           }
           heightWidget.callback = (value: number) => {
-            load3d.setTargetSize(widthWidget.value as number, value)
+            resolveLoad3d().setTargetSize(widthWidget.value as number, value)
           }
         }
 
@@ -169,7 +187,8 @@ function createPreview3DExtension(
               cameraType: currentLoad3d.getCurrentCameraType(),
               fov: currentLoad3d.cameraManager.perspectiveCamera.fov
             }
-            cameraConfig.state = currentLoad3d.getCameraState()
+            const cameraState = currentLoad3d.getCameraState()
+            cameraConfig.state = cameraState
             node.properties['Camera Config'] = cameraConfig
 
             const modelInfo = currentLoad3d.getModelInfo()
@@ -179,7 +198,7 @@ function createPreview3DExtension(
               image: '',
               mask: '',
               normal: '',
-              camera_info: cameraConfig.state || null,
+              camera_info: cameraState,
               recording: '',
               model_3d_info
             }
@@ -199,7 +218,14 @@ function createPreview3DExtension(
             return
           }
 
-          applyResultToLoad3d(node, load3d, filePath, result?.[1])
+          applyResultToLoad3d(
+            node,
+            resolveLoad3d(),
+            filePath,
+            result[1],
+            result[2]?.[0],
+            loadFolder
+          )
         }
       })
     }
@@ -207,8 +233,26 @@ function createPreview3DExtension(
 }
 
 useExtensionService().registerExtension(
-  createPreview3DExtension('PreviewGaussianSplat', 'Comfy.PreviewGaussianSplat')
+  createPreview3DExtension(
+    'PreviewGaussianSplat',
+    'Comfy.PreviewGaussianSplat',
+    'temp'
+  )
 )
 useExtensionService().registerExtension(
-  createPreview3DExtension('PreviewPointCloud', 'Comfy.PreviewPointCloud')
+  createPreview3DExtension(
+    'PreviewPointCloud',
+    'Comfy.PreviewPointCloud',
+    'temp'
+  )
+)
+useExtensionService().registerExtension(
+  createPreview3DExtension(
+    'SaveGaussianSplat',
+    'Comfy.SaveGaussianSplat',
+    'output'
+  )
+)
+useExtensionService().registerExtension(
+  createPreview3DExtension('SavePointCloud', 'Comfy.SavePointCloud', 'output')
 )

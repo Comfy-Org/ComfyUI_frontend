@@ -1,18 +1,20 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Load3D from '@/components/load3d/Load3D.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComponentWidget } from '@/scripts/domWidget'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
-const { load3dState, resolveNodeMock, settingGetMock } = vi.hoisted(() => ({
+const { load3dState, resolveNodeMock } = vi.hoisted(() => ({
   load3dState: {
     current: null as ReturnType<typeof buildLoad3dStub> | null
   },
-  resolveNodeMock: vi.fn(),
-  settingGetMock: vi.fn()
+  resolveNodeMock: vi.fn()
 }))
 
 function buildLoad3dStub() {
@@ -59,15 +61,11 @@ function buildLoad3dStub() {
   }
 }
 
-vi.mock('@/composables/useLoad3d', () => ({
+vi.mock<unknown>(import('@/composables/useLoad3d'), () => ({
   useLoad3d: () => load3dState.current
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: settingGetMock })
-}))
-
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock(import('@/utils/litegraphUtil'), () => ({
   resolveNode: resolveNodeMock
 }))
 
@@ -76,6 +74,7 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      g: { play: 'Play' },
       load3d: { fitToViewer: 'Fit to viewer' }
     }
   }
@@ -83,7 +82,7 @@ const i18n = createI18n({
 
 type RenderOptions = {
   widget?: unknown
-  nodeId?: number | string
+  nodeId?: NodeId
   stateOverrides?: Partial<ReturnType<typeof buildLoad3dStub>>
   enable3DViewer?: boolean
 }
@@ -97,11 +96,8 @@ function renderLoad3D(options: RenderOptions = {}) {
   }
   load3dState.current = stub
 
-  settingGetMock.mockImplementation((key: string) =>
-    key === 'Comfy.Load3D.3DViewerEnable'
-      ? (options.enable3DViewer ?? false)
-      : undefined
-  )
+  useSettingStore().settingValues['Comfy.Load3D.3DViewerEnable'] =
+    options.enable3DViewer ?? false
 
   return {
     ...render(Load3D, {
@@ -122,23 +118,13 @@ function renderLoad3D(options: RenderOptions = {}) {
             name: 'Load3DScene',
             template: '<div data-testid="load3d-scene" />'
           },
-          AnimationControls: {
-            name: 'AnimationControls',
-            template: '<div data-testid="animation-controls" />'
-          },
-          RecordingControls: {
-            name: 'RecordingControls',
-            template: '<div data-testid="recording-controls" />'
+          RecordMenuControl: {
+            name: 'RecordMenuControl',
+            template: '<div data-testid="record-menu-control" />'
           },
           ViewerControls: {
             name: 'ViewerControls',
             template: '<div data-testid="viewer-controls" />'
-          },
-          Button: {
-            name: 'Button',
-            props: ['ariaLabel'],
-            template:
-              '<button type="button" :aria-label="ariaLabel"><slot /></button>'
           }
         },
         directives: {
@@ -152,7 +138,6 @@ function renderLoad3D(options: RenderOptions = {}) {
 
 describe('Load3D', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     load3dState.current = null
   })
 
@@ -165,16 +150,17 @@ describe('Load3D', () => {
     })
 
     it('falls back to resolveNode(nodeId) when the widget lacks a node', async () => {
+      const nodeId = toNodeId(42)
       resolveNodeMock.mockReturnValue(MOCK_NODE)
-      renderLoad3D({ widget: {}, nodeId: 42 })
+      renderLoad3D({ widget: {}, nodeId })
 
-      expect(resolveNodeMock).toHaveBeenCalledWith(42)
+      expect(resolveNodeMock).toHaveBeenCalledWith(nodeId)
       expect(await screen.findByTestId('load3d-scene')).toBeInTheDocument()
     })
 
     it('does not render Load3DScene when no node can be resolved', async () => {
       resolveNodeMock.mockReturnValue(null)
-      renderLoad3D({ widget: {}, nodeId: 99 })
+      renderLoad3D({ widget: {}, nodeId: toNodeId(99) })
 
       await Promise.resolve()
       expect(screen.queryByTestId('load3d-scene')).not.toBeInTheDocument()
@@ -219,36 +205,44 @@ describe('Load3D', () => {
 
     it('hides ViewerControls when there is no node even if the setting is on', () => {
       resolveNodeMock.mockReturnValue(null)
-      renderLoad3D({ widget: {}, nodeId: 1, enable3DViewer: true })
+      renderLoad3D({
+        widget: {},
+        nodeId: toNodeId(1),
+        enable3DViewer: true
+      })
       expect(screen.queryByTestId('viewer-controls')).not.toBeInTheDocument()
     })
   })
 
   describe('recording controls', () => {
-    it('renders RecordingControls in regular (non-preview) mode', () => {
+    it('renders the record control in regular (non-preview) mode', () => {
       renderLoad3D({ stateOverrides: { isPreview: ref(false) } })
-      expect(screen.getByTestId('recording-controls')).toBeInTheDocument()
+      expect(screen.getByTestId('record-menu-control')).toBeInTheDocument()
     })
 
-    it('hides RecordingControls in preview mode', () => {
+    it('hides the record control in preview mode', () => {
       renderLoad3D({ stateOverrides: { isPreview: ref(true) } })
-      expect(screen.queryByTestId('recording-controls')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('record-menu-control')
+      ).not.toBeInTheDocument()
     })
   })
 
   describe('animation controls', () => {
-    it('renders AnimationControls when animations are present', () => {
+    it('renders the animation strip when animations are present', () => {
       renderLoad3D({
         stateOverrides: {
           animations: ref([{ name: 'idle', index: 0 }])
         }
       })
-      expect(screen.getByTestId('animation-controls')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
     })
 
-    it('hides AnimationControls when the animation list is empty', () => {
+    it('hides the animation strip when the animation list is empty', () => {
       renderLoad3D()
-      expect(screen.queryByTestId('animation-controls')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('animation-menu-strip')
+      ).not.toBeInTheDocument()
     })
   })
 })

@@ -1,14 +1,14 @@
 <template>
   <div class="widget-markdown relative w-full" @dblclick="startEditing">
-    <div
-      class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg text-sm"
+    <SanitizedHtml
+      class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg"
       :class="isEditing ? 'invisible' : 'visible'"
       tabindex="0"
       data-capture-wheel="true"
       role="textarea"
       :aria-label="widget.name || $t('g.markdown')"
       aria-readonly="true"
-      v-html="renderedHtml"
+      :html="renderedHtml"
     />
 
     <Textarea
@@ -16,7 +16,7 @@
       ref="textareaRef"
       v-model="modelValue"
       :aria-label="`${$t('g.edit')} ${widget.name || $t('g.markdown')} ${$t('g.content')}`"
-      class="absolute inset-0 min-h-[60px] w-full resize-none text-sm"
+      class="absolute inset-0 min-h-[60px] w-full resize-none text-(length:--comfy-textarea-font-size)"
       data-capture-wheel="true"
       @blur="handleBlur"
       @pointerdown.capture.stop
@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'

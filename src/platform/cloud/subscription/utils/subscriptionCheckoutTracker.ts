@@ -1,53 +1,81 @@
+import type { SubscriptionDuration } from '@comfyorg/ingest-types'
 import {
-  TIER_TO_KEY,
-  getTierPrice
+  getTierPrice,
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
-  SubscriptionTier,
+  IngestSubscriptionTier,
   TierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import type { SubscriptionSuccessMetadata } from '@/platform/telemetry/types'
+import type {
+  BeginCheckoutMetadata,
+  PaymentIntentSource,
+  ResubscribeClickMetadata,
+  SubscriptionCheckoutType,
+  SubscriptionSuccessMetadata
+} from '@/platform/telemetry/types'
 
 const PENDING_SUBSCRIPTION_CHECKOUT_MAX_AGE_MS = 6 * 60 * 60 * 1000
-const VALID_TIER_KEYS = new Set<TierKey>([
+const VALID_TIER_KEYS: ReadonlySet<string> = new Set([
   'free',
   'standard',
   'creator',
   'pro',
   'founder'
 ])
+const VALID_PAYMENT_INTENT_SOURCES = {
+  subscription_required: true,
+  out_of_credits: true,
+  top_up_blocked: true,
+  deep_link: true,
+  subscribe_to_run: true,
+  subscribe_now_button: true,
+  upgrade_to_add_credits: true,
+  settings_billing_panel: true,
+  avatar_menu_plans: true,
+  team_members_panel: true,
+  invite_member_upsell: true,
+  upload_model_upgrade: true,
+  team_upgrade_resume: true,
+  free_tier_quota: true
+} satisfies Record<PaymentIntentSource, true>
 
 export const PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY =
   'comfy.subscription.pending_checkout_attempt'
 export const PENDING_SUBSCRIPTION_CHECKOUT_EVENT =
   'comfy:subscription-checkout-attempt-changed'
 
-type CheckoutType = 'new' | 'change'
-type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
-
 interface SubscriptionStatusSnapshot {
   is_active?: boolean
-  subscription_tier?: SubscriptionTier | null
+  subscription_tier?: IngestSubscriptionTier | null
   subscription_duration?: SubscriptionDuration | null
 }
 
-interface PendingSubscriptionCheckoutAttempt {
+export interface PendingSubscriptionCheckoutAttempt {
   attempt_id: string
   started_at_ms: number
   tier: TierKey
   cycle: BillingCycle
-  checkout_type: CheckoutType
+  checkout_type: SubscriptionCheckoutType
   previous_tier?: TierKey
   previous_cycle?: BillingCycle
+  payment_intent_source?: PaymentIntentSource
+  /** Set when this attempt was initiated from the resubscribe flow, not a plain subscribe. */
+  operation?: 'resubscribe'
+  /** Click-time source for a resubscribe attempt; carried through to the terminal event. */
+  resubscribe_source?: ResubscribeClickMetadata['source']
 }
 
-interface RecordPendingSubscriptionCheckoutAttemptInput {
+interface PendingSubscriptionCheckoutAttemptInput {
   tier: TierKey
   cycle: BillingCycle
-  checkout_type: CheckoutType
+  checkout_type: SubscriptionCheckoutType
   previous_tier?: TierKey
   previous_cycle?: BillingCycle
+  payment_intent_source?: PaymentIntentSource
+  operation?: 'resubscribe'
+  resubscribe_source?: ResubscribeClickMetadata['source']
 }
 
 const dispatchPendingCheckoutChangeEvent = () => {
@@ -66,8 +94,10 @@ const createAttemptId = (): string => {
   return `attempt-${Date.now()}`
 }
 
-const getStorage = (): Storage | null => {
-  let storage: Storage | null
+type CheckoutStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
+
+const getStorage = (): CheckoutStorage | null => {
+  let storage: unknown
 
   try {
     storage = globalThis.localStorage
@@ -75,16 +105,24 @@ const getStorage = (): Storage | null => {
     return null
   }
 
-  if (
-    !storage ||
-    typeof storage.getItem !== 'function' ||
-    typeof storage.setItem !== 'function' ||
-    typeof storage.removeItem !== 'function'
-  ) {
-    return null
-  }
+  return isCheckoutStorage(storage) ? storage : null
+}
 
-  return storage
+function isCheckoutStorage(value: unknown): value is CheckoutStorage {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    'getItem' in value &&
+    typeof value.getItem === 'function' &&
+    'setItem' in value &&
+    typeof value.setItem === 'function' &&
+    'removeItem' in value &&
+    typeof value.removeItem === 'function'
+  )
+}
+
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object'
 }
 
 const getAnnualCheckoutValue = (tier: Exclude<TierKey, 'free' | 'founder'>) =>
@@ -108,7 +146,7 @@ const getTierFromStatus = (
     return null
   }
 
-  return TIER_TO_KEY[subscriptionTier] ?? null
+  return toTierKey(subscriptionTier)
 }
 
 const getCycleFromStatus = (
@@ -131,11 +169,11 @@ const isExpired = (attempt: PendingSubscriptionCheckoutAttempt): boolean =>
 const normalizeAttempt = (
   value: unknown
 ): PendingSubscriptionCheckoutAttempt | null => {
-  if (!value || typeof value !== 'object') {
+  if (!isUnknownRecord(value)) {
     return null
   }
 
-  const candidate = value as Partial<PendingSubscriptionCheckoutAttempt>
+  const candidate = value
 
   if (
     typeof candidate.attempt_id !== 'string' ||
@@ -148,29 +186,50 @@ const normalizeAttempt = (
   }
 
   if (
-    !VALID_TIER_KEYS.has(candidate.tier as TierKey) ||
+    !isTierKey(candidate.tier) ||
     (candidate.cycle !== 'monthly' && candidate.cycle !== 'yearly') ||
     (candidate.checkout_type !== 'new' && candidate.checkout_type !== 'change')
   ) {
     return null
   }
 
+  const tier = candidate.tier
+  const cycle = candidate.cycle
+  const checkoutType = candidate.checkout_type
+
   return {
     attempt_id: candidate.attempt_id,
     started_at_ms: candidate.started_at_ms,
-    tier: candidate.tier as TierKey,
-    cycle: candidate.cycle,
-    checkout_type: candidate.checkout_type,
-    ...(candidate.previous_tier &&
-    VALID_TIER_KEYS.has(candidate.previous_tier as TierKey)
-      ? { previous_tier: candidate.previous_tier as TierKey }
+    tier,
+    cycle,
+    checkout_type: checkoutType,
+    ...(typeof candidate.previous_tier === 'string' &&
+    isTierKey(candidate.previous_tier)
+      ? { previous_tier: candidate.previous_tier }
       : {}),
     ...(candidate.previous_cycle === 'monthly' ||
     candidate.previous_cycle === 'yearly'
       ? { previous_cycle: candidate.previous_cycle }
+      : {}),
+    ...(isPaymentIntentSource(candidate.payment_intent_source)
+      ? { payment_intent_source: candidate.payment_intent_source }
+      : {}),
+    ...(candidate.operation === 'resubscribe'
+      ? { operation: 'resubscribe' }
+      : {}),
+    ...(candidate.resubscribe_source === 'pricing_dialog' ||
+    candidate.resubscribe_source === 'settings_billing_panel'
+      ? { resubscribe_source: candidate.resubscribe_source }
       : {})
   }
 }
+
+const isTierKey = (value: unknown): value is TierKey =>
+  typeof value === 'string' && VALID_TIER_KEYS.has(value)
+
+const isPaymentIntentSource = (value: unknown): value is PaymentIntentSource =>
+  typeof value === 'string' &&
+  Object.hasOwn(VALID_PAYMENT_INTENT_SOURCES, value)
 
 export const clearPendingSubscriptionCheckoutAttempt = (): void => {
   const storage = getStorage()
@@ -224,20 +283,31 @@ const getPendingSubscriptionCheckoutAttempt =
 export const hasPendingSubscriptionCheckoutAttempt = (): boolean =>
   getPendingSubscriptionCheckoutAttempt() !== null
 
-export const recordPendingSubscriptionCheckoutAttempt = (
-  input: RecordPendingSubscriptionCheckoutAttemptInput
+export const createPendingSubscriptionCheckoutAttempt = (
+  input: PendingSubscriptionCheckoutAttemptInput
 ): PendingSubscriptionCheckoutAttempt => {
-  const storage = getStorage()
-  const attempt: PendingSubscriptionCheckoutAttempt = {
+  return {
     attempt_id: createAttemptId(),
     started_at_ms: Date.now(),
     tier: input.tier,
     cycle: input.cycle,
     checkout_type: input.checkout_type,
     ...(input.previous_tier ? { previous_tier: input.previous_tier } : {}),
-    ...(input.previous_cycle ? { previous_cycle: input.previous_cycle } : {})
+    ...(input.previous_cycle ? { previous_cycle: input.previous_cycle } : {}),
+    ...(input.payment_intent_source
+      ? { payment_intent_source: input.payment_intent_source }
+      : {}),
+    ...(input.operation ? { operation: input.operation } : {}),
+    ...(input.resubscribe_source
+      ? { resubscribe_source: input.resubscribe_source }
+      : {})
   }
+}
 
+export const persistPendingSubscriptionCheckoutAttempt = (
+  attempt: PendingSubscriptionCheckoutAttempt
+): PendingSubscriptionCheckoutAttempt => {
+  const storage = getStorage()
   if (!storage) {
     return attempt
   }
@@ -254,6 +324,21 @@ export const recordPendingSubscriptionCheckoutAttempt = (
 
   return attempt
 }
+
+export const recordPendingSubscriptionCheckoutAttempt = (
+  input: PendingSubscriptionCheckoutAttemptInput
+): PendingSubscriptionCheckoutAttempt =>
+  persistPendingSubscriptionCheckoutAttempt(
+    createPendingSubscriptionCheckoutAttempt(input)
+  )
+
+export const withPendingCheckoutAttemptId = (
+  metadata: BeginCheckoutMetadata,
+  attempt: PendingSubscriptionCheckoutAttempt
+): BeginCheckoutMetadata => ({
+  ...metadata,
+  checkout_attempt_id: attempt.attempt_id
+})
 
 const didAttemptSucceed = (
   attempt: PendingSubscriptionCheckoutAttempt,
@@ -287,6 +372,13 @@ export const consumePendingSubscriptionCheckoutSuccess = (
     cycle: attempt.cycle,
     checkout_type: attempt.checkout_type,
     ...(attempt.previous_tier ? { previous_tier: attempt.previous_tier } : {}),
+    ...(attempt.payment_intent_source
+      ? { payment_intent_source: attempt.payment_intent_source }
+      : {}),
+    ...(attempt.operation ? { operation: attempt.operation } : {}),
+    ...(attempt.resubscribe_source
+      ? { resubscribe_source: attempt.resubscribe_source }
+      : {}),
     value,
     currency: 'USD',
     ecommerce: {

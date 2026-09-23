@@ -1,3 +1,4 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { render } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,21 +10,10 @@ import { i18n } from '@/i18n'
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-const trackSettingChanged = vi.fn()
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: vi.fn(() => ({
-    trackSettingChanged
-  }))
-}))
-
 const mockGet = vi.fn()
-const mockSet = vi.fn()
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: mockGet,
-    set: mockSet
-  })
-}))
+const mockSet = vi.fn<ReturnType<typeof useSettingStore>['set']>(
+  async () => undefined
+)
 
 let emitFormValue: ((value: unknown) => void) | null = null
 
@@ -40,9 +30,13 @@ const FormItemUpdateStub = defineComponent({
   template: '<div data-testid="form-item-stub" />'
 })
 
-describe('SettingItem (telemetry UI tracking)', () => {
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(mockGet)
+  vi.mocked(useSettingStore().set).mockImplementation(mockSet)
+})
+
+describe('SettingItem', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     emitFormValue = null
   })
 
@@ -51,8 +45,7 @@ describe('SettingItem (telemetry UI tracking)', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          FormItem: FormItemUpdateStub,
-          Tag: true
+          FormItem: FormItemUpdateStub
         }
       },
       props: {
@@ -61,15 +54,15 @@ describe('SettingItem (telemetry UI tracking)', () => {
     })
   }
 
-  it('tracks telemetry when value changes via UI (uses normalized value)', async () => {
+  it('persists setting updates through the setting store', async () => {
     const settingParams: SettingParams = {
-      id: 'main.sub.setting.name',
-      name: 'Telemetry Visible',
+      id: 'Comfy.Locale',
+      name: 'Visible Setting',
       type: 'text',
       defaultValue: 'default'
     }
 
-    mockGet.mockReturnValueOnce('default').mockReturnValueOnce('normalized')
+    mockGet.mockReturnValue('default')
     mockSet.mockResolvedValue(undefined)
 
     renderComponent(settingParams)
@@ -78,33 +71,6 @@ describe('SettingItem (telemetry UI tracking)', () => {
 
     await flushPromises()
 
-    expect(trackSettingChanged).toHaveBeenCalledTimes(1)
-    expect(trackSettingChanged).toHaveBeenCalledWith(
-      expect.objectContaining({
-        setting_id: 'main.sub.setting.name',
-        previous_value: 'default',
-        new_value: 'normalized'
-      })
-    )
-  })
-
-  it('does not track telemetry when normalized value does not change', async () => {
-    const settingParams: SettingParams = {
-      id: 'main.sub.setting.name',
-      name: 'Telemetry Visible',
-      type: 'text',
-      defaultValue: 'same'
-    }
-
-    mockGet.mockReturnValueOnce('same').mockReturnValueOnce('same')
-    mockSet.mockResolvedValue(undefined)
-
-    renderComponent(settingParams)
-
-    emitFormValue!('same')
-
-    await flushPromises()
-
-    expect(trackSettingChanged).not.toHaveBeenCalled()
+    expect(mockSet).toHaveBeenCalledWith('Comfy.Locale', 'newvalue')
   })
 })

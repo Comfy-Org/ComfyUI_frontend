@@ -3,8 +3,10 @@ import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
@@ -52,8 +54,11 @@ export const useImageUploadWidget = () => {
     if (!fileComboWidget) {
       throw new Error(`Widget "${imageInputName}" not found on node`)
     }
-    const formatPath = (value: string | ResultItem) =>
-      createAnnotatedPath(value, { rootFolder: image_folder })
+    function formatPath(value: string | ResultItem) {
+      return typeof value === 'string'
+        ? createAnnotatedPath(value, { rootFolder: image_folder })
+        : createAnnotatedPath(value)
+    }
 
     // Setup file upload handling
     let rollback: (() => void) | undefined
@@ -94,6 +99,7 @@ export const useImageUploadWidget = () => {
           oldValue,
           fileComboWidget
         )
+        useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
       }
     })
 
@@ -105,7 +111,7 @@ export const useImageUploadWidget = () => {
       () => openFileSelection(),
       {
         serialize: false,
-        canvasOnly: true
+        surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
       }
     )
     uploadWidget.label = t('g.choose_file_to_upload')
@@ -116,6 +122,7 @@ export const useImageUploadWidget = () => {
       nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
         isAnimated
       })
+      showPreview({ block: false })
       node.graph?.setDirtyCanvas(true)
     }
 
@@ -123,9 +130,16 @@ export const useImageUploadWidget = () => {
     // The value isn't set immediately so we need to wait a moment
     // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
-      nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
-        isAnimated
-      })
+      const fileValue = fileComboWidget.value as
+        | string
+        | number
+        | null
+        | undefined
+      if (fileValue != null) {
+        nodeOutputStore.setNodeOutputs(node, String(fileValue), {
+          isAnimated
+        })
+      }
       showPreview({ block: false })
     })
 

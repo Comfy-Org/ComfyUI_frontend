@@ -22,10 +22,11 @@ Review for behavior and current repo rules, not motion. Compare to authoritative
 When docs and examples conflict, use this order:
 
 1. Explicit repo rules, lint rules, and note blocks.
-2. [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md)
-3. Rule sections in [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md), [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md), and [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)
-4. Example snippets
-5. Prior diffs
+2. [`docs/guidance/testing-principles.md`](../../../docs/guidance/testing-principles.md) for design rules that apply at every test level.
+3. [`docs/testing/vitest-patterns.md`](../../../docs/testing/vitest-patterns.md)
+4. Rule sections in [`docs/testing/unit-testing.md`](../../../docs/testing/unit-testing.md), [`docs/testing/store-testing.md`](../../../docs/testing/store-testing.md), and [`docs/testing/component-testing.md`](../../../docs/testing/component-testing.md)
+5. Example snippets
+6. Prior diffs
 
 Apply these repo-specific clarifications:
 

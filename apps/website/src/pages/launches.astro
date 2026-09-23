@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import CtaSection from '../templates/drops/CtaSection.vue'
+import DropsSection from '../templates/drops/DropsSection.vue'
+import HeroSection from '../templates/drops/HeroSection.vue'
+import { t } from '../i18n/translations'
+
+const locale = 'en' as const
+---
+
+<BaseLayout
+  title={t('launches.page.title', locale)}
+  description={t('launches.page.description', locale)}
+>
+  <HeroSection locale={locale} client:load />
+  <DropsSection locale={locale} />
+  <CtaSection locale={locale} />
+</BaseLayout>

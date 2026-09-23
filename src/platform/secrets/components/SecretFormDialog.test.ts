@@ -1,98 +1,140 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SecretFormDialog from './SecretFormDialog.vue'
+import type { SecretCredentialOption, SecretInputType } from '../types'
 
-vi.mock('../composables/useSecretForm', () => ({
+const mockState = vi.hoisted(() => ({
+  inputType: 'text' as SecretInputType,
+  credentialOptions: [] as SecretCredentialOption[]
+}))
+
+vi.mock<unknown>(import('../composables/useSecretForm'), () => ({
   useSecretForm: () => ({
     form: { provider: '', name: '', secretValue: '' },
     errors: {},
     loading: false,
     apiError: '',
     providerOptions: [],
+    providerHelp: '',
+    selectedInputType: computed(() => mockState.inputType),
+    credentialOptions: computed(() => mockState.credentialOptions),
+    credentialType: ref<string | null>(null),
+    fileName: ref(''),
+    loadSecretFromFile: vi.fn(),
     handleSubmit: vi.fn()
   })
 }))
 
-vi.mock('primevue/inputtext', () => ({
-  default: { name: 'InputText', template: '<input />' }
-}))
-vi.mock('primevue/password', () => ({
-  default: { name: 'Password', template: '<input type="password" />' }
-}))
+vi.mock<unknown>(
+  import('primevue/inputtext'), // eslint-disable-line primevue-removal/no-imports
 
-let capturedPointerDownOutside: ((event: Event) => void) | null = null
-
-vi.mock('@/components/ui/button/Button.vue', () => ({
-  default: { name: 'Button', template: '<button><slot /></button>' }
-}))
-
-vi.mock('@/components/ui/select/Select.vue', () => ({
-  default: { name: 'Select', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/select/SelectContent.vue', () => ({
-  default: { name: 'SelectContent', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/select/SelectItem.vue', () => ({
-  default: { name: 'SelectItem', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/select/SelectTrigger.vue', () => ({
-  default: { name: 'SelectTrigger', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/select/SelectValue.vue', () => ({
-  default: { name: 'SelectValue', template: '<span />' }
-}))
-
-vi.mock('@/components/ui/dialog/Dialog.vue', () => ({
-  default: { name: 'Dialog', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/dialog/DialogPortal.vue', () => ({
-  default: { name: 'DialogPortal', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/dialog/DialogOverlay.vue', () => ({
-  default: { name: 'DialogOverlay', template: '<div />' }
-}))
-vi.mock('@/components/ui/dialog/DialogContent.vue', () => ({
-  default: defineComponent({
-    name: 'DialogContent',
-    inheritAttrs: false,
-    setup(_, { attrs }) {
-      const onPointerDownOutside = (attrs as Record<string, unknown>)[
-        'onPointerDownOutside'
-      ] as ((event: Event) => void) | undefined
-      capturedPointerDownOutside = onPointerDownOutside ?? null
-    },
-    template: '<div data-testid="dialog-content"><slot /></div>'
+  () => ({
+    default: { name: 'InputText', template: '<input />' }
   })
-}))
-vi.mock('@/components/ui/dialog/DialogHeader.vue', () => ({
-  default: { name: 'DialogHeader', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/dialog/DialogTitle.vue', () => ({
-  default: { name: 'DialogTitle', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/dialog/DialogClose.vue', () => ({
-  default: { name: 'DialogClose', template: '<button />' }
-}))
+)
+vi.mock<unknown>(
+  import('primevue/password'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    default: { name: 'Password', template: '<input type="password" />' }
+  })
+)
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 describe('SecretFormDialog', () => {
   beforeEach(() => {
-    capturedPointerDownOutside = null
+    mockState.inputType = 'text'
+    mockState.credentialOptions = []
   })
 
-  it('prevents backdrop pointer-down-outside from closing the dialog', () => {
+  it('does not render the JSON upload control for a text provider', async () => {
     render(SecretFormDialog, {
       global: { plugins: [i18n] },
       props: { visible: true }
     })
 
-    expect(capturedPointerDownOutside).not.toBeNull()
-    const event = new CustomEvent('pointerDownOutside', { cancelable: true })
-    capturedPointerDownOutside!(event)
-    expect(event.defaultPrevented).toBe(true)
+    await screen.findByRole('dialog')
+    expect(screen.queryByText('secrets.uploadJsonFile')).toBeNull()
+    expect(
+      screen.queryByPlaceholderText('secrets.jsonFilePlaceholder')
+    ).toBeNull()
+  })
+
+  it('renders a file upload and textarea for a json_file provider', async () => {
+    mockState.inputType = 'json_file'
+
+    render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true }
+    })
+
+    expect(await screen.findByText('secrets.uploadJsonFile')).toBeTruthy()
+    expect(
+      screen.getByPlaceholderText('secrets.jsonFilePlaceholder')
+    ).toBeTruthy()
+  })
+
+  it('opens the file dialog when the JSON upload button is activated by keyboard', async () => {
+    mockState.inputType = 'json_file'
+
+    const fileClickSpy = vi
+      .spyOn(HTMLInputElement.prototype, 'click')
+      .mockImplementation(() => {})
+
+    render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true }
+    })
+
+    const uploadButton = await screen.findByRole('button', {
+      name: 'secrets.uploadJsonFile'
+    })
+    expect(uploadButton.tabIndex).not.toBe(-1)
+
+    uploadButton.focus()
+    await userEvent.keyboard('{Enter}')
+
+    expect(fileClickSpy).toHaveBeenCalledOnce()
+  })
+
+  it('renders server-provided credential choices only for create forms with multiple options', async () => {
+    mockState.credentialOptions = [
+      { credential_type: 'api_key', input_type: 'text', label: 'API key' },
+      {
+        credential_type: 'gcp_service_account',
+        input_type: 'json_file',
+        label: 'Service account'
+      }
+    ]
+
+    const { unmount } = render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true }
+    })
+
+    expect(await screen.findByText('secrets.credentialType')).toBeTruthy()
+    const user = userEvent.setup()
+    const credentialSelect = screen.getByRole('combobox', {
+      name: 'secrets.credentialType'
+    })
+    await user.click(credentialSelect)
+    await user.keyboard('{Home}{Enter}')
+    expect(credentialSelect).toHaveTextContent('API key')
+    await user.click(credentialSelect)
+    await user.keyboard('{End}{Enter}')
+    expect(credentialSelect).toHaveTextContent('Service account')
+
+    unmount()
+    render(SecretFormDialog, {
+      global: { plugins: [i18n] },
+      props: { visible: true, mode: 'edit' }
+    })
+
+    await screen.findByRole('dialog')
+    expect(screen.queryByText('secrets.credentialType')).toBeNull()
   })
 })

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full items-center" :class="cn(!isDocked && '-ml-2')">
+  <div :class="cn('flex h-full items-center', !isDocked && '-ml-2')">
     <div
       v-if="isDragging && !isDocked"
       :class="actionbarClass"
@@ -9,16 +9,7 @@
       {{ t('actionbar.dockToTop') }}
     </div>
 
-    <Panel
-      ref="panelRef"
-      class="pointer-events-auto"
-      :style="style"
-      :class="panelClass"
-      :pt="{
-        header: { class: 'hidden' },
-        content: { class: isDocked ? 'p-0' : 'p-1' }
-      }"
-    >
+    <div ref="panelRef" :style :class="panelClass">
       <div class="relative flex items-center gap-2 select-none">
         <span
           ref="dragHandleRef"
@@ -30,7 +21,7 @@
           "
         />
         <Suspense @resolve="comfyRunButtonResolved">
-          <ComfyRunButton />
+          <ComfyRunButton v-coachmark="FIRST_RUN_COACH_IDS.runButton" />
         </Suspense>
         <Button
           v-tooltip.bottom="cancelJobTooltipConfig"
@@ -75,7 +66,9 @@
         </Button>
         <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
       </div>
-    </Panel>
+      <FreeTierQuota v-if="!isDocked" />
+      <PartnerNodesRunCaption v-if="!isDocked" />
+    </div>
 
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
       <QueueInlineProgress
@@ -92,35 +85,41 @@ import {
   useDraggable,
   useEventListener,
   useLocalStorage,
-  unrefElement,
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
-import Panel from 'primevue/panel'
 import { computed, nextTick, ref, watch } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import ComfyRunButton from './ComfyRunButton'
 
-const { topMenuContainer, queueOverlayExpanded = false } = defineProps<{
-  topMenuContainer?: HTMLElement | null
+const { dockedProgressContainer, queueOverlayExpanded = false } = defineProps<{
+  /**
+   * Element the inline run-progress bar is teleported into while the actionbar
+   * is docked. Must be the bordered actionbar card, not the inner button row —
+   * the bar is `absolute inset-0` and sits flush with its container's bottom.
+   */
+  dockedProgressContainer?: HTMLElement | null
   queueOverlayExpanded?: boolean
 }>()
 
@@ -143,18 +142,14 @@ const visible = computed(() => position.value !== 'Disabled')
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
 
-const panelRef = ref<ComponentPublicInstance | null>(null)
-const panelElement = computed<HTMLElement | null>(() => {
-  const element = unrefElement(panelRef)
-  return element instanceof HTMLElement ? element : null
-})
+const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-const { x, y, style, isDragging } = useDraggable(panelElement, {
+const { x, y, style, isDragging } = useDraggable(panelRef, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
   containerElement: document.body
@@ -171,7 +166,7 @@ watchDebounced(
 
 // Set initial position to bottom center
 const setInitialPosition = () => {
-  const panel = panelElement.value
+  const panel = panelRef.value
   if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
@@ -222,7 +217,8 @@ watch(visible, async (newVisible) => {
  */
 useEventListener(dragHandleRef, 'mousedown', () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'actionbar_run_handle_drag_start'
+    button_id: 'actionbar_run_handle_drag_start',
+    element_group: 'actionbar'
   })
 })
 
@@ -252,7 +248,7 @@ watch(
 )
 
 const adjustMenuPosition = () => {
-  const panel = panelElement.value
+  const panel = panelRef.value
   if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
@@ -332,14 +328,14 @@ const inlineProgressTarget = computed(() => {
   ) {
     return null
   }
-  if (isDocked.value) return topMenuContainer ?? null
-  return panelElement.value
+  if (isDocked.value) return dockedProgressContainer ?? null
+  return panelRef.value
 })
 const shouldHideInlineProgress = computed(
   () => !isQueuePanelV2Enabled.value && queueOverlayExpanded
 )
 watch(
-  panelElement,
+  panelRef,
   (target) => {
     emit('update:progressTarget', target)
   },
@@ -431,11 +427,10 @@ const actionbarClass = computed(() =>
 )
 const panelClass = computed(() =>
   cn(
-    'actionbar pointer-events-auto z-1300',
+    'actionbar pointer-events-auto',
     isDragging.value && 'pointer-events-none select-none',
-    isDocked.value
-      ? 'static border-none bg-transparent p-0'
-      : ['fixed shadow-interface', 'border-interface-stroke']
+    !isDocked.value &&
+      'fixed z-1300 rounded-lg border border-interface-stroke bg-interface-panel-surface p-1 shadow-interface'
   )
 )
 </script>

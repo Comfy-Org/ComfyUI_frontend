@@ -2,14 +2,24 @@
   <nav
     ref="sideToolbarRef"
     data-testid="side-toolbar"
-    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
-    :class="{
-      'small-sidebar': isSmall,
-      'connected-sidebar pointer-events-auto': isConnected,
-      'floating-sidebar': !isConnected,
-      'overflowing-sidebar': isOverflowing,
-      'border-r border-(--interface-stroke) shadow-interface': isConnected
-    }"
+    :inert="isHidden"
+    :aria-hidden="isHidden"
+    :class="
+      cn(
+        'side-tool-bar-container flex h-full flex-col items-center overflow-hidden bg-transparent transition-[max-width,opacity,transform] duration-300 ease-in-out [.floating-sidebar]:-mr-2',
+        {
+          'small-sidebar': isSmall,
+          'connected-sidebar pointer-events-auto': isConnected,
+          'floating-sidebar': !isConnected,
+          'overflowing-sidebar': isOverflowing,
+          'border-r border-interface-stroke/50 shadow-interface': isConnected,
+          'pointer-events-none opacity-0': isHidden,
+          '-translate-x-8': isHidden && sidebarLocation === 'left',
+          'translate-x-8': isHidden && sidebarLocation === 'right'
+        }
+      )
+    "
+    :style="{ maxWidth: isHidden ? '0px' : 'var(--sidebar-width)' }"
   >
     <div
       :class="
@@ -28,26 +38,26 @@
           :tooltip="tab.tooltip"
           :tooltip-suffix="getTabTooltipSuffix(tab)"
           :label="tab.label || tab.title"
-          :is-small="isSmall"
+          :is-small
           :selected="tab.id === selectedTab?.id"
-          :class="tab.id + '-tab-button'"
+          :data-testid="`${tab.id}-tab-button`"
           @click="onTabClick(tab)"
         />
         <SidebarTemplatesButton />
       </div>
 
-      <div ref="bottomToolbarRef" class="mt-auto" :class="groupClasses">
-        <SidebarLogoutIcon
-          v-if="userStore.isMultiUserServer"
-          :is-small="isSmall"
+      <div ref="bottomToolbarRef" :class="cn('mt-auto', groupClasses)">
+        <SidebarLogoutIcon v-if="userStore.isMultiUserServer" :is-small />
+        <SidebarHelpCenterIcon :is-small />
+        <SidebarBottomPanelToggleButton
+          v-if="!isCloud && !hideWorkspaceToggles"
+          :is-small
         />
-        <SidebarHelpCenterIcon :is-small="isSmall" />
-        <SidebarBottomPanelToggleButton v-if="!isCloud" :is-small="isSmall" />
-        <SidebarShortcutsToggleButton :is-small="isSmall" />
-        <SidebarSettingsButton :is-small="isSmall" />
+        <SidebarShortcutsToggleButton v-if="!hideWorkspaceToggles" :is-small />
+        <SidebarSettingsButton :is-small />
       </div>
     </div>
-    <HelpCenterPopups :is-small="isSmall" />
+    <HelpCenterPopups :is-small />
     <Suspense v-if="NightlySurveyController">
       <component :is="NightlySurveyController" />
     </Suspense>
@@ -77,6 +87,7 @@ import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
@@ -88,6 +99,16 @@ import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
 import SidebarIcon from './SidebarIcon.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
+
+const {
+  visibleTabIds,
+  forceConnected = false,
+  hideWorkspaceToggles = false
+} = defineProps<{
+  visibleTabIds?: string[]
+  forceConnected?: boolean
+  hideWorkspaceToggles?: boolean
+}>()
 
 const NightlySurveyController =
   isNightly && !isCloud && !isDesktop
@@ -102,6 +123,7 @@ const settingStore = useSettingStore()
 const userStore = useUserStore()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const sideToolbarRef = ref<HTMLElement>()
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
@@ -115,13 +137,20 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
 const sidebarStyle = computed(() => settingStore.get('Comfy.Sidebar.Style'))
 const isConnected = computed(
   () =>
+    forceConnected ||
     selectedTab.value ||
     isOverflowing.value ||
     sidebarStyle.value === 'connected'
 )
 
-const tabs = computed(() => workspaceStore.getSidebarTabs())
+const tabs = computed(() => {
+  const all = workspaceStore.getSidebarTabs()
+  return visibleTabIds
+    ? all.filter((tab) => visibleTabIds.includes(tab.id))
+    : all
+})
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
+const isHidden = computed(() => agentNodeSelectionStore.isActionBarsHidden)
 
 /**
  * Handle sidebar tab icon click.
@@ -138,19 +167,23 @@ const onTabClick = async (item: SidebarTabExtension) => {
 
   if (isNodeLibraryTab)
     telemetry?.trackUiButtonClicked({
-      button_id: 'sidebar_tab_node_library_selected'
+      button_id: 'sidebar_tab_node_library_selected',
+      element_group: 'sidebar'
     })
   else if (isModelLibraryTab)
     telemetry?.trackUiButtonClicked({
-      button_id: 'sidebar_tab_model_library_selected'
+      button_id: 'sidebar_tab_model_library_selected',
+      element_group: 'sidebar'
     })
   else if (isWorkflowsTab)
     telemetry?.trackUiButtonClicked({
-      button_id: 'sidebar_tab_workflows_selected'
+      button_id: 'sidebar_tab_workflows_selected',
+      element_group: 'sidebar'
     })
   else if (isAssetsTab)
     telemetry?.trackUiButtonClicked({
-      button_id: 'sidebar_tab_assets_media_selected'
+      button_id: 'sidebar_tab_assets_media_selected',
+      element_group: 'sidebar'
     })
 
   await commandStore.commands
@@ -173,6 +206,24 @@ const groupClasses = computed(() =>
     !isConnected.value && 'pointer-events-auto rounded-lg shadow-interface'
   )
 )
+
+const CANVAS_GUTTER_VAR = '--comfy-canvas-gutter'
+
+/**
+ * The canvas gutter in pixels. Custom properties come back from
+ * `getComputedStyle` unresolved, so the token is measured through a length
+ * property the browser does resolve.
+ */
+function canvasGutter(): number {
+  const probe = document.createElement('div')
+  probe.style.position = 'absolute'
+  probe.style.visibility = 'hidden'
+  probe.style.marginLeft = `var(${CANVAS_GUTTER_VAR})`
+  document.body.append(probe)
+  const px = parseFloat(getComputedStyle(probe).marginLeft)
+  probe.remove()
+  return Number.isFinite(px) ? px : 0
+}
 
 const ENTER_OVERFLOW_MARGIN = 20
 const EXIT_OVERFLOW_MARGIN = 50
@@ -214,8 +265,12 @@ onMounted(() => {
       if (canvasStore.canvas) {
         if (sidebarLocation.value === 'left') {
           await nextTick()
+          const sidebarRight =
+            sideToolbarRef.value?.getBoundingClientRect()?.right
           canvasStore.canvas.fpsInfoLocation = [
-            sideToolbarRef.value?.getBoundingClientRect()?.right,
+            sidebarRight === undefined
+              ? undefined
+              : sidebarRight + canvasGutter(),
             null
           ]
         } else {
@@ -275,7 +330,7 @@ onMounted(() => {
 }
 
 .floating-sidebar .sidebar-item-group {
-  border-color: var(--p-panel-border-color);
+  border-color: var(--interface-stroke);
 }
 
 .connected-sidebar {

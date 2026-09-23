@@ -2,14 +2,15 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  type AvifIinfBox,
-  type AvifIlocBox,
-  type AvifInfeBox,
-  type ComfyMetadata,
-  ComfyMetadataTags,
-  type IsobmffBoxContentRange
+import { ComfyMetadataTags } from '@/types/metadataTypes'
+import type {
+  AvifIinfBox,
+  AvifIlocBox,
+  AvifInfeBox,
+  ComfyMetadata,
+  IsobmffBoxContentRange
 } from '@/types/metadataTypes'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const readNullTerminatedString = (
@@ -280,7 +281,7 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
 
   if (tiffHeaderOffset !== -1) {
     const exifData = itemData.subarray(tiffHeaderOffset)
-    const data: Record<string, any> = parseExifData(exifData)
+    const data: Record<string, unknown> = parseExifData(exifData)
     for (const key in data) {
       const value = data[key]
       if (typeof value === 'string') {
@@ -322,7 +323,7 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
       }
     }
   } else {
-    console.log('Warning: TIFF header not found in EXIF data.')
+    console.warn('TIFF header not found in EXIF data.')
   }
 
   return metadata
@@ -336,7 +337,7 @@ function parseExifData(exifData) {
   // Function to read 16-bit and 32-bit integers from binary data
   // @ts-expect-error fixme ts strict error
   function readInt(offset, isLittleEndian, length) {
-    let arr = exifData.slice(offset, offset + length)
+    const arr = exifData.slice(offset, offset + length)
     if (length === 2) {
       return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint16(
         0,
@@ -388,36 +389,24 @@ function parseExifData(exifData) {
   return ifdData
 }
 
-export function getFromAvifFile(file: File): Promise<Record<string, string>> {
-  return new Promise<Record<string, string>>((resolve) => {
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const buffer = event.target?.result as ArrayBuffer
-      if (!buffer) {
-        resolve({})
-        return
-      }
+export async function getFromAvifFile(
+  file: File
+): Promise<Record<string, string>> {
+  const buffer = await readFileAsArrayBuffer(file)
+  if (!buffer) return {}
 
-      try {
-        const comfyMetadata = parseAvifMetadata(buffer)
-        const result: Record<string, string> = {}
-        if (comfyMetadata.prompt) {
-          result.prompt = JSON.stringify(comfyMetadata.prompt)
-        }
-        if (comfyMetadata.workflow) {
-          result.workflow = JSON.stringify(comfyMetadata.workflow)
-        }
-        resolve(result)
-      } catch (e) {
-        console.error('Parser: Error parsing AVIF metadata:', e)
-        resolve({})
-      }
+  try {
+    const comfyMetadata = parseAvifMetadata(buffer)
+    const result: Record<string, string> = {}
+    if (comfyMetadata.prompt) {
+      result.prompt = JSON.stringify(comfyMetadata.prompt)
     }
-    reader.onerror = (err) => {
-      console.error('FileReader: Error reading AVIF file:', err)
-      resolve({})
+    if (comfyMetadata.workflow) {
+      result.workflow = JSON.stringify(comfyMetadata.workflow)
     }
-    reader.onabort = () => resolve({})
-    reader.readAsArrayBuffer(file)
-  })
+    return result
+  } catch (e) {
+    console.error('Parser: Error parsing AVIF metadata:', e)
+    return {}
+  }
 }

@@ -1,16 +1,16 @@
 /* eslint-disable testing-library/no-node-access */
 /* eslint-disable testing-library/prefer-user-event */
-import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
 
 // Mock xterm and related modules
-vi.mock('@xterm/xterm', () => ({
+vi.mock<unknown>(import('@xterm/xterm'), () => ({
   Terminal: vi.fn().mockImplementation(() => ({
     open: vi.fn(),
     dispose: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock('@xterm/xterm', () => ({
   IDisposable: vi.fn()
 }))
 
-vi.mock('@xterm/addon-fit', () => ({
+vi.mock(import('@xterm/addon-fit'), () => ({
   FitAddon: vi.fn().mockImplementation(() => ({
     fit: vi.fn(),
     proposeDimensions: vi.fn(() => ({ rows: 24, cols: 80 }))
@@ -48,20 +48,20 @@ const mockTerminal = {
   clearSelection: vi.fn()
 }
 
-vi.mock('@/composables/bottomPanelTabs/useTerminal', () => ({
+vi.mock<unknown>(import('@/composables/bottomPanelTabs/useTerminal'), () => ({
   useTerminal: vi.fn(() => ({
     terminal: mockTerminal,
     useAutoSize: vi.fn(() => ({ resize: vi.fn() }))
   }))
 }))
 
-vi.mock('@/utils/envUtil', () => ({
+vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: vi.fn(() => null)
 }))
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
     return mockData.isDesktop
   }
@@ -93,27 +93,12 @@ function renderBaseTerminal(props: Record<string, unknown> = {}) {
   return render(BaseTerminal, {
     props,
     global: {
-      plugins: [
-        createTestingPinia({
-          createSpy: vi.fn
-        }),
-        i18n
-      ],
-      stubs: {
-        Button: {
-          template: '<button v-bind="$attrs"><slot /></button>',
-          props: ['icon', 'severity', 'size']
-        }
-      }
+      plugins: [getActivePinia()!, i18n]
     }
   })
 }
 
 describe('BaseTerminal', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('emits created event on mount', () => {
     const onCreated = vi.fn()
     renderBaseTerminal({ onCreated })

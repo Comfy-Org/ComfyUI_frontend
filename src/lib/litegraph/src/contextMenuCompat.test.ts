@@ -18,7 +18,7 @@ describe('contextMenuCompat', () => {
       constructor: {
         prototype: LGraphCanvas.prototype
       } as typeof LGraphCanvas
-    } as Partial<LGraphCanvas>)
+    })
 
     // Clear console warnings
     vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -27,7 +27,6 @@ describe('contextMenuCompat', () => {
   afterEach(() => {
     // Restore original method
     LGraphCanvas.prototype.getCanvasMenuOptions = originalGetCanvasMenuOptions
-    vi.restoreAllMocks()
   })
 
   describe('install', () => {

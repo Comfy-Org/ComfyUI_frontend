@@ -28,7 +28,7 @@ export class GPUBrushRenderer {
 
   // Pipelines
   private renderPipeline: GPURenderPipeline // Standard alpha blending pipeline
-  private accumulatePipeline: GPURenderPipeline // SourceOver blending pipeline for stroke accumulation
+  private accumulatePipeline: GPURenderPipeline // Maximum coverage pipeline for stroke accumulation
   private blitPipeline: GPURenderPipeline
   private compositePipeline: GPURenderPipeline // Composite pipeline that applies opacity
   private compositePipelinePreview: GPURenderPipeline // Pipeline for rendering to the preview canvas
@@ -174,7 +174,7 @@ export class GPUBrushRenderer {
       primitive: { topology: 'triangle-list' }
     })
 
-    // Accumulate strokes using SourceOver blending to ensure smooth intersections.
+    // Keep the highest coverage reached by each stroke sample.
     this.accumulatePipeline = device.createRenderPipeline({
       layout: renderPipelineLayout,
       vertex: {
@@ -204,16 +204,15 @@ export class GPUBrushRenderer {
           {
             format: 'rgba8unorm',
             blend: {
-              // Use SourceOver blending for smooth stroke intersections.
               color: {
                 srcFactor: 'one',
-                dstFactor: 'one-minus-src-alpha',
-                operation: 'add'
+                dstFactor: 'one',
+                operation: 'max'
               },
               alpha: {
                 srcFactor: 'one',
-                dstFactor: 'one-minus-src-alpha',
-                operation: 'add'
+                dstFactor: 'one',
+                operation: 'max'
               }
             }
           }
@@ -449,7 +448,7 @@ export class GPUBrushRenderer {
     points: { x: number; y: number; pressure: number }[],
     settings: {
       size: number
-      opacity: number
+      coverage: number
       hardness: number
       color: [number, number, number]
       width: number
@@ -463,7 +462,7 @@ export class GPUBrushRenderer {
       this.currentStrokeView,
       this.accumulatePipeline,
       points,
-      settings
+      { ...settings, opacity: settings.coverage }
     )
   }
 

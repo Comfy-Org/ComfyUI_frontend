@@ -7,22 +7,21 @@ import type {
   JobListItem,
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
-  ResultItem,
   StatusWsMessageStatus,
   TaskOutput
-} from '@/schemas/apiSchema'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+} from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 enum TaskItemDisplayStatus {
   Running = 'Running',
@@ -32,228 +31,15 @@ enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
-interface ResultItemInit extends ResultItem {
-  nodeId: NodeId
-  mediaType: string
-  format?: string
-  frame_rate?: number
-  display_name?: string
-  content?: string
-}
-
-export class ResultItemImpl {
-  filename: string
-  subfolder: string
-  type: string
-
-  nodeId: NodeId
-  // 'audio' | 'images' | ...
-  mediaType: string
-
-  display_name?: string
-
-  // VHS output specific fields
-  format?: string
-  frame_rate?: number
-
-  // text specific field
-  content?: string
-
-  constructor(obj: ResultItemInit) {
-    this.filename = obj.filename ?? ''
-    this.subfolder = obj.subfolder ?? ''
-    this.type = obj.type ?? ''
-
-    this.nodeId = obj.nodeId
-    this.mediaType = obj.mediaType
-
-    this.display_name = obj.display_name
-
-    this.format = obj.format
-    this.frame_rate = obj.frame_rate
-    this.content = obj.content
-  }
-
-  get urlParams(): URLSearchParams {
-    const params = new URLSearchParams()
-    params.set('filename', this.filename)
-    params.set('type', this.type)
-    params.set('subfolder', this.subfolder)
-
-    if (this.format) {
-      params.set('format', this.format)
-    }
-    if (this.frame_rate) {
-      params.set('frame_rate', this.frame_rate.toString())
-    }
-    return params
-  }
-
-  /**
-   * VHS advanced preview URL. `/viewvideo` endpoint is provided by VHS node.
-   *
-   * `/viewvideo` always returns a webm file.
-   */
-  get vhsAdvancedPreviewUrl(): string {
-    return api.apiURL('/viewvideo?' + this.urlParams)
-  }
-
-  get url(): string {
-    if (!this.filename) return ''
-    return api.apiURL('/view?' + this.urlParams)
-  }
-
-  get previewUrl(): string {
-    if (!this.isImage) return this.url
-    const params = new URLSearchParams(this.urlParams)
-    appendCloudResParam(params, this.filename)
-    return api.apiURL('/view?' + params)
-  }
-
-  get urlWithTimestamp(): string {
-    return `${this.url}&t=${+new Date()}`
-  }
-
-  get isVhsFormat(): boolean {
-    return !!this.format && !!this.frame_rate
-  }
-
-  get htmlVideoType(): string | undefined {
-    if (this.isWebm) {
-      return 'video/webm'
-    }
-    if (this.isMp4) {
-      return 'video/mp4'
-    }
-    if (this.filename.endsWith('.mov')) {
-      return 'video/quicktime'
-    }
-
-    if (this.isVhsFormat) {
-      if (this.format?.endsWith('webm')) {
-        return 'video/webm'
-      }
-      if (this.format?.endsWith('mp4')) {
-        return 'video/mp4'
-      }
-    }
-    return undefined
-  }
-
-  get htmlAudioType(): string | undefined {
-    if (this.isMp3) {
-      return 'audio/mpeg'
-    }
-    if (this.isWav) {
-      return 'audio/wav'
-    }
-    if (this.isOgg) {
-      return 'audio/ogg'
-    }
-    if (this.isFlac) {
-      return 'audio/flac'
-    }
-    return undefined
-  }
-
-  get isWebm(): boolean {
-    return this.filename.endsWith('.webm')
-  }
-
-  get isMp4(): boolean {
-    return this.filename.endsWith('.mp4')
-  }
-
-  get isVideoBySuffix(): boolean {
-    return getMediaTypeFromFilename(this.filename) === 'video'
-  }
-
-  get isImageBySuffix(): boolean {
-    return getMediaTypeFromFilename(this.filename) === 'image'
-  }
-
-  get isMp3(): boolean {
-    return this.filename.endsWith('.mp3')
-  }
-
-  get isWav(): boolean {
-    return this.filename.endsWith('.wav')
-  }
-
-  get isOgg(): boolean {
-    return this.filename.endsWith('.ogg')
-  }
-
-  get isFlac(): boolean {
-    return this.filename.endsWith('.flac')
-  }
-
-  get isAudioBySuffix(): boolean {
-    return getMediaTypeFromFilename(this.filename) === 'audio'
-  }
-
-  get isVideo(): boolean {
-    const isVideoByType =
-      this.mediaType === 'video' || !!this.format?.startsWith('video/')
-    return (
-      this.isVideoBySuffix ||
-      (isVideoByType && !this.isImageBySuffix && !this.isAudioBySuffix)
-    )
-  }
-
-  get isImage(): boolean {
-    return (
-      this.isImageBySuffix ||
-      (this.mediaType === 'images' &&
-        !this.isVideoBySuffix &&
-        !this.isAudioBySuffix)
-    )
-  }
-
-  get isAudio(): boolean {
-    const isAudioByType =
-      this.mediaType === 'audio' || !!this.format?.startsWith('audio/')
-    return (
-      this.isAudioBySuffix ||
-      (isAudioByType && !this.isImageBySuffix && !this.isVideoBySuffix)
-    )
-  }
-
-  get is3D(): boolean {
-    return getMediaTypeFromFilename(this.filename) === '3D'
-  }
-  get isText(): boolean {
-    return this.mediaType === 'text'
-  }
-
-  get supportsPreview(): boolean {
-    return (
-      this.isImage || this.isVideo || this.isAudio || this.is3D || this.isText
-    )
-  }
-
-  static filterPreviewable(
-    outputs: readonly ResultItemImpl[]
-  ): ResultItemImpl[] {
-    return outputs.filter((o) => o.supportsPreview)
-  }
-
-  static findByUrl(items: readonly ResultItemImpl[], url?: string): number {
-    if (!url) return 0
-    const idx = items.findIndex((o) => o.url === url)
-    return idx >= 0 ? idx : 0
-  }
-}
-
 export class TaskItemImpl {
   readonly job: JobListItem
   readonly outputs: TaskOutput
-  readonly flatOutputs: ReadonlyArray<ResultItemImpl>
+  readonly flatOutputs: ReadonlyArray<AugmentedResultItem>
 
   constructor(
     job: JobListItem,
     outputs?: TaskOutput,
-    flatOutputs?: ReadonlyArray<ResultItemImpl>
+    flatOutputs?: ReadonlyArray<AugmentedResultItem>
   ) {
     this.job = job
     // If no outputs provided but job has preview_output, create synthetic outputs
@@ -271,19 +57,16 @@ export class TaskItemImpl {
     this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
   }
 
-  calculateFlatOutputs(): ReadonlyArray<ResultItemImpl> {
-    if (!this.outputs) {
-      return []
-    }
+  calculateFlatOutputs(): ReadonlyArray<AugmentedResultItem> {
     return parseTaskOutput(this.outputs)
   }
 
   /** All outputs that support preview (images, videos, audio, 3D, text) */
-  get previewableOutputs(): readonly ResultItemImpl[] {
-    return ResultItemImpl.filterPreviewable(this.flatOutputs)
+  get previewableOutputs(): readonly AugmentedResultItem[] {
+    return filterPreviewableResults(this.flatOutputs)
   }
 
-  get previewOutput(): ResultItemImpl | undefined {
+  get previewOutput(): AugmentedResultItem | undefined {
     const previewable = this.previewableOutputs
     // Prefer the last saved media file (most recent result) over temp previews
     return (
@@ -324,6 +107,11 @@ export class TaskItemImpl {
 
   get outputsCount(): number | undefined {
     return this.job.outputs_count ?? undefined
+  }
+
+  /** Absent on backends or jobs that predate this field. */
+  get previewableOutputsCount(): number | undefined {
+    return this.job.previewable_outputs_count ?? undefined
   }
 
   get status() {
@@ -434,16 +222,14 @@ export class TaskItemImpl {
 
     // Use full outputs from job detail, or fall back to existing outputs
     const outputsToLoad = jobDetail?.outputs ?? this.outputs
-    if (!outputsToLoad) {
-      return
-    }
-
     const nodeOutputsStore = useNodeOutputStore()
     const rawOutputs = toRaw(outputsToLoad)
-    for (const nodeExecutionId in rawOutputs) {
+    for (const rawNodeExecutionId in rawOutputs) {
+      const nodeExecutionId = tryNormalizeNodeExecutionId(rawNodeExecutionId)
+      if (!nodeExecutionId) continue
       nodeOutputsStore.setNodeOutputsByExecutionId(
         nodeExecutionId,
-        rawOutputs[nodeExecutionId]
+        rawOutputs[rawNodeExecutionId]
       )
     }
     useExtensionService().invokeExtensions(
@@ -458,7 +244,7 @@ export class TaskItemImpl {
     }
 
     return this.flatOutputs.map(
-      (output: ResultItemImpl, i: number) =>
+      (output: AugmentedResultItem, i: number) =>
         new TaskItemImpl(
           {
             ...this.job,
@@ -490,8 +276,8 @@ export const useQueueStore = defineStore('queue', () => {
   // and a single re-fetch fires after the current one completes.
   // This prevents both request spam and UI starvation (where a rapid stream
   // of calls causes every response to be discarded by a stale-request guard).
-  let inFlight = false
-  let dirty = false
+  const updateState = { inFlight: false, dirty: false }
+  const hasDirtyUpdate = () => updateState.dirty
 
   const tasks = computed<TaskItemImpl[]>(
     () =>
@@ -516,13 +302,13 @@ export const useQueueStore = defineStore('queue', () => {
   )
 
   const update = async () => {
-    if (inFlight) {
-      dirty = true
+    if (updateState.inFlight) {
+      updateState.dirty = true
       return
     }
 
-    inFlight = true
-    dirty = false
+    updateState.inFlight = true
+    updateState.dirty = false
     isLoading.value = true
     try {
       const [queueResult, historyResult] = await Promise.allSettled([
@@ -539,7 +325,7 @@ export const useQueueStore = defineStore('queue', () => {
         const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
         const executionStore = useExecutionStore()
         appearedTasks.forEach((task) => {
-          const jobIdString = String(task.jobId)
+          const jobIdString = task.jobId
           const workflowId = task.workflowId
           if (workflowId && jobIdString) {
             executionStore.registerJobWorkflowIdMapping(jobIdString, workflowId)
@@ -574,7 +360,11 @@ export const useQueueStore = defineStore('queue', () => {
           const existing = existingByJobId.get(job.id)
           if (!existing) return new TaskItemImpl(job)
           // Recreate if outputs_count changed to ensure lazy loading works
-          if (existing.outputsCount !== (job.outputs_count ?? undefined)) {
+          if (
+            existing.outputsCount !== (job.outputs_count ?? undefined) ||
+            existing.previewableOutputsCount !==
+              (job.previewable_outputs_count ?? undefined)
+          ) {
             return new TaskItemImpl(job)
           }
           return existing
@@ -595,8 +385,8 @@ export const useQueueStore = defineStore('queue', () => {
       }
     } finally {
       isLoading.value = false
-      inFlight = false
-      if (dirty) {
+      updateState.inFlight = false
+      if (hasDirtyUpdate()) {
         void update()
       }
     }
@@ -644,34 +434,13 @@ export const useQueuePendingTaskCountStore = defineStore(
       count: 0
     }),
     actions: {
-      update(e: CustomEvent<StatusWsMessageStatus>) {
-        this.count = e.detail?.exec_info?.queue_remaining || 0
+      update(e: CustomEvent<StatusWsMessageStatus | null>) {
+        const queueRemaining = e.detail?.exec_info?.queue_remaining
+        if (queueRemaining != null) this.count = queueRemaining
       }
     }
   }
 )
-
-export type AutoQueueMode =
-  | 'disabled'
-  | 'change'
-  | 'instant-idle'
-  | 'instant-running'
-
-export const isInstantMode = (
-  mode: AutoQueueMode
-): mode is 'instant-idle' | 'instant-running' =>
-  mode === 'instant-idle' || mode === 'instant-running'
-
-export const isInstantRunningMode = (
-  mode: AutoQueueMode
-): mode is 'instant-running' => mode === 'instant-running'
-
-export const useQueueSettingsStore = defineStore('queueSettingsStore', {
-  state: () => ({
-    mode: 'disabled' as AutoQueueMode,
-    batchCount: 1
-  })
-})
 
 export const useQueueUIStore = defineStore('queueUIStore', () => {
   const settingStore = useSettingStore()

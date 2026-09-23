@@ -5,10 +5,11 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import {
   deleteSecret as deleteSecretApi,
+  listSecretProviders,
   listSecrets,
   SecretsApiError
 } from '../api/secretsApi'
-import type { SecretMetadata, SecretProvider } from '../types'
+import type { SecretMetadata, SecretProviderInfo } from '../types'
 
 export function useSecrets() {
   const { t } = useI18n()
@@ -16,12 +17,11 @@ export function useSecrets() {
 
   const loading = ref(false)
   const secrets = ref<SecretMetadata[]>([])
+  const availableProviders = ref<SecretProviderInfo[] | null>(null)
   const operatingSecretId = ref<string | null>(null)
 
-  const existingProviders = computed<SecretProvider[]>(() =>
-    secrets.value
-      .map((s) => s.provider)
-      .filter((p): p is SecretProvider => p !== undefined)
+  const existingProviders = computed<string[]>(() =>
+    secrets.value.map((s) => s.provider).filter((p): p is string => p != null)
   )
 
   async function fetchSecrets() {
@@ -45,6 +45,14 @@ export function useSecrets() {
       }
     } finally {
       loading.value = false
+    }
+  }
+
+  async function fetchProviders() {
+    try {
+      availableProviders.value = await listSecretProviders()
+    } catch (err) {
+      console.error('Unexpected error fetching secret providers:', err)
     }
   }
 
@@ -76,9 +84,11 @@ export function useSecrets() {
   return {
     loading,
     secrets,
+    availableProviders,
     operatingSecretId,
     existingProviders,
     fetchSecrets,
+    fetchProviders,
     deleteSecret
   }
 }

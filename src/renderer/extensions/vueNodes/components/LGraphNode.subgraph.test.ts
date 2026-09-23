@@ -1,53 +1,45 @@
 /**
  * Tests for NodeHeader subgraph functionality
  */
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen, fireEvent } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Pinia } from 'pinia'
+import { getActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import { toNodeId } from '@/types/nodeId'
 import { nextTick } from 'vue'
 
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
-  LGraph,
   LGraphNode as LGLGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
-const mockApp: { rootGraph?: Partial<LGraph> } = vi.hoisted(() => ({}))
+const SUBGRAPH_ID = '00000000-0000-4000-8000-000000000002'
+const mockApp: {
+  rootGraph?: Partial<LGraph>
+  nodeOutputs: Record<string, never>
+  nodePreviewImages: Record<string, never>
+} = vi.hoisted(() => ({ nodeOutputs: {}, nodePreviewImages: {} }))
 // Mock dependencies
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  getNodeByLocatorId: vi.fn(),
-  getLocatorIdFromNodeData: vi.fn((nodeData) =>
-    nodeData.subgraphId
-      ? `${nodeData.subgraphId}:${String(nodeData.id)}`
-      : String(nodeData.id)
-  )
-}))
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     toastErrorHandler: vi.fn()
   })
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: vi.fn((key) => key)
-  }),
-  createI18n: vi.fn(() => ({
-    global: {
-      t: vi.fn((key) => key)
-    }
-  }))
-}))
-
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   st: vi.fn((key) => key),
   t: vi.fn((key) => key),
   i18n: {
@@ -57,10 +49,21 @@ vi.mock('@/i18n', () => ({
   }
 }))
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
+
 describe('Vue Node - Subgraph Functionality', () => {
+  let rootGraph: LGraph
+  let pinia: Pinia
+
   // Helper to setup common mocks
   const setupMocks = async (isSubgraph = true, hasGraph = true) => {
-    if (hasGraph) mockApp.rootGraph = {}
+    if (hasGraph) mockApp.rootGraph = rootGraph
     else mockApp.rootGraph = undefined
 
     vi.mocked(getNodeByLocatorId).mockReturnValue({
@@ -69,34 +72,29 @@ describe('Vue Node - Subgraph Functionality', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    pinia = getActivePinia()!
+    rootGraph = new LGraph()
   })
 
-  const createMockNodeData = (
-    id: string,
-    subgraphId?: string
-  ): VueNodeData => ({
-    id,
+  const createMockNodeData = (id: string, subgraphId?: string): NodeState => ({
+    id: toNodeId(id),
+    graphId: subgraphId ?? rootGraph.id,
     title: 'Test Node',
     type: 'TestNode',
     mode: 0,
-    selected: false,
-    executing: false,
-    subgraphId,
-    widgets: [],
+    flags: {},
     inputs: [],
     outputs: [],
-    hasErrors: false,
-    flags: {}
+    properties: {}
   })
 
-  const renderComponent = (props: { nodeData: VueNodeData }) => {
+  const renderComponent = (props: { nodeData: NodeState }) => {
+    useCanvasStore().currentGraph = rootGraph
     return render(LGraphNode, {
       props,
       global: {
-        plugins: [createTestingPinia({ createSpy: vi.fn })],
+        plugins: [pinia, i18n],
         mocks: {
-          $t: vi.fn((key: string) => key),
           $primevue: { config: {} }
         }
       }
@@ -133,7 +131,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     await setupMocks(true) // isSubgraph = true
 
     renderComponent({
-      nodeData: createMockNodeData('test-node-1', 'subgraph-id')
+      nodeData: createMockNodeData('test-node-1', SUBGRAPH_ID)
     })
 
     await nextTick()
@@ -141,7 +139,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     // Should call getNodeByLocatorId with correct locator ID
     expect(vi.mocked(getNodeByLocatorId)).toHaveBeenCalledWith(
       expect.anything(),
-      'subgraph-id:test-node-1'
+      `${SUBGRAPH_ID}:test-node-1`
     )
 
     expect(screen.getByTestId('subgraph-enter-button')).toBeInTheDocument()

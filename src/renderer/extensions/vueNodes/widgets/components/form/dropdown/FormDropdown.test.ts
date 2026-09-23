@@ -1,11 +1,15 @@
+import { getActivePinia } from 'pinia'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+
 import PrimeVue from 'primevue/config'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import FormDropdown from './FormDropdown.vue'
+import { DROPDOWN_PANEL_CLASS } from './shared'
 import type { FormDropdownItem } from './types'
 
 function createItem(id: string, name: string): FormDropdownItem {
@@ -14,11 +18,16 @@ function createItem(id: string, name: string): FormDropdownItem {
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({
-    addAlert: vi.fn()
-  })
-}))
+const transformState = vi.hoisted(() => ({ camera: { x: 0, y: 0, z: 1 } }))
+
+vi.mock<unknown>(
+  import('@/renderer/core/layout/transform/useTransformState'),
+  async () => {
+    const { reactive } = await import('vue')
+    transformState.camera = reactive(transformState.camera)
+    return { useTransformState: () => ({ camera: transformState.camera }) }
+  }
+)
 
 const MockFormDropdownMenu = {
   name: 'FormDropdownMenu',
@@ -37,6 +46,14 @@ const MockFormDropdownMenu = {
     'candidateLabel'
   ],
   template: `<div class="mock-menu" data-testid="dropdown-menu" :data-candidate-index="candidateIndex" :data-candidate-label="candidateLabel ?? ''" :data-items="JSON.stringify(items)">
+      <button
+        v-for="(item, index) in items"
+        :key="item.id"
+        type="button"
+        @click="$emit('item-click', item, index)"
+      >
+        {{ item.label ?? item.name }}
+      </button>
       <button type="button" @click="$emit('search-enter')">Search enter</button>
     </div>`
 }
@@ -57,11 +74,6 @@ const MockFormDropdownInput = {
     '<button ref="triggerButton" class="mock-dropdown-trigger" @click="$emit(\'select-click\', $event)">Open</button>'
 }
 
-const MockPopover = {
-  name: 'Popover',
-  template: '<div><slot /></div>'
-}
-
 interface MountDropdownOptions {
   searcher?: (
     query: string,
@@ -69,8 +81,10 @@ interface MountDropdownOptions {
     onCleanup: (cleanupFn: () => void) => void
   ) => Promise<FormDropdownItem[]>
   multiple?: boolean | number
+  selected?: Set<string>
   searchQuery?: string
   onUpdateSelected?: (selected: Set<string>) => void
+  onUpdateIsOpen?: (isOpen: boolean) => void
 }
 
 function flushPromises() {
@@ -86,15 +100,16 @@ function mountDropdown(
     props: {
       items,
       multiple: options.multiple,
+      selected: options.selected,
       searcher: options.searcher,
       searchQuery: options.searchQuery,
-      'onUpdate:selected': options.onUpdateSelected
+      'onUpdate:selected': options.onUpdateSelected,
+      'onUpdate:isOpen': options.onUpdateIsOpen
     },
     global: {
-      plugins: [PrimeVue, i18n],
+      plugins: [PrimeVue, i18n, getActivePinia()!],
       stubs: {
         FormDropdownInput: MockFormDropdownInput,
-        Popover: MockPopover,
         FormDropdownMenu: MockFormDropdownMenu
       }
     }
@@ -119,17 +134,27 @@ function getCandidateLabel(): string {
 
 async function openDropdown(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Open' }))
-  await flushPromises()
+  await screen.findByTestId('dropdown-menu')
 }
 
+beforeEach(() => {
+  vi.mocked(useToastStore().addAlert).mockImplementation(() => undefined)
+})
+
 describe('FormDropdown', () => {
+  beforeEach(() => {
+    transformState.camera.x = 0
+    transformState.camera.y = 0
+    transformState.camera.z = 1
+  })
+
   describe('filteredItems updates when items prop changes', () => {
     it('updates displayed items when items prop changes', async () => {
-      const { rerender } = mountDropdown([
+      const { rerender, user } = mountDropdown([
         createItem('input-0', 'video1.mp4'),
         createItem('input-1', 'video2.mp4')
       ])
-      await flushPromises()
+      await openDropdown(user)
 
       expect(getMenuItems()).toHaveLength(2)
 
@@ -147,8 +172,8 @@ describe('FormDropdown', () => {
     })
 
     it('updates when items change but IDs stay the same', async () => {
-      const { rerender } = mountDropdown([createItem('1', 'alpha')])
-      await flushPromises()
+      const { rerender, user } = mountDropdown([createItem('1', 'alpha')])
+      await openDropdown(user)
 
       await rerender({ items: [createItem('1', 'beta')] })
       await flushPromises()
@@ -157,8 +182,8 @@ describe('FormDropdown', () => {
     })
 
     it('updates when switching between empty and non-empty items', async () => {
-      const { rerender } = mountDropdown([])
-      await flushPromises()
+      const { rerender, user } = mountDropdown([])
+      await openDropdown(user)
 
       expect(getMenuItems()).toHaveLength(0)
 
@@ -202,7 +227,7 @@ describe('FormDropdown', () => {
     await flushPromises()
 
     expect(searcher).not.toHaveBeenCalled()
-    expect(getMenuItems().map((item) => item.id)).toEqual(['3', '4'])
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
   })
 
   it('runs filtering when dropdown opens', async () => {
@@ -238,6 +263,40 @@ describe('FormDropdown', () => {
     expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
   })
 
+  it('keeps the selected item when it is clicked again in single-select mode', async () => {
+    const onUpdateSelected = vi.fn()
+    const onUpdateIsOpen = vi.fn()
+    const item = createItem('image', 'photo.png')
+    const { user } = mountDropdown([item], {
+      selected: new Set([item.id]),
+      onUpdateSelected,
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    await user.click(screen.getByRole('button', { name: item.label }))
+
+    expect(onUpdateSelected).not.toHaveBeenCalled()
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+    expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+  })
+
+  it('replaces the selected item when a different item is clicked in single-select mode', async () => {
+    const onUpdateSelected = vi.fn()
+    const firstItem = createItem('first', 'first.png')
+    const secondItem = createItem('second', 'second.png')
+    const { user } = mountDropdown([firstItem, secondItem], {
+      selected: new Set([firstItem.id]),
+      onUpdateSelected
+    })
+    await openDropdown(user)
+
+    await user.click(screen.getByRole('button', { name: secondItem.label }))
+
+    expect(onUpdateSelected).toHaveBeenCalledWith(new Set([secondItem.id]))
+    expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+  })
+
   it('does not select when Enter is pressed with an empty search query', async () => {
     const onUpdateSelected = vi.fn()
     const { user } = mountDropdown(
@@ -260,10 +319,9 @@ describe('FormDropdown', () => {
     )
     await flushPromises()
 
-    expect(getCandidateIndex()).toBe(-1)
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Search enter' }))
-    await flushPromises()
+    await user.keyboard('{Enter}')
 
     expect(onUpdateSelected).not.toHaveBeenCalled()
   })
@@ -360,6 +418,74 @@ describe('FormDropdown', () => {
 
     expect(searcher).toHaveBeenCalledWith('alp', items, expect.any(Function))
     expect(onUpdateSelected).not.toHaveBeenCalled()
+  })
+
+  it('closes on a pointerdown outside the menu and trigger', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const { user } = mountDropdown([createItem('1', 'alpha')], {
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+
+    const outside = document.createElement('div')
+    document.body.appendChild(outside)
+    outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await flushPromises()
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+    outside.remove()
+  })
+
+  it('closes when the canvas viewport moves', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const { user } = mountDropdown([createItem('1', 'alpha')], {
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+
+    transformState.camera.x += 77
+    await flushPromises()
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+  })
+
+  it('stays open on a pointerdown inside the menu', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const { user } = mountDropdown([createItem('1', 'alpha')], {
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    screen
+      .getByTestId('dropdown-menu')
+      .dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await flushPromises()
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+  })
+
+  it('stays open on a pointerdown inside a body-teleported sub-popover panel', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const { user } = mountDropdown([createItem('1', 'alpha')], {
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    const panel = document.createElement('div')
+    panel.classList.add(DROPDOWN_PANEL_CLASS)
+    const option = document.createElement('button')
+    panel.appendChild(option)
+    document.body.appendChild(panel)
+
+    option.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await flushPromises()
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+    panel.remove()
   })
 
   it('does not select a search result from multi-select dropdowns', async () => {

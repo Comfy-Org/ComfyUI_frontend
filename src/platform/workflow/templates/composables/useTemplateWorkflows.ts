@@ -1,9 +1,11 @@
-import { computed, ref } from 'vue'
+import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import type {
   TemplateGroup,
   TemplateInfo,
@@ -13,6 +15,20 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
 
+type TemplateLoadResult = 'loaded' | 'graph-failed' | 'not-started'
+
+function updateTemplateEducation(
+  isPartnerNode: boolean | undefined,
+  loadedWorkflow: Awaited<ReturnType<typeof app.loadGraphData>>
+) {
+  const educationStore = usePartnerNodesEducationStore()
+  if (isPartnerNode && typeof loadedWorkflow === 'object') {
+    educationStore.requestCard(loadedWorkflow.key)
+  } else {
+    educationStore.dismissCard()
+  }
+}
+
 export function useTemplateWorkflows() {
   const { t } = useI18n()
   const workflowTemplatesStore = useWorkflowTemplatesStore()
@@ -20,7 +36,13 @@ export function useTemplateWorkflows() {
 
   // State
   const selectedTemplate = ref<WorkflowTemplates | null>(null)
-  const loadingTemplateId = ref<string | null>(null)
+  let ownedLoadController: AbortController | undefined
+  const loadingTemplateId = computed(
+    () => workflowTemplatesStore.loadingTemplateId
+  )
+  onScopeDispose(() => {
+    workflowTemplatesStore.cancelTemplateLoad(ownedLoadController)
+  })
 
   // Computed
   const isTemplatesLoaded = computed(() => workflowTemplatesStore.isLoaded)
@@ -77,8 +99,7 @@ export function useTemplateWorkflows() {
    * Gets formatted template title
    */
   const getTemplateTitle = (template: TemplateInfo, sourceModule: string) => {
-    const fallback =
-      template.title ?? template.name ?? `${sourceModule} Template`
+    const fallback = template.title ?? template.name
     return sourceModule === 'default'
       ? (template.localizedTitle ?? fallback)
       : fallback
@@ -88,81 +109,132 @@ export function useTemplateWorkflows() {
    * Gets formatted template description
    */
   const getTemplateDescription = (template: TemplateInfo) => {
-    return (
-      (template.localizedDescription || template.description)
-        ?.replace(/[-_]/g, ' ')
-        .trim() ?? ''
-    )
+    return (template.localizedDescription || template.description)
+      .replace(/[-_]/g, ' ')
+      .trim()
   }
 
-  /**
-   * Loads a workflow template
-   */
-  const loadWorkflowTemplate = async (id: string, sourceModule: string) => {
-    if (!isTemplatesLoaded.value) return false
+  function resolveTemplateSource(id: string, sourceModule: string) {
+    if (sourceModule !== 'all') return sourceModule
 
-    loadingTemplateId.value = id
-    let json
+    const group = allTemplateGroups.value.find(
+      (group) =>
+        group.label ===
+        t('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
+    )
+    const category = group?.modules.find(
+      (module) => module.moduleName === 'all'
+    )
+    const template = category?.templates.find(
+      (template) => template.name === id
+    )
+    return template?.sourceModule
+  }
 
+  function showTemplateError(detail: string) {
+    useToastStore().add({ severity: 'error', summary: t('g.error'), detail })
+  }
+
+  function reportTemplateError(error: unknown) {
+    reportError(error, { errorType: 'error_loading_template' })
+    showTemplateError(t('templateWorkflows.error.loading'))
+  }
+
+  async function loadTemplateData(
+    id: string,
+    sourceModule: string,
+    signal: AbortSignal
+  ) {
+    const json = await fetchTemplateJson(id, sourceModule, signal)
+    signal.throwIfAborted()
+    const template = workflowTemplatesStore.enhancedTemplates.find(
+      (template) =>
+        template.name === id && template.sourceModule === sourceModule
+    )
+    return { json, template }
+  }
+
+  async function loadTemplateGraph(
+    { json, template }: Awaited<ReturnType<typeof loadTemplateData>>,
+    workflowName: string
+  ): Promise<TemplateLoadResult> {
     try {
-      // Handle "All" category as a special case
-      if (sourceModule === 'all') {
-        // Find "All" category in the ComfyUI Examples group
-        const comfyExamplesGroup = allTemplateGroups.value.find(
-          (g) =>
-            g.label ===
-            t('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
-        )
-        const allCategory = comfyExamplesGroup?.modules.find(
-          (m) => m.moduleName === 'all'
-        )
-        const template = allCategory?.templates.find((t) => t.name === id)
+      const loadedWorkflow = await app.loadGraphData(
+        json,
+        true,
+        true,
+        workflowName,
+        { openSource: 'template' }
+      )
+      if (loadedWorkflow === false) return 'graph-failed'
 
-        if (!template || !template.sourceModule) return false
+      updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
+      return 'loaded'
+    } catch (error) {
+      reportTemplateError(error)
+      return 'graph-failed'
+    }
+  }
 
-        // Use the stored source module for loading
-        sourceModule = template.sourceModule
+  async function loadWorkflowTemplate(
+    id: string,
+    sourceModule: string
+  ): Promise<TemplateLoadResult> {
+    if (!isTemplatesLoaded.value) {
+      showTemplateError(t('templateWorkflows.error.loading'))
+      return 'not-started'
+    }
+    const controller = workflowTemplatesStore.startTemplateLoad(id)
+    if (!controller) return 'not-started'
+    ownedLoadController = controller
+    try {
+      const source = resolveTemplateSource(id, sourceModule)
+      if (!source) {
+        showTemplateError(
+          t('templateWorkflows.error.templateNotFound', { templateName: id })
+        )
+        return 'not-started'
       }
-
-      // Regular case for normal categories
-      json = await fetchTemplateJson(id, sourceModule)
+      const data = await loadTemplateData(id, source, controller.signal)
+      controller.signal.throwIfAborted()
+      if (!workflowTemplatesStore.startTemplateGraphLoad(controller))
+        return 'not-started'
 
       const workflowName =
-        sourceModule === 'default'
-          ? t(`templateWorkflows.template.${id}`, id)
-          : id
-
-      if (isCloud) {
-        useTelemetry()?.trackTemplate({
-          workflow_name: id,
-          template_source: sourceModule
-        })
-      }
-
-      dialogStore.closeDialog()
-      await app.loadGraphData(json, true, true, workflowName, {
-        openSource: 'template'
+        source === 'default' ? t(`templateWorkflows.template.${id}`, id) : id
+      useTelemetry()?.trackTemplate({
+        workflow_name: id,
+        template_source: source
       })
 
-      return true
+      dialogStore.closeDialog()
+      return await loadTemplateGraph(data, workflowName)
     } catch (error) {
-      console.error('Error loading workflow template:', error)
-      return false
+      if (!controller.signal.aborted) reportTemplateError(error)
+      return 'not-started'
     } finally {
-      loadingTemplateId.value = null
+      workflowTemplatesStore.finishTemplateLoad(controller)
+      if (ownedLoadController === controller) ownedLoadController = undefined
     }
   }
 
   /**
    * Fetches template JSON from the appropriate endpoint
    */
-  const fetchTemplateJson = async (id: string, sourceModule: string) => {
+  async function fetchTemplateJson(
+    id: string,
+    sourceModule: string,
+    signal: AbortSignal
+  ) {
     if (sourceModule === 'default') {
       // Default templates provided by frontend are served on this separate endpoint
-      return fetch(api.fileURL(`/templates/${id}.json`)).then((r) => r.json())
+      return fetch(api.fileURL(`/templates/${id}.json`), { signal }).then((r) =>
+        r.json()
+      )
     } else {
       return fetch(
-        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
+        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`),
+        { signal }
       ).then((r) => r.json())
     }
   }

@@ -1,40 +1,22 @@
-import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useNodeVideo } from '@/composables/node/useNodeImage'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 
-const { canvasInteractionsMock, nodeOutputStoreMock } = vi.hoisted(() => ({
-  canvasInteractionsMock: {
-    handleWheel: vi.fn(),
-    handlePointerDown: vi.fn(),
-    handlePointerMove: vi.fn()
-  },
-  nodeOutputStoreMock: {
-    getNodeImageUrls: vi.fn<(node: unknown) => string[] | undefined>()
-  }
-}))
-
-vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
-  useCanvasInteractions: () => canvasInteractionsMock
-}))
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => nodeOutputStoreMock
-}))
-vi.mock('@/utils/imageUtil', () => ({
+vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
+vi.mock(import('@/utils/imageUtil'), () => ({
   fitDimensionsToNodeWidth: () => ({ minHeight: 256, minWidth: 256 })
 }))
 
 describe('useNodeVideo', () => {
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
-  })
-
   async function setup() {
     vi.clearAllMocks()
-    vi.useFakeTimers()
 
-    nodeOutputStoreMock.getNodeImageUrls.mockReturnValue(['http://video/1.mp4'])
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      'http://video/1.mp4'
+    ])
     const node = createMockMediaNode({
       size: [400, 400],
       graph: { setDirtyCanvas: vi.fn() }
@@ -75,9 +57,9 @@ describe('useNodeVideo', () => {
     video.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
     video.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
 
-    expect(canvasInteractionsMock.handleWheel).toHaveBeenCalledTimes(1)
-    expect(canvasInteractionsMock.handlePointerMove).toHaveBeenCalledTimes(1)
-    expect(canvasInteractionsMock.handlePointerDown).toHaveBeenCalledTimes(1)
+    expect(useCanvasInteractions().handleWheel).toHaveBeenCalledTimes(1)
+    expect(useCanvasInteractions().handlePointerMove).toHaveBeenCalledTimes(1)
+    expect(useCanvasInteractions().handlePointerDown).toHaveBeenCalledTimes(1)
   })
 
   it('detaches every listener when the widget is removed', async () => {
@@ -89,8 +71,8 @@ describe('useNodeVideo', () => {
     video.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }))
     video.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
 
-    expect(canvasInteractionsMock.handleWheel).not.toHaveBeenCalled()
-    expect(canvasInteractionsMock.handlePointerMove).not.toHaveBeenCalled()
-    expect(canvasInteractionsMock.handlePointerDown).not.toHaveBeenCalled()
+    expect(useCanvasInteractions().handleWheel).not.toHaveBeenCalled()
+    expect(useCanvasInteractions().handlePointerMove).not.toHaveBeenCalled()
+    expect(useCanvasInteractions().handlePointerDown).not.toHaveBeenCalled()
   })
 })

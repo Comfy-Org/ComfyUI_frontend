@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as ModelAdapterModule from './ModelAdapter'
@@ -15,27 +16,29 @@ const splatMeshSpies = {
   updateWorldMatrix: vi.fn()
 }
 
-vi.mock('@sparkjsdev/spark', async () => {
+vi.mock(import('@sparkjsdev/spark'), async () => {
   const three = await import('three')
   return {
-    SplatMesh: class extends three.Object3D {
-      initialized = Promise.resolve()
-      dispose = splatMeshSpies.dispose
-      getBoundingBox = splatMeshSpies.getBoundingBox
+    SplatMesh: fromAny(
+      class extends three.Object3D {
+        initialized = Promise.resolve()
+        dispose = splatMeshSpies.dispose
+        getBoundingBox = splatMeshSpies.getBoundingBox
 
-      constructor(opts: { fileBytes: ArrayBuffer; fileName?: string }) {
-        super()
-        splatMeshSpies.ctor(opts)
-      }
+        constructor(opts: { fileBytes: ArrayBuffer; fileName?: string }) {
+          super()
+          splatMeshSpies.ctor(opts)
+        }
 
-      override updateWorldMatrix(
-        force: boolean,
-        updateChildren: boolean
-      ): void {
-        splatMeshSpies.updateWorldMatrix(force, updateChildren)
-        super.updateWorldMatrix(force, updateChildren)
+        override updateWorldMatrix(
+          force: boolean,
+          updateChildren: boolean
+        ): void {
+          splatMeshSpies.updateWorldMatrix(force, updateChildren)
+          super.updateWorldMatrix(force, updateChildren)
+        }
       }
-    }
+    )
   }
 })
 
@@ -50,10 +53,6 @@ function makeContext(): ModelLoadContext {
 
 describe('SplatModelAdapter', () => {
   beforeEach(() => {
-    splatMeshSpies.ctor.mockClear()
-    splatMeshSpies.dispose.mockClear()
-    splatMeshSpies.getBoundingBox.mockClear()
-    splatMeshSpies.updateWorldMatrix.mockClear()
     vi.spyOn(ModelAdapterModule, 'fetchModelData').mockResolvedValue(
       new ArrayBuffer(8)
     )
@@ -63,7 +62,7 @@ describe('SplatModelAdapter', () => {
     const adapter = new SplatModelAdapter()
     expect(adapter.kind).toBe('splat')
     expect(adapter.capabilities.lighting).toBe(false)
-    expect(adapter.capabilities.exportable).toBe(false)
+    expect(adapter.capabilities.exportable).toBe(true)
     expect([...adapter.capabilities.materialModes]).toEqual([])
   })
 
@@ -89,14 +88,12 @@ describe('SplatModelAdapter', () => {
       fileBytes: buf,
       fileName: 'scene.splat'
     })
-    expect(result!.object).toBeInstanceOf(THREE.Group)
-    expect(result!.object.children).toHaveLength(1)
-    expect(result!.capabilities.lighting).toBe(false)
+    expect(result.object).toBeInstanceOf(THREE.Group)
+    expect(result.object.children).toHaveLength(1)
+    expect(result.capabilities.lighting).toBe(false)
 
     expect(ctx.setOriginalModel).toHaveBeenCalledTimes(1)
-    expect(ctx.setOriginalModel).toHaveBeenCalledWith(
-      result!.object.children[0]
-    )
+    expect(ctx.setOriginalModel).toHaveBeenCalledWith(result.object.children[0])
   })
 
   it('rotates the splat 180° around X (OpenCV → three.js convention)', async () => {
@@ -106,7 +103,7 @@ describe('SplatModelAdapter', () => {
       'scene.splat'
     )
 
-    const splat = result!.object.children[0]
+    const splat = result.object.children[0]
     expect(splat.quaternion.x).toBe(1)
     expect(splat.quaternion.y).toBe(0)
     expect(splat.quaternion.z).toBe(0)
@@ -132,7 +129,7 @@ describe('SplatModelAdapter', () => {
         '/api/view?',
         'scene.splat'
       )
-      const group = result!.object
+      const group = result.object
       const splat = group.children[0]
       splat.position.set(10, 0, 0)
 
@@ -165,7 +162,7 @@ describe('SplatModelAdapter', () => {
         'scene.splat'
       )
 
-      adapter.disposeModel(result!.object)
+      adapter.disposeModel(result.object)
 
       expect(splatMeshSpies.dispose).toHaveBeenCalledOnce()
     })

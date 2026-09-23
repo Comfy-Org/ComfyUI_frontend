@@ -9,7 +9,7 @@
       :class="
         cn(
           tabStyles,
-          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
+          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
           errorRadiusClass
         )
       "
@@ -28,7 +28,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
           enterRadiusClass
         )
       "
@@ -58,7 +58,7 @@
       :class="
         cn(
           tabStyles,
-          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
+          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
           errorRadiusClass
         )
       "
@@ -77,7 +77,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-4 pl-5',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
           enterRadiusClass
         )
       "
@@ -112,7 +112,7 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-destructive-background pt-9 pb-4 text-white hover:bg-destructive-background-hover',
+          'box-border w-full rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
           footerRadiusClass
         )
       "
@@ -142,8 +142,8 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface',
-          hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4',
+          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
+          hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
           footerRadiusClass
         )
       "
@@ -174,8 +174,8 @@
       :class="
         cn(
           tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface',
-          hasAnyError ? 'pt-9 pb-4' : 'pt-8 pb-4',
+          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
+          hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
           footerRadiusClass
         )
       "
@@ -254,37 +254,23 @@ function emitIfNotDragged(
   else emit('toggleAdvanced')
 }
 
-const RADIUS_CLASS = {
-  'rounded-b-17': 'rounded-b-[17px]',
-  'rounded-b-20': 'rounded-b-[20px]',
-  'rounded-br-17': 'rounded-br-[17px]',
-  'rounded-br-20': 'rounded-br-[20px]'
-} as const
-
 function getBottomRadius(
   nodeShape: RenderShape | undefined,
-  size: '17px' | '20px',
   corners: 'both' | 'right' = 'both'
 ): string {
   if (nodeShape === RenderShape.BOX) return ''
-  const prefix =
-    nodeShape === RenderShape.CARD || corners === 'right'
-      ? 'rounded-br'
-      : 'rounded-b'
-  const key =
-    `${prefix}-${size === '17px' ? '17' : '20'}` as keyof typeof RADIUS_CLASS
-  return RADIUS_CLASS[key]
+  return nodeShape === RenderShape.CARD || corners === 'right'
+    ? 'rounded-br-xl'
+    : 'rounded-b-xl'
 }
 
-const footerRadiusClass = computed(() =>
-  getBottomRadius(shape, hasAnyError ? '20px' : '17px')
-)
+const footerRadiusClass = computed(() => getBottomRadius(shape))
 
-const errorRadiusClass = computed(() => getBottomRadius(shape, '20px'))
+const errorRadiusClass = computed(() => getBottomRadius(shape))
 
-const enterRadiusClass = computed(() => getBottomRadius(shape, '20px', 'right'))
+const enterRadiusClass = computed(() => getBottomRadius(shape, 'right'))
 
-const tabStyles = 'pointer-events-auto h-9 text-xs'
+const tabStyles = 'pointer-events-auto h-11 text-xs font-normal'
 const footerWrapperBase = 'isolate -z-1 -mt-5 box-border flex'
 const errorWrapperStyles = cn(
   footerWrapperBase,

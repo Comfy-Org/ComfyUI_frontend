@@ -19,7 +19,7 @@ export class SplatModelAdapter implements ModelAdapter {
     requiresMaterialRebuild: false,
     gizmoTransform: true,
     lighting: false,
-    exportable: false,
+    exportable: true,
     materialModes: [],
     fitTargetSize: 20
   }

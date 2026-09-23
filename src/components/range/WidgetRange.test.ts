@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
@@ -7,13 +7,18 @@ import type {
   IWidgetRangeOptions,
   RangeValue
 } from '@/lib/litegraph/src/types/widgets'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+
+import WidgetRange from './WidgetRange.vue'
 
 const upstreamHolder = vi.hoisted(() => ({
   ref: null as { value: unknown } | null
 }))
 
-vi.mock('@/composables/useUpstreamValue', async () => {
+vi.mock<unknown>(import('@/composables/useUpstreamValue'), async () => {
   const { ref } = await import('vue')
   return {
     useUpstreamValue: () => {
@@ -23,16 +28,6 @@ vi.mock('@/composables/useUpstreamValue', async () => {
     singleValueExtractor: () => () => undefined
   }
 })
-
-const outputsHolder = vi.hoisted(() => ({
-  nodeOutputs: {} as Record<string, unknown>
-}))
-
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => outputsHolder
-}))
-
-import WidgetRange from './WidgetRange.vue'
 
 const RangeEditorStub = defineComponent({
   name: 'RangeEditor',
@@ -65,9 +60,9 @@ function makeWidget(
     name: 'range_w',
     type: 'range',
     value: { min: 0, max: 1 },
-    options: options as IWidgetRangeOptions,
+    options,
     ...widgetOverrides
-  } as SimplifiedWidget<RangeValue, IWidgetRangeOptions>
+  }
 }
 
 function setUpstream(value: RangeValue | undefined) {
@@ -94,7 +89,7 @@ function renderWidget(
 describe('WidgetRange', () => {
   beforeEach(() => {
     upstreamHolder.ref = null
-    outputsHolder.nodeOutputs = {}
+    useNodeOutputStore().nodeOutputs = {}
   })
 
   describe('Value pass-through', () => {
@@ -133,9 +128,12 @@ describe('WidgetRange', () => {
     it('shows upstream value when disabled with a valid upstream', () => {
       setUpstream({ min: 0.3, max: 0.7 })
       renderWidget(
-        makeWidget({ disabled: true } as IWidgetRangeOptions, {
-          linkedUpstream: { nodeId: 'n1' }
-        }),
+        makeWidget(
+          { disabled: true },
+          {
+            linkedUpstream: { nodeId: toNodeId('n1') }
+          }
+        ),
         { min: 0, max: 1 }
       )
       const el = screen.getByTestId('range-editor')
@@ -144,10 +142,13 @@ describe('WidgetRange', () => {
 
     it('ignores upstream value when not disabled', () => {
       setUpstream({ min: 0.3, max: 0.7 })
-      renderWidget(makeWidget({}, { linkedUpstream: { nodeId: 'n1' } }), {
-        min: 0,
-        max: 1
-      })
+      renderWidget(
+        makeWidget({}, { linkedUpstream: { nodeId: toNodeId('n1') } }),
+        {
+          min: 0,
+          max: 1
+        }
+      )
       const el = screen.getByTestId('range-editor')
       expect(JSON.parse(el.dataset.model!)).toEqual({ min: 0, max: 1 })
     })
@@ -162,20 +163,30 @@ describe('WidgetRange', () => {
     })
 
     it('passes a histogram when node output has a matching histogram entry', () => {
-      outputsHolder.nodeOutputs = {
+      useNodeOutputStore().nodeOutputs = {
         loc1: { histogram_range_w: [1, 2, 3, 4] }
       }
-      renderWidget(makeWidget({}, { nodeLocatorId: 'loc1' }))
+      renderWidget(
+        makeWidget(
+          {},
+          { nodeLocatorId: createNodeLocatorId(null, toNodeId('loc1')) }
+        )
+      )
       expect(screen.getByTestId('range-editor').dataset.hasHistogram).toBe(
         'true'
       )
     })
 
     it('treats an empty histogram array as null', () => {
-      outputsHolder.nodeOutputs = {
+      useNodeOutputStore().nodeOutputs = {
         loc1: { histogram_range_w: [] }
       }
-      renderWidget(makeWidget({}, { nodeLocatorId: 'loc1' }))
+      renderWidget(
+        makeWidget(
+          {},
+          { nodeLocatorId: createNodeLocatorId(null, toNodeId('loc1')) }
+        )
+      )
       expect(screen.getByTestId('range-editor').dataset.hasHistogram).toBe(
         'false'
       )

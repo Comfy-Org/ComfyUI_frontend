@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -12,13 +10,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-vi.mock('@/stores/domWidgetStore', () => ({
-  useDomWidgetStore: () => ({ widgetStates: new Map() })
-}))
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 
@@ -36,10 +28,6 @@ function addConcreteWidget(node: LGraphNode, name: string): IBaseWidget {
   return node.addWidget('text', name, `${name}-value`, () => undefined)
 }
 
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
-
 describe('resolveConcretePromotedWidget', () => {
   test('resolves a direct concrete source widget', () => {
     const host = createHostNode(100)
@@ -55,6 +43,7 @@ describe('resolveConcretePromotedWidget', () => {
     expect(result.status).toBe('resolved')
     if (result.status !== 'resolved') return
     expect(result.resolved.node.id).toBe(concreteNode.id)
+    expect(result.resolved.nodePath).toEqual([String(concreteNode.id)])
     expect(result.resolved.widget.name).toBe('seed')
   })
 
@@ -91,6 +80,10 @@ describe('resolveConcretePromotedWidget', () => {
     expect(result.status).toBe('resolved')
     if (result.status !== 'resolved') return
     expect(result.resolved.node.id).toBe(leaf.id)
+    expect(result.resolved.nodePath).toEqual([
+      String(innerNode.id),
+      String(leaf.id)
+    ])
     expect(result.resolved.widget.name).toBe('seed')
     expect(result.resolved.widget.type).toBe('combo')
   })
@@ -104,7 +97,7 @@ describe('resolveConcretePromotedWidget', () => {
       subgraph: {
         inputNode: { slots: [{ name: 'x', linkIds: [1] }] },
         getLink: () => ({
-          resolve: () => ({ inputNode: recursiveNode })
+          resolve: () => ({ inputNode: recursiveNode, input: recursiveInput })
         }),
         getNodeById: () => recursiveNode
       }

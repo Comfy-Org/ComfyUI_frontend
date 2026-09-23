@@ -7,7 +7,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { isImageNode, isLGraphNode, isLoad3dNode } from '@/utils/litegraphUtil'
+import {
+  isImageNode,
+  isLGraphGroup,
+  isLGraphNode,
+  isLoad3dNode
+} from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 export interface NodeSelectionState {
@@ -28,9 +33,7 @@ export function useSelectionState() {
   const { selectedItems } = storeToRefs(canvasStore)
 
   const selectedNodes = computed(() => {
-    return selectedItems.value.filter((i: unknown) =>
-      isLGraphNode(i)
-    ) as LGraphNode[]
+    return selectedItems.value.filter((i: unknown) => isLGraphNode(i))
   })
 
   const nodeDef = computed(() => {
@@ -41,15 +44,20 @@ export function useSelectionState() {
   const hasAnySelection = computed(() => selectedItems.value.length > 0)
   const hasSingleSelection = computed(() => selectedItems.value.length === 1)
   const hasMultipleSelection = computed(() => selectedItems.value.length > 1)
+  const hasGroupedNodesSelection = computed(() =>
+    selectedItems.value.some(
+      (item) => isLGraphGroup(item) && [...item.children].some(isLGraphNode)
+    )
+  )
 
   const isSingleNode = computed(
     () => hasSingleSelection.value && isLGraphNode(selectedItems.value[0])
   )
-  const isSingleSubgraph = computed(
-    () =>
-      isSingleNode.value &&
-      (selectedItems.value[0] as LGraphNode)?.isSubgraphNode?.()
-  )
+  const isSingleSubgraph = computed(() => {
+    const predicate: (() => boolean) | undefined =
+      selectedNodes.value.at(0)?.isSubgraphNode
+    return isSingleNode.value && (predicate?.() ?? false)
+  })
   const isSingleImageNode = computed(
     () =>
       isSingleNode.value && isImageNode(selectedItems.value[0] as LGraphNode)
@@ -79,7 +87,7 @@ export function useSelectionState() {
   ): NodeSelectionState => {
     if (!nodes.length) return { collapsed: false, pinned: false }
     return {
-      collapsed: nodes.some((n) => n.flags?.collapsed),
+      collapsed: nodes.some((n) => n.flags.collapsed),
       pinned: nodes.some((n) => n.pinned)
     }
   }
@@ -112,6 +120,7 @@ export function useSelectionState() {
     openNodeInfo,
     hasAny3DNodeSelected,
     hasAnySelection,
+    hasGroupedNodesSelection,
     hasSingleSelection,
     hasMultipleSelection,
     isSingleNode,

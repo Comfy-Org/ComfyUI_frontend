@@ -1,23 +1,29 @@
+import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AssetInfo } from '@/schemas/apiSchema'
+import type { AssetInfo, HubWorkflowDetail } from '@comfyorg/ingest-types'
+
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 
 const mockApp = vi.hoisted(() => ({
   rootGraph: {} as object | null,
+  get isGraphReady() {
+    return this.rootGraph !== null
+  },
   graphToPrompt: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
 const mockGetShareableAssets = vi.fn()
 const mockFetchApi = vi.fn()
-const mockInvalidateInputAssetsIncludingPublic = vi.hoisted(() => vi.fn())
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
+    addEventListener: vi.fn(),
+    getServerFeature: (_name: string, defaultValue: unknown) => defaultValue,
     getShareableAssets: (...args: unknown[]) => mockGetShareableAssets(...args),
     fetchApi: (...args: unknown[]) => mockFetchApi(...args),
     apiURL: (route: string) => `/api${route}`,
@@ -25,12 +31,11 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    invalidateInputAssetsIncludingPublic:
-      mockInvalidateInputAssetsIncludingPublic
-  }
-}))
+beforeEach(() => {
+  vi.spyOn(useAssetsStore().inputAssets, 'invalidate').mockResolvedValue(
+    undefined
+  )
+})
 
 describe(useWorkflowShareService, () => {
   const mockShareableAssets: AssetInfo[] = [
@@ -63,9 +68,7 @@ describe(useWorkflowShareService, () => {
   }
 
   beforeEach(() => {
-    vi.resetAllMocks()
     mockApp.rootGraph = {}
-    window.history.replaceState({}, '', '/')
   })
 
   it('returns unpublished status for unknown workflow', async () => {
@@ -175,12 +178,29 @@ describe(useWorkflowShareService, () => {
       }
 
       if (path === '/hub/workflows/wf-prefill') {
-        return mockJsonResponse({
+        const detail = {
+          share_id: 'wf-prefill',
+          workflow_id: 'wf-prefill',
+          name: 'Published title',
+          status: 'approved',
           description: 'A cool workflow',
-          tags: ['art', 'upscale'],
+          is_app: false,
+          tags: [
+            { name: 'art', display_name: 'Art' },
+            { name: 'upscale', display_name: 'Upscale' }
+          ],
+          models: [{ name: 'sdxl', display_name: 'SDXL' }],
+          custom_nodes: [{ name: 'impact-pack', display_name: 'Impact Pack' }],
           thumbnail_type: 'image_comparison',
-          sample_image_urls: ['https://example.com/img1.png']
-        })
+          sample_image_urls: ['https://example.com/img1.png'],
+          tutorial_url: 'https://youtube.com/abc',
+          metadata: { extra: 'value' },
+          workflow_json: {},
+          assets: [],
+          profile: { username: 'builder' }
+        } satisfies HubWorkflowDetail
+
+        return mockJsonResponse(detail)
       }
 
       return mockJsonResponse({}, false, 404)
@@ -191,12 +211,77 @@ describe(useWorkflowShareService, () => {
 
     expect(status.isPublished).toBe(true)
     expect(status.prefill).toEqual({
+      name: 'Published title',
       description: 'A cool workflow',
-      tags: ['art', 'upscale'],
+      tags: ['Art', 'Upscale'],
+      models: ['sdxl'],
+      customNodes: ['impact-pack'],
       thumbnailType: 'imageComparison',
-      sampleImageUrls: ['https://example.com/img1.png']
+      sampleImageUrls: ['https://example.com/img1.png'],
+      tutorialUrl: 'https://youtube.com/abc',
+      metadata: { extra: 'value' }
     })
     expect(mockFetchApi).toHaveBeenNthCalledWith(2, '/hub/workflows/wf-prefill')
+  })
+
+  it('omits empty metadata from prefill', async () => {
+    mockFetchApi.mockImplementation(async (path: string) => {
+      if (path === '/userdata/wf-empty-meta/publish') {
+        return mockJsonResponse({
+          workflow_id: 'wf-empty-meta',
+          share_id: 'wf-empty-meta',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      }
+
+      if (path === '/hub/workflows/wf-empty-meta') {
+        const detail = {
+          share_id: 'wf-empty-meta',
+          workflow_id: 'wf-empty-meta',
+          name: 'Title only',
+          status: 'approved',
+          is_app: false,
+          metadata: {},
+          workflow_json: {},
+          assets: [],
+          profile: { username: 'builder' }
+        } satisfies HubWorkflowDetail
+
+        return mockJsonResponse(detail)
+      }
+
+      return mockJsonResponse({}, false, 404)
+    })
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-empty-meta')
+
+    expect(status.prefill?.name).toBe('Title only')
+    expect(status.prefill?.metadata).toBeUndefined()
+  })
+
+  it('rejects hub workflow details that violate the generated contract', async () => {
+    mockFetchApi
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          workflow_id: 'wf-invalid',
+          share_id: 'wf-invalid',
+          publish_time: '2026-02-23T00:00:00Z',
+          listed: true
+        })
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          name: 'Incomplete response'
+        })
+      )
+
+    const service = useWorkflowShareService()
+    const status = await service.getPublishStatus('wf-invalid')
+
+    expect(status.isPublished).toBe(true)
+    expect(status.prefill).toBeNull()
   })
 
   it('returns null prefill when hub workflow details are unavailable', async () => {
@@ -348,7 +433,7 @@ describe(useWorkflowShareService, () => {
         share_id: 'share-id-1'
       })
     })
-    expect(mockInvalidateInputAssetsIncludingPublic).toHaveBeenCalledTimes(1)
+    expect(useAssetsStore().inputAssets.invalidate).toHaveBeenCalledOnce()
   })
 
   it('omits share_id from the payload when not provided', async () => {
@@ -385,7 +470,7 @@ describe(useWorkflowShareService, () => {
     await expect(
       service.importPublishedAssets(['bad-id'], 'share-id-1')
     ).rejects.toThrow('Failed to import assets: 400')
-    expect(mockInvalidateInputAssetsIncludingPublic).not.toHaveBeenCalled()
+    expect(useAssetsStore().inputAssets.invalidate).not.toHaveBeenCalled()
   })
 
   it('throws when shared workflow payload is invalid', async () => {

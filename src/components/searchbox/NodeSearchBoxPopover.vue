@@ -3,6 +3,7 @@
     <Dialog
       v-model:visible="visible"
       modal
+      :close-on-escape="!filterVisible"
       :dismissable-mask="dismissable"
       :pt="{
         root: {
@@ -27,7 +28,6 @@
         <div v-if="useSearchBoxV2" role="search" class="relative">
           <NodeSearchContent
             :filters="nodeFilters"
-            :default-root-filter="defaultRootFilter"
             @add-filter="addFilter"
             @remove-filter="removeFilter"
             @add-node="addNode"
@@ -45,6 +45,7 @@
         </div>
         <NodeSearchBox
           v-else
+          v-model:filter-visible="filterVisible"
           :filters="nodeFilters"
           @add-filter="addFilter"
           @remove-filter="removeFilter"
@@ -78,8 +79,6 @@ import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
-import { RootCategory } from '@/components/searchbox/v2/rootCategories'
-import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
 
 import NodeSearchContent from './v2/NodeSearchContent.vue'
 import NodeSearchBox from './NodeSearchBox.vue'
@@ -91,12 +90,12 @@ let disconnectOnReset = false
 const settingStore = useSettingStore()
 const searchBoxStore = useSearchBoxStore()
 const litegraphService = useLitegraphService()
-const canvasStore = useCanvasStore()
 const { trackFeatureUsed } = useSurveyFeatureTracking('node-search')
 
 const { visible, newSearchBoxEnabled, useSearchBoxV2 } =
   storeToRefs(searchBoxStore)
 const dismissable = ref(true)
+const filterVisible = ref(false)
 const hoveredNodeDef = ref<ComfyNodeDefImpl | null>(null)
 const { width: windowWidth } = useWindowSize()
 // Minimum viewport width for the preview panel to fit beside the dialog
@@ -107,13 +106,6 @@ const enableNodePreview = computed(
     settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview') &&
     windowWidth.value >= MIN_WIDTH_FOR_PREVIEW
 )
-const defaultRootFilter = ref<RootCategoryId | null>(null)
-watch(visible, (isVisible) => {
-  if (!isVisible) return
-  defaultRootFilter.value = !canvasStore.canvas?.graph?.nodes?.length
-    ? RootCategory.Essentials
-    : null
-})
 function getNewNodeLocation(): Point {
   return triggerEvent
     ? [triggerEvent.canvasX, triggerEvent.canvasY]
@@ -133,11 +125,13 @@ function removeFilter(filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) {
 }
 function clearFilters() {
   nodeFilters.value = []
+  filterVisible.value = false
   hoveredNodeDef.value = null
 }
 function closeDialog() {
   visible.value = false
 }
+const canvasStore = useCanvasStore()
 
 function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
   const followCursor = settingStore.get('Comfy.NodeSearchBoxImpl.FollowCursor')
@@ -248,11 +242,16 @@ function showContextMenu(e: CanvasPointerEvent) {
     canvas.canvas,
     'connect-new-default-node',
     (createEvent) => {
-      if (!(createEvent instanceof CustomEvent))
-        throw new Error('Invalid event')
+      if (!(createEvent instanceof CustomEvent)) {
+        console.error('Invalid event')
+        return
+      }
 
       const node: unknown = createEvent.detail?.node
-      if (!(node instanceof LGraphNode)) throw new Error('Invalid node')
+      if (!(node instanceof LGraphNode)) {
+        console.error('Invalid node')
+        return
+      }
 
       disconnectOnReset = false
       createEvent.preventDefault()

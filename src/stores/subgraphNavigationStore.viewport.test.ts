@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -12,15 +11,12 @@ import {
   VIEWPORT_CACHE_MAX_SIZE
 } from '@/stores/subgraphNavigationStore'
 
-const { mockSetDirty, mockFitView, mockRequestSlotSyncAll } = vi.hoisted(
-  () => ({
-    mockSetDirty: vi.fn(),
-    mockFitView: vi.fn(),
-    mockRequestSlotSyncAll: vi.fn()
-  })
-)
+const { mockSetDirty, mockFitView } = vi.hoisted(() => ({
+  mockSetDirty: vi.fn(),
+  mockFitView: vi.fn()
+}))
 
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
     subgraph: undefined as unknown,
     graph: undefined as unknown,
@@ -44,7 +40,10 @@ vi.mock('@/scripts/app', () => {
     nodes: [],
     subgraphs: new Map(),
     getNodeById: vi.fn(),
-    id: 'root'
+    id: 'root',
+    get rootGraph() {
+      return mockGraph
+    }
   }
 
   mockCanvas.graph = mockGraph
@@ -53,28 +52,18 @@ vi.mock('@/scripts/app', () => {
     app: {
       graph: mockGraph,
       rootGraph: mockGraph,
-      canvas: mockCanvas
+      rootGraphOrUndefined: mockGraph,
+      canvas: mockCanvas,
+      canvasOrUndefined: mockCanvas
     }
   }
 })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => app.canvas
-  })
-}))
-vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: vi.fn() }))
 
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ fitView: mockFitView })
 }))
-
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
-  () => ({
-    requestSlotLayoutSyncForAllNodes: mockRequestSlotSyncAll
-  })
-)
 
 const mockCanvas = app.canvas
 
@@ -82,7 +71,8 @@ let rafCallbacks: FrameRequestCallback[] = []
 
 describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
+    useCanvasStore().canvas = app.canvas
+    vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     rafCallbacks = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafCallbacks.push(cb)
@@ -94,13 +84,6 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     mockCanvas.ds.offset = [0, 0]
     mockCanvas.ds.state.scale = 1
     mockCanvas.ds.state.offset = [0, 0]
-    mockSetDirty.mockClear()
-    mockFitView.mockClear()
-    mockRequestSlotSyncAll.mockClear()
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   describe('cache key isolation', () => {
@@ -228,7 +211,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(mockFitView).not.toHaveBeenCalled()
     })
 
-    it('re-syncs all slot layouts on the frame after fitView', () => {
+    it('fits the first visit on the next frame', () => {
       const store = useSubgraphNavigationStore()
       store.viewportCache.delete(':root')
 
@@ -239,37 +222,9 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       store.restoreViewport('root')
       expect(rafCallbacks).toHaveLength(1)
 
-      // Outer RAF runs fitView and schedules the inner RAF
       rafCallbacks[0](performance.now())
       expect(mockFitView).toHaveBeenCalledOnce()
-      expect(mockRequestSlotSyncAll).not.toHaveBeenCalled()
-      expect(rafCallbacks).toHaveLength(2)
-
-      // Inner RAF re-syncs slots after fitView's transform has been applied
-      rafCallbacks[1](performance.now())
-      expect(mockRequestSlotSyncAll).toHaveBeenCalledOnce()
-
-      mockGraph.nodes = []
-      mockGraph._nodes = []
-    })
-
-    it('skips slot re-sync if active graph changed between fitView and inner RAF', () => {
-      const store = useSubgraphNavigationStore()
-      store.viewportCache.delete(':root')
-
-      const mockGraph = app.graph as { nodes: unknown[]; _nodes: unknown[] }
-      mockGraph.nodes = [{ pos: [0, 0], size: [100, 100] }]
-      mockGraph._nodes = mockGraph.nodes
-
-      store.restoreViewport('root')
-      rafCallbacks[0](performance.now())
-      expect(mockFitView).toHaveBeenCalledOnce()
-
-      // User navigated away before the inner RAF fired
-      mockCanvas.subgraph = { id: 'different-graph' } as never
-      rafCallbacks[1](performance.now())
-
-      expect(mockRequestSlotSyncAll).not.toHaveBeenCalled()
+      expect(rafCallbacks).toHaveLength(1)
 
       mockGraph.nodes = []
       mockGraph._nodes = []

@@ -1,12 +1,24 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { TaskOutput } from '@/schemas/apiSchema'
+import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import {
+  TaskItemImpl,
+  useQueuePendingTaskCountStore,
+  useQueueStore
+} from '@/stores/queueStore'
+import {
+  isAudioResult,
+  isImageResult,
+  isTextResult,
+  isVhsFormat,
+  isVideoResult,
+  resultItemHtmlAudioType,
+  resultItemHtmlVideoType,
+  resultItemSupportsPreview
+} from '@/utils/resultItem'
 
 // Fixture factory for JobListItem
 function createJob(
@@ -54,7 +66,7 @@ type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
 type QueueResolver = (value: QueueResponse) => void
 
 // Mock API
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getQueue: vi.fn(),
     getHistory: vi.fn(),
@@ -65,6 +77,21 @@ vi.mock('@/scripts/api', () => ({
     removeEventListener: vi.fn()
   }
 }))
+
+describe('useQueuePendingTaskCountStore', () => {
+  it.for([
+    { name: 'null status', status: null },
+    { name: 'missing execution info', status: {} },
+    { name: 'missing queue count', status: { exec_info: {} } }
+  ])('preserves the count for $name', ({ status }) => {
+    const store = useQueuePendingTaskCountStore()
+    store.count = 3
+
+    store.update(new CustomEvent('status', { detail: status }))
+
+    expect(store.count).toBe(3)
+  })
+})
 
 describe('TaskItemImpl', () => {
   it('should exclude animated from flatOutputs', () => {
@@ -103,10 +130,10 @@ describe('TaskItemImpl', () => {
 
     const output = taskItem.flatOutputs[0]
 
-    expect(output.htmlVideoType).toBe('video/webm')
-    expect(output.isVideo).toBe(true)
-    expect(output.isVhsFormat).toBe(false)
-    expect(output.isImage).toBe(false)
+    expect(resultItemHtmlVideoType(output)).toBe('video/webm')
+    expect(isVideoResult(output)).toBe(true)
+    expect(isVhsFormat(output)).toBe(false)
+    expect(isImageResult(output)).toBe(false)
   })
 
   // https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/0a75c7958fe320efcb052f1d9f8451fd20c730a8/videohelpersuite/nodes.py#L578-L590
@@ -128,10 +155,10 @@ describe('TaskItemImpl', () => {
 
     const output = taskItem.flatOutputs[0]
 
-    expect(output.htmlVideoType).toBe('video/webm')
-    expect(output.isVideo).toBe(true)
-    expect(output.isVhsFormat).toBe(true)
-    expect(output.isImage).toBe(false)
+    expect(resultItemHtmlVideoType(output)).toBe('video/webm')
+    expect(isVideoResult(output)).toBe(true)
+    expect(isVhsFormat(output)).toBe(true)
+    expect(isImageResult(output)).toBe(false)
   })
 
   it('should recognize mp4 video from core', () => {
@@ -151,9 +178,9 @@ describe('TaskItemImpl', () => {
 
     const output = taskItem.flatOutputs[0]
 
-    expect(output.htmlVideoType).toBe('video/mp4')
-    expect(output.isVideo).toBe(true)
-    expect(output.isImage).toBe(false)
+    expect(resultItemHtmlVideoType(output)).toBe('video/mp4')
+    expect(isVideoResult(output)).toBe(true)
+    expect(isImageResult(output)).toBe(false)
   })
 
   describe('audio format detection', () => {
@@ -181,13 +208,36 @@ describe('TaskItemImpl', () => {
 
         const output = taskItem.flatOutputs[0]
 
-        expect(output.htmlAudioType).toBe(mimeType)
-        expect(output.isAudio).toBe(true)
-        expect(output.isVideo).toBe(false)
-        expect(output.isImage).toBe(false)
-        expect(output.supportsPreview).toBe(true)
+        expect(resultItemHtmlAudioType(output)).toBe(mimeType)
+        expect(isAudioResult(output)).toBe(true)
+        expect(isVideoResult(output)).toBe(false)
+        expect(isImageResult(output)).toBe(false)
+        expect(resultItemSupportsPreview(output)).toBe(true)
       })
     })
+  })
+
+  it('should recognize text files saved under the files output key', () => {
+    const job = createHistoryJob(0, 'job-id')
+    const taskItem = new TaskItemImpl(job, {
+      'node-1': {
+        files: [
+          {
+            filename: 'result.txt',
+            type: 'output',
+            subfolder: ''
+          }
+        ]
+      }
+    })
+
+    const output = taskItem.flatOutputs[0]
+
+    expect(isTextResult(output)).toBe(true)
+    expect(isImageResult(output)).toBe(false)
+    expect(isVideoResult(output)).toBe(false)
+    expect(isAudioResult(output)).toBe(false)
+    expect(resultItemSupportsPreview(output)).toBe(true)
   })
 
   it.skip('should parse text outputs', () => {
@@ -259,15 +309,48 @@ describe('TaskItemImpl', () => {
       expect(taskItem.executionError).toEqual(errorDetail)
     })
   })
+
+  describe('previewableOutputsCount', () => {
+    it('returns undefined when the job has no previewable_outputs_count', () => {
+      const job = createHistoryJob(0, 'job-id')
+      const taskItem = new TaskItemImpl(job)
+      expect(taskItem.previewableOutputsCount).toBeUndefined()
+    })
+
+    it('returns the server-provided previewable_outputs_count', () => {
+      const job: JobListItem = {
+        ...createHistoryJob(0, 'job-id'),
+        previewable_outputs_count: 2
+      }
+      const taskItem = new TaskItemImpl(job)
+      expect(taskItem.previewableOutputsCount).toBe(2)
+    })
+
+    it('returns 0 when previewable_outputs_count is 0', () => {
+      const job: JobListItem = {
+        ...createHistoryJob(0, 'job-id'),
+        previewable_outputs_count: 0
+      }
+      const taskItem = new TaskItemImpl(job)
+      expect(taskItem.previewableOutputsCount).toBe(0)
+    })
+
+    it('normalizes an explicit null previewable_outputs_count to undefined', () => {
+      const job: JobListItem = {
+        ...createHistoryJob(0, 'job-id'),
+        previewable_outputs_count: null
+      }
+      const taskItem = new TaskItemImpl(job)
+      expect(taskItem.previewableOutputsCount).toBeUndefined()
+    })
+  })
 })
 
 describe('useQueueStore', () => {
   let store: ReturnType<typeof useQueueStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useQueueStore()
-    vi.clearAllMocks()
   })
 
   const mockGetQueue = vi.mocked(api.getQueue)

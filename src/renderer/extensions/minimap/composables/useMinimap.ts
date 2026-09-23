@@ -1,19 +1,32 @@
-import { useRafFn } from '@vueuse/core'
+import {
+  useDocumentVisibility,
+  useIntervalFn,
+  usePreferredReducedMotion,
+  useRafFn
+} from '@vueuse/core'
 import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ShallowRef } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  getMinimapDecorations,
+  minimapDecorationRevision
+} from '@/platform/canvas/minimapDecorationRegistry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useExecutionStore } from '@/stores/executionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 
+import { MINIMAP_DECORATION_POP_MS } from '../minimapCanvasRenderer'
 import type { MinimapCanvas, MinimapSettingsKey } from '../types'
 import { useMinimapGraph } from './useMinimapGraph'
 import { useMinimapInteraction } from './useMinimapInteraction'
 import { useMinimapRenderer } from './useMinimapRenderer'
 import { useMinimapSettings } from './useMinimapSettings'
 import { useMinimapViewport } from './useMinimapViewport'
+
+/** How often to compare digests for state that emits no event; see the poll. */
+const CHANGE_DETECTION_INTERVAL_MS = 100
 
 export function useMinimap({
   canvasRefMaybe,
@@ -32,6 +45,7 @@ export function useMinimap({
 
   const visible = ref(true)
   const initialized = ref(false)
+  const motionPreference = usePreferredReducedMotion()
 
   const width = 250
   const height = 200
@@ -41,6 +55,22 @@ export function useMinimap({
     // If we're in a subgraph, use that; otherwise use the canvas graph
     const activeSubgraph = workflowStore.activeSubgraph
     return (activeSubgraph || canvas.value?.graph) as LGraph | null
+  })
+  const decorations = computed(() => {
+    const revision = minimapDecorationRevision.value
+    void revision
+    if (!graph.value) return []
+    const rows = getMinimapDecorations(graphScopeOf(graph.value))
+    const reducedMotion =
+      settingStore.get('Comfy.Appearance.DisableAnimations') ||
+      motionPreference.value === 'reduce'
+    return reducedMotion
+      ? rows.map((row) => ({
+          ...row,
+          enter: undefined,
+          enteredAt: undefined
+        }))
+      : rows
   })
 
   // Settings
@@ -75,11 +105,23 @@ export function useMinimap({
     canvas
   )
 
-  // Graph event management
-  const graphManager = useMinimapGraph(graph, () => {
-    renderer.forceFullRedraw()
-    renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-  })
+  // Two of the three useMinimap() call sites have no canvas. updateBounds()
+  // runs before renderMinimap discovers there is nothing to draw, and it costs
+  // a full layout-map rebuild, so every path that redraws checks this first.
+  const canDraw = computed(() => visible.value && !!canvasRef.value)
+
+  // Graph events are hints to compare the digests, not commands to repaint:
+  // graphChanged fires for plenty the minimap does not draw (zIndex from every
+  // widget pointerdown, widget values, title edits), and the digest is the one
+  // place that knows whether the picture moved.
+  const checkAndRepaint = () => {
+    if (!canDraw.value) return
+    if (graphManager.checkForChanges()) {
+      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
+    }
+  }
+
+  const graphManager = useMinimapGraph(graph, () => checkAndRepaint())
 
   // Rendering
   const renderer = useMinimapRenderer(
@@ -90,25 +132,94 @@ export function useMinimap({
     graphManager.updateFlags,
     settings,
     width,
-    height
+    height,
+    decorations
   )
 
-  // RAF loop for continuous updates
+  const decorationFrames = useRafFn(
+    () => {
+      const now = performance.now()
+      if (
+        !canDraw.value ||
+        decorations.value.every(
+          ({ enteredAt }) =>
+            enteredAt === undefined ||
+            now - enteredAt >= MINIMAP_DECORATION_POP_MS
+        )
+      ) {
+        decorationFrames.pause()
+        return
+      }
+      renderer.forceFullRedraw()
+      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
+    },
+    { immediate: false }
+  )
+
+  const shouldAnimateDecorations = computed(
+    () =>
+      initialized.value &&
+      canDraw.value &&
+      decorations.value.some(
+        ({ enteredAt }) =>
+          enteredAt !== undefined &&
+          performance.now() - enteredAt < MINIMAP_DECORATION_POP_MS
+      )
+  )
+
+  watch(
+    shouldAnimateDecorations,
+    (active) => {
+      if (!initialized.value || !canDraw.value) {
+        decorationFrames.pause()
+        return
+      }
+      renderer.forceFullRedraw()
+      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
+      if (active) decorationFrames.resume()
+      else decorationFrames.pause()
+    },
+    { immediate: true }
+  )
+
+  // Most edits reach the digest comparison through useMinimapGraph's event
+  // hooks. This loop is the backstop for state that emits no event at all:
+  // snapPoint mutating `_pos` elements in place, extensions assigning
+  // `node.pos[0]` directly (only `size` is Proxy-wrapped against that),
+  // `has_errors`, group drags, and execution-state transitions, which arrive
+  // in executionStore rather than as graph events. Repaints happen only when
+  // the digests move, so idle ticks cost one O(n) comparison and nothing else.
   const { pause: pauseChangeDetection, resume: resumeChangeDetection } =
-    useRafFn(
-      async () => {
-        if (visible.value) {
-          const hasChanges = await graphManager.checkForChanges()
-          if (hasChanges) {
-            renderer.updateMinimap(
-              viewport.updateBounds,
-              viewport.updateViewport
-            )
-          }
-        }
-      },
-      { immediate: false }
-    )
+    useIntervalFn(checkAndRepaint, CHANGE_DETECTION_INTERVAL_MS, {
+      immediate: false
+    })
+
+  // Polling is derived state, not something init() decides once. init() runs
+  // synchronously from the immediate canvas watcher - before the template ref
+  // has mounted - so any start decision taken there sees canvasRef as null and
+  // the poll never starts. Deriving from the refs means the loop starts the
+  // moment the canvas mounts and stops the moment any condition lapses.
+  //
+  // Document visibility is part of the condition because rAF was suspended
+  // entirely on a hidden tab while setInterval is only clamped, and a tab that
+  // is hidden at mount (middle-click, session restore) never fires a
+  // visibilitychange to a transition-only watcher.
+  const documentVisibility = useDocumentVisibility()
+  const shouldPoll = computed(
+    () =>
+      initialized.value &&
+      canDraw.value &&
+      documentVisibility.value !== 'hidden'
+  )
+
+  watch(
+    shouldPoll,
+    (active) => {
+      if (active) resumeChangeDetection()
+      else pauseChangeDetection()
+    },
+    { immediate: true }
+  )
 
   const init = async () => {
     if (initialized.value) return
@@ -131,16 +242,14 @@ export function useMinimap({
       renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
       viewport.updateViewport()
 
-      if (visible.value) {
-        resumeChangeDetection()
-        viewport.startViewportSync()
-      }
+      if (visible.value) viewport.startViewportSync()
       initialized.value = true
     }
   }
 
   const destroy = () => {
     pauseChangeDetection()
+    decorationFrames.pause()
     viewport.stopViewportSync()
     graphManager.destroy()
 
@@ -175,6 +284,7 @@ export function useMinimap({
     if (newGraph && newGraph !== oldGraph) {
       graphManager.cleanupEventListeners(oldGraph || undefined)
       graphManager.setupEventListeners()
+      if (!canDraw.value) return
       renderer.forceFullRedraw()
       renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
     }
@@ -194,25 +304,11 @@ export function useMinimap({
 
       renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
       viewport.updateViewport()
-      resumeChangeDetection()
       viewport.startViewportSync()
     } else {
-      pauseChangeDetection()
       viewport.stopViewportSync()
     }
   })
-
-  const executionStore = useExecutionStore()
-  watch(
-    () => executionStore.nodeProgressStates,
-    () => {
-      if (visible.value) {
-        renderer.forceFullRedraw()
-        renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
-      }
-    },
-    { deep: true }
-  )
 
   const toggle = async () => {
     visible.value = !visible.value
@@ -242,6 +338,7 @@ export function useMinimap({
   return {
     visible: computed(() => visible.value),
     initialized: computed(() => initialized.value),
+    decorationCount: computed(() => decorations.value.length),
 
     containerStyles,
     viewportStyles,

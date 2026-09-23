@@ -1,7 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "ignorePatterns": [
-    ".i18nrc.cjs",
     "**/vite.config.*.timestamp*",
     "**/vitest.config.*.timestamp*",
     "components.d.ts",
@@ -9,8 +8,8 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
-    "src/extensions/core/*",
-    "src/scripts/*",
+    "scripts/registry-census/detection-proof/**",
+    "src/__ecs_matrix__/**",
     "src/types/generatedManagerTypes.ts",
     "src/types/vue-shim.d.ts",
     "test-results/*",
@@ -25,7 +24,10 @@
     "vitest",
     "vue"
   ],
+  "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
   "rules": {
+    "comfy/no-duplicate-ingest-type": "error",
+    "comfy/no-render-in-watch-effect": "error",
     "no-async-promise-executor": "off",
     "no-console": [
       "error",
@@ -65,6 +67,7 @@
     ],
     "no-unsafe-optional-chaining": "error",
     "no-self-assign": "allow",
+    "no-unreachable": "error",
     "no-unused-expressions": "off",
     "no-unused-private-class-members": "off",
     "no-useless-rename": "off",
@@ -73,18 +76,33 @@
     "import/namespace": "error",
     "import/no-duplicates": "error",
     "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
-    "jest/expect-expect": "off",
-    "jest/no-conditional-expect": "off",
-    "jest/no-disabled-tests": "off",
-    "jest/no-standalone-expect": "off",
-    "jest/valid-title": "off",
+    "vitest/expect-expect": "off",
+    "vitest/no-conditional-expect": "off",
+    "vitest/no-disabled-tests": "off",
+    "vitest/no-standalone-expect": "off",
+    "vitest/valid-title": "off",
+    "vitest/require-to-throw-message": "off",
     "typescript/no-this-alias": "off",
-    "typescript/no-unnecessary-parameter-property-assignment": "off",
+    "typescript/no-useless-default-assignment": "off",
+    "typescript/no-unnecessary-boolean-literal-compare": "error",
+    "typescript/no-unnecessary-condition": "error",
+    "typescript/no-unnecessary-parameter-property-assignment": "error",
+    "typescript/no-unnecessary-qualifier": "error",
+    "typescript/no-unnecessary-template-expression": "error",
+    "typescript/no-unnecessary-type-arguments": "error",
+    "typescript/no-unnecessary-type-assertion": "error",
+    "typescript/no-unnecessary-type-constraint": "error",
+    "typescript/no-unnecessary-type-conversion": "error",
+    "typescript/no-unnecessary-type-parameters": "error",
     "typescript/no-unsafe-declaration-merging": "off",
+    "typescript/require-array-sort-compare": "error",
+    "typescript/triple-slash-reference": "error",
     "typescript/no-unused-vars": "off",
     "unicorn/no-empty-file": "off",
     "vitest/require-mock-type-parameters": "off",
+    "vitest/valid-expect": "error",
     "vitest/hoisted-apis-on-top": "error",
+    "vitest/prefer-import-in-mock": "error",
     "typescript/no-misused-spread": "error",
     "vitest/consistent-each-for": [
       "error",
@@ -120,9 +138,157 @@
   },
   "overrides": [
     {
+      "files": [
+        "**/*.{test,spec}.{ts,tsx}",
+        "**/{__test__,__tests__,__fixtures__}/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "comfy/no-import-actual": "error",
+        "comfy/use-global-pinia": "error"
+      }
+    },
+    {
+      "files": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "src/**/*.vue",
+        "apps/*/src/**/*.ts",
+        "apps/*/src/**/*.tsx",
+        "apps/*/src/**/*.vue"
+      ],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+      ],
+      "rules": {
+        "comfy/no-unsafe-error-assertion": "error"
+      }
+    },
+    {
+      "files": ["src/**/*.ts", "src/**/*.vue"],
+      "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
+      "rules": {
+        "comfy/no-dom-in-computed": "warn"
+      }
+    },
+    {
+      "files": ["src/platform/remote/**/*.ts", "src/platform/remote/**/*.vue"],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "src/platform/remote/comfyui/execution/types.ts",
+        "src/platform/remote/comfyui/jobs/jobTypes.ts"
+      ],
+      "rules": {
+        "comfy/no-new-zod-for-remote-api-types": "error"
+      }
+    },
+    {
+      "files": ["browser_tests/fixtures/data/**/*.ts"],
+      "rules": {
+        "comfy/no-playwright-imports-in-fixture-data": "error"
+      }
+    },
+    {
+      "files": ["browser_tests/tests/**/*.test.ts"],
+      "rules": {
+        "comfy/no-unit-test-files-in-browser-tests": "error"
+      }
+    },
+    {
+      "files": ["**/*.spec.ts"],
+      "excludeFiles": [
+        "browser_tests/tests/**/*.spec.ts",
+        "apps/*/e2e/**/*.spec.ts"
+      ],
+      "rules": {
+        "comfy/no-misplaced-spec-files": "error"
+      }
+    },
+    {
+      "files": ["**/*.{ts,tsx,vue}"],
+      "rules": {
+        "comfy/no-deprecated-api-schema": "error"
+      }
+    },
+    {
+      "files": ["src/schemas/**/*.ts"],
+      "excludeFiles": [
+        "src/schemas/**/*.test.ts",
+        "src/schemas/colorPaletteSchema.ts",
+        "src/schemas/signInSchema.ts"
+      ],
+      "rules": {
+        "comfy/no-new-zod-server-response-schema": "warn"
+      }
+    },
+    {
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
+      }
+    },
+    {
+      "files": ["**/*.test.{ts,tsx}"],
+      "rules": {
+        "comfy/no-module-scope-vitest-mocks": "error",
+        "comfy/no-persistent-litegraph-registration": "error",
+        "comfy/no-redundant-litegraph-cleanup": "error",
+        "comfy/no-redundant-vitest-cleanup": "error"
+      }
+    },
+    {
+      "files": [
+        "apps/**/*.test.{ts,tsx}",
+        "packages/object-info-parser/**/*.test.{ts,tsx}"
+      ],
+      "rules": {
+        "comfy/no-persistent-litegraph-registration": "off",
+        "comfy/no-redundant-litegraph-cleanup": "off"
+      }
+    },
+    {
+      "files": ["scripts/**", "tools/test-recorder/**/*.ts"],
+      "rules": {
+        "no-console": "allow"
+      }
+    },
+    {
+      "files": ["browser_tests/tests/**/*.spec.ts", "apps/*/e2e/**/*.spec.ts"],
+      "rules": {
+        "comfy/no-comfy-page-setup-call": "error"
+      }
+    },
+    {
+      "files": ["browser_tests/tests/**/*.spec.ts"],
+      "rules": {
+        "comfy/prefer-initial-settings": "error"
+      }
+    },
+    {
+      "files": ["browser_tests/**/*.ts"],
+      "excludeFiles": ["browser_tests/fixtures/networkIsolationFixture.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@playwright/test",
+                "importNames": ["test"],
+                "message": "Use a fixture based on networkIsolationFixture instead of raw Playwright test."
+              }
+            ]
+          }
+        ],
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "continue",
+            "message": "Use route.fallback() so requests pass through the network policy."
+          }
+        ]
       }
     },
     {

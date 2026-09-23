@@ -3,6 +3,7 @@ import type { Locator, Page } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 
 export class SettingDialog extends BaseDialog {
   public readonly searchBox: Locator
@@ -24,6 +25,29 @@ export class SettingDialog extends BaseDialog {
     await this.waitForVisible()
   }
 
+  async selectLocale(locale: 'zh' | 'en') {
+    await this.open()
+    await this.category('Comfy').click()
+    const select = this.root
+      .locator('[data-setting-id="Comfy.Locale"]')
+      .getByRole('combobox')
+    await expect(select).toBeVisible()
+    await select.click()
+    await this.page
+      .getByRole('option', {
+        name: locale === 'zh' ? '中文' : 'English',
+        exact: true
+      })
+      .click()
+    await expect
+      .poll(() => this.comfyPage.settings.getPersistedSetting('Comfy.Locale'))
+      .toBe(locale)
+    await this.root
+      .getByRole('button', { name: /Close dialog|关闭对话框/i })
+      .click()
+    await this.waitForHidden()
+  }
+
   /**
    * Set the value of a text setting
    * @param id - The id of the setting
@@ -39,8 +63,7 @@ export class SettingDialog extends BaseDialog {
    * @param id - The id of the setting
    */
   async toggleBooleanSetting(id: string) {
-    const settingInputDiv = this.root.locator(`div[id="${id}"]`)
-    await settingInputDiv.locator('input').click()
+    await this.root.locator(`button[role="switch"][id="${id}"]`).click()
   }
 
   category(name: string) {

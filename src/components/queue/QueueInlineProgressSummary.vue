@@ -34,7 +34,6 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { st } from '@/i18n'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useExecutionStore } from '@/stores/executionStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -56,8 +55,7 @@ const {
 const currentNodeName = computed(() => {
   return resolveNodeDisplayName(executionStore.executingNode, {
     emptyLabel: t('g.emDash'),
-    untitledLabel: t('g.untitled'),
-    st
+    untitledLabel: t('g.untitled')
   })
 })
 

@@ -367,6 +367,22 @@ const menuItems = computed<MenuItem[]>(() => {
     }
   ]
 
+  // System status page - only in cloud distributions
+  if (isCloud) {
+    items.push({
+      key: 'status',
+      type: 'item',
+      icon: 'icon-[lucide--activity]',
+      label: t('helpCenter.systemStatus'),
+      showExternalIcon: true,
+      action: () => {
+        trackResourceClick('status', true)
+        openExternalLink(staticUrls.status)
+        emit('close')
+      }
+    })
+  }
+
   // Extension manager - only in non-cloud distributions
   if (!isCloud) {
     items.push({
@@ -420,7 +436,8 @@ const trackResourceClick = (
     | 'github'
     | 'help_feedback'
     | 'manager'
-    | 'release_notes',
+    | 'release_notes'
+    | 'status',
   isExternal: boolean
 ): void => {
   telemetry?.trackHelpResourceClicked({
@@ -575,7 +592,8 @@ const onReinstall = (): void => {
 }
 
 const onUpdateComfyUI = async (): Promise<void> => {
-  const { updateComfyUI, rebootComfyUI, error } = useComfyManagerService()
+  const { updateComfyUI, startQueue, rebootComfyUI, error } =
+    useComfyManagerService()
 
   toast.add({
     severity: 'info',
@@ -586,6 +604,7 @@ const onUpdateComfyUI = async (): Promise<void> => {
 
   try {
     const result = await updateComfyUI({ is_stable: true })
+    if (result !== null) await startQueue()
 
     if (result === null || error.value) {
       toast.add({

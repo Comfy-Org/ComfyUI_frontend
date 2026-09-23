@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import type {
   SubgraphPseudoWidget,
   SubgraphPseudoWidgetCache,
@@ -13,6 +15,7 @@ interface TestWidget extends SubgraphPseudoWidget {
 }
 
 interface TestNode extends SubgraphPseudoWidgetNode<TestWidget> {
+  id: NodeId
   widgets?: TestWidget[]
 }
 
@@ -20,19 +23,24 @@ function widget(name: string, isPseudo = false): TestWidget {
   return { name, isPseudo }
 }
 
-function node(id: string, widgets: TestWidget[] = []): TestNode {
-  return { id, widgets }
+function node(id: SerializedNodeId, widgets: TestWidget[] = []): TestNode {
+  return { id: toNodeId(id), widgets }
+}
+
+function promotion(
+  sourceNodeId: SerializedNodeId,
+  sourceWidgetName: string
+): PromotedWidgetSource {
+  return { sourceNodeId: toNodeId(sourceNodeId), sourceWidgetName }
 }
 
 describe('resolveSubgraphPseudoWidgetCache', () => {
   it('builds update targets from pseudo widget promotions', () => {
     const interiorNode = node('n1', [widget('preview', true)])
-    const getNodeById = vi.fn((id: string) =>
+    const getNodeById = vi.fn((id: NodeId) =>
       id === 'n1' ? interiorNode : undefined
     )
-    const promotions: readonly PromotedWidgetSource[] = [
-      { sourceNodeId: 'n1', sourceWidgetName: 'preview' }
-    ]
+    const promotions = [promotion('n1', 'preview')]
 
     const result = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
       cache: null,
@@ -48,9 +56,7 @@ describe('resolveSubgraphPseudoWidgetCache', () => {
 
   it('keeps $$ fallback behavior when the backing widget is missing', () => {
     const interiorNode = node('n1', [widget('other')])
-    const promotions: readonly PromotedWidgetSource[] = [
-      { sourceNodeId: 'n1', sourceWidgetName: '$$canvas-image-preview' }
-    ]
+    const promotions = [promotion('n1', '$$canvas-image-preview')]
 
     const result = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
       cache: null,
@@ -64,16 +70,14 @@ describe('resolveSubgraphPseudoWidgetCache', () => {
 
   it('reuses cache when promotions and node identities are unchanged', () => {
     const interiorNode = node('n1', [widget('preview', true)])
-    const promotions: readonly PromotedWidgetSource[] = [
-      { sourceNodeId: 'n1', sourceWidgetName: 'preview' }
-    ]
+    const promotions = [promotion('n1', 'preview')]
     const base = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
       cache: null,
       promotions,
       getNodeById: (id) => (id === 'n1' ? interiorNode : undefined),
       isPreviewPseudoWidget: (candidate) => candidate.isPseudo === true
     })
-    const getNodeById = vi.fn((id: string) =>
+    const getNodeById = vi.fn((id: NodeId) =>
       id === 'n1' ? interiorNode : undefined
     )
 
@@ -91,18 +95,14 @@ describe('resolveSubgraphPseudoWidgetCache', () => {
 
   it('rebuilds cache when promotions reference changes', () => {
     const interiorNode = node('n1', [widget('preview', true)])
-    const promotionsA: readonly PromotedWidgetSource[] = [
-      { sourceNodeId: 'n1', sourceWidgetName: 'preview' }
-    ]
+    const promotionsA = [promotion('n1', 'preview')]
     const base = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
       cache: null,
       promotions: promotionsA,
       getNodeById: (id) => (id === 'n1' ? interiorNode : undefined),
       isPreviewPseudoWidget: (candidate) => candidate.isPseudo === true
     })
-    const promotionsB: readonly PromotedWidgetSource[] = [
-      { sourceNodeId: 'n1', sourceWidgetName: 'preview' }
-    ]
+    const promotionsB = [promotion('n1', 'preview')]
 
     const result = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
       cache: base.cache,
@@ -116,9 +116,7 @@ describe('resolveSubgraphPseudoWidgetCache', () => {
 
   it('falls back to rebuild when a cached node reference goes stale', () => {
     const oldNode = node('n1', [widget('preview', true)])
-    const promotions: readonly PromotedWidgetSource[] = [
-      { sourceNodeId: 'n1', sourceWidgetName: 'preview' }
-    ]
+    const promotions = [promotion('n1', 'preview')]
     const initial = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
       cache: null,
       promotions,
@@ -140,9 +138,7 @@ describe('resolveSubgraphPseudoWidgetCache', () => {
 
   it('rebuilds cache with different results when replacement node lacks the pseudo widget', () => {
     const oldNode = node('n1', [widget('preview', true)])
-    const promotions: readonly PromotedWidgetSource[] = [
-      { sourceNodeId: 'n1', sourceWidgetName: 'preview' }
-    ]
+    const promotions = [promotion('n1', 'preview')]
     const initial = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
       cache: null,
       promotions,
@@ -169,11 +165,8 @@ describe('resolveSubgraphPseudoWidgetCache', () => {
   it('includes all pseudo-widget promotions across multiple interior nodes', () => {
     const nodeA = node('n1', [widget('preview', true)])
     const nodeB = node('n2', [widget('preview', true)])
-    const promotions: readonly PromotedWidgetSource[] = [
-      { sourceNodeId: 'n1', sourceWidgetName: 'preview' },
-      { sourceNodeId: 'n2', sourceWidgetName: 'preview' }
-    ]
-    const getNodeById = (id: string) => {
+    const promotions = [promotion('n1', 'preview'), promotion('n2', 'preview')]
+    const getNodeById = (id: NodeId) => {
       if (id === 'n1') return nodeA
       if (id === 'n2') return nodeB
       return undefined
@@ -189,9 +182,7 @@ describe('resolveSubgraphPseudoWidgetCache', () => {
     expect(result.nodes).toEqual([nodeA, nodeB])
     expect(result.cache.entries).toHaveLength(2)
 
-    const reducedPromotions: readonly PromotedWidgetSource[] = [
-      { sourceNodeId: 'n1', sourceWidgetName: 'preview' }
-    ]
+    const reducedPromotions = [promotion('n1', 'preview')]
 
     const reduced = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
       cache: null,
@@ -207,9 +198,7 @@ describe('resolveSubgraphPseudoWidgetCache', () => {
 
   it('excludes promotions where isPreviewPseudoWidget returns false', () => {
     const interiorNode = node('n1', [widget('myWidget', false)])
-    const promotions: readonly PromotedWidgetSource[] = [
-      { sourceNodeId: 'n1', sourceWidgetName: 'myWidget' }
-    ]
+    const promotions = [promotion('n1', 'myWidget')]
 
     const result = resolveSubgraphPseudoWidgetCache<TestNode, TestWidget>({
       cache: null,
@@ -223,14 +212,12 @@ describe('resolveSubgraphPseudoWidgetCache', () => {
   })
 
   it('drops cached entries when node no longer resolves', () => {
-    const promotions: readonly PromotedWidgetSource[] = [
-      { sourceNodeId: 'missing', sourceWidgetName: '$$canvas-image-preview' }
-    ]
+    const promotions = [promotion('missing', '$$canvas-image-preview')]
     const cache: SubgraphPseudoWidgetCache<TestNode, TestWidget> = {
       promotions,
       entries: [
         {
-          sourceNodeId: 'missing',
+          sourceNodeId: toNodeId('missing'),
           sourceWidgetName: '$$canvas-image-preview',
           node: node('missing')
         }

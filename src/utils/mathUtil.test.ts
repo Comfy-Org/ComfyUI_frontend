@@ -2,14 +2,36 @@ import { describe, expect, it } from 'vitest'
 
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import {
+  clipRectToBounds,
   computeUnionBounds,
   denormalize,
   gcd,
   lcm,
-  normalize
+  normalize,
+  wrapIndex
 } from '@/utils/mathUtil'
 
 describe('mathUtil', () => {
+  describe('wrapIndex', () => {
+    it('leaves an in-range index alone', () => {
+      expect(wrapIndex(0, 3)).toBe(0)
+      expect(wrapIndex(2, 3)).toBe(2)
+    })
+
+    it('wraps past the end back to the start', () => {
+      expect(wrapIndex(3, 3)).toBe(0)
+      expect(wrapIndex(4, 3)).toBe(1)
+    })
+
+    it('wraps a negative index round to the end', () => {
+      expect(
+        wrapIndex(-1, 3),
+        'plain `%` returns -1 here, which is the whole reason this helper exists'
+      ).toBe(2)
+      expect(wrapIndex(-4, 3)).toBe(2)
+    })
+  })
+
   describe('normalize', () => {
     it('normalizes value to 0-1', () => {
       expect(normalize(128, 0, 256)).toBe(0.5)
@@ -135,6 +157,31 @@ describe('mathUtil', () => {
       expect(result!.y).toBe(0)
       expect(result!.width).toBe(325)
       expect(result!.height).toBe(242)
+    })
+  })
+
+  describe('clipRectToBounds', () => {
+    const bounds = { left: 0, top: 0, right: 100, bottom: 100 }
+
+    it('returns the rect unchanged when fully inside the bounds', () => {
+      expect(
+        clipRectToBounds({ left: 10, top: 10, right: 40, bottom: 40 }, bounds)
+      ).toEqual({ left: 10, top: 10, right: 40, bottom: 40 })
+    })
+
+    it('clamps every edge that extends past the bounds', () => {
+      expect(
+        clipRectToBounds(
+          { left: -20, top: -10, right: 150, bottom: 130 },
+          bounds
+        )
+      ).toEqual({ left: 0, top: 0, right: 100, bottom: 100 })
+    })
+
+    it('clamps only the overflowing side', () => {
+      expect(
+        clipRectToBounds({ left: 10, top: 10, right: 200, bottom: 40 }, bounds)
+      ).toEqual({ left: 10, top: 10, right: 100, bottom: 40 })
     })
   })
 })

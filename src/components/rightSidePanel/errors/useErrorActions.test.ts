@@ -1,33 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useCommandStore } from '@/stores/commandStore'
+
 import { useErrorActions } from './useErrorActions'
+
+beforeEach(() => {
+  vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+})
 
 const mocks = vi.hoisted(() => ({
   trackUiButtonClicked: vi.fn(),
   trackHelpResourceClicked: vi.fn(),
-  execute: vi.fn(),
   telemetry: null as {
     trackUiButtonClicked: ReturnType<typeof vi.fn>
     trackHelpResourceClicked: ReturnType<typeof vi.fn>
-  } | null,
-  staticUrls: {
-    githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues'
-  }
+  } | null
 }))
 
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    execute: mocks.execute
-  })
-}))
-
-vi.mock('@/composables/useExternalLink', () => ({
-  useExternalLink: () => ({
-    staticUrls: mocks.staticUrls
-  })
-}))
-
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => mocks.telemetry
 }))
 
@@ -39,12 +29,7 @@ describe('useErrorActions', () => {
       trackUiButtonClicked: mocks.trackUiButtonClicked,
       trackHelpResourceClicked: mocks.trackHelpResourceClicked
     }
-    mocks.trackUiButtonClicked.mockReset()
-    mocks.trackHelpResourceClicked.mockReset()
-    mocks.execute.mockReset()
-    windowOpenSpy = vi
-      .spyOn(window, 'open')
-      .mockImplementation(() => null as unknown as Window)
+    windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
   })
 
   afterEach(() => {
@@ -58,10 +43,11 @@ describe('useErrorActions', () => {
       openGitHubIssues()
 
       expect(mocks.trackUiButtonClicked).toHaveBeenCalledWith({
-        button_id: 'error_tab_github_issues_clicked'
+        button_id: 'error_tab_github_issues_clicked',
+        element_group: 'errors_panel'
       })
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        mocks.staticUrls.githubIssues,
+        'https://github.com/Comfy-Org/ComfyUI/issues',
         '_blank',
         'noopener,noreferrer'
       )
@@ -75,7 +61,7 @@ describe('useErrorActions', () => {
 
       expect(mocks.trackUiButtonClicked).not.toHaveBeenCalled()
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        mocks.staticUrls.githubIssues,
+        'https://github.com/Comfy-Org/ComfyUI/issues',
         '_blank',
         'noopener,noreferrer'
       )
@@ -83,26 +69,37 @@ describe('useErrorActions', () => {
   })
 
   describe('contactSupport', () => {
-    it('tracks the help resource click and executes the contact support command', () => {
-      mocks.execute.mockReturnValue('executed')
+    it('tracks the help resource click and executes the contact support command', async () => {
+      vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
       const { contactSupport } = useErrorActions()
 
-      const result = contactSupport()
+      const result = await contactSupport()
 
       expect(mocks.trackHelpResourceClicked).toHaveBeenCalledWith({
         resource_type: 'help_feedback',
         is_external: true,
         source: 'error_dialog'
       })
-      expect(mocks.execute).toHaveBeenCalledWith('Comfy.ContactSupport')
-      expect(result).toBe('executed')
+      expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+        'Comfy.ContactSupport'
+      )
+      expect(result).toBeUndefined()
     })
 
     it('returns the execute promise when the command is async', async () => {
-      mocks.execute.mockResolvedValue('done')
+      let resolve!: () => void
+      const promise = new Promise<void>((resolvePromise) => {
+        resolve = resolvePromise
+      })
+      vi.mocked(useCommandStore().execute).mockReturnValue(promise)
       const { contactSupport } = useErrorActions()
-
-      await expect(contactSupport()).resolves.toBe('done')
+      const settled = vi.fn()
+      const result = contactSupport().then(settled)
+      await Promise.resolve()
+      expect(settled).not.toHaveBeenCalled()
+      resolve()
+      await result
+      expect(settled).toHaveBeenCalledExactlyOnceWith(undefined)
     })
 
     it('still executes the command when telemetry is unavailable', () => {
@@ -112,7 +109,9 @@ describe('useErrorActions', () => {
       void contactSupport()
 
       expect(mocks.trackHelpResourceClicked).not.toHaveBeenCalled()
-      expect(mocks.execute).toHaveBeenCalledWith('Comfy.ContactSupport')
+      expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+        'Comfy.ContactSupport'
+      )
     })
   })
 
@@ -123,11 +122,12 @@ describe('useErrorActions', () => {
       findOnGitHub('CUDA out of memory')
 
       expect(mocks.trackUiButtonClicked).toHaveBeenCalledWith({
-        button_id: 'error_tab_find_existing_issues_clicked'
+        button_id: 'error_tab_find_existing_issues_clicked',
+        element_group: 'errors_panel'
       })
       const expectedQuery = encodeURIComponent('CUDA out of memory is:issue')
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        `${mocks.staticUrls.githubIssues}?q=${expectedQuery}`,
+        `https://github.com/Comfy-Org/ComfyUI/issues?q=${expectedQuery}`,
         '_blank',
         'noopener,noreferrer'
       )

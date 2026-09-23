@@ -1,0 +1,158 @@
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
+import { createI18n } from 'vue-i18n'
+
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+
+import SubscriptionFooterLinks from './SubscriptionFooterLinks.vue'
+
+const state = vi.hoisted(() => ({
+  isCloud: true,
+  handleLearnMoreClick: vi.fn(),
+  handleMessageSupport: vi.fn()
+}))
+
+vi.mock(import('@/config/comfyApi'), () => ({
+  getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
+}))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return state.isCloud
+  }
+}))
+
+vi.mock(import('@/composables/billing/useBillingContext'))
+
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionActions'),
+  () => ({
+    useSubscriptionActions: () => ({
+      isLoadingSupport: ref(false),
+      handleMessageSupport: state.handleMessageSupport
+    })
+  })
+)
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      subscription: {
+        plansAndPricing: 'Plans & pricing',
+        partnerNodesPricingTable: 'Partner Nodes pricing',
+        messageSupport: 'Message support',
+        invoiceHistory: 'Invoice history',
+        fullUsageActivity: 'Full usage activity'
+      }
+    }
+  }
+})
+
+function renderComponent(
+  props: Partial<ComponentProps<typeof SubscriptionFooterLinks>> = {}
+) {
+  mockBillingContext()
+  return render(SubscriptionFooterLinks, {
+    props,
+    global: {
+      plugins: [i18n]
+    }
+  })
+}
+
+describe('SubscriptionFooterLinks', () => {
+  beforeEach(() => {
+    state.isCloud = true
+  })
+
+  it('emits viewPlans from the plans link only when enabled', async () => {
+    const user = userEvent.setup()
+    const { emitted, rerender } = renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Plans & pricing' })
+    ).not.toBeInTheDocument()
+
+    await rerender({ showPlansLink: true })
+    await user.click(screen.getByRole('button', { name: 'Plans & pricing' }))
+
+    expect(emitted()).toHaveProperty('viewPlans')
+  })
+
+  it('renders working support links without a duplicate invoice action', async () => {
+    const user = userEvent.setup()
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Invoice history' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Partner Nodes pricing' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Message support' })
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Message support' }))
+    expect(state.handleMessageSupport).toHaveBeenCalledOnce()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Partner Nodes pricing' })
+    )
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://docs.comfy.org/tutorials/partner-nodes/pricing',
+      '_blank'
+    )
+  })
+
+  it('keeps Invoice history working outside the cloud distribution', async () => {
+    const user = userEvent.setup()
+    state.isCloud = false
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Invoice history' }))
+
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
+  })
+
+  it('hides Invoice history from local users without billing permission', () => {
+    state.isCloud = false
+    renderComponent({ showInvoiceHistory: false })
+
+    expect(
+      screen.queryByRole('button', { name: 'Invoice history' })
+    ).not.toBeInTheDocument()
+    expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
+  })
+
+  it('opens the platform usage page', async () => {
+    const user = userEvent.setup()
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+    renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Full usage activity' })
+    )
+
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://platform.comfy.org/profile/usage',
+      '_blank',
+      'noopener'
+    )
+  })
+
+  it('hides Full usage activity when the caller opts out', () => {
+    renderComponent({ showUsageActivity: false })
+
+    expect(
+      screen.queryByRole('button', { name: 'Full usage activity' })
+    ).not.toBeInTheDocument()
+  })
+})

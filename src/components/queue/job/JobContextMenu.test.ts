@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
@@ -49,18 +49,6 @@ const popoverStub = defineComponent({
   `
 })
 
-const buttonStub = {
-  props: {
-    disabled: { type: Boolean, default: false },
-    ariaLabel: { type: String, default: undefined }
-  },
-  template: `
-    <button :disabled="disabled" :aria-label="ariaLabel">
-      <slot />
-    </button>
-  `
-}
-
 type MenuHandle = { open: (e: Event) => Promise<void>; hide: () => void }
 
 const createEntries = (): MenuEntry[] => [
@@ -98,7 +86,7 @@ function renderMenu(entries: MenuEntry[], onAction?: ReturnType<typeof vi.fn>) {
   const { unmount } = render(Wrapper, {
     props: { onAction: actionSpy },
     global: {
-      stubs: { Popover: popoverStub, Button: buttonStub }
+      stubs: { Popover: popoverStub }
     }
   })
 
@@ -115,10 +103,6 @@ async function openMenu(
   await nextTick()
   return trigger
 }
-
-afterEach(() => {
-  document.body.innerHTML = ''
-})
 
 describe('JobContextMenu', () => {
   it('passes disabled state to action buttons', async () => {

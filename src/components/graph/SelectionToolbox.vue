@@ -5,49 +5,46 @@
     class="pointer-events-none fixed top-0 left-0 z-40"
   >
     <Transition name="slide-up">
-      <Panel
+      <div
         v-if="visible"
         data-testid="selection-toolbox"
         class="selection-toolbox pointer-events-auto rounded-lg border border-interface-stroke bg-interface-panel-surface"
-        :pt="{
-          header: 'hidden',
-          content: 'p-1 h-10 flex flex-row gap-1'
-        }"
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
-        <DeleteButton v-if="showDelete" />
-        <VerticalDivider v-if="canOpenNodeInfo && showAnyPrimaryActions" />
-        <InfoButton v-if="canOpenNodeInfo" />
+        <div class="flex h-10 flex-row gap-1 p-1">
+          <DeleteButton v-if="showDelete" />
+          <VerticalDivider v-if="canOpenNodeInfo && showAnyPrimaryActions" />
+          <InfoButton v-if="canOpenNodeInfo" />
 
-        <ColorPickerButton v-if="showColorPicker" />
-        <ArrangeButton v-if="showArrange" />
-        <FrameNodes v-if="showFrameNodes" />
-        <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
-        <ConfigureSubgraph v-if="showSubgraphButtons" />
-        <PublishSubgraphButton v-if="showSubgraphButtons" />
-        <MaskEditorButton v-if="showMaskEditor" />
-        <VerticalDivider
-          v-if="showAnyPrimaryActions && showAnyControlActions"
-        />
+          <ColorPickerButton v-if="showColorPicker" />
+          <ArrangeButton v-if="showArrange" />
+          <FrameNodes v-if="showFrameNodes" />
+          <ConvertToSubgraphButton v-if="showConvertToSubgraph" />
+          <ConfigureSubgraph v-if="showSubgraphButtons" />
+          <PublishSubgraphButton v-if="showSubgraphButtons" />
+          <MaskEditorButton v-if="showMaskEditor" />
+          <VerticalDivider
+            v-if="showAnyPrimaryActions && showAnyControlActions"
+          />
 
-        <BypassButton v-if="showBypass" />
-        <RefreshSelectionButton v-if="showRefresh" />
-        <Load3DViewerButton v-if="showLoad3DViewer" />
+          <BypassButton v-if="showBypass" />
+          <RefreshSelectionButton v-if="showRefresh" />
+          <Load3DViewerButton v-if="showLoad3DViewer" />
 
-        <ExtensionCommandButton
-          v-for="command in extensionToolboxCommands"
-          :key="command.id"
-          :command="command"
-        />
-        <ExecuteButton v-if="showExecute" />
-        <NodeOptionsButton />
-      </Panel>
+          <ExtensionCommandButton
+            v-for="command in extensionToolboxCommands"
+            :key="command.id"
+            :command
+          />
+          <ExecuteButton v-if="showExecute" />
+          <NodeOptionsButton />
+        </div>
+      </div>
     </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import Panel from 'primevue/panel'
 import { computed, ref } from 'vue'
 
 import ArrangeButton from '@/components/graph/selectionToolbox/ArrangeButton.vue'
@@ -101,6 +98,7 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 
 const {
   hasAnySelection,
+  hasGroupedNodesSelection,
   hasMultipleSelection,
   isSingleNode,
   isSingleSubgraph,
@@ -118,7 +116,10 @@ const showSubgraphButtons = computed(() => isSingleSubgraph.value)
 
 const showBypass = computed(
   () =>
-    isSingleNode.value || isSingleSubgraph.value || hasMultipleSelection.value
+    isSingleNode.value ||
+    isSingleSubgraph.value ||
+    hasMultipleSelection.value ||
+    hasGroupedNodesSelection.value
 )
 const showLoad3DViewer = computed(() => hasAny3DNodeSelected.value)
 const showMaskEditor = computed(() => isSingleImageNode.value)

@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Sauvegarder et restaurer la position et le niveau de zoom du canevas dans les flux de travail"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "Afficher les modèles manquants dans l’onglet Problèmes",
+    "tooltip": "Lorsqu’ils sont désactivés, les fichiers de modèles introuvables ne sont pas répertoriés dans l’onglet Problèmes et leurs nœuds ne sont pas mis en évidence."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "Méthode d’aperçu en direct",
     "options": {
@@ -367,8 +371,8 @@
     "tooltip": "Remplace le panneau flottant de la file d’attente des tâches par une file d’attente équivalente intégrée dans le panneau latéral des ressources. Vous pouvez désactiver cette option pour revenir à la disposition du panneau flottant."
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "Afficher l’onglet des erreurs dans le panneau latéral",
-    "tooltip": "Lorsque cette option est activée, un onglet des erreurs s’affiche dans le panneau latéral droit pour visualiser rapidement les erreurs d’exécution du workflow."
+    "name": "Afficher l’onglet Problèmes dans le panneau latéral",
+    "tooltip": "Lorsqu’il est activé, l’onglet Problèmes s’affiche dans le panneau latéral droit pour indiquer les erreurs bloquantes et les ressources manquantes à configurer."
   },
   "Comfy_Sidebar_Location": {
     "name": "Emplacement de la barre latérale",
@@ -426,10 +430,6 @@
   "Comfy_Validation_Workflows": {
     "name": "Valider les flux de travail"
   },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "Mise à l'échelle automatique de la mise en page (nœuds Vue)",
-    "tooltip": "Redimensionne automatiquement les positions des nœuds lors du passage au rendu Vue pour éviter les chevauchements"
-  },
   "Comfy_VueNodes_Enabled": {
     "name": "Design moderne des nœuds (nœuds Vue)",
     "tooltip": "Moderne : rendu basé sur DOM avec interactivité améliorée, fonctionnalités natives du navigateur et design visuel actualisé. Classique : rendu traditionnel sur toile."
@@ -459,11 +459,19 @@
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Afficher une confirmation lors de la suppression des flux de travail"
   },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "Restaurer les valeurs du widget par nom"
+  },
   "Comfy_Workflow_Persist": {
     "name": "Persiste l'état du flux de travail et restaure lors du (re)chargement de la page"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Afficher l'avertissement des modèles manquants"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Afficher les médias manquants dans l’onglet Problèmes",
+    "tooltip": "Lorsqu’ils sont désactivés, les images, vidéos et fichiers audio d’entrée introuvables ne sont pas répertoriés dans l’onglet Problèmes et leurs nœuds ne sont pas mis en évidence."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "Afficher les nœuds manquants dans l’onglet Problèmes",
+    "tooltip": "Lorsqu’ils sont désactivés, les packs de nœuds manquants ne sont pas répertoriés dans l’onglet Problèmes et leurs nœuds ne sont pas mis en évidence. Le workflow ne peut toujours pas s’exécuter tant qu’ils ne sont pas installés."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Trier les ID de nœuds lors de l'enregistrement du flux de travail"

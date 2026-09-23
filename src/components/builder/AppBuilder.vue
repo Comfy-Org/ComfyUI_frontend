@@ -12,8 +12,9 @@ import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelec
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
 import type { WidgetId } from '@/types/widgetId'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { NodeId } from '@/types/nodeId'
 import {
   LGraphEventMode,
   TitleMode
@@ -30,6 +31,7 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
+import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
@@ -132,12 +134,13 @@ function handleClick(e: MouseEvent) {
     if (!isSelectOutputsMode.value) return
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
-    const index = appModeStore.selectedOutputs.findIndex((id) => id == node.id)
+    const index = appModeStore.selectedOutputs.findIndex((id) => id === node.id)
     if (index === -1) appModeStore.selectedOutputs.push(node.id)
     else appModeStore.selectedOutputs.splice(index, 1)
     return
   }
-  if (!isSelectInputsMode.value || widget.options.canvasOnly) return
+  const visibility = widget.visibility ?? deriveWidgetVisibility(widget)
+  if (!isSelectInputsMode.value || visibility.surfaces.panel === 'never') return
 
   const widgetId = widget.widgetId
   if (!widgetId) return
@@ -287,7 +290,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             :title
             :sub-title="String(key)"
             :remove="
-              () => remove(appModeStore.selectedOutputs, (k) => k == key)
+              () => remove(appModeStore.selectedOutputs, (k) => k === key)
             "
           />
         </DraggableList>
@@ -310,6 +313,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
     to="body"
   >
     <div
+      data-testid="builder-selection-overlay"
       :class="
         cn(
           'pointer-events-auto absolute size-full',
@@ -347,7 +351,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
                 v-if="isSelected"
                 class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full cursor-pointer rounded-lg bg-warning-background p-2"
                 @click.stop="
-                  remove(appModeStore.selectedOutputs, (k) => k == key)
+                  remove(appModeStore.selectedOutputs, (k) => k === key)
                 "
                 @pointerdown.stop
               >

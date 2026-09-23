@@ -1,7 +1,11 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
+import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { RendererView } from '@/renderer/three/RendererView'
+import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
 
 import type { EventManagerInterface } from './interfaces'
 import Load3dUtils from './Load3dUtils'
@@ -11,24 +15,25 @@ const { mockTextureLoad } = vi.hoisted(() => ({
   mockTextureLoad: vi.fn()
 }))
 
-vi.mock('./Load3dUtils', () => ({
-  default: {
+vi.mock(import('./Load3dUtils'), () => ({
+  default: fromAny({
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn()
-  }
+  })
 }))
 
-vi.mock('three', async (importOriginal) => {
-  const actual = await importOriginal<typeof THREE>()
-  class StubTextureLoader {
-    load = mockTextureLoad
+vi.mock(import('three'), { spy: true })
+
+beforeEach(() => {
+  function MockTextureLoader() {
+    return { load: mockTextureLoad }
   }
-  return { ...actual, TextureLoader: StubTextureLoader }
+  vi.spyOn(THREE, 'TextureLoader').mockImplementation(MockTextureLoader)
 })
 
-vi.mock('three/examples/jsm/controls/OrbitControls', () => {
+vi.mock(import('three/examples/jsm/controls/OrbitControls'), () => {
   class OrbitControls {}
-  return { OrbitControls }
+  return { OrbitControls: fromAny(OrbitControls) }
 })
 
 function makeMockRenderer(pixelRatio = 1): THREE.WebGLRenderer {
@@ -63,6 +68,32 @@ function makeMockEventManager() {
     removeEventListener: vi.fn(),
     emitEvent: vi.fn()
   } satisfies EventManagerInterface
+}
+
+function makeView(
+  renderer: THREE.WebGLRenderer,
+  width = 400,
+  height = 300
+): RendererView {
+  const canvas = document.createElement('canvas')
+  Object.defineProperty(canvas, 'clientWidth', {
+    configurable: true,
+    value: width
+  })
+  Object.defineProperty(canvas, 'clientHeight', {
+    configurable: true,
+    value: height
+  })
+  return {
+    renderer,
+    canvas,
+    state: createRendererViewState(),
+    width,
+    height,
+    beginRender: vi.fn(),
+    blit: vi.fn(),
+    setSize: vi.fn()
+  } as unknown as RendererView
 }
 
 function makeRenderer() {
@@ -115,20 +146,15 @@ describe('SceneManager', () => {
   let manager: SceneManager
 
   beforeEach(() => {
-    vi.clearAllMocks()
     renderer = makeRenderer()
     camera = new THREE.PerspectiveCamera()
     events = makeMockEventManager()
     manager = new SceneManager(
-      renderer,
+      makeView(renderer),
       () => camera,
       () => ({}) as unknown as OrbitControls,
       events
     )
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('construction', () => {
@@ -592,27 +618,18 @@ describe('SceneManager', () => {
 
 function makeSceneManager(
   pixelRatio = 1,
-  cameraOverride?: THREE.PerspectiveCamera | THREE.OrthographicCamera
+  cameraOverride?: THREE.PerspectiveCamera | THREE.OrthographicCamera,
+  viewSize?: { width: number; height: number }
 ) {
   const renderer = makeMockRenderer(pixelRatio)
+  const view = makeView(renderer, viewSize?.width, viewSize?.height)
   const camera = cameraOverride ?? new THREE.PerspectiveCamera()
   const eventManager = makeMockEventManager()
-  const manager = new SceneManager(
-    renderer,
-    () => camera,
-    vi.fn() as unknown as () => InstanceType<
-      typeof import('three/examples/jsm/controls/OrbitControls').OrbitControls
-    >,
-    eventManager
-  )
-  return { manager, renderer, camera, eventManager }
+  const manager = new SceneManager(view, () => camera, vi.fn(), eventManager)
+  return { manager, renderer, view, camera, eventManager }
 }
 
 describe('SceneManager.captureScene', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('resolves with scene, mask, and normal data URLs', async () => {
     const { manager } = makeSceneManager()
     const result = await manager.captureScene(800, 600)
@@ -646,6 +663,19 @@ describe('SceneManager.captureScene', () => {
     await manager.captureScene(1920, 1080)
     const calls = vi.mocked(renderer.setSize).mock.calls
     expect(calls.at(-1)).toEqual([400, 300])
+  })
+
+  it('restores the view state first and resizes the background to the view size, not the shared buffer size', async () => {
+    const { manager, view } = makeSceneManager(1, undefined, {
+      width: 640,
+      height: 480
+    })
+    const handleResize = vi.spyOn(manager, 'handleResize')
+
+    await manager.captureScene(1920, 1080)
+
+    expect(view.beginRender).toHaveBeenCalledOnce()
+    expect(handleResize).toHaveBeenCalledWith(640, 480)
   })
 
   it('restores perspective camera aspect after capture', async () => {

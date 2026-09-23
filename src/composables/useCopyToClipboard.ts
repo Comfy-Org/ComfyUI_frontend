@@ -1,4 +1,3 @@
-import { useClipboard } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
 
 import { t } from '@/i18n'
@@ -20,17 +19,14 @@ function legacyCopy(text: string): boolean {
 }
 
 export function useCopyToClipboard() {
-  const { copy, isSupported } = useClipboard()
   const toast = useToast()
 
   async function copyToClipboard(text: string) {
     let success = false
 
     try {
-      if (isSupported.value) {
-        await copy(text)
-        success = true
-      }
+      await navigator.clipboard.writeText(text)
+      success = true
     } catch {
       // Modern clipboard API failed, fall through to legacy
     }

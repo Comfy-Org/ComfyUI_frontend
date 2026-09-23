@@ -1,7 +1,11 @@
 # Description: Linting and code formatting validation for pull requests.
-# Paired with ci-lint-format-queue.yaml - workflow name and job name must
-# match so branch protection resolves a single required check in both the
-# pull_request and merge_group contexts.
+# Paired with ci-lint-format-queue.yaml - workflow name and the gate job name
+# `lint-and-format` must match so branch protection resolves a single
+# required check in both the pull_request and merge_group contexts.
+#
+# Work is split across parallel jobs so wall time is the slowest job rather
+# than the sum. The `lint` job runs the fixers; every fixer exits non-zero
+# when unfixable problems remain, so no second verify-only lint pass runs.
 name: 'CI: Lint Format'
 
 on:
@@ -16,18 +20,33 @@ permissions:
   contents: write
   pull-requests: write
 
+env:
+  LINT_CACHE_PATHS: |
+    .eslintcache
+    .stylelintcache
+  TYPECHECK_CACHE_PATHS: |
+    node_modules/.cache/tsbuildinfo
+    packages/*/node_modules/.cache/tsbuildinfo
+
 jobs:
-  lint-and-format:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || github.ref }}
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.PR_GH_TOKEN || github.token }}
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
+
+      - name: Restore lint caches
+        id: lint-cache
+        uses: ./.github/actions/tool-cache-restore
+        with:
+          scope: lint
+          path: ${{ env.LINT_CACHE_PATHS }}
 
       - name: Run ESLint with auto-fix
         run: pnpm lint:fix
@@ -72,13 +91,10 @@ jobs:
           echo "See CONTRIBUTING.md for more details."
           exit 1
 
-      - name: Verify lint and format
-        uses: ./.github/actions/lint-format-verify
-
       - name: Comment on PR about auto-fix
         if: steps.verify-changed-files.outputs.changed == 'true' && github.event.pull_request.head.repo.full_name == github.repository
         continue-on-error: true
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.createComment({
@@ -87,3 +103,93 @@ jobs:
               repo: context.repo.repo,
               body: '## 🔧 Auto-fixes Applied\n\nThis PR has been automatically updated to fix linting and formatting issues.\n\n**⚠️ Important**: Your local branch is now behind. Run `git pull` before making additional changes to avoid conflicts.\n\n### Changes made:\n- ESLint auto-fixes\n- Oxfmt formatting'
             })
+
+      - name: Save lint caches
+        if: always()
+        uses: ./.github/actions/tool-cache-save
+        with:
+          cache-key: ${{ steps.lint-cache.outputs.cache-key }}
+          path: ${{ env.LINT_CACHE_PATHS }}
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Restore incremental typecheck cache
+        id: typecheck-cache
+        uses: ./.github/actions/tool-cache-restore
+        with:
+          scope: typecheck
+          path: ${{ env.TYPECHECK_CACHE_PATHS }}
+
+      - name: Typecheck application and packages
+        run: pnpm typecheck
+
+      - name: Save incremental typecheck cache
+        if: always()
+        uses: ./.github/actions/tool-cache-save
+        with:
+          cache-key: ${{ steps.typecheck-cache.outputs.cache-key }}
+          path: ${{ env.TYPECHECK_CACHE_PATHS }}
+
+  typecheck-aux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Restore incremental typecheck cache
+        id: typecheck-cache
+        uses: ./.github/actions/tool-cache-restore
+        with:
+          scope: typecheck-aux
+          path: ${{ env.TYPECHECK_CACHE_PATHS }}
+
+      - name: Typecheck browser tests, scripts and tools
+        uses: ./.github/actions/typecheck-aux
+
+      - name: Save incremental typecheck cache
+        if: always()
+        uses: ./.github/actions/tool-cache-save
+        with:
+          cache-key: ${{ steps.typecheck-cache.outputs.cache-key }}
+          path: ${{ env.TYPECHECK_CACHE_PATHS }}
+
+  repo-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v7
+        with:
+          # Blobless full history: pnpm locale:check fetches the English
+          # source blobs recorded in src/locales/.source-manifest.json
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Verify knip, locale integrity and ADR index
+        uses: ./.github/actions/repo-checks
+
+  # Single stable branch-protection context over the parallel jobs above.
+  lint-and-format:
+    needs: [lint, typecheck, typecheck-aux, repo-checks]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify every lint and format job passed
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "$RESULTS"
+          echo "$RESULTS" | jq -e 'all(. == "success")' > /dev/null ||
+            { echo "::error::At least one lint/format job did not succeed."; exit 1; }

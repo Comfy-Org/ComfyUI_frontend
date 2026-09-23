@@ -1,12 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   mockFileReaderAbort,
   mockFileReaderError
 } from './__fixtures__/helpers'
 import { getFromPngBuffer, getFromPngFile } from './png'
-
-afterEach(() => vi.restoreAllMocks())
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
 
@@ -170,7 +168,7 @@ describe('getFromPngBuffer', () => {
 
     const reader = stream.readable.getReader()
     const chunks: Uint8Array[] = []
-    while (true) {
+    for (;;) {
       const { done, value } = await reader.read()
       if (done) break
       chunks.push(value)

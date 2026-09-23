@@ -1,6 +1,15 @@
+import { zAssetInfo, zHubProfile } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { zAssetInfo, zComfyHubProfile } from '@/schemas/apiSchema'
+const zComfyHubProfile = zHubProfile
+  .pick({ username: true, description: true })
+  .extend({
+    name: zHubProfile.shape.display_name,
+    coverImageUrl: z.string().nullish(),
+    profilePictureUrl: zHubProfile.shape.avatar_url.nullish()
+  })
+
+export type ComfyHubProfile = z.infer<typeof zComfyHubProfile>
 
 export const zPublishRecordResponse = z.object({
   workflow_id: z.string(),
@@ -8,15 +17,6 @@ export const zPublishRecordResponse = z.object({
   listed: z.boolean(),
   publish_time: z.string().nullable(),
   assets: z.array(zAssetInfo).optional()
-})
-
-export const zHubWorkflowPrefillResponse = z.object({
-  description: z.string().nullish(),
-  tags: z.array(z.string()).nullish(),
-  sample_image_urls: z.array(z.string()).nullish(),
-  thumbnail_type: z.enum(['image', 'video', 'image_comparison']).nullish(),
-  thumbnail_url: z.string().nullish(),
-  thumbnail_comparison_url: z.string().nullish()
 })
 
 /**

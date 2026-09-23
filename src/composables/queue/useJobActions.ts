@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
-import type { TaskItemImpl } from '@/stores/queueStore'
 import { isActiveJobState } from '@/utils/queueUtil'
 
 export type JobAction = {
@@ -64,7 +63,7 @@ export function useJobActions(
 
   const runDeleteJob = wrapWithErrorHandlingAsync(async () => {
     const currentJob = jobRef.value
-    const task = currentJob?.taskRef as TaskItemImpl | undefined
+    const task = currentJob?.taskRef
     if (!task) {
       return
     }

@@ -1,0 +1,382 @@
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+
+import InviteMembersForm from './InviteMembersForm.vue'
+
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+const { mockToastAdd } = vi.hoisted(() => ({
+  mockToastAdd: vi.fn()
+}))
+
+vi.mock(import('@/composables/billing/useBillingContext'))
+
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({
+      add: mockToastAdd
+    })
+  })
+)
+
+vi.mock(import('@/platform/telemetry'))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+function pendingInviteFor(email: string): WorkspacePendingInvite {
+  return {
+    id: `inv-${email}`,
+    email,
+    inviteDate: new Date(0),
+    expiryDate: new Date(0)
+  }
+}
+
+function renderForm(props: Record<string, unknown> = {}) {
+  mockBillingContext()
+  const user = userEvent.setup()
+  const result = render(InviteMembersForm, {
+    props: {
+      submitLabel: 'Send invites',
+      placeholder: 'Enter emails',
+      source: 'post_upgrade_success',
+      ...props
+    },
+    global: { plugins: [i18n] }
+  })
+  return { ...result, user }
+}
+
+function emailInput() {
+  return screen.getByRole('textbox')
+}
+
+function submitButton() {
+  return screen.getByRole('button', { name: 'Send invites' })
+}
+
+type SubmittedPayload = [string[], WorkspacePendingInvite[]]
+
+function submittedPayloads(
+  emitted: () => Record<string, unknown[] | undefined>
+): SubmittedPayload[] {
+  return (emitted().submitted ?? []) as SubmittedPayload[]
+}
+
+describe('InviteMembersForm', () => {
+  beforeEach(() => {
+    vi.useRealTimers()
+    Object.assign(useTeamWorkspaceStore(), { pendingInvites: [] })
+    vi.mocked(useTeamWorkspaceStore().fetchPendingInvites).mockResolvedValue([
+      ...useTeamWorkspaceStore().pendingInvites
+    ])
+
+    vi.mocked(useTeamWorkspaceStore().createInvite).mockImplementation(
+      async (email: string) => pendingInviteFor(email)
+    )
+  })
+
+  it('turns comma-, whitespace-, and enter-delimited input into chips', async () => {
+    const { user } = renderForm()
+
+    await user.type(emailInput(), 'a@b.com ')
+    await user.type(emailInput(), 'c@d.com,')
+    await user.type(emailInput(), 'e@f.com{Enter}')
+
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(screen.getByText('c@d.com')).toBeInTheDocument()
+    expect(screen.getByText('e@f.com')).toBeInTheDocument()
+  })
+
+  it('disables submit with no chips and flags invalid emails', async () => {
+    const { user } = renderForm()
+
+    expect(submitButton()).toBeDisabled()
+
+    await user.type(emailInput(), 'not-an-email{Enter}')
+
+    expect(screen.getByText('not-an-email')).toBeInTheDocument()
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.invalidEmailCount')
+    ).toBeInTheDocument()
+    expect(submitButton()).toBeDisabled()
+  })
+
+  it('creates an invite per email, tracks telemetry, and emits submitted', async () => {
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'A@B.com C@D.com{Enter}')
+    await user.click(submitButton())
+
+    await waitFor(() =>
+      expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
+    )
+    expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('a@b.com')
+    expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith('c@d.com')
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
+      source: 'post_upgrade_success',
+      count: 2
+    })
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    expect(submittedPayloads(emitted)).toHaveLength(1)
+    expect(submittedPayloads(emitted)[0][0]).toEqual(['a@b.com', 'c@d.com'])
+    expect(submittedPayloads(emitted)[0][1].map((i) => i.email)).toEqual([
+      'a@b.com',
+      'c@d.com'
+    ])
+  })
+
+  it('completes submission when the billing refresh fails', async () => {
+    const refreshError = new Error('refresh failed')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { user, emitted } = renderForm()
+    vi.mocked(useBillingContext().fetchStatus).mockRejectedValueOnce(
+      refreshError
+    )
+
+    await user.type(emailInput(), 'a@b.com{Enter}')
+    await user.click(submitButton())
+
+    await waitFor(() =>
+      expect(submittedPayloads(emitted)[0][0]).toEqual(['a@b.com'])
+    )
+    expect(submitButton()).toBeEnabled()
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+  })
+
+  it('ignores stale cached invites when pending invites cannot be refreshed', async () => {
+    const refreshError = new Error('pending invites failed')
+    useTeamWorkspaceStore().pendingInvites.push(
+      pendingInviteFor('stale@example.com')
+    )
+    vi.mocked(
+      useTeamWorkspaceStore().fetchPendingInvites
+    ).mockRejectedValueOnce(refreshError)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'stale@example.com{Enter}')
+    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
+
+    expect(
+      screen.queryByText(
+        'workspacePanel.inviteMemberDialog.pendingInviteSingle'
+      )
+    ).not.toBeInTheDocument()
+    await user.click(submitButton())
+
+    await waitFor(() =>
+      expect(submittedPayloads(emitted)[0][0]).toEqual(['stale@example.com'])
+    )
+  })
+
+  it('revalidates emails after pending invites finish loading', async () => {
+    let resolvePendingInvites: (
+      invites: WorkspacePendingInvite[]
+    ) => void = () => {}
+    vi.mocked(
+      useTeamWorkspaceStore().fetchPendingInvites
+    ).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePendingInvites = resolve
+        })
+    )
+    const { user } = renderForm()
+
+    await user.type(emailInput(), 'valid@example.com{Enter}')
+    await user.click(submitButton())
+    await user.type(emailInput(), 'invalid{Enter}')
+    resolvePendingInvites([])
+
+    await waitFor(() =>
+      expect(submitButton()).toHaveAttribute('aria-busy', 'false')
+    )
+    expect(useTeamWorkspaceStore().createInvite).not.toHaveBeenCalled()
+  })
+
+  it('keeps failed emails for retry and emits all invited emails after recovery', async () => {
+    let shouldFail = true
+    vi.mocked(useTeamWorkspaceStore().createInvite).mockImplementation(
+      async (email: string) => {
+        if (email === 'fail@x.com' && shouldFail) {
+          shouldFail = false
+          throw new Error('nope')
+        }
+        return pendingInviteFor(email)
+      }
+    )
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'ok@x.com fail@x.com{Enter}')
+    await user.click(submitButton())
+
+    await waitFor(() =>
+      expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
+    )
+    expect(screen.getByText('fail@x.com')).toBeInTheDocument()
+    expect(screen.queryByText('ok@x.com')).not.toBeInTheDocument()
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error' })
+    )
+    expect(emitted().submitted).toBeUndefined()
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledWith({
+      source: 'post_upgrade_success',
+      count: 1
+    })
+
+    await user.click(submitButton())
+
+    await waitFor(() =>
+      expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(3)
+    )
+    expect(submittedPayloads(emitted)[0][0]).toEqual(['ok@x.com', 'fail@x.com'])
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledTimes(2)
+    expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenLastCalledWith({
+      source: 'post_upgrade_success',
+      count: 1
+    })
+  })
+
+  it('keeps all chips, toasts, and emits nothing when every invite fails', async () => {
+    vi.mocked(useTeamWorkspaceStore().createInvite).mockRejectedValue(
+      new Error('nope')
+    )
+    const { user, emitted } = renderForm()
+
+    await user.type(emailInput(), 'a@b.com,c@d.com{Enter}')
+    await user.click(submitButton())
+
+    await waitFor(() =>
+      expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(2)
+    )
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(screen.getByText('c@d.com')).toBeInTheDocument()
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error' })
+    )
+    expect(emitted().submitted).toBeUndefined()
+    expect(useTelemetry()?.trackWorkspaceInviteSent).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+  })
+
+  it('keeps over-limit chips visible and blocks submission', async () => {
+    const { user } = renderForm({ maxSeats: 2 })
+
+    await user.type(emailInput(), 'a@b.com,b@b.com,c@b.com{Enter}')
+
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(screen.getByText('b@b.com')).toBeInTheDocument()
+    expect(screen.getByText('c@b.com')).toBeInTheDocument()
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.seatLimitExceeded')
+    ).toBeInTheDocument()
+    expect(submitButton()).toBeDisabled()
+  })
+
+  it('blocks submission while workspace occupancy is unresolved', async () => {
+    const { user } = renderForm({ maxSeats: 1, occupiedSeats: null })
+
+    await user.type(emailInput(), 'a@b.com{Enter}')
+
+    expect(submitButton()).toBeDisabled()
+    expect(
+      screen.queryByText('workspacePanel.inviteMemberDialog.seatLimitExceeded')
+    ).not.toBeInTheDocument()
+  })
+
+  it('disables submit when every email has a pending invite', async () => {
+    const pendingInvite = pendingInviteFor('ALREADY@EXAMPLE.COM')
+    useTeamWorkspaceStore().pendingInvites.push(pendingInvite)
+    vi.mocked(
+      useTeamWorkspaceStore().fetchPendingInvites
+    ).mockResolvedValueOnce([pendingInvite])
+    const { user } = renderForm()
+
+    await user.type(emailInput(), 'already@example.com{Enter}')
+
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.pendingInviteSingle')
+    ).toBeInTheDocument()
+    expect(submitButton()).toBeDisabled()
+    expect(useTeamWorkspaceStore().createInvite).not.toHaveBeenCalled()
+  })
+
+  it('skips pending invites and sends the rest of the batch', async () => {
+    const pendingInvites = [
+      pendingInviteFor('first@example.com'),
+      pendingInviteFor('second@example.com')
+    ]
+    useTeamWorkspaceStore().pendingInvites.push(...pendingInvites)
+    vi.mocked(
+      useTeamWorkspaceStore().fetchPendingInvites
+    ).mockResolvedValueOnce(pendingInvites)
+    const { user, emitted } = renderForm({ maxSeats: 3, occupiedSeats: 2 })
+
+    await user.type(
+      emailInput(),
+      'first@example.com,second@example.com,new@example.com{Enter}'
+    )
+
+    expect(
+      screen.getByText('workspacePanel.inviteMemberDialog.pendingInviteCount')
+    ).toBeInTheDocument()
+    expect(submitButton()).toBeEnabled()
+
+    await user.click(submitButton())
+
+    await waitFor(() =>
+      expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledOnce()
+    )
+    expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith(
+      'new@example.com'
+    )
+    expect(submittedPayloads(emitted)[0][0]).toEqual(['new@example.com'])
+  })
+
+  it('caps unlimited workspaces to one invite batch', async () => {
+    const { user } = renderForm({ maxSeats: Number.POSITIVE_INFINITY })
+    const emails = Array.from(
+      { length: 31 },
+      (_, index) => `member${index + 1}@example.com`
+    )
+
+    await user.click(emailInput())
+    await user.paste(emails.join(','))
+
+    expect(screen.getByText('member30@example.com')).toBeInTheDocument()
+    expect(screen.queryByText('member31@example.com')).not.toBeInTheDocument()
+  })
+
+  it('emits cancel when a cancel label is provided', async () => {
+    const { user, emitted } = renderForm({ cancelLabel: 'Cancel' })
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(emitted().cancel).toBeTruthy()
+    expect(useTeamWorkspaceStore().createInvite).not.toHaveBeenCalled()
+  })
+
+  it('hides the built-in submit row when showSubmit is false', () => {
+    renderForm({ showSubmit: false })
+
+    expect(
+      screen.queryByRole('button', { name: 'Send invites' })
+    ).not.toBeInTheDocument()
+  })
+})

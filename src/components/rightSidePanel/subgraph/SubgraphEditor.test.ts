@@ -1,8 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -11,7 +9,8 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
@@ -25,7 +24,7 @@ type DraggableListProps = ComponentProps<typeof DraggableList>
 type PromotedRow =
   DraggableListProps['modelValue'] extends Array<infer T> ? T : never
 
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: vi.fn() })
 }))
 
@@ -53,18 +52,12 @@ const i18n = createI18n({
 })
 
 describe('SubgraphEditor', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-  })
-
   it('renders preview exposures after promoted inputs without drag handles', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
     const firstNode = new LGraphNode('FirstNode')
     const secondNode = new LGraphNode('SecondNode')
-    const previewNode = new LGraphNode('PreviewImage')
-    previewNode.type = 'PreviewImage'
+    const previewNode = new LGraphNode('PreviewImage', 'PreviewImage')
     subgraph.add(firstNode)
     subgraph.add(secondNode)
     subgraph.add(previewNode)
@@ -85,7 +78,7 @@ describe('SubgraphEditor', () => {
         sourcePreviewName: '$$canvas-image-preview'
       }
     )
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -104,12 +97,12 @@ describe('SubgraphEditor', () => {
     expect(
       within(shown)
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['first', 'second', '$$canvas-image-preview'])
     expect(
       within(screen.getByTestId('draggable-list'))
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['first', 'second'])
     expect(
       within(shown).getAllByTestId('subgraph-widget-drag-handle')
@@ -132,7 +125,7 @@ describe('SubgraphEditor', () => {
     secondInput.widget = { name: secondWidget.name }
     promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
     promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     let listSetter: ((value: PromotedRow[]) => void) | undefined
     const draggableListStub = {
@@ -165,7 +158,7 @@ describe('SubgraphEditor', () => {
     expect(
       within(shown)
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['first', 'second'])
 
     const rowFor = (sourceNode: LGraphNode) => {
@@ -188,7 +181,7 @@ describe('SubgraphEditor', () => {
     expect(
       within(shown)
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['second', 'first'])
   })
 
@@ -201,7 +194,7 @@ describe('SubgraphEditor', () => {
     const sourceInput = sourceNode.addInput('first', 'STRING')
     const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
     sourceInput.widget = { name: sourceWidget.name }
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -224,8 +217,35 @@ describe('SubgraphEditor', () => {
     expect(
       within(shown)
         .getAllByTestId('subgraph-widget-label')
-        .map((el) => el.textContent?.trim())
+        .map((el) => el.textContent.trim())
     ).toEqual(['first'])
+  })
+
+  it('excludes Vue-node-ineligible candidates except pseudo-widgets', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const sourceNode = new LGraphNode('SourceNode')
+    subgraph.add(sourceNode)
+    const hiddenWidget = sourceNode.addWidget('text', 'hidden', '', () => {})
+    const pseudoWidget = sourceNode.addWidget('text', '$$preview', '', () => {})
+    if (!hiddenWidget.visibility || !pseudoWidget.visibility) {
+      throw new Error('Missing concrete widget visibility')
+    }
+    hiddenWidget.visibility.surfaces.vueNode = 'never'
+    pseudoWidget.visibility.surfaces.vueNode = 'never'
+    useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = true
+    setCanvasSelection([host])
+
+    render(SubgraphEditor, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      within(screen.getByTestId('subgraph-editor-hidden-section'))
+        .getAllByTestId('subgraph-widget-label')
+        .map((element) => element.textContent.trim())
+    ).toEqual(['$$preview'])
   })
 
   it('demotes linked promoted widgets when "Hide all" is clicked', async () => {
@@ -244,7 +264,7 @@ describe('SubgraphEditor', () => {
     secondInput.widget = { name: secondWidget.name }
     promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
     promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -268,11 +288,68 @@ describe('SubgraphEditor', () => {
     expect(host.inputs.filter((input) => input.widgetId)).toHaveLength(0)
   })
 
+  it('does not shrink a user-resized subgraph node merely by mounting the panel (FE-853)', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph, { size: [640, 480] })
+    const sourceNode = new LGraphNode('SourceNode')
+    subgraph.add(sourceNode)
+    const sourceInput = sourceNode.addInput('first', 'STRING')
+    const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
+    sourceInput.widget = { name: sourceWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, sourceNode, sourceWidget)
+    setCanvasSelection([host])
+
+    render(SubgraphEditor, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: {
+        plugins: [i18n],
+        stubs: {
+          DraggableList: {
+            template:
+              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
+          }
+        }
+      }
+    })
+
+    expect(Array.from(host.size)).toEqual([640, 480])
+  })
+
+  it('does not shrink a user-resized subgraph node when promoting from the hidden section', async () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph, { size: [640, 480] })
+    const sourceNode = new LGraphNode('SourceNode')
+    subgraph.add(sourceNode)
+
+    const sourceInput = sourceNode.addInput('first', 'STRING')
+    const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
+    sourceInput.widget = { name: sourceWidget.name }
+    setCanvasSelection([host])
+
+    render(SubgraphEditor, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: {
+        plugins: [i18n],
+        stubs: {
+          DraggableList: {
+            template:
+              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
+          }
+        }
+      }
+    })
+
+    const hidden = screen.getByTestId('subgraph-editor-hidden-section')
+    await userEvent.click(within(hidden).getByTestId('subgraph-widget-toggle'))
+    await nextTick()
+
+    expect(Array.from(host.size)).toEqual([640, 480])
+  })
+
   it('removes the exposure when a preview row without a real source widget is demoted', async () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
-    const orphanedSourceNode = new LGraphNode('OrphanedNode')
-    orphanedSourceNode.type = 'OrphanedNode'
+    const orphanedSourceNode = new LGraphNode('OrphanedNode', 'OrphanedNode')
     subgraph.add(orphanedSourceNode)
 
     const previewStore = usePreviewExposureStore()
@@ -281,7 +358,7 @@ describe('SubgraphEditor', () => {
       sourcePreviewName: '$$canvas-image-preview'
     })
 
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),

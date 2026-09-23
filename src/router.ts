@@ -16,8 +16,11 @@ import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
+import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
+import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
-import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { unmatchedRouteRedirect } from '@/platform/navigation/unmatchedRoute'
+import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 
 const cloudOnboardingRoutes = isCloud
   ? (await import('./platform/cloud/onboarding/onboardingCloudRoutes'))
@@ -35,15 +38,13 @@ const isFileProtocol = window.location.protocol === 'file:'
  */
 function getBasePath(): string {
   if (isDesktop) return '/'
-  if (isCloud) return import.meta.env?.BASE_URL || '/'
+  if (isCloud) return import.meta.env.BASE_URL || '/'
   return window.location.pathname
 }
 
 const basePath = getBasePath()
 
 function trackPageView(): void {
-  if (!isCloud || typeof window === 'undefined') return
-
   useTelemetry()?.trackPageView(document.title, {
     path: window.location.href
   })
@@ -83,7 +84,8 @@ const router = createRouter({
           component: () => import('@/views/UserSelectView.vue')
         }
       ]
-    }
+    },
+    { path: '/:pathMatch(.*)*', redirect: unmatchedRouteRedirect }
   ],
 
   scrollBehavior(_to, _from, savedPosition) {
@@ -95,28 +97,7 @@ const router = createRouter({
   }
 })
 
-installPreservedQueryTracker(router, [
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,
-    keys: ['template', 'source', 'mode']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.SHARE,
-    keys: ['share']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.INVITE,
-    keys: ['invite']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE,
-    keys: ['create_workspace']
-  },
-  {
-    namespace: PRESERVED_QUERY_NAMESPACES.OAUTH,
-    keys: ['oauth_request_id']
-  }
-])
+installPreservedQueryTracker(router, PRESERVED_QUERY_DEFINITIONS)
 
 router.beforeEach((to, _from, next) => {
   captureOAuthRequestId(to.query)
@@ -140,7 +121,7 @@ if (isCloud) {
     '/cloud/login',
     '/cloud/signup',
     '/cloud/forgot-password',
-    '/cloud/oauth/consent',
+    '/oauth/consent',
     '/cloud/sorry-contact-support'
   ])
 
@@ -169,6 +150,7 @@ if (isCloud) {
     // Pass authenticated users
     const authHeader = await authStore.getAuthHeader()
     const isLoggedIn = !!authHeader
+    preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 
     // Allow public routes
     if (isPublicRoute(to)) {
@@ -220,7 +202,7 @@ if (isCloud) {
 
     // User is logged in - check if they need onboarding (when enabled)
     // For root path, check actual user status to handle waitlisted users
-    if (!isDesktop && isLoggedIn && to.path === '/') {
+    if (!isDesktop && to.path === '/') {
       if (!flags.onboardingSurveyEnabled) {
         return next()
       }
@@ -245,6 +227,8 @@ if (isCloud) {
     // User is logged in and accessing protected route
     return next()
   })
+
+  installDesktopLoginRedemption(router)
 }
 
 export default router

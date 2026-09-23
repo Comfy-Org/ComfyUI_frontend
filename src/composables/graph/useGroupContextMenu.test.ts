@@ -1,0 +1,204 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
+import type {
+  CanvasPointerEvent,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphGroup,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+
+const { mockShowNodeOptions, mockGetCanvasContextMenuTarget } = vi.hoisted(
+  () => ({
+    mockShowNodeOptions: vi.fn(),
+    mockGetCanvasContextMenuTarget: vi.fn<
+      () => { reroute?: unknown; link?: unknown; group?: unknown }
+    >(() => ({}))
+  })
+)
+
+vi.mock(import('@/composables/graph/useMoreOptionsMenu'), () => ({
+  showNodeOptions: mockShowNodeOptions
+}))
+
+vi.mock<unknown>(
+  import('@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'),
+  () => ({
+    getCanvasContextMenuTarget: mockGetCanvasContextMenuTarget
+  })
+)
+
+interface StubCanvas {
+  graph: LGraph
+  deselectAll: ReturnType<typeof vi.fn>
+  selectedItems: Set<unknown>
+  state: { selectionChanged: boolean }
+}
+
+describe('useGroupContextMenu', () => {
+  const event = fromPartial<CanvasPointerEvent>({ canvasX: 10, canvasY: 20 })
+  let group: LGraphGroup
+  let recomputeInsideNodes: ReturnType<typeof vi.spyOn>
+  let legacyMenuMock: ReturnType<typeof vi.fn>
+  let stubCanvas: StubCanvas
+
+  beforeEach(() => {
+    LiteGraph.vueNodesMode = true
+    const graph = createTestSubgraph({ rootGraph: new LGraph() })
+    group = new LGraphGroup()
+    graph.add(group)
+    recomputeInsideNodes = vi.spyOn(group, 'recomputeInsideNodes')
+    mockGetCanvasContextMenuTarget.mockReturnValue({ group })
+
+    legacyMenuMock = vi.fn()
+    LGraphCanvas.prototype.processContextMenu = fromAny(legacyMenuMock)
+
+    useGroupContextMenu()
+
+    stubCanvas = {
+      graph,
+      deselectAll: vi.fn(),
+      selectedItems: new Set(),
+      state: { selectionChanged: false }
+    }
+    stubCanvas.deselectAll.mockImplementation(() => {
+      stubCanvas.selectedItems.clear()
+    })
+  })
+
+  function invoke(node: LGraphNode | undefined) {
+    LGraphCanvas.prototype.processContextMenu.call(
+      fromAny(stubCanvas),
+      node,
+      event
+    )
+  }
+
+  it('opens the Vue menu and selects only the group in Nodes 2.0 mode', () => {
+    invoke(undefined)
+
+    expect(stubCanvas.deselectAll).toHaveBeenCalledOnce()
+    expect(group.selected).toBe(true)
+    expect(stubCanvas.selectedItems.has(group)).toBe(true)
+    expect(
+      useSelectionStore().isSelected(
+        graphScopeOf(stubCanvas.graph),
+        selectableKeyOf(group)
+      )
+    ).toBe(true)
+    expect(stubCanvas.state.selectionChanged).toBe(true)
+    expect(recomputeInsideNodes).toHaveBeenCalledOnce()
+    expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
+    expect(stubCanvas.deselectAll.mock.invocationCallOrder[0]).toBeLessThan(
+      mockShowNodeOptions.mock.invocationCallOrder[0]
+    )
+    expect(legacyMenuMock).not.toHaveBeenCalled()
+  })
+
+  it('falls through to the legacy menu when a node is under the cursor', () => {
+    invoke(fromPartial<LGraphNode>({}))
+
+    expect(mockGetCanvasContextMenuTarget).not.toHaveBeenCalled()
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
+    expect(mockShowNodeOptions).not.toHaveBeenCalled()
+  })
+
+  it('falls through to the legacy menu in legacy (non-Nodes 2.0) mode', () => {
+    LiteGraph.vueNodesMode = false
+
+    invoke(undefined)
+
+    expect(mockGetCanvasContextMenuTarget).not.toHaveBeenCalled()
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
+    expect(mockShowNodeOptions).not.toHaveBeenCalled()
+  })
+
+  it('falls through to the legacy menu when no group is under the cursor', () => {
+    mockGetCanvasContextMenuTarget.mockReturnValue({})
+
+    invoke(undefined)
+
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
+    expect(mockShowNodeOptions).not.toHaveBeenCalled()
+    expect(stubCanvas.selectedItems.size).toBe(0)
+  })
+
+  it('falls through to the legacy menu when the cursor is on a reroute', () => {
+    mockGetCanvasContextMenuTarget.mockReturnValue({
+      reroute: { id: 5 },
+      group
+    })
+
+    invoke(undefined)
+
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
+    expect(mockShowNodeOptions).not.toHaveBeenCalled()
+    expect(stubCanvas.selectedItems.size).toBe(0)
+  })
+
+  it('falls through to the legacy menu when the cursor is on a link', () => {
+    mockGetCanvasContextMenuTarget.mockReturnValue({
+      link: { id: 5 },
+      group
+    })
+
+    invoke(undefined)
+
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
+    expect(mockShowNodeOptions).not.toHaveBeenCalled()
+    expect(stubCanvas.selectedItems.size).toBe(0)
+  })
+
+  it('keeps the menu open without re-selecting when only the group is selected', () => {
+    group.selected = true
+    stubCanvas.selectedItems.add(group)
+
+    invoke(undefined)
+
+    expect(stubCanvas.deselectAll).not.toHaveBeenCalled()
+    expect(stubCanvas.selectedItems.size).toBe(1)
+    expect(stubCanvas.selectedItems.has(group)).toBe(true)
+    expect(stubCanvas.state.selectionChanged).toBe(false)
+    expect(group.recomputeInsideNodes).not.toHaveBeenCalled()
+    expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
+    expect(legacyMenuMock).not.toHaveBeenCalled()
+  })
+
+  it('reselects the group when selected child nodes would hide group actions', () => {
+    const childNode = { selected: true }
+    group.selected = true
+    stubCanvas.selectedItems.add(group)
+    stubCanvas.selectedItems.add(childNode)
+
+    invoke(undefined)
+
+    expect(stubCanvas.deselectAll).toHaveBeenCalledOnce()
+    expect(stubCanvas.selectedItems.size).toBe(1)
+    expect(stubCanvas.selectedItems.has(group)).toBe(true)
+    expect(stubCanvas.state.selectionChanged).toBe(true)
+    expect(group.recomputeInsideNodes).toHaveBeenCalledOnce()
+    expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
+    expect(legacyMenuMock).not.toHaveBeenCalled()
+  })
+
+  it('falls through to the legacy menu when the canvas has no graph', () => {
+    LGraphCanvas.prototype.processContextMenu.call(
+      fromAny({ deselectAll: vi.fn() }),
+      undefined,
+      event
+    )
+
+    expect(mockGetCanvasContextMenuTarget).not.toHaveBeenCalled()
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
+    expect(mockShowNodeOptions).not.toHaveBeenCalled()
+  })
+})

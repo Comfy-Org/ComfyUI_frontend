@@ -1,7 +1,15 @@
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
 import type { CurveData } from '@/components/curve/types'
+import type { BoundingBox } from '@/types/boundingBoxes'
+import type { NodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
-import type { WidgetControlConfig } from '@/types/widgetState'
+import type {
+  WidgetSurfaces,
+  WidgetVisibilityComponent
+} from '@/types/widgetVisibility'
+import type { ColorFormat } from '@/utils/colorUtil'
 
 import type {
   CanvasColour,
@@ -10,12 +18,7 @@ import type {
   RequiredProps,
   Size
 } from '../interfaces'
-import type {
-  CanvasPointer,
-  LGraphCanvas,
-  LGraphNode,
-  NodeId
-} from '../litegraph'
+import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
 import type { CanvasPointerEvent } from './events'
 
 export interface NodeBindable {
@@ -45,8 +48,17 @@ export interface IWidgetOptions<TValues = unknown> {
   property?: string
   /** If `true`, an input socket will not be created for this widget. */
   socketless?: boolean
-  /** If `true`, the widget will not be rendered by the Vue renderer. */
+  surfaces?: WidgetSurfaces
+  /** @deprecated This key stays supported for third-party widgets. */
   canvasOnly?: boolean
+  /**
+   * If `true`, the widget still renders on the node but is omitted from the
+   * right side panel. Unlike {@link IWidgetOptions.canvasOnly}, the node body
+   * keeps rendering it via the Vue renderer. Used for widgets that hold
+   * non-syncable state (e.g. a Three.js viewport) where a second instance in
+   * the panel would diverge from the one on the node.
+   */
+  hideInPanel?: boolean
   /** Used as a temporary override for determining the asset type in vue mode*/
   nodeType?: string
 
@@ -141,7 +153,12 @@ export type IWidget =
   | IBoundingBoxWidget
   | ICurveWidget
   | IPainterWidget
+  | ICompositorWidget
   | IRangeWidget
+  | IVideoEditWidget
+  | IResolutionPreviewWidget
+  | IBoundingBoxesWidget
+  | IColorsWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -193,10 +210,10 @@ export interface IStringComboWidget extends IBaseWidget<
   value: string
 }
 
-type ComboWidgetValues =
-  | string[]
+export type ComboWidgetValues =
+  | (string | number)[]
   | Record<string, string>
-  | ((widget?: IComboWidget, node?: LGraphNode) => string[])
+  | ((widget?: IComboWidget, node?: LGraphNode) => (string | number)[])
 
 /** A combo-box widget (dropdown, select, etc) */
 export interface IComboWidget extends IBaseWidget<
@@ -241,9 +258,17 @@ export interface IFileUploadWidget extends IBaseWidget<string, 'fileupload'> {
 }
 
 /** Color picker widget for selecting colors */
-export interface IColorWidget extends IBaseWidget<string, 'color'> {
+export interface IColorWidgetOptions extends IWidgetOptions {
+  format?: ColorFormat | 'int'
+}
+
+export interface IColorWidget extends IBaseWidget<
+  string | number,
+  'color',
+  IColorWidgetOptions
+> {
   type: 'color'
-  value: string
+  value: string | number
 }
 
 /** Markdown widget for displaying formatted text */
@@ -344,6 +369,27 @@ export interface IPainterWidget extends IBaseWidget<string, 'painter'> {
   value: string
 }
 
+export interface ICompositorWidget extends IBaseWidget<
+  CompositorWidgetValue,
+  'compositor'
+> {
+  type: 'compositor'
+  value: CompositorWidgetValue
+}
+
+export interface IBoundingBoxesWidget extends IBaseWidget<
+  BoundingBox[],
+  'boundingboxes'
+> {
+  type: 'boundingboxes'
+  value: BoundingBox[]
+}
+
+export interface IColorsWidget extends IBaseWidget<string[], 'colors'> {
+  type: 'colors'
+  value: string[]
+}
+
 export interface RangeValue {
   min: number
   max: number
@@ -368,20 +414,60 @@ export interface IRangeWidget extends IBaseWidget<
   value: RangeValue
 }
 
+export interface VideoEditTrim {
+  start_time: number
+  duration: number
+}
+
+export interface VideoEditValue {
+  trim?: VideoEditTrim
+  crop?: Bounds
+}
+
+export type VideoEditFeature = 'trim' | 'crop'
+
+export interface IWidgetVideoEditOptions extends IWidgetOptions {
+  features?: VideoEditFeature[]
+}
+
+export interface IVideoEditWidget extends IBaseWidget<
+  VideoEditValue,
+  'videoedit',
+  IWidgetVideoEditOptions
+> {
+  type: 'videoedit'
+  value: VideoEditValue
+}
+
+export interface IWidgetResolutionPreviewOptions extends IWidgetOptions {
+  ratio_widget?: string
+  megapixels_widget?: string
+  multiple_widget?: string
+}
+
+export interface IResolutionPreviewWidget extends IBaseWidget<
+  null,
+  'resolutionpreview',
+  IWidgetResolutionPreviewOptions
+> {
+  type: 'resolutionpreview'
+  value: null
+}
+
 /**
  * Valid widget types.  TS cannot provide easily extensible type safety for this at present.
  * Override linkedWidgets[]
  * Values not in this list will not result in litegraph errors, however they will be treated the same as "custom".
  */
 export type TWidgetType = IWidget['type']
-export type TWidgetValue = IWidget['value']
+export type TWidgetValue = WidgetValue
 
 export function isWidgetValue(value: unknown): value is TWidgetValue {
-  if (value === undefined) return true
+  if (value == null) return true
   if (typeof value === 'string') return true
   if (typeof value === 'number') return true
   if (typeof value === 'boolean') return true
-  return value !== null && typeof value === 'object'
+  return typeof value === 'object'
 }
 
 /**
@@ -392,7 +478,7 @@ export function isWidgetValue(value: unknown): value is TWidgetValue {
  * @see IWidget
  */
 export interface IBaseWidget<
-  TValue = boolean | number | string | object | undefined,
+  TValue = WidgetValue,
   TType extends string = string,
   TOptions extends IWidgetOptions = IWidgetOptions
 > {
@@ -400,13 +486,12 @@ export interface IBaseWidget<
 
   linkedWidgets?: IBaseWidget[]
 
-  /** Transient control intent, registered as a control component on bind. */
-  controlConfig?: WidgetControlConfig
-
   readonly widgetId?: WidgetId
 
   name: string
   options: TOptions
+  syncLiveVisibilityOptions?(): void
+  syncLiveDisabled?(): void
 
   label?: string
   /** Widget type (see {@link TWidgetType}) */
@@ -461,13 +546,29 @@ export interface IBaseWidget<
    */
   computedDisabled?: boolean
 
+  /**
+   * Whether the widget's input is satisfied by an upstream link, suppressing
+   * the widget on every rendering surface (the slot still renders).
+   * @readonly [Computed] This property is computed by the node on
+   * connection changes.
+   */
+  connectionSuppressed?: boolean
+
   hidden?: boolean
   advanced?: boolean
+
+  /**
+   * Canonical visibility component backing the `hidden` / `advanced` /
+   * `options.hideInPanel` facades. Present on concrete widgets; absent on
+   * legacy POJO widgets that have not been adopted yet.
+   */
+  readonly visibility?: WidgetVisibilityComponent
+
   tooltip?: string
 
   // TODO: Confirm this format
   callback?(
-    value: unknown,
+    value: WidgetValue,
     canvas?: LGraphCanvas,
     node?: LGraphNode,
     pos?: Point,

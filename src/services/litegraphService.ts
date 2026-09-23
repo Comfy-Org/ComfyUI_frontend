@@ -1,4 +1,4 @@
-import _ from 'es-toolkit/compat'
+import { pick, zip } from 'es-toolkit/compat'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
@@ -11,7 +11,7 @@ import {
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
-import { st, t } from '@/i18n'
+import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
   LGraphCanvas,
   LGraphEventMode,
@@ -19,7 +19,8 @@ import {
   LiteGraph,
   RenderShape,
   SubgraphNode,
-  createBounds
+  createBounds,
+  outputAsSerialisable
 } from '@/lib/litegraph/src/litegraph'
 import type {
   CreateNodeOptions,
@@ -36,10 +37,10 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
@@ -57,11 +58,18 @@ import { $el } from '@/scripts/ui'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { parseNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
+import { isBlueprintType } from '@/utils/blueprintUtils'
+import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -81,7 +89,7 @@ async function reencodeAsPngBlob(
   width: number,
   height: number
 ): Promise<Blob> {
-  const canvas = $el('canvas', { width, height }) as HTMLCanvasElement
+  const canvas = $el('canvas', { width, height })
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Could not get canvas context')
 
@@ -117,10 +125,6 @@ async function reencodeAsPngBlob(
       else reject(new Error('PNG conversion failed'))
     }, 'image/png')
   })
-}
-
-export interface HasInitialMinSize {
-  _initialMinSize: { width: number; height: number }
 }
 
 export const CONFIG = Symbol()
@@ -169,6 +173,11 @@ export function getExtraOptionsForWidget(
   return options
 }
 
+function getMinSize(node: LGraphNode) {
+  node._initialMinSize ??= { width: 1, height: 1 }
+  return node._initialMinSize
+}
+
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
  */
@@ -188,7 +197,8 @@ export const useLitegraphService = () => {
   }
 
   function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
-    const hostLocator = String(node.id)
+    const hostLocator = getPreviewExposureHostLocator(node)
+    if (!hostLocator) return []
     const promotions = usePreviewExposureStore().getExposuresAsPromotionShape(
       node.rootGraph.id,
       hostLocator
@@ -204,17 +214,16 @@ export const useLitegraphService = () => {
   }
 
   /**
-   * @internal The key for the node definition in the i18n file.
+   * @internal The node definition name used to resolve the node's i18n text.
    */
-  function nodeKey(node: LGraphNode): string {
-    return `nodeDefs.${normalizeI18nKey(node.constructor.nodeData!.name)}`
+  function nodeDefName(node: LGraphNode): string {
+    return node.constructor.nodeData?.name ?? ''
   }
   /**
    * @internal Add input sockets to the node. (No widget)
    */
   function addInputSocket(node: LGraphNode, inputSpec: InputSpec) {
     const inputName = inputSpec.name
-    const nameKey = `${nodeKey(node)}.inputs.${normalizeI18nKey(inputName)}.name`
     const widgetConstructor = widgetStore.widgets.get(
       inputSpec.widgetType ?? inputSpec.type
     )
@@ -224,19 +233,23 @@ export const useLitegraphService = () => {
     )
       return
 
-    const input = node.addInput(inputName, inputSpec.type, {
+    node.addInput(inputName, inputSpec.type, {
       shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
-      localized_name: st(nameKey, inputName)
+      localized_name: resolveNodeDefSlotText(
+        'name',
+        nodeDefName(node),
+        inputName,
+        inputSpec.display_name,
+        inputName
+      )
     })
-    input.label ??= inputSpec.display_name
   }
   /**
    * @internal Setup stroke styles for the node under various conditions.
    */
   function setupStrokeStyles(node: LGraphNode) {
     node.strokeStyles['running'] = function (this: LGraphNode) {
-      const nodeId = String(this.id)
-      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
+      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(this.id)
       const state =
         useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
       if (state === 'running') {
@@ -250,7 +263,7 @@ export const useLitegraphService = () => {
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
       if (app.lastExecutionError?.node_id == this.id) {
-        return { color: '#f0f', lineWidth: 3 }
+        return { color: LiteGraph.NODE_ERROR_COLOUR, lineWidth: 3 }
       }
     }
   }
@@ -277,51 +290,60 @@ export const useLitegraphService = () => {
       widgetInputSpec.type = inputSpec.widgetType
     }
     const inputName = inputSpec.name
-    const nameKey = `${nodeKey(node)}.inputs.${normalizeI18nKey(inputName)}.name`
+    const resolveLabel = (fallback: string) =>
+      resolveNodeDefSlotText(
+        'name',
+        nodeDefName(node),
+        inputName,
+        widgetInputSpec.display_name,
+        fallback
+      )
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
     if (!widgetConstructor || inputSpec.forceInput) return
 
-    const {
-      widget,
-      minWidth = 1,
-      minHeight = 1
-    } = widgetConstructor(
+    const widgetsBefore = new Set(node.widgets ?? [])
+    const result = widgetConstructor(
       node,
       inputName,
       transformInputSpecV2ToV1(widgetInputSpec),
       app
-    ) ?? {}
-
-    if (widget) {
-      widget.label = st(
-        nameKey,
-        widget.label ?? widgetInputSpec.display_name ?? inputName
-      )
-      widget.options ??= {}
-      Object.assign(widget.options, {
-        advanced: inputSpec.advanced,
-        hidden: inputSpec.hidden
-      })
-      if (dynamic) widget.tooltip = inputSpec.tooltip
+    )
+    const wrappedResult = result && !('type' in result) ? result : undefined
+    const { minWidth = 1, minHeight = 1 } = wrappedResult ?? {}
+    const returnedWidget = result && 'type' in result ? result : result?.widget
+    if (returnedWidget) {
+      // oxlint-disable-next-line typescript/no-unnecessary-condition -- extension widgets may omit options at runtime
+      returnedWidget.options ??= {}
     }
+    const widget =
+      (node.widgets ?? []).find(
+        (candidate) =>
+          candidate === returnedWidget ||
+          (!widgetsBefore.has(candidate) &&
+            (!returnedWidget || candidate.name === returnedWidget.name))
+      ) ?? (returnedWidget ? toConcreteWidget(returnedWidget, node) : undefined)
+    if (!widget) return
 
-    if (!widget?.options?.socketless) {
+    widget.label = resolveLabel(
+      widget.label ?? widgetInputSpec.display_name ?? inputName
+    )
+    Object.assign(widget.options, {
+      advanced: inputSpec.advanced
+    })
+    if (inputSpec.hidden !== undefined) widget.hidden = inputSpec.hidden
+    if (dynamic) widget.tooltip = inputSpec.tooltip
+
+    if (!widget.options.socketless) {
       const inputSpecV1 = transformInputSpecV2ToV1(widgetInputSpec)
       node.addInput(inputName, inputSpec.type, {
         shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
-        localized_name: st(nameKey, inputName),
+        localized_name: resolveLabel(inputName),
         widget: { name: inputName, [GET_CONFIG]: () => inputSpecV1 }
       })
     }
-    const castedNode = node as LGraphNode & HasInitialMinSize
-    castedNode._initialMinSize.width = Math.max(
-      castedNode._initialMinSize.width,
-      minWidth
-    )
-    castedNode._initialMinSize.height = Math.max(
-      castedNode._initialMinSize.height,
-      minHeight
-    )
+    const minSize = getMinSize(node)
+    minSize.width = Math.max(minSize.width, minWidth)
+    minSize.height = Math.max(minSize.height, minHeight)
   }
 
   /**
@@ -347,7 +369,6 @@ export const useLitegraphService = () => {
       // TODO: Fix the typing at the node spec level
       const type = output.type === 'COMFY_MATCHTYPE_V3' ? '*' : output.type
       const shapeOptions = is_list ? { shape: LiteGraph.GRID_SHAPE } : {}
-      const nameKey = `${nodeKey(node)}.outputs.${output.index}.name`
       const typeKey = `dataTypes.${normalizeI18nKey(type)}`
       const outputOptions = {
         ...shapeOptions,
@@ -355,7 +376,15 @@ export const useLitegraphService = () => {
         // e.g.
         // - type ("INT"); name ("Positive") => translate name
         // - type ("FLOAT"); name ("FLOAT") => translate type
-        localized_name: type !== name ? st(nameKey, name) : st(typeKey, name)
+        localized_name:
+          type !== name
+            ? resolveNodeDefSlotText(
+                'name',
+                nodeDefName(node),
+                output.index,
+                name
+              )
+            : st(typeKey, name)
       }
       node.addOutput(name, type, outputOptions)
     }
@@ -370,9 +399,9 @@ export const useLitegraphService = () => {
     const pad =
       node.widgets?.length &&
       !useSettingStore().get('LiteGraph.Node.DefaultPadding')
-    const castedNode = node as LGraphNode & HasInitialMinSize
-    s[0] = Math.max(castedNode._initialMinSize.width, s[0] + (pad ? 60 : 0))
-    s[1] = Math.max(castedNode._initialMinSize.height, s[1])
+    const minSize = getMinSize(node)
+    s[0] = Math.max(minSize.width, s[0] + (pad ? 60 : 0))
+    s[1] = Math.max(minSize.height, s[1])
     node.setSize(s)
   }
 
@@ -381,16 +410,11 @@ export const useLitegraphService = () => {
     subgraph: Subgraph,
     instanceData: ExportedSubgraphInstance
   ) {
-    const node = class ComfyNode
-      extends SubgraphNode
-      implements HasInitialMinSize
-    {
+    const node = class ComfyNode extends SubgraphNode {
       static comfyClass: string
       static override title: string
       static override category: string
       static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
-
-      _initialMinSize = { width: 1, height: 1 }
 
       constructor() {
         super(app.rootGraph, subgraph, instanceData)
@@ -447,7 +471,7 @@ export const useLitegraphService = () => {
                 ...inputData,
                 // Whether the input has associated widget follows the
                 // original node definition.
-                ..._.pick(input, RESERVED_KEYS.concat('widget'))
+                ...pick(input, RESERVED_KEYS.concat('widget'))
               }
             : input
         })
@@ -459,8 +483,8 @@ export const useLitegraphService = () => {
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = _.zip(this.outputs, data.outputs).map(
-          ([output, outputData]) => {
+        data.outputs = zip(this.outputs, data.outputs ?? []).map(
+          ([output, outputData], index) => {
             // If there are extra outputs in the serialised node, use them directly.
             // There are currently custom nodes that dynamically add outputs via
             // js logic.
@@ -469,15 +493,15 @@ export const useLitegraphService = () => {
             return outputData
               ? {
                   ...outputData,
-                  ..._.pick(output, RESERVED_KEYS)
+                  ...pick(output, RESERVED_KEYS)
                 }
-              : output
+              : outputAsSerialisable(output, this, index)
           }
         )
 
         data.widgets_values = migrateWidgetsValues(
           ComfyNode.nodeData.inputs,
-          this.widgets ?? [],
+          this.widgets,
           data.widgets_values ?? []
         )
 
@@ -504,16 +528,11 @@ export const useLitegraphService = () => {
   }
 
   async function registerNodeDef(nodeId: string, nodeDefV1: ComfyNodeDefV1) {
-    const node = class ComfyNode
-      extends LGraphNode
-      implements HasInitialMinSize
-    {
+    const node = class ComfyNode extends LGraphNode {
       static comfyClass: string
       static override title: string
       static override category: string
       static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
-
-      _initialMinSize = { width: 1, height: 1 }
 
       constructor(title: string) {
         super(title)
@@ -555,7 +574,7 @@ export const useLitegraphService = () => {
                 ...inputData,
                 // Whether the input has associated widget follows the
                 // original node definition.
-                ..._.pick(input, RESERVED_KEYS.concat('widget'))
+                ...pick(input, RESERVED_KEYS.concat('widget'))
               }
             : input
         })
@@ -567,8 +586,8 @@ export const useLitegraphService = () => {
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = _.zip(this.outputs, data.outputs).map(
-          ([output, outputData]) => {
+        data.outputs = zip(this.outputs, data.outputs ?? []).map(
+          ([output, outputData], index) => {
             // If there are extra outputs in the serialised node, use them directly.
             // There are currently custom nodes that dynamically add outputs via
             // js logic.
@@ -577,9 +596,9 @@ export const useLitegraphService = () => {
             return outputData
               ? {
                   ...outputData,
-                  ..._.pick(output, RESERVED_KEYS)
+                  ...pick(output, RESERVED_KEYS)
                 }
-              : output
+              : outputAsSerialisable(output, this, index)
           }
         )
 
@@ -633,7 +652,7 @@ export const useLitegraphService = () => {
       return [
         {
           content: 'Copy Image',
-          callback: async () => {
+          callback: markCoreMediaMenuCallback(async () => {
             const url = new URL(img.src)
             url.searchParams.delete('preview')
 
@@ -667,7 +686,7 @@ export const useLitegraphService = () => {
                 })
               )
             }
-          }
+          }, 'preview')
         }
       ]
     }
@@ -687,21 +706,21 @@ export const useLitegraphService = () => {
           options.unshift(
             {
               content: 'Open Image',
-              callback: () => {
+              callback: markCoreMediaMenuCallback(() => {
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
                 void openFileInNewTab(url.toString())
-              }
+              }, 'preview')
             },
             ...getCopyImageOption(img),
             {
               content: 'Save Image',
-              callback: () => {
+              callback: markCoreMediaMenuCallback(() => {
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
                 const filename = new URLSearchParams(url.search).get('filename')
                 downloadFile(url.toString(), filename ?? undefined)
-              }
+              }, 'preview')
             }
           )
         }
@@ -727,18 +746,18 @@ export const useLitegraphService = () => {
         if (ComfyApp.clipspace != null) {
           options.push({
             content: 'Paste (Clipspace)',
-            callback: () => {
+            callback: markCoreMediaMenuCallback(() => {
               ComfyApp.pasteFromClipspace(this)
-            }
+            }, 'input')
           })
         }
 
         if (isImageNode(this)) {
           options.push({
             content: 'Open in MaskEditor | Image Canvas',
-            callback: () => {
+            callback: markCoreMediaMenuCallback(() => {
               useMaskEditor().openMaskEditor(this)
-            }
+            }, 'preview')
           })
         }
       }
@@ -861,7 +880,7 @@ export const useLitegraphService = () => {
         if (e.key === 'ArrowLeft') {
           // @ts-expect-error fixme ts strict error
           this.imageIndex -= 1
-        } else if (e.key === 'ArrowRight') {
+        } else {
           // @ts-expect-error fixme ts strict error
           this.imageIndex += 1
         }
@@ -879,7 +898,7 @@ export const useLitegraphService = () => {
         handled = true
       }
 
-      if (handled === true) {
+      if (handled) {
         e.preventDefault()
         e.stopImmediatePropagation()
         return false
@@ -894,7 +913,7 @@ export const useLitegraphService = () => {
   ): LGraphNode | null {
     options.pos ??= getCanvasCenter()
 
-    if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
+    if (isBlueprintType(nodeDef.name)) {
       const canvas = canvasStore.getCanvas()
       const bp = useSubgraphStore().getBlueprint(nodeDef.name)
       const items: object = {
@@ -930,24 +949,24 @@ export const useLitegraphService = () => {
     )
 
     const graph = useWorkflowStore().activeSubgraph ?? app.graph
-    if (!graph || !node) return null
+    if (!node) return null
 
     graph.add(node, addOptions)
     return node
   }
 
   function getCanvasCenter(): Point {
-    const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
-    const visibleArea = app.canvas?.ds?.visible_area
-    if (!visibleArea) {
-      return [0, 0]
-    }
+    const dpi = Math.max(window.devicePixelRatio || 1, 1)
+    if (!app.isGraphReady) return [0, 0]
+    const visibleArea = app.canvas.ds.visible_area
     const [x, y, w, h] = visibleArea
     return [x + w / dpi / 2, y + h / dpi / 2]
   }
 
-  function goToNode(nodeId: NodeId) {
-    const graphNode = app.canvas.graph?.getNodeById(nodeId)
+  function goToNode(nodeId: SerializedNodeId) {
+    const parsedNodeId = parseNodeId(nodeId)
+    if (!parsedNodeId) return
+    const graphNode = app.canvas.graph?.getNodeById(parsedNodeId)
     if (!graphNode) return
     app.canvas.animateToBounds(graphNode.boundingRect)
   }

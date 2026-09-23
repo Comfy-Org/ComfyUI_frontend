@@ -119,6 +119,31 @@ describe('parseComfyWorkflow', () => {
       const result = await validateComfyWorkflow(workflow)
       expect(result).toBeNull()
     })
+
+    it('accepts mixed int/string node ids and preserves linearMode', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearMode: true,
+        linearData: {
+          inputs: [
+            [3, 'file'],
+            [5, 'upscaler_model'],
+            [5, 'upscaler_resolution'],
+            ['5', 'upscaler_creativity']
+          ],
+          outputs: [4]
+        }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearMode).toBe(true)
+      expect(result!.extra!.linearData!.inputs).toEqual([
+        [3, 'file'],
+        [5, 'upscaler_model'],
+        [5, 'upscaler_resolution'],
+        ['5', 'upscaler_creativity']
+      ])
+    })
   })
 
   it('workflow.nodes.pos', async () => {
@@ -178,6 +203,23 @@ describe('parseComfyWorkflow', () => {
     expect(validatedWorkflow!.nodes[0].widgets_values).toEqual({ foo: 'bar' })
   })
 
+  it('workflow.nodes.widgets_values preserves null entries', async () => {
+    // LGraphNode.serialize writes `val ?? null`, so null reaches the schema on
+    // ordinary saves. Validation must let it through unchanged, in both the
+    // array and the object form.
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+
+    workflow.nodes[0].widgets_values = ['foo', null]
+    const arrayForm = await validateComfyWorkflow(workflow)
+    expect(arrayForm).not.toBeNull()
+    expect(arrayForm!.nodes[0].widgets_values).toEqual(['foo', null])
+
+    workflow.nodes[0].widgets_values = { foo: null }
+    const objectForm = await validateComfyWorkflow(workflow)
+    expect(objectForm).not.toBeNull()
+    expect(objectForm!.nodes[0].widgets_values).toEqual({ foo: null })
+  })
+
   it('workflow.links', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
 
@@ -192,6 +234,86 @@ describe('parseComfyWorkflow', () => {
       ]
     ]
     await expect(validateComfyWorkflow(workflow)).resolves.not.toBeNull()
+  })
+
+  it('validates 0.4 link presentation without a reroute', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.extra = {
+      ...workflow.extra,
+      linkPresentation: {
+        '1': { hidden: true, label: 'Preview' }
+      }
+    }
+
+    const validated = await validateComfyWorkflow(workflow)
+
+    expect(validated?.extra?.linkPresentation).toEqual({
+      '1': { hidden: true, label: 'Preview' }
+    })
+  })
+
+  it.for(['01', '1e0', '1.5', 'NaN', '9007199254740992'])(
+    'rejects noncanonical link presentation key %s',
+    async (linkId) => {
+      const workflow = {
+        ...structuredClone(defaultGraph),
+        extra: { linkPresentation: { [linkId]: { hidden: true } } }
+      }
+
+      await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
+    }
+  )
+
+  function schema1WorkflowWithLink(fields: Record<string, unknown>) {
+    return {
+      version: 1,
+      state: {
+        lastGroupId: 0,
+        lastNodeId: 2,
+        lastLinkId: 1,
+        lastRerouteId: 0
+      },
+      nodes: [],
+      groups: [],
+      links: [
+        {
+          id: 1,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 0,
+          type: 'MODEL',
+          ...fields
+        }
+      ]
+    }
+  }
+
+  it('validates visibility fields on schema 1 link objects', async () => {
+    const workflow = schema1WorkflowWithLink({ hidden: true, label: 'Preview' })
+
+    const validated = await validateComfyWorkflow(workflow)
+
+    expect(validated?.links?.[0]).toMatchObject({
+      hidden: true,
+      label: 'Preview'
+    })
+  })
+
+  it('rejects non-boolean hidden in the 0.4 presentation sidecar', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.extra = {
+      ...workflow.extra,
+      linkPresentation: { '1': { hidden: 'yes' } }
+    }
+
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
+  })
+
+  it('rejects a non-string label on schema 1 link objects', async () => {
+    const workflow = schema1WorkflowWithLink({ label: 42 })
+
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
   })
 
   describe('workflow.nodes.properties.aux_id', () => {

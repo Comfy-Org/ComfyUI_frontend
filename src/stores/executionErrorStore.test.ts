@@ -1,59 +1,76 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
-import type { MissingNodeType } from '@/types/comfy'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import {
+  createBoundaryLinkedSubgraph,
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import { useDialogStore } from '@/stores/dialogStore'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
+
+beforeEach(() => {
+  const settings = useSettingStore().settingValues
+  settings['Comfy.RightSidePanel.ShowErrorsTab'] = false
+  settings['Comfy.Workflow.ShowMissingNodesWarning'] = true
+  settings['Comfy.ErrorSystem.ShowMissingModels'] = true
+  settings['Comfy.Workflow.ShowMissingMediaWarning'] = true
+})
 
 // Mock dependencies
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-const mockShowErrorsTab = vi.hoisted(() => ({ value: false }))
-
-vi.mock('@/stores/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => mockShowErrorsTab.value)
-  }))
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => mockShowErrorsTab.value)
-  }))
-}))
-
-vi.mock(
-  '@/platform/missingModel/composables/useMissingModelInteractions',
+vi.mock<unknown>(
+  import('@/platform/missingModel/composables/useMissingModelInteractions'),
   () => ({
     clearMissingModelState: vi.fn()
   })
 )
 
 import { useExecutionErrorStore } from './executionErrorStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { toNodeId } from '@/types/nodeId'
+import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
+
+function mockGraphReady(rootGraph: LGraph) {
+  vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)
+}
 
 describe('executionErrorStore — node error operations', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   describe('clearSimpleNodeErrors', () => {
     it('does nothing if lastNodeErrors is null', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = null
+      store.recordNodeErrors(null)
       // Should not error
-      store.clearSimpleNodeErrors('123', 'widgetName')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'widgetName'
+      )
       expect(store.lastNodeErrors).toBeNull()
     })
 
     it('clears entirely if there are only simple errors for the same slot', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -66,9 +83,12 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors('123', 'testSlot')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'testSlot'
+      )
 
       // Should be entirely removed (empty object becomes null)
       expect(store.lastNodeErrors).toBeNull()
@@ -76,7 +96,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('clears only the specific slot errors, leaving other errors alone', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -95,9 +115,12 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors('123', 'testSlot')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'testSlot'
+      )
 
       // otherSlot error should still exist
       expect(store.lastNodeErrors).not.toBeNull()
@@ -109,7 +132,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('does nothing if executionId is not found in lastNodeErrors', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -122,9 +145,12 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors('999', 'testSlot')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(999)]),
+        'testSlot'
+      )
 
       // Original error should remain untouched
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
@@ -132,7 +158,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('preserves complex errors when slot has both simple and complex errors', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -151,9 +177,12 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors('123', 'testSlot')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'testSlot'
+      )
 
       // Mixed simple+complex: not all are simple, so none are cleared
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(2)
@@ -161,7 +190,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('clears one node while preserving another in multi-node errors', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -186,9 +215,12 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'LoadModel'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors('123', 'steps')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'steps'
+      )
 
       // Node 123 cleared, node 456 remains
       expect(store.lastNodeErrors?.['123']).toBeUndefined()
@@ -197,7 +229,7 @@ describe('executionErrorStore — node error operations', () => {
 
     it('clears entire node when no slotName and all errors are simple', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -216,16 +248,16 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors('123')
+      store.clearSimpleNodeErrors(createNodeExecutionId([toNodeId(123)]))
 
       expect(store.lastNodeErrors).toBeNull()
     })
 
     it('does not clear when no slotName and some errors are not simple', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -244,16 +276,16 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors('123')
+      store.clearSimpleNodeErrors(createNodeExecutionId([toNodeId(123)]))
 
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(2)
     })
 
     it('does not clear if the error is not simple', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -266,19 +298,113 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
-      store.clearSimpleNodeErrors('123', 'testSlot')
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'testSlot'
+      )
 
       // Error should remain
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
+    })
+
+    it('clears a lifted host slot error from the raw interior record', () => {
+      const { rootGraph } = createBoundaryLinkedSubgraph()
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '12:5': nodeError([
+          validationError('required_input_missing', 'seed_input')
+        ])
+      })
+
+      expect(store.surfacedNodeErrors).toHaveProperty('12')
+
+      store.clearSimpleNodeErrors(createNodeExecutionId([toNodeId(12)]), 'seed')
+
+      expect(store.lastNodeErrors).toBeNull()
+      expect(store.surfacedNodeErrors).toBeNull()
+    })
+
+    it('does not clear lifted host slot errors when the raw error is not simple', () => {
+      const { rootGraph } = createBoundaryLinkedSubgraph()
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '12:5': nodeError([
+          validationError(
+            'custom_validation_failed',
+            'seed_input',
+            {},
+            'Custom validation failed'
+          )
+        ])
+      })
+
+      expect(store.surfacedNodeErrors).toHaveProperty('12')
+
+      store.clearSimpleNodeErrors(createNodeExecutionId([toNodeId(12)]), 'seed')
+
+      expect(store.lastNodeErrors).toHaveProperty('12:5')
+      expect(store.lastNodeErrors?.['12:5'].errors).toHaveLength(1)
+    })
+
+    it('clears a nested lifted error fixed at an intermediate host level', () => {
+      const rootGraph = createTestRootGraph()
+      const outerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: '*' }]
+      })
+      const outerHost = createTestSubgraphNode(outerSubgraph, { id: 1 })
+      rootGraph.add(outerHost)
+
+      const middleSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: '*' }]
+      })
+      const middleHost = createTestSubgraphNode(middleSubgraph, {
+        id: 2,
+        parentGraph: outerSubgraph
+      })
+      outerSubgraph.add(middleHost)
+      outerSubgraph.inputNode.slots[0].connect(middleHost.inputs[0], middleHost)
+
+      const leaf = new LGraphNode('LeafNode')
+      leaf.id = toNodeId(3)
+      const leafInput = leaf.addInput('seed_input', '*')
+      middleSubgraph.add(leaf)
+      middleSubgraph.inputNode.slots[0].connect(leafInput, leaf)
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '1:2:3': nodeError([
+          validationError('required_input_missing', 'seed_input')
+        ])
+      })
+
+      expect(store.surfacedNodeErrors).toHaveProperty('1')
+
+      store.clearSimpleNodeErrors(
+        createNodeExecutionId([toNodeId(1), toNodeId(2)]),
+        'seed'
+      )
+
+      expect(
+        store.lastNodeErrors,
+        'a fix at the intermediate host clears the raw interior error'
+      ).toBeNull()
+      expect(store.surfacedNodeErrors).toBeNull()
     })
   })
 
   describe('clearWidgetRelatedErrors', () => {
     it('clears error if value is valid (isValueStillOutOfRange is false)', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -291,19 +417,25 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
       // Valid value (5 < 10)
-      store.clearWidgetRelatedErrors('123', 'testWidget', 'testWidget', 5, {
-        max: 10
-      })
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'testWidget',
+        'testWidget',
+        5,
+        {
+          max: 10
+        }
+      )
 
       expect(store.lastNodeErrors).toBeNull()
     })
 
     it('optimistically clears value_not_in_list error for string combo values', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -316,16 +448,21 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'KSampler'
         }
-      }
+      })
 
-      store.clearWidgetRelatedErrors('123', 'sampler', 'sampler', 'euler_a')
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'sampler',
+        'sampler',
+        'euler_a'
+      )
 
       expect(store.lastNodeErrors).toBeNull()
     })
 
     it('does not clear error if value is still out of range', () => {
       const store = useExecutionErrorStore()
-      store.lastNodeErrors = {
+      store.recordNodeErrors({
         '123': {
           errors: [
             {
@@ -338,23 +475,159 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'TestNode'
         }
-      }
+      })
 
       // Invalid value (15 > 10)
-      store.clearWidgetRelatedErrors('123', 'testWidget', 'testWidget', 15, {
-        max: 10
-      })
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'testWidget',
+        'testWidget',
+        15,
+        {
+          max: 10
+        }
+      )
 
       expect(store.lastNodeErrors).not.toBeNull()
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
+    })
+
+    it('validates the base target against live widget bounds, not recorded ones', () => {
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '123': nodeError([
+          validationError('value_bigger_than_max', 'testWidget', {
+            input_config: ['INT', { max: 100 }]
+          })
+        ])
+      })
+
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([toNodeId(123)]),
+        'testWidget',
+        'testWidget',
+        150,
+        { max: 200 }
+      )
+
+      expect(
+        store.lastNodeErrors,
+        'a value within the refreshed widget bounds clears despite stale recorded bounds'
+      ).toBeNull()
+    })
+
+    it('does not clear lifted range errors until the host value is in range', () => {
+      const { rootGraph } = createBoundaryLinkedSubgraph()
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '12:5': nodeError([
+          validationError('value_bigger_than_max', 'seed_input', {}, 'Too high')
+        ])
+      })
+
+      expect(store.surfacedNodeErrors).toHaveProperty('12')
+
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([toNodeId(12)]),
+        'seed',
+        'seed',
+        200,
+        { max: 100 }
+      )
+
+      expect(store.lastNodeErrors).toHaveProperty('12:5')
+      expect(store.lastNodeErrors?.['12:5'].errors).toHaveLength(1)
+
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([toNodeId(12)]),
+        'seed',
+        'seed',
+        50,
+        { max: 100 }
+      )
+
+      expect(store.lastNodeErrors).toBeNull()
+    })
+
+    it('clears fan-out lifted targets per their own recorded bounds', () => {
+      const { rootGraph, subgraph } = createBoundaryLinkedSubgraph()
+      const second = new LGraphNode('SecondInterior')
+      second.id = toNodeId(7)
+      const secondInput = second.addInput('other_input', '*')
+      subgraph.add(second)
+      subgraph.inputNode.slots[0].connect(secondInput, second)
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '12:5': nodeError([
+          validationError('value_bigger_than_max', 'seed_input', {
+            input_config: ['INT', { max: 100 }]
+          })
+        ]),
+        '12:7': nodeError([
+          validationError('value_bigger_than_max', 'other_input', {
+            input_config: ['INT', { max: 50 }]
+          })
+        ])
+      })
+
+      expect(store.surfacedNodeErrors?.['12'].errors).toHaveLength(2)
+
+      store.clearWidgetRelatedErrors(
+        createNodeExecutionId([toNodeId(12)]),
+        'seed',
+        'seed',
+        75,
+        { max: 100 }
+      )
+
+      expect(
+        store.lastNodeErrors?.['12:5'],
+        'the target whose max=100 is satisfied by 75 clears'
+      ).toBeUndefined()
+      expect(
+        store.lastNodeErrors?.['12:7'].errors,
+        'the target whose max=50 is still violated by 75 stays'
+      ).toHaveLength(1)
+    })
+  })
+
+  describe('surfacedNodeErrors', () => {
+    it('derives boundary-lifted errors while preserving the raw record', () => {
+      const { rootGraph, host } = createBoundaryLinkedSubgraph()
+      mockGraphReady(rootGraph)
+
+      const store = useExecutionErrorStore()
+      store.recordNodeErrors({
+        '12:5': nodeError([
+          validationError('required_input_missing', 'seed_input')
+        ])
+      })
+
+      const hostLocatorId = createNodeLocatorId(null, toNodeId(12))
+
+      expect(store.lastNodeErrors).toHaveProperty('12:5')
+      expect(store.surfacedNodeErrors).toHaveProperty('12')
+      expect(
+        store.surfacedNodeErrors?.['12'].errors[0].extra_info
+      ).toMatchObject({
+        input_name: 'seed',
+        source_execution_id: '12:5',
+        source_input_name: 'seed_input'
+      })
+      expect(store.getNodeErrors(hostLocatorId)?.class_type).toBe(host.title)
+      expect(store.allErrorExecutionIds).toEqual(['12'])
+      expect(store.activeGraphErrorNodeIds).toEqual(new Set(['12']))
     })
   })
 })
 
 describe('surfaceMissingModels — silent option', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    mockShowErrorsTab.value = true
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
   })
 
   it('opens error overlay when silent is not specified and setting is enabled', () => {
@@ -362,7 +635,7 @@ describe('surfaceMissingModels — silent option', () => {
     store.surfaceMissingModels([
       fromAny({
         name: 'model.safetensors',
-        nodeId: '1',
+        nodeId: toNodeId('1'),
         nodeType: 'Loader',
         widgetName: 'ckpt',
         isMissing: true,
@@ -379,7 +652,7 @@ describe('surfaceMissingModels — silent option', () => {
       [
         fromAny({
           name: 'model.safetensors',
-          nodeId: '1',
+          nodeId: toNodeId('1'),
           nodeType: 'Loader',
           widgetName: 'ckpt',
           isMissing: true,
@@ -398,7 +671,7 @@ describe('surfaceMissingModels — silent option', () => {
       [
         fromAny({
           name: 'model.safetensors',
-          nodeId: '1',
+          nodeId: toNodeId('1'),
           nodeType: 'Loader',
           widgetName: 'ckpt',
           isMissing: true,
@@ -419,10 +692,66 @@ describe('surfaceMissingModels — silent option', () => {
   })
 })
 
+describe('per-kind visibility', () => {
+  it.for([
+    {
+      kind: 'models',
+      settingId: 'Comfy.ErrorSystem.ShowMissingModels' as const,
+      surface: (store: ReturnType<typeof useExecutionErrorStore>) =>
+        store.surfaceMissingModels([
+          fromAny({
+            name: 'model.safetensors',
+            nodeId: toNodeId('1'),
+            nodeType: 'Loader',
+            widgetName: 'ckpt',
+            isMissing: true,
+            isAssetSupported: false
+          })
+        ]),
+      rawCount: () => useMissingModelStore().missingModelCandidates?.length
+    },
+    {
+      kind: 'media',
+      settingId: 'Comfy.Workflow.ShowMissingMediaWarning' as const,
+      surface: (store: ReturnType<typeof useExecutionErrorStore>) =>
+        store.surfaceMissingMedia([
+          fromAny({
+            name: 'photo.png',
+            nodeId: toNodeId('1'),
+            nodeType: 'LoadImage',
+            widgetName: 'image',
+            mediaType: 'image',
+            isMissing: true
+          })
+        ]),
+      rawCount: () => useMissingMediaStore().missingMediaCandidates?.length
+    }
+  ])(
+    'restores missing $kind visibility without rescanning',
+    async ({ settingId, surface, rawCount }) => {
+      useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+        true
+      useSettingStore().settingValues[settingId] = false
+      const store = useExecutionErrorStore()
+
+      surface(store)
+
+      expect(rawCount()).toBe(1)
+      expect(store.isErrorOverlayOpen).toBe(false)
+      expect(store.hasMissingError).toBe(false)
+
+      useSettingStore().settingValues[settingId] = true
+      await nextTick()
+
+      expect(rawCount()).toBe(1)
+      expect(store.hasMissingError).toBe(true)
+    }
+  )
+})
+
 describe('surfaceMissingMedia — silent option', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    mockShowErrorsTab.value = true
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
   })
 
   it('opens error overlay when silent is not specified and setting is enabled', () => {
@@ -430,7 +759,7 @@ describe('surfaceMissingMedia — silent option', () => {
     store.surfaceMissingMedia([
       fromAny({
         name: 'photo.png',
-        nodeId: '1',
+        nodeId: toNodeId('1'),
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
@@ -447,7 +776,7 @@ describe('surfaceMissingMedia — silent option', () => {
       [
         fromAny({
           name: 'photo.png',
-          nodeId: '1',
+          nodeId: toNodeId('1'),
           nodeType: 'LoadImage',
           widgetName: 'image',
           mediaType: 'image',
@@ -466,7 +795,7 @@ describe('surfaceMissingMedia — silent option', () => {
       [
         fromAny({
           name: 'photo.png',
-          nodeId: '1',
+          nodeId: toNodeId('1'),
           nodeType: 'LoadImage',
           widgetName: 'image',
           mediaType: 'image',
@@ -487,19 +816,140 @@ describe('surfaceMissingMedia — silent option', () => {
   })
 })
 
-describe('clearAllErrors', () => {
+describe('recordNodeErrors', () => {
+  it('normalizes an empty error record to null', () => {
+    const store = useExecutionErrorStore()
+
+    store.recordNodeErrors({})
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('keeps a null error record as null', () => {
+    const store = useExecutionErrorStore()
+
+    store.recordNodeErrors(null)
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+})
+
+describe('hasMissingError', () => {
+  it.for([
+    {
+      type: 'nodes',
+      seedMissingError: () => {
+        useMissingNodesErrorStore().setMissingNodeTypes([
+          { type: 'TestNode', hint: '' }
+        ])
+      }
+    },
+    {
+      type: 'models',
+      seedMissingError: () => {
+        useMissingModelStore().missingModelCandidates = [fromAny({})]
+      }
+    },
+    {
+      type: 'media',
+      seedMissingError: () => {
+        useMissingMediaStore().missingMediaCandidates = [fromAny({})]
+      }
+    }
+  ])('includes missing $type', ({ seedMissingError }) => {
+    const executionErrorStore = useExecutionErrorStore()
+
+    expect(executionErrorStore.hasMissingError).toBe(false)
+
+    seedMissingError()
+
+    expect(executionErrorStore.hasMissingError).toBe(true)
+  })
+
+  it('returns false when only node validation errors exist', () => {
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordNodeErrors({
+      '1': nodeError([validationError('required_input_missing', 'input')])
+    })
+
+    expect(executionErrorStore.hasMissingError).toBe(false)
+  })
+})
+
+it('opens the runtime error dialog with details when the Issues tab is disabled', () => {
+  const store = useExecutionErrorStore()
+  store.showExecutionError({
+    prompt_id: 'test',
+    timestamp: 0,
+    node_id: '1',
+    node_type: 'KSampler',
+    executed: [],
+    exception_message: 'Not enough memory',
+    exception_type: 'RuntimeError',
+    traceback: ['first frame', 'second frame']
+  })
+
+  expect(store.isErrorOverlayOpen).toBe(false)
+  expect(useDialogStore().dialogStack).toEqual([
+    expect.objectContaining({
+      key: 'global-execution-error',
+      visible: true,
+      contentProps: {
+        errorSources: [
+          {
+            kind: 'execution',
+            nodeDisplayName: 'KSampler',
+            error: expect.objectContaining({
+              exception_type: 'RuntimeError',
+              exception_message: 'Not enough memory'
+            })
+          }
+        ],
+        error: {
+          exceptionType: 'RuntimeError',
+          exceptionMessage: 'Not enough memory',
+          nodeId: '1',
+          nodeType: 'KSampler',
+          traceback: 'first frame\nsecond frame',
+          reportType: 'graphExecutionError'
+        }
+      }
+    })
+  ])
+})
+
+describe('before the root graph exists', () => {
+  it('resolves the execution error locator without touching app.rootGraph', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const store = useExecutionErrorStore()
+    store.recordExecutionError({
+      prompt_id: 'test',
+      timestamp: 0,
+      node_id: '7',
+      node_type: 'KSampler',
+      executed: [],
+      exception_message: 'fail',
+      exception_type: 'RuntimeError',
+      traceback: []
+    })
+
+    expect(store.lastExecutionErrorNodeId).toBe(toNodeId('7'))
+    expect(store.activeGraphErrorNodeIds).toEqual(new Set())
+    expect(consoleError).not.toHaveBeenCalled()
+  })
+})
+
+describe('clearRunErrors', () => {
   let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
   let missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>
 
   beforeEach(() => {
-    const pinia = createPinia()
-    setActivePinia(pinia)
     executionErrorStore = useExecutionErrorStore()
     missingNodesStore = useMissingNodesErrorStore()
   })
 
-  it('resets all error categories and closes error overlay', () => {
-    executionErrorStore.lastExecutionError = {
+  it('resets run errors and closes the overlay, leaving missing resources', () => {
+    executionErrorStore.recordExecutionError({
       prompt_id: 'test',
       timestamp: 0,
       node_id: '1',
@@ -508,13 +958,13 @@ describe('clearAllErrors', () => {
       exception_message: 'fail',
       exception_type: 'RuntimeError',
       traceback: []
-    }
-    executionErrorStore.lastPromptError = {
+    })
+    executionErrorStore.recordPromptError({
       type: 'execution',
       message: 'fail',
       details: ''
-    }
-    executionErrorStore.lastNodeErrors = {
+    })
+    executionErrorStore.recordNodeErrors({
       '1': {
         errors: [
           {
@@ -527,19 +977,518 @@ describe('clearAllErrors', () => {
         dependent_outputs: [],
         class_type: 'Test'
       }
-    }
-    missingNodesStore.setMissingNodeTypes(
-      fromAny<MissingNodeType[], unknown>([{ type: 'MissingNode', hint: '' }])
-    )
+    })
+    missingNodesStore.setMissingNodeTypes([{ type: 'MissingNode', hint: '' }])
     executionErrorStore.showErrorOverlay()
 
-    executionErrorStore.clearAllErrors()
+    executionErrorStore.clearRunErrors()
 
     expect(executionErrorStore.lastExecutionError).toBeNull()
     expect(executionErrorStore.lastPromptError).toBeNull()
     expect(executionErrorStore.lastNodeErrors).toBeNull()
-    expect(missingNodesStore.missingNodesError).toBeNull()
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
-    expect(executionErrorStore.hasAnyError).toBe(false)
+    expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+      { type: 'MissingNode', hint: '' }
+    ])
+    expect(executionErrorStore.hasAnyError).toBe(true)
+  })
+})
+
+describe('added-node error scan coordination', () => {
+  it('keeps overlapping scans isolated by graph until every scan finishes', () => {
+    const store = useExecutionErrorStore()
+    const graphA = createTestRootGraph()
+    const graphB = createTestRootGraph()
+    const executionId = createNodeExecutionId([toNodeId(1)])
+
+    const finishFirst = store.beginAddedNodeErrorScan(graphA, executionId)
+    const finishSecond = store.beginAddedNodeErrorScan(graphA, executionId)
+    const finishOtherGraph = store.beginAddedNodeErrorScan(graphB, executionId)
+
+    expect(store.hasPendingAddedNodeErrorScan(graphA, executionId)).toBe(true)
+    expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(true)
+
+    finishFirst()
+    finishFirst()
+    expect(store.hasPendingAddedNodeErrorScan(graphA, executionId)).toBe(true)
+
+    finishSecond()
+    expect(store.hasPendingAddedNodeErrorScan(graphA, executionId)).toBe(false)
+    expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(true)
+
+    finishOtherGraph()
+    expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(false)
+  })
+})
+
+describe('absorbed-error retirement on candidate resolution', () => {
+  const execId = createNodeExecutionId([1])
+  if (!execId) {
+    throw new Error('Expected a node execution ID')
+  }
+
+  function absorbedModelCandidate() {
+    return {
+      nodeId: execId,
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      isAssetSupported: false,
+      name: 'model.safetensors',
+      directory: 'checkpoints',
+      isMissing: true
+    }
+  }
+
+  const absorbedError = () =>
+    validationError('value_not_in_list', 'ckpt_name', {
+      received_value: 'model.safetensors'
+    })
+  const blockingError = () =>
+    validationError('required_input_missing', 'positive')
+
+  it('retires an absorbed validation error when its candidate resolves', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({
+      '1': nodeError([absorbedError(), blockingError()])
+    })
+    await nextTick()
+
+    modelStore.setMissingModels([])
+    await nextTick()
+
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([blockingError()])
+  })
+
+  it('drops the node entry entirely when only absorbed errors remain', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+    await nextTick()
+
+    modelStore.removeMissingModelsByNodeId(execId)
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('keeps absorbed errors when a rescan rebuilds equivalent candidates', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+    await nextTick()
+
+    modelStore.setMissingModels([])
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    await nextTick()
+
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
+  })
+
+  it('retires resolved absorbed errors when a workflow is loaded again', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    const graphA = '11111111-1111-4111-8111-111111111111'
+    const graphB = '22222222-2222-4222-8222-222222222222'
+    store.setActiveGraph(graphA)
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({
+      '1': nodeError([absorbedError(), blockingError()])
+    })
+    await nextTick()
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      store.setActiveGraph(graphB)
+      modelStore.setMissingModels([])
+      await nextTick()
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+    store.retireResolvedMissingResourceErrors({ models: [], media: [] })
+    expect(store.lastNodeErrors).toBeNull()
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      store.setActiveGraph(graphA)
+      modelStore.setMissingModels([])
+      await nextTick()
+      expect(store.lastNodeErrors?.['1'].errors).toEqual([
+        absorbedError(),
+        blockingError()
+      ])
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+    store.retireResolvedMissingResourceErrors({ models: [], media: [] })
+
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([blockingError()])
+  })
+
+  it('keeps previously absorbed errors while verification is inconclusive', () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+
+    store.retireResolvedMissingResourceErrors({
+      models: [{ ...absorbedModelCandidate(), isMissing: undefined }],
+      media: []
+    })
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
+
+    store.retireResolvedMissingResourceErrors({
+      models: [{ ...absorbedModelCandidate(), isMissing: false }],
+      media: []
+    })
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it.for(['present', 'removed'] as const)(
+    'retires both resource errors after unknown verification becomes %s',
+    async (outcome) => {
+      const store = useExecutionErrorStore()
+      const modelStore = useMissingModelStore()
+      const mediaStore = useMissingMediaStore()
+      const model = absorbedModelCandidate()
+      const media = createMissingMediaCandidate([toNodeId(1)], {
+        name: 'portrait.png'
+      })
+      const errors = [
+        absorbedError(),
+        validationError('value_not_in_list', 'image', {
+          received_value: 'portrait.png'
+        }),
+        blockingError()
+      ]
+      modelStore.setMissingModels([model])
+      mediaStore.setMissingMedia([media])
+      store.recordNodeErrors({ '1': nodeError(errors) })
+      await nextTick()
+      expect(store.lastNodeErrors?.['1'].errors).toEqual(errors)
+
+      modelStore.setMissingModels([{ ...model, isMissing: undefined }])
+      mediaStore.setMissingMedia([{ ...media, isMissing: undefined }])
+      await nextTick()
+      expect(store.lastNodeErrors?.['1'].errors).toEqual(errors)
+
+      modelStore.setMissingModels(
+        outcome === 'present' ? [{ ...model, isMissing: false }] : []
+      )
+      mediaStore.setMissingMedia(
+        outcome === 'present' ? [{ ...media, isMissing: false }] : []
+      )
+      await nextTick()
+
+      expect(store.lastNodeErrors?.['1'].errors).toEqual([blockingError()])
+    }
+  )
+
+  it.for([
+    { verified: { models: [] }, remainingInput: 'image' },
+    { verified: { media: [] }, remainingInput: 'ckpt_name' }
+  ])(
+    'preserves unverified $remainingInput errors when the other resource resolves',
+    ({ verified, remainingInput }) => {
+      const store = useExecutionErrorStore()
+      useMissingModelStore().setMissingModels([absorbedModelCandidate()])
+      useMissingMediaStore().setMissingMedia([
+        createMissingMediaCandidate([toNodeId(1)], { name: 'portrait.png' })
+      ])
+      store.recordNodeErrors({
+        '1': nodeError([
+          absorbedError(),
+          validationError('value_not_in_list', 'image', {
+            received_value: 'portrait.png'
+          }),
+          blockingError()
+        ])
+      })
+
+      store.retireResolvedMissingResourceErrors(verified)
+
+      expect(
+        store.lastNodeErrors?.['1'].errors.map(
+          (error) => error.extra_info?.input_name
+        )
+      ).toEqual([remainingInput, 'positive'])
+    }
+  )
+
+  it('ignores verification completed for a different workflow', () => {
+    const store = useExecutionErrorStore()
+    const previousKey = store.captureRunErrorKey()
+    store.setActiveGraph('22222222-2222-4222-8222-222222222222')
+    useMissingModelStore().setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+
+    store.retireResolvedMissingResourceErrors(
+      { models: [], media: [] },
+      previousKey
+    )
+
+    expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
+  })
+
+  it('keeps absorbed errors when candidates reset during a graph load', async () => {
+    const store = useExecutionErrorStore()
+    const modelStore = useMissingModelStore()
+    modelStore.setMissingModels([absorbedModelCandidate()])
+    store.recordNodeErrors({ '1': nodeError([absorbedError()]) })
+    await nextTick()
+
+    ChangeTracker.isLoadingGraph = true
+    try {
+      modelStore.setMissingModels([])
+      await nextTick()
+
+      expect(store.lastNodeErrors?.['1'].errors).toEqual([absorbedError()])
+    } finally {
+      ChangeTracker.isLoadingGraph = false
+    }
+  })
+
+  it('retires a promoted media combo error stored under the host id', async () => {
+    const { rootGraph } = createBoundaryLinkedSubgraph()
+    mockGraphReady(rootGraph)
+
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([
+      {
+        nodeId: '12',
+        nodeType: 'LoadImage',
+        widgetName: 'seed',
+        mediaType: 'image',
+        name: 'portrait.png',
+        isMissing: true
+      }
+    ])
+    store.recordNodeErrors({
+      '12:5': nodeError([
+        validationError('value_not_in_list', 'seed_input', {
+          received_value: 'portrait.png'
+        })
+      ])
+    })
+    await nextTick()
+
+    mediaStore.removeMissingMediaByNodeId(createNodeExecutionId([toNodeId(12)]))
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('retires a promoted media error stored under the host id', async () => {
+    const { rootGraph } = createBoundaryLinkedSubgraph()
+    mockGraphReady(rootGraph)
+
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    // Production scanning keys promoted media by the host execution id and
+    // the boundary (renamed) widget, while the raw error stays interior.
+    // Shaped like a promoted-widget scan result: keyed by the host, carrying
+    // the interior identity the host widget name hides.
+    mediaStore.setMissingMedia([
+      {
+        nodeId: '12',
+        nodeType: 'LoadImage',
+        widgetName: 'seed',
+        promotedSources: [
+          {
+            executionId: createNodeExecutionId([toNodeId(12), toNodeId(5)]),
+            widgetName: 'seed_input'
+          }
+        ],
+        mediaType: 'image',
+        name: 'portrait.png',
+        isMissing: true
+      }
+    ])
+    store.recordNodeErrors({
+      '12:5': nodeError([
+        validationError(
+          'custom_validation_failed',
+          'seed_input',
+          { received_value: 'portrait.png' },
+          'Invalid image file'
+        )
+      ])
+    })
+    await nextTick()
+
+    mediaStore.removeMissingMediaByNodeId(createNodeExecutionId([toNodeId(12)]))
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('retires media-absorbed errors when the node leaves tracking', async () => {
+    const store = useExecutionErrorStore()
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([
+      {
+        nodeId: execId,
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        name: 'portrait.png',
+        isMissing: true
+      }
+    ])
+    store.recordNodeErrors({
+      '1': nodeError([
+        validationError(
+          'custom_validation_failed',
+          'image',
+          { received_value: 'portrait.png' },
+          'Invalid image file'
+        )
+      ])
+    })
+    await nextTick()
+
+    mediaStore.removeMissingMediaByNodeId(execId)
+    await nextTick()
+
+    expect(store.lastNodeErrors).toBeNull()
+  })
+})
+
+describe('setActiveGraph', () => {
+  const graphAId = '11111111-1111-4111-8111-111111111111'
+  const graphBId = '22222222-2222-4222-8222-222222222222'
+
+  const nodeErrors = {
+    '1': nodeError(
+      [validationError('value_bigger_than_max', 'steps', {}, 'Too big', '')],
+      'KSampler'
+    )
+  }
+
+  it('keeps each graph run errors separate and restores them on return', () => {
+    const store = useExecutionErrorStore()
+    const executionError = {
+      prompt_id: 'graph-a-run',
+      timestamp: 0,
+      node_id: '1',
+      node_type: 'KSampler',
+      executed: [],
+      exception_message: 'fail',
+      exception_type: 'RuntimeError',
+      traceback: []
+    }
+    const promptError = {
+      type: 'execution',
+      message: 'prompt failed',
+      details: ''
+    }
+
+    store.setActiveGraph(graphAId)
+    store.recordNodeErrors(nodeErrors)
+    store.recordExecutionError(executionError)
+    store.recordPromptError(promptError)
+
+    store.setActiveGraph(graphBId)
+    expect(store.lastNodeErrors).toBeNull()
+    expect(store.lastExecutionError).toBeNull()
+    expect(store.lastPromptError).toBeNull()
+
+    store.setActiveGraph(graphAId)
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+    expect(store.lastExecutionError).toEqual(executionError)
+    expect(store.lastPromptError).toEqual(promptError)
+  })
+
+  it('keeps workflows with the same graph id separate', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(graphAId, 'workflows/a.json')
+    store.recordNodeErrors(nodeErrors)
+
+    store.setActiveGraph(graphAId, 'workflows/b.json')
+    expect(store.lastNodeErrors).toBeNull()
+
+    store.setActiveGraph(graphAId, 'workflows/a.json')
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+  })
+
+  it('hides run errors while detached from a graph', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(graphAId)
+    store.recordNodeErrors(nodeErrors)
+
+    store.setActiveGraph(null)
+    expect(store.lastNodeErrors).toBeNull()
+    expect(store.hasAnyError).toBe(false)
+
+    store.setActiveGraph(graphAId)
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+  })
+
+  it('drops run errors on new runs without touching other graphs', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(graphAId)
+    store.recordNodeErrors(nodeErrors)
+
+    store.setActiveGraph(graphBId)
+    store.clearRunErrors()
+
+    store.setActiveGraph(graphAId)
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+
+    store.clearRunErrors()
+    expect(store.lastNodeErrors).toBeNull()
+  })
+
+  it('prunes a bucket when its last error is cleared', () => {
+    const store = useExecutionErrorStore()
+    const promptError = {
+      type: 'execution',
+      message: 'prompt failed',
+      details: ''
+    }
+
+    store.setActiveGraph(graphAId)
+    store.recordPromptError(promptError)
+    expect(store.lastPromptError).toEqual(promptError)
+
+    store.clearPromptError()
+    store.setActiveGraph(graphBId)
+    store.setActiveGraph(graphAId)
+
+    expect(store.lastPromptError).toBeNull()
+    expect(store.hasAnyError).toBe(false)
+  })
+
+  it('closes the error overlay when the active graph changes', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(graphAId)
+    store.recordNodeErrors(nodeErrors)
+    store.showErrorOverlay()
+
+    store.setActiveGraph(null)
+    expect(store.isErrorOverlayOpen).toBe(false)
+
+    store.setActiveGraph(graphAId)
+    expect(store.isErrorOverlayOpen).toBe(false)
+  })
+
+  it('ignores errors recorded while no graph is active', () => {
+    const store = useExecutionErrorStore()
+
+    store.setActiveGraph(null)
+    store.recordNodeErrors(nodeErrors)
+
+    expect(store.lastNodeErrors).toBeNull()
+
+    store.setActiveGraph(graphAId)
+    expect(store.lastNodeErrors).toBeNull()
   })
 })

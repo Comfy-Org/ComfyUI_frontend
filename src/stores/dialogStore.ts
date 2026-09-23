@@ -21,10 +21,10 @@ type DialogPosition =
   | 'bottomright'
 
 /**
- * Selects the dialog renderer used by `GlobalDialog`. `'primevue'` is the
- * current default and runs the legacy PrimeVue `Dialog` path. `'reka'` opts
- * into the Reka-UI primitive set under `src/components/ui/dialog/`. Migration
- * tracked in `temp/plans/adr-0009-dialog-reka-migration-DRAFT.md`.
+ * Selects the dialog renderer used by `GlobalDialog`. `'reka'` (the default)
+ * renders the Reka-UI primitive set under `src/components/ui/dialog/`.
+ * `'primevue'` is the legacy PrimeVue `Dialog` escape hatch, kept only until
+ * the branch is deleted in the Phase 6 cleanup (FE-578).
  */
 type DialogRenderer = 'primevue' | 'reka'
 
@@ -32,15 +32,37 @@ interface CustomDialogComponentProps {
   maximizable?: boolean
   maximized?: boolean
   onClose?: () => void
+  /**
+   * Guaranteed cleanup: fires exactly once when the dialog leaves the stack
+   * for any reason — `closeDialog` (user or programmatic) or the
+   * 10-dialog-cap eviction in `createDialog`. Wire promise settlement here.
+   * Keep user-intent side effects (telemetry, "don't show again") in
+   * `onClose`, which never fires on eviction.
+   */
+  onRemoved?: () => void
   closable?: boolean
+  /**
+   * Hides the header close button while keeping `closable` dismissal paths
+   * (Escape, programmatic close) available. Defaults to shown.
+   */
+  showCloseButton?: boolean
   modal?: boolean
   position?: DialogPosition
   pt?: DialogPassThroughOptions
   closeOnEscape?: boolean
   dismissableMask?: boolean
+  /**
+   * When `false`, the Reka dialog does not dismiss when focus leaves its
+   * content. Set on container dialogs (e.g. Settings) that host nested dialogs,
+   * where a nested dialog closing can move focus onto an ordinary app element
+   * — a programmatic shift that must not be read as a dismiss. Escape and
+   * outside-pointer dismissal are unaffected. Defaults to `true`.
+   */
+  dismissOnFocusOutside?: boolean
   unstyled?: boolean
   headless?: boolean
   renderer?: DialogRenderer
+  useAutomaticLabeling?: boolean
   size?: DialogContentSize
   /**
    * Class applied to the Reka-UI `DialogContent` element. Ignored on the
@@ -52,6 +74,22 @@ interface CustomDialogComponentProps {
    * PrimeVue path — use `pt.mask` for that renderer.
    */
   overlayClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the Reka-UI `DialogHeader` element on the non-headless
+   * path. Ignored on the PrimeVue path — use `pt.header` for that renderer.
+   */
+  headerClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the wrapper around the content component on the Reka-UI
+   * non-headless path. Ignored on the PrimeVue path — use `pt.content` for
+   * that renderer.
+   */
+  bodyClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the Reka-UI `DialogFooter` element on the non-headless
+   * path. Ignored on the PrimeVue path — use `pt.footer` for that renderer.
+   */
+  footerClass?: HTMLAttributes['class']
 }
 
 export type DialogComponentProps = Record<string, unknown> &
@@ -99,6 +137,10 @@ interface UpdateDialogOptions {
   dialogComponentProps?: Partial<DialogComponentProps>
 }
 
+function notifyRemoved(dialog: DialogInstance | undefined) {
+  dialog?.dialogComponentProps.onRemoved?.()
+}
+
 export const useDialogStore = defineStore('dialog', () => {
   const dialogStack: Ref<DialogInstance[]> = ref([])
 
@@ -143,16 +185,26 @@ export const useDialogStore = defineStore('dialog', () => {
       : dialogStack.value.find((d) => d.key === activeKey.value)
     if (!targetDialog) return
 
-    targetDialog.dialogComponentProps?.onClose?.()
-    const index = dialogStack.value.findIndex((d) => d.key === targetDialog.key)
-    if (index !== -1) dialogStack.value.splice(index, 1)
+    targetDialog.dialogComponentProps.onClose?.()
+    // Identity, not key: a reentrant onClose can evict targetDialog and open a
+    // replacement under the same key. Whoever actually removes the dialog from
+    // the stack fires onRemoved, so it fires exactly once.
+    const index = dialogStack.value.findIndex((d) => d === targetDialog)
+    const removed = index !== -1
+    if (removed) dialogStack.value.splice(index, 1)
 
-    activeKey.value =
-      dialogStack.value.length > 0
-        ? dialogStack.value[dialogStack.value.length - 1].key
-        : null
+    // A reentrant callback may have already activated a dialog of its own;
+    // only fall back to the stack tail when the active key named a dialog that
+    // is now gone.
+    if (!dialogStack.value.some((d) => d.key === activeKey.value)) {
+      activeKey.value =
+        dialogStack.value.length > 0
+          ? dialogStack.value[dialogStack.value.length - 1].key
+          : null
+    }
 
     updateCloseOnEscapeStates()
+    if (removed) notifyRemoved(targetDialog)
   }
 
   function createDialog<
@@ -160,9 +212,8 @@ export const useDialogStore = defineStore('dialog', () => {
     B extends Component = Component,
     F extends Component = Component
   >(options: ShowDialogOptions<H, B, F> & { key: string }) {
-    if (dialogStack.value.length >= 10) {
-      dialogStack.value.shift()
-    }
+    const evicted =
+      dialogStack.value.length >= 10 ? dialogStack.value.shift() : undefined
 
     const dialog = {
       key: options.key,
@@ -185,8 +236,9 @@ export const useDialogStore = defineStore('dialog', () => {
         closable: true,
         closeOnEscape: true,
         dismissableMask: true,
+        renderer: 'reka' as DialogRenderer,
         ...options.dialogComponentProps,
-        maximized: false,
+        maximized: options.dialogComponentProps?.maximized ?? false,
         onMaximize: () => {
           dialog.dialogComponentProps.maximized = true
         },
@@ -209,6 +261,7 @@ export const useDialogStore = defineStore('dialog', () => {
     insertDialogByPriority(dialog)
     activeKey.value = options.key
     updateCloseOnEscapeStates()
+    notifyRemoved(evicted)
 
     return dialog
   }

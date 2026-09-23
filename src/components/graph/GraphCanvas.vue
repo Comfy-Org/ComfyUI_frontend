@@ -7,23 +7,19 @@
       <div
         v-if="workflowTabsPosition === 'Topbar'"
         data-testid="topbar-workflow-tabs"
-        class="workflow-tabs-container pointer-events-auto relative h-(--workflow-tabs-height) w-full"
+        class="workflow-tabs-container pointer-events-auto relative flex h-(--workflow-tabs-height) w-full items-center border-b border-interface-stroke/50 bg-comfy-menu-bg shadow-interface"
       >
-        <div
-          class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
-        >
-          <WorkflowTabs />
-          <TopbarBadges />
-          <TopbarSubscribeButton />
-        </div>
+        <WorkflowTabs />
       </div>
     </template>
-    <template v-if="showUI && !isBuilderMode" #side-toolbar>
-      <SideToolbar />
+    <template #side-toolbar>
+      <SideToolbar v-if="showUI && !isBuilderMode && !linearMode" />
     </template>
     <template v-if="showUI" #side-bar-panel>
       <div
-        class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto"
+        :inert="agentNodeSelectionStore.isActive"
+        class="sidebar-content-container size-full overflow-x-hidden overflow-y-auto transition-opacity duration-200 ease-in-out"
+        :class="{ 'opacity-0': agentNodeSelectionStore.isActive }"
       >
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
@@ -38,17 +34,33 @@
       <AppBuilder v-if="isBuilderMode" />
       <NodePropertiesPanel v-else />
     </template>
+    <template v-if="showUI" #agent-panel="{ hasOpaqueNeighbor }">
+      <component
+        :is="DockedAgentPanel"
+        v-if="agentDocked && !linearMode"
+        :has-opaque-neighbor="hasOpaqueNeighbor"
+      />
+    </template>
     <template #graph-canvas-panel>
+      <div
+        ref="canvasPanelBoundsRef"
+        class="pointer-events-none absolute inset-0"
+      />
       <GraphCanvasMenu
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
       />
+      <!-- No node-selection condition here on purpose: entering the mode turns
+           the minimap setting off, so this reacts the same way it does to the
+           user's own toggle - and leaves them free to switch it back on while
+           they pick. -->
       <MiniMap
         v-if="
           comfyAppReady && minimapEnabled && betaMenuEnabled && !isBuilderMode
         "
         class="pointer-events-auto"
       />
+      <NodeSelectionModeBanner />
     </template>
   </LiteGraphCanvasSplitterOverlay>
   <canvas
@@ -66,17 +78,13 @@
     @pointerdown.capture="forwardPointerDownPanEvent"
     @pointerup.capture="forwardPointerUpPanEvent"
     @pointermove.capture="forwardPointerMovePanEvent"
+    @keydown.space="forwardSpaceKeyEvent"
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <LGraphNode
       v-for="nodeData in allNodes"
       :key="nodeData.id"
-      :node-data="nodeData"
-      :error="
-        executionErrorStore.lastExecutionError?.node_id === nodeData.id
-          ? 'Execution error'
-          : null
-      "
+      :node-data
       :data-node-id="nodeData.id"
     />
   </TransformPane>
@@ -89,10 +97,14 @@
   />
 
   <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
-  <SelectionRectangle v-if="comfyAppReady" />
+  <SelectionRectangle
+    v-if="comfyAppReady"
+    :panel-el="canvasPanelBoundsRef ?? undefined"
+  />
 
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
+  <NodeDragPreview />
   <VueNodeSwitchPopup />
 
   <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
@@ -115,6 +127,7 @@ import {
   onUnmounted,
   ref,
   shallowRef,
+  useTemplateRef,
   watch,
   watchEffect
 } from 'vue'
@@ -133,21 +146,22 @@ import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
+import { createNodeProgressCanvasSync } from '@/components/graph/nodeProgressCanvasSync'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import NodeContextMenu from '@/components/graph/NodeContextMenu.vue'
+import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
+import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
+import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
-import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
-import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
+import type { NodeState } from '@/types/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
@@ -155,51 +169,61 @@ import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
+import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
+import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
-import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+import {
+  collapseOutsideSelectionOnPrimaryPointerDown,
+  shouldIgnoreCopyPaste
+} from '@/workbench/eventHelpers'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
-import { isCloud } from '@/platform/distribution/types'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
-import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
+import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
 
 const { t } = useI18n()
 const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
@@ -207,9 +231,14 @@ const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
+const nodeProgressCanvasSync = createNodeProgressCanvasSync(
+  workflowStore.nodeToNodeLocatorId
+)
 const { linearMode } = storeToRefs(canvasStore)
+const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const toastStore = useToastStore()
@@ -231,8 +260,10 @@ const canvasMenuEnabled = computed(() =>
   settingStore.get('Comfy.Graph.CanvasMenu')
 )
 const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
-const selectionToolboxEnabled = computed(() =>
-  settingStore.get('Comfy.Canvas.SelectionToolbox')
+const selectionToolboxEnabled = computed(
+  () =>
+    settingStore.get('Comfy.Canvas.SelectionToolbox') &&
+    !agentNodeSelectionStore.isActive
 )
 const activeSidebarTab = computed(() => {
   return workspaceStore.sidebarTab.activeSidebarTab
@@ -246,9 +277,6 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 // Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-// Vue node system
-const vueNodeLifecycle = useVueNodeLifecycle()
-
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
 watch(
@@ -259,46 +287,57 @@ watch(
   }
 )
 
-const handleVueNodeLifecycleReset = async () => {
-  if (shouldRenderVueNodes.value) {
-    vueNodeLifecycle.disposeNodeManagerAndSyncs()
-    await nextTick()
-    vueNodeLifecycle.initializeNodeManager()
-  }
+function exitToLegacyRendering(graph: LGraph | null) {
+  layoutStore.clearViewGeometry()
+  if (graph) arrangeForLegacyRender(graph)
+  canvasStore.canvas?.setDirty(true, true)
 }
 
-watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
+watch(
+  [shouldRenderVueNodes, () => canvasStore.currentGraph],
+  ([enabled, graph], previous) => {
+    if (previous && previous[0] !== enabled) {
+      LiteGraph.vueNodesMode = enabled
+      if (graph) {
+        forEachNode(graph.rootGraph, (node) => {
+          for (const widget of node.widgets ?? []) {
+            widget.syncLiveVisibilityOptions?.()
+            widget.syncLiveDisabled?.()
+          }
+        })
+      }
+    }
+
+    if (enabled) {
+      layoutStore.clearViewGeometry()
+    } else if (previous?.[0]) {
+      exitToLegacyRendering(graph)
+    }
+  },
+  { immediate: true }
+)
+
+watchEffect((onCleanup) => {
+  const canvas = canvasStore.canvas
+  if (canvas) onCleanup(notifyLayoutChanges(canvas))
+})
 
 watch(
   () => canvasStore.isInSubgraph,
-  async (newValue, oldValue) => {
+  (newValue, oldValue) => {
     if (oldValue && !newValue) {
       useWorkflowStore().updateActiveGraph()
     }
-    await handleVueNodeLifecycleReset()
   }
 )
 
-const allNodes = computed((): VueNodeData[] =>
-  Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
-)
-watch(
-  () => linearMode.value,
-  (isLinearMode) => {
-    if (!shouldRenderVueNodes.value) return
-
-    if (isLinearMode) {
-      layoutStore.clearAllSlotLayouts()
-    } else {
-      // App mode hides the graph canvas with `display: none`, so slot connectors
-      // need a fresh DOM measurement pass before links can render correctly.
-      requestSlotLayoutSyncForAllNodes()
-    }
-
-    layoutStore.setPendingSlotSync(true)
-  }
-)
-
+const nodeDataStore = useNodeDataStore()
+const allNodes = computed((): NodeState[] => {
+  const { rootGraphId } = canvasStore
+  const graphId = canvasStore.currentGraph?.id
+  if (!rootGraphId || graphId === undefined) return []
+  return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
+})
 function onLinkOverlayReady(el: HTMLCanvasElement) {
   if (!canvasStore.canvas) return
   canvasStore.canvas.overlayCanvas = el
@@ -343,6 +382,26 @@ watchEffect(() => {
     textarea.blur()
   })
 })
+
+watch(
+  () => settingStore.get('Comfy.WidgetControlMode'),
+  () => {
+    if (!canvasStore.canvas) return
+
+    forEachNode(comfyApp.rootGraph, (n) => {
+      if (!n.widgets) return
+      for (const w of n.widgets) {
+        if (!w[IS_CONTROL_WIDGET]) continue
+        updateControlWidgetLabel(w)
+        if (!w.linkedWidgets) continue
+        for (const l of w.linkedWidgets) {
+          updateControlWidgetLabel(l)
+        }
+      }
+    })
+    canvasStore.canvas.setDirty(true)
+  }
+)
 
 watch(
   [() => canvasStore.canvas, () => settingStore.get('Comfy.ColorPalette')],
@@ -392,21 +451,15 @@ watch(
       canvasStore.currentGraph
     ] as const,
   ([nodeLocationProgressStates, canvas]) => {
-    if (!canvas?.graph) return
-    for (const node of canvas.graph.nodes) {
-      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(node.id)
-      const progressState = nodeLocationProgressStates[nodeLocatorId]
-      if (progressState && progressState.state === 'running') {
-        node.progress = progressState.value / progressState.max
-      } else {
-        node.progress = undefined
-      }
-    }
-
-    // Force canvas redraw to ensure progress updates are visible
-    canvas.setDirty(true, false)
+    nodeProgressCanvasSync.sync(
+      nodeLocationProgressStates,
+      canvas,
+      canvas?.graph ?? canvasStore.currentGraph
+    )
   }
 )
+
+onUnmounted(nodeProgressCanvasSync.dispose)
 
 // Repaint canvas when node errors change.
 // Slot error flags are reconciled by reconcileNodeErrorFlags in executionErrorStore.
@@ -432,16 +485,14 @@ useEventListener(
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
-const { flags } = useFeatureFlags()
-// Set up URL loaders during setup phase so useRoute/useRouter work correctly
-const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
-const createWorkspaceUrlLoader = isCloud ? useCreateWorkspaceUrlLoader() : null
+const { runUrlActionLoaders } = useUrlActionLoaders()
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
 
 useGlobalLitegraph()
 useContextMenuTranslation()
+useGroupContextMenu()
 useCopy()
 usePaste()
 useWorkflowAutoSave()
@@ -475,6 +526,9 @@ useEventListener(
 onMounted(async () => {
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
+  let startupOutcome: StartupOutcome | undefined
+  let urlTemplateId: string | undefined
+  let bootstrapOutcome: 'completed' | 'failed' = 'failed'
   try {
     // ChangeTracker needs to be initialized before setup, as it will overwrite
     // some listeners of litegraph canvas.
@@ -522,44 +576,26 @@ onMounted(async () => {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
     }
 
-    vueNodeLifecycle.setupEmptyGraphListener()
-
     // Load color palette
     colorPaletteStore.customPalettes = settingStore.get(
       'Comfy.CustomColorPalettes'
     )
 
     // Restore saved workflow and workflow tabs state
-    await workflowPersistence.initializeWorkflow()
+    startupOutcome = await workflowPersistence.initializeWorkflow()
     await workflowPersistence.restoreWorkflowTabsState()
-    await workflowPersistence.loadTemplateFromUrlIfPresent()
+    urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
+    await useFirstRunEntry().handleStartupOutcome(startupOutcome)
+    bootstrapOutcome = 'completed'
   } finally {
     workspaceStore.spinner = false
+    bootstrapTracer.complete(bootstrapOutcome)
   }
-  await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
+  const sharedStatus =
+    await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
-  comfyApp.canvas.onSelectionChange = useChainCallback(
-    comfyApp.canvas.onSelectionChange,
-    () => canvasStore.updateSelectedItems()
-  )
-
-  // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
-  // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts
-  if (inviteUrlLoader && flags.teamWorkspacesEnabled) {
-    await inviteUrlLoader.loadInviteFromUrl()
-  }
-
-  // Open create workspace dialog from URL if present (e.g., ?create_workspace=1)
-  if (createWorkspaceUrlLoader && flags.teamWorkspacesEnabled) {
-    try {
-      await createWorkspaceUrlLoader.loadCreateWorkspaceFromUrl()
-    } catch (error) {
-      console.error(
-        '[GraphCanvas] Failed to load create workspace from URL:',
-        error
-      )
-    }
-  }
+  // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing, ?topup)
+  await runUrlActionLoaders()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } =
@@ -568,14 +604,34 @@ onMounted(async () => {
   void releaseStore.initialize()
 
   emit('ready')
+
+  // The tour draws into an overlay that only mounts once `ready` has flushed.
+  await nextTick()
+  try {
+    await useFirstRunEntry().handleUrlWorkflow(
+      startupOutcome,
+      urlTemplateId,
+      sharedStatus
+    )
+  } catch (error) {
+    console.error('[GraphCanvas] Failed to offer the first-run tour:', error)
+  }
 })
 
 onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
-  vueNodeLifecycle.cleanup()
 })
+
+useEventListener(
+  canvasRef,
+  'pointerdown',
+  collapseOutsideSelectionOnPrimaryPointerDown,
+  { capture: true }
+)
+
 function forwardPointerDownPanEvent(e: PointerEvent) {
+  collapseOutsideSelectionOnPrimaryPointerDown(e)
   forwardPanEvent(e, isMiddlePointerInput)
 }
 
@@ -585,6 +641,21 @@ function forwardPointerMovePanEvent(e: PointerEvent) {
 
 function forwardPointerUpPanEvent(e: PointerEvent) {
   forwardPanEvent(e, isMiddleButtonEvent)
+}
+
+function forwardSpaceKeyEvent(e: KeyboardEvent) {
+  const target = e.target
+  if (
+    !layoutStore.isDraggingVueNodes.value ||
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target instanceof HTMLButtonElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  )
+    return
+
+  comfyApp.canvas?.processKey(e)
 }
 
 function forwardPanEvent(

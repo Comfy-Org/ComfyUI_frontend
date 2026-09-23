@@ -1,7 +1,6 @@
-import type {
-  ModelFile,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { SerializedNodeId } from '@/types/nodeId'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 /**
  * A single (node, widget, model) binding detected by the missing model pipeline.
@@ -9,7 +8,10 @@ import type {
  */
 export interface MissingModelCandidate {
   /** Undefined for workflow-level models not tied to a specific node. */
-  nodeId?: NodeId
+  nodeId?: SerializedNodeId
+  /** Stored owner of nodeType/embedded url; promotedSources tracks active consumers. */
+  sourceExecutionId?: NodeExecutionId
+  promotedSources?: PromotedWidgetExecutionSource[]
   nodeType: string
   widgetName: string
   isAssetSupported: boolean
@@ -23,16 +25,9 @@ export interface MissingModelCandidate {
   /**
    * - `true`  — confirmed missing
    * - `false` — confirmed installed
-   * - `undefined` — pending async verification (asset-supported nodes only)
+   * - `undefined` — pending async verification
    */
   isMissing: boolean | undefined
-}
-
-export interface EmbeddedModelWithSource extends ModelFile {
-  /** Undefined for workflow-level models not tied to a specific node. */
-  sourceNodeId?: NodeId
-  sourceNodeType: string
-  sourceWidgetName: string
 }
 
 /** View model grouping multiple candidate references under a single model name. */
@@ -40,7 +35,7 @@ export interface MissingModelViewModel {
   name: string
   representative: MissingModelCandidate
   referencingNodes: Array<{
-    nodeId: NodeId
+    nodeId: SerializedNodeId
     widgetName: string
   }>
 }

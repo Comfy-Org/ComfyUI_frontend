@@ -1,13 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
 
+import type { ComfyApi } from '@/scripts/api'
 import { api } from '@/scripts/api'
 
 import { DEFAULT_MODEL_CAPABILITIES, fetchModelData } from './ModelAdapter'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({
     fetchApi: vi.fn()
-  }
+  })
 }))
 
 describe('DEFAULT_MODEL_CAPABILITIES', () => {
@@ -19,6 +21,7 @@ describe('DEFAULT_MODEL_CAPABILITIES', () => {
     expect(DEFAULT_MODEL_CAPABILITIES.exportable).toBe(true)
     expect([...DEFAULT_MODEL_CAPABILITIES.materialModes]).toEqual([
       'original',
+      'clay',
       'normal',
       'wireframe'
     ])
@@ -27,14 +30,6 @@ describe('DEFAULT_MODEL_CAPABILITIES', () => {
 
 describe('fetchModelData', () => {
   const mockFetchApi = vi.mocked(api.fetchApi)
-
-  beforeEach(() => {
-    mockFetchApi.mockReset()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
 
   it('returns the arrayBuffer on a successful response', async () => {
     const buf = new ArrayBuffer(8)

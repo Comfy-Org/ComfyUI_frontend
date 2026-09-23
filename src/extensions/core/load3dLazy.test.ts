@@ -1,33 +1,42 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
+import type { useExtensionService } from '@/services/extensionService'
+import { useExtensionStore } from '@/stores/extensionStore'
 
-const { registerExtensionMock, enabledExtensionsGetter } = vi.hoisted(() => ({
-  registerExtensionMock: vi.fn(),
-  enabledExtensionsGetter: vi.fn(() => [] as ComfyExtension[])
+const { registerExtensionMock } = vi.hoisted(() => ({
+  registerExtensionMock: vi.fn()
 }))
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({ registerExtension: registerExtensionMock })
+let enabledExtensionsGetter: MockInstance<() => ComfyExtension[]>
+beforeEach(() => {
+  enabledExtensionsGetter = vi.spyOn(
+    useExtensionStore(),
+    'enabledExtensions',
+    'get'
+  )
+})
+
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({
+      registerExtension: registerExtensionMock
+    })
 }))
 
-vi.mock('@/stores/extensionStore', () => ({
-  useExtensionStore: () => ({
-    get enabledExtensions() {
-      return enabledExtensionsGetter()
-    }
-  })
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromAny({ __mockApp: true })
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { __mockApp: true }
-}))
-
-vi.mock('@/extensions/core/load3d', () => ({}))
-vi.mock('@/extensions/core/load3dPreviewExtensions', () => ({}))
-vi.mock('@/extensions/core/saveMesh', () => ({}))
+vi.mock(import('@/extensions/core/load3d'), () => ({}))
+vi.mock(import('@/extensions/core/load3dAdvanced'), () => ({}))
+vi.mock(import('@/extensions/core/load3dPreviewExtensions'), () => ({}))
+vi.mock(import('@/extensions/core/saveMesh'), () => ({}))
+vi.mock(import('@/extensions/core/cameraInfo'), () => ({}))
 
 type Hook = (
   nodeType: typeof LGraphNode,
@@ -62,10 +71,6 @@ function makeNodeDef(
 }
 
 describe('load3dLazy', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('registers a single Comfy.Load3DLazy extension on import', async () => {
     await loadLazyExtensionFresh()
 
@@ -89,7 +94,10 @@ describe('load3dLazy', () => {
     'Preview3D',
     'PreviewGaussianSplat',
     'PreviewPointCloud',
-    'SaveGLB'
+    'SaveGLB',
+    'Save3DAdvanced',
+    'SaveGaussianSplat',
+    'SavePointCloud'
   ])(
     'recognizes %s as a 3D node type and triggers the lazy-load path',
     async (nodeType) => {
@@ -108,7 +116,24 @@ describe('load3dLazy', () => {
       input: {
         required: { model_file: ['STRING', {}] }
       }
-    } as Partial<ComfyNodeDef>)
+    })
+
+    await hook({} as typeof LGraphNode, nodeData)
+
+    const spec = (
+      nodeData.input!.required!.model_file as [string, Record<string, unknown>]
+    )[1]
+    expect(spec.mesh_upload).toBe(true)
+    expect(spec.upload_subfolder).toBe('3d')
+  })
+
+  it('injects mesh_upload spec flags into the model_file widget for Load3DAdvanced nodes', async () => {
+    const { hook } = await loadLazyExtensionFresh()
+    const nodeData = makeNodeDef('Load3DAdvanced', {
+      input: {
+        required: { model_file: ['STRING', {}] }
+      }
+    })
 
     await hook({} as typeof LGraphNode, nodeData)
 
@@ -123,7 +148,7 @@ describe('load3dLazy', () => {
     const { hook } = await loadLazyExtensionFresh()
     const nodeData = makeNodeDef('Load3D', {
       input: { required: {} }
-    } as Partial<ComfyNodeDef>)
+    })
 
     await expect(
       hook({} as typeof LGraphNode, nodeData)
@@ -136,7 +161,7 @@ describe('load3dLazy', () => {
       input: {
         required: { model_file: ['STRING', { existing: true }] }
       }
-    } as Partial<ComfyNodeDef>)
+    })
 
     await hook({} as typeof LGraphNode, nodeData)
 

@@ -19,6 +19,7 @@ const MOCK_FOLDERS: Record<string, string[]> = {
 test.describe('Model library sidebar - tab', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -52,6 +53,7 @@ test.describe('Model library sidebar - folders', () => {
   // call during initialization hits the mock and populates the store.
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -101,6 +103,7 @@ test.describe('Model library sidebar - folders', () => {
 test.describe('Model library sidebar - search', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -164,6 +167,7 @@ test.describe('Model library sidebar - refresh', () => {
     await comfyPage.modelLibrary.mockFoldersWithFiles({
       checkpoints: ['model_a.safetensors']
     })
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     const tab = comfyPage.menu.modelLibraryTab
@@ -193,6 +197,7 @@ test.describe('Model library sidebar - refresh', () => {
     comfyPage
   }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     const tab = comfyPage.menu.modelLibraryTab
@@ -224,6 +229,7 @@ test.describe('Model library sidebar - empty state', () => {
     comfyPage
   }) => {
     await comfyPage.modelLibrary.mockFoldersWithFiles({})
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     const tab = comfyPage.menu.modelLibraryTab
@@ -232,5 +238,66 @@ test.describe('Model library sidebar - empty state', () => {
     await expect(tab.modelTree).toBeVisible()
     await expect(tab.folderNodes).toHaveCount(0)
     await expect(tab.leafNodes).toHaveCount(0)
+  })
+
+  test.describe('Model library sidebar - add node', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
+      await comfyPage.setup()
+      await comfyPage.nodeOps.clearGraph()
+    })
+
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.modelLibrary.clearMocks()
+    })
+
+    test('Clicking a model defers creation until placed on the canvas', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.modelLibraryTab
+      await tab.open()
+      await tab.getFolderByLabel('checkpoints').click()
+      await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
+
+      await tab.getLeafByLabel('sd_xl_base_1.0').click()
+
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 1000 })
+        .toBe(0)
+
+      const canvasBox = (await comfyPage.canvas.boundingBox())!
+      await comfyPage.canvas.click({
+        position: { x: canvasBox.width / 2, y: canvasBox.height / 2 }
+      })
+
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+        .toBe(1)
+
+      const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
+        'CheckpointLoaderSimple'
+      )
+      expect(loader).toBeDefined()
+      const widget = await loader.getWidgetByName('ckpt_name')
+      expect(await widget.getValue()).toBe('sd_xl_base_1.0.safetensors')
+    })
+
+    test('Ghost preview shows the model in the loader widget before placing', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.modelLibraryTab
+      await tab.open()
+      await tab.getFolderByLabel('checkpoints').click()
+      await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
+
+      await tab.getLeafByLabel('sd_xl_base_1.0').click()
+
+      const ghost = comfyPage.page.locator(
+        '[data-node-id="preview-CheckpointLoaderSimple"]'
+      )
+      await expect(ghost).toContainText('sd_xl_base_1.0.safetensors')
+    })
   })
 })

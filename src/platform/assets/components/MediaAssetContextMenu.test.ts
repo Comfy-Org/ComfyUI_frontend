@@ -1,32 +1,37 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render } from '@testing-library/vue'
 import type { MenuItem } from 'primevue/menuitem'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PropType } from 'vue'
 import { defineComponent, nextTick, onMounted, ref } from 'vue'
 
+import { i18n } from '@/i18n'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type * as LoaderNodeUtil from '@/utils/loaderNodeUtil'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
-
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/workflow/utils/workflowExtractionUtil', () => ({
+vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
   supportsWorkflowMetadata: () => true
 }))
 
-vi.mock('@/utils/formatUtil', () => ({
+vi.mock(import('@/utils/formatUtil'), () => ({
   isPreviewableMediaType: () => true
 }))
 
-vi.mock('@/utils/loaderNodeUtil', () => ({
-  detectNodeTypeFromFilename: () => ({ nodeType: 'LoadImage' })
+const detectNodeTypeFromFilename = vi.hoisted(() =>
+  vi.fn<typeof LoaderNodeUtil.detectNodeTypeFromFilename>(() => ({
+    nodeType: null,
+    widgetName: null
+  }))
+)
+
+vi.mock(import('@/utils/loaderNodeUtil'), () => ({
+  detectNodeTypeFromFilename
 }))
 
 const mediaAssetActions = {
@@ -38,7 +43,7 @@ const mediaAssetActions = {
   deleteAssets: vi.fn().mockResolvedValue(false)
 }
 
-vi.mock('../composables/useMediaAssetActions', () => ({
+vi.mock<unknown>(import('../composables/useMediaAssetActions'), () => ({
   useMediaAssetActions: () => mediaAssetActions
 }))
 
@@ -88,16 +93,12 @@ const contextMenuStub = defineComponent({
   `
 })
 
-const asset: AssetItem = {
+const asset: AssetItem = fromPartial({
   id: 'asset-1',
   name: 'image.png',
   tags: [],
   user_metadata: {}
-}
-
-const buttonStub = {
-  template: '<div class="button-stub"><slot /></div>'
-}
+})
 
 interface MediaAssetContextMenuExposed {
   show: (event: MouseEvent) => void
@@ -105,7 +106,7 @@ interface MediaAssetContextMenuExposed {
 
 let capturedRef: MediaAssetContextMenuExposed | null = null
 
-function mountComponent() {
+function mountComponent(targetAsset: AssetItem = asset) {
   const onHide = vi.fn()
   const { container, unmount } = render(
     defineComponent({
@@ -115,16 +116,16 @@ function mountComponent() {
         onMounted(() => {
           capturedRef = menuRef.value
         })
-        return { menuRef, asset, onHide }
+        return { menuRef, asset: targetAsset, onHide }
       },
       template:
         '<MediaAssetContextMenu ref="menuRef" :asset="asset" asset-type="output" file-kind="image" @hide="onHide" />'
     }),
     {
       global: {
+        plugins: [i18n],
         stubs: {
-          ContextMenu: contextMenuStub,
-          Button: buttonStub
+          ContextMenu: contextMenuStub
         }
       }
     }
@@ -141,19 +142,21 @@ async function showMenu(container: Element): Promise<HTMLElement> {
 }
 
 afterEach(() => {
-  vi.clearAllMocks()
   capturedRef = null
   capturedMenu.model = []
-  document.body.innerHTML = ''
 })
 
 type MenuItemWithCommand = MenuItem & {
   command: NonNullable<MenuItem['command']>
 }
 
+function findMenuItem(label: string): MenuItem | undefined {
+  return capturedMenu.model.find((item) => item.label === label)
+}
+
 function findDownloadMenuItem(): MenuItemWithCommand {
-  const downloadItem = capturedMenu.model.find(
-    (item) => item.label === 'mediaAsset.actions.download'
+  const downloadItem = findMenuItem(
+    i18n.global.t('mediaAsset.actions.download')
   )
   if (!downloadItem?.command) {
     throw new Error('Download menu item or command was not registered')
@@ -180,6 +183,35 @@ describe('MediaAssetContextMenu', () => {
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.context-menu-stub')).toBeNull()
     expect(onHide).toHaveBeenCalledOnce()
+
+    unmount()
+  })
+
+  it('shows insert-as-node for assets with a loader node', async () => {
+    detectNodeTypeFromFilename.mockReturnValue({
+      nodeType: 'LoadImage',
+      widgetName: 'image'
+    })
+    const { container, unmount } = mountComponent()
+    await showMenu(container)
+
+    expect(
+      findMenuItem(i18n.global.t('mediaAsset.actions.insertAsNodeInWorkflow'))
+    ).toBeDefined()
+
+    unmount()
+  })
+
+  it('hides insert-as-node for text assets without a loader node', async () => {
+    const { container, unmount } = mountComponent({
+      ...asset,
+      name: 'result.txt'
+    })
+    await showMenu(container)
+
+    expect(
+      findMenuItem('mediaAsset.actions.insertAsNodeInWorkflow')
+    ).toBeUndefined()
 
     unmount()
   })

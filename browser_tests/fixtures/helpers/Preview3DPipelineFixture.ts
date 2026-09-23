@@ -1,6 +1,9 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -45,9 +48,9 @@ async function orbitDragFromCanvasCenter(
 
 export class Preview3DPipelineContext {
   /** Matches node ids in `browser_tests/assets/3d/preview3d_pipeline.json`. */
-  static readonly loadNodeId = '1'
+  static readonly loadNodeId = toNodeId(1)
   /** Matches node ids in `browser_tests/assets/3d/preview3d_pipeline.json`. */
-  static readonly previewNodeId = '2'
+  static readonly previewNodeId = toNodeId(2)
 
   readonly load3d: Load3DHelper
   readonly preview3d: Load3DHelper
@@ -61,9 +64,9 @@ export class Preview3DPipelineContext {
     )
   }
 
-  async getModelFileWidgetValue(nodeId: string): Promise<string> {
+  async getModelFileWidgetValue(nodeId: NodeId): Promise<string> {
     return this.comfyPage.page.evaluate((id) => {
-      const node = window.app!.graph.getNodeById(Number(id))
+      const node = window.app!.graph.getNodeById(id)
       if (!node?.widgets) return ''
       const w = node.widgets.find((x) => x.name === 'model_file')
       const v = w?.value
@@ -71,9 +74,9 @@ export class Preview3DPipelineContext {
     }, nodeId)
   }
 
-  async getLastTimeModelFile(nodeId: string): Promise<string> {
+  async getLastTimeModelFile(nodeId: NodeId): Promise<string> {
     return this.comfyPage.page.evaluate((id) => {
-      const node = window.app!.graph.getNodeById(Number(id))
+      const node = window.app!.graph.getNodeById(id)
       if (!node?.properties) return ''
       const v = (node.properties as Record<string, unknown>)[
         'Last Time Model File'
@@ -82,9 +85,9 @@ export class Preview3DPipelineContext {
     }, nodeId)
   }
 
-  async getCameraStateFromProperties(nodeId: string): Promise<unknown> {
+  async getCameraStateFromProperties(nodeId: NodeId): Promise<unknown> {
     return this.comfyPage.page.evaluate((id) => {
-      const node = window.app!.graph.getNodeById(Number(id))
+      const node = window.app!.graph.getNodeById(id)
       if (!node?.properties) return null
       const cfg = (node.properties as Record<string, unknown>)['Camera Config']
       if (cfg === null || typeof cfg !== 'object') return null
@@ -151,14 +154,6 @@ export class Preview3DPipelineContext {
     await this.comfyPage.nextFrame()
   }
 
-  async alignPreview3dWorkflowUiSettings(): Promise<void> {
-    await this.comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await this.comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Sidebar'
-    )
-  }
-
   async queuePromptAndWaitIdle(timeoutMs: number): Promise<void> {
     await this.comfyPage.command.executeCommand('Comfy.QueuePrompt')
     await this.comfyPage.workflow.waitForWorkflowIdle(timeoutMs)
@@ -216,19 +211,10 @@ export class Preview3DPipelineContext {
 
   async reloadPageAndWaitForAppShell(): Promise<void> {
     await this.comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
-    await this.comfyPage.page.waitForFunction(
-      () => window.app && window.app.extensionManager,
-      { timeout: 30_000 }
-    )
-    await this.comfyPage.page.locator('.p-blockui-mask').waitFor({
-      state: 'hidden',
-      timeout: 30_000
-    })
-    await this.comfyPage.nextFrame()
+    await this.comfyPage.waitForAppReady()
   }
 
   async openPersistedWorkflowFromSidebar(workflowName: string): Promise<void> {
-    await this.alignPreview3dWorkflowUiSettings()
     const tab = this.comfyPage.menu.workflowsTab
     await tab.open()
     await tab.getPersistedItem(workflowName).click()
@@ -266,14 +252,7 @@ export const preview3dPipelineTest = comfyPageFixture.extend<{
   preview3dPipeline: Preview3DPipelineContext
 }>({
   preview3dPipeline: async ({ comfyPage }, use) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Sidebar'
-    )
-
     await comfyPage.workflow.loadWorkflow('3d/preview3d_pipeline')
-    await comfyPage.vueNodes.waitForNodes()
 
     const pipeline = new Preview3DPipelineContext(comfyPage)
     await use(pipeline)

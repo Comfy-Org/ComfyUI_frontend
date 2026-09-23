@@ -9,6 +9,7 @@
     :class="{
       'comfy-menu-button-active': menuRef?.visible
     }"
+    data-testid="comfy-menu-button"
     @click="onLogoMenuClick($event)"
   >
     <div class="grid place-items-center-safe gap-0.5">
@@ -26,6 +27,7 @@
   <TieredMenu
     ref="menuRef"
     :model="translatedItems"
+    :pt="{ item: nodes2MenuItemProps }"
     :popup="true"
     class="comfy-command-menu"
     @show="onMenuShow"
@@ -71,31 +73,19 @@
       </a>
       <div
         v-else
-        class="flex items-center justify-between px-4 py-2"
-        @click.stop="handleNodes2ToggleClick"
+        v-bind="props.action"
+        class="flex cursor-pointer items-center justify-between px-4 py-2 select-none"
+        data-testid="nodes-2-toggle-item"
+        @mousedown.prevent
+        @click.stop="onNodes2ToggleChange(!nodes2Enabled)"
       >
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
-        <Tag severity="info" class="ml-2 text-xs">{{ $t('g.beta') }}</Tag>
-        <ToggleSwitch
-          v-model="nodes2Enabled"
-          class="ml-4"
-          :aria-label="item.label"
-          :pt="{
-            root: {
-              style: {
-                width: '38px',
-                height: '20px'
-              }
-            },
-            handle: {
-              style: {
-                width: '16px',
-                height: '16px'
-              }
-            }
-          }"
-          @click.stop
-          @update:model-value="onNodes2ToggleChange"
+        <Switch
+          :model-value="nodes2Enabled"
+          class="pointer-events-none ml-4"
+          aria-hidden="true"
+          readonly
+          tabindex="-1"
         />
       </div>
     </template>
@@ -104,14 +94,17 @@
 
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
-import Tag from 'primevue/tag'
 import TieredMenu from 'primevue/tieredmenu'
-import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
-import ToggleSwitch from 'primevue/toggleswitch'
+import type {
+  TieredMenuMethods,
+  TieredMenuPassThroughMethodOptions,
+  TieredMenuState
+} from 'primevue/tieredmenu'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
+import Switch from '@/components/ui/switch/Switch.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingPanelType } from '@/platform/settings/types'
@@ -139,18 +132,16 @@ const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
 >(null)
 
-const nodes2Enabled = computed({
-  get: () => settingStore.get('Comfy.VueNodes.Enabled') ?? false,
-  set: async (value: boolean) => {
-    await settingStore.set('Comfy.VueNodes.Enabled', value)
-  }
-})
+const nodes2Enabled = computed(
+  () => settingStore.get('Comfy.VueNodes.Enabled') ?? false
+)
 
 const telemetry = useTelemetry()
 
 function onLogoMenuClick(event: MouseEvent) {
   telemetry?.trackUiButtonClicked({
-    button_id: 'sidebar_comfy_menu_opened'
+    button_id: 'sidebar_comfy_menu_opened',
+    element_group: 'sidebar'
   })
   menuRef.value?.toggle(event)
 }
@@ -217,7 +208,8 @@ const extraMenuItems = computed(() => [
     icon: 'icon-[lucide--settings]',
     command: () => {
       telemetry?.trackUiButtonClicked({
-        button_id: 'sidebar_settings_menu_opened'
+        button_id: 'sidebar_settings_menu_opened',
+        element_group: 'sidebar'
       })
       showSettings()
     }
@@ -322,15 +314,23 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
   )
 }
 
-const handleNodes2ToggleClick = () => {
-  return false
-}
-
 const onNodes2ToggleChange = async (value: boolean) => {
   await settingStore.set('Comfy.VueNodes.Enabled', value)
   telemetry?.trackUiButtonClicked({
-    button_id: `menu_nodes_2.0_toggle_${value ? 'enabled' : 'disabled'}`
+    button_id: `menu_nodes_2.0_toggle_${value ? 'enabled' : 'disabled'}`,
+    element_group: 'sidebar'
   })
+}
+
+function nodes2MenuItemProps({
+  context
+}: TieredMenuPassThroughMethodOptions<unknown>) {
+  if (context.item.key !== 'nodes-2.0-toggle') return
+
+  return {
+    'aria-checked': nodes2Enabled.value,
+    role: 'menuitemcheckbox'
+  }
 }
 </script>
 

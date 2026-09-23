@@ -72,15 +72,16 @@ const buttons = computed<ButtonSpec[]>(() => {
     size="lg"
     :class="customClass"
     :aria-label="btn.ariaLabel"
+    :data-astro-prefetch="btn.key === 'windows' ? 'false' : undefined"
     @click="captureDownloadClick(btn.key)"
   >
     <span class="inline-flex items-center gap-2">
       <img
         :src="btn.icon"
         alt=""
-        class="ppformula-text-center size-5 -translate-y-0.75"
+        class="ppformula-text-center inline-block size-5 -translate-y-0.75"
       />
-      <span class="ppformula-text-center">{{ label }}</span>
+      <span class="ppformula-text-center inline-block">{{ label }}</span>
     </span>
   </BrandButton>
 </template>

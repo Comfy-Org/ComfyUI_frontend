@@ -6,33 +6,40 @@
     @update:form-value="updateSettingValue"
   >
     <template #name-prefix>
-      <Tag v-if="setting.id === 'Comfy.Locale'" class="pi pi-language" />
-      <Tag
+      <Badge
+        v-if="setting.id === 'Comfy.Locale'"
+        severity="primary"
+        class="pi pi-language"
+      />
+      <Badge
         v-if="setting.experimental"
         v-tooltip="{
           value: $t('g.experimental'),
           showDelay: 600
         }"
+        severity="primary"
       >
         <template #icon>
           <i-material-symbols:experiment-outline />
         </template>
-      </Tag>
+      </Badge>
     </template>
   </FormItem>
 </template>
 
 <script setup lang="ts">
-import Tag from 'primevue/tag'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingOption, SettingParams } from '@/platform/settings/types'
-import { useTelemetry } from '@/platform/telemetry'
-import type { Settings } from '@/schemas/apiSchema'
+import type {
+  SettingOption,
+  SettingParams,
+  Settings
+} from '@/platform/settings/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const props = defineProps<{
@@ -78,22 +85,10 @@ const formItem = computed(() => {
 
 const settingStore = useSettingStore()
 const settingValue = computed(() => settingStore.get(props.setting.id))
-const updateSettingValue = async <K extends keyof Settings>(
-  newValue: Settings[K]
-) => {
-  const telemetry = useTelemetry()
-  const settingId = props.setting.id
-  const previousValue = settingValue.value
-
-  await settingStore.set(settingId, newValue)
-
-  const normalizedValue = settingStore.get(settingId)
-  if (previousValue !== normalizedValue) {
-    telemetry?.trackSettingChanged({
-      setting_id: settingId,
-      previous_value: previousValue,
-      new_value: normalizedValue
-    })
-  }
+async function updateSettingValue(newValue: unknown) {
+  await settingStore.set(
+    props.setting.id,
+    newValue as Settings[typeof props.setting.id]
+  )
 }
 </script>

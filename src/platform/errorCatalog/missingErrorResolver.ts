@@ -4,11 +4,8 @@ import type {
 } from './types'
 import { normalizeNodeName, translateCatalogMessage } from './catalogI18n'
 import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
+import { countMissingModels } from '@/platform/missingModel/missingModelGrouping'
 import { st } from '@/i18n'
-
-function formatCountTitle(title: string, count: number): string {
-  return `${title} (${count})`
-}
 
 function formatNodeTypeName(nodeType: string): string | null {
   const trimmed = nodeType.trim()
@@ -143,7 +140,7 @@ function resolveSwapNodeToastMessage(source: SwapNodeSource): string {
   const nodeTypes = getSwapNodeTypes(source)
   const labels = getDistinctNodeTypeLabels(nodeTypes)
   const [firstNodeType] = nodeTypes
-  if (labels.length === 1 && firstNodeType?.replacement?.new_node_id) {
+  if (labels.length === 1 && firstNodeType.replacement?.new_node_id) {
     return translateCatalogMessage(
       'errorCatalog.missingErrors.swap_nodes.toastMessageOne',
       'Replace it with {replacementNodeType} from the error panel.',
@@ -171,11 +168,7 @@ type MissingModelSource = Extract<
 >
 
 function getMissingModelCount(source: MissingModelSource): number {
-  const count = source.groups.reduce(
-    (total, group) => total + group.models.length,
-    0
-  )
-  return count || source.count
+  return countMissingModels(source.groups) || source.count
 }
 
 function resolveMissingModelDisplayMessage(source: MissingModelSource): string {
@@ -189,7 +182,7 @@ function resolveMissingModelDisplayMessage(source: MissingModelSource): string {
 }
 
 function resolveMissingModelToastTitle(source: MissingModelSource): string {
-  const [firstModel] = source.groups.flatMap((group) => group.models)
+  const firstModel = source.groups.flatMap((group) => group.models).at(0)
   const count = getMissingModelCount(source)
 
   if (count === 1 && firstModel) {
@@ -224,7 +217,7 @@ function getMissingModelNodeName(
 }
 
 function resolveMissingModelToastMessage(source: MissingModelSource): string {
-  const [firstModel] = source.groups.flatMap((group) => group.models)
+  const firstModel = source.groups.flatMap((group) => group.models).at(0)
   const count = getMissingModelCount(source)
 
   if (!firstModel || count !== 1) {
@@ -316,7 +309,7 @@ function resolveMissingMediaToastTitle(source: MissingMediaSource): string {
 
 function resolveMissingMediaToastMessage(source: MissingMediaSource): string {
   const items = getMissingMediaItems(source)
-  const [firstItem] = items
+  const firstItem = items.at(0)
   if (!firstItem || countMissingMediaReferences(source.groups) !== 1) {
     return translateCatalogMessage(
       'errorCatalog.missingErrors.missing_media.toastMessageMany',
@@ -344,15 +337,12 @@ export function resolveMissingErrorMessage(
     case 'missing_node':
       return {
         catalogId: 'missing_node',
-        displayTitle: formatCountTitle(
-          source.isCloud
-            ? st(
-                'rightSidePanel.missingNodePacks.unsupportedTitle',
-                'Unsupported Node Packs'
-              )
-            : st('rightSidePanel.missingNodePacks.title', 'Missing Node Packs'),
-          source.count
-        ),
+        displayTitle: source.isCloud
+          ? st(
+              'rightSidePanel.missingNodePacks.unsupportedTitle',
+              'Unsupported Node Packs'
+            )
+          : st('rightSidePanel.missingNodePacks.title', 'Missing Node Packs'),
         displayMessage: resolveMissingNodeDisplayMessage(source),
         toastTitle: resolveMissingNodeToastTitle(source),
         toastMessage: resolveMissingNodeToastMessage(source)
@@ -360,10 +350,7 @@ export function resolveMissingErrorMessage(
     case 'swap_nodes':
       return {
         catalogId: 'swap_nodes',
-        displayTitle: formatCountTitle(
-          st('nodeReplacement.swapNodesTitle', 'Swap Nodes'),
-          source.count
-        ),
+        displayTitle: st('nodeReplacement.swapNodesTitle', 'Swap Nodes'),
         displayMessage: resolveSwapNodeDisplayMessage(),
         toastTitle: resolveSwapNodeToastTitle(source),
         toastMessage: resolveSwapNodeToastMessage(source)
@@ -371,12 +358,9 @@ export function resolveMissingErrorMessage(
     case 'missing_model':
       return {
         catalogId: 'missing_model',
-        displayTitle: formatCountTitle(
-          st(
-            'rightSidePanel.missingModels.missingModelsTitle',
-            'Missing Models'
-          ),
-          source.count
+        displayTitle: st(
+          'rightSidePanel.missingModels.missingModelsTitle',
+          'Missing Models'
         ),
         displayMessage: resolveMissingModelDisplayMessage(source),
         toastTitle: resolveMissingModelToastTitle(source),
@@ -385,9 +369,9 @@ export function resolveMissingErrorMessage(
     case 'missing_media':
       return {
         catalogId: 'missing_media',
-        displayTitle: formatCountTitle(
-          st('rightSidePanel.missingMedia.missingMediaTitle', 'Missing Inputs'),
-          source.count
+        displayTitle: st(
+          'rightSidePanel.missingMedia.missingMediaTitle',
+          'Missing Inputs'
         ),
         displayMessage: resolveMissingMediaDisplayMessage(),
         toastTitle: resolveMissingMediaToastTitle(source),

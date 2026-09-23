@@ -1,11 +1,14 @@
+import { useAuthStore } from '@/stores/authStore'
 import axios from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 function createMockWidget(overrides: Partial<IWidget> = {}): IWidget {
   return {
@@ -19,40 +22,17 @@ function createMockWidget(overrides: Partial<IWidget> = {}): IWidget {
 
 const mockCloudAuth = vi.hoisted(() => ({
   isCloud: false,
-  authHeader: null as { Authorization: string } | null
+  authHeader: null as { Authorization: `Bearer ${string}` } | null
 }))
 
-vi.mock('axios', async (importOriginal) => {
-  const actual = await importOriginal<typeof axios>()
-  return {
-    default: {
-      ...actual,
-      get: vi.fn()
-    }
-  }
-})
+vi.mock(import('axios'), { spy: true })
+vi.mock(import('firebase/auth'), { spy: true })
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockCloudAuth.isCloud
   }
 }))
-
-vi.mock('@/stores/authStore', async () => {
-  return {
-    useAuthStore: vi.fn(() => ({
-      getAuthHeader: vi.fn(() => Promise.resolve(mockCloudAuth.authHeader))
-    }))
-  }
-})
-
-vi.mock('@/platform/settings/settingStore', async () => {
-  return {
-    useSettingStore: () => ({
-      settings: {}
-    })
-  }
-})
 
 const FIRST_BACKOFF = 1000 // backoff is 1s on first retry
 const DEFAULT_VALUE = 'Loading...'
@@ -105,22 +85,45 @@ async function getResolvedValue(hook: ReturnType<typeof useRemoteWidget>) {
   return hook.getCachedValue()
 }
 
+beforeEach(() => {
+  stubFirebaseAuthHarness()
+  vi.mocked(useAuthStore().getAuthHeader).mockImplementation(
+    async () => mockCloudAuth.authHeader
+  )
+})
+
 describe('useRemoteWidget', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    // Reset mocks
-    vi.mocked(axios.get).mockReset()
-    // Reset cache between tests
-    vi.spyOn(Map.prototype, 'get').mockClear()
-    vi.spyOn(Map.prototype, 'set').mockClear()
-    vi.spyOn(Map.prototype, 'delete').mockClear()
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('initialization', () => {
+    it('preserves a saved non-first option and initializes its callback once', async () => {
+      const options = createMockOptions({ control_after_refresh: 'first' })
+      options.widget.callback = vi.fn()
+      const hook = useRemoteWidget(options)
+      options.widget.value = 'optionB'
+      mockAxiosResponse(['optionA', 'optionB'])
+
+      await getResolvedValue(hook)
+      await getResolvedValue(hook)
+
+      expect(options.widget.value).toBe('optionB')
+      expect(options.widget.callback).toHaveBeenCalledWith('optionB')
+      expect(options.widget.callback).toHaveBeenCalledTimes(1)
+    })
+
+    it('selects the first option when the saved value is unavailable', async () => {
+      const options = createMockOptions()
+      options.widget = createMockWidget({
+        value: 'unavailable',
+        callback: vi.fn()
+      })
+      const hook = useRemoteWidget(options)
+      mockAxiosResponse(['optionA', 'optionB'])
+
+      await getResolvedValue(hook)
+
+      expect(options.widget.value).toBe('optionA')
+      expect(options.widget.callback).toHaveBeenCalledWith('optionA')
+    })
+
     it('should create hook with default values', () => {
       const hook = useRemoteWidget(createMockOptions())
       expect(hook.getCachedValue()).toBeUndefined()
@@ -185,8 +188,15 @@ describe('useRemoteWidget', () => {
     })
 
     it('should handle empty array responses', async () => {
-      const { result } = await setupHookWithResponse([])
+      const options = createMockOptions()
+      options.widget.value = 'unavailable'
+      const hook = useRemoteWidget(options)
+      mockAxiosResponse([])
+
+      const result = await getResolvedValue(hook)
+
       expect(result).toEqual([])
+      expect(options.widget.value).toBe(DEFAULT_VALUE)
     })
 
     it('should handle malformed response data', async () => {
@@ -212,15 +222,6 @@ describe('useRemoteWidget', () => {
   })
 
   describe('refresh behavior', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
-      vi.clearAllMocks()
-    })
-
     describe('permanent widgets (no refresh)', () => {
       it('permanent widgets should not attempt fetch after initialization', async () => {
         const mockData = ['data that is permanent after initialization']
@@ -259,7 +260,7 @@ describe('useRemoteWidget', () => {
         await getResolvedValue(hook)
         expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
 
-        vi.setSystemTime(Date.now() + FIRST_BACKOFF)
+        vi.advanceTimersByTime(FIRST_BACKOFF)
         const secondData = await getResolvedValue(hook)
         expect(secondData).toBe('Loading...')
         expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
@@ -283,7 +284,7 @@ describe('useRemoteWidget', () => {
       const { hook } = await setupHookWithResponse(mockData1, { refresh })
       mockAxiosResponse(mockData2)
 
-      vi.setSystemTime(Date.now() + refresh)
+      vi.advanceTimersByTime(refresh)
       const newData = await getResolvedValue(hook)
 
       expect(newData).toEqual(mockData2)
@@ -295,7 +296,7 @@ describe('useRemoteWidget', () => {
         refresh: 512
       })
 
-      vi.setSystemTime(Date.now() + 128)
+      vi.advanceTimersByTime(128)
       await getResolvedValue(hook)
 
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
@@ -308,12 +309,12 @@ describe('useRemoteWidget', () => {
       })
 
       mockAxiosError('Network error')
-      vi.setSystemTime(Date.now() + refresh)
+      vi.advanceTimersByTime(refresh)
       await getResolvedValue(hook)
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
 
       mockAxiosResponse(['second success'])
-      vi.setSystemTime(Date.now() + FIRST_BACKOFF)
+      vi.advanceTimersByTime(FIRST_BACKOFF)
       const thirdData = await getResolvedValue(hook)
       expect(thirdData).toEqual(['second success'])
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(3)
@@ -326,7 +327,7 @@ describe('useRemoteWidget', () => {
       })
 
       mockAxiosError('Network error')
-      vi.setSystemTime(Date.now() + refresh)
+      vi.advanceTimersByTime(refresh)
       const secondData = await getResolvedValue(hook)
 
       expect(secondData).toEqual(['a valid value'])
@@ -335,14 +336,6 @@ describe('useRemoteWidget', () => {
   })
 
   describe('error handling and backoff', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
     it('should implement exponential backoff on errors', async () => {
       mockAxiosError('Network error')
 
@@ -354,11 +347,11 @@ describe('useRemoteWidget', () => {
       await getResolvedValue(hook)
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
 
-      vi.setSystemTime(Date.now() + 500)
+      vi.advanceTimersByTime(500)
       await getResolvedValue(hook)
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1) // Still backing off
 
-      vi.setSystemTime(Date.now() + 3000)
+      vi.advanceTimersByTime(3000)
       await getResolvedValue(hook)
       expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(2)
       expect(entry1?.data).toBeDefined()
@@ -370,7 +363,7 @@ describe('useRemoteWidget', () => {
       const firstData = await getResolvedValue(hook)
       expect(firstData).toBe('Loading...')
 
-      vi.setSystemTime(Date.now() + 3000)
+      vi.advanceTimersByTime(3000)
       mockAxiosResponse(['option1'])
       const secondData = await getResolvedValue(hook)
       expect(secondData).toEqual(['option1'])
@@ -387,7 +380,7 @@ describe('useRemoteWidget', () => {
       const entry1 = hook.getCacheEntry()
       expect(entry1?.error).toBeTruthy()
 
-      vi.setSystemTime(Date.now() + 3000)
+      vi.advanceTimersByTime(3000)
       mockAxiosResponse(['success after backoff'])
       const secondData = await getResolvedValue(hook)
       expect(secondData).toEqual(['success after backoff'])
@@ -406,17 +399,17 @@ describe('useRemoteWidget', () => {
       const entry1 = hook.getCacheEntry()
       expect(entry1?.error).toBeTruthy()
 
-      vi.setSystemTime(Date.now() + 3000)
+      vi.advanceTimersByTime(3000)
       const secondData = await getResolvedValue(hook)
       expect(secondData).toBe('Loading...')
       expect(entry1?.error).toBeDefined()
 
-      vi.setSystemTime(Date.now() + 9000)
+      vi.advanceTimersByTime(9000)
       const thirdData = await getResolvedValue(hook)
       expect(thirdData).toBe('Loading...')
       expect(entry1?.error).toBeDefined()
 
-      vi.setSystemTime(Date.now() + 120_000)
+      vi.advanceTimersByTime(120_000)
       mockAxiosResponse(['success after multiple backoffs'])
       const fourthData = await getResolvedValue(hook)
       expect(fourthData).toEqual(['success after multiple backoffs'])
@@ -748,6 +741,178 @@ describe('useRemoteWidget', () => {
         'execution_success',
         executionSuccessHandler
       )
+    })
+  })
+  describe('inventory', () => {
+    it('does not start a request for an already cancelled inventory check', async () => {
+      const hook = useRemoteWidget(createMockOptions())
+      const controller = new AbortController()
+      controller.abort()
+
+      await hook.waitForInventory(controller.signal)
+
+      expect(axios.get).not.toHaveBeenCalled()
+    })
+
+    it('stops a cancelled wait without following or aborting a replacement request', async () => {
+      let resolveOriginal: (value: { data: string[] }) => void = () => undefined
+      let resolveReplacement: (value: { data: string[] }) => void = () =>
+        undefined
+      const original = new Promise<{ data: string[] }>((resolve) => {
+        resolveOriginal = resolve
+      })
+      const replacement = new Promise<{ data: string[] }>((resolve) => {
+        resolveReplacement = resolve
+      })
+      vi.mocked(axios.get)
+        .mockReturnValueOnce(original)
+        .mockReturnValueOnce(replacement)
+      const hook = useRemoteWidget(createMockOptions())
+      hook.getValue()
+      const controller = new AbortController()
+      const waiting = hook.waitForInventory(controller.signal)
+      controller.abort()
+      hook.refreshValue()
+      resolveOriginal({ data: ['original'] })
+
+      await waiting
+
+      expect(axios.get).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(axios.get).mock.calls[1][1]?.signal?.aborted).toBe(false)
+      resolveReplacement({ data: ['replacement'] })
+      await hook.waitForInventory()
+      expect(hook.getCachedValue()).toEqual(['replacement'])
+      expect(hook.getInventoryStatus()).toBe('ready')
+    })
+
+    it('reports loading until the in-flight request settles', async () => {
+      const hook = createHookWithData(['option1'])
+      hook.getValue()
+
+      expect(hook.getInventoryStatus()).toBe('loading')
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports error when the request fails', async () => {
+      mockAxiosError('Network error')
+      const hook = useRemoteWidget(createMockOptions())
+
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('error')
+    })
+
+    it('treats expired data as loading until the refresh settles', async () => {
+      const refresh = 4096
+      const { hook } = await setupHookWithResponse(['option1'], { refresh })
+
+      vi.advanceTimersByTime(refresh)
+      expect(hook.getInventoryStatus()).toBe('loading')
+
+      mockAxiosError('Network error')
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('error')
+    })
+
+    it('reports loading while a retry after a failed stale refresh is in flight', async () => {
+      const refresh = 4096
+      const { hook } = await setupHookWithResponse(['option1'], { refresh })
+      mockAxiosError('Network error')
+      vi.advanceTimersByTime(refresh)
+      await hook.waitForInventory()
+      expect(hook.getInventoryStatus()).toBe('error')
+
+      vi.advanceTimersByTime(FIRST_BACKOFF)
+      mockAxiosResponse(['option2'])
+      const waiting = hook.waitForInventory()
+      expect(hook.getInventoryStatus()).toBe('loading')
+      await waiting
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+    })
+
+    it('handles errors thrown by the completion callback', async () => {
+      const error = new Error('completion callback failed')
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const hook = createHookWithData(['option1'])
+
+      hook.getValue(() => {
+        throw error
+      })
+
+      await vi.waitFor(() => expect(errorSpy).toHaveBeenCalledWith(error))
+      expect(hook.getInventoryStatus()).toBe('ready')
+    })
+
+    it('settles even when the widget callback throws on first load', async () => {
+      const options = createMockOptions()
+      options.widget.callback = () => {
+        throw new Error('callback failed')
+      }
+      mockAxiosResponse(['option1'])
+      const hook = useRemoteWidget(options)
+
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+    })
+
+    it('follows a replacement request that interrupts its own request', async () => {
+      let resolveOriginal: (value: unknown) => void = () => undefined
+      vi.mocked(axios.get).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveOriginal = resolve
+        })
+      )
+      const hook = useRemoteWidget(createMockOptions())
+      const waiting = hook.waitForInventory()
+
+      mockAxiosResponse(['replacement'])
+      hook.refreshValue()
+      resolveOriginal({ data: ['original'], status: 200 })
+      await waiting
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+      expect(hook.getCachedValue()).toEqual(['replacement'])
+    })
+
+    it('stays loading for a new widget until its own first load settles on a warm cache', async () => {
+      const route = '/api/shared-inventory'
+      await setupHookWithResponse(['first', 'restored'], { route })
+      const options = createMockOptions({ route })
+      options.widget.value = 'restored'
+      const hook = useRemoteWidget(options)
+
+      expect(hook.getInventoryStatus()).toBe('loading')
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+      expect(options.widget.value).toBe('restored')
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+    })
+
+    it('follows a replacement request started by a refresh', async () => {
+      let resolveOriginal: (value: unknown) => void = () => undefined
+      vi.mocked(axios.get).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveOriginal = resolve
+        })
+      )
+      const hook = useRemoteWidget(createMockOptions())
+      hook.getValue()
+      const waiting = hook.waitForInventory()
+
+      mockAxiosResponse(['replacement'])
+      hook.refreshValue()
+      resolveOriginal({ data: ['original'], status: 200 })
+      await waiting
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+      expect(hook.getCachedValue()).toEqual(['replacement'])
     })
   })
 })

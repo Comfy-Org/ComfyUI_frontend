@@ -1,56 +1,28 @@
 import { Form } from '@primevue/forms'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import Button from '@/components/ui/button/Button.vue'
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import ProgressSpinner from 'primevue/progressspinner'
 import ToastService from 'primevue/toastservice'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useAuthStore } from '@/stores/authStore'
 
 import SignInForm from './SignInForm.vue'
-
-// Mock firebase auth modules
-vi.mock('firebase/app', () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock('firebase/auth', () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn(),
-  sendPasswordResetEmail: vi.fn()
-}))
+vi.mock(import('firebase/auth'))
 
 // Mock the auth composables and stores
-const mockSendPasswordReset = vi.fn()
-vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: vi.fn(() => ({
-    sendPasswordReset: mockSendPasswordReset
-  }))
-}))
-
-const mockLoadingRef = ref(false)
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => ({
-    get loading() {
-      return mockLoadingRef.value
-    }
-  }))
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 // Mock toast
 const mockToastAdd = vi.fn()
-vi.mock('primevue/usetoast', () => ({
+vi.mock<unknown>(import('primevue/usetoast'), () => ({
   useToast: vi.fn(() => ({
     add: mockToastAdd
   }))
@@ -61,13 +33,7 @@ const loginButtonText = enMessages.auth.login.loginButton
 
 describe('SignInForm', () => {
   beforeEach(() => {
-    mockSendPasswordReset.mockReset()
-    mockToastAdd.mockReset()
-    mockLoadingRef.value = false
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
+    useAuthStore().loading = false
   })
 
   function renderComponent(props: Record<string, unknown> = {}) {
@@ -80,7 +46,7 @@ describe('SignInForm', () => {
     const result = render(SignInForm, {
       global: {
         plugins: [PrimeVue, i18n, ToastService],
-        components: { Form, Button, InputText, Password, ProgressSpinner }
+        components: { Form, Button, InputText, Password, Spinner }
       },
       props
     })
@@ -114,7 +80,7 @@ describe('SignInForm', () => {
 
       expect(focusSpy).toHaveBeenCalled()
 
-      expect(mockSendPasswordReset).not.toHaveBeenCalled()
+      expect(useAuthActions().sendPasswordReset).not.toHaveBeenCalled()
     })
   })
 
@@ -147,10 +113,12 @@ describe('SignInForm', () => {
 
   describe('Loading State', () => {
     it('shows spinner when loading', () => {
-      mockLoadingRef.value = true
+      useAuthStore().loading = true
       renderComponent()
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+      expect(
+        screen.getByRole('progressbar', { name: 'Loading' })
+      ).toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: loginButtonText })
       ).not.toBeInTheDocument()
@@ -193,7 +161,9 @@ describe('SignInForm', () => {
       await user.type(getEmailInput(), 'test@example.com')
       await user.click(screen.getByText(forgotPasswordText))
 
-      expect(mockSendPasswordReset).toHaveBeenCalledWith('test@example.com')
+      expect(useAuthActions().sendPasswordReset).toHaveBeenCalledWith(
+        'test@example.com'
+      )
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })

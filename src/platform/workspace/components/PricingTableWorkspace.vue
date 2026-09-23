@@ -126,14 +126,14 @@
           <div class="flex flex-1 flex-col gap-3 pb-0">
             <div class="flex flex-row items-center justify-between">
               <span class="text-foreground text-sm font-normal">
-                {{ t('subscription.monthlyCreditsPerMemberLabel') }}
+                {{ t(creditsPerMemberLabelKey) }}
               </span>
               <div class="flex flex-row items-center gap-1">
-                <i class="icon-[lucide--component] text-sm text-amber-400" />
+                <i class="icon-[lucide--coins] size-4 text-credit" />
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
-                  {{ n(getMonthlyCreditsPerMember(tier)) }}
+                  {{ n(getCreditsPerMember(tier)) }}
                 </span>
               </div>
             </div>
@@ -206,7 +206,7 @@
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground"
                 >
-                  ~{{ n(tier.pricing.videoEstimate) }}
+                  ~{{ n(getVideoEstimateDisplay(tier)) }}
                 </span>
               </div>
             </div>
@@ -263,7 +263,7 @@
           <span class="underline">
             {{ t('subscription.videoEstimateTryTemplate') }}
           </span>
-          <span class="no-underline" v-html="'&rarr;'"></span>
+          <span class="no-underline">→</span>
         </a>
       </div>
     </Popover>
@@ -307,15 +307,18 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
-  TIER_TO_KEY
+  amountForBillingCycle,
+  hasActivePaidPlan,
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
-  SubscriptionTier,
+  RegistrySubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { useCommandStore } from '@/stores/commandStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -337,7 +340,7 @@ interface BillingCycleOption {
 }
 
 interface PricingTierConfig {
-  id: SubscriptionTier
+  id: RegistrySubscriptionTier
   key: CheckoutTierKey
   name: string
   pricing: TierPricing
@@ -348,6 +351,7 @@ interface PricingTierConfig {
 }
 
 const { t, n } = useI18n()
+const commandStore = useCommandStore()
 
 const billingCycleOptions: BillingCycleOption[] = [
   { label: t('subscription.yearly'), value: 'yearly' },
@@ -399,6 +403,14 @@ const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
+const isYearly = computed(() => currentBillingCycle.value === 'yearly')
+
+const creditsPerMemberLabelKey = computed(() =>
+  isYearly.value
+    ? 'subscription.yearlyCreditsPerMemberLabel'
+    : 'subscription.monthlyCreditsPerMemberLabel'
+)
+
 onMounted(() => {
   void fetchPlans()
 })
@@ -422,7 +434,7 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
 }
 
 const currentTierKey = computed<TierKey | null>(() =>
-  subscription.value?.tier ? TIER_TO_KEY[subscription.value.tier] : null
+  subscription.value?.tier ? toTierKey(subscription.value.tier) : null
 )
 
 const isYearlySubscription = computed(
@@ -463,7 +475,7 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
       : t('subscription.currentPlan')
   }
 
-  return currentTierKey.value
+  return hasActivePaidPlan(subscription.value?.tier)
     ? t('subscription.changeTo', { plan: planName })
     : t('subscription.subscribeTo', { plan: planName })
 }
@@ -513,8 +525,15 @@ const maxMembersByTier = computed(
     >
 )
 
-const getMonthlyCreditsPerMember = (tier: PricingTierConfig): number =>
-  tier.pricing.credits
+const getCreditsPerMember = (tier: PricingTierConfig): number =>
+  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits_cents ??
+  amountForBillingCycle(tier.pricing.credits, isYearly.value)
+
+const getVideoEstimateDisplay = (tier: PricingTierConfig): number =>
+  Math.round(
+    getCreditsPerMember(tier) *
+      (tier.pricing.videoEstimate / tier.pricing.credits)
+  )
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
   if (isLoading) return
@@ -533,11 +552,11 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
   })
 }
 
-function handleContactUs() {
-  window.open('https://www.comfy.org/discord', '_blank')
+async function handleContactUs() {
+  await commandStore.execute('Comfy.ContactSupport')
 }
 
 function handleViewEnterprise() {
-  window.open('https://www.comfy.org/enterprise', '_blank')
+  window.open('https://comfy.org/cloud/enterprise/', '_blank')
 }
 </script>

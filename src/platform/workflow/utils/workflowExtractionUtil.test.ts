@@ -1,17 +1,18 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-vi.mock('@/services/jobOutputCache', () => ({
+vi.mock(import('@/services/jobOutputCache'), () => ({
   getJobWorkflow: vi.fn()
 }))
-vi.mock('@/platform/assets/utils/assetUrlUtil', () => ({
+vi.mock(import('@/platform/assets/utils/assetUrlUtil'), () => ({
   getAssetUrl: vi.fn()
 }))
-vi.mock('@/scripts/metadata/parser', () => ({
+vi.mock(import('@/scripts/metadata/parser'), () => ({
   getWorkflowDataFromFile: vi.fn()
 }))
-vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
+vi.mock(import('@/platform/assets/schemas/assetMetadataSchema'), () => ({
   getOutputAssetMetadata: vi.fn()
 }))
 
@@ -27,12 +28,12 @@ import {
 } from './workflowExtractionUtil'
 
 function makeAsset(overrides: Partial<AssetItem> = {}): AssetItem {
-  return {
+  return fromPartial({
     id: 'asset-1',
     name: 'image.png',
     tags: [],
     ...overrides
-  }
+  })
 }
 
 const jobMetadata = { jobId: 'job-42', nodeId: 0, subfolder: '' }
@@ -48,11 +49,6 @@ describe('extractWorkflowFromAsset', () => {
   beforeEach(() => {
     vi.mocked(getOutputAssetMetadata).mockReturnValue(null)
     vi.mocked(getAssetUrl).mockReturnValue('http://test/asset.png')
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-    vi.resetAllMocks()
   })
 
   it('routes output assets through the jobs API', async () => {

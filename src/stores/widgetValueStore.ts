@@ -1,148 +1,616 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { UUID } from '@/utils/uuid'
-import { parseWidgetId } from '@/types/widgetId'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import {
+  isWidgetId,
+  parseWidgetId,
+  widgetId as createWidgetId
+} from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
-import type {
-  WidgetControlState,
-  WidgetState,
-  WidgetStateInit
-} from '@/types/widgetState'
+import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+import {
+  applyLegacyHiddenWrite,
+  deriveWidgetVisibility,
+  setWidgetAdvanced,
+  setWidgetHiddenInPanel
+} from '@/types/widgetVisibility'
+import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
-export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
-  return String(scopedId).replace(/^(.*:)+/, '') as NodeId
+export interface WidgetRenderState {
+  hasLayoutSize?: boolean
+  isDOMWidget?: boolean
+  tooltip?: string
+}
+
+interface WidgetRestorationState {
+  positional: readonly WidgetValue[]
+  named?: Readonly<Record<string, WidgetValue>>
+  restoreNamed: boolean
+}
+
+interface WidgetEntity {
+  state: WidgetState
+  render: WidgetRenderState
+  visibility: WidgetVisibilityComponent
+}
+
+interface WidgetValueChange {
+  widgetId: WidgetId
+  value: WidgetValue
+  oldValue: WidgetValue
+  context?: RemoteMutationContext
+}
+
+function setNodeScoped<T>(
+  graphMap: Map<UUID, Map<NodeId, T>>,
+  graphId: UUID,
+  nodeId: NodeId,
+  value: T
+): void {
+  let nodeMap = graphMap.get(graphId)
+  if (!nodeMap) {
+    nodeMap = new Map()
+    graphMap.set(graphId, nodeMap)
+  }
+  nodeMap.set(nodeId, value)
+}
+
+function clearNodeScoped<T>(
+  graphMap: Map<UUID, Map<NodeId, T>>,
+  graphId: UUID,
+  nodeId: NodeId
+): void {
+  const nodeMap = graphMap.get(graphId)
+  if (!nodeMap) return
+  nodeMap.delete(nodeId)
+  if (nodeMap.size === 0) graphMap.delete(graphId)
+}
+
+export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
+  return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
-  const graphWidgetStates = ref(new Map<UUID, Map<WidgetId, WidgetState>>())
-  const graphWidgetControls = ref(
-    new Map<UUID, Map<WidgetId, WidgetControlState>>()
-  )
+  const graphWidgets = ref(new Map<UUID, Map<WidgetId, WidgetEntity>>())
+  const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
+  const graphWidgetRestorations = new Map<
+    UUID,
+    Map<NodeId, WidgetRestorationState>
+  >()
 
-  function getGraphWidgetStates(graphId: UUID): Map<WidgetId, WidgetState> {
-    const widgetStates = graphWidgetStates.value.get(graphId)
-    if (widgetStates) return widgetStates
+  const valueChangeListeners = new Set<(change: WidgetValueChange) => void>()
+  const valueMutationContexts = new WeakMap<
+    WidgetState,
+    RemoteMutationContext
+  >()
 
-    const nextWidgetStates = reactive(new Map<WidgetId, WidgetState>())
-    graphWidgetStates.value.set(graphId, nextWidgetStates)
-    return nextWidgetStates
-  }
+  /**
+   * Widgets whose value last changed without a `RemoteMutationContext` -
+   * a human edit, or any other write that bypassed `setValue`'s context
+   * param. A CRDT catch-up reconcile reads its doc snapshot on its own
+   * schedule and must not replay a value over one of these: the snapshot
+   * predates the edit by definition, and clobbering it silently discards
+   * work in progress (PM-1303/PM-1310 "hypothesis C"). `setValue` clears an
+   * id once its own context-carrying write lands, whether or not that write
+   * changes the value.
+   */
+  const locallyDirtyWidgets = new Set<WidgetId>()
 
-  function getGraphWidgetControls(
+  /**
+   * Depth counter for {@link withLocalDirtyTrackingSuppressed} and the
+   * {@link beginLocalDirtyTrackingSuppression}/
+   * {@link endLocalDirtyTrackingSuppression} pair. A context-less write made
+   * while this is above zero is a structural replay - e.g.
+   * `agentNodeMaterializer`'s `node.configure()` catch-up (which legitimately
+   * re-applies a stale positional snapshot before immediately correcting it),
+   * or any workflow load's `LGraphNode.configure()` re-applying a tab's own
+   * locally-saved (possibly pre-edit) snapshot onto widgets already aliased
+   * to newer canonical state - rather than a human edit, so it must not arm
+   * the one-shot stale-reconcile guard.
+   */
+  let dirtyTrackingSuppressed = 0
+
+  function observeValue<TValue extends WidgetValue>(
+    state: WidgetState<TValue>,
     graphId: UUID
-  ): Map<WidgetId, WidgetControlState> {
-    const controls = graphWidgetControls.value.get(graphId)
-    if (controls) return controls
-
-    const nextControls = reactive(new Map<WidgetId, WidgetControlState>())
-    graphWidgetControls.value.set(graphId, nextControls)
-    return nextControls
+  ): void {
+    let value = state.value
+    Object.defineProperty(state, 'value', {
+      configurable: true,
+      enumerable: true,
+      get: () => value,
+      set: (nextValue: TValue) => {
+        if (Object.is(value, nextValue)) return
+        const oldValue = value
+        value = nextValue
+        const widgetId = createWidgetId(graphId, state.nodeId, state.name)
+        if (getWidget(widgetId) !== state) return
+        const context = valueMutationContexts.get(state)
+        valueMutationContexts.delete(state)
+        if (!context && dirtyTrackingSuppressed === 0) {
+          locallyDirtyWidgets.add(widgetId)
+        }
+        for (const listener of valueChangeListeners) {
+          listener({ widgetId, value, oldValue, context })
+        }
+      }
+    })
   }
 
-  function registerWidget<TValue = unknown>(
-    widgetId: WidgetId,
-    init: WidgetStateInit<TValue>
-  ): WidgetState<TValue> {
-    const existing = getWidget(widgetId)
-    if (existing) return existing as WidgetState<TValue>
+  /**
+   * Runs `fn` with local-dirty tracking suppressed: every context-less write
+   * inside it is treated as a structural adapter replay, never as a human
+   * edit that needs {@link isLocallyDirty} protection. Reentrant-safe.
+   */
+  function withLocalDirtyTrackingSuppressed<T>(fn: () => T): T {
+    beginLocalDirtyTrackingSuppression()
+    try {
+      return fn()
+    } finally {
+      endLocalDirtyTrackingSuppression()
+    }
+  }
 
-    const { graphId, nodeId, name } = parseWidgetId(widgetId)
-    const state: WidgetState<TValue> = {
+  /**
+   * Opens a local-dirty-tracking-suppressed window without a matching
+   * synchronous callback, for a caller that must pair with
+   * {@link endLocalDirtyTrackingSuppression} across an async boundary (e.g.
+   * an extension's `beforeLoadGraph`/`afterConfigureGraph` hooks around a
+   * workflow load). Reentrant: nests with any other suppression in effect.
+   */
+  function beginLocalDirtyTrackingSuppression(): void {
+    dirtyTrackingSuppressed++
+  }
+
+  /** Closes one suppression opened by {@link beginLocalDirtyTrackingSuppression}. */
+  function endLocalDirtyTrackingSuppression(): void {
+    dirtyTrackingSuppressed = Math.max(0, dirtyTrackingSuppressed - 1)
+  }
+
+  function onValueChange(
+    listener: (change: WidgetValueChange) => void
+  ): () => void {
+    valueChangeListeners.add(listener)
+    return () => valueChangeListeners.delete(listener)
+  }
+
+  function setNodeWidgetRestoration(
+    graphId: UUID,
+    nodeId: NodeId,
+    restoration: WidgetRestorationState
+  ): void {
+    setNodeScoped(graphWidgetRestorations, graphId, nodeId, restoration)
+  }
+
+  function getRestoredWidgetValue(
+    graphId: UUID,
+    nodeId: NodeId,
+    name: string,
+    positionalIndex: number
+  ): { value: WidgetValue } | undefined {
+    const restoration = graphWidgetRestorations.get(graphId)?.get(nodeId)
+    if (!restoration) return
+    if (restoration.restoreNamed && restoration.named) {
+      return Object.hasOwn(restoration.named, name)
+        ? { value: restoration.named[name] }
+        : undefined
+    }
+    return positionalIndex < restoration.positional.length
+      ? { value: restoration.positional[positionalIndex] }
+      : undefined
+  }
+
+  function clearNodeWidgetRestoration(graphId: UUID, nodeId: NodeId): void {
+    clearNodeScoped(graphWidgetRestorations, graphId, nodeId)
+  }
+
+  function getGraphWidgets(graphId: UUID): Map<WidgetId, WidgetEntity> {
+    const widgets = graphWidgets.value.get(graphId)
+    if (widgets) return widgets
+
+    const nextWidgets = reactive(new Map<WidgetId, WidgetEntity>())
+    graphWidgets.value.set(graphId, nextWidgets)
+    return nextWidgets
+  }
+
+  function findGraphWidgets(
+    graphId: UUID
+  ): Map<WidgetId, WidgetEntity> | undefined {
+    return graphWidgets.value.get(graphId)
+  }
+
+  function getGraphNodeWidgetOrders(graphId: UUID): Map<NodeId, WidgetId[]> {
+    const widgetOrders = graphNodeWidgetOrders.value.get(graphId)
+    if (widgetOrders) return widgetOrders
+
+    const nextWidgetOrders = reactive(new Map<NodeId, WidgetId[]>())
+    graphNodeWidgetOrders.value.set(graphId, nextWidgetOrders)
+    return nextWidgetOrders
+  }
+
+  function getNodeWidgetOrder(graphId: UUID, nodeId: NodeId): WidgetId[] {
+    const graphOrders = getGraphNodeWidgetOrders(graphId)
+    const order = graphOrders.get(nodeId)
+    if (order) return order
+
+    const nextOrder = reactive<WidgetId[]>([])
+    graphOrders.set(nodeId, nextOrder)
+    return nextOrder
+  }
+
+  function appendNodeWidgetOrder(widgetId: WidgetId): void {
+    const { graphId, nodeId } = parseWidgetId(widgetId)
+    const order = getNodeWidgetOrder(graphId, nodeId)
+    if (!order.includes(widgetId)) order.push(widgetId)
+  }
+
+  function removeNodeWidgetOrder(widgetId: WidgetId): void {
+    const { graphId, nodeId } = parseWidgetId(widgetId)
+    const graphOrders = graphNodeWidgetOrders.value.get(graphId)
+    if (!graphOrders) return
+    const order = graphOrders.get(nodeId)
+    if (!order) return
+
+    const index = order.indexOf(widgetId)
+    if (index !== -1) order.splice(index, 1)
+    if (order.length === 0) graphOrders.delete(nodeId)
+  }
+
+  /**
+   * @returns The existing state for the same widget type, replacement state
+   * for a different type, or `undefined` for an invalid widget ID.
+   */
+  function registerWidget<
+    TValue extends WidgetValue = WidgetValue,
+    TType extends string = string,
+    TOptions extends IWidgetOptions = IWidgetOptions
+  >(
+    widgetId: WidgetId,
+    init: WidgetStateInit<TValue, TType, TOptions>,
+    renderState?: WidgetRenderState,
+    visibility?: WidgetVisibilityComponent,
+    context?: RemoteMutationContext
+  ): WidgetState<TValue, TType, TOptions> | undefined
+  function registerWidget(
+    widgetId: WidgetId,
+    init: WidgetStateInit,
+    renderState: WidgetRenderState = {},
+    visibility: WidgetVisibilityComponent = deriveWidgetVisibility({
+      type: init.type,
+      options: init.options
+    }),
+    _context?: RemoteMutationContext
+  ): WidgetState | undefined {
+    if (!isWidgetId(widgetId)) {
+      console.warn(
+        'widgetValueStore.registerWidget: ignoring un-keyable widget id',
+        widgetId
+      )
+      return undefined
+    }
+
+    const { graphId, nodeId, name: storageName } = parseWidgetId(widgetId)
+    const widgets = getGraphWidgets(graphId)
+    const existing = widgets.get(widgetId)
+    // WidgetId is `graphId:nodeId:name`. A node replacement can reuse the same
+    // numeric nodeId, so a stale entry from the previous occupant may survive in
+    // the store under the same key. The type check distinguishes a live
+    // re-registration (same widget, keep its value) from a recycled key (new
+    // widget type at an old address, overwrite). Without it a text widget
+    // rendered as the prior int type until the next full reload (#13073, #13773).
+    if (existing && existing.state.type === init.type) {
+      const value = existing.state.value
+      Object.assign(existing.state, init, {
+        name: init.name ?? storageName,
+        nodeId,
+        value,
+        y: init.y ?? existing.state.y
+      })
+      Object.assign(existing.render, renderState)
+      Object.assign(existing.visibility.surfaces, visibility.surfaces)
+      existing.visibility.suppression.byExtension =
+        visibility.suppression.byExtension
+      appendNodeWidgetOrder(widgetId)
+      return existing.state
+    }
+
+    const state: WidgetState = {
       ...init,
       nodeId,
-      name,
+      name: init.name ?? storageName,
       y: init.y ?? 0
     }
-    const widgetStates = getGraphWidgetStates(graphId)
-    widgetStates.set(widgetId, state)
-    return widgetStates.get(widgetId) as WidgetState<TValue>
+    widgets.set(widgetId, {
+      state,
+      render: { ...renderState },
+      visibility: {
+        surfaces: { ...visibility.surfaces },
+        suppression: { ...visibility.suppression }
+      }
+    })
+    appendNodeWidgetOrder(widgetId)
+    const registered = widgets.get(widgetId)?.state
+    if (registered) observeValue(registered, graphId)
+    return registered
   }
 
   function getWidget(widgetId: WidgetId): WidgetState | undefined {
+    if (!isWidgetId(widgetId)) return undefined
+
     const { graphId } = parseWidgetId(widgetId)
-    return getGraphWidgetStates(graphId).get(widgetId)
+    return graphWidgets.value.get(graphId)?.get(widgetId)?.state
   }
 
-  function setValue(widgetId: WidgetId, value: WidgetState['value']): boolean {
+  function getWidgetRenderState(
+    widgetId: WidgetId
+  ): WidgetRenderState | undefined {
+    if (!isWidgetId(widgetId)) return undefined
+
+    const { graphId } = parseWidgetId(widgetId)
+    return graphWidgets.value.get(graphId)?.get(widgetId)?.render
+  }
+
+  function getWidgetVisibility(
+    widgetId: WidgetId
+  ): WidgetVisibilityComponent | undefined {
+    if (!isWidgetId(widgetId)) return undefined
+
+    const { graphId } = parseWidgetId(widgetId)
+    return graphWidgets.value.get(graphId)?.get(widgetId)?.visibility
+  }
+
+  function setValue(
+    widgetId: WidgetId,
+    value: WidgetState['value'],
+    context?: RemoteMutationContext
+  ): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
-    state.value = value
+    if (context) valueMutationContexts.set(state, context)
+    try {
+      state.value = value
+    } finally {
+      valueMutationContexts.delete(state)
+    }
+    // Setting the same value `state.value` already holds short-circuits
+    // `observeValue`'s setter before it can clear the id, so clear it here
+    // too: this write is still an authoritative context-carrying one.
+    if (context) locallyDirtyWidgets.delete(widgetId)
+    return true
+  }
+
+  /**
+   * Whether `widgetId`'s live value was last set without a
+   * `RemoteMutationContext`, i.e. a local edit a doc snapshot reconcile has
+   * not yet reflected. See {@link locallyDirtyWidgets}.
+   */
+  function isLocallyDirty(widgetId: WidgetId): boolean {
+    return locallyDirtyWidgets.has(widgetId)
+  }
+
+  function setLabel(widgetId: WidgetId, label: string): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    state.label = label
+    return true
+  }
+
+  function updateOptions(
+    widgetId: WidgetId,
+    options: Partial<WidgetState['options']>
+  ): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    const visibility = getWidgetVisibility(widgetId)
+    if (visibility) {
+      if (options.hidden !== undefined) {
+        applyLegacyHiddenWrite(visibility, options.hidden)
+      }
+      if (options.hideInPanel !== undefined) {
+        setWidgetHiddenInPanel(visibility, options.hideInPanel)
+      }
+      if (options.advanced !== undefined) {
+        setWidgetAdvanced(visibility, options.advanced, ['vueNode', 'panel'])
+      }
+    }
+    state.options = { ...state.options, ...options }
     return true
   }
 
   function deleteWidget(widgetId: WidgetId): boolean {
+    if (!isWidgetId(widgetId)) return false
+
     const { graphId } = parseWidgetId(widgetId)
-    deleteWidgetControl(widgetId)
-    return getGraphWidgetStates(graphId).delete(widgetId)
+    removeNodeWidgetOrder(widgetId)
+    locallyDirtyWidgets.delete(widgetId)
+    return graphWidgets.value.get(graphId)?.delete(widgetId) ?? false
   }
 
-  function registerWidgetControl(
-    targetId: WidgetId,
-    init: Omit<WidgetControlState, 'hasExecuted'>
-  ): WidgetControlState {
-    const { graphId } = parseWidgetId(targetId)
-    const controls = getGraphWidgetControls(graphId)
-    const existing = controls.get(targetId)
-    if (existing) return existing
+  function renameWidget(
+    oldId: WidgetId,
+    newId: WidgetId
+  ): WidgetState | undefined {
+    if (!isWidgetId(oldId) || !isWidgetId(newId)) return undefined
+    if (oldId === newId) return getWidget(oldId)
 
-    const state: WidgetControlState = { ...init, hasExecuted: false }
-    controls.set(targetId, state)
-    return controls.get(targetId) as WidgetControlState
+    const previous = parseWidgetId(oldId)
+    const next = parseWidgetId(newId)
+    if (previous.graphId !== next.graphId || previous.nodeId !== next.nodeId) {
+      return undefined
+    }
+
+    const { graphId, nodeId, name } = next
+    const widgets = findGraphWidgets(graphId)
+    if (!widgets) return undefined
+    const entity = widgets.get(oldId)
+    if (!entity || widgets.has(newId)) return undefined
+
+    const order = graphNodeWidgetOrders.value.get(graphId)?.get(nodeId)
+    if (!order) return undefined
+    const index = order.indexOf(oldId)
+
+    widgets.delete(oldId)
+    entity.state.name = name
+    widgets.set(newId, entity)
+    if (index === -1) order.push(newId)
+    else order.splice(index, 1, newId)
+
+    return entity.state
   }
 
-  function getWidgetControls(graphId: UUID): [WidgetId, WidgetControlState][] {
-    return [...getGraphWidgetControls(graphId).entries()]
+  function getNodeWidgets(graphId: UUID, localNodeId: NodeId): WidgetState[] {
+    return getNodeWidgetIds(graphId, localNodeId).flatMap((id) => {
+      const state = getWidget(id)
+      return state ? [state] : []
+    })
   }
 
-  function getWidgetControl(
-    targetId: WidgetId
-  ): WidgetControlState | undefined {
-    const { graphId } = parseWidgetId(targetId)
-    return getGraphWidgetControls(graphId).get(targetId)
+  /**
+   * Merges a requested widget order against the ids already tracked for the
+   * node: the request is filtered to tracked ids, then any tracked id the
+   * request omitted is appended. Tracked ids are never dropped here — only
+   * {@link removeNodeWidgetOrder} removes an id from the order.
+   */
+  function reconcileNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): WidgetId[] {
+    const currentOrder = getNodeWidgetIds(graphId, localNodeId)
+    const currentIds = new Set(currentOrder)
+    const nextOrder = orderedWidgetIds.filter((id) => currentIds.has(id))
+    const nextIds = new Set(nextOrder)
+    return [...nextOrder, ...currentOrder.filter((id) => !nextIds.has(id))]
   }
 
-  function updateWidgetControl(
-    targetId: WidgetId,
-    patch: Partial<WidgetControlState>
-  ): boolean {
-    const control = getWidgetControl(targetId)
-    if (!control) return false
-    if (patch.mode !== undefined) control.mode = patch.mode
-    if (patch.filter !== undefined && control.filter !== undefined)
-      control.filter = patch.filter
-    if (patch.hasExecuted !== undefined) control.hasExecuted = patch.hasExecuted
-    return true
+  function getNodeWidgetIds(graphId: UUID, localNodeId: NodeId): WidgetId[] {
+    return [
+      ...(graphNodeWidgetOrders.value.get(graphId)?.get(localNodeId) ?? [])
+    ]
   }
 
-  function deleteWidgetControl(targetId: WidgetId): boolean {
-    const { graphId } = parseWidgetId(targetId)
-    return getGraphWidgetControls(graphId).delete(targetId)
-  }
-
-  function getNodeWidgets(graphId: UUID, nodeId: NodeId): WidgetState[] {
-    return [...getGraphWidgetStates(graphId).values()].filter(
-      (state) => String(state.nodeId) === String(nodeId)
+  function setNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): void {
+    const nextOrder = reconcileNodeWidgetOrder(
+      graphId,
+      localNodeId,
+      orderedWidgetIds
     )
+    const order = getNodeWidgetOrder(graphId, localNodeId)
+    order.splice(0, order.length, ...nextOrder)
+  }
+
+  function replaceNodeWidgetOrder(
+    graphId: UUID,
+    localNodeId: NodeId,
+    orderedWidgetIds: readonly WidgetId[]
+  ): void {
+    const widgets = findGraphWidgets(graphId)
+    const nextOrder = orderedWidgetIds.filter(
+      (id) => widgets?.get(id)?.state.nodeId === localNodeId
+    )
+    const graphOrders = getGraphNodeWidgetOrders(graphId)
+    const order = graphOrders.get(localNodeId)
+
+    if (nextOrder.length === 0) {
+      graphOrders.delete(localNodeId)
+    } else if (order) {
+      order.splice(0, order.length, ...nextOrder)
+    } else {
+      graphOrders.set(localNodeId, reactive([...nextOrder]))
+    }
+  }
+
+  /**
+   * Releases the widget ids tracked for a node, from the store's own record
+   * rather than the node's live widget list — the two diverge once a node drops
+   * widgets without unregistering them. `discardValues` also drops the widget
+   * states; retaining them lets a node that comes back keep what the user set.
+   */
+  function releaseNodeWidgets(
+    graphId: UUID,
+    localNodeId: NodeId,
+    { discardValues }: { discardValues: boolean }
+  ): void {
+    const graphOrders = graphNodeWidgetOrders.value.get(graphId)
+    if (!graphOrders) return
+
+    const order = graphOrders.get(localNodeId)
+    if (!order) return
+
+    if (discardValues) {
+      for (const widgetId of order) {
+        graphWidgets.value.get(graphId)?.delete(widgetId)
+        locallyDirtyWidgets.delete(widgetId)
+      }
+    }
+    graphOrders.delete(localNodeId)
+  }
+
+  function clearNode(
+    graphId: UUID,
+    nodeId: NodeId,
+    _context?: RemoteMutationContext
+  ): void {
+    graphWidgetRestorations.get(graphId)?.delete(nodeId)
+    const widgets = graphWidgets.value.get(graphId)
+    if (widgets) {
+      for (const [id, entity] of widgets) {
+        if (entity.state.nodeId !== nodeId) continue
+        widgets.delete(id)
+        locallyDirtyWidgets.delete(id)
+      }
+      if (widgets.size === 0) graphWidgets.value.delete(graphId)
+    }
+
+    const widgetOrders = graphNodeWidgetOrders.value.get(graphId)
+    widgetOrders?.delete(nodeId)
+    if (widgetOrders?.size === 0) graphNodeWidgetOrders.value.delete(graphId)
   }
 
   function clearGraph(graphId: UUID): void {
-    graphWidgetStates.value.delete(graphId)
-    graphWidgetControls.value.delete(graphId)
+    for (const id of graphWidgets.value.get(graphId)?.keys() ?? []) {
+      locallyDirtyWidgets.delete(id)
+    }
+    graphWidgets.value.delete(graphId)
+    graphNodeWidgetOrders.value.delete(graphId)
+    graphWidgetRestorations.delete(graphId)
   }
 
   return {
     registerWidget,
+    setNodeWidgetRestoration,
+    clearNodeWidgetRestoration,
+    getRestoredWidgetValue,
     getWidget,
+    getWidgetRenderState,
+    getWidgetVisibility,
+    onValueChange,
     setValue,
+    isLocallyDirty,
+    withLocalDirtyTrackingSuppressed,
+    beginLocalDirtyTrackingSuppression,
+    endLocalDirtyTrackingSuppression,
+    setLabel,
+    updateOptions,
     deleteWidget,
-    registerWidgetControl,
-    getWidgetControls,
-    getWidgetControl,
-    updateWidgetControl,
-    deleteWidgetControl,
+    renameWidget,
     getNodeWidgets,
+    getNodeWidgetIds,
+    setNodeWidgetOrder,
+    replaceNodeWidgetOrder,
+    removeNodeWidgetOrder,
+    releaseNodeWidgets,
+    clearNode,
     clearGraph
   }
 })

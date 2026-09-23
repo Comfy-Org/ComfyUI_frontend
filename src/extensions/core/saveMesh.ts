@@ -10,7 +10,7 @@ import type {
   NodeExecutionOutput,
   NodeOutputWith,
   ResultItem
-} from '@/schemas/apiSchema'
+} from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 type SaveMeshOutput = NodeOutputWith<{
@@ -54,7 +54,6 @@ function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {
   node.properties['Last Time Model Folder'] = loadFolder
 
   useLoad3d(node).waitForLoad3d((load3d) => {
-    if (!load3d) return
     const config = new Load3DConfiguration(load3d, node.properties)
     config.configureForSaveMesh(loadFolder, filePath, {
       silentOnNotFound: true
@@ -107,7 +106,7 @@ useExtensionService().registerExtension({
           name: inputSpec.name,
           component: Load3D,
           inputSpec,
-          options: {}
+          options: { hideInPanel: true }
         })
 
         widget.type = 'load3D'
@@ -141,8 +140,6 @@ useExtensionService().registerExtension({
     await nextTick()
 
     useLoad3d(node).onLoad3dReady((load3d) => {
-      if (!load3d) return
-
       const modelWidget = node.widgets?.find((w) => w.name === 'image')
       if (!modelWidget) return
 
@@ -177,7 +174,7 @@ useExtensionService().registerExtension({
       useLoad3d(node).waitForLoad3d((load3d) => {
         const modelWidget = node.widgets?.find((w) => w.name === 'image')
 
-        if (load3d && modelWidget) {
+        if (modelWidget) {
           const filePath =
             (fileInfo.subfolder ?? '') + '/' + (fileInfo.filename ?? '')
 

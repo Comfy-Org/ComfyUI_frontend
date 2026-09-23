@@ -1,34 +1,45 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
-import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import type { MockInstance } from 'vitest'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
+import { api } from '@/scripts/api'
+import type { components } from '@/types/comfyRegistryTypes'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { ImportFailedKey } from '@/workbench/extensions/manager/types/importFailedTypes'
 
 import PackVersionSelectorPopover from './PackVersionSelectorPopover.vue'
 
 // Default mock versions for reference
-const defaultMockVersions = [
+const defaultMockVersions: components['schemas']['NodeVersion'][] = [
   {
     version: '1.0.0',
+    status: 'NodeVersionStatusActive',
     createdAt: '2023-01-01',
     supported_os: ['windows', 'linux'],
     supported_accelerators: ['CPU'],
     supported_comfyui_version: '>=0.1.0',
-    supported_comfyui_frontend_version: '>=1.0.0',
-    supported_python_version: '>=3.8',
-    is_banned: false,
-    has_registry_data: true
+    supported_comfyui_frontend_version: '>=1.0.0'
   },
-  { version: '0.9.0', createdAt: '2022-12-01' },
-  { version: '0.8.0', createdAt: '2022-11-01' }
+  {
+    version: '0.9.0',
+    status: 'NodeVersionStatusActive',
+    createdAt: '2022-12-01'
+  },
+  {
+    version: '0.8.0',
+    status: 'NodeVersionStatusActive',
+    createdAt: '2022-11-01'
+  }
 ]
 
 const mockNodePack = {
@@ -50,33 +61,24 @@ const mockNodePack = {
 
 // Create mock functions
 const mockGetPackVersions = vi.fn()
-const mockInstallPack = vi.fn().mockResolvedValue(undefined)
+const mockRegistryError = ref<string | null>(null)
+let mockInstallPack: MockInstance<
+  ReturnType<typeof useComfyManagerStore>['installPack']['call']
+>
 const mockCheckNodeCompatibility = vi.fn()
-const mockIsPackInstalled = vi.fn(() => false)
-const mockGetInstalledPackVersion = vi.fn(() => undefined)
 
 // Mock the registry service
-vi.mock('@/services/comfyRegistryService', () => ({
+vi.mock<unknown>(import('@/services/comfyRegistryService'), () => ({
   useComfyRegistryService: vi.fn(() => ({
-    getPackVersions: mockGetPackVersions
-  }))
-}))
-
-// Mock the manager store
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn(() => ({
-    installPack: {
-      call: mockInstallPack,
-      clear: vi.fn()
-    },
-    isPackInstalled: mockIsPackInstalled,
-    getInstalledPackVersion: mockGetInstalledPackVersion
+    getPackVersions: mockGetPackVersions,
+    error: mockRegistryError
   }))
 }))
 
 // Mock the conflict detection composable
-vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictDetection',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useConflictDetection'),
+
   () => ({
     useConflictDetection: vi.fn(() => ({
       checkNodeCompatibility: mockCheckNodeCompatibility
@@ -91,22 +93,30 @@ const waitForPromises = async () => {
 
 describe('PackVersionSelectorPopover', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockGetPackVersions.mockReset()
+    mockRegistryError.value = null
+    vi.spyOn(api, 'getSystemStats').mockResolvedValue(
+      fromPartial({ system: { os: 'linux', argv: [] }, devices: [] })
+    )
+    const store = useComfyManagerStore()
+    vi.mocked(store.getInstalledPackVersion).mockReturnValue('')
+    mockInstallPack = vi.spyOn(store.installPack, 'call')
     mockInstallPack.mockReset().mockResolvedValue(undefined)
     mockCheckNodeCompatibility
       .mockReset()
       .mockReturnValue({ hasConflict: false, conflicts: [] })
-    mockIsPackInstalled.mockReset().mockReturnValue(false)
-    mockGetInstalledPackVersion.mockReset().mockReturnValue(undefined)
+    vi.mocked(useComfyManagerStore().isPackInstalled)
+      .mockReset()
+      .mockReturnValue(false)
   })
 
   function renderComponent({
     props = {},
+    importFailed = false,
     onCancel,
     onSubmit
   }: {
     props?: Record<string, unknown>
+    importFailed?: boolean
     onCancel?: () => void
     onSubmit?: () => void
   } = {}) {
@@ -124,13 +134,97 @@ describe('PackVersionSelectorPopover', () => {
         ...(onSubmit ? { onSubmit } : {})
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n],
+        provide: {
+          [ImportFailedKey]: {
+            importFailed: computed(() => importFailed),
+            showImportFailedDialog: vi.fn()
+          }
+        },
+        plugins: [PrimeVue, i18n],
         components: { Listbox, VerifiedIcon, Select },
         directives: { tooltip: Tooltip }
       }
     })
     return { ...result, user }
   }
+
+  it.for([
+    {
+      name: 'only Flagged releases',
+      versions: [{ version: '1.0.0', status: 'NodeVersionStatusFlagged' }],
+      error: null,
+      label: 'Latest stable',
+      message:
+        'This pack has no Active releases. Select a Flagged release to request installation, subject to Manager security settings.'
+    },
+    {
+      name: 'an empty version list',
+      versions: [],
+      error: null,
+      label: 'Latest',
+      message: 'This pack has no Active releases.'
+    },
+    {
+      name: 'a failed version lookup',
+      versions: null,
+      error: 'Failed to get pack versions',
+      label: 'Latest',
+      message: 'Versions could not be loaded. Close this picker and try again.'
+    }
+  ] satisfies {
+    name: string
+    versions: components['schemas']['NodeVersion'][] | null
+    error: string | null
+    label: string
+    message: string
+  }[])(
+    'disables the Active default with $name while allowing Nightly',
+    async ({ versions, error, label, message }) => {
+      mockRegistryError.value = error
+      mockGetPackVersions.mockResolvedValueOnce(versions)
+      const { user } = renderComponent()
+      const latest = await screen.findByRole('option', {
+        name: label
+      })
+      expect(latest).toHaveAttribute('aria-disabled', 'true')
+      expect(screen.getByText(message)).toBeVisible()
+      expect(screen.getByRole('button', { name: 'Install' })).toBeDisabled()
+      await user.click(screen.getByRole('option', { name: 'Nightly' }))
+      await user.click(screen.getByRole('button', { name: 'Install' }))
+      expect(mockInstallPack).toHaveBeenCalledWith(
+        expect.objectContaining({
+          version: 'nightly',
+          selected_version: 'nightly'
+        })
+      )
+    }
+  )
+
+  it('allows an explicit Flagged release when neither Latest nor Nightly is available', async () => {
+    mockGetPackVersions.mockResolvedValueOnce([
+      { version: '1.2.0', status: 'NodeVersionStatusFlagged' }
+    ])
+    const { user } = renderComponent({
+      props: {
+        nodePack: { ...mockNodePack, latest_version: undefined, repository: '' }
+      }
+    })
+
+    expect(
+      await screen.findByRole('option', { name: 'Latest stable' })
+    ).toHaveAttribute('aria-disabled', 'true')
+    expect(
+      screen.queryByRole('option', { name: 'Nightly' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Install' })).toBeDisabled()
+
+    await user.click(screen.getByRole('option', { name: /1\.2\.0/ }))
+    expect(screen.getByRole('button', { name: 'Install' })).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: 'Install' }))
+    expect(mockInstallPack).toHaveBeenCalledWith(
+      expect.objectContaining({ version: '1.2.0', selected_version: '1.2.0' })
+    )
+  })
 
   it('fetches versions on mount', async () => {
     mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
@@ -142,12 +236,7 @@ describe('PackVersionSelectorPopover', () => {
   })
 
   it('shows loading state while fetching versions', async () => {
-    mockGetPackVersions.mockImplementationOnce(
-      () =>
-        new Promise((resolve) =>
-          setTimeout(() => resolve(defaultMockVersions), 1000)
-        )
-    )
+    mockGetPackVersions.mockImplementationOnce(() => new Promise(() => {}))
 
     renderComponent()
 
@@ -183,6 +272,169 @@ describe('PackVersionSelectorPopover', () => {
     expect(onCancel).toHaveBeenCalledOnce()
   })
 
+  it.for([
+    {
+      version: '0.9.0',
+      label: '0.9.0',
+      activeLabel: 'Latest (1.0.0)',
+      latestLabels: ['Latest (1.0.0)']
+    },
+    {
+      version: '1.0.0',
+      label: 'Latest (1.0.0)',
+      activeLabel: 'Latest stable (0.9.0)',
+      latestLabels: ['Latest (1.0.0)', 'Latest stable (0.9.0)']
+    }
+  ])(
+    'marks Flagged version $version and keeps it installable',
+    async ({ version, label, activeLabel, latestLabels }) => {
+      const versions: components['schemas']['NodeVersion'][] =
+        defaultMockVersions.map((item) => ({
+          ...item,
+          status:
+            item.version === version
+              ? 'NodeVersionStatusFlagged'
+              : 'NodeVersionStatusActive'
+        }))
+      mockGetPackVersions.mockResolvedValueOnce(versions)
+      const { user } = renderComponent({
+        importFailed: true,
+        props: { nodePack: { ...mockNodePack, latest_version: versions[0] } }
+      })
+
+      const option = await screen.findByRole('option', { name: label })
+      expect(within(option).getByText('Flagged')).toBeVisible()
+      expect(
+        screen
+          .getAllByRole('option', { name: /^Latest/ })
+          .map((item) => item.getAttribute('aria-label'))
+      ).toEqual(latestLabels)
+      expect(
+        within(screen.getByRole('option', { name: activeLabel })).queryByText(
+          'Flagged'
+        )
+      ).not.toBeInTheDocument()
+      expect(
+        within(screen.getByRole('option', { name: 'Nightly' })).queryByText(
+          'Flagged'
+        )
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByText(enMessages.manager.status.importFailed)
+      ).not.toBeInTheDocument()
+
+      await user.click(option)
+      await user.click(screen.getByRole('button', { name: 'Install' }))
+      expect(mockInstallPack).toHaveBeenCalledWith(
+        expect.objectContaining({ version, selected_version: version })
+      )
+    }
+  )
+
+  it('prevents another version install while the pack has a pending task', async () => {
+    mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+    vi.mocked(useComfyManagerStore().isPackInstalling).mockReturnValue(true)
+    const { user } = renderComponent()
+    await user.click(await screen.findByRole('option', { name: '0.9.0' }))
+    const install = screen.getByRole('button', { name: 'Install' })
+    expect(install).toBeDisabled()
+    await user.click(install)
+    expect(mockInstallPack).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { summary: undefined, fetched: 'NodeVersionStatusFlagged', flagged: true },
+    {
+      summary: 'NodeVersionStatusActive',
+      fetched: 'NodeVersionStatusFlagged',
+      flagged: true
+    },
+    {
+      summary: 'NodeVersionStatusFlagged',
+      fetched: 'NodeVersionStatusActive',
+      flagged: false
+    }
+  ] as const)(
+    'uses fetched status $fetched over summary $summary for explicit versions',
+    async ({ summary, fetched, flagged }) => {
+      const versions: components['schemas']['NodeVersion'][] = [
+        { ...defaultMockVersions[0], status: fetched },
+        { version: '0.9.0', status: 'NodeVersionStatusActive' }
+      ]
+      mockGetPackVersions.mockResolvedValueOnce(versions)
+      renderComponent({
+        props: {
+          nodePack: {
+            ...mockNodePack,
+            latest_version: { ...mockNodePack.latest_version, status: summary }
+          }
+        }
+      })
+      const latest = await screen.findByRole('option', {
+        name: flagged ? 'Latest stable (0.9.0)' : 'Latest (1.0.0)'
+      })
+      expect(within(latest).queryByText('Flagged')).not.toBeInTheDocument()
+      expect(latest).toHaveTextContent(flagged ? '0.9.0' : '1.0.0')
+      expect(screen.queryAllByText('Flagged')).toHaveLength(Number(flagged))
+    }
+  )
+
+  it('pins Latest before Latest stable while keeping Active selected by default', async () => {
+    const versions: components['schemas']['NodeVersion'][] = [
+      { version: '0.8.0', status: 'NodeVersionStatusActive' },
+      { version: '1.1.0', status: 'NodeVersionStatusFlagged' },
+      { version: '3.0.0', status: 'NodeVersionStatusBanned' },
+      { version: '1.2.0', status: 'NodeVersionStatusFlagged' },
+      { version: '0.9.0', status: 'NodeVersionStatusActive' }
+    ]
+    mockGetPackVersions.mockResolvedValueOnce(versions)
+    const { user } = renderComponent()
+    const stable = await screen.findByRole('option', {
+      name: 'Latest stable (0.9.0)'
+    })
+    const latest = screen.getByRole('option', { name: 'Latest (1.2.0)' })
+    expect(screen.getAllByRole('option').slice(0, 2)).toEqual([latest, stable])
+    expect(stable).toHaveAttribute('aria-selected', 'true')
+    expect(latest).toHaveAttribute('aria-selected', 'false')
+    expect(within(stable).queryByText('Flagged')).not.toBeInTheDocument()
+    expect(within(latest).getByText('Flagged')).toBeVisible()
+    expect(
+      screen.queryByRole('option', { name: '1.2.0' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('option', { name: '0.9.0' })
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Install' }))
+    expect(mockInstallPack).toHaveBeenCalledWith(
+      expect.objectContaining({
+        version: '0.9.0',
+        selected_version: '0.9.0'
+      })
+    )
+  })
+
+  it.for([
+    { installedVersion: '0.9.0', latestInstalled: true },
+    { installedVersion: '1.0.0', latestInstalled: false }
+  ])(
+    'checks Latest against installed Active version, with $installedVersion installed',
+    async ({ installedVersion, latestInstalled }) => {
+      mockGetPackVersions.mockResolvedValueOnce([
+        { version: '1.0.0', status: 'NodeVersionStatusFlagged' },
+        { version: '0.9.0', status: 'NodeVersionStatusActive' }
+      ])
+      const store = useComfyManagerStore()
+      vi.mocked(store.isPackInstalled).mockReturnValue(true)
+      vi.mocked(store.getInstalledPackVersion).mockReturnValue(installedVersion)
+      renderComponent()
+
+      const latest = await screen.findByRole('option', {
+        name: 'Latest stable (0.9.0)'
+      })
+      expect(latest).toHaveAttribute('aria-disabled', String(latestInstalled))
+    }
+  )
+
   it('calls installPack and emits submit when install button is clicked', async () => {
     mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
     const onSubmit = vi.fn()
@@ -205,6 +457,20 @@ describe('PackVersionSelectorPopover', () => {
     )
 
     expect(onSubmit).toHaveBeenCalledOnce()
+  })
+
+  it('does not queue installation without a pack ID', async () => {
+    mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+    const { user } = renderComponent({
+      props: { nodePack: { ...mockNodePack, id: '' } }
+    })
+    await waitForPromises()
+
+    const installButton = screen.getByRole('button', { name: 'Install' })
+    await user.click(installButton)
+
+    expect(mockInstallPack).not.toHaveBeenCalled()
+    expect(installButton).toBeDisabled()
   })
 
   it('is reactive to nodePack prop changes', async () => {
@@ -464,88 +730,34 @@ describe('PackVersionSelectorPopover', () => {
       expect(warningIcons.length).toBeGreaterThan(0)
     })
 
-    it('shows banned package warnings', async () => {
-      mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
-
-      mockCheckNodeCompatibility.mockImplementation((versionData) => {
-        if (versionData.is_banned === true) {
-          return {
-            hasConflict: true,
-            conflicts: [
-              {
-                type: 'banned',
-                current_value: 'installed',
-                required_value: 'not_banned'
-              }
-            ]
-          }
-        }
-        return { hasConflict: false, conflicts: [] }
-      })
-
-      const bannedNodePack = {
-        ...mockNodePack,
-        is_banned: true,
-        latest_version: {
-          ...mockNodePack.latest_version,
-          is_banned: true
-        }
+    it.for([
+      { status: 'NodeVersionStatusBanned', type: 'banned', label: '1.0.0' },
+      {
+        status: 'NodeVersionStatusPending',
+        type: 'pending',
+        label: 'Latest (1.0.0)'
       }
-
-      const { container } = renderComponent({
-        props: { nodePack: bannedNodePack }
-      })
-      await waitForPromises()
-
-      expect(mockCheckNodeCompatibility).toHaveBeenCalled()
-
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
-      const warningIcons = container.querySelectorAll(
-        '.icon-\\[lucide--triangle-alert\\]'
-      )
-      expect(warningIcons.length).toBeGreaterThan(0)
-    })
-
-    it('shows security pending warnings', async () => {
-      mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
-
-      mockCheckNodeCompatibility.mockImplementation((versionData) => {
-        if (versionData.has_registry_data === false) {
-          return {
-            hasConflict: true,
+    ] as const)(
+      'shows $type warnings from version status',
+      async ({ status, type, label }) => {
+        const versions: components['schemas']['NodeVersion'][] = [
+          { ...defaultMockVersions[0], status }
+        ]
+        mockGetPackVersions.mockResolvedValueOnce(versions)
+        mockCheckNodeCompatibility.mockImplementation(
+          (version: components['schemas']['NodeVersion']) => ({
+            hasConflict: version.status === status,
             conflicts: [
-              {
-                type: 'pending',
-                current_value: 'no_registry_data',
-                required_value: 'registry_data_available'
-              }
+              { type, current_value: status, required_value: 'active' }
             ]
-          }
-        }
-        return { hasConflict: false, conflicts: [] }
-      })
-
-      const securityPendingNodePack = {
-        ...mockNodePack,
-        has_registry_data: false,
-        latest_version: {
-          ...mockNodePack.latest_version,
-          has_registry_data: false
-        }
+          })
+        )
+        renderComponent()
+        const latest = await screen.findByRole('option', { name: label })
+        expect(
+          within(latest).getByRole('img', { name: /banned|pending/i })
+        ).toBeVisible()
       }
-
-      const { container } = renderComponent({
-        props: { nodePack: securityPendingNodePack }
-      })
-      await waitForPromises()
-
-      expect(mockCheckNodeCompatibility).toHaveBeenCalled()
-
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
-      const warningIcons = container.querySelectorAll(
-        '.icon-\\[lucide--triangle-alert\\]'
-      )
-      expect(warningIcons.length).toBeGreaterThan(0)
-    })
+    )
   })
 })

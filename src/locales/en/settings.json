@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Save and restore canvas position and zoom level in workflows"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "Show missing models in the issues tab",
+    "tooltip": "When disabled, model files that are not found are not listed in the issues tab and their nodes are not highlighted."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "Live preview method",
     "tooltip": "Live preview method during image generation. \"default\" uses the server CLI setting.",
@@ -367,8 +371,8 @@
     "tooltip": "The maximum number of tasks added to the queue at one button click"
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "Show errors tab in side panel",
-    "tooltip": "When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance."
+    "name": "Show issues tab in side panel",
+    "tooltip": "When enabled, the Issues tab is displayed in the right side panel to show blocking errors and missing resources that need setup."
   },
   "Comfy_Sidebar_Location": {
     "name": "Sidebar location",
@@ -426,10 +430,6 @@
   "Comfy_Validation_Workflows": {
     "name": "Validate workflows"
   },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "Auto-scale layout (Nodes 2.0)",
-    "tooltip": "Automatically scale node positions when switching to Nodes 2.0 rendering to prevent overlap"
-  },
   "Comfy_VueNodes_Enabled": {
     "name": "Modern Node Design (Nodes 2.0)",
     "tooltip": "Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering."
@@ -459,11 +459,19 @@
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Show confirmation when deleting workflows"
   },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "Restore widget values by name"
+  },
   "Comfy_Workflow_Persist": {
     "name": "Persist workflow state and restore on page (re)load"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Show missing models warning"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Show missing media in the issues tab",
+    "tooltip": "When disabled, input images, videos and audio that are not found are not listed in the issues tab and their nodes are not highlighted."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "Show missing nodes in the issues tab",
+    "tooltip": "When disabled, missing node packs are not listed in the issues tab and their nodes are not highlighted. The workflow still cannot run until they are installed."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Sort node IDs when saving workflow"

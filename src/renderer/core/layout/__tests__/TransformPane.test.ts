@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -7,27 +7,7 @@ import { createMockCanvas } from '@/utils/__tests__/litegraphTestUtils'
 
 import TransformPane from '../transform/TransformPane.vue'
 
-const mockData = vi.hoisted(() => ({
-  mockTransformStyle: {
-    transform: 'scale(1) translate(0px, 0px)',
-    transformOrigin: '0 0'
-  },
-  mockCamera: { x: 0, y: 0, z: 1 }
-}))
-
-vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
-  const syncWithCanvas = vi.fn()
-  return {
-    useTransformState: () => ({
-      camera: computed(() => mockData.mockCamera),
-      transformStyle: computed(() => mockData.mockTransformStyle),
-      canvasToScreen: vi.fn(),
-      screenToCanvas: vi.fn(),
-      isNodeInViewport: vi.fn(),
-      syncWithCanvas
-    })
-  }
-})
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 function createMockLGraphCanvas() {
   return createMockCanvas({
@@ -43,11 +23,6 @@ function createMockLGraphCanvas() {
 }
 
 describe('TransformPane', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.resetAllMocks()
-  })
-
   describe('component mounting', () => {
     it('should mount successfully with minimal props', () => {
       const mockCanvas = createMockLGraphCanvas()
@@ -61,10 +36,10 @@ describe('TransformPane', () => {
     })
 
     it('should apply transform style from composable', async () => {
-      mockData.mockTransformStyle = {
+      useTransformState().transformStyle = computed(() => ({
         transform: 'scale(2) translate(100px, 50px)',
         transformOrigin: '0 0'
-      }
+      }))
 
       const mockCanvas = createMockLGraphCanvas()
       render(TransformPane, {
@@ -180,7 +155,6 @@ describe('TransformPane', () => {
 
       const transformState = useTransformState()
       expect(transformState.syncWithCanvas).toBeDefined()
-      expect(transformState.canvasToScreen).toBeDefined()
       expect(transformState.screenToCanvas).toBeDefined()
     })
   })

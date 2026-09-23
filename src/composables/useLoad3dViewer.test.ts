@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
@@ -11,15 +11,11 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useLoad3dService } from '@/services/load3dService'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/services/load3dService', () => ({
+vi.mock(import('@/services/load3dService'), () => ({
   useLoad3dService: vi.fn()
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn()
-}))
-
-vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
+vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   default: {
     uploadFile: vi.fn(),
     splitFilePath: vi.fn((path: string) => {
@@ -33,21 +29,28 @@ vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: vi.fn((url: string) => `/${url}`)
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key) => key)
 }))
 
-vi.mock('@/extensions/core/load3d/Load3d', () => ({
+const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
+const persistThumbnail = vi.hoisted(() => vi.fn(async () => {}))
+vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
+  isAssetPreviewSupported,
+  persistThumbnail
+}))
+
+vi.mock(import('@/extensions/core/load3d/Load3d'), () => ({
   default: vi.fn()
 }))
 
-vi.mock('@/extensions/core/load3d/createLoad3d', () => ({
+vi.mock(import('@/extensions/core/load3d/createLoad3d'), () => ({
   createLoad3d: vi.fn()
 }))
 
@@ -74,8 +77,6 @@ describe('useLoad3dViewer', () => {
   let mockNode: LGraphNode
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockNode = createMockLGraphNode({
       properties: {
         'Scene Config': {
@@ -124,12 +125,14 @@ describe('useLoad3dViewer', () => {
       forceRender: vi.fn(),
       remove: vi.fn(),
       setTargetSize: vi.fn(),
-      loadModel: vi.fn().mockResolvedValue(undefined),
+      loadModel: vi.fn().mockResolvedValue(true),
+      captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,x'),
       setCameraState: vi.fn(),
       addEventListener: vi.fn(),
       hasAnimations: vi.fn().mockReturnValue(false),
       isSplatModel: vi.fn().mockReturnValue(false),
       isPlyModel: vi.fn().mockReturnValue(false),
+      getSourceFormat: vi.fn().mockReturnValue(null),
       getCurrentModelCapabilities: vi.fn().mockReturnValue({
         fitToViewer: true,
         requiresMaterialRebuild: false,
@@ -187,16 +190,7 @@ describe('useLoad3dViewer', () => {
     >
     vi.mocked(useLoad3dService).mockReturnValue(mockLoad3dService)
 
-    mockToastStore = {
-      addAlert: vi.fn()
-    } as Partial<ReturnType<typeof useToastStore>> as ReturnType<
-      typeof useToastStore
-    >
-    vi.mocked(useToastStore).mockReturnValue(mockToastStore)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
+    mockToastStore = useToastStore()
   })
 
   describe('initialization', () => {
@@ -235,7 +229,7 @@ describe('useLoad3dViewer', () => {
         value: ''
       })
       ;(
-        mockNode.properties!['Scene Config'] as Record<string, unknown>
+        mockNode.properties['Scene Config'] as Record<string, unknown>
       ).backgroundImage = 'test-image.jpg'
 
       const viewer = useLoad3dViewer(mockNode)
@@ -376,31 +370,31 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
       ;(
-        mockNode.properties!['Scene Config'] as Record<string, unknown>
+        mockNode.properties['Scene Config'] as Record<string, unknown>
       ).backgroundColor = '#ff0000'
       ;(
-        mockNode.properties!['Scene Config'] as Record<string, unknown>
+        mockNode.properties['Scene Config'] as Record<string, unknown>
       ).showGrid = false
 
       viewer.restoreInitialState()
 
       expect(
-        (mockNode.properties!['Scene Config'] as Record<string, unknown>)
+        (mockNode.properties['Scene Config'] as Record<string, unknown>)
           .backgroundColor
       ).toBe('#282828')
       expect(
-        (mockNode.properties!['Scene Config'] as Record<string, unknown>)
+        (mockNode.properties['Scene Config'] as Record<string, unknown>)
           .showGrid
       ).toBe(true)
       expect(
-        (mockNode.properties!['Camera Config'] as Record<string, unknown>)
+        (mockNode.properties['Camera Config'] as Record<string, unknown>)
           .cameraType
       ).toBe('perspective')
       expect(
-        (mockNode.properties!['Camera Config'] as Record<string, unknown>).fov
+        (mockNode.properties['Camera Config'] as Record<string, unknown>).fov
       ).toBe(75)
       expect(
-        (mockNode.properties!['Light Config'] as Record<string, unknown>)
+        (mockNode.properties['Light Config'] as Record<string, unknown>)
           .intensity
       ).toBe(1)
     })
@@ -411,13 +405,13 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
       ;(
-        mockNode.properties!['Model Config'] as Record<string, unknown>
+        mockNode.properties['Model Config'] as Record<string, unknown>
       ).futureField = 'preserve-me'
 
       viewer.restoreInitialState()
 
       expect(
-        (mockNode.properties!['Model Config'] as Record<string, unknown>)
+        (mockNode.properties['Model Config'] as Record<string, unknown>)
           .futureField
       ).toBe('preserve-me')
     })
@@ -437,11 +431,11 @@ describe('useLoad3dViewer', () => {
 
       expect(result).toBe(true)
       expect(
-        (mockNode.properties!['Scene Config'] as Record<string, unknown>)
+        (mockNode.properties['Scene Config'] as Record<string, unknown>)
           .backgroundColor
       ).toBe('#ff0000')
       expect(
-        (mockNode.properties!['Scene Config'] as Record<string, unknown>)
+        (mockNode.properties['Scene Config'] as Record<string, unknown>)
           .showGrid
       ).toBe(false)
       expect(mockLoad3dService.copyLoad3dState).toHaveBeenCalledWith(
@@ -481,13 +475,13 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
       ;(
-        mockNode.properties!['Model Config'] as Record<string, unknown>
+        mockNode.properties['Model Config'] as Record<string, unknown>
       ).futureField = 'preserve-me'
 
       await viewer.applyChanges()
 
       expect(
-        (mockNode.properties!['Model Config'] as Record<string, unknown>)
+        (mockNode.properties['Model Config'] as Record<string, unknown>)
           .futureField
       ).toBe('preserve-me')
     })
@@ -559,6 +553,44 @@ describe('useLoad3dViewer', () => {
       expect(viewer.hasBackgroundImage.value).toBe(false)
     })
 
+    it('should reset render mode to tiled when uploading a new image', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        'uploaded-image.jpg'
+      )
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      viewer.backgroundRenderMode.value = 'panorama'
+      await nextTick()
+
+      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      await viewer.handleBackgroundImageUpdate(file)
+
+      expect(viewer.backgroundRenderMode.value).toBe('tiled')
+    })
+
+    it('should not clear the background or touch render mode when the upload fails', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(undefined)
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      viewer.backgroundImage.value = 'existing.jpg'
+      viewer.backgroundRenderMode.value = 'panorama'
+      await nextTick()
+
+      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      await viewer.handleBackgroundImageUpdate(file)
+
+      expect(viewer.backgroundImage.value).toBe('existing.jpg')
+      expect(viewer.backgroundRenderMode.value).toBe('panorama')
+    })
+
     it('should handle upload errors', async () => {
       vi.mocked(Load3dUtils.uploadFile).mockRejectedValueOnce(
         new Error('Upload failed')
@@ -594,6 +626,22 @@ describe('useLoad3dViewer', () => {
   })
 
   describe('handleModelDrop', () => {
+    it('does not publish dropped-model state when the load was superseded', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        '3d/superseded.glb'
+      )
+      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce(false)
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      vi.mocked(mockLoad3d.getCurrentModelCapabilities!).mockClear()
+
+      await viewer.handleModelDrop(new File([''], 'superseded.glb'))
+
+      expect(mockNode.widgets).toEqual([])
+      expect(mockLoad3d.getCurrentModelCapabilities).not.toHaveBeenCalled()
+    })
+
     it('refreshes the capability refs after the dropped model loads, so the sidebar reflects the new model', async () => {
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
         '3d/dropped.splat'
@@ -618,7 +666,7 @@ describe('useLoad3dViewer', () => {
         requiresMaterialRebuild: false,
         gizmoTransform: true,
         lighting: false,
-        exportable: false,
+        exportable: true,
         materialModes: [],
         fitTargetSize: 20
       })
@@ -630,7 +678,7 @@ describe('useLoad3dViewer', () => {
         expect.stringContaining('dropped.splat')
       )
       expect(viewer.canUseLighting.value).toBe(false)
-      expect(viewer.canExport.value).toBe(false)
+      expect(viewer.canExport.value).toBe(true)
       expect(viewer.isSplatModel.value).toBe(true)
       expect([...viewer.materialModes.value]).toEqual([])
     })
@@ -700,7 +748,7 @@ describe('useLoad3dViewer', () => {
       mockSourceLoad3d.cameraManager = {
         perspectiveCamera: { fov: 75 }
       } as Partial<Load3d['cameraManager']> as Load3d['cameraManager']
-      delete (mockNode.properties!['Camera Config'] as Record<string, unknown>)
+      delete (mockNode.properties['Camera Config'] as Record<string, unknown>)
         .cameraType
 
       const viewer = useLoad3dViewer(mockNode)
@@ -720,6 +768,46 @@ describe('useLoad3dViewer', () => {
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       expect(viewer.lightIntensity.value).toBe(1) // Default value
+    })
+  })
+
+  describe('standalone thumbnail persistence', () => {
+    beforeEach(() => {
+      isAssetPreviewSupported.mockReset().mockReturnValue(false)
+      persistThumbnail.mockReset()
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ blob: () => Promise.resolve(new Blob()) })
+      )
+    })
+
+    it('captures and persists a thumbnail after a standalone model loads', async () => {
+      isAssetPreviewSupported.mockReturnValue(true)
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeStandaloneViewer(
+        containerRef,
+        '/api/view?filename=mesh.glb&type=output'
+      )
+
+      await vi.waitFor(() =>
+        expect(persistThumbnail).toHaveBeenCalledWith(
+          'mesh.glb',
+          expect.any(Blob)
+        )
+      )
+      expect(mockLoad3d.captureThumbnail).toHaveBeenCalledWith(256, 256)
+    })
+
+    it('skips thumbnail persistence when the asset API is unavailable', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeStandaloneViewer(containerRef, 'model.glb')
+      await nextTick()
+
+      expect(persistThumbnail).not.toHaveBeenCalled()
     })
   })
 
@@ -780,11 +868,44 @@ describe('useLoad3dViewer', () => {
       await newViewer.initializeStandaloneViewer(containerRef, modelUrl)
       expect(newViewer.backgroundColor.value).toBe('#0000ff')
     })
+
+    it('completes viewer setup when a concurrent call supersedes the first load', async () => {
+      let settleFirstLoad!: (accepted: boolean) => void
+      vi.mocked(mockLoad3d.loadModel!)
+        .mockImplementationOnce(
+          () =>
+            new Promise<boolean>((resolve) => {
+              settleFirstLoad = resolve
+            })
+        )
+        .mockResolvedValueOnce(true)
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+
+      const first = viewer.initializeStandaloneViewer(containerRef, 'a.glb')
+      const replacement = viewer.initializeStandaloneViewer(
+        containerRef,
+        'b.glb'
+      )
+      settleFirstLoad(false)
+      await Promise.all([first, replacement])
+
+      expect(createLoad3d).toHaveBeenCalledTimes(1)
+      expect(viewer.isPreview.value).toBe(true)
+      expect(mockLoad3d.addEventListener).toHaveBeenCalledWith(
+        'animationListChange',
+        expect.any(Function)
+      )
+      expect(mockLoad3d.addEventListener).toHaveBeenCalledWith(
+        'animationProgressChange',
+        expect.any(Function)
+      )
+    })
   })
 
   describe('gizmo controls', () => {
     it('should initialize gizmo state from node model config', async () => {
-      ;(mockNode.properties!['Model Config'] as Record<string, unknown>).gizmo =
+      ;(mockNode.properties['Model Config'] as Record<string, unknown>).gizmo =
         {
           enabled: true,
           mode: 'rotate'
@@ -820,7 +941,7 @@ describe('useLoad3dViewer', () => {
 
       await viewer.applyChanges()
 
-      const modelConfig = mockNode.properties!['Model Config'] as Record<
+      const modelConfig = mockNode.properties['Model Config'] as Record<
         string,
         unknown
       >
@@ -843,7 +964,7 @@ describe('useLoad3dViewer', () => {
 
       await viewer.applyChanges()
 
-      const modelConfig = mockNode.properties!['Model Config'] as Record<
+      const modelConfig = mockNode.properties['Model Config'] as Record<
         string,
         unknown
       >
@@ -868,7 +989,7 @@ describe('useLoad3dViewer', () => {
 
       viewer.restoreInitialState()
 
-      const modelConfig = mockNode.properties!['Model Config'] as Record<
+      const modelConfig = mockNode.properties['Model Config'] as Record<
         string,
         unknown
       >

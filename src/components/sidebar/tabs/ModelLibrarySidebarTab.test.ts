@@ -1,48 +1,61 @@
-import { createTestingPinia } from '@pinia/testing'
-import { fromPartial } from '@total-typescript/shoehorn'
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useModelStore } from '@/stores/modelStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelLibrarySidebarTab from './ModelLibrarySidebarTab.vue'
+
+beforeEach(() => {
+  vi.mocked(useModelStore().loadModels).mockResolvedValue([])
+  vi.mocked(useModelStore().loadModelFolders).mockResolvedValue(true)
+  vi.mocked(useModelStore().getLoadedModelFolder).mockResolvedValue(null)
+  vi.mocked(useModelStore().refresh).mockResolvedValue(true)
+  vi.mocked(useModelStore().refreshModelFolder).mockResolvedValue(undefined)
+  useSettingStore().settingValues['Comfy.ModelLibrary.NameFormat'] = 'filename'
+})
 
 const {
   captureRoot,
   getRoot,
   resetRoot,
-  mockAddNodeOnGraph,
-  mockGetNodeProvider,
-  mockToggleNodeOnEvent,
-  mockRefreshModelFolder,
-  downloadStoreState
+  captureExpandedKeys,
+  getExpandedKeys,
+  mockStartDrag,
+  mockToggleNodeOnEvent
 } = vi.hoisted(() => {
-  let capturedRoot: TreeExplorerNode<unknown> | null = null
+  let capturedRoot: TreeExplorerNode | null = null
+  let capturedExpandedKeys: Record<string, boolean> = {}
   return {
-    captureRoot: (root: TreeExplorerNode<unknown>) => {
+    captureRoot: (root: TreeExplorerNode) => {
       capturedRoot = root
     },
     getRoot: () => capturedRoot as TreeExplorerNode<ComfyModelDef>,
     resetRoot: () => {
       capturedRoot = null
     },
-    mockAddNodeOnGraph: vi.fn(),
-    mockGetNodeProvider: vi.fn(),
-    mockToggleNodeOnEvent: vi.fn(),
-    mockRefreshModelFolder: vi.fn().mockResolvedValue(undefined),
-    downloadStoreState: { setLastCompleted: (_: unknown) => {} }
+    captureExpandedKeys: (keys: Record<string, boolean>) => {
+      capturedExpandedKeys = keys
+    },
+    getExpandedKeys: () => capturedExpandedKeys,
+    mockStartDrag: vi.fn(),
+    mockToggleNodeOnEvent: vi.fn()
   }
 })
 
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
-}))
-
-vi.mock('@/stores/modelToNodeStore', () => ({
-  useModelToNodeStore: () => ({ getNodeProvider: mockGetNodeProvider })
+vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
+  useNodeDragToCanvas: () => ({ startDrag: mockStartDrag })
 }))
 
 const mockModel = fromPartial<ComfyModelDef>({
@@ -54,95 +67,52 @@ const mockModel = fromPartial<ComfyModelDef>({
   searchable: 'checkpoints/model.safetensors'
 })
 
-vi.mock('@/stores/modelStore', () => ({
-  ResourceState: {
-    Loading: 'loading',
-    Loaded: 'loaded'
-  },
-  useModelStore: () => ({
-    modelFolders: [],
-    models: [mockModel],
-    loadModels: vi.fn().mockResolvedValue([]),
-    loadModelFolders: vi.fn().mockResolvedValue([]),
-    refresh: vi.fn().mockResolvedValue(undefined),
-    refreshModelFolder: mockRefreshModelFolder
-  })
-}))
-
-vi.mock('@/stores/assetDownloadStore', async () => {
-  const { ref } = await import('vue')
-  const lastCompletedDownload = ref<{
-    taskId: string
-    modelType: string
-    timestamp: number
-  } | null>(null)
-  downloadStoreState.setLastCompleted = (value) => {
-    lastCompletedDownload.value = value as typeof lastCompletedDownload.value
-  }
-  return {
-    useAssetDownloadStore: () => ({
-      get lastCompletedDownload() {
-        return lastCompletedDownload.value
-      }
-    })
-  }
-})
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: vi.fn((key: string) => {
-      if (key === 'Comfy.ModelLibrary.NameFormat') return 'filename'
-      return false
-    })
-  })
-}))
-
-vi.mock('@/composables/useTreeExpansion', () => ({
+vi.mock(import('@/composables/useFeatureFlags'))
+const mockExpandNode = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
-    expandNode: vi.fn(),
+    expandNode: mockExpandNode,
     toggleNodeOnEvent: mockToggleNodeOnEvent
   })
 }))
 
-vi.mock('@/components/common/TreeExplorer.vue', () => ({
-  default: {
-    name: 'TreeExplorer',
-    template: '<div data-testid="tree-explorer" />',
-    props: ['root', 'expandedKeys'],
-    setup(props: { root: TreeExplorerNode<unknown> }) {
-      captureRoot(props.root)
+vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), async () => {
+  const { watchEffect } = await import('vue')
+  return {
+    default: {
+      name: 'TreeExplorer',
+      template: '<div data-testid="tree-explorer" />',
+      props: ['root', 'expandedKeys'],
+      setup(props: {
+        root: TreeExplorerNode
+        expandedKeys: Record<string, boolean>
+      }) {
+        watchEffect(() => captureRoot(props.root))
+        // The v-model record is shared with the component, so mutating the
+        // captured object simulates user expand/collapse actions.
+        watchEffect(() => captureExpandedKeys(props.expandedKeys))
+      }
     }
   }
-}))
+})
 
-vi.mock('@/components/ui/search-input/SearchInput.vue', () => ({
-  default: {
-    name: 'SearchInput',
-    template: '<input data-testid="search-input" />',
-    props: ['modelValue', 'placeholder'],
-    setup() {
-      return { focus: vi.fn() }
-    },
-    expose: ['focus']
-  }
-}))
-
-vi.mock('./SidebarTopArea.vue', () => ({
+vi.mock<unknown>(import('./SidebarTopArea.vue'), () => ({
   default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
 }))
 
-vi.mock('./SidebarTabTemplate.vue', () => ({
+vi.mock<unknown>(import('./SidebarTabTemplate.vue'), () => ({
   default: {
     name: 'SidebarTabTemplate',
-    template: '<div><slot name="header" /><slot name="body" /></div>'
+    template:
+      '<div><slot name="tool-buttons" /><slot name="header" /><slot name="body" /></div>'
   }
 }))
 
-vi.mock('./modelLibrary/ElectronDownloadItems.vue', () => ({
+vi.mock<unknown>(import('./modelLibrary/ElectronDownloadItems.vue'), () => ({
   default: { name: 'ElectronDownloadItems', template: '<div />' }
 }))
 
-vi.mock('./modelLibrary/ModelTreeLeaf.vue', () => ({
+vi.mock<unknown>(import('./modelLibrary/ModelTreeLeaf.vue'), () => ({
   default: { name: 'ModelTreeLeaf', template: '<div />', props: ['node'] }
 }))
 
@@ -154,35 +124,36 @@ const i18n = createI18n({
 
 describe('ModelLibrarySidebarTab', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     resetRoot()
-    downloadStoreState.setLastCompleted(null)
+    useAssetDownloadStore().lastCompletedDownload = null
+    useSettingStore().settingValues['Comfy.ModelLibrary.AutoLoadAll'] = false
+    Object.assign(useModelStore(), { models: [mockModel] })
   })
 
   function renderComponent() {
     return render(ModelLibrarySidebarTab, {
       global: {
-        plugins: [createTestingPinia({ stubActions: false }), i18n],
-        stubs: { teleport: true }
+        plugins: [i18n],
+        stubs: { teleport: true },
+        directives: { tooltip: {} }
       }
     })
   }
 
   it('renders search input', () => {
     renderComponent()
-    expect(screen.getByTestId('search-input')).toBeInTheDocument()
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
   })
 
-  it('handles model click and adds node to graph', async () => {
-    const mockNodeDef = { name: 'CheckpointLoaderSimple' }
-    const mockWidget = { name: 'ckpt_name', value: '' }
-    const mockGraphNode = { widgets: [mockWidget] }
+  it('starts a ghost drag carrying the widget value to fill on placement', async () => {
+    const mockNodeDef = fromPartial<ComfyNodeDefImpl>({
+      name: 'CheckpointLoaderSimple'
+    })
 
-    mockGetNodeProvider.mockReturnValue({
+    vi.mocked(useModelToNodeStore().getNodeProvider).mockReturnValue({
       nodeDef: mockNodeDef,
       key: 'ckpt_name'
     })
-    mockAddNodeOnGraph.mockReturnValue(mockGraphNode)
 
     renderComponent()
     await nextTick()
@@ -197,9 +168,13 @@ describe('ModelLibrarySidebarTab', () => {
     const mockEvent = new MouseEvent('click')
     await modelLeaf?.handleClick?.(mockEvent)
 
-    expect(mockGetNodeProvider).toHaveBeenCalledWith('checkpoints')
-    expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNodeDef)
-    expect(mockWidget.value).toBe('model.safetensors')
+    expect(
+      vi.mocked(useModelToNodeStore().getNodeProvider)
+    ).toHaveBeenCalledWith('checkpoints')
+    expect(mockStartDrag).toHaveBeenCalledWith(mockNodeDef, {
+      widgetValues: { ckpt_name: 'model.safetensors' },
+      source: 'sidebar_drag'
+    })
   })
 
   it('toggles folder expansion on click', async () => {
@@ -219,22 +194,238 @@ describe('ModelLibrarySidebarTab', () => {
     renderComponent()
     await nextTick()
 
-    expect(mockRefreshModelFolder).not.toHaveBeenCalled()
+    expect(vi.mocked(useModelStore().refreshModelFolder)).not.toHaveBeenCalled()
 
-    downloadStoreState.setLastCompleted({
+    useAssetDownloadStore().lastCompletedDownload = {
       taskId: 'task-1',
       modelType: 'checkpoints',
       timestamp: Date.now()
-    })
+    }
     await nextTick()
 
-    expect(mockRefreshModelFolder).toHaveBeenCalledWith('checkpoints')
+    expect(vi.mocked(useModelStore().refreshModelFolder)).toHaveBeenCalledWith(
+      'checkpoints'
+    )
   })
 
   it('does not refresh when no download has completed', async () => {
     renderComponent()
     await nextTick()
 
-    expect(mockRefreshModelFolder).not.toHaveBeenCalled()
+    expect(vi.mocked(useModelStore().refreshModelFolder)).not.toHaveBeenCalled()
+  })
+
+  describe('search', () => {
+    it('updates active search results when a reload adds a matching model', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+      await nextTick()
+
+      await user.type(screen.getByRole('combobox'), 'model')
+      await vi.advanceTimersByTimeAsync(300)
+
+      expect(vi.mocked(useModelStore().loadModels)).toHaveBeenCalled()
+      const leafLabels = () => {
+        const { children: folders = [] } = getRoot()
+        return folders.flatMap(({ children: leaves = [] }) =>
+          leaves.map((leaf) => leaf.label)
+        )
+      }
+      expect(leafLabels()).toEqual(['model'])
+
+      // A completed scan reloads the store while the search is still active.
+      Object.assign(useModelStore(), {
+        models: [
+          ...useModelStore().models,
+          fromPartial<ComfyModelDef>({
+            key: 'checkpoints/model-new.safetensors',
+            file_name: 'model-new.safetensors',
+            simplified_file_name: 'model-new',
+            title: 'Model New',
+            directory: 'checkpoints',
+            searchable: 'checkpoints/model-new.safetensors'
+          })
+        ]
+      })
+      await nextTick()
+
+      expect(leafLabels()).toEqual(['model', 'model-new'])
+    })
+
+    it('leaves the tree untouched until the debounced search event fires', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      renderComponent()
+      await nextTick()
+
+      // Raw keystrokes update the input model only; a non-matching query
+      // would empty the tree if it drove the derivation directly.
+      await user.type(screen.getByRole('combobox'), 'zzz')
+      await vi.advanceTimersByTimeAsync(299)
+
+      const leafLabels = () => {
+        const { children: folders = [] } = getRoot()
+        return folders.flatMap(({ children: leaves = [] }) =>
+          leaves.map((leaf) => leaf.label)
+        )
+      }
+      expect(leafLabels()).toEqual(['model'])
+
+      await vi.advanceTimersByTimeAsync(1)
+
+      expect(leafLabels()).toEqual([])
+    })
+  })
+
+  describe('search scale limits', () => {
+    it('caps rendered search results and shows the hint', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+      await nextTick()
+      Object.assign(useModelStore(), {
+        models: [
+          ...useModelStore().models,
+          ...Array.from({ length: 520 }, (_, i) =>
+            fromPartial<ComfyModelDef>({
+              key: `checkpoints/bulk-${i}.safetensors`,
+              file_name: `bulk-${i}.safetensors`,
+              simplified_file_name: `bulk-${i}`,
+              title: `bulk-${i}`,
+              directory: 'checkpoints',
+              searchable: `checkpoints/bulk-${i}.safetensors`
+            })
+          )
+        ]
+      })
+
+      await user.type(screen.getByRole('combobox'), 'bulk')
+      await vi.advanceTimersByTimeAsync(300)
+
+      const { children: folders = [] } = getRoot()
+      const leafCount = folders.flatMap(
+        ({ children: leaves = [] }) => leaves
+      ).length
+      expect(leafCount).toBe(500)
+      expect(
+        screen.getByText('sideToolbar.searchResultsCapped')
+      ).toBeInTheDocument()
+    })
+
+    it('does not re-expand a collapsed folder when a reload lands mid-search', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+      await nextTick()
+
+      await user.type(screen.getByRole('combobox'), 'model')
+      await vi.advanceTimersByTimeAsync(300)
+      await nextTick()
+      // The query's initial result folders auto-expand.
+      expect(getExpandedKeys()['root/checkpoints']).toBe(true)
+
+      // The user collapses the folder mid-search.
+      delete getExpandedKeys()['root/checkpoints']
+
+      // A background reload adds another matching model to that folder; the
+      // tree data updates but the manual collapse is preserved.
+      Object.assign(useModelStore(), {
+        models: [
+          ...useModelStore().models,
+          fromPartial<ComfyModelDef>({
+            key: 'checkpoints/model-late.safetensors',
+            file_name: 'model-late.safetensors',
+            simplified_file_name: 'model-late',
+            title: 'Model Late',
+            directory: 'checkpoints',
+            searchable: 'checkpoints/model-late.safetensors'
+          })
+        ]
+      })
+      await nextTick()
+      await nextTick()
+
+      expect(getExpandedKeys()['root/checkpoints']).toBeUndefined()
+    })
+
+    it('expands a result folder first surfaced by a mid-search reload', async () => {
+      const user = userEvent.setup()
+      renderComponent()
+      await nextTick()
+
+      // No prefix of the query matches the existing model, so the result
+      // tree stays empty and no folder has auto-expanded yet.
+      await user.type(screen.getByRole('combobox'), 'zzz')
+      await vi.advanceTimersByTimeAsync(300)
+      await nextTick()
+      expect(getExpandedKeys()['root/checkpoints']).toBeUndefined()
+
+      // A scan completes mid-search and surfaces the first match; its
+      // folder must render expanded or the result hides in a collapsed
+      // node.
+      Object.assign(useModelStore(), {
+        models: [
+          ...useModelStore().models,
+          fromPartial<ComfyModelDef>({
+            key: 'checkpoints/zzz-model.safetensors',
+            file_name: 'zzz-model.safetensors',
+            simplified_file_name: 'zzz-model',
+            title: 'Zzz Model',
+            directory: 'checkpoints',
+            searchable: 'checkpoints/zzz-model.safetensors'
+          })
+        ]
+      })
+      await nextTick()
+      await nextTick()
+
+      expect(getExpandedKeys()['root/checkpoints']).toBe(true)
+    })
+  })
+
+  describe('asset mode', () => {
+    it('surfaces an error toast when the eager load fails on mount', async () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+      vi.mocked(useModelStore().loadModels).mockRejectedValueOnce(
+        new Error('walk failed')
+      )
+
+      renderComponent()
+      await nextTick()
+      await nextTick()
+
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'sideToolbar.modelLibraryLoadFailed'
+        })
+      )
+      error.mockRestore()
+    })
+
+    it('hides the load-all button and eager-loads models on mount', async () => {
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+      renderComponent()
+      await nextTick()
+
+      expect(screen.queryByLabelText('g.loadAllFolders')).toBeNull()
+      expect(screen.getByLabelText('g.refresh')).toBeInTheDocument()
+      expect(vi.mocked(useModelStore().loadModels)).toHaveBeenCalledTimes(1)
+    })
+
+    it('legacy mode keeps the load-all button and stays lazy by default', async () => {
+      renderComponent()
+      await nextTick()
+
+      expect(screen.getByLabelText('g.loadAllFolders')).toBeInTheDocument()
+      expect(vi.mocked(useModelStore().loadModels)).not.toHaveBeenCalled()
+    })
+
+    it('legacy mode still honors AutoLoadAll', async () => {
+      useSettingStore().settingValues['Comfy.ModelLibrary.AutoLoadAll'] = true
+      renderComponent()
+      await nextTick()
+
+      expect(vi.mocked(useModelStore().loadModels)).toHaveBeenCalledTimes(1)
+    })
   })
 })

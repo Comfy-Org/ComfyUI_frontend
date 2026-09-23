@@ -42,9 +42,11 @@ export function downloadFile(url: string, filename?: string): void {
 
   if (isCloud) {
     // Assets from cross-origin (e.g., GCS) cannot be downloaded this way
-    void downloadViaBlobFetch(url, inferredFilename).catch((error) => {
-      console.error('Failed to download file', error)
-    })
+    void downloadFileAsBlob(url, { filename: inferredFilename }).catch(
+      (error) => {
+        console.error('Failed to download file', error)
+      }
+    )
     return
   }
 
@@ -120,19 +122,32 @@ export function extractFilenameFromContentDisposition(
  * Fetch a URL and return its body as a Blob.
  * Shared by download and open-in-new-tab cloud paths.
  */
-async function fetchAsBlob(url: string): Promise<Response> {
-  const response = await fetch(url)
+async function fetchAsBlob(
+  url: string,
+  fetchFile: (url: string) => Promise<Response> = fetch
+): Promise<Response> {
+  const response = await fetchFile(url)
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status}`)
   }
   return response
 }
 
-async function downloadViaBlobFetch(
-  href: string,
-  fallbackFilename: string
+export async function downloadFileAsBlob(
+  url: string,
+  {
+    filename,
+    fetch: fetchFile = fetch,
+    preferResponseFilename = true
+  }: {
+    filename?: string
+    fetch?: (url: string) => Promise<Response>
+    preferResponseFilename?: boolean
+  } = {}
 ): Promise<void> {
-  const response = await fetchAsBlob(href)
+  const fallbackFilename =
+    filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
+  const response = await fetchAsBlob(url, fetchFile)
 
   // Try to get filename from Content-Disposition header (set by backend)
   const contentDisposition = response.headers.get('Content-Disposition')
@@ -140,7 +155,12 @@ async function downloadViaBlobFetch(
     extractFilenameFromContentDisposition(contentDisposition)
 
   const blob = await response.blob()
-  downloadBlob(headerFilename ?? fallbackFilename, blob)
+  downloadBlob(
+    preferResponseFilename
+      ? (headerFilename ?? fallbackFilename)
+      : fallbackFilename,
+    blob
+  )
 }
 
 /**
@@ -152,6 +172,27 @@ async function downloadViaBlobFetch(
  * (browsers block window.open after an await), then navigates it to
  * the blob URL once the fetch completes.
  */
+const RENDERABLE_MEDIA_TYPES = new Set([
+  'image/apng',
+  'image/avif',
+  'image/bmp',
+  'image/gif',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'audio/mpeg',
+  'audio/ogg',
+  'audio/wav',
+  'audio/webm',
+  'video/mp4',
+  'video/ogg',
+  'video/webm'
+])
+
+function isRenderableMediaType(blobType: string): boolean {
+  return RENDERABLE_MEDIA_TYPES.has(blobType.split(';')[0].trim().toLowerCase())
+}
+
 export async function openFileInNewTab(url: string): Promise<void> {
   if (!isCloud) {
     window.open(url, '_blank')
@@ -163,7 +204,10 @@ export async function openFileInNewTab(url: string): Promise<void> {
 
   try {
     const response = await fetchAsBlob(url)
-    const blob = await response.blob()
+    const fetched = await response.blob()
+    const blob = isRenderableMediaType(fetched.type)
+      ? fetched
+      : new Blob([fetched], { type: 'application/octet-stream' })
     const blobUrl = URL.createObjectURL(blob)
 
     if (tab && !tab.closed) {

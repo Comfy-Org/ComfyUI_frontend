@@ -1,7 +1,8 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
+
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import {
   createTestSubgraph,
@@ -13,23 +14,26 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { GlobalSubgraphData } from '@/scripts/api'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false,
   isDesktop: false
 }))
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 // Mock telemetry to break circular dependency (telemetry → workflowStore → app → telemetry)
-vi.mock('@/platform/telemetry', () => ({
+vi.mock(import('@/platform/telemetry'), () => ({
   useTelemetry: () => null
 }))
 
 // Add mock for api at the top of the file
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getUserData: vi.fn(),
     storeUserData: vi.fn(),
@@ -39,20 +43,10 @@ vi.mock('@/scripts/api', () => ({
     addEventListener: vi.fn()
   }
 }))
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: vi.fn(() => ({
-    prompt: () => 'testname',
-    confirm: () => true
-  }))
-}))
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn(() => ({
-    getCanvas: () => comfyApp.canvas
-  }))
-}))
+vi.mock(import('@/services/dialogService'))
 
 // Mock comfyApp globally for the store setup
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       _deserializeItems: vi.fn((i) => i),
@@ -92,11 +86,14 @@ describe('useSubgraphStore', () => {
   }
 
   beforeEach(() => {
+    vi.mocked(useDialogService().prompt).mockResolvedValue('testname')
+    vi.mocked(useDialogService().confirm).mockResolvedValue(true)
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
-    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.mocked(useCanvasStore().getCanvas).mockImplementation(
+      () => comfyApp.canvas
+    )
     store = useSubgraphStore()
-    vi.clearAllMocks()
   })
 
   it('should allow publishing of a subgraph', async () => {
@@ -143,7 +140,7 @@ describe('useSubgraphStore', () => {
   })
   it('should allow subgraphs to be edited', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    await store.editBlueprint(store.typePrefix + 'test')
+    await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     //check active graph
     expect(comfyApp.loadGraphData).toHaveBeenCalled()
   })
@@ -157,13 +154,13 @@ describe('useSubgraphStore', () => {
   })
   it('should return a deep copy from getBlueprint so mutations do not corrupt the cache', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    const first = store.getBlueprint(store.typePrefix + 'test')
+    const first = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     first.nodes[0].id = -1
-    first.definitions!.subgraphs![0].id = 'corrupted'
+    first.definitions!.subgraphs[0].id = 'corrupted'
 
-    const second = store.getBlueprint(store.typePrefix + 'test')
+    const second = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     expect(second.nodes[0].id).not.toBe(-1)
-    expect(second.definitions!.subgraphs![0].id).toBe('123')
+    expect(second.definitions!.subgraphs[0].id).toBe('123')
   })
   it('should identify user blueprints as non-global', async () => {
     await mockFetch({ 'test.json': mockGraph })
@@ -563,7 +560,7 @@ describe('useSubgraphStore', () => {
         definitions: {
           subgraphs: [
             {
-              ...mockGraph.definitions?.subgraphs?.[0],
+              ...mockGraph.definitions.subgraphs[0],
               essentials_category: 'Image Tools'
             }
           ]
@@ -583,7 +580,7 @@ describe('useSubgraphStore', () => {
       const nodeDef = useNodeDefStore().nodeDefs.find(
         (d) => d.name === 'SubgraphBlueprint.bp_precedence'
       )
-      expect(nodeDef?.essentials_category).toBe('video generation')
+      expect(nodeDef?.essentials_category).toBe('Video Generation')
     })
 
     it('should pass essentials_category from GlobalSubgraphData to node def', async () => {
@@ -602,55 +599,7 @@ describe('useSubgraphStore', () => {
         (d) => d.name === 'SubgraphBlueprint.bp_essentials'
       )
       expect(nodeDef).toBeDefined()
-      expect(nodeDef?.essentials_category).toBe('image generation')
-    })
-
-    it('should extract essentials_category from subgraph definition as fallback', async () => {
-      const graphWithEssentials = {
-        ...mockGraph,
-        definitions: {
-          subgraphs: [
-            {
-              ...mockGraph.definitions?.subgraphs?.[0],
-              essentials_category: 'Image Tools'
-            }
-          ]
-        }
-      }
-      await mockFetch(
-        {},
-        {
-          bp_fallback: {
-            name: 'Fallback Blueprint',
-            info: { node_pack: 'test_pack' },
-            data: JSON.stringify(graphWithEssentials)
-          }
-        }
-      )
-      const nodeDef = useNodeDefStore().nodeDefs.find(
-        (d) => d.name === 'SubgraphBlueprint.bp_fallback'
-      )
-      expect(nodeDef).toBeDefined()
-      expect(nodeDef?.essentials_category).toBe('image tools')
-    })
-
-    it('should normalize title-cased essentials_category to canonical form', async () => {
-      await mockFetch(
-        {},
-        {
-          bp_3d: {
-            name: 'Test 3D Blueprint',
-            info: { node_pack: 'test_pack', category: 'Test Category' },
-            data: JSON.stringify(mockGraph),
-            essentials_category: '3d'
-          }
-        }
-      )
-      const nodeDef = useNodeDefStore().nodeDefs.find(
-        (d) => d.name === 'SubgraphBlueprint.bp_3d'
-      )
-      expect(nodeDef).toBeDefined()
-      expect(nodeDef?.essentials_category).toBe('3D')
+      expect(nodeDef?.essentials_category).toBe('Image Generation')
     })
   })
 

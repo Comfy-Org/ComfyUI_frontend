@@ -1,10 +1,8 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useCommandStore } from '@/stores/commandStore'
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandlingAsync:
       (fn: () => Promise<void>, errorHandler?: (e: unknown) => void) =>
@@ -19,17 +17,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-vi.mock('@/platform/keybindings/keybindingStore', () => ({
-  useKeybindingStore: () => ({
-    getKeybindingByCommandId: () => null
-  })
-}))
-
 describe('commandStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('registerCommand', () => {
     it('registers a command by id', () => {
       const store = useCommandStore()
@@ -52,7 +40,7 @@ describe('commandStore', () => {
       expect(warnSpy).toHaveBeenCalledWith('Command dup already registered')
       warnSpy.mockRestore()
 
-      await store.getCommand('dup')?.function()
+      await store.getCommand('dup').function()
       expect(replacementFn).toHaveBeenCalled()
       expect(originalFn).not.toHaveBeenCalled()
     })
@@ -65,7 +53,7 @@ describe('commandStore', () => {
       store.registerCommand({ id: 'get.test', function: fn, label: 'Test' })
       const cmd = store.getCommand('get.test')
       expect(cmd).toBeDefined()
-      expect(cmd?.label).toBe('Test')
+      expect(cmd.label).toBe('Test')
     })
 
     it('returns undefined for unregistered command', () => {
@@ -132,8 +120,8 @@ describe('commandStore', () => {
       })
       expect(store.isRegistered('ext.cmd1')).toBe(true)
       expect(store.isRegistered('ext.cmd2')).toBe(true)
-      expect(store.getCommand('ext.cmd1')?.source).toBe('test-ext')
-      expect(store.getCommand('ext.cmd2')?.source).toBe('test-ext')
+      expect(store.getCommand('ext.cmd1').source).toBe('test-ext')
+      expect(store.getCommand('ext.cmd2').source).toBe('test-ext')
     })
 
     it('skips extensions without commands', () => {
@@ -151,7 +139,7 @@ describe('commandStore', () => {
         function: vi.fn(),
         label: () => 'Dynamic'
       })
-      expect(store.getCommand('label.fn')?.label).toBe('Dynamic')
+      expect(store.getCommand('label.fn').label).toBe('Dynamic')
     })
 
     it('resolves tooltip as function', () => {
@@ -161,7 +149,7 @@ describe('commandStore', () => {
         function: vi.fn(),
         tooltip: () => 'Dynamic tip'
       })
-      expect(store.getCommand('tip.fn')?.tooltip).toBe('Dynamic tip')
+      expect(store.getCommand('tip.fn').tooltip).toBe('Dynamic tip')
     })
 
     it('uses explicit menubarLabel over label', () => {
@@ -172,7 +160,7 @@ describe('commandStore', () => {
         label: 'Label',
         menubarLabel: 'Menu Label'
       })
-      expect(store.getCommand('mbl.explicit')?.menubarLabel).toBe('Menu Label')
+      expect(store.getCommand('mbl.explicit').menubarLabel).toBe('Menu Label')
     })
 
     it('falls back menubarLabel to label', () => {
@@ -182,7 +170,7 @@ describe('commandStore', () => {
         function: vi.fn(),
         label: 'My Label'
       })
-      expect(store.getCommand('mbl.default')?.menubarLabel).toBe('My Label')
+      expect(store.getCommand('mbl.default').menubarLabel).toBe('My Label')
     })
   })
 
@@ -190,7 +178,7 @@ describe('commandStore', () => {
     it('returns empty string when command has no keybinding', () => {
       const store = useCommandStore()
       store.registerCommand({ id: 'no.kb', function: vi.fn() })
-      const cmd = store.getCommand('no.kb')!
+      const cmd = store.getCommand('no.kb')
       expect(store.formatKeySequence(cmd)).toBe('')
     })
   })

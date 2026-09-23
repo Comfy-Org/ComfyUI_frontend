@@ -23,7 +23,8 @@
         v-else-if="hasMedia && media?.type === 'image'"
         :image-urls="media.urls"
         :node-id="nodeId"
-        class="mt-2 flex-auto"
+        class="flex-auto"
+        :style="{ marginTop: `${IMAGE_PREVIEW_MARGIN_TOP}px` }"
       />
     </slot>
   </div>
@@ -32,16 +33,17 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 
 import VideoPreview from '../VideoPreview.vue'
 import AudioPreview from './AudioPreview.vue'
 import ImagePreview from './ImagePreview.vue'
+import { IMAGE_PREVIEW_MARGIN_TOP } from './imagePreviewLayout'
 
 interface NodeContentProps {
-  nodeData?: VueNodeData
+  nodeData?: NodeState
   media?: {
     type: 'image' | 'video' | 'audio'
     urls: string[]
@@ -52,8 +54,7 @@ const props = defineProps<NodeContentProps>()
 
 const hasMedia = computed(() => props.media && props.media.urls.length > 0)
 
-// Get node ID from nodeData
-const nodeId = computed(() => props.nodeData?.id?.toString())
+const nodeId = computed(() => props.nodeData?.id)
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)

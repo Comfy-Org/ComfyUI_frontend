@@ -130,13 +130,12 @@
         <div>
           <NodeBookmarkTreeExplorer
             ref="nodeBookmarkTreeExplorerRef"
-            :filtered-node-defs="filteredNodeDefs"
+            :filtered-node-defs
             :open-node-help="openHelp"
           />
-          <Divider
+          <div
             v-show="nodeBookmarkStore.bookmarks.length > 0"
-            type="dashed"
-            class="m-2"
+            class="m-2 border-t border-dashed border-interface-stroke"
           />
           <TreeExplorer
             v-model:expanded-keys="expandedKeys"
@@ -145,10 +144,10 @@
             :root="renderedRoot"
           >
             <template #folder="{ node }">
-              <NodeTreeFolder :node="node" />
+              <NodeTreeFolder :node />
             </template>
             <template #node="{ node }">
-              <NodeTreeLeaf :node="node" :open-node-help="openHelp" />
+              <NodeTreeLeaf :node :open-node-help="openHelp" />
             </template>
           </TreeExplorer>
         </div>
@@ -163,7 +162,6 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import type { Ref } from 'vue'
 import {
@@ -176,7 +174,6 @@ import {
   render
 } from 'vue'
 
-import { resolveEssentialsDisplayName } from '@/constants/essentialsDisplayNames'
 import SearchFilterChip from '@/components/common/SearchFilterChip.vue'
 import type { SearchFilter } from '@/components/common/SearchFilterChip.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
@@ -302,9 +299,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
 
     return {
       key: node.key,
-      label: node.leaf
-        ? (resolveEssentialsDisplayName(node.data) ?? node.data.display_name)
-        : node.label,
+      label: node.leaf ? node.data.display_name : node.label,
       leaf: node.leaf,
       data: node.data,
       getIcon() {

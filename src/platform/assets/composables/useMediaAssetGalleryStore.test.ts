@@ -1,31 +1,15 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 
-import { ResultItemImpl } from '@/stores/queueStore'
+import { describe, expect, it } from 'vitest'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import { useMediaAssetGalleryStore } from './useMediaAssetGalleryStore'
 
-vi.mock('@/stores/queueStore', () => ({
-  ResultItemImpl: vi
-    .fn<typeof ResultItemImpl>()
-    .mockImplementation(function (data) {
-      Object.assign(this, {
-        ...data,
-        url: ''
-      })
-    })
-}))
-
 describe('useMediaAssetGalleryStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   describe('openSingle', () => {
-    it('should convert AssetMeta to ResultItemImpl format', () => {
+    it('should convert AssetMeta to result item data', () => {
       const store = useMediaAssetGalleryStore()
-      const mockAsset: AssetMeta = {
+      const mockAsset = fromPartial<AssetMeta>({
         id: 'test-1',
         name: 'test-image.png',
         kind: 'image',
@@ -33,24 +17,25 @@ describe('useMediaAssetGalleryStore', () => {
         size: 1024,
         tags: [],
         created_at: '2025-01-01'
-      }
+      })
 
       store.openSingle(mockAsset)
 
-      expect(ResultItemImpl).toHaveBeenCalledWith({
+      expect(store.items).toHaveLength(1)
+      expect(store.items[0]).toEqual({
         filename: 'test-image.png',
         subfolder: '',
         type: 'output',
         nodeId: '0',
-        mediaType: 'images'
+        mediaType: 'images',
+        url: 'https://example.com/image.png'
       })
-      expect(store.items).toHaveLength(1)
       expect(store.activeIndex).toBe(0)
     })
 
     it('should set correct mediaType for video assets', () => {
       const store = useMediaAssetGalleryStore()
-      const mockVideoAsset: AssetMeta = {
+      const mockVideoAsset = fromPartial<AssetMeta>({
         id: 'test-2',
         name: 'test-video.mp4',
         kind: 'video',
@@ -58,21 +43,19 @@ describe('useMediaAssetGalleryStore', () => {
         size: 2048,
         tags: [],
         created_at: '2025-01-01'
-      }
+      })
 
       store.openSingle(mockVideoAsset)
 
-      expect(ResultItemImpl).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filename: 'test-video.mp4',
-          mediaType: 'video'
-        })
-      )
+      expect(store.items[0]).toMatchObject({
+        filename: 'test-video.mp4',
+        mediaType: 'video'
+      })
     })
 
     it('should set correct mediaType for audio assets', () => {
       const store = useMediaAssetGalleryStore()
-      const mockAudioAsset: AssetMeta = {
+      const mockAudioAsset = fromPartial<AssetMeta>({
         id: 'test-3',
         name: 'test-audio.mp3',
         kind: 'audio',
@@ -80,21 +63,19 @@ describe('useMediaAssetGalleryStore', () => {
         size: 512,
         tags: [],
         created_at: '2025-01-01'
-      }
+      })
 
       store.openSingle(mockAudioAsset)
 
-      expect(ResultItemImpl).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filename: 'test-audio.mp3',
-          mediaType: 'audio'
-        })
-      )
+      expect(store.items[0]).toMatchObject({
+        filename: 'test-audio.mp3',
+        mediaType: 'audio'
+      })
     })
 
-    it('should override url getter with asset.src', () => {
+    it('should use asset.src as the url', () => {
       const store = useMediaAssetGalleryStore()
-      const mockAsset: AssetMeta = {
+      const mockAsset = fromPartial<AssetMeta>({
         id: 'test-4',
         name: 'test.png',
         kind: 'image',
@@ -102,17 +83,16 @@ describe('useMediaAssetGalleryStore', () => {
         size: 1024,
         tags: [],
         created_at: '2025-01-01'
-      }
+      })
 
       store.openSingle(mockAsset)
 
-      const resultItem = store.items[0]
-      expect(resultItem.url).toBe('https://example.com/custom-url.png')
+      expect(store.items[0].url).toBe('https://example.com/custom-url.png')
     })
 
     it('should handle assets without src gracefully', () => {
       const store = useMediaAssetGalleryStore()
-      const mockAsset: AssetMeta = {
+      const mockAsset = fromPartial<AssetMeta>({
         id: 'test-5',
         name: 'no-src.png',
         kind: 'image',
@@ -120,17 +100,16 @@ describe('useMediaAssetGalleryStore', () => {
         size: 1024,
         tags: [],
         created_at: '2025-01-01'
-      }
+      })
 
       store.openSingle(mockAsset)
 
-      const resultItem = store.items[0]
-      expect(resultItem.url).toBe('')
+      expect(store.items[0].url).toBe('')
     })
 
     it('should update activeIndex and items when called multiple times', () => {
       const store = useMediaAssetGalleryStore()
-      const asset1: AssetMeta = {
+      const asset1 = fromPartial<AssetMeta>({
         id: '1',
         name: 'first.png',
         kind: 'image',
@@ -138,8 +117,8 @@ describe('useMediaAssetGalleryStore', () => {
         size: 100,
         tags: [],
         created_at: '2025-01-01'
-      }
-      const asset2: AssetMeta = {
+      })
+      const asset2 = fromPartial<AssetMeta>({
         id: '2',
         name: 'second.png',
         kind: 'image',
@@ -147,7 +126,7 @@ describe('useMediaAssetGalleryStore', () => {
         size: 200,
         tags: [],
         created_at: '2025-01-01'
-      }
+      })
 
       store.openSingle(asset1)
       expect(store.items).toHaveLength(1)
@@ -163,7 +142,7 @@ describe('useMediaAssetGalleryStore', () => {
   describe('close', () => {
     it('should reset activeIndex to -1', () => {
       const store = useMediaAssetGalleryStore()
-      const mockAsset: AssetMeta = {
+      const mockAsset = fromPartial<AssetMeta>({
         id: 'test',
         name: 'test.png',
         kind: 'image',
@@ -171,7 +150,7 @@ describe('useMediaAssetGalleryStore', () => {
         size: 1024,
         tags: [],
         created_at: '2025-01-01'
-      }
+      })
 
       store.openSingle(mockAsset)
       expect(store.activeIndex).toBe(0)

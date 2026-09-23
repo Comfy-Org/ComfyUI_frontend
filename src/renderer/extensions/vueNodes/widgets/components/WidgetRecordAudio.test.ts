@@ -1,9 +1,12 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 const { useAudioRecorderMock, useAudioPlaybackMock, useAudioWaveformMock } =
   vi.hoisted(() => ({
@@ -22,21 +25,21 @@ const appMock = vi.hoisted(() => ({
 }))
 const isDOMWidgetMock = vi.hoisted(() => vi.fn(() => false))
 
-vi.mock('../composables/audio/useAudioRecorder', () => ({
+vi.mock(import('../composables/audio/useAudioRecorder'), () => ({
   useAudioRecorder: useAudioRecorderMock
 }))
 
-vi.mock('../composables/audio/useAudioPlayback', () => ({
+vi.mock(import('../composables/audio/useAudioPlayback'), () => ({
   useAudioPlayback: useAudioPlaybackMock
 }))
 
-vi.mock('../composables/audio/useAudioWaveform', () => ({
+vi.mock(import('../composables/audio/useAudioWaveform'), () => ({
   useAudioWaveform: useAudioWaveformMock
 }))
 
-vi.mock('@/scripts/app', () => appMock)
+vi.mock<unknown>(import('@/scripts/app'), () => appMock)
 
-vi.mock('@/scripts/domWidget', () => ({
+vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   isDOMWidget: isDOMWidgetMock
 }))
 
@@ -80,10 +83,6 @@ const waveform = {
   dispose: vi.fn()
 } satisfies ReturnType<typeof useAudioWaveform>
 
-useAudioRecorderMock.mockImplementation(() => recorder)
-useAudioPlaybackMock.mockImplementation(() => playback)
-useAudioWaveformMock.mockImplementation(() => waveform)
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -111,13 +110,13 @@ const ButtonStub = defineComponent({
     '<button v-bind="$attrs" :disabled="disabled" type="button"><slot /></button>'
 })
 
-function renderWidget(props: { readonly?: boolean; nodeId?: string } = {}) {
+function renderWidget(props: { readonly?: boolean; nodeId?: NodeId } = {}) {
   return render(WidgetRecordAudio, {
     global: {
-      plugins: [i18n, createTestingPinia({ createSpy: vi.fn })],
+      plugins: [i18n, getActivePinia()!],
       stubs: { Button: ButtonStub }
     },
-    props: { readonly: false, nodeId: 'n1', ...props }
+    props: { readonly: false, nodeId: toNodeId('n1'), ...props }
   })
 }
 
@@ -129,24 +128,18 @@ function getRecorderOptions(): RecorderOptions {
 
 describe('WidgetRecordAudio', () => {
   beforeEach(() => {
+    useAudioRecorderMock.mockImplementation(() => recorder)
+    useAudioPlaybackMock.mockImplementation(() => playback)
+    useAudioWaveformMock.mockImplementation(() => waveform)
     recorder.isRecording.value = false
     recorder.recordedURL.value = null
     recorder.mediaRecorder.value = null
-    recorder.startRecording.mockClear()
-    recorder.stopRecording.mockClear()
-    recorder.dispose.mockClear()
 
     playback.isPlaying.value = false
     playback.audioElementKey.value = 0
     playback.playbackTimerInterval.value = null
-    playback.play.mockClear()
-    playback.stop.mockClear()
 
     waveform.waveformBars.value = []
-
-    useAudioRecorderMock.mockClear()
-    useAudioPlaybackMock.mockClear()
-    useAudioWaveformMock.mockClear()
 
     appMock.app.canvas.graph.getNodeById.mockReset().mockReturnValue(null)
     isDOMWidgetMock.mockReset().mockReturnValue(false)
@@ -267,7 +260,7 @@ describe('WidgetRecordAudio', () => {
 
   describe('Recording persistence via onRecordingComplete', () => {
     function createAudioWidget(initialSrc = '') {
-      const element = document.createElement('audio') as HTMLAudioElement
+      const element = document.createElement('audio')
       element.src = initialSrc
       return {
         name: 'audioUI',

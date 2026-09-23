@@ -1,14 +1,48 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { useTelemetry } from '@/platform/telemetry'
+
+const { addBreadcrumb, trackFetchTimeout } = vi.hoisted(() => ({
+  addBreadcrumb: vi.fn(),
+  trackFetchTimeout: vi.fn()
+}))
+
+vi.mock(import('@sentry/vue'), () => ({ addBreadcrumb }))
+
+vi.mock(import('@/platform/telemetry'), () => ({
+  useTelemetry: () =>
+    fromPartial<ReturnType<typeof useTelemetry>>({ trackFetchTimeout })
+}))
 
 import { api } from '@/scripts/api'
 
-// Mock global fetch
-vi.stubGlobal('fetch', vi.fn())
+function mockPendingFetch() {
+  return vi.mocked(global.fetch).mockImplementation((_input, init) => {
+    return new Promise<Response>((_resolve, reject) => {
+      const signal = init?.signal
+      if (!signal) return
+
+      if (signal.aborted) {
+        reject(signal.reason)
+        return
+      }
+
+      signal.addEventListener('abort', () => reject(signal.reason), {
+        once: true
+      })
+    })
+  })
+}
+
+const fetchTimeoutRejection = {
+  status: 'rejected',
+  reason: { name: 'TimeoutError', message: 'Fetch timeout' }
+}
 
 describe('api.fetchApi', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
-
+    vi.stubGlobal('fetch', vi.fn())
     // Reset api state
     api.user = 'test-user'
   })
@@ -166,6 +200,130 @@ describe('api.fetchApi', () => {
         expect.stringContaining('/api/test/route'),
         expect.any(Object)
       )
+    })
+  })
+
+  describe('response header timeout', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    it('aborts with a TimeoutError and forwards normalized diagnostics', async () => {
+      mockPendingFetch()
+
+      const request = api.fetchApi(
+        '/userdata/private%20workflow.json?directory=secret',
+        { method: 'post' }
+      )
+      const settled = Promise.allSettled([request])
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(await settled).toMatchObject([fetchTimeoutRejection])
+      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+        route: '/userdata/:resource',
+        method: 'POST',
+        timeout_ms: 60_000
+      })
+      expect(addBreadcrumb).toHaveBeenCalledExactlyOnceWith({
+        category: 'fetch',
+        message: 'Timeout on POST /userdata/:resource',
+        level: 'warning',
+        data: { timeout_ms: 60_000 }
+      })
+    })
+
+    it('uses a bounded fallback for unknown routes', async () => {
+      mockPendingFetch()
+
+      const request = api.fetchApi('/private-name/secret-id')
+      const settled = Promise.allSettled([request])
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(await settled).toMatchObject([fetchTimeoutRejection])
+      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+        route: '/other',
+        method: 'GET',
+        timeout_ms: 60_000
+      })
+    })
+
+    it('normalizes the video metadata endpoint', async () => {
+      mockPendingFetch()
+
+      const request = api.fetchApi('/video_metadata?filename=private.mp4')
+      const settled = Promise.allSettled([request])
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(await settled).toMatchObject([fetchTimeoutRejection])
+      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+        route: '/video_metadata',
+        method: 'GET',
+        timeout_ms: 60_000
+      })
+    })
+
+    it('uses a caller-owned 120 second timeout', async () => {
+      mockPendingFetch()
+
+      const request = api.fetchApi('/upload/image', {
+        timeoutMs: 120_000
+      })
+      const settled = Promise.allSettled([request])
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(trackFetchTimeout).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(await settled).toMatchObject([fetchTimeoutRejection])
+      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+        route: '/upload/:resource',
+        method: 'GET',
+        timeout_ms: 120_000
+      })
+    })
+
+    it('applies the default timeout alongside caller cancellation', async () => {
+      mockPendingFetch()
+      const controller = new AbortController()
+
+      const request = api.fetchApi('/assets', { signal: controller.signal })
+      const settled = Promise.allSettled([request])
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(await settled).toMatchObject([fetchTimeoutRejection])
+      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+        route: '/assets',
+        method: 'GET',
+        timeout_ms: 60_000
+      })
+    })
+
+    it('preserves caller cancellation without timeout telemetry', async () => {
+      mockPendingFetch()
+      const controller = new AbortController()
+
+      const request = api.fetchApi('/assets', { signal: controller.signal })
+      controller.abort()
+
+      await expect(request).rejects.toMatchObject({ name: 'AbortError' })
+      expect(trackFetchTimeout).not.toHaveBeenCalled()
+      expect(addBreadcrumb).not.toHaveBeenCalled()
+    })
+
+    it('clears the timeout when fetch resolves', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+
+      await api.fetchApi('/test')
+
+      expect(vi.getTimerCount()).toBe(0)
+    })
+
+    it('clears the timeout when fetch rejects', async () => {
+      vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'))
+
+      await expect(api.fetchApi('/test')).rejects.toThrow('Network error')
+
+      expect(vi.getTimerCount()).toBe(0)
     })
   })
 })

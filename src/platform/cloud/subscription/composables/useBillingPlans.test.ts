@@ -6,11 +6,22 @@ const { mockGetBillingPlans } = vi.hoisted(() => ({
   mockGetBillingPlans: vi.fn()
 }))
 
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: {
     getBillingPlans: mockGetBillingPlans
-  }
+  },
+  // What a failed rail read throws; only its message reaches `error.value`.
+  WorkspaceApiError: class extends Error {}
 }))
+
+/** Null is the legacy client; a rail is what the SDK store would hand back. */
+const railState = vi.hoisted(() => ({
+  rail: null as { readPlans: ReturnType<typeof vi.fn> } | null
+}))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingReadRail'),
+  () => ({ useBillingReadRail: () => railState.rail })
+)
 
 const buildPlan = (overrides: Partial<Plan> = {}): Plan => ({
   slug: 'standard-monthly',
@@ -39,7 +50,7 @@ describe('useBillingPlans', () => {
 
   beforeEach(() => {
     vi.resetModules()
-    mockGetBillingPlans.mockReset()
+    railState.rail = null
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
@@ -81,6 +92,42 @@ describe('useBillingPlans', () => {
       expect(currentPlanSlug.value).toBeNull()
     })
 
+    it('populates teamCreditStops from the response', async () => {
+      const stops = {
+        default_stop_index: 2,
+        stops: [
+          {
+            id: 'team_700',
+            credits: 147_700,
+            monthly: { list_price_cents: 70_000, price_cents: 66_500 },
+            yearly: { list_price_cents: 70_000, price_cents: 63_000 }
+          }
+        ]
+      }
+      mockGetBillingPlans.mockResolvedValue({
+        plans: [buildPlan()],
+        team_credit_stops: stops
+      })
+
+      const useBillingPlans = await importUseBillingPlans()
+      const { fetchPlans, teamCreditStops } = useBillingPlans()
+
+      await fetchPlans()
+
+      expect(teamCreditStops.value).toEqual(stops)
+    })
+
+    it('leaves teamCreditStops null when the response omits it', async () => {
+      mockGetBillingPlans.mockResolvedValue({ plans: [buildPlan()] })
+
+      const useBillingPlans = await importUseBillingPlans()
+      const { fetchPlans, teamCreditStops } = useBillingPlans()
+
+      await fetchPlans()
+
+      expect(teamCreditStops.value).toBeNull()
+    })
+
     it('dedupes concurrent calls while a fetch is in flight', async () => {
       let resolveFetch: (value: { plans: Plan[] }) => void = () => {}
       mockGetBillingPlans.mockImplementation(
@@ -91,16 +138,23 @@ describe('useBillingPlans', () => {
       )
 
       const useBillingPlans = await importUseBillingPlans()
-      const { fetchPlans, isLoading } = useBillingPlans()
+      const { fetchPlans, isLoading, plans } = useBillingPlans()
 
       const first = fetchPlans()
       expect(isLoading.value).toBe(true)
-      const second = fetchPlans()
+      let secondResolved = false
+      const second = fetchPlans().then(() => {
+        secondResolved = true
+      })
+
+      await Promise.resolve()
+      expect(secondResolved).toBe(false)
 
       resolveFetch({ plans: [buildPlan()] })
       await Promise.all([first, second])
 
       expect(mockGetBillingPlans).toHaveBeenCalledTimes(1)
+      expect(plans.value).toEqual([buildPlan()])
       expect(isLoading.value).toBe(false)
     })
 
@@ -144,6 +198,88 @@ describe('useBillingPlans', () => {
 
       await fetchPlans()
       expect(error.value).toBeNull()
+    })
+  })
+
+  describe('fetchPlans on the SDK rail', () => {
+    it('adopts the catalog the SDK reader decoded and leaves the client alone', async () => {
+      const apiPlans = [buildPlan()]
+      const readPlans = vi.fn(async () => ({
+        status: 'ok' as const,
+        value: { current_plan_slug: 'standard-monthly', plans: apiPlans }
+      }))
+      railState.rail = { readPlans }
+
+      const useBillingPlans = await importUseBillingPlans()
+      const { fetchPlans, plans, currentPlanSlug } = useBillingPlans()
+      await fetchPlans()
+
+      expect(readPlans).toHaveBeenCalledOnce()
+      expect(mockGetBillingPlans).not.toHaveBeenCalled()
+      expect(plans.value).toEqual(apiPlans)
+      expect(currentPlanSlug.value).toBe('standard-monthly')
+    })
+
+    it('keeps the previous catalog and reports nothing when the scope moved under the read', async () => {
+      railState.rail = {
+        readPlans: vi.fn(async () => ({
+          status: 'error' as const,
+          code: 'SUPERSEDED' as const
+        }))
+      }
+
+      const useBillingPlans = await importUseBillingPlans()
+      const { fetchPlans, plans, error, isLoading } = useBillingPlans()
+      await fetchPlans()
+
+      expect(plans.value).toEqual([])
+      expect(error.value).toBeNull()
+      expect(isLoading.value).toBe(false)
+    })
+
+    it('leaves a reported failure standing when the next read is superseded', async () => {
+      railState.rail = {
+        readPlans: vi
+          .fn()
+          .mockResolvedValueOnce({
+            status: 'error' as const,
+            code: 'REQUEST_FAILED' as const
+          })
+          .mockResolvedValueOnce({
+            status: 'error' as const,
+            code: 'SUPERSEDED' as const
+          })
+      }
+
+      const useBillingPlans = await importUseBillingPlans()
+      const { fetchPlans, plans, error } = useBillingPlans()
+
+      await fetchPlans()
+      const reported = error.value
+      expect(reported).toBe('REQUEST_FAILED')
+
+      await fetchPlans()
+
+      // The superseded read published no catalog, so it may not clear the
+      // explanation for the empty one already on screen.
+      expect(plans.value).toEqual([])
+      expect(error.value).toBe(reported)
+    })
+
+    it('surfaces a failed SDK read the way a failed client read is surfaced', async () => {
+      railState.rail = {
+        readPlans: vi.fn(async () => ({
+          status: 'error' as const,
+          code: 'REQUEST_FAILED' as const
+        }))
+      }
+
+      const useBillingPlans = await importUseBillingPlans()
+      const { fetchPlans, error } = useBillingPlans()
+      await fetchPlans()
+
+      expect(error.value).toBe('REQUEST_FAILED')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     })
   })
 

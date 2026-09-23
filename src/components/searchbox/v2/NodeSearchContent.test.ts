@@ -3,11 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
-import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 import {
   createMockNodeDef,
   setViewport,
-  setupTestPinia,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
 
@@ -23,8 +21,7 @@ const MOBILE_VIEWPORT = { width: 360, height: 800 }
 
 describe('NodeSearchContent', () => {
   beforeEach(() => {
-    setupTestPinia()
-    vi.restoreAllMocks()
+    vi.useRealTimers()
     setViewport(DESKTOP_VIEWPORT)
     const settings = useSettingStore()
     settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []
@@ -36,7 +33,7 @@ describe('NodeSearchContent', () => {
     const onAddNode = vi.fn()
     const onHoverNode = vi.fn()
     const onRemoveFilter =
-      vi.fn<(f: FuseFilterWithValue<ComfyNodeDefImpl, string>) => void>()
+      vi.fn<(f: FuseFilterWithValue<ComfyNodeDefImpl>) => void>()
     const onAddFilter = vi.fn()
     render(NodeSearchContent, {
       props: {
@@ -86,7 +83,7 @@ describe('NodeSearchContent', () => {
   ) {
     const btn = screen
       .getAllByRole('button')
-      .find((b) => b.textContent?.trim() === text)
+      .find((b) => b.textContent.trim() === text)
     expect(btn, `Expected filter button "${text}"`).toBeDefined()
     return user.click(btn!)
   }
@@ -204,16 +201,15 @@ describe('NodeSearchContent', () => {
       renderComponent()
       const texts = screen
         .getAllByRole('button')
-        .map((b) => b.textContent?.trim())
+        .map((b) => b.textContent.trim())
       expect(texts).not.toContain('Essentials')
     })
 
     it('should show only essential nodes when Essentials is selected', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
-          name: 'EssentialNode',
-          display_name: 'Essential Node',
-          essentials_category: 'basic'
+          name: 'LoadImage',
+          display_name: 'Load Image'
         }),
         createMockNodeDef({
           name: 'RegularNode',
@@ -227,52 +223,9 @@ describe('NodeSearchContent', () => {
       await waitFor(() => {
         const items = screen.getAllByTestId('node-item')
         expect(items).toHaveLength(1)
-        expect(items[0]).toHaveTextContent('Essential Node')
+        expect(items[0]).toHaveTextContent('Load Image')
       })
     })
-
-    it('should apply defaultRootFilter when provided and category is available', async () => {
-      useNodeDefStore().updateNodeDefs([
-        createMockNodeDef({
-          name: 'EssentialNode',
-          display_name: 'Essential Node',
-          essentials_category: 'basic'
-        }),
-        createMockNodeDef({
-          name: 'RegularNode',
-          display_name: 'Regular Node'
-        })
-      ])
-
-      renderComponent({ defaultRootFilter: RootCategory.Essentials })
-
-      await waitFor(() => {
-        const items = screen.getAllByTestId('node-item')
-        expect(items).toHaveLength(1)
-        expect(items[0]).toHaveTextContent('Essential Node')
-      })
-    })
-
-    it('should ignore defaultRootFilter of Essentials when no essentials exist', async () => {
-      useNodeDefStore().updateNodeDefs([
-        createMockNodeDef({
-          name: 'FrequentNode',
-          display_name: 'Frequent Node'
-        })
-      ])
-      vi.spyOn(useNodeFrequencyStore(), 'topNodeDefs', 'get').mockReturnValue([
-        useNodeDefStore().nodeDefsByName['FrequentNode']
-      ])
-
-      renderComponent({ defaultRootFilter: RootCategory.Essentials })
-
-      await waitFor(() => {
-        const items = screen.getAllByTestId('node-item')
-        expect(items).toHaveLength(1)
-        expect(items[0]).toHaveTextContent('Frequent Node')
-      })
-    })
-
     it('should show only API nodes when Partner Nodes filter is active', async () => {
       useNodeDefStore().updateNodeDefs([
         createMockNodeDef({
@@ -388,7 +341,7 @@ describe('NodeSearchContent', () => {
         const texts = screen
           .queryAllByTestId('node-item')
           .map((i) => i.textContent)
-        expect(texts.some((t) => t?.includes('Load Checkpoint'))).toBe(false)
+        expect(texts.some((t) => t.includes('Load Checkpoint'))).toBe(false)
       })
     })
 
@@ -615,7 +568,7 @@ describe('NodeSearchContent', () => {
 
       const chipTexts = screen
         .getAllByTestId('filter-chip')
-        .map((c) => c.textContent ?? '')
+        .map((c) => c.textContent)
       expect(chipTexts).toHaveLength(2)
       expect(chipTexts.some((t) => t.includes('IMAGE'))).toBe(true)
       expect(chipTexts.some((t) => t.includes('LATENT'))).toBe(true)
