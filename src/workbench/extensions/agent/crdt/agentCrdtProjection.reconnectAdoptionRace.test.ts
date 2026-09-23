@@ -105,7 +105,11 @@ const CATALOG: WidgetCatalog = {
     TestAutogrowSink: { widget_order: [] }
   }
 }
-const layout = { createNode: () => {}, deleteNodes: () => {} }
+const layout = {
+  createNode: () => {},
+  deleteNodes: () => {},
+  deleteGroups: () => {}
+}
 
 function remoteMutations(scope: GraphScope) {
   return createGraphMutations({

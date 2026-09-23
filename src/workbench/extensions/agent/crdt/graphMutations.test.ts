@@ -3087,7 +3087,11 @@ describe('graphMutations', () => {
     let liveReachable = true
     const graph = createGraphMutations({
       getScope: () => currentScope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      },
       placement,
       liveWidgets: { setValue: setLiveWidgetValue },
       liveNodes: {
@@ -3484,7 +3488,11 @@ describe('graphMutations', () => {
     const input = target.inputs[0]
     const remote = createGraphMutations({
       getScope: () => graphScopeOf(graph),
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      },
       placement: inertPlacementPort
     })
     const link = {

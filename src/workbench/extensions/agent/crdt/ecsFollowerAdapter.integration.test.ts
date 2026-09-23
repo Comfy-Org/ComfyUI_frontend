@@ -415,7 +415,11 @@ describe('EcsFollowerAdapter integration', () => {
     const mutations = createGraphMutations({
       placement: inertPlacementPort,
       getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: vi.fn(),
+        deleteGroups: vi.fn()
+      }
     })
     const realBatch = mutations.batch.bind(mutations)
     const failure = new Error('projection failed')
@@ -1017,7 +1021,11 @@ describe('EcsFollowerAdapter integration', () => {
     const deleteLayouts = vi.fn()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      },
       placement: inertPlacementPort
     })
     const adapter = new EcsFollowerAdapter(mutations)
@@ -1378,8 +1386,7 @@ describe('EcsFollowerAdapter integration', () => {
         addNode: () => true,
         setWidget: () => true,
         connect: () => true,
-        deleteNode: () => true,
-        clearSemanticGraph: () => true
+        deleteNode: () => true
       }
     }
     const adapter = new EcsFollowerAdapter(createTargetMutations)
@@ -1987,7 +1994,11 @@ describe('EcsFollowerAdapter integration', () => {
       const mutations = createGraphMutations({
         placement: inertPlacementPort,
         getScope: () => scope,
-        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups: vi.fn()
+        }
       })
       const host = mint(
         {

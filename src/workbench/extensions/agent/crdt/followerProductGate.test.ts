@@ -100,7 +100,11 @@ it.fails('keeps a projection-rejected sequence replayable through the compositio
   }
   const mutations = createGraphMutations({
     getScope: () => scope,
-    layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+    layout: {
+      createNode: vi.fn(),
+      deleteNodes: vi.fn(),
+      deleteGroups: vi.fn()
+    },
     placement: inertPlacementPort
   })
   const realBatch = mutations.batch.bind(mutations)

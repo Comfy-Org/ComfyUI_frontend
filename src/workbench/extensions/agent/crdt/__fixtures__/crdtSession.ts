@@ -79,7 +79,11 @@ export const crdtTest = baseTest.extend<CrdtFixtures>({
       const adapter = new EcsFollowerAdapter(
         createGraphMutations({
           getScope: () => graphScopeOf(graph),
-          layout: { createNode: () => {}, deleteNodes: () => {} },
+          layout: {
+            createNode: () => {},
+            deleteNodes: () => {},
+            deleteGroups: () => {}
+          },
           placement: inertPlacementPort
         })
       )
