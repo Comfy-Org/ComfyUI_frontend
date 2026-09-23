@@ -128,11 +128,9 @@ test(
     const reopenedPanel = page.locator('#agent-panel-root')
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
-    // core/1.54's ToolCallGroup trigger (main's WorkSummary redesign is not
-    // backported here) labels a settled group "Ran {count} tool calls for
-    // {seconds} seconds" — 420ms + 180ms across the 2 mocked calls above.
     const summary = reopenedPanel.getByRole('button', {
-      name: /ran 2 tool calls for 0\.6 seconds/i
+      name: enMessages.agent.worked,
+      exact: true
     })
     await expect(summary).toBeVisible({ timeout: 10_000 })
     await expect(summary).toHaveAttribute('aria-expanded', 'false')
@@ -141,5 +139,9 @@ test(
     await summary.click()
     await expect(reopenedPanel.getByText('Search nodes')).toBeVisible()
     await expect(reopenedPanel.getByText('Add node')).toBeVisible()
+    await expect(reopenedPanel.getByRole('listitem')).toHaveText([
+      'Search nodes',
+      'Add node'
+    ])
   }
 )
