@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { watch } from 'vue'
 
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -11,7 +12,17 @@ import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { toNodeId } from '@/types/nodeId'
 
-type TestWidget = BaseDOMWidget<object | string>
+type TestWidget = BaseDOMWidget
+
+type WidgetUpdateCounters = {
+  isVisibleCalls: number
+  nodeVisibilityChecks: number
+  positionChanges: number
+  sizeChanges: number
+  visibleChanges: number
+  zIndexChanges: number
+  zIndexLookups: number
+}
 
 function createNode(
   graph: LGraph,
@@ -226,4 +237,186 @@ describe('DomWidgets positioning', () => {
 
     expect(widgetState.pos).not.toBe(posAfterFirstFrame)
   })
+})
+
+describe('DomWidgets deterministic update matrix', () => {
+  const widgetCounts = [0, 10, 100] as const
+
+  async function measureUpdate({
+    count,
+    update,
+    widgetsVisible
+  }: {
+    count: number
+    update: 'node-geometry' | 'node-layout' | 'steady' | 'zoom'
+    widgetsVisible: boolean
+  }): Promise<WidgetUpdateCounters> {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+    const graph = new LGraph()
+    const isVisible = vi.fn(() => widgetsVisible)
+
+    for (let index = 0; index < count; index++) {
+      const node = createNode(graph, index + 1, `node-${index}`, [index, index])
+      const widget = createWidget(`widget-${index}`, node)
+      widget.isVisible = isVisible
+      domWidgetStore.registerWidget(widget)
+    }
+
+    const canvas = createCanvas(graph)
+    const nodeVisibility = vi.mocked(canvas.isNodeVisible)
+    const zIndexLookup = vi.spyOn(graph.nodes, 'indexOf')
+    canvasStore.canvas = canvas
+
+    const rendered = render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
+    })
+    drawFrame(canvas)
+
+    const changes = {
+      position: 0,
+      size: 0,
+      visible: 0,
+      zIndex: 0
+    }
+    const stops = [...domWidgetStore.widgetStates.values()].flatMap((state) => [
+      watch(
+        () => state.pos,
+        () => changes.position++,
+        { flush: 'sync' }
+      ),
+      watch(
+        () => state.size,
+        () => changes.size++,
+        { flush: 'sync' }
+      ),
+      watch(
+        () => state.visible,
+        () => changes.visible++,
+        { flush: 'sync' }
+      ),
+      watch(
+        () => state.zIndex,
+        () => changes.zIndex++,
+        { flush: 'sync' }
+      )
+    ])
+
+    isVisible.mockClear()
+    nodeVisibility.mockClear()
+    zIndexLookup.mockClear()
+
+    if (update === 'node-geometry') {
+      for (const node of graph.nodes) node.pos[0] += 1
+    } else if (update === 'node-layout') {
+      for (const state of domWidgetStore.widgetStates.values()) {
+        state.widget.computedHeight = (state.widget.computedHeight ?? 50) + 1
+      }
+    } else if (update === 'zoom') {
+      canvas.ds.scale = 1.25
+    }
+
+    drawFrame(canvas)
+
+    const counters: WidgetUpdateCounters = {
+      isVisibleCalls: isVisible.mock.calls.length,
+      nodeVisibilityChecks: nodeVisibility.mock.calls.length,
+      positionChanges: changes.position,
+      sizeChanges: changes.size,
+      visibleChanges: changes.visible,
+      zIndexChanges: changes.zIndex,
+      zIndexLookups: zIndexLookup.mock.calls.length
+    }
+
+    for (const stop of stops) stop()
+    rendered.unmount()
+    domWidgetStore.clear()
+    canvasStore.canvas = null
+    return counters
+  }
+
+  it.for(widgetCounts)(
+    'does no reactive state work for %i visible widgets on a steady draw',
+    async (count) => {
+      const result = await measureUpdate({
+        count,
+        update: 'steady',
+        widgetsVisible: true
+      })
+
+      expect(result).toEqual({
+        isVisibleCalls: count,
+        nodeVisibilityChecks: count,
+        positionChanges: 0,
+        sizeChanges: 0,
+        visibleChanges: 0,
+        zIndexChanges: 0,
+        zIndexLookups: count
+      })
+    }
+  )
+
+  it.for(widgetCounts)(
+    'does no downstream work for %i hidden widgets on a steady draw',
+    async (count) => {
+      const result = await measureUpdate({
+        count,
+        update: 'steady',
+        widgetsVisible: false
+      })
+
+      expect(result).toEqual({
+        isVisibleCalls: count,
+        nodeVisibilityChecks: 0,
+        positionChanges: 0,
+        sizeChanges: 0,
+        visibleChanges: 0,
+        zIndexChanges: 0,
+        zIndexLookups: 0
+      })
+    }
+  )
+
+  it.for(widgetCounts)(
+    'updates size once for each of %i visible widgets after node layout changes',
+    async (count) => {
+      const result = await measureUpdate({
+        count,
+        update: 'node-layout',
+        widgetsVisible: true
+      })
+
+      expect(result.positionChanges).toBe(0)
+      expect(result.sizeChanges).toBe(count)
+    }
+  )
+
+  it.for(widgetCounts)(
+    'updates position once for each of %i visible widgets after geometry changes',
+    async (count) => {
+      const result = await measureUpdate({
+        count,
+        update: 'node-geometry',
+        widgetsVisible: true
+      })
+
+      expect(result.positionChanges).toBe(count)
+      expect(result.sizeChanges).toBe(0)
+      expect(result.zIndexLookups).toBe(count)
+    }
+  )
+
+  it.for(widgetCounts)(
+    'updates position once for each of %i visible widgets after zoom changes',
+    async (count) => {
+      const result = await measureUpdate({
+        count,
+        update: 'zoom',
+        widgetsVisible: true
+      })
+
+      expect(result.positionChanges).toBe(count)
+      expect(result.sizeChanges).toBe(0)
+    }
+  )
 })

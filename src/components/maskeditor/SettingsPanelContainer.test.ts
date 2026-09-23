@@ -3,38 +3,43 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import SettingsPanelContainer from '@/components/maskeditor/SettingsPanelContainer.vue'
 import { Tools } from '@/extensions/core/maskeditor/types'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-const mockStore = vi.hoisted(() => ({
-  currentTool: 'pen' as Tools
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: () => mockStore
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/BrushSettingsPanel.vue'),
+  () => ({
+    default: {
+      name: 'BrushSettingsPanelStub',
+      template: '<div>brush-panel</div>'
+    }
+  })
+)
 
-vi.mock('@/components/maskeditor/BrushSettingsPanel.vue', () => ({
-  default: {
-    name: 'BrushSettingsPanelStub',
-    template: '<div>brush-panel</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/ColorSelectSettingsPanel.vue'),
+  () => ({
+    default: {
+      name: 'ColorSelectSettingsPanelStub',
+      template: '<div>color-panel</div>'
+    }
+  })
+)
 
-vi.mock('@/components/maskeditor/ColorSelectSettingsPanel.vue', () => ({
-  default: {
-    name: 'ColorSelectSettingsPanelStub',
-    template: '<div>color-panel</div>'
-  }
-}))
-
-vi.mock('@/components/maskeditor/PaintBucketSettingsPanel.vue', () => ({
-  default: {
-    name: 'PaintBucketSettingsPanelStub',
-    template: '<div>bucket-panel</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/PaintBucketSettingsPanel.vue'),
+  () => ({
+    default: {
+      name: 'PaintBucketSettingsPanelStub',
+      template: '<div>bucket-panel</div>'
+    }
+  })
+)
 
 describe('SettingsPanelContainer', () => {
   beforeEach(() => {
+    mockStore = useMaskEditorStore()
     mockStore.currentTool = Tools.MaskPen
   })
 

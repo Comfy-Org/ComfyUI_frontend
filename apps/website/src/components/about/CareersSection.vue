@@ -10,7 +10,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-24 lg:px-20 lg:py-32">
+  <section class="mx-auto max-w-9xl px-6 py-24 lg:px-20 lg:py-32">
     <GlassCard
       class="mx-auto mt-20 flex flex-col gap-12 lg:flex-row lg:items-stretch lg:gap-8"
     >
@@ -32,7 +32,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
             {{ t('about.careers.label', locale) }}
           </SectionLabel>
           <h2
-            class="text-primary-comfy-canvas mt-4 text-3xl font-light lg:text-5xl"
+            class="mt-4 text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
           >
             {{ t('about.careers.heading', locale) }}
           </h2>
@@ -46,7 +46,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           >
             {{ t('about.careers.cta', locale) }}
           </BrandButton>
-          <p class="text-primary-warm-gray mt-6 text-sm">
+          <p class="mt-6 text-sm text-primary-warm-gray">
             {{ t('about.careers.noRole', locale) }}
             <a
               href="mailto:hiring@comfy.org"

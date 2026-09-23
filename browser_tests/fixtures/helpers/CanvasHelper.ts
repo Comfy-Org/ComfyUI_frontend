@@ -313,8 +313,10 @@ export class CanvasHelper {
 
       expect(reroutes).toHaveLength(Object.keys(expectedReroutes).length)
       for (const reroute of reroutes) {
+        if (!(reroute.id in expectedReroutes)) {
+          throw new Error(`Unexpected reroute ${reroute.id}`)
+        }
         const expected = expectedReroutes[reroute.id]
-        if (!expected) throw new Error(`Unexpected reroute ${reroute.id}`)
         expect(reroute.x).toBeCloseTo(expected.x, 1)
         expect(reroute.y).toBeCloseTo(expected.y, 1)
       }

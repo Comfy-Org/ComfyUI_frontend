@@ -1,21 +1,20 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AssetItem } from '../../schemas/assetSchema'
-import {
-  getOutputGroupAssets,
-  mapInputFileToAssetItem,
-  unflattenOutputAssets
-} from './assetMappers'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-vi.mock('@/scripts/api', () => ({
+import { mapInputFileToAssetItem, unflattenOutputAssets } from './assetMappers'
+
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
-    apiURL: (path: string) => `/api${path}`
+    apiURL: (path: string) => `/api${path}`,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    getServerFeature: vi.fn(() => false)
   }
 }))
 
-vi.mock('@/scripts/app', () => ({ app: {} }))
-
-vi.mock('@/platform/distribution/cloudPreviewUtil', () => ({
+vi.mock(import('@/platform/distribution/cloudPreviewUtil'), () => ({
   appendCloudResParam: vi.fn()
 }))
 
@@ -62,46 +61,60 @@ describe('mapInputFileToAssetItem', () => {
 })
 
 describe('unflattenOutputAssets', () => {
-  const asset = (id: string, name: string, created_at: string): AssetItem => ({
-    id,
-    job_id: 'job-1',
-    name,
-    size: 1,
-    created_at,
-    updated_at: created_at,
-    tags: ['output'],
-    preview_url: `/${name}`,
-    user_metadata: { nodeId: id, subfolder: 'outputs' }
+  it('preserves each output directory type', () => {
+    const asset = {
+      job_id: 'job-id',
+      size: 1,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z'
+    }
+    const assets = [
+      {
+        ...asset,
+        id: 'temp-id',
+        name: 'preview.png',
+        tags: ['temp']
+      },
+      {
+        ...asset,
+        id: 'output-id',
+        name: 'saved.png',
+        created_at: '2026-01-01T00:00:01Z',
+        updated_at: '2026-01-01T00:00:01Z',
+        tags: ['output']
+      }
+    ] satisfies AssetItem[]
+
+    const [grouped] = unflattenOutputAssets(assets)
+    const metadata = getOutputAssetMetadata(grouped.user_metadata)
+
+    expect(metadata?.allOutputs?.map((output) => output.type)).toEqual([
+      'temp',
+      'output'
+    ])
   })
 
-  it('keeps the representative asset id and exposes plain child assets', () => {
-    const first = {
-      ...asset('asset-1', 'first.png', '2026-01-01T00:00:00Z'),
-      user_metadata: { jobId: 'stale-job' }
+  it('keeps the representative asset id apart from same-named outputs', () => {
+    const asset = {
+      job_id: 'job-id',
+      name: 'ComfyUI_00001.glb',
+      size: 1,
+      tags: ['output'],
+      updated_at: '2026-01-01T00:00:00Z'
     }
-    const second = asset('asset-2', 'second.png', '2026-01-02T00:00:00Z')
+    const assets = [
+      { ...asset, id: 'earlier-id', created_at: '2026-01-01T00:00:00Z' },
+      { ...asset, id: 'later-id', created_at: '2026-01-01T00:00:01Z' }
+    ] satisfies AssetItem[]
 
-    const [group] = unflattenOutputAssets([first, second])
+    const [grouped] = unflattenOutputAssets(assets)
+    const metadata = getOutputAssetMetadata(grouped.user_metadata)
 
-    expect(group.id).toBe('asset-2')
-    expect(group.user_metadata?.jobId).toBe('job-1')
-    expect(group.user_metadata?.outputCount).toBe(2)
-    expect(group.user_metadata?.allOutputs).toBeUndefined()
-    expect(getOutputGroupAssets(group)).toEqual([first, second])
-  })
-
-  it('falls back to the newest child and preserves ungrouped ordering', () => {
-    const first = asset('asset-1', 'first.txt', '2026-01-01T00:00:00Z')
-    const second = asset('asset-2', 'second.txt', '2026-01-02T00:00:00Z')
-    const ungrouped = {
-      ...asset('ungrouped', 'latest.txt', '2026-01-03T00:00:00Z'),
-      job_id: undefined
-    }
-
-    const result = unflattenOutputAssets([first, ungrouped, second])
-
-    expect(result[0]).toBe(ungrouped)
-    expect(result[1].id).toBe('asset-2')
-    expect(getOutputGroupAssets(result[1])).toEqual([first, second])
+    expect(grouped.id).toBe('job-id')
+    expect(metadata?.assetId).toBe('later-id')
+    expect(metadata?.allOutputs?.map((output) => output.assetId)).toEqual([
+      'earlier-id',
+      'later-id'
+    ])
   })
 })

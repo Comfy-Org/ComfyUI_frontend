@@ -36,7 +36,7 @@ Reference docs (read if you need full context):
 
 5. **Shared mutable state between tests** — Variables declared outside `test()` blocks, `let` state mutated across tests, or tests depending on execution order. Each test must be independently runnable.
 
-6. **Missing cleanup of server-persisted state** — Settings changed via `comfyPage.settings.setSetting()` persist across tests. Must be reset in `afterEach` or at test start. Same for uploaded files or saved workflows. Prefer moving cleanup into [fixture options](https://playwright.dev/docs/test-fixtures#fixtures-options) so individual tests don't manage reset logic.
+6. **Missing state isolation** — `comfyPageFixture` replaces backend settings before each test, so do not request settings resets in `afterEach`. Prefer `test.use({ initialSettings })` over startup-only setters in `beforeEach`. Nested option objects replace their parents; preserve inherited overrides and pre-navigation mock ordering. Manual boots must seed settings for their user, and mock-only cloud tests need a fresh mock settings response. Uploaded files and saved workflows still need cleanup. See [Starting settings and isolation](../../browser_tests/README.md#starting-settings-and-isolation).
 
 7. **Double-click without `{ delay }` option** — `dblclick()` without `{ delay: 5 }` or similar can be too fast for the canvas event handler.
 
@@ -46,7 +46,7 @@ Reference docs (read if you need full context):
    - `comfyPage.command.executeCommand()` for menu/command actions
    - `comfyPage.workflow.loadWorkflow()` for loading test workflows
    - `comfyPage.canvasOps.resetView()` for view reset
-   - `comfyPage.settings.setSetting()` for settings
+   - `test.use({ initialSettings })` for starting settings; `comfyPage.settings.setSetting()` for runtime changes under test
    - Component page objects in `browser_tests/fixtures/components/`
 
 9. **Building workflows programmatically when a JSON asset would work** — Complex `page.evaluate` chains to construct a graph should use a premade JSON workflow in `browser_tests/assets/` loaded via `comfyPage.workflow.loadWorkflow()`.
@@ -55,7 +55,7 @@ Reference docs (read if you need full context):
 
 ### Convention Violations (Minor)
 
-11. **Missing project-routing tags** — Project-routing tags are load-bearing: `playwright.config.ts` selects which project/run a test lands in by grepping `@mobile`, `@2x`, `@0.5x`, `@perf`, `@audit`, `@cloud`, `@oss`. A test that must run in one of those projects but lacks the tag silently won't run there. Organizational tags (`@smoke`, `@slow`, `@screenshot`, `@canvas`, `@node`, `@widget`, `@vue-nodes`, `@subgraph`, `@ui`) are for `--grep` filtering and are encouraged but not mandatory. See `browser_tests/README.md` → Test Tags.
+11. **Missing required tags** — Project-routing tags are load-bearing: `playwright.config.ts` selects which project/run a test lands in by grepping `@mobile`, `@2x`, `@0.5x`, `@perf`, `@audit`, `@cloud`, `@oss`. A test that must run in one of those projects but lacks the tag silently won't run there. Vue-node tests must use `@vue-nodes`, which enables the renderer and waits for initial readiness. Never manually set `Comfy.VueNodes.Enabled` or call `comfyPage.vueNodes.waitForNodes()` in tests. Organizational tags (`@smoke`, `@slow`, `@screenshot`, `@canvas`, `@node`, `@widget`, `@subgraph`, `@ui`) are for `--grep` filtering and are encouraged but not mandatory. See `browser_tests/README.md` → Test Tags.
 
 12. **`as any` type assertions** — Forbidden in E2E tests. Use specific type assertions or test-local type helpers. See `browser_tests/README.md` → Type safety for acceptable patterns.
 

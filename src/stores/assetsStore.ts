@@ -1,7 +1,16 @@
 import { useAsyncState, whenever } from '@vueuse/core'
 import { delay, difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, shallowReactive, toValue } from 'vue'
+import {
+  computed,
+  effectScope,
+  reactive,
+  ref,
+  shallowReactive,
+  toValue,
+  watch
+} from 'vue'
+import type { EffectScope } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
@@ -14,12 +23,15 @@ import type {
   AssetResponse,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
-import { createAssetList } from '@/platform/assets/composables/createAssetList'
+import {
+  useAssetsQuery,
+  invalidateAll
+} from '@/platform/assets/composables/useAssetsQuery'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
-import { reportError } from '@/platform/telemetry/reportError'
+import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 
 import { TaskItemImpl } from './queueStore'
@@ -80,8 +92,7 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
   return assetItems.sort(
     (a, b) =>
-      new Date(b.created_at ?? 0).getTime() -
-      new Date(a.created_at ?? 0).getTime()
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
 }
 
@@ -122,16 +133,15 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
-  const updateInputs = async () => {
-    await executeUpdateInputs()
-  }
   const historyInputs: PagedList<AssetItem> = {
     hasMore: false,
-    invalidate: updateInputs,
+    invalidate: async () => {
+      await executeUpdateInputs()
+    },
     isLoading: inputLoading,
     items: rawInputAssets,
-    loadMore: updateInputs,
-    loadNew: updateInputs
+    loadMore: async () => undefined,
+    loadNew: async () => undefined
   }
 
   function useHistoryAssets(): PagedList<AssetItem> {
@@ -174,9 +184,9 @@ export const useAssetsStore = defineStore('assets', () => {
           loadedIds.add(asset.id)
 
           // Find insertion index to maintain sorted order (newest first)
-          const assetTime = new Date(asset.created_at ?? 0).getTime()
+          const assetTime = new Date(asset.created_at).getTime()
           const insertIndex = allHistoryItems.value.findIndex(
-            (item) => new Date(item.created_at ?? 0).getTime() < assetTime
+            (item) => new Date(item.created_at).getTime() < assetTime
           )
 
           if (insertIndex === -1) {
@@ -271,42 +281,32 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   }
 
-  const queryOptions = {
-    onError: (reason: string, error?: unknown) =>
-      reportError(error ?? new Error(reason), {
-        errorType: 'asset_query_failure'
-      })
-  }
-  const cloudInputAssets = createAssetList(
-    { include_tags: ['input'] },
-    queryOptions
-  )
-  const cloudOutputAssets = createAssetList(
-    { tags_any: ['output', 'temp'] },
-    queryOptions
-  )
-  const historyOutputAssets = useHistoryAssets()
-  const groupedCloudOutputAssets: PagedList<AssetItem> = {
-    ...cloudOutputAssets,
-    items: computed(() =>
-      unflattenOutputAssets(toValue(cloudOutputAssets.items))
-    )
-  }
-  const inputAssets = computed(() =>
-    flags.assetsEnabled ? cloudInputAssets : historyInputs
-  )
-  const outputAssets = computed(() =>
-    flags.assetsEnabled ? groupedCloudOutputAssets : historyOutputAssets
-  )
+  const inputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const outputAssets = ref<PagedList<AssetItem>>(undefined!)
+  let assetsScope: EffectScope | undefined
+  watch(
+    () => flags.assetsEnabled,
+    (isAssets) => {
+      if (assetsScope) assetsScope.stop()
+      assetsScope = undefined
 
-  async function invalidateAll() {
-    await Promise.all([
-      cloudInputAssets.invalidate(),
-      cloudOutputAssets.invalidate(),
-      historyInputs.invalidate(),
-      historyOutputAssets.invalidate()
-    ])
-  }
+      if (isAssets) {
+        assetsScope = effectScope()
+        assetsScope.run(() => {
+          inputAssets.value = useAssetsQuery({ tags_any: ['input'] })
+          const flatAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
+          outputAssets.value = new WrappedList(
+            flatAssets,
+            unflattenOutputAssets
+          )
+        })
+      } else {
+        inputAssets.value = historyInputs
+        outputAssets.value = useHistoryAssets()
+      }
+    },
+    { immediate: true }
+  )
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -363,8 +363,8 @@ export const useAssetsStore = defineStore('assets', () => {
    * to category internally using modelToNodeStore.getCategoryForNodeType().
    *
    * Runs on every distribution; whether anything fetches through it is
-   * decided by consumers via `assetService.isAssetAPIEnabled()`, which stays
-   * the authoritative off-cloud gate.
+   * decided by consumers via `assetService.isWidgetAssetPickerEnabled()`,
+   * which hard-gates widget surfaces to cloud.
    */
   const getModelState = () => {
     const modelStateByCategory = ref(new Map<string, ModelPaginationState>())
@@ -819,7 +819,7 @@ export const useAssetsStore = defineStore('assets', () => {
               category,
               state
             ] of modelStateByCategory.value.entries()) {
-              if (state.assets?.has(asset.id)) {
+              if (state.assets.has(asset.id)) {
                 categoriesToInvalidate.add(category)
               }
             }
@@ -881,7 +881,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
       const providers = modelToNodeStore
         .getAllNodeProviders(modelType)
-        .filter((provider) => provider.nodeDef?.name)
+        .filter((provider) => provider.nodeDef.name)
 
       const nodeTypeUpdates = providers.map((provider) =>
         updateModelsForNodeType(provider.nodeDef.name).then(
@@ -914,7 +914,6 @@ export const useAssetsStore = defineStore('assets', () => {
     // States
     inputAssets,
     outputAssets,
-    flatOutputAssets: cloudOutputAssets,
     invalidateAll,
 
     // Deletion tracking

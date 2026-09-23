@@ -3,6 +3,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { Clock } from '@lucide/vue'
 
 import { t } from '../../i18n/translations'
+import SafeRichText from '@/components/common/SafeRichTextContent'
 import CheckIcon from '../icons/CheckIcon.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -62,7 +63,7 @@ const features: IncludedFeature[] = [
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-24">
+  <section class="mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-24">
     <div class="mx-auto w-full lg:grid lg:grid-cols-[280px_1fr] lg:gap-x-16">
       <div
         class="sticky top-20 mb-10 bg-primary-comfy-ink py-2 lg:top-28 lg:mb-0 lg:self-start"
@@ -93,7 +94,7 @@ const features: IncludedFeature[] = [
             />
             <CheckIcon
               v-else
-              class="text-primary-comfy-yellow mt-0.5 size-4 shrink-0"
+              class="mt-0.5 size-4 shrink-0 text-primary-comfy-yellow"
             />
             <p class="text-sm font-medium text-primary-comfy-canvas">
               {{ t(feature.titleKey, locale) }}
@@ -106,9 +107,10 @@ const features: IncludedFeature[] = [
             </p>
           </div>
 
-          <p
+          <SafeRichText
+            as="p"
             class="mt-3 text-sm/relaxed text-primary-comfy-canvas/55 lg:mt-0"
-            v-html="t(feature.descriptionKey, locale)"
+            :html="t(feature.descriptionKey, locale)"
           />
         </div>
       </div>

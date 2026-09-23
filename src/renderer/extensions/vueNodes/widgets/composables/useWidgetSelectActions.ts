@@ -5,7 +5,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
-import type { ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -32,7 +32,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         : dropdownItems.value.find((item) => item.id === id)?.name
 
     modelValue.value = name
-    useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+    useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   async function uploadFile(
@@ -79,7 +79,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
     async (files: File[]) => {
-      if (!files || files.length === 0) return
+      if (files.length === 0) return
 
       const uploadedPaths = await uploadFiles(files)
 
@@ -104,7 +104,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         widget.callback(uploadedPaths[0])
       }
 
-      useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+      useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
     }
   )
 

@@ -220,7 +220,7 @@ describe('prepareSurvey', () => {
       ]
     }
     const prepared = prepareSurvey(survey)
-    const values = prepared.fields[0]!.options!.map((o) => o.value)
+    const values = prepared.fields[0].options!.map((o) => o.value)
     expect(values).toContain('a')
     expect(values).toContain('b')
     expect(values[values.length - 1]).toBe('other')
@@ -244,7 +244,7 @@ describe('prepareSurvey', () => {
       ]
     }
     const prepared = prepareSurvey(survey)
-    const values = prepared.fields[0]!.options!.map((o) => o.value)
+    const values = prepared.fields[0].options!.map((o) => o.value)
     expect(values.slice(-2).sort()).toEqual(['not_sure', 'other'])
     expect(values.slice(0, -2).sort()).toEqual(['a', 'b'])
   })

@@ -69,6 +69,8 @@ def bucket(file, path):
         return (None, 'connectivity')
     if 'coreSmoke' in file:
         return (None, 'core smoke')
+    if 'legacyWidgetRegistration' in file:
+        return (None, 'legacy widgets')
     return (None, 'pure specs')
 
 RANK = {'skipped': 1, 'flaky': 2, 'unexpected': 3}

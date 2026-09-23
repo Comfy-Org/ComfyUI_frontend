@@ -1,6 +1,5 @@
 import type { Page, Route } from '@playwright/test'
 import type {
-  Asset,
   CreateAssetExportData,
   CreateAssetExportResponse,
   JobsListResponse,
@@ -93,26 +92,6 @@ export function createMockJobs(
       ...baseOverrides
     })
   )
-}
-
-export function createMockCloudAsset(
-  overrides: Pick<Asset, 'id' | 'name'> & Partial<Asset>
-): Asset {
-  const timestamp = new Date(0).toISOString()
-  return {
-    mime_type: 'image/png',
-    tags: ['output'],
-    preview_url: `/api/view?filename=${overrides.name}&type=output`,
-    created_at: timestamp,
-    updated_at: timestamp,
-    ...overrides
-  }
-}
-
-export function createMockAssetListResponse(
-  assets: Asset[]
-): ListAssetsResponse {
-  return { assets, total: assets.length, has_more: false }
 }
 
 function parseLimit(url: URL, total: number): number {
@@ -338,7 +317,7 @@ export class AssetsHelper {
     this.deleteHistoryRouteHandler = async (route: Route) => {
       const request = route.request()
       if (request.method() !== 'POST') {
-        await route.continue()
+        await route.fallback()
         return
       }
 

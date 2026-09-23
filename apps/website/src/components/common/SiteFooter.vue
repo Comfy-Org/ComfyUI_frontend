@@ -36,24 +36,37 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: t('nav.comfyLocal', locale), href: routes.download },
       { label: t('nav.comfyCloud', locale), href: routes.cloud },
-      { label: t('nav.comfyApi', locale), href: routes.api },
-      { label: t('nav.comfyEnterprise', locale), href: routes.cloudEnterprise },
-      { label: t('nav.pricing', locale), href: routes.cloudPricing },
+      { label: t('nav.developerPlatform', locale), href: routes.platform },
+      { label: t('nav.comfyEnterprise', locale), href: routes.enterprise },
+      { label: t('nav.pricing', locale), href: routes.pricing },
       { label: t('nav.mcpServer', locale), href: routes.mcp },
+      { label: t('nav.comfyAgent', locale), href: routes.agent },
+      { label: t('nav.comfyCli', locale), href: routes.cli }
+    ]
+  },
+  {
+    title: t('footer.models', locale),
+    links: [
       { label: t('nav.supportedModels', locale), href: routes.models },
-      {
-        label: t('footer.modelsShowcase', locale),
-        href: routes.modelsShowcase
-      },
       { label: t('footer.minimaxH3', locale), href: routes.minimax },
       {
         label: t('footer.minimaxMusic3', locale),
         href: routes.minimaxMusic3
       },
+      {
+        label: t('footer.minimaxLicense', locale),
+        href: routes.minimaxLicense
+      },
       { label: t('footer.seedance', locale), href: routes.seedance },
       { label: t('footer.wanAnimate2', locale), href: routes.wanAnimate2 },
       { label: t('footer.ltx', locale), href: routes.ltx },
+      { label: t('footer.geminiOmni', locale), href: routes.geminiOmni },
       { label: t('footer.wan3', locale), href: routes.wan3 },
+      {
+        label: t('footer.chatgptImage25', locale),
+        href: routes.chatgptImage25
+      },
+      { label: t('footer.qwenImage21', locale), href: routes.qwenImage21 },
       { label: t('footer.flux3', locale), href: routes.flux3 }
     ]
   },
@@ -61,6 +74,15 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
     title: t('footer.resources', locale),
     links: [
       { label: t('nav.learning', locale), href: routes.learning },
+      {
+        label: t('nav.customerStories', locale),
+        href: routes.customers
+      },
+      { label: t('footer.workflows', locale), href: externalLinks.workflows },
+      {
+        label: t('footer.useCases', locale),
+        href: externalLinks.workflowUseCases
+      },
       { label: t('nav.launches', locale), href: routes.launches },
       { label: t('nav.fdct', locale), href: routes.fdct },
       {
@@ -108,25 +130,27 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         href: routes.affiliates
       }
     ]
+  },
+  {
+    title: t('footer.company', locale),
+    links: [
+      { label: t('footer.about', locale), href: routes.about },
+      { label: t('nav.careers', locale), href: routes.careers },
+      { label: t('nav.brand', locale), href: routes.brand },
+      {
+        label: t('footer.termsOfService', locale),
+        href: routes.termsOfService
+      },
+      { label: t('footer.enterpriseMsa', locale), href: routes.enterpriseMsa },
+      { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy },
+      {
+        label: t('footer.trustSafety', locale),
+        href: externalLinks.trustCenter,
+        external: true
+      }
+    ]
   }
 ]
-
-const companyColumn: { title: string; links: FooterLink[] } = {
-  title: t('footer.company', locale),
-  links: [
-    { label: t('footer.about', locale), href: routes.about },
-    { label: t('nav.careers', locale), href: routes.careers },
-    { label: t('nav.brand', locale), href: routes.brand },
-    { label: t('footer.termsOfService', locale), href: routes.termsOfService },
-    { label: t('footer.enterpriseMsa', locale), href: routes.enterpriseMsa },
-    { label: t('footer.privacyPolicy', locale), href: routes.privacyPolicy },
-    {
-      label: t('footer.trustSafety', locale),
-      href: externalLinks.trustCenter,
-      external: true
-    }
-  ]
-}
 
 const contactColumn: { title: string; links: FooterLink[] } = {
   title: t('footer.contact', locale),
@@ -162,9 +186,8 @@ const contactColumn: { title: string; links: FooterLink[] } = {
 
       <!-- Link columns -->
       <div class="flex flex-col gap-12 lg:row-span-2 lg:justify-between">
-        <!-- Mobile: 2×2 grid -->
-        <div class="flex flex-col gap-12 lg:hidden">
-          <div class="grid grid-cols-2 gap-12">
+        <div class="flex flex-col gap-12">
+          <div class="grid grid-cols-1 gap-12 lg:grid-cols-4">
             <FooterLinkColumn
               v-for="column in topColumns"
               :key="column.title"
@@ -172,31 +195,8 @@ const contactColumn: { title: string; links: FooterLink[] } = {
               :links="column.links"
             />
           </div>
-          <div class="grid grid-cols-2 gap-12">
-            <FooterLinkColumn
-              :title="companyColumn.title"
-              :links="companyColumn.links"
-            />
-            <FooterLinkColumn
-              :title="contactColumn.title"
-              :links="contactColumn.links"
-            />
-          </div>
-        </div>
 
-        <!-- Desktop: 3-col, Company+Contact merged -->
-        <div class="hidden grid-cols-3 gap-12 lg:grid">
-          <FooterLinkColumn
-            v-for="column in topColumns"
-            :key="column.title"
-            :title="column.title"
-            :links="column.links"
-          />
-          <div class="flex flex-col gap-10">
-            <FooterLinkColumn
-              :title="companyColumn.title"
-              :links="companyColumn.links"
-            />
+          <div class="grid grid-cols-1 gap-12">
             <FooterLinkColumn
               :title="contactColumn.title"
               :links="contactColumn.links"

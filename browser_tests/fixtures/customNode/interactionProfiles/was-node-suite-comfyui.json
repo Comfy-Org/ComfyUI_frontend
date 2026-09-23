@@ -3,7 +3,11 @@
     "core": "b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2",
     "pin": "ea935d1044ae5a26efa54ebeb18fe9020af49a45"
   },
-  "schema": 1,
+  "schema": 3,
+  "corpus": {
+    "count": 220,
+    "nodeTypesSha256": "0a8583097d6b6e4d583e02c8c5bee3de6b6d5a0ed7f494f0bef94a7f670b3c1e"
+  },
   "nodes": {
     "Blend Latents": {
       "connectFirst": [],
@@ -17,7 +21,7 @@
     },
     "BLIP Model Loader": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Boolean To Text": {
@@ -37,7 +41,7 @@
     },
     "Bounded Image Crop": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Bounded Image Crop with Mask": {
@@ -46,32 +50,32 @@
       "disconnect": []
     },
     "Bus Node": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "Cache Node": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Checkpoint Loader": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "Checkpoint Loader (Simple)": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "CLIP Input Switch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "CLIP Vision Input Switch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -82,7 +86,7 @@
     },
     "CLIPSeg Masking": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "CLIPSeg Model Loader": {
@@ -92,26 +96,26 @@
     },
     "CLIPSEG2": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "CLIPTextEncode (NSP)": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "Conditioning Input Switch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "Constant Number": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "Control Net Model Input Switch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -132,17 +136,17 @@
     },
     "Create Morph Image": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Create Morph Image from Path": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Create Video from Path": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Debug Number to Console": {
@@ -151,7 +155,7 @@
       "disconnect": []
     },
     "Dictionary to Console": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -161,12 +165,12 @@
       "disconnect": []
     },
     "Diffusers Model Loader": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "Export API": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -182,7 +186,7 @@
     },
     "Image Analyze": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Aspect Ratio": {
@@ -226,7 +230,7 @@
       "disconnect": []
     },
     "Image Bounds to Console": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -242,12 +246,12 @@
     },
     "Image Color Palette": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Crop Face": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Crop Location": {
@@ -267,12 +271,12 @@
     },
     "Image Dragan Photography Filter": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Edge Detection Filter": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image fDOF Filter": {
@@ -287,12 +291,12 @@
     },
     "Image Filter Adjustments": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Flip": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Generate Gradient": {
@@ -302,18 +306,18 @@
     },
     "Image Gradient Map": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image High Pass Filter": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image History Loader": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "Image Input Switch": {
       "connectFirst": [],
@@ -327,7 +331,7 @@
     },
     "Image Load": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Lucy Sharpen": {
@@ -387,7 +391,7 @@
     },
     "Image Pixelate": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Power Noise": {
@@ -397,7 +401,7 @@
     },
     "Image Rembg (Remove Background)": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Remove Background (Alpha)": {
@@ -417,7 +421,7 @@
     },
     "Image Rotate": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Rotate Hue": {
@@ -427,7 +431,7 @@
     },
     "Image Save": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Seamless Texture": {
@@ -437,7 +441,7 @@
     },
     "Image Select Channel": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Select Color": {
@@ -447,7 +451,7 @@
     },
     "Image Send HTTP": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Shadows and Highlights": {
@@ -467,7 +471,7 @@
     },
     "Image SSDO (Direct Occlusion)": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Stitch": {
@@ -477,7 +481,7 @@
     },
     "Image Style Filter": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image Threshold": {
@@ -492,7 +496,7 @@
     },
     "Image to Latent Mask": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Image to Noise": {
@@ -512,7 +516,7 @@
     },
     "Image Voronoi Noise Filter": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Images to Linear": {
@@ -526,7 +530,7 @@
       "disconnect": []
     },
     "Inset Image Bounds": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -536,12 +540,12 @@
       "disconnect": []
     },
     "KSampler (WAS)": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "KSampler Cycle": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -567,7 +571,7 @@
     },
     "Latent Upscale by Factor (WAS)": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Load Cache": {
@@ -576,12 +580,12 @@
       "disconnect": []
     },
     "Load Image Batch": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "Load Lora": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -621,12 +625,12 @@
       "disconnect": []
     },
     "Lora Input Switch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "Lora Loader": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -662,7 +666,7 @@
     },
     "Mask Crop Region": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Mask Dilate Region": {
@@ -752,7 +756,7 @@
     },
     "MiDaS Depth Approximation": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "MiDaS Mask Image": {
@@ -761,23 +765,23 @@
       "disconnect": []
     },
     "MiDaS Model Loader": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "Model Input Switch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "Number Counter": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "Number Input Condition": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Number Input Switch": {
@@ -792,7 +796,7 @@
     },
     "Number Operation": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Number PI": {
@@ -826,29 +830,29 @@
       "disconnect": []
     },
     "Prompt Multiple Styles Selector": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "Prompt Styles Selector": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "Random Number": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "SAM Image Mask": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "SAM Model Loader": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "SAM Parameters": {
       "connectFirst": [],
@@ -856,9 +860,9 @@
       "disconnect": []
     },
     "SAM Parameters Combine": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "Samples Passthrough (Stat System)": {
       "connectFirst": [],
@@ -887,12 +891,12 @@
     },
     "Text Add Token by Input": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Text Add Tokens": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Text Compare": {
@@ -916,14 +920,14 @@
       "disconnect": []
     },
     "Text Dictionary Get": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "Text Dictionary Keys": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "Text Dictionary New": {
       "connectFirst": [],
@@ -931,17 +935,17 @@
       "disconnect": []
     },
     "Text Dictionary To Text": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "Text Dictionary Update": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "Text File History Loader": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -976,13 +980,13 @@
       "disconnect": []
     },
     "Text List Concatenate": {
-      "connectFirst": [],
-      "connectLast": [],
-      "disconnect": []
+      "connectFirst": "NO_PRODUCER",
+      "connectLast": "NO_PRODUCER",
+      "disconnect": "NO_PRODUCER"
     },
     "Text List to Text": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Text Load Line From File": {
@@ -1006,7 +1010,7 @@
       "disconnect": []
     },
     "Text Parse Noodle Soup Prompts": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -1046,7 +1050,7 @@
       "disconnect": []
     },
     "Text to Conditioning": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
@@ -1067,32 +1071,32 @@
     },
     "True Random.org Number Generator": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "unCLIP Checkpoint Loader": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "Upscale Model Loader": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": "SAME_AS_FIRST",
-      "disconnect": []
+      "disconnect": "NO_PRODUCER"
     },
     "Upscale Model Switch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "VAE Input Switch": {
-      "connectFirst": [],
+      "connectFirst": "NO_PRODUCER",
       "connectLast": [],
       "disconnect": []
     },
     "Video Dump Frames": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     },
     "Write to GIF": {
@@ -1102,7 +1106,7 @@
     },
     "Write to Video": {
       "connectFirst": [],
-      "connectLast": [],
+      "connectLast": "NO_PRODUCER",
       "disconnect": []
     }
   }

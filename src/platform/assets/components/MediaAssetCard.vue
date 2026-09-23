@@ -43,8 +43,6 @@
         "
         class="absolute inset-0"
         @download="handleDownload"
-        @video-playing-state-changed="isVideoPlaying = $event"
-        @video-controls-changed="showVideoControls = $event"
         @image-loaded="handleImageLoaded"
       />
 
@@ -171,7 +169,6 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -181,11 +178,9 @@ import {
   isPreviewableMediaType
 } from '@/utils/formatUtil'
 
-import {
-  getAssetType,
-  getOutputGroupAssets
-} from '../composables/media/assetMappers'
-import { getAssetUrl } from '../utils/assetUrlUtil'
+import { getAssetType } from '../composables/media/assetMappers'
+import { startAssetDrag } from '../utils/assetDragUtil'
+import { getAssetFileUrl, getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import {
@@ -193,7 +188,7 @@ import {
   resolveDisplayImageDimensions
 } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
-import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
+import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
@@ -246,9 +241,6 @@ const emit = defineEmits<{
   'context-menu': [event: MouseEvent, asset: AssetItem]
 }>()
 
-const isVideoPlaying = ref(false)
-const showVideoControls = ref(false)
-
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
 
@@ -286,7 +278,11 @@ const adaptedAsset = computed(() => {
     src:
       fileKind.value === '3D'
         ? getAssetUrl(asset)
-        : asset.thumbnail_url || asset.preview_url || '',
+        : asset.thumbnail_url ||
+          asset.preview_url ||
+          (fileKind.value === 'video' || fileKind.value === 'audio'
+            ? getAssetFileUrl(asset, { disposition: 'inline' })
+            : ''),
     preview_url: asset.preview_url,
     preview_id: asset.preview_id,
     size: asset.size,
@@ -302,9 +298,7 @@ const adaptedAsset = computed(() => {
 
 provide(MediaAssetKey, {
   asset: toRef(() => adaptedAsset.value),
-  context: toRef(() => ({ type: assetType.value })),
-  isVideoPlaying,
-  showVideoControls
+  context: toRef(() => ({ type: assetType.value }))
 })
 
 const formattedDuration = computed(() => {
@@ -376,35 +370,6 @@ function handleDownload() {
 }
 
 function dragStart(e: DragEvent) {
-  if (e.ctrlKey || e.metaKey) {
-    e.preventDefault()
-    return
-  }
-
-  if (!asset?.preview_url) return
-
-  const { dataTransfer } = e
-  if (!dataTransfer) return
-
-  const groupedAsset = getOutputGroupAssets(asset)?.[0]
-  const legacyOutput = getOutputAssetMetadata(asset.user_metadata)
-    ?.allOutputs?.[0]
-  const filename = groupedAsset?.name ?? legacyOutput?.filename
-  if (filename) {
-    const outputString = JSON.stringify({
-      filename,
-      subfolder:
-        getOutputAssetMetadata(groupedAsset?.user_metadata)?.subfolder ??
-        legacyOutput?.subfolder,
-      type: groupedAsset ? getAssetType(groupedAsset.tags) : legacyOutput?.type,
-      display_name: groupedAsset?.display_name ?? legacyOutput?.display_name
-    })
-    dataTransfer.items.add(outputString, MIME_ASSET_INFO)
-  }
-
-  const url = URL.parse(asset.preview_url, location.href)
-  if (!url) return
-
-  dataTransfer.items.add(url.toString(), 'text/uri-list')
+  startAssetDrag(e, asset)
 }
 </script>
