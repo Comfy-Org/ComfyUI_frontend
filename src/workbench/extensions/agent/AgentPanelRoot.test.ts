@@ -312,9 +312,8 @@ beforeEach(() => {
       const replacement = workflowStore.openWorkflows.find(
         (candidate) => candidate.path !== tab.path
       )
-      workflowStore.activeWorkflow = replacement
-        ? await replacement.load()
-        : null
+      const loadedReplacement = await replacement?.load()
+      workflowStore.activeWorkflow = loadedReplacement ?? null
     }
     await workflowStore.closeWorkflow(tab)
     return true
@@ -323,7 +322,8 @@ beforeEach(() => {
     const known = workflowStore.getWorkflowByPath(tab.path)
     if (known) {
       workflowStore.openWorkflowsInBackground({ right: [tab.path] })
-      workflowStore.activeWorkflow = await known.load()
+      const loaded = await known.load()
+      if (loaded) workflowStore.activeWorkflow = loaded
     }
     return true
   })
