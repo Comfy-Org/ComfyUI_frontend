@@ -107,6 +107,41 @@ describe('attachNodeFieldMintPort', () => {
     expect(minted).toEqual([])
   })
 
+  it.for([
+    {
+      name: 'detached',
+      unsettle: () => port.detach()
+    },
+    {
+      name: 'product flag turned off',
+      unsettle: () => {
+        enabled = false
+      }
+    },
+    {
+      name: 'doc unbound',
+      unsettle: () => {
+        bound = false
+      }
+    },
+    {
+      name: 'graph teardown begun',
+      unsettle: () => session.beginGraphTeardown()
+    }
+  ])(
+    'rechecks the gate inside the queued callback: $name between enqueue and the microtask no-ops it',
+    async ({ unsettle }) => {
+      deliver({ nodeId: '7', field: 'title', value: 'Renamed Node' })
+      // The gate passed at delivery time; the mint is now queued on a
+      // microtask. Change the gated condition before that microtask runs.
+      unsettle()
+
+      await Promise.resolve()
+
+      expect(minted).toEqual([])
+    }
+  )
+
   it('lands after a microtask already queued before the change (matches the layout store queuing add_node first)', async () => {
     const order: string[] = []
     const orderedPort = attachNodeFieldMintPort({

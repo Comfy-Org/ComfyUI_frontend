@@ -66,13 +66,18 @@ function toOperation(change: NodeFieldChangeView): GraphOperation {
 export function attachNodeFieldMintPort(
   deps: NodeFieldMintPortDeps
 ): NodeFieldMintPort {
-  function onChange(change: NodeFieldChangeView): void {
-    const mintable = shouldMint({
+  let detached = false
+
+  function isMintable(): boolean {
+    return shouldMint({
       flagEnabled: deps.isEnabled(),
       docBound: deps.isDocBound(),
       teardown: deps.session.inTeardown()
     })
-    if (!mintable) return
+  }
+
+  function onChange(change: NodeFieldChangeView): void {
+    if (!isMintable()) return
 
     // Deferred one microtask tick to land after the layout store's own
     // queued flush (`queueChange`'s `queueMicrotask` in layoutStore.ts).
@@ -84,12 +89,20 @@ export function attachNodeFieldMintPort(
     // for a node it has not seen `add_node` for yet. Queuing this port's own
     // microtask - scheduled after the layout store's, since that one is
     // always queued first in this sequence - lands this mint after the
-    // node's own placement.
+    // node's own placement. The gate is captured again once the microtask
+    // actually runs: detach, teardown, or the flag/doc-bound state can all
+    // change in the interim, and a stale capture from enqueue time would
+    // otherwise let this callback mint into a port or doc it no longer owns.
     queueMicrotask(() => {
+      if (detached || !isMintable()) return
       deps.enqueue([toOperation(change)])
     })
   }
 
-  const detach = deps.events.onChange(onChange)
+  const unsubscribe = deps.events.onChange(onChange)
+  function detach(): void {
+    detached = true
+    unsubscribe()
+  }
   return { detach }
 }
