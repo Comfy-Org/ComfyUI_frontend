@@ -161,7 +161,23 @@ function collectRemoteWidgetValues(
 ): RemoteWidgetValue[] {
   const rootOwner = toOwningGraphId(rootGraphId)
   const rootNodes = ownerNodesMap(doc, rootGraphId, rootOwner, false)
-  const nodesByOwner = new Map<OwningGraphId, Set<NodeId> | 'all'>()
+  const nodesByOwner = collectTouchedNodes(events, rootNodes, rootOwner)
+  return readTouchedWidgetValues(doc, rootGraphId, nodesByOwner)
+}
+
+type TouchedNodesByOwner = Map<OwningGraphId, Set<NodeId> | 'all'>
+
+/**
+ * Classifies deep events into the nodes whose widgets must be read back:
+ * a specific node set per owner, or `'all'` when an owner's `nodes` map (or
+ * the owner itself) was replaced wholesale.
+ */
+function collectTouchedNodes(
+  events: readonly Y.YEvent<Y.AbstractType<unknown>>[],
+  rootNodes: Y.Map<unknown> | undefined,
+  rootOwner: OwningGraphId
+): TouchedNodesByOwner {
+  const nodesByOwner: TouchedNodesByOwner = new Map()
 
   const touchNode = (owningGraphId: OwningGraphId, nodeId: NodeId) => {
     const nodes = nodesByOwner.get(owningGraphId)
@@ -205,7 +221,15 @@ function collectRemoteWidgetValues(
       touchKeys(event, (key) => touchNode(owningGraphId, key as NodeId))
     else touchNode(owningGraphId, path[2] as NodeId)
   }
+  return nodesByOwner
+}
 
+/** Reads the current widget values of every touched node from the document. */
+function readTouchedWidgetValues(
+  doc: Y.Doc,
+  rootGraphId: RootGraphId,
+  nodesByOwner: TouchedNodesByOwner
+): RemoteWidgetValue[] {
   const values: RemoteWidgetValue[] = []
   const readNode = (owningGraphId: OwningGraphId, nodeId: NodeId) => {
     const owned = ownerNodesMap(doc, rootGraphId, owningGraphId, false)
@@ -226,6 +250,32 @@ function collectRemoteWidgetValues(
     for (const nodeId of owned.keys()) readNode(owningGraphId, nodeId as NodeId)
   }
   return values
+}
+
+/**
+ * Live re-registration of an existing widget of the same type: refresh the
+ * definition, render and visibility state in place while keeping its value.
+ */
+function refreshRegisteredWidget(
+  existing: WidgetEntity,
+  init: WidgetStateInit,
+  next: {
+    nodeId: NodeId
+    storageName: string
+    renderState: WidgetRenderState
+    visibility: WidgetVisibilityComponent
+  }
+): void {
+  Object.assign(existing.state, init, {
+    name: init.name ?? next.storageName,
+    nodeId: next.nodeId,
+    value: existing.state.value,
+    y: init.y ?? existing.state.y
+  })
+  Object.assign(existing.render, next.renderState)
+  Object.assign(existing.visibility.surfaces, next.visibility.surfaces)
+  existing.visibility.suppression.byExtension =
+    next.visibility.suppression.byExtension
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
@@ -532,17 +582,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     // widget type at an old address, overwrite). Without it a text widget
     // rendered as the prior int type until the next full reload (#13073, #13773).
     if (existing && existing.state.type === init.type) {
-      const value = existing.state.value
-      Object.assign(existing.state, init, {
-        name: init.name ?? storageName,
+      refreshRegisteredWidget(existing, init, {
         nodeId,
-        value,
-        y: init.y ?? existing.state.y
+        storageName,
+        renderState,
+        visibility
       })
-      Object.assign(existing.render, renderState)
-      Object.assign(existing.visibility.surfaces, visibility.surfaces)
-      existing.visibility.suppression.byExtension =
-        visibility.suppression.byExtension
       appendNodeWidgetOrder(widgetId)
       return existing.state
     }
