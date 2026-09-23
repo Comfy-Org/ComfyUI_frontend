@@ -129,12 +129,12 @@ export function createHumanOpOutbox(deps: {
     let unknown = 0
     for (const op of outcome.ops) {
       const index = indexOf(op.op_id)
+      if (index === -1) {
+        unknown++
+        continue
+      }
       const entry = entries[index]
-      if (
-        !entry ||
-        entry.workflowId !== workflowId ||
-        entry.state !== 'queued'
-      ) {
+      if (entry.workflowId !== workflowId || entry.state !== 'queued') {
         unknown++
         continue
       }
