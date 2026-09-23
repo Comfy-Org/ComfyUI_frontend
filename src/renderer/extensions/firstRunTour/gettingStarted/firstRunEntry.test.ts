@@ -463,7 +463,7 @@ describe('useFirstRunEntry', () => {
     expect(
       mocks.beginTour,
       'opening a template link on a phone and returning on a laptop is ordinary behaviour'
-    ).toHaveBeenCalledWith('image_z_image_turbo')
+    ).toHaveBeenCalledWith('image_z_image_turbo', expect.any(Function))
     expect(
       useSettingStore().settingValues['Comfy.TutorialCompleted'],
       'the flag is spent on the boot that finally delivered the tour, not before'
@@ -644,7 +644,7 @@ describe('useFirstRunEntry', () => {
         expect(
           mocks.beginTour,
           'a share link is the case no pin can ever cover'
-        ).toHaveBeenCalledWith(undefined)
+        ).toHaveBeenCalledWith(undefined, expect.any(Function))
       }
     )
 
@@ -653,7 +653,10 @@ describe('useFirstRunEntry', () => {
 
       await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
 
-      expect(mocks.beginTour).toHaveBeenCalledWith('image_z_image_turbo')
+      expect(mocks.beginTour).toHaveBeenCalledWith(
+        'image_z_image_turbo',
+        expect.any(Function)
+      )
     })
 
     it('drops the template pins when a share link replaced the graph', async () => {
@@ -668,7 +671,7 @@ describe('useFirstRunEntry', () => {
       expect(
         mocks.beginTour,
         'pinned ids are graph-local, so validating them against a stranger workflow spotlights whichever node happens to share the id'
-      ).toHaveBeenCalledWith(undefined)
+      ).toHaveBeenCalledWith(undefined, expect.any(Function))
     })
 
     it('leaves the completion flag alone when the engine refused to start', async () => {

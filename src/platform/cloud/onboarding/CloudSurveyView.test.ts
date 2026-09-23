@@ -186,7 +186,7 @@ describe('CloudSurveyView', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Submit survey' }))
 
-    expect(mocks.restoreSurveyReplayRequest).toHaveBeenCalledOnce()
+    expect(mocks.restoreSurveyReplayRequest).toHaveBeenCalledWith('account-a')
     expect(mocks.reportError).toHaveBeenCalledWith(error, {
       errorType: 'error_navigating_from_onboarding_survey'
     })
@@ -211,11 +211,28 @@ describe('CloudSurveyView', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Submit survey' }))
 
     expect(router.currentRoute.value.name).toBe('survey')
-    expect(mocks.restoreSurveyReplayRequest).toHaveBeenCalledOnce()
+    expect(mocks.restoreSurveyReplayRequest).toHaveBeenCalledWith('account-a')
     expect(mocks.reportError).toHaveBeenCalledWith(
       expect.objectContaining({ type: expect.any(Number) }),
       { errorType: 'error_navigating_from_onboarding_survey' }
     )
     expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
+  })
+
+  it('does not restore a replay after the account changes', async () => {
+    mocks.isSurveyReplayRequested.mockReturnValue(true)
+    mocks.submitSurvey.mockImplementation(async () => {
+      Object.assign(useAuthStore(), { userId: 'account-b' })
+      return { status: 'preserved' }
+    })
+    const { router } = await renderView()
+    vi.spyOn(router, 'push').mockRejectedValue(new Error('navigation failed'))
+    await waitFor(() =>
+      expect(mocks.getSurveyCompletedStatus).toHaveBeenCalledOnce()
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Submit survey' }))
+
+    expect(mocks.restoreSurveyReplayRequest).not.toHaveBeenCalled()
   })
 })

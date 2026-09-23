@@ -114,13 +114,9 @@ export const useFirstRunEntry = createSharedComposable(() => {
       const shareLoaded = isSharedWorkflowLoaded(sharedStatus)
       const ownerId = authStore.userId
       const started = await useFirstRunTourController().beginTour(
-        shareLoaded ? undefined : templateId
+        shareLoaded ? undefined : templateId,
+        () => authStore.userId !== ownerId
       )
-      if (authStore.userId !== ownerId) {
-        const tourStore = useOnboardingTourStore()
-        if (tourStore.activeTour === 'firstRun') tourStore.postpone()
-        return
-      }
       if (!started) return
       firstRunTookScreen.value = true
       consumeFirstRunReplayRequest(ownerId)
