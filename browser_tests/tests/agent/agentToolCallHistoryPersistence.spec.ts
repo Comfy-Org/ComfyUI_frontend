@@ -140,6 +140,8 @@ test(
       /^Search nodes\s*0\.4s$/,
       /^Add node\s*0\.2s$/
     ])
+    const restoredThreadId = promptHistory.historyRequestThreadIds.at(-1)
+    expect(restoredThreadId).toBeTruthy()
 
     await reopenedPanel
       .getByRole('button', { name: enMessages.agent.newChat })
@@ -154,6 +156,9 @@ test(
     await reopenedPanel
       .getByRole('button', { name: 'Inline reference round trip', exact: true })
       .click()
+    await expect
+      .poll(() => promptHistory.historyRequestThreadIds.at(-1))
+      .toBe(restoredThreadId)
     await expect(summary).toHaveAttribute('aria-expanded', 'false')
     await expect(reopenedPanel.getByTestId('user-message-bubble')).toHaveText(
       'find a node for me'
