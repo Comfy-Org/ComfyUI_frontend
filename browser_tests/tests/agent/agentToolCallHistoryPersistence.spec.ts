@@ -26,7 +26,10 @@ test(
   { tag: ['@cloud', '@ui'] },
   async ({ page, promptHistory, workflowSelection }) => {
     await page
-      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
+      .getByRole('button', {
+        name: enMessages.agent.askComfyAgent,
+        exact: true
+      })
       .click()
     await page
       .getByRole('button', {
