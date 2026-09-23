@@ -710,7 +710,11 @@ function startAgentCrdtFollower(
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     const applied = adapter.applyFrame(update)
     outcomes.value = applied
-      ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
+      ? {
+          ...outcomes.value,
+          applied: outcomes.value.applied + 1,
+          appliedLive: outcomes.value.appliedLive + (update.catchUp ? 0 : 1)
+        }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
     const materialized = applied ? reconcileLiveGraph(update.workflowId) : []
     recordDevEvent('doc_update', {
