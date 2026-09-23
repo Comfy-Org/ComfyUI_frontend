@@ -2223,8 +2223,10 @@
     "star": "별"
   },
   "imageCompare": {
+    "afterAlt": "후 이미지",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "전 이미지",
     "noImages": "비교할 이미지가 없습니다"
   },
   "imageCrop": {

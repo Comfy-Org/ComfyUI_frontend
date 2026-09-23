@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Edita o combina hasta 5 imágenes de referencia guiadas por un prompt de texto mediante el modelo Hunyuan Image de Tencent.",
+    "display_name": "Tencent HY Image: Editar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      },
+      "model_watermark": {
+        "name": "marca de agua"
+      },
+      "model_width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Genera imágenes a partir de un prompt de texto mediante el modelo Hunyuan Image de Tencent.",
+    "display_name": "Tencent HY Image: Texto a imagen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se utilizará."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "model_seed": {
+        "name": "semilla"
+      },
+      "model_watermark": {
+        "name": "marca de agua"
+      },
+      "model_width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -23968,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Reemplaza el prompt del sistema en la plantilla de chat del modelo. Se ignora cuando no se utiliza la plantilla predeterminada."
+      },
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar en modo de pensamiento si el modelo lo permite."
@@ -23984,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "texto_generado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "razonamiento",
         "tooltip": null
       }
     }
@@ -24034,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Reemplaza el prompt del sistema en la plantilla de chat del modelo. Se ignora cuando no se utiliza la plantilla predeterminada."
+      },
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar en modo de pensamiento si el modelo lo permite."
@@ -24050,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "texto_generado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "razonamiento",
         "tooltip": null
       }
     }

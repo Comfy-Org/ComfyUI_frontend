@@ -2223,8 +2223,10 @@
     "star": "星星"
   },
   "imageCompare": {
+    "afterAlt": "后图像",
     "batchLabelA": "A：",
     "batchLabelB": "B：",
+    "beforeAlt": "前图像",
     "noImages": "没有可以对比的图像"
   },
   "imageCrop": {

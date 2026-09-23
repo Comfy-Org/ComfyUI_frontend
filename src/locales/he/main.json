@@ -2223,8 +2223,10 @@
     "star": "כוכב"
   },
   "imageCompare": {
+    "afterAlt": "תמונה לאחר",
     "batchLabelA": "א:",
     "batchLabelB": "ב:",
+    "beforeAlt": "תמונה לפני",
     "noImages": "אין תמונות להשוואה"
   },
   "imageCrop": {

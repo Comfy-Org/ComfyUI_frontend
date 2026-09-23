@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Редактирует или объединяет до 5 эталонных изображений в соответствии с текстовым запросом, используя модель Hunyuan Image от Tencent.",
+    "display_name": "Tencent HY Image: Редактирование",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "водяной знак"
+      },
+      "model_width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Создаёт изображения по текстовому запросу, используя модель Hunyuan Image от Tencent.",
+    "display_name": "Tencent HY Image: Текст в изображение",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Используемая модель."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "высота"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "водяной знак"
+      },
+      "model_width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -23968,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Заменяет системный запрос в шаблоне чата модели. Игнорируется, если не используется шаблон по умолчанию."
+      },
       "thinking": {
         "name": "мышление",
         "tooltip": "Работать в режиме мышления, если модель это поддерживает."
@@ -23984,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "сгенерированный текст",
+        "tooltip": null
+      },
+      "1": {
+        "name": "рассуждения",
         "tooltip": null
       }
     }
@@ -24034,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Заменяет системный запрос в шаблоне чата модели. Игнорируется, если не используется шаблон по умолчанию."
+      },
       "thinking": {
         "name": "мышление",
         "tooltip": "Работать в режиме мышления, если модель это поддерживает."
@@ -24050,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "сгенерированный текст",
+        "tooltip": null
+      },
+      "1": {
+        "name": "рассуждения",
         "tooltip": null
       }
     }

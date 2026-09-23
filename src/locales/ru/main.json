@@ -2223,8 +2223,10 @@
     "star": "Звезда"
   },
   "imageCompare": {
+    "afterAlt": "Изображение после",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Изображение до",
     "noImages": "Нет изображений для сравнения"
   },
   "imageCrop": {

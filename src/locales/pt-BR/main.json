@@ -2223,8 +2223,10 @@
     "star": "Estrela"
   },
   "imageCompare": {
+    "afterAlt": "Imagem posterior",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Imagem anterior",
     "noImages": "Nenhuma imagem para comparar"
   },
   "imageCrop": {

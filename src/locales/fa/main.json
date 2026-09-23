@@ -2223,8 +2223,10 @@
     "star": "ستاره"
   },
   "imageCompare": {
+    "afterAlt": "تصویر پس از",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "تصویر پیش از",
     "noImages": "تصویری برای مقایسه وجود ندارد"
   },
   "imageCrop": {
