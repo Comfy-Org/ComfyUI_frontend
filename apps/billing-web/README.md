@@ -28,32 +28,24 @@ this app.
 Every route but `/sign-in` requires an authenticated workspace session; the
 router guard redirects anyone else to `/sign-in?returnTo=<path>`, and only a
 same-origin absolute path is ever honoured as a return destination. The
-session is this origin's own: a Firebase identity for the configured project,
-exchanged at `${cloud}/api/auth/token` for the workspace-scoped JWT, cached in
-`sessionStorage` so it survives a reload but never outlives the tab. Password
-recovery stays a single flow, owned by the Cloud app's own page.
+session is this origin's own: a Firebase identity for the project its Cloud
+origin's `/api/features` names at runtime, exchanged at
+`${cloud}/api/auth/token` for the workspace-scoped JWT, cached in
+`sessionStorage` so it survives a reload but never outlives the tab. There is
+no build-time Firebase configuration and no fallback if that fetch fails: a
+stale project surviving a rotation is worse than reporting sign-in
+unavailable, since a usable session only ever comes from token exchange at
+that same Cloud origin anyway. Password recovery stays a single flow, owned
+by the Cloud app's own page.
 
 ## Environment variables
 
 Configure these per deployment (see `.env_example`):
 
-| Variable                            | Required | Meaning                                                                                                                                                                                                                                                                                                                      |
-| ----------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_BILLING_ENV`                  | no       | Backend family: `production`, `staging` or `test`. Unset or misspelt resolves to `test`, so a misconfigured deployment cannot reach production Cloud. It selects the Cloud origin (`https://cloud.comfy.org`, `https://stagingcloud.comfy.org`, `https://testcloud.comfy.org`).                                              |
-| `VITE_FIREBASE_API_KEY`             | yes      | Firebase web-app config for that family's project.                                                                                                                                                                                                                                                                           |
-| `VITE_FIREBASE_AUTH_DOMAIN`         | yes      |                                                                                                                                                                                                                                                                                                                              |
-| `VITE_FIREBASE_PROJECT_ID`          | yes      |                                                                                                                                                                                                                                                                                                                              |
-| `VITE_FIREBASE_APP_ID`              | yes      |                                                                                                                                                                                                                                                                                                                              |
-| `VITE_FIREBASE_DATABASE_URL`        | no       | Carried through to Firebase when set.                                                                                                                                                                                                                                                                                        |
-| `VITE_FIREBASE_STORAGE_BUCKET`      | no       |                                                                                                                                                                                                                                                                                                                              |
-| `VITE_FIREBASE_MESSAGING_SENDER_ID` | no       |                                                                                                                                                                                                                                                                                                                              |
-| `VITE_FIREBASE_MEASUREMENT_ID`      | no       |                                                                                                                                                                                                                                                                                                                              |
-| `VITE_STRIPE_PUBLISHABLE_KEY`       | no       | Stripe publishable key for the same family. Without it the checkout surface reports that payment is unavailable and takes no card: there is no hosted-page fallback on `/v1/checkout`. The portal-driven steps (payment methods, invoices) are unaffected, since they open the provider's own hosted portal and need no key. |
-
-The Firebase project has to belong to the same family as `VITE_BILLING_ENV`: a
-token minted against one family is meaningless in another. With any required
-variable missing the app still boots and the sign-in page reports that
-sign-in is unavailable, rather than throwing at startup.
+| Variable                      | Required | Meaning                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_BILLING_ENV`            | no       | Backend family: `production`, `staging` or `test`. Unset or misspelt resolves to `test`, so a misconfigured deployment cannot reach production Cloud. It selects the Cloud origin (`https://cloud.comfy.org`, `https://stagingcloud.comfy.org`, `https://testcloud.comfy.org`), whose `/api/features` names this deployment's Firebase project. |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | no       | Stripe publishable key for the same family. Without it the checkout surface reports that payment is unavailable and takes no card: there is no hosted-page fallback on `/v1/checkout`. The portal-driven steps (payment methods, invoices) are unaffected, since they open the provider's own hosted portal and need no key.                    |
 
 ## Commands
 
@@ -209,9 +201,9 @@ production. The allowlist names what the app actually loads:
 The two auth domains are `dreamboothy.firebaseapp.com` (production) and
 `dreamboothy-dev.firebaseapp.com` (staging and test), the projects the three
 Cloud origins report in `/api/features`. They are spelled out rather than
-wildcarded because `*.firebaseapp.com` is every Firebase project there is. A
-deployment whose `VITE_FIREBASE_AUTH_DOMAIN` names another project adds that
-domain to both directives.
+wildcarded because `*.firebaseapp.com` is every Firebase project there is;
+naming a Cloud origin's project under a new auth domain needs a CSP update
+here alongside it.
 
 No `report-to` endpoint is set: this origin has no server of its own to
 receive reports, so a violation is visible only in the console of a browser

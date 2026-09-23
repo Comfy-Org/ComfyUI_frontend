@@ -13,6 +13,13 @@
  * from a signed-out `null`. A caller that needs a token still awaits
  * `ensureFresh()` immediately before use.
  *
+ * The identity behind the session is a lazy one: `resolveBillingWebIdentity`
+ * resolves the config asynchronously (runtime fetch, then build-time
+ * fallback), so the client subscribes at module load while `pending` covers
+ * the wait. This module is the single owner of `activate()` /
+ * `deactivate()` — the lazy port is single-owner, and `listen()` is already
+ * the one gate that starts it.
+ *
  * `autoMint: false`: the identity port's own warm-up mint would target
  * whatever `workspaceId` the client was constructed with, frozen at that
  * moment — but the entry binding can change before anyone has signed in (a
@@ -31,9 +38,13 @@ import type {
   SessionSnapshot
 } from '@comfyorg/account-core/session'
 import { createSessionClient } from '@comfyorg/account-core/session'
+import {
+  createLazyIdentity,
+  createUnavailableIdentity
+} from '@comfyorg/account-core/lazyIdentity'
 
 import { CLOUD_BASE_URL } from '@/config/env'
-import { billingWebIdentity } from '@/config/firebase'
+import { resolveBillingWebIdentity } from '@/config/firebase'
 
 /**
  * Script-readable by design: an injected script on this origin could read the
@@ -69,6 +80,18 @@ const storage = {
   }
 }
 
+/**
+ * Deferred until `activate()`: resolving the config and constructing the
+ * real Firebase identity happens only once this module starts listening, not
+ * at import time.
+ */
+const billingWebSessionIdentity = createLazyIdentity<User>(async () => {
+  const identity = await resolveBillingWebIdentity()
+  // No runtime config and no build-time fallback: settle signed-out instead
+  // of leaving the session waiting on an identity that will never arrive.
+  return identity ?? createUnavailableIdentity<User>()
+})
+
 let client: SessionClient<User> | undefined
 
 export function billingWebSessionClient(): SessionClient<User> {
@@ -78,20 +101,13 @@ export function billingWebSessionClient(): SessionClient<User> {
       storage,
       autoMint: false
     },
-    billingWebIdentity
+    billingWebSessionIdentity
   )
   return client
 }
 
 const PENDING: SessionSnapshot<User> = {
   phase: 'pending',
-  user: null,
-  session: undefined
-}
-
-/** A deployment with no identity configuration has nobody to sign in. */
-const NO_IDENTITY: SessionSnapshot<User> = {
-  phase: 'signed-out',
   user: null,
   session: undefined
 }
@@ -106,8 +122,10 @@ function listen(): void {
   session.subscribe((next) => {
     snapshot.value = next
   })
-  // `pending` promises an answer from an identity; without one, none is coming.
-  if (!billingWebIdentity) snapshot.value = NO_IDENTITY
+  // Single owner of activate(): this is the one gate that starts the lazy
+  // identity, bounded by the config fetch's own timeout, so `pending` always
+  // resolves to a definite phase.
+  void billingWebSessionIdentity.activate()
 }
 
 /** The router guard's read; starts the identity listener on first call. */
