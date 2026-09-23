@@ -133,7 +133,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     await nextTick()
 
     // Should call getNodeByLocatorId with correct locator ID
-    expect(vi.mocked(getNodeByLocatorId)).toHaveBeenCalledWith(
+    expect(getNodeByLocatorId).toHaveBeenCalledWith(
       expect.anything(),
       `${SUBGRAPH_ID}:test-node-1`
     )

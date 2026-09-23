@@ -266,9 +266,10 @@ describe('useComboWidget', () => {
         options: ['model1.safetensors', 'model2.safetensors']
       })
 
-      expect(
-        vi.mocked(assetService.shouldUseWidgetAssetPicker)
-      ).toHaveBeenCalledWith('CheckpointLoaderSimple', 'ckpt_name')
+      expect(assetService.shouldUseWidgetAssetPicker).toHaveBeenCalledWith(
+        'CheckpointLoaderSimple',
+        'ckpt_name'
+      )
       expect(mockNode.addWidget).toHaveBeenCalledWith(
         'asset',
         'ckpt_name',
@@ -684,7 +685,7 @@ describe('useComboWidget', () => {
       }
 
       const result = options.getOptionLabel(scenario.assetHash)
-      expect(vi.mocked(useAssetsStore().getInputName)).toHaveBeenCalledWith(
+      expect(useAssetsStore().getInputName).toHaveBeenCalledWith(
         scenario.assetHash
       )
       expect(result).toBe('Beautiful Sunset.png')
@@ -790,9 +791,7 @@ describe('useComboWidget', () => {
 
       constructor(mockNode, inputSpec)
 
-      expect(
-        vi.mocked(useAssetsStore().inputAssets.loadMore)
-      ).toHaveBeenCalledTimes(1)
+      expect(useAssetsStore().inputAssets.loadMore).toHaveBeenCalledTimes(1)
     })
 
     it('should keep empty cloud input value after lazy-loaded inputs resolve a default', async () => {
@@ -823,9 +822,7 @@ describe('useComboWidget', () => {
 
       const widget = constructor(mockNode, inputSpec)
 
-      expect(
-        vi.mocked(useAssetsStore().inputAssets.loadMore)
-      ).toHaveBeenCalledTimes(1)
+      expect(useAssetsStore().inputAssets.loadMore).toHaveBeenCalledTimes(1)
       expect(getInputWidgetDefault(mockNode)).toBe('')
       expect(widget.value).toBe('')
 
@@ -859,9 +856,7 @@ describe('useComboWidget', () => {
 
       constructor(mockNode, inputSpec)
 
-      expect(
-        vi.mocked(useAssetsStore().inputAssets.loadMore)
-      ).not.toHaveBeenCalled()
+      expect(useAssetsStore().inputAssets.loadMore).not.toHaveBeenCalled()
     })
   })
 })
