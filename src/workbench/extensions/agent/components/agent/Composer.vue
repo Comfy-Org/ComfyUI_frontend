@@ -15,6 +15,7 @@ import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
@@ -391,34 +392,28 @@ defineExpose({
         data-testid="composer-node-section"
         class="flex flex-wrap items-center gap-2 border-b border-border-default p-3"
       >
-        <span
+        <Tag
           v-for="tag in selectionTags"
           :key="selectedNodeKey(tag)"
-          class="inline-flex h-7 items-center gap-1 rounded-lg border border-border-default bg-secondary-background-hover px-2.5 text-xs/4 font-medium text-base-foreground transition-colors hover:bg-tertiary-background-hover"
+          :label="tag.title"
+          removable
+          :remove-label="
+            t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
+          "
+          :remove-tooltip="t('agent.remove')"
+          class="max-w-64"
+          @remove="emit('removeTag', selectedNodeKey(tag))"
         >
-          <span class="flex items-center gap-1">
+          <template #icon>
             <span class="icon-[comfy--node] size-3.5 text-muted-foreground" />
-            <span class="max-w-40 truncate">{{ tag.title }}</span>
-            <span
-              v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
-              :class="duplicateIdClass"
-              >#{{ tag.id }}</span
-            >
-          </span>
-          <Button
-            v-tooltip.top="buildTooltipConfig(t('agent.remove'))"
-            type="button"
-            variant="muted-textonly"
-            size="unset"
-            :aria-label="
-              t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
-            "
-            class="size-3.5"
-            @click.stop="emit('removeTag', selectedNodeKey(tag))"
+          </template>
+          <span
+            v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
+            :class="duplicateIdClass"
           >
-            <span class="icon-[lucide--x] size-3.5 shrink-0" />
-          </Button>
-        </span>
+            #{{ tag.id }}
+          </span>
+        </Tag>
       </div>
 
       <div
