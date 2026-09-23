@@ -169,12 +169,12 @@ catalog:
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
   '@datadog/browser-logs': 6.33.0
-  '@comfyorg/comfy-multi-player': https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/08be0d140200e6ddfb2eab6949b2482da69a588f
+  '@comfyorg/comfy-multi-player': https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/b475423a0f8b019bbac261ce218dfc016e9aa634
 
 cleanupUnusedCatalogs: true
 
 allowBuilds:
-  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/08be0d140200e6ddfb2eab6949b2482da69a588f': true
+  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/b475423a0f8b019bbac261ce218dfc016e9aa634': true
   '@firebase/util': false
   '@sentry/cli': true
   '@tailwindcss/oxide': true
