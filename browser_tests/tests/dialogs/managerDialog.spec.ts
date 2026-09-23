@@ -658,17 +658,13 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       )
     })
 
-    // Geometry is measured through the dialog's zoom-in transform until it ends.
-    const waitForSettledDialog = async (panel: Locator) => {
-      await expect
-        .poll(() =>
-          panel.evaluate(
-            (element) => element.getAnimations({ subtree: true }).length
-          )
-        )
-        .toBe(0)
-    }
+    const managerPanel = (comfyPage: ComfyPage): Locator =>
+      comfyPage.page.getByRole('dialog').filter({
+        has: comfyPage.page.getByRole('heading', { name: 'Nodes Manager' })
+      })
 
+    // 3440 is the reported regression; 2560 sits below the 3000px breakpoint
+    // and guards the widths that already laid out correctly.
     for (const width of [2560, 3440]) {
       test(`Results grid stays inside the dialog panel at ${width}px`, async ({
         comfyPage
@@ -676,9 +672,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
         await comfyPage.page.setViewportSize({ width, height: 1440 })
         await openManagerDialog(comfyPage)
 
-        const panel = comfyPage.page.getByRole('dialog').filter({
-          has: comfyPage.page.getByRole('heading', { name: 'Nodes Manager' })
-        })
+        const panel = managerPanel(comfyPage)
         await expect(panel).toBeVisible()
         await expect(
           panel.getByText('Sizing Pack 0', { exact: true })
@@ -686,7 +680,15 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
         await expect
           .poll(() => panel.locator('[data-virtual-grid-item]').count())
           .toBeGreaterThan(14)
-        await waitForSettledDialog(panel)
+        // Cards have replaced the skeletons, so the only animation left to
+        // outlast is the dialog's zoom-in, which skews getBoundingClientRect().
+        await expect
+          .poll(() =>
+            panel.evaluate(
+              (element) => element.getAnimations({ subtree: true }).length
+            )
+          )
+          .toBe(0)
 
         await expect
           .poll(() => panel.evaluate(measureGridOverflow))
@@ -699,11 +701,8 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     }) => {
       await openManagerDialog(comfyPage)
 
-      const panel = comfyPage.page.getByRole('dialog').filter({
-        has: comfyPage.page.getByRole('heading', { name: 'Nodes Manager' })
-      })
+      const panel = managerPanel(comfyPage)
       await expect(panel).toBeVisible()
-      await waitForSettledDialog(panel)
 
       const panelWidth = () =>
         panel.evaluate((element: HTMLElement) => element.offsetWidth)
