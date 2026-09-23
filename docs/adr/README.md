@@ -22,6 +22,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [BILLING-CHECKOUT-0031](BILLING-CHECKOUT-0031-checkout-journey-instrumentation-contract.md)                      | Checkout Journey Instrumentation Contract                                          | Proposed   | 2026-09-09 |
 | [BILLING-WEB-0031](BILLING-WEB-0031-static-spa-boundary.md)                                                      | Static SPA Boundary for Hosted Billing                                             | Proposed   | 2026-09-10 |
 | [CANVAS-GESTURE-0029](CANVAS-GESTURE-0029-pointer-gesture-state-machine.md)                                      | Pointer Gesture State Machine                                                      | Proposed   | 2026-09-06 |
+| [CANVAS-INTERACTION-0035](CANVAS-INTERACTION-0035-agent-node-picking-policy.md)                                  | Agent Node Picking Policy                                                          | Proposed   | 2026-09-19 |
 | [CANVAS-SELECTION-0028](CANVAS-SELECTION-0028-single-selection-store.md)                                         | Single Selection Store                                                             | Proposed   | 2026-09-04 |
 | [CANVAS-SELECTION-0031](CANVAS-SELECTION-0031-ordered-set-storage.md)                                            | Ordered Set Storage for Selection                                                  | Proposed   | 2026-09-15 |
 | [CRDT-AUTHORITY-0035](CRDT-AUTHORITY-0035-human-canvas-authority-and-draft-reconciliation.md)                    | Human Canvas Authority and Draft Reconciliation                                    | Proposed   | 2026-09-19 |
@@ -59,9 +60,11 @@ An Architecture Decision Record captures an important architectural decision mad
 | [TELEMETRY-STARTUP-0030](TELEMETRY-STARTUP-0030-production-startup-telemetry.md)                                 | Production Startup Telemetry                                                       | Proposed   | 2026-09-08 |
 | [TESTING-BILLING-0031](TESTING-BILLING-0031-real-cloud-checkout-tests.md)                                        | Real Cloud Checkout Tests                                                          | Proposed   | 2026-09-11 |
 | [TESTING-E2E-0027](TESTING-E2E-0027-coverage-measurement-and-test-selection.md)                                  | E2E Coverage Measurement and Test Selection                                        | Proposed   | 2026-09-01 |
+| [WEBSITE-ACCEPTANCE-0036](WEBSITE-ACCEPTANCE-0036-separate-live-customer-tests-from-offline-ci.md)               | Separate live customer acceptance from offline CI                                  | Proposed   | 2026-09-21 |
 | [WEBSITE-REQUESTS-0030](WEBSITE-REQUESTS-0030-creator-widgets-and-router-request-composition.md)                 | Creator widgets and Router request composition                                     | Deprecated | 2026-09-09 |
 | [WIDGET-SERIALIZATION-0006](WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) | PrimitiveNode Widget Restoration Lifecycle                                         | Accepted   | 2026-02-22 |
 | [WORKSHOP-TELEMETRY-0034](WORKSHOP-TELEMETRY-0034-browser-delivery-health.md)                                    | Browser delivery health for Models                                                 | Proposed   | 2026-09-18 |
+| [WORKSHOP-VALIDATION-0036](WORKSHOP-VALIDATION-0036-declarative-input-constraints.md)                            | Declarative input constraints                                                      | Proposed   | 2026-09-22 |
 
 ## Creating a New ADR
 

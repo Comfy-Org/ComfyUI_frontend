@@ -36,6 +36,33 @@ interface CrdtFixtures {
 
 export type CreateCrdtSession = CrdtFixtures['createCrdtSession']
 
+/**
+ * Runs every cleanup in `cleanups`, in reverse registration order, even
+ * when an earlier one throws -- a broken detach/destroy must not skip the
+ * rest and leak state into later tests. A single thrown error is rethrown
+ * unchanged, so a test that owns just one failing cleanup still sees its
+ * own error; more than one is aggregated into an `AggregateError` so none
+ * of the causes are silently dropped. See `crdtSession.test.ts` for the
+ * focused regression coverage on this behavior.
+ */
+export function runCleanupsInReverse(
+  cleanups: readonly (() => void)[],
+  aggregateMessage = '[agent-crdt] fixture cleanup failed'
+): void {
+  const errors: unknown[] = []
+  for (const cleanup of [...cleanups].reverse()) {
+    try {
+      cleanup()
+    } catch (error) {
+      errors.push(error)
+    }
+  }
+  if (errors.length === 1) throw errors[0]
+  if (errors.length > 1) {
+    throw new AggregateError(errors, aggregateMessage)
+  }
+}
+
 export const crdtTest = baseTest.extend<CrdtFixtures>({
   createCrdtSession: async ({ task }, use) => {
     const cleanups: Array<() => void> = []
@@ -103,18 +130,9 @@ export const crdtTest = baseTest.extend<CrdtFixtures>({
       }
     })
 
-    const cleanupErrors: unknown[] = []
-    for (const cleanup of cleanups.reverse()) {
-      try {
-        cleanup()
-      } catch (error) {
-        cleanupErrors.push(error)
-      }
-    }
-    if (cleanupErrors.length > 0)
-      throw new AggregateError(
-        cleanupErrors,
-        `CRDT session cleanup failed in "${task.name}"`
-      )
+    runCleanupsInReverse(
+      cleanups,
+      `CRDT session cleanup failed in "${task.name}"`
+    )
   }
 })

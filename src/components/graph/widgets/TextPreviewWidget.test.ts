@@ -22,11 +22,6 @@ vi.mock(
   }
 )
 
-const SkeletonStub = defineComponent({
-  name: 'Skeleton',
-  template: '<div data-testid="skeleton" />'
-})
-
 function renderPreview(
   text: string,
   { nodeId = toNodeId('node-1') }: { nodeId?: NodeId } = {}
@@ -39,8 +34,12 @@ function renderPreview(
   })
   return render(Harness, {
     global: {
-      plugins: [PrimeVue],
-      stubs: { Skeleton: SkeletonStub }
+      plugins: [
+        [
+          PrimeVue,
+          { pt: { skeleton: { root: { 'data-testid': 'skeleton' } } } }
+        ]
+      ]
     }
   })
 }

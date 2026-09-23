@@ -269,7 +269,12 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
 
 function readField(source: unknown, key: string): unknown {
   if (source instanceof Y.Map) return source.get(key)
-  if (typeof source !== 'object' || source === null || !(key in source)) {
+  if (
+    typeof source !== 'object' ||
+    source === null ||
+    !isReadableKey(key) ||
+    !Object.hasOwn(source, key)
+  ) {
     return undefined
   }
   return Reflect.get(source, key)
@@ -281,18 +286,22 @@ function readList(source: unknown): unknown[] {
 }
 
 function collectDefinitionIds(source: unknown, ids: string[]): void {
-  const id = readField(source, 'id')
-  if (typeof id === 'string') ids.push(id)
-  const container = readField(source, 'definitions')
-  const nested = readField(container, 'subgraphs')
-  const definitions =
-    nested instanceof Y.Map
-      ? orderedKeys(readField(container, 'subgraph_order'), nested).map((key) =>
-          nested.get(key)
-        )
-      : readList(nested)
-  for (const definition of definitions) {
-    collectDefinitionIds(definition, ids)
+  const pending = [source]
+  while (pending.length > 0) {
+    const definition = pending.pop()
+    const id = plain(readField(definition, 'id'))
+    if (typeof id === 'string') ids.push(id)
+    const container = readField(definition, 'definitions')
+    const nested = readField(container, 'subgraphs')
+    const definitions =
+      nested instanceof Y.Map
+        ? orderedKeys(readField(container, 'subgraph_order'), nested).map(
+            (key) => nested.get(key)
+          )
+        : readList(nested)
+    for (let index = definitions.length - 1; index >= 0; index--) {
+      pending.push(definitions[index])
+    }
   }
 }
 
