@@ -21,7 +21,7 @@ const props = (overrides = {}) => ({
   author: 'ComfyUI',
   usage: 294,
   produces: [{ media: 'image' as const, count: 1 }],
-  runsHere: true,
+  reach: 'cloud' as const,
   openWeights: false,
   added: '2026-06-30',
   ...overrides
@@ -82,11 +82,21 @@ describe('WorkflowFacts', () => {
     expect(facts()).toContain('Weights')
   })
 
-  it('says where a workflow that needs a machine runs', () => {
-    render(WorkflowFacts, { props: props({ runsHere: false }) })
+  // The page runs these against Cloud from the browser, so Cloud is where
+  // they run. Only the one with a server of its own says otherwise.
+  it('says a workflow runs on Cloud', () => {
+    render(WorkflowFacts, { props: props() })
 
-    expect(screen.getByTestId('workflow-details').textContent).not.toMatch(
+    expect(screen.getByTestId('workflow-details').textContent).toMatch(
       /Comfy Cloud/
     )
+  })
+
+  it('says where the one with its own deployment runs instead', () => {
+    render(WorkflowFacts, { props: props({ reach: 'endpoint' as const }) })
+
+    const said = screen.getByTestId('workflow-details').textContent
+    expect(said).toMatch(/deployment of your own/)
+    expect(said).not.toMatch(/Comfy Cloud/)
   })
 })

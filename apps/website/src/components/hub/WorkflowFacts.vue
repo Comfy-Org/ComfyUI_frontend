@@ -7,6 +7,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { HubPortSummary } from '../../lib/hub/workflow-detail'
 import IconModel from './IconModel.vue'
+import type { WorkflowReach } from '../../lib/hub/workflow-reach'
 import { mediaLabel } from './mediaLabel'
 
 const {
@@ -14,7 +15,7 @@ const {
   author,
   usage,
   produces,
-  runsHere,
+  reach,
   openWeights,
   added,
   locale = 'en'
@@ -24,8 +25,8 @@ const {
   /** How many times the registry has seen it run. */
   usage: number
   produces: readonly HubPortSummary[]
-  /** Whether the model it calls runs on this page rather than on a machine. */
-  runsHere: boolean
+  /** Where it runs, which is Comfy Cloud unless it needs a server of its own. */
+  reach: WorkflowReach | undefined
   /** Whether the weights behind it can be downloaded and run anywhere. */
   openWeights: boolean
   added: string
@@ -42,9 +43,9 @@ const facts = computed<{ label: TranslationKey; value: string }[]>(() => {
     {
       label: 'workshop.v2.workflow.factWhere',
       value: t(
-        runsHere
-          ? 'workshop.v2.workflow.runsCloud'
-          : 'workshop.v2.workflow.runsLocal',
+        reach === 'endpoint'
+          ? 'workshop.v2.workflow.runsOwn'
+          : 'workshop.v2.workflow.runsCloud',
         locale
       )
     }

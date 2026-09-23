@@ -6,7 +6,6 @@ import WorkflowAbout from './WorkflowAbout.vue'
 const props = {
   graphUrl: 'https://example.test/graph.json',
   cloudUrl: 'https://cloud.test/?template=x',
-  runsHere: true,
   description: 'Turns a photo into a poster.',
   reach: 'cloud' as const,
   tutorialUrl: undefined,

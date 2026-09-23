@@ -155,7 +155,6 @@ const sectionTitle =
           model={runnable}
           graphUrl={page.downloadUrl}
           cloudUrl={cloudUrl}
-          runsHere={operations.length > 0}
           description={details.description}
           reach={reach}
           tutorialUrl={details.tutorialUrl}
@@ -172,36 +171,19 @@ const sectionTitle =
     ) : (
       runForm && <div class="mb-16" data-testid="workflow-on-cloud">
         <WorkflowTabs runs={reach !== 'endpoint'} client:load>
-          {reach !== 'endpoint' && <div
-            slot="playground"
-            class="grid gap-10 lg:grid-cols-12"
-          >
-            <div class="lg:col-span-5">
-              <WorkflowRunForm
-                fields={runForm.fields}
-                graph={runForm.graph}
-                coldStart={coldStart}
-                client:load
-              />
-            </div>
-            <div class="lg:col-span-7">
-              {template.thumbnails[0] && (
-                <img
-                  src={template.thumbnails[0]}
-                  alt={title}
-                  loading="lazy"
-                  decoding="async"
-                  class="aspect-video w-full rounded-2xl bg-hub-surface object-cover"
-                  data-testid="workflow-media"
-                />
-              )}
-            </div>
+          {reach !== 'endpoint' && <div slot="playground">
+            <WorkflowRunForm
+              fields={runForm.fields}
+              graph={runForm.graph}
+              sample={template.thumbnails[0]}
+              coldStart={coldStart}
+              client:load
+            />
           </div>}
           <div slot="details">
             <WorkflowAbout
               graphUrl={page.downloadUrl}
               cloudUrl={cloudUrl}
-              runsHere={false}
               description={details.description}
               reach={reach}
               tutorialUrl={details.tutorialUrl}

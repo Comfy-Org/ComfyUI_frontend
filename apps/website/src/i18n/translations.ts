@@ -10708,9 +10708,9 @@ Enterprise`
     en: 'Runs on Comfy Cloud',
     'zh-CN': '在 Comfy Cloud 上运行'
   },
-  'workshop.v2.workflow.runsLocal': {
-    en: 'Runs in ComfyUI, on your machine',
-    'zh-CN': '在你机器上的 ComfyUI 中运行'
+  'workshop.v2.workflow.runsOwn': {
+    en: 'Runs on a deployment of your own',
+    'zh-CN': '在你自己的部署上运行'
   },
   'workshop.v2.workflow.download': {
     en: 'Download the JSON',

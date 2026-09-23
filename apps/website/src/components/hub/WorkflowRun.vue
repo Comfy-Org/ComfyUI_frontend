@@ -21,7 +21,6 @@ const {
   model: WorkshopModelDetail
   graphUrl: string
   cloudUrl: string
-  runsHere: boolean
   description: string | undefined
   reach: WorkflowReach | undefined
   tutorialUrl: string | undefined

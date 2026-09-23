@@ -11,7 +11,6 @@ import WorkflowGraph from './WorkflowGraph.vue'
 const {
   graphUrl,
   cloudUrl,
-  runsHere,
   description,
   reach,
   tutorialUrl,
@@ -26,7 +25,6 @@ const {
 } = defineProps<{
   graphUrl: string
   cloudUrl: string
-  runsHere: boolean
   /** What the workflow does, in the template author's own words. */
   description: string | undefined
   reach: WorkflowReach | undefined
@@ -70,7 +68,7 @@ const sectionTitle =
           :author
           :usage
           :produces
-          :runs-here="runsHere"
+          :reach
           :open-weights="openWeights"
           :added
           :locale
