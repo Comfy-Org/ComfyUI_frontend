@@ -45,10 +45,6 @@ test.describe(
   'Subgraph node resize preservation',
   { tag: ['@subgraph', '@widget', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    })
-
     test('Promoting a widget preserves a user-resized subgraph node', async ({
       comfyPage
     }) => {
@@ -89,7 +85,7 @@ test.describe(
       const resizedBox = (await subgraphNode.boundingBox())!
 
       await comfyPage.vueNodes.enterSubgraph('2')
-      await comfyPage.subgraph.unpromoteWidget(ksampler, 'steps')
+      await comfyPage.subgraph.removeSlot('input', 'steps')
       await comfyPage.subgraph.exitViaBreadcrumb()
 
       const box = await subgraphNode.boundingBox()
@@ -141,11 +137,10 @@ test.describe(
         .toBeCloseTo(resizedBox.width, 0)
 
       await comfyPage.vueNodes.enterSubgraph('2')
-      await comfyPage.subgraph.unpromoteWidget(ksampler, 'steps')
+      await comfyPage.subgraph.removeSlot('input', 'steps')
       await comfyPage.subgraph.exitViaBreadcrumb()
-
       await comfyPage.vueNodes.enterSubgraph('2')
-      await comfyPage.subgraph.unpromoteWidget(ksampler, 'cfg')
+      await comfyPage.subgraph.removeSlot('input', 'cfg')
       await comfyPage.subgraph.exitViaBreadcrumb()
 
       const box = await subgraphNode.boundingBox()
@@ -181,10 +176,6 @@ test.describe(
   'Subgraph node resize preservation — nested subgraphs',
   { tag: ['@subgraph', '@widget', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    })
-
     test('Demoting a nested promotion does not shrink a user-resized outer host', async ({
       comfyPage
     }) => {

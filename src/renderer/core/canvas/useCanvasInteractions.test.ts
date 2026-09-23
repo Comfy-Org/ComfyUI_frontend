@@ -1,39 +1,15 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { app } from '@/scripts/app'
 
-// Mock stores
-vi.mock('@/renderer/core/canvas/canvasStore', () => {
-  const getCanvas = vi.fn()
-  const setCursorStyle = vi.fn()
-  return {
-    useCanvasStore: vi.fn(() => ({
-      getCanvas,
-      setCursorStyle,
-      isReadOnly: false
-    }))
-  }
-})
-vi.mock('@/platform/settings/settingStore', () => {
-  const getFn = vi.fn()
-  return { useSettingStore: vi.fn(() => ({ get: getFn })) }
-})
-vi.mock('@/scripts/app', () => ({
-  app: {
-    canvas: {
-      canvas: {
-        dispatchEvent: vi.fn()
-      }
-    }
-  }
-}))
-
-function createMockLGraphCanvas(read_only = true): LGraphCanvas {
-  const mockCanvas: Partial<LGraphCanvas> = { read_only }
+function createMockLGraphCanvas(
+  read_only = true,
+  canvas = document.createElement('canvas')
+): LGraphCanvas {
+  const mockCanvas: Partial<LGraphCanvas> = { read_only, canvas }
   return mockCanvas as LGraphCanvas
 }
 
@@ -70,11 +46,38 @@ function createMockWheelEvent(
 }
 
 describe('useCanvasInteractions', () => {
+  let canvasElement: HTMLCanvasElement
+
+  beforeEach(() => {
+    canvasElement = document.createElement('canvas')
+    vi.spyOn(canvasElement, 'dispatchEvent').mockReturnValue(true)
+    useCanvasStore().canvas = createMockLGraphCanvas(false, canvasElement)
+  })
+
+  it.for([
+    { name: 'middle button', button: 1, buttons: 4 },
+    { name: 'primary button', button: 0, buttons: 1 }
+  ])(
+    'ignores $name pointer events before the canvas exists',
+    ({ button, buttons }) => {
+      useCanvasStore().canvas = null
+      const { handlePointerDown } = useCanvasInteractions()
+      const mockEvent = createMockPointerEvent({
+        type: 'pointerdown',
+        button,
+        buttons
+      })
+
+      handlePointerDown(mockEvent)
+
+      expect(mockEvent.preventDefault).not.toHaveBeenCalled()
+      expect(canvasElement.dispatchEvent).not.toHaveBeenCalled()
+    }
+  )
+
   describe('pointer handlers', () => {
     it('should intercept left mouse events when canvas is read_only to enable space+drag navigation', () => {
-      const { getCanvas } = useCanvasStore()
-      const mockCanvas = createMockLGraphCanvas(true)
-      vi.mocked(getCanvas).mockReturnValue(mockCanvas)
+      useCanvasStore().canvas = createMockLGraphCanvas(true, canvasElement)
 
       const { handlePointerMove } = useCanvasInteractions()
 
@@ -86,9 +89,6 @@ describe('useCanvasInteractions', () => {
     })
 
     it('should forward middle pointerdown events to canvas', () => {
-      const { getCanvas } = useCanvasStore()
-      const mockCanvas = createMockLGraphCanvas(false)
-      vi.mocked(getCanvas).mockReturnValue(mockCanvas)
       const { handlePointerDown } = useCanvasInteractions()
 
       const mockEvent = createMockPointerEvent({
@@ -100,15 +100,12 @@ describe('useCanvasInteractions', () => {
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
       expect(mockEvent.stopPropagation).toHaveBeenCalled()
-      expect(app.canvas.canvas.dispatchEvent).toHaveBeenCalledWith(
+      expect(canvasElement.dispatchEvent).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'pointerdown' })
       )
     })
 
     it('should forward chorded middle-button drags to canvas', () => {
-      const { getCanvas } = useCanvasStore()
-      const mockCanvas = createMockLGraphCanvas(false)
-      vi.mocked(getCanvas).mockReturnValue(mockCanvas)
       const { handlePointerMove } = useCanvasInteractions()
 
       const mockEvent = createMockPointerEvent({ buttons: 5 })
@@ -116,15 +113,12 @@ describe('useCanvasInteractions', () => {
 
       expect(mockEvent.preventDefault).toHaveBeenCalled()
       expect(mockEvent.stopPropagation).toHaveBeenCalled()
-      expect(app.canvas.canvas.dispatchEvent).toHaveBeenCalledWith(
+      expect(canvasElement.dispatchEvent).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'pointermove' })
       )
     })
 
     it('should not prevent default when canvas is not in read_only mode and not middle button', () => {
-      const { getCanvas } = useCanvasStore()
-      const mockCanvas = createMockLGraphCanvas(false)
-      vi.mocked(getCanvas).mockReturnValue(mockCanvas)
       const { handlePointerMove } = useCanvasInteractions()
 
       const mockEvent = createMockPointerEvent({ buttons: 1 })

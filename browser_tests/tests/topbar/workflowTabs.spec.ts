@@ -4,12 +4,6 @@ import type { Locator, Page } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow tabs', () => {
-  test.use({
-    initialSettings: {
-      'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
-    }
-  })
-
   // These Agent-adjacent path-identity cases are staged behind the stacked
   // workflow-tab slice: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16184
   test.describe('Agent workflow-tab contract from slice 04', () => {
@@ -200,9 +194,18 @@ test.describe('Workflow tabs', () => {
 
     // WorkflowTab renders the dirty-state dot when the workflow has unsaved changes
     const activeTab = topbar.getActiveTab()
-    await expect(
-      activeTab.getByTestId('workflow-dirty-indicator')
-    ).toBeVisible()
+    const indicator = activeTab.getByTestId('workflow-dirty-indicator')
+    const closeButton = activeTab.getByTestId('close-workflow-button')
+    await expect(indicator).toBeVisible()
+    await expect(closeButton).toBeHidden()
+
+    await activeTab.hover()
+    await expect(indicator).toBeHidden()
+    await expect(closeButton).toBeVisible()
+
+    await comfyPage.canvas.hover()
+    await expect(indicator).toBeVisible()
+    await expect(closeButton).toBeHidden()
   })
 
   test('Can drag tab to end', async ({ comfyPage }) => {
@@ -290,6 +293,20 @@ test.describe('Workflow tabs', () => {
       await expect(scrollLeft).toBeVisible()
       await expect(scrollLeft).toBeEnabled()
       await expect(scrollRight).toBeDisabled()
+      const moreWorkflows = topbar.workflowTabs.getByRole('button', {
+        name: 'More workflows',
+        exact: true
+      })
+      await expect(async () => {
+        const [scrollArrowBox, moreWorkflowsBox] = await Promise.all([
+          scrollRight.boundingBox(),
+          moreWorkflows.boundingBox()
+        ])
+        expect(scrollArrowBox).not.toBeNull()
+        expect(moreWorkflowsBox).toMatchObject({
+          height: scrollArrowBox?.height
+        })
+      }).toPass({ timeout: 5000 })
 
       const activeTabName = await topbar.getActiveTabName()
       await scrollLeft.dispatchEvent('mousedown')
@@ -366,9 +383,13 @@ test.describe('Workflow tabs', () => {
       await modifyActiveWorkflow(comfyPage.page, topbar.getActiveTab())
       await topbar.closeWorkflowTab('Unsaved Workflow (2)')
 
-      await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
+      const dialog = comfyPage.page.getByRole('dialog', {
+        name: 'Save Changes?',
+        exact: true
+      })
+      await expect(dialog).toBeVisible()
       await comfyPage.page.keyboard.press('Escape')
-      await expect(comfyPage.page.getByRole('dialog')).toBeHidden()
+      await expect(dialog).toBeHidden()
 
       await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
     })

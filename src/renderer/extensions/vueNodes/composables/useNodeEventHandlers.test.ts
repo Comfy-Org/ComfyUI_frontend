@@ -1,77 +1,84 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, effectScope } from 'vue'
 
-import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useNodeEventHandlers as createNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
-const canvasSelectedItems = vi.hoisted(() => [] as Array<{ id?: string }>)
-const graphNode = vi.hoisted(() => ({
-  id: 'node-1',
+
+const graphNode = createMockLGraphNode({
+  id: toNodeId('node-1'),
   selected: false,
   flags: { pinned: false }
-}))
+})
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => {
-  const canvas: Partial<LGraphCanvas> = {
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/useCanvasInteractions'),
+  () => ({
+    useCanvasInteractions: vi.fn(() => ({
+      shouldHandleNodePointerEvents: computed(() => true) // Default to allowing pointer events
+    }))
+  })
+)
+
+vi.mock<unknown>(
+  import('@/renderer/core/layout/operations/layoutMutations'),
+  () => {
+    const setNodeOrder = vi.fn()
+    return {
+      useLayoutMutations: vi.fn(() => ({
+        setNodeOrder
+      }))
+    }
+  }
+)
+
+let scope: ReturnType<typeof effectScope>
+
+function useNodeEventHandlers() {
+  return scope.run(createNodeEventHandlers)!
+}
+
+afterEach(() => scope.stop())
+
+beforeEach(() => {
+  const store = useCanvasStore()
+  const graph = fromPartial<NonNullable<typeof store.currentGraph>>({
+    getNodeById: vi.fn(() => graphNode)
+  })
+  store.canvas = fromPartial({
+    graph,
+    canvas: document.createElement('canvas'),
     select: vi.fn(),
     deselect: vi.fn(),
     deselectAll: vi.fn()
-  }
-  const updateSelectedItems = vi.fn()
-  const currentGraph: Partial<LGraph> = {
-    getNodeById: vi.fn(() => graphNode as Partial<LGraphNode> as LGraphNode)
-  }
-  const canvasStoreInstance = {
-    canvas: canvas as LGraphCanvas,
-    currentGraph: currentGraph as LGraph,
-    updateSelectedItems,
-    selectedItems: canvasSelectedItems,
-    rootGraphId: ROOT_GRAPH_ID
-  }
-  return {
-    useCanvasStore: vi.fn(() => canvasStoreInstance)
-  }
-})
-
-vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
-  useCanvasInteractions: vi.fn(() => ({
-    shouldHandleNodePointerEvents: computed(() => true) // Default to allowing pointer events
-  }))
-}))
-
-vi.mock('@/renderer/core/layout/operations/layoutMutations', () => {
-  const setNodeOrder = vi.fn()
-  return {
-    useLayoutMutations: vi.fn(() => ({
-      setNodeOrder
-    }))
-  }
+  })
+  store.currentGraph = graph
+  Object.assign(store, { rootGraphId: ROOT_GRAPH_ID })
+  scope = effectScope()
 })
 
 describe('useNodeEventHandlers', () => {
-  const mockNode = graphNode as Partial<LGraphNode> as LGraphNode
+  const mockNode = graphNode
   const mockLayoutMutations = useLayoutMutations(LayoutSource.Vue)
 
   const testNodeId = toNodeId('node-1')
 
   beforeEach(async () => {
-    canvasSelectedItems.length = 0
+    setCanvasSelection([])
   })
 
   describe('handleNodeSelect', () => {
     it('should select single node on regular click', () => {
       const { handleNodeSelect } = useNodeEventHandlers()
-      const { canvas, updateSelectedItems } = useCanvasStore()
+      const { canvas } = useCanvasStore()
 
       const event = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -83,7 +90,6 @@ describe('useNodeEventHandlers', () => {
 
       expect(canvas?.deselectAll).toHaveBeenCalledOnce()
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
-      expect(updateSelectedItems).toHaveBeenCalledOnce()
     })
 
     it('on pointer down with ctrl+click: selects node immediately', () => {
@@ -200,7 +206,10 @@ describe('useNodeEventHandlers', () => {
       const { canvas } = useCanvasStore()
 
       mockNode.selected = true
-      canvasSelectedItems.push({ id: 'node-1' }, { id: 'node-2' })
+      setCanvasSelection([
+        createMockLGraphNode({ id: toNodeId('node-1') }),
+        createMockLGraphNode({ id: toNodeId('node-2') })
+      ])
 
       const event = new PointerEvent('pointerdown', {
         bubbles: true,
@@ -244,53 +253,53 @@ describe('useNodeEventHandlers', () => {
   describe('toggleNodeSelectionAfterPointerUp', () => {
     it('on pointer up with multi-select: deselects node that was selected at pointer down', () => {
       const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
-      const { canvas, updateSelectedItems } = useCanvasStore()
+      const { canvas } = useCanvasStore()
 
       mockNode.selected = true
 
       toggleNodeSelectionAfterPointerUp(testNodeId, true)
 
       expect(canvas?.deselect).toHaveBeenCalledWith(mockNode)
-      expect(updateSelectedItems).toHaveBeenCalledOnce()
     })
 
     it('on pointer up with multi-select and node not previously selected: no-op', () => {
       const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
-      const { canvas, updateSelectedItems } = useCanvasStore()
+      const { canvas } = useCanvasStore()
 
       mockNode.selected = true
 
       toggleNodeSelectionAfterPointerUp(testNodeId, true)
 
       expect(canvas?.select).not.toHaveBeenCalled()
-      expect(updateSelectedItems).toHaveBeenCalled()
+      expect(canvas?.deselect).toHaveBeenCalledWith(mockNode)
     })
 
     it('on pointer up without multi-select: collapses multi-selection to clicked node', () => {
       const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
-      const { canvas, updateSelectedItems } = useCanvasStore()
+      const { canvas } = useCanvasStore()
 
       mockNode.selected = true
-      canvasSelectedItems.push({ id: 'node-1' }, { id: 'node-2' })
+      setCanvasSelection([
+        createMockLGraphNode({ id: toNodeId('node-1') }),
+        createMockLGraphNode({ id: toNodeId('node-2') })
+      ])
 
       toggleNodeSelectionAfterPointerUp(testNodeId, false)
 
       expect(canvas?.deselectAll).toHaveBeenCalledOnce()
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
-      expect(updateSelectedItems).toHaveBeenCalledOnce()
     })
 
     it('on pointer up without multi-select: keeps single selection intact', () => {
       const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
-      const { canvas, updateSelectedItems } = useCanvasStore()
+      const { canvas } = useCanvasStore()
 
       mockNode.selected = true
-      canvasSelectedItems.push({ id: 'node-1' })
+      setCanvasSelection([createMockLGraphNode({ id: toNodeId('node-1') })])
 
       toggleNodeSelectionAfterPointerUp(testNodeId, false)
 
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
-      expect(updateSelectedItems).toHaveBeenCalled()
     })
   })
 })

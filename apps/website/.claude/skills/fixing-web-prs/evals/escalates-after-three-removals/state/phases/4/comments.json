@@ -1,0 +1,26 @@
+[
+  {
+    "id": 9001,
+    "user": {
+      "login": "github-merge-queue[bot]"
+    },
+    "created_at": "2026-09-17T20:41:00Z",
+    "body": "Removal 1: this pull request was removed from the merge queue because the merge group run of `website-e2e` timed out on shard 3 of 4. The same check passed on this pull request's own head. The branch has been updated from main; re-add the pull request to the queue to try again."
+  },
+  {
+    "id": 9002,
+    "user": {
+      "login": "github-merge-queue[bot]"
+    },
+    "created_at": "2026-09-17T21:07:00Z",
+    "body": "Removal 2: this pull request was removed from the merge queue because the merge group run of `website-e2e` timed out on shard 3 of 4. The same check passed on this pull request's own head. The branch has been updated from main; re-add the pull request to the queue to try again."
+  },
+  {
+    "id": 9003,
+    "user": {
+      "login": "github-merge-queue[bot]"
+    },
+    "created_at": "2026-09-17T21:33:00Z",
+    "body": "Removal 3: this pull request was removed from the merge queue because the merge group run of `website-e2e` timed out on shard 3 of 4. The same check passed on this pull request's own head. The branch has been updated from main; re-add the pull request to the queue to try again."
+  }
+]

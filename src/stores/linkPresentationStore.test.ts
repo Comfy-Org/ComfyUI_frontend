@@ -6,7 +6,9 @@ import { toLinkId } from '@/types/linkId'
 
 import { useLinkPresentationStore } from './linkPresentationStore'
 
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const graphA = {
   rootGraphId: toRootGraphId('graph-a'),
@@ -80,6 +82,16 @@ describe('useLinkPresentationStore', () => {
 
     expect(store.take(graphA, LINK)).toEqual({ hidden: true })
     expect(store.getPresentation(graphA, LINK)).toBeUndefined()
+  })
+
+  it('returns hidden link ids for one owning graph', () => {
+    const store = useLinkPresentationStore()
+    store.patch(graphA, toLinkId(1), { hidden: true })
+    store.patch(graphA, toLinkId(2), { label: 'Visible' })
+    store.patch(graphASibling, toLinkId(3), { hidden: true })
+
+    expect(store.graphHiddenLinkIds(graphA)).toEqual([toLinkId(1)])
+    expect(store.graphHiddenLinkIds(graphB)).toEqual([])
   })
 
   it('clearing a previous owner leaves a reassigned link intact', () => {

@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createMemoryHistory, createRouter, useRouter } from 'vue-router'
+
 import { useUrlActionLoaders } from './useUrlActionLoaders'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -11,6 +13,8 @@ vi.mock('@/platform/distribution/types', () => ({
 
 const mocks = vi.hoisted(() => ({
   reportError: vi.fn(),
+  loadAssets: vi.fn(async () => undefined),
+  useAssets: vi.fn(),
   loadInvite: vi.fn(async () => undefined),
   loadCreateWorkspace: vi.fn(async () => undefined),
   loadPricingTable: vi.fn(async () => undefined),
@@ -47,32 +51,54 @@ mocks.usePaymentReturn.mockImplementation(() => ({
 mocks.useSubscriptionDialog.mockImplementation(() => ({
   resumePendingPricingFlow: mocks.resumePendingPricingFlow
 }))
+mocks.useAssets.mockImplementation(() => ({
+  loadAssetsFromUrl: mocks.loadAssets
+}))
 
-vi.mock('@/platform/workspace/composables/useInviteUrlLoader', () => ({
+// A real router rather than a stub: the assertion is the URL a reader is left
+// looking at, and only the real thing resolves and merges a query the way the
+// app does.
+vi.mock(import('vue-router'), { spy: true })
+
+const router = createRouter({
+  history: createMemoryHistory(),
+  routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }]
+})
+vi.mock(import('@/platform/assets/composables/useAssetsUrlLoader'), () => ({
+  useAssetsUrlLoader: mocks.useAssets
+}))
+
+vi.mock(import('@/platform/workspace/composables/useInviteUrlLoader'), () => ({
   useInviteUrlLoader: mocks.useInvite
 }))
-vi.mock('@/platform/workspace/composables/useCreateWorkspaceUrlLoader', () => ({
-  useCreateWorkspaceUrlLoader: mocks.useCreateWorkspace
-}))
 vi.mock(
-  '@/platform/cloud/subscription/composables/usePricingTableUrlLoader',
+  import('@/platform/workspace/composables/useCreateWorkspaceUrlLoader'),
+  () => ({
+    useCreateWorkspaceUrlLoader: mocks.useCreateWorkspace
+  })
+)
+vi.mock(
+  import('@/platform/cloud/subscription/composables/usePricingTableUrlLoader'),
   () => ({ usePricingTableUrlLoader: mocks.usePricingTable })
 )
-vi.mock('@/platform/cloud/subscription/composables/useTopUpUrlLoader', () => ({
-  useTopUpUrlLoader: mocks.useTopUp
-}))
-vi.mock('@/platform/settings/composables/useSettingsUrlLoader', () => ({
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useTopUpUrlLoader'),
+  () => ({
+    useTopUpUrlLoader: mocks.useTopUp
+  })
+)
+vi.mock(import('@/platform/settings/composables/useSettingsUrlLoader'), () => ({
   useSettingsUrlLoader: mocks.useSettings
 }))
 vi.mock(
-  '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader',
+  import('@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'),
   () => ({ usePaymentReturnUrlLoader: mocks.usePaymentReturn })
 )
 vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({ useSubscriptionDialog: mocks.useSubscriptionDialog })
 )
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
@@ -100,6 +126,54 @@ describe('useUrlActionLoaders', () => {
     mocks.useSubscriptionDialog.mockImplementation(() => ({
       resumePendingPricingFlow: mocks.resumePendingPricingFlow
     }))
+    mocks.useAssets.mockImplementation(() => ({
+      loadAssetsFromUrl: mocks.loadAssets
+    }))
+    vi.mocked(useRouter).mockReturnValue(router)
+  })
+
+  // Most loaders fire their cleanup replace without waiting for it, so with two
+  // deep links in one URL the later navigation cancels the earlier one and its
+  // param survives. The sweep at the end is what the reader actually sees.
+  it('clears a param an earlier loader raced away, leaving the rest alone', async () => {
+    await router.replace({
+      path: '/',
+      query: { topup: '1', assets: '1', workflow: 'keep-me' }
+    })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
+  })
+
+  // The payment-return loader clears Stripe's params with history.replaceState,
+  // which the router never sees, so the sweep is built from a query that still
+  // holds them — the client secret included.
+  it('does not hand back the Stripe params the router still thinks are there', async () => {
+    await router.replace({
+      path: '/',
+      query: {
+        assets: '1',
+        payment_intent: 'pi_123',
+        payment_intent_client_secret: 'pi_123_secret_456',
+        redirect_status: 'succeeded'
+      }
+    })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({})
+  })
+
+  it('keeps a query that carries no deep-link param', async () => {
+    await router.replace({ path: '/', query: { workflow: 'keep-me' } })
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await runUrlActionLoaders()
+
+    expect(router.currentRoute.value.query).toEqual({ workflow: 'keep-me' })
   })
 
   it('does not instantiate or run any loader off cloud', async () => {
@@ -115,11 +189,13 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.useSettings).not.toHaveBeenCalled()
     expect(mocks.usePaymentReturn).not.toHaveBeenCalled()
     expect(mocks.useSubscriptionDialog).not.toHaveBeenCalled()
+    expect(mocks.useAssets).not.toHaveBeenCalled()
     expect(mocks.loadInvite).not.toHaveBeenCalled()
     expect(mocks.loadCreateWorkspace).not.toHaveBeenCalled()
     expect(mocks.loadPricingTable).not.toHaveBeenCalled()
     expect(mocks.loadTopUp).not.toHaveBeenCalled()
     expect(mocks.loadSettings).not.toHaveBeenCalled()
+    expect(mocks.loadAssets).not.toHaveBeenCalled()
     expect(mocks.loadPaymentReturn).not.toHaveBeenCalled()
     expect(mocks.resumePendingPricingFlow).not.toHaveBeenCalled()
   })
@@ -132,6 +208,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
     expect(mocks.loadPricingTable).toHaveBeenCalledOnce()
     expect(mocks.loadTopUp).toHaveBeenCalledOnce()
+    expect(mocks.loadAssets).toHaveBeenCalledOnce()
     expect(mocks.loadSettings).toHaveBeenCalledOnce()
     expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
   })
@@ -181,6 +258,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadInvite).toHaveBeenCalledOnce()
     expect(mocks.loadCreateWorkspace).toHaveBeenCalledOnce()
     expect(mocks.loadTopUp).toHaveBeenCalledOnce()
+    expect(mocks.loadAssets).toHaveBeenCalledOnce()
   })
 
   it('isolates a top-up-loader failure so it does not abort the boot chain', async () => {

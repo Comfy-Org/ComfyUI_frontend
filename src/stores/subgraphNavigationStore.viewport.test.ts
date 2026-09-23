@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -15,7 +16,7 @@ const { mockSetDirty, mockFitView } = vi.hoisted(() => ({
   mockFitView: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => {
+vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
     subgraph: undefined as unknown,
     graph: undefined as unknown,
@@ -39,7 +40,10 @@ vi.mock('@/scripts/app', () => {
     nodes: [],
     subgraphs: new Map(),
     getNodeById: vi.fn(),
-    id: 'root'
+    id: 'root',
+    get rootGraph() {
+      return mockGraph
+    }
   }
 
   mockCanvas.graph = mockGraph
@@ -48,19 +52,16 @@ vi.mock('@/scripts/app', () => {
     app: {
       graph: mockGraph,
       rootGraph: mockGraph,
-      canvas: mockCanvas
+      rootGraphOrUndefined: mockGraph,
+      canvas: mockCanvas,
+      canvasOrUndefined: mockCanvas
     }
   }
 })
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    getCanvas: () => app.canvas
-  })
-}))
-vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: vi.fn() }))
 
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ fitView: mockFitView })
 }))
 
@@ -70,6 +71,8 @@ let rafCallbacks: FrameRequestCallback[] = []
 
 describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   beforeEach(() => {
+    useCanvasStore().canvas = app.canvas
+    vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     rafCallbacks = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafCallbacks.push(cb)

@@ -4,17 +4,21 @@
     data-testid="side-toolbar"
     :inert="isHidden"
     :aria-hidden="isHidden"
-    class="side-tool-bar-container flex h-full flex-col items-center overflow-hidden bg-transparent transition-[max-width,opacity,transform] duration-300 ease-in-out [.floating-sidebar]:-mr-2"
-    :class="{
-      'small-sidebar': isSmall,
-      'connected-sidebar pointer-events-auto': isConnected,
-      'floating-sidebar': !isConnected,
-      'overflowing-sidebar': isOverflowing,
-      'border-r border-(--interface-stroke) shadow-interface': isConnected,
-      'pointer-events-none opacity-0': isHidden,
-      '-translate-x-8': isHidden && sidebarLocation === 'left',
-      'translate-x-8': isHidden && sidebarLocation === 'right'
-    }"
+    :class="
+      cn(
+        'side-tool-bar-container flex h-full flex-col items-center overflow-hidden bg-transparent transition-[max-width,opacity,transform] duration-300 ease-in-out [.floating-sidebar]:-mr-2',
+        {
+          'small-sidebar': isSmall,
+          'connected-sidebar pointer-events-auto': isConnected,
+          'floating-sidebar': !isConnected,
+          'overflowing-sidebar': isOverflowing,
+          'border-r border-interface-stroke/50 shadow-interface': isConnected,
+          'pointer-events-none opacity-0': isHidden,
+          '-translate-x-8': isHidden && sidebarLocation === 'left',
+          'translate-x-8': isHidden && sidebarLocation === 'right'
+        }
+      )
+    "
     :style="{ maxWidth: isHidden ? '0px' : 'var(--sidebar-width)' }"
   >
     <div
@@ -34,7 +38,7 @@
           :tooltip="tab.tooltip"
           :tooltip-suffix="getTabTooltipSuffix(tab)"
           :label="tab.label || tab.title"
-          :is-small="isSmall"
+          :is-small
           :selected="tab.id === selectedTab?.id"
           :data-testid="`${tab.id}-tab-button`"
           @click="onTabClick(tab)"
@@ -42,24 +46,18 @@
         <SidebarTemplatesButton />
       </div>
 
-      <div ref="bottomToolbarRef" class="mt-auto" :class="groupClasses">
-        <SidebarLogoutIcon
-          v-if="userStore.isMultiUserServer"
-          :is-small="isSmall"
-        />
-        <SidebarHelpCenterIcon :is-small="isSmall" />
+      <div ref="bottomToolbarRef" :class="cn('mt-auto', groupClasses)">
+        <SidebarLogoutIcon v-if="userStore.isMultiUserServer" :is-small />
+        <SidebarHelpCenterIcon :is-small />
         <SidebarBottomPanelToggleButton
           v-if="!isCloud && !hideWorkspaceToggles"
-          :is-small="isSmall"
+          :is-small
         />
-        <SidebarShortcutsToggleButton
-          v-if="!hideWorkspaceToggles"
-          :is-small="isSmall"
-        />
-        <SidebarSettingsButton :is-small="isSmall" />
+        <SidebarShortcutsToggleButton v-if="!hideWorkspaceToggles" :is-small />
+        <SidebarSettingsButton :is-small />
       </div>
     </div>
-    <HelpCenterPopups :is-small="isSmall" />
+    <HelpCenterPopups :is-small />
     <Suspense v-if="NightlySurveyController">
       <component :is="NightlySurveyController" />
     </Suspense>
@@ -209,6 +207,24 @@ const groupClasses = computed(() =>
   )
 )
 
+const CANVAS_GUTTER_VAR = '--comfy-canvas-gutter'
+
+/**
+ * The canvas gutter in pixels. Custom properties come back from
+ * `getComputedStyle` unresolved, so the token is measured through a length
+ * property the browser does resolve.
+ */
+function canvasGutter(): number {
+  const probe = document.createElement('div')
+  probe.style.position = 'absolute'
+  probe.style.visibility = 'hidden'
+  probe.style.marginLeft = `var(${CANVAS_GUTTER_VAR})`
+  document.body.append(probe)
+  const px = parseFloat(getComputedStyle(probe).marginLeft)
+  probe.remove()
+  return Number.isFinite(px) ? px : 0
+}
+
 const ENTER_OVERFLOW_MARGIN = 20
 const EXIT_OVERFLOW_MARGIN = 50
 
@@ -249,8 +265,12 @@ onMounted(() => {
       if (canvasStore.canvas) {
         if (sidebarLocation.value === 'left') {
           await nextTick()
+          const sidebarRight =
+            sideToolbarRef.value?.getBoundingClientRect()?.right
           canvasStore.canvas.fpsInfoLocation = [
-            sideToolbarRef.value?.getBoundingClientRect()?.right,
+            sidebarRight === undefined
+              ? undefined
+              : sidebarRight + canvasGutter(),
             null
           ]
         } else {
@@ -310,7 +330,7 @@ onMounted(() => {
 }
 
 .floating-sidebar .sidebar-item-group {
-  border-color: var(--p-panel-border-color);
+  border-color: var(--interface-stroke);
 }
 
 .connected-sidebar {

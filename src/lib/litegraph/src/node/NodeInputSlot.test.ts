@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LLink } from '@/lib/litegraph/src/LLink'
@@ -32,7 +30,6 @@ describe('NodeInputSlot', () => {
   const originalCallbacks = LiteGraph.onDeprecationWarning
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     onWarning.mockClear()
     LiteGraph.onDeprecationWarning = [onWarning]
     LiteGraph.alwaysRepeatWarnings = true
@@ -133,10 +130,6 @@ describe('NodeInputSlot', () => {
 })
 
 describe('NodeInputSlot.isConnected', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('reflects connect and disconnect', () => {
     const { target } = createConnectedPair()
     expect(inputSlot(target, 0)?.isConnected).toBe(true)

@@ -1,35 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import { usePaymentReturnUrlLoader } from './usePaymentReturnUrlLoader'
 
-const mocks = vi.hoisted(() => ({
-  fetchStatus: vi.fn().mockResolvedValue(undefined),
-  embeddedCheckoutEnabled: true
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({ fetchStatus: mocks.fetchStatus })
-}))
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get embeddedCheckoutEnabled() {
-        return mocks.embeddedCheckoutEnabled
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 describe('usePaymentReturnUrlLoader', () => {
   beforeEach(() => {
-    mocks.embeddedCheckoutEnabled = true
     window.history.replaceState({}, '', '/')
   })
 
   it('refreshes billing after bootstrap strips Stripe return params', async () => {
+    const billing = mockBillingContext()
+    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
     window.history.replaceState(
       {},
       '',
@@ -41,20 +28,22 @@ describe('usePaymentReturnUrlLoader', () => {
     await loadPaymentReturnFromUrl()
 
     expect(window.location.search).toBe('?workspace=ws-1')
-    expect(mocks.fetchStatus).toHaveBeenCalledOnce()
+    expect(billing.fetchStatus).toHaveBeenCalledOnce()
   })
 
   it('does nothing on an ordinary page load', async () => {
+    const billing = mockBillingContext()
     window.history.replaceState({}, '', '/?workspace=ws-1')
 
     const { loadPaymentReturnFromUrl } = usePaymentReturnUrlLoader()
     await loadPaymentReturnFromUrl()
 
-    expect(mocks.fetchStatus).not.toHaveBeenCalled()
+    expect(billing.fetchStatus).not.toHaveBeenCalled()
   })
 
   it('does not start embedded recovery while the flag is off', async () => {
-    mocks.embeddedCheckoutEnabled = false
+    const billing = mockBillingContext()
+    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
     window.history.replaceState(
       {},
       '',
@@ -64,6 +53,6 @@ describe('usePaymentReturnUrlLoader', () => {
 
     await usePaymentReturnUrlLoader().loadPaymentReturnFromUrl()
 
-    expect(mocks.fetchStatus).not.toHaveBeenCalled()
+    expect(billing.fetchStatus).not.toHaveBeenCalled()
   })
 })
