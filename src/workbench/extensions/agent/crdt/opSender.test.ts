@@ -672,6 +672,20 @@ describe('createOpSender', () => {
     ).toEqual([[1], [2], [3]])
   })
 
+  it('a second detach() call is a no-op: no double-settle and no timer left armed', () => {
+    sender.enqueue([addNode(1)])
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+
+    sender.detach()
+    const settledAfterFirstDetach = [...settled]
+    expect(vi.getTimerCount()).toBe(0)
+
+    sender.detach()
+
+    expect(settled).toEqual(settledAfterFirstDetach)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it.for([
     ['in-flight', 0],
     ['queued', 1],
