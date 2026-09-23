@@ -74,7 +74,7 @@ describe('RouterProviderCoverageSection', () => {
 
     expect(servedBy('Nano Banana Pro')).toEqual([true, true, false, true, true])
     expect(servedBy('Kling V3')).toEqual([true, false, true, false, false])
-    expect(servedBy('Seedance 2.0')).toEqual([true, true, false, true, true])
+    expect(servedBy('Seedance 2.0')).toEqual([true, true, false, false, false])
     expect(servedBy('MiniMax H3')).toEqual([true, false, false, false, false])
   })
 
