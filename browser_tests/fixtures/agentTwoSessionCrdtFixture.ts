@@ -8,12 +8,20 @@ import type {
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import {
+  DOC_PROTOCOL_VERSION,
+  parseServerDocFrame
+} from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import {
+  agentTest,
+  bootAgentApp,
+  mockWorkflowPersistence
+} from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -28,14 +36,34 @@ const PANEL_MOUNT_TIMEOUT = 30_000
 const SUBSCRIBE_TIMEOUT = 15_000
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
+const SEND_LABEL = enMessages.agent.send
+const STOP_LABEL = enMessages.agent.stop
+const NEW_CHAT_LABEL = enMessages.agent.newChat
+const SWITCH_WORKFLOW_LABEL = enMessages.agent.switchWorkflow
+// The cloud id the boot tab ("Unsaved Workflow") receives when the composer
+// pins it as the first target. The composer refuses to send without a target
+// (useAgentDraftSubmission), so every thread starts here before the agent's
+// `agent_active_tab` moves it onto Alpha or Bravo. Distinct from both.
+const HOME_WORKFLOW_ID = '00000000-0000-4000-8000-000000000000'
 
-// One agent session bound to one workflow, its doc held by the shared library
-// stand-in. Two of these describe the two-session scenario under test: two
-// agent threads targeting two workflows in one running app.
+// One agent-bound workflow, its doc held by the shared library stand-in. Two
+// of these describe the two-session scenario under test: two agent threads
+// targeting two workflows in one running app.
 interface AgentBoundWorkflow {
   workflowId: string
   name: string
   host: HostDoc
+}
+
+/**
+ * One agent thread the harness opened through the real composer. Its ids are
+ * the ones the mocked POST ack handed the page, so frames stamped with them
+ * are routed by `useAgentSession` exactly as the real agent's would be: only
+ * the thread on screen may move the user's tabs.
+ */
+interface AgentThread {
+  threadId: string
+  messageId: string
 }
 
 interface OutboundDocOps {
@@ -43,14 +71,27 @@ interface OutboundDocOps {
   ops: { op?: unknown; node_id?: unknown }[]
 }
 
+interface ClientDocFrame {
+  type: string
+  workflowId?: string
+  stateVectorB64?: string
+  ops: unknown
+}
+
 /**
  * A single cloud app whose one CRDT follower must track whichever workflow tab
  * is active across two agent-bound workflows. The follower's subscribe target
  * is the session's `boundWorkflowId`, which only moves on a turn ack, an
  * `agent_active_tab`, `loadThread`, or `newChat` — never when the user simply
- * clicks back to an earlier tab. This harness binds two workflows through the
- * real `agent_active_tab` path, then drives tab switches, so a test can observe
- * what the follower does (or fails to do) on return.
+ * clicks back to an earlier tab. This harness opens two real agent threads
+ * (composer, POST ack, `agent_active_tab` stamped with the thread's ids,
+ * `agent_message_done`, New chat), then drives tab switches, so a test can
+ * observe what the follower does (or fails to do) on return.
+ *
+ * Human `doc_ops` the page mints are judged by the real applier through
+ * `HostDoc.applyWire` and answered with `doc_ops_result` (and the resulting
+ * `doc_update`), as the relay does, so the sender settles each batch instead
+ * of retrying it.
  */
 class AgentTwoSessionCrdtHarness {
   readonly panel: Locator
@@ -67,6 +108,9 @@ class AgentTwoSessionCrdtHarness {
   // Every doc_ops frame the client put on the wire, addressed workflow first.
   readonly outboundDocOps: OutboundDocOps[] = []
   private readonly subscribeWaiters = new Map<string, Array<() => void>>()
+  // Why a `doc_subscribe` went unanswered, oldest first, so a subscribe
+  // timeout names its real cause instead of "never subscribed".
+  private readonly droppedSubscribes: string[] = []
 
   constructor(private readonly page: Page) {
     this.template = loadAgentConversation(TEMPLATE_CASE).workflow
@@ -89,7 +133,7 @@ class AgentTwoSessionCrdtHarness {
 
   async boot(): Promise<void> {
     await this.mockAgentApi()
-    await this.page.routeWebSocket(/\/ws/, (socket) => {
+    await this.page.routeWebSocket(/\/ws(\?|$)/, (socket) => {
       this.socket = socket
       socket.onMessage((raw) => this.onClientFrame(raw))
       socket.send(
@@ -117,28 +161,114 @@ class AgentTwoSessionCrdtHarness {
     await objectInfo
     await this.page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    await this.selectHomeTarget()
+  }
+
+  /**
+   * Pin the boot tab as the composer's target, the way
+   * `agentConversationFixture` does. Pinning a temporary tab saves it and
+   * looks its cloud id up; `mockWorkflowPersistence` answers both with
+   * `HOME_WORKFLOW_ID`. Without a target the Send button opens this same
+   * picker instead of posting, and no thread ever exists to route frames to.
+   */
+  private async selectHomeTarget(): Promise<void> {
+    await mockWorkflowPersistence(this.page, HOME_WORKFLOW_ID)
+    const picker = this.panel.getByRole('button', {
+      name: SWITCH_WORKFLOW_LABEL
+    })
+    await picker.click()
+    await this.page
+      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
+      .click()
+    await expect(picker).toHaveText('Unsaved Workflow')
+  }
+
+  /**
+   * Start an agent thread the way a user does: type a prompt and send it. The
+   * ids come from the mocked POST's own ack, so a thread only exists here once
+   * the page really posted; the rendered user turn then says the page stored
+   * that thread id (useAgentSession records the turn straight after).
+   */
+  async startThread(prompt: string): Promise<AgentThread> {
+    const posted = this.page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        /\/api\/agent\/threads\/[^/]+\/messages$/.test(
+          new URL(response.url()).pathname
+        )
+    )
+    await this.panel.getByRole('textbox').fill(prompt)
+    await this.panel.getByRole('button', { name: SEND_LABEL }).click()
+    const ack: { thread_id: string; message_id: string } = await (
+      await posted
+    ).json()
+    await expect(this.panel.getByText(prompt).first()).toBeVisible()
+    return { threadId: ack.thread_id, messageId: ack.message_id }
   }
 
   /**
    * Bind a workflow the way the agent does when it moves the user's canvas:
-   * an `agent_active_tab` frame. The panel opens (or creates) that workflow's
-   * tab, binds the session to it, and the follower subscribes — at which point
-   * the shared host answers with the workflow's catch-up.
+   * an `agent_active_tab` frame stamped with the thread that is speaking. The
+   * panel opens (or creates) that workflow's tab, binds the session to it, and
+   * the follower subscribes — at which point the shared host answers with the
+   * workflow's catch-up.
    */
-  async bindViaActiveTab(bound: AgentBoundWorkflow): Promise<void> {
+  async bindViaActiveTab(
+    thread: AgentThread,
+    bound: AgentBoundWorkflow
+  ): Promise<void> {
     const before = this.subscribeCount(bound.workflowId)
     this.send(
       this.stamp({
         type: 'agent_active_tab',
-        data: { workflow_id: bound.workflowId, name: bound.name }
+        data: {
+          workflow_id: bound.workflowId,
+          name: bound.name,
+          thread_id: thread.threadId,
+          message_id: thread.messageId
+        }
       })
     )
     await this.waitForSubscribe(bound.workflowId, before + 1)
   }
 
+  /** End the thread's turn and wait for the composer to offer Send again. */
+  async finishTurn(thread: AgentThread): Promise<void> {
+    this.send(
+      this.stamp({
+        type: 'agent_message_done',
+        data: { message_id: thread.messageId, thread_id: thread.threadId }
+      })
+    )
+    await expect(
+      this.panel.getByRole('button', { name: SEND_LABEL })
+    ).toBeVisible()
+    await expect(
+      this.panel.getByRole('button', { name: STOP_LABEL })
+    ).toHaveCount(0)
+  }
+
+  /** Leave the current thread through the panel's own New chat button. */
+  async newChat(): Promise<void> {
+    await this.panel.getByRole('button', { name: NEW_CHAT_LABEL }).click()
+    await expect(this.panel.getByRole('textbox')).toHaveText('')
+  }
+
   /** Apply ops to a workflow's doc host and broadcast the effect frame. */
   hostEdit(bound: AgentBoundWorkflow, ops: RecordedGraphOperation[]): void {
     this.send(bound.host.apply(ops))
+  }
+
+  /** The widget value a workflow's host doc currently holds. */
+  hostWidgetValue(
+    bound: AgentBoundWorkflow,
+    nodeId: string,
+    widget: string
+  ): unknown {
+    const widgets = bound.host.graph().nodes[nodeId]?.widgets
+    return typeof widgets === 'object' && widgets !== null
+      ? (widgets as Record<string, unknown>)[widget]
+      : undefined
   }
 
   /** How many times the client has subscribed this workflow's doc. */
@@ -158,22 +288,27 @@ class AgentTwoSessionCrdtHarness {
   private waitForSubscribe(workflowId: string, target: number): Promise<void> {
     if (this.subscribeCount(workflowId) >= target) return Promise.resolve()
     return new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(
-        () =>
-          reject(
-            new Error(
-              `follower never subscribed ${this.names.get(workflowId)} (${workflowId})`
-            )
-          ),
-        SUBSCRIBE_TIMEOUT
-      )
       const waiters = this.subscribeWaiters.get(workflowId) ?? []
-      waiters.push(() => {
+      this.subscribeWaiters.set(workflowId, waiters)
+      const forget = (): void => {
+        const at = waiters.indexOf(waiter)
+        if (at !== -1) waiters.splice(at, 1)
+      }
+      const timer = setTimeout(() => {
+        forget()
+        const label = `${this.names.get(workflowId)} (${workflowId})`
+        const dropped = this.droppedSubscribes.length
+          ? `; dropped: ${this.droppedSubscribes.join('; ')}`
+          : ''
+        reject(new Error(`follower never subscribed ${label}${dropped}`))
+      }, SUBSCRIBE_TIMEOUT)
+      const waiter = (): void => {
         if (this.subscribeCount(workflowId) < target) return
         clearTimeout(timer)
+        forget()
         resolve()
-      })
-      this.subscribeWaiters.set(workflowId, waiters)
+      }
+      waiters.push(waiter)
     })
   }
 
@@ -205,20 +340,21 @@ class AgentTwoSessionCrdtHarness {
     const { type, workflowId, stateVectorB64, ops } = parsed
     if (type === 'doc_ops' && workflowId !== undefined) {
       this.recordOutboundDocOps(workflowId, ops)
+      this.judgeClientOps(workflowId, ops)
       return
     }
-    if (type === 'doc_subscribe' && workflowId !== undefined) {
+    if (type === 'doc_subscribe') {
       this.handleDocSubscribe(workflowId, stateVectorB64)
     }
   }
 
-  private static parseClientFrame(raw: string | Buffer): {
-    type: string
-    workflowId?: string
-    stateVectorB64?: string
-    ops: unknown
-  } | null {
-    const frame: unknown = JSON.parse(raw.toString())
+  private static parseClientFrame(raw: string | Buffer): ClientDocFrame | null {
+    let frame: unknown
+    try {
+      frame = JSON.parse(raw.toString())
+    } catch {
+      return null
+    }
     if (typeof frame !== 'object' || frame === null) return null
     const { type, data } = frame as { type?: unknown; data?: unknown }
     if (typeof type !== 'string' || typeof data !== 'object' || data === null)
@@ -244,17 +380,83 @@ class AgentTwoSessionCrdtHarness {
     })
   }
 
-  private handleDocSubscribe(
+  // The applier is the only judge of a structurally valid human batch. A
+  // batch for a workflow no host serves fails as `unknown_workflow`; one that
+  // is malformed, empty, or repeats an `op_id` fails as `invalid_frame` —
+  // both as the relay answers, so the sender settles instead of retrying.
+  private judgeClientOps(workflowId: string, ops: unknown): void {
+    const host = this.hosts.get(workflowId)
+    if (host === undefined) {
+      this.send(
+        this.failedOpsResult(
+          workflowId,
+          'unknown_workflow',
+          'the harness serves no such workflow'
+        )
+      )
+      return
+    }
+    const parsed = parseWireOps(ops)
+    if (!parsed.ok || !isValidDocOpsBatch(parsed.ops)) {
+      this.send(
+        this.failedOpsResult(
+          workflowId,
+          'invalid_frame',
+          'doc_ops frame was not structurally valid'
+        )
+      )
+      return
+    }
+    const { result, update } = host.applyWire(parsed.ops)
+    this.send(result)
+    if (update) this.send(update)
+  }
+
+  private failedOpsResult(
     workflowId: string,
+    code: 'unknown_workflow' | 'invalid_frame',
+    message: string
+  ): HostFrame {
+    return {
+      type: 'doc_ops_result',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: workflowId,
+        ok: false,
+        applied: [],
+        skipped: [],
+        code,
+        message
+      }
+    }
+  }
+
+  private handleDocSubscribe(
+    workflowId: string | undefined,
     stateVectorB64: string | undefined
   ): void {
-    if (stateVectorB64 === undefined) return
+    if (workflowId === undefined) {
+      this.droppedSubscribes.push('doc_subscribe carried no workflow_id')
+      return
+    }
+    if (stateVectorB64 === undefined) {
+      this.droppedSubscribes.push(
+        `doc_subscribe for ${workflowId} carried no state_vector_b64`
+      )
+      return
+    }
     const host = this.hosts.get(workflowId)
-    if (host === undefined) return
+    if (host === undefined) {
+      this.droppedSubscribes.push(
+        `doc_subscribe for ${workflowId}, which no host serves`
+      )
+      return
+    }
     this.send(host.subscribed())
     this.send(host.catchUp(stateVectorB64))
     this.subscribes.set(workflowId, this.subscribeCount(workflowId) + 1)
-    for (const waiter of this.subscribeWaiters.get(workflowId) ?? []) waiter()
+    for (const waiter of [...(this.subscribeWaiters.get(workflowId) ?? [])])
+      waiter()
   }
 
   private async mockAgentApi(): Promise<void> {
@@ -281,8 +483,10 @@ class AgentTwoSessionCrdtHarness {
     await page.route('**/api/agent/threads/*/messages/*/cancel', (route) =>
       route.fulfill(jsonRoute({ status: 'cancelling' }))
     )
-    // Neither bound workflow is a saved cloud workflow; the reference list stays
-    // empty so resolution falls back to the session binding under test.
+    // Neither bound workflow is a saved cloud workflow. This empty list is the
+    // default until `boot()` pins the home tab, whose `mockWorkflowPersistence`
+    // routes are registered later and therefore win; Alpha and Bravo still
+    // resolve through the session binding under test.
     await page.route('**/api/workflows**', (route) =>
       route.fulfill(
         jsonRoute({
