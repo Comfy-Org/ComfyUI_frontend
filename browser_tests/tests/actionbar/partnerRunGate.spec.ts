@@ -132,7 +132,14 @@ apiKeyAuthFixture.describe('Partner nodes run gate (local, API key)', () => {
       await expect(page.getByTestId(TestIds.topbar.queueButton)).toBeVisible()
       await expect(signInButton).toHaveCount(0)
 
+      const validationResponse = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          response.url().endsWith('/customers') &&
+          response.status() === 201
+      )
       releaseValidation()
+      await validationResponse
       await comfyPage.nextFrame()
       await expect(page.getByTestId(TestIds.topbar.queueButton)).toBeVisible()
       await expect(signInButton).toHaveCount(0)
