@@ -62,10 +62,7 @@ function isBatchable(op: Op): boolean {
 
 /** Conservative encoded size of a complete doc_ops frame carrying `ops`. */
 export function wireBatchSize(ops: readonly Op[]): number {
-  return (
-    utf8.encode(JSON.stringify(ops)).length +
-    WIRE_FRAME_OVERHEAD_BYTES
-  )
+  return utf8.encode(JSON.stringify(ops)).length + WIRE_FRAME_OVERHEAD_BYTES
 }
 
 /** UTF-8 byte length of a single op's JSON encoding, as it appears inside a batch array. */
