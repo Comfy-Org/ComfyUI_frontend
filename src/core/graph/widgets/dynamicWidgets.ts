@@ -591,6 +591,7 @@ export function liveAutogrowGroupOf(
   return undefined
 }
 
+/** @knipIgnoreUsedByStackedPR */
 export function reconcileAutogrowInputs(node: LGraphNode): void {
   if (!node.comfyDynamic?.autogrow) return
   withComfyAutogrow(node)

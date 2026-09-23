@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@/schemas/apiSchema'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 

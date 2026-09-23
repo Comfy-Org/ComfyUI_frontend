@@ -103,6 +103,18 @@ export class HostDoc {
     return this.updateFrame(update, HOST_ACTOR, [])
   }
 
+  subscribeRefused(reason: string): HostFrame {
+    return {
+      type: 'doc_subscribed',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: this.workflowId,
+        ok: false,
+        reason
+      }
+    }
+  }
+
   apply(operations: GraphOperation[]): HostFrame {
     const before = Y.encodeStateVector(this.doc)
     const ops = mintWireOps(operations, {
