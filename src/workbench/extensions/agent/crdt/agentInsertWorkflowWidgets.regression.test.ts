@@ -162,20 +162,21 @@ describe('insert_workflow materializes a node whose widgets actually render', ()
     expect(node.widgets?.[0]?.value).toBe('my_custom_prefix')
   })
 
-  it("two inserted nodes sharing an original id do not steal each other's widgets", () => {
+  it("two inserted nodes sharing an original id, in the SAME graph, do not steal each other's widgets", () => {
     LiteGraph.registerNodeType('TestSaveImage', TestSaveImage)
-    const graphA = new LGraph()
-    const graphB = new LGraph()
-    const hostA = mint({ nodes: [], links: [] }, CATALOG)
-    const hostB = mint({ nodes: [], links: [] }, CATALOG)
-    const deliverA = bindProjection('wf-a', graphA)
-    const deliverB = bindProjection('wf-b', graphB)
-    deliverA(Y.encodeStateAsUpdate(hostA), [])
-    deliverB(Y.encodeStateAsUpdate(hostB), [])
+    const graph = new LGraph()
+    const host = mint({ nodes: [], links: [] }, CATALOG)
+    const deliver = bindProjection('wf-collision', graph)
+    deliver(Y.encodeStateAsUpdate(host), [])
 
-    // Same original node id (9) in two independent insert_workflow ops, as
-    // could happen for two different templates that both number their sole
-    // SaveImage node "9".
+    // Same original node id (9), same target graph, from two independent
+    // insert_workflow ops — as could happen inserting two different
+    // templates that both number their sole SaveImage node "9" into the
+    // same workflow. Only the differing `op_id` disambiguates the derived
+    // ids; a `stripGraphPrefix` that collapsed both down to their trailing
+    // segment ("9") would collide them in this SAME graph's per-node maps,
+    // unlike the cross-graph case where separate top-level graph keys would
+    // mask the collision regardless of the fix.
     const opA = insertOp(
       {
         nodes: [{ id: 9, type: 'TestSaveImage', widgets_values: ['a'] }],
@@ -191,28 +192,29 @@ describe('insert_workflow materializes a node whose widgets actually render', ()
       'insert-op-b'
     )
 
-    const vectorA = Y.encodeStateVector(hostA)
-    expect(applyOps(hostA, [opA], CATALOG).outcomes[0]?.outcome).toBe('applied')
-    expect(deliverA(Y.encodeStateAsUpdate(hostA, vectorA), [opA.op_id])).toBe(
+    const vectorA = Y.encodeStateVector(host)
+    expect(applyOps(host, [opA], CATALOG).outcomes[0]?.outcome).toBe('applied')
+    expect(deliver(Y.encodeStateAsUpdate(host, vectorA), [opA.op_id])).toBe(
       true
     )
 
-    const vectorB = Y.encodeStateVector(hostB)
-    expect(applyOps(hostB, [opB], CATALOG).outcomes[0]?.outcome).toBe('applied')
-    expect(deliverB(Y.encodeStateAsUpdate(hostB, vectorB), [opB.op_id])).toBe(
+    const vectorB = Y.encodeStateVector(host)
+    expect(applyOps(host, [opB], CATALOG).outcomes[0]?.outcome).toBe('applied')
+    expect(deliver(Y.encodeStateAsUpdate(host, vectorB), [opB.op_id])).toBe(
       true
     )
 
-    const nodeA = graphA._nodes.find((n) => n.type === 'TestSaveImage')
-    const nodeB = graphB._nodes.find((n) => n.type === 'TestSaveImage')
-    expect(nodeA).toBeDefined()
-    expect(nodeB).toBeDefined()
-    if (!nodeA || !nodeB) return
+    const saveImageNodes = graph._nodes.filter(
+      (n) => n.type === 'TestSaveImage'
+    )
+    expect(saveImageNodes).toHaveLength(2)
+    const [nodeA, nodeB] = saveImageNodes
+    expect(nodeA.id).not.toBe(nodeB.id)
 
-    expect(renderedWidgetNames(graphA.rootGraph.id, String(nodeA.id))).toEqual([
+    expect(renderedWidgetNames(graph.rootGraph.id, String(nodeA.id))).toEqual([
       'filename_prefix'
     ])
-    expect(renderedWidgetNames(graphB.rootGraph.id, String(nodeB.id))).toEqual([
+    expect(renderedWidgetNames(graph.rootGraph.id, String(nodeB.id))).toEqual([
       'filename_prefix'
     ])
     expect(nodeA.widgets?.[0]?.value).toBe('a')
