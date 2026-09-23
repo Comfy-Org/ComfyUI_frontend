@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue'
 
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
-import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
+import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 
 interface CompletedDownload {
@@ -71,6 +71,21 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   )
   const hasActiveDownloads = computed(() => activeDownloads.value.length > 0)
   const hasDownloads = computed(() => downloads.value.size > 0)
+  // `failed` downloads are included because the backend can broadcast a
+  // premature terminal `failed` message for an error it's still retrying;
+  // re-checking them lets the UI recover once the backend actually
+  // completes (or truly gives up on) the download.
+  const recheckableDownloads = computed(() =>
+    downloadList.value.filter(
+      (d) =>
+        d.status === 'created' ||
+        d.status === 'running' ||
+        d.status === 'failed'
+    )
+  )
+  const hasRecheckableDownloads = computed(
+    () => recheckableDownloads.value.length > 0
+  )
 
   function isDownloadedThisSession(assetId: string): boolean {
     return unacknowledgedDownloads.value.some((d) => d.assetId === assetId)
@@ -97,8 +112,12 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     const data = e.detail
     const existing = downloads.value.get(data.task_id)
 
-    // Skip if already in terminal state
-    if (existing?.status === 'completed' || existing?.status === 'failed') {
+    // A `completed` status reflects an asset that was actually created, so
+    // it's trustworthy and final. A `failed` status is not: the backend may
+    // broadcast a premature terminal `failed` message for an error it goes
+    // on to retry (and succeed at), so a `failed` download must stay open to
+    // a later message for the same task_id updating it again.
+    if (existing?.status === 'completed') {
       return
     }
 
@@ -128,7 +147,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
   async function pollStaleDownloads() {
     const now = Date.now()
-    const staleDownloads = activeDownloads.value.filter(
+    const staleDownloads = recheckableDownloads.value.filter(
       (d) => now - d.lastUpdate >= STALE_THRESHOLD_MS
     )
 
@@ -137,6 +156,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     async function pollSingleDownload(download: AssetDownload) {
       try {
         const task = await taskService.getTask(download.taskId)
+        if (downloads.value.get(download.taskId) !== download) return
 
         if (task.status === 'completed' || task.status === 'failed') {
           const result = task.result
@@ -171,9 +191,9 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   )
 
   watch(
-    hasActiveDownloads,
-    (hasActive) => {
-      if (hasActive) resume()
+    hasRecheckableDownloads,
+    (hasRecheckable) => {
+      if (hasRecheckable) resume()
       else pause()
     },
     { immediate: true }

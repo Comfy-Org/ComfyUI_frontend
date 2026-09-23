@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -55,7 +56,7 @@ async function fetchCloudGeneratedAssets(
   const foundTargetNames = new Set<string>()
   let offset = 0
 
-  while (true) {
+  for (;;) {
     signal?.throwIfAborted()
 
     const assetPage = await assetService.getAssetsPageByTag('output', true, {
@@ -101,7 +102,7 @@ async function fetchGeneratedHistoryAssets(
   const seenJobIds = new Set<string>()
   let offset = 0
 
-  while (true) {
+  for (;;) {
     signal?.throwIfAborted()
 
     const requestedOffset = offset
@@ -243,8 +244,8 @@ function mapHistoryJobToAsset(job: JobListItem): AssetItem | null {
 }
 
 export interface MissingMediaAssetSources {
-  inputAssets: AssetItem[]
-  generatedAssets: AssetItem[]
+  inputAssets: readonly AssetItem[]
+  generatedAssets: readonly AssetItem[]
 }
 
 export interface ResolveMissingMediaAssetSourcesOptions {
@@ -281,8 +282,10 @@ export async function resolveMissingMediaAssetSources({
   try {
     const [inputAssets, generatedAssets] = await Promise.all([
       abortSiblingsOnFailure(
-        isCloud
-          ? assetService.getInputAssetsIncludingPublic(controller.signal)
+        useFeatureFlags().flags.assetsEnabled
+          ? assetService.getAllAssetsByTag('input', true, {
+              signal: controller.signal
+            })
           : Promise.resolve<AssetItem[]>([]),
         controller
       ),

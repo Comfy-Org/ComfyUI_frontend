@@ -7,7 +7,7 @@ import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import NodeHelpContent from './NodeHelpContent.vue'
 
-vi.mock('@/composables/useNodeHelpContent', () => ({
+vi.mock<unknown>(import('@/composables/useNodeHelpContent'), () => ({
   useNodeHelpContent: () => ({
     renderedHelpHtml: ref(''),
     isLoading: ref(false),
@@ -53,7 +53,7 @@ function buildNodeDef(): ComfyNodeDefImpl {
     output_is_list: [false],
     output_name: ['video'],
     output_node: false
-  } as ComfyNodeDefV1
+  }
 
   return new ComfyNodeDefImpl(nodeDef)
 }

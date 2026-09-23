@@ -4,6 +4,10 @@ import { useI18n } from 'vue-i18n'
 import type { MenuItem } from 'primevue/menuitem'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isCloud } from '@/platform/distribution/types'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
@@ -16,11 +20,13 @@ import { useDialogService } from '@/services/dialogService'
 export function useWorkspaceMenuItems() {
   const { t } = useI18n()
   const { billingStatus, isFreeTier, subscription } = useBillingContext()
+  const { shouldUseWorkspaceBilling } = useBillingRouting()
+  const { canCancel } = useBillingCapabilities()
   const {
     permissions,
     uiConfig,
     isInPersonalWorkspace,
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isSubscriptionCancelled,
     isDeleteDisabled,
     deleteDisabledTooltipKey
@@ -37,12 +43,8 @@ export function useWorkspaceMenuItems() {
   }
 
   function cancelSubscription() {
-    if (
-      !permissions.value.canManageSubscriptionLifecycle ||
-      !canCancelPlan.value
-    ) {
-      return
-    }
+    if (isCloud && shouldUseWorkspaceBilling.value && !canCancel.value) return
+    if (!canCancelPlan.value) return
     void showCancelSubscriptionFlow(subscription.value?.endDate ?? undefined)
   }
 
@@ -62,20 +64,32 @@ export function useWorkspaceMenuItems() {
     void showLeaveWorkspaceDialog()
   }
 
-  const canCancelPlan = computed(
-    () =>
+  const canCancelPlan = computed(() => {
+    // can_cancel already encodes role, subscription presence/status and a
+    // scheduled cancellation, but not tier: it stays true for an active FREE
+    // plan, so the free-tier guard has to remain client-side.
+    if (isCloud && shouldUseWorkspaceBilling.value)
+      return canCancel.value && !isFreeTier.value
+    return (
       permissions.value.canManageSubscriptionLifecycle &&
-      (isActiveSubscription.value ||
+      (canAccessSubscriptionFeatures.value ||
         ((billingStatus.value === 'payment_failed' ||
           billingStatus.value === 'paused') &&
           Boolean(subscription.value?.planSlug))) &&
       !isSubscriptionCancelled.value &&
-      !isFreeTier.value
-  )
+      !isFreeTier.value &&
+      !isSalesManagedTier(subscription.value?.tier)
+    )
+  })
 
+  // Deleting a workspace requires cancelling its plan first, and an Enterprise
+  // plan only ends through sales — so Delete would be a permanently disabled
+  // dead end. Hidden entirely per DES-782.
   const canDeleteWorkspace = computed(
     () =>
-      permissions.value.canManageSubscription && !isInPersonalWorkspace.value
+      permissions.value.canManageSubscription &&
+      !isInPersonalWorkspace.value &&
+      subscription.value?.tier !== 'ENTERPRISE'
   )
 
   const deleteTooltip = computed(() => {

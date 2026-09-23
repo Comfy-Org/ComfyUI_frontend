@@ -3,15 +3,18 @@ import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
-import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
+import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { api } from './api'
-import { ComfyApp, app } from './app'
+import type { ComfyApp } from './app'
+import { app } from './app'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
 import { ComfySettingsDialog } from './ui/settings'
 import { toggleSwitch } from './ui/toggleSwitch'
@@ -39,66 +42,9 @@ type ElementType<K extends string> = K extends keyof HTMLElementTagNameMap
   ? HTMLElementTagNameMap[K]
   : HTMLElement
 
-export function $el<TTag extends string>(
-  tag: TTag,
-  propsOrChildren?: Children | Props,
-  children?: Children
-): ElementType<TTag> {
-  const split = tag.split('.')
-  const element = document.createElement(split.shift() as string)
-  if (split.length > 0) {
-    element.classList.add(...split)
-  }
-
-  if (propsOrChildren) {
-    if (typeof propsOrChildren === 'string') {
-      propsOrChildren = { textContent: propsOrChildren }
-    } else if (propsOrChildren instanceof Element) {
-      propsOrChildren = [propsOrChildren]
-    }
-    if (Array.isArray(propsOrChildren)) {
-      element.append(...propsOrChildren)
-    } else {
-      const {
-        parent,
-        $: cb,
-        dataset,
-        style,
-        ...rest
-      } = propsOrChildren as Props
-
-      if (rest.for) {
-        element.setAttribute('for', rest.for)
-      }
-
-      if (style) {
-        Object.assign(element.style, style)
-      }
-
-      if (dataset) {
-        Object.assign(element.dataset, dataset)
-      }
-
-      Object.assign(element, rest)
-      if (children) {
-        element.append(...(Array.isArray(children) ? children : [children]))
-      }
-
-      if (parent) {
-        parent.append(element)
-      }
-
-      if (cb) {
-        cb(element)
-      }
-    }
-  }
-  return element as ElementType<TTag>
-}
-
 // @ts-expect-error fixme ts strict error
 function dragElement(dragEl): () => void {
-  var posDiffX = 0,
+  let posDiffX = 0,
     posDiffY = 0,
     posStartX = 0,
     posStartY = 0,
@@ -308,10 +254,7 @@ class ComfyList {
                     const workflow = await extractWorkflow(job)
                     await app.loadGraphData(workflow, true, false)
                     if ('outputs' in job && job.outputs) {
-                      app.nodeOutputs = {}
-                      for (const [key, value] of Object.entries(job.outputs)) {
-                        app.nodeOutputs[key] = value
-                      }
+                      useNodeOutputStore().restoreOutputs(job.outputs)
                     }
                   }
                 }),
@@ -365,10 +308,61 @@ class ComfyList {
       this.hide()
       return false
     } else {
-      this.show()
+      void this.show()
       return true
     }
   }
+}
+
+export function $el<TTag extends string>(
+  tag: TTag,
+  propsOrChildren?: Children | Props,
+  children?: Children
+): ElementType<TTag> {
+  const split = tag.split('.')
+  const element = document.createElement(split.shift() as string)
+  if (split.length > 0) {
+    element.classList.add(...split)
+  }
+
+  if (propsOrChildren) {
+    if (typeof propsOrChildren === 'string') {
+      propsOrChildren = { textContent: propsOrChildren }
+    } else if (propsOrChildren instanceof Element) {
+      propsOrChildren = [propsOrChildren]
+    }
+    if (Array.isArray(propsOrChildren)) {
+      element.append(...propsOrChildren)
+    } else {
+      const { parent, $: cb, dataset, style, ...rest } = propsOrChildren
+
+      if (rest.for) {
+        element.setAttribute('for', rest.for)
+      }
+
+      if (style) {
+        Object.assign(element.style, style)
+      }
+
+      if (dataset) {
+        Object.assign(element.dataset, dataset)
+      }
+
+      Object.assign(element, rest)
+      if (children) {
+        element.append(...(Array.isArray(children) ? children : [children]))
+      }
+
+      if (parent) {
+        parent.append(element)
+      }
+
+      if (cb) {
+        cb(element)
+      }
+    }
+  }
+  return element as ElementType<TTag>
 }
 
 export class ComfyUI {
@@ -406,8 +400,8 @@ export class ComfyUI {
     this.history = new ComfyList('History', 'history', true)
 
     api.addEventListener('status', () => {
-      this.queue.update()
-      this.history.update()
+      void this.queue.update()
+      void this.history.update()
     })
 
     this.setup(document.body)
@@ -451,7 +445,6 @@ export class ComfyUI {
         }
       ],
       {
-        // @ts-expect-error fixme ts strict error
         onChange: (value) => {
           this.autoQueueMode = value.item.value
         }
@@ -460,10 +453,10 @@ export class ComfyUI {
     autoQueueModeEl.style.display = 'none'
 
     api.addEventListener('autoQueueGraphChanged', () => {
-      if (this.autoQueueMode === 'change' && this.autoQueueEnabled === true) {
+      if (this.autoQueueMode === 'change' && this.autoQueueEnabled) {
         if (this.lastQueueSize === 0) {
           this.graphHasChanged = false
-          app.queuePrompt(0, this.batchCount, {
+          void app.queuePrompt(0, this.batchCount, {
             intent: { trigger_source: 'auto_queue' }
           })
         } else {
@@ -516,7 +509,7 @@ export class ComfyUI {
             } as const
             useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
             useTelemetry()?.trackWorkflowExecution()
-            app.queuePrompt(0, this.batchCount, {
+            void app.queuePrompt(0, this.batchCount, {
               intent: workflowQueueIntent
             })
           }
@@ -627,7 +620,7 @@ export class ComfyUI {
               } as const
               useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
               useTelemetry()?.trackWorkflowExecution()
-              app.queuePrompt(-1, this.batchCount, {
+              void app.queuePrompt(-1, this.batchCount, {
                 intent: workflowQueueIntent
               })
             }
@@ -657,7 +650,7 @@ export class ComfyUI {
           id: 'comfy-save-button',
           textContent: 'Save',
           onclick: () => {
-            useCommandStore().execute('Comfy.ExportWorkflow')
+            void useCommandStore().execute('Comfy.ExportWorkflow')
           }
         }),
         $el('button', {
@@ -665,7 +658,7 @@ export class ComfyUI {
           textContent: 'Save (API Format)',
           style: { width: '100%', display: 'none' },
           onclick: () => {
-            useCommandStore().execute('Comfy.ExportWorkflowAPI')
+            void useCommandStore().execute('Comfy.ExportWorkflowAPI')
           }
         }),
         $el('button', {
@@ -693,7 +686,7 @@ export class ComfyUI {
               !useSettingStore().get('Comfy.ConfirmClear') ||
               confirm('Clear workflow?')
             ) {
-              app.clean()
+              runMintPortsIntentionalClear(() => app.clean())
               useLitegraphService().resetView()
               api.dispatchCustomEvent('graphCleared')
             }
@@ -726,8 +719,7 @@ export class ComfyUI {
 
     this.restoreMenuPosition = dragElement(this.menuContainer)
 
-    // @ts-expect-error
-    this.setStatus({ exec_info: { queue_remaining: 'X' } })
+    this.queueSize.textContent = 'Queue size: X'
   }
 
   setStatus(status: StatusWsMessageStatus | null) {
@@ -742,7 +734,7 @@ export class ComfyUI {
       (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
       !app.lastExecutionError
     ) {
-      app.queuePrompt(0, this.batchCount, {
+      void app.queuePrompt(0, this.batchCount, {
         intent: { trigger_source: 'auto_queue' }
       })
       this.graphHasChanged = false

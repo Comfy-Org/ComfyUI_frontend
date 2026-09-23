@@ -7,6 +7,7 @@ const config: KnipConfig = {
     '.': {
       entry: [
         '{build,scripts}/**/*.{js,ts}',
+        'vitest.matrix.config.mts',
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
@@ -14,11 +15,23 @@ const config: KnipConfig = {
         'tools/oxlint-plugins/comfyIngestTypes.ts',
         'tools/oxlint-plugins/vitestCleanup.ts'
       ],
-      project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}', '!.claude/**']
+      project: [
+        '**/*.{js,ts,vue}',
+        '*.{js,ts,mts}',
+        '!.claude/**',
+        '!worktrees/**',
+        '!src/__ecs_matrix__/**'
+      ],
+      ignore: ['scripts/registry-census/detection-proof/**']
     },
-    'apps/desktop-ui': {
-      entry: ['src/i18n.ts'],
+    'packages/account-core': {
+      project: ['src/**/*.{js,ts}']
+    },
+    'packages/account-ui': {
       project: ['src/**/*.{js,ts,vue}']
+    },
+    'packages/billing-contract': {
+      project: ['src/**/*.ts']
     },
     'packages/design-system': {
       project: ['src/**/*.{css,js,ts}']
@@ -36,9 +49,20 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     },
     'apps/website': {
-      entry: ['src/scripts/**/*.ts']
+      // Models pages are registered by the release-gate integration.
+      entry: ['src/scripts/**/*.ts', 'src/routes/models/*.{astro,ts}'],
+      // Executed by models-snippets.test.ts inside the generated Node examples.
+      ignoreDependencies: ['mime-types']
+    },
+    'tools/test-recorder': {
+      project: ['src/**/*.ts']
     }
   },
+  ignoreBinaries: [
+    'ffmpeg',
+    // Optional host tool the recorder probes for and degrades without
+    'xcode-select'
+  ],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify/json'
@@ -47,13 +71,8 @@ const config: KnipConfig = {
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
-    // Workflow files contain license names that knip misinterprets as binaries
-    '.github/workflows/ci-oss-assets-validation.yaml',
-    // Pending integration in stacked PR
-    'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Marketing media tooling — adopted by pages in a follow-up PR
     'apps/website/src/components/common/SiteVideo.vue',
-    'apps/website/src/utils/marketingImage.ts',
     // Animated pill button — retained for reuse after the learning directory
     // switched to ButtonPill; no current consumer
     'apps/website/src/components/ui/button-mask/**',
@@ -79,11 +98,7 @@ const config: KnipConfig = {
     config: ['playwright?(.*).config.ts'],
     entry: ['browser_tests/**/*.@(spec|test).?(c|m)[jt]s?(x)']
   },
-  tags: [
-    '-knipIgnoreUnusedButUsedByCustomNodes',
-    '-knipIgnoreUnusedButUsedByVueNodesBranch',
-    '-knipIgnoreUsedByStackedPR'
-  ]
+  tags: ['-knipIgnoreUnusedButUsedByCustomNodes', '-knipIgnoreUsedByStackedPR']
 }
 
 export default config

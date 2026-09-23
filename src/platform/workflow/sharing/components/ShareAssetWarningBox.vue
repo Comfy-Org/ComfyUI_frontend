@@ -56,7 +56,7 @@ import {
 } from 'reka-ui'
 import { ref } from 'vue'
 
-import type { AssetInfo } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@comfyorg/ingest-types'
 import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'

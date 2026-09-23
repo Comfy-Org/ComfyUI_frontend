@@ -16,6 +16,22 @@ export type ViewportRect = {
   height: number
 }
 
+export type LetterboxNdc = { x: number; y: number; inside: boolean }
+
+export type PointerNdcSource = (
+  clientX: number,
+  clientY: number
+) => LetterboxNdc | null
+
+export type Load3dActivityFlags = {
+  mouseOnNode: boolean
+  mouseOnScene: boolean
+  mouseOnViewer: boolean
+  recording: boolean
+  initialRenderDone: boolean
+  animationPlaying: boolean
+}
+
 export function computeLetterboxedViewport(
   container: Size,
   targetAspectRatio: number
@@ -42,13 +58,6 @@ export function computeLetterboxedViewport(
     height
   }
 }
-
-export type LetterboxNdc = { x: number; y: number; inside: boolean }
-
-export type PointerNdcSource = (
-  clientX: number,
-  clientY: number
-) => LetterboxNdc | null
 
 export function clientPointToLetterboxNdc(
   normalizedX: number,
@@ -105,15 +114,6 @@ export function computeLetterboxBars(
   }
 
   return []
-}
-
-export type Load3dActivityFlags = {
-  mouseOnNode: boolean
-  mouseOnScene: boolean
-  mouseOnViewer: boolean
-  recording: boolean
-  initialRenderDone: boolean
-  animationPlaying: boolean
 }
 
 export function isLoad3dActive(flags: Load3dActivityFlags): boolean {

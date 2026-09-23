@@ -4,12 +4,12 @@ import { until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
 import { ref } from 'vue'
+import type { Ref } from 'vue'
 
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams, Settings } from '@/platform/settings/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SettingChangedMetadata } from '@/platform/telemetry/types'
-import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { TreeNode } from '@/types/treeExplorerTypes'
@@ -25,6 +25,10 @@ export const getSettingInfo = (setting: SettingParams) => {
 interface AppliedSetting<TValue> {
   previousValue: TValue
   newValue: TValue
+}
+
+function resolveDefaultValue<T>(value: T | (() => T)): T {
+  return typeof value === 'function' ? (value as () => T)() : value
 }
 
 function tryMigrateDeprecatedValue(
@@ -119,7 +123,7 @@ export interface SettingTreeNode extends TreeNode {
 }
 
 export const useSettingStore = defineStore('setting', () => {
-  const settingValues = ref<Partial<Settings>>({})
+  const settingValues: Ref<Partial<Settings>> = ref({})
   const settingsById = ref<Record<string, SettingParams>>({})
   const latestWrite = new Map<keyof Settings, number>()
 
@@ -162,7 +166,7 @@ export const useSettingStore = defineStore('setting', () => {
    * @param key - The key of the setting to check.
    * @returns Whether the setting exists.
    */
-  function exists<K extends keyof Settings>(key: K) {
+  function exists(key: keyof Settings) {
     return settingValues.value[key] !== undefined
   }
 
@@ -226,12 +230,9 @@ export const useSettingStore = defineStore('setting', () => {
     const telemetryEvents: SettingChangedMetadata[] = []
 
     for (const key of Object.keys(settings) as (keyof Settings)[]) {
-      const applied = await applySettingLocally(
-        key,
-        settings[key] as Settings[typeof key]
-      )
+      const applied = await applySettingLocally(key, settings[key])
       if (applied !== undefined) {
-        updatedSettings[key] = applied.newValue
+        Object.assign(updatedSettings, { [key]: applied.newValue })
         const event = settingChangedEvent(settingsById.value[key], key, applied)
         if (event) telemetryEvents.push(event)
       }
@@ -283,14 +284,7 @@ export const useSettingStore = defineStore('setting', () => {
 
     const versionedDefault = getVersionedDefaultValue(key, param)
 
-    if (versionedDefault) {
-      return versionedDefault
-    }
-
-    const defaultValue = param.defaultValue
-    return typeof defaultValue === 'function'
-      ? (defaultValue as () => Settings[K])()
-      : defaultValue
+    return versionedDefault ?? resolveDefaultValue(param.defaultValue)
   }
 
   function getVersionedDefaultValue<
@@ -336,9 +330,6 @@ export const useSettingStore = defineStore('setting', () => {
    * @param setting - The setting to register.
    */
   function addSetting(setting: SettingParams) {
-    if (!setting.id) {
-      throw new Error('Settings must have an ID')
-    }
     if (setting.id in settingsById.value) {
       // Setting already registered - skip to allow component remounting
       // TODO: Add store reset methods to bootstrapStore and settingStore, then
@@ -350,10 +341,12 @@ export const useSettingStore = defineStore('setting', () => {
     settingsById.value[setting.id] = setting
 
     if (settingValues.value[setting.id] !== undefined) {
-      settingValues.value[setting.id] = tryMigrateDeprecatedValue(
-        setting,
-        settingValues.value[setting.id]
-      )
+      Object.assign(settingValues.value, {
+        [setting.id]: tryMigrateDeprecatedValue(
+          setting,
+          settingValues.value[setting.id]
+        )
+      })
     }
     void onChange(setting, get(setting.id), undefined)
   }
@@ -402,7 +395,7 @@ export const useSettingStore = defineStore('setting', () => {
       settingValues.value[oldKey] !== undefined &&
       settingValues.value[newKey] === undefined
     ) {
-      const oldValue = settingValues.value[oldKey] as number
+      const oldValue = settingValues.value[oldKey]
 
       // Convert zoom threshold to equivalent font size to preserve exact behavior
       // The threshold formula is: threshold = font_size / (14 * sqrt(DPR))

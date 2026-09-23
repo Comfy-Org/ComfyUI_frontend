@@ -29,23 +29,6 @@ export interface ToolInternalSettings {
   newActiveLayerOnSet?: ImageLayer
 }
 
-export enum CompositionOperation {
-  SourceOver = 'source-over',
-  DestinationOut = 'destination-out'
-}
-
-export enum MaskBlendMode {
-  Black = 'black',
-  White = 'white',
-  Negative = 'negative'
-}
-
-export enum ColorComparisonMethod {
-  Simple = 'simple',
-  HSL = 'hsl',
-  LAB = 'lab'
-}
-
 export interface Point {
   x: number
   y: number
@@ -62,4 +45,21 @@ export interface Brush {
   opacity: number
   hardness: number
   stepSize: number
+}
+
+export enum CompositionOperation {
+  SourceOver = 'source-over',
+  DestinationOut = 'destination-out'
+}
+
+export enum MaskBlendMode {
+  Black = 'black',
+  White = 'white',
+  Negative = 'negative'
+}
+
+export enum ColorComparisonMethod {
+  Simple = 'simple',
+  HSL = 'hsl',
+  LAB = 'lab'
 }

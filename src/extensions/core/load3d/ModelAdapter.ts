@@ -5,6 +5,8 @@ import { api } from '@/scripts/api'
 
 import type { MaterialMode } from './interfaces'
 
+type ModelAdapterKind = 'mesh' | 'pointCloud' | 'splat'
+
 export interface ModelLoadContext {
   setOriginalModel(model: THREE.Object3D | THREE.BufferGeometry | GLTF): void
   registerOriginalMaterial(
@@ -14,8 +16,6 @@ export interface ModelLoadContext {
   readonly standardMaterial: THREE.MeshStandardMaterial
   readonly materialMode: MaterialMode
 }
-
-type ModelAdapterKind = 'mesh' | 'pointCloud' | 'splat'
 
 export interface ModelAdapterCapabilities {
   /**

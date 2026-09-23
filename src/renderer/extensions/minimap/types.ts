@@ -4,6 +4,8 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 
+import type { ResolvedMinimapNodeDecoration } from '@/platform/canvas/minimapDecorationRegistry'
+
 interface MinimapRenderSettings {
   nodeColors: boolean
   showLinks: boolean
@@ -36,6 +38,8 @@ export interface MinimapRenderContext {
   settings: MinimapRenderSettings
   width: number
   height: number
+  decorations?: readonly ResolvedMinimapNodeDecoration[]
+  now?: number
 }
 
 export interface MinimapBounds {
@@ -102,16 +106,4 @@ export interface MinimapGroupData {
   width: number
   height: number
   color?: string
-}
-
-/**
- * Interface for minimap data sources (Dependency Inversion Principle)
- */
-export interface IMinimapDataSource {
-  getNodes(): MinimapNodeData[]
-  getLinks(): MinimapLinkData[]
-  getGroups(): MinimapGroupData[]
-  getBounds(): MinimapBounds
-  getNodeCount(): number
-  hasData(): boolean
 }

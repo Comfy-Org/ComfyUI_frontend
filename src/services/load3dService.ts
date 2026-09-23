@@ -112,7 +112,7 @@ async function loadSkeletonUtils() {
 const viewerInstances = new Map<NodeId, ReturnType<UseLoad3dViewerFn>>()
 
 class Load3dService {
-  private static instance: Load3dService
+  private static instance: Load3dService | undefined
 
   private constructor() {}
 
@@ -232,8 +232,8 @@ class Load3dService {
 
       if (source.isSplatModel()) {
         const originalURL = source.modelManager.originalURL
-        if (originalURL) {
-          await target.loadModel(originalURL)
+        if (originalURL && !(await target.loadModel(originalURL))) {
+          return
         }
       } else {
         // Use SkeletonUtils.clone for proper skeletal animation support
@@ -318,7 +318,7 @@ class Load3dService {
       .getCurrentBackgroundInfo()
     if (sourceBackgroundInfo.type === 'image') {
       const sourceNode = this.getNodeByLoad3d(source)
-      const sceneConfig = sourceNode?.properties?.['Scene Config'] as
+      const sceneConfig = sourceNode?.properties['Scene Config'] as
         | SceneConfig
         | undefined
       const backgroundPath = sceneConfig?.backgroundImage

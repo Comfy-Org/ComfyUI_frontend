@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -54,30 +54,20 @@ const i18n = createI18n({
   }
 })
 
+type PanelProps = ComponentProps<typeof VideoEditPanel>
+
 function stub(testId: string) {
   return defineComponent({
     setup: () => () => h('div', { 'data-testid': testId })
   })
 }
 
-const SliderStub = defineComponent({
-  emits: ['update:modelValue'],
-  setup(_, { emit }) {
-    return () =>
-      h('button', {
-        'data-testid': 'stub-slider-seek',
-        onClick: () => emit('update:modelValue', [90])
-      })
-  }
-})
-
-type PanelProps = ComponentProps<typeof VideoEditPanel>
-
 function renderPanel(props: Partial<PanelProps> = {}) {
   return render(VideoEditPanel, {
     props: {
       features: ['trim', 'crop'],
       videoUrl: '/api/view?filename=clip.mp4',
+      hasSource: true,
       thumbnail: 'data:image/jpeg;base64,one',
       totalFrames: 100,
       duration: 10,
@@ -96,14 +86,7 @@ function renderPanel(props: Partial<PanelProps> = {}) {
         VideoCropOverlay: stub('stub-crop-overlay'),
         WidgetInputNumberInput: stub('stub-number-input'),
         WidgetBoundingBox: stub('stub-bounding-box'),
-        Loader: stub('stub-loader'),
-        Slider: SliderStub,
-        Select: stub('stub-select'),
-        SelectTrigger: stub('stub-select-trigger'),
-        SelectValue: stub('stub-select-value'),
-        SelectContent: stub('stub-select-content'),
-        SelectItem: stub('stub-select-item'),
-        Button: stub('stub-lock-button')
+        Loader: stub('stub-loader')
       }
     }
   })
@@ -111,7 +94,7 @@ function renderPanel(props: Partial<PanelProps> = {}) {
 
 describe('VideoEditPanel', () => {
   it('shows an empty state without a video source', () => {
-    renderPanel({ videoUrl: undefined })
+    renderPanel({ videoUrl: undefined, hasSource: false })
 
     expect(screen.getByTestId('video-edit-empty')).toBeTruthy()
     expect(screen.queryByTestId('video-preview')).toBeNull()
@@ -155,6 +138,14 @@ describe('VideoEditPanel', () => {
     await userEvent.click(screen.getByTestId('video-preview-retry'))
 
     expect(retries).toHaveLength(1)
+  })
+
+  it('emits loadError when the preview video fails to load', async () => {
+    const { emitted } = renderPanel({ hasSource: true, videoUrl: 'clip.mp4' })
+
+    await fireEvent.error(screen.getByTestId('video-preview'))
+
+    expect(emitted().loadError).toHaveLength(1)
   })
 
   it('describes canvas failures separately from load failures', () => {
@@ -202,7 +193,7 @@ describe('VideoEditPanel', () => {
     renderPanel()
 
     expect(screen.getByTestId('video-playback-controls')).toBeTruthy()
-    expect(screen.getByTestId('playback-timecode').textContent?.trim()).toBe(
+    expect(screen.getByTestId('playback-timecode').textContent.trim()).toBe(
       '0:00 / 0:10'
     )
     expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy()
@@ -214,10 +205,13 @@ describe('VideoEditPanel', () => {
       features: ['trim'],
       startFrame: 30,
       endFrame: 60,
+      playheadFrame: 89,
       'onUpdate:playheadFrame': (value: number) => updates.push(value)
     } as Partial<PanelProps>)
 
-    await userEvent.click(screen.getByTestId('stub-slider-seek'))
+    const slider = await screen.findByRole('slider')
+    slider.focus()
+    await userEvent.keyboard('{ArrowRight}')
 
     expect(updates).toContain(60)
     expect(updates).not.toContain(90)
@@ -227,10 +221,13 @@ describe('VideoEditPanel', () => {
     const updates: number[] = []
     renderPanel({
       features: ['crop'],
+      playheadFrame: 89,
       'onUpdate:playheadFrame': (value: number) => updates.push(value)
     } as Partial<PanelProps>)
 
-    await userEvent.click(screen.getByTestId('stub-slider-seek'))
+    const slider = await screen.findByRole('slider')
+    slider.focus()
+    await userEvent.keyboard('{ArrowRight}')
 
     expect(updates).toContain(90)
   })
@@ -258,8 +255,24 @@ describe('VideoEditPanel', () => {
   })
 
   it('hides the playback controls without a video source', () => {
-    renderPanel({ videoUrl: undefined })
+    renderPanel({ videoUrl: undefined, hasSource: false })
 
     expect(screen.queryByTestId('video-playback-controls')).toBeNull()
+  })
+
+  it('hides the controls once the video has terminally failed to load', () => {
+    renderPanel({ error: 'load-failed' })
+
+    expect(screen.queryByTestId('video-playback-controls')).toBeNull()
+    expect(screen.queryByTestId('stub-filmstrip')).toBeNull()
+    expect(screen.queryByTestId('stub-bounding-box')).toBeNull()
+  })
+
+  it('keeps the controls when only the filmstrip canvas is unavailable', () => {
+    renderPanel({ error: 'canvas-unavailable' })
+
+    expect(screen.getByTestId('video-playback-controls')).toBeTruthy()
+    expect(screen.getByTestId('stub-filmstrip')).toBeTruthy()
+    expect(screen.getByTestId('stub-bounding-box')).toBeTruthy()
   })
 })

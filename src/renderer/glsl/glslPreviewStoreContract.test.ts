@@ -1,6 +1,8 @@
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive, shallowRef } from 'vue'
+import { nextTick, shallowRef } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
@@ -9,6 +11,7 @@ import { DEBOUNCE_MS } from '@/renderer/glsl/glslPreviewUtils'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 /**
  * Guards the writer/reader store contract behind the GLSL live preview: the
@@ -41,33 +44,12 @@ const mockRenderer = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/renderer/glsl/useGLSLRenderer', () => ({
+vi.mock<unknown>(import('@/renderer/glsl/useGLSLRenderer'), () => ({
   useGLSLRenderer: (_config?: GLSLRendererConfig) => mockRenderer.create()
 }))
 
-const nodeOutputs = reactive<Record<string, unknown>>({})
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => ({
-    setNodePreviewsByNodeId: vi.fn(),
-    setNodePreviewsByLocatorId: vi.fn(),
-    revokePreviewsByLocatorId: vi.fn(),
-    nodeOutputs
-  })
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    nodeIdToNodeLocatorId: (id: string | number) => String(id),
-    nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
-  })
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: { id: 'root' } }
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => false })
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { rootGraph: { id: 'root', _nodes: [] }, nodePreviewImages: {} }
 }))
 
 function seedShaderThroughWidget(nodeId: number, value: string): void {
@@ -88,25 +70,45 @@ function seedShaderThroughWidget(nodeId: number, value: string): void {
 }
 
 function createGLSLNode(nodeId: number): LGraphNode {
+  const rootGraph = { id: GRAPH_ID, _nodes: [] }
   return fromAny<LGraphNode, unknown>({
     id: nodeId,
     type: 'GLSLShader',
     inputs: [],
-    graph: { id: GRAPH_ID, rootGraph: { id: GRAPH_ID } },
+    graph: { id: GRAPH_ID, rootGraph },
     getInputNode: () => null,
     isSubgraphNode: () => false
   })
 }
 
+beforeEach(() => {
+  vi.mocked(useWorkflowStore().nodeIdToNodeLocatorId).mockImplementation((id) =>
+    createNodeLocatorId(null, id)
+  )
+  vi.mocked(useWorkflowStore().nodeToNodeLocatorId).mockImplementation((node) =>
+    createNodeLocatorId(null, node.id)
+  )
+  vi.mocked(useNodeOutputStore().setNodePreviewsByNodeId).mockImplementation(
+    () => undefined
+  )
+  vi.mocked(useNodeOutputStore().setNodePreviewsByLocatorId).mockImplementation(
+    () => undefined
+  )
+  vi.mocked(useNodeOutputStore().revokePreviewsByLocatorId).mockImplementation(
+    () => undefined
+  )
+})
+
 describe('GLSL live preview reads the shader written by the customtext widget', () => {
   beforeEach(() => {
-    for (const key of Object.keys(nodeOutputs)) delete nodeOutputs[key]
+    for (const key of Object.keys(useNodeOutputStore().nodeOutputs))
+      delete useNodeOutputStore().nodeOutputs[key]
   })
 
   it('compiles the shader value written through the widget store path', async () => {
     const nodeId = 1
     seedShaderThroughWidget(nodeId, SHADER)
-    nodeOutputs[String(nodeId)] = {
+    useNodeOutputStore().nodeOutputs[String(nodeId)] = {
       images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
     }
 

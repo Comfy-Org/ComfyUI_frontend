@@ -2,12 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { hashPath } from '../base/hashUtil'
 import { readOpenPaths } from '../base/storageIO'
-import {
-  cleanupV1Data,
-  getMigrationStatus,
-  isV2MigrationComplete,
-  migrateV1toV2
-} from './migrateV1toV2'
+import { isV2MigrationComplete, migrateV1toV2 } from './migrateV1toV2'
 
 describe('migrateV1toV2', () => {
   const workspaceId = 'test-workspace'
@@ -157,53 +152,6 @@ describe('migrateV1toV2', () => {
       ]
       expect(index.order).toEqual(expectedOrder)
     })
-
-    it('keeps V1 data intact after migration', () => {
-      const v1Drafts = {
-        'workflows/test.json': {
-          data: '{}',
-          updatedAt: 1000,
-          name: 'test',
-          isTemporary: true
-        }
-      }
-      setV1Data(v1Drafts, ['workflows/test.json'])
-
-      migrateV1toV2(workspaceId)
-
-      // V1 data should still exist
-      expect(
-        localStorage.getItem(`Comfy.Workflow.Drafts:${workspaceId}`)
-      ).not.toBeNull()
-      expect(
-        localStorage.getItem(`Comfy.Workflow.DraftOrder:${workspaceId}`)
-      ).not.toBeNull()
-    })
-  })
-
-  describe('cleanupV1Data', () => {
-    it('removes V1 keys', () => {
-      setV1Data(
-        {
-          'workflows/test.json': {
-            data: '{}',
-            updatedAt: 1,
-            name: 'test',
-            isTemporary: true
-          }
-        },
-        ['workflows/test.json']
-      )
-
-      cleanupV1Data(workspaceId)
-
-      expect(
-        localStorage.getItem(`Comfy.Workflow.Drafts:${workspaceId}`)
-      ).toBeNull()
-      expect(
-        localStorage.getItem(`Comfy.Workflow.DraftOrder:${workspaceId}`)
-      ).toBeNull()
-    })
   })
 
   describe('V1 tab state migration', () => {
@@ -282,34 +230,6 @@ describe('migrateV1toV2', () => {
 
       // No tab state to migrate — should remain null
       expect(openPaths).toBeNull()
-    })
-  })
-
-  describe('getMigrationStatus', () => {
-    it('reports correct status', () => {
-      setV1Data(
-        {
-          'workflows/a.json': {
-            data: '{}',
-            updatedAt: 1,
-            name: 'a',
-            isTemporary: true
-          },
-          'workflows/b.json': {
-            data: '{}',
-            updatedAt: 2,
-            name: 'b',
-            isTemporary: true
-          }
-        },
-        ['workflows/a.json', 'workflows/b.json']
-      )
-
-      const status = getMigrationStatus(workspaceId)
-      expect(status.v1Exists).toBe(true)
-      expect(status.v2Exists).toBe(false)
-      expect(status.v1DraftCount).toBe(2)
-      expect(status.v2DraftCount).toBe(0)
     })
   })
 })

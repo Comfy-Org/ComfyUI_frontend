@@ -23,7 +23,7 @@
     </div>
 
     <template v-if="hasDevices">
-      <Divider />
+      <div class="my-4 border-t border-interface-stroke" />
 
       <div>
         <h2 class="mb-4 text-2xl font-semibold">
@@ -36,7 +36,7 @@
             :header="device.name"
             :value="device.index"
           >
-            <DeviceInfo :device="device" />
+            <DeviceInfo :device />
           </TabPanel>
         </TabView>
         <DeviceInfo v-else :device="stats.devices[0]" />
@@ -46,7 +46,6 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
 import TabPanel from 'primevue/tabpanel'
 import TabView from 'primevue/tabview'
 import { computed } from 'vue'
@@ -59,7 +58,7 @@ import {
 } from '@/components/common/systemStatsColumns'
 import Button from '@/components/ui/button/Button.vue'
 import { useCopySystemInfo } from '@/composables/useCopySystemInfo'
-import type { SystemStats } from '@/schemas/apiSchema'
+import type { SystemStats } from '@/platform/remote/comfyui/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { stats } = defineProps<{

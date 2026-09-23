@@ -1,5 +1,9 @@
 import { groupBy } from 'es-toolkit'
-import { hasActivePromotedWidgetConsumer } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import {
+  buildPromotedWidgetExecutionSources,
+  hasActivePromotedWidgetConsumer,
+  resolveActivePromotedWidgetConsumers
+} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -70,6 +74,21 @@ function mediaTypeFromSpec(
   return undefined
 }
 
+function resolveMediaMissingState(
+  widget: IComboWidget,
+  value: string,
+  isCloud: boolean
+): boolean | undefined {
+  if (isCloud) return undefined
+  const options = resolveComboValues(widget)
+  if (getAnnotatedMediaPathTypeForDetection(value) === 'output') {
+    return options.includes(value) ? false : undefined
+  }
+  return !getMediaPathDetectionNames(value).some((name) =>
+    options.includes(name)
+  )
+}
+
 function getGeneratedCandidateMatchNames(
   candidates: MissingMediaCandidate[],
   isCloud: boolean,
@@ -136,7 +155,7 @@ function getMediaPathBasename(value: string): string {
 
 function addAssetIdentifiers(
   identifiers: Set<string>,
-  assets: AssetItem[],
+  assets: readonly AssetItem[],
   pathOptions: { allowCompactSuffix: boolean }
 ) {
   for (const asset of assets) {
@@ -148,7 +167,7 @@ function addAssetIdentifiers(
 
 function addAssetHashIdentifiers(
   identifiers: Set<string>,
-  assets: AssetItem[],
+  assets: readonly AssetItem[],
   pathOptions: { allowCompactSuffix: boolean }
 ) {
   for (const asset of assets) {
@@ -170,8 +189,6 @@ export function scanAllMediaCandidates(
   rootGraph: LGraph,
   isCloud: boolean
 ): MissingMediaCandidate[] {
-  if (!rootGraph) return []
-
   const allNodes = collectAllNodes(rootGraph)
   const candidates: MissingMediaCandidate[] = []
 
@@ -216,36 +233,29 @@ export function scanNodeMediaCandidates(
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
 
-    let isMissing: boolean | undefined
-    if (isCloud) {
-      isMissing = undefined
-    } else {
-      const type = getAnnotatedMediaPathTypeForDetection(value)
-      if (type === 'output') {
-        isMissing = undefined
-      } else {
-        const options = resolveComboValues(widget)
-        const detectionNames = getMediaPathDetectionNames(value)
-        const existsInOptions = detectionNames.some((name) =>
-          options.includes(name)
-        )
-        isMissing = !existsInOptions
-      }
-    }
+    const isMissing = resolveMediaMissingState(widget, value, isCloud)
 
     // Label only, and leaf-derived to match missingModelScan: the overlay
     // formats nodeType directly and a SubgraphNode's own type is a UUID.
-    const labelNode =
-      resolvePromotedWidgetSource(rootGraph, node, widget)?.sourceNode ?? node
+    const promotedSource = resolvePromotedWidgetSource(rootGraph, node, widget)
+    const labelNode = promotedSource?.sourceNode ?? node
 
-    candidates.push({
+    const candidate: MissingMediaCandidate = {
       nodeId: executionId,
       nodeType: labelNode.type,
       widgetName: widget.name,
       mediaType,
       name: value,
       isMissing
-    })
+    }
+    if (node.isSubgraphNode()) {
+      const consumers = resolveActivePromotedWidgetConsumers(node, widget.name)
+      candidate.promotedSources = buildPromotedWidgetExecutionSources(
+        executionId,
+        consumers
+      )
+    }
+    candidates.push(candidate)
   }
 
   return candidates
@@ -314,8 +324,8 @@ export async function verifyMediaCandidates(
     pathOptions
   )
 
-  let inputAssets: AssetItem[]
-  let generatedAssets: AssetItem[]
+  let inputAssets: readonly AssetItem[]
+  let generatedAssets: readonly AssetItem[]
   try {
     const assetSources = await resolveAssetSources({
       signal,

@@ -13,7 +13,9 @@ const FF_PREFIX = 'ff:'
  *   localStorage.setItem('ff:example_enabled', 'true')
  *   localStorage.removeItem('ff:example_enabled')
  */
-export function getDevOverride<T>(flagKey: string): T | undefined {
+export function getDevOverride<T>(
+  flagKey: string & { readonly valueType?: T }
+): T | undefined {
   if (!import.meta.env.DEV) return undefined
   const raw = localStorage.getItem(`${FF_PREFIX}${flagKey}`)
   if (raw === null) return undefined

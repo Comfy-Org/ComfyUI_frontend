@@ -2,6 +2,10 @@ import { isObject } from 'es-toolkit/compat'
 
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
+function isApiJson(data: unknown) {
+  return isObject(data) && Object.values(data).every((v) => v.class_type)
+}
+
 export function getDataFromJSON(
   file: File
 ): Promise<Record<string, object> | undefined> {
@@ -16,8 +20,8 @@ export function getDataFromJSON(
         const jsonContent = parseJsonWithNonFinite<Record<string, unknown>>(
           reader.result
         )
-        if (jsonContent?.templates) {
-          resolve({ templates: jsonContent.templates as object })
+        if (jsonContent.templates) {
+          resolve({ templates: jsonContent.templates })
           return
         }
         if (isApiJson(jsonContent)) {
@@ -33,8 +37,4 @@ export function getDataFromJSON(
     reader.onabort = () => resolve(undefined)
     reader.readAsText(file)
   })
-}
-
-function isApiJson(data: unknown) {
-  return isObject(data) && Object.values(data).every((v) => v.class_type)
 }

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import { api } from '@/scripts/api'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { getPathDetails } from '@/utils/formatUtil'
@@ -64,7 +64,6 @@ export class UserFile {
     public size: number
   ) {
     const details = getPathDetails(path)
-    this.path = path
     this.directory = details.directory
     this.fullFilename = details.fullFilename
     this.filename = details.filename
@@ -212,11 +211,10 @@ export const useUserFileStore = defineStore('userFile', () => {
     userFiles.value.filter((file: UserFile) => file.isLoaded)
   )
 
-  const fileTree = computed<TreeExplorerNode<UserFile>>(
-    () =>
-      buildTree<UserFile>(userFiles.value, (userFile: UserFile) =>
-        userFile.path.split('/')
-      ) as TreeExplorerNode<UserFile>
+  const fileTree = computed<TreeExplorerNode<UserFile>>(() =>
+    buildTree<UserFile>(userFiles.value, (userFile: UserFile) =>
+      userFile.path.split('/')
+    )
   )
 
   /**

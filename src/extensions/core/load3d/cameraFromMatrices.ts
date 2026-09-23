@@ -27,6 +27,26 @@ interface CameraFromMatricesResult {
   fovYDegrees: number
 }
 
+function assertMatrixShape(
+  matrix: readonly (readonly number[])[],
+  rows: number,
+  cols: number,
+  name: string
+): void {
+  if (matrix.length !== rows) {
+    throw new Error(
+      `${name} must be ${rows}x${cols}, got ${matrix.length} rows`
+    )
+  }
+  for (let i = 0; i < rows; i++) {
+    if (matrix[i].length !== cols) {
+      throw new Error(
+        `${name} row ${i} must have ${cols} columns, got ${matrix[i].length}`
+      )
+    }
+  }
+}
+
 export function computeCameraFromMatrices(
   extrinsics: readonly (readonly number[])[],
   intrinsics: readonly (readonly number[])[]
@@ -70,25 +90,5 @@ export function computeCameraFromMatrices(
     position: [posX, -posY, -posZ],
     target: [targetX, -targetY, -targetZ],
     fovYDegrees
-  }
-}
-
-function assertMatrixShape(
-  matrix: readonly (readonly number[])[],
-  rows: number,
-  cols: number,
-  name: string
-): void {
-  if (matrix.length !== rows) {
-    throw new Error(
-      `${name} must be ${rows}x${cols}, got ${matrix.length} rows`
-    )
-  }
-  for (let i = 0; i < rows; i++) {
-    if (matrix[i].length !== cols) {
-      throw new Error(
-        `${name} row ${i} must have ${cols} columns, got ${matrix[i].length}`
-      )
-    }
   }
 }

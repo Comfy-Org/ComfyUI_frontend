@@ -1,6 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import WidgetTextPreview from '@/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
@@ -15,6 +16,13 @@ const inputSpecTextPreview: CustomInputSpec = {
   name: PREVIEW_WIDGET_NAME,
   type: 'TEXT_PREVIEW',
   isPreview: true
+}
+
+function toPreviewText(text: unknown): string {
+  if (text == null) return ''
+  if (Array.isArray(text))
+    return text.filter((part) => part != null).join('\n\n')
+  return String(text)
 }
 
 export function addTextPreviewWidgets(node: LGraphNode) {
@@ -68,11 +76,10 @@ export function addTextPreviewWidgets(node: LGraphNode) {
 
 export function updateTextPreviewWidgets(
   node: LGraphNode,
-  message: { text?: string | string[] }
+  message: NodeExecutionOutput | null | undefined
 ) {
   const preview = node.widgets?.find((w) => w.name === PREVIEW_WIDGET_NAME)
   if (!preview) return
 
-  const text = message.text ?? ''
-  preview.value = Array.isArray(text) ? text.join('\n\n') : text
+  preview.value = toPreviewText(message?.text)
 }

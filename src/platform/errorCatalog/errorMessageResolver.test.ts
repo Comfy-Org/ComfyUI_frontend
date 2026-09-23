@@ -6,7 +6,7 @@ import {
   resolveRunErrorMessage
 } from './errorMessageResolver'
 import type { NodeValidationError } from './types'
-import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
@@ -621,6 +621,41 @@ describe('errorMessageResolver', () => {
       displayTitle: 'Prompt has no outputs',
       displayMessage:
         'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
+    })
+  })
+
+  it('resolves agent API failures with catalog copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'agent_api_failed',
+          message: 'The agent request failed',
+          details: ''
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Comfy Agent error',
+      displayMessage: 'Comfy Agent hit a server error.'
+    })
+  })
+
+  it('resolves an agent transport failure to overlay copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'apply_failed',
+          message: 'An agent edit could not be applied',
+          details: 'op_rejected: unknown_widget at seed'
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Agent edit failed',
+      displayMessage:
+        'An agent edit could not be applied to the workflow document.'
     })
   })
 

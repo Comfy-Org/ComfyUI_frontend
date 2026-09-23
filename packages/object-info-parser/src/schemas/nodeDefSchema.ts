@@ -52,6 +52,9 @@ const zNumericInputOptions = zBaseInputOptions.extend({
 })
 
 export const zIntInputOptions = zNumericInputOptions.extend({
+  display: z
+    .enum(['slider', 'number', 'knob', 'gradientslider', 'color'])
+    .optional(),
   /**
    * If true, a linked widget will be added to the node to select the mode
    * of `control_after_generate`.
@@ -263,7 +266,7 @@ const zPriceBadgeDepends = z.object({
  * Used to calculate and display pricing information for API nodes.
  * The `expr` field contains a JSONata expression that returns a PricingResult.
  */
-const zPriceBadge = z.object({
+export const zPriceBadge = z.object({
   engine: z.literal('jsonata').optional().default('jsonata'),
   depends_on: zPriceBadgeDepends
     .optional()

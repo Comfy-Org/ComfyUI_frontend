@@ -6,6 +6,7 @@ import type {
   RenderContext
 } from '@/renderer/core/canvas/pathRenderer'
 import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
+import { StubPath2D } from '@/utils/__tests__/litegraphTestUtils'
 
 function createMockCtx(): CanvasRenderingContext2D {
   return {
@@ -54,25 +55,6 @@ function makeContext(overrides: Partial<RenderContext> = {}): RenderContext {
       ...overrides.colors
     },
     ...overrides
-  }
-}
-
-class StubPath2D {
-  calls: Array<{ method: string; args: unknown[] }> = []
-  moveTo(...args: unknown[]) {
-    this.calls.push({ method: 'moveTo', args })
-  }
-  lineTo(...args: unknown[]) {
-    this.calls.push({ method: 'lineTo', args })
-  }
-  bezierCurveTo(...args: unknown[]) {
-    this.calls.push({ method: 'bezierCurveTo', args })
-  }
-  quadraticCurveTo(...args: unknown[]) {
-    this.calls.push({ method: 'quadraticCurveTo', args })
-  }
-  arc(...args: unknown[]) {
-    this.calls.push({ method: 'arc', args })
   }
 }
 

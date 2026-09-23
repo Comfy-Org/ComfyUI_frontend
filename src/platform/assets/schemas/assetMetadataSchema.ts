@@ -1,5 +1,5 @@
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 /**
  * Type guard to check if metadata is OutputAssetMetadata
@@ -7,10 +7,10 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 function isOutputAssetMetadata(
   metadata: Record<string, unknown> | undefined
 ): metadata is OutputAssetMetadata {
-  if (!metadata) return false
   return (
+    !!metadata &&
     typeof metadata.jobId === 'string' &&
-    (typeof metadata.nodeId === 'string' || typeof metadata.nodeId === 'number')
+    typeof metadata.subfolder === 'string'
   )
 }
 
@@ -20,13 +20,14 @@ function isOutputAssetMetadata(
  */
 export interface OutputAssetMetadata extends Record<string, unknown> {
   jobId: string
-  nodeId: string | number
+  nodeId?: string | number
   subfolder: string
   executionTimeInSeconds?: number
   format?: string
   workflow?: ComfyWorkflowJSON
   outputCount?: number
-  allOutputs?: ResultItemImpl[]
+  allOutputs?: AugmentedResultItem[]
+  assetId?: string
 }
 
 /**

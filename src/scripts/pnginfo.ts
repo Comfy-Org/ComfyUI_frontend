@@ -1,4 +1,5 @@
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { api } from './api'
@@ -6,17 +7,14 @@ import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'
 import { getFromPngFile } from './metadata/png'
 
-// Original functions left in for backwards compatibility
-export function getPngMetadata(file: File): Promise<Record<string, string>> {
-  return getFromPngFile(file)
+interface NodeConnection {
+  node: LGraphNode
+  index: number
 }
 
-export function getFlacMetadata(file: File): Promise<Record<string, string>> {
-  return getFromFlacFile(file)
-}
-
-export function getAvifMetadata(file: File): Promise<Record<string, string>> {
-  return getFromAvifFile(file)
+interface LoraEntry {
+  name: string
+  weight: number
 }
 
 function parseExifData(exifData: Uint8Array) {
@@ -29,19 +27,11 @@ function parseExifData(exifData: Uint8Array) {
     isLittleEndian: boolean,
     length: 2 | 4
   ): number {
-    let arr = exifData.slice(offset, offset + length)
-    if (length === 2) {
-      return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint16(
-        0,
-        isLittleEndian
-      )
-    } else if (length === 4) {
-      return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint32(
-        0,
-        isLittleEndian
-      )
-    }
-    return 0
+    const arr = exifData.slice(offset, offset + length)
+    const view = new DataView(arr.buffer, arr.byteOffset, arr.byteLength)
+    return length === 2
+      ? view.getUint16(0, isLittleEndian)
+      : view.getUint32(0, isLittleEndian)
   }
 
   // Read the offset to the first IFD (Image File Directory)
@@ -76,6 +66,19 @@ function parseExifData(exifData: Uint8Array) {
   // Parse the first IFD
   const ifdData = parseIFD(ifdOffset)
   return ifdData
+}
+
+// Original functions left in for backwards compatibility
+export function getPngMetadata(file: File): Promise<Record<string, string>> {
+  return getFromPngFile(file)
+}
+
+export function getFlacMetadata(file: File): Promise<Record<string, string>> {
+  return getFromFlacFile(file)
+}
+
+export function getAvifMetadata(file: File): Promise<Record<string, string>> {
+  return getFromAvifFile(file)
 }
 
 export function getWebpMetadata(file: File) {
@@ -170,16 +173,6 @@ export function getLatentMetadata(
   })
 }
 
-interface NodeConnection {
-  node: LGraphNode
-  index: number
-}
-
-interface LoraEntry {
-  name: string
-  weight: number
-}
-
 const A1111_NEGATIVE_PROMPT_PREFIX = '\nNegative prompt:'
 
 function normalizeA1111Parameters(parameters: string): string {
@@ -196,18 +189,18 @@ function normalizeA1111Parameters(parameters: string): string {
 
 export type A1111ImportOutcome =
   | 'imported'
+  | 'imported-without-embeddings'
   | 'not-a1111'
   | 'core-nodes-unavailable'
 
 export async function importA1111(
   graph: LGraph,
   parameters: string,
-  beforeGraphClear?: () => void
+  beforeGraphClear?: () => void | Promise<void>
 ): Promise<A1111ImportOutcome> {
   const normalizedParameters = normalizeA1111Parameters(parameters)
   const p = normalizedParameters.lastIndexOf('\nSteps:')
   if (p > -1) {
-    const embeddings = await api.getEmbeddings()
     const matchResult = normalizedParameters
       .substr(p)
       .split('\n')[1]
@@ -216,7 +209,7 @@ export async function importA1111(
       )
     if (!matchResult) return 'not-a1111'
 
-    const opts: Record<string, string> = matchResult.reduce(
+    const opts: Partial<Record<string, string>> = matchResult.reduce(
       (acc: Record<string, string>, n: string) => {
         const s = n.split(':')
         if (s[1].endsWith(',')) {
@@ -257,8 +250,9 @@ export async function importA1111(
         return 'core-nodes-unavailable'
       }
 
-      let hrSamplerNode: LGraphNode | null = null
-      let hrSteps: string | null = null
+      const hires: { samplerNode: LGraphNode | null; steps?: string } = {
+        samplerNode: null
+      }
 
       const ceil64 = (v: number) => Math.ceil(v / 64) * 64
 
@@ -326,8 +320,8 @@ export async function importA1111(
 
         prevClip.node.connect(1, clipNode, 0)
         prevModel.node.connect(0, targetSamplerNode, 0)
-        if (hrSamplerNode) {
-          prevModel.node.connect(0, hrSamplerNode, 0)
+        if (hires.samplerNode) {
+          prevModel.node.connect(0, hires.samplerNode, 0)
         }
 
         return { text, prevModel, prevClip }
@@ -354,7 +348,15 @@ export async function importA1111(
         return v
       }
 
-      beforeGraphClear?.()
+      const { embeddings, embeddingsLoaded } = await api
+        .getEmbeddings()
+        .then((embeddings) => ({ embeddings, embeddingsLoaded: true }))
+        .catch((error: unknown) => {
+          console.error('Failed to load embeddings for A1111 import:', error)
+          return { embeddings: [], embeddingsLoaded: false }
+        })
+
+      await beforeGraphClear?.()
       graph.clear()
       graph.add(ckptNode)
       graph.add(clipSkipNode)
@@ -376,7 +378,7 @@ export async function importA1111(
       samplerNode.connect(0, vaeNode, 0)
       ckptNode.connect(2, vaeNode, 1)
 
-      const handlers: Record<string, (v: string) => void> = {
+      const handlers: Partial<Record<string, (v: string) => void>> = {
         model(v: string) {
           setWidgetValue(ckptNode, 'ckpt_name', v, true)
         },
@@ -408,7 +410,7 @@ export async function importA1111(
           const h = ceil64(+wxh[1])
           const hrUp = popOpt('hires upscale')
           const hrSz = popOpt('hires resize')
-          hrSteps = popOpt('hires steps') ?? null
+          hires.steps = popOpt('hires steps')
           let hrMethod = popOpt('hires upscaler')
 
           setWidgetValue(imageNode, 'width', w)
@@ -484,8 +486,9 @@ export async function importA1111(
             setWidgetValue(upscaleNode, 'width', ceil64(uw))
             setWidgetValue(upscaleNode, 'height', ceil64(uh))
 
-            hrSamplerNode = LiteGraph.createNode('KSampler')
+            const hrSamplerNode = LiteGraph.createNode('KSampler')
             if (!hrSamplerNode || !latentNode) return
+            hires.samplerNode = hrSamplerNode
             graph.add(hrSamplerNode)
             ckptNode.connect(0, hrSamplerNode, 0)
             positiveNode.connect(0, hrSamplerNode, 1)
@@ -510,6 +513,7 @@ export async function importA1111(
         }
       }
 
+      const { samplerNode: hrSamplerNode, steps: hrSteps } = hires
       if (hrSamplerNode) {
         setWidgetValue(
           hrSamplerNode,
@@ -577,7 +581,7 @@ export async function importA1111(
       if (Object.keys(opts).length) {
         console.warn('Unhandled parameters:', opts)
       }
-      return 'imported'
+      return embeddingsLoaded ? 'imported' : 'imported-without-embeddings'
     }
   }
   return 'not-a1111'

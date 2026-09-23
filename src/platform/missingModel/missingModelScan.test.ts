@@ -1,6 +1,10 @@
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
+import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -13,6 +17,7 @@ import {
   scanNodeModelCandidates,
   isModelFileName,
   enrichWithEmbeddedMetadata,
+  hasPendingVerification,
   verifyAssetSupportedCandidates,
   MODEL_FILE_EXTENSIONS
 } from '@/platform/missingModel/missingModelScan'
@@ -21,8 +26,11 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+type TestNode = Omit<LGraphNode, 'constructor'> & {
+  _testExecutionId?: string
+}
 
-vi.mock('@/utils/graphTraversalUtil', () => {
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
   type TestNode = LGraphNode & {
     _testExecutionId?: string
     _testActiveExecutionIds?: string[]
@@ -96,6 +104,13 @@ function makeOtherWidget(name: string, value: unknown): IBaseWidget {
   })
 }
 
+/** Mocks read connectivity from their own input mock data. */
+function stampInputConnectivity(node: LGraphNode): LGraphNode {
+  return Object.assign(node, {
+    isInputConnected: (slot: number) => node.inputs[slot].link != null
+  })
+}
+
 /** Helper: create a mock LGraphNode with configured widgets */
 function makeNode(
   id: number,
@@ -103,12 +118,14 @@ function makeNode(
   widgets: IBaseWidget[] = [],
   executionId?: string
 ): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
-    id,
-    type,
-    widgets,
-    _testExecutionId: executionId
-  })
+  return stampInputConnectivity(
+    fromAny<LGraphNode, Partial<TestNode>>({
+      id: toNodeId(id),
+      type,
+      widgets,
+      _testExecutionId: executionId
+    })
+  )
 }
 
 /** Helper: create a mock LGraph containing given nodes */
@@ -180,13 +197,19 @@ function makeNestedPromotedModelGraph({
       },
       getLink: (id: number) =>
         id === innerLinkId
-          ? { resolve: () => ({ inputNode: leafNode }) }
+          ? {
+              resolve: () => ({
+                inputNode: leafNode,
+                input: leafNode.inputs[0]
+              })
+            }
           : null,
       getNodeById: (id: string | number) =>
         String(id) === String(leafNode.id) ? leafNode : null
     },
     _testExecutionId: innerExecutionId
   })
+  stampInputConnectivity(innerNode)
 
   const outerWidgetId = widgetId('graph', toNodeId(65), 'outer_ckpt')
   useWidgetValueStore().registerWidget(outerWidgetId, {
@@ -217,18 +240,35 @@ function makeNestedPromotedModelGraph({
       },
       getLink: (id: number) =>
         id === outerLinkId
-          ? { resolve: () => ({ inputNode: innerNode }) }
+          ? {
+              resolve: () => ({
+                inputNode: innerNode,
+                input: innerNode.inputs[0]
+              })
+            }
           : null,
       getNodeById: (id: string | number) =>
         String(id) === String(innerNode.id) ? innerNode : null
     },
     _testExecutionId: '65'
   })
+  stampInputConnectivity(outerNode)
 
   return makeGraph([outerNode, innerNode, leafNode])
 }
 
 const noAssetSupport = () => false
+
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
+})
+
+beforeEach(() => {
+  vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
+    mockUpdateModelsForNodeType
+  )
+  vi.mocked(useAssetsStore().getAssets).mockImplementation(mockGetAssets)
+})
 
 describe('isModelFileName', () => {
   it('should return true for common model extensions', () => {
@@ -331,6 +371,7 @@ describe('scanNodeModelCandidates', () => {
         ]
       }
     })
+    stampInputConnectivity(node)
 
     const result = scanNodeModelCandidates(graph, node, noAssetSupport)
 
@@ -357,6 +398,7 @@ describe('scanNodeModelCandidates', () => {
         ]
       }
     })
+    stampInputConnectivity(node)
 
     const result = scanNodeModelCandidates(
       graph,
@@ -396,6 +438,7 @@ describe('scanNodeModelCandidates', () => {
         ]
       }
     })
+    stampInputConnectivity(node)
 
     const result = scanNodeModelCandidates(
       graph,
@@ -426,6 +469,7 @@ describe('scanNodeModelCandidates', () => {
         ]
       }
     })
+    stampInputConnectivity(node)
 
     const result = scanNodeModelCandidates(graph, node, noAssetSupport)
 
@@ -733,6 +777,7 @@ describe('scanAllModelCandidates', () => {
       mode: 2, // LGraphEventMode.NEVER
       _testExecutionId: '10'
     })
+    stampInputConnectivity(mutedNode)
 
     const graph = makeGraph([mutedNode])
     const result = scanAllModelCandidates(graph, noAssetSupport)
@@ -750,6 +795,7 @@ describe('scanAllModelCandidates', () => {
       mode: 4, // LGraphEventMode.BYPASS
       _testExecutionId: '11'
     })
+    stampInputConnectivity(bypassedNode)
 
     const graph = makeGraph([bypassedNode])
     const result = scanAllModelCandidates(graph, noAssetSupport)
@@ -767,6 +813,7 @@ describe('scanAllModelCandidates', () => {
       mode: 0, // LGraphEventMode.ALWAYS
       _testExecutionId: '12'
     })
+    stampInputConnectivity(activeNode)
 
     const graph = makeGraph([activeNode])
     const result = scanAllModelCandidates(graph, noAssetSupport)
@@ -835,13 +882,19 @@ describe('scanAllModelCandidates', () => {
         },
         getLink: (id: number) =>
           id === linkId
-            ? { resolve: () => ({ inputNode: interiorNode }) }
+            ? {
+                resolve: () => ({
+                  inputNode: interiorNode,
+                  input: interiorNode.inputs[0]
+                })
+              }
             : null,
         getNodeById: (id: string | number) =>
           String(id) === String(interiorNode.id) ? interiorNode : null
       },
       _testExecutionId: '65'
     })
+    stampInputConnectivity(hostNode)
 
     const isAssetSupported = vi.fn(() => false)
     const graph = makeGraph([hostNode, interiorNode])
@@ -912,13 +965,19 @@ describe('scanAllModelCandidates', () => {
         },
         getLink: (id: number) =>
           id === linkId
-            ? { resolve: () => ({ inputNode: interiorNode }) }
+            ? {
+                resolve: () => ({
+                  inputNode: interiorNode,
+                  input: interiorNode.inputs[0]
+                })
+              }
             : null,
         getNodeById: (id: string | number) =>
           String(id) === String(interiorNode.id) ? interiorNode : null
       },
       _testExecutionId: '65'
     })
+    stampInputConnectivity(hostNode)
 
     const result = scanAllModelCandidates(
       makeGraph([hostNode, interiorNode]),
@@ -987,13 +1046,19 @@ describe('scanAllModelCandidates', () => {
         },
         getLink: (id: number) =>
           id === innerLinkId
-            ? { resolve: () => ({ inputNode: leafNode }) }
+            ? {
+                resolve: () => ({
+                  inputNode: leafNode,
+                  input: leafNode.inputs[0]
+                })
+              }
             : null,
         getNodeById: (id: string | number) =>
           String(id) === String(leafNode.id) ? leafNode : null
       },
       _testExecutionId: '65:77'
     })
+    stampInputConnectivity(innerNode)
 
     const outerWidgetId = widgetId('graph', toNodeId(65), 'outer_ckpt')
     useWidgetValueStore().registerWidget(outerWidgetId, {
@@ -1024,13 +1089,19 @@ describe('scanAllModelCandidates', () => {
         },
         getLink: (id: number) =>
           id === outerLinkId
-            ? { resolve: () => ({ inputNode: innerNode }) }
+            ? {
+                resolve: () => ({
+                  inputNode: innerNode,
+                  input: innerNode.inputs[0]
+                })
+              }
             : null,
         getNodeById: (id: string | number) =>
           String(id) === String(innerNode.id) ? innerNode : null
       },
       _testExecutionId: '65'
     })
+    stampInputConnectivity(outerNode)
 
     const isAssetSupported = vi.fn(() => false)
     const graph = makeGraph([outerNode, innerNode, leafNode])
@@ -1672,20 +1743,8 @@ const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
   mockGetAssets: vi.fn().mockReturnValue([])
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    updateModelsForNodeType: mockUpdateModelsForNodeType,
-    getAssets: mockGetAssets
-  })
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({
-    add: vi.fn()
-  })
-}))
-
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
+  t: (key: string) => key,
   st: (_key: string, fallback: string) => fallback
 }))
 
@@ -1919,5 +1978,124 @@ describe('verifyAssetSupportedCandidates', () => {
     await verifyAssetSupportedCandidates(candidates)
 
     expect(candidates[0].isMissing).toBe(false)
+  })
+})
+
+describe('remote combo inventory', () => {
+  function makeRemoteCombo(value: string) {
+    const widget = makeComboWidget('file_name', value, ['0', '1'])
+    const inventory: { status: ComboWidgetInventoryStatus } = {
+      status: 'loading'
+    }
+    let release = () => {}
+    const settled = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    registerComboWidgetInventory(widget, {
+      getStatus: () => inventory.status,
+      waitForSettled: () => settled
+    })
+    const node = makeNode(1, 'RemoteFileNode', [widget])
+    const graph = makeGraph([node])
+    const settle = (status: ComboWidgetInventoryStatus, options: string[]) => {
+      widget.options.values = options
+      inventory.status = status
+      release()
+    }
+    return {
+      node,
+      widget,
+      settle,
+      scan: () => scanNodeModelCandidates(graph, node, noAssetSupport)
+    }
+  }
+
+  it('defers a remote combo whose inventory is still loading', () => {
+    const { scan } = makeRemoteCombo('selected.safetensors')
+
+    const [candidate] = scan()
+
+    expect(candidate.isMissing).toBeUndefined()
+    expect(hasPendingVerification(candidate)).toBe(true)
+  })
+
+  it('confirms the value against the settled inventory', async () => {
+    const found = makeRemoteCombo('selected.safetensors')
+    const missing = makeRemoteCombo('other.safetensors')
+    const candidates = [...found.scan(), ...missing.scan()]
+
+    const verifying = verifyAssetSupportedCandidates(candidates)
+    found.settle('ready', ['selected.safetensors'])
+    missing.settle('ready', ['selected.safetensors'])
+    await verifying
+
+    expect(candidates.map((c) => c.isMissing)).toEqual([false, true])
+    expect(candidates.some(hasPendingVerification)).toBe(false)
+  })
+
+  it('discards the deferred result when the selected value changed', async () => {
+    const { widget, settle, scan } = makeRemoteCombo('selected.safetensors')
+    const candidates = scan()
+    widget.value = 'new-selection.safetensors'
+
+    const verifying = verifyAssetSupportedCandidates(candidates)
+    settle('ready', ['other.safetensors'])
+    await verifying
+
+    expect(candidates[0].isMissing).toBeUndefined()
+  })
+
+  it('leaves the result open when the inventory fails to load', async () => {
+    const { settle, scan } = makeRemoteCombo('selected.safetensors')
+    const candidates = scan()
+
+    const verifying = verifyAssetSupportedCandidates(candidates)
+    settle('error', [])
+    await verifying
+
+    expect(candidates[0].isMissing).toBeUndefined()
+  })
+  it('keeps the deferred check on enriched copies', async () => {
+    const { node, settle, scan } = makeRemoteCombo('selected.safetensors')
+    Object.assign(node, {
+      properties: {
+        models: [
+          {
+            name: 'selected.safetensors',
+            url: 'https://example.com/selected.safetensors',
+            directory: 'checkpoints'
+          }
+        ]
+      }
+    })
+    const [fromNode] = scan()
+    const [fromWorkflow] = enrichWithEmbeddedMetadata(
+      [fromNode],
+      fromPartial<ComfyWorkflowJSON>({ nodes: [], links: [] })
+    )
+    expect(fromNode.url).toBe('https://example.com/selected.safetensors')
+    expect(hasPendingVerification(fromWorkflow)).toBe(true)
+
+    const verifying = verifyAssetSupportedCandidates([fromWorkflow])
+    settle('ready', ['selected.safetensors'])
+    await verifying
+
+    expect(fromWorkflow.isMissing).toBe(false)
+  })
+
+  it('releases the deferred check when the scan is aborted', async () => {
+    const { scan } = makeRemoteCombo('selected.safetensors')
+    const candidates = scan()
+    const controller = new AbortController()
+
+    const verifying = verifyAssetSupportedCandidates(
+      candidates,
+      controller.signal
+    )
+    controller.abort()
+    await verifying
+
+    expect(candidates[0].isMissing).toBeUndefined()
+    expect(hasPendingVerification(candidates[0])).toBe(false)
   })
 })

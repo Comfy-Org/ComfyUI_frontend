@@ -1,42 +1,28 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>()
-  return {
-    ...actual,
-    LiteGraph: {
-      ...(actual.LiteGraph as Record<string, unknown>),
-      registered_node_types: {} as Record<string, unknown>
-    }
-  }
-})
-
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(),
   getExecutionIdByNode: vi.fn()
 }))
 
-vi.mock('@/platform/nodeReplacement/cnrIdUtil', () => ({
+vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
   getCnrIdFromNode: vi.fn(() => undefined)
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: vi.fn(() => true)
-  })
-}))
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
 
 import {
   collectAllNodes,
@@ -46,6 +32,7 @@ import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { rescanAndSurfaceMissingNodes } from './missingNodeScan'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -74,15 +61,11 @@ function getMissingNodesError(
   return error
 }
 
-describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
-  beforeEach(() => {
-    // Reset registered_node_types
-    const reg = LiteGraph.registered_node_types as Record<string, unknown>
-    for (const key of Object.keys(reg)) {
-      delete reg[key]
-    }
-  })
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(() => true)
+})
 
+describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
   it('returns empty when all nodes are registered', () => {
     const reg = LiteGraph.registered_node_types as Record<string, unknown>
     reg['KSampler'] = {}
@@ -94,6 +77,29 @@ describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
 
     const store = useMissingNodesErrorStore()
     expect(store.missingNodesError).toBeNull()
+  })
+
+  it('clears an absorbed missing-node prompt when a rescan finds none', () => {
+    const missingNodesStore = useMissingNodesErrorStore()
+    missingNodesStore.surfaceMissingNodes([
+      {
+        type: 'MissingNode',
+        nodeId: '1',
+        isReplaceable: false
+      }
+    ])
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordPromptError({
+      type: 'missing_node_type',
+      message: 'MissingNode is unavailable',
+      details: ''
+    })
+    vi.mocked(collectAllNodes).mockReturnValue([])
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    expect(missingNodesStore.missingNodesError).toBeNull()
+    expect(executionErrorStore.lastPromptError).toBeNull()
   })
 
   it('detects unregistered nodes as missing', () => {

@@ -1,8 +1,9 @@
 import type { UUID } from '@/utils/uuid'
+import type { LinkPresentation } from '@/types/linkPresentation'
 
 import type { LGraphConfig, LGraphExtra, SubgraphId } from '../LGraph'
-import type { GroupId, IGraphGroupFlags } from '../LGraphGroup'
-import type { NodeProperty } from '../LGraphNode'
+import type { IGraphGroupFlags } from '../LGraphGroup'
+import type { NodeProperty } from '@/types/nodeState'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { SerialisedLLinkArray } from '../LLink'
 import type { FloatingRerouteSlot } from '../Reroute'
@@ -33,14 +34,18 @@ interface BaseExportedGraph {
     /** The base definition of subgraphs used in this workflow. That is, what you see when you open / edit a subgraph. */
     subgraphs?: ExportedSubgraph[]
   }
+  extensions?: ExtensionPayload
 }
 
 interface SerialisableGraphState {
-  lastGroupId: GroupId
+  /** Counter, not an id — brand at the point a group is constructed. */
+  lastGroupId: number
   lastNodeId: number
   lastLinkId: number
   lastRerouteId: number
 }
+
+type ExtensionPayload = Record<string, unknown>
 
 /** Properties of nodes that are used by subgraph instances. */
 type NodeSubgraphSharedProps = Omit<
@@ -51,7 +56,7 @@ type NodeSubgraphSharedProps = Omit<
 /** Properties shared by subgraph and node I/O slots. */
 type SubgraphIOShared = Omit<
   INodeSlot,
-  'boundingRect' | 'nameLocked' | 'locked' | 'removable' | '_floatingLinks'
+  'boundingRect' | 'nameLocked' | 'locked' | 'removable'
 >
 
 /**
@@ -79,7 +84,7 @@ export interface SerialisableGraph extends BaseExportedGraph {
 
 export type ISerialisableNodeInput = Omit<
   INodeInputSlot,
-  'boundingRect' | 'widget' | 'link' | '_floatingLinks'
+  'boundingRect' | 'widget' | 'link'
 > & {
   link?: number | null
   widget?: { name: string }
@@ -87,7 +92,7 @@ export type ISerialisableNodeInput = Omit<
 
 export type ISerialisableNodeOutput = Omit<
   INodeOutputSlot,
-  'boundingRect' | '_data' | 'links' | '_floatingLinks'
+  'boundingRect' | '_data' | 'links'
 > & {
   links?: number[] | null
   widget?: { name: string }
@@ -119,6 +124,7 @@ export interface ISerialisedNode {
    */
   widgets_values?: TWidgetValue[]
   widgets_values_named?: Record<string, TWidgetValue>
+  extensions?: ExtensionPayload
 }
 
 /** A single instance of a subgraph; where it is used on a graph, any customisation to shape / colour etc. */
@@ -188,7 +194,7 @@ export interface ExposedWidget {
 
 /** Serialised LGraphGroup */
 export interface ISerialisedGroup {
-  id: GroupId
+  id: number
   title: string
   bounding: number[]
   color?: string
@@ -213,7 +219,7 @@ export interface SerialisableReroute {
   floating?: FloatingRerouteSlot
 }
 
-export interface SerialisableLLink {
+export interface SerialisableLLink extends LinkPresentation {
   /** Link ID */
   id: number
   /** Output node ID */

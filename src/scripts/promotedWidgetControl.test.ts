@@ -8,10 +8,26 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toLinkId } from '@/types/linkId'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 import { applyPromotedWidgetControl } from './promotedWidgetControl'
+
+function promotedSeedValue(host: SubgraphNode): unknown {
+  const input = host.inputs.find((input) => input.name === 'seed')
+  if (!input?.widgetId) throw new Error('seed was not promoted')
+  return useWidgetValueStore().getWidget(input.widgetId)?.value
+}
+
+function createPromotedSeedHost(controlMode: string): SubgraphNode {
+  const subgraph = createTestSubgraph()
+  const seedNode = new SeedNode(controlMode)
+  subgraph.add(seedNode)
+  const host = createTestSubgraphNode(subgraph)
+  const seedWidget = seedNode.widgets!.find((w) => w.name === 'seed')!
+  const result = promoteValueWidgetViaSubgraphInput(host, seedNode, seedWidget)
+  if (!result.ok) throw new Error(`promotion failed: ${result.reason}`)
+  return host
+}
 
 class SeedNode extends LGraphNode {
   constructor(controlMode: string) {
@@ -38,23 +54,6 @@ class SeedNode extends LGraphNode {
   }
 }
 
-function promotedSeedValue(host: SubgraphNode): unknown {
-  const input = host.inputs.find((input) => input.name === 'seed')
-  if (!input?.widgetId) throw new Error('seed was not promoted')
-  return useWidgetValueStore().getWidget(input.widgetId)?.value
-}
-
-function createPromotedSeedHost(controlMode: string): SubgraphNode {
-  const subgraph = createTestSubgraph()
-  const seedNode = new SeedNode(controlMode)
-  subgraph.add(seedNode)
-  const host = createTestSubgraphNode(subgraph)
-  const seedWidget = seedNode.widgets!.find((w) => w.name === 'seed')!
-  const result = promoteValueWidgetViaSubgraphInput(host, seedNode, seedWidget)
-  if (!result.ok) throw new Error(`promotion failed: ${result.reason}`)
-  return host
-}
-
 describe('applyPromotedWidgetControl', () => {
   it('increments the host-owned value of a promoted seed after queueing', () => {
     const host = createPromotedSeedHost('increment')
@@ -76,7 +75,10 @@ describe('applyPromotedWidgetControl', () => {
   it('does not run control on a host input fed by an external link', () => {
     const host = createPromotedSeedHost('increment')
     const seedInput = host.inputs.find((input) => input.name === 'seed')!
-    seedInput.link = toLinkId(99)
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    host.graph!.add(source)
+    source.connect(0, host, host.inputs.indexOf(seedInput))
 
     applyPromotedWidgetControl(host, 'afterQueued')
 

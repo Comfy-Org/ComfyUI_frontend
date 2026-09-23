@@ -11,7 +11,7 @@ const dynamicTypeResolvers: Record<
   COMFY_MATCHTYPE_V3: (input) =>
     zMatchTypeOptions
       .safeParse(input)
-      .data?.template?.allowed_types?.split(',') ?? []
+      .data?.template.allowed_types.split(',') ?? []
 }
 
 function resolveAutogrowType(rawSpec: InputSpecV2): string[] {

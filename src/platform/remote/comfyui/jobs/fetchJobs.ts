@@ -8,7 +8,7 @@
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { JobId } from '@/schemas/apiSchema'
+import type { JobId } from '@/platform/remote/comfyui/execution/types'
 
 import type {
   JobAssetsResult,
@@ -33,6 +33,10 @@ interface FetchJobsRawResult {
   hasMore: boolean
 }
 
+interface FetchJobsOptions {
+  throwOnError?: boolean
+}
+
 /**
  * Fetches raw jobs from /jobs endpoint
  * @internal
@@ -41,21 +45,15 @@ async function fetchJobsRaw(
   fetchApi: (url: string) => Promise<Response>,
   statuses: JobStatus[],
   maxItems: number = 200,
-  offset: number = 0
+  offset: number = 0,
+  options?: FetchJobsOptions
 ): Promise<FetchJobsRawResult> {
   const statusParam = statuses.join(',')
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
   try {
     const res = await fetchApi(url)
     if (!res.ok) {
-      console.error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
-      return {
-        jobs: [],
-        total: 0,
-        offset,
-        limit: maxItems,
-        hasMore: false
-      }
+      throw new JobsApiError(`Failed to fetch jobs: ${res.status}`)
     }
     const data = zJobsListResponse.parse(await res.json())
     return {
@@ -66,10 +64,13 @@ async function fetchJobsRaw(
       hasMore: data.pagination.has_more
     }
   } catch (error) {
+    if (options?.throwOnError) throw error
     console.error('[Jobs API] Error fetching jobs:', error)
     return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
   }
 }
+
+class JobsApiError extends Error {}
 
 export interface FetchHistoryPageResult {
   jobs: JobListItem[]
@@ -139,13 +140,15 @@ export async function fetchHistoryPage(
  * Pending jobs get highest priority, then running jobs.
  */
 export async function fetchQueue(
-  fetchApi: (url: string) => Promise<Response>
+  fetchApi: (url: string) => Promise<Response>,
+  options?: FetchJobsOptions
 ): Promise<{ Running: JobListItem[]; Pending: JobListItem[] }> {
   const { jobs } = await fetchJobsRaw(
     fetchApi,
     ['in_progress', 'pending'],
     200,
-    0
+    0,
+    options
   )
 
   const running = jobs.filter((j) => j.status === 'in_progress')

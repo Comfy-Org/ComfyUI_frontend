@@ -5,7 +5,7 @@ import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/types/nodeId'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
@@ -14,9 +14,10 @@ const adapterByGraph = new WeakMap<LGraph, LinkConnectorAdapter>()
 
 /** Convenience creator using the current app canvas graph. */
 export function createLinkConnectorAdapter(): LinkConnectorAdapter | null {
-  const graph = app.canvas?.graph
-  const connector = app.canvas?.linkConnector
-  if (!graph || !connector) return null
+  const canvas = useCanvasStore().canvas
+  const graph = canvas?.graph
+  if (!graph) return null
+  const connector = canvas.linkConnector
 
   const adapter = adapterByGraph.get(graph)
   if (adapter && adapter.linkConnector === connector) {
@@ -64,13 +65,13 @@ export class LinkConnectorAdapter {
     opts?: { moveExisting?: boolean; fromRerouteId?: RerouteId }
   ): void {
     const node = this.network.getNodeById(nodeId)
-    const output = node?.outputs?.[outputIndex]
+    const output = node?.outputs[outputIndex]
     if (!node || !output) return
 
     const fromReroute = this.network.getReroute(opts?.fromRerouteId)
 
     if (opts?.moveExisting) {
-      this.linkConnector.moveOutputLink(this.network, output)
+      this.linkConnector.moveOutputLink(this.network, node, output)
     } else {
       this.linkConnector.dragNewFromOutput(
         this.network,
@@ -97,7 +98,7 @@ export class LinkConnectorAdapter {
     }
   ): void {
     const node = this.network.getNodeById(nodeId)
-    const input = node?.inputs?.[inputIndex]
+    const input = node?.inputs[inputIndex]
     if (!node || !input) return
 
     const fromReroute = this.network.getReroute(opts?.fromRerouteId)
@@ -106,7 +107,9 @@ export class LinkConnectorAdapter {
       const startPoint: Point | undefined = opts.layout
         ? [opts.layout.position.x, opts.layout.position.y]
         : undefined
-      this.linkConnector.moveInputLink(this.network, input, { startPoint })
+      this.linkConnector.moveInputLink(this.network, node, input, {
+        startPoint
+      })
     } else {
       this.linkConnector.dragNewFromInput(
         this.network,
@@ -127,14 +130,14 @@ export class LinkConnectorAdapter {
 
   isInputValidDrop(nodeId: NodeId, inputIndex: number): boolean {
     const node = this.network.getNodeById(nodeId)
-    const input = node?.inputs?.[inputIndex]
+    const input = node?.inputs[inputIndex]
     if (!node || !input) return false
     return this.linkConnector.isInputValidDrop(node, input)
   }
 
   isOutputValidDrop(nodeId: NodeId, outputIndex: number): boolean {
     const node = this.network.getNodeById(nodeId)
-    const output = node?.outputs?.[outputIndex]
+    const output = node?.outputs[outputIndex]
     if (!node || !output) return false
     return this.linkConnector.renderLinks.some((link) =>
       link.canConnectToOutput(node, output)
@@ -159,7 +162,7 @@ export class LinkConnectorAdapter {
     //Add extra check for connection to subgraphInput/subgraphOutput
     if (isSubgraph(this.network)) {
       const { canvasX, canvasY } = event
-      const ioNode = this.network.getIoNodeOnPos?.(canvasX, canvasY)
+      const ioNode = this.network.getIoNodeOnPos(canvasX, canvasY)
       if (ioNode) {
         this.linkConnector.dropOnIoNode(ioNode, event)
         return

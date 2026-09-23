@@ -75,17 +75,6 @@ function rectHitTest(
   return null
 }
 
-function isBoundingBox(b: unknown): b is BoundingBox {
-  if (!b || typeof b !== 'object') return false
-  const box = b as Record<string, unknown>
-  return (
-    typeof box.x === 'number' &&
-    typeof box.y === 'number' &&
-    typeof box.width === 'number' &&
-    typeof box.height === 'number'
-  )
-}
-
 function normalizeHexColor(color: unknown): string | null {
   if (typeof color !== 'string') return null
   const hex = color.trim().toLowerCase()
@@ -100,6 +89,17 @@ function normalizePalette(palette: unknown): string[] {
   return Array.isArray(palette)
     ? palette.map(normalizeHexColor).filter((c): c is string => c !== null)
     : []
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object'
+}
+
+export type BoundingBoxInput = Pick<
+  BoundingBox,
+  'x' | 'y' | 'width' | 'height'
+> & {
+  metadata?: unknown
 }
 
 export function applyDrag(
@@ -218,15 +218,30 @@ export function tagRects(
   return rects
 }
 
+export function isBoundingBox(b: unknown): b is BoundingBoxInput {
+  return (
+    !!b &&
+    typeof b === 'object' &&
+    'x' in b &&
+    typeof b.x === 'number' &&
+    'y' in b &&
+    typeof b.y === 'number' &&
+    'width' in b &&
+    typeof b.width === 'number' &&
+    'height' in b &&
+    typeof b.height === 'number'
+  )
+}
+
 export function fromBoundingBoxes(
-  boxes: readonly BoundingBox[],
+  boxes: readonly unknown[],
   width: number,
   height: number
 ): Region[] {
   const w = width || 1
   const h = height || 1
   return boxes.filter(isBoundingBox).map((box) => {
-    const meta = (box.metadata ?? {}) as Partial<BoundingBoxMetadata>
+    const meta = isRecord(box.metadata) ? box.metadata : {}
     return {
       x: box.x / w,
       y: box.y / h,

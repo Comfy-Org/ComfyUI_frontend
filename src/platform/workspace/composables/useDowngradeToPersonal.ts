@@ -8,20 +8,20 @@ import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { BillingFailure } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import type {
-  PreviewSubscribeResponse,
-  SubscribeResponse
-} from '@/platform/workspace/api/workspaceApi'
+import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 export interface DowngradeToPersonalResult {
   preview: PreviewSubscribeResponse
-  response: SubscribeResponse
+  response: SettledSubscribeResponse
 }
 
 export interface DowngradePreview {
@@ -47,6 +47,7 @@ export function useDowngradeToPersonal() {
   const billingOperationStore = useBillingOperationStore()
   const { userEmail } = useCurrentUser()
   const { permissions } = useWorkspaceUI()
+  const { canDowngradeToPersonal } = useBillingCapabilities()
   const telemetry = useTelemetry()
 
   const removableMembers = computed(() => {
@@ -61,7 +62,11 @@ export function useDowngradeToPersonal() {
   const hasOtherMembers = computed(() => removableMembers.value.length > 0)
 
   function ensureCanDowngrade(): void {
-    if (!permissions.value.canDowngradeToPersonal) {
+    if (
+      !(isCloud
+        ? canDowngradeToPersonal.value
+        : permissions.value.canDowngradeToPersonal)
+    ) {
       throw new Error(t('subscription.downgrade.notAllowed'))
     }
   }
@@ -93,9 +98,7 @@ export function useDowngradeToPersonal() {
     // isInitialized (status + balance + plans): a balance/plans failure must
     // not permanently force reactivation onto an otherwise-valid, active
     // subscription. Mirrors the same fix in the transition preview component.
-    return (
-      subscription.value === null || (subscription.value?.isCancelled ?? false)
-    )
+    return subscription.value === null || subscription.value.isCancelled
   }
 
   /** Read-only preview so a caller can decide whether to collect reactivation
@@ -189,11 +192,14 @@ export function useDowngradeToPersonal() {
         )
       }
       ensureCanDowngrade()
-      targetTier = preview.new_plan?.tier
-        ? (toTierKey(preview.new_plan.tier) ?? undefined)
+      const newPlan = Object.hasOwn(preview, 'new_plan')
+        ? preview.new_plan
         : undefined
-      targetCycle = preview.new_plan
-        ? preview.new_plan.duration === 'ANNUAL'
+      targetTier = newPlan?.tier
+        ? (toTierKey(newPlan.tier) ?? undefined)
+        : undefined
+      targetCycle = newPlan
+        ? newPlan.duration === 'ANNUAL'
           ? 'yearly'
           : 'monthly'
         : undefined
@@ -259,7 +265,7 @@ export function useDowngradeToPersonal() {
         cycle: targetCycle,
         checkout_type: 'change'
       })
-      let response: SubscribeResponse | void
+      let response: SettledSubscribeResponse | void
       try {
         response = await subscribe(planSlug, {
           returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,

@@ -5,6 +5,26 @@ import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import type { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
+interface CameraQuaternion {
+  x: number
+  y: number
+  z: number
+  w: number
+}
+interface CameraFrustum {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+type CustomUpConfig =
+  | { hasCustomUp?: false }
+  | { hasCustomUp: true; useCustomUp: boolean }
+interface BaseManager {
+  init(): void
+  dispose(): void
+  reset(): void
+}
 export type MaterialMode =
   | 'original'
   | 'pointCloud'
@@ -12,24 +32,14 @@ export type MaterialMode =
   | 'wireframe'
   | 'depth'
   | 'clay'
+
 export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
+
 export type CameraType = 'perspective' | 'orthographic'
+
 export type BackgroundRenderModeType = 'tiled' | 'panorama'
+
 export type LoadFolder = 'temp' | 'output'
-
-interface CameraQuaternion {
-  x: number
-  y: number
-  z: number
-  w: number
-}
-
-interface CameraFrustum {
-  left: number
-  right: number
-  top: number
-  bottom: number
-}
 
 export interface CameraState {
   position: THREE.Vector3
@@ -37,6 +47,8 @@ export interface CameraState {
   zoom: number
   cameraType: CameraType
   quaternion?: CameraQuaternion
+  useCustomUp?: boolean
+  customUp?: { x: number; y: number; z: number }
   fov?: number
   aspect?: number
   near?: number
@@ -78,11 +90,16 @@ export interface ModelConfig {
   gizmo?: GizmoConfig
 }
 
-export interface CameraConfig {
+/** `Model Config` as persisted in node properties by older workflows. */
+export type StoredModelConfig = Omit<Partial<ModelConfig>, 'gizmo'> & {
+  gizmo?: Partial<GizmoConfig>
+}
+
+export type CameraConfig = {
   cameraType: CameraType
   fov: number
   state?: CameraState
-}
+} & CustomUpConfig
 
 export interface LightConfig {
   intensity: number
@@ -127,12 +144,6 @@ export interface CaptureResult {
   normal: string
 }
 
-interface BaseManager {
-  init(): void
-  dispose(): void
-  reset(): void
-}
-
 export interface AnimationItem {
   name: string
   index: number
@@ -159,6 +170,7 @@ export interface CameraManagerInterface extends BaseManager {
   setFOV(fov: number): void
   setCameraState(state: CameraState): void
   getCameraState(): CameraState
+  setUseCustomUp(use: boolean): void
   handleResize(width: number, height: number): void
   setControls(controls: OrbitControls): void
 }
@@ -174,8 +186,8 @@ export interface LightingManagerInterface extends BaseManager {
 }
 
 export interface ViewHelperManagerInterface extends BaseManager {
-  viewHelper: ViewHelper
-  viewHelperContainer: HTMLDivElement
+  viewHelper: ViewHelper | null
+  viewHelperContainer: HTMLDivElement | null
   createViewHelper(container: Element | HTMLElement): void
   update(delta: number): void
   handleResize(): void
@@ -184,7 +196,7 @@ export interface ViewHelperManagerInterface extends BaseManager {
 export interface EventManagerInterface {
   addEventListener<T>(event: string, callback: EventCallback<T>): void
   removeEventListener<T>(event: string, callback: EventCallback<T>): void
-  emitEvent<T>(event: string, data: T): void
+  emitEvent(event: string, data: unknown): void
 }
 
 export interface AnimationManagerInterface extends BaseManager {

@@ -3,12 +3,6 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-type GltfExtras = {
-  workflow?: string | object
-  prompt?: string | object
-  [key: string]: unknown
-}
-
 type AvifIlocItemExtent = {
   extent_offset: number
   extent_length: number
@@ -64,14 +58,6 @@ export type GltfHeader = {
 export type GltfChunkHeader = {
   chunkLengthBytes: number
   chunkTypeIdentifier: number
-}
-
-export type GltfJsonData = {
-  asset?: {
-    extras?: GltfExtras
-    [key: string]: unknown
-  }
-  [key: string]: unknown
 }
 
 /**

@@ -1,10 +1,10 @@
 import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
+import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternalScript'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { toError } from '@/utils/errorUtil'
-import { createScriptLoader } from '@/utils/loadExternalScript'
 
 import type {
   ChurnkeyHandlerResult,
