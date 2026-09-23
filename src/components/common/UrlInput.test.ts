@@ -73,7 +73,7 @@ describe('UrlInput', () => {
     await nextTick()
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-spinner class with no ARIA role
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-spinner class with no ARIA role
     expect(container.querySelector('.pi-spinner')).not.toBeNull()
   })
 
@@ -88,7 +88,7 @@ describe('UrlInput', () => {
     await nextTick()
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-check class with no ARIA role
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-check class with no ARIA role
     expect(container.querySelector('.pi-check')).not.toBeNull()
   })
 
@@ -103,7 +103,7 @@ describe('UrlInput', () => {
     await nextTick()
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-times class with no ARIA role
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-times class with no ARIA role
     expect(container.querySelector('.pi-times')).not.toBeNull()
   })
 
@@ -116,7 +116,7 @@ describe('UrlInput', () => {
     await nextTick()
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-check class with no ARIA role
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-check class with no ARIA role
     expect(container.querySelector('.pi-check')).not.toBeNull()
   })
 
@@ -135,7 +135,7 @@ describe('UrlInput', () => {
     await nextTick()
 
     // Click the validation icon
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-check class with no ARIA role
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon uses pi-check class with no ARIA role
     const icon = container.querySelector('.pi-check')!
     await user.click(icon)
     await nextTick()
@@ -161,7 +161,7 @@ describe('UrlInput', () => {
     await nextTick()
 
     // Trigger multiple validations in quick succession
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue InputIcon
     const spinner = container.querySelector('.pi-spinner')!
     await user.click(spinner)
     await user.click(spinner)

@@ -90,9 +90,9 @@ describe('EssentialNodeCard', () => {
   }
 
   function getCard(container: Element) {
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
     return container.querySelector('[draggable]') as HTMLElement
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-container, testing-library/no-node-access */
   }
 
   describe('rendering', () => {
@@ -103,9 +103,9 @@ describe('EssentialNodeCard', () => {
 
     it('should render the tile icon', () => {
       const { container } = renderComponent()
-      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+      /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
       const icon = container.querySelector('i')
-      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+      /* oxlint-enable testing-library/no-container, testing-library/no-node-access */
       expect(icon).toHaveClass('icon-s1.5-[lucide--image-up]')
     })
 

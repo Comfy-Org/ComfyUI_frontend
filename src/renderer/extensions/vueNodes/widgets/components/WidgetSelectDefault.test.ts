@@ -315,7 +315,7 @@ describe('WidgetSelectDefault', () => {
 
         // user-event does not model the raw viewport pointerdown that triggers
         // this Reka focus-outside interaction.
-        // eslint-disable-next-line testing-library/prefer-user-event
+        // oxlint-disable-next-line testing-library/prefer-user-event
         await fireEvent.pointerDown(viewport)
         outsideButton.focus()
         await fireEvent.focusIn(outsideButton)

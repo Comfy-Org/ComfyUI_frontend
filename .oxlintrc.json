@@ -24,7 +24,10 @@
     "vitest",
     "vue"
   ],
-  "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
+  "jsPlugins": [
+    "./tools/oxlint-plugins/comfy.ts",
+    "eslint-plugin-unused-imports"
+  ],
   "extends": ["./scripts/primevue-import-allowlist.json"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
@@ -117,6 +120,7 @@
     "typescript/require-array-sort-compare": "error",
     "typescript/triple-slash-reference": "error",
     "typescript/no-unused-vars": "off",
+    "unused-imports/no-unused-imports": "error",
     "unicorn/no-empty-file": "off",
     "vitest/require-mock-type-parameters": "off",
     "vitest/valid-expect": "error",
@@ -295,6 +299,52 @@
             "allowEmptyCatch": true
           }
         ]
+      }
+    },
+    {
+      "files": ["**/*.vue", "**/*.astro"],
+      "rules": {
+        "unused-imports/no-unused-imports": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.ts"],
+      "jsPlugins": ["eslint-plugin-testing-library"],
+      "rules": {
+        "testing-library/no-container": "error",
+        "testing-library/no-debugging-utils": "error",
+        "testing-library/no-node-access": "error",
+        "testing-library/no-wait-for-multiple-assertions": "error",
+        "testing-library/prefer-find-by": "error",
+        "testing-library/prefer-presence-queries": "error",
+        "testing-library/prefer-screen-queries": "error",
+        "testing-library/prefer-user-event": "error"
+      }
+    },
+    {
+      "files": [
+        "**/*.stories.{ts,tsx,js,jsx,mjs,cjs}",
+        "**/*.story.{ts,tsx,js,jsx,mjs,cjs}"
+      ],
+      "jsPlugins": ["eslint-plugin-storybook"],
+      "rules": {
+        "storybook/await-interactions": "error",
+        "storybook/context-in-play-function": "error",
+        "storybook/default-exports": "error",
+        "storybook/hierarchy-separator": "warn",
+        "storybook/no-redundant-story-name": "warn",
+        "storybook/no-renderer-packages": "error",
+        "storybook/prefer-pascal-case": "warn",
+        "storybook/story-exports": "error",
+        "storybook/use-storybook-expect": "error",
+        "storybook/use-storybook-testing-library": "error"
+      }
+    },
+    {
+      "files": [".storybook/main.{ts,js,mts,mjs,cts,cjs}"],
+      "jsPlugins": ["eslint-plugin-storybook"],
+      "rules": {
+        "storybook/no-uninstalled-addons": "error"
       }
     },
     {

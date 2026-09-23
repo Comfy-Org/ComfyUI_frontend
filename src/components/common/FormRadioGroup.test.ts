@@ -197,12 +197,12 @@ describe('FormRadioGroup', () => {
 
       const radios = screen.getAllByRole('radio')
       // PrimeVue RadioButton places aria-describedby on its root <div>, not the <input>
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(radios[0].closest('[aria-describedby]')).toHaveAttribute(
         'aria-describedby',
         'Option 1-label'
       )
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(radios[1].closest('[aria-describedby]')).toHaveAttribute(
         'aria-describedby',
         'Option 2-label'

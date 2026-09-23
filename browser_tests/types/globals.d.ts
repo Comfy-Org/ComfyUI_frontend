@@ -1,5 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-// eslint-disable-next-line unused-imports/no-unused-imports -- used in typeof
+// oxlint-disable-next-line unused-imports/no-unused-imports -- used in typeof
 import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'

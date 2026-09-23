@@ -250,7 +250,7 @@ describe('PackEnableToggle', () => {
       vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
       const { container } = renderComponent()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const warningIcon = container.querySelector(
         '.icon-\\[lucide--triangle-alert\\]'
       )
@@ -264,7 +264,7 @@ describe('PackEnableToggle', () => {
       vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
       const { container } = renderComponent()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const warningIcon = container.querySelector(
         '.icon-\\[lucide--triangle-alert\\]'
       )

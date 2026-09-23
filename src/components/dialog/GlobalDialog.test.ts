@@ -346,13 +346,13 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
 
     await screen.findByRole('dialog')
 
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const header = screen.getByText('Section classes').parentElement
     expect(header?.classList.contains('p-2')).toBe(true)
     // twMerge drops the default header padding in favor of headerClass
     expect(header?.classList.contains('px-4')).toBe(false)
 
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const body = screen.getByTestId('body').parentElement
     expect(body?.classList.contains('p-0')).toBe(true)
     expect(body?.classList.contains('px-4')).toBe(false)

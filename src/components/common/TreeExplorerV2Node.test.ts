@@ -107,7 +107,7 @@ describe('TreeExplorerV2Node', () => {
   }
 
   function getTreeNode(container: Element) {
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     return container.querySelector('div.group\\/tree-node')!
   }
 
@@ -265,7 +265,7 @@ describe('TreeExplorerV2Node', () => {
         item: createMockItem('node')
       })
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('i.icon-\\[comfy--node\\]')).toBeTruthy()
     })
 
@@ -274,11 +274,11 @@ describe('TreeExplorerV2Node', () => {
         item: createMockItem('folder', { icon: 'icon-[lucide--folder]' })
       })
 
-      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+      /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
       expect(
         container.querySelector('i.icon-\\[lucide--folder\\]')
       ).toBeTruthy()
-      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+      /* oxlint-enable testing-library/no-container, testing-library/no-node-access */
     })
 
     it('renders label text', () => {
@@ -297,11 +297,11 @@ describe('TreeExplorerV2Node', () => {
         }
       })
 
-      /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+      /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
       expect(
         container.querySelector('i.icon-\\[lucide--chevron-down\\]')
       ).toBeTruthy()
-      /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+      /* oxlint-enable testing-library/no-container, testing-library/no-node-access */
     })
   })
 

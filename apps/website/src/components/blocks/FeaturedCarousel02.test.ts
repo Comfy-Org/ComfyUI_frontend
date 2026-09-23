@@ -188,13 +188,13 @@ describe('FeaturedCarousel02', () => {
     await nextTick()
 
     // The scroll-snap track has no ARIA role, so reach it by class.
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const track = container.querySelector('.snap-x') as HTMLElement
     expect(track).toBeTruthy()
 
     // happy-dom has no layout, so give the slides deterministic offsets and
     // report a scroll position that lands nearest the third slide.
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     Array.from(track.children).forEach((child, index) => {
       Object.defineProperty(child, 'offsetLeft', {
         value: index * 300,

@@ -51,7 +51,7 @@ describe('WidgetInputText Value Binding', () => {
     if (trigger === 'blur') {
       await fireEvent.blur(input)
     } else {
-      // eslint-disable-next-line testing-library/prefer-user-event
+      // oxlint-disable-next-line testing-library/prefer-user-event
       await fireEvent.keyDown(input, { key: 'Enter' })
     }
     return input
@@ -164,7 +164,7 @@ describe('WidgetInputText Value Binding', () => {
       expect(input).toBeInTheDocument()
 
       // Should not render textarea (that's handled by WidgetTextarea component)
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const textarea = container.querySelector('textarea')
       expect(textarea).not.toBeInTheDocument()
     })

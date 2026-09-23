@@ -53,21 +53,21 @@ describe('TextPreviewWidget', () => {
   describe('Text formatting', () => {
     it('renders plain text content', () => {
       const { container } = renderPreview('hello world')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const span = container.querySelector('span')
       expect(span?.innerHTML).toContain('hello world')
     })
 
     it('converts newlines to <br> tags', () => {
       const { container } = renderPreview('line1\nline2')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const span = container.querySelector('span')
       expect(span?.innerHTML).toContain('<br')
     })
 
     it('auto-links bare http URLs', () => {
       const { container } = renderPreview('visit https://example.com for info')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const anchor = container.querySelector('a')
       expect(anchor).not.toBeNull()
       expect(anchor?.getAttribute('href')).toBe('https://example.com')
@@ -79,7 +79,7 @@ describe('TextPreviewWidget', () => {
       const { container } = renderPreview(
         'see [[Docs|https://docs.example.com]]'
       )
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const anchor = container.querySelector('a')
       expect(anchor).not.toBeNull()
       expect(anchor?.getAttribute('href')).toBe('https://docs.example.com')
@@ -88,7 +88,7 @@ describe('TextPreviewWidget', () => {
 
     it('sets target=_blank and rel=noopener for safety', () => {
       const { container } = renderPreview('[[Docs|https://x.example.com]]')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const anchor = container.querySelector('a')
       expect(anchor?.getAttribute('target')).toBe('_blank')
       expect(anchor?.getAttribute('rel')).toContain('noopener')
@@ -96,9 +96,9 @@ describe('TextPreviewWidget', () => {
 
     it('renders label as plain text when url is not http(s)', () => {
       const { container } = renderPreview('[[Local|javascript:alert(1)]]')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('a')).toBeNull()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('span')?.textContent).toContain('Local')
     })
 
@@ -106,7 +106,7 @@ describe('TextPreviewWidget', () => {
       const { container } = renderPreview(
         '[[<img src=x>|https://x.example.com]]'
       )
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const span = container.querySelector('span')
       expect(span?.innerHTML).toContain('&lt;img')
       expect(span?.innerHTML).not.toContain('<img src')
@@ -116,7 +116,7 @@ describe('TextPreviewWidget', () => {
   describe('Raw HTML sanitisation in modelValue', () => {
     it('drops img tags entirely (strict allowlist is <a> + <br> only)', () => {
       const { container } = renderPreview('<img src=x onerror="alert(1)">')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const img = container.querySelector('img')
       expect(img).toBeNull()
     })
@@ -125,7 +125,7 @@ describe('TextPreviewWidget', () => {
       const { container } = renderPreview(
         'hello<script>window.__xss = true</script>world'
       )
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('script')).toBeNull()
     })
 
@@ -133,7 +133,7 @@ describe('TextPreviewWidget', () => {
       const { container } = renderPreview(
         '<iframe src="https://evil.example.com"></iframe>'
       )
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('iframe')).toBeNull()
     })
 
@@ -141,7 +141,7 @@ describe('TextPreviewWidget', () => {
       const { container } = renderPreview(
         '<a href="javascript:alert(1)">click</a>'
       )
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const anchor = container.querySelector('a')
       expect(anchor).not.toBeNull()
       const href = anchor?.getAttribute('href')
@@ -150,7 +150,7 @@ describe('TextPreviewWidget', () => {
 
     it('preserves the <br> tag produced by nl2br', () => {
       const { container } = renderPreview('line1\nline2')
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('br')).toBeInTheDocument()
     })
   })

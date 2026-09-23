@@ -51,7 +51,7 @@ describe('TagOverflow', () => {
     const list = await screen.findByTestId('model-tags-rest-list')
 
     // Reka listens on the portalled content; userEvent cannot target it here.
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.keyDown(list, { key: 'Escape' })
     await waitFor(() => expect(list.getAttribute('data-state')).toBe('closed'))
   })

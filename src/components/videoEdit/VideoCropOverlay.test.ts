@@ -1,4 +1,4 @@
-﻿/* eslint-disable testing-library/prefer-user-event -- crop dragging needs low-level pointer events */
+﻿/* oxlint-disable testing-library/prefer-user-event -- crop dragging needs low-level pointer events */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'

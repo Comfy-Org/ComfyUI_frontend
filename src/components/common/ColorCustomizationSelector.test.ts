@@ -49,7 +49,7 @@ describe('ColorCustomizationSelector', () => {
 
   /** PrimeVue SelectButton renders toggle buttons with aria-pressed */
   function getToggleButtons(container: Element) {
-    return container.querySelectorAll<HTMLButtonElement>( // eslint-disable-line testing-library/no-node-access -- PrimeVue SelectButton renders toggle buttons without standard ARIA radiogroup roles
+    return container.querySelectorAll<HTMLButtonElement>( // oxlint-disable-line testing-library/no-node-access -- PrimeVue SelectButton renders toggle buttons without standard ARIA radiogroup roles
       '[data-pc-name="pctogglebutton"]'
     )
   }
@@ -80,13 +80,13 @@ describe('ColorCustomizationSelector', () => {
     const { container, user } = renderComponent({ modelValue: '#0d6efd' })
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container -- count buttons to detect the ColorPicker popover trigger appearing
+    // oxlint-disable-next-line testing-library/no-node-access, testing-library/no-container -- count buttons to detect the ColorPicker popover trigger appearing
     const initialButtonCount = container.querySelectorAll('button').length
     const toggleButtons = getToggleButtons(container)
     await user.click(toggleButtons[toggleButtons.length - 1])
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container -- count buttons to detect the ColorPicker popover trigger appearing
+    // oxlint-disable-next-line testing-library/no-node-access, testing-library/no-container -- count buttons to detect the ColorPicker popover trigger appearing
     const afterButtonCount = container.querySelectorAll('button').length
     expect(afterButtonCount).toBe(initialButtonCount + 1)
   })

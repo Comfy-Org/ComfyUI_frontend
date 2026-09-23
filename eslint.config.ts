@@ -7,10 +7,8 @@ import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
 import oxlint from 'eslint-plugin-oxlint'
-import testingLibrary from 'eslint-plugin-testing-library'
 // eslint-config-prettier disables ESLint rules that conflict with formatters (oxfmt)
 import eslintConfigPrettier from 'eslint-config-prettier'
-import { configs as storybookConfigs } from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
@@ -201,13 +199,16 @@ export default defineConfig([
   },
   // Disables ESLint rules that conflict with formatters
   eslintConfigPrettier,
-  // @ts-expect-error Type incompatibility between storybook plugin and ESLint config types
-  storybookConfigs['flat/recommended'],
   importX.flatConfigs.recommended,
   importX.flatConfigs.typescript,
   {
+    // oxlint runs this rule elsewhere; it cannot see template usages in SFCs
+    files: ['**/*.vue'],
+    plugins: { 'unused-imports': unusedImports },
+    rules: { 'unused-imports/no-unused-imports': 'error' }
+  },
+  {
     plugins: {
-      'unused-imports': unusedImports,
       // @ts-expect-error Type incompatibility in i18n plugin
       '@intlify/vue-i18n': pluginI18n
     },
@@ -218,7 +219,6 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-imports': 'error',
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
-      'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
       // Prohibit dark-theme: and dark: prefixes
       'vue/no-restricted-class': ['error', '/^dark(-theme)?:/'],
@@ -295,20 +295,6 @@ export default defineConfig([
       'vue/one-component-per-file': 'off',
       'vue/no-reserved-component-names': 'off',
       'vue/no-unused-emit-declarations': 'off'
-    }
-  },
-  {
-    files: ['**/*.test.ts'],
-    plugins: { 'testing-library': testingLibrary },
-    rules: {
-      'testing-library/prefer-screen-queries': 'error',
-      'testing-library/no-container': 'error',
-      'testing-library/no-node-access': 'error',
-      'testing-library/no-wait-for-multiple-assertions': 'error',
-      'testing-library/prefer-find-by': 'error',
-      'testing-library/prefer-presence-queries': 'error',
-      'testing-library/prefer-user-event': 'error',
-      'testing-library/no-debugging-utils': 'error'
     }
   },
   {

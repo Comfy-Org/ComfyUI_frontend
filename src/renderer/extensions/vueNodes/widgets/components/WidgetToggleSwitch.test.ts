@@ -203,9 +203,9 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
       const offButton = screen.getByText('disabled')
       const onButton = screen.getByText('enabled')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(offButton.closest('button')).toHaveAttribute('data-state', 'on')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(onButton.closest('button')).toHaveAttribute('data-state', 'off')
     })
 
@@ -218,9 +218,9 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
       const offButton = screen.getByText('disabled')
       const onButton = screen.getByText('enabled')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(onButton.closest('button')).toHaveAttribute('data-state', 'on')
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       expect(offButton.closest('button')).toHaveAttribute('data-state', 'off')
     })
 

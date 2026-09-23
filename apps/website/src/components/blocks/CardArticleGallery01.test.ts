@@ -10,7 +10,7 @@ describe('CardArticleGallery01', () => {
     })
 
     // The root <section> carries no ARIA name, so reach it directly.
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const section = container.querySelector('section')
     expect(section).toBeTruthy()
     expect(section?.classList.contains('custom-spacing')).toBe(true)

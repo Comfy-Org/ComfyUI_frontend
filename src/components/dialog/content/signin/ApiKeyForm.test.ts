@@ -78,7 +78,7 @@ describe('ApiKeyForm', () => {
     useAuthStore().loading = true
     const { container } = renderComponent()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const submitButton = container.querySelector('button[type="submit"]')
     expect(submitButton).toBeDisabled()
   })

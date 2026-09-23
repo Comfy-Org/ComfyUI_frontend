@@ -1,4 +1,4 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access -- shape buttons are unlabeled divs and number inputs have no aria labels */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access -- shape buttons are unlabeled divs and number inputs have no aria labels */
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
