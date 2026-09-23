@@ -38,9 +38,29 @@ SQLite tests and PostgreSQL migration/Ent comparison pass after the correction.
 These cover parts of M01/M03–M05/M10/M11 below; real signed PUT/CORS, Cloud asset
 staging, deployed auth and result delivery remain unproved.
 
-This is Cloud-boundary evidence for parts of R01–R03, R06, R08–R11, R14, R15 and R17.
+Cloud commit `96961fe8b8` adds the publication compiler and local review command.
+Frontend commit `ebf6cdf7f2` supplies a second portable export fixture: two nested
+instances with promoted fan-out and ordered previews. Backend tests consume the
+same bytes and assert literal target values and output order. Rejection cases
+cover altered digests, stale selections, missing or foreign targets, ambiguous
+legacy identities, muted hosts, incompatible schemas/defaults, fixed-field
+overrides, duplicate JSON members, unsafe numbers and numeric/product bounds.
+Prepared inputs preserve false/zero/empty values and cannot mutate definitions.
+A 2,048-target string expansion is rejected before graph copying; the allocation
+test caps rejected preparation at 2 MiB per operation. Go race/vet/static checks
+and formatting pass; frontend tests, typecheck, lint, knip and formatting pass.
+
+Follow-up `de129fc7fc` fixes image finalization after real APNG, animated WebP and
+MPO fixtures reproduced acceptance by the header-only inspector. Bounded frame
+inspection now rejects these sequences, unknown frame counts and truncated PNG
+pixel data while accepting static PNG/JPEG/WebP. The media and composed upload
+HTTP suites pass under the race detector. Video frame accounting and reviewed
+per-definition media budgets remain unproved.
+
+This is Cloud-boundary evidence for parts of R01–R03, R06, R08–R11, R14, R15 and R17,
+plus publication evidence for parts of P01–P06, P08/P09 and P11.
 It does not prove comfy-api's durable worker/leases, public-operation isolation,
-publication/default parity, media delivery or real caller billing. The matrix
+public-form/browser/CLI parity, media delivery or real caller billing. The matrix
 below remains the verification contract for the
 [architecture](../architecture/workshop-cloud-workflows.md), not a report of
 completed feature or staging acceptance.

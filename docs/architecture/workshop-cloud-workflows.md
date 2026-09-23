@@ -7,6 +7,16 @@ acceptance. The decision record is
 The [test strategy](../testing/workshop-cloud-workflows.md) defines the evidence
 required before enablement.
 
+Implementation checkpoint, 2026-09-23: the APP exporter and flat/nested contract
+fixtures are committed in the authoring worktree (`34e948eebf`, `ebf6cdf7f2`).
+Cloud's publication compiler and local review command are committed as
+`96961fe8b8`; image frame validation follows in `de129fc7fc`. These validate
+captured bindings and bounded scalar materialization. Live catalog/worker
+compatibility, media staging and definition publication storage remain pending.
+The compiler currently rejects dynamic recipes and supports only its reviewed
+core-node allowlist and image output rules. This is not a runnable-workflow
+release; the six-PR grouping, with at most three Cloud PRs, remains unchanged.
+
 ## Scope and authority
 
 Signed-in callers run reviewed, published Cloud workflows using the author's
