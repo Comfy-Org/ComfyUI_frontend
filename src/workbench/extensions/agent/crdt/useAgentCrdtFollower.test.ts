@@ -123,7 +123,8 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
     constructor(transport: DocFrameTransport) {
       clientState.transport = transport
     }
-  }
+  },
+  SYSTEM_MINT_ACTOR: 'system:mint'
 }))
 
 vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
@@ -722,18 +723,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it.fails('KNOWN BUG: a doc_reset minted for the very first time (actor system:mint) should not clear the live graph, since nothing was tracked by the CRDT doc yet', () => {
-    // `system:mint` is the backend's actor for `ensureDoc`'s lazy,
-    // first-ever doc creation (cloud `crdt.go:2094-2096`), broadcast to
-    // an already-subscribed ("early") follower with no accompanying
-    // `doc_update` (`TestLazyMintBroadcastsDocResetToEarlyFollowers`,
-    // `crdt_premint_follower_test.go:15-55`). There is no prior
-    // CRDT-tracked content to lose in that case, so this reset should be
-    // a no-op for the live graph. `onDocReset`
-    // (`useAgentCrdtFollower.ts` ~473-503) currently calls
-    // `clearForReset` unconditionally, with no carve-out for this actor
-    // -- the same gap `agentCrdtProjection.ts:55-59`'s `clearForReset`
-    // has at the sweep itself.
+  it('a doc_reset minted for the very first time (actor system:mint) does not clear the live graph, since nothing was tracked by the CRDT doc yet', () => {
     const { unmount } = mountFollower('wf-1')
 
     dispatchFrame('doc_reset', {

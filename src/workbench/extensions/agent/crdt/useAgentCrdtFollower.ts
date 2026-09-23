@@ -29,7 +29,7 @@ import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
-import { DocFrameClient } from './docFrameClient'
+import { DocFrameClient, SYSTEM_MINT_ACTOR } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
@@ -486,7 +486,9 @@ function startAgentCrdtFollower(
       actor: detail.actor ?? 'agent-reset',
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
-    projection.clearForReset(detail.workflowId, context)
+    if (detail.actor !== SYSTEM_MINT_ACTOR) {
+      projection.clearForReset(detail.workflowId, context)
+    }
     sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false
@@ -508,7 +510,10 @@ function startAgentCrdtFollower(
     // new doc — otherwise it keeps observing the destroyed one and goes deaf
     // when the socket recovers and updates land in the replacement.
     if (!(event instanceof CustomEvent)) return
-    const detail = event.detail as { workflowId?: unknown } | null
+    const detail = event.detail as {
+      workflowId?: unknown
+      actor?: unknown
+    } | null
     const workflowId = detail?.workflowId
     if (
       isTargetActive.value &&
@@ -517,11 +522,13 @@ function startAgentCrdtFollower(
     ) {
       updatesApplied.value = 0
       confirmedDeletes.clear()
-      projection.clearForReset(workflowId, {
-        source: 'agent-remote',
-        actor: 'agent-lineage',
-        opId: `follower-replaced:${workflowId}`
-      })
+      if (detail?.actor !== SYSTEM_MINT_ACTOR) {
+        projection.clearForReset(workflowId, {
+          source: 'agent-remote',
+          actor: 'agent-lineage',
+          opId: `follower-replaced:${workflowId}`
+        })
+      }
       projection.bind(workflowId, bridge.follower)
     }
   }

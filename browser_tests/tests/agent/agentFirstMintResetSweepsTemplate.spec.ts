@@ -19,9 +19,10 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 /**
- * Repro: opening a template workflow that has never had an agent session
- * bound to it, then sending ANY agent turn (even a read-only one), makes the
- * whole canvas visually disappear and reappear ~0.3-0.5s later.
+ * Regression coverage: opening a template workflow that has never had an
+ * agent session bound to it, then sending ANY agent turn (even a read-only
+ * one), used to make the whole canvas visually disappear and reappear
+ * ~0.3-0.5s later.
  *
  * Backend (`Comfy-Org/cloud`): a turn's turn-start focus step
  * (`focusWorkflow`, `services/agent/internal/loop/tabs.go:380-444`) runs
@@ -35,18 +36,17 @@ import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
  * part is expected/correct backend behavior, not the bug.
  *
  * Frontend (this repo): `AgentCrdtProjection.clearForReset`
- * (`src/workbench/extensions/agent/crdt/agentCrdtProjection.ts:55-59`) sweeps
- * the whole canvas on ANY `doc_reset` frame, unconditionally, with no
+ * (`src/workbench/extensions/agent/crdt/agentCrdtProjection.ts:55-59`) used to
+ * sweep the whole canvas on ANY `doc_reset` frame, unconditionally, with no
  * carve-out for actor `system:mint` -- fired from `useAgentCrdtFollower.ts`'s
- * `onDocReset` (~473-503). That is the bug: a benign first-mint reset (there
- * is no prior CRDT-tracked content to lose -- the template's nodes below are
- * pure local content, never touched by CRDT before this turn) gets treated
- * identically to a real, content-losing reset, wiping the already-rendered
- * template nodes until a resubscribe's catch-up repopulates them.
+ * `onDocReset` (~473-503). A benign first-mint reset (there is no prior
+ * CRDT-tracked content to lose -- the template's nodes below are pure local
+ * content, never touched by CRDT before this turn) was treated identically
+ * to a real, content-losing reset, wiping the already-rendered template
+ * nodes until a resubscribe's catch-up repopulated them.
  *
- * This test does not implement the fix. It pins the current, wrong
- * behavior: the two template nodes should stay put across a `system:mint`
- * reset, and currently do not.
+ * `onDocReset` now skips `clearForReset` when the reset frame's actor is
+ * `system:mint`, so the two template nodes stay put across the reset below.
  */
 
 const WORKFLOW_ID = 'c9a1e5c2-4f3b-4a8e-9d2f-6b7a8c9d0e1f'
@@ -221,16 +221,12 @@ test.describe(
         data: { v: 1, workflow_id: WORKFLOW_ID, seq: 1, actor: 'system:mint' }
       })
 
+      // Visual proof of the (non-)flicker: the canvas should look identical
+      // before and after the mint reset.
       await page.screenshot({
         path: test.info().outputPath('template-after-mint-reset.png')
       })
 
-      // KNOWN BUG (`agentCrdtProjection.ts:55-59` /
-      // `useAgentCrdtFollower.ts`'s `onDocReset` ~473-503): `clearForReset`
-      // sweeps the canvas for ANY reset regardless of actor, so this benign
-      // first-mint reset wipes the template nodes exactly like a real,
-      // content-losing reset would.
-      test.fail()
       await expect(
         vueNodes.getNodeLocator(String(TEMPLATE_NODE_A_ID))
       ).toBeVisible()
