@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type { BillingOperationState } from '@comfyorg/account-core/billing'
@@ -29,9 +29,12 @@ const CHECKOUT_PATH = `${ENTRY_QUERY_PATH}&plan=creator_monthly`
 /** The values this view and its surface read; a test-family key stands in for a deployment's. */
 vi.mock<unknown>(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test',
-  CLOUD_BASE_URL: 'https://testcloud.comfy.org',
-  FIREBASE_OPTIONS: undefined,
-  STRIPE_PUBLISHABLE_KEY: 'pk_test_example'
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org'
+}))
+
+vi.mock(import('@/config/stripeKey'), () => ({
+  billingWebStripeKey: () => 'pk_test_example',
+  useBillingWebStripeKey: () => ref('pk_test_example')
 }))
 
 const workspace = vi.hoisted(() => ({
@@ -75,8 +78,8 @@ const challengeMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
-  createStripeChallengePort: (key: string) => {
-    challengeMocks.createPort(key)
+  createDeferredStripeChallengePort: (getKey: () => string | undefined) => {
+    challengeMocks.createPort(getKey())
     return { handleNextAction: challengeMocks.handleNextAction }
   }
 }))

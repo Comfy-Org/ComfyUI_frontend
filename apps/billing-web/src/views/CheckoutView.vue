@@ -32,9 +32,10 @@ import EmbeddedCheckout from '@/components/EmbeddedCheckout.vue'
 import HostedSurface from '@/components/HostedSurface.vue'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useHostedCopy } from '@/composables/useHostedCopy'
-import { BILLING_WEB_ENV, STRIPE_PUBLISHABLE_KEY } from '@/config/env'
+import { BILLING_WEB_ENV } from '@/config/env'
+import { billingWebStripeKey, useBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
-import { createStripeChallengePort } from '@/session/stripeChallengePort'
+import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
 const { t } = useI18n()
 const { coded } = useHostedCopy()
@@ -54,15 +55,15 @@ const {
   reset: resetQuote
 } = usePreviewSubscribe()
 
-const challengePort =
-  STRIPE_PUBLISHABLE_KEY === undefined
-    ? undefined
-    : createStripeChallengePort(STRIPE_PUBLISHABLE_KEY)
+// Reactive: `stripeKey` still reflects a server key that resolves after this
+// setup runs, instead of the fallback this ref started with.
+const stripeKey = useBillingWebStripeKey()
 
 const checkout = useCheckout({
   openUrl: (url) => window.location.assign(url),
   navigationMode: 'redirect',
-  challengePort
+  // Deferred: reads the key at challenge time, not this setup's snapshot.
+  challengePort: createDeferredStripeChallengePort(billingWebStripeKey)
 })
 
 const quotedPlan = ref<string | undefined>()
@@ -164,7 +165,7 @@ const paymentMethodConfigurationId = computed(
   () => preview.value?.payment_method_configuration_id ?? ''
 )
 
-const publishableKey = STRIPE_PUBLISHABLE_KEY ?? ''
+const publishableKey = computed(() => stripeKey.value ?? '')
 
 const quoting = computed(() => loading.value && summary.value === undefined)
 
