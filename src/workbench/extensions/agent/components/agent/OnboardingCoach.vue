@@ -14,19 +14,27 @@ import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
 import { clampSpotlight } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
-import { useOnboarding } from '../../composables/agent/useOnboarding'
+import {
+  reportOnboardingNotShown,
+  useOnboarding
+} from '../../composables/agent/useOnboarding'
+
+/** Long enough for any panel layout to settle; a target still absent is a regression. */
+const TARGET_MISSING_AFTER_MS = 8000
 
 const { steps, storageKey } = defineProps<{
   steps: CoachStep[]
   storageKey?: string
 }>()
 
-const { active, index, step, isLast, next, finish } = useOnboarding(
+const { active, seen, index, step, isLast, next, finish } = useOnboarding(
   () => steps,
   storageKey
 )
 
+if (seen.value) reportOnboardingNotShown('already_seen', storageKey)
 const titleId = useId()
 const bodyId = useId()
 const target = ref<HTMLElement | null>(null)
@@ -70,9 +78,31 @@ targetObserver.observe(document.body, {
   childList: true,
   subtree: true
 })
+let targetMissingTimer: ReturnType<typeof setTimeout> | undefined
+function reportTargetMissing(): void {
+  if (!reportOnboardingNotShown('target_missing', storageKey)) return
+  reportError(new Error('agent coach target never mounted'), {
+    errorType: 'agent_onboarding_target_missing',
+    context: { step: index.value + 1, target: step.value?.target }
+  })
+}
+watch(
+  [active, target],
+  ([isActive, found]) => {
+    clearTimeout(targetMissingTimer)
+    if (!isActive || found) return
+    targetMissingTimer = setTimeout(
+      reportTargetMissing,
+      TARGET_MISSING_AFTER_MS
+    )
+  },
+  { immediate: true }
+)
+
 onBeforeUnmount(() => {
   targetObserver.disconnect()
   clearTimeout(targetRetryTimer)
+  clearTimeout(targetMissingTimer)
 })
 
 watch(

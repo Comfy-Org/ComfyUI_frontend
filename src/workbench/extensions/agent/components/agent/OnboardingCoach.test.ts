@@ -5,9 +5,17 @@ import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
+import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
+import { resetOnboardingNotShownReports } from '../../composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'
+
+vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const KEY = 'coach-test'
 const STEPS: CoachStep[] = [
@@ -59,6 +67,9 @@ function mount(steps = STEPS) {
 
 beforeEach(() => {
   localStorage.clear()
+  resetOnboardingNotShownReports()
+  vi.mocked(useTelemetry()!.trackAgentOnboardingNotShown).mockClear()
+  vi.mocked(reportError).mockClear()
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
     function (this: HTMLElement) {
       return (
@@ -248,6 +259,107 @@ describe('OnboardingCoach', () => {
 
     unmount()
     expect(overlay.active).toBe(false)
+  })
+
+  it('reports an already-seen tour once per key however often it remounts', async () => {
+    const notShown = vi.mocked(useTelemetry()!.trackAgentOnboardingNotShown)
+    const mountSeen = (storageKey: string) => {
+      localStorage.setItem(storageKey, 'true')
+      return render(OnboardingCoach, {
+        props: { steps: STEPS, storageKey },
+        global: { plugins: [i18n] }
+      })
+    }
+
+    mountSeen('coach-seen-a').unmount()
+    mountSeen('coach-seen-a')
+    expect(notShown).toHaveBeenCalledExactlyOnceWith({ reason: 'already_seen' })
+
+    mountSeen('coach-seen-b')
+    expect(notShown).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports a target that never mounts once the grace period passes, once', async () => {
+    vi.useFakeTimers()
+    try {
+      const notShown = vi.mocked(useTelemetry()!.trackAgentOnboardingNotShown)
+      notShown.mockClear()
+      vi.mocked(reportError).mockClear()
+      render(OnboardingCoach, {
+        props: {
+          steps: [{ ...STEPS[0], target: '#never-mounts' }],
+          storageKey: 'coach-missing-test'
+        },
+        global: { plugins: [i18n] }
+      })
+
+      await vi.advanceTimersByTimeAsync(7_999)
+      expect(reportError).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(notShown).toHaveBeenCalledExactlyOnceWith({
+        reason: 'target_missing'
+      })
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_onboarding_target_missing'
+        })
+      )
+
+      await vi.advanceTimersByTimeAsync(8_000)
+      expect(reportError).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stays quiet when the target arrives inside the grace period', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(reportError).mockClear()
+      render(OnboardingCoach, {
+        props: {
+          steps: [{ ...STEPS[0], target: '#arrives-late' }],
+          storageKey: 'coach-late-ok-test'
+        },
+        global: { plugins: [i18n] }
+      })
+      await vi.advanceTimersByTimeAsync(5_000)
+      const target = document.createElement('div')
+      target.id = 'arrives-late'
+      document.body.appendChild(target)
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stays quiet when it unmounts before the grace period ends', async () => {
+    vi.useFakeTimers()
+    try {
+      const { unmount } = render(OnboardingCoach, {
+        props: {
+          steps: [{ ...STEPS[0], target: '#panel-closed' }],
+          storageKey: 'coach-unmounted-test'
+        },
+        global: { plugins: [i18n] }
+      })
+      await vi.advanceTimersByTimeAsync(5_000)
+      unmount()
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(
+        useTelemetry()!.trackAgentOnboardingNotShown
+      ).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('waits for a late target without letting Escape complete an unseen tour', async () => {

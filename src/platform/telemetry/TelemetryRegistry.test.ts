@@ -353,6 +353,18 @@ describe('TelemetryRegistry', () => {
         expected: { ...workflowAppliedMetadata },
         invoke: (registry) =>
           registry.trackAgentWorkflowApplied(workflowAppliedMetadata)
+      },
+      {
+        method: 'trackAgentConsentNotOffered',
+        expected: { reason: 'boot_undecided' },
+        invoke: (registry) =>
+          registry.trackAgentConsentNotOffered({ reason: 'boot_undecided' })
+      },
+      {
+        method: 'trackAgentOnboardingNotShown',
+        expected: { reason: 'target_missing' },
+        invoke: (registry) =>
+          registry.trackAgentOnboardingNotShown({ reason: 'target_missing' })
       }
     ]
 

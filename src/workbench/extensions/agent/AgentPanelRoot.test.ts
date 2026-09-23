@@ -17,6 +17,14 @@ vi.mock(import('firebase/auth'))
 import { i18n } from '@/i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { clearCoachmarks } from '@/platform/onboarding/coachmarkRegistry'
+import {
+  TOUR_SEEN_SETTING,
+  registerTour
+} from '@/platform/onboarding/onboardingTours'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { resetOnboardingNotShownReports } from './composables/agent/useOnboarding'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
@@ -221,7 +229,9 @@ const telemetry = vi.hoisted(() => ({
   trackAgentAttachButtonClicked: vi.fn(),
   trackAgentCloseButtonClicked: vi.fn(),
   trackAgentPanelOpened: vi.fn(),
-  trackAgentPanelClosed: vi.fn()
+  trackAgentPanelClosed: vi.fn(),
+  trackAgentOnboardingNotShown: vi.fn(),
+  trackOnboardingTour: vi.fn()
 }))
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => telemetry
@@ -522,6 +532,40 @@ describe('AgentPanelRoot onboarding', () => {
     })
     localStorage.removeItem('Comfy.AgentPanel.onboarded')
     localStorage.removeItem(SCOPED_KEY)
+    resetOnboardingNotShownReports()
+    telemetry.trackAgentOnboardingNotShown.mockClear()
+  })
+
+  it('reports a tour held back by another tour, once', async () => {
+    useSettingStore().settingValues[TOUR_SEEN_SETTING] = []
+    registerTour('firstRun', () =>
+      Promise.resolve([{ kind: 'spotlight', name: 'run', placement: 'center' }])
+    )
+    const tourStore = useOnboardingTourStore()
+    await tourStore.startTour('firstRun')
+    expect(tourStore.activeTour).toBe('firstRun')
+    try {
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(
+        telemetry.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'tour_active' })
+    } finally {
+      tourStore.skip()
+      clearCoachmarks()
+    }
+  })
+
+  it('stays quiet in App Mode for a user who already finished the tour', async () => {
+    localStorage.setItem(SCOPED_KEY, 'true')
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalledWith({
+      reason: 'app_mode'
+    })
+    canvasStore.linearMode = false
   })
 
   it('defers the tour in App Mode without completing it or blocking the composer', async () => {
@@ -529,6 +573,9 @@ describe('AgentPanelRoot onboarding', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(
+      telemetry.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
     await userEvent.type(screen.getByRole('textbox'), 'Explain this app')
     expect(screen.getByRole('textbox')).toHaveTextContent('Explain this app')
     expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')

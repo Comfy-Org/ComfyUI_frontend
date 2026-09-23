@@ -3,7 +3,10 @@ import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { useTelemetry } from '@/platform/telemetry'
+import { createOnceGate } from '@/platform/telemetry/onceGate'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { AgentConsentNotOfferedReason } from '@/platform/telemetry/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
@@ -32,12 +35,14 @@ function writeAutoShown(key: string, shown: boolean): boolean {
   }
 }
 
-function prepareAutoShow(key: string): boolean {
+function prepareAutoShow(
+  key: string
+): 'ready' | 'already_offered' | 'storage_unavailable' {
   try {
-    if (localStorage.getItem(key) === 'true') return false
-    return writeAutoShown(key, false)
+    if (localStorage.getItem(key) === 'true') return 'already_offered'
+    return writeAutoShown(key, false) ? 'ready' : 'storage_unavailable'
   } catch {
-    return false
+    return 'storage_unavailable'
   }
 }
 
@@ -163,8 +168,22 @@ export function registerAgentPanelExtension(): void {
         { immediate: true, flush: 'sync' }
       )
 
-      const onboardingHoldsScreen = (): boolean =>
-        firstRunTookScreen.value || onboardingTourStore.activeTour !== null
+      // Keyed like the one-shot offer itself, so each workspace reports its own.
+      const withheldGate = createOnceGate()
+      /** True when this call was the one that reported the reason. */
+      const withholdOffer = (reason: AgentConsentNotOfferedReason): boolean => {
+        const scope = `${resolvedUserInfo.value?.id ?? ''}.${workspaceStore.activeWorkspaceId ?? ''}`
+        if (!withheldGate.first(`${scope}:${reason}`)) return false
+        useTelemetry()?.trackAgentConsentNotOffered({ reason })
+        return true
+      }
+
+      const screenHolder = (): AgentConsentNotOfferedReason | null =>
+        firstRunTookScreen.value
+          ? 'first_run_screen'
+          : onboardingTourStore.activeTour !== null
+            ? 'tour_active'
+            : null
 
       let autoShowInFlight = false
       const offerConsentUnprompted = (): void => {
@@ -172,13 +191,25 @@ export function registerAgentPanelExtension(): void {
         if (!agentPanelStore.enabled || !isLoggedIn.value) return
         if (consentStore.isChecking || consentStore.accepted) return
         // Must precede prepareAutoShow, which burns the one-shot key.
-        if (onboardingHoldsScreen()) return
+        const held = screenHolder()
+        if (held) {
+          withholdOffer(held)
+          return
+        }
 
         const userId = resolvedUserInfo.value?.id
         const workspaceId = workspaceStore.activeWorkspaceId
-        if (!userId || !workspaceId || workspaceStore.isSwitching) return
+        if (!userId || !workspaceId) return
+        if (workspaceStore.isSwitching) {
+          withholdOffer('workspace_switching')
+          return
+        }
         const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
-        if (!prepareAutoShow(key)) return
+        const autoShow = prepareAutoShow(key)
+        if (autoShow !== 'ready') {
+          withholdOffer(autoShow)
+          return
+        }
 
         const offeredIdentity = consentStore.identity
         autoShowInFlight = true
@@ -192,7 +223,11 @@ export function registerAgentPanelExtension(): void {
             onShown: () => {
               writeAutoShown(key, true)
             },
-            canShow: () => !onboardingHoldsScreen()
+            canShow: () => {
+              const heldAtMount = screenHolder()
+              if (heldAtMount) withholdOffer(heldAtMount)
+              return heldAtMount === null
+            }
           }
         ).finally(() => {
           autoShowInFlight = false
@@ -205,7 +240,18 @@ export function registerAgentPanelExtension(): void {
         // rather than landing it on a late first-run screen.
         whenStartupDecided()
           .then((decided) => {
-            if (decided) offerConsentUnprompted()
+            if (decided) {
+              offerConsentUnprompted()
+              return
+            }
+            const firstTime = withholdOffer('boot_undecided')
+            if (!firstTime) return
+            reportError(
+              new Error('first-run startup decision never reported'),
+              {
+                errorType: 'first_run_decision_timeout'
+              }
+            )
           })
           .catch((error: unknown) => {
             reportError(error, {
@@ -222,6 +268,7 @@ export function registerAgentPanelExtension(): void {
             if (!isAccepted) offerWhenStartupDecided()
           })
           .catch((error: unknown) => {
+            withholdOffer('load_failed')
             reportError(error, {
               errorType: 'agent_consent_setting_load_failure'
             })
