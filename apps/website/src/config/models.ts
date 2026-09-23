@@ -30,7 +30,7 @@ export function isModelDirectory(value: string): value is ModelDirectory {
   return MODEL_DIRECTORY_SET.has(value)
 }
 
-function toModelDirectory(value: string, slug: string): ModelDirectory {
+export function toModelDirectory(value: string, slug: string): ModelDirectory {
   if (!isModelDirectory(value)) {
     throw new Error(
       `Unknown model directory ${JSON.stringify(value)} for model "${slug}". ` +
