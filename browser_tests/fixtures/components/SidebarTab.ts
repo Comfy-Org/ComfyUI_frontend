@@ -339,6 +339,8 @@ export class AssetsSidebarTab extends SidebarTab {
 
   // --- Panel chrome ---
   public readonly panelHeader: Locator
+  /** The sidebar panel. Not the scroller — VirtualGrid's root owns overflow. */
+  public readonly contentPanel: Locator
 
   // --- Loading ---
   public readonly skeletonLoaders: Locator
@@ -378,6 +380,7 @@ export class AssetsSidebarTab extends SidebarTab {
     this.sortZToA = page.getByText('Name (Z → A)')
     this.sortLongestFirst = page.getByText('Generation time (longest first)')
     this.sortFastestFirst = page.getByText('Generation time (fastest first)')
+    this.contentPanel = page.locator('.sidebar-content-container')
     this.assetCards = page.locator(
       '.sidebar-content-container [data-asset-id][data-selected]'
     )

@@ -5,6 +5,7 @@ import { ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
@@ -15,13 +16,8 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
-const fetchApi = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => '/api' + route,
-    fetchApi
-  }
-}))
+vi.mock(import('@/scripts/api'))
+const fetchApi = vi.mocked(api.fetchApi)
 
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => false,
@@ -50,6 +46,7 @@ function renderFeedback(assets?: ReplyAsset[]) {
 
 describe('MessageFeedback', () => {
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((route) => '/api' + route)
     vi.stubGlobal(
       'ResizeObserver',
       class {

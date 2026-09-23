@@ -102,8 +102,7 @@ describe('GroupNodeConfig.getLinks', () => {
     const model = [1, 0, 4, 0, 4, 'MODEL'] satisfies GroupNodeLink
     const config = configFrom([clip, model])
 
-    expect(config.linksFrom[1][1]).toEqual([clip])
-    expect(config.linksFrom[1][0]).toEqual([model])
+    expect(config.linksFrom).toEqual({ 1: { 1: [clip], 0: [model] } })
   })
 
   it('indexes incoming links by [target index][target slot]', () => {
@@ -111,8 +110,7 @@ describe('GroupNodeConfig.getLinks', () => {
     const cond = [2, 0, 4, 1, 6, 'CONDITIONING'] satisfies GroupNodeLink
     const config = configFrom([clip, cond])
 
-    expect(config.linksTo[2][0]).toEqual(clip)
-    expect(config.linksTo[4][1]).toEqual(cond)
+    expect(config.linksTo).toEqual({ 2: { 0: clip }, 4: { 1: cond } })
   })
 
   it('accumulates multiple fan-out links from the same origin slot', () => {
@@ -120,7 +118,7 @@ describe('GroupNodeConfig.getLinks', () => {
     const toNeg = [1, 1, 3, 0, 5, 'CLIP'] satisfies GroupNodeLink
     const config = configFrom([toPos, toNeg])
 
-    expect(config.linksFrom[1][1]).toEqual([toPos, toNeg])
+    expect(config.linksFrom).toEqual({ 1: { 1: [toPos, toNeg] } })
   })
 
   it('skips links that have a null endpoint', () => {
@@ -128,13 +126,12 @@ describe('GroupNodeConfig.getLinks', () => {
     const broken = [null, 1, 2, 0, 4, 'CLIP'] satisfies GroupNodeLink
     const config = configFrom([valid, broken])
 
-    expect(config.linksFrom[1][1]).toEqual([valid])
-    expect(Object.keys(config.linksFrom)).toEqual(['1'])
+    expect(config.linksFrom).toEqual({ 1: { 1: [valid] } })
   })
 
   it('maps external links by [node index][slot] to their type', () => {
     const config = configFrom([], [[0, 1, 'IMAGE']])
-    expect(config.externalFrom[0][1]).toBe('IMAGE')
+    expect(config.externalFrom).toEqual({ 0: { 1: 'IMAGE' } })
   })
 })
 

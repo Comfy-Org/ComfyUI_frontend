@@ -57,14 +57,6 @@ vi.mock(import('@/composables/maskeditor/useMaskEditorLoader'), () => ({
   useMaskEditorLoader: () => mockMaskEditorLoader
 }))
 
-vi.mock<unknown>(import('@/components/common/LoadingOverlay.vue'), () => ({
-  default: {
-    name: 'LoadingOverlayStub',
-    props: ['loading', 'size'],
-    template: `<div data-testid="loading-overlay" :data-loading="loading" />`
-  }
-}))
-
 vi.mock<unknown>(import('@/components/maskeditor/ToolPanel.vue'), () => ({
   default: {
     name: 'ToolPanelStub',

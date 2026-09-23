@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Markdownコードブロックを含むテキスト内の最初の有効なJSONオブジェクトから、キーの値を抽出します。",
     "display_name": "JSONから文字列を抽出",
     "inputs": {
       "json_string": {
@@ -13234,6 +13235,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "より精細なサーフェスディテールを持つ高忠実度なジオメトリのために、追加のリファインメント処理を実行します。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "ウルトラパスの解像度：2kでは2048³、4kでは4096³で実行し、最高水準の表面ディテールを実現します。4kにはmeshy-7.1以降が必要です。ultra_modeが有効な場合にのみ使用されます。"
       }
     },
     "outputs": {
@@ -13300,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "2048³で追加のリファインメントパスを実行し、より細かな表面ディテールを備えた高忠実度のジオメトリを生成します。"
       }
     },
     "outputs": {
@@ -13441,6 +13450,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "より精細なサーフェスディテールを持つ高忠実度なジオメトリのために、追加のリファインメント処理を実行します。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "ウルトラパスの解像度：2kでは2048³、4kでは4096³で実行し、最高水準の表面ディテールを実現します。4kにはmeshy-7.1以降が必要です。ultra_modeが有効な場合にのみ使用されます。"
       }
     },
     "outputs": {
