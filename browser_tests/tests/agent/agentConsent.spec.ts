@@ -586,6 +586,17 @@ test.describe(
         '/?desktop_login_code=dlc_e2eApprovalCodeFE2808abcdefghijklmnopqrstu'
     })
 
+    test.beforeEach(async ({ page }) => {
+      await page.route('**/api/auth/desktop-login-codes/redeem', (route) =>
+        route.fulfill({
+          status: 200,
+          json: {
+            status: 'redeemed'
+          } satisfies DesktopLoginCodeRedeemResponse
+        })
+      )
+    })
+
     test('waits for the approval before offering Agent', async ({
       comfyPage,
       agentPanel,
@@ -598,15 +609,6 @@ test.describe(
       const consent = page.getByRole('dialog', {
         name: enMessages.agent.consent.title
       })
-      await page.route('**/api/auth/desktop-login-codes/redeem', (route) =>
-        route.fulfill({
-          status: 200,
-          json: {
-            status: 'redeemed'
-          } satisfies DesktopLoginCodeRedeemResponse
-        })
-      )
-
       const approve = approval.getByRole('button', {
         name: enMessages.g.confirm
       })

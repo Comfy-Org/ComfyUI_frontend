@@ -628,6 +628,27 @@ describe('AgentPanel extension flag gate', () => {
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
   })
 
+  it('withholds a card whose Getting Started screen took over while the offer was in flight', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_onAccept, hooks) => {
+        firstRunTookScreen.value = true
+        if (hooks?.canShow?.() === false) return
+        hooks?.onShown?.()
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    await flush()
+
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('false')
+    expect(agentStore.open).not.toHaveBeenCalled()
+  })
+
   it('does not re-read consent on every dialog close while the read keeps failing', async () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
@@ -712,6 +733,14 @@ describe('AgentPanel extension flag gate', () => {
     async ({ userId, workspaceId }) => {
       mocks.flagEnabled = true
       Object.assign(consentStore, { accepted: false, isChecking: false })
+      vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+        async (_onAccept, hooks) => {
+          hooks?.onShown?.()
+          openDialog(CONSENT_DIALOG_KEY)
+          await flush()
+          closeDialog(CONSENT_DIALOG_KEY)
+        }
+      )
 
       await loadEntryAndSetup()
       await flush()

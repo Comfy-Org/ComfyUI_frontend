@@ -180,11 +180,11 @@ export function registerAgentPanelExtension(): void {
         offerHeld.value = true
         return true
       }
-      let consentCardSeen = false
+      let consentCardSeenBy: string | null = null
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
         () => {
-          consentCardSeen = true
+          consentCardSeenBy = consentStore.identity
         }
       )
 
@@ -193,7 +193,12 @@ export function registerAgentPanelExtension(): void {
         if (autoShowInFlight) return
         if (!agentPanelStore.enabled || !isLoggedIn.value) return
         if (consentStore.isChecking || consentStore.accepted) return
-        if (firstRunTookScreen.value || consentCardSeen) return
+        if (firstRunTookScreen.value) return
+        if (
+          consentCardSeenBy !== null &&
+          consentCardSeenBy === consentStore.identity
+        )
+          return
         // Must precede prepareAutoShow, which burns the one-shot key.
         if (holdIfScreenBusy()) return
 
@@ -215,7 +220,7 @@ export function registerAgentPanelExtension(): void {
             onShown: () => {
               writeAutoShown(key, true)
             },
-            canShow: () => !holdIfScreenBusy()
+            canShow: () => !firstRunTookScreen.value && !holdIfScreenBusy()
           }
         ).finally(() => {
           autoShowInFlight = false
