@@ -14,7 +14,8 @@ import { WORKSHOP_CLOUD_BASE_URL } from '../config/workshop-env'
 import { useWorkshopSession } from '../config/workshop-session-state'
 import { refreshWorkshopCredits } from '../config/workshop-credits'
 
-type RunState =
+/** Where one run has got to, and what the page can say about it. */
+export type RunState =
   | { phase: 'idle' }
   | { phase: 'uploading' | 'submitting' | 'reconnecting' }
   | { phase: 'tracking'; job: WorkflowJob }

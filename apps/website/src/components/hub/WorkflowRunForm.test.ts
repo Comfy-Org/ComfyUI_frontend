@@ -1,0 +1,136 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref, shallowRef } from 'vue'
+
+import type { AccountCredential } from '@comfyorg/account-core/session'
+import { zJobDetailResponse } from '@comfyorg/ingest-types/zod'
+
+import type { RunState } from '../../composables/useWorkflowRun'
+import type { WorkflowField } from '../../config/workflow-fields'
+import WorkflowRunForm from './WorkflowRunForm.vue'
+
+const credential = {
+  token: 't',
+  expiresAt: Date.now() + 60_000,
+  uid: 'u1',
+  workspace: { id: 'w1', name: 'Personal', type: 'personal' },
+  role: 'owner',
+  permissions: []
+} satisfies AccountCredential
+
+const running = zJobDetailResponse.parse({
+  id: '11111111-2222-3333-4444-555555555555',
+  status: 'in_progress',
+  create_time: 0n,
+  update_time: 0n
+})
+
+const state = shallowRef<RunState>({ phase: 'idle' })
+const inFlight = ref(false)
+const signedIn = ref<AccountCredential | undefined>(credential)
+
+// The composable hands the component computed views of its state, so the
+// stand-in has to as well or the component reads a different shape.
+const busy = computed(() => inFlight.value)
+const session = computed(() => signedIn.value)
+const settled = computed(() => true)
+const run = vi.fn()
+const cancel = vi.fn()
+
+// The run itself is the composable's, and it has its own tests. What this
+// component owes is the questions, the one way to start, and the way out.
+vi.mock(import('../../composables/useWorkflowRun'), () => ({
+  useWorkflowRun: () => ({
+    state,
+    values: ref<Record<string, string | number>>({}),
+    files: ref({}),
+    outputs: ref([]),
+    busy,
+    session,
+    settled,
+    run,
+    resume: vi.fn(),
+    cancel
+  })
+}))
+
+const fields: readonly WorkflowField[] = [
+  { node: '1', input: 'image', label: 'Your image', kind: 'image' },
+  { node: '2', input: 'prompt', label: 'What to change', kind: 'text' }
+]
+
+const graph = {
+  '1': { class_type: 'LoadImage', inputs: { image: 'example.png' } },
+  '2': { class_type: 'Text', inputs: { prompt: 'make it night' } }
+}
+
+const mount = () => render(WorkflowRunForm, { props: { fields, graph } })
+
+describe('WorkflowRunForm', () => {
+  beforeEach(() => {
+    state.value = { phase: 'idle' }
+    inFlight.value = false
+    signedIn.value = credential
+  })
+
+  it('asks one question per answer the graph needs', () => {
+    mount()
+
+    expect(screen.getByRole('group', { name: 'Your image' })).toBeTruthy()
+    expect(screen.getByLabelText('What to change')).toBeTruthy()
+  })
+
+  it('starts the run when the reader asks for it', async () => {
+    mount()
+
+    await userEvent.setup().click(screen.getByTestId('workflow-run-button'))
+
+    expect(run).toHaveBeenCalled()
+  })
+
+  // Nothing can be spent until somebody is signed in, so a signed-out reader
+  // is offered the way in rather than a button that refuses them.
+  it('offers the way in instead of Run when nobody is signed in', () => {
+    signedIn.value = undefined
+    mount()
+
+    expect(screen.getByTestId('workflow-run-signin')).toBeTruthy()
+    expect(screen.queryByTestId('workflow-run-button')).toBeNull()
+  })
+
+  it('refuses a second Run while one is already going', () => {
+    inFlight.value = true
+    mount()
+
+    expect(screen.getByTestId('workflow-run-button').matches(':disabled')).toBe(
+      true
+    )
+  })
+
+  // A queued run is costing something, so there is a way to stop it while it
+  // is going and none before it starts.
+  it('offers to stop a run only while one is running', () => {
+    mount()
+
+    expect(screen.queryByTestId('workflow-run-cancel')).toBeNull()
+
+    state.value = { phase: 'tracking', job: running }
+    mount()
+
+    expect(screen.getAllByTestId('workflow-run-cancel')).not.toHaveLength(0)
+  })
+
+  it('says what went wrong rather than going quiet', () => {
+    state.value = {
+      phase: 'error',
+      message: 'Cloud could not accept this workflow.',
+      retrySafe: false
+    }
+    mount()
+
+    expect(screen.getByTestId('workflow-run-error').textContent).toContain(
+      'Cloud could not accept this workflow.'
+    )
+  })
+})
