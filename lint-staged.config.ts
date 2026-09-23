@@ -25,11 +25,8 @@ export default function lintStaged(stagedFiles: string[]) {
       /\.(js|ts|tsx|vue|mts|json|yaml|md)$/.test(fileName) &&
       !fileName.endsWith('pnpm-lock.yaml')
   )
-  const codeFiles = relativePaths.filter(
-    (fileName) =>
-      /\.(js|ts|tsx|vue|mts)$/.test(fileName) &&
-      !fileName.startsWith('packages/ingest-types/src/types.gen.ts') &&
-      !fileName.startsWith('packages/shared-frontend-utils/')
+  const codeFiles = relativePaths.filter((fileName) =>
+    /\.(js|ts|tsx|vue|mts)$/.test(fileName)
   )
   const styleFiles = relativePaths.filter((fileName) =>
     /\.(css|vue)$/.test(fileName)
