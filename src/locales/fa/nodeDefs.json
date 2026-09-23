@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "تا ۵ تصویر مرجع را با هدایت یک prompt متنی و با استفاده از مدل Hunyuan Image تنسنت ویرایش یا ترکیب می‌کند.",
+    "display_name": "تصویر HY تنسنت: ویرایش",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که باید استفاده شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت_ابعاد"
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reference_detail": {
+        "name": "جزئیات_مرجع"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "واترمارک"
+      },
+      "model_width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "با استفاده از مدل Hunyuan Image تنسنت، از یک prompt متنی تصویر تولید می‌کند.",
+    "display_name": "تصویر HY تنسنت: متن به تصویر",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که باید استفاده شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت_ابعاد"
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "واترمارک"
+      },
+      "model_width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -23968,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "prompt_سیستم",
+        "tooltip": "prompt سیستم را در قالب گفت‌وگوی مدل جایگزین می‌کند. هنگامی که از قالب پیش‌فرض استفاده نشود، نادیده گرفته می‌شود."
+      },
       "thinking": {
         "name": "تفکر",
         "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
@@ -23984,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "متن تولید شده",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تفکر",
         "tooltip": null
       }
     }
@@ -24034,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "prompt_سیستم",
+        "tooltip": "prompt سیستم را در قالب گفت‌وگوی مدل جایگزین می‌کند. هنگامی که از قالب پیش‌فرض استفاده نشود، نادیده گرفته می‌شود."
+      },
       "thinking": {
         "name": "تفکر",
         "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
@@ -24050,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "متن تولید شده",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تفکر",
         "tooltip": null
       }
     }

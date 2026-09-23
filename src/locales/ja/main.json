@@ -2223,8 +2223,10 @@
     "star": "星"
   },
   "imageCompare": {
+    "afterAlt": "後の画像",
     "batchLabelA": "A：",
     "batchLabelB": "B：",
+    "beforeAlt": "前の画像",
     "noImages": "比較する画像がありません"
   },
   "imageCrop": {

@@ -2223,8 +2223,10 @@
     "star": "نجمة"
   },
   "imageCompare": {
+    "afterAlt": "الصورة بعد",
     "batchLabelA": "أ: ",
     "batchLabelB": "ب: ",
+    "beforeAlt": "الصورة قبل",
     "noImages": "لا توجد صور للمقارنة"
   },
   "imageCrop": {

@@ -2223,8 +2223,10 @@
     "star": "Yıldız"
   },
   "imageCompare": {
+    "afterAlt": "Sonraki görüntü",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Önceki görüntü",
     "noImages": "Karşılaştırılacak görsel yok"
   },
   "imageCrop": {

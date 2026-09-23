@@ -2223,8 +2223,10 @@
     "star": "星號"
   },
   "imageCompare": {
+    "afterAlt": "後圖",
     "batchLabelA": "A：",
     "batchLabelB": "B：",
+    "beforeAlt": "前圖",
     "noImages": "沒有可比較的圖像"
   },
   "imageCrop": {

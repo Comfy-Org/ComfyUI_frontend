@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Tencent의 Hunyuan Image 모델을 사용하여 텍스트 프롬프트의 안내에 따라 최대 5개의 참조 이미지를 편집하거나 결합합니다.",
+    "display_name": "Tencent HY Image: 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_reference_detail": {
+        "name": "참조 세부사항"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_watermark": {
+        "name": "워터마크"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Tencent의 Hunyuan Image 모델을 사용하여 텍스트 프롬프트에서 이미지를 생성합니다.",
+    "display_name": "Tencent HY Image: 텍스트를 이미지로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_watermark": {
+        "name": "워터마크"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -23968,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 채팅 템플릿에서 시스템 프롬프트를 대체합니다. 기본 템플릿을 사용하지 않을 때는 무시됩니다."
+      },
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
@@ -23984,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "생성된 텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "사고 과정",
         "tooltip": null
       }
     }
@@ -24034,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 채팅 템플릿에서 시스템 프롬프트를 대체합니다. 기본 템플릿을 사용하지 않을 때는 무시됩니다."
+      },
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
@@ -24050,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "생성된 텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "사고 과정",
         "tooltip": null
       }
     }
