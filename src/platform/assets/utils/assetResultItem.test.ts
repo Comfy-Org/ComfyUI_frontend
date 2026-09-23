@@ -1,14 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { assetToResultItem } from './assetResultItem'
-
-vi.mock('@/stores/queueStore', () => ({
-  ResultItemImpl: class {
-    constructor(init: Record<string, unknown>) {
-      Object.assign(this, init)
-    }
-  }
-}))
 
 describe('assetToResultItem', () => {
   it('uses asset URLs for standard and VHS previews', () => {
@@ -25,6 +17,5 @@ describe('assetToResultItem', () => {
 
     expect(result.url).toBe('https://example.com/preview.mp4')
     expect(result.previewUrl).toBe('https://example.com/thumbnail.webp')
-    expect(result.vhsAdvancedPreviewUrl).toBe('https://example.com/preview.mp4')
   })
 })

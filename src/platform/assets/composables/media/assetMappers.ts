@@ -12,6 +12,18 @@ import {
   isPreviewableMediaType
 } from '@/utils/formatUtil'
 
+export function getOutputGroupAssets(
+  asset: AssetItem
+): readonly AssetItem[] | null {
+  return 'outputGroup' in asset &&
+    typeof asset.outputGroup === 'object' &&
+    asset.outputGroup !== null &&
+    'assets' in asset.outputGroup &&
+    Array.isArray(asset.outputGroup.assets)
+    ? asset.outputGroup.assets
+    : null
+}
+
 /**
  * Extract asset type from tags array
  * @param tags The tags array from AssetItem
