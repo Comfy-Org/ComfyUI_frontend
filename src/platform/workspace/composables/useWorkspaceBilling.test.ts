@@ -60,6 +60,20 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
+// The hosted-billing opener refreshes through the shared context, not this
+// instance's own fetchStatus/fetchBalance. Stubbed with fixed fns (the
+// automock builds a fresh, unobservable pair on every call) so a test can
+// assert the opener's refresh ran, without chaining into
+// useBillingRouting/useFreeTierQuota/useAuthStore.
+const mockBillingContextFetchStatus = vi.hoisted(() => vi.fn(async () => {}))
+const mockBillingContextFetchBalance = vi.hoisted(() => vi.fn(async () => {}))
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
+  useBillingContext: () => ({
+    fetchStatus: mockBillingContextFetchStatus,
+    fetchBalance: mockBillingContextFetchBalance
+  })
+}))
+
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useBillingPlans'),
   () => ({
@@ -855,6 +869,10 @@ describe('useWorkspaceBilling', () => {
     })
 
     afterEach(() => {
+      // Flushes any return-refresh listener a test armed but never fired
+      // (openHostedBillingTab's own, independent of this instance's
+      // stopPortalReturnRefresh), so it cannot fire twice for a later test.
+      window.dispatchEvent(new Event('focus'))
       mockRail.enabled = false
       localStorage.clear()
       Object.defineProperty(window, 'location', {
@@ -909,7 +927,8 @@ describe('useWorkspaceBilling', () => {
     ] as const)(
       'opens the hosted payment-methods route on %s',
       async ([, railEnabled]) => {
-        const openSpy = vi.fn(() => window)
+        const tab = { location: { href: '' } } as unknown as Window
+        const openSpy = vi.fn(() => tab)
         vi.stubGlobal('open', openSpy)
         vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
         localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
@@ -918,16 +937,18 @@ describe('useWorkspaceBilling', () => {
         const billing = setupBilling()
         await billing.manageSubscription()
 
-        expect(openSpy).toHaveBeenCalledWith(
-          'https://billing.comfy.org/v1/payment-methods?product=comfyui&return_to=comfyui_workspace',
-          '_blank'
+        // The disowned-tab technique opens a blank tab before navigating it,
+        // so the hosted URL lands on the tab handle, not on the open() call.
+        expect(openSpy).toHaveBeenCalledWith('', '_blank')
+        expect(tab.location.href).toBe(
+          'https://billing.comfy.org/v1/payment-methods?product=comfyui&return_to=comfyui_workspace'
         )
         expect(mockWorkspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()
         expect(mockRail.openPaymentPortal).not.toHaveBeenCalled()
 
-        mockWorkspaceApi.getBillingStatus.mockClear()
+        mockBillingContextFetchStatus.mockClear()
         document.dispatchEvent(new Event('visibilitychange'))
-        expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
+        expect(mockBillingContextFetchStatus).toHaveBeenCalledTimes(1)
       }
     )
 
@@ -953,10 +974,7 @@ describe('useWorkspaceBilling', () => {
         const billing = setupBilling()
         await billing.manageSubscription()
 
-        expect(openSpy).toHaveBeenCalledWith(
-          'https://billing.comfy.org/v1/payment-methods?product=comfyui&return_to=comfyui_workspace',
-          '_blank'
-        )
+        expect(openSpy).toHaveBeenCalledWith('', '_blank')
         expect(openSpy).toHaveBeenCalledWith(fallbackUrl, '_blank')
       }
     )
@@ -988,7 +1006,7 @@ describe('useWorkspaceBilling', () => {
     it('clears a failure from the previous attempt when the hosted route opens', async () => {
       vi.stubGlobal(
         'open',
-        vi.fn(() => window)
+        vi.fn(() => ({ location: { href: '' } }) as unknown as Window)
       )
       localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
       mockWorkspaceApi.getPaymentPortalUrl.mockRejectedValue(

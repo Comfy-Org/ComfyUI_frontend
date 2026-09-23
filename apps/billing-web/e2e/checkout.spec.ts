@@ -5,6 +5,7 @@
  * — that is covered by the live test plan, not here.
  */
 import type { MockCloud } from './fixtures/cloud'
+import { E2E_USER } from './fixtures/env'
 import {
   challengeRequiredOperation,
   declinedOperation,
@@ -185,7 +186,7 @@ test('reloading on the result page while pending recovers it and shows the settl
     page.getByRole('link', { name: 'Return to ComfyUI' })
   ).toHaveAttribute(
     'href',
-    'https://testcloud.comfy.org/?billing_result=success&billing_ref=op_pending'
+    `https://testcloud.comfy.org/?workspace=${E2E_USER.workspaceId}&billing_result=success&billing_ref=op_pending`
   )
   expect(
     cloud.requests.some((request) => request.path === '/billing/ops/op_pending')

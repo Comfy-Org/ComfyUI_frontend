@@ -105,6 +105,9 @@
       "workshop": "Comfy Workshop",
       "models": "Comfy Models"
     },
+    "workspace": {
+      "current": "Billing for {name}"
+    },
     "entryError": {
       "title": "We couldn't open that billing page",
       "unknown": "That link isn't a billing request we recognise. Go back and try again.",
@@ -114,12 +117,14 @@
       "UNKNOWN_RETURN_TARGET": "That link doesn't name a place we can send you back to.",
       "INVALID_PLAN": "That link names a plan we can't read.",
       "INVALID_CORRELATION_ID": "That link carries a reference we can't read.",
-      "INVALID_WORKSPACE_ID": "That link names a workspace we can't read."
+      "INVALID_WORKSPACE_ID": "That link names a workspace we can't read.",
+      "INVALID_TEAM_CREDIT_STOP_ID": "That link names a credit amount we can't read."
     },
     "failure": {
       "unknown": "Something went wrong. Please try again.",
       "NOT_AUTHENTICATED": "Your session expired. Sign in again to continue.",
       "ACCESS_DENIED": "This account can't manage billing for that workspace.",
+      "WORKSPACE_NOT_FOUND": "This account can't access that workspace. Reopen billing from the app while signed in with the right account.",
       "NOT_FOUND": "We couldn't find that billing record.",
       "CONFLICT": "That change conflicts with your current subscription.",
       "SUPERSEDED": "Your workspace changed while we were loading. Please try again.",

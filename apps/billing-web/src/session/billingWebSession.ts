@@ -12,6 +12,16 @@
  * occur. `phase === 'pending'` is "Firebase has not answered yet", distinct
  * from a signed-out `null`. A caller that needs a token still awaits
  * `ensureFresh()` immediately before use.
+ *
+ * `autoMint: false`: the identity port's own warm-up mint would target
+ * whatever `workspaceId` the client was constructed with, frozen at that
+ * moment — but the entry binding can change before anyone has signed in (a
+ * later link rebinding the tab while it is signed out), and a frozen default
+ * would then mint the workspace the tab is leaving instead of the one it was
+ * rebound to. The sign-in flow (`useSignInController`) is the sole mint
+ * driver instead, reading the binding live at the moment it actually mints.
+ * A later rebind after that reaches requests through the live `workspaceId`
+ * getter the transport passes per call (see `billingWebClient.ts`).
  */
 import type { User } from 'firebase/auth'
 import { computed, shallowRef } from 'vue'
@@ -63,7 +73,11 @@ let client: SessionClient<User> | undefined
 
 export function billingWebSessionClient(): SessionClient<User> {
   client ??= createSessionClient<User>(
-    { exchangeUrl: `${CLOUD_BASE_URL}/api/auth/token`, storage },
+    {
+      exchangeUrl: `${CLOUD_BASE_URL}/api/auth/token`,
+      storage,
+      autoMint: false
+    },
     billingWebIdentity
   )
   return client
@@ -111,6 +125,9 @@ export function useBillingWebSession() {
       snapshot.value.phase === 'authenticated'
         ? snapshot.value.session
         : undefined
+    ),
+    failure: computed(() =>
+      snapshot.value.phase === 'error' ? snapshot.value.failure : undefined
     )
   }
 }
