@@ -12,6 +12,16 @@ import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
 /**
+ * PM-1575: a `doc_update` whose `catchUp` distinguishes a subscribe's own
+ * one-time state-vector sync from a live update unrelated to any in-flight
+ * tool call. Consumers that need "did a LIVE update land" must read this
+ * flag rather than treat every dispatched `doc_update` as one.
+ */
+export interface ClassifiedDocUpdate extends DocUpdate {
+  catchUp: boolean
+}
+
+/**
  * Outbound frames are advisory: the follower's correctness never depends on one
  * arriving. A transport that cannot carry a frame reports `false`; one that
  * throws (the shape `apiTransport` had before this seam was fixed, and the shape
@@ -328,7 +338,13 @@ export class LayoutFollowerBridge extends EventTarget {
       return
     }
 
-    this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
+    const classifiedUpdate: ClassifiedDocUpdate = {
+      ...update,
+      catchUp: isCatchUp
+    }
+    this.dispatchEvent(
+      new CustomEvent('doc_update', { detail: classifiedUpdate })
+    )
   }
 
   /**

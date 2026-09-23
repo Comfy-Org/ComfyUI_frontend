@@ -662,6 +662,7 @@ describe('useAgentCrdtFollower', () => {
       expect(status().outcomes).toEqual({
         received: 1,
         applied: 1,
+        appliedLive: 1,
         skipped: 0,
         errored: 0,
         gap: 0,
@@ -779,6 +780,23 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('counts appliedLive for a live update but not for a subscribe catch-up frame', () => {
+      const { unmount, status } = mountFollower('wf-1')
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 4, catchUp: true })
+      expect(status().outcomes.applied).toBe(1)
+      expect(status().outcomes.appliedLive).toBe(0)
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 5,
+        catchUp: false
+      })
+      expect(status().outcomes.applied).toBe(2)
+      expect(status().outcomes.appliedLive).toBe(1)
+      unmount()
+    })
+
     it('accumulates received/applied/skipped across mixed frames without resetting on unrelated activity', () => {
       const { unmount, status } = mountFollower('wf-1')
 
@@ -792,6 +810,7 @@ describe('useAgentCrdtFollower', () => {
       expect(status().outcomes).toEqual({
         received: 3,
         applied: 2,
+        appliedLive: 2,
         skipped: 1,
         errored: 1,
         gap: 1,
