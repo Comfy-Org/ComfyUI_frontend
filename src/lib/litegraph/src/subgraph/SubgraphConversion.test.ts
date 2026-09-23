@@ -23,6 +23,7 @@ import {
   createTestNode,
   createTestWidgetNode
 } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import type { reportError } from '@/platform/telemetry/reportError'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -39,8 +40,14 @@ import {
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
+const mockReportError = vi.hoisted(() => vi.fn<typeof reportError>())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
 beforeEach(() => {
   resetSubgraphFixtureState()
+  mockReportError.mockClear()
 })
 
 function expectUnpackRejected(graph: LGraph, subgraphNode: SubgraphNode): void {
@@ -651,20 +658,23 @@ describe('SubgraphConversion', () => {
       innerLink.origin_slot = 9999
       expectUnpackRejected(graph, subgraphNode)
     })
-    it('Should leave the graph untouched when a subgraph link has an invalid target slot', () => {
-      const subgraph = createTestSubgraph()
-      const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
-      graph.add(subgraphNode)
+    it.for([9999, 0.5])(
+      'Should leave the graph untouched when a subgraph link has invalid target slot %s',
+      (invalidSlot) => {
+        const subgraph = createTestSubgraph()
+        const subgraphNode = createTestSubgraphNode(subgraph)
+        const graph = subgraphNode.graph!
+        graph.add(subgraphNode)
 
-      const innerNode1 = createTestNode(subgraph, [], ['number'])
-      const innerNode2 = createTestNode(subgraph, ['number'], [])
-      const innerLink = innerNode1.connect(0, innerNode2, 0)
-      assert(innerLink)
+        const innerNode1 = createTestNode(subgraph, [], ['number'])
+        const innerNode2 = createTestNode(subgraph, ['number'], [])
+        const innerLink = innerNode1.connect(0, innerNode2, 0)
+        assert(innerLink)
 
-      innerLink.target_slot = 9999
-      expectUnpackRejected(graph, subgraphNode)
-    })
+        innerLink.target_slot = invalidSlot
+        expectUnpackRejected(graph, subgraphNode)
+      }
+    )
     it.for([9999, 0.5])(
       'Should leave the graph untouched when a subgraph input link has invalid boundary slot %s',
       (invalidSlot) => {
@@ -838,22 +848,31 @@ describe('SubgraphConversion', () => {
 
       it('Should not report a missing link for a promoted widget input', () => {
         const { graph, subgraphNode } = createPromotedWidgetSubgraph()
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
         graph.unpackSubgraph(subgraphNode)
 
-        expect(errorSpy).not.toHaveBeenCalled()
+        expect(mockReportError).not.toHaveBeenCalled()
       })
 
       it('Should report a missing host input and continue unpacking', () => {
         const { graph, subgraphNode } = createPromotedWidgetSubgraph()
+        const [link] = subgraphNode.subgraph.links.values()
+        assert(link)
         subgraphNode.removeInput(0)
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
         graph.unpackSubgraph(subgraphNode)
 
-        expect(errorSpy).toHaveBeenCalledWith(
-          'Missing host input when unpacking subgraph'
+        expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            message: 'Missing host input when unpacking subgraph'
+          }),
+          {
+            errorType: 'subgraph_unpack_missing_host_input',
+            context: {
+              linkId: link.id,
+              subgraphNodeId: subgraphNode.id
+            }
+          }
         )
         expect(graph.nodes.length).toBe(1)
       })
@@ -882,11 +901,10 @@ describe('SubgraphConversion', () => {
         assert(secondWidgetId)
         useWidgetValueStore().setValue(secondWidgetId, 'second host')
         subgraphNode.removeInput(0)
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
         graph.unpackSubgraph(subgraphNode)
 
-        expect(errorSpy).toHaveBeenCalledTimes(1)
+        expect(mockReportError).toHaveBeenCalledTimes(1)
         expect(readUnpackedWidgetValues(graph)).toEqual([
           'interior 0',
           'second host'
@@ -936,11 +954,10 @@ describe('SubgraphConversion', () => {
 
         const inner = createTestNode(subgraph, ['number'])
         subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
         graph.unpackSubgraph(subgraphNode)
 
-        expect(errorSpy).not.toHaveBeenCalled()
+        expect(mockReportError).not.toHaveBeenCalled()
         expect(graph.nodes.length).toBe(1)
       })
     })
