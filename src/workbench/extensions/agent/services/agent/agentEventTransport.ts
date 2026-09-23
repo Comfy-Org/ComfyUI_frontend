@@ -17,6 +17,7 @@ export type AgentChatEvent = Extract<
       | 'agent_thinking'
       | 'agent_tool_call'
       | 'agent_message_delta'
+      | 'agent_message_draft'
       | 'agent_message_done'
       | 'agent_active_tab'
       | 'agent_ask'
