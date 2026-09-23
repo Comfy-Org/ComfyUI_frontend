@@ -56,6 +56,7 @@ import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
 import { parseNodeId } from '@/types/nodeId'
+import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -431,7 +432,16 @@ const {
   isTracking: () => canReferenceNodes.value && agentNodeSelectionStore.isActive,
   isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
   scope: () => selectedTarget.value?.path ?? null,
-  dismissedSignature: dismissedSelectionSignature
+  dismissedSignature: dismissedSelectionSignature,
+  retainStagedNode: (node) => {
+    const locator = parseNodeLocatorId(selectedNodeKey(node))
+    if (!locator) return false
+    const viewedSubgraphUuid =
+      canvasStore.currentGraph?.isRootGraph === false
+        ? canvasStore.currentGraph.id
+        : null
+    return locator.subgraphUuid !== viewedSubgraphUuid
+  }
 })
 
 let nodeReferenceWorkflow = selectionTags.value.length
@@ -1037,8 +1047,6 @@ let assetDragDepth = 0
 provide('agentAssetDragActive', readonly(assetDragActive))
 let selectingNodes = false
 let nodeSelectionCanvas: LGraphCanvas | undefined
-let restoreAllowDragNodes: boolean | undefined
-let restoreSelectOnly: boolean | undefined
 
 watch(
   () => canvasStore.selectedItems,
@@ -1055,14 +1063,7 @@ watch(
 
 function exitNodeSelectionMode(): void {
   const canvas = nodeSelectionCanvas
-  if (canvas) {
-    canvas.multi_select = false
-    canvas.allow_dragnodes = restoreAllowDragNodes ?? true
-    canvas.selectOnly = restoreSelectOnly ?? false
-  }
   nodeSelectionCanvas = undefined
-  restoreAllowDragNodes = undefined
-  restoreSelectOnly = undefined
   selectingNodes = false
   if (agentNodeSelectionStore.isActive) agentNodeSelectionStore.exit()
   if (canvas) {
@@ -1095,7 +1096,8 @@ watch(
   () => canvasStore.currentGraph,
   () => {
     if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
-  }
+  },
+  { flush: 'sync' }
 )
 
 function onSelectNodes(): void {
@@ -1116,11 +1118,6 @@ function onSelectNodes(): void {
   if (merged.size) {
     canvas.selectItems([...merged.values()])
   }
-  restoreAllowDragNodes = canvas.allow_dragnodes
-  restoreSelectOnly = canvas.selectOnly
-  canvas.allow_dragnodes = false
-  canvas.selectOnly = true
-  canvas.multi_select = true
   nodeSelectionCanvas = canvas
   selectingNodes = true
   agentNodeSelectionStore.enter()

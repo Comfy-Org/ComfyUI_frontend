@@ -25,7 +25,9 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   applyCanvasSelection,
+  clearGraphSelection,
   ownsSelectable,
+  releaseCanvasSelection,
   selectableKeyOf,
   setCanvasItemSelected
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
@@ -60,6 +62,7 @@ import {
 import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
+import type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
 import { LinkConnector } from './canvas/LinkConnector'
 import {
   findRerouteAtPoint,
@@ -375,21 +378,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ghostNodeId: null
   }
 
-  private _subgraph?: Subgraph
-  get subgraph(): Subgraph | undefined {
-    return this._subgraph
-  }
-
-  set subgraph(value: Subgraph | undefined) {
-    if (value !== this._subgraph) {
-      this._subgraph = value
-      if (value)
-        this.dispatch('litegraph:set-graph', {
-          oldGraph: this._subgraph,
-          newGraph: value
-        })
-    }
-  }
+  subgraph?: Subgraph
 
   /**
    * The location of the fps info widget. Leaving an element unset will use the default position for that element.
@@ -465,9 +454,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
   }
 
-  /** @inheritdoc {@link LGraphCanvasState.selectOnly} */
+  /**
+   * @inheritdoc {@link LGraphCanvasState.selectOnly}
+   * Also `true` while the injected {@link options.interactionMode} is select-only.
+   */
   get selectOnly(): boolean {
-    return this.state.selectOnly
+    return (
+      this.state.selectOnly ||
+      this.options.interactionMode?.isSelectOnly() === true
+    )
   }
 
   set selectOnly(value: boolean) {
@@ -588,6 +583,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     viewport?: Rect
     skip_render?: boolean
     autoresize?: boolean
+    /** Application-owned interaction mode; see {@link CanvasInteractionModeReader}. */
+    interactionMode?: CanvasInteractionModeReader
   }
 
   background_image: string
@@ -1846,11 +1843,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     })
   }
 
-  /**
-   * clears all the data inside
-   *
-   */
   clear(): void {
+    releaseCanvasSelection(this)
+    applyCanvasSelection(this, { type: 'selection.clear' })
+    this.#resetTransientState()
+    this.onClear?.()
+  }
+
+  #resetTransientState(): void {
     this.frame = 0
     this.last_draw_time = 0
     this.render_time = 0
@@ -1860,11 +1860,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // this.offset = [0,0];
     this.dragging_rectangle = null
 
-    for (const item of this.selectedItems.keys()) item.selected = undefined
-    this.selected_nodes = {}
-    this.selected_group = null
-    this.selectedItems.clear()
-    applyCanvasSelection(this, { type: 'selection.clear' })
     this.state.selectionChanged = true
     this.onSelectionChange?.(this.selected_nodes)
 
@@ -1886,8 +1881,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.last_mouseclick = 0
     this.pointer.reset()
     this.visible_area.set([0, 0, 0, 0])
-
-    this.onClear?.()
   }
 
   /**
@@ -1903,14 +1896,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Drop any in-flight ghost so listeners don't outlive the graph it belongs to
     if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
 
-    this.clear()
+    releaseCanvasSelection(this)
     newGraph.attachCanvas(this)
 
     // Re-initialize link renderer with new graph
     this.linkRenderer = new LitegraphLinkAdapter(false)
 
     this.dispatch('litegraph:set-graph', { newGraph, oldGraph: graph })
-    this._dirty()
+    clearGraphSelection(graph)
+    this.#resetTransientState()
   }
 
   openSubgraph(subgraph: Subgraph, fromNode: SubgraphNode): void {
@@ -1927,8 +1921,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     )
     if (!mayContinue) return
 
-    this.clear()
-    this.subgraph = subgraph
     this.setGraph(subgraph)
 
     this.canvas.dispatchEvent(new CustomEvent('subgraph-opened', options))
@@ -2463,6 +2455,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
     }
 
+    if (this.selectOnly) {
+      this.#processSelectOnlyPrimaryButton(e, node)
+      return
+    }
+
     // clone node ALT dragging
     if (
       !LiteGraph.vueNodesMode &&
@@ -2495,10 +2492,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else {
       const badgeLink = queryHiddenLinkBadgeAtPoint(this, graph, x, y)
       if (badgeLink) {
-        if (!this.selectOnly) {
-          pointer.onDoubleClick = () =>
-            promptRenameLinkBadge(this, graphScopeOf(graph), badgeLink.id, e)
-        }
+        pointer.onDoubleClick = () =>
+          promptRenameLinkBadge(this, graphScopeOf(graph), badgeLink.id, e)
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return
@@ -2618,7 +2613,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           pointer.onDragStart = () => (this.resizingGroup = group)
           pointer.onDrag = (eMove) => {
-            if (this.read_only || this.selectOnly) return
+            if (this.read_only) return
 
             // Resize only by the exact pointer movement
             const pos: Point = [
@@ -2682,14 +2677,35 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !pointer.onDrag &&
       this.allow_dragcanvas
     ) {
-      // allow dragging canvas based on leftMouseClickBehavior or read-only mode
-      if (LiteGraph.leftMouseClickBehavior === 'panning') {
-        pointer.onClick = () => this.processSelect(null, e)
-        pointer.finally = () => (this.dragging_canvas = false)
-        this.dragging_canvas = true
-      } else {
-        this._setupNodeSelectionDrag(e, pointer)
-      }
+      this.#setupCanvasDrag(e, pointer)
+    }
+  }
+
+  /**
+   * Pointer primary button processing while the canvas is select-only.
+   * A node press can only select; anything else is an empty-canvas press.
+   */
+  #processSelectOnlyPrimaryButton(
+    e: CanvasPointerEvent,
+    node: LGraphNode | undefined
+  ): void {
+    const { pointer } = this
+
+    if (node && (this.allow_interaction || node.flags.allow_interaction)) {
+      pointer.onClick = () => this.processSelect(node, e)
+    } else if (this.allow_dragcanvas) {
+      this.#setupCanvasDrag(e, pointer)
+    }
+  }
+
+  #setupCanvasDrag(e: CanvasPointerEvent, pointer: CanvasPointer): void {
+    // allow dragging canvas based on leftMouseClickBehavior or read-only mode
+    if (LiteGraph.leftMouseClickBehavior === 'panning') {
+      pointer.onClick = () => this.processSelect(null, e)
+      pointer.finally = () => (this.dragging_canvas = false)
+      this.dragging_canvas = true
+    } else {
+      this._setupNodeSelectionDrag(e, pointer)
     }
   }
 
@@ -2758,8 +2774,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!node.flags.pinned) {
       this.bringToFront(node)
     }
-
-    if (this.selectOnly) return
 
     // Collapse toggle
     const inCollapse = node.isPointInCollapse(x, y)
@@ -3620,8 +3634,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this.processSelect(item, pointer.eDown, sticky)
-    if (this.selectOnly) return
-
     this.isDragging = true
 
     // Seed the auto-pan modifier state from the pointer-down event so a drag
@@ -4012,10 +4024,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       // TODO
-      for (const node of Object.values(this.selected_nodes)) {
-        node.onKeyDown?.(e)
+      if (!this.selectOnly) {
+        for (const node of Object.values(this.selected_nodes)) {
+          node.onKeyDown?.(e)
+        }
       }
-    } else if (e.type == 'keyup') {
+    } else if (e.type == 'keyup' && !this.selectOnly) {
       for (const node of Object.values(this.selected_nodes)) {
         node.onKeyUp?.(e)
       }
