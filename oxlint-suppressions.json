@@ -584,24 +584,6 @@
       "count": 1
     }
   },
-  "tools/test-recorder/src/commands/addWorkflow.test.ts": {
-    "vitest/prefer-import-in-mock": {
-      "count": 1
-    }
-  },
-  "tools/test-recorder/src/commands/pr.test.ts": {
-    "typescript/no-unnecessary-type-assertion": {
-      "count": 1
-    },
-    "vitest/prefer-import-in-mock": {
-      "count": 2
-    }
-  },
-  "tools/test-recorder/src/commands/record.test.ts": {
-    "vitest/prefer-import-in-mock": {
-      "count": 7
-    }
-  },
   "tools/test-recorder/src/commands/record.ts": {
     "typescript/no-unnecessary-condition": {
       "count": 3
@@ -615,11 +597,6 @@
   "tools/test-recorder/src/pr/gh.ts": {
     "typescript/no-unnecessary-condition": {
       "count": 2
-    }
-  },
-  "tools/test-recorder/src/pr/openPr.test.ts": {
-    "vitest/prefer-import-in-mock": {
-      "count": 4
     }
   },
   "tools/test-recorder/src/recorder/runner.ts": {

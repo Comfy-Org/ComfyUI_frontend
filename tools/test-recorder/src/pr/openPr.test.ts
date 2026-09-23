@@ -2,19 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { openPr } from './openPr'
 
-vi.mock('./gh', () => ({
+vi.mock(import('./gh'), () => ({
   checkGhAvailable: vi.fn(),
   createPr: vi.fn(),
   switchBranch: vi.fn()
 }))
-vi.mock('./clipboard', () => ({ copyToClipboard: vi.fn() }))
-vi.mock('node:fs', () => ({
-  default: { readFileSync: vi.fn(() => 'contents') },
-  readFileSync: vi.fn(() => 'contents')
-}))
-vi.mock('@clack/prompts', () => ({
+vi.mock(import('./clipboard'), () => ({ copyToClipboard: vi.fn() }))
+vi.mock(import('@clack/prompts'), () => ({
   confirm: vi.fn(),
-  isCancel: vi.fn(() => false)
+  isCancel: (value: unknown): value is symbol => typeof value === 'symbol'
 }))
 
 import { confirm } from '@clack/prompts'
