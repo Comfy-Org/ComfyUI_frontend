@@ -51,8 +51,6 @@ vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-let billingCapabilities: ReturnType<typeof useBillingCapabilities>
-
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -89,8 +87,7 @@ describe('WorkspaceAuthGate', () => {
       activeWorkspaceId: 'workspace-123'
     })
     mockRefreshRemoteConfig.mockResolvedValue(undefined)
-    billingCapabilities = vi.mocked(useBillingCapabilities())
-    vi.mocked(billingCapabilities.initialize).mockResolvedValue(undefined)
+    vi.mocked(useBillingCapabilities().initialize).mockResolvedValue(undefined)
     vi.mocked(useTeamWorkspaceStore().initialize).mockImplementation(
       async () => {
         Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
@@ -142,7 +139,7 @@ describe('WorkspaceAuthGate', () => {
 
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
-      expect(billingCapabilities.initialize).not.toHaveBeenCalled()
+      expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
 
@@ -306,18 +303,18 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalled()
-      expect(billingCapabilities.initialize).toHaveBeenCalled()
+      expect(useBillingCapabilities().initialize).toHaveBeenCalled()
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 
     it('does not block app rendering on billing capabilities', async () => {
-      vi.mocked(billingCapabilities.initialize).mockImplementationOnce(
+      vi.mocked(useBillingCapabilities().initialize).mockImplementationOnce(
         () => new Promise<void>(() => {})
       )
 
       mountComponent()
       await vi.waitFor(() =>
-        expect(billingCapabilities.initialize).toHaveBeenCalledOnce()
+        expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
       )
 
       await flushPromises()
@@ -326,7 +323,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('aborts capability initialization when unmounted', async () => {
-      vi.mocked(billingCapabilities.initialize).mockImplementationOnce(
+      vi.mocked(useBillingCapabilities().initialize).mockImplementationOnce(
         (signal) =>
           new Promise<void>((resolve) => {
             signal?.addEventListener('abort', () => resolve(), { once: true })
@@ -335,9 +332,10 @@ describe('WorkspaceAuthGate', () => {
 
       const { unmount } = mountComponent()
       await vi.waitFor(() =>
-        expect(billingCapabilities.initialize).toHaveBeenCalledOnce()
+        expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
       )
-      const signal = vi.mocked(billingCapabilities.initialize).mock.calls[0][0]
+      const signal = vi.mocked(useBillingCapabilities().initialize).mock
+        .calls[0][0]
 
       unmount()
       await flushPromises()

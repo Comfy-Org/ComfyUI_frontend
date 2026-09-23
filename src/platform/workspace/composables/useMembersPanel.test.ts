@@ -263,8 +263,6 @@ describe('sortPendingInvites', () => {
 })
 
 const mockToastAdd = vi.fn()
-const mockResendInvite =
-  vi.fn<(inviteId: string) => Promise<WorkspacePendingInvite>>()
 
 const {
   mockMaxSeats,
@@ -460,9 +458,7 @@ describe('useMembersPanel', () => {
     useCurrentUser().userDisplayName = computed(() => 'Owner User')
     pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
-    vi.spyOn(workspaceStore, 'resendInvite').mockImplementation(
-      mockResendInvite
-    )
+    vi.spyOn(workspaceStore, 'resendInvite')
     workspaceType = 'personal'
     workspaceMembers = []
     workspacePendingInvites = []
@@ -679,10 +675,12 @@ describe('useMembersPanel', () => {
 
   describe('handleResendInvite', () => {
     it('resends the invite and shows a success toast', async () => {
-      mockResendInvite.mockResolvedValue(createInvite({ id: 'inv-1' }))
+      vi.mocked(workspaceStore.resendInvite).mockResolvedValue(
+        createInvite({ id: 'inv-1' })
+      )
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
-      expect(mockResendInvite).toHaveBeenCalledWith('inv-1')
+      expect(workspaceStore.resendInvite).toHaveBeenCalledWith('inv-1')
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'success',
@@ -692,7 +690,9 @@ describe('useMembersPanel', () => {
     })
 
     it('shows error toast on failure', async () => {
-      mockResendInvite.mockRejectedValue(new Error('fail'))
+      vi.mocked(workspaceStore.resendInvite).mockRejectedValue(
+        new Error('fail')
+      )
       const panel = await setup()
       await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(mockToastAdd).toHaveBeenCalledWith(
@@ -1078,7 +1078,7 @@ describe('useMembersPanel', () => {
       panel.handleRevokeInvite(createInvite({ id: 'inv-1' }))
       panel.handleInviteMember()
 
-      expect(mockResendInvite).not.toHaveBeenCalled()
+      expect(workspaceStore.resendInvite).not.toHaveBeenCalled()
       expect(useDialogService().showRevokeInviteDialog).not.toHaveBeenCalled()
       expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
     })

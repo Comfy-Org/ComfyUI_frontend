@@ -66,10 +66,8 @@ vi.mock(import('@/composables/billing/useBillingRouting'))
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
-const subscriptionDialog = vi.mocked(useSubscriptionDialog())
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
-const settingsDialog = vi.mocked(useSettingsDialog())
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -352,7 +350,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
-    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'avatar_menu_plans'
     })
     expect(open).not.toHaveBeenCalled()
@@ -375,7 +373,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(tab.location.href).toBe(
       'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace'
     )
-    expect(subscriptionDialog.showPricingTable).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
   it('falls back to the in-app pricing table when the hosted tab is blocked', async () => {
@@ -388,7 +386,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
     expect(open).toHaveBeenCalledOnce()
-    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'avatar_menu_plans'
     })
   })
@@ -404,7 +402,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
     expect(open).not.toHaveBeenCalled()
-    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'avatar_menu_plans'
     })
   })
@@ -416,7 +414,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     await user.click(screen.getByTestId('upgrade-to-add-credits-button'))
 
-    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'upgrade_to_add_credits'
     })
   })
@@ -664,7 +662,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
-    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledOnce()
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledOnce()
   })
 
   it('hides Plans & pricing on a sales-managed plan but keeps Manage plan', () => {
@@ -722,7 +720,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       menuItem.focus()
       await user.keyboard('{Enter}')
 
-      expect(settingsDialog.show).toHaveBeenCalledWith('workspace')
+      expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
       expect(emitted('close')).toHaveLength(1)
     })
   }
@@ -746,8 +744,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       })
     )
 
-    expect(settingsDialog.show).toHaveBeenCalledWith('workspace')
-    expect(subscriptionDialog.showPricingTable).not.toHaveBeenCalled()
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
     expect(emitted('close')).toHaveLength(1)
   })
 

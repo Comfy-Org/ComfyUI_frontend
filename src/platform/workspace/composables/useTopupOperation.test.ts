@@ -36,9 +36,6 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
-const mockContextTopup = vi.hoisted(() =>
-  vi.fn<(amountCents: number) => Promise<CreateTopupResponse | undefined>>()
-)
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
@@ -55,7 +52,6 @@ let harness: ReturnType<typeof fakeBillingSdk>
 beforeEach(() => {
   stubAccountIdentityPort()
   const billingContext = useBillingContext()
-  billingContext.topup = mockContextTopup
   vi.mocked(useBillingContext).mockReturnValue(billingContext)
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
@@ -123,7 +119,7 @@ describe('useTopupOperation', () => {
       status: 'completed',
       amount_cents: 1000
     }
-    mockContextTopup.mockResolvedValue(response)
+    vi.mocked(useBillingContext().topup).mockResolvedValue(response)
 
     await expect(useTopupOperation().topup(1000)).resolves.toBe(response)
 
@@ -149,7 +145,7 @@ describe('useTopupOperation', () => {
     expect(harness.sdk.topup.createTopupCheckout).toHaveBeenCalledWith({
       amountCents: 1000
     })
-    expect(mockContextTopup).not.toHaveBeenCalled()
+    expect(useBillingContext().topup).not.toHaveBeenCalled()
   })
 
   it.for([

@@ -46,7 +46,6 @@ vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
-const settingsDialog = vi.mocked(useSettingsDialog())
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -489,7 +488,7 @@ describe('billingOperationStore', () => {
       expect(useDialogStore().closeDialog).not.toHaveBeenCalledWith({
         key: 'subscription-required'
       })
-      expect(settingsDialog.show).not.toHaveBeenCalled()
+      expect(useSettingsDialog().show).not.toHaveBeenCalled()
     })
 
     it('closes the top-up dialog and opens settings on topup success', async () => {
@@ -507,7 +506,7 @@ describe('billingOperationStore', () => {
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'top-up-credits'
       })
-      expect(settingsDialog.show).toHaveBeenCalledWith('workspace')
+      expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
     })
 
     it('opens Credits settings after a polled local topup succeeds', async () => {
@@ -523,7 +522,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(settingsDialog.show).toHaveBeenCalledWith('credits')
+      expect(useSettingsDialog().show).toHaveBeenCalledWith('credits')
     })
 
     it('fires purchase telemetry on subscription success', async () => {
@@ -2792,7 +2791,7 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
       await terminal
 
-      expect(settingsDialog.show).not.toHaveBeenCalled()
+      expect(useSettingsDialog().show).not.toHaveBeenCalled()
       expect(useToastStore().add).not.toHaveBeenCalled()
     })
 

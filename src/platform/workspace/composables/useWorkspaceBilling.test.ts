@@ -69,7 +69,6 @@ vi.mock<unknown>(
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
-const subscriptionDialog = vi.mocked(useSubscriptionDialog())
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
@@ -1841,7 +1840,7 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.requireActiveSubscription()
 
-      expect(subscriptionDialog.show).toHaveBeenCalledTimes(1)
+      expect(useSubscriptionDialog().show).toHaveBeenCalledTimes(1)
     })
 
     it('does nothing when subscription is active', async () => {
@@ -1850,7 +1849,7 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.requireActiveSubscription()
 
-      expect(subscriptionDialog.show).not.toHaveBeenCalled()
+      expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
     })
   })
 
@@ -1859,7 +1858,7 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       billing.showSubscriptionDialog()
 
-      expect(subscriptionDialog.show).toHaveBeenCalledTimes(1)
+      expect(useSubscriptionDialog().show).toHaveBeenCalledTimes(1)
     })
   })
 

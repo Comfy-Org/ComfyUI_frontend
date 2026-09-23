@@ -62,9 +62,6 @@ vi.mock(
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/telemetry'))
-const telemetry = useTelemetry()
-if (!telemetry) throw new Error('Telemetry mock unavailable')
-const mockedTelemetry = vi.mocked(telemetry)
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
 vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
@@ -266,8 +263,11 @@ describe('cancel subscription on the billing SDK rail', () => {
 })
 
 describe('cancel telemetry on the billing SDK rail', () => {
-  const stages = () =>
-    mockedTelemetry.trackBillingEvent.mock.calls.map(([event]) => event.stage)
+  function stages() {
+    const trackBillingEvent = useTelemetry()?.trackBillingEvent
+    if (!trackBillingEvent) throw new Error('Telemetry mock unavailable')
+    return vi.mocked(trackBillingEvent).mock.calls.map(([event]) => event.stage)
+  }
 
   it('reports a rail cancel that settles as one started and one succeeded', async () => {
     flagState.billingSdkSubscriptionEnabled = true
@@ -293,7 +293,7 @@ describe('cancel telemetry on the billing SDK rail', () => {
     )
 
     expect(stages()).toEqual(['started', 'failed'])
-    expect(mockedTelemetry.trackBillingEvent).toHaveBeenLastCalledWith(
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenLastCalledWith(
       expect.objectContaining({
         operation_type: 'cancel',
         failure_category: 'api_rejected'

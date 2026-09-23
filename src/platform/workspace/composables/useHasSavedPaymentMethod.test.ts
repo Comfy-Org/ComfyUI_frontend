@@ -11,9 +11,6 @@ import type { BillingResult } from '@comfyorg/account-core/billing'
 import type { BillingReadRail } from './useBillingReadRail'
 import { useHasSavedPaymentMethod } from './useHasSavedPaymentMethod'
 
-const mockListSavedPaymentMethods = vi.mocked(
-  workspaceApi.listSavedPaymentMethods
-)
 const mockReportError = vi.hoisted(() => vi.fn<typeof reportError>())
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
@@ -42,11 +39,10 @@ async function flushLookup() {
 describe('useHasSavedPaymentMethod', () => {
   beforeEach(() => {
     railState.rail = null
-    mockReportError.mockReset()
   })
 
   it('starts unknown before the lookup resolves', () => {
-    mockListSavedPaymentMethods.mockResolvedValue([])
+    vi.mocked(workspaceApi.listSavedPaymentMethods).mockResolvedValue([])
 
     const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
 
@@ -54,7 +50,7 @@ describe('useHasSavedPaymentMethod', () => {
   })
 
   it('resolves true when a payment method is on file', async () => {
-    mockListSavedPaymentMethods.mockResolvedValue([
+    vi.mocked(workspaceApi.listSavedPaymentMethods).mockResolvedValue([
       { id: 'pm-1', type: 'card', is_default: true }
     ])
 
@@ -65,7 +61,7 @@ describe('useHasSavedPaymentMethod', () => {
   })
 
   it('resolves false when only non-default methods are saved', async () => {
-    mockListSavedPaymentMethods.mockResolvedValue([
+    vi.mocked(workspaceApi.listSavedPaymentMethods).mockResolvedValue([
       { id: 'pm-1', type: 'card', is_default: false }
     ])
 
@@ -76,7 +72,7 @@ describe('useHasSavedPaymentMethod', () => {
   })
 
   it('resolves false when no payment methods are saved', async () => {
-    mockListSavedPaymentMethods.mockResolvedValue([])
+    vi.mocked(workspaceApi.listSavedPaymentMethods).mockResolvedValue([])
 
     const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
     await flushLookup()
@@ -86,7 +82,7 @@ describe('useHasSavedPaymentMethod', () => {
 
   it('stays unknown and reports when the lookup fails', async () => {
     const failure = new Error('network')
-    mockListSavedPaymentMethods.mockRejectedValue(failure)
+    vi.mocked(workspaceApi.listSavedPaymentMethods).mockRejectedValue(failure)
 
     const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
     await flushLookup()
@@ -103,9 +99,7 @@ describe('useHasSavedPaymentMethod on the SDK rail', () => {
     vi.fn()
 
   beforeEach(() => {
-    readPaymentMethods.mockReset()
     railState.rail = { readPaymentMethods }
-    mockListSavedPaymentMethods.mockReset()
   })
 
   const railReads: {
@@ -142,7 +136,7 @@ describe('useHasSavedPaymentMethod on the SDK rail', () => {
       await flushLookup()
 
       expect(hasSavedPaymentMethod.value).toBe(expected)
-      expect(mockListSavedPaymentMethods).not.toHaveBeenCalled()
+      expect(workspaceApi.listSavedPaymentMethods).not.toHaveBeenCalled()
       expect(mockReportError).not.toHaveBeenCalled()
     }
   )

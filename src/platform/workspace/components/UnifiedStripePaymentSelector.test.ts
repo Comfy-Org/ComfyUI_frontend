@@ -13,9 +13,6 @@ import {
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 
 vi.mock(import('@/platform/telemetry'))
-const telemetry = useTelemetry()
-if (!telemetry) throw new Error('Telemetry mock unavailable')
-const mockedTelemetry = vi.mocked(telemetry)
 
 /**
  * The provider work is covered in the package, against the real Stripe mocks.
@@ -140,7 +137,7 @@ describe('UnifiedStripePaymentSelector', () => {
 
     reportPhase({ phase: 'payment_element_ready', element: 'payment' })
 
-    expect(mockedTelemetry.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
+    expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         checkout_journey_id:
           seeded.status === 'active' ? seeded.record.journey_id : '',
@@ -156,6 +153,6 @@ describe('UnifiedStripePaymentSelector', () => {
 
     reportPhase({ phase: 'payment_submit_attempted' })
 
-    expect(mockedTelemetry.trackCheckoutJourneyEvent).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackCheckoutJourneyEvent).not.toHaveBeenCalled()
   })
 })

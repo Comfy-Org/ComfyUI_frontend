@@ -14,8 +14,6 @@ const mocks = vi.hoisted(() => ({
     isTeamPlan: { value: boolean }
     billingStatus: { value: BillingStatus | null }
     subscription: { value: Pick<SubscriptionInfo, 'hasFunds'> | null }
-    fetchStatus: ReturnType<typeof vi.fn>
-    fetchBalance: ReturnType<typeof vi.fn>
   } | null
 }))
 
@@ -45,9 +43,7 @@ describe('useBillingBanner', () => {
       billingStatus: ref<BillingStatus | null>('paid'),
       subscription: ref<Pick<SubscriptionInfo, 'hasFunds'> | null>({
         hasFunds: true
-      }),
-      fetchStatus: vi.fn(),
-      fetchBalance: vi.fn()
+      })
     }
     mocks.billing = billing
     const billingContext = useBillingContext()
@@ -71,8 +67,6 @@ describe('useBillingBanner', () => {
           }
         : null
     )
-    billingContext.fetchStatus = billing.fetchStatus
-    billingContext.fetchBalance = billing.fetchBalance
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
     const workspaceUI = vi.mocked(useWorkspaceUI())
     const defaultPermissions = workspaceUI.permissions.value
@@ -135,8 +129,8 @@ describe('useBillingBanner', () => {
     window.dispatchEvent(new Event('focus'))
     await nextTick()
 
-    expect(b.fetchStatus).toHaveBeenCalledOnce()
-    expect(b.fetchBalance).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
   })
 
   it('does not refresh payment recovery on focus when the flag is off', async () => {
@@ -150,7 +144,7 @@ describe('useBillingBanner', () => {
     window.dispatchEvent(new Event('focus'))
     await nextTick()
 
-    expect(b.fetchStatus).not.toHaveBeenCalled()
-    expect(b.fetchBalance).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
   })
 })

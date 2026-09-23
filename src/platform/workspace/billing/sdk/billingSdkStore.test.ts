@@ -17,6 +17,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingSdkStore } from './billingSdkStore'
 import {
   fakeBillingSdk,
+  failedOperation,
   failedTopup,
   pendingTopup,
   pendingSubscription,
@@ -38,12 +39,8 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
-const settingsDialog = vi.mocked(useSettingsDialog())
 
 vi.mock(import('@/platform/telemetry'))
-const telemetry = useTelemetry()
-if (!telemetry) throw new Error('Telemetry mock unavailable')
-const mockedTelemetry = vi.mocked(telemetry)
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -58,14 +55,12 @@ vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
 
 let harness: ReturnType<typeof fakeBillingSdk>
 let options: BillingSdkOptions
-let billingContext: ReturnType<typeof useBillingContext>
 
 beforeEach(() => {
   stubAccountIdentityPort()
   vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
   vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'stripe'
-  billingContext = vi.mocked(useBillingContext())
-  vi.mocked(useBillingContext).mockReturnValue(billingContext)
+  vi.mocked(useBillingContext).mockReturnValue(useBillingContext())
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockImplementation((sdkOptions) => {
     options = sdkOptions
@@ -247,10 +242,10 @@ describe('useBillingSdkStore', () => {
     harness.publish(settledTopup('succeeded'))
 
     await vi.waitFor(() =>
-      expect(settingsDialog.show).toHaveBeenCalledWith('workspace')
+      expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
     )
-    expect(billingContext.fetchStatus).toHaveBeenCalledOnce()
-    expect(billingContext.fetchBalance).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
     expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'top-up-credits'
@@ -261,13 +256,13 @@ describe('useBillingSdkStore', () => {
         summary: 'Credits added successfully'
       })
     )
-    expect(mockedTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'operation',
       operation_type: 'topup',
       stage: 'started',
       outcome: 'pending'
     })
-    expect(mockedTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'operation',
       operation_type: 'topup',
       billing_op_id: 'op-1',
@@ -289,9 +284,9 @@ describe('useBillingSdkStore', () => {
     harness.publish(settledTopup('succeeded'))
     await nextTick()
 
-    expect(mockedTelemetry.trackBillingEvent).not.toHaveBeenCalled()
-    expect(settingsDialog.show).not.toHaveBeenCalled()
-    expect(billingContext.fetchStatus).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
     expect(useToastStore().messagesToAdd).toEqual([])
   })
 
@@ -358,7 +353,7 @@ describe('useBillingSdkStore', () => {
       duration_ms: 900
     })
 
-    expect(mockedTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'operation',
       operation_type: 'cancel',
       billing_op_id: 'op-cancel',
@@ -425,8 +420,8 @@ describe('useBillingSdkStore subscription commands', () => {
       status: 'ok',
       value: undefined
     })
-    expect(billingContext.fetchStatus).toHaveBeenCalledOnce()
-    expect(billingContext.fetchBalance).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
@@ -437,7 +432,9 @@ describe('useBillingSdkStore subscription commands', () => {
       status: 'ok',
       value: undefined
     })
-    expect(billingContext.reconcileSubscriptionSuccess).toHaveBeenCalledOnce()
+    expect(
+      useBillingContext().reconcileSubscriptionSuccess
+    ).toHaveBeenCalledOnce()
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
@@ -467,7 +464,7 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(harness.sdk.commands.openPaymentPortal).not.toHaveBeenCalled()
     expect(harness.sdk.commands.subscribe).not.toHaveBeenCalled()
     expect(harness.sdk.commands.previewSubscribe).not.toHaveBeenCalled()
-    expect(billingContext.fetchStatus).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
   })
 
   it('reconciles the subscription after a plan change settles', async () => {
@@ -488,8 +485,83 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(harness.sdk.commands.subscribe).toHaveBeenCalledWith({
       plan_slug: 'pro-yearly'
     })
-    expect(billingContext.reconcileSubscriptionSuccess).toHaveBeenCalledOnce()
+    expect(
+      useBillingContext().reconcileSubscriptionSuccess
+    ).toHaveBeenCalledOnce()
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+  })
+
+  function reattachedSubscribe() {
+    options.onTelemetry({
+      name: 'billing.operation.started',
+      billing_op_id: 'op-1',
+      operation_type: 'subscription',
+      presentation: 'hosted',
+      resumed: true
+    })
+  }
+
+  it('finishes a reattached subscribe the way the poller did', async () => {
+    useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(settledOperation('succeeded', 'subscription'))
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({
+          severity: 'success',
+          summary: 'Subscription updated successfully'
+        })
+      )
+    )
+    expect(
+      useBillingContext().reconcileSubscriptionSuccess
+    ).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+  })
+
+  it('reports the failure of a reattached subscribe', () => {
+    useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(failedOperation('subscription'))
+
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'Subscription update failed'
+      })
+    )
+  })
+
+  it('reports a reattached subscribe that timed out, without reconciling', () => {
+    useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(settledOperation('timed_out', 'subscription'))
+
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'Subscription verification timed out'
+      })
+    )
+    expect(
+      useBillingContext().reconcileSubscriptionSuccess
+    ).not.toHaveBeenCalled()
+  })
+
+  it('leaves a subscribe it issued to the checkout that issued it', async () => {
+    useBillingSdkStore()
+
+    harness.publish(settledOperation('succeeded', 'subscription'))
+    await nextTick()
+
+    expect(
+      useBillingContext().reconcileSubscriptionSuccess
+    ).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toEqual([])
   })
 
   it('hands back the quote without refreshing anything', async () => {
@@ -501,8 +573,10 @@ describe('useBillingSdkStore subscription commands', () => {
     await expect(
       useBillingSdkStore().previewSubscribe({ planSlug: 'pro-yearly' })
     ).resolves.toEqual({ status: 'ok', value: QUOTE })
-    expect(billingContext.reconcileSubscriptionSuccess).not.toHaveBeenCalled()
-    expect(billingContext.fetchStatus).not.toHaveBeenCalled()
+    expect(
+      useBillingContext().reconcileSubscriptionSuccess
+    ).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
   })
 
   it('warns once and keeps a blocked payment page reachable however long it polls', () => {
@@ -622,7 +696,7 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(harness.sdk.commands.openPaymentPortal).toHaveBeenCalledWith({
       returnUrl: 'https://app.example/'
     })
-    expect(billingContext.fetchStatus).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
   })
 
   it('drops the saved cards it holds when it hands the portal URL out', async () => {
