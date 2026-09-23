@@ -37,10 +37,12 @@ import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
+import type { NodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
@@ -1445,4 +1447,109 @@ describe('reconcileAgentAdapters', () => {
       })
     })
   })
+})
+
+describe('reserved-bit mint-convention guard', () => {
+  /** Bit 40 set: comfy-cli's `mint_id()` shape. */
+  const AGENT_MINTED_ID = 2 ** 40 + 7
+  /** Large enough for the guard to look, but carrying neither bit 40 nor 41. */
+  const VIOLATING_ID = 2 ** 42
+
+  function seedRemoteNode(graph: LGraph, id: NodeId): GraphScope {
+    const scope = graphScopeOf(graph)
+    remoteMutations(scope).addNode(
+      { ...nodePayload(1), id },
+      { ...REMOTE, opId: `op-${String(id)}` }
+    )
+    return scope
+  }
+
+  function bindGraph(graph: LGraph): () => void {
+    return registerDocBoundRootGraphProbe(() => graph.id)
+  }
+
+  it.for([
+    { bound: true, id: AGENT_MINTED_ID, name: 'an agent-minted id' },
+    {
+      bound: false,
+      id: VIOLATING_ID,
+      name: 'an off-convention id on a graph no doc is bound to'
+    },
+    { bound: true, id: '2e12', name: 'an agent-minted id in exponent form' },
+    {
+      bound: true,
+      id: '2.0e12',
+      name: 'an agent-minted id in decimal-mantissa exponent form'
+    },
+    {
+      bound: true,
+      id: `${VIOLATING_ID}.0001`,
+      name: 'a fractional id that only coerces to the violating floor'
+    },
+    {
+      bound: true,
+      id: (BigInt(Number.MAX_SAFE_INTEGER) + 2n).toString(),
+      name: 'an unsafe integer past Number.MAX_SAFE_INTEGER, even though its rounded value falls in the violating range'
+    }
+  ])('stays silent for $name', ({ bound, id }) => {
+    const graph = new LGraph()
+    const unbind = bound ? bindGraph(graph) : () => {}
+    seedRemoteNode(graph, toNodeId(id))
+
+    expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(id)])
+    unbind()
+
+    expect(graph.getNodeById(toNodeId(id))).toBeTruthy()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  // A bound doc may legally carry a string id (`NodeId` is `string | number`):
+  // a legacy `"named"` node, or a subgraph-scoped `"57:3"` address. Converting
+  // one for the bit test threw and aborted reconciliation before the node was
+  // ever materialized.
+  it('materializes a nonnumeric remote id without reporting a violation', () => {
+    const graph = new LGraph()
+    const unbind = bindGraph(graph)
+    const id = toNodeId('named')
+    seedRemoteNode(graph, id)
+
+    expect(reconcileAgentAdapters(graph)).toEqual([id])
+    unbind()
+
+    expect(graph.getNodeById(id)).toBeTruthy()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { rawId: VIOLATING_ID, name: 'the canonical integer spelling' },
+    {
+      rawId: `${VIOLATING_ID}.`,
+      name: 'a trailing decimal point with no fractional digits'
+    },
+    {
+      rawId: `.${VIOLATING_ID}e13`,
+      name: 'a leading decimal point with an exponent'
+    }
+  ])(
+    'reports a large remote id carrying neither reserved bit, spelled as $name',
+    ({ rawId }) => {
+      const graph = new LGraph()
+      const unbind = bindGraph(graph)
+      const id = toNodeId(rawId)
+      seedRemoteNode(graph, id)
+
+      expect(reconcileAgentAdapters(graph)).toEqual([id])
+      unbind()
+
+      expect(graph.getNodeById(id)).toBeTruthy()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        errorType: 'agent_node_id_reserved_bit_violation',
+        tags: expect.objectContaining({
+          feature_area: 'agent',
+          outcome: 'degraded'
+        }),
+        context: { graphId: graph.id, nodeId: String(rawId) }
+      })
+    }
+  )
 })
