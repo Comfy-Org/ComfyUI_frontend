@@ -392,6 +392,23 @@ describe('agentWorkflowTabBindingStore', () => {
     })
   })
 
+  it('unbindWorkflow drops only the named workflow, wherever it now sits', () => {
+    const store = useAgentWorkflowTabBindingStore()
+    store.bind('wf-1', 'workflows/a.json')
+    store.bind('wf-2', 'workflows/b.json')
+
+    store.bind('wf-3', 'workflows/a.json')
+    store.unbindWorkflow('wf-1')
+
+    expect(store.tabPathFor('wf-3')).toBe('workflows/a.json')
+    expect(store.workflowIdFor('workflows/a.json')).toBe('wf-3')
+    expect(store.tabPathFor('wf-2')).toBe('workflows/b.json')
+    expect(store.tabPathFor('wf-1')).toBeUndefined()
+
+    store.unbindWorkflow('wf-unknown')
+    expect(store.tabPathFor('wf-3')).toBe('workflows/a.json')
+  })
+
   it('resolves both directions after a bind', () => {
     const store = useAgentWorkflowTabBindingStore()
     store.bind('wf-1', 'workflows/a.json')

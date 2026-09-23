@@ -504,6 +504,55 @@ describe('useAgentConversationStore', () => {
     })
   })
 
+  it('hydrates persisted tool calls into the same parts array the live work-summary UI reads', () => {
+    const assistant = historyRow(2, 'assistant', 'turn-a', 'Done')
+    assistant.content = {
+      text: 'Done',
+      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([historyRow(1, 'user', 'turn-a', 'Find a node'), assistant])
+
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'tool',
+      callId: 'call-1',
+      name: 'search_nodes',
+      state: 'done',
+      ok: true
+    })
+  })
+
+  it('does not bleed a tool-call summary onto a different chat, and restores it when switching back', () => {
+    const store = useAgentConversationStore()
+    const threadAAssistant = historyRow(2, 'assistant', 'turn-a', 'Done A')
+    threadAAssistant.content = {
+      text: 'Done A',
+      tool_calls: [{ id: 'call-a', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const threadA = [
+      historyRow(1, 'user', 'turn-a', 'Find a node'),
+      threadAAssistant
+    ]
+    const threadB = [
+      historyRow(1, 'user', 'turn-b', 'Just chat'),
+      historyRow(2, 'assistant', 'turn-b', 'Done B')
+    ]
+    const hasToolPart = () =>
+      store.messages.some((message) =>
+        message.parts.some((part) => part.type === 'tool')
+      )
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
+
+    store.hydrate(threadB)
+    expect(hasToolPart()).toBe(false)
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
+  })
+
   it('keeps hydrated turn identity stable when persisted row ids change', () => {
     const store = useAgentConversationStore()
     const firstRows = [
@@ -562,6 +611,81 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
+  it.for(['before hydration', 'after hydration'] as const)(
+    'keeps socket completion authoritative when it arrives %s while returning to a thread',
+    (completion) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.recordUser(T1, 'go')
+      store.ingest(delta('t1', 'socket reply'))
+      store.stashActiveTurn()
+      const complete = () => store.ingest(done('t1'))
+      const hydrate = () =>
+        store.hydrate([
+          historyRow(1, 'user', 'server-turn', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'server-turn', '', 't1'),
+            status: 'streaming'
+          }
+        ])
+      const actions = {
+        'before hydration': () => {
+          complete()
+          hydrate()
+        },
+        'after hydration': () => {
+          hydrate()
+          complete()
+        }
+      }
+
+      actions[completion]()
+      store.resumeBackgroundTurn()
+
+      expect(store.isStreaming).toBe(false)
+      expect(store.activeTurnId).toBeNull()
+      expect(store.liveTurns()).toEqual([])
+      expect(partTexts(store)).toEqual(['socket reply'])
+      expect(store.messages.map((message) => message.id)).toEqual([
+        'server-turn'
+      ])
+    }
+  )
+
+  it('resumes one live transport with the persisted turn identity and attachments', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'before'))
+    store.stashActiveTurn()
+    const user = historyRow(1, 'user', 'server-turn', 'go')
+    user.content = { text: 'go', attachments: ['input.png'] }
+
+    store.hydrate([
+      user,
+      {
+        ...historyRow(2, 'assistant', 'server-turn', '', 't1'),
+        status: 'streaming'
+      }
+    ])
+    store.ingest(delta('t1', ' during'))
+    store.resumeBackgroundTurn()
+    store.ingest(delta('t1', ' after'))
+
+    expect(store.liveTurns()).toEqual([{ threadId: 'th', messageId: T1 }])
+    expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
+    expect(partTexts(store)).toEqual(['before during after'])
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: 'input.png', ref: 'input.png' }]
+    })
+    store.ingest(done('t1'))
+    expect(store.isStreaming).toBe(false)
+    expect(store.liveTurns()).toEqual([])
+  })
+
   it.for([
     {
       name: 'the displayed turn',
@@ -604,4 +728,33 @@ describe('useAgentConversationStore', () => {
       ).toHaveLength(1)
     }
   )
+
+  it('resolves existing paywalls without resurrecting them after funds run out again', () => {
+    const store = useAgentConversationStore()
+    store.recordPaywall(T1, 'subscribe')
+
+    store.setPaywallsResolved(true)
+    store.setPaywallsResolved(false)
+
+    expect(store.messages[0].parts).toEqual([])
+    expect(store.entries[0]).toMatchObject({ role: 'user', text: 'subscribe' })
+
+    store.recordPaywall(T2, 'top up')
+    expect(store.messages[1].parts).toEqual([
+      { type: 'paywall', message: undefined }
+    ])
+  })
+
+  it('shows a later paywall after resolving an earlier one', () => {
+    const store = useAgentConversationStore()
+    store.recordPaywall(T1, 'subscribe')
+    store.setPaywallsResolved(true)
+
+    store.recordPaywall(T2, 'continue')
+
+    expect(store.messages[0].parts).toEqual([])
+    expect(store.messages[1].parts).toEqual([
+      { type: 'paywall', message: undefined }
+    ])
+  })
 })

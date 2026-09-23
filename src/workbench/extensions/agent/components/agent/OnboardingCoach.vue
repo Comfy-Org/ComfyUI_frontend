@@ -13,6 +13,7 @@ import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
 import { clampSpotlight } from '@/platform/onboarding/coachmarkLayout'
+import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
 import { useOnboarding } from '../../composables/agent/useOnboarding'
 
@@ -25,9 +26,14 @@ const { active, index, step, isLast, next, finish } = useOnboarding(
   () => steps,
   storageKey
 )
+
 const titleId = useId()
 const bodyId = useId()
 const target = ref<HTMLElement | null>(null)
+const visible = computed(() => active.value && target.value !== null)
+// Let surfaces like the What's New popup defer while a coach card is on
+// screen. The store drops the source with this component's scope on unmount.
+useOnboardingOverlayStore().registerSource(() => visible.value)
 const toolbar = ref<HTMLElement | null>(null)
 const card = ref<HTMLElement | null>(null)
 const bounds = useElementBounding(target)
@@ -144,11 +150,7 @@ useEventListener(
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="active && target"
-      v-reka-z-index
-      class="agent-scope fixed inset-0"
-    >
+    <div v-if="visible" v-reka-z-index class="agent-scope fixed inset-0">
       <div class="absolute inset-0" />
       <div
         aria-hidden="true"

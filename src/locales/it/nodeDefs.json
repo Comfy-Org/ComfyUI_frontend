@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Estrae il valore di una chiave dal primo oggetto JSON valido nel testo, inclusi i blocchi di codice Markdown.",
     "display_name": "Estrai Testo da JSON",
     "inputs": {
       "json_string": {
@@ -13234,6 +13235,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Esegue un passaggio di raffinamento aggiuntivo per una geometria più fedele con dettagli della superficie più fini."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Risoluzione del passaggio ultra: 2k lo esegue a 2048³, 4k a 4096³ per il massimo dettaglio della superficie. 4k richiede meshy-7.1 o versione successiva. Usato solo quando ultra_mode è abilitato."
       }
     },
     "outputs": {
@@ -13300,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "modalità_simmetria"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Esegue un passaggio di raffinamento aggiuntivo a 2048³ per una geometria più fedele con dettagli della superficie più fini."
       }
     },
     "outputs": {
@@ -13441,6 +13450,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Esegue un passaggio di raffinamento aggiuntivo per una geometria più fedele con dettagli della superficie più fini."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Risoluzione del passaggio ultra: 2k lo esegue a 2048³, 4k a 4096³ per il massimo dettaglio della superficie. 4k richiede meshy-7.1 o versione successiva. Usato solo quando ultra_mode è abilitato."
       }
     },
     "outputs": {

@@ -44,6 +44,36 @@ function mountField(
 }
 
 describe('PlaygroundField', () => {
+  it('preserves a provider rejection when the input passes its form constraint', () => {
+    mountField(
+      {
+        kind: 'select',
+        name: 'size',
+        label: 'Image size',
+        options: ['2K'],
+        presentation: {
+          label: 'Image size',
+          help: 'Choose a supported size.',
+          hidden: false,
+          advanced: false,
+          control: 'dropdown',
+          formConstraint: {
+            schema: { properties: { size: { const: '2K' } } },
+            error: 'incompatible'
+          }
+        }
+      },
+      { size: '2K' },
+      'en',
+      { size: 'rejected' }
+    )
+    expect(screen.getByTestId('error-size')).toHaveTextContent(
+      'The model rejected this value'
+    )
+    expect(
+      screen.getByRole('combobox', { name: 'Image size' })
+    ).toHaveAttribute('aria-invalid', 'true')
+  })
   it('disables a fixed single option while keeping its native value', () => {
     const field: FieldSchema = {
       kind: 'select',
