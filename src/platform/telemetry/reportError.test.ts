@@ -321,4 +321,73 @@ describe('reportError', () => {
     ).not.toThrow()
     expect(addError).toHaveBeenCalledOnce()
   })
+
+  it('delivers a report that re-enters through a sink once, then accepts the next report', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { reportError } = await loadReportError()
+    const nested = new Error('Graph serialization state mismatch')
+    captureException.mockImplementationOnce(() => {
+      reportError(nested, { errorType: 'graph_serialization_state_mismatch' })
+    })
+
+    reportError(new Error('bad subgraph'), {
+      errorType: 'subgraph_load_failure'
+    })
+
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(addError).toHaveBeenCalledOnce()
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining('graph_serialization_state_mismatch'),
+      nested
+    )
+
+    reportError(new Error('later'), { errorType: 'http_error' })
+
+    expect(captureException).toHaveBeenCalledTimes(2)
+    expect(addError).toHaveBeenCalledTimes(2)
+  })
+
+  it('skips the console line for a suppressed re-entrant report that opted out', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { reportError } = await loadReportError()
+    captureException.mockImplementationOnce(() => {
+      reportError(new Error('nested'), {
+        errorType: 'invariant_assert',
+        logToConsole: false
+      })
+    })
+
+    reportError(new Error('outer'), {
+      errorType: 'subgraph_load_failure',
+      logToConsole: false
+    })
+
+    expect(consoleError).not.toHaveBeenCalled()
+    expect(consoleWarn).not.toHaveBeenCalled()
+  })
+
+  it('logs a suppressed warning-level re-entrant report through console.warn', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
+    const nested = new Error('nested')
+    captureException.mockImplementationOnce(() => {
+      reportError(nested, {
+        errorType: 'session_cookie_creation_failure',
+        level: 'warning'
+      })
+    })
+
+    reportError(new Error('outer'), {
+      errorType: 'subgraph_load_failure',
+      logToConsole: false
+    })
+
+    expect(consoleWarn).toHaveBeenCalledExactlyOnceWith(
+      `${REPORTED_ERROR_PREFIX}session_cookie_creation_failure (suppressed: raised while reporting)`,
+      nested
+    )
+    expect(consoleError).not.toHaveBeenCalled()
+  })
 })
