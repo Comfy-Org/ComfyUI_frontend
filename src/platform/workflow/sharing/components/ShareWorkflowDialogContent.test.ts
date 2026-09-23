@@ -192,10 +192,6 @@ describe('ShareWorkflowDialogContent', () => {
             template:
               '<section data-testid="publish-intro"><button data-testid="publish-intro-cta" @click="$props.onCreateProfile()">Start publishing</button></section>',
             props: ['onCreateProfile']
-          },
-          Input: {
-            template: '<input v-bind="$attrs" />',
-            methods: { focus() {}, select() {} }
           }
         }
       }

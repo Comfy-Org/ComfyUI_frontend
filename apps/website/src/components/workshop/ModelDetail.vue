@@ -15,7 +15,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
+import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
 import { sameFormValues } from '../../lib/workshop/form-values'
+import { validateWorkshopMediaInputs } from '../../config/workshop-media-validation'
 import { leaveForSignIn } from '../../config/workshop-return'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
@@ -369,6 +371,11 @@ interface ActiveRun {
 }
 
 let activeRun: ActiveRun | undefined
+const credentialFailures = new WeakSet<ActiveRun>()
+const delivery = useWorkshopDelivery()
+watch(activeSection, (section) => {
+  if (section !== 'playground') delivery.cancel()
+})
 let pendingRequest: { fingerprint: string; key: string } | undefined
 const uploadUrl = createWorkshopUrlUploader()
 
@@ -382,6 +389,7 @@ watch(isRunning, (running) =>
 onScopeDispose(() => reportWorkshopRun(undefined))
 
 function cancelRun() {
+  delivery.cancel()
   if (activeRun) {
     activeRun.controller.abort()
     captureWorkshopEvent({
@@ -458,8 +466,10 @@ async function freshCredentialFor(
     credential?.status !== 'ok' ||
     credential.session.uid !== startedFor.uid ||
     credential.session.workspace.id !== startedFor.workspace.id
-  )
+  ) {
+    credentialFailures.add(attempt)
     throw new WorkshopRouterError('unavailable')
+  }
   return credential.session
 }
 
@@ -532,6 +542,8 @@ function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
   releaseRouterOutputs(
     discarded.flatMap((run) => [run.output, ...run.attachments])
   )
+  delivery.start(attempt.analytics, result.requestId, output)
+  if (activeSection.value !== 'playground') delivery.cancel()
   runState.value = transition(runState.value, {
     type: 'complete',
     at: Date.now(),
@@ -555,7 +567,9 @@ function failRun(error: unknown, attempt: ActiveRun): void {
   const failure =
     error instanceof WorkshopRouterError
       ? error
-      : new WorkshopRouterError('client')
+      : new WorkshopRouterError('client', null, {}, undefined, undefined, {
+          cause: error
+        })
   if (!workshopRunMayStillSettle(failure)) pendingRequest = undefined
   requestId.value = failure.requestId
   runState.value = transition(runState.value, {
@@ -569,7 +583,10 @@ function failRun(error: unknown, attempt: ActiveRun): void {
       ...attempt.analytics,
       status: 'failed',
       duration_ms: Date.now() - attempt.startedAt,
-      ...workshopFailureAnalytics(failure)
+      ...workshopFailureAnalytics(failure, schema.value),
+      ...(credentialFailures.has(attempt)
+        ? { failure_stage: 'credential' }
+        : {})
     }
   })
 }
@@ -583,7 +600,10 @@ async function run() {
       name: 'run_validation_failed',
       properties: {
         ...modelAnalytics,
-        field_error_codes: workshopFieldErrorCodes(fieldErrors)
+        field_error_codes: workshopFieldErrorCodes(fieldErrors),
+        field_error_names: schema.value
+          .filter((field) => Object.hasOwn(fieldErrors, field.name))
+          .map((field) => field.name)
       }
     })
     runState.value = transition(runState.value, {
@@ -594,6 +614,7 @@ async function run() {
     return
   }
   const startedAt = Date.now()
+  delivery.cancel()
   const analytics: WorkshopRunAnalytics = {
     ...modelAnalytics,
     user_id: startedFor.uid,
@@ -610,6 +631,12 @@ async function run() {
   requestId.value = null
   runState.value = transition(runState.value, { type: 'start', at: startedAt })
   try {
+    await validateWorkshopMediaInputs(
+      schema.value,
+      values.value,
+      attempt.controller.signal
+    )
+    if (!runIsActive(attempt)) return
     finishRun(await renderRun(startedFor, attempt), attempt)
   } catch (error) {
     failRun(error, attempt)
@@ -632,6 +659,7 @@ function reset() {
 }
 
 function applyExample(example: PlaygroundExample) {
+  delivery.cancel()
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
@@ -919,6 +947,8 @@ function useInCode() {
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"
           @download="captureOutputDownload"
+          @delivery="delivery.settle"
+          @playback-started="delivery.beginPlayback"
         />
         <div
           v-if="runState.status === 'succeeded' || requestId"
@@ -996,7 +1026,12 @@ function useInCode() {
       role="tabpanel"
       aria-labelledby="tab-api"
     >
-      <ApiTab :contract="model.execution" :values :locale />
+      <ApiTab
+        :contract="model.execution"
+        :values
+        :locale
+        :model-slug="model.slug"
+      />
     </section>
 
     <RunLeaveDialog

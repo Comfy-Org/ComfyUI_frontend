@@ -152,6 +152,18 @@ export const useAgentWorkflowTabBindingStore = defineStore(
       }
     }
 
+    /**
+     * Drops one workflow's record wherever it sits. Path-keyed `unbind` would
+     * take whichever workflow occupies the path now, which is the wrong one
+     * once the tab has been rebound.
+     */
+    function unbindWorkflow(workflowId: string): void {
+      if (!Object.hasOwn(tabByWorkflow.value, workflowId)) return
+      delete tabByWorkflow.value[workflowId]
+      boundInstances.delete(workflowId)
+      refusedInstances.delete(workflowId)
+    }
+
     function releaseClosedTab({ tab, path }: OpenTab): void {
       const workflowId = recordIdFor(path)
       if (workflowId === undefined) return
@@ -222,6 +234,13 @@ export const useAgentWorkflowTabBindingStore = defineStore(
         : undefined
     }
 
-    return { bind, unbind, matchesWorkflow, tabPathFor, workflowIdFor }
+    return {
+      bind,
+      unbind,
+      unbindWorkflow,
+      matchesWorkflow,
+      tabPathFor,
+      workflowIdFor
+    }
   }
 )
