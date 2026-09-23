@@ -38,6 +38,8 @@ const MAX_PENDING_REPORTS = 25
 
 const isDatadogRumLive = () => datadogRum.getInitConfiguration() !== undefined
 
+let dispatching = false
+
 const definedEntriesOf = (
   tags: ReportErrorOptions['tags']
 ): Record<string, string | number | boolean> =>
@@ -58,43 +60,48 @@ function dispatch(
   let sentryDelivered = false
   let datadogDelivered = false
 
-  if (sentryLive) {
-    try {
-      captureException(error, {
-        tags: { ...tags, error_type: errorType },
-        extra: context,
-        level
-      })
-      sentryDelivered = true
-    } catch (reporterFailure) {
-      console.error(
-        '[reportError] Sentry delivery failed',
-        reporterFailure,
-        error
-      )
+  dispatching = true
+  try {
+    if (sentryLive) {
+      try {
+        captureException(error, {
+          tags: { ...tags, error_type: errorType },
+          extra: context,
+          level
+        })
+        sentryDelivered = true
+      } catch (reporterFailure) {
+        console.error(
+          '[reportError] Sentry delivery failed',
+          reporterFailure,
+          error
+        )
+      }
     }
-  }
-  if (datadogLive) {
-    try {
-      const datadogError = Object.assign(
-        new Error(error.message, { cause: error.cause }),
-        error,
-        { name: errorType, stack: error.stack }
-      )
-      datadogRum.addError(datadogError, {
-        ...context,
-        ...tags,
-        error_type: errorType,
-        ...(level ? { level } : {})
-      })
-      datadogDelivered = true
-    } catch (reporterFailure) {
-      console.error(
-        '[reportError] Datadog delivery failed',
-        reporterFailure,
-        error
-      )
+    if (datadogLive) {
+      try {
+        const datadogError = Object.assign(
+          new Error(error.message, { cause: error.cause }),
+          error,
+          { name: errorType, stack: error.stack }
+        )
+        datadogRum.addError(datadogError, {
+          ...context,
+          ...tags,
+          error_type: errorType,
+          ...(level ? { level } : {})
+        })
+        datadogDelivered = true
+      } catch (reporterFailure) {
+        console.error(
+          '[reportError] Datadog delivery failed',
+          reporterFailure,
+          error
+        )
+      }
     }
+  } finally {
+    dispatching = false
   }
 
   return { sentry: sentryDelivered, datadog: datadogDelivered }
@@ -145,6 +152,16 @@ export function flushErrorReports(): void {
   }
 }
 
+function logReport(
+  cause: unknown,
+  options: ReportErrorOptions,
+  suffix = ''
+): void {
+  if (options.logToConsole === false) return
+  const log = options.level === 'warning' ? console.warn : console.error
+  log(`${REPORTED_ERROR_PREFIX}${options.errorType}${suffix}`, cause)
+}
+
 /**
  * Report an error to every observability sink at once.
  *
@@ -153,14 +170,17 @@ export function flushErrorReports(): void {
  * `workspace_auth_gate_initialization_failure` stayed invisible on every
  * Datadog dashboard while it was firing in production.
  *
+ * A report raised while a sink is still delivering only reaches the console.
+ *
  * Never throws — a failing error reporter must not become a second failure.
  */
 export function reportError(cause: unknown, options: ReportErrorOptions): void {
   try {
-    if (options.logToConsole !== false) {
-      const log = options.level === 'warning' ? console.warn : console.error
-      log(`${REPORTED_ERROR_PREFIX}${options.errorType}`, cause)
+    if (dispatching) {
+      logReport(cause, options, ' (suppressed: raised while reporting)')
+      return
     }
+    logReport(cause, options)
     flushErrorReports()
 
     const error = toError(cause)
