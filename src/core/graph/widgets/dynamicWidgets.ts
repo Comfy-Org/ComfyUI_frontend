@@ -243,8 +243,8 @@ function dynamicComboWidget(
     }
     const result = commitMutatedInputs(node, previous, inputLinks)
     if (!result.ok) return
-    //A callback can grow the group it lands on, shifting every input after
-    //it, so the slot captured before the batch is stale for later entries.
+    //A callback can grow the group it lands on, so slots captured before the
+    //batch are stale for every entry after it.
     for (const { input, link } of result.replacements) {
       const slot = node.inputs.indexOf(input)
       if (slot === -1) continue
