@@ -160,7 +160,8 @@ vi.mock(import('./agentNodeMaterializer'), () => ({
   subgraphDefinitionReadState: materializerState.subgraphDefinitionReadState
 }))
 
-vi.mock(import('./agentSubgraphDefinitions'), () => ({
+vi.mock(import('./agentSubgraphDefinitions'), async (importOriginal) => ({
+  ...(await importOriginal()),
   readSubgraphDefinitionIds: definitionsState.readSubgraphDefinitionIds,
   readSubgraphDefinitions: definitionsState.readSubgraphDefinitions
 }))
