@@ -18,6 +18,7 @@ export const WIRE_MAX_BATCH_BYTES = 4 * 1024 * 1024
 // Reserve space for the doc_ops frame fields outside `ops` (type, protocol,
 // workflow id and tab). The server's identifiers are bounded well below this.
 const WIRE_FRAME_OVERHEAD_BYTES = 1024
+const utf8 = new TextEncoder()
 
 export interface MintContext {
   actor: Actor
@@ -62,14 +63,14 @@ function isBatchable(op: Op): boolean {
 /** Conservative encoded size of a complete doc_ops frame carrying `ops`. */
 export function wireBatchSize(ops: readonly Op[]): number {
   return (
-    new TextEncoder().encode(JSON.stringify(ops)).length +
+    utf8.encode(JSON.stringify(ops)).length +
     WIRE_FRAME_OVERHEAD_BYTES
   )
 }
 
 /** UTF-8 byte length of a single op's JSON encoding, as it appears inside a batch array. */
 function opBytes(op: Op): number {
-  return new TextEncoder().encode(JSON.stringify(op)).length
+  return utf8.encode(JSON.stringify(op)).length
 }
 
 /**

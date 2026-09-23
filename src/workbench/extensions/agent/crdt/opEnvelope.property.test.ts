@@ -360,10 +360,11 @@ describe('minted stamps (property) — order-independent LWW', () => {
  * `(workflowId, actor)`, so a life-1 client cannot mint a stale-high
  * `base_version` after a reconnect resets its observed sequence lower.
  *
- * The test below asserts TODAY's behaviour on purpose. It is a tripwire: when
- * the pin advances to the incarnation-namespaced stamps, it goes red and this
- * is where the write leg gets updated. Nothing here is a claim that the current
- * outcome is correct.
+ * The second test below asserts the DESIRED outcome and is marked `it.fails`
+ * because this pin cannot deliver it yet. It is a tripwire: when the pin
+ * advances to incarnation-namespaced stamps the assertion starts passing,
+ * `it.fails` reports that as a failure, and this is where the write leg gets
+ * updated and the marker removed.
  */
 describe('minted stamps — DQ-11 actor-incarnation gap at this pin', () => {
   it('pins the actor-incarnation-free stamp shape the write leg mints', () => {
@@ -377,7 +378,7 @@ describe('minted stamps — DQ-11 actor-incarnation gap at this pin', () => {
     expect(Object.keys(op)).not.toContain('incarnation')
   })
 
-  it('documents that a stale life-1 write still defeats a live life-2 write', () => {
+  it.fails('a stale life-1 write must not defeat a live life-2 write', () => {
     const doc = mint({ nodes: [], links: [] }, CATALOG)
     const actor = 'human:reconnecting-client:tab-1'
 
@@ -401,8 +402,6 @@ describe('minted stamps — DQ-11 actor-incarnation gap at this pin', () => {
     applyOps(doc, live)
     applyOps(doc, stale)
 
-    // DQ-11 says this SHOULD be 'life-2-live'. At this pin it is not, because
-    // the stamp carries no incarnation to order the two lives by.
-    expect(readWidget(doc)).toBe('life-1-stale')
+    expect(readWidget(doc)).toBe('life-2-live')
   })
 })

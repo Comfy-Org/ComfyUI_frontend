@@ -462,6 +462,45 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
   })
 
+  it('drops the doc once when the same reset is replayed', () => {
+    const { transport, bridge } = wire()
+    const resets: unknown[] = []
+    bridge.addEventListener('doc_reset', (event) => {
+      if (event instanceof CustomEvent) resets.push(event.detail)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 43 })
+    const freshDoc = bridge.follower
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+
+    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 43 })
+
+    expect(bridge.follower).toBe(freshDoc)
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(resets).toEqual([{ workflowId: WORKFLOW_ID, seq: 43 }])
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+  })
+
+  it('ignores a reset at or below the seq it has already applied', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 50)
+    )
+    const oldDoc = bridge.follower
+
+    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 50 })
+    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 49 })
+
+    expect(bridge.follower).toBe(oldDoc)
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+  })
+
   it('a reset on a dead socket still drops the doc; the resubscribe lands on the next reconcile', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { transport, bridge } = wire()
