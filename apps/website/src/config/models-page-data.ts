@@ -3,14 +3,17 @@ import { z } from 'astro/zod'
 import { MODALITIES, USE_CASES } from './models-catalogue'
 import { formForContract, workshopContractSchema } from './workshop-contract'
 import { generatedModelSchema } from './workshop-generated-models'
+import {
+  formForWorkflow,
+  workshopWorkflowDefinitionSchema
+} from './workshop-workflow-definition'
 
-const modelSchema = z.object({
+const presentationSchema = z.object({
   slug: z.string(),
   name: z.string(),
   workflowCount: z.number(),
   recommendedRank: z.number().optional(),
   href: z.string(),
-  routerId: z.string(),
   incompleteReason: z.literal('missing-input-schema').optional(),
   provider: z.string().optional(),
   modality: z.enum(MODALITIES).optional(),
@@ -39,8 +42,23 @@ const modelSchema = z.object({
   successorSlug: z.string().optional()
 })
 
-const detailSchema = generatedModelSchema
-  .extend(modelSchema.shape)
+const routerModelSchema = presentationSchema.extend({
+  type: z.literal('MODEL').optional(),
+  routerId: z.string(),
+  workflowId: z.never().optional()
+})
+
+const workflowModelSchema = presentationSchema.extend({
+  type: z.enum(['CLOUD', 'SERVERLESS']),
+  workflowId: z.string(),
+  routerId: z.never().optional(),
+  category: z.string().optional()
+})
+
+const modelSchema = z.union([routerModelSchema, workflowModelSchema])
+
+const routerDetailSchema = generatedModelSchema
+  .extend(routerModelSchema.shape)
   .extend({
     nodeDisplayName: z.string().optional(),
     execution: workshopContractSchema.optional()
@@ -49,6 +67,17 @@ const detailSchema = generatedModelSchema
     ...model,
     ...(model.execution ? { form: formForContract(model.execution) } : {})
   }))
+
+const workflowDetailSchema = generatedModelSchema
+  .extend(workflowModelSchema.shape)
+  .extend({ workflow: workshopWorkflowDefinitionSchema })
+  .refine((model) => model.workflowId === model.workflow.id)
+  .transform((model) => ({
+    ...model,
+    form: formForWorkflow(model.workflow)
+  }))
+
+const detailSchema = z.union([routerDetailSchema, workflowDetailSchema])
 
 const tagSchema = z.object({ label: z.string(), search: z.string() })
 
@@ -78,7 +107,7 @@ async function readPageData(path: string): Promise<unknown> {
 
 export async function fetchModelsPage(slug: string): Promise<ModelsPageData> {
   const data = await readPageData(
-    `/models/${encodeURIComponent(slug)}/page.json`
+    `/models/${slug.split('/').map(encodeURIComponent).join('/')}/page.json`
   )
   return modelsPageDataSchema.parse(data)
 }

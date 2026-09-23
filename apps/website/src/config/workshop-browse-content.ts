@@ -7,7 +7,7 @@ import useCaseOverrides from '../data/workshop-use-case-overrides.json'
 import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
 import { workshopModelSchema } from '../content/workshop-models.schema'
 import type { WorkshopModelEntry } from '../content/workshop-models.schema'
-import type { Modality, UseCase, WorkshopModel } from './models-catalogue'
+import type { Modality, UseCase, RouterWorkshopModel } from './models-catalogue'
 import { USE_CASES } from './models-catalogue'
 import { workshopRouterIndexSchema } from './workshop-router-index'
 import { workshopRouterAliasesSchema } from './workshop-router-identity'
@@ -86,7 +86,9 @@ function providerName(provider: string): string {
   )
 }
 
-function taskForUseCases(useCases: readonly UseCase[]): WorkshopModel['task'] {
+function taskForUseCases(
+  useCases: readonly UseCase[]
+): RouterWorkshopModel['task'] {
   if (useCases.includes('edit-images')) return 'image-to-image'
   if (useCases.includes('animate-images')) return 'image-to-video'
   if (useCases.includes('edit-videos')) return 'video-to-video'
@@ -121,6 +123,7 @@ function bindingFor(overlay: (typeof display)[number]) {
 }
 
 const contentSources = display.flatMap((overlay) => {
+  if (overlay.type !== undefined && overlay.type !== 'MODEL') return []
   const input = workshopContentInputs.get(overlay.id)
   if (input?.unavailableReason) return []
   const binding = bindingFor(overlay)
@@ -159,7 +162,7 @@ export const routerContentById = new Map(
   })
 )
 
-const browseModels: readonly WorkshopModel[] = contentSources.map(
+const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
   ({ entry, overlay, binding, record }) => {
     const useCases = [
       correctedUseCases.get(entry.id) ??
@@ -287,7 +290,9 @@ export const routerWorkshopModelPaths = [
   ])
 ]
 
-export function getWorkshopModel(slug: string): WorkshopModel | undefined {
+export function getWorkshopModel(
+  slug: string
+): RouterWorkshopModel | undefined {
   const canonical = routerModelSlugAliases.get(slug) ?? slug
   return workshopModels.find((model) => model.slug === canonical)
 }

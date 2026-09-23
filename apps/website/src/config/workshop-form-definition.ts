@@ -70,7 +70,7 @@ function deriveFieldsForDefinition(
   const fields = deriveWorkshopFields(
     { ...parameters, properties },
     roles,
-    definition.source === 'router' ? [] : undefined
+    definition.source === 'router' || definition.inputs ? [] : undefined
   ).filter((field) => !definition.inputs?.[field.name]?.hidden)
   const bodyEditor = usesRequestBodyEditor(definition)
   const names = new Set([
