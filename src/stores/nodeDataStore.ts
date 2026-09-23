@@ -403,8 +403,16 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   ): boolean {
     const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
     if (!state || state.graphId !== graphScope.owningGraphId) return false
-    const entries = Object.entries(flags) as [keyof NodeFlagsPatch, boolean][]
-    if (entries.every(([key, value]) => state.flags[key] === value))
+    const entries = Object.entries(flags) as [
+      keyof NodeFlagsPatch,
+      boolean | undefined
+    ][]
+    // `pin(false)` patches `{ pinned: undefined }` (falsy-collapses at the
+    // call site) against a state that may hold an explicit `false` (valid
+    // workflow JSON): compare truthiness, matching how `LGraphNode.pinned`/
+    // `collapsed` already read these flags back through `!!`, so a no-op
+    // unpin over a mixed selection is not reported as a change.
+    if (entries.every(([key, value]) => !!state.flags[key] === !!value))
       return false
     Object.assign(state.flags, flags)
     return true

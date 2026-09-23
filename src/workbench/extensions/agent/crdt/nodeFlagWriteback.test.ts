@@ -1,7 +1,8 @@
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
@@ -12,7 +13,12 @@ import { mintWireOps } from './opEnvelope'
 import { attachMintPortWiring } from './mintPortWiring'
 import type { MintPortWiring, MintableGraph } from './mintPortWiring'
 
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
+
 const ROOT_ID = 'root-uuid'
+const OTHER_ROOT_ID = 'other-root-uuid'
 const NODE_ID = 7
 
 /** The doc host's pinned catalog: server classes only. */
@@ -50,6 +56,7 @@ describe('node flag write-back', () => {
   let wiring: MintPortWiring
   let enabled: boolean
   let bound: boolean
+  let boundRoot: string
   let layoutListeners: Set<(change: LayoutChangeView) => void>
   let graphNodes: Map<string, LGraphNode>
 
@@ -78,8 +85,10 @@ describe('node flag write-back', () => {
     minted = []
     enabled = true
     bound = true
+    boundRoot = ROOT_ID
     layoutListeners = new Set()
     graphNodes = new Map()
+    vi.mocked(reportError).mockClear()
     wiring = attachMintPortWiring({
       isEnabled: () => enabled,
       isDocBound: () => bound,
@@ -90,7 +99,7 @@ describe('node flag write-back', () => {
       },
       localActorPrefix: 'user-',
       getGraph: () => graph,
-      boundRootGraphId: () => toRootGraphId(ROOT_ID)
+      boundRootGraphId: () => toRootGraphId(boundRoot)
     })
   })
 
@@ -200,6 +209,64 @@ describe('node flag write-back', () => {
     liveNode().collapse()
 
     expect(minted).toEqual([])
+  })
+
+  it('does not mint into a foreign document during a workflow-switch race (bound root differs from the live graph)', () => {
+    // isDocBound() already reports the incoming workflow while the shared
+    // canvas graph (and so `change.graphId`) still holds the outgoing one -
+    // scoping against the LIVE graph's root, rather than the bound
+    // document's own stored root, would pass this check trivially and mint
+    // a foreign workflow's node into the bound doc.
+    boundRoot = OTHER_ROOT_ID
+
+    liveNode().collapse()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_crdt_op_for_unbound_graph' })
+    )
+  })
+
+  it('reports an unbound-graph flag toggle only once per tick', async () => {
+    boundRoot = OTHER_ROOT_ID
+    const node = liveNode()
+
+    node.collapse()
+    node.collapse()
+
+    expect(reportError).toHaveBeenCalledOnce()
+
+    await Promise.resolve()
+    node.collapse()
+    expect(reportError).toHaveBeenCalledTimes(2)
+  })
+
+  it('mints when there is no stored bound root graph id (untracked, not restricted)', () => {
+    wiring.detach()
+    wiring = attachMintPortWiring({
+      isEnabled: () => enabled,
+      isDocBound: () => bound,
+      enqueue: (operations) => minted.push(...operations),
+      layoutChanges: (listener) => {
+        layoutListeners.add(listener)
+        return () => layoutListeners.delete(listener)
+      },
+      localActorPrefix: 'user-',
+      getGraph: () => graph,
+      boundRootGraphId: () => null
+    })
+
+    liveNode().collapse()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_node_field',
+        node_id: toNodeId(NODE_ID),
+        field: 'flags.collapsed',
+        value: true
+      }
+    ])
   })
 
   it('stops observing after detach', () => {

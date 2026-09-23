@@ -247,7 +247,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     session,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
-    rootGraphId,
+    boundRootGraphId: deps.boundRootGraphId,
     enqueue
   })
 

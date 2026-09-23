@@ -18,6 +18,8 @@
  */
 import type { NodeId } from '@comfyorg/comfy-multi-player'
 
+import { reportError } from '@/platform/telemetry/reportError'
+import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeFlagsPatch } from '@/types/nodeState'
 
 import type { GraphOperation } from './graphOperations'
@@ -44,8 +46,15 @@ export interface NodeFlagMintPortDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
-  /** The active root graph id, or null when no workflow is open. */
-  rootGraphId(): string | null
+  /**
+   * The bound workflow's own stored root graph id, or null when no workflow
+   * is bound. Read from the workflow's serialized state rather than the live
+   * canvas graph (mirrors the layout port's `boundRootGraphId`), so a flag
+   * toggle that lands during a workflow switch - after `isDocBound()` already
+   * reports the incoming workflow but before the shared canvas graph has
+   * caught up - cannot mint into the wrong document.
+   */
+  boundRootGraphId(): RootGraphId | null
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
 }
@@ -80,6 +89,42 @@ function flagOps(nodeId: NodeId, flags: NodeFlagsPatch): GraphOperation[] {
 export function attachNodeFlagMintPort(
   deps: NodeFlagMintPortDeps
 ): NodeFlagMintPort {
+  const reportedUnboundGraphChanges = new Set<string>()
+
+  /**
+   * Reports (deduped per tick, like the layout port's own
+   * `reportOpForUnboundGraph`) and returns true when `change` targets a
+   * graph other than the bound document's root - either a subgraph-interior
+   * node (no `set_node_field` addressing for a non-root graph) or a foreign
+   * workflow caught mid-switch. A null `boundRootGraphId` means scope cannot
+   * be judged yet (untracked, not restricted - matches the layout port).
+   */
+  function reportForeignGraphChange(change: NodeFlagChangeView): boolean {
+    const boundRootGraphId = deps.boundRootGraphId()
+    if (boundRootGraphId === null || change.graphId === boundRootGraphId)
+      return false
+
+    const reportKey = `${change.graphId}:${boundRootGraphId}`
+    if (reportedUnboundGraphChanges.has(reportKey)) return true
+
+    reportedUnboundGraphChanges.add(reportKey)
+    queueMicrotask(() => reportedUnboundGraphChanges.delete(reportKey))
+    reportError(
+      new Error(
+        `setNodeFlags targets graph ${change.graphId}, not the bound document's root graph ${boundRootGraphId}; refusing to mint (no set_node_field addressing for a non-root graph)`
+      ),
+      {
+        errorType: 'agent_crdt_op_for_unbound_graph',
+        context: {
+          graphId: change.graphId,
+          boundRootGraphId,
+          nodeId: change.nodeId
+        }
+      }
+    )
+    return true
+  }
+
   function onFlagsChanged(change: NodeFlagChangeView): void {
     const mintable = shouldMint({
       flagEnabled: deps.isEnabled(),
@@ -87,19 +132,7 @@ export function attachNodeFlagMintPort(
       teardown: deps.session.inTeardown()
     })
     if (!mintable) return
-
-    const root = deps.rootGraphId()
-    if (root === null || change.graphId !== root) {
-      // Subgraph-interior nodes have no root-scope `set_node_field` target
-      // (the op addresses by node_id alone, unlike `set_widget`'s interior
-      // path form), so the doc diverges from the local graph; observable,
-      // never silent (the surfacing-honesty principle).
-      console.error(
-        '[agent-crdt] node-flag write-back outside the root graph has no wire op; the bound doc diverges from the local graph',
-        `${change.graphId}:${String(change.nodeId)}`
-      )
-      return
-    }
+    if (reportForeignGraphChange(change)) return
 
     deps.enqueue(flagOps(change.nodeId, change.flags))
   }

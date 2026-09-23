@@ -993,4 +993,33 @@ describe('nodeDataStore registration via LGraph', () => {
 
     expect(SubgraphNode).toBeTypeOf('function')
   })
+
+  describe('setNodeFlags', () => {
+    it('reports no change for a no-op unpin against an explicit false flag', () => {
+      const store = useNodeDataStore()
+      const scope = graphScope(rootA, rootA)
+      const state = node(1)
+      state.flags.pinned = false
+      store.registerNode(scope, state)
+
+      const changed = store.setNodeFlags(scope, state.id, {
+        pinned: undefined
+      })
+
+      expect(changed).toBe(false)
+      expect(state.flags.pinned).toBe(false)
+    })
+
+    it('still reports a change when the flag is genuinely toggled', () => {
+      const store = useNodeDataStore()
+      const scope = graphScope(rootA, rootA)
+      const state = node(1)
+      store.registerNode(scope, state)
+
+      const changed = store.setNodeFlags(scope, state.id, { collapsed: true })
+
+      expect(changed).toBe(true)
+      expect(state.flags.collapsed).toBe(true)
+    })
+  })
 })

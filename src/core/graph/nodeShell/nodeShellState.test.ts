@@ -13,7 +13,11 @@ import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 
-import { createNodeShellState, unregisterNodeState } from './nodeShellState'
+import {
+  createNodeShellState,
+  setNodeFlags,
+  unregisterNodeState
+} from './nodeShellState'
 
 describe('node shell state', () => {
   function addNodeToSubgraph() {
@@ -187,5 +191,22 @@ describe('node registration invariants', () => {
       { nodeId: node.id, rootGraphId: graph.id }
     )
     setAssertReporter(null)
+  })
+
+  it('reports a state that drifted out of its bucket before writing flags', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Node')
+    graph.add(node)
+    node._state = createNodeShellState(
+      node,
+      createInputSlotView,
+      'Node',
+      'test',
+      undefined
+    )
+
+    expect(() => setNodeFlags(node, { collapsed: true })).toThrow(
+      /identity drift/
+    )
   })
 })

@@ -88,6 +88,15 @@ export function setTrackedNodeState<K extends keyof NodeState>(
  * so an observer can relay the change (see the store action's contract). A
  * node that has not joined a graph yet has no scope to command against, and
  * writes its own shell state directly.
+ *
+ * Callers (`LGraphNode.collapse`/`pin`) already commit their own side effects
+ * — bumping the graph version, deriving `resizable` from the toggled value —
+ * before this returns, so a rejected write must fail loudly rather than let
+ * those side effects disagree with a silently-dropped flag. Checked with
+ * {@link ownsNode} rather than the store action's own return value: that
+ * value legitimately reports `false` for a benign no-op (the patch already
+ * matches the node's flags), which is not the identity-drift failure this
+ * asserts against.
  */
 export function setNodeFlags(node: LGraphNode, flags: NodeFlagsPatch): void {
   const graphScope = node._graphScope
@@ -95,7 +104,13 @@ export function setNodeFlags(node: LGraphNode, flags: NodeFlagsPatch): void {
     Object.assign(node._state.flags, flags)
     return
   }
-  useNodeDataStore().setNodeFlags(graphScope, node.id, flags)
+  const store = useNodeDataStore()
+  assert(
+    store.ownsNode(graphScope, node._state),
+    'setNodeFlags: node state not found in bucket (identity drift)',
+    { nodeId: node.id, rootGraphId: graphScope.rootGraphId }
+  )
+  store.setNodeFlags(graphScope, node.id, flags)
 }
 
 /**
