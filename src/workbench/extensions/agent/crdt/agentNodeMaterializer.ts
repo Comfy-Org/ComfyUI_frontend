@@ -348,6 +348,12 @@ function materialize(
   }
   if (!added) return rollback('LGraph.add returned no node')
 
+  // Only report once the node this id now belongs to is actually live: a
+  // failed add rolls the orphan back onto the id via `rollback()`/`restore()`,
+  // so a report emitted before this point would claim a drop that a
+  // subsequent retry then contradicts.
+  reportNodeIdWriteDropped(graph, state, orphan)
+
   try {
     const savedInputs = serialised.inputs?.map((input) => ({ ...input }))
     node.configure(withNamedWidgetValues(serialised, widgets))
@@ -397,6 +403,81 @@ function reportReservedBitViolation(
       errorType: 'agent_node_id_reserved_bit_violation',
       tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
       context: { graphId: graph.id, nodeId: String(nodeId) }
+    }
+  )
+}
+
+/**
+ * Node ids already reported as a dropped write for their current live/doc
+ * class pairing, per root graph, so a reconcile frame that keeps re-deriving
+ * the same orphan across many frames reports it once rather than on every
+ * frame it remains unresolved.
+ */
+const reportedNodeIdCollisions = new WeakMap<LGraph, Set<NodeId>>()
+
+/** Bound on a class name read from the shared doc before it reaches
+ * telemetry, so a peer cannot inflate the report or inject fake log lines
+ * into it through an oversized or newline-bearing `type`. */
+const MAX_REPORTED_CLASS_NAME_LENGTH = 200
+
+function sanitizeClassNameForTelemetry(value: string): string {
+  const collapsed = value.replace(/[\r\n]+/g, ' ')
+  return collapsed.length > MAX_REPORTED_CLASS_NAME_LENGTH
+    ? `${collapsed.slice(0, MAX_REPORTED_CLASS_NAME_LENGTH)}…`
+    : collapsed
+}
+
+/**
+ * A node id's class is fixed by the `add_node` that claimed it: the op
+ * vocabulary has no retype, so nothing can legally change the class at a live
+ * id through an ordinary edit. A class change here most often means the
+ * document resolved two `add_node` writes sharing an id as last-write-wins
+ * and dropped the loser with no error to either actor — but the same shape
+ * (a live node at this id whose class no longer matches the record) can also
+ * come from a legitimate `remove_node` + `add_node` pair reusing the id, a
+ * retype, or a stale-canvas catch-up reconcile that observes both changes at
+ * once. This function has no op provenance to tell those apart, so it is a
+ * heuristic, not a confirmed diagnosis: treat the report as "this id's class
+ * changed under our feet", not as proof a write was lost.
+ *
+ * `orphan` is the live node at this id that is no longer owned by the record
+ * the document now holds for it. Comparing its class to the record's is the
+ * only trace of a genuine drop this client gets, since the ack counts an
+ * LWW-dropped op as applied and the applier's own conflict event fires
+ * host-side.
+ */
+function reportNodeIdWriteDropped(
+  graph: MaterializableGraph,
+  state: NodeState,
+  orphan: LGraphNode | undefined
+): void {
+  const rootGraph = graph.rootGraph
+  const reported =
+    reportedNodeIdCollisions.get(rootGraph) ??
+    reportedNodeIdCollisions.set(rootGraph, new Set()).get(rootGraph)!
+
+  if (!orphan || orphan.type === state.type) {
+    reported.delete(state.id)
+    return
+  }
+  if (reported.has(state.id)) return
+  reported.add(state.id)
+
+  const liveClass = sanitizeClassNameForTelemetry(orphan.type)
+  const docClass = sanitizeClassNameForTelemetry(state.type)
+  reportError(
+    new Error(
+      `Node id ${String(state.id)} changed class from ${liveClass} to ${docClass} at the same id`
+    ),
+    {
+      errorType: 'agent_node_id_collision_write_dropped',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
+      context: {
+        graphId: graph.id,
+        nodeId: String(state.id),
+        liveClass,
+        docClass
+      }
     }
   )
 }
