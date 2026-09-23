@@ -69,6 +69,7 @@
     "dismiss": "بستن",
     "downloadAssets": "دانلود دارایی‌ها",
     "dragAndDropAssets": "دارایی‌ها را اینجا بکشید و رها کنید",
+    "editWhileWorking": "می‌توانید هنگام کار آن، به ویرایش ادامه دهید",
     "feedbackCaption": "ارسال بازخورد",
     "focusNode": "نمایش روی بوم",
     "focusNodeLabel": "نمایش {node} روی بوم",
@@ -102,6 +103,7 @@
       "selectNode": "انتخاب گره"
     },
     "nodes": "گره‌ها",
+    "nodesAdded": "عامل ۱ node به گراف افزود | عامل {count} node به گراف افزود",
     "notHelpful": "غیرمفید",
     "openWorkflowTab": "باز کردن {name}",
     "otherOpenWorkflows": "workflowهای باز دیگر",
@@ -190,7 +192,9 @@
     "unavailableWorkflowReference": "{name} (دردسترس نیست)",
     "unsavedWorkflow": "ذخیره‌نشده",
     "untitledChat": "بدون عنوان",
+    "updatingGraph": "عامل در حال به‌روزرسانی گراف است",
     "uploading": "در حال بارگذاری",
+    "viewAddedNodes": "مشاهدهٔ node | مشاهدهٔ nodeها",
     "worked": "انجام شد",
     "workedForMinutes": "به‌مدت {minutes}m {seconds}s کار کرد",
     "workedForSeconds": "به‌مدت {seconds} ثانیه کار کرد",
@@ -3108,6 +3112,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "nodeهای برجسته‌شده: {count}",
+    "label": "نقشهٔ کوچک",
     "nodeColors": "رنگ‌های نود",
     "renderBypassState": "نمایش وضعیت عبور",
     "renderErrorState": "نمایش وضعیت خطا",

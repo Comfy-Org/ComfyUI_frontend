@@ -69,6 +69,7 @@
     "dismiss": "Kapat",
     "downloadAssets": "Varlıkları indir",
     "dragAndDropAssets": "Varlıkları buraya sürükleyip bırakın",
+    "editWhileWorking": "Çalışırken düzenlemeye devam edebilirsiniz",
     "feedbackCaption": "Geri bildirim paylaş",
     "focusNode": "Tuvalde göster",
     "focusNodeLabel": "{node} öğesini tuvalde göster",
@@ -102,6 +103,7 @@
       "selectNode": "Düğüm seç"
     },
     "nodes": "Düğümler",
+    "nodesAdded": "Aracı grafiğe 1 düğüm ekledi | Aracı grafiğe {count} düğüm ekledi",
     "notHelpful": "Yararlı değil",
     "openWorkflowTab": "{name} öğesini aç",
     "otherOpenWorkflows": "Diğer açık iş akışları",
@@ -190,7 +192,9 @@
     "unavailableWorkflowReference": "{name} (kullanılamıyor)",
     "unsavedWorkflow": "Kaydedilmemiş",
     "untitledChat": "Başlıksız",
+    "updatingGraph": "Aracı grafiği güncelliyor",
     "uploading": "Yükleniyor",
+    "viewAddedNodes": "Düğümü görüntüle | Düğümleri görüntüle",
     "worked": "Tamamlandı",
     "workedForMinutes": "{minutes} dk. {seconds} sn. çalıştı",
     "workedForSeconds": "{seconds} saniye çalıştı",
@@ -3108,6 +3112,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "Vurgulanan düğümler: {count}",
+    "label": "Küçük harita",
     "nodeColors": "Düğüm Renkleri",
     "renderBypassState": "Atlama Durumunu Oluştur",
     "renderErrorState": "Hata Durumunu Oluştur",

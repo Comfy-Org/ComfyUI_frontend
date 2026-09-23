@@ -18447,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "模型在繪製前投入多少推理。較高等級可提升細節，但會消耗更多 token。僅供 Arrow 2 模型使用。"
+      },
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不具決定性。"
@@ -18485,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "對期望 SVG 輸出的文字描述。"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "模型在繪製前投入多少推理。較高等級可提升細節，但會消耗更多 token。僅供 Arrow 2 模型使用。"
       },
       "reference_images": {
         "name": "reference_images",
@@ -19156,7 +19164,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references。"
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references；recraftv4_1_flash 是最快且最便宜的模型，完全不支援任何風格。"
       },
       "model_size": {
         "name": "size"
@@ -24049,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "取代模型聊天範本中的系統提示詞。未使用預設範本時會被忽略。"
+      },
       "thinking": {
         "name": "思考模式",
         "tooltip": "若模型支援，則以思考模式運作。"
@@ -24065,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "生成文字",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -24115,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "Top-P"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "取代模型聊天範本中的系統提示詞。未使用預設範本時會被忽略。"
+      },
       "thinking": {
         "name": "思考模式",
         "tooltip": "若模型支援，則以思考模式運作。"
@@ -24131,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "生成文字",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }

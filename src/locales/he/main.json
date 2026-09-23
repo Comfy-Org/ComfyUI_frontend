@@ -69,6 +69,7 @@
     "dismiss": "סגור",
     "downloadAssets": "הורדת נכסים",
     "dragAndDropAssets": "גרור ושחרר נכסים כאן",
+    "editWhileWorking": "ניתן להמשיך לערוך בזמן שהוא עובד",
     "feedbackCaption": "שיתוף משוב",
     "focusNode": "הצג בקנבס",
     "focusNodeLabel": "הצג את {node} בקנבס",
@@ -102,6 +103,7 @@
       "selectNode": "בחר צומת"
     },
     "nodes": "צמתים",
+    "nodesAdded": "הסוכן הוסיף צומת אחד לגרף | הסוכן הוסיף {count} צמתים לגרף",
     "notHelpful": "לא מועיל",
     "openWorkflowTab": "פתיחת {name}",
     "otherOpenWorkflows": "תהליכי עבודה פתוחים אחרים",
@@ -190,7 +192,9 @@
     "unavailableWorkflowReference": "{name} (לא זמין)",
     "unsavedWorkflow": "לא נשמר",
     "untitledChat": "ללא כותרת",
+    "updatingGraph": "הסוכן מעדכן את הגרף",
     "uploading": "מעלה",
+    "viewAddedNodes": "הצג צומת | הצג צמתים",
     "worked": "בוצע",
     "workedForMinutes": "פעל במשך {minutes}m ו-{seconds}s",
     "workedForSeconds": "פעל במשך {seconds} שניות",
@@ -3108,6 +3112,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "צמתים מודגשים: {count}",
+    "label": "מפה ממוזערת",
     "nodeColors": "צבעי הצמתים",
     "renderBypassState": "הצגת מצב העקיפה",
     "renderErrorState": "הצגת מצב השגיאה",

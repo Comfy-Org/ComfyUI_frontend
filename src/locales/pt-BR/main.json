@@ -69,6 +69,7 @@
     "dismiss": "Dispensar",
     "downloadAssets": "Baixar recursos",
     "dragAndDropAssets": "Arraste e solte recursos aqui",
+    "editWhileWorking": "Você pode continuar editando enquanto ele trabalha",
     "feedbackCaption": "Enviar feedback",
     "focusNode": "Mostrar na tela",
     "focusNodeLabel": "Mostrar {node} na tela",
@@ -102,6 +103,7 @@
       "selectNode": "Selecionar nó"
     },
     "nodes": "Nós",
+    "nodesAdded": "O agente adicionou 1 nó ao grafo | O agente adicionou {count} nós ao grafo",
     "notHelpful": "Não foi útil",
     "openWorkflowTab": "Abrir {name}",
     "otherOpenWorkflows": "Outros fluxos de trabalho abertos",
@@ -190,7 +192,9 @@
     "unavailableWorkflowReference": "{name} (indisponível)",
     "unsavedWorkflow": "Não salvo",
     "untitledChat": "Sem título",
+    "updatingGraph": "O agente está atualizando o grafo",
     "uploading": "Enviando",
+    "viewAddedNodes": "Ver nó | Ver nós",
     "worked": "Concluído",
     "workedForMinutes": "Trabalhou por {minutes}m {seconds}s",
     "workedForSeconds": "Trabalhou por {seconds} segundos",
@@ -3108,6 +3112,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "Nós destacados: {count}",
+    "label": "Minimapa",
     "nodeColors": "Cores dos Nós",
     "renderBypassState": "Exibir Estado de Ignorar",
     "renderErrorState": "Exibir Estado de Erro",
