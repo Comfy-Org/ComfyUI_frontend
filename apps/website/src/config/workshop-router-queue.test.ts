@@ -77,6 +77,30 @@ async function settle<T>(run: Promise<T>): Promise<T> {
   return settled.value
 }
 
+async function withoutStaticAbortSignalHelpers<T>(
+  action: () => Promise<T>
+): Promise<T> {
+  const nativeAny = Object.getOwnPropertyDescriptor(AbortSignal, 'any')
+  const nativeTimeout = Object.getOwnPropertyDescriptor(AbortSignal, 'timeout')
+  Object.defineProperty(AbortSignal, 'any', {
+    configurable: true,
+    value: undefined
+  })
+  Object.defineProperty(AbortSignal, 'timeout', {
+    configurable: true,
+    value: undefined
+  })
+  try {
+    return await action()
+  } finally {
+    if (nativeAny) Object.defineProperty(AbortSignal, 'any', nativeAny)
+    else Reflect.deleteProperty(AbortSignal, 'any')
+    if (nativeTimeout)
+      Object.defineProperty(AbortSignal, 'timeout', nativeTimeout)
+    else Reflect.deleteProperty(AbortSignal, 'timeout')
+  }
+}
+
 function requestedUrls(calls: ReturnType<typeof stubFetch>) {
   return calls.mock.calls.map(([url, init]) => `${init?.method} ${String(url)}`)
 }
@@ -107,6 +131,22 @@ describe('queued Router delivery', () => {
       'logical-run'
     )
     expect(submit?.body).toBe('{"prompt":"Private prompt"}')
+  })
+
+  it('runs when Safari lacks the static AbortSignal helpers', async () => {
+    const calls = stubFetch(admitted(), result())
+    const controller = new AbortController()
+
+    const rendered = await withoutStaticAbortSignalHelpers(() =>
+      runWorkshopRouter(options(controller.signal))
+    )
+
+    expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
+    expect(calls).toHaveBeenCalledTimes(2)
+    expect(
+      calls.mock.calls.every(([, init]) => init?.signal?.aborted === true)
+    ).toBe(true)
+    expect(controller.signal.aborted).toBe(false)
   })
 
   it('keeps collecting the same run when the connection drops mid-generation', async () => {

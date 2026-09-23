@@ -35,7 +35,7 @@ import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { ComfyApp, app as singletonApp } from './app'
-import { createNode } from '@/utils/litegraphUtil'
+import { createNode, isSelectOnly } from '@/utils/litegraphUtil'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -122,6 +122,7 @@ vi.mock(import('@/utils/litegraphUtil'), () => ({
   isImageNode: fromAny(vi.fn()),
   isVideoNode: fromAny(vi.fn()),
   isAudioNode: fromAny(vi.fn()),
+  isSelectOnly: vi.fn(() => false),
   executeWidgetsCallback: vi.fn()
 }))
 
@@ -3226,6 +3227,27 @@ describe('ComfyApp', () => {
       } finally {
         releaseOpenWorkflow()
       }
+    })
+
+    it('claims but ignores a drop while the canvas is select-only', async () => {
+      app.canvas = fromPartial<LGraphCanvas>({
+        ...createMockCanvas(),
+        graph_mouse: [0, 0],
+        adjustMouseEvent: vi.fn()
+      })
+      vi.mocked(isSelectOnly).mockReturnValue(true)
+      const onDragDrop = vi.fn()
+      app.dragOverNode = fromPartial({ onDragDrop })
+      app['addDropHandler']()
+
+      const event = new DragEvent('drop')
+      const preventDefault = vi.spyOn(event, 'preventDefault')
+      document.dispatchEvent(event)
+      await Promise.resolve()
+
+      expect(preventDefault).toHaveBeenCalled()
+      expect(app.dragOverNode).toBeNull()
+      expect(onDragDrop).not.toHaveBeenCalled()
     })
 
     it.for([

@@ -906,7 +906,7 @@ function removeIncidentLinks(
   links: Map<LinkId, LinkTopology>,
   nodeId: NodeId
 ): void {
-  for (const [id, topology] of [...links]) {
+  for (const [id, topology] of Array.from(links)) {
     if (topology.originNodeId === nodeId || topology.targetNodeId === nodeId) {
       removeSimulatedLink(nodes, links, id)
     }
@@ -1242,7 +1242,7 @@ function createAutogrowMemory() {
         rollbackMutation(mutationIndex) {
           journal.delete(mutationIndex)
           pending.delete(mutationIndex)
-          for (const index of [...pending.keys()]) {
+          for (const index of Array.from(pending.keys())) {
             if (index > mutationIndex) pending.delete(index)
           }
           for (const [index, writes] of [...journal].sort(

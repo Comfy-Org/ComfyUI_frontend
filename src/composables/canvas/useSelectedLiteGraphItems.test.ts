@@ -82,6 +82,7 @@ describe('useSelectedLiteGraphItems', () => {
 
   beforeEach(() => {
     canvasStore = useCanvasStore()
+    app.canvas.selected_nodes = {}
 
     // markRaw so the spied getter's return is not reactive-wrapped by the Pinia
     // store proxy — production reads a shallowRef, so nodes stay raw references.
