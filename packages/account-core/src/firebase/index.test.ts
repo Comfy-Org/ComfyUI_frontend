@@ -707,4 +707,64 @@ describe('resolveFirebaseIdentity', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2)
     expect(fromOne).not.toBe(fromTwo)
   })
+
+  it('does not cache a failed resolution: a later call re-fetches and can succeed', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response('not json', { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ firebase_config: VALID_CONFIG }), {
+          status: 200
+        })
+      )
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveFirebaseIdentity } = await import('./index.js')
+    const options = {
+      cloudBaseUrl: 'https://cloud.example',
+      appName: 'evict-on-failure'
+    }
+
+    const first = await resolveFirebaseIdentity(options)
+    expect(first).toBeUndefined()
+    const second = await resolveFirebaseIdentity(options)
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(second).toBeDefined()
+  })
+
+  it('shares one in-flight fetch even when it will end in failure', async () => {
+    const response = deferred<Response>()
+    const fetchImpl = vi.fn<typeof fetch>(() => response.promise)
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveFirebaseIdentity } = await import('./index.js')
+    const options = {
+      cloudBaseUrl: 'https://cloud.example',
+      appName: 'concurrent-failure'
+    }
+
+    const callA = resolveFirebaseIdentity(options)
+    const callB = resolveFirebaseIdentity(options)
+    response.resolve(new Response('not json', { status: 200 }))
+
+    const [a, b] = await Promise.all([callA, callB])
+    expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(a).toBeUndefined()
+    expect(b).toBeUndefined()
+  })
+
+  it('keeps a successful resolution cached: a later call does not re-fetch', async () => {
+    const fetchImpl = jsonFetch({ firebase_config: VALID_CONFIG })
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveFirebaseIdentity } = await import('./index.js')
+    const options = {
+      cloudBaseUrl: 'https://cloud.example',
+      appName: 'stays-cached'
+    }
+
+    const first = await resolveFirebaseIdentity(options)
+    const second = await resolveFirebaseIdentity(options)
+
+    expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(first).toBe(second)
+  })
 })

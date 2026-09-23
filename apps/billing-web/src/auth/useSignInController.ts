@@ -27,13 +27,14 @@ const AUTH_ERROR_COPY: AuthErrorCopy = en.auth.errors
 export function useSignInController(onSignedIn: () => void) {
   const { user } = useBillingWebSession()
   const state = ref<SignInState>({ step: 'idle' })
-  // Resolved once, asynchronously: the runtime config wins when the bounded
-  // fetch beats this page's first sign-in click, the build-time fallback
-  // otherwise. Never awaited here, so it can't block first paint.
+  // Resolved asynchronously so it can't block first paint. A failed fetch no
+  // longer sticks in account-core's cache, so calling this again (from
+  // `retryAvailability`) genuinely re-fetches instead of replaying `undefined`.
   const identity = ref<FirebaseIdentity>()
-  void resolveBillingWebIdentity().then((resolved) => {
-    identity.value = resolved
-  })
+  async function loadIdentity(): Promise<void> {
+    identity.value = await resolveBillingWebIdentity()
+  }
+  void loadIdentity()
 
   const busy = computed(
     () => state.value.step === 'pending' || state.value.step === 'minting'
@@ -118,6 +119,11 @@ export function useSignInController(onSignedIn: () => void) {
     await mint()
   }
 
+  /** For the "sign-in unavailable" notice: re-fetches instead of leaving the page dead. */
+  async function retryAvailability(): Promise<void> {
+    await loadIdentity()
+  }
+
   watch(
     user,
     (restored) => {
@@ -142,6 +148,7 @@ export function useSignInController(onSignedIn: () => void) {
     available: computed(() => identity.value !== undefined),
     signInWith,
     submitEmail,
-    retryMint
+    retryMint,
+    retryAvailability
   }
 }
