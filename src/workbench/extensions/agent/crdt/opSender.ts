@@ -149,19 +149,22 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let inFlight: InFlight | null = null
   let detached = false
   let suspended = false
-  // Late-result credits: a batch retired after transmission (settled
-  // 'unacknowledged' after two sends, or 'unconfirmed' by an abort after one
-  // or two) may still draw one result per send - as ANONYMOUS failures
-  // (empty id lists, no failure op_id) they are indistinguishable from the
+  // Late-result credits: every send a batch leaves the client with may still
+  // draw a result, including the send whose silence provoked the resend and
+  // the sends of a batch that has already settled. As ANONYMOUS failures
+  // (empty id lists, no failure op_id) those are indistinguishable from the
   // current batch's. Swallowing up to the credit beats mis-attribution: a
   // swallowed own-result only costs the idempotent resend cycle, while a
   // mis-attributed settle poisons everything downstream of this seam.
   let staleAnonymousBudget = 0
   const retiredOpIds = new Set<string>()
 
-  function retire(batch: InFlight): void {
-    staleAnonymousBudget += batch.sends
-    if (batch.sends > 0) for (const opId of batch.opIds) retiredOpIds.add(opId)
+  /** @param answered results already consumed for this batch. */
+  function retire(batch: InFlight, answered = 0): void {
+    const outstanding = batch.sends - answered
+    if (outstanding <= 0) return
+    staleAnonymousBudget += outstanding
+    for (const opId of batch.opIds) retiredOpIds.add(opId)
   }
 
   function drainStaleCredit(): void {
@@ -310,6 +313,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         result.workflowId === inFlight.workflowId)
     if (identified.length > 0) {
       if (addressed && identified.some((opId) => inFlight!.opIds.has(opId))) {
+        retire(inFlight!, 1)
         settle({ state: 'acknowledged', ops: inFlight!.ops, result })
       } else if (identified.some((opId) => retiredOpIds.has(opId))) {
         // A retired batch's own answer consumes the credit reserved for it;
@@ -326,6 +330,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       drainStaleCredit()
       return
     }
+    retire(inFlight!, 1)
     settle({ state: 'acknowledged', ops: inFlight!.ops, result })
   })
 
