@@ -2,32 +2,13 @@ import { onTestFinished, vi } from 'vitest'
 
 import type { useErrorHandling as realUseErrorHandling } from '../useErrorHandling'
 
-const toastErrorHandler = vi.fn()
-
 const defaults: ReturnType<typeof realUseErrorHandling> = {
-  wrapWithErrorHandling:
-    (action, errorHandler, finallyHandler) =>
-    (...args) => {
-      try {
-        return action(...args)
-      } catch (error) {
-        ;(errorHandler ?? toastErrorHandler)(error)
-      } finally {
-        finallyHandler?.()
-      }
-    },
+  wrapWithErrorHandling: (action) => action,
   wrapWithErrorHandlingAsync:
-    (action, errorHandler, finallyHandler) =>
-    async (...args) => {
-      try {
-        return await action(...args)
-      } catch (error) {
-        ;(errorHandler ?? toastErrorHandler)(error)
-      } finally {
-        finallyHandler?.()
-      }
-    },
-  toastErrorHandler
+    (action) =>
+    async (...args) =>
+      action(...args),
+  toastErrorHandler: vi.fn()
 }
 
 const errorHandling = { ...defaults }

@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useTelemetry } from '@/platform/telemetry'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -169,6 +170,15 @@ function renderComponent() {
 const onChooseTeamWorkspace = vi.fn()
 
 beforeEach(() => {
+  useErrorHandling().wrapWithErrorHandlingAsync =
+    (action, errorHandler) =>
+    async (...args) => {
+      try {
+        return await action(...args)
+      } catch (error) {
+        errorHandler?.(error)
+      }
+    }
   const billing = useBillingContext()
   billing.canAccessSubscriptionFeatures = computed(
     () => mockCanAccessSubscriptionFeatures.value

@@ -150,6 +150,16 @@ function createDeferred() {
 
 describe('CreditsTile', () => {
   beforeEach(() => {
+    const errorHandling = useErrorHandling()
+    errorHandling.wrapWithErrorHandlingAsync =
+      (action, errorHandler) =>
+      async (...args) => {
+        try {
+          return await action(...args)
+        } catch (error) {
+          ;(errorHandler ?? errorHandling.toastErrorHandler)(error)
+        }
+      }
     const billing = useBillingContext()
     vi.mocked(useBillingContext).mockReturnValue(billing)
     billing.balance = computed(() =>
