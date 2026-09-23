@@ -627,47 +627,40 @@ export class ComfyApi extends EventTarget {
         ? AbortSignal.any([requestOptions.signal, timeout.controller.signal])
         : (requestOptions.signal ?? timeout?.controller.signal)
 
-    // A post-401 retry replays the request only after the re-mint round trip
-    // (its own independently-bounded token exchange) has already spent some
-    // of `timeout`'s window, so reusing `signal` would hand the retry
-    // whatever is left of the original deadline rather than a full one.
-    // Minted lazily -- only if a retry actually happens -- and only when
-    // there is a timeout to renew in the first place.
     let retryTimeoutId: ReturnType<typeof setTimeout> | undefined
-    const freshRetrySignal = timeout
-      ? () => {
-          // The original fetch already returned (the 401 that triggered this
-          // retry) -- end its timeout lifecycle now so it cannot fire the
-          // timeout telemetry/abort for a request that already resolved.
-          // Only the fresh timer armed below guards the retry window.
-          if (timeoutId !== undefined) clearTimeout(timeoutId)
+    const retrySignalLifecycle = timeout
+      ? {
+          clearInitialTimeout: () => {
+            if (timeoutId !== undefined) clearTimeout(timeoutId)
+          },
+          createSignal: () => {
+            const retryController = new AbortController()
+            retryTimeoutId = setTimeout(() => {
+              const method = (requestOptions.method ?? 'GET').toUpperCase()
+              const routeTemplate = getFetchRouteTemplate(route)
 
-          const retryController = new AbortController()
-          retryTimeoutId = setTimeout(() => {
-            const method = (requestOptions.method ?? 'GET').toUpperCase()
-            const routeTemplate = getFetchRouteTemplate(route)
+              addBreadcrumb({
+                category: 'fetch',
+                message: `Timeout on ${method} ${routeTemplate}`,
+                level: 'warning',
+                data: { timeout_ms: timeout.duration }
+              })
 
-            addBreadcrumb({
-              category: 'fetch',
-              message: `Timeout on ${method} ${routeTemplate}`,
-              level: 'warning',
-              data: { timeout_ms: timeout.duration }
-            })
+              useTelemetry()?.trackFetchTimeout({
+                route: routeTemplate,
+                method,
+                timeout_ms: timeout.duration
+              })
 
-            useTelemetry()?.trackFetchTimeout({
-              route: routeTemplate,
-              method,
-              timeout_ms: timeout.duration
-            })
+              retryController.abort(
+                new DOMException('Fetch timeout', 'TimeoutError')
+              )
+            }, timeout.duration)
 
-            retryController.abort(
-              new DOMException('Fetch timeout', 'TimeoutError')
-            )
-          }, timeout.duration)
-
-          return requestOptions.signal
-            ? AbortSignal.any([requestOptions.signal, retryController.signal])
-            : retryController.signal
+            return requestOptions.signal
+              ? AbortSignal.any([requestOptions.signal, retryController.signal])
+              : retryController.signal
+          }
         }
       : undefined
 
@@ -680,7 +673,7 @@ export class ComfyApi extends EventTarget {
         signal
       },
       unifiedRetryOn401,
-      freshRetrySignal
+      retrySignalLifecycle
     ).finally(() => {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
       if (retryTimeoutId !== undefined) clearTimeout(retryTimeoutId)

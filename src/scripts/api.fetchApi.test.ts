@@ -380,25 +380,20 @@ describe('api.fetchApi', () => {
       mockDistribution.isCloud = false
     })
 
-    it('gives the retry fetch a fresh timeout window instead of the shrunk remainder', async () => {
-      // The re-mint round trip (unifiedUser -> exchangeToken, each with its
-      // own independent budget) takes 55s here -- most of the original 60s
-      // window -- before the retry fetch even starts.
+    it('ends the initial timeout before re-minting and gives the retry a fresh window', async () => {
       vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockImplementation(
         () =>
-          new Promise((resolve) => setTimeout(() => resolve('tokenB'), 55_000))
+          new Promise((resolve) => setTimeout(() => resolve('tokenB'), 30_000))
       )
 
       let fetchCall = 0
       vi.mocked(global.fetch).mockImplementation((_input, init) => {
         fetchCall++
         if (fetchCall === 1) {
-          return Promise.resolve({ status: 401 } as Response)
+          return new Promise((resolve) =>
+            setTimeout(() => resolve({ status: 401 } as Response), 40_000)
+          )
         }
-        // The retry itself takes 30s. Reusing the original signal (which
-        // expires at t=60s, only 5s into the retry) would abort this before
-        // it finishes; a fresh signal (starting its own 60s clock at t=55s)
-        // does not.
         const signal = init?.signal
         return new Promise<Response>((resolve, reject) => {
           if (signal?.aborted) {
@@ -416,15 +411,12 @@ describe('api.fetchApi', () => {
 
       const request = api.fetchApi('/test')
       const settled = Promise.allSettled([request])
-      await vi.advanceTimersByTimeAsync(90_000)
+      await vi.advanceTimersByTimeAsync(100_000)
 
       expect(await settled).toMatchObject([
         { status: 'fulfilled', value: { status: 200 } }
       ])
       expect(fetchCall).toBe(2)
-      // The original fetch's timer must not outlive the 401 it was guarding:
-      // it would otherwise still fire at t=60s (mid re-mint) even though the
-      // retry it triggered ultimately succeeds.
       expect(trackFetchTimeout).not.toHaveBeenCalled()
       expect(addBreadcrumb).not.toHaveBeenCalled()
     })

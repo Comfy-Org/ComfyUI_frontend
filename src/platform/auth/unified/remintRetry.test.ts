@@ -320,14 +320,15 @@ describe('fetchWithUnifiedRemint', () => {
     })
   })
 
-  it('uses the fresh signal from freshRetrySignal on the retry fetch, not the original init.signal', async () => {
+  it('ends the initial timeout before re-minting and uses a fresh signal for the retry', async () => {
     mockFetch.mockResolvedValueOnce(unauthorized).mockResolvedValueOnce(ok)
     vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
       'tokenB'
     )
     const originalController = new AbortController()
     const freshController = new AbortController()
-    const freshRetrySignal = vi.fn(() => freshController.signal)
+    const clearInitialTimeout = vi.fn()
+    const createSignal = vi.fn(() => freshController.signal)
 
     const result = await fetchWithUnifiedRemint(
       'https://cloud/x',
@@ -336,29 +337,33 @@ describe('fetchWithUnifiedRemint', () => {
         signal: originalController.signal
       },
       true,
-      freshRetrySignal
+      { clearInitialTimeout, createSignal }
     )
 
     expect(result).toBe(ok)
-    expect(freshRetrySignal).toHaveBeenCalledTimes(1)
+    expect(clearInitialTimeout).toHaveBeenCalledTimes(1)
+    expect(createSignal).toHaveBeenCalledTimes(1)
+    expect(clearInitialTimeout).toHaveBeenCalledBefore(createSignal)
     const retrySignal = mockFetch.mock.calls[1][1].signal
     expect(retrySignal).toBe(freshController.signal)
     expect(retrySignal).not.toBe(originalController.signal)
   })
 
-  it('does not call freshRetrySignal when no retry happens', async () => {
+  it('does not use the retry signal lifecycle when no retry happens', async () => {
     mockFetch.mockResolvedValueOnce(unauthorized)
-    const freshRetrySignal = vi.fn()
+    const clearInitialTimeout = vi.fn()
+    const createSignal = vi.fn()
 
     const result = await fetchWithUnifiedRemint(
       'https://cloud/x',
       { headers: { Authorization: 'Bearer tokenA' as const } },
       false,
-      freshRetrySignal
+      { clearInitialTimeout, createSignal }
     )
 
     expect(result).toBe(unauthorized)
-    expect(freshRetrySignal).not.toHaveBeenCalled()
+    expect(clearInitialTimeout).not.toHaveBeenCalled()
+    expect(createSignal).not.toHaveBeenCalled()
   })
 
   it.for([
