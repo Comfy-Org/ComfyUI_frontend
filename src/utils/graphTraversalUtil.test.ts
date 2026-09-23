@@ -18,6 +18,7 @@ import {
   getLocalNodeIdFromExecutionId,
   getNodeByExecutionId,
   getNodeByLocatorId,
+  getNodeByState,
   getRootGraph,
   getSubgraphPathFromExecutionId,
   executionIdFromState,
@@ -1057,29 +1058,6 @@ describe('graphTraversalUtil', () => {
 
         expect(execId).toBe('123:999')
       })
-
-      it('keeps a colon-bearing subgraph-interior id opaque', () => {
-        const rawId = 'insert:abc123:root:node:5'
-        const targetNode = createMockNode(rawId)
-        const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-        const subgraph = createMockSubgraph(subgraphUuid, [targetNode])
-        const topNode = createMockNode('123', {
-          isSubgraph: true,
-          subgraph
-        })
-        const rootGraph = createMockGraph([topNode])
-
-        ;(subgraph as Subgraph & { rootGraph: LGraph }).rootGraph = rootGraph
-        targetNode.graph = subgraph
-        topNode.graph = rootGraph
-
-        const execId = executionIdFromState(rootGraph, {
-          id: toNodeId(rawId),
-          graphId: subgraphUuid
-        })
-
-        expect(execId).toBe(rawId)
-      })
     })
 
     describe('locatorIdFromState', () => {
@@ -1112,14 +1090,35 @@ describe('graphTraversalUtil', () => {
         expect(locatorId).toBe(rawId)
       })
 
-      it('keeps a colon-bearing id whole when the node is subgraph-owned', () => {
+      it('still rejects a colon-bearing id when the node really is subgraph-owned (no regression)', () => {
         const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
         const rawId = 'insert:abc123:root:node:5'
         const locatorId = locatorIdFromState(
           { id: toNodeId(rawId), graphId: subgraphUuid },
           ROOT_GRAPH_ID
         )
-        expect(locatorId).toBe(`${subgraphUuid}:${rawId}`)
+        expect(locatorId).toBeNull()
+      })
+    })
+
+    describe('getNodeByState', () => {
+      it('uses graph identity to disambiguate colon-bearing node IDs', () => {
+        const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+        const nodeId = toNodeId(`${subgraphUuid}:node:5`)
+        const rootNode = createMockNode(nodeId)
+        const interiorNode = createMockNode(nodeId)
+        const subgraph = createMockSubgraph(subgraphUuid, [interiorNode])
+        const graph = createMockGraph([
+          rootNode,
+          createMockNode('456', { isSubgraph: true, subgraph })
+        ])
+
+        expect(
+          getNodeByState(graph, { id: nodeId, graphId: ROOT_GRAPH_ID })
+        ).toBe(rootNode)
+        expect(
+          getNodeByState(graph, { id: nodeId, graphId: subgraphUuid })
+        ).toBe(interiorNode)
       })
     })
 
@@ -1156,37 +1155,6 @@ describe('graphTraversalUtil', () => {
 
         const found = getNodeByLocatorId(graph, 'invalid:::format')
         expect(found).toBeNull()
-      })
-
-      it('finds a subgraph-interior node whose id carries a colon', () => {
-        const targetUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-        const rawId = 'insert:abc123:root:node:5'
-        const targetNode = createMockNode(rawId)
-        const subgraph = createMockSubgraph(targetUuid, [targetNode])
-
-        const graph = createMockGraph([
-          createMockNode('123'),
-          createMockNode('456', { isSubgraph: true, subgraph })
-        ])
-
-        const locatorId = `${targetUuid}:${rawId}`
-        const found = getNodeByLocatorId(graph, locatorId)
-
-        expect(found).toBe(targetNode)
-      })
-
-      it('prefers an exact root ID over an ambiguous subgraph locator', () => {
-        const targetUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-        const rootNode = createMockNode(`${targetUuid}:node:5`)
-        const subgraph = createMockSubgraph(targetUuid, [
-          createMockNode('node:5')
-        ])
-        const graph = createMockGraph([
-          rootNode,
-          createMockNode('456', { isSubgraph: true, subgraph })
-        ])
-
-        expect(getNodeByLocatorId(graph, String(rootNode.id))).toBe(rootNode)
       })
 
       it('should return null when subgraph UUID not found', () => {

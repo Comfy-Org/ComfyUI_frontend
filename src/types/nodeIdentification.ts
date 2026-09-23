@@ -115,8 +115,18 @@ export function createNodeLocatorId(
 }
 
 /**
- * Create a locator while preserving an `insert_workflow` node's colon-bearing
- * local ID in either graph scope.
+ * Create a `NodeLocatorId` from components, tolerating a colon inside a
+ * root-graph local id.
+ *
+ * `createNodeLocatorId` rejects a colon in `localNodeId` because colon is
+ * the delimiter between the subgraph UUID and the local id. That is the
+ * right contract for a node that really lives in a subgraph, but it is too
+ * strict for a root-graph node (no `subgraphUuid`) whose raw id itself
+ * contains colons for reasons that have nothing to do with locator-id
+ * encoding (comfy-multi-player's `insert_workflow` remapped ids, e.g.
+ * `insert:<opId>:root:node:<originalId>`, PM-1580). There is no subgraph
+ * UUID to disambiguate such an id from, so nothing is lost by keeping it
+ * whole rather than rejecting it outright.
  */
 export function createLeafNodeLocatorId(
   subgraphUuid: string | null,
@@ -124,37 +134,11 @@ export function createLeafNodeLocatorId(
 ): NodeLocatorId | null {
   const strictNodeId = requireNodeIdSegment(localNodeId)
   if (strictNodeId) return createNodeLocatorId(subgraphUuid, strictNodeId)
+  if (subgraphUuid) return null
 
   const bareNodeId = parseNodeId(localNodeId)
-  if (!bareNodeId) return null
-  if (!subgraphUuid) return String(bareNodeId) as NodeLocatorId
-  if (!UUID_PATTERN.test(subgraphUuid)) return null
-  return `${subgraphUuid}:${bareNodeId}` as NodeLocatorId
+  return bareNodeId ? (String(bareNodeId) as NodeLocatorId) : null
 }
-
-/**
- * Parse a locator whose local ID may contain colons. A UUID-shaped first
- * segment denotes subgraph scope; otherwise the complete value is a root ID.
- */
-export function parseLeafNodeLocatorId(
-  id: string
-): { subgraphUuid: string | null; localNodeId: NodeId } | null {
-  const strict = parseNodeLocatorId(id)
-  if (strict) return strict
-
-  const separatorIndex = id.indexOf(':')
-  if (separatorIndex === -1) return null
-
-  const subgraphUuid = id.slice(0, separatorIndex)
-  if (!UUID_PATTERN.test(subgraphUuid)) {
-    const localNodeId = parseNodeId(id)
-    return localNodeId ? { subgraphUuid: null, localNodeId } : null
-  }
-
-  const localNodeId = parseNodeId(id.slice(separatorIndex + 1))
-  return localNodeId ? { subgraphUuid, localNodeId } : null
-}
-
 /**
  * Parse a NodeExecutionId into its component node IDs
  * @param id The NodeExecutionId to parse

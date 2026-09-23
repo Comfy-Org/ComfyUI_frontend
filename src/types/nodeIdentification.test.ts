@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -12,7 +12,6 @@ import {
   getParentExecutionIds,
   isNodeExecutionId,
   isNodeLocatorId,
-  parseLeafNodeLocatorId,
   parseNodeExecutionId,
   parseNodeLocatorId,
   tryNormalizeNodeExecutionId
@@ -156,44 +155,16 @@ describe('nodeIdentification', () => {
         expect(createLeafNodeLocatorId(null, rawId)).toBe(rawId)
       })
 
-      it('keeps a colon-bearing id whole when it really is subgraph-nested (insert_workflow subgraph-interior remap)', () => {
+      it('still rejects a colon-bearing id when it really is subgraph-nested', () => {
+        // There is no subgraph UUID to disambiguate a colon-bearing id from
+        // in the root-level case, but a node that IS scoped to a subgraph
+        // still goes through the strict, delimiter-aware path.
         const rawId = 'insert:abc123:root:node:5'
-        const result = createLeafNodeLocatorId(validUuid, rawId)
-        assert(result)
-        expect(result).toBe(`${validUuid}:${rawId}`)
-        expect(parseLeafNodeLocatorId(result)).toEqual({
-          subgraphUuid: validUuid,
-          localNodeId: rawId
-        })
+        expect(createLeafNodeLocatorId(validUuid, rawId)).toBeNull()
       })
 
       it('returns null for an empty id', () => {
         expect(createLeafNodeLocatorId(null, '')).toBeNull()
-      })
-    })
-
-    describe('parseLeafNodeLocatorId', () => {
-      it('parses exactly like parseNodeLocatorId for ordinary ids', () => {
-        expect(parseLeafNodeLocatorId(String(validNodeLocatorId))).toEqual({
-          subgraphUuid: validUuid,
-          localNodeId: '123'
-        })
-        expect(parseLeafNodeLocatorId('123')).toEqual({
-          subgraphUuid: null,
-          localNodeId: '123'
-        })
-      })
-
-      it('keeps a colon-bearing root-level id whole (PM-1580)', () => {
-        const rawId = 'insert:abc123:root:node:5'
-        expect(parseLeafNodeLocatorId(rawId)).toEqual({
-          subgraphUuid: null,
-          localNodeId: rawId
-        })
-      })
-
-      it('returns null for an empty id', () => {
-        expect(parseLeafNodeLocatorId('')).toBeNull()
       })
     })
   })
