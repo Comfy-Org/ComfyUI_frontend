@@ -3,6 +3,10 @@ import { expect, mergeTests } from '@playwright/test'
 import { canvasMenuFixture } from '@e2e/fixtures/canvasMenuFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import {
+  readBackgroundColor,
+  resolveColorVariable
+} from '@e2e/fixtures/utils/cssColors'
 import { readPanelStyle } from '@e2e/fixtures/utils/panelStyle'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -57,15 +61,20 @@ test.describe('Floating toolbars', { tag: ['@ui', '@canvas'] }, () => {
     getWebSocket
   }) => {
     const cancel = comfyPage.actionbar.cancelButton
+    const [secondary, destructive] = await Promise.all([
+      resolveColorVariable(comfyPage.page, '--color-secondary-background'),
+      resolveColorVariable(comfyPage.page, '--color-destructive-background')
+    ])
+    expect(destructive).not.toBe(secondary)
+
     await expect(cancel).toBeDisabled()
-    await expect(cancel).toHaveClass(/bg-secondary-background/)
-    await expect(cancel).not.toHaveClass(/destructive/)
+    await expect.poll(() => readBackgroundColor(cancel)).toBe(secondary)
 
     const exec = new ExecutionHelper(comfyPage, await getWebSocket())
     const jobId = await exec.run()
     exec.executionStart(jobId)
 
     await expect(cancel).toBeEnabled()
-    await expect(cancel).toHaveClass(/bg-destructive-background/)
+    await expect.poll(() => readBackgroundColor(cancel)).toBe(destructive)
   })
 })

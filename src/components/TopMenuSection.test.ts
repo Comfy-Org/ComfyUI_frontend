@@ -586,7 +586,6 @@ describe('TopMenuSection', () => {
     expect(container.querySelector('.actionbar-container')).not.toHaveClass(
       'w-0'
     )
-    expect(screen.getByTestId('action-bar-card')).toHaveClass('floating-panel')
   })
 
   it('coalesces legacy topbar mutation scans to one check per frame', async () => {
@@ -620,9 +619,6 @@ describe('TopMenuSection', () => {
       const actionbarContainer = container.querySelector('.actionbar-container')
       expect(actionbarContainer).not.toBeNull()
       expect(actionbarContainer!.classList).toContain('w-0')
-      expect(screen.getByTestId('action-bar-card')).not.toHaveClass(
-        'floating-panel'
-      )
 
       const legacyContainer = getLegacyCommandsContainer(container)
       const querySpy = vi.spyOn(legacyContainer, 'querySelector')
