@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useCommandPolicyStore } from '@/stores/commandPolicyStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
@@ -102,14 +101,14 @@ describe('commandStore', () => {
     })
 
     it.for([
-      { locked: false, calls: 1 },
-      { locked: true, calls: 0 }
+      { selectOnly: false, calls: 1 },
+      { selectOnly: true, calls: 0 }
     ])(
-      'executes graph mutations $calls times with graphMutationsLocked=$locked',
-      async ({ locked, calls }) => {
-        useCommandPolicyStore().graphMutationsLocked = locked
+      'executes graph mutations $calls times while selectOnly=$selectOnly',
+      async ({ selectOnly, calls }) => {
         const fn = vi.fn()
         const store = useCommandStore()
+        store.setInteractionMode({ isSelectOnly: () => selectOnly })
         store.registerCommand({
           id: 'graph.mutation',
           function: fn,
@@ -123,15 +122,15 @@ describe('commandStore', () => {
     )
 
     it.for([
-      { lockedAtDispatch: true, lockedBeforeResume: false, calls: 0 },
-      { lockedAtDispatch: false, lockedBeforeResume: true, calls: 1 }
+      { selectOnlyAtDispatch: true, selectOnlyBeforeResume: false, calls: 0 },
+      { selectOnlyAtDispatch: false, selectOnlyBeforeResume: true, calls: 1 }
     ])(
-      'decides at dispatch: locked=$lockedAtDispatch then $lockedBeforeResume before the promise resumes runs $calls times',
-      async ({ lockedAtDispatch, lockedBeforeResume, calls }) => {
-        const policy = useCommandPolicyStore()
-        policy.graphMutationsLocked = lockedAtDispatch
+      'decides at dispatch: selectOnly=$selectOnlyAtDispatch then $selectOnlyBeforeResume before the promise resumes runs $calls times',
+      async ({ selectOnlyAtDispatch, selectOnlyBeforeResume, calls }) => {
+        let selectOnly = selectOnlyAtDispatch
         const fn = vi.fn()
         const store = useCommandStore()
+        store.setInteractionMode({ isSelectOnly: () => selectOnly })
         store.registerCommand({
           id: 'graph.mutation',
           function: fn,
@@ -139,7 +138,7 @@ describe('commandStore', () => {
         })
 
         const execution = store.execute('graph.mutation')
-        policy.graphMutationsLocked = lockedBeforeResume
+        selectOnly = selectOnlyBeforeResume
         await execution
 
         expect(fn).toHaveBeenCalledTimes(calls)
@@ -147,9 +146,9 @@ describe('commandStore', () => {
     )
 
     it('evaluates conditional graph mutation capabilities at dispatch', async () => {
-      useCommandPolicyStore().graphMutationsLocked = true
       const fn = vi.fn()
       const store = useCommandStore()
+      store.setInteractionMode({ isSelectOnly: () => true })
       store.registerCommand({
         id: 'conditional.mutation',
         function: fn,

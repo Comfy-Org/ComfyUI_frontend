@@ -2,9 +2,10 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import type { CanvasInteractionModeReader } from '@/lib/litegraph/src/canvas/CanvasInteractionMode'
+import { EDITABLE_INTERACTION_MODE } from '@/lib/litegraph/src/canvas/CanvasInteractionMode'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useCommandPolicyStore } from '@/stores/commandPolicyStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 export interface ComfyCommand {
@@ -20,12 +21,11 @@ export interface ComfyCommand {
   source?: string
   active?: () => boolean // Getter to check if the command is active/toggled on
   category?: 'essentials' | 'view-controls' // For shortcuts panel organization
-  /** Refused by `execute()` while `commandPolicyStore.graphMutationsLocked` (agent node picking). */
+  /** Refused by `execute()` while the canvas interaction mode is select-only. */
   mutatesGraph?: boolean | (() => boolean)
 }
 
-function isRefusedByGraphMutationLock(command: ComfyCommand): boolean {
-  if (!useCommandPolicyStore().graphMutationsLocked) return false
+function mutatesGraph(command: ComfyCommand): boolean {
   return typeof command.mutatesGraph === 'function'
     ? command.mutatesGraph()
     : command.mutatesGraph === true
@@ -104,6 +104,11 @@ export const useCommandStore = defineStore('command', () => {
     return commandsById.value[command]
   }
 
+  let interactionMode: CanvasInteractionModeReader = EDITABLE_INTERACTION_MODE
+  const setInteractionMode = (mode: CanvasInteractionModeReader) => {
+    interactionMode = mode
+  }
+
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
   const execute = async (
     commandId: string,
@@ -116,7 +121,7 @@ export const useCommandStore = defineStore('command', () => {
       throw new Error(`Command ${commandId} not found`)
     }
     const command = getCommand(commandId)
-    if (isRefusedByGraphMutationLock(command)) return
+    if (interactionMode.isSelectOnly() && mutatesGraph(command)) return
     await wrapWithErrorHandlingAsync(
       () => command.function(options?.metadata),
       options?.errorHandler
@@ -152,6 +157,7 @@ export const useCommandStore = defineStore('command', () => {
     registerCommand,
     registerCommands,
     isRegistered,
+    setInteractionMode,
     loadExtensionCommands,
     formatKeySequence
   }
