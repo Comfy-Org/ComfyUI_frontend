@@ -248,6 +248,33 @@ const hub = {
     'zh-CN': '正在加载所需模型'
   },
   'workshop.v2.run.generating': { en: 'Generating', 'zh-CN': '生成中' },
+  'workshop.v2.run.cancelled': {
+    en: 'This run was cancelled before it finished.',
+    'zh-CN': '这次运行在完成前已取消。'
+  },
+  'workshop.v2.run.runAgain': { en: 'Run it again', 'zh-CN': '重新运行' },
+  'workshop.v2.run.failed': {
+    en: 'The run failed. Keep your answers as they are and try again. If credits were spent without a result, contact support with the run ID.',
+    'zh-CN':
+      '运行失败。请保持当前填写内容后重试。若已扣除积分却没有结果，请携带运行 ID 联系支持。'
+  },
+  'workshop.v2.run.rejected': {
+    en: 'Cloud would not accept this workflow. Check your answers before running it again.',
+    'zh-CN': 'Cloud 未接受此工作流。请检查填写内容后再运行。'
+  },
+  'workshop.v2.run.blocked': {
+    en: 'This workspace blocks one of the providers this workflow calls. A workspace owner can allow it in Cloud settings.',
+    'zh-CN':
+      '该工作区禁用了此工作流调用的某个提供方。工作区所有者可在 Cloud 设置中放行。'
+  },
+  'workshop.v2.run.unavailable': {
+    en: 'Cloud cannot run this workflow right now. Try again in a few minutes.',
+    'zh-CN': 'Cloud 目前无法运行此工作流，请几分钟后重试。'
+  },
+  'workshop.v2.run.expired': {
+    en: 'Your session expired. Sign in again to run this workflow.',
+    'zh-CN': '登录状态已过期。请重新登录后运行此工作流。'
+  },
   'workshop.v2.workflow.factWhere': { en: 'Where', 'zh-CN': '运行位置' },
   'workshop.v2.workflow.factOutput': { en: 'Output', 'zh-CN': '输出' },
   'workshop.v2.workflow.factRuns': { en: 'Runs', 'zh-CN': '运行次数' },

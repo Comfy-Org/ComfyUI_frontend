@@ -10,6 +10,7 @@ import {
   createWorkflowClient,
   workflowFinished
 } from '../config/workflow-execution'
+import type { WorkflowFailure } from '../lib/hub/run-failure'
 import { WORKSHOP_CLOUD_BASE_URL } from '../config/workshop-env'
 import { useWorkshopSession } from '../config/workshop-session-state'
 import { refreshWorkshopCredits } from '../config/workshop-credits'
@@ -20,7 +21,30 @@ export type RunState =
   | { phase: 'uploading' | 'submitting' | 'reconnecting' }
   | { phase: 'tracking'; job: WorkflowJob }
   | { phase: 'finished'; job: WorkflowJob }
-  | { phase: 'error'; message: string; jobId?: string; retrySafe: boolean }
+  | { phase: 'cancelled' }
+  | {
+      phase: 'error'
+      reason: WorkflowFailure
+      /**
+       * The page's own words, where it stopped the run itself and can say
+       * something more useful than the reason's general sentence. Cloud's
+       * refusals carry none: the reason names them better, and in both
+       * languages.
+       */
+      message?: string
+      jobId?: string
+      retrySafe: boolean
+    }
+
+/** Something this page stopped over, named the way a refusal from Cloud is. */
+class RunProblem extends Error {
+  constructor(
+    readonly reason: WorkflowFailure,
+    message: string
+  ) {
+    super(message)
+  }
+}
 
 /**
  * One run of one workflow against Cloud: the fields the reader fills, the
@@ -30,6 +54,15 @@ export type RunState =
  */
 const carriesAFile = (field: WorkflowField) =>
   ['image', 'video', 'audio'].includes(field.kind)
+
+/** Which named refusal this was, whoever raised it. */
+function reasonFor(error: unknown): WorkflowFailure {
+  if (error instanceof WorkflowHttpError || error instanceof RunProblem)
+    return error.reason
+  if (error instanceof DOMException && error.name === 'TimeoutError')
+    return 'timeout'
+  return error instanceof TypeError ? 'network' : 'client'
+}
 
 /**
  * What went wrong, and whether pressing Run again is safe. It is safe only
@@ -41,10 +74,8 @@ function failed(error: unknown, jobId: string | undefined, sent: boolean) {
     !sent || (error instanceof WorkflowHttpError && error.retrySafe)
   return {
     phase: 'error',
-    message:
-      error instanceof Error
-        ? error.message
-        : 'Could not reach Cloud. Check your Cloud job history before submitting again.',
+    reason: reasonFor(error),
+    message: error instanceof RunProblem ? error.message : undefined,
     jobId,
     retrySafe: !jobId && stillHere
   } as const
@@ -101,7 +132,8 @@ export function useWorkflowRun(
       fresh?.status !== 'ok' ||
       `${fresh.session.uid}:${fresh.session.workspace.id}` !== owner
     )
-      throw new Error(
+      throw new RunProblem(
+        'signedOut',
         'Your account or workspace changed. Start a new run in the selected workspace.'
       )
     return fresh.session.token
@@ -120,6 +152,20 @@ export function useWorkflowRun(
       signal.throwIfAborted()
       state.value = { phase: 'tracking', job }
       if (workflowFinished(job)) {
+        // A job that was cancelled or failed is an outcome of its own. Only a
+        // completed one has anything to fetch.
+        if (job.status === 'cancelled') {
+          state.value = { phase: 'cancelled' }
+          void refreshWorkshopCredits({ force: true })
+          return
+        }
+        if (job.status === 'failed') {
+          // The run is over, so there is nothing to pick back up: what is
+          // left to offer is running it again.
+          state.value = { phase: 'error', reason: 'provider', retrySafe: true }
+          void refreshWorkshopCredits({ force: true })
+          return
+        }
         if (job.status === 'completed') {
           const result = await client.outputs(id, signal)
           for (const asset of result.assets) {
@@ -156,15 +202,17 @@ export function useWorkflowRun(
     if (!file && answer?.sourceUrl) {
       const response = await fetch(answer.sourceUrl, { signal })
       if (!response.ok)
-        throw new Error(
+        throw new RunProblem(
+          'upload',
           'The example input could not load. Upload your own file and try again.'
         )
       const blob = await response.blob()
       file = new File([blob], answer.name, { type: blob.type })
     }
-    if (!file) throw new Error('Choose a file before running.')
+    if (!file)
+      throw new RunProblem('validation', 'Choose a file before running.')
     if (file.size > 100 * 1024 * 1024)
-      throw new Error('Choose an input smaller than 100 MB.')
+      throw new RunProblem('validation', 'Choose an input smaller than 100 MB.')
     return client.upload(file, signal)
   }
 
@@ -205,7 +253,10 @@ export function useWorkflowRun(
     try {
       const missing = unanswered()
       if (missing)
-        throw new Error(`Upload ${missing.label.toLowerCase()} before running.`)
+        throw new RunProblem(
+          'validation',
+          `Upload ${missing.label.toLowerCase()} before running.`
+        )
       const bindings = []
       for (const field of fields) bindings.push(await bindingFor(field, signal))
       state.value = { phase: 'submitting' }
@@ -226,13 +277,7 @@ export function useWorkflowRun(
     try {
       await poll(jobId, signal)
     } catch (error) {
-      if (!signal.aborted)
-        state.value = {
-          phase: 'error',
-          message: String(error),
-          jobId,
-          retrySafe: false
-        }
+      if (!signal.aborted) state.value = failed(error, jobId, true)
     }
   }
   async function cancel() {
@@ -245,12 +290,11 @@ export function useWorkflowRun(
       )
     } catch (error) {
       controller.abort()
-      state.value = {
-        phase: 'error',
-        message: `Cancellation could not be confirmed. ${String(error)}`,
-        jobId: job.id,
-        retrySafe: false
-      }
+      state.value = failed(
+        new RunProblem('client', 'Cancellation could not be confirmed.'),
+        job.id,
+        true
+      )
     }
   }
   watch(identity, (next, previous) => {

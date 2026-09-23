@@ -7,6 +7,9 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
+import type { WorkflowFailure } from '../lib/hub/run-failure'
+import { workflowFailure } from '../lib/hub/run-failure'
+
 export const workflowGraphSchema = z.record(
   z.string(),
   z.object({
@@ -40,16 +43,24 @@ export function bindWorkflowInputs(
 }
 
 export class WorkflowHttpError extends Error {
+  readonly reason: WorkflowFailure
   constructor(
-    message: string,
-    readonly status: number
+    readonly status: number,
+    type: string | undefined
   ) {
-    super(message)
+    super(`Cloud returned ${status}.`)
+    this.reason = workflowFailure(status, type)
   }
   get retrySafe() {
     return this.status >= 400 && this.status < 500
   }
 }
+
+// Cloud says which of the two things a 429 is in the body's `error.type`, and
+// its documentation asks for that field rather than a match on the message.
+const problemBody = z.object({
+  error: z.object({ type: z.string() }).partial().optional()
+})
 
 export function createWorkflowClient(
   origin: string,
@@ -77,39 +88,10 @@ export function createWorkflowClient(
       headers
     })
     if (!response.ok) {
-      const body: unknown = await response.json().catch(() => undefined)
-      const paymentRequired = JSON.stringify(body ?? {}).includes(
-        'PAYMENT_REQUIRED'
+      const body = problemBody.safeParse(
+        await response.json().catch(() => undefined)
       )
-      if (paymentRequired)
-        throw new WorkflowHttpError(
-          'Insufficient credits to queue this workflow. Check your plan and credits in Cloud.',
-          response.status
-        )
-      if (response.status === 402)
-        throw new WorkflowHttpError(
-          'Your Cloud plan or credits do not cover this run. Check your plan and credits in Cloud.',
-          response.status
-        )
-      if (response.status === 401)
-        throw new WorkflowHttpError(
-          'Your session expired. Sign in again to continue.',
-          response.status
-        )
-      if (response.status === 403)
-        throw new WorkflowHttpError(
-          'This account cannot run this workflow in Cloud. Check your Cloud access.',
-          response.status
-        )
-      if (response.status === 422)
-        throw new WorkflowHttpError(
-          'Cloud could not accept this workflow. Check your inputs and Cloud job history before submitting again.',
-          response.status
-        )
-      throw new WorkflowHttpError(
-        `Cloud returned ${response.status}. Check your Cloud job history before submitting again.`,
-        response.status
-      )
+      throw new WorkflowHttpError(response.status, body.data?.error?.type)
     }
     return response
   }

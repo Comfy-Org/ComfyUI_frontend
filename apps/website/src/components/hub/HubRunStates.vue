@@ -22,9 +22,11 @@ type JobStatus =
   | 'failed'
   | 'cancelled'
 
+const JOB_ID = '11111111-2222-3333-4444-555555555555'
+
 const job = (status: JobStatus) =>
   zJobDetailResponse.parse({
-    id: '11111111-2222-3333-4444-555555555555',
+    id: JOB_ID,
     status,
     create_time: 0n,
     update_time: 0n
@@ -38,6 +40,8 @@ interface Scene {
   readonly outputs?: readonly { url: string; name: string; mime: string }[]
   readonly sample?: string
   readonly coldStart?: boolean
+  /** Named where the reader is a member of that workspace, not its owner. */
+  readonly memberWorkspace?: string
 }
 
 const scenes: readonly Scene[] = [
@@ -91,31 +95,97 @@ const scenes: readonly Scene[] = [
     outputs: [{ url: MADE, name: 'Result', mime: 'image/webp' }]
   },
   {
-    name: 'Failed before anything left the page',
-    when: 'Nothing was spent, so pressing Run again is safe and the panel says nothing else.',
+    name: 'Cancelled',
+    when: 'The reader stopped it themselves. Nothing went wrong, so it is not drawn as though something had.',
+    state: { phase: 'cancelled' }
+  },
+  {
+    name: 'Not enough credits',
+    when: 'The wallet is empty and the reader owns it. On a real page this is asked before the run, on the Run button itself.',
+    state: { phase: 'error', reason: 'noCredits', retrySafe: true }
+  },
+  {
+    name: 'Not enough credits, in someone else’s workspace',
+    when: 'The same emptiness, but buying is the owner’s to do. What is offered instead is the reader’s own workspace.',
+    state: { phase: 'error', reason: 'noCredits', retrySafe: true },
+    memberWorkspace: 'Comfy Design'
+  },
+  {
+    name: 'Blocked by the workspace',
+    when: 'Governance forbids one of the providers this workflow calls. Running again would be refused the same way, so nothing is offered.',
+    state: { phase: 'error', reason: 'policy', retrySafe: true }
+  },
+  {
+    name: 'The queue is full',
+    when: 'This workspace has as many jobs queued as it may. Waiting for one to finish is what clears it.',
+    state: { phase: 'error', reason: 'concurrency', retrySafe: true }
+  },
+  {
+    name: 'Too many runs at once',
+    when: 'Cloud is refusing the rate rather than the run. A moment and another press is the whole of it.',
+    state: { phase: 'error', reason: 'rateLimit', retrySafe: true }
+  },
+  {
+    name: 'Cloud cannot take it right now',
+    when: 'Nothing about this workflow is wrong. Later it will run.',
+    state: { phase: 'error', reason: 'unavailable', retrySafe: true }
+  },
+  {
+    name: 'The run itself failed',
+    when: 'Cloud accepted the graph, started it, and it came back failed. The run is over, so what is left is to run it again.',
+    state: { phase: 'error', reason: 'provider', retrySafe: true }
+  },
+  {
+    name: 'We stopped waiting',
+    when: 'A run that finishes later is still billed, so the reader is told to retry the same request rather than start a new one.',
+    state: { phase: 'error', reason: 'timeout', retrySafe: true }
+  },
+  {
+    name: 'The session expired',
+    when: 'The run never left the page. Signing in again is the only thing that helps.',
+    state: { phase: 'error', reason: 'signedOut', retrySafe: true }
+  },
+  {
+    name: 'A file could not go up',
+    when: 'The upload failed before Cloud saw anything. Nothing was spent.',
     state: {
       phase: 'error',
-      message: 'The image is larger than 100 MB.',
+      reason: 'upload',
+      message:
+        'The example input could not load. Upload your own file and try again.',
       retrySafe: true
     }
   },
   {
-    name: 'Failed with a run still out there',
+    name: 'The page could not finish the request',
+    when: 'Something on this side gave way rather than Cloud refusing anything. Pressing again would go the same way, so nothing is offered.',
+    state: { phase: 'error', reason: 'client', retrySafe: true }
+  },
+  {
+    name: 'Stopped before anything left the page',
+    when: 'The page refused the run itself, so it says what it wants rather than what Cloud would have said.',
+    state: {
+      phase: 'error',
+      reason: 'validation',
+      message: 'Choose an input smaller than 100 MB.',
+      retrySafe: true
+    }
+  },
+  {
+    name: 'Lost, with a run still out there',
     when: 'A job exists. Running again would spend a second one, so the panel offers to go and find the first.',
     state: {
       phase: 'error',
-      message:
-        'Could not reach Cloud. Check your Cloud job history before submitting again.',
-      jobId: '11111111-2222-3333-4444-555555555555',
+      reason: 'network',
+      jobId: JOB_ID,
       retrySafe: false
     }
   }
 ]
 
 const missing = [
-  'Not enough credits, with the way to buy more — and the different wording for someone inside another person’s workspace.',
-  'The named reasons a run is refused: blocked by policy, too many at once, rate limited, unavailable, timed out, file unreadable.',
-  'Cancelled, as an outcome rather than only a button.'
+  'The named reasons a run is refused, told apart on a model page by the field that caused them: a file the page could read but the model would not.',
+  'What a failed run actually said. Cloud returns the node and the exception; none of it is shown, because none of it is written for a reader.'
 ]
 </script>
 
@@ -149,6 +219,7 @@ const missing = [
         :outputs="scene.outputs ?? []"
         :sample="scene.sample"
         :cold-start="scene.coldStart ?? false"
+        :member-workspace="scene.memberWorkspace"
         :locale
       />
       <div class="flex flex-col gap-1 lg:col-span-5 lg:pt-3">
@@ -162,8 +233,8 @@ const missing = [
     <section class="flex max-w-2xl flex-col gap-3">
       <h2 class="text-lg font-bold text-primary-comfy-canvas">Not drawn yet</h2>
       <p class="text-sm/relaxed text-primary-warm-gray">
-        A model's playground tells these apart; a workflow's shows them all as
-        the one message above.
+        Everything a run can be is above. What is left is detail a model's
+        playground carries and this one does not.
       </p>
       <ul
         class="flex list-disc flex-col gap-2 ps-5 text-sm/relaxed text-primary-warm-gray"
@@ -171,9 +242,10 @@ const missing = [
         <li v-for="gap in missing" :key="gap">{{ gap }}</li>
       </ul>
       <p class="text-sm/relaxed text-primary-warm-gray">
-        The input panel's own two states — Sign in when nobody is signed in, and
-        Cancel while a run is going — sit beside the form on a real workflow
-        page rather than here.
+        The input panel's own states — Sign in when nobody is signed in, Cancel
+        while a run is going, and the empty wallet asked about before the run
+        rather than after it — sit beside the form on a real workflow page
+        rather than here.
       </p>
     </section>
   </div>

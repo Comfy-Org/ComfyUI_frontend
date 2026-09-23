@@ -139,6 +139,7 @@ describe('useWorkflowRun', () => {
 
     expect(run.state.value).toMatchObject({
       phase: 'error',
+      reason: 'validation',
       message: expect.stringMatching(/smaller than 100 MB/i)
     })
     expect(client.submit).not.toHaveBeenCalled()
@@ -180,9 +181,55 @@ describe('useWorkflowRun', () => {
 
     expect(run.state.value).toMatchObject({
       phase: 'error',
+      reason: 'upload',
       message: expect.stringMatching(/example input could not load/i)
     })
   })
+
+  // A run stopped on purpose is not a failure, and a run that came back
+  // failed is over rather than still out there. Neither is "finished".
+  it.for([
+    { status: 'cancelled', expected: { phase: 'cancelled' } },
+    {
+      status: 'failed',
+      expected: { phase: 'error', reason: 'provider', retrySafe: true }
+    }
+  ] as const)(
+    'reads a $status job as its own outcome',
+    async ({ status, expected }) => {
+      client.read.mockResolvedValue(job(status))
+      const run = useWorkflowRun(imageField, graph)
+      run.files.value['1.image'] = chosen('a.png')
+
+      void run.run()
+      await settle()
+
+      expect(run.state.value).toMatchObject(expected)
+      expect(client.outputs).not.toHaveBeenCalled()
+    }
+  )
+
+  // What Cloud refused is what the reader is told, and the code it refused
+  // with is the only thing that says which refusal it was.
+  it.for([
+    { status: 402, reason: 'noCredits' },
+    { status: 403, reason: 'policy' },
+    { status: 503, reason: 'unavailable' }
+  ] as const)(
+    'carries a $status refusal through as $reason',
+    async ({ status, reason }) => {
+      client.submit.mockRejectedValueOnce(
+        new workflowExecution.WorkflowHttpError(status, undefined)
+      )
+      const run = useWorkflowRun(imageField, graph)
+      run.files.value['1.image'] = chosen('a.png')
+
+      await run.run()
+      await settle()
+
+      expect(run.state.value).toMatchObject({ phase: 'error', reason })
+    }
+  )
 
   it('sends a number as a number, not as what was typed', async () => {
     const run = useWorkflowRun(

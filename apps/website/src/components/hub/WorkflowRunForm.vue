@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { usePersonalWorkspace } from '../../composables/usePersonalWorkspace'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useWorkflowRun } from '../../composables/useWorkflowRun'
 import type { WorkflowGraph } from '../../config/workflow-execution'
 import type { WorkflowField } from '../../config/workflow-fields'
+import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
+import { useWorkshopCredits } from '../../config/workshop-credits'
 import { leaveForSignIn } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
 import { tHub } from '../../i18n/hub'
@@ -48,6 +51,13 @@ const {
   cancel
 } = useWorkflowRun(fields, graph)
 
+const { balance } = useWorkshopCredits()
+const {
+  switching,
+  failed: switchFailed,
+  switchToPersonal
+} = usePersonalWorkspace()
+
 const signInHref = useSignInHref(locale)
 
 const address = (field: WorkflowField) => `${field.node}.${field.input}`
@@ -55,6 +65,27 @@ const address = (field: WorkflowField) => `${field.node}.${field.input}`
 const signedOut = computed(() => settled.value && !session.value)
 
 const running = computed(() => state.value.phase === 'tracking')
+
+/**
+ * The workspace this run would spend, named only where the reader is a member
+ * rather than its owner. Buying is then the owner's to do, so the panel and
+ * the button both have to say whose wallet is empty.
+ */
+const memberWorkspace = computed(() =>
+  session.value?.role === 'member' ? session.value.workspace.name : undefined
+)
+
+/**
+ * Asking before the run rather than after it. A reader with nothing to spend
+ * would otherwise upload their files, wait, and be told at the end.
+ */
+const broke = computed(
+  () =>
+    !!session.value &&
+    !busy.value &&
+    balance.value.status === 'ok' &&
+    balance.value.credits <= 0
+)
 </script>
 
 <template>
@@ -102,6 +133,64 @@ const running = computed(() => state.value.phase === 'tracking')
           {{ tHub('workshop.run.signIn', locale) }}
         </Button>
 
+        <!-- An empty wallet is said before the run, not after it, and it
+          names the workspace: topping up the wrong one is the mistake worth
+          making impossible. -->
+        <template v-else-if="broke">
+          <div class="flex flex-col gap-1 text-center" data-testid="run-gate">
+            <p class="text-sm font-bold text-content-secondary">
+              {{ tHub('workshop.error.creditsTitle', locale) }}
+            </p>
+            <p class="text-xs text-content-secondary">
+              {{
+                tHub(
+                  memberWorkspace === undefined
+                    ? 'workshop.error.noCreditsCloud'
+                    : 'workshop.error.memberNoCredits',
+                  locale
+                ).replace('{workspace}', () => session?.workspace.name ?? '')
+              }}
+            </p>
+          </div>
+
+          <Button
+            v-if="memberWorkspace === undefined"
+            size="lg"
+            class="w-full"
+            data-testid="workflow-run-credits"
+            @click="requestWorkshopBuyCredits"
+          >
+            {{ tHub('workshop.run.buyCredits', locale) }}
+          </Button>
+
+          <Button
+            v-else
+            variant="outline"
+            size="lg"
+            class="w-full"
+            :disabled="switching"
+            data-testid="workflow-run-personal"
+            @click="switchToPersonal"
+          >
+            {{
+              tHub(
+                switching
+                  ? 'workshop.run.preparingSession'
+                  : 'workshop.run.switchPersonal',
+                locale
+              )
+            }}
+          </Button>
+
+          <p
+            v-if="switchFailed"
+            class="text-xs text-primary-comfy-red"
+            role="alert"
+          >
+            {{ tHub('nav.workspaceSwitchError', locale) }}
+          </p>
+        </template>
+
         <Button
           v-else
           size="lg"
@@ -131,8 +220,12 @@ const running = computed(() => state.value.phase === 'tracking')
       :outputs
       :sample
       :cold-start="coldStart"
+      :member-workspace="memberWorkspace"
       :locale
       @resume="resume"
+      @retry="run"
+      @credits="requestWorkshopBuyCredits"
+      @personal="switchToPersonal"
     />
   </section>
 </template>

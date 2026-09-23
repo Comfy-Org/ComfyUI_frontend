@@ -36,12 +36,10 @@ describe('runSaying', () => {
     ['idle', undefined],
     ['finished', undefined]
   ] as const)('says %s in its own words', ([phase, expected]) => {
-    expect(runSaying(phase, 'workshop.v2.run.queued')).toBe(expected)
+    expect(runSaying(phase)).toBe(expected)
   })
 
-  it('hands the step back once the job is the thing being waited on', () => {
-    expect(runSaying('tracking', 'workshop.v2.run.generating')).toBe(
-      'workshop.v2.run.generating'
-    )
+  it('says nothing once the lit step is already saying it', () => {
+    expect(runSaying('tracking')).toBeUndefined()
   })
 })

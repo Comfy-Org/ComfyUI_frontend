@@ -8,7 +8,11 @@ import { zJobDetailResponse } from '@comfyorg/ingest-types/zod'
 
 import type { RunState } from '../../composables/useWorkflowRun'
 import type { WorkflowField } from '../../config/workflow-fields'
+import { useWorkshopCredits } from '../../config/workshop-credits'
 import WorkflowRunForm from './WorkflowRunForm.vue'
+
+vi.mock(import('../../config/workshop-credits'))
+vi.mock(import('../../config/workshop-session-state'))
 
 const credential = {
   token: 't',
@@ -27,6 +31,9 @@ const running = zJobDetailResponse.parse({
 })
 
 const state = shallowRef<RunState>({ phase: 'idle' })
+let balance = ref<ReturnType<typeof useWorkshopCredits>['balance']['value']>({
+  status: 'unknown'
+})
 const inFlight = ref(false)
 const signedIn = ref<AccountCredential | undefined>(credential)
 
@@ -65,13 +72,17 @@ const graph = {
   '2': { class_type: 'Text', inputs: { prompt: 'make it night' } }
 }
 
-const mount = () => render(WorkflowRunForm, { props: { fields, graph } })
+const mount = () => {
+  useWorkshopCredits().balance = computed(() => balance.value)
+  return render(WorkflowRunForm, { props: { fields, graph } })
+}
 
 describe('WorkflowRunForm', () => {
   beforeEach(() => {
     state.value = { phase: 'idle' }
     inFlight.value = false
     signedIn.value = credential
+    balance = ref({ status: 'unknown' })
   })
 
   it('asks one question per answer the graph needs', () => {
@@ -124,6 +135,7 @@ describe('WorkflowRunForm', () => {
   it('says what went wrong rather than going quiet', () => {
     state.value = {
       phase: 'error',
+      reason: 'validation',
       message: 'Cloud could not accept this workflow.',
       retrySafe: false
     }
@@ -132,5 +144,39 @@ describe('WorkflowRunForm', () => {
     expect(screen.getByTestId('workflow-run-error').textContent).toContain(
       'Cloud could not accept this workflow.'
     )
+  })
+
+  // An empty wallet is worth saying before the files go up, not after: the
+  // upload and the wait are spent either way.
+  it('asks for credits instead of a run the wallet cannot pay for', () => {
+    balance.value = { status: 'ok', credits: 0 }
+    mount()
+
+    expect(screen.getByTestId('workflow-run-credits')).toBeTruthy()
+    expect(screen.queryByTestId('workflow-run-button')).toBeNull()
+    expect(screen.getByTestId('run-gate').textContent).toContain('Personal')
+  })
+
+  // Buying for a workspace the reader only belongs to is the owner's to do.
+  it('offers the reader their own workspace where the empty one is not theirs', () => {
+    signedIn.value = {
+      ...credential,
+      role: 'member',
+      workspace: { id: 'w2', name: 'Comfy Design', type: 'team' }
+    }
+    balance.value = { status: 'ok', credits: 0 }
+    mount()
+
+    expect(screen.getByTestId('workflow-run-personal')).toBeTruthy()
+    expect(screen.queryByTestId('workflow-run-credits')).toBeNull()
+    expect(screen.getByTestId('run-gate').textContent).toContain('Comfy Design')
+  })
+
+  // A balance that has not arrived is not a balance of nothing.
+  it('leaves Run alone while the balance is still unknown', () => {
+    mount()
+
+    expect(screen.getByTestId('workflow-run-button')).toBeTruthy()
+    expect(screen.queryByTestId('run-gate')).toBeNull()
   })
 })

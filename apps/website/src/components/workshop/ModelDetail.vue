@@ -24,6 +24,7 @@ import {
   apiPanelRequested,
   releaseApiPanelHash
 } from '../../config/workshop-api-anchor'
+import { usePersonalWorkspace } from '../../composables/usePersonalWorkspace'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
@@ -238,7 +239,7 @@ const attachments = computed(() =>
 )
 const revealed = ref(false)
 
-const { user, session, sessionFailure, settled, ensureFresh, remint } =
+const { user, session, sessionFailure, settled, ensureFresh } =
   useWorkshopSession()
 const { balance } = useWorkshopCredits()
 const workshopEnabled = useWorkshopEnabled()
@@ -433,25 +434,11 @@ function cancelRun() {
   runState.value = transition(runState.value, { type: 'cancel' })
 }
 
-const personalSwitchPending = ref(false)
-const personalSwitchError = ref(false)
-
-async function switchToPersonal() {
-  if (personalSwitchPending.value) return
-  personalSwitchPending.value = true
-  personalSwitchError.value = false
-  try {
-    const result = await remint(undefined, {
-      preserveCredentialOnTransientFailure: true
-    })
-    if (result?.status === 'ok') await refreshWorkshopCredits({ force: true })
-    else if (result?.status === 'error') personalSwitchError.value = true
-  } catch {
-    personalSwitchError.value = true
-  } finally {
-    personalSwitchPending.value = false
-  }
-}
+const {
+  switching: personalSwitchPending,
+  failed: personalSwitchError,
+  switchToPersonal
+} = usePersonalWorkspace()
 
 onUnmounted(() => {
   cancelRun()

@@ -52,26 +52,40 @@ describe('bindWorkflowInputs', () => {
 
 describe('the Cloud client', () => {
   // What went wrong decides what the reader can do next, so each answer that
-  // means something different says something different.
+  // means something different is carried through as a different reason. The
+  // sentence for it belongs to the panel that has to say it in two languages.
   it.for([
-    [402, /plan or credits/i],
-    [401, /sign in again/i],
-    [403, /cannot run this workflow/i],
-    [422, /could not accept/i],
-    [500, /returned 500/i]
-  ] as const)('turns %i into its own words', async ([status, said]) => {
-    await expect(
-      client(replying(status)).read('/api/jobs/1', new AbortController().signal)
-    ).rejects.toThrow(said)
-  })
+    [402, 'noCredits'],
+    [401, 'signedOut'],
+    [403, 'policy'],
+    [422, 'validation'],
+    [500, 'provider']
+  ] as const)(
+    'carries %i through as its own reason',
+    async ([status, reason]) => {
+      await expect(
+        client(replying(status)).read(
+          '/api/jobs/1',
+          new AbortController().signal
+        )
+      ).rejects.toMatchObject({ reason })
+    }
+  )
 
-  it('names being out of credits whatever status carries it', async () => {
+  // Cloud asks for the body's type to be read rather than its message matched,
+  // because one status covers a queue that clears itself and a bill that does
+  // not.
+  it.for([
+    [{ error: { type: 'PAYMENT_REQUIRED' } }, 'noCredits'],
+    [{ error: { type: 'QUEUE_LIMIT' } }, 'concurrency'],
+    [{}, 'rateLimit']
+  ] as const)('reads a 429 of %j as %s', async ([body, reason]) => {
     await expect(
-      client(replying(400, { error: 'PAYMENT_REQUIRED' })).read(
+      client(replying(429, body)).read(
         '/api/jobs/1',
         new AbortController().signal
       )
-    ).rejects.toThrow(/insufficient credits/i)
+    ).rejects.toMatchObject({ reason })
   })
 
   // Retrying is safe when the request never reached the work, and a job that

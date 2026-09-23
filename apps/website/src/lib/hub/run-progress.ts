@@ -8,6 +8,7 @@ export type RunPhase =
   | 'reconnecting'
   | 'tracking'
   | 'finished'
+  | 'cancelled'
   | 'error'
 
 const QUEUED: readonly HubKey[] = [
@@ -52,11 +53,8 @@ const SAYING: Partial<Record<RunPhase, HubKey>> = {
 /**
  * What to say beside the steps. Everything before the job exists is about
  * this page's own work, so it says that; once the job exists, the step it has
- * reached is the whole answer and repeating it would say nothing.
+ * reached is lit in the list above and a line repeating it says nothing.
  */
-export function runSaying(
-  phase: RunPhase,
-  step: HubKey | undefined
-): HubKey | undefined {
-  return phase === 'tracking' ? step : SAYING[phase]
+export function runSaying(phase: RunPhase): HubKey | undefined {
+  return SAYING[phase]
 }
