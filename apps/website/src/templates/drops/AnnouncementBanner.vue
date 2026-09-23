@@ -42,6 +42,7 @@ const { isVisible, close, persistHidden } = useBannerDismissal(version)
       <div class="min-h-0 overflow-hidden">
         <div
           data-slot="announcement-banner"
+          :data-banner-persistent="dismissible ? undefined : ''"
           :class="
             cn(
               'relative flex items-center gap-x-6 px-6 py-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-transparency-white-t4 sm:px-3.5',

@@ -2,17 +2,24 @@ import { expect } from '@playwright/test'
 
 import { bannerConfig, getBannerData } from '../src/config/banner'
 import type { Locale } from '../src/i18n/translations'
+import { t } from '../src/i18n/translations'
 import { evaluateBannerVisibility } from '../src/utils/banner'
 import { test } from './fixtures/blockExternalMedia'
 
 const BANNER = '[data-slot="announcement-banner"]'
 
+// `ja` is omitted: it has no translated banner strings and no localized paths,
+// so its homepage renders the copy and CTA that `/` already asserts here.
 const HOMEPAGES: ReadonlyArray<readonly [string, Locale]> = [
   ['/', 'en'],
   ['/zh-CN/', 'zh-CN']
 ]
 
-/** The gate BaseLayout applies at build time before it renders the banner. */
+/**
+ * The gate BaseLayout applies before it renders the banner. It reads the clock,
+ * which on this static site ran at BUILD time — a `startsAt`/`endsAt` boundary
+ * crossed between the build and this run makes the two disagree.
+ */
 function isOnAir(locale: Locale): boolean {
   return evaluateBannerVisibility(bannerConfig, {
     currentLocale: locale,
@@ -58,4 +65,28 @@ test.describe('Sitewide announcement banner @smoke', () => {
       )
     })
   }
+})
+
+// The pre-paint hide signal is one attribute on <html>, so a page carrying its
+// own banner beside the sitewide one can lose both to a single dismissal. /mcp
+// is that page, and its Comfy Agent banner is deliberately not dismissible.
+test.describe('Dismissing the sitewide banner @smoke', () => {
+  const { title } = getBannerData(bannerConfig, 'en')
+
+  test("leaves a page's own banner in place", async ({ page }) => {
+    test.skip(!isOnAir('en'), 'the sitewide banner is switched off')
+
+    await page.goto('/mcp')
+    const sitewide = page.locator(BANNER).filter({ hasText: title })
+    const pageOwn = page.locator(BANNER).filter({ hasNotText: title })
+    await expect(pageOwn).toBeVisible()
+
+    await sitewide.getByRole('button', { name: t('nav.close', 'en') }).click()
+    await expect(page.locator('html')).toHaveAttribute('data-banner-dismissed')
+    await expect(pageOwn).toBeVisible()
+
+    await page.reload()
+    await expect(sitewide).toBeHidden()
+    await expect(pageOwn).toBeVisible()
+  })
 })
