@@ -32,15 +32,21 @@ export interface ValidatedLinkEndpoints {
   readonly originSlot: number
   readonly targetId: string
   readonly targetSlot: number
-  readonly type: string | number
+  readonly type: string
 }
 
 /**
- * Parses a raw link tuple's endpoints for delivery-proof comparison. Unlike a
- * bare array index, this REJECTS a slot that hasn't landed as an actual
- * `number` (e.g. the string `"0"`) instead of letting `Number("0") === 0`
- * coerce it into a false match — a schema-invalid tuple must not be able to
- * prove a `connect`'s effect is present.
+ * Parses a raw link tuple's endpoints for delivery-proof comparison. The
+ * applier only ever writes a link tuple's 6 elements together (`connect`
+ * rejects a non-string `link_type` before mset), so a tuple missing element 5
+ * is a PARTIALLY LANDED write, never a deliberately untyped link — unlike
+ * {@link linkWireType}'s display fallback, this must not coerce that absence
+ * to the wildcard `'*'` and let an incomplete tuple pass as delivery
+ * evidence for a wildcard `connect`. Slots are further rejected unless they
+ * are actual integers: a bare `typeof === 'number'` check would still let a
+ * fractional or non-finite value (e.g. `NaN`, `Infinity`) through, and
+ * `parseLinkScalarFields` (the incremental path's equivalent) holds
+ * `connect` to the same integer constraint.
  */
 export function validateLinkEndpoints(
   tuple: readonly unknown[]
@@ -49,11 +55,15 @@ export function validateLinkEndpoints(
   const originSlot = tuple[2]
   const targetId = tuple[3]
   const targetSlot = tuple[4]
+  const type = tuple[5]
   if (
     !isIdValue(originId) ||
     typeof originSlot !== 'number' ||
+    !Number.isInteger(originSlot) ||
     !isIdValue(targetId) ||
-    typeof targetSlot !== 'number'
+    typeof targetSlot !== 'number' ||
+    !Number.isInteger(targetSlot) ||
+    typeof type !== 'string'
   )
     return null
   return {
@@ -61,6 +71,6 @@ export function validateLinkEndpoints(
     originSlot,
     targetId: String(targetId),
     targetSlot,
-    type: linkWireType(tuple)
+    type
   }
 }
