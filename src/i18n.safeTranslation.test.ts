@@ -47,6 +47,19 @@ describe('st', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
+  it('does not recurse on long attribute-like translations', () => {
+    const ending = "='y' onerror='alert(1)'>"
+    const message = `<a ${'x'.repeat(100_000)}${ending}`
+    i18n.global.mergeLocaleMessage('en', {
+      safeTranslationTest: { longMarkup: message }
+    })
+
+    const translated = st('safeTranslationTest.longMarkup', 'Fallback value')
+
+    expect(translated).toHaveLength(message.length)
+    expect(translated.endsWith(ending)).toBe(true)
+  })
+
   it('returns raw locale messages when vue-i18n compilation fails', () => {
     const message = 'Provided by @acme/model with JSON such as {"mode":"fast"}'
 
