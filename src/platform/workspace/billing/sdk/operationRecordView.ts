@@ -6,11 +6,14 @@
  * templates or their conditions changing.
  */
 import type { BillingOperationState } from '@comfyorg/account-core/billing'
+import { validateActionUrl } from '@comfyorg/account-core/billing'
 
 import type {
   BillingAuthenticationState,
   BillingOperationPhase
 } from '@/platform/workspace/api/workspaceApi'
+
+import { declineDetail } from './topupOperationView'
 
 type OperationKind = BillingOperationState['kind']
 
@@ -31,9 +34,15 @@ export interface BillingOperationRecordView {
   readonly authenticationState: BillingAuthenticationState | null
   readonly isAuthenticating: boolean
   readonly canRetryAuthentication: boolean
+  /** The declined-attempt line a surface shows under its own summary. */
+  readonly errorMessage: string | null
 }
 
 /**
+ * `actionUrl` is validated here for the same reason the legacy store validates
+ * it at registration: the surfaces that read this record hand the URL to
+ * `window.open`.
+ *
  * `superseded` has no counterpart in the legacy record: the scope moved on
  * under the operation, so there is nothing for this workspace's surfaces to
  * read — the same outcome `readOnRail` gives a superseded read.
@@ -60,17 +69,22 @@ export function projectOperationRecord(
           ? 'reconciliation_needed'
           : null,
       isAuthenticating: false,
-      canRetryAuthentication: false
+      canRetryAuthentication: false,
+      errorMessage: null
     }
   }
 
   return {
     ...identity,
     status: 'pending',
-    actionUrl: state.actionUrl ?? null,
+    actionUrl: validateActionUrl(state.actionUrl) ?? null,
     phase: state.serverPhase ?? null,
     authenticationState: state.authenticationState ?? null,
     isAuthenticating: state.challenge?.status === 'in_progress',
-    canRetryAuthentication: state.challenge?.status === 'required'
+    canRetryAuthentication: state.challenge?.status === 'required',
+    errorMessage:
+      state.authenticationState === 'failed_retryable'
+        ? declineDetail(state.declineReason ?? 'authentication_failed')
+        : null
   }
 }

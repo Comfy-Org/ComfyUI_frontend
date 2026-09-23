@@ -16,6 +16,7 @@ import type { BillingScopeSource } from './billingScope.js'
 import { sessionBillingScopeSource } from './billingScope.js'
 import { createCapabilitiesReader } from './capabilities.js'
 import { createCreditsReader } from './credits.js'
+import { createBillingEventsReader } from './events.js'
 import { createPaymentMethodsReader } from './paymentMethods.js'
 import { createPlansReader } from './plans.js'
 import { createBillingStatusReader } from './status.js'
@@ -50,7 +51,7 @@ function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
     scopeSource: sessionBillingScopeSource(fake),
     moveTo(next: SessionSnapshot) {
       snapshot = next
-      for (const listener of [...listeners]) listener(snapshot)
+      for (const listener of Array.from(listeners)) listener(snapshot)
     },
     moveToTeam() {
       this.moveTo(authenticated(credential({ workspace: TEAM })))
@@ -109,6 +110,20 @@ const PLAN = {
 }
 
 const CATALOG = { current_plan_slug: 'free', plans: [PLAN] }
+
+const EVENTS_PAGE = {
+  events: [
+    {
+      createdAt: '2026-09-01T12:00:00.000Z',
+      event_id: 'evt-1',
+      event_type: 'topup_completed'
+    }
+  ],
+  limit: 20,
+  page: 1,
+  total: 1,
+  totalPages: 1
+}
 
 const CARD = {
   brand: 'visa',
@@ -206,6 +221,13 @@ const CASES: readonly ReaderCase[] = [
     malformedBody: [{ ...CARD, id: 'card_1' }],
     paced: false,
     create: (options) => alwaysRequests(createPaymentMethodsReader(options))
+  },
+  {
+    name: 'billing events',
+    body: EVENTS_PAGE,
+    malformedBody: { ...EVENTS_PAGE, total: 'a few' },
+    paced: false,
+    create: (options) => alwaysRequests(createBillingEventsReader(options))
   },
   {
     name: 'capabilities',

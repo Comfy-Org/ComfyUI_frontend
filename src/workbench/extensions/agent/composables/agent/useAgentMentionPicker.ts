@@ -37,9 +37,9 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
       graphNodes.value = []
       return
     }
-    graphNodes.value = options
-      .getMentionNodes()
-      .toSorted((a, b) => a.title.localeCompare(b.title))
+    graphNodes.value = [...options.getMentionNodes()].sort((a, b) =>
+      a.title.localeCompare(b.title)
+    )
   }
 
   const mention = ref<MentionPickerState>({ status: 'closed' })

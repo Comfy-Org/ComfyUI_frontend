@@ -2,11 +2,14 @@ import { assert, describe, expect, it, vi } from 'vitest'
 
 import content from '../content/workshop-display.json'
 import { workshopContentInputs } from './workshop-content-inputs'
-import { workshopModels } from './workshop-browse-content'
+import { authoredWorkshopModels } from './workshop-browse-content'
 import { workshopContract } from './workshop-contract-catalog'
 import { formForContract } from './workshop-contract'
 import { isWorkshopModelDisabled } from './workshop-model-availability'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import {
+  getAuthoredRouterWorkshopModelDetail,
+  getRouterWorkshopModelDetail
+} from './workshop-router-content'
 import {
   defaultValues,
   schemaForModel,
@@ -24,7 +27,7 @@ const lastImage = 'https://example.com/last.png'
 const video = 'https://example.com/source.mp4'
 
 function detail(slug: string) {
-  const page = getRouterWorkshopModelDetail(slug)
+  const page = getAuthoredRouterWorkshopModelDetail(slug)
   if (!page?.execution) throw new Error(`Missing page: ${slug}`)
   return { ...page, execution: page.execution }
 }
@@ -75,7 +78,7 @@ async function contractRequest(
 describe('use-case input contracts', () => {
   it('uses dropdowns for every exposed resolution and aspect-ratio control', () => {
     let checked = 0
-    for (const model of workshopModels) {
+    for (const model of authoredWorkshopModels) {
       for (const field of schemaForModel(detail(model.slug))) {
         if (
           /^(?:param_|setting_|image_)?(?:resolution|aspect_ratio|ratio|aspectRatio)$/.test(
@@ -102,7 +105,7 @@ describe('use-case input contracts', () => {
   })
 
   it('keeps a valid prompt on every applicable worked example, including rejected legacy prompts', () => {
-    for (const model of workshopModels) {
+    for (const model of authoredWorkshopModels) {
       const page = detail(model.slug)
       const prompt = schemaForModel(page).find(
         (field) => field.label === 'Prompt'
@@ -162,7 +165,7 @@ describe('use-case input contracts', () => {
   })
 
   it('offers image uploads on every Animate images page and video uploads on every file-based Edit videos page', () => {
-    for (const model of workshopModels) {
+    for (const model of authoredWorkshopModels) {
       if (
         !model.useCases?.some((value) =>
           ['animate-images', 'edit-videos'].includes(value)

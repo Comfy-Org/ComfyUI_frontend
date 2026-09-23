@@ -68,9 +68,11 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
   )
 
   const activeMissingMediaGraphIds = computed<Set<string>>(() => {
+    const rootGraph = app.rootGraphOrUndefined
+    if (!rootGraph) return new Set()
     return getActiveGraphNodeIds(
-      app.rootGraph,
-      canvasStore.currentGraph ?? app.rootGraph,
+      rootGraph,
+      canvasStore.currentGraph ?? rootGraph,
       missingMediaAncestorExecutionIds.value
     )
   })

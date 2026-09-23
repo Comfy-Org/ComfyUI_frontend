@@ -1,0 +1,10 @@
+[
+  {
+    "id": 9101,
+    "user": {
+      "login": "site-maintainer"
+    },
+    "created_at": "2026-09-17T18:30:00Z",
+    "body": "Please hold this one: do not merge until #4300 lands, it changes the same pricing component. I will say here when it is clear."
+  }
+]

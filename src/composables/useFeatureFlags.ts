@@ -75,15 +75,13 @@ function resolveFlag<T>(
 }
 
 /**
- * Resolves a per-user, Cloud-only flag that selects backend behavior. Off the
- * Cloud build it is always false; during the auth window it falls back to the
- * cached session value so anonymous bootstrap config cannot route the user to
- * the wrong backend before authenticated config confirms the flag.
- */
-/**
  * A flag that enables a payment flow: same channels as `resolveFlag`, but only
  * a literal `true` counts. A malformed wire value (`'true'`, `1`) or a failed
  * lookup resolves to false rather than switching a charge onto a new transport.
+ *
+ * Needs no auth gate: the server returns a concrete `false` for these keys to
+ * an unauthenticated caller, so the anonymous window resolves to the legacy
+ * rail and cannot enable a flow before authenticated config confirms it.
  */
 function resolveStrictBooleanFlag(
   flagKey: string,
@@ -96,6 +94,12 @@ function resolveStrictBooleanFlag(
   }
 }
 
+/**
+ * Resolves a per-user, Cloud-only flag that selects backend behavior. Off the
+ * Cloud build it is always false; during the auth window it falls back to the
+ * cached session value so anonymous bootstrap config cannot route the user to
+ * the wrong backend before authenticated config confirms the flag.
+ */
 function resolveAuthGatedFlag(
   flagKey: string,
   remoteConfigValue: boolean | undefined,

@@ -21,6 +21,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import {
   createBillingCommands,
+  createBillingEventsReader,
   createBillingOperationLifecycle,
   createBillingStatusReader,
   createCapabilitiesReader,
@@ -62,6 +63,7 @@ export function createBillingWebClient(session: BillingSession): BillingClient {
   const status = createBillingStatusReader(readerOptions)
   const plans = createPlansReader(readerOptions)
   const paymentMethods = createPaymentMethodsReader(readerOptions)
+  const events = createBillingEventsReader(readerOptions)
   const lifecycle = createBillingOperationLifecycle({
     transport,
     scopeSource,
@@ -77,6 +79,7 @@ export function createBillingWebClient(session: BillingSession): BillingClient {
     status,
     plans,
     paymentMethods,
+    events,
     topup: createTopupCommand({ transport, lifecycle, capabilities, credits }),
     commands: createBillingCommands({
       transport,

@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "Vídeo latente Cosmos vacío",
     "inputs": {
       "batch_size": {
         "name": "tamaño_del_lote"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "ImagenLatenteHunyuanVacía",
+    "display_name": "Imagen latente Hunyuan vacía",
     "inputs": {
       "batch_size": {
         "name": "tamaño_lote"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "EmptyHunyuanLatentVideo",
+    "display_name": "Vídeo latente Hunyuan Video 1.0 vacío",
     "inputs": {
       "batch_size": {
         "name": "tamaño_del_lote"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Empty HunyuanVideo 1.5 Latent",
+    "display_name": "Vídeo latente Hunyuan Video 1.5 vacío",
     "inputs": {
       "batch_size": {
         "name": "tamaño_lote"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo",
+    "display_name": "Vídeo latente LTXV vacío",
     "inputs": {
       "batch_size": {
         "name": "tamaño_del_lote"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "Latente Hunyuan 3D v2 vacío",
     "inputs": {
       "batch_size": {
         "name": "tamaño_del_lote",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "Estructura latente Trellis2 vacía",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -8072,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "Reescalado de latente Hunyuan Video 1.5 con modelo",
     "inputs": {
       "crop": {
         "name": "recorte"
@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Extrae el valor de una clave del primer objeto JSON válido del texto, incluidos los bloques de código Markdown.",
     "display_name": "Extraer cadena de JSON",
     "inputs": {
       "json_string": {
@@ -10514,7 +10515,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Audio Latente Vacío",
+    "display_name": "Audio latente LTXV vacío",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -13234,6 +13235,10 @@
       "ultra_mode": {
         "name": "modo ultra",
         "tooltip": "Ejecuta una pasada de refinamiento adicional para obtener una geometría de mayor fidelidad con detalles de superficie más finos."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Resolución de la pasada ultra: 2k la ejecuta a 2048³, 4k a 4096³ para el máximo detalle de superficie. 4k requiere meshy-7.1 o posterior. Se usa solo cuando ultra_mode está activado."
       }
     },
     "outputs": {
@@ -13300,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "modo de simetría"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Ejecuta una pasada adicional de refinamiento a 2048³ para una geometría de mayor fidelidad con detalles de superficie más finos."
       }
     },
     "outputs": {
@@ -13441,6 +13450,10 @@
       "ultra_mode": {
         "name": "modo ultra",
         "tooltip": "Ejecuta una pasada de refinamiento adicional para obtener una geometría de mayor fidelidad con detalles de superficie más finos."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Resolución de la pasada ultra: 2k la ejecuta a 2048³, 4k a 4096³ para el máximo detalle de superficie. 4k requiere meshy-7.1 o posterior. Se usa solo cuando ultra_mode está activado."
       }
     },
     "outputs": {
@@ -14199,6 +14212,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Solo MoGe-3: pasadas de refinamiento volumétrico disperso sobre la profundidad predicha. Más pasadas aumentan la nitidez de los detalles finos y los bordes con un coste aproximadamente lineal. 0 desactiva el refinamiento. Ignorado por MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = más rápido, 9 = mayor detalle."
@@ -14229,6 +14246,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Solo MoGe-3: pasadas de refinamiento volumétrico disperso sobre la profundidad predicha. Más pasadas aumentan la nitidez de los detalles finos y los bordes con un coste aproximadamente lineal. 0 desactiva el refinamiento. Ignorado por MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17443,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Condicionamiento Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18391,6 +18412,28 @@
       "seed": {
         "name": "semilla",
         "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "Permite configurar el dispositivo y la cuantización de la caché KV; de forma predeterminada, el modelo usa la opción auto. La cuantización puede acelerar los flujos de edición cuando falta memoria ",
+    "display_name": "Caché de Qwen Image 2.1",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto usa la VRAM disponible y luego la RAM. cpu (RAM) se precarga durante el cálculo y apenas afecta a la velocidad. off vuelve a calcular el prefijo en cada paso, lo que es más lento, pero es la única forma de descartar la caché."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Precisión de almacenamiento. default no tiene pérdidas. int8 reduce la caché a la mitad con una precisión aproximada de bf16; int4 la reduce a una cuarta parte, pero aproximadamente duplica el error por paso."
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -22751,7 +22794,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "Imagen latente Stable Cascade vacía",
     "inputs": {
       "batch_size": {
         "name": "tamaño_del_lote"
@@ -22794,7 +22837,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "Codificación VAE de la etapa C de Stable Cascade",
     "inputs": {
       "compression": {
         "name": "compresión"
@@ -23756,8 +23799,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "Codificación de texto Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Imágenes de referencia, vistas por el codificador de texto e insertadas en la secuencia como latentes de VAE."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Las imágenes de referencia se redimensionan a aproximadamente resolution x resolution píxeles, en múltiplos de 32 y conservando la relación de aspecto. 0 mantiene cada referencia con su propio tamaño, redondeado a un múltiplo de 32. "
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latente",
+        "tooltip": "Latente vacío con el tamaño de la primera imagen de referencia, para coincidir con el muestreo, ya que cualquier otro tamaño desplaza la edición."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "Codificación de texto para edición de Qwen Image",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23861,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "Codificación de texto para edición de Qwen Image Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +23937,10 @@
       "max_length": {
         "name": "longitud_máxima"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Decodificación especulativa con la cabeza de predicción de múltiples tokens del checkpoint. No tiene efecto sin pesos MTP. auto adapta la profundidad del borrador; 2-5 la fija. La salida muestreada conserva una distribución correcta, pero difiere de la salida sin MTP para la misma semilla."
+      },
       "prompt": {
         "name": "prompt"
       },
@@ -23916,6 +24002,10 @@
       },
       "max_length": {
         "name": "longitud_máxima"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Decodificación especulativa con la cabeza de predicción de múltiples tokens del checkpoint. No tiene efecto sin pesos MTP. auto adapta la profundidad del borrador; 2-5 la fija. La salida muestreada mantiene la distribución correcta, pero difiere de la salida sin MTP con la misma semilla."
       },
       "prompt": {
         "name": "mensaje"
@@ -24432,7 +24522,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Condicionamiento de Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24544,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Etapa de forma de Trellis2",
     "inputs": {
       "negative": {
         "name": "negativo"
@@ -24482,7 +24572,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Etapa de textura de Trellis2",
     "inputs": {
       "negative": {
         "name": "negativo"
@@ -26162,7 +26252,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Decodificación VAE de Hunyuan 3D",
     "inputs": {
       "num_chunks": {
         "name": "num_chunks"
@@ -26470,7 +26560,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Decodificación de forma VAE de Trellis2",
     "inputs": {
       "samples": {
         "name": "muestras"
@@ -26491,7 +26581,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Decodificación de estructura VAE de Trellis2",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -26511,7 +26601,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Decodificación de textura VAE de Trellis2",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -29466,6 +29556,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "Conecte el generador ABC o proporcione una partitura editada. Déjelo vacío para usar automáticamente el modo desactivado."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "Guía autorregresiva para el estilo y las letras. 1.0 desactiva CFG, igualando el flujo de trabajo ABC. Usa 1.01 para igualar la guía original en modo desactivado."
       },
       "clip": {
         "name": "clip"

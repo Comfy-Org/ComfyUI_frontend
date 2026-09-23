@@ -21,6 +21,9 @@ catalogs:
     '@astrojs/vue':
       specifier: ^7.0.2
       version: 7.0.2
+    '@comfyorg/comfy-multi-player':
+      specifier: 0.3.5
+      version: 0.3.5
     '@comfyorg/comfyui-desktop-bridge-types':
       specifier: 0.2.0
       version: 0.2.0
@@ -33,6 +36,9 @@ catalogs:
     '@customerio/cdp-analytics-browser':
       specifier: ^0.5.3
       version: 0.5.6
+    '@datadog/browser-logs':
+      specifier: 6.33.0
+      version: 6.33.0
     '@datadog/browser-rum':
       specifier: ^6.33.0
       version: 6.33.0
@@ -153,6 +159,9 @@ catalogs:
     '@types/three':
       specifier: ^0.184.1
       version: 0.184.1
+    '@typescript-eslint/utils':
+      specifier: ^8.69.0
+      version: 8.69.0
     '@vee-validate/zod':
       specifier: ^4.15.1
       version: 4.15.1
@@ -268,8 +277,8 @@ catalogs:
       specifier: ^3.14.2
       version: 3.15.0
     happy-dom:
-      specifier: 20.9.0
-      version: 20.9.0
+      specifier: 20.14.5
+      version: 20.14.5
     husky:
       specifier: ^9.1.7
       version: 9.1.7
@@ -451,8 +460,8 @@ catalogs:
       specifier: ^6.2.1
       version: 6.2.1
     yjs:
-      specifier: ^13.6.27
-      version: 13.6.31
+      specifier: ^13.6.32
+      version: 13.6.32
     zod:
       specifier: ^3.23.8
       version: 3.25.76
@@ -504,8 +513,8 @@ importers:
         specifier: workspace:*
         version: link:packages/billing-contract
       '@comfyorg/comfy-multi-player':
-        specifier: 0.2.1
-        version: 0.2.1
+        specifier: 'catalog:'
+        version: 0.3.5
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
         version: 0.2.0
@@ -535,7 +544,7 @@ importers:
         version: 0.5.6
       '@datadog/browser-rum':
         specifier: 'catalog:'
-        version: 6.33.0
+        version: 6.33.0(@datadog/browser-logs@6.33.0)
       '@floating-ui/vue':
         specifier: 'catalog:'
         version: 1.1.11(vue@3.5.42(typescript@6.0.3))
@@ -697,7 +706,7 @@ importers:
         version: 6.2.1(three@0.184.0)
       yjs:
         specifier: 'catalog:'
-        version: 13.6.31
+        version: 13.6.32
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -765,6 +774,9 @@ importers:
       '@types/three':
         specifier: 'catalog:'
         version: 0.184.1
+      '@typescript-eslint/utils':
+        specifier: 'catalog:'
+        version: 8.69.0(eslint@10.10.0(jiti@2.7.0))(typescript@6.0.3)
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 6.0.8(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
@@ -830,7 +842,7 @@ importers:
         version: 17.7.0
       happy-dom:
         specifier: 'catalog:'
-        version: 20.9.0
+        version: 20.14.5
       husky:
         specifier: 'catalog:'
         version: 9.1.7
@@ -926,7 +938,7 @@ importers:
         version: 8.2.1(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.9.0)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
       vue-component-type-helpers:
         specifier: 'catalog:'
         version: 3.3.11
@@ -1017,7 +1029,7 @@ importers:
         version: 10.10.0(jiti@2.7.0)
       happy-dom:
         specifier: 'catalog:'
-        version: 20.9.0
+        version: 20.14.5
       stylelint:
         specifier: 'catalog:'
         version: 17.14.0(typescript@6.0.3)
@@ -1032,7 +1044,7 @@ importers:
         version: 8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.9.0)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.11(typescript@6.0.3)
@@ -1069,6 +1081,9 @@ importers:
       '@customerio/cdp-analytics-browser':
         specifier: 'catalog:'
         version: 0.5.6
+      '@datadog/browser-logs':
+        specifier: 'catalog:'
+        version: 6.33.0(@datadog/browser-rum@6.33.0)
       '@lucide/vue':
         specifier: 'catalog:'
         version: 1.24.0(vue@3.5.42(typescript@6.0.3))
@@ -1177,7 +1192,7 @@ importers:
         version: 6.2.5
       happy-dom:
         specifier: 'catalog:'
-        version: 20.9.0
+        version: 20.14.5
       mime-types:
         specifier: 'catalog:'
         version: 3.0.2
@@ -1204,7 +1219,7 @@ importers:
         version: 7.29.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.9.0)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
       vue-component-type-helpers:
         specifier: 'catalog:'
         version: 3.3.11
@@ -1229,13 +1244,13 @@ importers:
         version: 11.10.0
       happy-dom:
         specifier: 'catalog:'
-        version: 20.9.0
+        version: 20.14.5
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.9.0)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -1269,7 +1284,7 @@ importers:
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
       happy-dom:
         specifier: 'catalog:'
-        version: 20.9.0
+        version: 20.14.5
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1281,7 +1296,7 @@ importers:
         version: 5.1.0(@microsoft/api-extractor@7.58.9(@types/node@25.9.5))(@vue/language-core@3.3.11)(esbuild@0.28.1)(rolldown@1.2.6)(typescript@6.0.3)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.9.0)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@6.0.3)
@@ -1302,7 +1317,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.10.6)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
 
   packages/design-system:
     dependencies:
@@ -1336,7 +1351,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.10.6)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
 
   packages/ingest-types:
     devDependencies:
@@ -1367,7 +1382,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.10.6)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
 
   packages/registry-types: {}
 
@@ -1394,7 +1409,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 'catalog:'
-        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.10.6)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
 
   packages/tailwind-utils:
     dependencies:
@@ -1946,8 +1961,8 @@ packages:
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
 
-  '@comfyorg/comfy-multi-player@0.2.1':
-    resolution: {integrity: sha512-ReaO6GIKUv8ONwhFk/hjJPYiLU7aqbSgjtSaS754gUZqu8ouqLJiKIAJMqk76N92RnPeXALLjBH5bFugkaI3YQ==}
+  '@comfyorg/comfy-multi-player@0.3.5':
+    resolution: {integrity: sha512-stsag63SdKI/EFzdbEFPO3IhGzftyDcuJnT0WyPLMc08nEWkwg0M8kmVHAc4akRsIeWoj7mXSLzbHxpcbCm3lg==}
 
   '@comfyorg/comfyui-desktop-bridge-types@0.2.0':
     resolution: {integrity: sha512-V5Wj5KXDzTDm5GJAa0xBISjmndNIY5P79pRHQbLkkqJxgp/GPb/QGvcI+xG4ogol0ODJ4j/UBnUmkzpSafw8Aw==}
@@ -2038,6 +2053,14 @@ packages:
 
   '@datadog/browser-core@6.33.0':
     resolution: {integrity: sha512-h/xuBuY4Xi32CbBHkChMMWlOQ4al/mFF08x3o0hqrderfJvX7VO5tD3OVNwF+pfMXOGlDtBCIhwazr9sn24h3g==}
+
+  '@datadog/browser-logs@6.33.0':
+    resolution: {integrity: sha512-WZ1XEIIYK2sijR0hUG3hTPu2kQs8hE/PpoJcMDE7p0/NPXX3TR3dGVrwag+gvIVyBaszRkITiBsHQfnRvxV1DA==}
+    peerDependencies:
+      '@datadog/browser-rum': 6.33.0
+    peerDependenciesMeta:
+      '@datadog/browser-rum':
+        optional: true
 
   '@datadog/browser-rum-core@6.33.0':
     resolution: {integrity: sha512-Ais4x7zQBrBI6JyILYwFAmjUsqy0iQp2C7JcEEfzU4YYYcVO3DGpyVuYYrqHT27jY1QToHY8EnQUr3Yaj6saDA==}
@@ -6655,12 +6678,8 @@ packages:
   h3@1.15.11:
     resolution: {integrity: sha512-L3THSe2MPeBwgIZVSH5zLdBBU90TOxarvhK9d04IDY2AmVS8j2Jz2LIWtwsGOU3lu2I5jCN7FNvVfY2+XyF+mg==}
 
-  happy-dom@20.10.6:
-    resolution: {integrity: sha512-6QD0ilzDDt93tX44y8tbmZdAcdTRYDhUP+Asgi6pC8Pp5IA3cvaZGyoVN/EGtlq9ziT65iPuBBn3ASLr6hCgVw==}
-    engines: {node: '>=20.0.0'}
-
-  happy-dom@20.9.0:
-    resolution: {integrity: sha512-GZZ9mKe8r646NUAf/zemnGbjYh4Bt8/MqASJY+pSm5ZDtc3YQox+4gsLI7yi1hba6o+eCsGxpHn5+iEVn31/FQ==}
+  happy-dom@20.14.5:
+    resolution: {integrity: sha512-x/RzkpWO40bTjIoT30iQtt64FLLmH/iRcUCN2X//bLx7H3ifkdfPXyqsro/OYtqzIAhiLMMA7mmiOR9C3NOKjQ==}
     engines: {node: '>=20.0.0'}
 
   has-bigints@1.1.0:
@@ -9897,8 +9916,8 @@ packages:
     resolution: {integrity: sha512-2rAgRKu54VsHkqI0/tYkmluGXHD4KW7yZoycuqDQ15QOTnc2VVfy0nN/1eMhnQLO00A+dwtK20xuCnc1YGeUyg==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=23}
 
-  yjs@13.6.31:
-    resolution: {integrity: sha512-Eq+5BRfbeGyqGVrTJL3bEcr8gKkxPuyuoHmAwpk52fDb8kOVMrfVSTRPd6yiGgX5Fskb96qCRjzjbRjrL4YEnw==}
+  yjs@13.6.32:
+    resolution: {integrity: sha512-lfiJIIC4Xayt5ItynE407ehlE03pCjeOc4hkR4yxxvvNJ4kuiN25B0g+Qp8XagYz361LLL7DCzR5bvFJ81QKtQ==}
     engines: {node: '>=16.0.0', npm: '>=8.0.0'}
 
   yocto-queue@0.1.0:
@@ -10591,9 +10610,9 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@comfyorg/comfy-multi-player@0.2.1':
+  '@comfyorg/comfy-multi-player@0.3.5':
     dependencies:
-      yjs: 13.6.31
+      yjs: 13.6.32
 
   '@comfyorg/comfyui-desktop-bridge-types@0.2.0': {}
 
@@ -10679,14 +10698,22 @@ snapshots:
 
   '@datadog/browser-core@6.33.0': {}
 
+  '@datadog/browser-logs@6.33.0(@datadog/browser-rum@6.33.0)':
+    dependencies:
+      '@datadog/browser-core': 6.33.0
+    optionalDependencies:
+      '@datadog/browser-rum': 6.33.0(@datadog/browser-logs@6.33.0)
+
   '@datadog/browser-rum-core@6.33.0':
     dependencies:
       '@datadog/browser-core': 6.33.0
 
-  '@datadog/browser-rum@6.33.0':
+  '@datadog/browser-rum@6.33.0(@datadog/browser-logs@6.33.0)':
     dependencies:
       '@datadog/browser-core': 6.33.0
       '@datadog/browser-rum-core': 6.33.0
+    optionalDependencies:
+      '@datadog/browser-logs': 6.33.0(@datadog/browser-rum@6.33.0)
 
   '@dimforge/rapier3d-compat@0.12.0': {}
 
@@ -13361,7 +13388,7 @@ snapshots:
       obug: 2.1.4
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.9.0)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+      vitest: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
 
   '@vitest/expect@3.2.4':
     dependencies:
@@ -13423,7 +13450,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.1
-      vitest: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.9.0)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+      vitest: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -14135,7 +14162,6 @@ snapshots:
   buffer-image-size@0.6.4:
     dependencies:
       '@types/node': 25.9.5
-    optional: true
 
   bundle-name@4.1.0:
     dependencies:
@@ -15319,25 +15345,12 @@ snapshots:
       ufo: 1.6.4
       uncrypto: 0.1.3
 
-  happy-dom@20.10.6:
+  happy-dom@20.14.5:
     dependencies:
       '@types/node': 25.9.5
       '@types/whatwg-mimetype': 3.0.2
       '@types/ws': 8.18.1
       buffer-image-size: 0.6.4
-      entities: 7.0.1
-      whatwg-mimetype: 3.0.0
-      ws: 8.21.1
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-    optional: true
-
-  happy-dom@20.9.0:
-    dependencies:
-      '@types/node': 25.9.5
-      '@types/whatwg-mimetype': 3.0.2
-      '@types/ws': 8.18.1
       entities: 7.0.1
       whatwg-mimetype: 3.0.0
       ws: 8.21.1
@@ -18741,7 +18754,7 @@ snapshots:
     optionalDependencies:
       vite: 8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)
 
-  vitest@4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.10.6)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)):
+  vitest@4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.11
       '@vitest/mocker': 4.1.11(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
@@ -18767,38 +18780,7 @@ snapshots:
       '@types/node': 25.9.5
       '@vitest/coverage-v8': 4.1.11(vitest@4.1.11)
       '@vitest/ui': 4.1.11(vitest@4.1.11)
-      happy-dom: 20.10.6
-      jsdom: 29.1.1
-    transitivePeerDependencies:
-      - msw
-
-  vitest@4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.9.0)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)):
-    dependencies:
-      '@vitest/expect': 4.1.11
-      '@vitest/mocker': 4.1.11(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
-      '@vitest/pretty-format': 4.1.11
-      '@vitest/runner': 4.1.11
-      '@vitest/snapshot': 4.1.11
-      '@vitest/spy': 4.1.11
-      '@vitest/utils': 4.1.11
-      es-module-lexer: 2.3.1
-      expect-type: 1.4.0
-      magic-string: 0.30.21
-      obug: 2.1.4
-      pathe: 2.0.3
-      picomatch: 4.0.5
-      std-env: 4.2.0
-      tinybench: 2.9.0
-      tinyexec: 1.2.4
-      tinyglobby: 0.2.17
-      tinyrainbow: 3.1.1
-      vite: 8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)
-      why-is-node-running: 2.3.0
-    optionalDependencies:
-      '@types/node': 25.9.5
-      '@vitest/coverage-v8': 4.1.11(vitest@4.1.11)
-      '@vitest/ui': 4.1.11(vitest@4.1.11)
-      happy-dom: 20.9.0
+      happy-dom: 20.14.5
       jsdom: 29.1.1
     transitivePeerDependencies:
       - msw
@@ -19238,7 +19220,7 @@ snapshots:
       y18n: 5.0.8
       yargs-parser: 22.0.0
 
-  yjs@13.6.31:
+  yjs@13.6.32:
     dependencies:
       lib0: 0.2.117
 
