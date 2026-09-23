@@ -30,9 +30,10 @@ test.describe(
       // default 15s budget. The CI video-walkthrough job
       // (playwright-video-new-tests) reruns new specs like this one with
       // RECORD_VIDEO=true and SLOW_MO=250, which adds ~250ms per Playwright
-      // action on top of video-capture overhead, so this needs more than
-      // double the plain 30s bump.
-      test.setTimeout(60000)
+      // action on top of video-capture overhead. The first 60s bump still
+      // timed out there, landing at ~64s actual, so this raises the budget
+      // to ~2x that observed runtime.
+      test.setTimeout(120000)
       const { searchBoxV2, nodeOps, vueNodes, workflow } = comfyPage
 
       const getLinkOriginIds = async (resizeNodeId: string) => {
