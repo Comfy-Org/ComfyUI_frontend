@@ -967,6 +967,7 @@ export type DocOpsResultFrame = {
 
 export type DocResetData = {
   actor?: string
+  lineage_seq: number
   seq: number
   v: number
   workflow_id: string
@@ -982,6 +983,11 @@ export type DocResetFrame = {
 
 export type DocUpdateData = {
   actor?: string
+  lineage_seq: number
+  /**
+   * Semantic op IDs whose effects are encoded in this live update. Absent on state-vector catch-up updates, which can fold arbitrary history and have no bounded one-frame op set.
+   */
+  op_ids?: Array<string>
   seq: number
   /**
    * Standard-base64 encoded Yjs update. Host-to-follower only.
@@ -3630,7 +3636,7 @@ export type CreateTopupCheckoutResponse = {
 export type CreateTopupCheckoutRequest = {
   /**
    * Amount to charge in cents, before any promotion code the customer
-   * enters. Whole dollars only, from $5.00 to $4,739.00. The ceiling is
+   * enters. Whole dollars only, from $5.00 to $16,000.00. The ceiling is
    * a fixed business limit (not a Stripe technical constraint) on how
    * much a single unauthenticated-approval session may sell. The
    * credits granted are derived server-side from this amount and
@@ -4516,7 +4522,11 @@ export type AgentPostMessageRequest = {
    */
   current_tab?: string
   /**
-   * The client's live canvas, sent so the agent operates on what the user currently sees instead of an empty or stale draft. Reuses the {content, version} shape returned by GET /api/agent/draft. Additive — older clients omit it and the agent falls back to the stored draft.
+   * The client's active editor tab has no workflow yet (a fresh, unsaved tab), so it sends neither workflow_id nor current_tab. Without this signal the turn falls back to the thread's remembered workflow and the fresh tab is presented to the model as having no workflow selected. With it, the turn mints a workflow for the tab instead and that workflow is treated as selected. An explicit workflow_id or a resolvable current_tab still wins.
+   */
+  current_tab_unbound?: boolean
+  /**
+   * The client's live canvas, sent so the agent operates on what the user currently sees instead of an empty or stale draft. The canvas is authoritative for this send and carries no version token — the draft version returned by GET /api/agent/draft is a projection-cache snapshot counter, not a concurrency token, so there is no version to reconcile and no 409 on this field. Additive — older clients omit the whole object and the agent falls back to the stored draft.
    */
   draft?: {
     /**
@@ -4525,10 +4535,6 @@ export type AgentPostMessageRequest = {
     content?: {
       [key: string]: unknown
     }
-    /**
-     * The draft version the client last saw; null or 0 on first send. If it does not match the server's current draft version, the server returns 409 with the current version (an agent write landed since the client last saw the draft).
-     */
-    version?: number | null
   }
   /**
    * Snapshot of the client's open editor tabs in editor order. Advisory context, not a grant — entries outside the caller's workspace are ignored. With workflow_references present, only the editable target and explicit references enter the model's workflow context.
@@ -7038,6 +7044,10 @@ export type GetBillingBalanceErrors = {
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * Balance read temporarily unavailable
+   */
+  503: ErrorResponse
 }
 
 export type GetBillingBalanceError =
@@ -7913,6 +7923,10 @@ export type GetFeaturesResponses = {
      * Maximum upload size in bytes
      */
     max_upload_size?: number
+    /**
+     * Stripe publishable key (pk_...) for the environment's Stripe account. Public by design (the secret key is never exposed here). Absent when STRIPE_PUBLISHABLE_KEY is not configured on the server, so a client can tell "not configured" from "configured as empty".
+     */
+    stripe_publishable_key?: string
     /**
      * Whether the server supports preview metadata
      */
