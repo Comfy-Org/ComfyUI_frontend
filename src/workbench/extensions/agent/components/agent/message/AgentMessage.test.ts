@@ -209,6 +209,35 @@ describe('AgentMessage thinking narration', () => {
     expect(screen.getByText('Set widget')).toBeInTheDocument()
   })
 
+  it('shows a spinning working state after tools settle and before the reply', async () => {
+    const message = createAssistantMessage('msg-working' as TurnId)
+    message.parts = [
+      { type: 'tool', callId: 'tool-0', name: 'set_widget', state: 'done' }
+    ]
+
+    const { rerender } = render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Working...')).toBeInTheDocument()
+    expect(screen.getByTestId('agent-working-spinner')).toHaveClass(
+      'animate-spin'
+    )
+
+    await rerender({
+      message: {
+        ...message,
+        parts: [
+          ...message.parts,
+          { type: 'text', text: 'The edit is complete.', state: 'streaming' }
+        ]
+      }
+    })
+
+    expect(screen.queryByText('Working...')).not.toBeInTheDocument()
+  })
+
   it('shows resumed thinking after the completed tool group', async () => {
     const message = thinkingMessage('Planning the next step')
     message.parts = [

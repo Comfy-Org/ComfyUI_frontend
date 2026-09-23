@@ -97,6 +97,19 @@ const replyAssets = computed(() =>
 const hasTools = computed(() =>
   message.parts.some((part) => part.type === 'tool')
 )
+
+// A completed tool can be followed by a quiet gap before the reply starts.
+// Keep an explicit busy signal on screen for that part of the live turn.
+const composing = computed(
+  () =>
+    message.streaming &&
+    message.parts.length > 0 &&
+    message.parts.every(
+      (part) =>
+        part.type !== 'runApproval' &&
+        (!('state' in part) || part.state === 'done')
+    )
+)
 </script>
 
 <template>
@@ -176,6 +189,17 @@ const hasTools = computed(() =>
       <span class="agent-shimmer-text min-w-0 truncate text-sm/5">{{
         message.thinkingText || $t('agent.thinking')
       }}</span>
+    </div>
+
+    <div
+      v-if="composing"
+      class="text-agent-fg-muted flex h-8 items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal"
+    >
+      <span
+        data-testid="agent-working-spinner"
+        class="icon-[lucide--loader-circle] size-4 shrink-0 animate-spin"
+      />
+      <span>{{ t('agent.working') }}</span>
     </div>
 
     <MessageFeedback
