@@ -325,20 +325,20 @@ describe('useBillingContext', () => {
     const context = useBillingContext()
     await vi.waitFor(() => {
       expect(useSubscription().fetchStatus).toHaveBeenCalled()
-      expect(vi.mocked(useAuthStore().fetchBalance)).toHaveBeenCalled()
+      expect(useAuthStore().fetchBalance).toHaveBeenCalled()
     })
     vi.clearAllMocks()
 
     await context.reconcileSubscriptionSuccess()
 
     expect(
-      vi.mocked(useTeamWorkspaceStore().setWorkspaceBillingRail)
+      useTeamWorkspaceStore().setWorkspaceBillingRail
     ).toHaveBeenCalledWith('personal-123', 'stripe')
     expect(context.type.value).toBe('workspace')
     expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
     expect(workspaceApi.getBillingBalance).toHaveBeenCalled()
     expect(useSubscription().fetchStatus).not.toHaveBeenCalled()
-    expect(vi.mocked(useAuthStore().fetchBalance)).not.toHaveBeenCalled()
+    expect(useAuthStore().fetchBalance).not.toHaveBeenCalled()
   })
 
   it('does not refresh a balance through a stale rail after discovery fails', async () => {
@@ -347,7 +347,7 @@ describe('useBillingContext', () => {
     const context = useBillingContext()
     await vi.waitFor(() => {
       expect(useSubscription().fetchStatus).toHaveBeenCalled()
-      expect(vi.mocked(useAuthStore().fetchBalance)).toHaveBeenCalled()
+      expect(useAuthStore().fetchBalance).toHaveBeenCalled()
     })
     vi.clearAllMocks()
     vi.mocked(workspaceApi.getBillingStatus).mockRejectedValueOnce(
@@ -359,7 +359,7 @@ describe('useBillingContext', () => {
     )
 
     expect(workspaceApi.getBillingBalance).not.toHaveBeenCalled()
-    expect(vi.mocked(useAuthStore().fetchBalance)).not.toHaveBeenCalled()
+    expect(useAuthStore().fetchBalance).not.toHaveBeenCalled()
   })
 
   it('rejects topup amounts that are not positive whole-dollar cents', async () => {
@@ -395,7 +395,7 @@ describe('useBillingContext', () => {
       await nextTick()
 
       expect(
-        vi.mocked(useTeamWorkspaceStore().updateActiveWorkspace)
+        useTeamWorkspaceStore().updateActiveWorkspace
       ).toHaveBeenCalledWith({
         isSubscribed: true,
         subscriptionPlan: null
@@ -410,7 +410,7 @@ describe('useBillingContext', () => {
       await nextTick()
 
       expect(
-        vi.mocked(useTeamWorkspaceStore().updateActiveWorkspace)
+        useTeamWorkspaceStore().updateActiveWorkspace
       ).not.toHaveBeenCalledWith({
         isSubscribed: false,
         subscriptionPlan: null

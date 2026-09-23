@@ -34,9 +34,6 @@ const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 
 const mockStartPendingTopup = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockBillingState = vi.hoisted(() => ({
-  canAccessSubscriptionFeatures: false
-}))
 const mockClearAllWorkflowStorage = vi.hoisted(() => vi.fn())
 const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
@@ -116,9 +113,7 @@ beforeEach(() => {
   })
   const billingContext = useBillingContext()
   vi.mocked(useBillingContext).mockReturnValue(billingContext)
-  billingContext.canAccessSubscriptionFeatures = computed(
-    () => mockBillingState.canAccessSubscriptionFeatures
-  )
+  billingContext.canAccessSubscriptionFeatures = computed(() => false)
   billingContext.isFreeTier = computed(() => true)
   stubFirebaseAuthHarness()
   mockAuthStore = useAuthStore()
@@ -134,12 +129,11 @@ beforeEach(() => {
   vi.mocked(mockAuthStore.register).mockResolvedValue(credential)
   vi.mocked(mockAuthStore.loginWithGoogle).mockResolvedValue(credential)
   mockDistributionState.isCloud = false
-  mockBillingState.canAccessSubscriptionFeatures = false
 })
 
 describe('useAuthActions.purchaseCreditsDirect', () => {
   beforeEach(() => {
-    mockBillingState.canAccessSubscriptionFeatures = true
+    useBillingContext().canAccessSubscriptionFeatures = computed(() => true)
   })
 
   it('starts top-up tracking before opening Stripe checkout', async () => {
