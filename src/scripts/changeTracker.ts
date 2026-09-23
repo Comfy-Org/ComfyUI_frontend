@@ -241,36 +241,6 @@ function getExecutionGraphState(value: unknown): unknown {
  */
 const restoreChains = new WeakMap<ChangeTracker, Promise<void>>()
 
-/**
- * Settle the history after a restore whose load did not complete, by reading
- * the canvas rather than inferring how far `loadGraphData` reached. It can give
- * up before touching the graph, throw partway through `LGraph.configure` (which
- * clears first, so the canvas is left wrecked), or fail only after `configure`
- * succeeded — and `false` versus a rejection does not distinguish those.
- *
- * Whatever happened, `activeState` has to name the graph the canvas actually
- * holds. Naming any other leaves the next `captureCanvasState` reading the gap
- * as an edit, which empties the redo queue — the ING-198 symptom.
- */
-function settleFailedRestore(
-  tracker: ChangeTracker,
-  prevState: ComfyWorkflowJSON,
-  previousState: ComfyWorkflowJSON,
-  source: ComfyWorkflowJSON[],
-  target: ComfyWorkflowJSON[]
-) {
-  const canvasState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
-  if (ChangeTracker.graphEqual(canvasState, prevState)) {
-    tracker.activeState = prevState
-    tracker.updateModified(previousState)
-    return
-  }
-  // Unreached, so the step did not happen — and returning it to `source`
-  // leaves the pre-restore workflow one keystroke away from a wrecked canvas.
-  target.pop()
-  source.push(prevState)
-}
-
 const reportedInactiveCalls = new Set<string>()
 
 function reportInactiveTrackerCall(method: string, workflowPath: string) {
@@ -521,25 +491,12 @@ export class ChangeTracker {
         target.push(previousState)
         this._restoringState = true
         try {
-          const loaded = await app.loadGraphData(
-            prevState,
-            false,
-            false,
-            this.workflow,
-            {
-              checkForRerouteMigration: false,
-              silentAssetErrors: true
-            }
-          )
-          if (loaded === false) {
-            settleFailedRestore(this, prevState, previousState, source, target)
-            return
-          }
+          await app.loadGraphData(prevState, false, false, this.workflow, {
+            checkForRerouteMigration: false,
+            silentAssetErrors: true
+          })
           this.activeState = prevState
           this.updateModified(previousState)
-        } catch (error) {
-          settleFailedRestore(this, prevState, previousState, source, target)
-          throw error
         } finally {
           this._restoringState = false
         }

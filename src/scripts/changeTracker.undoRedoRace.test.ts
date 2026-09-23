@@ -124,53 +124,6 @@ function settleLoadsImmediately() {
   })
 }
 
-/** `loadGraphData`'s own failure result: the canvas keeps the graph it had. */
-function refuseFirstLoad() {
-  let loadsSeen = 0
-  vi.mocked(app.loadGraphData).mockImplementation((graphData) => {
-    loadsSeen++
-    if (loadsSeen > 1) {
-      beginLoad(graphData as ComfyWorkflowJSON)()
-      return Promise.resolve(true)
-    }
-    return Promise.resolve(false)
-  })
-}
-
-/** Only the post-`configure` stages throw, so the canvas did move. */
-function throwAfterFirstLoadConfigures(error: Error) {
-  let loadsSeen = 0
-  vi.mocked(app.loadGraphData).mockImplementation((graphData) => {
-    loadsSeen++
-    const finishLoad = beginLoad(graphData as ComfyWorkflowJSON)
-    finishLoad()
-    return loadsSeen > 1 ? Promise.resolve(true) : Promise.reject(error)
-  })
-}
-
-/** `beforeLoadNewGraph` throws: rejected, but the canvas never moved. */
-function throwBeforeFirstLoadConfigures(error: Error) {
-  let loadsSeen = 0
-  vi.mocked(app.loadGraphData).mockImplementation((graphData) => {
-    loadsSeen++
-    if (loadsSeen > 1) {
-      beginLoad(graphData as ComfyWorkflowJSON)()
-      return Promise.resolve(true)
-    }
-    return Promise.reject(error)
-  })
-}
-
-/** `configure` ran, then a later stage gave up: `false`, but the canvas moved. */
-function refuseFirstLoadAfterConfiguring() {
-  let loadsSeen = 0
-  vi.mocked(app.loadGraphData).mockImplementation((graphData) => {
-    loadsSeen++
-    beginLoad(graphData as ComfyWorkflowJSON)()
-    return Promise.resolve(loadsSeen > 1)
-  })
-}
-
 /**
  * Loads whose promise settles only when the test releases it. Releasing is
  * count-independent on purpose: how many loads are outstanding depends on
@@ -266,11 +219,9 @@ function trackerEditing(
  * `v1.53.7` (the release line on Comfy Cloud prod) and `main`, so this was
  * broken in 1.53 too, not a regression introduced after it.
  *
- * Three defects here can regress independently: the emptied redo queue the
- * report describes ("redo restores the partner nodes…"), the duplicate redo
- * entry that loses the intermediate workflow ("records each distinct state
- * once…"), and `activeState` naming a graph the canvas never reached, which
- * empties the redo queue from a single undo (the four load-failure cases).
+ * The last two cases pin defects that can regress independently: the emptied
+ * redo queue the report describes, and the duplicate redo entry that loses the
+ * intermediate workflow.
  */
 describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
   const beforePartnerNodes = () => workflowOf([checkpointLoader])
@@ -360,100 +311,6 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
       CHECKPOINT_LOADER,
       OPENAI_PARTNER_NODE,
       LUMA_PARTNER_NODE
-    ])
-  })
-
-  it('leaves the history untouched when the load refuses, so the next undo still works', async () => {
-    refuseFirstLoad()
-    const tracker = trackerEditing(withBothPartnerNodes(), [
-      beforePartnerNodes(),
-      withOnePartnerNode()
-    ])
-
-    await tracker.undo()
-
-    expect(nodeTypesOf(tracker.activeState)).toEqual([
-      CHECKPOINT_LOADER,
-      OPENAI_PARTNER_NODE,
-      LUMA_PARTNER_NODE
-    ])
-    expect(tracker.redoQueue).toEqual([])
-
-    tracker.prepareForSave()
-    await tracker.undo()
-
-    expect(nodeTypesOf(tracker.activeState)).toEqual([
-      CHECKPOINT_LOADER,
-      OPENAI_PARTNER_NODE
-    ])
-  })
-
-  it('records the workflow the canvas reached when a load throws after configuring', async () => {
-    const loadFailure = new Error('afterConfigureGraph hook failed')
-    throwAfterFirstLoadConfigures(loadFailure)
-    const tracker = trackerEditing(withBothPartnerNodes(), [
-      beforePartnerNodes(),
-      withOnePartnerNode()
-    ])
-
-    await expect(tracker.undo()).rejects.toThrow(loadFailure)
-
-    expect(nodeTypesOf(tracker.activeState)).toEqual([
-      CHECKPOINT_LOADER,
-      OPENAI_PARTNER_NODE
-    ])
-
-    tracker.prepareForSave()
-
-    expect(tracker.redoQueue.map(nodeTypesOf)).toEqual([
-      [CHECKPOINT_LOADER, OPENAI_PARTNER_NODE, LUMA_PARTNER_NODE]
-    ])
-  })
-
-  it('leaves the history untouched when a load throws before it configures', async () => {
-    const loadFailure = new Error('beforeLoadNewGraph failed')
-    throwBeforeFirstLoadConfigures(loadFailure)
-    const tracker = trackerEditing(withBothPartnerNodes(), [
-      beforePartnerNodes(),
-      withOnePartnerNode()
-    ])
-
-    await expect(tracker.undo()).rejects.toThrow(loadFailure)
-
-    expect(nodeTypesOf(tracker.activeState)).toEqual([
-      CHECKPOINT_LOADER,
-      OPENAI_PARTNER_NODE,
-      LUMA_PARTNER_NODE
-    ])
-    expect(tracker.redoQueue).toEqual([])
-
-    tracker.prepareForSave()
-    await tracker.undo()
-
-    expect(nodeTypesOf(tracker.activeState)).toEqual([
-      CHECKPOINT_LOADER,
-      OPENAI_PARTNER_NODE
-    ])
-  })
-
-  it('records the workflow the canvas reached when a load refuses after configuring', async () => {
-    refuseFirstLoadAfterConfiguring()
-    const tracker = trackerEditing(withBothPartnerNodes(), [
-      beforePartnerNodes(),
-      withOnePartnerNode()
-    ])
-
-    await tracker.undo()
-
-    expect(nodeTypesOf(tracker.activeState)).toEqual([
-      CHECKPOINT_LOADER,
-      OPENAI_PARTNER_NODE
-    ])
-
-    tracker.prepareForSave()
-
-    expect(tracker.redoQueue.map(nodeTypesOf)).toEqual([
-      [CHECKPOINT_LOADER, OPENAI_PARTNER_NODE, LUMA_PARTNER_NODE]
     ])
   })
 
