@@ -25,6 +25,7 @@
     "vue"
   ],
   "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
+  "extends": ["./scripts/primevue-import-allowlist.json"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
     "comfy/no-render-in-watch-effect": "error",
@@ -188,6 +189,13 @@
       "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": {
         "comfy/no-dom-in-computed": "warn"
+      }
+    },
+    {
+      "files": ["src/**/*.{js,mjs,cjs,ts,mts,cts,vue}"],
+      "excludeFiles": ["src/**/*.test.{ts,tsx}"],
+      "rules": {
+        "comfy/no-es2023-array-copy-method": "error"
       }
     },
     {

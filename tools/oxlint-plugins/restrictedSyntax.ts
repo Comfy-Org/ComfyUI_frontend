@@ -11,6 +11,15 @@ const DOM_METHOD_MESSAGES = new Map([
   ['querySelector', DOM_INSPECTION_MESSAGE],
   ['querySelectorAll', DOM_INSPECTION_MESSAGE]
 ])
+const PRIMEVUE_MODULE = /^(?:primevue(?:\/|$)|@primevue(?:\/|$))/
+const ES2023_ARRAY_COPY_METHODS = new Set([
+  'toReversed',
+  'toSorted',
+  'toSpliced',
+  'with'
+])
+const ES2023_ARRAY_COPY_MESSAGE =
+  'ES2023 array method is not polyfilled for build target es2022; use the matching ES2022-safe non-mutating equivalent.'
 
 interface Node {
   readonly type: string
@@ -25,8 +34,23 @@ interface StringLiteral extends Node {
   readonly value: string
 }
 
+interface Literal extends Node {
+  readonly type: 'Literal'
+  readonly value: unknown
+}
+
+interface TemplateLiteral extends Node {
+  readonly type: 'TemplateLiteral'
+  readonly expressions: readonly Node[]
+  readonly quasis: readonly { readonly value: { readonly cooked?: string } }[]
+}
+
 interface ImportDeclaration extends Node {
   readonly source: StringLiteral
+}
+
+interface ImportExpression extends Node {
+  readonly source: Node
 }
 
 interface ExportDeclaration extends Node {
@@ -36,6 +60,7 @@ interface ExportDeclaration extends Node {
 interface MemberExpression extends Node {
   readonly type: 'MemberExpression'
   readonly property: Node
+  readonly computed: boolean
 }
 
 interface CallExpression extends Node {
@@ -58,6 +83,23 @@ function identifierName(node: Node): string | undefined {
   return node.type === 'Identifier' ? (node as Identifier).name : undefined
 }
 
+function staticString(node: Node): string | undefined {
+  if (node.type === 'Literal') {
+    const { value } = node as Literal
+    return typeof value === 'string' ? value : undefined
+  }
+  if (node.type === 'TemplateLiteral') {
+    const { expressions, quasis } = node as TemplateLiteral
+    return expressions.length === 0 ? quasis[0]?.value.cooked : undefined
+  }
+}
+
+function staticPropertyName(member: MemberExpression): string | undefined {
+  return member.computed
+    ? staticString(member.property)
+    : identifierName(member.property)
+}
+
 function restrictImports(
   isRestricted: (source: string) => boolean,
   message: string
@@ -73,25 +115,34 @@ function restrictImports(
   }
 }
 
-function restrictModules(source: string, message: string) {
+function restrictModules(
+  isRestricted: (source: string) => boolean,
+  message: string
+) {
   function reportRestrictedModule(
     context: RuleContext,
-    node: ImportDeclaration | ExportDeclaration
+    node: Node,
+    source: string | undefined
   ) {
-    if (node.source?.value === source) context.report({ node, message })
+    if (source !== undefined && isRestricted(source)) {
+      context.report({ node, message })
+    }
   }
 
   return {
     create(context: RuleContext) {
       return {
         ImportDeclaration(node: ImportDeclaration) {
-          reportRestrictedModule(context, node)
+          reportRestrictedModule(context, node, node.source.value)
+        },
+        ImportExpression(node: ImportExpression) {
+          reportRestrictedModule(context, node, staticString(node.source))
         },
         ExportNamedDeclaration(node: ExportDeclaration) {
-          reportRestrictedModule(context, node)
+          reportRestrictedModule(context, node, node.source?.value)
         },
         ExportAllDeclaration(node: ExportDeclaration) {
-          reportRestrictedModule(context, node)
+          reportRestrictedModule(context, node, node.source?.value)
         }
       }
     }
@@ -175,11 +226,30 @@ export const noUnitTestFilesInBrowserTests = reportProgram(
 )
 
 export const noDeprecatedApiSchema = restrictModules(
-  '@/schemas/apiSchema',
+  (source) => source === '@/schemas/apiSchema',
   'This module was removed. Use a generated or domain-owned contract as documented in browser_tests/README.md.'
 )
 
 export const noNewZodServerResponseSchema = restrictModules(
-  'zod',
+  (source) => source === 'zod',
   'Avoid introducing new hand-written zod schemas under src/schemas/ for server responses. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
 )
+
+export const noPrimeVueImports = restrictModules(
+  (source) => PRIMEVUE_MODULE.test(source),
+  'New PrimeVue usage is banned per the PrimeVue removal effort. Remove this import. scripts/primevue-import-allowlist.json only shrinks; do not add entries.'
+)
+
+export const noEs2023ArrayCopyMethod = {
+  create(context: RuleContext) {
+    return {
+      CallExpression(node: CallExpression) {
+        if (node.callee.type !== 'MemberExpression') return
+        const method = staticPropertyName(node.callee as MemberExpression)
+        if (method !== undefined && ES2023_ARRAY_COPY_METHODS.has(method)) {
+          context.report({ node, message: ES2023_ARRAY_COPY_MESSAGE })
+        }
+      }
+    }
+  }
+}

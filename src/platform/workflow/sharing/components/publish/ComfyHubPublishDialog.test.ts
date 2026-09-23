@@ -12,7 +12,7 @@ import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/
 const mockToastAdd = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({ add: mockToastAdd })
   })

@@ -8,6 +8,7 @@ interface Diagnostic {
   readonly filename: string
   readonly message: string
   readonly severity: string
+  readonly labels: readonly { readonly span: { readonly line: number } }[]
 }
 
 const probeDirs = {
@@ -104,6 +105,60 @@ void (0 as unknown as GetI18nResponse)
     source: "test('misplaced', () => {})\n"
   },
   {
+    file: path.join(probeDirs.source, 'primevue.ts'),
+    source: `import Button from 'primevue/button'
+import { useToast } from 'primevue'
+import { definePreset } from '@primevue/themes'
+import prime from 'primevue-lookalike'
+export { default as Select } from 'primevue/select'
+export * from '@primevue/forms'
+const lazy = () => import('primevue/skeleton')
+const templated = () => import(\`primevue/dialog\`)
+void [Button, useToast, definePreset, prime, lazy, templated]
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'primevue.vue'),
+    source: `<script setup lang="ts">
+import Skeleton from 'primevue/skeleton'
+void Skeleton
+</script>
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'arrayCopy.ts'),
+    source: `const items = [1, 2]
+items.toReversed()
+items.toSorted()
+items.toSpliced(0, 1)
+items.with(0, 1)
+items['toSorted']()
+items[\`toSorted\`]()
+items?.with(0, 1)
+new Uint8Array(1).toSorted()
+const fn = items.toSorted
+const method = 'map' as const
+items[method]()
+items.sort()
+void fn
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'arrayCopy.vue'),
+    source: `<script setup lang="ts">
+const items = [1, 2].toSorted()
+void items
+</script>
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'arrayCopy.test.ts'),
+    source: `const items = [1, 2]
+items.toReversed()
+items['toSorted']()
+`
+  },
+  {
     file: path.join(probeDirs.remote, 'remote.ts'),
     source: `import { z } from 'zod'
 const asserted = <Error>value
@@ -148,9 +203,21 @@ function hasStringProperty(value: object, property: keyof Diagnostic): boolean {
 
 function isDiagnostic(value: unknown): value is Diagnostic {
   if (typeof value !== 'object' || value === null) return false
+  if (!('labels' in value) || !Array.isArray(value.labels)) return false
   return (['code', 'filename', 'message', 'severity'] as const).every(
     (property) => hasStringProperty(value, property)
   )
+}
+
+function locations(diagnostics: readonly Diagnostic[]) {
+  return diagnostics
+    .map(({ filename, labels }) => [
+      path.basename(filename),
+      labels[0]?.span.line
+    ])
+    .toSorted(([fileA, lineA], [fileB, lineB]) =>
+      fileA === fileB ? Number(lineA) - Number(lineB) : fileA < fileB ? -1 : 1
+    )
 }
 
 function parseDiagnostics(output: string): Diagnostic[] {
@@ -292,6 +359,41 @@ describe('restricted syntax rules', () => {
       ])
     }
   )
+
+  it('rejects static PrimeVue imports, re-exports, and dynamic imports', () => {
+    const primeVueFindings = findingsFor('no-primevue-imports')
+    expect(locations(primeVueFindings)).toEqual([
+      ['primevue.ts', 1],
+      ['primevue.ts', 2],
+      ['primevue.ts', 3],
+      ['primevue.ts', 5],
+      ['primevue.ts', 6],
+      ['primevue.ts', 7],
+      ['primevue.ts', 8],
+      ['primevue.vue', 2]
+    ])
+    expect(primeVueFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
+    )
+  })
+
+  it('rejects statically named ES2023 array copy calls outside unit tests', () => {
+    const copyFindings = findingsFor('no-es2023-array-copy-method')
+    expect(locations(copyFindings)).toEqual([
+      ['arrayCopy.ts', 2],
+      ['arrayCopy.ts', 3],
+      ['arrayCopy.ts', 4],
+      ['arrayCopy.ts', 5],
+      ['arrayCopy.ts', 6],
+      ['arrayCopy.ts', 7],
+      ['arrayCopy.ts', 8],
+      ['arrayCopy.ts', 9],
+      ['arrayCopy.vue', 2]
+    ])
+    expect(copyFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
+    )
+  })
 
   it('allows generated contracts', () => {
     expect(
