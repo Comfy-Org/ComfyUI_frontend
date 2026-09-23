@@ -368,10 +368,13 @@ test.describe(
       // The turn's own summary settled instantly (asserted inside the arrange
       // step above), matching the report's "every working affordance" -- but
       // the fix under test lives one level down, on the tool call's OWN
-      // displayed state inside that summary: expand it to look.
+      // displayed state inside that summary. cloud/1.54's ToolCallGroup
+      // auto-expands (and stays expanded) while any of its own tool parts is
+      // still 'streaming' -- exactly this row's state here -- so there is
+      // nothing to click open; clicking an already-open trigger would only
+      // toggle it closed.
       const panel = page.locator('#agent-panel-root')
       const workSummary = panel.getByRole('button', { name: /^Ran/ })
-      await workSummary.click()
       await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
 
       const addNodeRow = panel
