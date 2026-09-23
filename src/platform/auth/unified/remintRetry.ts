@@ -7,6 +7,7 @@ import axios, { AxiosHeaders } from 'axios'
 
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   UnifiedAuthRetryFailureReason,
   UnifiedAuthRetryMetadata
@@ -39,7 +40,8 @@ export async function shouldRemintCloudRequest(): Promise<boolean> {
  * surfaced + torn down inside `remintUnifiedOnce` (error toast + session clear,
  * matching the proactive refresh path); the `catch` here only guards an
  * unexpected throw (e.g. a chunk-load failure or no active Pinia), which it
- * logs. Either way `null` makes the caller surface its original 401 unchanged.
+ * reports as `auth_unified_remint_unexpected`. Either way `null` makes the
+ * caller surface its original 401 unchanged.
  */
 async function tryRemintToken(expectedToken: string): Promise<string | null> {
   try {
@@ -47,7 +49,16 @@ async function tryRemintToken(expectedToken: string): Promise<string | null> {
       await import('@/platform/workspace/stores/workspaceAuthStore')
     return await useWorkspaceAuthStore().remintUnifiedOnce(expectedToken)
   } catch (err) {
-    console.warn('Unified re-mint primitive threw unexpectedly:', err)
+    reportError(err, {
+      errorType: 'auth_unified_remint_unexpected',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'auth',
+        operation: 'auth',
+        outcome: 'failed'
+      },
+      level: 'error'
+    })
     return null
   }
 }
