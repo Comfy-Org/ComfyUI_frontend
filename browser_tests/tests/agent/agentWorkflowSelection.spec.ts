@@ -69,6 +69,52 @@ test.describe(
       expect(workflowSelection.postedMessages).toHaveLength(0)
     })
 
+    test('does not repost a workflow the server disowned after reload', async ({
+      page,
+      workflowSelection
+    }) => {
+      await page
+        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .click()
+      const panel = page.locator('#agent-panel-root')
+      const targetPicker = panel.getByRole('button', {
+        name: enMessages.agent.switchWorkflow
+      })
+      await targetPicker.click()
+      await page
+        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
+        .click()
+      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+      workflowSelection.finishSave(true)
+      await expect(targetPicker).toHaveText('Unsaved Workflow')
+
+      workflowSelection.refuseNextWorkflowMessage()
+      const composer = panel.getByRole('textbox', { includeHidden: true })
+      await composer.fill('first attempt')
+      await composer.press('Enter')
+      await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
+      expect(JSON.parse(workflowSelection.postedMessages[0])).toMatchObject({
+        workflow_id: 'a81718a4-02ae-41e6-ae85-000000000001'
+      })
+      await expect(
+        panel.getByText(
+          `${enMessages.agent.sendFailed}: workflow not found or access denied`
+        )
+      ).toBeVisible()
+
+      await page.reload()
+      const reloadedPanel = page.locator('#agent-panel-root')
+      const reloadedComposer = reloadedPanel.getByRole('textbox', {
+        includeHidden: true
+      })
+      await reloadedComposer.fill('retry after reload')
+      await reloadedComposer.press('Enter')
+      await expect.poll(() => workflowSelection.postedMessages.length).toBe(2)
+      expect(
+        JSON.parse(workflowSelection.postedMessages[1])
+      ).not.toHaveProperty('workflow_id')
+    })
+
     test('retains a closed-workflow reference across panel reopen, navigation, and removal', async ({
       page,
       workflowSelection

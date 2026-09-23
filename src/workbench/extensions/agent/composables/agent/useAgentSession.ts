@@ -8,7 +8,8 @@ import {
   isAgentEvent,
   parseAgentWsEvent,
   toTurnId,
-  zAgentAdmissionError
+  zAgentAdmissionError,
+  zDisownedWorkflowError
 } from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
@@ -76,6 +77,7 @@ export interface AgentSessionDeps {
       isCurrent: () => boolean
     ): Promise<void> | void
     prepare?(): Promise<void>
+    disowned?(workflowId: string): void
     tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
     draft?(origin?: TurnOrigin): DraftSnapshot | undefined
@@ -98,6 +100,14 @@ function parseAdmissionError(error: unknown) {
   if (!(error instanceof AgentApiError)) return undefined
   const parsed = zAgentAdmissionError.safeParse(error.body)
   return parsed.success ? parsed.data.error : undefined
+}
+
+function disownsWorkflow(error: unknown): boolean {
+  return (
+    error instanceof AgentApiError &&
+    error.status === 403 &&
+    zDisownedWorkflowError.safeParse(error.body).success
+  )
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
@@ -242,6 +252,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const originContext = workflow?.current()
     const origin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
+    let sentContext: WorkflowTurnContext | undefined
     try {
       if (workflow?.prepare)
         await Promise.race([
@@ -263,6 +274,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         )
         return false
       }
+      sentContext = wfContext
       const tabs = workflow?.tabs?.(origin)
       // current_tab_unbound's own contract (see its generated doc comment) is
       // a tab-level fact: this tab has no cloud id yet. wfContext with no id
@@ -356,6 +368,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return true
     } catch (error) {
+      if (sentContext?.id !== undefined && disownsWorkflow(error)) {
+        bindingStore.unbindWorkflow(sentContext.id)
+        workflow?.disowned?.(sentContext.id)
+        if (boundWorkflowId.value === sentContext.id)
+          boundWorkflowId.value = null
+        if (rememberedWorkflowId === sentContext.id) rememberedWorkflowId = null
+      }
       if (generation !== loadGeneration) return false
       const admission = parseAdmissionError(error)
       if (admission?.reason === 'no_funds') {
