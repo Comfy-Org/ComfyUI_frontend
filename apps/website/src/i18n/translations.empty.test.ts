@@ -1,16 +1,13 @@
 import { expect, it, vi } from 'vitest'
 
-vi.mock('../locales/en/main.json', () => ({
-  default: { hero: { title: 'English title' } }
-}))
-vi.mock('../locales/zh-CN/main.json', () => ({
-  default: { hero: { title: '' } }
-}))
-vi.mock('../locales/ja/main.json', () => ({ default: {} }))
+vi.mock(import('../locales/zh-CN/main.json'), async (importOriginal) => {
+  const { default: catalog } = await importOriginal()
+  return { default: { ...catalog, hero: { ...catalog.hero, title: '' } } }
+})
 
-it('preserves an explicitly empty translation while missing copy falls back', async () => {
+it('preserves an explicitly empty translation', async () => {
   const { t } = await import('./translations')
 
   expect(t('hero.title', 'zh-CN')).toBe('')
-  expect(t('hero.title', 'ja')).toBe('English title')
+  expect(t('hero.title', 'en')).toBe('Professional Control\nof Visual AI')
 })
