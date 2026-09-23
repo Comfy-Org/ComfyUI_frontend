@@ -135,9 +135,13 @@ const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
 const { subscription, tier: subscriptionTier } = useBillingContext()
 const conversationStore = useAgentConversationStore()
-watch(subscription, (currentSubscription) => {
-  if (currentSubscription?.hasFunds) conversationStore.resolvePaywalls()
-})
+watch(
+  subscription,
+  (currentSubscription) => {
+    if (currentSubscription?.hasFunds) conversationStore.resolvePaywalls()
+  },
+  { immediate: true }
+)
 const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
   useBillingCapabilities()
 const paywallPresentation = computed(() => {
