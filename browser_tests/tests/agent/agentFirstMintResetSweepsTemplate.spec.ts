@@ -218,15 +218,27 @@ test.describe(
       // still-empty "Unsaved Workflow" tab by its exact name, switching the
       // canvas away from the just-rendered template nodes before the CRDT
       // follower is ever bound.
+      //
+      // Boot's own default-workflow mint (GraphCanvas.vue's onMounted ->
+      // useWorkflowPersistenceV2().initializeWorkflow() -> resolveStartupOutcome
+      // -> app.loadGraphData()) runs asynchronously after Vue mounts and is
+      // NOT awaited by bootAgentApp/waitForCloudApp above (that only waits
+      // for `window.app.extensionManager` to exist). Reading
+      // `workflow.activeWorkflow` immediately after boot can therefore race
+      // ahead of that mint and observe `null`, which makes `activeWorkflow ??
+      // undefined` collapse to `undefined` -- functionally identical to
+      // omitting the 4th arg entirely. Waiting for the store to actually
+      // populate it first closes that race.
+      await page.waitForFunction(() => {
+        const workspace = window.app?.extensionManager as
+          | WorkspaceStore
+          | undefined
+        return workspace?.workflow.activeWorkflow != null
+      })
       await page.evaluate(async (json) => {
         const activeWorkflow = (window.app!.extensionManager as WorkspaceStore)
-          .workflow.activeWorkflow
-        await window.app!.loadGraphData(
-          json,
-          true,
-          true,
-          activeWorkflow ?? undefined
-        )
+          .workflow.activeWorkflow!
+        await window.app!.loadGraphData(json, true, true, activeWorkflow)
       }, TEMPLATE_GRAPH)
       await expect(
         vueNodes.getNodeLocator(String(TEMPLATE_NODE_A_ID))
