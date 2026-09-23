@@ -1,61 +1,30 @@
-import snapshot from '../../data/cloud-nodes.snapshot.json'
-import details from '../../data/hubTemplateDetails.json'
 import { needsOwnEndpoint } from '../../config/workshop-launch'
 
 /** How far a workflow can be taken without the reader building anything. */
 export type WorkflowReach =
-  /** The page runs it, as a form and a Run button. */
+  /** The page runs it inline, through one call to a catalogue model. */
   | 'here'
-  /** The shared Cloud endpoint runs it: the request carries the graph. */
+  /** The page runs it against Cloud: the request carries the whole graph. */
   | 'cloud'
   /** Nothing shared can run it. A developer deploys it before calling it. */
   | 'endpoint'
 
-const loose = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
-
-// A pack is named three ways between the registry and Cloud's own listing, and
-// none of them is canonical, so a match is a match on any of them.
-const CARRIED = new Set(
-  snapshot.packs.flatMap((pack) =>
-    [pack.id, pack.displayName].filter(Boolean).map((name) => loose(name))
-  )
-)
-
-const carried = (pack: string) => {
-  const name = loose(pack)
-  return [...CARRIED].some(
-    (known) => known === name || known.includes(name) || name.includes(known)
-  )
-}
-
 /**
- * The packs a workflow needs that Cloud does not carry. They are what decides
- * whether a developer can call the shared endpoint or has to stand up their
- * own, which is the one difference between the two that changes their work.
+ * Both `here` and `cloud` run in the visitor's browser; they differ only in
+ * which engine the browser talks to. Only `endpoint` cannot run at all.
+ *
+ * This used to also infer `endpoint` from the packs a graph declares against
+ * a committed list of Cloud's nodes. That inference was wrong: the list is a
+ * fallback snapshot taken on 22 August, it holds 61 packs, and absence from
+ * it is not absence from Cloud. It marked three workflows the workflow
+ * prototype runs against Cloud for real. What is left is the one workflow
+ * that genuinely has a server of its own, which that prototype also declines
+ * to run.
  */
-export function packsCloudLacks(packs: readonly string[]): readonly string[] {
-  return packs.filter((pack) => !carried(pack))
-}
-
-const packsOf = (templateName: string): readonly string[] => {
-  const detail: unknown = (details as Record<string, unknown>)[templateName]
-  const packs =
-    detail && typeof detail === 'object' && 'requiresCustomNodes' in detail
-      ? detail.requiresCustomNodes
-      : undefined
-  return Array.isArray(packs) ? packs.filter((p) => typeof p === 'string') : []
-}
-
-/** The packs this one needs that Cloud does not carry. */
-export function missingFromCloud(templateName: string): readonly string[] {
-  return packsCloudLacks(packsOf(templateName))
-}
-
 export function workflowReach(
   templateName: string,
   runsInline: boolean
 ): WorkflowReach {
-  if (needsOwnEndpoint(templateName) || missingFromCloud(templateName).length)
-    return 'endpoint'
+  if (needsOwnEndpoint(templateName)) return 'endpoint'
   return runsInline ? 'here' : 'cloud'
 }

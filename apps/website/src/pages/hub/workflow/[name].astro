@@ -5,6 +5,7 @@ import HubPageHeader from '../../../components/hub/HubPageHeader.vue'
 import WorkflowAbout from '../../../components/hub/WorkflowAbout.vue'
 import WorkflowRun from '../../../components/hub/WorkflowRun.vue'
 import WorkflowRunForm from '../../../components/hub/WorkflowRunForm.vue'
+import WorkflowTabs from '../../../components/hub/WorkflowTabs.vue'
 import { catalogSearch, useCaseFor } from '../../../config/models-catalogue'
 import { useCaseForTemplate } from '../../../lib/hub/template-use-case'
 import { displayModelName } from '../../../lib/hub/model-identity'
@@ -95,6 +96,13 @@ const cloudUrl = `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(temp
 // copy into a workspace where they can be deployed instead.
 const reach = workflowReach(template.name, page.runsInline)
 
+// A workflow that reaches neither a model nor its own bindings would open on
+// an empty Playground. None does; the build stops rather than ship one.
+if (!runnable && !runForm)
+  throw new Error(
+    `${template.name} has no run form and no catalogue model behind it.`
+  )
+
 // A page that runs a model has to say what a run costs, on either page.
 const price = operations.find((operation) => operation.price)?.price
 
@@ -162,45 +170,52 @@ const sectionTitle =
         />
       </section>
     ) : (
-      <div class="mb-16 flex flex-col gap-10" data-testid="workflow-on-cloud">
-        {runForm && <div class="grid gap-10 lg:grid-cols-12">
-          <div class="lg:col-span-5">
-            <WorkflowRunForm
-              fields={runForm.fields}
-              graph={runForm.graph}
-              coldStart={coldStart}
+      runForm && <div class="mb-16" data-testid="workflow-on-cloud">
+        <WorkflowTabs runs={reach !== 'endpoint'} client:load>
+          {reach !== 'endpoint' && <div
+            slot="playground"
+            class="grid gap-10 lg:grid-cols-12"
+          >
+            <div class="lg:col-span-5">
+              <WorkflowRunForm
+                fields={runForm.fields}
+                graph={runForm.graph}
+                coldStart={coldStart}
+                client:load
+              />
+            </div>
+            <div class="lg:col-span-7">
+              {template.thumbnails[0] && (
+                <img
+                  src={template.thumbnails[0]}
+                  alt={title}
+                  loading="lazy"
+                  decoding="async"
+                  class="aspect-video w-full rounded-2xl bg-hub-surface object-cover"
+                  data-testid="workflow-media"
+                />
+              )}
+            </div>
+          </div>}
+          <div slot="details">
+            <WorkflowAbout
+              graphUrl={page.downloadUrl}
+              cloudUrl={cloudUrl}
+              runsHere={false}
+              description={details.description}
+              reach={reach}
+              tutorialUrl={details.tutorialUrl}
+              samples={template.thumbnails}
+              models={runsOn}
+              author={author}
+              usage={template.usage}
+              produces={summarisePorts(page.outputs)}
+              openWeights={details.openSource ?? false}
+              added={template.date}
               client:load
             />
           </div>
-          <div class="lg:col-span-7">
-            {template.thumbnails[0] && (
-              <img
-                src={template.thumbnails[0]}
-                alt={title}
-                loading="lazy"
-                decoding="async"
-                class="aspect-video w-full rounded-2xl bg-hub-surface object-cover"
-                data-testid="workflow-media"
-              />
-            )}
-          </div>
-        </div>}
-        <WorkflowAbout
-          graphUrl={page.downloadUrl}
-          cloudUrl={cloudUrl}
-          runsHere={false}
-          description={details.description}
-          reach={reach}
-          tutorialUrl={details.tutorialUrl}
-          samples={template.thumbnails}
-          models={runsOn}
-          author={author}
-          usage={template.usage}
-          produces={summarisePorts(page.outputs)}
-          openWeights={details.openSource ?? false}
-          added={template.date}
-          client:load
-        />
+        </WorkflowTabs>
       </div>
     )}
 
