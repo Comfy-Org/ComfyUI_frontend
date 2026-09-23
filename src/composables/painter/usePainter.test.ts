@@ -30,8 +30,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/scripts/api'))
 
-const fixture = vi.hoisted((): { node: LGraphNode | null } => ({ node: null }))
-
 vi.mock(import('@/scripts/app'))
 
 const i18n = createI18n({
@@ -61,13 +59,18 @@ function makePaintNode(widgets: PaintWidgetSpec[] = []) {
   }
   node.isInputConnected = mockIsInputConnected
   node.getInputNode = mockGetInputNode
-  fixture.node = node
+  const rootGraph = app.canvas.graph
+  if (!(rootGraph instanceof LGraph)) throw new Error('Expected a root graph')
+  vi.spyOn(rootGraph, 'getNodeById').mockReturnValue(node)
   return { node, callbacks }
 }
 
 function paintNode(): LGraphNode {
-  if (!fixture.node) throw new Error('Expected a paint node')
-  return fixture.node
+  const rootGraph = app.canvas.graph
+  if (!(rootGraph instanceof LGraph)) throw new Error('Expected a root graph')
+  const node = rootGraph.getNodeById(toNodeId('test-node'))
+  if (!(node instanceof LGraphNode)) throw new Error('Expected a paint node')
+  return node
 }
 
 function widgetOf(name: string): IBaseWidget {
@@ -118,9 +121,6 @@ describe('usePainter', () => {
     vi.mocked(api.apiURL).mockImplementation(
       (path) => `http://localhost:8188${path}`
     )
-    const graph = app.canvas.graph
-    if (!(graph instanceof LGraph)) throw new Error('Expected a root graph')
-    vi.spyOn(graph, 'getNodeById').mockImplementation(() => fixture.node)
     vi.mocked(useElementSize).mockImplementation(() => ({
       width: ref(512),
       height: ref(512),
