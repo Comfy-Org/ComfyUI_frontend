@@ -1,7 +1,15 @@
-import { existsSync, writeFileSync, mkdirSync, unlinkSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import {
+  existsSync,
+  writeFileSync,
+  mkdirSync,
+  unlinkSync,
+  rmSync
+} from 'node:fs'
 import { homedir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { formatInitialFeatureFlags } from '../featureFlags'
+import type { Distribution } from '../devserver/distributions'
 
 export type RecordingTarget = 'local' | 'cloud'
 
@@ -14,8 +22,60 @@ interface TemplateOptions {
   storageStateFile?: string
 }
 
+/**
+ * Every custom backend previously shared one cache key ('custom'), so a
+ * session saved against one host got replayed against a completely
+ * different one — a stale/foreign cookie an unrelated origin will reject,
+ * which can surface as an auth redirect loop. Custom backends key by a hash
+ * of their full normalized origin+path instead (path included, since
+ * path-routed backends like /tenant-a/ vs /tenant-b/ are distinct sessions);
+ * the three fixed cloud distributions keep their id. Hashing also bounds the
+ * resulting filename length and routes every unparseable/malformed URL to
+ * one shared fallback bucket.
+ */
+export function storageStateKey(distribution?: Distribution): string {
+  if (!distribution) return 'cloud'
+  if (distribution.id !== 'custom') {
+    return distribution.id
+  }
+  if (!distribution.backendUrl) return 'custom-unparsed'
+  try {
+    const { protocol, hostname, port, pathname } = new URL(
+      distribution.backendUrl
+    )
+    if ((protocol !== 'http:' && protocol !== 'https:') || !hostname) {
+      // A scheme-less input like 'localhost:8100' parses as a non-special
+      // `localhost:` URL with an empty hostname and the real host/port
+      // sitting in the opaque path — treat that the same as unparseable
+      // rather than silently sharing a bucket with other typos.
+      return 'custom-unparsed'
+    }
+    const origin = `${protocol}//${hostname}${port ? `:${port}` : ''}${pathname}`
+    const digest = createHash('sha256').update(origin).digest('hex')
+    return `custom-${digest.slice(0, 16)}`
+  } catch {
+    return 'custom-unparsed'
+  }
+}
+
 export function storageStatePath(distributionId: string): string {
   return join(homedir(), '.comfy-test', `storage-state.${distributionId}.json`)
+}
+
+export function removeLegacyCustomStorageState(storageStateFile: string): void {
+  const legacyStorageStateFile = join(
+    dirname(storageStateFile),
+    'storage-state.custom.json'
+  )
+  if (storageStateFile !== legacyStorageStateFile) {
+    try {
+      rmSync(legacyStorageStateFile, { force: true })
+    } catch {
+      // Best-effort cleanup of an obsolete file — EACCES/EPERM/a lock on it
+      // shouldn't abort the recording session, same as cleanupRecordingTemplate
+      // and cleanupRecordedCode below.
+    }
+  }
 }
 
 export function ensureStorageStateDir(storageStateFile: string): void {
@@ -134,19 +194,6 @@ function cloudTemplate(
   safeName: string,
   safeOutputPath: string
 ): string {
-  const hasFlags =
-    options.featureFlags && Object.keys(options.featureFlags).length > 0
-  // The app reads feature-flag overrides from localStorage 'ff:<key>' keys —
-  // the same mechanism FeatureFlagHelper.seedFlags uses in cloud specs.
-  const flagSeedBlock = hasFlags
-    ? `  await page.addInitScript((flags) => {
-    for (const [key, value] of Object.entries(flags)) {
-      localStorage.setItem('ff:' + key, JSON.stringify(value))
-    }
-  }, ${JSON.stringify(options.featureFlags)})
-`
-    : ''
-
   const stateFile = options.storageStateFile
   const safeStateFile = stateFile ? JSON.stringify(stateFile) : undefined
   const reuseLoginBlock =
@@ -173,7 +220,7 @@ function cloudTemplate(
 import { test } from '@playwright/test'
 
 ${reuseLoginBlock}test(${safeName}, async ({ page }) => {
-${flagSeedBlock}  await page.goto(process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173')
+  await page.goto(process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173')
 ${persistLoginBlock}  // The cloud app may show a sign-in screen first — sign in manually, then
   // record. Nothing is captured until the Record button is clicked, so the
   // recorder opens immediately rather than gating on app boot.

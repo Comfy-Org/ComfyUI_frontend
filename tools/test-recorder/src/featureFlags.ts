@@ -26,6 +26,17 @@ export function parseFeatureFlagSpecs(
   )
 }
 
+export function buildFfQuery(flags: Record<string, unknown>): string {
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(flags)) {
+    const encodedValue =
+      value === true ? key : `${key}:${JSON.stringify(value) ?? String(value)}`
+    params.append('ff', encodedValue)
+  }
+  const query = params.toString()
+  return query ? `?${query}` : ''
+}
+
 export function extractEnumValues(source: string): string[] {
   const enumBody = source.match(
     /export\s+enum\s+ServerFeatureFlag\s*\{([\s\S]*?)\}/

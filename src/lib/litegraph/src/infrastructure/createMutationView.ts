@@ -1,7 +1,7 @@
-interface MutationViewOptions<TValue> {
+interface MutationViewOptions {
   commit: () => void
   mapValue?: (property: PropertyKey, value: unknown) => unknown
-  observe?: ArrayLike<TValue>
+  observe?: object
   shouldCommitMethod?: (property: PropertyKey) => boolean
   synchronize?: () => void
 }
@@ -18,10 +18,14 @@ const arrayMutationMethods = new Set<PropertyKey>([
   'unshift'
 ])
 
-export function createMutationView<
-  TValue,
-  TTarget extends object & ArrayLike<TValue>
->(
+function snapshot(target: object): unknown[] {
+  return Reflect.ownKeys(target).flatMap((property) => [
+    property,
+    Reflect.get(target, property)
+  ])
+}
+
+export function createMutationView<TTarget extends object>(
   target: TTarget,
   {
     synchronize,
@@ -29,12 +33,13 @@ export function createMutationView<
     observe = target,
     mapValue = (_property, value) => value,
     shouldCommitMethod = () => true
-  }: MutationViewOptions<TValue>
+  }: MutationViewOptions
 ): TTarget {
-  function commitIfChanged(previous: TValue[]): void {
+  function commitIfChanged(previous: unknown[]): void {
+    const current = snapshot(observe)
     if (
-      previous.some((value, index) => value !== observe[index]) ||
-      previous.length !== observe.length
+      previous.some((value, index) => value !== current[index]) ||
+      previous.length !== current.length
     )
       commit()
   }
@@ -49,7 +54,7 @@ export function createMutationView<
 
       return (...args: unknown[]) => {
         synchronize?.()
-        const previous = Array.from(observe)
+        const previous = snapshot(observe)
         try {
           const result = Reflect.apply(value, target, args)
           return result === target ? receiver : result
@@ -60,7 +65,7 @@ export function createMutationView<
     },
     set(target, property, value) {
       synchronize?.()
-      const previous = Array.from(observe)
+      const previous = snapshot(observe)
       try {
         return Reflect.set(target, property, value, target)
       } finally {
@@ -69,7 +74,7 @@ export function createMutationView<
     },
     deleteProperty(target, property) {
       synchronize?.()
-      const previous = Array.from(observe)
+      const previous = snapshot(observe)
       try {
         return Reflect.deleteProperty(target, property)
       } finally {
@@ -78,7 +83,7 @@ export function createMutationView<
     },
     defineProperty(target, property, attributes) {
       synchronize?.()
-      const previous = Array.from(observe)
+      const previous = snapshot(observe)
       try {
         return Reflect.defineProperty(target, property, attributes)
       } finally {

@@ -29,6 +29,9 @@
       ],
       "@/utils/networkUtil": [
         "./packages/shared-frontend-utils/src/networkUtil.ts"
+      ],
+      "@/base/credits/comfyCredits": [
+        "./packages/shared-frontend-utils/src/creditsUtil.ts"
       ]
     },
     "typeRoots": ["src/types", "node_modules/@types", "./node_modules"],
@@ -41,7 +44,9 @@
     "rootDir": "./"
   },
   "include": [
+    "__mocks__/**/*.ts",
     ".storybook/**/*",
+    "build/**/*.ts",
     "eslint.config.ts",
     "global.d.ts",
     "knip.config.ts",

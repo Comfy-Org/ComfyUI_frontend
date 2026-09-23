@@ -122,7 +122,8 @@ describe('toCardProps', () => {
       slug: 'series-entertainment',
       title: validFrontmatter.title,
       category: validFrontmatter.category,
-      cover: validFrontmatter.cover
+      cover: validFrontmatter.cover,
+      description: validFrontmatter.description
     })
   })
 })

@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
     return mockData.isDesktop
   }
 }))
 
 // Mock the environment utilities
-vi.mock('@/utils/envUtil', () => ({
+vi.mock(import('@/utils/envUtil'), () => ({
   electronAPI: vi.fn()
 }))
 
@@ -21,7 +21,7 @@ const i18n = vi.hoisted(() => ({
     }
   }
 }))
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   i18n
 }))
 
@@ -53,7 +53,7 @@ describe('useExternalLink', () => {
         'https://github.com/Comfy-Org/electron'
       )
       expect(staticUrls.forum).toBe('https://forum.comfy.org/')
-      expect(staticUrls.comfyOrg).toBe('https://www.comfy.org/')
+      expect(staticUrls.comfyOrg).toBe('https://comfy.org/')
     })
   })
 
@@ -71,7 +71,7 @@ describe('useExternalLink', () => {
       const { buildDocsUrl } = useExternalLink()
 
       const url = buildDocsUrl('/changelog', { includeLocale: true })
-      expect(url).toBe('https://docs.comfy.org/zh-CN/changelog')
+      expect(url).toBe('https://docs.comfy.org/zh/changelog')
     })
 
     it('should build docs URL with Chinese (zh-TW) locale when requested', () => {
@@ -79,7 +79,7 @@ describe('useExternalLink', () => {
       const { buildDocsUrl } = useExternalLink()
 
       const url = buildDocsUrl('/changelog', { includeLocale: true })
-      expect(url).toBe('https://docs.comfy.org/zh-CN/changelog')
+      expect(url).toBe('https://docs.comfy.org/zh/changelog')
     })
 
     it('should not include locale for English when requested', () => {
@@ -133,9 +133,7 @@ describe('useExternalLink', () => {
         includeLocale: true,
         platform: true
       })
-      expect(url).toBe(
-        'https://docs.comfy.org/zh-CN/installation/desktop/macos'
-      )
+      expect(url).toBe('https://docs.comfy.org/zh/installation/desktop/macos')
     })
 
     it('should not add platform when not desktop', () => {

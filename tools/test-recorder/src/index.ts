@@ -10,9 +10,23 @@ intro(pc.bgCyan(pc.black(' 🎭 ComfyUI Test Recorder ')))
 
 try {
   switch (command) {
-    case 'record': {
+    case 'record':
+    case 'recorder': {
+      const { parseFlags } = await import('./cli/flags')
+      const { flags } = parseFlags(args.slice(1), [
+        'distribution',
+        'backend',
+        'workflow',
+        'tags',
+        'feature-flags',
+        'use-case',
+        'description',
+        'name',
+        'pr'
+      ])
+      const { resolveRecordPrefill } = await import('./commands/recordPrefill')
       const { runRecord } = await import('./commands/record')
-      await runRecord()
+      await runRecord(resolveRecordPrefill(flags))
       break
     }
     case 'add-workflow': {
@@ -161,6 +175,11 @@ try {
       }
       break
     }
+    case 'agent-replay': {
+      const { agentReplayCli } = await import('./commands/agentReplay')
+      process.exitCode = await agentReplayCli(args.slice(1))
+      break
+    }
     case 'list': {
       const { parseFlags } = await import('./cli/flags')
       const { flags } = parseFlags(args.slice(1), ['filter'])
@@ -181,7 +200,7 @@ try {
     default: {
       // Help is a successful request; a typo is not.
       const askedForHelp =
-        command === undefined || command === '--help' || command === 'help'
+        !command || command === '--help' || command === 'help'
       if (!askedForHelp) {
         console.log(pc.red(`  Unknown command: ${command}`))
         process.exitCode = 1
@@ -190,7 +209,10 @@ try {
 Usage: comfy-test <command>
 
 Commands:
-  record      Record a new browser test interactively (needs a terminal)
+  record (alias: recorder) [--distribution <id>] [--backend <url>] [--workflow <name>]
+         [--tags <a,b>] [--feature-flags <specs>] [--use-case <id>]
+         [--description <text>] [--name <slug>] [--pr <number>]
+              Record a browser test; supplied answers skip setup prompts
   add-workflow <file> [--name <n>]
               Add and validate a workflow asset from disk
   plan        Print a test plan for an agent to hand to playwright-test-generator
@@ -198,6 +220,10 @@ Commands:
   pr          Open a pull request for a generated test
   check [--distribution cloud|cloud-staging|cloud-prod|local] [--backend <url>]
               Check environment prerequisites (defaults to cloud)
+  agent-replay [--case <id>] [--spec <path>] [--url <dev server>] [--headed] [--video] [--help]
+              Replay the recorded agent conversations as tests against a
+              running dev server; --spec replays them through another spec
+              (see .claude/skills/agent-integration-replay)
   list [--filter <keyword>]
               List available test workflows, optionally filtered by path
   tags        List test tags with their meanings
@@ -220,7 +246,7 @@ Transform flags:
   --feature-flags <specs>
               Seed comma-separated feature flags in the generated test
 
-'add-workflow', 'transform', 'pr', 'check', 'plan', 'list', and 'tags' work non-interactively.
+'add-workflow', 'transform', 'pr', 'check', 'plan', 'list', 'tags', and 'agent-replay' work non-interactively.
 `)
       break
     }

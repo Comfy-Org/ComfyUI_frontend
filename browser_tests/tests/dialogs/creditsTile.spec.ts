@@ -10,6 +10,7 @@ import type {
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
@@ -64,6 +65,7 @@ const mockBillingStatus: BillingStatusResponse = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-02-20T12:00:00Z',
@@ -75,6 +77,7 @@ const freeBillingStatus: BillingStatusResponse = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_tier: 'FREE',
   has_funds: true
 }
@@ -84,6 +87,7 @@ const endedPersonalBillingStatus: BillingStatusResponse = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_status: 'ended',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -178,6 +182,14 @@ async function mockCloudBoot(
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute({ plans: [] }))
   )
+  await page.route('**/api/billing/capabilities', (r) => {
+    if (r.request().method() !== 'GET') return r.fallback()
+    return r.fulfill(
+      jsonRoute(
+        createWorkspaceBillingCapabilities(workspace('personal', 'owner'))
+      )
+    )
+  })
 }
 
 async function mockBalance(
@@ -282,8 +294,12 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await mockCloudBoot(page, true, endedPersonalBillingStatus)
 
     const content = await openPlanAndCredits(page)
-    await expect(content.getByText('Your subscription has ended')).toBeVisible()
-    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+    const billingPortal = content.getByRole('button', {
+      name: 'Billing & invoices'
+    })
+    await expect(billingPortal).toBeVisible()
+    await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
+    await billingPortal.click()
 
     await expect
       .poll(() => page.locator('html').getAttribute('data-opened-url'))
@@ -424,10 +440,15 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
 
   let operationPollRequests: Request[]
+  let releaseOperationPoll: () => void
+  let operationPollGate: Promise<void>
   let topupDialog: TopUpCreditsDialog
 
   test.beforeEach(async ({ page }) => {
     operationPollRequests = []
+    operationPollGate = new Promise((resolve) => {
+      releaseOperationPoll = resolve
+    })
     await page.addInitScript(() => {
       window.open = (url, target, features) => {
         document.documentElement.dataset.openedUrl = String(url)
@@ -459,17 +480,21 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
         } satisfies CreateTopupResponse)
       )
     )
-    await page.route('**/api/billing/ops/topup-3ds-operation', (route) => {
-      operationPollRequests.push(route.request())
-      return route.fulfill(
-        jsonRoute({
-          id: 'topup-3ds-operation',
-          status: 'pending',
-          started_at: '2026-07-31T00:00:00Z',
-          action_url: 'https://verify.example/topup-3ds'
-        } satisfies BillingOpStatusResponse)
-      )
-    })
+    await page.route(
+      '**/api/billing/ops/topup-3ds-operation',
+      async (route) => {
+        operationPollRequests.push(route.request())
+        await operationPollGate
+        return route.fulfill(
+          jsonRoute({
+            id: 'topup-3ds-operation',
+            status: 'pending',
+            started_at: '2026-07-31T00:00:00Z',
+            action_url: 'https://verify.example/topup-3ds'
+          } satisfies BillingOpStatusResponse)
+        )
+      }
+    )
 
     const content = await openPlanAndCredits(page)
     topupDialog = new TopUpCreditsDialog(page)
@@ -492,10 +517,8 @@ test.describe('Top-up 3DS verification', { tag: '@cloud' }, () => {
 
     await topupDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
 
-    await expect(
-      topupDialog.root.getByRole('button', { name: 'Back' })
-    ).toBeDisabled()
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
+    releaseOperationPoll()
     const verificationButton = topupDialog.root.getByRole('button', {
       name: 'Complete verification'
     })

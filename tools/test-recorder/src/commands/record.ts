@@ -31,7 +31,7 @@ import { pass, fail, warn, alert, info, blank, box } from '../ui/logger'
 import { toSlug } from '../cli/slug'
 import { TAG_REGISTRY } from '../tags'
 import { USE_CASES, useCaseById } from '../useCases'
-import { addWorkflow } from '../workflows/add'
+import { addWorkflow, WORKFLOW_ASSET_EXPLANATION } from '../workflows/add'
 import {
   customDistribution,
   DISTRIBUTIONS,
@@ -39,7 +39,10 @@ import {
   resolveDistribution
 } from '../devserver/distributions'
 import { ensureDevServer } from '../devserver/manager'
+import { fetchEnvInfo } from '../devserver/envInfo'
 import { discoverFlagKeys, parseFeatureFlagSpecs } from '../featureFlags'
+import type { RecordPrefill } from './recordPrefill'
+import { decidePrCheckout } from './prCheckout'
 
 const PASTE_SENTINEL = '.'
 const ADD_WORKFLOW_SENTINEL = '__add-workflow__'
@@ -128,7 +131,100 @@ async function offerAgentRefactor(
   pass('Test refactored', specPath)
 }
 
-export async function runRecord(): Promise<void> {
+function printPrefill(label: string, value: string, source: string): void {
+  console.log(`  ${label}: ${value} (from ${source})`)
+}
+
+function answered<T>(value: T | symbol): T {
+  if (isCancel(value)) {
+    cancel('Operation cancelled')
+    process.exit(0)
+  }
+  return value
+}
+
+async function preparePrCheckout(
+  pr: string,
+  projectRoot: string
+): Promise<void> {
+  const details = runCommand(
+    'gh',
+    [
+      'pr',
+      'view',
+      pr,
+      '--json',
+      'headRefName,title,state',
+      '-q',
+      '[.headRefName,.title,.state] | @tsv'
+    ],
+    { cwd: projectRoot, stdio: 'pipe' }
+  )
+  if (details.error || details.status !== 0) {
+    warn(`Could not look up PR #${pr}. Continuing on the current checkout.`)
+    info([`Install or sign in to gh, then run: gh pr checkout ${pr}`])
+    return
+  }
+
+  const [prBranch, title] = details.stdout.toString().trim().split('\t')
+  if (!prBranch || !title) {
+    warn(`Could not read PR #${pr}. Continuing on the current checkout.`)
+    return
+  }
+  const currentBranch = runCommand('git', ['branch', '--show-current'], {
+    cwd: projectRoot,
+    stdio: 'pipe'
+  })
+    .stdout.toString()
+    .trim()
+  const dirty =
+    runCommand('git', ['status', '--porcelain'], {
+      cwd: projectRoot,
+      stdio: 'pipe'
+    })
+      .stdout.toString()
+      .trim().length > 0
+  const action = decidePrCheckout(currentBranch, prBranch, dirty)
+  if (action === 'already-on-branch') {
+    pass(`Your checkout already has the code for PR #${pr}`, prBranch)
+    return
+  }
+  if (action === 'refuse-dirty') {
+    warn(
+      `PR #${pr} targets "${prBranch}", but this checkout has unsaved changes. ` +
+        `I won't switch and risk losing them. Continuing on "${currentBranch}".`
+    )
+    info([`Save or commit your changes, then run: gh pr checkout ${pr}`])
+    return
+  }
+
+  info([
+    `This test plan targets PR #${pr} — '${title}'.`,
+    `Your checkout is on '${currentBranch}'. I can switch to the PR's code for you.`
+  ])
+  const shouldSwitch = await confirm({
+    message: `Switch to the code for PR #${pr}?`
+  })
+  if (isCancel(shouldSwitch) || !shouldSwitch) {
+    warn(`Continuing on "${currentBranch}" instead of PR #${pr}.`)
+    info([`To switch later, run: gh pr checkout ${pr}`])
+    return
+  }
+  const checkout = runCommand('gh', ['pr', 'checkout', pr], {
+    cwd: projectRoot,
+    stdio: 'pipe'
+  })
+  if (checkout.error || checkout.status !== 0) {
+    warn(`Could not switch to PR #${pr}. Continuing on "${currentBranch}".`)
+    info([`Try manually: gh pr checkout ${pr}`])
+    return
+  }
+  pass(`Switched to the code for PR #${pr}`, prBranch)
+}
+
+export async function runRecord(
+  prefill: RecordPrefill = { warnings: [] }
+): Promise<void> {
   if (!process.stdin.isTTY) {
     fail(
       'comfy-test record needs an interactive terminal',
@@ -167,28 +263,68 @@ export async function runRecord(): Promise<void> {
   ])
   blank()
 
-  stepHeader(1, 7, 'Target Distribution')
-  const selectedDistribution = await select({
-    message: 'Which distribution do you want to record against?',
-    options: [
-      ...DISTRIBUTIONS.map(({ id, label, hint }) => ({
-        value: id,
-        label,
-        hint
-      })),
-      {
-        value: CUSTOM_DISTRIBUTION_SENTINEL,
-        label: 'Custom backend…',
-        hint: 'connect Vite to another backend URL'
-      }
-    ],
-    initialValue: 'cloud'
-  })
-  if (isCancel(selectedDistribution)) {
-    cancel('Operation cancelled')
-    process.exit(0)
+  for (const warning of prefill.warnings) {
+    warn(`${warning} Asking you instead.`)
   }
-  let distribution = resolveDistribution(selectedDistribution)
+
+  if (prefill.pr) {
+    let root: string
+    try {
+      root = findProjectRoot()
+    } catch {
+      warn(`Could not find the checkout for PR #${prefill.pr}. Continuing.`)
+      root = process.cwd()
+    }
+    await preparePrCheckout(prefill.pr, root)
+  }
+
+  stepHeader(1, 7, 'Target Distribution')
+  const distributionInfo = await Promise.all(
+    DISTRIBUTIONS.map(async (candidate) => ({
+      id: candidate.id,
+      info:
+        candidate.backendUrl && candidate.id !== 'local'
+          ? await fetchEnvInfo(candidate.backendUrl)
+          : { ok: false as const }
+    }))
+  )
+  const selectedDistribution = prefill.distribution
+    ? prefill.distribution.id
+    : answered(
+        await select({
+          message: 'Which distribution do you want to record against?',
+          options: [
+            ...DISTRIBUTIONS.map(({ id, label, hint, backendUrl }) => ({
+              value: id,
+              label,
+              hint: (() => {
+                const env = distributionInfo.find(
+                  (entry) => entry.id === id
+                )?.info
+                if (!env?.ok || !backendUrl) return hint
+                const host = new URL(backendUrl).host
+                const suffix = id === 'cloud' ? ' (default)' : ''
+                return `${host} — backend ${env.cloudVersion}${suffix}`
+              })()
+            })),
+            {
+              value: CUSTOM_DISTRIBUTION_SENTINEL,
+              label: 'Custom backend…',
+              hint: 'connect Vite to another backend URL'
+            }
+          ],
+          initialValue: 'cloud'
+        })
+      )
+  if (prefill.distribution) {
+    printPrefill(
+      'Distribution',
+      prefill.distribution.id,
+      prefill.distributionSource ?? '--distribution'
+    )
+  }
+  let distribution =
+    prefill.distribution ?? resolveDistribution(selectedDistribution)
   if (selectedDistribution === CUSTOM_DISTRIBUTION_SENTINEL) {
     const backendInput = await text({
       message: 'Backend URL:',
@@ -207,6 +343,17 @@ export async function runRecord(): Promise<void> {
     distribution = customDistribution(normalized.url)
   }
   if (!distribution) throw new Error('Selected distribution is unavailable')
+
+  const branch = runCommand('git', ['branch', '--show-current'], {
+    cwd: process.cwd(),
+    stdio: 'pipe'
+  })
+    .stdout?.toString()
+    .trim()
+  info([
+    `The app you're testing is your local checkout (branch ${branch || 'unknown'}). ` +
+      'The environment choice only picks which backend it talks to.'
+  ])
 
   stepHeader(2, 7, 'Environment Check')
   const { allPassed } = await runChecks(distribution, undefined, {
@@ -248,18 +395,21 @@ export async function runRecord(): Promise<void> {
 
   stepHeader(4, 7, 'Configure Your Test')
 
-  const useCaseChoice = await select({
-    message:
-      "What brings you here today? There's no wrong answer — this just helps us ask the right question next.",
-    options: USE_CASES.map(({ id, label, hint }) => ({
-      value: id,
-      label,
-      hint
-    }))
-  })
-  if (isCancel(useCaseChoice)) {
-    cancel('Operation cancelled')
-    process.exit(0)
+  const useCaseChoice = prefill.useCase
+    ? prefill.useCase.id
+    : answered(
+        await select({
+          message:
+            "What brings you here today? There's no wrong answer — this just helps us ask the right question next.",
+          options: USE_CASES.map(({ id, label, hint }) => ({
+            value: id,
+            label,
+            hint
+          }))
+        })
+      )
+  if (prefill.useCase) {
+    printPrefill('Use case', prefill.useCase.id, '--use-case')
   }
   const useCase = useCaseById(useCaseChoice) ?? USE_CASES[0]
 
@@ -274,26 +424,33 @@ export async function runRecord(): Promise<void> {
   ])
   blank()
 
-  const description = await text({
-    message: useCase.question,
-    placeholder: useCase.placeholder,
-    validate: (value) =>
-      toSlug(value ?? '') ? undefined : 'Use some letters or numbers.'
-  })
-  if (isCancel(description)) {
-    cancel('Operation cancelled')
-    process.exit(0)
+  const description =
+    prefill.description ??
+    answered(
+      await text({
+        message: useCase.question,
+        placeholder: useCase.placeholder,
+        validate: (value) =>
+          toSlug(value ?? '') ? undefined : 'Use some letters or numbers.'
+      })
+    )
+  if (prefill.description) {
+    printPrefill('Description', prefill.description, '--description')
   }
 
   let testDescription: string = description
   let slug = toSlug(description)
 
-  const filenameOk = await confirm({
-    message: `Generated filename: ${slug}.spec.ts — looks good?`
-  })
-  if (isCancel(filenameOk)) {
-    cancel('Operation cancelled')
-    process.exit(0)
+  const filenameOk = prefill.name
+    ? true
+    : answered(
+        await confirm({
+          message: `Generated filename: ${slug}.spec.ts — looks good?`
+        })
+      )
+  if (prefill.name) {
+    slug = prefill.name
+    printPrefill('Name', prefill.name, '--name')
   }
   if (!filenameOk) {
     const customName = await text({
@@ -315,20 +472,23 @@ export async function runRecord(): Promise<void> {
   ])
   blank()
 
-  const selectedTags = await multiselect({
-    message:
-      'Pick tags: press SPACE to select each one, ENTER when done (ENTER alone = no tags):',
-    options: TAG_REGISTRY.map(({ tag, hint }) => ({
-      value: tag,
-      label: tag,
-      hint
-    })),
-    initialValues: [],
-    required: false
-  })
-  if (isCancel(selectedTags)) {
-    cancel('Operation cancelled')
-    process.exit(0)
+  const selectedTags =
+    prefill.tags ??
+    answered(
+      await multiselect({
+        message:
+          'Pick tags: press SPACE to select each one, ENTER when done (ENTER alone = no tags):',
+        options: TAG_REGISTRY.map(({ tag, hint }) => ({
+          value: tag,
+          label: tag,
+          hint
+        })),
+        initialValues: [],
+        required: false
+      })
+    )
+  if (prefill.tags) {
+    printPrefill('Tags', prefill.tags.join(', '), '--tags')
   }
 
   const workflows = listWorkflows(projectRoot)
@@ -350,19 +510,35 @@ export async function runRecord(): Promise<void> {
     ...rest.map((wf) => ({ value: wf, label: wf }))
   ]
 
-  const selectedWorkflow = await autocomplete({
-    message: `Start with a pre-loaded workflow? (${workflows.length} available)`,
-    options: workflowOptions,
-    initialValue: '',
-    maxItems: 12
-  })
-  if (isCancel(selectedWorkflow)) {
-    cancel('Operation cancelled')
-    process.exit(0)
+  const validPrefillWorkflow =
+    prefill.workflow !== undefined &&
+    (prefill.workflow === '' || workflows.includes(prefill.workflow))
+      ? prefill.workflow
+      : undefined
+  if (prefill.workflow !== undefined && validPrefillWorkflow === undefined) {
+    warn(`Unknown --workflow "${prefill.workflow}". Asking you instead.`)
+  }
+  const selectedWorkflow =
+    validPrefillWorkflow ??
+    answered(
+      await autocomplete({
+        message: `Start with a pre-loaded workflow? (${workflows.length} available)`,
+        options: workflowOptions,
+        initialValue: '',
+        maxItems: 12
+      })
+    )
+  if (validPrefillWorkflow !== undefined) {
+    printPrefill(
+      'Workflow',
+      validPrefillWorkflow || '(empty canvas)',
+      '--workflow'
+    )
   }
 
   let seedWorkflow = selectedWorkflow
   if (selectedWorkflow === ADD_WORKFLOW_SENTINEL) {
+    info([WORKFLOW_ASSET_EXPLANATION])
     const workflowPath = await path({
       message: 'Select a ComfyUI workflow JSON file:',
       root: process.cwd(),
@@ -389,17 +565,26 @@ export async function runRecord(): Promise<void> {
     }
   }
 
-  const overrideFeatureFlags = await confirm({
-    message: 'Override feature flags for this test?',
-    initialValue: false
-  })
-  if (isCancel(overrideFeatureFlags)) {
-    cancel('Operation cancelled')
-    process.exit(0)
+  const overrideFeatureFlags = prefill.featureFlags
+    ? true
+    : answered(
+        await confirm({
+          message: 'Override feature flags for this test?',
+          initialValue: false
+        })
+      )
+  if (prefill.featureFlags) {
+    printPrefill(
+      'Feature flags',
+      Object.entries(prefill.featureFlags)
+        .map(([key, value]) => `${key}:${JSON.stringify(value)}`)
+        .join(', '),
+      '--feature-flags'
+    )
   }
 
   let selectedFeatureFlags: string[] = []
-  if (overrideFeatureFlags) {
+  if (overrideFeatureFlags && !prefill.featureFlags) {
     const availableFlags = discoverFlagKeys(projectRoot)
     if (availableFlags.length > 0) {
       const selected = await autocompleteMultiselect({
@@ -427,7 +612,8 @@ export async function runRecord(): Promise<void> {
       ...customFlags.split(',').map((flag) => flag.trim())
     ]
   }
-  const featureFlags = parseFeatureFlagSpecs(selectedFeatureFlags)
+  const featureFlags =
+    prefill.featureFlags ?? parseFeatureFlagSpecs(selectedFeatureFlags)
 
   stepHeader(5, 7, 'Record')
 
@@ -528,7 +714,7 @@ export async function runRecord(): Promise<void> {
 
   const transformResult = transform(recordedCode, {
     testName: slug,
-    tags: selectedTags as string[],
+    tags: selectedTags,
     workflow: seedWorkflow || undefined,
     featureFlags
   })

@@ -3,10 +3,7 @@ import type { IContextMenuValue } from './interfaces'
 
 /**
  * Simple compatibility layer for legacy getCanvasMenuOptions and getNodeMenuOptions monkey patches.
- * To disable legacy support, set ENABLE_LEGACY_SUPPORT = false
  */
-const ENABLE_LEGACY_SUPPORT = true
-
 type ContextMenuValueProvider = (
   ...args: unknown[]
 ) => (IContextMenuValue | null)[]
@@ -46,15 +43,15 @@ class LegacyMenuCompat {
     prototype?: LGraphCanvas
   ) {
     this.wrapperMethods.set(
-      methodName as string,
+      methodName,
       wrapperFn as unknown as ContextMenuValueProvider
     )
     this.preWrapperMethods.set(
-      methodName as string,
+      methodName,
       preWrapperFn as unknown as ContextMenuValueProvider
     )
     const isInstalled = prototype && prototype[methodName] === wrapperFn
-    this.wrapperInstalled.set(methodName as string, !!isInstalled)
+    this.wrapperInstalled.set(methodName, !!isInstalled)
   }
 
   /**
@@ -62,15 +59,10 @@ class LegacyMenuCompat {
    * @param prototype The prototype to install on
    * @param methodName The method name to track
    */
-  install<K extends keyof LGraphCanvas>(
-    prototype: LGraphCanvas,
-    methodName: K
-  ) {
-    if (!ENABLE_LEGACY_SUPPORT) return
-
+  install(prototype: LGraphCanvas, methodName: keyof LGraphCanvas) {
     const originalMethod = prototype[methodName]
     this.originalMethods.set(
-      methodName as string,
+      methodName,
       originalMethod as unknown as ContextMenuValueProvider
     )
 
@@ -80,7 +72,7 @@ class LegacyMenuCompat {
       get() {
         return currentImpl
       },
-      set: (newImpl: LGraphCanvas[K]) => {
+      set: (newImpl: LGraphCanvas[keyof LGraphCanvas]) => {
         if (!newImpl) return
         const fnKey = `${methodName as string}:${newImpl.toString().slice(0, 100)}`
         if (!this.hasWarned.has(fnKey) && this.currentExtension) {
@@ -119,7 +111,6 @@ class LegacyMenuCompat {
     context: LGraphCanvas,
     ...args: unknown[]
   ): (IContextMenuValue | null)[] {
-    if (!ENABLE_LEGACY_SUPPORT) return []
     if (this.isExtracting) return []
 
     const originalMethod = this.originalMethods.get(methodName)

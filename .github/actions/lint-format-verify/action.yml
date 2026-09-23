@@ -9,6 +9,10 @@ description: >
 runs:
   using: composite
   steps:
+    - name: Typecheck application
+      shell: bash
+      run: pnpm typecheck
+
     - name: Verify lint and format
       shell: bash
       run: |
@@ -20,6 +24,10 @@ runs:
     - name: Verify locale integrity
       shell: bash
       run: pnpm locale:check
+
+    - name: Verify ADR naming and index
+      shell: bash
+      run: pnpm adr:check
 
     - name: Typecheck browser tests
       shell: bash

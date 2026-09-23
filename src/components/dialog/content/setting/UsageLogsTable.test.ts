@@ -1,14 +1,17 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 
 import type { AuditLog } from '@/services/customerEventsService'
 import { EventType } from '@/services/customerEventsService'
+
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import UsageLogsTable from './UsageLogsTable.vue'
 
@@ -24,7 +27,7 @@ const mockCustomerEventsService = vi.hoisted(() => ({
   isLoading: { value: false }
 }))
 
-vi.mock('@/services/customerEventsService', () => ({
+vi.mock<unknown>(import('@/services/customerEventsService'), () => ({
   useCustomerEventsService: () => mockCustomerEventsService,
   EventType: {
     CREDIT_ADDED: 'credit_added',
@@ -35,34 +38,73 @@ vi.mock('@/services/customerEventsService', () => ({
 }))
 
 const mockTelemetry = vi.hoisted(() => ({
-  checkForCompletedTopup: vi.fn()
+  trackApiCreditTopupSucceeded: vi.fn()
 }))
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => mockTelemetry
+}))
+
+const mockPendingTopup = vi.hoisted(() => ({
+  isPendingTopupCompleted: vi.fn().mockReturnValue(true)
+}))
+vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
+  usePendingTopup: () => mockPendingTopup
 }))
 
 const mockBillingRouting = vi.hoisted(() => ({
   shouldUseWorkspaceBilling: false
 }))
-vi.mock('@/composables/billing/useBillingRouting', async () => {
-  const { ref } = await import('vue')
-  const shouldUseWorkspaceBilling = ref(false)
-  Object.defineProperty(mockBillingRouting, 'shouldUseWorkspaceBilling', {
-    get: () => shouldUseWorkspaceBilling.value,
-    set: (value: boolean) => {
-      shouldUseWorkspaceBilling.value = value
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingRouting'),
+  async () => {
+    const { ref } = await import('vue')
+    const shouldUseWorkspaceBilling = ref(false)
+    Object.defineProperty(mockBillingRouting, 'shouldUseWorkspaceBilling', {
+      get: () => shouldUseWorkspaceBilling.value,
+      set: (value: boolean) => {
+        shouldUseWorkspaceBilling.value = value
+      }
+    })
+    return {
+      useBillingRouting: () => ({ shouldUseWorkspaceBilling })
     }
-  })
-  return {
-    useBillingRouting: () => ({ shouldUseWorkspaceBilling })
   }
-})
+)
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   getBillingEvents: vi.fn()
 }))
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
-  workspaceApi: mockWorkspaceApi
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
+  workspaceApi: mockWorkspaceApi,
+  // readOnRail throws this on a failed read, so the real one has to exist.
+  WorkspaceApiError: class WorkspaceApiError extends Error {
+    constructor(
+      message: string,
+      readonly status?: number,
+      readonly code?: string
+    ) {
+      super(message)
+    }
+  }
+}))
+
+// The table only ever calls `readEvents`; the other five are here so the
+// factory satisfies `BillingReadRail` and the module type stays checked.
+const mockBillingReadRail = vi.hoisted(() => ({
+  enabled: false,
+  readStatus: vi.fn(),
+  readBalance: vi.fn(),
+  readPlans: vi.fn(),
+  readCapabilities: vi.fn(),
+  readPaymentMethods: vi.fn(),
+  readEvents: vi.fn()
+}))
+vi.mock(import('@/platform/workspace/composables/useBillingReadRail'), () => ({
+  useBillingReadRail: () => {
+    if (!mockBillingReadRail.enabled) return null
+    const { enabled: _enabled, ...rail } = mockBillingReadRail
+    return rail
+  }
 }))
 
 const i18n = createI18n({
@@ -85,11 +127,6 @@ const i18n = createI18n({
     }
   }
 })
-
-const globalConfig = {
-  plugins: [PrimeVue, i18n, createTestingPinia()],
-  directives: { tooltip: Tooltip }
-}
 
 async function flushMicrotasks() {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -136,6 +173,11 @@ describe('UsageLogsTable', () => {
   beforeEach(() => {
     mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
     mockWorkspaceApi.getBillingEvents.mockResolvedValue(mockEventsResponse)
+    mockBillingReadRail.readEvents.mockResolvedValue({
+      status: 'ok',
+      value: mockEventsResponse
+    })
+    mockBillingReadRail.enabled = false
     mockBillingRouting.shouldUseWorkspaceBilling = false
     mockCustomerEventsService.formatEventType.mockImplementation(
       (type: string) => {
@@ -177,7 +219,7 @@ describe('UsageLogsTable', () => {
     mockCustomerEventsService.hasAdditionalInfo.mockImplementation(
       (event: AuditLog) => {
         const { amount, api_name, model, ...otherParams } =
-          (event.params as Record<string, unknown>) ?? {}
+          event.params as Record<string, unknown>
         return Object.keys(otherParams).length > 0
       }
     )
@@ -189,7 +231,12 @@ describe('UsageLogsTable', () => {
   })
 
   function renderComponent() {
-    return render(UsageLogsTable, { global: globalConfig })
+    return render(UsageLogsTable, {
+      global: {
+        plugins: [PrimeVue, i18n, getActivePinia()!],
+        directives: { tooltip: Tooltip }
+      }
+    })
   }
 
   async function renderLoaded() {
@@ -423,6 +470,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('runs top-up completion telemetry for a superseded response', async () => {
+      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(true)
       let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
       mockCustomerEventsService.getMyEvents.mockReturnValue(
         new Promise((resolve) => {
@@ -458,10 +506,184 @@ describe('UsageLogsTable', () => {
       resolveLegacy(legacyResponse)
 
       await waitFor(() => {
-        expect(mockTelemetry.checkForCompletedTopup).toHaveBeenCalledWith(
+        expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
           legacyResponse.events
         )
+        expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalled()
       })
+    })
+
+    it('skips top-up telemetry when no completion is pending', async () => {
+      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(false)
+
+      await renderLoaded()
+
+      expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
+        mockEventsResponse.events
+      )
+      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('SDK reader rail', () => {
+    const railResponse = makeEventsResponse(
+      [
+        {
+          event_id: 'rail-1',
+          event_type: EventType.API_USAGE_COMPLETED,
+          params: { api_name: 'RailAPI', model: 'rail-model' },
+          createdAt: '2024-03-01T10:00:00Z'
+        }
+      ],
+      { total: 20, totalPages: 3 }
+    )
+
+    const readers = {
+      legacy: () => mockCustomerEventsService.getMyEvents,
+      workspaceApi: () => mockWorkspaceApi.getBillingEvents,
+      rail: () => mockBillingReadRail.readEvents
+    }
+
+    function onTheRail(
+      result: unknown = { status: 'ok', value: railResponse }
+    ) {
+      mockBillingRouting.shouldUseWorkspaceBilling = true
+      mockBillingReadRail.enabled = true
+      mockBillingReadRail.readEvents.mockResolvedValue(result)
+    }
+
+    it.for([
+      { workspaceBilling: false, rail: false, serves: 'legacy' },
+      { workspaceBilling: false, rail: true, serves: 'legacy' },
+      { workspaceBilling: true, rail: false, serves: 'workspaceApi' },
+      { workspaceBilling: true, rail: true, serves: 'rail' }
+    ] as const)(
+      'serves the page from $serves with workspaceBilling=$workspaceBilling rail=$rail',
+      async ({ workspaceBilling, rail, serves }) => {
+        mockBillingRouting.shouldUseWorkspaceBilling = workspaceBilling
+        mockBillingReadRail.enabled = rail
+
+        await renderLoaded()
+
+        expect(readers[serves]()).toHaveBeenCalledWith({ page: 1, limit: 7 })
+        for (const [name, reader] of Object.entries(readers)) {
+          if (name !== serves) expect(reader()).not.toHaveBeenCalled()
+        }
+      }
+    )
+
+    it('renders the reader page the way the legacy rail renders its own', async () => {
+      onTheRail()
+
+      await renderLoaded()
+
+      expect(screen.getByText('RailAPI')).toBeInTheDocument()
+      expect(screen.getByText(/rail-model/)).toBeInTheDocument()
+    })
+
+    it('asks the reader for the page the paginator moved to', async () => {
+      const user = userEvent.setup()
+      onTheRail()
+
+      await renderLoaded()
+      await user.click(screen.getByRole('button', { name: 'Next Page' }))
+
+      await waitFor(() => {
+        expect(mockBillingReadRail.readEvents).toHaveBeenCalledWith({
+          page: 2,
+          limit: 7
+        })
+      })
+    })
+
+    it('publishes nothing and reports nothing when the read is superseded', async () => {
+      onTheRail({ status: 'error', code: 'SUPERSEDED' })
+
+      await renderLoaded()
+
+      expect(screen.queryByText('RailAPI')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('Failed to load activity. Please try again.')
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByText(
+          'Something went wrong while loading activity. Please refresh and try again.'
+        )
+      ).not.toBeInTheDocument()
+    })
+
+    // The billing-mode watcher is the only thing that reloads this table, so a
+    // switch between two workspaces on the same mode leaves it mounted. A read
+    // superseded by that switch must not leave the previous workspace's events
+    // on screen.
+    it('drops the rendered rows when a later read is superseded', async () => {
+      const user = userEvent.setup()
+      onTheRail()
+
+      await renderLoaded()
+      expect(screen.getByText('RailAPI')).toBeInTheDocument()
+
+      mockBillingReadRail.readEvents.mockResolvedValue({
+        status: 'error',
+        code: 'SUPERSEDED'
+      })
+      await user.click(screen.getByRole('button', { name: 'Next Page' }))
+
+      await waitFor(() => {
+        expect(screen.queryByText('RailAPI')).not.toBeInTheDocument()
+      })
+      expect(
+        screen.queryByText(
+          'Something went wrong while loading activity. Please refresh and try again.'
+        )
+      ).not.toBeInTheDocument()
+    })
+
+    // The superseded branch only covers a switch that races an in-flight read.
+    // With nothing in flight, nothing reloaded this table at all and the rows
+    // of the workspace being left stayed on screen.
+    it('reloads and drops the rows when the active workspace changes', async () => {
+      onTheRail()
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+
+      await renderLoaded()
+      expect(screen.getByText('RailAPI')).toBeInTheDocument()
+
+      mockBillingReadRail.readEvents.mockResolvedValue({
+        status: 'ok',
+        value: { events: [], page: 1, limit: 7, total: 0, totalPages: 0 }
+      })
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-2' })
+
+      await waitFor(() => {
+        expect(screen.queryByText('RailAPI')).not.toBeInTheDocument()
+      })
+    })
+
+    it('shows the localized fallback when the read fails', async () => {
+      onTheRail({ status: 'error', code: 'REQUEST_FAILED', httpStatus: 500 })
+
+      renderComponent()
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            'Something went wrong while loading activity. Please refresh and try again.'
+          )
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('runs top-up completion telemetry off the reader page', async () => {
+      onTheRail()
+      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(true)
+
+      await renderLoaded()
+
+      expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
+        railResponse.events
+      )
+      expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalled()
     })
   })
 

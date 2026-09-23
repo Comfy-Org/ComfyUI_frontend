@@ -3,8 +3,7 @@ import { computed, nextTick, toRaw, watch } from 'vue'
 
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  IWidget
+  INodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphNode,
@@ -27,11 +26,7 @@ describe('NodeSlot', () => {
         boundingRect
       }
       const node = new LGraphNode('test')
-      const serialized = outputAsSerialisable(
-        slot as INodeOutputSlot & { widget?: IWidget },
-        node,
-        0
-      )
+      const serialized = outputAsSerialisable(slot, node, 0)
       expect(serialized).not.toHaveProperty('_data')
     })
 
@@ -142,6 +137,24 @@ describe('NodeSlot', () => {
       expect(node.inputs[0]).toBe(added)
       expect(node.inputs.indexOf(added)).toBe(0)
       expect(added).toBeInstanceOf(NodeInputSlot)
+    })
+
+    it('uses native indexOf fromIndex semantics', () => {
+      const node = new LGraphNode('test')
+      const first = node.addInput('first', 'STRING')
+      node.addInput('second', 'STRING')
+      const last = node.addInput('last', 'STRING')
+
+      expect(node.inputs.indexOf(first, -2)).toBe(-1)
+      expect(node.inputs.indexOf(first, Number.NaN)).toBe(0)
+      expect(node.inputs.indexOf(last, 1.5)).toBe(2)
+    })
+
+    it('handles negative infinity as an indexOf fromIndex', () => {
+      const node = new LGraphNode('test')
+      const input = node.addInput('slot', 'STRING')
+
+      expect(node.inputs.indexOf(input, -Infinity)).toBe(0)
     })
 
     it('leaves nested slot values raw so identity comparisons hold', () => {

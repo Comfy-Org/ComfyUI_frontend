@@ -11,8 +11,9 @@ import { checkDevServer } from '../checks/devServer'
 import { checkBackend } from '../checks/backend'
 import { checkModels } from '../checks/models'
 import type { Distribution } from '../devserver/distributions'
-import { alert, header, pass } from '../ui/logger'
+import { alert, header, pass, info } from '../ui/logger'
 import type { CheckResult } from '../checks/types'
+import { fetchEnvInfo } from '../devserver/envInfo'
 
 export async function runChecks(
   distribution: Distribution,
@@ -23,6 +24,17 @@ export async function runChecks(
   allPassed: boolean
 }> {
   if (options.showHeader !== false) header('Environment Check')
+
+  if (distribution.backendUrl && distribution.id !== 'local') {
+    const env = await fetchEnvInfo(distribution.backendUrl)
+    if (env.ok) {
+      info([
+        `${env.deployEnvironment}: backend ${env.cloudVersion}, ComfyUI ${env.comfyuiVersion}`
+      ])
+    } else {
+      info(['Environment version information is currently unavailable.'])
+    }
+  }
 
   let root = projectRoot
   if (!root) {

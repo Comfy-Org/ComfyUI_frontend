@@ -10,6 +10,8 @@ import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLe
 import {
   customNodeSuiteSettings,
   drainBackendToIdle,
+  runWithCollectedCleanup,
+  submittedPromptCount,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
@@ -33,10 +35,19 @@ test.beforeEach(async ({ comfyPage }) => {
 // round-trip; it stays as the guard for pack JS that queues one behind our
 // back, which would otherwise run on into the next test.
 test.afterEach(async ({ comfyPage }) => {
-  expect(
-    await drainBackendToIdle(comfyPage.page, 10_000),
-    'smoke test left test-owned backend work running'
-  ).toBe(0)
+  await runWithCollectedCleanup(async () => {
+    expect(
+      await submittedPromptCount(comfyPage.page),
+      'core smoke submitted a prompt'
+    ).toBe(0)
+  }, [
+    async () => {
+      expect(
+        await drainBackendToIdle(comfyPage.page, 10_000),
+        'smoke test left test-owned backend work running'
+      ).toBe(0)
+    }
+  ])
 })
 
 test.describe('smoke: core workflow @custom-nodes', () => {
@@ -54,38 +65,44 @@ test.describe('smoke: core workflow @custom-nodes', () => {
     expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
   })
 
-  test('loads without console errors in both renderers', async ({
-    comfyPage
-  }) => {
-    const validationErrors: string[] = []
-    const smokeWorkflow = await validateComfyWorkflow(
-      smokeWorkflowInput,
-      (error) => validationErrors.push(error)
-    )
-    expect(validationErrors, 'core smoke fixture schema errors').toEqual([])
-    expect(
-      smokeWorkflow,
-      'core smoke fixture must be a valid workflow'
-    ).not.toBeNull()
-    if (!smokeWorkflow) throw new Error('core smoke fixture validation failed')
-    for (const vueNodesEnabled of [false, true]) {
-      const consoleErrors = collectConsoleErrors(comfyPage.page)
-      await comfyPage.settings.setSetting(
-        'Comfy.VueNodes.Enabled',
-        vueNodesEnabled
-      )
-      await comfyPage.workflow.loadGraphData(smokeWorkflow)
-      await comfyPage.nextFrame()
-      consoleErrors.stop()
+  for (const vueNodesEnabled of [false, true]) {
+    test(
+      `loads without console errors with VueNodes=${vueNodesEnabled}`,
+      { tag: vueNodesEnabled ? ['@vue-nodes'] : [] },
+      async ({ comfyPage }) => {
+        const validationErrors: string[] = []
+        const smokeWorkflow = await validateComfyWorkflow(
+          smokeWorkflowInput,
+          (error) => validationErrors.push(error)
+        )
+        expect(validationErrors, 'core smoke fixture schema errors').toEqual([])
+        expect(
+          smokeWorkflow,
+          'core smoke fixture must be a valid workflow'
+        ).not.toBeNull()
+        if (!smokeWorkflow)
+          throw new Error('core smoke fixture validation failed')
+        const consoleErrors = collectConsoleErrors(comfyPage.page)
+        await comfyPage.workflow.loadGraphData(smokeWorkflow)
+        await comfyPage.nextFrame()
+        consoleErrors.stop()
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBeGreaterThan(0)
-      // Core smoke loads a graph but queues no prompt; a prompt-execution
-      // error here is a prior tier's async stray (isForeignExecutionNoise).
-      expect(
-        consoleErrors.errors.filter((error) => !isForeignExecutionNoise(error)),
-        `console errors (VueNodes=${vueNodesEnabled})`
-      ).toEqual([])
-      await expectNoVisibleErrors(comfyPage.page, `VueNodes=${vueNodesEnabled}`)
-    }
-  })
+        await expect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .toBeGreaterThan(0)
+        // Core smoke loads a graph but queues no prompt; a prompt-execution
+        // error here is a prior tier's async stray (isForeignExecutionNoise).
+        expect(
+          consoleErrors.errors.filter(
+            (error) => !isForeignExecutionNoise(error)
+          ),
+          `console errors (VueNodes=${vueNodesEnabled})`
+        ).toEqual([])
+        await expectNoVisibleErrors(
+          comfyPage.page,
+          `VueNodes=${vueNodesEnabled}`
+        )
+      }
+    )
+  }
 })

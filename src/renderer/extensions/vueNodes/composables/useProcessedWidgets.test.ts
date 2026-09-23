@@ -1,7 +1,6 @@
 import type { TooltipOptions } from 'primevue'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -31,12 +30,6 @@ import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    rootGraphId: GRAPH_ID
-  })
-}))
 
 function createMockWidget(
   overrides: Partial<IBaseWidget> & { widgetId?: WidgetId } = {}
@@ -133,7 +126,8 @@ function processWidgets({
       mode: 0,
       flags: {},
       inputs: [],
-      outputs: []
+      outputs: [],
+      properties: {}
     },
     widgetIds,
     graphId: GRAPH_ID,
@@ -144,10 +138,129 @@ function processWidgets({
   })
 }
 
-describe('widget visibility', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
+describe('widget slot ownership', () => {
+  beforeEach(() => {})
+
+  it('does not assign a non-widget input socket to a same-named custom widget', () => {
+    const { graph, node } = createGraphWithNode([])
+    node.addInput('model', 'MODEL')
+    node.addWidget('custom', 'model', null, () => {})
+
+    const [processedWidget] = computeProcessedWidgets({
+      nodeData: node._state,
+      widgetIds: undefined,
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: true,
+      rootGraph: graph,
+      ui: noopUi
+    })
+
+    expect(processedWidget.slotMetadata).toBeUndefined()
   })
+
+  it.for(['none', 'widget', 'widgetId'] as const)(
+    'respects explicit widget ownership on linked same-name sockets (%s)',
+    (ownership) => {
+      const nodeId = toNodeId(1)
+      const { graph, node } = createGraphWithNode([], nodeId)
+      node.addInput('model', 'MODEL')
+      node.addWidget('custom', 'model', null, () => {})
+      if (ownership === 'widget') node.inputs[0].widget = { name: 'model' }
+      if (ownership === 'widgetId') {
+        node.inputs[0].widgetId = widgetId(GRAPH_ID, nodeId, 'model')
+      }
+      useLinkStore().registerLink(
+        {
+          rootGraphId: toRootGraphId(GRAPH_ID),
+          owningGraphId: toOwningGraphId(GRAPH_ID)
+        },
+        {
+          id: toLinkId(1),
+          graphId: toOwningGraphId(GRAPH_ID),
+          originNodeId: toNodeId(2),
+          originSlot: 0,
+          targetNodeId: nodeId,
+          targetSlot: 0,
+          type: 'MODEL'
+        }
+      )
+
+      const [processedWidget] = computeProcessedWidgets({
+        nodeData: node._state,
+        widgetIds: undefined,
+        graphId: GRAPH_ID,
+        showAdvanced: false,
+        isGraphReady: true,
+        rootGraph: graph,
+        ui: noopUi
+      })
+
+      if (ownership !== 'none') {
+        expect(processedWidget.slotMetadata?.linked).toBe(true)
+        expect(processedWidget.simplified.options?.disabled).toBe(true)
+      } else {
+        expect(processedWidget.slotMetadata).toBeUndefined()
+        expect(processedWidget.simplified.options?.disabled).not.toBe(true)
+      }
+    }
+  )
+
+  it('uses the first same-named widget input slot', () => {
+    const nodeId = toNodeId(1)
+    const { graph, node } = createGraphWithNode([], nodeId)
+    const widget = node.addWidget('text', 'value', '', () => {})
+    node.inputs = [
+      {
+        name: 'value',
+        type: 'STRING',
+        widget: { name: 'value' },
+        boundingRect: [0, 0, 0, 0]
+      },
+      {
+        name: 'value',
+        type: 'STRING',
+        widget: { name: 'value' },
+        boundingRect: [0, 0, 0, 0]
+      }
+    ]
+    useLinkStore().registerLink(
+      {
+        rootGraphId: toRootGraphId(GRAPH_ID),
+        owningGraphId: toOwningGraphId(GRAPH_ID)
+      },
+      {
+        id: toLinkId(1),
+        graphId: toOwningGraphId(GRAPH_ID),
+        originNodeId: toNodeId(2),
+        originSlot: 0,
+        targetNodeId: nodeId,
+        targetSlot: 1,
+        type: 'STRING'
+      }
+    )
+    const id = widget.widgetId
+    if (!id) throw new Error('Missing widget ID')
+
+    const [processedWidget] = computeProcessedWidgets({
+      nodeData: node._state,
+      widgetIds: [id],
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: true,
+      rootGraph: graph,
+      ui: noopUi
+    })
+
+    expect(processedWidget.slotMetadata).toMatchObject({
+      index: 0,
+      linked: false
+    })
+  })
+})
+
+describe('widget visibility', () => {
+  beforeEach(() => {})
 
   function visibilityOf(
     options: IBaseWidget['options'],
@@ -173,6 +286,7 @@ describe('widget visibility', () => {
       {
         name: 'w',
         type: 'STRING',
+        widget: { name: 'w' },
         link: toLinkId(1),
         boundingRect: [0, 0, 0, 0]
       }
@@ -220,12 +334,40 @@ describe('widget visibility', () => {
   it('keeps hidden widgets hidden even when linked', () => {
     expect(visibilityOf({ hidden: true }, { linked: true })).toBe(false)
   })
+
+  it('hides canvas-only widgets', () => {
+    expect(visibilityOf({ canvasOnly: true })).toBe(false)
+  })
+
+  it('re-shows a canvas-only widget once its vueNode tier is restored', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'w')
+    registerWidgetState(id, { type: 'text', options: { canvasOnly: true } })
+    const visibility = useWidgetValueStore().getWidgetVisibility(id)
+    if (!visibility) throw new Error('Missing visibility component')
+    const visible = computed(
+      () => processWidgets({ widgetIds: [id] })[0]?.visible
+    )
+
+    expect(visible.value).toBe(false)
+    visibility.surfaces.vueNode = 'shown'
+    expect(visible.value).toBe(true)
+  })
+
+  it('hides connection-suppressed widgets and flags them for socket-only rows', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'w')
+    registerWidgetState(id, { type: 'text' })
+    const visibility = useWidgetValueStore().getWidgetVisibility(id)
+    if (!visibility) throw new Error('Missing visibility component')
+    visibility.suppression.byConnection = true
+
+    const [processed] = processWidgets({ widgetIds: [id] })
+    expect(processed.visible).toBe(false)
+    expect(processed.suppressedByConnection).toBe(true)
+  })
 })
 
 describe('widget error state', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
+  beforeEach(() => {})
 
   function processWidgetNamed(name: string) {
     const id = widgetId(GRAPH_ID, toNodeId(1), name)
@@ -270,7 +412,6 @@ describe('promoted subgraph widgets', () => {
   const SOURCE_EXECUTION_ID = createNodeExecutionId([HOST_ID, INTERIOR_ID])
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
   })
 
@@ -430,6 +571,34 @@ describe('computeProcessedWidgets', () => {
     expect(result[0].simplified.value).toBeNull()
   })
 
+  it('uses the live widget type after runtime changes', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
+    registerWidgetState(id, { type: 'combo' })
+    const widget = createMockWidget({ widgetId: id, name: 'text', type: '' })
+    const { graph } = createGraphWithNode([widget])
+
+    const result = processWidgets({ widgetIds: [id], rootGraph: graph })
+
+    expect(result).toEqual([])
+  })
+
+  it('uses the legacy renderer for a customized draw method', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'stack_data')
+    registerWidgetState(id, { type: 'text' })
+    const widget = createMockWidget({
+      widgetId: id,
+      name: 'stack_data',
+      type: 'text',
+      computeSize: () => [0, -4],
+      draw: () => undefined
+    })
+    const { graph } = createGraphWithNode([widget])
+
+    const [result] = processWidgets({ widgetIds: [id], rootGraph: graph })
+
+    expect(result.vueComponent).toBe(WidgetLegacy)
+  })
+
   it('uses widget state nodeId for simplified widget locator', () => {
     const subgraphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
     const id = widgetId(GRAPH_ID, toNodeId('inner-node'), 'text')
@@ -482,10 +651,9 @@ describe('computeProcessedWidgets', () => {
       {
         type: 'unknown',
         value: 'model.safetensors',
-        options: {}
+        options: { advanced: true }
       },
       {
-        advanced: true,
         hasLayoutSize: true,
         isDOMWidget: true,
         tooltip: 'Choose checkpoint'
@@ -522,9 +690,7 @@ describe('computeProcessedWidgets', () => {
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
   const NODE_ID = toNodeId(1)
 
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
+  beforeEach(() => {})
 
   function processUpdateWidgets(widgets: IBaseWidget[]) {
     const { graph } = createGraphWithNode(widgets, NODE_ID)
@@ -604,9 +770,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
 })
 
 describe('live widget update handler', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
+  beforeEach(() => {})
 
   it('forwards null (not undefined) to both the live widget value and callback', () => {
     const callback = vi.fn()

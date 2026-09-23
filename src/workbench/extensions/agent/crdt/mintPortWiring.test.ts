@@ -1,0 +1,444 @@
+import { applyOps, mint } from '@comfyorg/comfy-multi-player'
+import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { GraphScope } from '@/types/graphScopeId'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { LinkTopology } from '@/types/linkTopology'
+
+import { useLinkStore } from '@/stores/linkStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+
+import type { GraphOperation } from './graphOperations'
+import type { LayoutChangeView } from './layoutMintPort'
+import { mintWireOps } from './opEnvelope'
+import {
+  attachMintPortWiring,
+  runMintPortsIntentionalClear
+} from './mintPortWiring'
+import type { MintPortWiring, MintableGraph } from './mintPortWiring'
+
+const ROOT_ID = 'root-uuid'
+
+/** Structural stand-in for the two LGraphNode members the wiring reads. */
+interface FakeGraphNode {
+  id?: unknown
+  type?: string
+  isVirtualNode?: boolean
+  serialize?: () => unknown
+  widgets?: { name: string; type: string; serialize?: boolean }[]
+}
+
+/** The doc host's pinned catalog: server classes only. */
+const CATALOG: WidgetCatalog = {
+  types: { LoadImage: { widget_order: ['image'] } }
+}
+const BLUEPRINT_ID = '4d3f5a6e-0b1c-4d2e-9f80-1a2b3c4d5e6f'
+
+const ROOT_SCOPE: GraphScope = {
+  rootGraphId: toRootGraphId(ROOT_ID),
+  owningGraphId: toOwningGraphId(ROOT_ID)
+}
+
+function topology(id: number, targetSlot = 3): LinkTopology {
+  return {
+    id: toLinkId(id),
+    graphId: toOwningGraphId(ROOT_ID),
+    originNodeId: toNodeId(1),
+    originSlot: 0,
+    targetNodeId: toNodeId(2),
+    targetSlot,
+    type: 'IMAGE'
+  }
+}
+
+async function afterSweep(): Promise<void> {
+  await Promise.resolve()
+  await Promise.resolve()
+  await Promise.resolve()
+}
+
+describe('attachMintPortWiring', () => {
+  let minted: GraphOperation[]
+  let wiring: MintPortWiring
+  let enabled: boolean
+  let bound: boolean
+  let layoutListeners: Set<(change: LayoutChangeView) => void>
+  let graphNodes: Map<string, FakeGraphNode>
+
+  function deliverLayoutChange(change: LayoutChangeView): void {
+    for (const listener of layoutListeners) listener(change)
+  }
+
+  const graph: MintableGraph = {
+    id: ROOT_ID,
+    rootGraph: { id: ROOT_ID },
+    getNodeById: (id) =>
+      (graphNodes.get(String(id)) as unknown as LGraphNode | undefined) ?? null,
+    get _nodes() {
+      return [...graphNodes.values()] as LGraphNode[]
+    }
+  }
+
+  beforeEach(() => {
+    minted = []
+    enabled = true
+    bound = true
+    layoutListeners = new Set()
+    graphNodes = new Map()
+    wiring = attachMintPortWiring({
+      isEnabled: () => enabled,
+      isDocBound: () => bound,
+      enqueue: (operations) => minted.push(...operations),
+      layoutChanges: (listener) => {
+        layoutListeners.add(listener)
+        return () => layoutListeners.delete(listener)
+      },
+      localActorPrefix: 'user-',
+      getGraph: () => graph,
+      boundRootGraphId: () => toRootGraphId(ROOT_ID)
+    })
+  })
+
+  afterEach(() => wiring.detach())
+
+  it('mints a root clear through the production intentional-clear entry point', () => {
+    graphNodes.set('1', { id: toNodeId(1) })
+    graphNodes.set('2', { id: toNodeId(2) })
+
+    runMintPortsIntentionalClear(() => {
+      deliverLayoutChange({
+        operation: { type: 'clearGraph', actor: 'user-abc' }
+      })
+    })
+
+    expect(minted).toEqual([
+      { op: 'clear', removed_nodes: [toNodeId(1), toNodeId(2)] }
+    ])
+  })
+
+  it('mints a concrete connect when the real link store places a link', () => {
+    useLinkStore().registerLink(ROOT_SCOPE, topology(41))
+
+    expect(minted).toEqual([
+      {
+        op: 'connect',
+        link_id: 41,
+        // The store's NodeId brand normalizes to strings; the wire vocabulary
+        // treats node ids as opaque, so they pass through verbatim.
+        from_node: toNodeId(1),
+        from_slot: 0,
+        to_node: toNodeId(2),
+        to_slot: 3,
+        link_type: 'IMAGE'
+      }
+    ])
+  })
+
+  it('maps a replace to PLACED, never DELETED (no false disconnect surfaces)', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    const linkStore = useLinkStore()
+    const incumbent = topology(41)
+    linkStore.registerLink(ROOT_SCOPE, incumbent)
+
+    // A rewire claims the same input slot: the store displaces the incumbent
+    // internally with no deleteLink action, so the wire story is exactly one
+    // new connect and zero severances.
+    linkStore.replaceLink(ROOT_SCOPE, incumbent, topology(42))
+    await afterSweep()
+
+    const connects = minted.filter((operation) => operation.op === 'connect')
+    expect(connects.map((operation) => operation.link_id)).toEqual([41, 42])
+    expect(consoleError).not.toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
+  it('carries a real severed link into the delete_node mint', async () => {
+    const linkStore = useLinkStore()
+    const severed = topology(41)
+    linkStore.registerLink(ROOT_SCOPE, severed)
+    minted.length = 0
+
+    linkStore.deleteLink(ROOT_SCOPE, severed)
+    deliverLayoutChange({
+      operation: { type: 'deleteNode', actor: 'user-abc', nodeId: toNodeId(2) }
+    })
+    await afterSweep()
+
+    expect(minted).toEqual([
+      { op: 'delete_node', node_id: '2', removed_links: [toLinkId(41)] }
+    ])
+  })
+
+  it('mints a name-keyed set_widget with the pre-write value from the real store', () => {
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+    widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
+      typeof widgetStore.registerWidget
+    >[1])
+
+    widgetStore.setValue(id, 42)
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: toNodeId(7),
+        widget: 'seed',
+        value: 42,
+        old: 3
+      }
+    ])
+  })
+
+  it('mints a widget value written through a real widget', () => {
+    const liveGraph = new LGraph()
+    liveGraph.id = ROOT_ID
+    const node = new LGraphNode('Test')
+    node.id = toNodeId(7)
+    liveGraph.add(node)
+    const widget = node.addWidget('number', 'seed', 3, () => undefined)
+    graphNodes.set('7', node)
+
+    widget.value = 42
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: toNodeId(7),
+        widget: 'seed',
+        value: 42,
+        old: 3
+      }
+    ])
+  })
+
+  it('mints once when a store write is mirrored through the widget shim', () => {
+    const liveGraph = new LGraph()
+    liveGraph.id = ROOT_ID
+    const node = new LGraphNode('Test')
+    node.id = toNodeId(7)
+    liveGraph.add(node)
+    const widget = node.addWidget('number', 'seed', 3, () => undefined)
+    graphNodes.set('7', node)
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+
+    useWidgetValueStore().setValue(id, 42)
+    widget.value = 42
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: toNodeId(7),
+        widget: 'seed',
+        value: 42,
+        old: 3
+      }
+    ])
+  })
+
+  it('mints nothing for a setValue that did not apply', () => {
+    useWidgetValueStore().setValue(widgetId(ROOT_ID, toNodeId(9), 'missing'), 1)
+
+    expect(minted).toEqual([])
+  })
+
+  it('suppresses remote store calls from their call-carried context', () => {
+    const context: RemoteMutationContext = {
+      source: 'agent-remote',
+      actor: 'agent:test',
+      opId: 'op-1'
+    }
+    const link = useLinkStore().registerLink(ROOT_SCOPE, topology(41), context)
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+    widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
+      typeof widgetStore.registerWidget
+    >[1])
+    const widget = widgetStore.setValue(id, 42, context)
+
+    expect(link).toBeDefined()
+    expect(widget).toBe(true)
+    expect(minted).toEqual([])
+  })
+
+  it('suppresses mints between the load-bracket hooks, fail-closed on a failed load', () => {
+    wiring.onBeforeGraphLoad()
+    useLinkStore().registerLink(ROOT_SCOPE, topology(41))
+    expect(minted).toEqual([])
+
+    // A failed load never fires afterConfigureGraph: the bracket stays open
+    // (still no mints), and the NEXT load's paired hooks close it.
+    wiring.onBeforeGraphLoad()
+    useLinkStore().registerLink(ROOT_SCOPE, topology(42))
+    expect(minted).toEqual([])
+
+    wiring.onAfterGraphConfigure()
+    useLinkStore().registerLink(ROOT_SCOPE, topology(43, 4))
+    expect(minted).toHaveLength(1)
+  })
+
+  it('serializes add_node snapshots name-keyed, dropping non-value widgets', () => {
+    graphNodes.set('5', {
+      serialize: () => ({
+        id: 5,
+        type: 'LoadImage',
+        __incarnation: 'source-node-incarnation',
+        widgets_values: ['positional'],
+        widgets_values_named: { image: 'cat.png', upload: 'button-slot' }
+      }),
+      widgets: [
+        { name: 'image', type: 'combo' },
+        { name: 'upload', type: 'button' }
+      ]
+    })
+
+    deliverLayoutChange({
+      operation: {
+        type: 'createNode',
+        actor: 'user-abc',
+        nodeId: toNodeId(5),
+        layout: { position: { x: 10, y: 20 } }
+      }
+    })
+
+    expect(minted).toEqual([
+      {
+        op: 'add_node',
+        node_id: toNodeId(5),
+        class_type: 'LoadImage',
+        pos: [10, 20],
+        node: {
+          id: 5,
+          type: 'LoadImage',
+          widgets_values: { image: 'cat.png' }
+        }
+      }
+    ])
+  })
+
+  // Note, PrimitiveNode, Get/Set nodes and blueprint hosts have no catalog
+  // entry: the applier rejects a name-keyed record for them and stores a
+  // positional array opaquely.
+  it.for([
+    {
+      name: 'a frontend-only node',
+      type: 'Note',
+      widgetsValues: ['a note'],
+      named: { text: 'a note' },
+      widgets: [{ name: 'text', type: 'markdown' }]
+    },
+    {
+      name: 'a subgraph blueprint host with a promoted widget',
+      type: BLUEPRINT_ID,
+      widgetsValues: ['a pasted prompt'],
+      named: { text: 'a pasted prompt' },
+      widgets: [{ name: 'text', type: 'text' }]
+    }
+  ])(
+    'keeps add_node widgets_values positional for $name, and the applier takes it',
+    ({ type, widgetsValues, named, widgets }) => {
+      graphNodes.set('7', {
+        type,
+        isVirtualNode: true,
+        serialize: () => ({
+          id: 7,
+          type,
+          widgets_values: widgetsValues,
+          widgets_values_named: named
+        }),
+        widgets
+      })
+
+      deliverLayoutChange({
+        operation: {
+          type: 'createNode',
+          actor: 'user-abc',
+          nodeId: toNodeId(7),
+          layout: { position: { x: 10, y: 20 } }
+        }
+      })
+
+      expect(minted).toEqual([
+        {
+          op: 'add_node',
+          node_id: toNodeId(7),
+          class_type: type,
+          pos: [10, 20],
+          node: { id: 7, type, widgets_values: widgetsValues }
+        }
+      ])
+      const doc = mint({ nodes: [], links: [] }, CATALOG)
+      const { outcomes } = applyOps(
+        doc,
+        mintWireOps(minted, { actor: 'human:user:tab', baseVersion: 1 }),
+        CATALOG
+      )
+      expect(outcomes).toEqual([
+        expect.objectContaining({ outcome: 'applied' })
+      ])
+      doc.destroy()
+    }
+  )
+
+  it('positive control: an unbound workflow runs normally, zero mint and zero blockage', () => {
+    bound = false
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+    widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
+      typeof widgetStore.registerWidget
+    >[1])
+
+    const placed = useLinkStore().registerLink(ROOT_SCOPE, topology(41))
+    const applied = widgetStore.setValue(id, 42)
+
+    expect(minted).toEqual([])
+    expect(placed).toBeDefined()
+    expect(applied).toBe(true)
+    expect(widgetStore.getWidget(id)?.value).toBe(42)
+  })
+
+  it('stops observing both stores after detach', () => {
+    wiring.detach()
+    useLinkStore().registerLink(ROOT_SCOPE, topology(41))
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+    widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
+      typeof widgetStore.registerWidget
+    >[1])
+    widgetStore.setValue(id, 42)
+
+    expect(minted).toEqual([])
+  })
+
+  describe('doc-bound root graph probe', () => {
+    it('registers the probe on attach and answers only while enabled and doc-bound', () => {
+      expect(isRootGraphDocBound(ROOT_ID)).toBe(true)
+
+      enabled = false
+      expect(isRootGraphDocBound(ROOT_ID)).toBe(false)
+      enabled = true
+
+      bound = false
+      expect(isRootGraphDocBound(ROOT_ID)).toBe(false)
+      bound = true
+
+      expect(isRootGraphDocBound(ROOT_ID)).toBe(true)
+    })
+
+    it('unregisters the probe on detach', () => {
+      expect(isRootGraphDocBound(ROOT_ID)).toBe(true)
+
+      wiring.detach()
+
+      expect(isRootGraphDocBound(ROOT_ID)).toBe(false)
+    })
+  })
+})

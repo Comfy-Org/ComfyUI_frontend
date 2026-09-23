@@ -86,6 +86,34 @@ describe('workflowToClipboardItems', () => {
     expect(items.reroutes).toEqual([{ id: 7, pos: [40, 50], linkIds: [] }])
   })
 
+  it('carries 0.4 sidecar presentation onto object links', () => {
+    const workflow = fromPartial<ISerialisedGraph>({
+      id: createUuidv4(),
+      version: 0.4,
+      nodes: [],
+      groups: [],
+      links: [[1, 1, 0, 2, 0, 'MODEL']],
+      extra: {
+        linkExtensions: [{ id: 1, parentId: 7 }],
+        linkPresentation: { '1': { hidden: true, label: 'Vae' } }
+      }
+    })
+
+    expect(workflowToClipboardItems(workflow).links).toEqual([
+      {
+        id: 1,
+        origin_id: 1,
+        origin_slot: 0,
+        target_id: 2,
+        target_slot: 0,
+        type: 'MODEL',
+        parentId: 7,
+        hidden: true,
+        label: 'Vae'
+      }
+    ])
+  })
+
   it('tolerates a legacy workflow with no links', () => {
     const workflow = fromPartial<ISerialisedGraph>({
       id: createUuidv4(),
@@ -110,6 +138,20 @@ describe('workflowToClipboardItems', () => {
 
     expect(items.subgraphs?.map(({ id }) => id)).toEqual([parent.id, child.id])
     expect(items.subgraphs?.every(({ definitions }) => !definitions)).toBe(true)
+  })
+
+  it('flattens cyclic subgraph definitions once', () => {
+    const child = subgraph()
+    const parent = subgraph([child])
+    child.definitions = { subgraphs: [parent] }
+    const workflow = {
+      ...workflowV1(),
+      definitions: { subgraphs: [parent] }
+    }
+
+    const items = workflowToClipboardItems(workflow)
+
+    expect(items.subgraphs?.map(({ id }) => id)).toEqual([parent.id, child.id])
   })
 })
 

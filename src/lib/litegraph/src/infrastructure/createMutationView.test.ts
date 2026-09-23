@@ -21,6 +21,19 @@ describe('createMutationView', () => {
     expect(commit).toHaveBeenCalledTimes(2)
   })
 
+  it('commits record property assignments and deletions', () => {
+    const target: Record<string, number> = { first: 1 }
+    const commit = vi.fn()
+    const view = createMutationView(target, { commit })
+
+    view.second = 2
+    view.second = 2
+    delete view.first
+
+    expect(view).toEqual({ second: 2 })
+    expect(commit).toHaveBeenCalledTimes(2)
+  })
+
   it('synchronizes before reads and preserves chained mutator identity', () => {
     const target = new Float64Array([1, 2])
     const synchronize = vi.fn(() => target.set([3, 4]))

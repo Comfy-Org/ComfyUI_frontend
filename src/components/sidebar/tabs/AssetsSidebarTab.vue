@@ -113,10 +113,11 @@
           :selectable-assets="listViewSelectableAssets"
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
+          :on-load-more="loadMoreAssets"
+          :can-load-more="canLoadMoreAssets"
           @select-asset="handleAssetSelect"
           @preview-asset="handleZoomClick"
           @context-menu="handleAssetContextMenu"
-          @approach-end="handleApproachEnd"
         />
         <div v-else class="size-full">
           <AssetsSidebarGridView
@@ -125,10 +126,11 @@
             :show-output-count
             :get-output-count
             :grid-mode
+            :on-load-more="loadMoreAssets"
+            :can-load-more="canLoadMoreAssets"
             @select-asset="handleAssetSelect"
             @toggle-asset-selection="handleAssetSelectionToggle"
             @context-menu="handleAssetContextMenu"
-            @approach-end="handleApproachEnd"
             @zoom="handleZoomClick"
             @output-count-click="enterFolderView"
           />
@@ -181,7 +183,6 @@
 import {
   unrefElement,
   useAsyncState,
-  useDebounceFn,
   useStorage,
   useTimeoutFn
 } from '@vueuse/core'
@@ -193,6 +194,7 @@ import {
   onMounted,
   onUnmounted,
   ref,
+  toValue,
   useTemplateRef,
   watch
 } from 'vue'
@@ -219,7 +221,6 @@ import type {
   MediaAssetViewMode
 } from '@/platform/assets/components/mediaAssetViewOptions'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
-import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -230,19 +231,20 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import {
-  getAssetSubfolder,
-  getAssetUrl
+  getAssetFileUrl,
+  getAssetSubfolder
 } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { ResultItemImpl } from '@/stores/queueStore'
 import {
   formatDuration,
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -302,9 +304,7 @@ const formattedExecutionTime = computed(() => {
 })
 
 const toast = useToast()
-
-const inputAssets = useAssetsApi('input')
-const outputAssets = useAssetsApi('output')
+const assetsStore = useAssetsStore()
 
 // Asset selection
 const {
@@ -339,11 +339,12 @@ const {
 } = useMediaAssetActions()
 
 const currentAssets = computed(() =>
-  activeTab.value === 'input' ? inputAssets : outputAssets
+  activeTab.value === 'input'
+    ? assetsStore.inputAssets
+    : assetsStore.outputAssets
 )
-const loading = computed(() => currentAssets.value.loading.value)
-const error = computed(() => currentAssets.value.error.value)
-const mediaAssets = computed(() => currentAssets.value.media.value)
+const loading = computed(() => toValue(currentAssets.value.isLoading))
+const mediaAssets = computed(() => toValue(currentAssets.value.items))
 
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
@@ -434,7 +435,10 @@ const showLoadingState = computed(
 
 const showEmptyState = computed(
   () =>
-    !loading.value && !isFolderLoading.value && displayAssets.value.length === 0
+    !loading.value &&
+    !isFolderLoading.value &&
+    !canLoadMoreAssets.value &&
+    displayAssets.value.length === 0
 )
 
 watch(visibleAssets, (newAssets) => {
@@ -455,33 +459,22 @@ watch(galleryActiveIndex, (index) => {
   }
 })
 
-const galleryItems = computed(() => {
+const galleryItems = computed<AugmentedResultItem[]>(() => {
   return previewableVisibleAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
-    const resultItem = new ResultItemImpl({
+    return {
       filename: asset.name,
       subfolder: getAssetSubfolder(asset),
       type: 'output',
       nodeId: '0',
-      mediaType: mediaType === 'image' ? 'images' : mediaType
-    })
-
-    Object.defineProperty(resultItem, 'url', {
-      get() {
-        return asset.preview_url || ''
-      },
-      configurable: true
-    })
-
-    return resultItem
+      mediaType: mediaType === 'image' ? 'images' : mediaType,
+      url: asset.preview_url || ''
+    }
   })
 })
 
 const refreshAssets = async () => {
-  await currentAssets.value.fetchMediaList()
-  if (error.value) {
-    console.error('Failed to refresh assets:', error.value)
-  }
+  await currentAssets.value.invalidate()
 }
 
 watch(
@@ -579,12 +572,12 @@ const handleZoomClick = (asset: AssetItem) => {
       title: getAssetDisplayName(asset),
       component: Load3dViewerContent,
       props: {
-        modelUrl: asset.preview_url || getAssetUrl(asset)
+        modelUrl: getAssetFileUrl(asset)
       },
       dialogComponentProps: {
         renderer: 'reka',
         size: 'full',
-        contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
+        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
         maximizable: true
       }
     })
@@ -676,14 +669,8 @@ const copyJobId = async () => {
   }
 }
 
-const handleApproachEnd = useDebounceFn(async () => {
-  if (
-    activeTab.value === 'output' &&
-    !isInFolderView.value &&
-    outputAssets.hasMore.value &&
-    !outputAssets.isLoadingMore.value
-  ) {
-    await outputAssets.loadMore()
-  }
-}, 300)
+const loadMoreAssets = () => currentAssets.value.loadMore()
+const canLoadMoreAssets = computed(
+  () => !isInFolderView.value && toValue(currentAssets.value.hasMore)
+)
 </script>

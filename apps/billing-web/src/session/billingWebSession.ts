@@ -1,0 +1,116 @@
+/**
+ * The hosted billing origin's own session: one session client from
+ * `@comfyorg/account-core`, bound to the env-selected Cloud origin, with the
+ * Firebase identity of this origin attached.
+ *
+ * The credential cache sits in sessionStorage so a token survives a reload
+ * but never outlives the tab, and never crosses signed-in users — the client
+ * keys it by uid.
+ *
+ * `useBillingWebSession` projects the client's one `SessionSnapshot` as
+ * reactive state, so the illegal combinations parallel refs could hold cannot
+ * occur. `phase === 'pending'` is "Firebase has not answered yet", distinct
+ * from a signed-out `null`. A caller that needs a token still awaits
+ * `ensureFresh()` immediately before use.
+ */
+import type { User } from 'firebase/auth'
+import { computed, shallowRef } from 'vue'
+
+import type {
+  SessionClient,
+  SessionSnapshot
+} from '@comfyorg/account-core/session'
+import { createSessionClient } from '@comfyorg/account-core/session'
+
+import { CLOUD_BASE_URL } from '@/config/env'
+import { billingWebIdentity } from '@/config/firebase'
+
+/**
+ * Script-readable by design: an injected script on this origin could read the
+ * cached credential, but it could equally mint a fresh one from the identity it
+ * would already control, so memory-only storage moves the exposure rather than
+ * removing it. What bounds the damage is the credential's own lifetime, which
+ * is short, tab-scoped and keyed by uid, as the Cloud app caches it too.
+ */
+const STORAGE_KEY = 'comfy.billing-web.session.v1'
+
+const storage = {
+  read(): string | null {
+    try {
+      return globalThis.sessionStorage.getItem(STORAGE_KEY)
+    } catch {
+      // Storage that throws outright (cookies disabled) behaves as no cache.
+      return null
+    }
+  },
+  write(value: string): void {
+    try {
+      globalThis.sessionStorage.setItem(STORAGE_KEY, value)
+    } catch {
+      // A session that only lives in memory still works for this tab.
+    }
+  },
+  clear(): void {
+    try {
+      globalThis.sessionStorage.removeItem(STORAGE_KEY)
+    } catch {
+      // Nothing to clear if storage is unavailable.
+    }
+  }
+}
+
+let client: SessionClient<User> | undefined
+
+export function billingWebSessionClient(): SessionClient<User> {
+  client ??= createSessionClient<User>(
+    { exchangeUrl: `${CLOUD_BASE_URL}/api/auth/token`, storage },
+    billingWebIdentity
+  )
+  return client
+}
+
+const PENDING: SessionSnapshot<User> = {
+  phase: 'pending',
+  user: null,
+  session: undefined
+}
+
+/** A deployment with no identity configuration has nobody to sign in. */
+const NO_IDENTITY: SessionSnapshot<User> = {
+  phase: 'signed-out',
+  user: null,
+  session: undefined
+}
+
+const snapshot = shallowRef<SessionSnapshot<User>>(PENDING)
+let listening = false
+
+function listen(): void {
+  if (listening) return
+  listening = true
+  const session = billingWebSessionClient()
+  session.subscribe((next) => {
+    snapshot.value = next
+  })
+  // `pending` promises an answer from an identity; without one, none is coming.
+  if (!billingWebIdentity) snapshot.value = NO_IDENTITY
+}
+
+/** The router guard's read; starts the identity listener on first call. */
+export function billingWebSessionPhase(): SessionSnapshot<User>['phase'] {
+  listen()
+  return snapshot.value.phase
+}
+
+export function useBillingWebSession() {
+  listen()
+  return {
+    phase: computed(() => snapshot.value.phase),
+    user: computed(() => snapshot.value.user),
+    session: computed(() =>
+      snapshot.value.phase === 'authenticated'
+        ? snapshot.value.session
+        : undefined
+    )
+  }
+}

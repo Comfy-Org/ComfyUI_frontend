@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
@@ -8,97 +6,86 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
-import type { ConflictAcknowledgmentState } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
-import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
-import type * as ConflictUtils from '@/workbench/extensions/manager/utils/conflictUtils'
+import { consolidateConflictsByPackage } from '@/workbench/extensions/manager/utils/conflictUtils'
 import {
   checkAcceleratorCompatibility,
   checkOSCompatibility
 } from '@/workbench/extensions/manager/utils/systemCompatibility'
 import { checkVersionCompatibility } from '@/workbench/extensions/manager/utils/versionUtil'
 
-// Mock @vueuse/core until function
-vi.mock('@vueuse/core', async () => {
-  const actual = await vi.importActual('@vueuse/core')
-  return {
-    ...actual,
-    until: vi.fn(() => ({
-      toBe: vi.fn(() => Promise.resolve())
-    }))
-  }
-})
-
 // Mock dependencies
-vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
-  useComfyManagerService: vi.fn()
-}))
+vi.mock(
+  import('@/workbench/extensions/manager/services/comfyManagerService'),
 
-vi.mock('@/services/comfyRegistryService', () => ({
+  () => ({
+    useComfyManagerService: vi.fn()
+  })
+)
+
+vi.mock(import('@/services/comfyRegistryService'), () => ({
   useComfyRegistryService: vi.fn()
 }))
 
-vi.mock('@/stores/systemStatsStore', () => ({
-  useSystemStatsStore: vi.fn()
-}))
+vi.mock(
+  import('@/workbench/extensions/manager/utils/versionUtil'),
 
-vi.mock('@/workbench/extensions/manager/utils/versionUtil', () => ({
-  getFrontendVersion: vi.fn(() => '1.24.0'),
-  checkVersionCompatibility: vi.fn(() => null)
-}))
-
-vi.mock('@/workbench/extensions/manager/utils/systemCompatibility', () => ({
-  checkOSCompatibility: vi.fn(() => null),
-  checkAcceleratorCompatibility: vi.fn(() => null),
-  normalizeOSList: vi.fn((list) => list)
-}))
-
-vi.mock('@/workbench/extensions/manager/utils/conflictUtils', async () => {
-  const actual = await vi.importActual<typeof ConflictUtils>(
-    '@/workbench/extensions/manager/utils/conflictUtils'
-  )
-  return {
-    ...actual,
-    consolidateConflictsByPackage: vi.fn((results) => results)
-  }
-})
+  () => ({
+    getFrontendVersion: vi.fn(() => '1.24.0'),
+    checkVersionCompatibility: vi.fn(() => null)
+  })
+)
 
 vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictAcknowledgment',
+  import('@/workbench/extensions/manager/utils/systemCompatibility'),
+
+  () => ({
+    checkOSCompatibility: vi.fn(() => null),
+    checkAcceleratorCompatibility: vi.fn(() => null),
+    normalizeOSList: vi.fn((list) => list)
+  })
+)
+
+vi.mock(import('@/workbench/extensions/manager/utils/conflictUtils'), {
+  spy: true
+})
+vi.mocked(consolidateConflictsByPackage).mockImplementation(
+  (results) => results
+)
+
+vi.mock(
+  import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
+
   () => ({
     useConflictAcknowledgment: vi.fn()
   })
 )
 
 vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks',
+  import('@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'),
+
   () => ({
     useInstalledPacks: vi.fn()
   })
 )
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn()
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerState'),
 
-vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore', () => ({
-  useConflictDetectionStore: vi.fn()
-}))
-
-vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
-  useManagerState: vi.fn(() => ({
-    isNewManagerUI: { value: true }
-  }))
-}))
+  () => ({
+    useManagerState: vi.fn(() => ({
+      isNewManagerUI: { value: true }
+    }))
+  })
+)
 
 describe('useConflictDetection', () => {
-  let pinia: ReturnType<typeof createTestingPinia>
-
   const mockComfyManagerService = {
     getImportFailInfoBulk: vi.fn(),
+    listInstalledPacks: vi.fn(async () => ({})),
     isLoading: ref(false),
     error: ref<string | null>(null)
   } as Partial<ReturnType<typeof useComfyManagerService>> as ReturnType<
@@ -131,99 +118,59 @@ describe('useConflictDetection', () => {
     typeof useInstalledPacks
   >
 
-  const mockManagerStore = {
-    isPackEnabled: vi.fn()
-  } as Partial<ReturnType<typeof useComfyManagerStore>> as ReturnType<
-    typeof useComfyManagerStore
-  >
-
-  // Create refs that can be used to control computed properties
-  let mockConflictedPackages: ConflictDetectionResult[] = []
-
-  const mockConflictStore = {
-    get hasConflicts() {
-      return mockConflictedPackages.some((p) => p.has_conflict)
+  let mockManagerStore: ReturnType<typeof useComfyManagerStore>
+  let mockSystemStatsStore: ReturnType<typeof useSystemStatsStore>
+  const systemStats: NonNullable<
+    ReturnType<typeof useSystemStatsStore>['systemStats']
+  > = {
+    system: {
+      os: 'darwin', // sys.platform returns 'darwin' for macOS
+      ram_total: 17179869184,
+      ram_free: 8589934592,
+      comfyui_version: '0.3.41',
+      required_frontend_version: '1.24.0',
+      python_version:
+        '3.11.0 (main, Oct 13 2023, 09:34:16) [Clang 15.0.0 (clang-1500.0.40.1)]',
+      pytorch_version: '2.1.0',
+      embedded_python: false,
+      argv: ['--enable-manager']
     },
-    get conflictedPackages() {
-      return mockConflictedPackages
-    },
-    get bannedPackages() {
-      return mockConflictedPackages.filter((p) =>
-        p.conflicts?.some((c) => c.type === 'banned')
-      )
-    },
-    get securityPendingPackages() {
-      return mockConflictedPackages.filter((p) =>
-        p.conflicts?.some((c) => c.type === 'pending')
-      )
-    },
-    setConflictedPackages: vi.fn(),
-    clearConflicts: vi.fn()
-  } as Partial<ReturnType<typeof useConflictDetectionStore>> as ReturnType<
-    typeof useConflictDetectionStore
-  >
+    devices: [
+      {
+        name: 'Apple M1 Pro',
+        type: 'mps',
+        index: 0,
+        vram_total: 17179869184,
+        vram_free: 8589934592,
+        torch_vram_total: 17179869184,
+        torch_vram_free: 8589934592
+      }
+    ]
+  }
 
-  const mockIsInitialized = true
-  const mockSystemStatsStore = {
-    systemStats: {
-      system: {
-        os: 'darwin', // sys.platform returns 'darwin' for macOS
-        ram_total: 17179869184,
-        ram_free: 8589934592,
-        comfyui_version: '0.3.41',
-        required_frontend_version: '1.24.0',
-        python_version:
-          '3.11.0 (main, Oct 13 2023, 09:34:16) [Clang 15.0.0 (clang-1500.0.40.1)]',
-        pytorch_version: '2.1.0',
-        embedded_python: false,
-        argv: ['--enable-manager']
-      },
-      devices: [
-        {
-          name: 'Apple M1 Pro',
-          type: 'mps',
-          index: 0,
-          vram_total: 17179869184,
-          vram_free: 8589934592,
-          torch_vram_total: 17179869184,
-          torch_vram_free: 8589934592
-        }
-      ]
-    },
-    isInitialized: mockIsInitialized,
-
-    _customProperties: new Set<string>()
-  } as Partial<ReturnType<typeof useSystemStatsStore>> as ReturnType<
-    typeof useSystemStatsStore
-  >
-
-  const mockAcknowledgment = {
-    checkComfyUIVersionChange: vi.fn(),
-    acknowledgmentState: computed(
-      () => ({}) as Partial<ConflictAcknowledgmentState>
-    ),
+  const mockAcknowledgment: ReturnType<typeof useConflictAcknowledgment> = {
+    acknowledgmentState: computed(() => ({
+      modal_dismissed: false,
+      red_dot_dismissed: false,
+      warning_banner_dismissed: false
+    })),
     shouldShowConflictModal: computed(() => false),
     shouldShowRedDot: computed(() => false),
     shouldShowManagerBanner: computed(() => false),
     dismissRedDotNotification: vi.fn(),
     dismissWarningBanner: vi.fn(),
     markConflictsAsSeen: vi.fn()
-  } as Partial<ReturnType<typeof useConflictAcknowledgment>> as ReturnType<
-    typeof useConflictAcknowledgment
-  >
+  }
 
   beforeEach(() => {
-    pinia = createTestingPinia({ stubActions: false })
-    setActivePinia(pinia)
-
     // Setup mocks
     vi.mocked(useComfyManagerService).mockReturnValue(mockComfyManagerService)
     vi.mocked(useComfyRegistryService).mockReturnValue(mockRegistryService)
-    vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
     vi.mocked(useConflictAcknowledgment).mockReturnValue(mockAcknowledgment)
     vi.mocked(useInstalledPacks).mockReturnValue(mockInstalledPacks)
-    vi.mocked(useComfyManagerStore).mockReturnValue(mockManagerStore)
-    vi.mocked(useConflictDetectionStore).mockReturnValue(mockConflictStore)
+    mockManagerStore = useComfyManagerStore()
+    mockSystemStatsStore = useSystemStatsStore()
+    mockSystemStatsStore.$patch({ systemStats, isInitialized: true })
 
     // Reset mock implementations
     vi.mocked(mockInstalledPacks.startFetchInstalled).mockResolvedValue(
@@ -239,8 +186,6 @@ describe('useConflictDetection', () => {
 
     // Reset the installedPacksWithVersions data
     mockInstalledPacksWithVersions.value = []
-    // Reset conflicted packages
-    mockConflictedPackages = []
   })
 
   describe('system environment collection', () => {
@@ -257,7 +202,7 @@ describe('useConflictDetection', () => {
     })
 
     it('should handle missing system stats gracefully', async () => {
-      mockSystemStatsStore.systemStats = null as never
+      mockSystemStatsStore.systemStats = null
 
       const { collectSystemEnvironment } = useConflictDetection()
       const environment = await collectSystemEnvironment()
@@ -281,7 +226,7 @@ describe('useConflictDetection', () => {
           id: 'test-pack',
           name: 'Test Pack',
           latest_version: { version: '1.0.0' }
-        } as components['schemas']['Node']
+        }
       ]
 
       mockInstalledPacksWithVersions.value = [
@@ -345,7 +290,7 @@ describe('useConflictDetection', () => {
         {
           id: 'banned-pack',
           name: 'Banned Pack'
-        } as components['schemas']['Node']
+        }
       ]
 
       mockInstalledPacksWithVersions.value = [
@@ -427,7 +372,7 @@ describe('useConflictDetection', () => {
       const { checkNodeCompatibility } = useConflictDetection()
       const { conflicts } = checkNodeCompatibility({
         status: 'NodeStatusBanned'
-      } as components['schemas']['Node'])
+      })
 
       expect(conflicts.map((c) => c.type)).toContain('banned')
     })
@@ -436,7 +381,7 @@ describe('useConflictDetection', () => {
       const { checkNodeCompatibility } = useConflictDetection()
       const { conflicts } = checkNodeCompatibility({
         status: 'NodeVersionStatusBanned'
-      } as components['schemas']['NodeVersion'])
+      })
 
       expect(conflicts.map((c) => c.type)).toContain('banned')
     })
@@ -445,7 +390,7 @@ describe('useConflictDetection', () => {
       const { checkNodeCompatibility } = useConflictDetection()
       const { conflicts } = checkNodeCompatibility({
         status: 'NodeVersionStatusPending'
-      } as components['schemas']['NodeVersion'])
+      })
 
       const types = conflicts.map((c) => c.type)
       expect(types).toContain('pending')
@@ -458,7 +403,7 @@ describe('useConflictDetection', () => {
         status: 'NodeVersionStatusActive',
         supported_os: ['Linux'],
         supported_accelerators: ['CUDA']
-      } as components['schemas']['NodeVersion'])
+      })
 
       expect(checkOSCompatibility).toHaveBeenCalledWith(['Linux'], undefined)
       expect(checkAcceleratorCompatibility).toHaveBeenCalledWith(
@@ -470,7 +415,8 @@ describe('useConflictDetection', () => {
 
   describe('computed properties', () => {
     it('should expose conflict status from store', () => {
-      mockConflictedPackages = [
+      const store = useConflictDetectionStore()
+      store.conflictedPackages = [
         {
           package_id: 'test',
           package_name: 'Test',
@@ -483,8 +429,8 @@ describe('useConflictDetection', () => {
       useConflictDetection()
 
       // The hasConflicts computed should be true since we have a conflict
-      expect(mockConflictedPackages).toHaveLength(1)
-      expect(mockConflictedPackages[0].has_conflict).toBe(true)
+      expect(store.conflictedPackages).toHaveLength(1)
+      expect(store.conflictedPackages[0].has_conflict).toBe(true)
     })
   })
 

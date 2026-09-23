@@ -51,7 +51,7 @@
               :variant="selectedType === tab.value ? 'inverted' : 'secondary'"
               :aria-pressed="selectedType === tab.value"
               :aria-label="tab.icon ? tab.label : undefined"
-              class="h-9 shrink-0 px-4 @max-[30rem]/filters:px-2.5"
+              class="h-8 shrink-0 px-3 text-xs @max-[30rem]/filters:px-2.5"
               @click="selectedType = tab.value"
             >
               <i v-if="tab.icon" :class="cn(tab.icon, 'size-3.5')" />
@@ -76,7 +76,7 @@
             :aria-expanded="mobileFiltersOpen"
             aria-controls="template-mobile-filters"
             :aria-label="$t('templateWorkflows.filtersButton')"
-            class="ml-auto h-9 shrink-0 px-4 @[58rem]/filters:hidden"
+            class="ml-auto h-8 shrink-0 px-3 text-xs @[58rem]/filters:hidden"
             @click="mobileFiltersOpen = !mobileFiltersOpen"
           >
             <i class="icon-[lucide--sliders-horizontal] size-3.5" />
@@ -100,10 +100,10 @@
           </div>
         </div>
 
-        <div v-if="hasActiveFilters" class="flex items-center pt-3">
+        <div v-if="hasActiveFilters" class="flex items-center pt-5">
           <span
             v-if="activeFilterCount > 0"
-            class="text-xs font-semibold text-muted-foreground"
+            class="text-xs font-medium text-muted-foreground"
           >
             {{
               $t('templateWorkflows.filtersApplied', {
@@ -152,7 +152,7 @@
         <!-- Template Cards Grid -->
         <div
           :key="templateListKey"
-          class="-mx-2 grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] items-start gap-2"
+          class="-mx-2 grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] items-stretch gap-2"
           data-testid="template-workflows-content"
         >
           <!-- Loading Skeletons (show while loading initial data) -->
@@ -194,7 +194,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card hover:bg-base-background"
+            class="group/card h-full transition-colors hover:bg-secondary-background/50"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -259,9 +259,7 @@
                           template.mediaType === 'video' ||
                           template.mediaSubtype === 'webp'
                         "
-                        :hover-zoom="
-                          template.thumbnailVariant === 'zoomHover' ? 16 : 5
-                        "
+                        :hover-zoom="0"
                       />
                     </template>
                     <LogoOverlay
@@ -270,28 +268,26 @@
                       :get-logo-url="workflowTemplatesStore.getLogoUrl"
                       default-position="right-2 bottom-2"
                     />
-                    <ProgressSpinner
-                      v-if="loadingTemplate === template.name"
+                    <Spinner
+                      v-if="loadingTemplateId === template.name"
                       class="absolute inset-0 z-10 m-auto size-12"
                     />
                   </div>
                 </template>
                 <template #top-left>
                   <div
-                    class="flex h-7 items-center gap-1.5 rounded-lg bg-black/30 px-2 backdrop-blur-[20px]"
+                    class="flex h-6 items-center gap-1 rounded-md bg-zinc-700/50 px-2 backdrop-blur-[20px]"
                   >
                     <i
                       :class="
-                        cn(
-                          'size-4',
-                          isAppTemplate(template)
-                            ? 'icon-[lucide--app-window] text-jade-600'
-                            : 'icon-[comfy--workflow] text-azure-400'
-                        )
+                        isAppTemplate(template)
+                          ? 'icon-[lucide--app-window]'
+                          : 'icon-[comfy--workflow]'
                       "
+                      class="size-3 text-white"
                     />
                     <span
-                      class="text-sm font-medium whitespace-nowrap text-white"
+                      class="text-xs font-medium whitespace-nowrap text-white"
                     >
                       {{
                         isAppTemplate(template)
@@ -425,7 +421,6 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -445,6 +440,7 @@ import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { selectCountBadgeClass } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
@@ -503,6 +499,7 @@ const workflowTemplatesStore = useWorkflowTemplatesStore()
 const {
   loadTemplates,
   loadWorkflowTemplate,
+  loadingTemplateId,
   getTemplateThumbnailUrl,
   getTemplateTitle
 } = useTemplateWorkflows()
@@ -713,7 +710,6 @@ const hasActiveFilters = computed(
 
 // UI state
 const mobileFiltersOpen = ref(false)
-const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
 
@@ -891,25 +887,20 @@ watch(
   ],
   () => {
     resetPagination()
-    // Clear loading state and force re-render of template list
-    loadingTemplate.value = null
     templateListKey.value++
   }
 )
 
 // Methods
-const onLoadWorkflow = async (template: TemplateInfo) => {
-  loadingTemplate.value = template.name
-  try {
-    await loadWorkflowTemplate(
-      template.name,
-      getEffectiveSourceModule(template)
-    )
-    templateWasSelected.value = true
-    onClose()
-  } finally {
-    loadingTemplate.value = null
-  }
+async function onLoadWorkflow(template: TemplateInfo) {
+  const result = await loadWorkflowTemplate(
+    template.name,
+    getEffectiveSourceModule(template)
+  )
+  if (result === 'not-started') return
+
+  templateWasSelected.value = result === 'loaded'
+  onClose()
 }
 
 const pageTitle = computed(() => {

@@ -1,4 +1,5 @@
 import type { LGraph } from '../LGraph'
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { toGroupId } from '@/types/groupId'
 import {
   mintGroupId,
@@ -19,6 +20,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
+import { createUuidv4 } from '@/utils/uuid'
 import type {
   ExportedSubgraph,
   ExposedWidget,
@@ -29,9 +31,13 @@ import type {
 
 const MAX_ID = 100_000_000
 
-interface DeduplicationResult {
-  subgraphs: ExportedSubgraph[]
-  rootNodes: ISerialisedNode[] | undefined
+interface DeduplicationResult<
+  Subgraph extends { id: string; nodes?: { type: string }[] } =
+    ExportedSubgraph,
+  Node extends { type: string } = ISerialisedNode
+> {
+  subgraphs: Subgraph[]
+  rootNodes: Node[] | undefined
 }
 
 interface SubgraphNormalizationReservations {
@@ -47,13 +53,11 @@ export function normalizeSubgraphDefinitions(
   state: LGraphState,
   rootNodes?: ISerialisedNode[]
 ): DeduplicationResult {
+  const normalizedIds = normalizeSubgraphDefinitionIds(subgraphs, rootNodes)
   const clonedSubgraphs =
-    firstById(
-      structuredClone(subgraphs),
-      (subgraph) => subgraph.id,
-      'subgraph'
-    ) ?? []
-  const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
+    firstById(normalizedIds.subgraphs, (subgraph) => subgraph.id, 'subgraph') ??
+    []
+  const clonedRootNodes = normalizedIds.rootNodes
 
   for (const [index, subgraph] of clonedSubgraphs.entries()) {
     dropSameOwnerDuplicates(subgraph)
@@ -69,6 +73,72 @@ export function normalizeSubgraphDefinitions(
   deduplicateSubgraphGroupIds(clonedSubgraphs, reservations.groupIds, state)
   deduplicateSubgraphLinkIds(clonedSubgraphs, reservations.linkIds, state)
   deduplicateSubgraphRerouteIds(clonedSubgraphs, reservations.rerouteIds, state)
+
+  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
+}
+
+interface NestedSubgraphDefinitions<Subgraph> {
+  definitions?: { subgraphs?: Subgraph[] }
+}
+
+/**
+ * Flattens every subgraph definition reachable from `subgraphs` into one
+ * array, descending into each definition's own nested
+ * `definitions.subgraphs` (a subgraph-within-subgraph definition) at any
+ * depth. Each definition's own nested list is cleared once its contents are
+ * hoisted, since callers operate on the returned flat list.
+ */
+function flattenSubgraphDefinitions<
+  Subgraph extends NestedSubgraphDefinitions<Subgraph>
+>(subgraphs: Subgraph[]): Subgraph[] {
+  const flattened: Subgraph[] = []
+  for (const subgraph of subgraphs) {
+    flattened.push(subgraph)
+    const nested = subgraph.definitions?.subgraphs
+    if (nested?.length) {
+      flattened.push(...flattenSubgraphDefinitions(nested))
+      subgraph.definitions!.subgraphs = undefined
+    }
+  }
+  return flattened
+}
+
+export function normalizeSubgraphDefinitionIds<
+  Subgraph extends NestedSubgraphDefinitions<Subgraph> & {
+    id: string
+    nodes?: { type: string }[]
+  },
+  Node extends { type: string }
+>(
+  subgraphs: Subgraph[],
+  rootNodes?: Node[]
+): DeduplicationResult<Subgraph, Node> {
+  const clonedSubgraphs = flattenSubgraphDefinitions(structuredClone(subgraphs))
+  const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
+  const ids = new Set(clonedSubgraphs.map(({ id }) => id))
+  const remapped = new Map<string, string>()
+
+  for (const subgraph of clonedSubgraphs) {
+    if (isUuidShapedSubgraphId(subgraph.id)) continue
+    let id = remapped.get(subgraph.id)
+    if (!id) {
+      do id = createUuidv4()
+      while (ids.has(id))
+      remapped.set(subgraph.id, id)
+      ids.add(id)
+      console.warn(
+        `LiteGraph: replaced legacy subgraph ID ${subgraph.id} with ${id}`
+      )
+    }
+    subgraph.id = id
+  }
+
+  for (const node of [
+    ...(clonedRootNodes ?? []),
+    ...clonedSubgraphs.flatMap(({ nodes }) => nodes ?? [])
+  ]) {
+    node.type = remapped.get(node.type) ?? node.type
+  }
 
   return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
 }
@@ -251,7 +321,7 @@ function findNextAvailableId(
   usedIds: Set<number>,
   advance: () => number
 ): number {
-  while (true) {
+  for (;;) {
     const nextId = advance()
     if (nextId > MAX_ID) {
       throw new Error('Node ID space exhausted')
@@ -406,8 +476,8 @@ function remapRerouteIds(
   )
 }
 
-function remapNumericIds<T extends { id: number }>(
-  items: T[],
+function remapNumericIds(
+  items: { id: number }[],
   usedIds: Set<number>,
   nextId: () => number,
   reserveId: (id: number) => void,

@@ -6,20 +6,17 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import CloudLoginView from '@/platform/cloud/onboarding/CloudLoginView.vue'
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: () => ({
-    signInWithGoogle: vi.fn(),
-    signInWithGithub: vi.fn(),
-    signInWithEmail: vi.fn()
-  })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock('@/platform/cloud/onboarding/composables/usePostAuthRedirect', () => ({
-  usePostAuthRedirect: () => ({ onAuthSuccess: vi.fn() })
-}))
+vi.mock(
+  import('@/platform/cloud/onboarding/composables/usePostAuthRedirect'),
+  () => ({
+    usePostAuthRedirect: () => ({ onAuthSuccess: vi.fn() })
+  })
+)
 
 const isEmbeddedWebView = vi.hoisted(() => ({ value: false }))
-vi.mock('@/base/webviewDetection', () => ({
+vi.mock(import('@comfyorg/account-core/webviewDetection'), () => ({
   isEmbeddedWebView: () => isEmbeddedWebView.value
 }))
 

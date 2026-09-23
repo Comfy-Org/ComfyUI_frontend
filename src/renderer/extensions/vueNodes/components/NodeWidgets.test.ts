@@ -1,10 +1,13 @@
+import { getActivePinia } from 'pinia'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
-import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
+import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import type { NodeState } from '@/types/nodeState'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -17,34 +20,25 @@ import type { WidgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    rootGraphId: GRAPH_ID
-  })
-}))
-
 const WidgetStub = {
   name: 'WidgetStub',
-  props: ['widget', 'nodeId', 'nodeType', 'modelValue'],
+  props: ['widget', 'nodeId', 'nodeType', 'modelValue', 'invalid'],
   template:
-    '<div class="widget-stub" :data-node-type="nodeType" :data-name="widget.name">{{ nodeType }}</div>'
+    '<div class="widget-stub" :data-node-type="nodeType" :data-name="widget.name" :aria-invalid="invalid || undefined">{{ nodeType }}</div>'
 }
 
 const AppInputStub = {
   props: ['widgetId', 'name', 'enable'],
   template:
-    '<div class="app-input-stub" :data-entity-id="widgetId"><slot /></div>'
+    '<div class="app-input-stub" :data-entity-id="widgetId" :data-enable="enable"><slot /></div>'
 }
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
-  async (importOriginal) => {
-    const original = await importOriginal()
-    return {
-      ...(original as Record<string, unknown>),
-      getComponent: () => WidgetStub
-    }
-  }
+  import('@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'),
+  () => ({
+    getComponent: () => WidgetStub,
+    shouldExpand: () => false
+  })
 )
 
 function createMockNodeData(
@@ -59,7 +53,8 @@ function createMockNodeData(
     mode: 0,
     flags: {},
     inputs: [],
-    outputs: []
+    outputs: [],
+    properties: {}
   }
 }
 
@@ -81,20 +76,19 @@ function registerWidgetState(
 function renderComponent({
   nodeData,
   widgetIds,
+  processedWidgetModel,
   setupStores
-}: {
-  nodeData?: NodeState
-  widgetIds?: readonly WidgetId[]
+}: ComponentProps<typeof NodeWidgets> & {
   setupStores?: () => void
 }) {
-  const pinia = createTestingPinia({ stubActions: false })
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
   setupStores?.()
 
   return render(NodeWidgets, {
     props: {
       nodeData,
-      widgetIds
+      widgetIds,
+      processedWidgetModel
     },
     global: {
       plugins: [pinia],
@@ -108,6 +102,10 @@ function renderComponent({
     }
   })
 }
+
+beforeEach(() => {
+  Object.assign(useCanvasStore(), { rootGraphId: GRAPH_ID })
+})
 
 describe('NodeWidgets', () => {
   describe('node-type prop passing', () => {
@@ -236,6 +234,37 @@ describe('NodeWidgets', () => {
     expect(ids).toStrictEqual([seedAEntityId, seedBEntityId])
   })
 
+  it('prefers a supplied processed widget model over fallback inputs', () => {
+    const fallbackId = widgetId(GRAPH_ID, toNodeId('fallback'), 'fallback')
+    const suppliedId = widgetId(GRAPH_ID, toNodeId('supplied'), 'supplied')
+    const suppliedWidget = fromPartial<ProcessedWidget>({
+      renderKey: 'supplied',
+      simplified: { name: 'supplied', type: 'text', value: 'supplied' },
+      visible: true,
+      vueComponent: WidgetStub,
+      widgetId: suppliedId
+    })
+
+    const { container } = renderComponent({
+      nodeData: createMockNodeData('FallbackNode', toNodeId('fallback')),
+      widgetIds: [fallbackId],
+      processedWidgetModel: {
+        processedWidgets: [suppliedWidget],
+        nodeType: 'SuppliedNode',
+        canSelectInputs: true
+      },
+      setupStores: () => registerWidgetState(fallbackId, { type: 'text' })
+    })
+
+    const appInput = container.querySelector('.app-input-stub')
+    expect(appInput).toHaveAttribute('data-entity-id', suppliedId)
+    expect(appInput).toHaveAttribute('data-enable', 'true')
+    expect(container.querySelector('.widget-stub')).toHaveAttribute(
+      'data-node-type',
+      'SuppliedNode'
+    )
+  })
+
   it('marks widgets with host execution errors', () => {
     const nodeId = toNodeId('test_node')
     const id = widgetId(GRAPH_ID, nodeId, 'seed')
@@ -262,8 +291,9 @@ describe('NodeWidgets', () => {
       }
     })
 
-    expect(container.querySelector('.widget-stub')?.className).toContain(
-      'text-node-stroke-error'
+    expect(container.querySelector('.widget-stub')).toHaveAttribute(
+      'aria-invalid',
+      'true'
     )
   })
 })
