@@ -25,7 +25,7 @@ vi.mock(import('@/config/env'), () => ({
 }))
 
 vi.mock(import('@/config/stripeKey'), () => ({
-  billingWebStripeKey: () => 'pk_test_example'
+  awaitBillingWebStripeKey: () => Promise.resolve('pk_test_example')
 }))
 
 const challengeMocks = vi.hoisted(() => ({
@@ -34,8 +34,10 @@ const challengeMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
-  createDeferredStripeChallengePort: (getKey: () => string | undefined) => {
-    challengeMocks.createPort(getKey())
+  createDeferredStripeChallengePort: (
+    getKey: () => string | undefined | Promise<string | undefined>
+  ) => {
+    void Promise.resolve(getKey()).then((key) => challengeMocks.createPort(key))
     return { handleNextAction: challengeMocks.handleNextAction }
   }
 }))

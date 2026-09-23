@@ -33,7 +33,10 @@ import HostedSurface from '@/components/HostedSurface.vue'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
-import { billingWebStripeKey, useBillingWebStripeKey } from '@/config/stripeKey'
+import {
+  awaitBillingWebStripeKey,
+  useBillingWebStripeKey
+} from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
@@ -63,7 +66,7 @@ const checkout = useCheckout({
   openUrl: (url) => window.location.assign(url),
   navigationMode: 'redirect',
   // Deferred: reads the key at challenge time, not this setup's snapshot.
-  challengePort: createDeferredStripeChallengePort(billingWebStripeKey)
+  challengePort: createDeferredStripeChallengePort(awaitBillingWebStripeKey)
 })
 
 const quotedPlan = ref<string | undefined>()

@@ -84,6 +84,47 @@ describe('billingWebStripeKey', () => {
       timeoutMs: 4000
     })
   })
+
+  it('retries the fetch on a later read after a settle with no key', async () => {
+    h.buildTimeKey = undefined
+    h.resolveStripePublishableKey
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce('pk_server')
+    const { billingWebStripeKey } = await freshStripeKey()
+
+    billingWebStripeKey()
+    await h.resolveStripePublishableKey.mock.results[0]?.value
+    expect(billingWebStripeKey()).toBeUndefined()
+
+    billingWebStripeKey()
+    await vi.waitFor(() => expect(billingWebStripeKey()).toBe('pk_server'))
+    expect(h.resolveStripePublishableKey).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('awaitBillingWebStripeKey', () => {
+  it('resolves immediately with the build-time fallback, without waiting on the fetch', async () => {
+    h.resolveStripePublishableKey.mockReturnValue(new Promise(() => undefined))
+    const { awaitBillingWebStripeKey } = await freshStripeKey()
+
+    await expect(awaitBillingWebStripeKey()).resolves.toBe('pk_build_time')
+  })
+
+  it('waits out the in-flight fetch when there is no fallback yet', async () => {
+    h.buildTimeKey = undefined
+    let resolveFetch: (key: string | undefined) => void = () => undefined
+    h.resolveStripePublishableKey.mockReturnValue(
+      new Promise((resolve) => {
+        resolveFetch = resolve
+      })
+    )
+    const { awaitBillingWebStripeKey } = await freshStripeKey()
+
+    const pending = awaitBillingWebStripeKey()
+    resolveFetch('pk_server')
+
+    await expect(pending).resolves.toBe('pk_server')
+  })
 })
 
 describe('useBillingWebStripeKey', () => {

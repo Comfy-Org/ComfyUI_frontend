@@ -410,6 +410,15 @@ describe('useBillingSdkStore', () => {
     expect(options.embeddedCheckoutAvailable()).toBe(false)
   })
 
+  it('reports checkout available on the server key alone, with no build-time key', () => {
+    flagState.embeddedCheckoutEnabled = true
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', undefined)
+    remoteConfig.value = { stripe_publishable_key: 'pk_server' }
+    useBillingSdkStore()
+
+    expect(options.embeddedCheckoutAvailable()).toBe(true)
+  })
+
   it('polls every pending operation when the tab returns', () => {
     useBillingSdkStore()
 

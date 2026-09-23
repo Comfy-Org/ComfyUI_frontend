@@ -82,4 +82,25 @@ describe('createDeferredStripeChallengePort', () => {
 
     expect(h.loadStripe).toHaveBeenCalledTimes(1)
   })
+
+  it('waits out a getter that resolves the key after the challenge already started', async () => {
+    const handleNextAction = vi.fn(async () => ({
+      paymentIntent: { status: 'succeeded' }
+    }))
+    h.loadStripe.mockResolvedValue({ handleNextAction })
+    let resolveKey: (key: string) => void = () => undefined
+    const port = createDeferredStripeChallengePort(
+      () =>
+        new Promise((resolve) => {
+          resolveKey = resolve
+        })
+    )
+
+    const pending = port.handleNextAction('secret')
+    resolveKey('pk_server')
+    const result = await pending
+
+    expect(result).toEqual({ paymentIntent: { status: 'succeeded' } })
+    expect(h.loadStripe).toHaveBeenCalledWith('pk_server')
+  })
 })
