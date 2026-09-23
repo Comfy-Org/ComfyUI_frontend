@@ -318,7 +318,7 @@ export class ComfyApp {
   static clipspace: Clipspace | null = null
   static clipspace_invalidate_handler: (() => void) | null = null
   static open_maskeditor: (() => void) | null = null
-  static maskeditor_is_opended: (() => void) | null = null
+  static maskeditor_is_opended: (() => boolean) | null = null
   static clipspace_return_node: LGraphNode | null = null
 
   vueAppReady: boolean
@@ -1983,15 +1983,14 @@ export class ComfyApp {
             const hasPromptNodeErrors =
               error instanceof PromptExecutionError &&
               Object.keys(error.response.node_errors ?? {}).length > 0
-            const preconditionResponseError =
-              error instanceof PromptExecutionError &&
-              typeof error.response.error === 'object'
-                ? error.response.error
-                : undefined
-            const promptPrecondition = preconditionResponseError
+            const promptError =
+              error instanceof PromptExecutionError
+                ? normalizePromptError(error.response.error)
+                : null
+            const promptPrecondition = promptError
               ? resolveAccountPrecondition({
-                  exceptionType: preconditionResponseError.type,
-                  exceptionMessage: preconditionResponseError.message
+                  exceptionType: promptError.type,
+                  exceptionMessage: promptError.message
                 })
               : undefined
             // Account preconditions (sign-in, subscription, credits) open their
@@ -2003,8 +2002,7 @@ export class ComfyApp {
             }
             if (
               error instanceof PromptExecutionError &&
-              typeof error.response.error === 'object' &&
-              error.response.error?.type === 'missing_node_type'
+              promptError?.type === 'missing_node_type'
             ) {
               // Re-scan the full graph instead of using the server's single-node response.
               rescanAndSurfaceMissingNodes(this.rootGraph)
@@ -2057,14 +2055,14 @@ export class ComfyApp {
               // Store prompt-level error separately only when no node-specific errors exist,
               // because node errors already carry the full context. Prompt-level errors
               // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
-              if (!nodeErrors || Object.keys(nodeErrors).length === 0) {
-                const promptError = normalizePromptError(error.response.error)
-                if (promptError) {
-                  executionErrorStore.recordPromptError(
-                    promptError,
-                    queuedRunErrorKey
-                  )
-                }
+              if (
+                (!nodeErrors || Object.keys(nodeErrors).length === 0) &&
+                promptError
+              ) {
+                executionErrorStore.recordPromptError(
+                  promptError,
+                  queuedRunErrorKey
+                )
               }
 
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {

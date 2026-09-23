@@ -114,6 +114,172 @@ describe('useFirstRunEntry', () => {
     ]
   ] as const
 
+  describe('what the boot reports to surfaces that must yield to it', () => {
+    it('records that Getting Started took the screen', async () => {
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(entry.firstRunTookScreen.value).toBe(true)
+    })
+
+    it('records that a url-intent tour took the screen', async () => {
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('url-intent')
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(entry.firstRunTookScreen.value).toBe(true)
+    })
+
+    it.for([
+      {
+        label: 'restored work',
+        boot: async (entry: FirstRunEntry) =>
+          entry.handleStartupOutcome('restored')
+      },
+      {
+        label: 'a boot that only deferred',
+        boot: async (entry: FirstRunEntry) => {
+          mocks.isDesktopWidth = false
+          await entry.handleStartupOutcome('fresh')
+        }
+      },
+      {
+        label: 'a url-intent boot whose tour did not start',
+        boot: async (entry: FirstRunEntry) => {
+          mocks.beginTour.mockResolvedValue(false)
+          await entry.handleStartupOutcome('url-intent')
+          await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+        }
+      }
+    ])('reports no first-run screen for $label', async ({ boot }) => {
+      const entry = useFirstRunEntry()
+
+      await boot(entry)
+
+      expect(entry.firstRunTookScreen.value).toBe(false)
+    })
+
+    it('settles a url-intent boot only once the url stage has run', async () => {
+      const entry = useFirstRunEntry()
+      let decided: boolean | undefined
+      void entry.whenStartupDecided().then((value) => {
+        decided = value
+      })
+
+      await entry.handleStartupOutcome('url-intent')
+      await new Promise((resolve) => setTimeout(resolve))
+      expect(decided).toBeUndefined()
+
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+      await vi.waitFor(() => expect(decided).toBe(true))
+    })
+
+    it('settles a fresh boot as soon as the screen stage has run', async () => {
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      await expect(entry.whenStartupDecided()).resolves.toBe(true)
+    })
+
+    it('settles even when the screen stage throws', async () => {
+      const entry = useFirstRunEntry()
+      mocks.isDesktopWidth = false
+      vi.mocked(useCommandStore().execute).mockRejectedValue(
+        new Error('stale chunk')
+      )
+
+      await expect(entry.handleStartupOutcome('fresh')).rejects.toThrow(
+        'stale chunk'
+      )
+
+      await expect(entry.whenStartupDecided()).resolves.toBe(true)
+    })
+
+    it('shares one grace timer across every waiter', async () => {
+      const entry = useFirstRunEntry()
+      vi.mocked(VueUse.until).mockClear()
+
+      void entry.whenStartupDecided()
+      void entry.whenStartupDecided()
+      expect(VueUse.until).toHaveBeenCalledOnce()
+
+      await entry.handleStartupOutcome('fresh')
+      await expect(entry.whenStartupDecided()).resolves.toBe(true)
+      expect(VueUse.until).toHaveBeenCalledOnce()
+    })
+
+    it('resolves at once for a subscriber that arrives after the boot reported', async () => {
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('fresh')
+      await entry.handleUrlWorkflow('fresh')
+
+      await expect(entry.whenStartupDecided()).resolves.toBe(true)
+    })
+
+    it('stays undecided while a url-intent tour is still starting', async () => {
+      const entry = useFirstRunEntry()
+      let start = (_: boolean) => {}
+      mocks.beginTour.mockReturnValue(
+        new Promise<boolean>((resolve) => {
+          start = resolve
+        })
+      )
+      let decided: boolean | undefined
+      void entry.whenStartupDecided().then((value) => {
+        decided = value
+      })
+
+      await entry.handleStartupOutcome('url-intent')
+      const urlStage = entry.handleUrlWorkflow(
+        'url-intent',
+        'image_z_image_turbo'
+      )
+      await new Promise((resolve) => setTimeout(resolve))
+      expect(decided).toBeUndefined()
+      expect(entry.firstRunTookScreen.value).toBe(false)
+
+      start(true)
+      await urlStage
+      await vi.waitFor(() => expect(decided).toBe(true))
+      expect(entry.firstRunTookScreen.value).toBe(true)
+    })
+
+    it('settles the startup decision even when the tour fails to start', async () => {
+      const entry = useFirstRunEntry()
+      mocks.beginTour.mockRejectedValue(new Error('offline'))
+
+      await entry.handleStartupOutcome('url-intent')
+      await expect(
+        entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+      ).rejects.toThrow('offline')
+
+      await expect(entry.whenStartupDecided()).resolves.toBe(true)
+      expect(entry.firstRunTookScreen.value).toBe(false)
+    })
+
+    it('gives up with false only once the grace period has fully passed', async () => {
+      vi.useFakeTimers()
+      try {
+        const entry = useFirstRunEntry()
+        let decided: boolean | undefined
+        void entry.whenStartupDecided().then((value) => {
+          decided = value
+        })
+
+        await vi.advanceTimersByTimeAsync(59_999)
+        expect(decided).toBeUndefined()
+
+        await vi.advanceTimersByTimeAsync(1)
+        expect(decided).toBe(false)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+  })
+
   describe('what a fresh user sees', () => {
     it('shows Getting Started to a candidate', async () => {
       const entry = useFirstRunEntry()

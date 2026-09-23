@@ -27,6 +27,27 @@ describe('ComfyApi response boundaries', () => {
     expect(new PromptExecutionError(failure).response).toEqual(failure)
   })
 
+  it('formats prompt failures without a nested error', () => {
+    expect(
+      new PromptExecutionError({
+        message: 'Gateway rejected prompt'
+      }).toString()
+    ).toBe('Gateway rejected prompt')
+  })
+
+  it.for([
+    { name: 'null response', payload: null },
+    { name: 'missing data', payload: {} },
+    { name: 'non-string data', payload: { data: 17 } },
+    { name: 'empty data', payload: { data: '' } }
+  ])('rejects $name with the endpoint error', async ({ payload }) => {
+    vi.mocked(global.fetch).mockResolvedValue(Response.json(payload))
+
+    await expect(api.getGlobalSubgraphData('blueprint-17')).rejects.toThrow(
+      "Global subgraph 'blueprint-17' returned empty data"
+    )
+  })
+
   it('returns valid shareable assets', async () => {
     const response: WorkflowApiAssetsResponse = {
       assets: [
