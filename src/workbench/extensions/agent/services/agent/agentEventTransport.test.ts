@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { AgentMessages } from '../../schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
+import { normalizeAgentTranscript } from './agentTranscript'
 
 import type { AgentChatEvent } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'
@@ -359,6 +361,77 @@ describe('agentEventTransport text and tool parts', () => {
       toolCall('run', 'running', 'call-1'),
       toolCall('run', 'success', 'call-1')
     ])
+
+    expect(toolParts(message)).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'run',
+        state: 'done',
+        ok: true,
+        durationMs: undefined
+      }
+    ])
+  })
+
+  it('updates an already-restored tool part in place instead of duplicating it', () => {
+    const restored: ToolPart = {
+      type: 'tool',
+      callId: 'call-1',
+      name: 'run',
+      state: 'streaming'
+    }
+    const message = createAssistantMessage(T)
+    message.parts = [restored]
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(toolCall('run', 'success', 'call-1'))
+
+    expect(toolParts(message)).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'run',
+        state: 'done',
+        ok: true,
+        durationMs: undefined
+      }
+    ])
+  })
+
+  it('updates a persisted-then-restored tool part in place when a live frame carries a different id than the audit row', () => {
+    // The audit row's own id and the provider tool_call_id it was recorded
+    // under are deliberately DIFFERENT here (unlike 'call-1' reused for
+    // both elsewhere in this file) so this test actually exercises the
+    // mismatch: a live agent_tool_call frame keys on tool_call_id, not the
+    // audit row's id, so callId must be derived from tool_call_id or the
+    // restored part and the live update never match.
+    const persistedRow: AgentMessages[number] = {
+      id: 'row-1',
+      thread_id: 'thread-1',
+      seq: 1,
+      role: 'assistant',
+      status: 'complete',
+      turn_id: 't1',
+      content: {
+        text: '',
+        tool_calls: [
+          {
+            id: 'audit-row-uuid-1',
+            tool_call_id: 'call-1',
+            tool_name: 'run',
+            status: 'running'
+          }
+        ]
+      }
+    }
+    const { messages } = normalizeAgentTranscript([persistedRow])
+    const message = messages[0]
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(toolCall('run', 'success', 'call-1'))
 
     expect(toolParts(message)).toEqual([
       {
