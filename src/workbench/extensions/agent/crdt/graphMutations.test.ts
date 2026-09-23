@@ -937,7 +937,7 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
-  it.fails('rolls back store writes when a batch commit throws', () => {
+  it('leaves node stores untouched when a layout commit throws', () => {
     createLayout.mockImplementationOnce(() => {
       throw new Error('layout commit failed')
     })
