@@ -248,6 +248,9 @@
       "badType": "File type not supported",
       "outOfRange": "Value is outside the allowed range",
       "badOption": "Choose one of the listed options",
+      "incompatible": "This input is incompatible with the other settings.",
+      "videoTooLong": "Use a video that is {seconds} seconds or shorter.",
+      "videoUnreadable": "Could not read the video duration. Select a playable video or use an accessible video link.",
       "rejected": "The model rejected this value"
     },
     "signIn": {
