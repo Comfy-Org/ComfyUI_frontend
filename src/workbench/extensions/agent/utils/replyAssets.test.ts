@@ -1,5 +1,5 @@
 import { marked } from 'marked'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { isImageResult } from '@/utils/resultItem'
 
@@ -19,109 +19,103 @@ function firstTokenAssets(text: string) {
   return tokenReplyAssets(marked.lexer(text)[0])
 }
 
-// FE: the local agent writes previews as absolute URLs of the ComfyUI it
-// drives. Opened from any machine but the one running it, that loopback host
-// is the viewer's own computer and every chat image is broken.
+// The local agent writes previews as absolute URLs of the ComfyUI it drives.
+// Opened from any machine but the one running it, that loopback host is the
+// reader's own computer and every chat image is broken.
 const PANEL = 'http://100.74.161.87:8190'
 const LOOPBACK_VIEW =
   'http://127.0.0.1:8188/view?filename=ComfyUI_00005_.png&subfolder=&type=output'
 
 describe('resolveAgentAssetUrl', () => {
-  it('leaves an agent URL untouched in a cloud build', () => {
-    expect(resolveAgentAssetUrl(LOOPBACK_VIEW, PANEL)).toBe(LOOPBACK_VIEW)
+  it.for([
+    ['http://127.0.0.1:8188/view?filename=a.png', '/view?filename=a.png'],
+    [
+      'http://localhost:8188/api/view?filename=a.png',
+      '/api/view?filename=a.png'
+    ],
+    ['http://[::1]:8188/view?filename=a.png', '/view?filename=a.png'],
+    [
+      'http://0.0.0.0:8188/viewvideo?filename=a.mp4',
+      '/viewvideo?filename=a.mp4'
+    ],
+    [
+      'http://127.1.2.3:8188/viewaudio?filename=a.mp3',
+      '/viewaudio?filename=a.mp3'
+    ]
+  ])('re-homes %s onto the page origin', ([href, path]) => {
+    expect(resolveAgentAssetUrl(href, PANEL)).toBe(`${PANEL}${path}`)
   })
 
-  describe('in a standalone build', () => {
-    beforeEach(() => {
-      vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
-    })
+  it('keeps the whole query, including an empty subfolder', () => {
+    expect(resolveAgentAssetUrl(LOOPBACK_VIEW, PANEL)).toBe(
+      `${PANEL}/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
+    )
+  })
 
-    it.for([
-      ['http://127.0.0.1:8188/view?filename=a.png', '/view?filename=a.png'],
-      [
-        'http://localhost:8188/api/view?filename=a.png',
-        '/api/view?filename=a.png'
-      ],
-      ['http://[::1]:8188/view?filename=a.png', '/view?filename=a.png'],
-      [
-        'http://0.0.0.0:8188/viewvideo?filename=a.mp4',
-        '/viewvideo?filename=a.mp4'
-      ],
-      [
-        'http://127.1.2.3:8188/viewaudio?filename=a.mp3',
-        '/viewaudio?filename=a.mp3'
-      ]
-    ])('re-homes %s onto the panel origin', ([href, path]) => {
-      expect(resolveAgentAssetUrl(href, PANEL)).toBe(`${PANEL}${path}`)
-    })
+  it('defaults to the page the panel is served from', () => {
+    expect(resolveAgentAssetUrl(LOOPBACK_VIEW)).toBe(
+      `${window.location.origin}/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
+    )
+  })
 
-    it('keeps the whole query, including an empty subfolder', () => {
-      expect(resolveAgentAssetUrl(LOOPBACK_VIEW, PANEL)).toBe(
-        `${PANEL}/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
-      )
-    })
+  it('leaves a genuinely remote ComfyUI host alone', () => {
+    const remote = 'http://gpu-box.lan:8188/view?filename=a.png'
+    expect(resolveAgentAssetUrl(remote, PANEL)).toBe(remote)
+  })
 
-    it('leaves a genuinely remote ComfyUI host alone', () => {
-      const remote = 'http://gpu-box.lan:8188/view?filename=a.png'
-      expect(resolveAgentAssetUrl(remote, PANEL)).toBe(remote)
-      const cloud = 'https://cloud.comfy.org/api/view?filename=a.png'
-      expect(resolveAgentAssetUrl(cloud, PANEL)).toBe(cloud)
-    })
+  // A cloud reply never carries a loopback URL, and its own asset host is
+  // left exactly as authored, so the cloud panel is unaffected.
+  it('leaves a cloud asset host alone', () => {
+    const cloud = 'https://cloud.comfy.org/api/view?filename=a.png'
+    expect(resolveAgentAssetUrl(cloud, PANEL)).toBe(cloud)
+  })
 
-    it('leaves a relative URL alone', () => {
-      expect(resolveAgentAssetUrl('/api/view?filename=a.png', PANEL)).toBe(
-        '/api/view?filename=a.png'
-      )
-      expect(resolveAgentAssetUrl('view?filename=a.png', PANEL)).toBe(
-        'view?filename=a.png'
-      )
-    })
+  it('leaves a relative URL alone', () => {
+    expect(resolveAgentAssetUrl('/api/view?filename=a.png', PANEL)).toBe(
+      '/api/view?filename=a.png'
+    )
+    expect(resolveAgentAssetUrl('view?filename=a.png', PANEL)).toBe(
+      'view?filename=a.png'
+    )
+  })
 
-    it('leaves a loopback URL that is not a media route alone', () => {
-      for (const href of [
-        'http://127.0.0.1:8188/prompt',
-        'http://127.0.0.1:8086/docs',
-        'http://127.0.0.1:8188/view/extra?filename=a.png'
-      ])
-        expect(resolveAgentAssetUrl(href, PANEL)).toBe(href)
-    })
+  it('leaves a loopback URL that is not a media route alone', () => {
+    for (const href of [
+      'http://127.0.0.1:8188/prompt',
+      'http://127.0.0.1:8086/docs',
+      'http://127.0.0.1:8188/view/extra?filename=a.png'
+    ])
+      expect(resolveAgentAssetUrl(href, PANEL)).toBe(href)
+  })
 
-    it('reaches ReplyAsset urls through classifyAssetUrl', () => {
-      expect(classifyAssetUrl(LOOPBACK_VIEW, PANEL)).toEqual({
-        url: `${PANEL}/view?filename=ComfyUI_00005_.png&subfolder=&type=output`,
-        filename: 'ComfyUI_00005_.png',
-        kind: 'image'
-      })
+  it('reaches ReplyAsset urls through classifyAssetUrl', () => {
+    expect(classifyAssetUrl(LOOPBACK_VIEW, PANEL)).toEqual({
+      url: `${PANEL}/view?filename=ComfyUI_00005_.png&subfolder=&type=output`,
+      filename: 'ComfyUI_00005_.png',
+      kind: 'image'
     })
   })
 })
 
 describe('rewriteAgentAssetHtml', () => {
-  const html = `<p><img src="${LOOPBACK_VIEW}" alt="a duck"></p>`
-
-  it('leaves rendered markdown untouched in a cloud build', () => {
-    expect(rewriteAgentAssetHtml(html)).toBe(html)
+  it('rewrites the img src the reader actually sees', () => {
+    expect(
+      rewriteAgentAssetHtml(`<p><img src="${LOOPBACK_VIEW}" alt="a duck"></p>`)
+    ).toContain(
+      `src="${window.location.origin}/view?filename=ComfyUI_00005_.png&amp;subfolder=&amp;type=output"`
+    )
   })
 
-  describe('in a standalone build', () => {
-    beforeEach(() => {
-      vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
-    })
+  it('rewrites an anchor to a loopback asset', () => {
+    expect(
+      rewriteAgentAssetHtml(`<a href="${LOOPBACK_VIEW}">duck.png</a>`)
+    ).toContain(`href="${window.location.origin}/view?`)
+  })
 
-    it('rewrites the img src the reader actually sees', () => {
-      expect(rewriteAgentAssetHtml(html)).toContain(
-        `src="${window.location.origin}/view?filename=ComfyUI_00005_.png&amp;subfolder=&amp;type=output"`
-      )
-    })
-
-    it('rewrites anchors and returns asset-free html unchanged', () => {
-      expect(
-        rewriteAgentAssetHtml(`<a href="${LOOPBACK_VIEW}">duck.png</a>`)
-      ).toContain(`href="${window.location.origin}/view?`)
-      expect(rewriteAgentAssetHtml('<p>plain <b>text</b></p>')).toBe(
-        '<p>plain <b>text</b></p>'
-      )
-    })
+  it('returns html with nothing to rewrite unchanged', () => {
+    const untouched =
+      '<p>plain <b>text</b> and <img src="/api/view?filename=a.png"></p>'
+    expect(rewriteAgentAssetHtml(untouched)).toBe(untouched)
   })
 })
 

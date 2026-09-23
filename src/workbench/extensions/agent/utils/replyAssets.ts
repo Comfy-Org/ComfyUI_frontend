@@ -4,8 +4,6 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
-import { isAgentStandalone } from '../agentDistribution'
-
 type ReplyAssetKind = Extract<MediaType, 'image' | 'video' | 'audio' | '3D'>
 
 export interface ReplyAsset {
@@ -27,7 +25,7 @@ const LOOPBACK_HOST = /^(?:localhost|0\.0\.0\.0|\[::1\]|127(?:\.\d{1,3}){3})$/i
 const COMFY_MEDIA_PATH = /^\/(?:api\/)?view(?:video|audio)?$/
 
 /**
- * Point an agent-authored media URL at the panel instead of at the agent's own
+ * Point an agent-authored media URL at the page instead of at the agent's own
  * machine.
  *
  * The local agent writes previews into chat as absolute URLs of the ComfyUI it
@@ -38,15 +36,16 @@ const COMFY_MEDIA_PATH = /^\/(?:api\/)?view(?:video|audio)?$/
  * `/view` routes, so keep the path and query and swap in its origin.
  *
  * Only loopback hosts on ComfyUI's media routes are touched: a genuinely
- * remote ComfyUI, a relative URL (already the panel's own origin) and any
- * non-media link are returned unchanged. Cloud builds never take this path —
- * the cloud agent has no loopback ComfyUI to link to.
+ * remote ComfyUI, a relative URL (already the page's own origin) and any
+ * non-media link are returned unchanged. That leaves the cloud panel alone in
+ * practice — a cloud reply has no loopback ComfyUI to link to — without
+ * branching on the distribution, so the in-app agent ComfyUI serves gets the
+ * same treatment as the local harness.
  */
 export function resolveAgentAssetUrl(
   href: string,
   origin = window.location.origin
 ): string {
-  if (!isAgentStandalone()) return href
   let url: URL
   try {
     url = new URL(href)
@@ -68,7 +67,6 @@ export function resolveAgentAssetUrl(
  * reachable URL rather than only the lightbox that opens on clicking it.
  */
 export function rewriteAgentAssetHtml(html: string): string {
-  if (!isAgentStandalone()) return html
   const doc = new DOMParser().parseFromString(html, 'text/html')
   let rewritten = false
   for (const element of doc.querySelectorAll('[src], [href], [poster]')) {

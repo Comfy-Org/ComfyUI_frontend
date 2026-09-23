@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
 
@@ -121,17 +121,13 @@ describe('MarkdownStream', () => {
 
   // The local agent links previews on the ComfyUI it drives, by loopback
   // address. Opened from another machine that host is the reader's own
-  // computer, so the panel re-homes the reference onto its own origin.
-  describe('a standalone panel opened away from the agent', () => {
+  // computer, so the panel re-homes the reference onto the page's origin.
+  describe('a panel opened away from the machine running the agent', () => {
     const loopback =
       'http://127.0.0.1:8188/view?filename=ComfyUI_00005_.png&subfolder=&type=output'
     const sameOrigin = `${window.location.origin}/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
 
-    beforeEach(() => {
-      vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
-    })
-
-    it('renders a loopback asset image against the panel origin', () => {
+    it('renders a loopback asset image against the page origin', () => {
       render(MarkdownStream, {
         props: { text: `![a duck](${loopback})` },
         global: { plugins: [i18n] }
@@ -142,7 +138,7 @@ describe('MarkdownStream', () => {
       )
     })
 
-    it('renders a loopback image inside prose against the panel origin', () => {
+    it('renders a loopback image inside prose against the page origin', () => {
       render(MarkdownStream, {
         props: { text: `Here it is ![a duck](${loopback}) — enjoy.` },
         global: { plugins: [i18n] }
@@ -164,18 +160,6 @@ describe('MarkdownStream', () => {
         remote
       )
     })
-  })
-
-  it('leaves a loopback asset image alone in a cloud build', () => {
-    const loopback = 'http://127.0.0.1:8188/view?filename=a.png'
-    render(MarkdownStream, {
-      props: { text: `Here it is ![a duck](${loopback}) — enjoy.` },
-      global: { plugins: [i18n] }
-    })
-    expect(screen.getByRole('img', { name: 'a duck' })).toHaveAttribute(
-      'src',
-      loopback
-    )
   })
 
   it('strips a script tag (XSS guard)', () => {
