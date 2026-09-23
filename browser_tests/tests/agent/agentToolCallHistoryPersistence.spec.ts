@@ -14,7 +14,9 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 // `content.tool_calls` ([]persist.ToolCallSummary) verbatim.
 // normalizeAgentTranscript (agentTranscript.ts) reads that field and folds it
 // into the same ToolPart parts the live agent_tool_call handler builds, so
-// agentConversationStore.hydrate() restores the identical WorkSummary UI.
+// agentConversationStore.hydrate() restores the identical ToolCallGroup UI
+// (this branch predates main's WorkSummary/ActivityTrace rename, so the
+// restored summary trigger reads "Ran N tool calls...", not "Worked").
 // This test mimics that verbatim content pass-through (the shared fixture's
 // own GET mock does not carry tool_calls) and asserts the summary survives a
 // refresh.
@@ -125,9 +127,11 @@ test(
     const reopenedPanel = page.locator('#agent-panel-root')
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
+    // This branch's ToolCallGroup trigger (not main's renamed WorkSummary)
+    // labels the restored, completed group "Ran 2 tool calls for 0.6
+    // seconds" (2 calls, 420ms + 180ms from the mock above).
     const summary = reopenedPanel.getByRole('button', {
-      name: enMessages.agent.worked,
-      exact: true
+      name: /^Ran 2 tool calls for 0\.6 seconds/
     })
     await expect(summary).toBeVisible({ timeout: 10_000 })
     await expect(summary).toHaveAttribute('aria-expanded', 'false')
