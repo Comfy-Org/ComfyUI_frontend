@@ -10739,6 +10739,26 @@ Enterprise`
     en: 'Run this workflow, or look at how it is built',
     'zh-CN': '运行此工作流，或查看它的构成'
   },
+  'workshop.launch.videos': {
+    en: 'Create & edit videos',
+    'zh-CN': '创建与编辑视频'
+  },
+  'workshop.launch.characters': {
+    en: 'Animate characters',
+    'zh-CN': '让角色动起来'
+  },
+  'workshop.launch.product': {
+    en: 'Create product photos & ads',
+    'zh-CN': '产品照片与广告'
+  },
+  'workshop.launch.upscale': {
+    en: 'Upscale & restore',
+    'zh-CN': '放大与修复'
+  },
+  'workshop.launch.cleanup': {
+    en: 'Edit & clean up photos',
+    'zh-CN': '修图与清理'
+  },
   'workshop.v2.workflow.factWhere': { en: 'Where', 'zh-CN': '运行位置' },
   'workshop.v2.workflow.factOutput': { en: 'Output', 'zh-CN': '输出' },
   'workshop.v2.workflow.factRuns': { en: 'Runs', 'zh-CN': '运行次数' },

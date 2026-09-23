@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { LAUNCH_CATEGORIES } from '../../config/workshop-launch'
 import { hubWorkflowPath } from './catalogue-entries'
+import { runsHere } from './runs-here'
 import {
   getHubWorkflowPage,
   listHubWorkflows,
@@ -12,70 +14,74 @@ describe('getHubWorkflowPage', () => {
     expect(getHubWorkflowPage('no-such-template')).toBeUndefined()
   })
 
-  it('gives every workflow that runs here a page of its own', () => {
-    expect(listHubWorkflows().length).toBeGreaterThan(20)
-    expect(hubWorkflowPath('api_nano_banana_pro')).toBe(
-      '/hub/workflow/api_nano_banana_pro/'
+  it('gives every workflow in the launch list a page of its own', () => {
+    const listed = LAUNCH_CATEGORIES.flatMap((category) =>
+      category.workflows.map((workflow) => workflow.template)
+    )
+
+    expect(
+      listHubWorkflows()
+        .map((t) => t.name)
+        .sort()
+    ).toEqual([...listed].sort())
+    expect(listed.every((name) => getHubWorkflowPage(name))).toBe(true)
+    expect(hubWorkflowPath('video_ltx2_3_i2v')).toBe(
+      '/hub/workflow/video_ltx2_3_i2v/'
     )
   })
 
-  // The catalogue holds only what this page can run, so every page in it
-  // reaches one partner model, downloads nothing, and installs nothing.
-  it('carries a destination, no weights and no custom nodes throughout', () => {
-    const pages = listHubWorkflows().map((template) =>
-      getHubWorkflowPage(template.name)!
+  // The catalogue is chosen editorially now, so weights and custom nodes are
+  // ordinary: Cloud holds them. What still has to hold is that a page which
+  // offers an inline run is one the Router can actually serve.
+  it('offers an inline run only where the Router carries the model', () => {
+    const pages = listHubWorkflows().map((template) => ({
+      template,
+      page: getHubWorkflowPage(template.name)!
+    }))
+
+    for (const { template, page } of pages)
+      expect(page.runsInline).toBe(runsHere(template))
+
+    // Naming a model is not the same as being runnable: a graph can reach a
+    // model the Router carries and still need custom nodes around it.
+    expect(pages.some(({ page }) => page.destination && !page.runsInline)).toBe(
+      true
     )
 
-    expect(pages.every((page) => page.callsPartnerModel)).toBe(true)
-    expect(pages.every((page) => page.destination !== undefined)).toBe(true)
-    expect(pages.every((page) => page.weightsBytes === 0)).toBe(true)
-    expect(pages.every((page) => page.customNodes.length === 0)).toBe(true)
-  })
-
-  it('names the model page a workflow can open', () => {
-    const routed = getHubWorkflowPage('api_nano_banana_pro')!
-
-    expect(routed.destination?.name).toBe('Nano Banana Pro')
-    expect(routed.runsOn.map((ref) => ref.name)).toContain('Nano Banana Pro')
+    expect(pages.some(({ page }) => page.weightsBytes > 0)).toBe(true)
   })
 
   // Some registry rows list the maker beside the model it made, which reads on
   // the page as a graph calling two models rather than one.
   it('leaves the maker out of the models a workflow runs on', () => {
-    const page = getHubWorkflowPage('api_google_nano_banana2_image_edit')!
+    const page = getHubWorkflowPage('templates-character_sheet')!
 
     expect(page.runsOn.map((ref) => ref.name)).not.toContain('Google')
-    expect(page.runsOn.map((ref) => ref.name)).toContain('Nano Banana 2')
   })
 
-  // A graph the catalogue no longer holds has no page at all, whatever the
-  // registry still ships under that name.
+  // A graph outside the launch list has no page at all, whatever the registry
+  // still ships under that name.
   it.for([
     'video_minimax_h3_i2v',
-    'flux_fill_inpaint_example',
+    'api_nano_banana_pro',
     'video_ltx_2_audio_to_video'
-  ])('has no page for %s, which cannot run here', (name) => {
+  ])('has no page for %s, which the launch list leaves out', (name) => {
     expect(getHubWorkflowPage(name)).toBeUndefined()
   })
 
   it('reads the ports the details declare, and falls back to the medium', () => {
-    const withPorts = getHubWorkflowPage('api_google_nano_banana2_image_edit')!
-    expect(withPorts.inputs).toContainEqual({
-      name: 'LoadImage',
-      type: 'image'
-    })
-    expect(withPorts.mediaType).toBe('image')
+    const withPorts = getHubWorkflowPage('flux_fill_inpaint_example')!
 
-    const noInputs = getHubWorkflowPage('api_bytedance_seedream_5_0_pro_t2i')!
-    expect(noInputs.inputs).toEqual([])
+    expect(withPorts.inputs.length).toBeGreaterThan(0)
+    expect(withPorts.mediaType).toBe('image')
   })
 
   it('never recommends the workflow itself', () => {
-    const page = getHubWorkflowPage('api_nano_banana_pro')!
+    const page = getHubWorkflowPage('video_ltx2_3_i2v')!
 
     expect(page.related.length).toBeGreaterThan(0)
     expect(page.related.map((other) => other.name)).not.toContain(
-      'api_nano_banana_pro'
+      'video_ltx2_3_i2v'
     )
   })
 })

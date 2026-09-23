@@ -3,6 +3,7 @@ import { workshopModels } from '../../config/workshop-browse-content'
 import hubTemplateDetails from '../../data/hubTemplateDetails.json'
 import hubTemplates from '../../data/hubTemplates.json'
 import { modelIdentity, modelName } from './model-identity'
+import { launchesHere } from '../../config/workshop-launch'
 import { runsHere } from './runs-here'
 import { partnerModelFor } from './template-use-case'
 import type { HubTemplate, HubTemplateDetails } from './types'
@@ -38,6 +39,13 @@ export interface HubWorkflowPage {
   readonly runsOn: readonly HubWorkflowModelRef[]
   /** The one model page this workflow can open without guessing. */
   readonly destination: HubWorkflowDestination | undefined
+  /**
+   * Whether the page can run it inline, as a form and a Run button. Naming a
+   * model is not enough: the graph around it has to be one the Router can
+   * serve, with nothing to load and nothing to install. Everything else runs
+   * on Cloud and the page offers the way there instead.
+   */
+  readonly runsInline: boolean
   readonly callsPartnerModel: boolean
   readonly customNodes: readonly string[]
   /** Bytes of weights to download before it runs. Zero for partner workflows. */
@@ -48,7 +56,9 @@ export interface HubWorkflowPage {
   readonly downloadUrl: string
 }
 
-const templates = hubTemplatesSchema.parse(hubTemplates).filter(runsHere)
+const templates = hubTemplatesSchema
+  .parse(hubTemplates)
+  .filter((template) => launchesHere(template.name))
 const details: HubTemplateDetails =
   hubTemplateDetailsSchema.parse(hubTemplateDetails)
 
@@ -155,6 +165,7 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
     details: detail,
     runsOn: modelRefs(template, workshopModels),
     destination: destinationFor(template),
+    runsInline: runsHere(template),
     callsPartnerModel: template.tags.includes('API'),
     customNodes: detail.requiresCustomNodes ?? [],
     weightsBytes: detail.size ?? 0,

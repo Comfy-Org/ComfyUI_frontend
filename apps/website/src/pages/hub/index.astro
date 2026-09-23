@@ -5,7 +5,7 @@ import hubTemplateDetails from '../../data/hubTemplateDetails.json'
 import hubTemplates from '../../data/hubTemplates.json'
 import { browseEntries } from '../../lib/hub/browse-payload'
 import { customNodeNamesFrom, facetedTemplates } from '../../lib/hub/page-data'
-import { runsHere } from '../../lib/hub/runs-here'
+import { launchesHere } from '../../config/workshop-launch'
 import { t } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 
@@ -14,10 +14,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 
 // Everything resolves here. The island receives card-sized records, so the
 // model list and the template index never reach the browser.
-// The workflows half holds only what this page can run, so every card in it
-// opens onto a form and a Run button.
+// The workflows half is the launch list from the Phase 2 spec: five
+// categories of six, chosen editorially rather than by what the Router can
+// serve inline. Most of them run on Cloud, so a card opens onto the workflow
+// rather than onto a form.
 const entries = browseEntries(
-  facetedTemplates(hubTemplates, workshopModels).filter(runsHere),
+  facetedTemplates(hubTemplates, workshopModels).filter((template) =>
+    launchesHere(template.name)
+  ),
   workshopModels,
   customNodeNamesFrom(hubTemplateDetails)
 )

@@ -140,7 +140,7 @@ test.describe('V2 catalogue', () => {
   test('opens on the playground and keeps the graph behind its tab', async ({
     page
   }) => {
-    await page.goto('/hub/workflow/api_google_nano_banana2_image_edit/')
+    await page.goto('/hub/workflow/utility_nanobanana_pro_product_upscale/')
 
     // The header names what answers for the workflow, the way a model page
     // names its provider: the model the graph calls.
@@ -168,13 +168,13 @@ test.describe('V2 catalogue', () => {
   test('a workflow page opens its graph in the Cloud and offers the file', async ({
     page
   }) => {
-    await page.goto('/hub/workflow/api_google_nano_banana2_image_edit/')
+    await page.goto('/hub/workflow/utility_nanobanana_pro_product_upscale/')
     await page.getByTestId('tab-details').click()
 
-    const actions = page.getByTestId('workflow-actions')
+    const actions = page.getByTestId('workflow-actions').first()
     await expect(actions.getByTestId('workflow-open-cloud')).toHaveAttribute(
       'href',
-      /cloud\.comfy\.org\/\?template=api_google_nano_banana2_image_edit/
+      /cloud\.comfy\.org\/\?template=utility_nanobanana_pro_product_upscale/
     )
     await expect(
       actions.getByRole('link', { name: /Download the JSON/ })
@@ -185,10 +185,28 @@ test.describe('V2 catalogue', () => {
   // model with its graph around it, so the page runs rather than sending the
   // reader somewhere else.
   test('runs a partner workflow on its own page', async ({ page }) => {
-    await page.goto('/hub/workflow/api_nano_banana_pro/')
+    await page.goto('/hub/workflow/utility_nanobanana_pro_product_upscale/')
 
     await expect(page.getByTestId('workflow-run')).toBeVisible()
     await expect(page.getByTestId('workflow-destination')).toHaveCount(0)
+  })
+
+  // Most of the launch list loads weights or custom nodes, which Cloud holds
+  // and the Router cannot. Those pages say so with the graph and the way to
+  // Cloud rather than offering a Run button that would fail.
+  test('a Cloud workflow offers the way to Cloud instead of a form', async ({
+    page
+  }) => {
+    await page.goto('/hub/workflow/flux_fill_inpaint_example/')
+
+    await expect(page.getByTestId('workflow-on-cloud')).toBeVisible()
+    await expect(page.getByTestId('workflow-run')).toHaveCount(0)
+    await expect(
+      page
+        .getByTestId('workflow-actions')
+        .first()
+        .getByTestId('workflow-open-cloud')
+    ).toBeVisible()
   })
 
   test('the prototype asks not to be indexed', async ({ request }) => {

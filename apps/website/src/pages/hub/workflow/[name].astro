@@ -2,6 +2,7 @@
 import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
 import CatalogueBackLink from '../../../components/workshop/CatalogueBackLink.vue'
 import HubPageHeader from '../../../components/hub/HubPageHeader.vue'
+import WorkflowAbout from '../../../components/hub/WorkflowAbout.vue'
 import WorkflowRun from '../../../components/hub/WorkflowRun.vue'
 import { catalogSearch, useCaseFor } from '../../../config/models-catalogue'
 import { useCaseForTemplate } from '../../../lib/hub/template-use-case'
@@ -40,12 +41,14 @@ if (!page) return Astro.redirect('/hub/')
 const { template, details, runsOn, related } = page
 
 const author = template.username || 'ComfyUI'
-// A workflow that is one call to a model we carry is that model with a graph
-// around it, so the page hands the reader the playground rather than a file to
-// take elsewhere. Everything the graph adds stays below it.
-const runnable = page.destination
-  ? getRouterWorkshopModelDetail(page.destination.slug)
-  : undefined
+// A workflow this page can serve is one call to a model we carry, and there
+// the page hands the reader the playground rather than a file to take
+// elsewhere. Naming a model is not enough: a graph can reach one and still
+// need custom nodes or weights around it, and that one runs on Cloud.
+const runnable =
+  page.runsInline && page.destination
+    ? getRouterWorkshopModelDetail(page.destination.slug)
+    : undefined
 const operations = runnable
   ? (
       await pricedOperations([runnable], (model) =>
@@ -139,23 +142,31 @@ const sectionTitle =
         />
       </section>
     ) : (
-      <div class="mb-16 grid gap-10 lg:grid-cols-12">
+      <div class="mb-16 flex flex-col gap-10" data-testid="workflow-on-cloud">
         {template.thumbnails[0] && (
           <img
             src={template.thumbnails[0]}
             alt={title}
             loading="lazy"
             decoding="async"
-            class="aspect-4/3 w-full rounded-2xl bg-hub-surface object-cover lg:col-span-7"
+            class="aspect-video w-full rounded-2xl bg-hub-surface object-cover"
             data-testid="workflow-media"
           />
         )}
-        <p
-          class="text-sm text-content-muted lg:col-span-5"
-          data-testid="workflow-no-run"
-        >
-          {t('workshop.v2.model.noRun')}
-        </p>
+        <WorkflowAbout
+          graphUrl={page.downloadUrl}
+          cloudUrl={cloudUrl}
+          runsHere={false}
+          tutorialUrl={details.tutorialUrl}
+          samples={template.thumbnails}
+          models={runsOn}
+          author={author}
+          usage={template.usage}
+          produces={summarisePorts(page.outputs)}
+          openWeights={details.openSource ?? false}
+          added={template.date}
+          client:load
+        />
       </div>
     )}
 
