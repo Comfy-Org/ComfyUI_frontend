@@ -126,7 +126,7 @@ test(
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
     const summary = reopenedPanel.getByRole('button', {
-      name: enMessages.agent.worked,
+      name: 'Ran 2 tool calls for 0.6 seconds',
       exact: true
     })
     await expect(summary).toBeVisible({ timeout: 10_000 })
@@ -137,8 +137,8 @@ test(
     await expect(reopenedPanel.getByText('Search nodes')).toBeVisible()
     await expect(reopenedPanel.getByText('Add node')).toBeVisible()
     await expect(reopenedPanel.getByRole('listitem')).toHaveText([
-      'Search nodes',
-      'Add node'
+      /^Search nodes\s*0\.4s$/,
+      /^Add node\s*0\.2s$/
     ])
 
     await reopenedPanel
@@ -162,8 +162,8 @@ test(
     await expect(reopenedPanel.getByText('Search nodes')).toBeVisible()
     await expect(reopenedPanel.getByText('Add node')).toBeVisible()
     await expect(reopenedPanel.getByRole('listitem')).toHaveText([
-      'Search nodes',
-      'Add node'
+      /^Search nodes\s*0\.4s$/,
+      /^Add node\s*0\.2s$/
     ])
   }
 )
