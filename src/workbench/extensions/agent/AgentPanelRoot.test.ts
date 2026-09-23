@@ -237,7 +237,8 @@ const telemetry = vi.hoisted(() => ({
   trackAgentCloseButtonClicked: vi.fn(),
   trackAgentPanelOpened: vi.fn(),
   trackAgentPanelClosed: vi.fn(),
-  trackAgentOnboardingNotShown: vi.fn()
+  trackAgentOnboardingNotShown: vi.fn(),
+  trackOnboardingTour: vi.fn()
 }))
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => telemetry
