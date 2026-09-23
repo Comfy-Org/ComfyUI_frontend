@@ -163,24 +163,21 @@ describe('userStore', () => {
     )
   })
 
-  it(
-    'clears the previous stylesheet when the selected user CSS is unavailable',
-    async () => {
-      getUserConfig.mockResolvedValue({
-        users: { 'alice-id': 'Alice', 'bob-id': 'Bob' }
-      })
-      const store = useUserStore()
-      await store.initialize()
-      const previousStyle = document.createElement('style')
-      previousStyle.id = 'user-stylesheet'
-      previousStyle.textContent = 'body { color: red; }'
-      document.head.prepend(previousStyle)
+  it('clears the previous stylesheet when the selected user CSS is unavailable', async () => {
+    getUserConfig.mockResolvedValue({
+      users: { 'alice-id': 'Alice', 'bob-id': 'Bob' }
+    })
+    const store = useUserStore()
+    await store.initialize()
+    const previousStyle = document.createElement('style')
+    previousStyle.id = 'user-stylesheet'
+    previousStyle.textContent = 'body { color: red; }'
+    document.head.prepend(previousStyle)
 
-      await store.login({ userId: 'bob-id', username: 'Bob' })
+    await store.login({ userId: 'bob-id', username: 'Bob' })
 
-      expect(document.querySelector('#user-stylesheet')).toBeNull()
-    }
-  )
+    expect(document.querySelector('#user-stylesheet')).toBeNull()
+  })
 
   it('ignores stylesheet bodies for a previously selected user', async () => {
     getUserConfig.mockResolvedValue({
