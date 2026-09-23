@@ -54,20 +54,6 @@ export interface OpSenderDeps {
   /** The follower's last observed doc sequence (stamps `base_version`). */
   baseVersion(): number
   /**
-   * Opaque per-op admission-time metadata, read once when `op`'s `op_id` is
-   * minted and handed back on that op's own {@link BatchOutcome}, keyed by
-   * that same `op_id`. The sender neither inspects `op` to decide whether to
-   * call this nor interprets what comes back - which ops carry metadata and
-   * what it means (e.g. a `delete_node`'s target Yjs item identity) is the
-   * caller's own domain policy, kept out of transport batching and retry.
-   * Omitted deps default to capturing nothing. `undefined` and `null` are
-   * both valid, distinct results: `undefined` means this op carries no
-   * metadata at all (omitted from {@link BatchOutcome.admissionMetadata}),
-   * while `null` is itself a captured value (e.g. identity capture was
-   * attempted but inconclusive) and is present in the map like any other.
-   */
-  admissionMetadata?(op: Op): string | null | undefined
-  /**
    * Terminal per-batch report: 'acknowledged' carries the host's result;
    * 'unacknowledged' means one resend after silence also drew no result;
    * 'unconfirmed' means the transport carried it at least once but its doc
@@ -78,26 +64,11 @@ export interface OpSenderDeps {
   onBatchSettled(outcome: BatchOutcome): void
 }
 
-// A discriminated union, not `{ workflowId: string | null } & (state union)`:
-// only an immediate, never-bound `admit()` (no doc to address the batch to)
-// can settle without a workflow id, and only as 'undeliverable'. Every other
-// state settles a batch that was minted against a real `InFlight.workflowId`
-// (a `string`), so making `workflowId: null` uncombinable with them here
-// means a caller cannot construct an invalid pairing and have it compile.
-export type BatchOutcome = (
-  | {
-      workflowId: string
-      state: 'acknowledged'
-      ops: Op[]
-      result: OpsResultView
-    }
-  | { workflowId: string; state: 'unacknowledged'; ops: Op[] }
-  | { workflowId: string; state: 'unconfirmed'; ops: Op[] }
-  | { workflowId: string | null; state: 'undeliverable'; ops: Op[] }
-) & {
-  /** Every op in this batch, by its own `op_id` -> the metadata captured for it at admission time (see {@link OpSenderDeps.admissionMetadata}). */
-  admissionMetadata: ReadonlyMap<string, string | null>
-}
+export type BatchOutcome =
+  | { state: 'acknowledged'; ops: Op[]; result: OpsResultView }
+  | { state: 'unacknowledged'; ops: Op[] }
+  | { state: 'unconfirmed'; ops: Op[] }
+  | { state: 'undeliverable'; ops: Op[] }
 
 export interface OpSender {
   enqueue(operations: GraphOperation[]): void
@@ -169,7 +140,9 @@ export interface OpSender {
   detach(): void
 }
 
-interface InFlight extends OpGroup {
+interface InFlight {
+  workflowId: string
+  ops: Op[]
   opIds: Set<string>
   transmitted: boolean
   resent: boolean
@@ -177,35 +150,12 @@ interface InFlight extends OpGroup {
   timer: ReturnType<typeof setTimeout> | null
 }
 
-interface OpGroup {
-  workflowId: string
-  ops: Op[]
-  /** Captured once at admission time (see {@link captureAdmissionMetadata}) and carried by reference as the group moves from `open` to `queue` to {@link InFlight} - never a separate, manually-synced side table. */
-  admissionMetadata: Map<string, string | null>
-}
-
 export function createOpSender(deps: OpSenderDeps): OpSender {
-  const queue: OpGroup[] = []
-  let open: OpGroup | null = null
+  const queue: Array<{ workflowId: string; ops: Op[] }> = []
+  let open: { workflowId: string; ops: Op[] } | null = null
   let inFlight: InFlight | null = null
   let detached = false
   let suspended = false
-
-  /**
-   * `deps.admissionMetadata` for every op just minted, keyed by its own
-   * `op_id`; empty when the dep is omitted. An op whose capture returns
-   * `undefined` carries no metadata and is left out of the map entirely,
-   * distinct from a captured `null`.
-   */
-  function captureAdmissionMetadata(ops: Op[]): Map<string, string | null> {
-    const metadata = new Map<string, string | null>()
-    if (!deps.admissionMetadata) return metadata
-    for (const op of ops) {
-      const captured = deps.admissionMetadata(op)
-      if (captured !== undefined) metadata.set(op.op_id, captured)
-    }
-    return metadata
-  }
   // Late-result credits: a batch retired after transmission (settled
   // 'unacknowledged' after two sends, or 'unconfirmed' by an abort after one
   // or two) may still draw one result per send - as ANONYMOUS failures
@@ -264,9 +214,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (batch.transmitted) staleAnonymousBudget += batch.resent ? 2 : 1
     settle({
       state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
-      ops: batch.ops,
-      workflowId: batch.workflowId,
-      admissionMetadata: batch.admissionMetadata
+      ops: batch.ops
     })
   }
 
@@ -276,12 +224,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (inFlight !== batch) return
       if (batch.resent) {
         staleAnonymousBudget += 2
-        settle({
-          state: 'unacknowledged',
-          ops: batch.ops,
-          workflowId: batch.workflowId,
-          admissionMetadata: batch.admissionMetadata
-        })
+        settle({ state: 'unacknowledged', ops: batch.ops })
         return
       }
       // One silent-result resend of the SAME minted ops: idempotent at the
@@ -308,26 +251,14 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       inFlight = null
       notify({
         state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
-        ops: batch.ops,
-        workflowId: batch.workflowId,
-        admissionMetadata: batch.admissionMetadata
+        ops: batch.ops
       })
     }
     for (const batch of queued) {
-      notify({
-        state: 'undeliverable',
-        ops: batch.ops,
-        workflowId: batch.workflowId,
-        admissionMetadata: batch.admissionMetadata
-      })
+      notify({ state: 'undeliverable', ops: batch.ops })
     }
     if (admitted) {
-      notify({
-        state: 'undeliverable',
-        ops: admitted.ops,
-        workflowId: admitted.workflowId,
-        admissionMetadata: admitted.admissionMetadata
-      })
+      notify({ state: 'undeliverable', ops: admitted.ops })
     }
   }
 
@@ -338,7 +269,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     inFlight = {
       workflowId: queued.workflowId,
       ops: queued.ops,
-      admissionMetadata: queued.admissionMetadata,
       opIds: new Set(queued.ops.map((op) => op.op_id)),
       transmitted: false,
       resent: false,
@@ -346,15 +276,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       timer: null
     }
     transmit(inFlight, 0)
-  }
-
-  function settleUnadmitted(minted: Op[], workflowId: string | null): void {
-    deps.onBatchSettled({
-      state: 'undeliverable',
-      ops: minted,
-      workflowId,
-      admissionMetadata: captureAdmissionMetadata(minted)
-    })
   }
 
   function admit(operations: GraphOperation[]): void {
@@ -371,55 +292,24 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     // permanently refuses to send it. Unbound (no doc to join a group for)
     // settles the same way.
     if (detached || workflowId === null) {
-      settleUnadmitted(minted, workflowId)
+      deps.onBatchSettled({ state: 'undeliverable', ops: minted })
       return
     }
-    const admissionMetadata = captureAdmissionMetadata(minted)
     if (open?.workflowId !== workflowId) seal()
-    if (open) {
-      open.ops.push(...minted)
-      for (const [opId, metadata] of admissionMetadata)
-        open.admissionMetadata.set(opId, metadata)
-    } else {
-      open = { workflowId, ops: minted, admissionMetadata }
-    }
+    if (open) open.ops.push(...minted)
+    else open = { workflowId, ops: minted }
   }
 
   function seal(): void {
     if (!open) return
-    const { workflowId, ops, admissionMetadata } = open
+    const { workflowId, ops } = open
     open = null
-    for (const chunkOps of chunkWireOps(ops)) {
-      const chunkOpIds = new Set(chunkOps.map((op) => op.op_id))
-      queue.push({
-        workflowId,
-        ops: chunkOps,
-        admissionMetadata: new Map(
-          [...admissionMetadata].filter(([opId]) => chunkOpIds.has(opId))
-        )
-      })
-    }
+    queue.push(...chunkWireOps(ops).map((ops) => ({ workflowId, ops })))
   }
 
   function flush(): void {
     seal()
     pump()
-  }
-
-  /**
-   * Whether `result` must be drained as a stale credit instead of settling
-   * the in-flight batch: it names ops that are not in flight (a retired
-   * batch's own result), or it is anonymous (empty lists, no failure
-   * `op_id`) while a credit from an earlier retirement is still outstanding
-   * - either way indistinguishable from this batch's own result otherwise.
-   */
-  function namesRetiredBatch(result: OpsResultView, batch: InFlight): boolean {
-    const identified = [...result.applied, ...result.skipped]
-    if (result.failure?.op_id) identified.push(result.failure.op_id)
-    if (identified.length > 0) {
-      return !identified.some((opId) => batch.opIds.has(opId))
-    }
-    return staleAnonymousBudget > 0
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
@@ -434,17 +324,25 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       if (staleAnonymousBudget > 0) staleAnonymousBudget--
       return
     }
-    if (namesRetiredBatch(result, inFlight)) {
-      if (staleAnonymousBudget > 0) staleAnonymousBudget--
+    const identified = [...result.applied, ...result.skipped]
+    if (result.failure?.op_id) identified.push(result.failure.op_id)
+    if (identified.length > 0) {
+      if (!identified.some((opId) => inFlight!.opIds.has(opId))) {
+        // Names ops that are not in flight: a retired batch's own result, if
+        // a credit is outstanding for one.
+        if (staleAnonymousBudget > 0) staleAnonymousBudget--
+        return
+      }
+      settle({ state: 'acknowledged', ops: inFlight.ops, result })
       return
     }
-    settle({
-      state: 'acknowledged',
-      ops: inFlight.ops,
-      result,
-      workflowId: inFlight.workflowId,
-      admissionMetadata: inFlight.admissionMetadata
-    })
+    // Anonymous failure (empty lists, no failure op_id): only attribute it
+    // to the in-flight batch once no stale credit could explain it.
+    if (staleAnonymousBudget > 0) {
+      staleAnonymousBudget--
+      return
+    }
+    settle({ state: 'acknowledged', ops: inFlight.ops, result })
   })
 
   return {
@@ -459,12 +357,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return queue.length + (inFlight ? 1 : 0) + (open ? 1 : 0)
     },
     pendingOps() {
-      const groups = [
-        ...(inFlight ? [inFlight] : []),
-        ...queue,
-        ...(open ? [open] : [])
-      ]
-      return groups.map(({ workflowId, ops }) => ({ workflowId, ops }))
+      const batches = inFlight
+        ? [{ workflowId: inFlight.workflowId, ops: inFlight.ops }]
+        : []
+      return [...batches, ...queue, ...(open ? [open] : [])]
     },
     suspend() {
       suspended = true
