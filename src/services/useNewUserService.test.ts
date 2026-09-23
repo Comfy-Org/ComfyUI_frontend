@@ -16,6 +16,11 @@ Object.defineProperty(window, 'localStorage', {
 })
 
 import { useNewUserService } from '@/services/useNewUserService'
+import { reportError } from '@/platform/telemetry/reportError'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 describe('useNewUserService', () => {
   let service: ReturnType<typeof useNewUserService>
@@ -164,6 +169,10 @@ describe('useNewUserService', () => {
       await service.initializeIfNewUser()
 
       expect(service.isNewUser()).toBe(true)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'error_parsing_workflow_draft_index',
+        level: 'warning'
+      })
     })
 
     it('should identify new user when tutorial is explicitly false', async () => {

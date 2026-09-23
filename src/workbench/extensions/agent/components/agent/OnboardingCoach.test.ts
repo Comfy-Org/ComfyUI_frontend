@@ -5,9 +5,14 @@ import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const KEY = 'coach-test'
 const STEPS: CoachStep[] = [
@@ -273,5 +278,68 @@ describe('OnboardingCoach', () => {
     })
     await waitFor(() => expect(dialog).toBeVisible())
     expect(useOnboardingOverlayStore().active).toBe(true)
+  })
+
+  describe('reporting a step whose target never mounts', () => {
+    const renderMissing = (target: string) =>
+      render(OnboardingCoach, {
+        props: {
+          steps: [{ ...STEPS[0], target }],
+          storageKey: `coach-missing-${target}`
+        },
+        global: { plugins: [i18n] }
+      })
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.mocked(reportError).mockClear()
+    })
+
+    it('reports once the grace period has fully passed', async () => {
+      renderMissing('#never-a')
+
+      await vi.advanceTimersByTimeAsync(7_999)
+      expect(reportError).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        errorType: 'failure_locating_agent_coach_target',
+        level: 'warning',
+        context: { target: '#never-a', step: 1 }
+      })
+    })
+
+    it('reports a target once per session however often the panel remounts', async () => {
+      renderMissing('#never-b').unmount()
+      renderMissing('#never-b')
+      await vi.advanceTimersByTimeAsync(8_000)
+      renderMissing('#never-b')
+      await vi.advanceTimersByTimeAsync(8_000)
+
+      expect(reportError).toHaveBeenCalledOnce()
+    })
+
+    it('stays quiet when the target arrives inside the grace period', async () => {
+      renderMissing('#late-c')
+      await vi.advanceTimersByTimeAsync(5_000)
+      const target = document.createElement('div')
+      target.id = 'late-c'
+      document.body.appendChild(target)
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(reportError).not.toHaveBeenCalled()
+      target.remove()
+    })
+
+    it('stays quiet when the panel closes before the grace period ends', async () => {
+      const { unmount } = renderMissing('#never-d')
+      await vi.advanceTimersByTimeAsync(5_000)
+      unmount()
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
   })
 })

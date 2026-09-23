@@ -2,6 +2,8 @@ import { useStorage } from '@vueuse/core'
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 export interface CoachStep {
   target: string
   title: string
@@ -36,6 +38,18 @@ export function adoptSharedOnboardingFlag(scopedKey: string): void {
   } catch {
     // Storage is unavailable, so the coach marks run again.
   }
+}
+
+const reportedMissingTargets = new Set<string>()
+/** Once per target per session: every panel mount would otherwise repeat it. */
+export function reportMissingCoachTarget(target: string, step: number): void {
+  if (reportedMissingTargets.has(target)) return
+  reportedMissingTargets.add(target)
+  reportError(new Error('Agent coach target never mounted'), {
+    errorType: 'failure_locating_agent_coach_target',
+    level: 'warning',
+    context: { target, step }
+  })
 }
 
 export function useOnboarding(

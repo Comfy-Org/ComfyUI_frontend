@@ -10,6 +10,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useNewUserService } from '@/services/useNewUserService'
@@ -124,10 +125,19 @@ export const useFirstRunEntry = createSharedComposable(() => {
   /** True once this boot's first-run stages have run, false if the grace period passes first. */
   function whenStartupDecided(): Promise<boolean> {
     if (startupDecided.value) return Promise.resolve(true)
-    startupDecision ??= until(startupDecided).toBe(true, {
-      timeout: STARTUP_DECISION_TIMEOUT_MS,
-      throwOnTimeout: false
-    })
+    startupDecision ??= until(startupDecided)
+      .toBe(true, {
+        timeout: STARTUP_DECISION_TIMEOUT_MS,
+        throwOnTimeout: false
+      })
+      .then((decided) => {
+        if (!decided)
+          reportError(new Error('First-run stages never reported a decision'), {
+            errorType: 'failure_settling_first_run_decision',
+            level: 'warning'
+          })
+        return decided
+      })
     return startupDecision
   }
 
@@ -136,7 +146,10 @@ export const useFirstRunEntry = createSharedComposable(() => {
     try {
       await settingStore.set('Comfy.TutorialCompleted', true)
     } catch (error) {
-      console.error('Failed to persist Comfy.TutorialCompleted', error)
+      reportError(error, {
+        errorType: 'failure_writing_tutorial_completed_setting',
+        level: 'error'
+      })
     }
   }
 

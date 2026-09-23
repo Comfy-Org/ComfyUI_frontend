@@ -15,7 +15,13 @@ import Button from '@/components/ui/button/Button.vue'
 import { clampSpotlight } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
-import { useOnboarding } from '../../composables/agent/useOnboarding'
+import {
+  reportMissingCoachTarget,
+  useOnboarding
+} from '../../composables/agent/useOnboarding'
+
+/** Long enough for any panel layout to settle; a target still absent is a regression. */
+const TARGET_MISSING_AFTER_MS = 8000
 
 const { steps, storageKey } = defineProps<{
   steps: CoachStep[]
@@ -70,9 +76,23 @@ targetObserver.observe(document.body, {
   childList: true,
   subtree: true
 })
+let targetMissingTimer: ReturnType<typeof setTimeout> | undefined
+watch(
+  [active, target],
+  ([isActive, found]) => {
+    clearTimeout(targetMissingTimer)
+    if (!isActive || found) return
+    targetMissingTimer = setTimeout(
+      () => reportMissingCoachTarget(step.value.target, index.value + 1),
+      TARGET_MISSING_AFTER_MS
+    )
+  },
+  { immediate: true }
+)
 onBeforeUnmount(() => {
   targetObserver.disconnect()
   clearTimeout(targetRetryTimer)
+  clearTimeout(targetMissingTimer)
 })
 
 watch(

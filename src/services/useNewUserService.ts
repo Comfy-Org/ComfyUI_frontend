@@ -1,6 +1,7 @@
 import { ref, shallowRef } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 
 function hasV2DraftHistory(raw: string | null): boolean {
   if (!raw) return false
@@ -15,7 +16,11 @@ function hasV2DraftHistory(raw: string | null): boolean {
         ? Object.keys(parsed.entries).length
         : 0
     return orderLength > 0 || entriesCount > 0
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_parsing_workflow_draft_index',
+      level: 'warning'
+    })
     return false
   }
 }

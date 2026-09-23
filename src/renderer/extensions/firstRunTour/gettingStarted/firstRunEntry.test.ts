@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 
@@ -63,6 +64,9 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
 }))
@@ -277,6 +281,36 @@ describe('useFirstRunEntry', () => {
       } finally {
         vi.useRealTimers()
       }
+    })
+
+    it('reports a boot that never decided once, however many surfaces waited', async () => {
+      vi.useFakeTimers()
+      try {
+        const entry = useFirstRunEntry()
+        vi.mocked(reportError).mockClear()
+        void entry.whenStartupDecided()
+        void entry.whenStartupDecided()
+
+        await vi.advanceTimersByTimeAsync(60_000)
+
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+          errorType: 'failure_settling_first_run_decision',
+          level: 'warning'
+        })
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('reports nothing when the boot decides inside the grace period', async () => {
+      const entry = useFirstRunEntry()
+      vi.mocked(reportError).mockClear()
+      const decision = entry.whenStartupDecided()
+
+      await entry.handleStartupOutcome('fresh')
+
+      await expect(decision).resolves.toBe(true)
+      expect(reportError).not.toHaveBeenCalled()
     })
   })
 
@@ -652,5 +686,18 @@ describe('useFirstRunEntry', () => {
       'Comfy.TutorialCompleted',
       true
     )
+  })
+
+  it('reports a tutorial flag write that fails instead of only logging it', async () => {
+    const entry = useFirstRunEntry()
+    vi.mocked(useSettingStore().set).mockRejectedValue(new Error('503'))
+    vi.mocked(reportError).mockClear()
+
+    await entry.dismissGettingStarted()
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      errorType: 'failure_writing_tutorial_completed_setting',
+      level: 'error'
+    })
   })
 })
