@@ -35,7 +35,8 @@ inputs:
 outputs:
   should-run:
     description: >
-      Any file outside `apps/`, `docs/`, `.storybook/`, or `**/*.md` changed.
+      Any file outside `apps/`, `docs/`, `.storybook/`, `.github/pr-images/`, or
+      `**/*.md` changed.
       With `evaluate-candidate` set to 'true', also evaluated for merge-queue
       candidates, over the range from the merge group's parent commit to this
       candidate's synthetic head.
@@ -109,4 +110,5 @@ runs:
             - '!apps/**'
             - '!docs/**'
             - '!.storybook/**'
+            - '!.github/pr-images/**'
             - '!**/*.md'
