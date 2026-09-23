@@ -58,6 +58,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   createMockLoadedWorkflow,
@@ -234,7 +236,9 @@ const telemetry = vi.hoisted(() => ({
   trackAgentAttachButtonClicked: vi.fn(),
   trackAgentCloseButtonClicked: vi.fn(),
   trackAgentPanelOpened: vi.fn(),
-  trackAgentPanelClosed: vi.fn()
+  trackAgentPanelClosed: vi.fn(),
+  trackAgentOnboardingNotShown: vi.fn(),
+  trackOnboardingTour: vi.fn()
 }))
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => telemetry
@@ -533,6 +537,99 @@ describe('AgentPanelRoot onboarding', () => {
       await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
     ).toBeInTheDocument()
     expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
+  })
+
+  it('reports a coach held back by another tour', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-tour'
+    })
+    const firstRunHolds = ref(true)
+    registerTour(
+      'firstRun',
+      () =>
+        Promise.resolve([
+          { kind: 'spotlight', name: 'run', placement: 'center' }
+        ]),
+      firstRunHolds
+    )
+    const tourStore = useOnboardingTourStore()
+    tourStore.replayTour('firstRun')
+    await vi.waitFor(() => expect(tourStore.activeTour).toBe('firstRun'))
+    try {
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(
+        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).not.toBeInTheDocument()
+      expect(
+        telemetry.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'tour_active' })
+    } finally {
+      firstRunHolds.value = false
+    }
+  })
+
+  it('stays quiet when App Mode pauses a coach that was already on screen', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-interrupted'
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+
+    canvasStore.linearMode = true
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).not.toBeInTheDocument()
+    )
+
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+  })
+
+  it('reports the deferral once the workspace resolves after mount', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-late'
+    })
+
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
+    )
+  })
+
+  it('reports a deferral once however often the panel remounts', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-remount'
+    })
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } }).unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(
+      telemetry.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
+  })
+
+  it('says nothing about App Mode to a user who already finished the tour', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-seen'
+    })
+    localStorage.setItem(
+      'Comfy.AgentPanel.onboarded.account-a.workspace-seen',
+      'true'
+    )
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
   })
 
   it('walks through the four cards and leaves the composer usable after Done', async () => {
@@ -1433,16 +1530,15 @@ describe('AgentPanelRoot attach flow', () => {
 
       dispatchDrag(target, 'dragenter', dragData)
       await nextTick()
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Drag and drop assets here'
-      )
+      const dropTarget = screen.getByRole('status')
+      expect(dropTarget).toHaveTextContent('Drag and drop assets here')
 
       expect(dispatchDrag(target, 'dragover', dragData)).toBe(true)
 
       const claimed = dispatchDrag(target, 'drop', dragData)
       expect(claimed).toBe(true)
       await nextTick()
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(dropTarget).not.toBeInTheDocument()
 
       expect(
         within(await screen.findByTestId('composer-asset-section')).getByText(
@@ -2297,6 +2393,16 @@ describe('AgentPanelRoot feedback capture', () => {
     store.startTurn(turnId)
     store.ingest(
       zAgentWsEventForTest({
+        type: 'agent_active_tab',
+        data: {
+          workflow_id: 'wf-rated',
+          message_id: 'turn-9',
+          thread_id: 'th'
+        }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
         type: 'agent_message_delta',
         data: { delta: 'Here is a cat', message_id: 'turn-9', thread_id: 'th' }
       })
@@ -2317,8 +2423,80 @@ describe('AgentPanelRoot feedback capture', () => {
     )
 
     expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-9', vote: 'up', workflow_id: null }],
-      [{ message_id: 'turn-9', vote: null, workflow_id: null }]
+      [{ message_id: 'turn-9', vote: 'up', workflow_id: 'wf-rated' }],
+      [{ message_id: 'turn-9', vote: null, workflow_id: 'wf-rated' }]
+    ])
+  })
+
+  it('attributes the vote to the last tab the rated message linked', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const store = useAgentConversationStore()
+    const turnId = 'turn-10' as TurnId
+    store.recordUser(turnId, 'make two cats')
+    store.startTurn(turnId)
+    for (const workflowId of ['wf-first', 'wf-last']) {
+      store.ingest(
+        zAgentWsEventForTest({
+          type: 'agent_active_tab',
+          data: {
+            workflow_id: workflowId,
+            message_id: 'turn-10',
+            thread_id: 'th'
+          }
+        })
+      )
+    }
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'Two cats', message_id: 'turn-10', thread_id: 'th' }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: 'turn-10', thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Helpful' })
+    )
+
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-10', vote: 'up', workflow_id: 'wf-last' }]
+    ])
+  })
+
+  it('reports a null workflow when the rated message never linked a tab', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    const store = useAgentConversationStore()
+    const turnId = 'turn-11' as TurnId
+    store.recordUser(turnId, 'hello')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_delta',
+        data: { delta: 'Hi there', message_id: 'turn-11', thread_id: 'th' }
+      })
+    )
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_message_done',
+        data: { message_id: 'turn-11', thread_id: 'th', usage: null }
+      })
+    )
+    await nextTick()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Helpful' })
+    )
+
+    expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
+      [{ message_id: 'turn-11', vote: 'up', workflow_id: null }]
     ])
   })
 })

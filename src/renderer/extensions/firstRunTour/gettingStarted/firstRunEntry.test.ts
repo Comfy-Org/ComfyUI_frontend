@@ -1,6 +1,7 @@
 import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 
@@ -82,6 +83,10 @@ vi.mock('@/platform/settings/settingStore', () => ({
     get: (key: string) => mocks.settings[key],
     set: mocks.setSetting
   })
+}))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
 }))
 
 vi.mock('../tour/useFirstRunTourController', () => ({
@@ -655,5 +660,17 @@ describe('useFirstRunEntry', () => {
       'Comfy.TutorialCompleted',
       true
     )
+  })
+
+  it('reports a tutorial flag write that fails instead of only logging it', async () => {
+    const entry = useFirstRunEntry()
+    mocks.setSetting.mockRejectedValue(new TypeError('Failed to fetch'))
+
+    await entry.dismissGettingStarted()
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      errorType: 'failure_writing_tutorial_completed_setting',
+      level: 'warning'
+    })
   })
 })
