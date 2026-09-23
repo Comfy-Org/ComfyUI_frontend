@@ -61,7 +61,7 @@ vi.mock(import('@vueuse/router'), () => ({ useRouteHash: vi.fn() }))
 
 vi.mock(import('@/services/litegraphService'))
 
-const mockFitView = vi.mocked(useLitegraphService().fitView)
+const litegraphService = vi.mocked(useLitegraphService())
 
 const mockCanvas = app.canvas
 
@@ -182,12 +182,12 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       store.restoreViewport('root')
 
-      expect(mockFitView).not.toHaveBeenCalled()
+      expect(litegraphService.fitView).not.toHaveBeenCalled()
       expect(rafCallbacks).toHaveLength(1)
 
       rafCallbacks[0](performance.now())
 
-      expect(mockFitView).toHaveBeenCalledOnce()
+      expect(litegraphService.fitView).toHaveBeenCalledOnce()
 
       mockGraph.nodes = []
       mockGraph._nodes = []
@@ -206,7 +206,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(rafCallbacks).toHaveLength(1)
       rafCallbacks[0](performance.now())
 
-      expect(mockFitView).not.toHaveBeenCalled()
+      expect(litegraphService.fitView).not.toHaveBeenCalled()
     })
 
     it('fits the first visit on the next frame', () => {
@@ -221,7 +221,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(rafCallbacks).toHaveLength(1)
 
       rafCallbacks[0](performance.now())
-      expect(mockFitView).toHaveBeenCalledOnce()
+      expect(litegraphService.fitView).toHaveBeenCalledOnce()
       expect(rafCallbacks).toHaveLength(1)
 
       mockGraph.nodes = []
@@ -240,7 +240,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       rafCallbacks[0](performance.now())
 
-      expect(mockFitView).not.toHaveBeenCalled()
+      expect(litegraphService.fitView).not.toHaveBeenCalled()
     })
   })
 
