@@ -71,7 +71,10 @@ const adapterState = vi.hoisted(() => ({
 
 const materializerState = vi.hoisted(() => ({
   reconcileAgentAdapters: vi.fn(() => [] as NodeId[]),
-  needsSubgraphDefinitionBody: vi.fn(() => true)
+  subgraphDefinitionReadState: vi.fn(
+    (rootGraph: MaterializableGraph['rootGraph'], id: string) =>
+      rootGraph.subgraphs.has(id) ? ('registered' as const) : ('missing' as const)
+  )
 }))
 
 // The reader is module-mocked too: these tests only check that the composable
@@ -149,7 +152,7 @@ vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
 
 vi.mock(import('./agentNodeMaterializer'), () => ({
   reconcileAgentAdapters: materializerState.reconcileAgentAdapters,
-  needsSubgraphDefinitionBody: materializerState.needsSubgraphDefinitionBody
+  subgraphDefinitionReadState: materializerState.subgraphDefinitionReadState
 }))
 
 vi.mock(import('./agentSubgraphDefinitions'), () => ({
@@ -266,9 +269,11 @@ describe('useAgentCrdtFollower', () => {
     bridgeState.current = null
     clientState.transport = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
-    materializerState.needsSubgraphDefinitionBody
+    materializerState.subgraphDefinitionReadState
       .mockReset()
-      .mockReturnValue(true)
+      .mockImplementation((rootGraph, id) =>
+        rootGraph.subgraphs.has(id) ? 'registered' : 'missing'
+      )
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
   })
@@ -996,18 +1001,19 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('does not deep-copy a definition body after registration already failed', () => {
-      materializerState.needsSubgraphDefinitionBody.mockReturnValue(false)
+      materializerState.subgraphDefinitionReadState.mockReturnValue('failed')
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
 
       expect(
-        materializerState.needsSubgraphDefinitionBody
+        materializerState.subgraphDefinitionReadState
       ).toHaveBeenCalledWith(fakeGraph.rootGraph, fakeDefinitions[0].id)
       expect(definitionsState.readSubgraphDefinitions).not.toHaveBeenCalled()
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
-        []
+        [],
+        new Set([fakeDefinitions[0].id])
       )
       unmount()
     })

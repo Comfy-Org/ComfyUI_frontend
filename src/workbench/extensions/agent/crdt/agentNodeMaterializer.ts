@@ -65,15 +65,21 @@ export type MaterializableGraph = Pick<
  * @param subgraphDefinitions explicitly created definitions present in the
  * document. Root nodes typed by a definition id can only materialize once the
  * definition is registered on the root graph.
+ * @param pendingDefinitionIds definition ids whose bodies were deliberately
+ * not read but whose dependent nodes must remain pending.
  * @returns ids that received a new live node.
  */
 export function reconcileAgentAdapters(
   graph: MaterializableGraph,
-  subgraphDefinitions: ExportedSubgraph[] = []
+  subgraphDefinitions: ExportedSubgraph[] = [],
+  pendingDefinitionIds: ReadonlySet<string> = new Set()
 ): NodeId[] {
   return runMintPortsSuppressed(() =>
     useWidgetValueStore().withLocalDirtyTrackingSuppressed(() => {
       const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
+      for (const id of pendingDefinitionIds) {
+        if (!graph.rootGraph.subgraphs.has(id)) pending.add(id)
+      }
       return reconcile(graph, pending)
     })
   )
@@ -93,14 +99,14 @@ const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
  * a failure whose telemetry is already deduplicated. Explicit callers that
  * supply a fresh body to `reconcileAgentAdapters` still retry registration.
  */
-export function needsSubgraphDefinitionBody(
+export function subgraphDefinitionReadState(
   rootGraph: LGraph,
   definitionId: string
-): boolean {
-  return (
-    !rootGraph.subgraphs.has(definitionId) &&
-    !reportedDefinitionFailures.get(rootGraph)?.has(definitionId)
-  )
+): 'registered' | 'failed' | 'missing' {
+  if (rootGraph.subgraphs.has(definitionId)) return 'registered'
+  if (reportedDefinitionFailures.get(rootGraph)?.has(definitionId))
+    return 'failed'
+  return 'missing'
 }
 
 /**

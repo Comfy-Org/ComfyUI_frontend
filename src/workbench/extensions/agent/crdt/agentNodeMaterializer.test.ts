@@ -43,9 +43,10 @@ import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
+import { AgentCrdtProjection } from './agentCrdtProjection'
 import {
-  needsSubgraphDefinitionBody,
-  reconcileAgentAdapters
+  reconcileAgentAdapters,
+  subgraphDefinitionReadState
 } from './agentNodeMaterializer'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
@@ -1415,7 +1416,7 @@ describe('reconcileAgentAdapters', () => {
       const definitions = readSubgraphDefinitions(follower.doc)
 
       expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
-      expect(needsSubgraphDefinitionBody(graph, definition.id)).toBe(false)
+      expect(subgraphDefinitionReadState(graph, definition.id)).toBe('failed')
       expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
       // Same definition, same failure: one report, not one per frame.
       expect(reportError).toHaveBeenCalledOnce()
@@ -1430,6 +1431,35 @@ describe('reconcileAgentAdapters', () => {
       expect((instance as SubgraphNode).subgraph).toBe(
         graph.subgraphs.get(definition.id)
       )
+    })
+
+    it('keeps nodes pending when a failed definition body is skipped', () => {
+      configureShouldThrow = true
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'throws-on-configure')] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      const projection = new AgentCrdtProjection(
+        remoteMutations(graphScopeOf(graph)),
+        () => graph,
+        () => follower.doc
+      )
+
+      expect(projection.reconcileLiveGraph('workflow')).toEqual([])
+      expect(subgraphDefinitionReadState(graph, definition.id)).toBe('failed')
+      expect(projection.reconcileLiveGraph('workflow')).toEqual([])
+      expect(graph.getNodeById(toNodeId(1))).toBeNull()
+
+      configureShouldThrow = false
+      expect(
+        reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      ).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(SubgraphNode)
+      projection.destroy()
     })
 
     it('registers a valid sibling when another definition in the same frame fails', () => {
@@ -1519,7 +1549,7 @@ describe('reconcileAgentAdapters', () => {
       // createSubgraphs would silently mint a UUID for it, leaving the root
       // node's `type` pointing at an id the doc never registered.
       expect(graph.subgraphs.size).toBe(0)
-      expect(needsSubgraphDefinitionBody(graph, definition.id)).toBe(false)
+      expect(subgraphDefinitionReadState(graph, definition.id)).toBe('failed')
       expect(created).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
         errorType: 'agent_subgraph_definitions_failed',

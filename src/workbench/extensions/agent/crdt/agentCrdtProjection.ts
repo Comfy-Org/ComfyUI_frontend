@@ -5,8 +5,8 @@ import type { NodeId } from '@/types/nodeId'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import {
-  needsSubgraphDefinitionBody,
-  reconcileAgentAdapters
+  reconcileAgentAdapters,
+  subgraphDefinitionReadState
 } from './agentNodeMaterializer'
 import {
   readSubgraphDefinitionIds,
@@ -71,13 +71,24 @@ export class AgentCrdtProjection {
     if (!graph) return []
     const followerDoc = this.getFollowerDoc()
     const definitionIds = readSubgraphDefinitionIds(followerDoc)
-    const needsDefinitionBody = definitionIds.some((id) =>
-      needsSubgraphDefinitionBody(graph.rootGraph, id)
+    const definitionStates = definitionIds.map((id) => ({
+      id,
+      state: subgraphDefinitionReadState(graph.rootGraph, id)
+    }))
+    const needsDefinitionBody = definitionStates.some(
+      ({ state }) => state === 'missing'
     )
     const definitions = needsDefinitionBody
       ? readSubgraphDefinitions(followerDoc)
       : []
-    const nodeIds = reconcileAgentAdapters(graph, definitions)
+    const failedDefinitionIds = new Set(
+      definitionStates
+        .filter(({ state }) => state === 'failed')
+        .map(({ id }) => id)
+    )
+    const nodeIds = failedDefinitionIds.size
+      ? reconcileAgentAdapters(graph, definitions, failedDefinitionIds)
+      : reconcileAgentAdapters(graph, definitions)
     // A frame that only wires or rewires nodes moves no layout, so nothing
     // else asks the canvas to paint the new links.
     graph.setDirtyCanvas(true, true)
