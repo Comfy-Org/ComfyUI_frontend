@@ -1,6 +1,8 @@
-import type { Rule } from 'eslint'
+import type { RuleTester } from 'oxlint/plugins-dev'
 
-export const noNewErrorThrow: Rule.RuleModule = {
+type Rule = Parameters<RuleTester['run']>[1]
+
+export const noNewErrorThrow: Rule = {
   meta: {
     type: 'problem',
     docs: {
@@ -17,7 +19,7 @@ export const noNewErrorThrow: Rule.RuleModule = {
       ThrowStatement(node) {
         const expression = node.argument
         if (
-          expression?.type !== 'NewExpression' ||
+          expression.type !== 'NewExpression' ||
           expression.callee.type !== 'Identifier' ||
           expression.callee.name !== 'Error' ||
           !context.sourceCode.isGlobalReference(expression.callee)

@@ -20,8 +20,6 @@ import {
 import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
-import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
-
 const extraFileExtensions = ['.vue']
 
 const commonGlobals = {
@@ -64,28 +62,6 @@ const commonParserOptions = {
   sourceType: 'module',
   extraFileExtensions
 } as const
-
-const useVirtualListRestriction = {
-  name: '@vueuse/core',
-  importNames: ['useVirtualList'],
-  message:
-    'useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead.'
-} as const
-
-const reportErrorRestrictions = [
-  {
-    name: '@sentry/vue',
-    importNames: ['captureException'],
-    message:
-      "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
-  },
-  {
-    name: '@datadog/browser-rum',
-    importNames: ['datadogRum'],
-    message:
-      "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
-  }
-] as const
 
 export default defineConfig([
   {
@@ -325,26 +301,6 @@ export default defineConfig([
     }
   },
 
-  {
-    name: 'comfy/no-new-error-throw',
-    files: ['src/**/*.{ts,tsx,vue}'],
-    ignores: [
-      'src/**/*.d.ts',
-      'src/**/*.{test,spec,stories}.{ts,tsx,vue}',
-      'src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**',
-      'src/**/{generated,vendor}/**',
-      'src/__ecs_matrix__/**',
-      'src/types/generatedManagerTypes.ts',
-      'src/types/vue-shim.d.ts'
-    ],
-    plugins: {
-      comfy: { rules: { 'no-new-error-throw': noNewErrorThrow } }
-    },
-    rules: {
-      'comfy/no-new-error-throw': 'error'
-    }
-  },
-
   // Turn off ESLint rules that are already handled by oxlint
   oxlint
     .buildFromOxlintConfigFile(
@@ -411,166 +367,11 @@ export default defineConfig([
       'vue/no-unused-properties': 'off'
     }
   },
-  // i18n import enforcement
-  // Vue components must use the useI18n() composable, not the global t/d/st/te
-  {
-    files: ['**/*.vue'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: '@/i18n',
-              importNames: ['t', 'd', 'te'],
-              message:
-                "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
-            },
-            useVirtualListRestriction,
-            ...reportErrorRestrictions
-          ]
-        }
-      ]
-    }
-  },
-  // Non-composable .ts files must use the global t/d/te, not useI18n()
-  {
-    files: ['**/*.ts'],
-    ignores: ['**/use[A-Z]*.ts', '**/*.test.ts', 'src/i18n.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: 'vue-i18n',
-              importNames: ['useI18n'],
-              message:
-                "useI18n() requires Vue setup context. Use `import { t } from '@/i18n'` instead."
-            },
-            useVirtualListRestriction,
-            ...reportErrorRestrictions
-          ]
-        }
-      ]
-    }
-  },
-  // Preserve the useVirtualList ban for files excluded from the useI18n rule.
-  {
-    files: ['**/use[A-Z]*.ts', '**/*.test.ts', 'src/i18n.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [useVirtualListRestriction, ...reportErrorRestrictions]
-        }
-      ]
-    }
-  },
-  {
-    files: ['**/*.test.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: '@vue/test-utils',
-              message:
-                'Use @testing-library/vue with @testing-library/user-event instead.'
-            }
-          ]
-        }
-      ]
-    }
-  },
   {
     name: 'comfy/enforce-sanitized-html-boundary',
     files: ['src/**/*.vue'],
     rules: {
       'vue/no-v-html': 'error'
-    }
-  },
-  {
-    files: ['apps/website/e2e/**/*.spec.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: '@playwright/test',
-              importNames: ['test', 'chromium', 'firefox', 'webkit', 'request'],
-              message:
-                'Use the blockExternalMedia fixture so website tests cannot access external services.'
-            },
-            {
-              name: 'playwright',
-              message: 'Use the blockExternalMedia fixture instead.'
-            },
-            {
-              name: 'vue-i18n',
-              importNames: ['useI18n'],
-              message: 'useI18n() requires Vue setup context.'
-            },
-            useVirtualListRestriction,
-            ...reportErrorRestrictions
-          ]
-        }
-      ]
-    }
-  },
-  // Browser tests must use comfyPageFixture, not raw @playwright/test test
-  {
-    files: ['browser_tests/tests/**/*.spec.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: '@playwright/test',
-              importNames: ['test'],
-              message:
-                "Use `comfyPageFixture as test` from the ComfyPage fixture module instead of raw `test` from '@playwright/test'."
-            }
-          ],
-          patterns: [
-            {
-              group: ['./**', '../**'],
-              message: 'Use the @e2e/ path alias instead of relative imports.'
-            },
-            {
-              group: ['@e2e/helpers', '@e2e/helpers/*'],
-              message:
-                'browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead.'
-            }
-          ]
-        }
-      ]
-    }
-  },
-  // Enforce @e2e/ alias — no relative imports in browser_tests (non-spec files)
-  {
-    files: ['browser_tests/**/*.ts'],
-    ignores: ['browser_tests/tests/**/*.spec.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['./**', '../**'],
-              message: 'Use the @e2e/ path alias instead of relative imports.'
-            },
-            {
-              group: ['@e2e/helpers', '@e2e/helpers/*'],
-              message:
-                'browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead.'
-            }
-          ]
-        }
-      ]
     }
   }
 ])

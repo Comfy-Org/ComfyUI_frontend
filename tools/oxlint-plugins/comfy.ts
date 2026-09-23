@@ -11,6 +11,7 @@ import type {
   noRestrictedPaths as NoRestrictedPaths,
   noUselessPathSegments as NoUselessPathSegments
 } from './importPaths'
+import type { noNewErrorThrow as NoNewErrorThrow } from './noNewErrorThrow'
 import type {
   noDeprecatedApiSchema as NoDeprecatedApiSchema,
   noDomInComputed as NoDomInComputed,
@@ -51,6 +52,9 @@ const { noRelativePackages, noRestrictedPaths, noUselessPathSegments } =
     noRestrictedPaths: typeof NoRestrictedPaths
     noUselessPathSegments: typeof NoUselessPathSegments
   }
+const { noNewErrorThrow } = requireFrom('./noNewErrorThrow.ts') as {
+  noNewErrorThrow: typeof NoNewErrorThrow
+}
 const {
   noDeprecatedApiSchema,
   noDomInComputed,
@@ -102,6 +106,7 @@ export default {
     'no-import-actual': noImportActual,
     'no-misplaced-spec-files': noMisplacedSpecFiles,
     'no-module-scope-vitest-mocks': noModuleScopeVitestMocks,
+    'no-new-error-throw': noNewErrorThrow,
     'no-new-zod-for-remote-api-types': noNewZodForRemoteApiTypes,
     'no-new-zod-server-response-schema': noNewZodServerResponseSchema,
     'no-persistent-litegraph-registration': noPersistentLiteGraphRegistration,

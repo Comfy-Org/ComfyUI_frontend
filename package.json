@@ -51,7 +51,7 @@
     "locale": "tsx scripts/i18n/update-locales.ts",
     "locale:check": "tsx scripts/i18n/update-locales.ts --check",
     "oxlint:audit": "oxlint --config tools/oxlint-plugins/vitestCleanup.config.json .",
-    "oxlint:main": "oxlint .storybook src scripts browser_tests tools/oxlint-plugins apps/website/src apps/website/scripts apps/billing-web/src packages/account-core/src packages/account-ui/src packages/billing-contract/src --type-aware",
+    "oxlint:main": "oxlint .storybook src scripts browser_tests tools/oxlint-plugins apps/website/src apps/website/scripts apps/website/e2e apps/billing-web/src apps/billing-web/e2e packages/account-core/src packages/account-ui/src packages/billing-contract/src --type-aware",
     "oxlint": "pnpm oxlint:main && pnpm oxlint:audit",
     "prepare": "pnpm exec husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
     "preview": "vite preview --config vite.config.mts",
