@@ -81,6 +81,15 @@ export const ROUTER_PROVIDERS: readonly RouterProvider[] = [
     ?.providers ?? [])
 ]
 
+function providerArgument(format: (provider: RouterProvider) => string) {
+  return {
+    values: ROUTER_PROVIDERS.map((provider) =>
+      provider === 'comfy' ? '' : format(provider)
+    ),
+    highlight: true
+  }
+}
+
 export const routerCodeTabs: Record<string, CodeTab> = {
   python: {
     name: 'Python',
@@ -88,37 +97,36 @@ export const routerCodeTabs: Record<string, CodeTab> = {
     segments: [
       'from comfy_sdk import Comfy\n\nclient = Comfy(api_key="comfyui-...")\n\nresult = client.models.run(\n    "' +
         ROUTER_MODEL +
-        '",\n    arguments={"prompt": "' +
+        '",\n    {"prompt": "' +
         ROUTER_PROMPT +
-        '"},\n    provider="',
-      { values: [...ROUTER_PROVIDERS], highlight: true },
-      '",\n)'
+        '"},',
+      providerArgument((provider) => `\n    model_provider="${provider}",`),
+      '\n)'
     ]
   },
   typescript: {
     name: 'TypeScript',
     lang: 'typescript',
     segments: [
-      "import { Comfy } from '@comfyorg/sdk'\n\nconst client = new Comfy({ apiKey: 'comfyui-...' })\n\nconst result = await client.models.run('" +
+      "import { comfy } from '@comfyorg/sdk'\n\ncomfy.config({ credentials: 'comfyui-...' })\n\nconst result = await comfy.models.run(\n  '" +
         ROUTER_MODEL +
-        "', {\n  arguments: { prompt: '" +
+        "',\n  { prompt: '" +
         ROUTER_PROMPT +
-        "' },\n  provider: '",
-      { values: [...ROUTER_PROVIDERS], highlight: true },
-      "',\n})"
+        "' }",
+      providerArgument((provider) => `,\n  { modelProvider: '${provider}' }`),
+      '\n)'
     ]
   },
-  // Router picks the serving provider from the model_provider query parameter;
-  // the route and the model's native body stay the same (docs.comfy.org/development/comfy-router/providers).
+  // Router serves the model's default provider unless the model_provider query
+  // parameter names an alternate; the route and the native body stay the same
+  // (docs.comfy.org/development/comfy-router/providers).
   curl: {
     name: 'cURL',
     lang: 'shell',
     wrap: true,
     segments: [
-      'curl -X POST "https://api.comfy.org/v2/models/' +
-        ROUTER_MODEL +
-        '?model_provider=',
-      { values: [...ROUTER_PROVIDERS], highlight: true },
+      'curl -X POST "https://api.comfy.org/v2/models/' + ROUTER_MODEL,
+      providerArgument((provider) => `?model_provider=${provider}`),
       '" \\\n  -H "X-API-Key: $COMFY_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -H "Idempotency-Key: $(uuidgen)" \\\n  -d \'{"prompt": "' +
         ROUTER_PROMPT +
         '"}\''

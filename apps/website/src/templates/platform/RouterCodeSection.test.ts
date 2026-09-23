@@ -10,16 +10,18 @@ describe('RouterCodeSection', () => {
     const providers = screen.getByRole('radiogroup', { name: 'Provider' })
 
     expect(providers).toBeTruthy()
-    expect(screen.getByText('comfy')).toBeTruthy()
+    const code = () =>
+      screen.getByText((_, element) => element?.tagName === 'CODE').textContent
+
+    expect(code()).not.toContain('model_provider')
 
     await userEvent.click(screen.getByRole('radio', { name: 'fal' }))
 
-    expect(screen.getByText('fal')).toBeTruthy()
-    expect(screen.queryByText('comfy')).toBeNull()
+    expect(code()).toContain('model_provider="fal"')
 
     await userEvent.click(screen.getByRole('radio', { name: 'Runware' }))
 
-    expect(screen.getByText('runware')).toBeTruthy()
-    expect(screen.queryByText('fal')).toBeNull()
+    expect(code()).toContain('model_provider="runware"')
+    expect(code()).not.toContain('"fal"')
   })
 })

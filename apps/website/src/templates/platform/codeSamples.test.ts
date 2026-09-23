@@ -12,20 +12,21 @@ function resolve(segments: CodeSegment[], provider: number): string {
 }
 
 describe('routerCodeTabs', () => {
-  it('cycles every supported provider in each language sample', () => {
-    const providers = ['comfy', 'fal', 'runware', 'wavespeed']
-
+  it('runs on Comfy by default and names only alternate providers', () => {
     for (const tab of Object.values(routerCodeTabs)) {
-      const providerSegment = tab.segments.find(
-        (segment) => typeof segment !== 'string' && segment.highlight
-      )
-
-      expect(providerSegment).toEqual({ values: providers, highlight: true })
-      expect(tab.lang).toBeDefined()
+      expect(resolve(tab.segments, 0)).not.toMatch(/provider/i)
     }
   })
 
-  it('copies as a working Router request for the chosen provider', () => {
+  it.for([
+    { tab: 'curl', index: 1, expected: '?model_provider=fal"' },
+    { tab: 'python', index: 2, expected: 'model_provider="runware",' },
+    { tab: 'typescript', index: 3, expected: "{ modelProvider: 'wavespeed' }" }
+  ])('selects $expected in the $tab sample', ({ tab, index, expected }) => {
+    expect(resolve(routerCodeTabs[tab].segments, index)).toContain(expected)
+  })
+
+  it('copies as a working Router request', () => {
     expect(resolve(routerCodeTabs.curl.segments, 1)).toBe(
       'curl -X POST "https://api.comfy.org/v2/models/openai/gpt-image-2?model_provider=fal" \\\n' +
         '  -H "X-API-Key: $COMFY_API_KEY" \\\n' +
@@ -33,8 +34,8 @@ describe('routerCodeTabs', () => {
         '  -H "Idempotency-Key: $(uuidgen)" \\\n' +
         '  -d \'{"prompt": "aerial view of a neon coral reef at dusk"}\''
     )
-    expect(resolve(routerCodeTabs.python.segments, 2)).toContain(
-      'provider="runware"'
+    expect(resolve(routerCodeTabs.typescript.segments, 0)).toContain(
+      "import { comfy } from '@comfyorg/sdk'"
     )
   })
 })
