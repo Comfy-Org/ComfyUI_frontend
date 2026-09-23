@@ -94,7 +94,11 @@ export function useAgentConsent() {
           const saved = persistOnAccept
             ? await consentStore.accept(expectedIdentity)
             : true
-          if (saved)
+          // Only a persisted acceptance resolves here. Without `persistOnAccept`
+          // this card is the first half of the signed-out flow, which still has
+          // a sign-in and a real save to clear before consent exists, so that
+          // path reports its own acceptance once those land.
+          if (persistOnAccept && saved)
             useTelemetry()?.trackAgentConsentResolved({ decision: 'accepted' })
           closeWith(saved)
         } catch (error) {
@@ -169,6 +173,7 @@ export function useAgentConsent() {
       const decisionIdentity = await consentStore.ensureScope()
       if (!decisionIdentity || !(await consentStore.accept(decisionIdentity)))
         return null
+      useTelemetry()?.trackAgentConsentResolved({ decision: 'accepted' })
       return decisionIdentity
     } catch (error) {
       reportError(error, {

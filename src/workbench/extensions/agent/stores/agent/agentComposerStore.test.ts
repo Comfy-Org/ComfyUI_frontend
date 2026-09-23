@@ -136,4 +136,39 @@ describe('composer prompt origin (PM-1474 F11)', () => {
 
     expect(store.promptOrigin).toBe('typed')
   })
+
+  it('gives the origin back when a failed send returns the draft to the composer', () => {
+    const store = useAgentComposerStore()
+    store.setText('Upscale this image')
+    store.markSuggestedPrompt()
+    const id = store.startSubmission({
+      prompt: store.prompt,
+      attachments: [],
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+    store.settleSubmission(id, false)
+
+    expect(store.takeFailedSubmission()).toBeDefined()
+
+    expect(store.promptOrigin).toBe('suggestion')
+  })
+
+  it('leaves the origin alone when the failed draft is too stale to restore', () => {
+    const store = useAgentComposerStore()
+    store.markSuggestedPrompt()
+    const id = store.startSubmission({
+      prompt: store.prompt,
+      attachments: [],
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+    store.settleSubmission(id, false)
+    // The user has moved on and written something of their own since.
+    store.setText('never mind, do this instead')
+
+    expect(store.takeFailedSubmission()).toBeUndefined()
+
+    expect(store.promptOrigin).toBe('typed')
+  })
 })

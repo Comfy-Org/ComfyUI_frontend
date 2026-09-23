@@ -523,6 +523,9 @@ describe('useAgentConsent', () => {
       false
     )
     expect(onOpen).toHaveBeenCalledOnce()
+    expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
+      [{ decision: 'accepted' }]
+    ])
   })
 
   it('writes nothing when a signed-out Local user cancels sign-in', async () => {
@@ -540,6 +543,10 @@ describe('useAgentConsent', () => {
     expect(onOpen).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
     expect(useToastStore().add).not.toHaveBeenCalled()
+    // Accepting the card is only half of the signed-out flow. Consent was
+    // never persisted, so reporting it accepted would put a decision the user
+    // did not complete into the funnel.
+    expect(telemetry.trackAgentConsentResolved).not.toHaveBeenCalled()
   })
 
   it('reports sign-in loading failure without saving or opening and allows another attempt', async () => {

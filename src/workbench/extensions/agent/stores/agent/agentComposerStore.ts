@@ -81,6 +81,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     phase: 'pending' | 'failed'
     stopRequested: boolean
     revision: number
+    origin: AgentInputMethod
     snapshot: SubmittedDraft
   } | null>(null)
   let revision = 0
@@ -343,6 +344,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function startSubmission(snapshot: SubmittedDraft): number {
     resetPromptHistory()
+    // Held with the snapshot, not dropped: a send that fails puts this draft
+    // back in the composer, and the retry came from the same chip or edited
+    // prompt the first attempt did.
+    const origin = promptOrigin.value
     promptOrigin.value = 'typed'
     updateDraft({ text: '', references: [] })
     insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
@@ -352,6 +357,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       phase: 'pending',
       stopRequested: false,
       revision,
+      origin,
       snapshot
     }
     return id
@@ -378,7 +384,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     const failed = submission.value
     if (failed?.phase !== 'failed') return
     submission.value = null
-    if (failed.revision === revision) return failed.snapshot
+    if (failed.revision !== revision) return
+    promptOrigin.value = failed.origin
+    return failed.snapshot
   }
 
   function invalidateSubmission(): void {
