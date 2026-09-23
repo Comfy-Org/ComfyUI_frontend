@@ -1,6 +1,14 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 import type {
@@ -538,6 +546,35 @@ describe('usePaste', () => {
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
     })
   })
+
+  it.for([
+    { clipboard: 'node JSON', collaborator: 'pasteFromClipboard' },
+    { clipboard: 'an image', collaborator: 'createNode' }
+  ] as const)(
+    'pasting $clipboard while the canvas is select-only never reaches $collaborator',
+    ({ clipboard, collaborator }) => {
+      mockCanvas.selectOnly = true
+      onTestFinished(() => {
+        mockCanvas.selectOnly = false
+      })
+      const collaborators = {
+        pasteFromClipboard: mockCanvas.pasteFromClipboard,
+        createNode
+      }
+      usePaste()
+      const dataTransfer =
+        clipboard === 'an image'
+          ? createDataTransfer([createImageFile()])
+          : new DataTransfer()
+      if (clipboard === 'node JSON') dataTransfer.setData('text/plain', '{}')
+
+      document.dispatchEvent(
+        new ClipboardEvent('paste', { clipboardData: dataTransfer })
+      )
+
+      expect(collaborators[collaborator]).not.toHaveBeenCalled()
+    }
+  )
 
   it('should ignore paste when shift is down', () => {
     Object.assign(mockWorkspaceStore, { shiftDown: true })

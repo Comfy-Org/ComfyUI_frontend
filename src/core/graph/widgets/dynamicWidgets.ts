@@ -248,7 +248,11 @@ function dynamicComboWidget(
     }
     const result = commitMutatedInputs(node, previous, inputLinks)
     if (!result.ok) return false
-    for (const { input, link, slot } of result.replacements) {
+    //A callback can grow the group it lands on, shifting every input after
+    //it, so the slot captured before the batch is stale for later entries.
+    for (const { input, link } of result.replacements) {
+      const slot = node.inputs.indexOf(input)
+      if (slot === -1) continue
       node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
     }
     restoreRemovedValues(value, addedWidgetNames)
@@ -621,7 +625,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     : undefined
   if (!autogrowGroup) return
 
-  const { min = 1, inputSpecs } = autogrowGroup
+  const { min, inputSpecs } = autogrowGroup
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 
