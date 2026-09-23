@@ -352,6 +352,15 @@ describe('OnboardingCoach', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('stays quiet for a user who already finished the tour', async () => {
+      localStorage.setItem('coach-missing-#never-f', 'true')
+      renderMissing('#never-f')
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
     it('stays quiet when the panel closes before the grace period ends', async () => {
       const { unmount } = renderMissing('#never-d')
       await vi.advanceTimersByTimeAsync(5_000)
