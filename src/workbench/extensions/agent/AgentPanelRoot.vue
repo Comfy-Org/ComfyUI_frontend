@@ -2,7 +2,7 @@
 import './agentPanel.css'
 
 import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
-import { useClipboard } from '@vueuse/core'
+import { useClipboard, useStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -64,7 +64,9 @@ import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStor
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
+  SHARED_ONBOARDING_KEY,
   adoptSharedOnboardingFlag,
+  reportCoachDeferred,
   scopedOnboardingKey
 } from './composables/agent/useOnboarding'
 
@@ -280,6 +282,28 @@ watch(
   { immediate: true }
 )
 const { activeTour } = storeToRefs(useOnboardingTourStore())
+const coachDeferredBy = computed(() =>
+  canvasStore.linearMode
+    ? 'app_mode'
+    : activeTour.value !== null
+      ? 'tour_active'
+      : null
+)
+const coachSeen = useStorage(
+  () => onboardingKey.value ?? SHARED_ONBOARDING_KEY,
+  false,
+  undefined,
+  { writeDefaults: false }
+)
+watch(
+  () =>
+    consentAccepted.value && !coachSeen.value ? coachDeferredBy.value : null,
+  (reason) => {
+    if (reason && onboardingKey.value)
+      reportCoachDeferred(reason, onboardingKey.value)
+  },
+  { immediate: true }
+)
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -1418,12 +1442,7 @@ function onPanelDrop(event: DragEvent): void {
       </template>
     </AgentPanel>
     <OnboardingCoach
-      v-if="
-        consentAccepted &&
-        onboardingKey &&
-        !canvasStore.linearMode &&
-        activeTour === null
-      "
+      v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
       :steps="coachSteps"
       :storage-key="onboardingKey"
     />

@@ -272,6 +272,18 @@ describe('HostTelemetrySink', () => {
         workflow_id: 'workflow-1',
         target: 'active_tab_switch'
       }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_NOT_OFFERED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentNotOffered({ reason: 'tour_active' }),
+      properties: { reason: 'tour_active' }
+    },
+    {
+      name: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentOnboardingNotShown({ reason: 'target_missing' }),
+      properties: { reason: 'target_missing' }
     }
   ])('forwards $name to the host bridge', ({ name, track, properties }) => {
     track(new HostTelemetrySink())

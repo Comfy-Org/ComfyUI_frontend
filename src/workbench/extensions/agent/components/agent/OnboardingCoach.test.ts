@@ -5,11 +5,13 @@ import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'
 
+vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
@@ -302,6 +304,9 @@ describe('OnboardingCoach', () => {
         level: 'warning',
         context: { target: '#never-a', step: 1 }
       })
+      expect(
+        useTelemetry()!.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'target_missing' })
     })
 
     it('reports a target once per session however often the panel remounts', async () => {

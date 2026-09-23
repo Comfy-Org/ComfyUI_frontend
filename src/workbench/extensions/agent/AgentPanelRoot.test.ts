@@ -48,6 +48,8 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { reportError } from '@/platform/telemetry/reportError'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { registerTour } from '@/platform/onboarding/onboardingTours'
 import {
   saveSelection,
   savedSelectionKeys,
@@ -523,6 +525,9 @@ describe('AgentPanelRoot onboarding', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(
+      telemetry.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
     await userEvent.type(screen.getByRole('textbox'), 'Explain this app')
     expect(screen.getByRole('textbox')).toHaveTextContent('Explain this app')
     expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
@@ -533,6 +538,44 @@ describe('AgentPanelRoot onboarding', () => {
       await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
     ).toBeInTheDocument()
     expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
+  })
+
+  it('reports a coach held back by another tour', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-tour'
+    })
+    const firstRunHolds = ref(true)
+    registerTour(
+      'firstRun',
+      () =>
+        Promise.resolve([
+          { kind: 'spotlight', name: 'run', placement: 'center' }
+        ]),
+      firstRunHolds
+    )
+    const tourStore = useOnboardingTourStore()
+    tourStore.replayTour('firstRun')
+    await vi.waitFor(() => expect(tourStore.activeTour).toBe('firstRun'))
+    try {
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(
+        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).not.toBeInTheDocument()
+      expect(
+        telemetry.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'tour_active' })
+    } finally {
+      firstRunHolds.value = false
+    }
+  })
+
+  it('says nothing about App Mode to a user who already finished the tour', async () => {
+    localStorage.setItem(SCOPED_KEY, 'true')
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
   })
 
   it('walks through the four cards and leaves the composer usable after Done', async () => {

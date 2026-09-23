@@ -2,7 +2,9 @@ import { useStorage } from '@vueuse/core'
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { AgentOnboardingNotShownReason } from '@/platform/telemetry/types'
 
 export interface CoachStep {
   target: string
@@ -12,7 +14,7 @@ export interface CoachStep {
   toolbarTarget?: string
 }
 
-const SHARED_ONBOARDING_KEY = 'Comfy.AgentPanel.onboarded'
+export const SHARED_ONBOARDING_KEY = 'Comfy.AgentPanel.onboarded'
 
 export function scopedOnboardingKey(
   userId: string | undefined,
@@ -45,11 +47,24 @@ const reportedMissingTargets = new Set<string>()
 export function reportMissingCoachTarget(target: string, step: number): void {
   if (reportedMissingTargets.has(target)) return
   reportedMissingTargets.add(target)
+  useTelemetry()?.trackAgentOnboardingNotShown({ reason: 'target_missing' })
   reportError(new Error('Agent coach target never mounted'), {
     errorType: 'failure_locating_agent_coach_target',
     level: 'warning',
     context: { target, step }
   })
+}
+
+const reportedDeferrals = new Set<string>()
+/** Once per scope and reason per session, like the tour engine's `not_started`. */
+export function reportCoachDeferred(
+  reason: Exclude<AgentOnboardingNotShownReason, 'target_missing'>,
+  scope: string
+): void {
+  const key = `${scope}:${reason}`
+  if (reportedDeferrals.has(key)) return
+  reportedDeferrals.add(key)
+  useTelemetry()?.trackAgentOnboardingNotShown({ reason })
 }
 
 export function useOnboarding(
