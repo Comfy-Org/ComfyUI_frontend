@@ -20,12 +20,14 @@ interface WorkflowSelectionOptions {
   resolver: ReturnType<typeof useAgentWorkflowResolver>
   canSelectTarget: () => boolean
   warnWorkflowUnavailable: () => void
+  recoverWorkflow: (workflowId: string) => Promise<ComfyWorkflow | null>
 }
 
 export function useAgentWorkflowSelection({
   resolver,
   canSelectTarget,
-  warnWorkflowUnavailable
+  warnWorkflowUnavailable,
+  recoverWorkflow
 }: WorkflowSelectionOptions) {
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
@@ -201,7 +203,21 @@ export function useAgentWorkflowSelection({
     if (workflowId === undefined) return
     await refreshCloudWorkflowIds()
     if (!isCurrent()) return
-    const target = boundOrOpenWorkflowFor(workflowId)
+    let target = boundOrOpenWorkflowFor(workflowId)
+    let recovered = false
+    if (target === null) {
+      try {
+        target = await recoverWorkflow(workflowId)
+        recovered = target !== null
+      } catch {
+        target = null
+      }
+    }
+    if (!isCurrent()) {
+      if (recovered && target !== null)
+        await workflowStore.closeWorkflow(target)
+      return
+    }
     if (target === null) {
       panelStore.setWorkflowTarget(null)
       warnWorkflowUnavailable()
@@ -209,14 +225,19 @@ export function useAgentWorkflowSelection({
     }
     try {
       const opened = await workflowService.openWorkflow(target)
-      if (!isCurrent()) return
+      if (!isCurrent()) {
+        if (recovered) await workflowStore.closeWorkflow(target)
+        return
+      }
       if (!opened) {
+        if (recovered) await workflowStore.closeWorkflow(target)
         panelStore.setWorkflowTarget(null)
         warnWorkflowUnavailable()
         return
       }
       commitWorkflowTarget(target, workflowId)
     } catch {
+      if (recovered) await workflowStore.closeWorkflow(target)
       if (!isCurrent()) return
       warnWorkflowUnavailable()
     }

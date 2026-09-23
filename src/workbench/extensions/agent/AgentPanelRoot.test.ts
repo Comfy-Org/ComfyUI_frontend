@@ -3184,6 +3184,61 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
   })
 
+  it('recovers a closed unsaved workflow from its durable Agent draft', async () => {
+    const viewed = makeTab('wf-viewed')
+    useAgentConversationStore().setThreadId('th-history')
+    const recoveredGraph = {
+      version: 0.4,
+      last_node_id: 7,
+      last_link_id: 0,
+      nodes: [{ id: 7, type: 'KSampler' }],
+      links: []
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/agent/draft'))
+          return json(200, { content: recoveredGraph, version: 4 })
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-closed-unsaved',
+              content: { text: 'Continue the closed workflow' }
+            }
+          ])
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(200, agentThreadList())
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow).toMatchObject({
+        filename: 'Recovered Workflow',
+        isTemporary: true
+      })
+    )
+    const recovered = useAgentPanelStore().selectedWorkflow
+    expect(recovered).not.toBe(viewed)
+    expect(recovered?.activeState?.nodes).toEqual(recoveredGraph.nodes)
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-closed-unsaved')
+    ).toBe(recovered?.path)
+    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+  })
+
   it.for(['wf-old', '', 'missing'])(
     'retains the explicit target when reopening history for %s',
     async (restoredId) => {

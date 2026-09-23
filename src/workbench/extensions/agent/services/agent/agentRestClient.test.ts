@@ -112,6 +112,26 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('GET')
   })
 
+  it('getDraft GETs and validates the encoded workflow snapshot', async () => {
+    const draft = {
+      content: { version: 0.4, nodes: [], links: [] },
+      version: 3
+    }
+    respond(jsonResponse(200, draft))
+
+    await expect(makeClient().getDraft('wf/x')).resolves.toEqual(draft)
+    expect(lastCall()).toMatchObject({
+      route: '/agent/draft?workflow_id=wf%2Fx',
+      init: { method: 'GET' }
+    })
+  })
+
+  it('rejects a malformed draft snapshot', async () => {
+    respond(jsonResponse(200, { content: [], version: -1 }))
+
+    await expect(makeClient().getDraft('wf-1')).rejects.toThrow()
+  })
+
   it('gets and puts the run-mode preference using the API contract', async () => {
     const preference = { mode: 'auto_limited' as const, credit_limit: 25 }
     const client: AgentRestClient = createAgentRestClient()
