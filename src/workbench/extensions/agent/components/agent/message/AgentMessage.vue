@@ -170,10 +170,10 @@ const hasTools = computed(() =>
         !hasTools &&
         (message.thinking || (message.streaming && !message.parts.length))
       "
-      class="text-agent-fg-muted flex h-8 items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal"
+      class="text-agent-fg-muted flex h-8 items-center gap-2 rounded-lg px-2 font-normal"
     >
       <span class="icon-[lucide--brain] size-4 shrink-0" />
-      <span class="agent-shimmer-text min-w-0 truncate">{{
+      <span class="agent-shimmer-text min-w-0 truncate text-sm/5">{{
         message.thinkingText || $t('agent.thinking')
       }}</span>
     </div>

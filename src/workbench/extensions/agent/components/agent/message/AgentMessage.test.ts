@@ -129,7 +129,10 @@ describe('AgentMessage thinking narration', () => {
       global: { plugins: [i18n] }
     })
 
-    expect(screen.getByText('Reading the graph')).toBeInTheDocument()
+    const narration = screen.getByText('Reading the graph')
+    expect(narration).toBeInTheDocument()
+    expect(narration).toHaveClass('text-sm/5')
+    expect(narration).not.toHaveClass('leading-none')
     expect(screen.queryByText('Thinking...')).not.toBeInTheDocument()
   })
 
