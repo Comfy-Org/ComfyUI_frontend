@@ -4,7 +4,7 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { AgentOnboardingNotShownReason } from '@/platform/telemetry/types'
+import type { AgentOnboardingNotShownMetadata } from '@/platform/telemetry/types'
 
 export interface CoachStep {
   target: string
@@ -72,7 +72,10 @@ const reportedDeferrals = new Set<string>()
 /** A coach paused mid-way by App Mode or a tour was already shown, so it stays quiet. */
 export function trackCoachDeferral(
   scope: string,
-  reason: Exclude<AgentOnboardingNotShownReason, 'target_missing'> | null
+  reason: Exclude<
+    AgentOnboardingNotShownMetadata['reason'],
+    'target_missing'
+  > | null
 ): void {
   if (reason === null) {
     shownScopes.add(scope)

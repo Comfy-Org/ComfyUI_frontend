@@ -590,17 +590,9 @@ export interface AgentConsentNotOfferedMetadata extends Record<
 > {
   reason: AgentConsentNotOfferedReason
 }
-export type AgentOnboardingNotShownReason =
-  | 'app_mode'
-  | 'tour_active'
-  | 'target_missing'
-export interface AgentOnboardingNotShownMetadata extends Record<
-  string,
-  unknown
-> {
-  reason: AgentOnboardingNotShownReason
-  step?: number
-}
+export type AgentOnboardingNotShownMetadata =
+  | { reason: 'app_mode' | 'tour_active' }
+  | { reason: 'target_missing'; step: number }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null

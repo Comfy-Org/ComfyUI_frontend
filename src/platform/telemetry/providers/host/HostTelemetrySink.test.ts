@@ -282,8 +282,11 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentOnboardingNotShown({ reason: 'target_missing' }),
-      properties: { reason: 'target_missing' }
+        sink.trackAgentOnboardingNotShown({
+          reason: 'target_missing',
+          step: 2
+        }),
+      properties: { reason: 'target_missing', step: 2 }
     }
   ])('forwards $name to the host bridge', ({ name, track, properties }) => {
     track(new HostTelemetrySink())
