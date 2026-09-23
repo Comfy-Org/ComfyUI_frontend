@@ -93,9 +93,9 @@ the expected full frontend SHA. Configure `CLOUD_ACCOUNT_EMAIL` and
 `release-smoke-testcloud` or `release-smoke-stagingcloud`.
 
 Use a dedicated personal account with onboarding completed, hosted checkout
-enabled, no subscription and no saved cards. The saved-card API must be available
-for the account preflight. The test checks the deployed SHA before login and
-after checkout, and verifies the hosted card fields are editable. It does not
+enabled, no subscription and no saved cards. The preflight checks saved cards
+through the hosted billing portal. The test checks the deployed SHA before login
+and after checkout, and verifies the hosted card fields are editable. It does not
 enter payment details or submit payment; opening checkout can leave an incomplete
 billing operation. Reports are retained for seven days; tracing stays disabled.
 

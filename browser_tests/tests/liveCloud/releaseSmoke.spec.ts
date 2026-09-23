@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict'
 
-import {
-  zBillingStatusResponse,
-  zListSavedPaymentMethodsResponse
-} from '@comfyorg/ingest-types/zod'
+import { zBillingStatusResponse } from '@comfyorg/ingest-types/zod'
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
@@ -26,7 +23,6 @@ const test = base.extend({
     assert(liveCloudBillingConfig)
     await verifyVersion(page, liveCloudBillingConfig.PLAYWRIGHT_TEST_URL)
     await use(await signInToLiveCloud(page, liveCloudBillingConfig))
-    await verifyVersion(page, liveCloudBillingConfig.PLAYWRIGHT_TEST_URL)
   }
 })
 
@@ -58,15 +54,9 @@ test.describe(
       )
       expect(status.is_active).toBe(false)
       expect(['FREE', undefined]).toContain(status.subscription_tier)
-      expect(
-        await billingSession.read(
-          '/api/billing/payment-methods',
-          zListSavedPaymentMethodsResponse
-        )
-      ).toHaveLength(0)
-
       const origin = new URL(comfyPage.page.url()).origin
       const billing = new LiveCloudCheckout(comfyPage, origin, origin)
+      await billing.verifySavedPaymentMethods(billingSession, 0)
       await billing.open()
       const { checkout } = await billing.startCheckout()
       await expect(
@@ -76,6 +66,7 @@ test.describe(
         checkout.getByLabel('Expiration', { exact: true })
       ).toBeEditable()
       await checkout.close()
+      await verifyVersion(comfyPage.page, origin)
     })
   }
 )
