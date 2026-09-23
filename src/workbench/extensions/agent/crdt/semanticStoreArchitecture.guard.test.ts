@@ -114,8 +114,8 @@ describe('CRDT-STORES-0036 semantic store architecture guard', () => {
   })
 
   // Widget values are written through to `nodes.<id>.widgets.<name>` on
-  // registration and on every change; the store still reads its own values,
-  // so the projection is write-side only for now.
+  // registration and on every change, and remote-origin transactions are
+  // applied back onto registered widget state (no echo into the document).
   it('widgetValueStore.ts is a projection of a Yjs document', () => {
     expect(readSource(path.join(STORES_DIR, 'widgetValueStore.ts'))).toMatch(
       YJS_IMPORT

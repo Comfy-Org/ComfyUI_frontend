@@ -1,10 +1,15 @@
 import { defineStore } from 'pinia'
-import { reactive, ref } from 'vue'
+import { getCurrentScope, onScopeDispose, reactive, ref } from 'vue'
 import * as Y from 'yjs'
 
-import { ownerNodesMap, semanticDocs } from '@/stores/semanticDoc'
+import {
+  isRemoteUpdateOrigin,
+  ownerNodesMap,
+  semanticDocs
+} from '@/stores/semanticDoc'
 import type { LocalUpdateOrigin } from '@/stores/semanticDoc'
 import { toOwningGraphId } from '@/types/graphScopeId'
+import type { OwningGraphId, RootGraphId } from '@/types/graphScopeId'
 import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
@@ -126,6 +131,103 @@ function projectValue(
   })
 }
 
+/** A widget value a remote-origin transaction changed, located by owner. */
+interface RemoteWidgetValue {
+  owningGraphId: OwningGraphId
+  nodeId: NodeId
+  name: string
+  value: WidgetValue
+}
+
+function widgetsMapOf(node: unknown): Y.Map<unknown> | undefined {
+  if (!(node instanceof Y.Map)) return undefined
+  const widgets = node.get(WIDGETS_KEY)
+  return widgets instanceof Y.Map ? widgets : undefined
+}
+
+/**
+ * Collects every widget value a remote-origin transaction may have changed
+ * under `rootGraphId`, from the deep events on the `nodes` root and the
+ * `definitions` root. The events name the touched node (or, for a
+ * definition-level change, the touched owner); the values are then read back
+ * from the document so a node or `widgets` map set wholesale is covered the
+ * same way as a single key. Deleted nodes yield nothing: membership removal
+ * belongs to `nodeDataStore`, which releases the widgets.
+ */
+function collectRemoteWidgetValues(
+  doc: Y.Doc,
+  rootGraphId: RootGraphId,
+  events: readonly Y.YEvent<Y.AbstractType<unknown>>[]
+): RemoteWidgetValue[] {
+  const rootOwner = toOwningGraphId(rootGraphId)
+  const rootNodes = ownerNodesMap(doc, rootGraphId, rootOwner, false)
+  const nodesByOwner = new Map<OwningGraphId, Set<NodeId> | 'all'>()
+
+  const touchNode = (owningGraphId: OwningGraphId, nodeId: NodeId) => {
+    const nodes = nodesByOwner.get(owningGraphId)
+    if (nodes === 'all') return
+    if (nodes) nodes.add(nodeId)
+    else nodesByOwner.set(owningGraphId, new Set([nodeId]))
+  }
+  const touchOwner = (owningGraphId: OwningGraphId) =>
+    nodesByOwner.set(owningGraphId, 'all')
+  const touchKeys = (
+    event: Y.YEvent<Y.AbstractType<unknown>>,
+    touch: (key: string) => void
+  ) => {
+    for (const [key, change] of event.changes.keys) {
+      if (change.action !== 'delete') touch(key)
+    }
+  }
+
+  for (const event of events) {
+    const path = event.path.map(String)
+    if (event.currentTarget === rootNodes) {
+      if (path.length === 0)
+        touchKeys(event, (key) => touchNode(rootOwner, key as NodeId))
+      else touchNode(rootOwner, path[0] as NodeId)
+      continue
+    }
+    // Anything else is the `definitions` root: definitions.<owner>.nodes.<id>
+    if (path.length === 0) {
+      touchKeys(event, (key) => touchOwner(toOwningGraphId(key)))
+      continue
+    }
+    const owningGraphId = toOwningGraphId(path[0])
+    if (path.length === 1) {
+      touchKeys(event, (key) => {
+        if (key === 'nodes') touchOwner(owningGraphId)
+      })
+      continue
+    }
+    if (path[1] !== 'nodes') continue
+    if (path.length === 2)
+      touchKeys(event, (key) => touchNode(owningGraphId, key as NodeId))
+    else touchNode(owningGraphId, path[2] as NodeId)
+  }
+
+  const values: RemoteWidgetValue[] = []
+  const readNode = (owningGraphId: OwningGraphId, nodeId: NodeId) => {
+    const owned = ownerNodesMap(doc, rootGraphId, owningGraphId, false)
+    const widgets = widgetsMapOf(owned?.get(nodeId))
+    if (!widgets) return
+    for (const [name, value] of widgets) {
+      if (value instanceof Y.AbstractType) continue
+      values.push({ owningGraphId, nodeId, name, value: value as WidgetValue })
+    }
+  }
+  for (const [owningGraphId, nodes] of nodesByOwner) {
+    if (nodes !== 'all') {
+      for (const nodeId of nodes) readNode(owningGraphId, nodeId)
+      continue
+    }
+    const owned = ownerNodesMap(doc, rootGraphId, owningGraphId, false)
+    if (!owned) continue
+    for (const nodeId of owned.keys()) readNode(owningGraphId, nodeId as NodeId)
+  }
+  return values
+}
+
 export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgets = ref(new Map<UUID, Map<WidgetId, WidgetEntity>>())
   const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
@@ -166,6 +268,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
    */
   let dirtyTrackingSuppressed = 0
 
+  /**
+   * Depth of {@link applyRemoteValues} on the stack; while positive, the
+   * `observeValue` setter skips the semantic-document write-through.
+   */
+  let applyingRemoteValue = 0
+
   function observeValue<TValue extends WidgetValue>(
     state: WidgetState<TValue>,
     graphId: UUID
@@ -186,11 +294,79 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         if (!context && dirtyTrackingSuppressed === 0) {
           locallyDirtyWidgets.add(widgetId)
         }
-        projectValue(graphId, state.nodeId, state.name, value, context)
+        // A value arriving from the document must not be echoed back into it
+        // (KA-6: no outbound write from a remote-origin observer).
+        if (applyingRemoteValue === 0) {
+          observeRemoteValues(graphId)
+          projectValue(graphId, state.nodeId, state.name, value, context)
+        }
         for (const listener of valueChangeListeners) {
           listener({ widgetId, value, oldValue, context })
         }
       }
+    })
+  }
+
+  /**
+   * Read side of the projection: applies widget values a remote-origin
+   * transaction changed to the registered widget state. Runs with local-dirty
+   * tracking suppressed and without provenance, like a structural replay: the
+   * document is the source of truth, so the value is never a local edit.
+   * Widgets that are not registered (yet) are skipped; `registerWidget`'s
+   * write-through then reconciles against the document value.
+   */
+  function applyRemoteValues(values: readonly RemoteWidgetValue[]): void {
+    if (values.length === 0) return
+    applyingRemoteValue++
+    try {
+      withLocalDirtyTrackingSuppressed(() => {
+        for (const { owningGraphId, nodeId, name, value } of values) {
+          const graphId = owningGraphId as string as UUID
+          const widgetId = createWidgetId(graphId, nodeId, name)
+          const state = graphWidgets.value.get(graphId)?.get(widgetId)?.state
+          if (!state || Object.is(state.value, value)) continue
+          locallyDirtyWidgets.delete(widgetId)
+          state.value = value
+        }
+      })
+    } finally {
+      applyingRemoteValue--
+    }
+  }
+
+  /**
+   * Remote-origin observers by root graph, keyed with the document they were
+   * attached to so a destroyed-and-recreated document is re-observed. Only
+   * transactions with a remote update origin (`isRemoteUpdateOrigin`) apply:
+   * local writes already went through `projectValue` from the setter.
+   */
+  const remoteObservers = new Map<
+    RootGraphId,
+    { doc: Y.Doc; unobserve: () => void }
+  >()
+
+  function observeRemoteValues(graphId: UUID): void {
+    const rootGraphId = semanticDocs.rootFor(toOwningGraphId(graphId))
+    if (!rootGraphId) return
+    const doc = semanticDocs.get(rootGraphId)
+    if (!doc) return
+    const existing = remoteObservers.get(rootGraphId)
+    if (existing?.doc === doc) return
+    existing?.unobserve()
+    const unobserve = semanticDocs.observeNodes(
+      rootGraphId,
+      (events, transaction) => {
+        if (!isRemoteUpdateOrigin(transaction.origin)) return
+        applyRemoteValues(collectRemoteWidgetValues(doc, rootGraphId, events))
+      }
+    )
+    remoteObservers.set(rootGraphId, { doc, unobserve })
+  }
+
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      for (const { unobserve } of remoteObservers.values()) unobserve()
+      remoteObservers.clear()
     })
   }
 
@@ -389,6 +565,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const registered = widgets.get(widgetId)?.state
     if (registered) {
       observeValue(registered, graphId)
+      observeRemoteValues(graphId)
       projectValue(graphId, nodeId, registered.name, registered.value, context)
     }
     return registered

@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { ownerNodesMap, semanticDocs } from '@/stores/semanticDoc'
-import type { LocalUpdateOrigin } from '@/stores/semanticDoc'
+import type {
+  LocalUpdateOrigin,
+  RemoteUpdateOrigin
+} from '@/stores/semanticDoc'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { UUID } from '@/utils/uuid'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
@@ -863,5 +866,147 @@ describe('useWidgetValueStore semantic document projection', () => {
       { source: 'local' }
     ])
     expect(widgetsOf()?.get('seed')).toBe(3)
+  })
+
+  describe('remote-origin read side', () => {
+    const remoteOrigin: RemoteUpdateOrigin = {
+      source: 'agent-remote',
+      actor: 'host:1'
+    }
+
+    /**
+     * Mirrors the follower document into a host replica, runs `mutate` on the
+     * host, and merges the delta back as a remote update - the one host to
+     * follower path (`applyRemote`).
+     */
+    function hostWrites(mutate: (host: Y.Doc) => void): void {
+      const follower = semanticDocs.ensure(root)
+      const host = new Y.Doc()
+      Y.applyUpdate(host, Y.encodeStateAsUpdate(follower))
+      host.transact(() => mutate(host))
+      const delta = Y.encodeStateAsUpdate(host, Y.encodeStateVector(follower))
+      semanticDocs.applyRemote(root, delta, remoteOrigin)
+    }
+
+    function recordChangedOrigins(): unknown[] {
+      const origins: unknown[] = []
+      semanticDocs
+        .ensure(root)
+        .on('afterTransaction', (transaction: Y.Transaction) => {
+          if (transaction.changed.size > 0) origins.push(transaction.origin)
+        })
+      return origins
+    }
+
+    it('applies a host value to the registered widget without echoing it back', () => {
+      projectNode()
+      const store = useWidgetValueStore()
+      store.registerWidget(rootSeed, state('number', 1))
+      const origins = recordChangedOrigins()
+
+      hostWrites((host) => {
+        const node = ownerNodesMap(host, root, rootOwner, true).get(nodeId)
+        ;((node as Y.Map<unknown>).get('widgets') as Y.Map<unknown>).set(
+          'seed',
+          42
+        )
+      })
+
+      expect(store.getWidget(rootSeed)?.value).toBe(42)
+      expect(store.isLocallyDirty(rootSeed)).toBe(false)
+      // Exactly the merge itself changed the document: no local write-back.
+      expect(origins).toEqual([remoteOrigin])
+      expect(widgetsOf()?.get('seed')).toBe(42)
+    })
+
+    it('clears a local-dirty mark once the host value lands', () => {
+      projectNode()
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(rootSeed, state('number', 1))!
+      registered.value = 2
+      expect(store.isLocallyDirty(rootSeed)).toBe(true)
+
+      hostWrites((host) => {
+        const node = ownerNodesMap(host, root, rootOwner, true).get(nodeId)
+        ;((node as Y.Map<unknown>).get('widgets') as Y.Map<unknown>).set(
+          'seed',
+          3
+        )
+      })
+
+      expect(store.getWidget(rootSeed)?.value).toBe(3)
+      expect(store.isLocallyDirty(rootSeed)).toBe(false)
+    })
+
+    it('applies a value under a definition owner to that subgraph widget only', () => {
+      semanticDocs.ensure(root)
+      projectNode(rootOwner)
+      projectNode(definitionOwner)
+      const store = useWidgetValueStore()
+      store.registerWidget(rootSeed, state('number', 1))
+      store.registerWidget(definitionSeed, state('number', 5))
+
+      hostWrites((host) => {
+        const node = ownerNodesMap(host, root, definitionOwner, true).get(
+          nodeId
+        )
+        ;((node as Y.Map<unknown>).get('widgets') as Y.Map<unknown>).set(
+          'seed',
+          6
+        )
+      })
+
+      expect(store.getWidget(definitionSeed)?.value).toBe(6)
+      expect(store.getWidget(rootSeed)?.value).toBe(1)
+    })
+
+    it('applies widgets of a node the host sets wholesale', () => {
+      semanticDocs.ensure(root)
+      const store = useWidgetValueStore()
+      store.registerWidget(rootSeed, state('number', 1))
+
+      hostWrites((host) => {
+        ownerNodesMap(host, root, rootOwner, true).set(
+          nodeId,
+          new Y.Map<unknown>([
+            ['type', 'KSampler'],
+            ['widgets', new Y.Map<unknown>([['seed', 9]])]
+          ])
+        )
+      })
+
+      expect(store.getWidget(rootSeed)?.value).toBe(9)
+    })
+
+    it('ignores a local-origin transaction from another writer', () => {
+      projectNode()
+      const store = useWidgetValueStore()
+      store.registerWidget(rootSeed, state('number', 1))
+
+      semanticDocs.transactLocal(root, { source: 'local' }, () => {
+        widgetsOf()?.set('seed', 8)
+      })
+
+      expect(store.getWidget(rootSeed)?.value).toBe(1)
+    })
+
+    it('leaves an unregistered widget alone and reconciles on registration', () => {
+      projectNode()
+      const store = useWidgetValueStore()
+
+      hostWrites((host) => {
+        const node = ownerNodesMap(host, root, rootOwner, true).get(nodeId)
+        ;(node as Y.Map<unknown>).set(
+          'widgets',
+          new Y.Map<unknown>([['seed', 11]])
+        )
+      })
+      expect(store.getWidget(rootSeed)).toBeUndefined()
+
+      // Registration is a local write-through: the local value wins the key
+      // until the host echoes, which is the documented remaining gap.
+      store.registerWidget(rootSeed, state('number', 1))
+      expect(widgetsOf()?.get('seed')).toBe(1)
+    })
   })
 })
