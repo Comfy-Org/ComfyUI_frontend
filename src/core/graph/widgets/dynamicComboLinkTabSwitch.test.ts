@@ -63,6 +63,40 @@ function findMatchInput(node: LGraphNode) {
   return node.inputs.findIndex((input) => input.name === 'resize_type.match')
 }
 
+function createNodeOrThrow(type: string): LGraphNode {
+  const node = LiteGraph.createNode(type)
+  if (!node) throw new Error(`failed to create node: ${type}`)
+  return node
+}
+
+function connectOrThrow(
+  source: LGraphNode,
+  sourceSlot: number,
+  target: LGraphNode,
+  targetSlot: number
+) {
+  const link = source.connect(sourceSlot, target, targetSlot)
+  if (!link)
+    throw new Error(`failed to connect ${source.type} to ${target.type}`)
+  return link
+}
+
+function getWidgetOrThrow(node: LGraphNode, name: string) {
+  const widget = node.widgets?.find((widget) => widget.name === name)
+  if (!widget) throw new Error(`widget not found: ${name}`)
+  return widget
+}
+
+function getNodeByTypeOrThrow(graph: LGraph, type: string): LGraphNode {
+  const node = graph.nodes.find((n) => n.type === type)
+  if (!node) throw new Error(`node not found: ${type}`)
+  return node
+}
+
+function getLinkOriginId(node: LGraphNode, slot: number) {
+  return node.getInputLink(slot)?.origin_id
+}
+
 /** Two distinct, separately-registered IMAGE producers so a crossed or
  * misindexed link (matched by slot index alone) would be caught by comparing
  * `origin_id`, not just presence of a link. */
@@ -106,35 +140,26 @@ describe('DynamicCombo input link survives a workflow tab switch (#18388)', () =
     LiteGraph.registerNodeType('baseImageSource', TestBaseImageSourceNode)
 
     const graph = new LGraph()
-    const resizeNode = LiteGraph.createNode(nodeName)
-    if (!resizeNode) throw new Error('failed to create node')
+    const resizeNode = createNodeOrThrow(nodeName)
     graph.add(resizeNode)
 
-    const source = LiteGraph.createNode('source')
-    if (!source) throw new Error('failed to create source node')
+    const source = createNodeOrThrow('source')
     graph.add(source)
 
-    const baseImageSource = LiteGraph.createNode('baseImageSource')
-    if (!baseImageSource)
-      throw new Error('failed to create base image source node')
+    const baseImageSource = createNodeOrThrow('baseImageSource')
     graph.add(baseImageSource)
     const baseInputIndex = resizeNode.inputs.findIndex(
       (input) => input.name === 'input'
     )
     expect(baseInputIndex).toBeGreaterThanOrEqual(0)
-    const baseLink = baseImageSource.connect(0, resizeNode, baseInputIndex)
-    if (!baseLink) throw new Error('failed to connect base input')
+    connectOrThrow(baseImageSource, 0, resizeNode, baseInputIndex)
 
-    const resizeTypeWidget = resizeNode.widgets?.find(
-      (widget) => widget.name === 'resize_type'
-    )
-    if (!resizeTypeWidget) throw new Error('resize_type widget not found')
+    const resizeTypeWidget = getWidgetOrThrow(resizeNode, 'resize_type')
     resizeTypeWidget.value = 'match_size'
 
     const matchIndex = findMatchInput(resizeNode)
     expect(matchIndex).toBeGreaterThanOrEqual(0)
-    const link = source.connect(0, resizeNode, matchIndex)
-    if (!link) throw new Error('failed to connect match input')
+    connectOrThrow(source, 0, resizeNode, matchIndex)
     expect(resizeNode.isInputConnected(matchIndex)).toBe(true)
 
     // Switching away from this tab and back reconstructs every node fresh
@@ -153,27 +178,25 @@ describe('DynamicCombo input link survives a workflow tab switch (#18388)', () =
     expect(configureError).not.toBe(true)
     expect(graph.nodes.filter((n) => n.has_errors)).toEqual([])
 
-    const reloadedNode = graph.nodes.find((n) => n.type === nodeName)
-    if (!reloadedNode) throw new Error('reloaded node not found')
+    const reloadedNode = getNodeByTypeOrThrow(graph, nodeName)
     const reloadedBaseIndex = reloadedNode.inputs.findIndex(
       (input) => input.name === 'input'
     )
     expect(reloadedNode.isInputConnected(reloadedBaseIndex)).toBe(true)
-    expect(reloadedNode.getInputLink(reloadedBaseIndex)?.origin_id).toBe(
+    expect(getLinkOriginId(reloadedNode, reloadedBaseIndex)).toBe(
       baseImageSource.id
     )
 
     const reloadedMatchIndex = findMatchInput(reloadedNode)
     expect(reloadedMatchIndex).toBeGreaterThanOrEqual(0)
     expect(reloadedNode.isInputConnected(reloadedMatchIndex)).toBe(true)
-    expect(reloadedNode.getInputLink(reloadedMatchIndex)?.origin_id).toBe(
-      source.id
-    )
+    expect(getLinkOriginId(reloadedNode, reloadedMatchIndex)).toBe(source.id)
 
-    const reloadedResizeTypeWidget = reloadedNode.widgets?.find(
-      (widget) => widget.name === 'resize_type'
+    const reloadedResizeTypeWidget = getWidgetOrThrow(
+      reloadedNode,
+      'resize_type'
     )
-    expect(reloadedResizeTypeWidget?.value).toBe('match_size')
+    expect(reloadedResizeTypeWidget.value).toBe('match_size')
     expect(
       reloadedNode.inputs.some((input) => input.name === 'resize_type.width')
     ).toBe(false)
