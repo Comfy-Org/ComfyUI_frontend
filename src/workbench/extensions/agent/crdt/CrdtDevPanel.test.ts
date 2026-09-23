@@ -106,6 +106,22 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toHaveTextContent('7')
   })
 
+  it('keeps the active tab selected when activated again', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(chip()!)
+
+    const statusTab = screen.getByTestId('crdt-dev-panel-tab-status')
+    await user.click(statusTab)
+    expect(statusTab).toHaveAttribute('aria-pressed', 'true')
+    expect(sheet()).toHaveTextContent('doc-1')
+
+    statusTab.focus()
+    await user.keyboard(' ')
+    expect(statusTab).toHaveAttribute('aria-pressed', 'true')
+    expect(sheet()).toHaveTextContent('doc-1')
+  })
+
   it('moves focus into the panel and restores it after Escape closes', async () => {
     const user = userEvent.setup()
     renderPanel()
@@ -197,10 +213,8 @@ describe('CrdtDevPanel', () => {
       'ws_out'
     )
 
-    await user.selectOptions(
-      screen.getByTestId('crdt-dev-panel-scope-filter'),
-      'doc'
-    )
+    await user.click(screen.getByTestId('crdt-dev-panel-scope-filter'))
+    await user.click(screen.getByRole('option', { name: 'doc' }))
 
     const log = screen.getByTestId('crdt-dev-panel-log').textContent
     expect(log).toContain('doc_update')
@@ -221,13 +235,10 @@ describe('CrdtDevPanel', () => {
     await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
 
     const kindFilter = screen.getByTestId('crdt-dev-panel-filter')
-    expect(
-      within(kindFilter)
-        .getAllByRole<HTMLOptionElement>('option')
-        .map((option) => option.value)
-    ).toContain('agent_node_adapters_materialized')
-
-    await user.selectOptions(kindFilter, 'agent_node_adapters_materialized')
+    await user.click(kindFilter)
+    await user.click(
+      screen.getByRole('option', { name: 'agent_node_adapters_materialized' })
+    )
 
     const log = screen.getByTestId('crdt-dev-panel-log')
     expect(

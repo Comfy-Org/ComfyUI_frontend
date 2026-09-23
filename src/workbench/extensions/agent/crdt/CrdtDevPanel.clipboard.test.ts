@@ -210,10 +210,8 @@ describe('CrdtDevPanel clipboard controls', () => {
     renderPanel()
     await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
 
-    await user.selectOptions(
-      screen.getByTestId('crdt-dev-panel-filter'),
-      'doc_update'
-    )
+    await user.click(screen.getByTestId('crdt-dev-panel-filter'))
+    await user.click(screen.getByRole('option', { name: 'doc_update' }))
     await user.click(screen.getByRole('button', { name: 'Copy log' }))
 
     expect(writeText).toHaveBeenCalledExactlyOnceWith(
