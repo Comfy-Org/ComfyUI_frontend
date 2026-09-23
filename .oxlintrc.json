@@ -14,6 +14,7 @@
     "coverage/*",
     "dist/*",
     "packages/design-system/src/css/lucideStrokePlugin.js",
+    "packages/ingest-types/src/*.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
     "scripts/registry-census/detection-proof/**",
@@ -21,12 +22,7 @@
     "src/types/generatedManagerTypes.ts",
     "src/types/vue-shim.d.ts",
     "test-results/*",
-    "vitest.setup.ts",
-    "packages/ingest-types/src/**",
-    "packages/object-info-parser/**",
-    "packages/shared-frontend-utils/**",
-    "tools/devtools/web/**",
-    "tools/test-recorder/**"
+    "vitest.setup.ts"
   ],
   "plugins": [
     "eslint",

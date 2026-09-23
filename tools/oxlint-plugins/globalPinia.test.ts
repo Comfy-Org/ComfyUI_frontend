@@ -155,44 +155,40 @@ vi.spyOn(pinia, 'defineStore')`,
   ]
 })
 
-it('enforces the rule through both repository lint configurations', () => {
+it('enforces the rule through the repository lint configuration', () => {
   const code = `import { createPinia } from 'pinia'
 createPinia()
 vi.mock('pinia')`
-  const testPath = path.join(directory, 'src/example.test.ts')
+  const testPaths = [
+    path.join(directory, 'src/example.test.ts'),
+    path.join(directory, 'src/scripts/nested.test.ts')
+  ]
   const appPath = path.join(directory, 'src/example.ts')
-  const ignoredTestPath = path.join(directory, 'src/scripts/ignored.test.ts')
   const helperPaths = [
     path.join(directory, 'src/__test__/testUtils.ts'),
     path.join(directory, 'src/__tests__/helpers.ts'),
     path.join(directory, 'src/__fixtures__/fixture.ts')
   ]
-  for (const file of [testPath, appPath, ignoredTestPath, ...helperPaths]) {
+  for (const file of [...testPaths, appPath, ...helperPaths]) {
     mkdirSync(path.dirname(file), { recursive: true })
     writeFileSync(file, code)
   }
 
-  for (const [config, files] of [
-    ['.oxlintrc.json', [testPath, appPath, ...helperPaths]],
+  const result = spawnSync(
+    process.execPath,
     [
-      'tools/oxlint-plugins/vitestCleanup.config.json',
-      [ignoredTestPath, appPath, ...helperPaths]
-    ]
-  ] as const) {
-    const result = spawnSync(
-      process.execPath,
-      [
-        path.resolve('node_modules/oxlint/bin/oxlint'),
-        '--format=json',
-        '--config',
-        path.resolve(config),
-        ...files
-      ],
-      { encoding: 'utf8', windowsHide: true }
-    )
-    expect(result.error).toBeUndefined()
-    expect(result.status).toBe(1)
-    expect(result.stdout.match(/comfy\(use-global-pinia\)/g)).toHaveLength(8)
-    expect(result.stdout).not.toContain('"filename": "src/example.ts"')
-  }
+      path.resolve('node_modules/oxlint/bin/oxlint'),
+      '--format=json',
+      '--config',
+      path.resolve('.oxlintrc.json'),
+      ...testPaths,
+      appPath,
+      ...helperPaths
+    ],
+    { encoding: 'utf8', windowsHide: true }
+  )
+  expect(result.error).toBeUndefined()
+  expect(result.status).toBe(1)
+  expect(result.stdout.match(/comfy\(use-global-pinia\)/g)).toHaveLength(10)
+  expect(result.stdout).not.toContain('"filename": "src/example.ts"')
 })

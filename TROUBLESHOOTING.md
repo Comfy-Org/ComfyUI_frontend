@@ -191,7 +191,7 @@ Check whether the rule is enforced by oxlint (in `.oxlintrc.json`) or ESLint (in
 
 This is expected. oxlint lints every `.ts`/`.js` file in the workspace; ESLint only lints what oxlint cannot parse (`.vue`, `.astro`) plus `better-tailwindcss` class-string checks in non-test `.ts` files under `src/`, `apps/` and `packages/`. Use `oxlint-disable` in `.ts` files.
 
-Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-plugin-oxlint` mirrors it into ESLint). A few directories stay ignored until their findings are fixed: `packages/ingest-types/src`, `packages/object-info-parser`, `packages/shared-frontend-utils`, `tools/devtools/web` and `tools/test-recorder`. To bring one back, delete its pattern and run `pnpm oxlint:main` to see what needs fixing.
+Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-plugin-oxlint` mirrors it into ESLint).
 
 ---
 
@@ -230,7 +230,7 @@ Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-p
 `oxlint-suppressions.json` baselines pre-existing violations (mostly `comfy/no-new-error-throw`). Fixing one makes its entry stale; prune the file and commit it with your change:
 
 ```bash
-pnpm oxlint:main --prune-suppressions
+pnpm oxlint --prune-suppressions
 ```
 
 Never run `--suppress-all` to silence new violations in your own code.
