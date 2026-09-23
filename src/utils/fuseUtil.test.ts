@@ -125,7 +125,7 @@ describe('FuseFilter', () => {
   it('matches single values, comma-separated values, and wildcard fallbacks', () => {
     const imageItem = { options: ['IMAGE', 'LATENT'] }
     const modelItem = { options: ['MODEL'] }
-    const filter = new FuseFilter<FilterItem, string>([imageItem, modelItem], {
+    const filter = new FuseFilter<FilterItem>([imageItem, modelItem], {
       id: 'type',
       name: 'Type',
       invokeSequence: 't',

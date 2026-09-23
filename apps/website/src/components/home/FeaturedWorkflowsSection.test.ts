@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,7 +10,7 @@ import FeaturedWorkflowsSection from './FeaturedWorkflowsSection.vue'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock('../../composables/useReducedMotion', () => ({
+vi.mock(import('../../composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 
@@ -46,6 +45,13 @@ describe('FeaturedWorkflowsSection', () => {
     ).toBeTruthy()
     const links = [...container.querySelectorAll('a')]
     expect(links).toHaveLength(SLIDE_COUNT)
+    // Every href resolves against the apex host, no www, and to the workflow
+    // hub's canonical trailing-slash form: comfy.org/workflows/<slug>/.
+    for (const link of links) {
+      expect(link.getAttribute('href')).toMatch(
+        /^https:\/\/comfy\.org\/workflows\/[a-z0-9-]+\/$/
+      )
+    }
     expect(trackOffset(container)).toBe('translate3d(-0%, 0, 0)')
   })
 

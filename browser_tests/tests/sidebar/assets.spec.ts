@@ -1,16 +1,23 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
 import type { Asset } from '@comfyorg/ingest-types'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
-  createMockCloudAsset,
+  AssetsHelper,
   createMockJob,
   createMockJobs
 } from '@e2e/fixtures/helpers/AssetsHelper'
+import {
+  withOutputAssets,
+  withPagination
+} from '@e2e/fixtures/helpers/AssetHelper'
 import type {
   JobDetail,
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+
+const test = mergeTests(comfyPageFixture, assetApiFixture)
 
 // Legacy coverage backed by AssetsHelper's shadow backend. New assets-sidebar
 // browser coverage should use typed route mocks in assetsSidebarTab.spec.ts.
@@ -79,13 +86,16 @@ function makeCloudAsset(
   createTime: number
 ): Asset {
   const createdAt = new Date(createTime).toISOString()
-  return createMockCloudAsset({
+  return {
     id,
     name,
     job_id: jobId,
+    mime_type: 'image/png',
+    tags: ['output'],
+    preview_url: `/api/view?filename=${name}&type=output`,
     created_at: createdAt,
     updated_at: createdAt
-  })
+  }
 }
 
 // Cloud assets matching SAMPLE_JOBS. job-gamma has 2 outputs so
@@ -138,20 +148,6 @@ const JOB_GAMMA_DETAIL: JobDetail = {
   }
 }
 
-const cloudTest = test.extend<{ mockCloudAssetSidebarData: void }>({
-  mockCloudAssetSidebarData: async ({ comfyPage }, use) => {
-    await comfyPage.assets.mockCloudAssets({
-      assets: CLOUD_ASSETS,
-      total: CLOUD_ASSETS.length,
-      has_more: false
-    })
-
-    await use()
-
-    await comfyPage.assets.clearMocks()
-  }
-})
-
 // ==========================================================================
 // 1. Empty states
 // ==========================================================================
@@ -159,6 +155,7 @@ const cloudTest = test.extend<{ mockCloudAssetSidebarData: void }>({
 test.describe('Assets sidebar - empty states', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockEmptyState()
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -199,6 +196,7 @@ test.describe('Assets sidebar - tab navigation', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -248,6 +246,7 @@ test.describe('Assets sidebar - grid view display', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -309,6 +308,7 @@ test.describe('Assets sidebar - view mode', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -364,6 +364,31 @@ test.describe('Assets sidebar - view mode', () => {
       )
       .toBe('grid-small')
 
+    const generatedAssetIds = await tab.assetCards.evaluateAll((cards) =>
+      cards.map((card) => card.getAttribute('data-asset-id'))
+    )
+    expect(
+      generatedAssetIds.every(
+        (id) => typeof id === 'string' && id.trim().length > 0
+      )
+    ).toBe(true)
+    expect(new Set(generatedAssetIds).size).toBe(generatedAssetIds.length)
+
+    await tab.close()
+    await expect(tab.generatedTab).toBeHidden()
+    await tab.open()
+
+    await expect
+      .poll(() => tab.getFirstGridItemWidth())
+      .toBeLessThan(largeCardWidth)
+    await expect
+      .poll(() =>
+        tab.assetCards.evaluateAll((cards) =>
+          cards.map((card) => card.getAttribute('data-asset-id'))
+        )
+      )
+      .toEqual(generatedAssetIds)
+
     await tab.switchToImported()
 
     await expect(tab.assetCards.first()).toBeVisible()
@@ -393,6 +418,7 @@ test.describe('Assets sidebar - search', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -450,6 +476,7 @@ test.describe('Assets sidebar - selection', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -526,6 +553,7 @@ test.describe('Assets sidebar - context menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -720,6 +748,7 @@ test.describe('Assets sidebar - bulk actions', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -817,96 +846,98 @@ test.describe('Assets sidebar - bulk actions', () => {
   })
 })
 
-cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
-  cloudTest(
-    'Single job selection uses preserve naming strategy',
-    async ({ comfyPage, mockCloudAssetSidebarData }) => {
-      void mockCloudAssetSidebarData
-      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+test.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
+  test.beforeEach(async ({ page }) => {
+    await new AssetsHelper(page).mockCloudAssets({
+      assets: CLOUD_ASSETS,
+      total: CLOUD_ASSETS.length,
+      has_more: false
+    })
+  })
 
-      const tab = comfyPage.menu.assetsTab
-      await tab.open()
+  test('Single job selection uses preserve naming strategy', async ({
+    comfyPage
+  }) => {
+    const exportRequests = await comfyPage.assets.captureAssetExportRequests()
 
-      await tab.assetCards.first().click()
-      await expect(tab.downloadSelectedButton).toBeVisible()
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
 
-      await tab.downloadSelectedButton.click()
+    await tab.assetCards.first().click()
+    await expect(tab.downloadSelectedButton).toBeVisible()
 
-      await expect.poll(() => exportRequests).toHaveLength(1)
+    await tab.downloadSelectedButton.click()
 
-      const payload = exportRequests[0]
-      expect(payload.job_ids).toEqual([JOB_IDS.gamma])
-      expect(payload.job_asset_name_filters).toBeUndefined()
-      expect(payload.naming_strategy).toBe('preserve')
-    }
-  )
+    await expect.poll(() => exportRequests).toHaveLength(1)
 
-  cloudTest(
-    'Multiple selected assets from one job use preserve naming strategy',
-    async ({ comfyPage, mockCloudAssetSidebarData }) => {
-      void mockCloudAssetSidebarData
-      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
-      await comfyPage.assets.mockJobDetail(JOB_IDS.gamma, JOB_GAMMA_DETAIL)
+    const payload = exportRequests[0]
+    expect(payload.job_ids).toEqual([JOB_IDS.gamma])
+    expect(payload.job_asset_name_filters).toBeUndefined()
+    expect(payload.naming_strategy).toBe('preserve')
+  })
 
-      const tab = comfyPage.menu.assetsTab
-      await tab.open()
+  test('Multiple selected assets from one job use preserve naming strategy', async ({
+    comfyPage
+  }) => {
+    const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+    await comfyPage.assets.mockJobDetail(JOB_IDS.gamma, JOB_GAMMA_DETAIL)
 
-      await tab.assetCards
-        .first()
-        .getByRole('button', { name: 'See more outputs' })
-        .click()
-      await expect(tab.backToAssetsButton).toBeVisible()
-      await expect.poll(() => tab.assetCards.count()).toBe(2)
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
 
-      await tab.assetCards.first().click()
-      await comfyPage.page.keyboard.down('Control')
-      await tab.assetCards.nth(1).click()
-      await comfyPage.page.keyboard.up('Control')
+    await tab.assetCards
+      .first()
+      .getByRole('button', { name: 'See more outputs' })
+      .click()
+    await expect(tab.backToAssetsButton).toBeVisible()
+    await expect.poll(() => tab.assetCards.count()).toBe(2)
 
-      await expect(tab.selectedCards).toHaveCount(2)
-      await tab.downloadSelectedButton.click()
+    await tab.assetCards.first().click()
+    await comfyPage.page.keyboard.down('Control')
+    await tab.assetCards.nth(1).click()
+    await comfyPage.page.keyboard.up('Control')
 
-      await expect.poll(() => exportRequests).toHaveLength(1)
+    await expect(tab.selectedCards).toHaveCount(2)
+    await tab.downloadSelectedButton.click()
 
-      const payload = exportRequests[0]
-      expect(payload.job_ids).toEqual([JOB_IDS.gamma])
-      const names = payload.job_asset_name_filters?.[JOB_IDS.gamma]
-      expect(names).toHaveLength(2)
-      expect(names).toEqual(
-        expect.arrayContaining(['abstract_art.png', 'abstract_art_alt.png'])
-      )
-      expect(payload.naming_strategy).toBe('preserve')
-    }
-  )
+    await expect.poll(() => exportRequests).toHaveLength(1)
 
-  cloudTest(
-    'Multiple selected jobs use job-time naming strategy',
-    async ({ comfyPage, mockCloudAssetSidebarData }) => {
-      void mockCloudAssetSidebarData
-      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+    const payload = exportRequests[0]
+    expect(payload.job_ids).toEqual([JOB_IDS.gamma])
+    const assetNames = payload.job_asset_name_filters?.[JOB_IDS.gamma] ?? []
+    expect(assetNames).toHaveLength(2)
+    expect(assetNames).toEqual(
+      expect.arrayContaining(['abstract_art.png', 'abstract_art_alt.png'])
+    )
+    expect(payload.naming_strategy).toBe('preserve')
+  })
 
-      const tab = comfyPage.menu.assetsTab
-      await tab.open()
+  test('Multiple selected jobs use job-time naming strategy', async ({
+    comfyPage
+  }) => {
+    const exportRequests = await comfyPage.assets.captureAssetExportRequests()
 
-      await tab.assetCards.nth(1).click()
-      await comfyPage.page.keyboard.down('Control')
-      await tab.assetCards.nth(2).click()
-      await comfyPage.page.keyboard.up('Control')
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
 
-      await expect(tab.selectedCards).toHaveCount(2)
-      await tab.downloadSelectedButton.click()
+    await tab.assetCards.nth(1).click()
+    await comfyPage.page.keyboard.down('Control')
+    await tab.assetCards.nth(2).click()
+    await comfyPage.page.keyboard.up('Control')
 
-      await expect.poll(() => exportRequests).toHaveLength(1)
+    await expect(tab.selectedCards).toHaveCount(2)
+    await tab.downloadSelectedButton.click()
 
-      const payload = exportRequests[0]
-      expect(payload.job_ids).toHaveLength(2)
-      expect(payload.job_ids).toEqual(
-        expect.arrayContaining([JOB_IDS.alpha, JOB_IDS.beta])
-      )
-      expect(payload.job_asset_name_filters).toBeUndefined()
-      expect(payload.naming_strategy).toBe('group_by_job_time')
-    }
-  )
+    await expect.poll(() => exportRequests).toHaveLength(1)
+
+    const payload = exportRequests[0]
+    expect(payload.job_ids).toHaveLength(2)
+    expect(payload.job_ids).toEqual(
+      expect.arrayContaining([JOB_IDS.alpha, JOB_IDS.beta])
+    )
+    expect(payload.job_asset_name_filters).toBeUndefined()
+    expect(payload.naming_strategy).toBe('group_by_job_time')
+  })
 })
 
 // ==========================================================================
@@ -914,15 +945,12 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - pagination', () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
-  })
-
   test('initial load fetches first batch with offset 0', async ({
     comfyPage
   }) => {
     const manyJobs = createMockJobs(250)
     await comfyPage.assets.mockOutputHistory(manyJobs)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     // Queue polling also calls /jobs, so wait for completed history only.
@@ -941,6 +969,31 @@ test.describe('Assets sidebar - pagination', () => {
     expect(url.searchParams.get('offset')).toBe('0')
     expect(Number(url.searchParams.get('limit'))).toBeGreaterThan(0)
   })
+
+  test.describe('Assets enabled', () => {
+    test.use({
+      modelLibraryOptions: {
+        operators: [withOutputAssets(30), withPagination({ limit: 1 })]
+      },
+      initialLocalStorage: { 'unified-sidebar': '[43, 57]' }
+    })
+
+    test('Pages assets to fill view', async ({ assetApi: _, comfyPage }) => {
+      await comfyPage.featureFlags.setServerFlagsPersistent({ assets: true })
+      const listRequests: URL[] = []
+      comfyPage.page.on('request', (req) => {
+        if (req.method() !== 'GET') return
+        const url = new URL(req.url())
+        if (url.pathname.endsWith('/api/assets')) listRequests.push(url)
+      })
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+
+      await expect.poll(() => tab.assetCards.count()).toBeGreaterThan(3)
+      expect(listRequests.length).toBeGreaterThan(3)
+    })
+  })
 })
 
 // ==========================================================================
@@ -951,6 +1004,7 @@ test.describe('Assets sidebar - settings menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockInputFiles([])
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -992,10 +1046,8 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     const dialog = comfyPage.confirmDialog.root
     await expect(dialog).toBeVisible()
-    await expect(dialog.getByText('Delete this asset?')).toBeVisible()
-    await expect(
-      dialog.getByText('This asset will be permanently removed.')
-    ).toBeVisible()
+    await expect(dialog.getByText('Delete these items')).toBeVisible()
+    await expect(dialog.getByText('abstract_art.png')).toBeVisible()
   })
 
   test('Confirming delete removes asset and shows success toast', async ({
@@ -1017,9 +1069,8 @@ test.describe('Assets sidebar - delete confirmation', () => {
     await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount - 1)
 
-    await expect(
-      comfyPage.page.locator('.p-toast-message-success')
-    ).toBeVisible()
+    const successToast = comfyPage.page.locator('.p-toast-message-success')
+    await expect(successToast).toBeVisible()
   })
 
   test('Cancelling delete preserves asset', async ({ comfyPage }) => {
@@ -1097,6 +1148,7 @@ test.describe('Assets sidebar - media type filter', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(MIXED_MEDIA_JOBS)
     await comfyPage.assets.mockInputFiles([])
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
 
@@ -1169,7 +1221,6 @@ test.describe('Assets sidebar - drag and drop', () => {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
 
     const [loadImage] = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-    if (!loadImage) throw new Error('Load Image node not found')
     await loadImage.centerOnNode()
 
     const { assetsTab } = comfyPage.menu
@@ -1236,7 +1287,7 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
       }
     }),
     createMockJob({
-      id: 'job3',
+      id: 'job2',
       preview_output: {
         filename: `3.png`,
         type: 'input',

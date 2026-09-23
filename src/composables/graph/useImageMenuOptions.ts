@@ -19,11 +19,6 @@ function canPasteImage(node?: LGraphNode): boolean {
 }
 
 async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
-  if (!navigator.clipboard?.read) {
-    console.warn('Clipboard API not available')
-    return
-  }
-
   try {
     const clipboardItems = await navigator.clipboard.read()
     for (const item of clipboardItems) {
@@ -56,8 +51,9 @@ export function useImageMenuOptions() {
   }
 
   const openImage = (node: LGraphNode) => {
-    if (!node?.imgs?.length) return
-    const img = node.imgs[node.imageIndex ?? 0]
+    const images = node.imgs
+    if (!images?.length) return
+    const img = images.at(node.imageIndex ?? 0)
     if (!img) return
     const url = new URL(img.src)
     url.searchParams.delete('preview')
@@ -65,8 +61,9 @@ export function useImageMenuOptions() {
   }
 
   const copyImage = async (node: LGraphNode) => {
-    if (!node?.imgs?.length) return
-    const img = node.imgs[node.imageIndex ?? 0]
+    const images = node.imgs
+    if (!images?.length) return
+    const img = images.at(node.imageIndex ?? 0)
     if (!img) return
 
     const canvas = document.createElement('canvas')
@@ -87,12 +84,6 @@ export function useImageMenuOptions() {
         return
       }
 
-      // Check if clipboard API is available
-      if (!navigator.clipboard?.write) {
-        console.warn('Clipboard API not available')
-        return
-      }
-
       await navigator.clipboard.write([
         new ClipboardItem({ 'image/png': blob })
       ])
@@ -102,8 +93,9 @@ export function useImageMenuOptions() {
   }
 
   const saveImage = (node: LGraphNode) => {
-    if (!node?.imgs?.length) return
-    const img = node.imgs[node.imageIndex ?? 0]
+    const images = node.imgs
+    if (!images?.length) return
+    const img = images.at(node.imageIndex ?? 0)
     if (!img) return
 
     try {
@@ -119,7 +111,7 @@ export function useImageMenuOptions() {
     node: LGraphNode,
     availability: ImageMenuAvailability = DEFAULT_IMAGE_MENU_AVAILABILITY
   ): MenuOption[] => {
-    const hasImages = !!node?.imgs?.length
+    const hasImages = !!node.imgs?.length
     const canPaste = canPasteImage(node)
     if (
       (!hasImages || !availability.preview) &&

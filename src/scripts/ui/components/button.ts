@@ -1,10 +1,11 @@
-import { type Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/platform/settings/types'
 import type { ComfyApp } from '@/scripts/app'
 
 import type { ComfyComponent } from '.'
 import { $el } from '../../ui'
 import { prop } from '../../utils'
-import { type ClassList, applyClasses, toggleElement } from '../utils'
+import { applyClasses, toggleElement } from '../utils'
+import type { ClassList } from '../utils'
 import type { ComfyPopup } from './popup'
 
 type ComfyButtonProps = {
@@ -20,14 +21,13 @@ type ComfyButtonProps = {
   app?: ComfyApp
 }
 
-export class ComfyButton implements ComfyComponent<HTMLElement> {
+export class ComfyButton implements ComfyComponent {
   private _over = 0
   private _popupOpen = false
   isOver = false
   iconElement = $el('i.mdi')
   contentElement = $el('span')
-  // @ts-expect-error fixme ts strict error
-  popup: ComfyPopup
+  popup?: ComfyPopup
   element: HTMLElement
   overIcon: string
   iconSize: number
@@ -37,7 +37,7 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
   classList: ClassList
   hidden: boolean
   enabled: boolean
-  action: (e: Event, btn: ComfyButton) => void
+  action?: (e: Event, btn: ComfyButton) => void
 
   constructor({
     icon,
@@ -90,7 +90,7 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
       this,
       'content',
       content,
-      toggleElement(this.contentElement, {
+      toggleElement<ComfyButtonProps['content']>(this.contentElement, {
         onShow: (el, v) => {
           if (typeof v === 'string') {
             el.textContent = v
@@ -118,7 +118,6 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
       this.updateClasses()
       ;(this.element as HTMLButtonElement).disabled = !this.enabled
     })
-    // @ts-expect-error fixme ts strict error
     this.action = prop(this, 'action', action)
     this.element.addEventListener('click', (e) => {
       if (this.popup) {
@@ -170,12 +169,12 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
     this.popup = popup
 
     if (mode === 'hover') {
-      for (const el of [this.element, this.popup.element]) {
+      for (const el of [this.element, popup.element]) {
         el.addEventListener('mouseenter', () => {
-          this.popup.open = !!++this._over
+          popup.open = !!++this._over
         })
         el.addEventListener('mouseleave', () => {
-          this.popup.open = !!--this._over
+          popup.open = !!--this._over
         })
       }
     }

@@ -1,11 +1,7 @@
 import { expect } from '@playwright/test'
 
-import type { Asset } from '@comfyorg/ingest-types'
+import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import {
-  createMockAssetListResponse,
-  createMockCloudAsset
-} from '@e2e/fixtures/helpers/AssetsHelper'
 
 // The assets sidebar's attribute filter menu only renders in cloud mode
 // (`MediaAssetFilterBar.vue` gates `MediaAssetFilterButton` behind `isCloud`).
@@ -19,13 +15,6 @@ import {
 // reads the full store, so the per-filter count assertions still cover the
 // behavior.
 
-const MIME_TYPES: Record<string, string> = {
-  png: 'image/png',
-  mp4: 'video/mp4',
-  wav: 'audio/wav',
-  glb: 'model/gltf-binary'
-}
-
 const now = Date.now()
 const ages = [0, 86_400_000, 8 * 86_400_000, 40 * 86_400_000]
 const MIXED_ASSETS: Asset[] = (['images', 'video', 'audio', '3D'] as const).map(
@@ -33,13 +22,14 @@ const MIXED_ASSETS: Asset[] = (['images', 'video', 'audio', '3D'] as const).map(
     const ext = { images: 'png', video: 'mp4', audio: 'wav', '3D': 'glb' }[kind]
     const filename = `output_${kind}-${String(i + 1).padStart(3, '0')}.${ext}`
     const createdAt = new Date(now - (ages[i] ?? 0)).toISOString()
-    return createMockCloudAsset({
+    return {
       id: `${kind}-${String(i + 1).padStart(3, '0')}`,
       name: filename,
-      mime_type: MIME_TYPES[ext] ?? 'application/octet-stream',
+      tags: ['output'],
+      preview_url: `/api/view?filename=${filename}&type=output`,
       created_at: createdAt,
       updated_at: createdAt
-    })
+    }
   }
 )
 
@@ -49,6 +39,10 @@ const imageCardName = 'output_images-001'
 const videoCardName = 'output_video-002'
 const audioCardName = 'output_audio-003'
 const threeDCardName = 'output_3D-004'
+
+function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
+  return { assets, total: assets.length, has_more: false }
+}
 
 const test = comfyPageFixture.extend<{
   stubCloudAssets: void
@@ -69,7 +63,7 @@ const test = comfyPageFixture.extend<{
           return route.fulfill({
             status: 200,
             contentType: 'application/json',
-            body: JSON.stringify(createMockAssetListResponse([]))
+            body: JSON.stringify(makeAssetsResponse([]))
           })
         }
 
@@ -91,7 +85,7 @@ const test = comfyPageFixture.extend<{
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(createMockAssetListResponse(matches))
+          body: JSON.stringify(makeAssetsResponse(matches))
         })
       })
       await use()
@@ -290,7 +284,9 @@ test.describe('Assets sidebar - attribute filters', { tag: '@cloud' }, () => {
     // toggle restores it (only image/video/audio reappear). Image, video,
     // and audio cover the restoration path; once #11635 is fixed, add the
     // 3D card back to this assertion list.
-    await expect(tab.getAssetCardByName(imageCardName)).toBeVisible()
+    await expect(tab.getAssetCardByName(imageCardName)).toBeVisible({
+      timeout: 10_000
+    })
     await expect(tab.getAssetCardByName(videoCardName)).toBeVisible()
     await expect(tab.getAssetCardByName(audioCardName)).toBeVisible()
   })

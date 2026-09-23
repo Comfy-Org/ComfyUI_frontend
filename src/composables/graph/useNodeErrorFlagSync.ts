@@ -4,9 +4,10 @@ import { computed, watch } from 'vue'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { getParentExecutionIds } from '@/types/nodeIdentification'
 import { hasErrorForSlot } from '@/utils/executionErrorUtil'
 import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
@@ -35,7 +36,8 @@ function reconcileNodeErrorFlags(
   rootGraph: LGraph,
   nodeErrors: Record<string, NodeError> | null,
   missingModelExecIds: Set<string>,
-  missingMediaExecIds: Set<string> = new Set()
+  missingMediaExecIds: Set<string> = new Set(),
+  missingNodeExecIds: Set<string> = new Set()
 ): void {
   // Collect nodes and slot info that should be flagged
   // Includes both error-owning nodes and their ancestor containers
@@ -69,16 +71,18 @@ function reconcileNodeErrorFlags(
     const node = getNodeByExecutionId(rootGraph, execId)
     if (node) flaggedNodes.add(node)
   }
+  for (const execId of missingNodeExecIds) {
+    const node = getNodeByExecutionId(rootGraph, execId)
+    if (node) flaggedNodes.add(node)
+  }
 
   forEachNode(rootGraph, (node) => {
     setNodeHasErrors(node, flaggedNodes.has(node))
 
-    if (node.inputs) {
-      const ownErrors = errorsByNode.get(node)
-      for (const slot of node.inputs) {
-        slot.hasErrors =
-          !!slot.name && !!ownErrors && hasErrorForSlot(ownErrors, slot.name)
-      }
+    const ownErrors = errorsByNode.get(node)
+    for (const slot of node.inputs) {
+      slot.hasErrors =
+        !!slot.name && !!ownErrors && hasErrorForSlot(ownErrors, slot.name)
     }
   })
 }
@@ -86,7 +90,8 @@ function reconcileNodeErrorFlags(
 export function useNodeErrorFlagSync(
   nodeErrors: Ref<Record<string, NodeError> | null>,
   missingModelStore: ReturnType<typeof useMissingModelStore>,
-  missingMediaStore: ReturnType<typeof useMissingMediaStore>
+  missingMediaStore: ReturnType<typeof useMissingMediaStore>,
+  missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>
 ): () => void {
   const settingStore = useSettingStore()
   const showErrorsTab = computed(() =>
@@ -98,23 +103,29 @@ export function useNodeErrorFlagSync(
       nodeErrors,
       () => missingModelStore.missingModelNodeIds,
       () => missingMediaStore.missingMediaNodeIds,
+      () => missingNodesStore.missingAncestorExecutionIds,
       showErrorsTab
     ],
     () => {
-      if (!app.isGraphReady) return
-      // Legacy (LGraphNode) only: suppress missing-model/media error flags
+      const rootGraph = app.rootGraphOrUndefined
+      if (!rootGraph) return
+      // Legacy (LGraphNode) only: suppress missing-resource error flags
       // when the Errors tab is hidden, since legacy nodes lack the per-widget
       // red highlight that Vue nodes use to indicate *why* a node has errors.
       // Vue nodes compute hasAnyError independently and are unaffected.
       reconcileNodeErrorFlags(
-        app.rootGraph,
+        rootGraph,
         nodeErrors.value,
         showErrorsTab.value
           ? missingModelStore.missingModelAncestorExecutionIds
           : new Set(),
         showErrorsTab.value
           ? missingMediaStore.missingMediaAncestorExecutionIds
-          : new Set()
+          : new Set(),
+        // Placeholders for missing nodes are flagged at creation regardless
+        // of the Errors tab, so keep that and let only the nodes warning
+        // setting clear them.
+        missingNodesStore.missingAncestorExecutionIds
       )
     },
     { flush: 'post' }

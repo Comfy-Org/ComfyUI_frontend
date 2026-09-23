@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { load3dViewerTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
 
-test.describe('Load3D Viewer', () => {
+test.describe('Load3D Viewer', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage, load3d }) => {
     // Upload cube.obj so the node has a model loaded
     const uploadResponsePromise = comfyPage.page.waitForResponse(
@@ -51,4 +51,37 @@ test.describe('Load3D Viewer', () => {
       await viewer.waitForClosed()
     }
   )
+
+  test('keeps the full-screen viewer inside the visible workspace inset', async ({
+    comfyPage,
+    load3d,
+    viewer
+  }) => {
+    test.fixme(
+      true,
+      'Activates after slice PR 16187 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16187'
+    )
+
+    await comfyPage.page.evaluate(() => {
+      document.documentElement.style.setProperty(
+        '--workspace-inset-right',
+        '420px'
+      )
+    })
+    await load3d.openViewerButton.click()
+    await viewer.waitForOpen()
+
+    const dialogBox = await viewer.dialog.boundingBox()
+    const viewport = comfyPage.page.viewportSize()
+    expect(dialogBox).not.toBeNull()
+    expect(viewport).not.toBeNull()
+    expect(dialogBox!.x).toBeGreaterThanOrEqual(0)
+    expect(dialogBox!.y).toBeGreaterThanOrEqual(0)
+    expect(dialogBox!.x + dialogBox!.width).toBeLessThanOrEqual(
+      viewport!.width - 420 + 1
+    )
+    expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(
+      viewport!.height + 1
+    )
+  })
 })

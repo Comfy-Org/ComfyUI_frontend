@@ -2,10 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { Asset } from '@comfyorg/ingest-types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import {
-  createMockCloudAsset,
-  createMockJob
-} from '@e2e/fixtures/helpers/AssetsHelper'
+import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 /**
@@ -39,15 +36,16 @@ const CLOUD_ASSETS: Asset[] = [
   ...DISTINCT_FILENAMES,
   DUPLICATE_FILENAME,
   DUPLICATE_FILENAME
-].map((filename, i) =>
-  createMockCloudAsset({
-    id: `asset-dedupe-${i}`,
-    name: filename,
-    job_id: STACK_JOB_ID,
-    created_at: new Date(5000 + i).toISOString(),
-    updated_at: new Date(5000 + i).toISOString()
-  })
-)
+].map((filename, i) => ({
+  id: `asset-dedupe-${i}`,
+  name: filename,
+  job_id: STACK_JOB_ID,
+  mime_type: 'image/png',
+  tags: ['output'],
+  preview_url: `/api/view?filename=${filename}&type=output`,
+  created_at: new Date(5000 + i).toISOString(),
+  updated_at: new Date(5000 + i).toISOString()
+}))
 
 const STACK_JOB = createMockJob({
   id: STACK_JOB_ID,
@@ -77,18 +75,15 @@ test.describe(
   'Expanded folder view dedupes duplicate composite output keys',
   { tag: '@cloud' },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.assets.mockCloudAssets({
+    test.beforeEach(async ({ page }) => {
+      const assets = new AssetsHelper(page)
+      await assets.mockCloudAssets({
         assets: CLOUD_ASSETS,
         total: CLOUD_ASSETS.length,
         has_more: false
       })
-      await comfyPage.assets.mockInputFiles([])
-      await comfyPage.assets.mockJobDetail(STACK_JOB_ID, STACK_JOB_DETAIL)
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.assets.clearMocks()
+      await assets.mockInputFiles([])
+      await assets.mockJobDetail(STACK_JOB_ID, STACK_JOB_DETAIL)
     })
 
     test('renders one tile per unique composite key', async ({
@@ -105,6 +100,13 @@ test.describe(
       await expect(tab.backToAssetsButton).toBeVisible()
 
       await expect(tab.assetCards).toHaveCount(EXPECTED_TOTAL_TILES)
+
+      const labels = await tab.assetCards.evaluateAll((nodes) =>
+        nodes
+          .map((el) => el.getAttribute('aria-label'))
+          .filter((v): v is string => v !== null)
+      )
+      expect(new Set(labels).size).toBe(labels.length)
 
       await testInfo.attach('expanded-folder-view.png', {
         body: await comfyPage.page.screenshot({ fullPage: false }),

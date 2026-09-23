@@ -1,6 +1,7 @@
 import { ref, toValue } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
+import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
@@ -25,8 +26,6 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import { useRemoteWidget } from './useRemoteWidget'
 
-type AssetsStore = ReturnType<typeof useAssetsStore>
-
 const getDefaultValue = (inputSpec: ComboInputSpec) => {
   if (inputSpec.default) return inputSpec.default
   if (inputSpec.options?.length) return inputSpec.options[0]
@@ -35,7 +34,9 @@ const getDefaultValue = (inputSpec: ComboInputSpec) => {
 }
 
 // Map node types to expected media types
-const NODE_MEDIA_TYPE_MAP: Record<string, 'image' | 'video' | 'audio'> = {
+const NODE_MEDIA_TYPE_MAP: Partial<
+  Record<string, 'image' | 'video' | 'audio'>
+> = {
   LoadImage: 'image',
   LoadVideo: 'video',
   LoadAudio: 'audio'
@@ -88,7 +89,7 @@ const addMultiSelectWidget = (
       }
     }
   })
-  addWidget(node, widget as BaseDOMWidget<object | string>)
+  addWidget(node, widget as BaseDOMWidget)
   // TODO: Add remote support to multi-select widget
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3003
   if (inputSpec.control_after_generate) {
@@ -114,11 +115,10 @@ const addMultiSelectWidget = (
  * asset → undefined (shows placeholder).
  */
 function resolveCloudDefault(
-  assetsStore: AssetsStore,
   nodeType: string,
   specDefault: string | undefined
 ): string | undefined {
-  const assets = assetsStore.getAssets(nodeType)
+  const assets = useAssetsStore().getAssets(nodeType)
   if (specDefault != null) {
     const inAssets = assets.some((a) => getAssetFilename(a) === specDefault)
     if (inAssets) return specDefault
@@ -128,14 +128,11 @@ function resolveCloudDefault(
   return filename || undefined
 }
 
-function getCloudInputAssets(
-  assetsStore: AssetsStore,
-  nodeType: string | undefined
-): AssetItem[] {
+function getCloudInputAssets(nodeType: string | undefined): AssetItem[] {
   const mediaType = NODE_MEDIA_TYPE_MAP[nodeType ?? '']
   if (!mediaType) return []
 
-  return toValue(assetsStore.inputAssets.items).filter(
+  return toValue(useAssetsStore().inputAssets.items).filter(
     (asset) =>
       getCloudInputAssetValue(asset) &&
       getMediaTypeFromFilename(asset.name) === mediaType
@@ -146,21 +143,17 @@ function getCloudInputAssetValue(asset: AssetItem): string | undefined {
   return asset.hash ?? undefined
 }
 
-function getCloudInputAssetValues(
-  assetsStore: AssetsStore,
-  nodeType: string | undefined
-): string[] {
-  return getCloudInputAssets(assetsStore, nodeType)
+function getCloudInputAssetValues(nodeType: string | undefined): string[] {
+  return getCloudInputAssets(nodeType)
     .map(getCloudInputAssetValue)
     .filter((value): value is string => !!value)
 }
 
 function resolveCloudInputDefault(
-  assetsStore: AssetsStore,
   nodeType: string | undefined,
   specDefault: string | undefined
 ): string | undefined {
-  const assets = getCloudInputAssets(assetsStore, nodeType)
+  const assets = getCloudInputAssets(nodeType)
   if (specDefault != null) {
     const matchingAsset =
       assets.find((asset) => getCloudInputAssetValue(asset) === specDefault) ??
@@ -186,11 +179,12 @@ function createAssetBrowserWidget(
 }
 
 const createInputMappingWidget = (
-  assetsStore: AssetsStore,
   node: LGraphNode,
   inputSpec: ComboInputSpec,
   defaultValue: string | undefined
 ): IBaseWidget => {
+  const assetsStore = useAssetsStore()
+
   const widget = node.addWidget(
     'combo',
     inputSpec.name,
@@ -219,7 +213,7 @@ const createInputMappingWidget = (
   void loadAll()
 
   bindDynamicValuesOption(widget, () =>
-    getCloudInputAssetValues(assetsStore, node.comfyClass)
+    getCloudInputAssetValues(node.comfyClass)
   )
 
   if (inputSpec.control_after_generate) {
@@ -249,13 +243,13 @@ const addComboWidget = (
   const defaultValue = getDefaultValue(inputSpec)
 
   if (isCloud) {
-    const assetsStore = useAssetsStore()
-    if (assetService.shouldUseAssetBrowser(node.comfyClass, inputSpec.name)) {
+    if (
+      assetService.shouldUseWidgetAssetPicker(node.comfyClass, inputSpec.name)
+    ) {
       // Default from cloud assets, not from server combo options.
       // Server options list local files that may not exist in the user's
       // cloud asset library, leading to missing-model errors on undo/reload.
       const cloudDefault = resolveCloudDefault(
-        assetsStore,
         node.comfyClass ?? '',
         inputSpec.default
       )
@@ -264,14 +258,9 @@ const addComboWidget = (
 
     if (NODE_MEDIA_TYPE_MAP[node.comfyClass ?? '']) {
       return createInputMappingWidget(
-        assetsStore,
         node,
         inputSpec,
-        resolveCloudInputDefault(
-          assetsStore,
-          node.comfyClass,
-          inputSpec.default
-        )
+        resolveCloudInputDefault(node.comfyClass, inputSpec.default)
       )
     }
   }
@@ -300,6 +289,10 @@ const addComboWidget = (
     })
     if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
 
+    registerComboWidgetInventory(widget, {
+      getStatus: remoteWidget.getInventoryStatus,
+      waitForSettled: remoteWidget.waitForInventory
+    })
     bindDynamicValuesOption(widget, () => remoteWidget.getValue())
   }
 

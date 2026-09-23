@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { PendingSubscriptionCheckout } from './pendingSubscriptionCheckout'
 import {
   clearPendingSubscriptionCheckout,
+  clearPendingSubscriptionCheckoutIfTerminal,
   getPendingSubscriptionCheckout,
   savePendingSubscriptionCheckout
 } from './pendingSubscriptionCheckout'
@@ -81,5 +82,35 @@ describe('pendingSubscriptionCheckout', () => {
 
     clearPendingSubscriptionCheckout('op-new')
     expect(getPendingSubscriptionCheckout()).toBeNull()
+  })
+})
+
+describe('clearPendingSubscriptionCheckoutIfTerminal', () => {
+  beforeEach(() => {
+    savePendingSubscriptionCheckout(checkoutFixture())
+  })
+
+  it.for(['succeeded', 'failed', 'reconciliation_needed'] as const)(
+    'clears the pointer once the operation reports %s',
+    (status) => {
+      clearPendingSubscriptionCheckoutIfTerminal('op-1', status)
+
+      expect(getPendingSubscriptionCheckout()).toBeNull()
+    }
+  )
+
+  it.for(['pending', 'timeout'] as const)(
+    'keeps the pointer while the operation reports %s',
+    (status) => {
+      clearPendingSubscriptionCheckoutIfTerminal('op-1', status)
+
+      expect(getPendingSubscriptionCheckout()?.operationId).toBe('op-1')
+    }
+  )
+
+  it('leaves a pointer belonging to a different operation alone', () => {
+    clearPendingSubscriptionCheckoutIfTerminal('op-other', 'succeeded')
+
+    expect(getPendingSubscriptionCheckout()?.operationId).toBe('op-1')
   })
 })

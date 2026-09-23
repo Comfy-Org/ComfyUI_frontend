@@ -27,7 +27,7 @@
         </p>
       </div>
 
-      <Message v-if="!isSecureContext" severity="warn" class="mb-4">
+      <Message v-if="!isSecureContext" severity="warning" class="mb-4">
         {{ t('auth.login.insecureContextWarning') }}
       </Message>
 
@@ -45,7 +45,7 @@
         </div>
         <Message
           v-else-if="regionStatus === 'blocked'"
-          severity="warn"
+          severity="warning"
           class="mb-4"
         >
           {{ t('auth.signup.regionRestrictionChina') }}
@@ -53,10 +53,13 @@
         <SignUpForm v-else ref="signUpForm" @submit="signUpWithEmail" />
       </template>
 
-      <!-- Divider -->
-      <Divider align="center" layout="horizontal" class="my-8">
-        <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
-      </Divider>
+      <div class="my-8 flex items-center gap-3">
+        <div class="grow border-t border-interface-stroke" />
+        <span class="shrink-0 text-muted">{{
+          t('auth.login.orContinueWith')
+        }}</span>
+        <div class="grow border-t border-interface-stroke" />
+      </div>
 
       <!-- Social Login Buttons (hidden if host not whitelisted) -->
       <div class="flex flex-col gap-6">
@@ -124,12 +127,13 @@
           </small>
         </template>
         <Message
-          v-if="authActions.accessError.value"
+          v-model:visible="authActions.accessError.value"
           severity="info"
-          icon="pi pi-info-circle"
-          variant="outlined"
           closable
         >
+          <template #icon>
+            <i class="pi pi-info-circle" />
+          </template>
           {{ t('toastMessages.useApiKeyTip') }}
         </Message>
       </div>
@@ -162,16 +166,16 @@
 </template>
 
 <script setup lang="ts">
-import Divider from 'primevue/divider'
-import Message from 'primevue/message'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isEmbeddedWebView } from '@/base/webviewDetection'
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
+import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
+
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useRegionGate } from '@/composables/auth/useRegionGate'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,

@@ -1,24 +1,22 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-vi.mock('vue-i18n', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as Record<string, unknown>),
-    useI18n: () => ({
-      t: (key: string, params?: Record<string, unknown>) =>
-        params ? `${key} ${Object.values(params).join(' ')}` : key
-    })
-  }
-})
+import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: mockToastAdd })
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({ add: mockToastAdd })
+  })
+)
 
 import ComfyHubPublishDialog from '@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue'
 
@@ -35,11 +33,11 @@ const mockSubmitToComfyHub = vi.hoisted(() => vi.fn())
 const mockGetPublishStatus = vi.hoisted(() => vi.fn())
 const mockRenameWorkflow = vi.hoisted(() => vi.fn())
 const mockFormDataHolder = vi.hoisted(
-  () => ({ value: null }) as { value: Record<string, unknown> | null }
+  (): { value: ComfyHubPublishFormData | null } => ({ value: null })
 )
 
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/composables/useComfyHubProfileGate'),
   () => ({
     useComfyHubProfileGate: () => ({
       fetchProfile: mockFetchProfile
@@ -47,8 +45,8 @@ vi.mock(
   })
 )
 
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubPublishWizard',
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/composables/useComfyHubPublishWizard'),
   () => {
     mockFormDataHolder.value = {
       name: '',
@@ -87,7 +85,7 @@ vi.mock(
 )
 
 vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubPublishSubmission',
+  import('@/platform/workflow/sharing/composables/useComfyHubPublishSubmission'),
   () => ({
     useComfyHubPublishSubmission: () => ({
       submitToComfyHub: mockSubmitToComfyHub
@@ -95,56 +93,58 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  useWorkflowShareService: () => ({
-    getPublishStatus: mockGetPublishStatus
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    useWorkflowShareService: () => ({
+      getPublishStatus: mockGetPublishStatus
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    renameWorkflow: mockRenameWorkflow,
-    saveWorkflow: vi.fn()
-  })
-}))
-
-const mockWorkflowStore = vi.hoisted(() => {
-  return {
-    instance: null as { activeWorkflow: Record<string, unknown> | null } | null
-  }
-})
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { reactive } = await import('vue')
-  mockWorkflowStore.instance = reactive({
-    activeWorkflow: {
-      path: 'workflows/test.json',
-      filename: 'test.json',
-      directory: 'workflows',
-      isTemporary: false,
-      isModified: false
-    } as Record<string, unknown> | null
-  })
-  return {
-    useWorkflowStore: () => ({
-      ...mockWorkflowStore.instance,
-      get activeWorkflow() {
-        return mockWorkflowStore.instance?.activeWorkflow ?? null
-      },
+vi.mock<unknown>(
+  import('@/platform/workflow/core/services/workflowService'),
+  () => ({
+    useWorkflowService: () => ({
+      renameWorkflow: mockRenameWorkflow,
       saveWorkflow: vi.fn()
     })
-  }
-})
+  })
+)
 
-function setActiveWorkflow(workflow: Record<string, unknown> | null) {
-  if (mockWorkflowStore.instance) {
-    mockWorkflowStore.instance.activeWorkflow = workflow
-  }
+function setActiveWorkflow(workflow: Partial<LoadedComfyWorkflow>) {
+  useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>(workflow)
+}
+
+function createTestI18n() {
+  return createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: {
+      en: {
+        comfyHubPublish: {
+          title: 'Publish to Comfy Workflows',
+          publishFailedTitle: 'Publish failed',
+          publishFailedDescription:
+            'Something went wrong while publishing your workflow. Please try again.',
+          publishFailedDescriptionWithReason:
+            'Something went wrong while publishing your workflow: {reason}',
+          publishSuccessTitle: 'Published successfully',
+          publishSuccessDescription:
+            'Your workflow is now live on Comfy Workflows.'
+        }
+      }
+    }
+  })
 }
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
+
+beforeEach(() => {
+  vi.mocked(useWorkflowStore().saveWorkflow).mockResolvedValue(undefined)
+})
 
 describe('ComfyHubPublishDialog', () => {
   const onClose = vi.fn()
@@ -175,9 +175,7 @@ describe('ComfyHubPublishDialog', () => {
     return render(ComfyHubPublishDialog, {
       props: { onClose },
       global: {
-        mocks: {
-          $t: (key: string) => key
-        },
+        plugins: [createTestI18n()],
         stubs: {
           BaseModalLayout: {
             template:
@@ -318,9 +316,8 @@ describe('ComfyHubPublishDialog', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
-        detail: expect.stringContaining(
-          'unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
-        )
+        detail:
+          'Something went wrong while publishing your workflow: unsupported content type "video/quicktime"; allowed: image/png, image/jpeg, video/mp4'
       })
     )
   })
@@ -336,7 +333,8 @@ describe('ComfyHubPublishDialog', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         severity: 'error',
-        detail: 'comfyHubPublish.publishFailedDescription'
+        detail:
+          'Something went wrong while publishing your workflow. Please try again.'
       })
     )
     expect(onClose).not.toHaveBeenCalled()

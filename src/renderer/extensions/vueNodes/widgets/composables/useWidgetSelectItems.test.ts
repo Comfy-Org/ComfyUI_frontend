@@ -3,13 +3,16 @@ import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData',
+  import('@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'),
   () => ({
     useAssetWidgetData: () => ({
       category: computed(() => 'checkpoints'),
@@ -20,7 +23,7 @@ vi.mock(
   })
 )
 
-const mockResolveOutputAssetItems = vi.fn()
+const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
 function createMockMediaAssets() {
   return {
@@ -35,7 +38,7 @@ function createMockMediaAssets() {
 
 let mockMediaAssets = createMockMediaAssets()
 
-vi.mock('@/platform/assets/composables/useAssetFilterOptions', () => ({
+vi.mock(import('@/platform/assets/composables/useAssetFilterOptions'), () => ({
   useAssetFilterOptions: () => ({
     ownershipOptions: computed(() => []),
     availableBaseModels: computed(() => []),
@@ -43,10 +46,20 @@ vi.mock('@/platform/assets/composables/useAssetFilterOptions', () => ({
   })
 }))
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
-  resolveOutputAssetItems: (...args: unknown[]) =>
-    mockResolveOutputAssetItems(...args)
-}))
+vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
+
+function makeResolvedOutput(
+  id: string,
+  name: string,
+  previewUrl = ''
+): AssetItem {
+  return fromPartial({
+    id,
+    name,
+    preview_url: previewUrl,
+    tags: ['output']
+  })
+}
 
 function createDefaultOptions(
   overrides: Partial<UseWidgetSelectItemsOptions> = {}
@@ -175,9 +188,7 @@ describe('useWidgetSelectItems', () => {
 
       expect(dropdownItems.value).toHaveLength(2)
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
 
@@ -192,9 +203,7 @@ describe('useWidgetSelectItems', () => {
       await nextTick()
 
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
 
@@ -207,9 +216,7 @@ describe('useWidgetSelectItems', () => {
       )
       expect(dropdownItems.value).toHaveLength(2)
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
 
@@ -222,9 +229,7 @@ describe('useWidgetSelectItems', () => {
       )
       expect(dropdownItems.value).toHaveLength(2)
       expect(
-        dropdownItems.value.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.value.every((item) => !item.id.startsWith('missing-'))
       ).toBe(true)
     })
   })
@@ -451,24 +456,21 @@ describe('useWidgetSelectItems', () => {
       ]
 
       mockResolveOutputAssetItems.mockResolvedValue([
-        {
-          id: 'job-1-5-output_001.png',
-          name: 'output_001.png',
-          preview_url: '/api/view?filename=output_001.png&type=output',
-          tags: ['output']
-        },
-        {
-          id: 'job-1-5-output_002.png',
-          name: 'output_002.png',
-          preview_url: '/api/view?filename=output_002.png&type=output',
-          tags: ['output']
-        },
-        {
-          id: 'job-1-5-output_003.png',
-          name: 'output_003.png',
-          preview_url: '/api/view?filename=output_003.png&type=output',
-          tags: ['output']
-        }
+        makeResolvedOutput(
+          'job-1-5-output_001.png',
+          'output_001.png',
+          '/api/view?filename=output_001.png&type=output'
+        ),
+        makeResolvedOutput(
+          'job-1-5-output_002.png',
+          'output_002.png',
+          '/api/view?filename=output_002.png&type=output'
+        ),
+        makeResolvedOutput(
+          'job-1-5-output_003.png',
+          'output_003.png',
+          '/api/view?filename=output_003.png&type=output'
+        )
       ])
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -515,40 +517,18 @@ describe('useWidgetSelectItems', () => {
         makeMultiOutputAsset('job-B', 'previewB.png', '2', 2)
       ]
 
-      mockResolveOutputAssetItems.mockImplementation(
-        async (meta: { jobId: string }) => {
-          if (meta.jobId === 'job-A') {
-            return [
-              {
-                id: 'A-1',
-                name: 'a1.png',
-                preview_url: '',
-                tags: ['output']
-              },
-              {
-                id: 'A-2',
-                name: 'a2.png',
-                preview_url: '',
-                tags: ['output']
-              }
-            ]
-          }
+      mockResolveOutputAssetItems.mockImplementation(async (meta) => {
+        if (meta.jobId === 'job-A') {
           return [
-            {
-              id: 'B-1',
-              name: 'b1.png',
-              preview_url: '',
-              tags: ['output']
-            },
-            {
-              id: 'B-2',
-              name: 'b2.png',
-              preview_url: '',
-              tags: ['output']
-            }
+            makeResolvedOutput('A-1', 'a1.png'),
+            makeResolvedOutput('A-2', 'a2.png')
           ]
         }
-      )
+        return [
+          makeResolvedOutput('B-1', 'b1.png'),
+          makeResolvedOutput('B-2', 'b2.png')
+        ]
+      })
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
         createDefaultOptions({
@@ -602,18 +582,8 @@ describe('useWidgetSelectItems', () => {
       ]
 
       mockResolveOutputAssetItems.mockResolvedValue([
-        {
-          id: 'c-1',
-          name: 'out1.png',
-          preview_url: '',
-          tags: ['output']
-        },
-        {
-          id: 'c-2',
-          name: 'out2.png',
-          preview_url: '',
-          tags: ['output']
-        }
+        makeResolvedOutput('c-1', 'out1.png'),
+        makeResolvedOutput('c-2', 'out2.png')
       ])
 
       const { dropdownItems, filterSelected } = useWidgetSelectItems(
@@ -1046,9 +1016,29 @@ describe('useWidgetSelectItems', () => {
   })
 
   describe('FE-230 missing-media filtering', () => {
+    it('still drops missing media when the missing media warning is off', async () => {
+      useMissingMediaStore().setMissingMedia([
+        {
+          nodeId: '1',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          name: 'photo_abc.jpg',
+          isMissing: true
+        }
+      ])
+      useSettingStore().settingValues[
+        'Comfy.Workflow.ShowMissingMediaWarning'
+      ] = false
+
+      const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
+
+      expect(dropdownItems.value.map((i) => i.name)).not.toContain(
+        'photo_abc.jpg'
+      )
+    })
+
     it('drops input items whose name is in the missing-media store', async () => {
-      const { useMissingMediaStore } =
-        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
@@ -1086,8 +1076,6 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { useMissingMediaStore } =
-        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
@@ -1125,8 +1113,6 @@ describe('useWidgetSelectItems', () => {
         })
       ]
 
-      const { useMissingMediaStore } =
-        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
@@ -1152,8 +1138,6 @@ describe('useWidgetSelectItems', () => {
     it('does not surface a missing-value placeholder when the modelValue is confirmed missing', async () => {
       const modelValue = ref<string | undefined>('gone.png [output]')
 
-      const { useMissingMediaStore } =
-        await import('@/platform/missingMedia/missingMediaStore')
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {

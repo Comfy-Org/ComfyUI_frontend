@@ -26,6 +26,7 @@
         <WorkspaceProfilePic
           v-else-if="showWorkspaceIcon"
           :workspace-name="workspaceName"
+          :subscription-tier="activeWorkspace?.subscriptionTier"
           :class="compact && 'size-full'"
         />
         <UserAvatar
@@ -94,7 +95,8 @@ const photoURL = computed<string | undefined>(
 const {
   workspaceName: teamWorkspaceName,
   initState,
-  isInPersonalWorkspace
+  isInPersonalWorkspace,
+  activeWorkspace
 } = storeToRefs(useTeamWorkspaceStore())
 
 const showWorkspaceSkeleton = computed(

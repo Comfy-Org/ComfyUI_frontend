@@ -1,24 +1,27 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-vi.mock('@/platform/assets/composables/media/assetMappers')
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 const mocks = vi.hoisted(() => ({
   addEventListener:
     vi.fn<(event: string, listener: (event: Event) => void) => void>(),
   queuePrompt: vi.fn(() => Promise.resolve(true)),
-  lastExecutionError: null as object | null
+  lastExecutionError: null as object | null,
+  gateBlocks: false
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock(import('@/composables/billing/usePartnerNodesRunGate'), () => ({
+  partnerRunGateBlocksAutoQueue: () => mocks.gateBlocks
+}))
+
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: mocks.addEventListener
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     queuePrompt: mocks.queuePrompt,
     get lastExecutionError() {
@@ -42,17 +45,12 @@ function setupAndGetAutoQueueGraphChangedListener() {
 
 describe('setupAutoQueueHandler', () => {
   beforeEach(() => {
-    setActivePinia(
-      createTestingPinia({
-        createSpy: vi.fn,
-        stubActions: false
-      })
-    )
     const queueSettingsStore = useQueueSettingsStore()
     queueSettingsStore.mode = 'change'
     queueSettingsStore.batchCount = 2
     useQueuePendingTaskCountStore().count = 0
     mocks.lastExecutionError = null
+    mocks.gateBlocks = false
   })
 
   it('queues on autoQueueGraphChanged instead of graphChanged', () => {
@@ -103,5 +101,40 @@ describe('setupAutoQueueHandler', () => {
     await nextTick()
 
     expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not queue while the partner run gate blocks auto-queue', () => {
+    mocks.gateBlocks = true
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    listener(new Event('autoQueueGraphChanged'))
+
+    expect(mocks.queuePrompt).not.toHaveBeenCalled()
+  })
+
+  it('queues again once the gate clears rather than staying stuck', () => {
+    mocks.gateBlocks = true
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+    listener(new Event('autoQueueGraphChanged'))
+    expect(mocks.queuePrompt).not.toHaveBeenCalled()
+
+    mocks.gateBlocks = false
+    listener(new Event('autoQueueGraphChanged'))
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not re-queue when a busy processor reports the item as not run yet', async () => {
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    mocks.queuePrompt.mockResolvedValueOnce(false)
+    listener(new Event('autoQueueGraphChanged'))
+    await nextTick()
+    listener(new Event('autoQueueGraphChanged'))
+    await nextTick()
+
+    expect(
+      mocks.queuePrompt,
+      'a false from a busy processor already enqueued the item; do not queue it again'
+    ).toHaveBeenCalledTimes(1)
   })
 })

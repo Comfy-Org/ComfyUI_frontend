@@ -72,7 +72,7 @@ import {
   CollapsibleTrigger
 } from 'reka-ui'
 
-import type { AssetInfo } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@comfyorg/ingest-types'
 import ShareAssetThumbnail from '@/platform/workflow/sharing/components/ShareAssetThumbnail.vue'
 import { useAssetSections } from '@/platform/workflow/sharing/composables/useAssetSections'
 import Button from '@/components/ui/button/Button.vue'

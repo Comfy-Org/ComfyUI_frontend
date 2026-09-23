@@ -18,7 +18,8 @@ import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -249,6 +250,72 @@ describe('SubgraphNode Synchronization', () => {
     )
   })
 
+  it('registers promoted widget bindings once added to a graph, not during construction (#16250)', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(input, interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: -1 })
+    const promotedInput = subgraphNode.inputs[0]
+    // Registration is deferred while the node's id is still
+    // UNASSIGNED_NODE_ID: no widgetId is minted, so nothing keyed by the
+    // shared construction-time id can leak into an unrelated instance.
+    expect(promotedInput.widgetId).toBeUndefined()
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId(subgraph.rootGraph.id, UNASSIGNED_NODE_ID, 'text')
+      )
+    ).toBeUndefined()
+
+    subgraph.rootGraph.add(subgraphNode)
+
+    const nextId = promotedInput.widgetId
+    expect(nextId).toBeDefined()
+    if (!nextId) throw new Error('Missing settled widgetId')
+    expect(useWidgetValueStore().getWidget(nextId)?.value).toBe('initial')
+    expect(promotedInput.widget).toMatchObject({ name: 'text' })
+    expect(subgraphNode.getWidgetFromSlot(promotedInput)).toBe(
+      promotedInput._widget
+    )
+    expect(subgraphNode.widgets).toContain(promotedInput._widget)
+  })
+
+  it('preserves a promoted widget when re-resolution fails', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    const link = subgraph.inputNode.slots[0].connect(input, interiorNode)
+    if (!link) throw new Error('Missing promoted widget link')
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    const previousWidget = promotedInput._widget
+    const previousWidgetId = promotedInput.widgetId
+    if (!previousWidgetId) throw new Error('Missing widgetId')
+    useWidgetValueStore().setValue(previousWidgetId, 'edited')
+
+    subgraph.links.delete(link.id)
+    subgraphNode.rebuildInputWidgetBindings()
+
+    expect(promotedInput.widgetId).toBe(previousWidgetId)
+    expect(promotedInput._widget).toBe(previousWidget)
+    expect(useWidgetValueStore().getWidget(previousWidgetId)?.value).toBe(
+      'edited'
+    )
+  })
+
   it('declines promotion when an empty widget name cannot be registered', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const subgraph = createTestSubgraph({
@@ -362,7 +429,7 @@ describe('SubgraphNode Synchronization', () => {
 
     const subgraphNode = createTestSubgraphNode(subgraph)
     const widget = subgraphNode.widgets[0]
-    expect(widget?.widgetId).toBeDefined()
+    expect(widget.widgetId).toBeDefined()
 
     expect(() => {
       // @ts-expect-error Abstract class instantiation
@@ -394,9 +461,9 @@ describe('SubgraphNode Synchronization', () => {
     state.label = 'Stored Label'
     state.y = 27
 
-    expect(widget?.name).toBe('text')
-    expect(widget?.label).toBe('Stored Label')
-    expect(widget?.y).toBe(27)
+    expect(widget.name).toBe('text')
+    expect(widget.label).toBe('Stored Label')
+    expect(widget.y).toBe(27)
   })
 
   it('writes promoted widget label and y to WidgetState', () => {
@@ -418,7 +485,6 @@ describe('SubgraphNode Synchronization', () => {
     const id = promotedInput.widgetId
     if (!id) throw new Error('Missing widgetId')
 
-    if (!widget) throw new Error('Missing projected widget')
     widget.label = 'Projected Label'
     widget.y = 31
 

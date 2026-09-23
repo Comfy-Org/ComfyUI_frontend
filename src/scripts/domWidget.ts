@@ -1,5 +1,5 @@
-import _ from 'es-toolkit/compat'
-import { type Component, toRaw } from 'vue'
+import { toRaw } from 'vue'
+import type { Component } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 // LegacyWidget is imported from its own module, not the barrel: the barrel
@@ -117,22 +117,33 @@ export const isComponentWidget = <V extends object | string>(
   widget: IBaseWidget
 ): widget is ComponentWidget<V> => 'component' in widget && !!widget.component
 
+type BaseDOMWidgetInit<V extends object | string> = Pick<
+  BaseDOMWidget<V>,
+  'node' | 'name' | 'type' | 'options'
+>
+
+type DOMWidgetInit<
+  T extends HTMLElement,
+  V extends object | string
+> = BaseDOMWidgetInit<V> & Pick<DOMWidget<T, V>, 'element'>
+
+type ComponentWidgetInit<
+  V extends object | string,
+  P extends ComponentWidgetCustomProps
+> = Omit<BaseDOMWidgetInit<V>, 'type'> & {
+  type?: string
+} & Pick<ComponentWidget<V, P>, 'component' | 'inputSpec' | 'props'>
+
 abstract class BaseDOMWidgetImpl<V extends object | string>
   extends LegacyWidget<IBaseWidget<V, string, DOMWidgetOptions<V>>>
   implements BaseDOMWidget<V>
 {
   static readonly DEFAULT_MARGIN = 10
-  declare readonly options: DOMWidgetOptions<V>
   declare callback?: (value: V) => void
 
   readonly id: string
 
-  constructor(obj: {
-    node: LGraphNode
-    name: string
-    type: string
-    options: DOMWidgetOptions<V>
-  }) {
+  constructor(obj: BaseDOMWidgetInit<V>) {
     const { node, name, type, options } = obj
     super({ y: 0, name, type, options }, node)
 
@@ -193,21 +204,6 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   override onRemove(): void {
     useDomWidgetStore().unregisterWidget(this.id)
   }
-
-  override createCopyForNode(node: LGraphNode): this {
-    // @ts-expect-error
-    const cloned: this = new (this.constructor as typeof this)({
-      node: node,
-      name: this.name,
-      type: this.type,
-      options: this.options
-    })
-    cloned.value = this.value
-    // Preserve the Y position from the original widget to maintain proper positioning
-    // when widgets are promoted through subgraph nesting
-    cloned.y = this.y
-    return cloned
-  }
 }
 
 export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
@@ -216,24 +212,18 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
 {
   override readonly element: T
 
-  constructor(obj: {
-    node: LGraphNode
-    name: string
-    type: string
-    element: T
-    options: DOMWidgetOptions<V>
-  }) {
+  constructor(obj: DOMWidgetInit<T, V>) {
     super(obj)
     this.element = obj.element
   }
 
   override createCopyForNode(node: LGraphNode): this {
-    // @ts-expect-error
-    const cloned: this = new (this.constructor as typeof this)({
-      node: node,
+    const Widget = this.constructor as new (init: DOMWidgetInit<T, V>) => this
+    const cloned = new Widget({
+      node,
       name: this.name,
       type: this.type,
-      element: this.element, // Include the element!
+      element: this.element,
       options: this.options
     })
     cloned.value = this.value
@@ -244,7 +234,7 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   }
 
   /** Extract DOM widget size info */
-  override computeLayoutSize(node: LGraphNode) {
+  override computeLayoutSize() {
     if (this.type === 'hidden') {
       return {
         minHeight: 0,
@@ -257,25 +247,19 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     let minHeight =
       this.options.getMinHeight?.() ??
       parseInt(styles.getPropertyValue('--comfy-widget-min-height'))
-    let maxHeight =
+    const maxHeight =
       this.options.getMaxHeight?.() ??
       parseInt(styles.getPropertyValue('--comfy-widget-max-height'))
 
-    let prefHeight: string | number =
+    const prefHeight: string | number =
       this.options.getHeight?.() ??
       styles.getPropertyValue('--comfy-widget-height')
 
-    if (typeof prefHeight === 'string' && prefHeight.endsWith?.('%')) {
-      prefHeight =
-        node.size[1] *
-        (parseFloat(prefHeight.substring(0, prefHeight.length - 1)) / 100)
-    } else {
-      prefHeight =
+    const isPercentageHeight =
+      typeof prefHeight === 'string' && prefHeight.endsWith('%')
+    if (!isPercentageHeight && isNaN(minHeight)) {
+      minHeight =
         typeof prefHeight === 'number' ? prefHeight : parseInt(prefHeight)
-
-      if (isNaN(minHeight)) {
-        minHeight = prefHeight
-      }
     }
 
     return {
@@ -297,15 +281,7 @@ export class ComponentWidgetImpl<
   readonly inputSpec: InputSpec
   readonly props?: P
 
-  constructor(obj: {
-    node: LGraphNode
-    name: string
-    component: Component
-    inputSpec: InputSpec
-    props?: P
-    options: DOMWidgetOptions<V>
-    type?: string
-  }) {
+  constructor(obj: ComponentWidgetInit<V, P>) {
     super({
       type: 'custom',
       ...obj
@@ -313,6 +289,26 @@ export class ComponentWidgetImpl<
     this.component = obj.component
     this.inputSpec = obj.inputSpec
     this.props = obj.props
+  }
+
+  override createCopyForNode(node: LGraphNode): this {
+    const Widget = this.constructor as new (
+      init: ComponentWidgetInit<V, P>
+    ) => this
+    const cloned = new Widget({
+      node,
+      name: this.name,
+      type: this.type,
+      component: this.component,
+      inputSpec: this.inputSpec,
+      props: this.props,
+      options: this.options
+    })
+    cloned.value = this.value
+    // Preserve the Y position from the original widget to maintain proper positioning
+    // when widgets are promoted through subgraph nesting
+    cloned.y = this.y
+    return cloned
   }
 
   override computeLayoutSize() {
@@ -330,10 +326,7 @@ export class ComponentWidgetImpl<
   }
 }
 
-export const addWidget = <W extends BaseDOMWidget<object | string>>(
-  node: LGraphNode,
-  widget: W
-) => {
+export const addWidget = (node: LGraphNode, widget: BaseDOMWidget) => {
   node.addCustomWidget(widget)
 
   if (node.graph) {
@@ -372,7 +365,7 @@ LGraphNode.prototype.addDOMWidget = function <
     options: { hideOnZoom: true, ...options }
   })
   // Note: Before `LGraphNode.configure` is called, `this.id` is always `-1`.
-  addWidget(this, widget as unknown as BaseDOMWidget<object | string>)
+  addWidget(this, widget as unknown as BaseDOMWidget)
 
   // Workaround for https://github.com/Comfy-Org/ComfyUI_frontend/issues/2493
   // Some custom nodes are explicitly expecting getter and setter of `value`

@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { cleanup, render } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -45,6 +44,16 @@ function renderedVideoSrc() {
 afterEach(() => {
   cleanup()
   setViewportWidth(DESKTOP_WIDTH)
+})
+
+describe('wan 3.0 workflow links', () => {
+  it('sends the secondary hero CTA to the Wan family page, not the hub root', () => {
+    // The family page lists the shipped Wan workflows, matching what
+    // /ltx-2.5 and /seedance-2.5 already do.
+    expect(wan3Page.hero.secondaryCta?.href).toBe(
+      'https://comfy.org/workflows/model/wan/'
+    )
+  })
 })
 
 describe('wan 3.0 hero media', () => {

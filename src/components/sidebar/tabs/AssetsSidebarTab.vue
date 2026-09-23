@@ -113,10 +113,11 @@
           :selectable-assets="listViewSelectableAssets"
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
+          :on-load-more="loadMoreAssets"
+          :can-load-more="canLoadMoreAssets"
           @select-asset="handleAssetSelect"
           @preview-asset="handleZoomClick"
           @context-menu="handleAssetContextMenu"
-          @approach-end="handleApproachEnd"
         />
         <div v-else class="size-full">
           <AssetsSidebarGridView
@@ -125,10 +126,11 @@
             :show-output-count
             :get-output-count
             :grid-mode
+            :on-load-more="loadMoreAssets"
+            :can-load-more="canLoadMoreAssets"
             @select-asset="handleAssetSelect"
             @toggle-asset-selection="handleAssetSelectionToggle"
             @context-menu="handleAssetContextMenu"
-            @approach-end="handleApproachEnd"
             @zoom="handleZoomClick"
             @output-count-click="enterFolderView"
           />
@@ -181,7 +183,6 @@
 import {
   unrefElement,
   useAsyncState,
-  useDebounceFn,
   useStorage,
   useTimeoutFn
 } from '@vueuse/core'
@@ -219,10 +220,7 @@ import type {
   MediaAssetGridMode,
   MediaAssetViewMode
 } from '@/platform/assets/components/mediaAssetViewOptions'
-import {
-  getAssetType,
-  getOutputGroupAssets
-} from '@/platform/assets/composables/media/assetMappers'
+import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -232,9 +230,11 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
+import {
+  getAssetFileUrl,
+  getAssetSubfolder
+} from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
-import { assetToResultItem } from '@/platform/assets/utils/assetResultItem'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -244,6 +244,7 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -361,14 +362,8 @@ const {
   error: folderError,
   execute: loadFolderAssets
 } = useAsyncState(
-  (
-    asset: AssetItem,
-    metadata: OutputAssetMetadata,
-    options: { createdAt?: string } = {}
-  ) =>
-    Promise.resolve(
-      getOutputGroupAssets(asset) ?? resolveOutputAssetItems(metadata, options)
-    ),
+  (metadata: OutputAssetMetadata, options: { createdAt?: string } = {}) =>
+    resolveOutputAssetItems(metadata, options),
   [] as AssetItem[],
   { immediate: false, resetOnExecute: true }
 )
@@ -440,7 +435,10 @@ const showLoadingState = computed(
 
 const showEmptyState = computed(
   () =>
-    !loading.value && !isFolderLoading.value && displayAssets.value.length === 0
+    !loading.value &&
+    !isFolderLoading.value &&
+    !canLoadMoreAssets.value &&
+    displayAssets.value.length === 0
 )
 
 watch(visibleAssets, (newAssets) => {
@@ -461,8 +459,18 @@ watch(galleryActiveIndex, (index) => {
   }
 })
 
-const galleryItems = computed(() => {
-  return previewableVisibleAssets.value.map(assetToResultItem)
+const galleryItems = computed<AugmentedResultItem[]>(() => {
+  return previewableVisibleAssets.value.map((asset) => {
+    const mediaType = getMediaTypeFromFilename(asset.name)
+    return {
+      filename: asset.name,
+      subfolder: getAssetSubfolder(asset),
+      type: 'output',
+      nodeId: '0',
+      mediaType: mediaType === 'image' ? 'images' : mediaType,
+      url: asset.preview_url || ''
+    }
+  })
 })
 
 const refreshAssets = async () => {
@@ -475,7 +483,8 @@ watch(
     clearSelection()
     // Clear search when switching tabs
     searchQuery.value = ''
-    void currentAssets.value.loadMore()
+    // Reset pagination state when tab changes
+    void refreshAssets()
   },
   { immediate: true }
 )
@@ -563,12 +572,12 @@ const handleZoomClick = (asset: AssetItem) => {
       title: getAssetDisplayName(asset),
       component: Load3dViewerContent,
       props: {
-        modelUrl: asset.preview_url || getAssetUrl(asset)
+        modelUrl: getAssetFileUrl(asset)
       },
       dialogComponentProps: {
         renderer: 'reka',
         size: 'full',
-        contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
+        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
         maximizable: true
       }
     })
@@ -602,7 +611,7 @@ const enterFolderView = async (asset: AssetItem) => {
   folderExecutionTime.value = executionTimeInSeconds
   expectedFolderCount.value = metadata.outputCount ?? 0
 
-  await loadFolderAssets(0, asset, metadata, { createdAt: asset.created_at })
+  await loadFolderAssets(0, metadata, { createdAt: asset.created_at })
 
   if (folderError.value) {
     toast.add({
@@ -660,7 +669,8 @@ const copyJobId = async () => {
   }
 }
 
-const handleApproachEnd = useDebounceFn(async () => {
-  if (!isInFolderView.value) await currentAssets.value.loadMore()
-}, 300)
+const loadMoreAssets = () => currentAssets.value.loadMore()
+const canLoadMoreAssets = computed(
+  () => !isInFolderView.value && toValue(currentAssets.value.hasMore)
+)
 </script>

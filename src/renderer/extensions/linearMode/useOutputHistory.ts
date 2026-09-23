@@ -4,24 +4,23 @@ import { computed, toValue, watchEffect } from 'vue'
 
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { getOutputGroupAssets } from '@/platform/assets/composables/media/assetMappers'
-import { assetToResultItem } from '@/platform/assets/utils/assetResultItem'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { api } from '@/scripts/api'
 import { getJobDetail } from '@/services/jobOutputCache'
+import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 export function useOutputHistory(): {
   outputs: PagedList<AssetItem>
-  allOutputs: (item?: AssetItem) => ResultItemImpl[]
+  allOutputs: (item?: AssetItem) => AugmentedResultItem[]
   selectFirstHistory: () => void
   mayBeActiveWorkflowPending: ComputedRef<boolean>
   isWorkflowActive: ComputedRef<boolean>
@@ -62,7 +61,9 @@ export function useOutputHistory(): {
       hasActiveWorkflowJobs()
   )
 
-  function filterByOutputNodes(items: ResultItemImpl[]): ResultItemImpl[] {
+  function filterByOutputNodes(
+    items: AugmentedResultItem[]
+  ): AugmentedResultItem[] {
     const nodeIds = appModeStore.selectedOutputs
     if (!nodeIds.length) return []
     return items.filter((r) =>
@@ -70,38 +71,29 @@ export function useOutputHistory(): {
     )
   }
 
-  const outputs: PagedList<AssetItem> = {
-    ...assetsStore.outputAssets,
-    items: computed(() => {
-      const path = workflowStore.activeWorkflow?.path
-      if (!path) return []
+  const outputs = new WrappedList(assetsStore.outputAssets, (items) => {
+    const path = workflowStore.activeWorkflow?.path
+    if (!path) return []
 
-      const pathMap = executionStore.jobIdToSessionWorkflowPath
-      return toValue(assetsStore.outputAssets.items).filter((asset) => {
-        const metadata = getOutputAssetMetadata(asset.user_metadata)
-        return metadata ? pathMap.get(metadata.jobId) === path : false
-      })
+    const pathMap = executionStore.jobIdToSessionWorkflowPath
+
+    return items.filter((asset) => {
+      const m = getOutputAssetMetadata(asset.user_metadata)
+      return m ? pathMap.get(m.jobId) === path : false
     })
-  }
+  })
 
   const resolvedCache = linearStore.resolvedOutputsCache
   const asyncRefs = new Map<
     string,
-    ReturnType<typeof useAsyncState<ResultItemImpl[]>>['state']
+    ReturnType<typeof useAsyncState<AugmentedResultItem[]>>['state']
   >()
 
-  function allOutputs(item?: AssetItem): ResultItemImpl[] {
+  function allOutputs(item?: AssetItem): AugmentedResultItem[] {
     if (!item?.id) return []
 
     const cached = resolvedCache.get(item.id)
     if (cached) return filterByOutputNodes(cached)
-
-    const groupedAssets = getOutputGroupAssets(item)
-    if (groupedAssets) {
-      const results = groupedAssets.toReversed().map(assetToResultItem)
-      resolvedCache.set(item.id, results)
-      return filterByOutputNodes(results)
-    }
 
     const user_metadata = getOutputAssetMetadata(item.user_metadata)
     if (!user_metadata) return []
@@ -127,7 +119,7 @@ export function useOutputHistory(): {
         user_metadata.outputCount <= user_metadata.allOutputs.length) &&
       item.preview_url
     ) {
-      const reversed = user_metadata.allOutputs.toReversed()
+      const reversed = [...user_metadata.allOutputs].reverse()
       resolvedCache.set(item.id, reversed)
       return filterByOutputNodes(reversed)
     }
@@ -143,7 +135,7 @@ export function useOutputHistory(): {
         if (!jobDetail?.outputs) return []
         const results = Object.entries(jobDetail.outputs)
           .flatMap(flattenNodeOutput)
-          .toReversed()
+          .reverse()
         resolvedCache.set(itemId, results)
         return results
       }),
@@ -154,7 +146,7 @@ export function useOutputHistory(): {
   }
 
   function selectFirstHistory() {
-    const first = toValue(outputs.items)[0]
+    const first = toValue(outputs.items).at(0)
     if (first) {
       linearStore.selectAsLatest(`history:${first.id}:0`)
     } else {
@@ -167,7 +159,7 @@ export function useOutputHistory(): {
     if (linearStore.pendingResolve.size === 0) return
     for (const jobId of linearStore.pendingResolve) {
       const asset = toValue(outputs.items).find((a) => {
-        const m = getOutputAssetMetadata(a?.user_metadata)
+        const m = getOutputAssetMetadata(a.user_metadata)
         return m?.jobId === jobId
       })
       if (!asset) continue
@@ -189,7 +181,7 @@ export function useOutputHistory(): {
       // Delete first pending job for this workflow from the queue
       for (const task of queueStore.pendingTasks) {
         if (matchesActiveWorkflow(task)) {
-          await api.deleteItem('queue', String(task.jobId))
+          await api.deleteItem('queue', task.jobId)
           break
         }
       }

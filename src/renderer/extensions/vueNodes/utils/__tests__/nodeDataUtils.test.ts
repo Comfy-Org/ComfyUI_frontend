@@ -1,6 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -14,7 +11,7 @@ import {
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { useLinkStore } from '@/stores/linkStore'
-import { beforeEach, describe, it } from 'vitest'
+import { describe, it } from 'vitest'
 
 const GRAPH_ID = 'graph-test'
 const GRAPH_SCOPE = {
@@ -93,10 +90,6 @@ describe('nodeDataUtils', () => {
   })
 
   describe('linkedWidgetedInputs', () => {
-    beforeEach(() => {
-      setActivePinia(createTestingPinia({ stubActions: false }))
-    })
-
     it('returns nothing when no input slot is connected', () => {
       const inputs: INodeInputSlot[] = [
         makeFakeInputSlot('first'),
