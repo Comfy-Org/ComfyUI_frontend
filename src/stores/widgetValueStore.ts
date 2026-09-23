@@ -105,6 +105,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     WidgetState,
     RemoteMutationContext
   >()
+  const locallyDirtyWidgets = new Set<WidgetId>()
+  let dirtyTrackingSuppressed = 0
 
   function observeValue<TValue extends WidgetValue>(
     state: WidgetState<TValue>,
@@ -123,11 +125,31 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         if (getWidget(widgetId) !== state) return
         const context = valueMutationContexts.get(state)
         valueMutationContexts.delete(state)
+        if (!context && dirtyTrackingSuppressed === 0) {
+          locallyDirtyWidgets.add(widgetId)
+        }
         for (const listener of valueChangeListeners) {
           listener({ widgetId, value, oldValue, context })
         }
       }
     })
+  }
+
+  function withLocalDirtyTrackingSuppressed<T>(fn: () => T): T {
+    beginLocalDirtyTrackingSuppression()
+    try {
+      return fn()
+    } finally {
+      endLocalDirtyTrackingSuppression()
+    }
+  }
+
+  function beginLocalDirtyTrackingSuppression(): void {
+    dirtyTrackingSuppressed++
+  }
+
+  function endLocalDirtyTrackingSuppression(): void {
+    dirtyTrackingSuppressed = Math.max(0, dirtyTrackingSuppressed - 1)
   }
 
   function onValueChange(
@@ -336,7 +358,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     } finally {
       valueMutationContexts.delete(state)
     }
+    if (context) locallyDirtyWidgets.delete(widgetId)
     return true
+  }
+
+  function isLocallyDirty(widgetId: WidgetId): boolean {
+    return locallyDirtyWidgets.has(widgetId)
   }
 
   function setLabel(widgetId: WidgetId, label: string): boolean {
@@ -362,6 +389,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const { graphId } = parseWidgetId(widgetId)
     graphWidgetRenderStates.value.get(graphId)?.delete(widgetId)
     removeNodeWidgetOrder(widgetId)
+    locallyDirtyWidgets.delete(widgetId)
     return graphWidgetStates.value.get(graphId)?.delete(widgetId) ?? false
   }
 
@@ -488,6 +516,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       for (const widgetId of order) {
         graphWidgetStates.value.get(graphId)?.delete(widgetId)
         graphWidgetRenderStates.value.get(graphId)?.delete(widgetId)
+        locallyDirtyWidgets.delete(widgetId)
       }
     }
     graphOrders.delete(localNodeId)
@@ -506,6 +535,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         if (state.nodeId !== nodeId) continue
         widgetStates.delete(id)
         widgetRenderStates?.delete(id)
+        locallyDirtyWidgets.delete(id)
       }
       if (widgetStates.size === 0) graphWidgetStates.value.delete(graphId)
     }
@@ -519,6 +549,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearGraph(graphId: UUID): void {
+    for (const id of graphWidgetStates.value.get(graphId)?.keys() ?? []) {
+      locallyDirtyWidgets.delete(id)
+    }
     graphWidgetStates.value.delete(graphId)
     graphWidgetRenderStates.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
@@ -534,6 +567,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidgetRenderState,
     onValueChange,
     setValue,
+    isLocallyDirty,
+    withLocalDirtyTrackingSuppressed,
+    beginLocalDirtyTrackingSuppression,
+    endLocalDirtyTrackingSuppression,
     setLabel,
     updateOptions,
     deleteWidget,
