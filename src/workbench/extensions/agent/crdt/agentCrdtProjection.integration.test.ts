@@ -1,6 +1,6 @@
 import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { assert } from '@/base/assert'
@@ -245,5 +245,39 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
       graph.getNodeById(toNodeId(1))?.widgets?.map((w) => w.value)
     ).toEqual([30, 7])
     destroy()
+  })
+
+  it.fails('keeps a local node whose add never reached the doc during a later remote reconcile', () => {
+    const { graph } = buildLiveGraph()
+    const { host, hostEdit, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    onTestFinished(destroy)
+    const local = createRegisteredNode('TestSource', TestSource)
+    graph.add(local)
+
+    hostEdit(() => {
+      const source = nodesMap(host).get('1')
+      if (!(source instanceof Y.Map))
+        throw new Error('node 1 is not in the doc')
+      source.set('title', 'Remote title')
+    })
+
+    expect(graph.getNodeById(local.id)).toBe(local)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor(
+          graphScopeOf(graph).rootGraphId,
+          graphScopeOf(graph).owningGraphId
+        )
+        .map(({ id }) => String(id))
+    ).toContain(String(local.id))
+    expect(graph.serialize().nodes.map(({ id }) => id)).toContain(local.id)
+    expect(layout.deleteNodes).not.toHaveBeenCalledWith(
+      graphScopeOf(graph),
+      [local.id],
+      expect.anything()
+    )
   })
 })
