@@ -22,7 +22,8 @@ const {
   available,
   signInWith,
   submitEmail,
-  retryMint
+  retryMint,
+  retryAvailability
 } = useSignInController(() => {
   void router.replace(safeReturnTo(route.query.returnTo))
 })
@@ -87,6 +88,14 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
       >
         {{ t(noticeKey) }}
       </div>
+      <button
+        v-if="!available"
+        type="button"
+        :class="linkButtonClass"
+        @click="retryAvailability"
+      >
+        {{ t('auth.signIn.retryAvailability') }}
+      </button>
 
       <div class="mt-8 flex flex-col gap-4">
         <template v-if="!showEmailForm">

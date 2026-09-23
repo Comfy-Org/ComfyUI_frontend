@@ -249,10 +249,12 @@ function resolveCloudFeatures(
  * failure along the way and never rejects, so a caller always gets either a
  * ready identity or a definite absence.
  *
- * Memoized per `appName`/`cloudBaseUrl` pair for the life of the module:
- * every caller with the same pair shares one fetch and one identity, and two
- * pairs (two hosts, or two Cloud origins in one process, as this package's
- * own tests run) never share a result.
+ * Memoized per `appName`/`cloudBaseUrl` pair while a fetch is in flight or
+ * has produced a ready identity, so every caller with the same pair shares
+ * one fetch and one identity, and two pairs (two hosts, or two Cloud origins
+ * in one process, as this package's own tests run) never share a result. An
+ * unsuccessful settle evicts its entry, so a later call re-fetches rather
+ * than replaying the same absence for the module's lifetime.
  */
 const identityResolutions = new Map<
   string,
@@ -282,6 +284,14 @@ export function resolveFirebaseIdentity(
         }
       }
     )
+    // Evict on an unsuccessful settle so a transient failure does not wedge
+    // sign-in for the module's lifetime. Callers already hold this promise
+    // directly, not a map lookup, so deleting it here never orphans one.
+    void resolution.then((identity) => {
+      if (!identity && identityResolutions.get(key) === resolution) {
+        identityResolutions.delete(key)
+      }
+    })
     identityResolutions.set(key, resolution)
   }
   return resolution
