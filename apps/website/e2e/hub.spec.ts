@@ -193,18 +193,43 @@ test.describe('V2 catalogue', () => {
   })
 
   // Most of the launch list loads weights or custom nodes, which Cloud holds
-  // and the Router cannot. Those pages say so with the graph and the way to
-  // Cloud rather than offering a Run button that would fail.
-  test('a Cloud workflow offers the way to Cloud instead of a form', async ({
-    page
-  }) => {
+  // and the Router cannot. Those pages send the whole graph to Cloud from the
+  // browser, so they open on a form of their own rather than on a way out.
+  test('a Cloud workflow opens on the form that runs it', async ({ page }) => {
     await page.goto('/hub/workflow/flux_fill_inpaint_example/')
 
     await expect(page.getByTestId('workflow-on-cloud')).toBeVisible()
+    await expect(page.getByTestId('workflow-run-input')).toBeVisible()
+    await expect(page.getByTestId('workflow-run-output')).toBeVisible()
+    // The model page's own shell is for the workflows that borrow it.
     await expect(page.getByTestId('workflow-run')).toHaveCount(0)
+  })
+
+  // The ways to take it elsewhere are a second question, so they wait behind
+  // the tab that holds them rather than sitting under the form.
+  test('keeps the ways out behind the details tab', async ({ page }) => {
+    await page.goto('/hub/workflow/flux_fill_inpaint_example/')
+
+    await expect(page.getByTestId('workflow-actions')).toHaveCount(0)
+
+    await page.getByTestId('tab-details').click()
+
     await expect(
       page.getByTestId('workflow-actions').getByTestId('workflow-open-cloud')
     ).toBeVisible()
+  })
+
+  // Calling it yourself is offered on every workflow page, and the snippet is
+  // built from that workflow's own bindings.
+  test('builds a snippet from the workflow on the API tab', async ({
+    page
+  }) => {
+    await page.goto('/hub/workflow/flux_fill_inpaint_example/')
+    await page.getByTestId('tab-api').click()
+
+    await expect(page.getByTestId('workflow-snippet')).toContainText(
+      'flux_fill_inpaint_example.api.json'
+    )
   })
 
   test('the prototype asks not to be indexed', async ({ request }) => {
