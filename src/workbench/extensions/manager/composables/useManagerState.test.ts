@@ -11,7 +11,7 @@ import {
 } from '@/workbench/extensions/manager/composables/useManagerState'
 
 // Mock dependencies that are not stores
-vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -21,13 +21,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
-  useSettingsDialog: vi.fn(() => ({
-    show: vi.fn(),
-    hide: vi.fn(),
-    showAbout: vi.fn()
-  }))
-}))
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 vi.mock(
   import('@/workbench/extensions/manager/composables/useManagerDialog'),
