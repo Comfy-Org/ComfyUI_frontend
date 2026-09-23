@@ -164,7 +164,7 @@ catalog:
   vue-tsc: ^3.3.11
   wwobjloader2: ^6.2.1
   yaml: ^2.8.3
-  yjs: ^13.6.27
+  yjs: ^13.6.32
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
