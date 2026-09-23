@@ -124,6 +124,30 @@ function settleLoadsImmediately() {
   })
 }
 
+/** `loadGraphData`'s own failure result: the canvas keeps the graph it had. */
+function refuseFirstLoad() {
+  let loadsSeen = 0
+  vi.mocked(app.loadGraphData).mockImplementation((graphData) => {
+    loadsSeen++
+    if (loadsSeen > 1) {
+      beginLoad(graphData as ComfyWorkflowJSON)()
+      return Promise.resolve(true)
+    }
+    return Promise.resolve(false)
+  })
+}
+
+/** Only the post-`configure` stages throw, so the canvas did move. */
+function throwAfterFirstLoadConfigures(error: Error) {
+  let loadsSeen = 0
+  vi.mocked(app.loadGraphData).mockImplementation((graphData) => {
+    loadsSeen++
+    const finishLoad = beginLoad(graphData as ComfyWorkflowJSON)
+    finishLoad()
+    return loadsSeen > 1 ? Promise.resolve(true) : Promise.reject(error)
+  })
+}
+
 /**
  * Loads whose promise settles only when the test releases it. Releasing is
  * count-independent on purpose: how many loads are outstanding depends on
@@ -311,6 +335,53 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
       CHECKPOINT_LOADER,
       OPENAI_PARTNER_NODE,
       LUMA_PARTNER_NODE
+    ])
+  })
+
+  it('leaves the history untouched when the load refuses, so the next undo still works', async () => {
+    refuseFirstLoad()
+    const tracker = trackerEditing(withBothPartnerNodes(), [
+      beforePartnerNodes(),
+      withOnePartnerNode()
+    ])
+
+    await tracker.undo()
+
+    expect(nodeTypesOf(tracker.activeState)).toEqual([
+      CHECKPOINT_LOADER,
+      OPENAI_PARTNER_NODE,
+      LUMA_PARTNER_NODE
+    ])
+    expect(tracker.redoQueue).toEqual([])
+
+    tracker.prepareForSave()
+    await tracker.undo()
+
+    expect(nodeTypesOf(tracker.activeState)).toEqual([
+      CHECKPOINT_LOADER,
+      OPENAI_PARTNER_NODE
+    ])
+  })
+
+  it('records the workflow the canvas reached when a load throws after configuring', async () => {
+    const loadFailure = new Error('afterConfigureGraph hook failed')
+    throwAfterFirstLoadConfigures(loadFailure)
+    const tracker = trackerEditing(withBothPartnerNodes(), [
+      beforePartnerNodes(),
+      withOnePartnerNode()
+    ])
+
+    await expect(tracker.undo()).rejects.toThrow(loadFailure)
+
+    expect(nodeTypesOf(tracker.activeState)).toEqual([
+      CHECKPOINT_LOADER,
+      OPENAI_PARTNER_NODE
+    ])
+
+    tracker.prepareForSave()
+
+    expect(tracker.redoQueue.map(nodeTypesOf)).toEqual([
+      [CHECKPOINT_LOADER, OPENAI_PARTNER_NODE, LUMA_PARTNER_NODE]
     ])
   })
 

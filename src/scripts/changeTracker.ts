@@ -491,12 +491,32 @@ export class ChangeTracker {
         target.push(previousState)
         this._restoringState = true
         try {
-          await app.loadGraphData(prevState, false, false, this.workflow, {
-            checkForRerouteMigration: false,
-            silentAssetErrors: true
-          })
+          const loaded = await app.loadGraphData(
+            prevState,
+            false,
+            false,
+            this.workflow,
+            {
+              checkForRerouteMigration: false,
+              silentAssetErrors: true
+            }
+          )
+          // `false` means the load gave up before or during `configure`, so
+          // the canvas kept the graph it had. Both queues forget the step:
+          // naming a graph the canvas never reached would leave the next
+          // `captureCanvasState` reading the gap as an edit, emptying redo.
+          if (loaded === false) {
+            target.pop()
+            source.push(prevState)
+            return
+          }
           this.activeState = prevState
           this.updateModified(previousState)
+        } catch (error) {
+          // What still throws runs after `configure` succeeded, so the canvas
+          // is on `prevState`. Record that, for the same reason, then rethrow.
+          this.activeState = prevState
+          throw error
         } finally {
           this._restoringState = false
         }
