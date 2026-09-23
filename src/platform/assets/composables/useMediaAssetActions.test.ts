@@ -21,6 +21,7 @@ import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
+import { useLitegraphService } from '@/services/litegraphService'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
@@ -92,13 +93,8 @@ vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
   extractWorkflowFromAsset: mockExtractWorkflowFromAsset
 }))
 
-const litegraphServiceMock = vi.hoisted(() => ({
-  addNodeOnGraph: vi.fn<(nodeDef: unknown, options?: unknown) => LGraphNode>(),
-  getCanvasCenter: vi.fn<() => [number, number]>()
-}))
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => litegraphServiceMock
-}))
+vi.mock(import('@/services/litegraphService'))
+const litegraphServiceMock = vi.mocked(useLitegraphService())
 
 vi.mock(import('@/utils/loaderNodeUtil'))
 const mockDetectNodeTypeFromFilename = vi.mocked(detectNodeTypeFromFilename)

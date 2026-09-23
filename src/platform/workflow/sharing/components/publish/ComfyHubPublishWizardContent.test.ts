@@ -3,12 +3,15 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import ComfyHubPublishWizardContent from './ComfyHubPublishWizardContent.vue'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
 const mockCheckProfile = vi.hoisted(() => vi.fn())
-const mockToastErrorHandler = vi.hoisted(() => vi.fn())
+let mockToastErrorHandler: ReturnType<
+  typeof useErrorHandling
+>['toastErrorHandler']
 const mockHasProfile = ref<boolean | null>(true)
 const mockIsFetchingProfile = ref(false)
 const mockProfile = ref<{ username: string; name?: string } | null>({
@@ -28,11 +31,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    toastErrorHandler: mockToastErrorHandler
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 function createDefaultFormData(): ComfyHubPublishFormData {
@@ -69,6 +68,7 @@ describe('ComfyHubPublishWizardContent', () => {
   const onGateClose = vi.fn()
 
   beforeEach(() => {
+    mockToastErrorHandler = useErrorHandling().toastErrorHandler
     vi.mocked(useFeatureFlags().flags).comfyHubProfileGateEnabled = true
     onPublish.mockResolvedValue(undefined)
     mockCheckProfile.mockResolvedValue(true)

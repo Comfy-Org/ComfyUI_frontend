@@ -2,13 +2,16 @@ import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
 
 const mockGetMyProfile = vi.hoisted(() => vi.fn())
 const mockRequestAssetUploadUrl = vi.hoisted(() => vi.fn())
 const mockUploadFileToPresignedUrl = vi.hoisted(() => vi.fn())
 const mockCreateProfile = vi.hoisted(() => vi.fn())
-const mockToastErrorHandler = vi.hoisted(() => vi.fn())
+let mockToastErrorHandler: ReturnType<
+  typeof useErrorHandling
+>['toastErrorHandler']
 
 vi.mock<unknown>(
   import('@/platform/workflow/sharing/services/comfyHubService'),
@@ -24,11 +27,7 @@ vi.mock<unknown>(
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    toastErrorHandler: mockToastErrorHandler
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 // Must import after vi.mock declarations
 const { useComfyHubProfileGate } = await import('./useComfyHubProfileGate')
@@ -55,6 +54,7 @@ describe('useComfyHubProfileGate', () => {
   let gate: ReturnType<typeof useComfyHubProfileGate>
 
   beforeEach(() => {
+    mockToastErrorHandler = useErrorHandling().toastErrorHandler
     useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-a' }))
     setCurrentWorkspace('workspace-1')
     mockGetMyProfile.mockResolvedValue(mockProfile)

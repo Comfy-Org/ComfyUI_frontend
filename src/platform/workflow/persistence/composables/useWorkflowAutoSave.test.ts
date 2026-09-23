@@ -7,21 +7,10 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { api } from '@/scripts/api'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: vi.fn(() => ({
-      saveWorkflow: vi.fn()
-    }))
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
+const workflowService = useWorkflowService()
 
 beforeEach(() => {
   useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'
@@ -46,8 +35,7 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    expect(serviceInstance.saveWorkflow).toHaveBeenCalledWith(
+    expect(workflowService.saveWorkflow).toHaveBeenCalledWith(
       useWorkflowStore().activeWorkflow
     )
   })
@@ -69,8 +57,7 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    expect(serviceInstance.saveWorkflow).not.toHaveBeenCalledWith(
+    expect(workflowService.saveWorkflow).not.toHaveBeenCalledWith(
       useWorkflowStore().activeWorkflow
     )
   })

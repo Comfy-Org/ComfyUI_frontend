@@ -1,13 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { api } from '@/scripts/api'
 
-const mockFetchApi = vi.hoisted(() => vi.fn())
 const mockGlobalFetch = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: (...args: unknown[]) => mockFetchApi(...args)
-  }
-}))
+vi.mock(import('@/scripts/api'))
+const mockFetchApi = vi.mocked(api.fetchApi)
 
 const { useComfyHubService } = await import('./comfyHubService')
 
@@ -148,7 +145,9 @@ describe('useComfyHubService', () => {
     })
 
     const [, options] = mockFetchApi.mock.calls[0]
-    const body = JSON.parse(options.body as string)
+    assert.exists(options)
+    assert(typeof options.body === 'string')
+    const body = JSON.parse(options.body)
     expect(body).toMatchObject({
       username: 'builder',
       name: 'My Flow',

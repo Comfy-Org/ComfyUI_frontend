@@ -3,17 +3,15 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import * as utils from '@/scripts/utils'
 import { useWorkflowActionsService } from './workflowActionsService'
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({ openWorkflow: vi.fn() })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
+
+const openWorkflow = vi.mocked(useWorkflowService().openWorkflow)
 
 const minimalWorkflow: ComfyWorkflowJSON = {
   version: 0.4,
@@ -25,6 +23,7 @@ const minimalWorkflow: ComfyWorkflowJSON = {
 
 beforeEach(() => {
   vi.spyOn(utils, 'downloadBlob').mockImplementation(() => {})
+  openWorkflow.mockResolvedValue(true)
 })
 
 describe('workflowActionsService.exportWorkflowAction', () => {

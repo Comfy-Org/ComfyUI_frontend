@@ -8,6 +8,7 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
 
@@ -31,7 +32,6 @@ const mockCachePublishPrefill = vi.hoisted(() => vi.fn())
 const mockGetCachedPrefill = vi.hoisted(() => vi.fn())
 const mockSubmitToComfyHub = vi.hoisted(() => vi.fn())
 const mockGetPublishStatus = vi.hoisted(() => vi.fn())
-const mockRenameWorkflow = vi.hoisted(() => vi.fn())
 const mockFormDataHolder = vi.hoisted(
   (): { value: ComfyHubPublishFormData | null } => ({ value: null })
 )
@@ -102,15 +102,8 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({
-      renameWorkflow: mockRenameWorkflow,
-      saveWorkflow: vi.fn()
-    })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
+const mockRenameWorkflow = vi.mocked(useWorkflowService().renameWorkflow)
 
 function setActiveWorkflow(workflow: Partial<LoadedComfyWorkflow>) {
   useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>(workflow)
