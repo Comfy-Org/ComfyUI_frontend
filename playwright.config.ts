@@ -42,6 +42,8 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
 export default defineConfig({
   testDir: './browser_tests',
   testIgnore: [
+    '**/liveCloud/**',
+    '**/*.test.ts',
     // Untransformed recorder output — still bare codegen, not a runnable spec
     '**/*.raw.spec.ts',
     // The recorder's scratch spec calls page.pause(), so collecting it outside
@@ -55,90 +57,135 @@ export default defineConfig({
   reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html',
   ...maybeLocalOptions,
 
-  globalSetup: './browser_tests/globalSetup.ts',
-  globalTeardown: './browser_tests/globalTeardown.ts',
+  globalSetup:
+    process.env.PLAYWRIGHT_CLOUD_LIVE === '1'
+      ? undefined
+      : './browser_tests/globalSetup.ts',
+  globalTeardown:
+    process.env.PLAYWRIGHT_CLOUD_LIVE === '1'
+      ? undefined
+      : './browser_tests/globalTeardown.ts',
 
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-      timeout: 15000,
-      grepInvert: /@mobile|@perf|@audit|@cloud|@custom-nodes/
-    },
+  projects:
+    process.env.PLAYWRIGHT_CLOUD_LIVE === '1'
+      ? [
+          {
+            name: 'cloud-live',
+            testMatch: '**/tests/liveCloud/**/*.spec.ts',
+            testIgnore: [],
+            fullyParallel: false,
+            retries: 0,
+            timeout: 120_000,
+            expect: { timeout: 30_000 },
+            use: {
+              ...devices['Desktop Chrome'],
+              locale: 'en-US',
+              trace: 'off',
+              video: 'off',
+              screenshot: 'off'
+            }
+          } satisfies NonNullable<PlaywrightTestConfig['projects']>[number]
+        ]
+      : [
+          {
+            name: 'chromium',
+            use: { ...devices['Desktop Chrome'] },
+            timeout: 15000,
+            grepInvert:
+              /@mobile|@perf|@audit|@cloud|@desktop|@custom-nodes|@agent-harness/
+          },
 
-    // The custom-node suite needs the manifest packs installed and a quiet
-    // backend queue, so it runs in its own gating job
-    // (ci-tests-custom-nodes.yaml) with --workers=1, not alongside the
-    // parallel main e2e shards: the auto-run tier waits on the WHOLE queue
-    // to go quiet before it measures, which a parallel shard cannot provide.
-    // retain-on-failure trace: ~40 serial tests, negligible overhead, and a
-    // red run needs 6 installed packs + a live backend to reproduce.
-    {
-      name: 'custom-nodes',
-      use: {
-        ...devices['Desktop Chrome'],
-        trace: 'retain-on-failure'
-      },
-      timeout: 15000,
-      grep: /@custom-nodes/,
-      fullyParallel: false
-    },
+          {
+            name: 'desktop',
+            use: { ...devices['Desktop Chrome'] },
+            timeout: 15000,
+            grep: /@desktop/
+          },
 
-    {
-      name: 'performance',
-      use: {
-        ...devices['Desktop Chrome'],
-        trace: 'retain-on-failure'
-      },
-      timeout: 60_000,
-      grep: /@perf/,
-      fullyParallel: false
-    },
+          // Runs only against the local agent integration harness
+          // (scripts/dev-agent-integration.ts): the panel's local-agent path gates
+          // on VITE_AGENT_STANDALONE, baked at build time and unset in the CI
+          // dist, so these specs are excluded from every CI project by tag.
+          {
+            name: 'agent-harness',
+            use: { ...devices['Desktop Chrome'] },
+            timeout: 180000,
+            grep: /@agent-harness/
+          },
 
-    {
-      name: 'audit',
-      use: {
-        ...devices['Desktop Chrome'],
-        trace: 'retain-on-failure'
-      },
-      timeout: 120_000,
-      grep: /@audit/,
-      fullyParallel: false
-    },
+          // The custom-node suite needs the manifest packs installed and a quiet
+          // backend queue, so it runs in its own gating job
+          // (ci-tests-custom-nodes.yaml) with --workers=1, not alongside the
+          // parallel main e2e shards: the auto-run tier waits on the WHOLE queue
+          // to go quiet before it measures, which a parallel shard cannot provide.
+          // retain-on-failure trace: ~40 serial tests, negligible overhead, and a
+          // red run needs 6 installed packs + a live backend to reproduce.
+          {
+            name: 'custom-nodes',
+            use: {
+              ...devices['Desktop Chrome'],
+              trace: 'retain-on-failure'
+            },
+            timeout: 15000,
+            grep: /@custom-nodes/,
+            fullyParallel: false
+          },
 
-    {
-      name: 'chromium-2x',
-      use: { ...devices['Desktop Chrome'], deviceScaleFactor: 2 },
-      timeout: 15000,
-      grep: /@2x/
-    },
+          {
+            name: 'performance',
+            use: {
+              ...devices['Desktop Chrome'],
+              trace: 'retain-on-failure'
+            },
+            timeout: 60_000,
+            grep: /@perf/,
+            fullyParallel: false
+          },
 
-    {
-      name: 'chromium-0.5x',
-      use: { ...devices['Desktop Chrome'], deviceScaleFactor: 0.5 },
-      timeout: 15000,
-      grep: /@0.5x/
-    },
+          {
+            name: 'audit',
+            use: {
+              ...devices['Desktop Chrome'],
+              trace: 'retain-on-failure'
+            },
+            timeout: 120_000,
+            grep: /@audit/,
+            fullyParallel: false
+          },
 
-    {
-      name: 'cloud',
-      use: { ...devices['Desktop Chrome'] },
-      timeout: 15000,
-      grep: /@cloud/,
-      grepInvert: /@oss|@mobile-ios/
-    },
+          {
+            name: 'chromium-2x',
+            use: { ...devices['Desktop Chrome'], deviceScaleFactor: 2 },
+            timeout: 15000,
+            grep: /@2x/
+          },
 
-    {
-      name: 'mobile-chrome',
-      use: { ...devices['Pixel 5'], hasTouch: true },
-      grep: /@mobile\b/,
-      grepInvert: /@mobile-ios/
-    },
+          {
+            name: 'chromium-0.5x',
+            use: { ...devices['Desktop Chrome'], deviceScaleFactor: 0.5 },
+            timeout: 15000,
+            grep: /@0.5x/
+          },
 
-    {
-      name: 'mobile-safari',
-      use: { ...devices['iPhone 15'] },
-      grep: /@mobile-ios/
-    }
-  ]
+          {
+            name: 'cloud',
+            use: { ...devices['Desktop Chrome'] },
+            timeout: 15000,
+            grep: /@cloud/,
+            grepInvert: /@oss|@mobile-ios/
+          },
+
+          {
+            name: 'mobile-chrome',
+            use: { ...devices['Pixel 5'], hasTouch: true },
+            grep: /@mobile\b/,
+            grepInvert: /@mobile-ios/
+          },
+
+          {
+            name: 'mobile-safari',
+            use: { ...devices['iPhone 15'] },
+            grep: /@mobile-ios/
+          }
+        ]
 })

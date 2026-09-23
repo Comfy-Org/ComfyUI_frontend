@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
@@ -77,7 +75,6 @@ describe('canvas redraw budget while progress events stream in', () => {
   let previousVueNodesMode: boolean
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     previousVueNodesMode = LiteGraph.vueNodesMode
     LiteGraph.vueNodesMode = false
 
@@ -119,8 +116,8 @@ describe('canvas redraw budget while progress events stream in', () => {
 
     const foreground = vi.spyOn(canvas, 'drawFrontCanvas')
     const background = vi.spyOn(canvas, 'drawBackCanvas')
-
     const nodes = graph.nodes
+
     for (let i = 0; i < PROGRESS_EVENTS; i++) {
       const executingNode = nodes[i % nodes.length]
       executingNode.progress = (i % 10) / 10
@@ -145,7 +142,8 @@ describe('canvas redraw budget while progress events stream in', () => {
     const background = vi.spyOn(canvas, 'drawBackCanvas')
 
     for (const node of graph.nodes) {
-      node.inputs[0].pos = [node.inputs[0].pos![0], node.inputs[0].pos![1] + 1]
+      const [x, y] = node.inputs[0].pos ?? [0, 0]
+      node.inputs[0].pos = [x, y + 1]
     }
     await nextTick()
 
@@ -155,7 +153,7 @@ describe('canvas redraw budget while progress events stream in', () => {
     expect(background).not.toHaveBeenCalled()
   })
 
-  it('still redraws immediately when the CanvasInfo setting changes', async () => {
+  it('redraws immediately when the CanvasInfo setting changes', async () => {
     const scope = effectScope()
     scope.run(() => useLitegraphSettings())
     await nextTick()

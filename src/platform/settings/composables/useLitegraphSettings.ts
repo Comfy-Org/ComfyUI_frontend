@@ -16,18 +16,16 @@ export const useLitegraphSettings = () => {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
 
-  // Must stay an explicit `watch`: rendering reads reactive slot state, so a
-  // `watchEffect` wrapping draw() adopts every slot it touches as a dependency
-  // and each per-frame slot write then forces another draw.
   watch(
     [
       () => settingStore.get('Comfy.Graph.CanvasInfo'),
       () => canvasStore.canvas
     ],
     ([canvasInfoEnabled, canvas]) => {
-      if (!canvas) return
-      canvas.show_info = canvasInfoEnabled
-      canvas.draw(false, true)
+      if (canvas) {
+        canvas.show_info = canvasInfoEnabled
+        canvas.draw(false, true)
+      }
     },
     { immediate: true }
   )
@@ -70,32 +68,44 @@ export const useLitegraphSettings = () => {
     )
   })
 
-  watchEffect(() => {
-    const linkRenderMode = settingStore.get('Comfy.LinkRenderMode')
-    if (canvasStore.canvas) {
-      canvasStore.canvas.links_render_mode = linkRenderMode
-      canvasStore.canvas.setDirty(/* fg */ false, /* bg */ true)
-    }
-  })
+  watch(
+    [() => settingStore.get('Comfy.LinkRenderMode'), () => canvasStore.canvas],
+    ([linkRenderMode, canvas]) => {
+      if (canvas) {
+        canvas.links_render_mode = linkRenderMode
+        canvas.setDirty(false, true)
+      }
+    },
+    { immediate: true }
+  )
 
-  watchEffect(() => {
-    const minFontSizeForLOD = settingStore.get(
-      'LiteGraph.Canvas.MinFontSizeForLOD'
-    )
-    if (canvasStore.canvas) {
-      canvasStore.canvas.min_font_size_for_lod = minFontSizeForLOD
-      canvasStore.canvas.setDirty(/* fg */ true, /* bg */ true)
-    }
-  })
+  watch(
+    [
+      () => settingStore.get('LiteGraph.Canvas.MinFontSizeForLOD'),
+      () => canvasStore.canvas
+    ],
+    ([minFontSizeForLOD, canvas]) => {
+      if (canvas) {
+        canvas.min_font_size_for_lod = minFontSizeForLOD
+        canvas.setDirty(true, true)
+      }
+    },
+    { immediate: true }
+  )
 
-  watchEffect(() => {
-    const linkMarkerShape = settingStore.get('Comfy.Graph.LinkMarkers')
-    const { canvas } = canvasStore
-    if (canvas) {
-      canvas.linkMarkerShape = linkMarkerShape
-      canvas.setDirty(false, true)
-    }
-  })
+  watch(
+    [
+      () => settingStore.get('Comfy.Graph.LinkMarkers'),
+      () => canvasStore.canvas
+    ],
+    ([linkMarkerShape, canvas]) => {
+      if (canvas) {
+        canvas.linkMarkerShape = linkMarkerShape
+        canvas.setDirty(false, true)
+      }
+    },
+    { immediate: true }
+  )
 
   watchEffect(() => {
     const maximumFps = settingStore.get('LiteGraph.Canvas.MaximumFps')

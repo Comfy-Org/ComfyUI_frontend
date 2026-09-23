@@ -1,20 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
-const { mockStartDrag, mockGetNodeProvider } = vi.hoisted(() => ({
-  mockStartDrag: vi.fn(),
-  mockGetNodeProvider: vi.fn()
-}))
-
-vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
-  useNodeDragToCanvas: () => ({ startDrag: mockStartDrag })
-}))
-
-vi.mock('@/stores/modelToNodeStore', () => ({
-  useModelToNodeStore: () => ({ getNodeProvider: mockGetNodeProvider })
-}))
+vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
 function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
@@ -35,33 +28,46 @@ describe('startModelNodeDragFromAsset', () => {
   })
 
   it('starts a ghost drag for the resolved node carrying the widget value', () => {
-    const nodeDef = { name: 'CheckpointLoaderSimple' }
-    mockGetNodeProvider.mockReturnValue({ nodeDef, key: 'ckpt_name' })
+    const nodeDef = fromPartial<ComfyNodeDefImpl>({
+      name: 'CheckpointLoaderSimple'
+    })
+    vi.mocked(useModelToNodeStore().getNodeProvider).mockReturnValue({
+      nodeDef,
+      key: 'ckpt_name'
+    })
 
     const error = startModelNodeDragFromAsset(createAsset())
 
     expect(error).toBeUndefined()
-    expect(mockStartDrag).toHaveBeenCalledWith(nodeDef, {
+    expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(nodeDef, {
       widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' },
       source: 'sidebar_drag'
     })
   })
 
   it('threads the node-add source through to the drag', () => {
-    const nodeDef = { name: 'CheckpointLoaderSimple' }
-    mockGetNodeProvider.mockReturnValue({ nodeDef, key: 'ckpt_name' })
+    const nodeDef = fromPartial<ComfyNodeDefImpl>({
+      name: 'CheckpointLoaderSimple'
+    })
+    vi.mocked(useModelToNodeStore().getNodeProvider).mockReturnValue({
+      nodeDef,
+      key: 'ckpt_name'
+    })
 
     startModelNodeDragFromAsset(createAsset(), 'asset_browser')
 
-    expect(mockStartDrag).toHaveBeenCalledWith(nodeDef, {
+    expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(nodeDef, {
       widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' },
       source: 'asset_browser'
     })
   })
 
   it('carries no widget value when the provider has no key', () => {
-    const nodeDef = { name: 'FL_ChatterboxVC' }
-    mockGetNodeProvider.mockReturnValue({ nodeDef, key: '' })
+    const nodeDef = fromPartial<ComfyNodeDefImpl>({ name: 'FL_ChatterboxVC' })
+    vi.mocked(useModelToNodeStore().getNodeProvider).mockReturnValue({
+      nodeDef,
+      key: ''
+    })
 
     startModelNodeDragFromAsset(
       createAsset({
@@ -70,18 +76,18 @@ describe('startModelNodeDragFromAsset', () => {
       })
     )
 
-    expect(mockStartDrag).toHaveBeenCalledWith(nodeDef, {
+    expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(nodeDef, {
       widgetValues: undefined,
       source: 'sidebar_drag'
     })
   })
 
   it('returns the resolution error and does not start a drag for an invalid asset', () => {
-    mockGetNodeProvider.mockReturnValue(null)
+    vi.mocked(useModelToNodeStore().getNodeProvider).mockReturnValue(undefined)
 
     const error = startModelNodeDragFromAsset(createAsset())
 
     expect(error?.code).toBe('NO_PROVIDER')
-    expect(mockStartDrag).not.toHaveBeenCalled()
+    expect(useNodeDragToCanvas().startDrag).not.toHaveBeenCalled()
   })
 })

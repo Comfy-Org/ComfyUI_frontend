@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { nextTick, watch } from 'vue'
 
@@ -22,7 +20,6 @@ describe('LGraphNode widget input slot arrangement', () => {
   let node: LGraphNode
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     graph = new LGraph()
     node = createWidgetInputNode(graph)
   })

@@ -64,11 +64,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
   }
 
   get highlightColor(): CanvasColour {
-    return (
-      LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR ??
-      LiteGraph.NODE_SELECTED_TITLE_COLOR ??
-      LiteGraph.NODE_TEXT_COLOR
-    )
+    return LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR
   }
 
   abstract get isWidgetInputSlot(): boolean

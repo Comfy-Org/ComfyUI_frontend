@@ -1,7 +1,5 @@
 // oxlint-disable no-empty-pattern
 // TODO: Fix these tests after migration
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -26,7 +24,6 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 
 interface TestContext {
-  pinia: undefined
   graph: LGraph
   connector: LinkConnector
   setConnectingLinks: (value: ConnectingLink[]) => void
@@ -39,14 +36,6 @@ interface TestContext {
 }
 
 const test = baseTest.extend<TestContext>({
-  pinia: [
-    async ({}, use) => {
-      setActivePinia(createTestingPinia({ stubActions: false }))
-      await use(undefined)
-    },
-    { auto: true }
-  ],
-
   reroutesBeforeTest: async ({ reroutesComplexGraph }, use) => {
     await use([...reroutesComplexGraph.reroutes])
   },
@@ -159,7 +148,7 @@ const test = baseTest.extend<TestContext>({
 
       for (const link of graph.links.values()) {
         expect(
-          graph.getNodeById(link!.origin_id)?.outputs[link!.origin_slot].links
+          graph.getNodeById(link.origin_id)?.outputs[link.origin_slot].links
         ).toContain(link.id)
         expect(
           linkStore.getInputSlotLink(graphId, link.target_id, link.target_slot)

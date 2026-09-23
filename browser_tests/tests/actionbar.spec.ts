@@ -1,7 +1,7 @@
 import type { Request } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
-import type { PromptResponse } from '@/schemas/apiSchema'
+import type { PromptResponse } from '@/platform/remote/comfyui/types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -21,7 +21,7 @@ webSocketTest.describe(
       async ({ comfyPage, getWebSocket }) => {
         await comfyPage.workflow.loadWorkflow('default')
         await comfyPage.page.evaluate(() => {
-          const sampler = window.app!.graph!._nodes.find(
+          const sampler = window.app!.graph._nodes.find(
             (node) => node.type === 'KSampler'
           )
           const control = sampler?.widgets?.find(
@@ -51,8 +51,7 @@ webSocketTest.describe(
           promptNumber++
           const promptResponse: PromptResponse = {
             prompt_id: String(promptNumber),
-            node_errors: {},
-            error: ''
+            node_errors: {}
           }
           await route.fulfill({
             status: 200,
@@ -64,7 +63,7 @@ webSocketTest.describe(
         // Find and set the width on the latent node
         const triggerChange = async (value: number) => {
           return await comfyPage.page.evaluate((value) => {
-            const node = window.app!.graph!._nodes.find(
+            const node = window.app!.graph._nodes.find(
               (n) => n.type === 'EmptyLatentImage'
             )
             node!.widgets![0].value = value
@@ -160,8 +159,7 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
 
       const promptResponse: PromptResponse = {
         prompt_id: 'run-on-change',
-        node_errors: {},
-        error: ''
+        node_errors: {}
       }
       await comfyPage.page.route('**/api/prompt', async (route) => {
         await route.fulfill({
@@ -250,7 +248,10 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     })
   })
 
-  test('Can dock actionbar into top menu', async ({ comfyPage }) => {
+  test('Can dock actionbar into top menu', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
     await comfyPage.page.dragAndDrop(
       '.actionbar .drag-handle',
       '.actionbar-container',
@@ -259,8 +260,12 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
         force: true
       }
     )
-    await expect(comfyPage.actionbar.root.locator('.actionbar')).toHaveClass(
-      /static/
-    )
+    await expect.poll(() => comfyPage.actionbar.isDocked()).toBe(true)
+
+    await comfyMouse.dragElementBy(comfyPage.actionbar.dragHandle, {
+      x: -100,
+      y: 100
+    })
+    await expect.poll(() => comfyPage.actionbar.isDocked()).toBe(false)
   })
 })

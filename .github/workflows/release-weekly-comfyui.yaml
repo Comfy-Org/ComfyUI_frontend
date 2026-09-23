@@ -32,8 +32,16 @@ on:
         required: false
         type: string
 
+# One release at a time. The daily stranded-commits check dispatches this
+# workflow, so a dispatch and the Monday schedule can otherwise overlap and
+# resolve the same line twice, cutting two bumps for one release.
+concurrency:
+  group: release-weekly-comfyui
+  cancel-in-progress: false
+
 jobs:
   check-release-week:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     outputs:
       is_release_week: ${{ steps.check.outputs.is_release_week }}
@@ -60,7 +68,10 @@ jobs:
 
   resolve-version:
     needs: check-release-week
-    if: needs.check-release-week.outputs.is_release_week == 'true' || github.event_name == 'workflow_dispatch'
+    if: >
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      (needs.check-release-week.outputs.is_release_week == 'true' ||
+       github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     outputs:
       current_version: ${{ steps.resolve.outputs.current_version }}
@@ -130,8 +141,29 @@ jobs:
           echo "target_minor=$(echo "$RESULT" | jq -r '.target_minor')" >> $GITHUB_OUTPUT
           echo "target_branch=$(echo "$RESULT" | jq -r '.target_branch')" >> $GITHUB_OUTPUT
           echo "needs_release=$(echo "$RESULT" | jq -r '.needs_release')" >> $GITHUB_OUTPUT
+          echo "pending_bump=$(echo "$RESULT" | jq -r '.pending_bump')" >> $GITHUB_OUTPUT
           echo "diff_url=$(echo "$RESULT" | jq -r '.diff_url')" >> $GITHUB_OUTPUT
           echo "latest_patch_tag=$(echo "$RESULT" | jq -r '.latest_patch_tag')" >> $GITHUB_OUTPUT
+
+      - name: Stop if the previous bump was never released
+        if: steps.resolve.outputs.pending_bump == 'true'
+        env:
+          TARGET_BRANCH: ${{ steps.resolve.outputs.target_branch }}
+          TARGET_VERSION: ${{ steps.resolve.outputs.target_version }}
+          LATEST_TAG: ${{ steps.resolve.outputs.latest_patch_tag != 'null' && steps.resolve.outputs.latest_patch_tag || '(none)' }}
+        run: |
+          set -euo pipefail
+          echo "::error title=Release already in flight::${TARGET_BRANCH} is at ${TARGET_VERSION} but its newest tag is ${LATEST_TAG}. Run release-recover-tag.yaml on ${TARGET_BRANCH} to finish that release; cutting another bump only burns a version."
+          {
+            echo "## Release already in flight"
+            echo
+            echo "\`${TARGET_BRANCH}\` is at \`${TARGET_VERSION}\`, its newest tag is \`${LATEST_TAG}\`."
+            echo "A bump landed without being released, so this run stops rather than stacking a second bump on it."
+            echo
+            echo "Finish the in-flight release by running \`release-recover-tag.yaml\` with \`branch=${TARGET_BRANCH}\`, then re-run this workflow."
+            echo "Check the \`release-draft-create\` run on the merged bump PR for why the tag is missing."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
 
       - name: Summary
         run: |
@@ -159,7 +191,7 @@ jobs:
 
           # Trigger the release-version-bump workflow
           if ! gh workflow run release-version-bump.yaml \
-            --repo Comfy-Org/ComfyUI_frontend \
+            --repo "$GITHUB_REPOSITORY" \
             --ref main \
             --field version_type=patch \
             --field branch=${{ needs.resolve-version.outputs.target_branch }}; then
@@ -193,15 +225,14 @@ jobs:
         with:
           sparse-checkout: scripts/cicd
           sparse-checkout-cone-mode: false
+          path: release-scripts
 
-      # The tag checkout below replaces the workspace, and the tag predates these.
       - name: Stage release scripts
-        run: cp -r scripts/cicd "$RUNNER_TEMP/cicd"
+        run: cp -r release-scripts/scripts/cicd "$RUNNER_TEMP/cicd"
 
       - name: Wait for the release tag
         if: needs.trigger-release-if-needed.result == 'success'
         env:
-          GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
           REPO: ${{ github.repository }}
           TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
           TARGET_BRANCH: ${{ needs.resolve-version.outputs.target_branch }}
@@ -212,16 +243,21 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: v${{ needs.resolve-version.outputs.target_version }}
+          path: release
 
       - name: Install pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          package_json_file: release/package.json
 
       - uses: actions/setup-node@v6
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: 'release/.nvmrc'
           cache: 'pnpm'
+          cache-dependency-path: release/pnpm-lock.yaml
 
       - name: Build project
+        working-directory: release
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
@@ -243,12 +279,12 @@ jobs:
       - name: Build and publish PyPI package
         run: |
           set -euo pipefail
-          mkdir -p comfyui_frontend_package/comfyui_frontend_package/static/
-          cp -r dist/* comfyui_frontend_package/comfyui_frontend_package/static/
+          mkdir -p release/comfyui_frontend_package/comfyui_frontend_package/static/
+          cp -r release/dist/* release/comfyui_frontend_package/comfyui_frontend_package/static/
 
       - name: Build pypi package
         run: python -m build
-        working-directory: comfyui_frontend_package
+        working-directory: release/comfyui_frontend_package
         env:
           COMFYUI_FRONTEND_VERSION: ${{ needs.resolve-version.outputs.target_version }}
 
@@ -257,7 +293,7 @@ jobs:
         with:
           skip-existing: true
           password: ${{ secrets.PYPI_TOKEN }}
-          packages-dir: comfyui_frontend_package/dist
+          packages-dir: release/comfyui_frontend_package/dist
 
       - name: Wait for the version to be installable
         id: pypi-wait
@@ -290,6 +326,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: ${{ inputs.comfyui_fork || 'Comfy-Org/ComfyUI' }}
+          ref: master
           token: ${{ secrets.PR_GH_TOKEN }}
           path: comfyui
 
@@ -384,6 +421,10 @@ jobs:
 
           # Create/update branch (reuse same branch name each release cycle)
           BRANCH="automation/comfyui-frontend-bump"
+          HEAD_BRANCH="$BRANCH"
+          if [[ "$COMFYUI_FORK" != "Comfy-Org/ComfyUI" ]]; then
+            HEAD_BRANCH="${FORK_OWNER}:${BRANCH}"
+          fi
           git checkout -B "$BRANCH"
           git add requirements.txt
 
@@ -408,7 +449,7 @@ jobs:
           # Try to create PR, ignore error if it already exists
           if ! gh pr create \
             --repo Comfy-Org/ComfyUI \
-            --head "${FORK_OWNER}:${BRANCH}" \
+            --head "$HEAD_BRANCH" \
             --base master \
             --title "Bump comfyui-frontend-package to ${{ needs.resolve-version.outputs.target_version }}" \
             --body "$PR_BODY" \
@@ -416,7 +457,7 @@ jobs:
 
             # Check if PR already exists
             set +e
-            EXISTING_PR=$(gh pr list --repo Comfy-Org/ComfyUI --head "${FORK_OWNER}:${BRANCH}" --json number --jq '.[0].number' 2>&1)
+            EXISTING_PR=$(gh pr list --repo Comfy-Org/ComfyUI --head "$HEAD_BRANCH" --json number --jq '.[0].number' 2>&1)
             PR_LIST_EXIT=$?
             set -e
 

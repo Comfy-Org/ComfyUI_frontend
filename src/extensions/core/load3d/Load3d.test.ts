@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
@@ -27,19 +28,19 @@ const {
   detectFormatFromURLMock: vi.fn()
 }))
 
-vi.mock('three/examples/jsm/utils/SkeletonUtils.js', () => ({
+vi.mock(import('three/examples/jsm/utils/SkeletonUtils.js'), () => ({
   clone: cloneSkinnedMock
 }))
 
-vi.mock('@/extensions/core/load3d/ModelExporter', () => ({
-  ModelExporter: {
+vi.mock(import('@/extensions/core/load3d/ModelExporter'), () => ({
+  ModelExporter: fromAny({
     exportGLB: exportGLBMock,
     exportOBJ: exportOBJMock,
     exportSTL: exportSTLMock,
     exportFBX: exportFBXMock,
     exportDirect: exportDirectMock,
     detectFormatFromURL: detectFormatFromURLMock
-  }
+  })
 }))
 
 type GizmoStub = {
@@ -135,6 +136,8 @@ function makeInstance() {
     animationManager,
     eventManager,
     adapterRef: { current: null },
+    _loadGeneration: 0,
+    loadingPromise: null,
     forceRender: vi.fn(),
     handleResize: vi.fn(),
     preRenderCallbacks: [],
@@ -828,8 +831,8 @@ describe('Load3d', () => {
     })
 
     it('waits for the current loadingPromise to settle', async () => {
-      let resolveLoad!: () => void
-      const p = new Promise<void>((resolve) => {
+      let resolveLoad!: (accepted: boolean) => void
+      const p = new Promise<boolean>((resolve) => {
         resolveLoad = resolve
       })
       Object.assign(ctx.load3d, { loadingPromise: p })
@@ -843,7 +846,7 @@ describe('Load3d', () => {
       await Promise.resolve()
       expect(settled).toBe(false)
 
-      resolveLoad()
+      resolveLoad(true)
 
       Object.assign(ctx.load3d, { loadingPromise: null })
       await idle
@@ -851,12 +854,12 @@ describe('Load3d', () => {
     })
 
     it('drains a chained sequence of loads before resolving', async () => {
-      let resolveFirst!: () => void
-      const first = new Promise<void>((resolve) => {
+      let resolveFirst!: (accepted: boolean) => void
+      const first = new Promise<boolean>((resolve) => {
         resolveFirst = resolve
       })
-      let resolveSecond!: () => void
-      const second = new Promise<void>((resolve) => {
+      let resolveSecond!: (accepted: boolean) => void
+      const second = new Promise<boolean>((resolve) => {
         resolveSecond = resolve
       })
 
@@ -871,11 +874,11 @@ describe('Load3d', () => {
         settled = true
       })
 
-      resolveFirst()
+      resolveFirst(true)
       await new Promise((r) => setTimeout(r, 0))
       expect(settled).toBe(false)
 
-      resolveSecond()
+      resolveSecond(true)
       Object.assign(ctx.load3d, { loadingPromise: null })
       await idle
       expect(settled).toBe(true)
@@ -890,6 +893,94 @@ describe('Load3d', () => {
       Object.assign(ctx.load3d, { loadingPromise: null })
 
       await expect(idle).resolves.toBeUndefined()
+    })
+
+    it('waits for a load accepted while the current load is still pending', async () => {
+      let resolveFirst!: () => void
+      let resolveSecond!: () => void
+      const first = new Promise<void>((resolve) => {
+        resolveFirst = resolve
+      })
+      const second = new Promise<void>((resolve) => {
+        resolveSecond = resolve
+      })
+      const internal = vi
+        .fn()
+        .mockImplementationOnce(() => first)
+        .mockImplementationOnce(() => second)
+      Object.assign(ctx.load3d, {
+        loadingPromise: null,
+        _loadModelInternal: internal
+      })
+
+      const loadA = ctx.load3d.loadModel('api/view?filename=a.glb')
+      const idle = ctx.load3d.whenLoadIdle()
+      const loadB = ctx.load3d.loadModel('api/view?filename=b.glb')
+      let settled = false
+      void idle.then(() => {
+        settled = true
+      })
+
+      resolveFirst()
+      await loadA
+      await Promise.resolve()
+      expect(internal).toHaveBeenCalledTimes(2)
+      expect(settled).toBe(false)
+
+      resolveSecond()
+      await Promise.all([idle, loadB])
+      expect(settled).toBe(true)
+    })
+
+    it('keeps the viewer empty when clear is accepted during a pending load', async () => {
+      let resolveLoad!: () => void
+      const pendingLoad = new Promise<void>((resolve) => {
+        resolveLoad = resolve
+      })
+      const loadedModel = new THREE.Group()
+      const modelManager: typeof ctx.modelManager & {
+        currentModel: THREE.Object3D | null
+        originalModel: THREE.Object3D | null
+      } = {
+        ...ctx.modelManager,
+        currentModel: null,
+        originalModel: null,
+        clearModel: vi.fn(() => {
+          modelManager.currentModel = null
+        })
+      }
+      Object.assign(ctx.load3d, {
+        _loadGeneration: 0,
+        loadingPromise: null,
+        cameraManager: {
+          ...ctx.cameraManager,
+          getCameraState: vi.fn(),
+          getCurrentCameraType: vi.fn(() => 'perspective'),
+          setCameraState: vi.fn()
+        },
+        controlsManager: { ...ctx.controlsManager, reset: vi.fn() },
+        loaderManager: {
+          loadModel: vi.fn(async () => {
+            await pendingLoad
+            modelManager.currentModel = loadedModel
+          })
+        },
+        modelManager,
+        animationManager: {
+          ...ctx.animationManager,
+          setupModelAnimations: vi.fn()
+        },
+        hasLoadedModel: false
+      })
+
+      const load = ctx.load3d.loadModel('api/view?filename=a.glb')
+      ctx.load3d.clearModel()
+      const idle = ctx.load3d.whenLoadIdle()
+      resolveLoad()
+      const [accepted] = await Promise.all([load, idle])
+
+      expect(accepted).toBe(false)
+      expect(ctx.load3d.getCurrentModel()).toBeNull()
     })
   })
 
@@ -993,7 +1084,7 @@ describe('Load3d', () => {
       const mocks = setupLoadInternal()
 
       await ctx.load3d.loadModel('a.glb')
-      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      ctx.cameraManager.reset.mockClear()
       mocks.getCameraState.mockClear()
       mocks.setCameraState.mockClear()
 
@@ -1014,7 +1105,7 @@ describe('Load3d', () => {
       }))
       // First load (active type stays perspective per the default mock).
       await ctx.load3d.loadModel('a.glb')
-      ;(ctx.cameraManager.toggleCamera as ReturnType<typeof vi.fn>).mockClear()
+      ctx.cameraManager.toggleCamera.mockClear()
 
       await ctx.load3d.loadModel('b.glb')
 
@@ -1028,7 +1119,7 @@ describe('Load3d', () => {
       const mocks = setupLoadInternal()
       await ctx.load3d.loadModel('a.glb')
       ctx.load3d.clearModel()
-      ;(ctx.cameraManager.reset as ReturnType<typeof vi.fn>).mockClear()
+      ctx.cameraManager.reset.mockClear()
       mocks.getCameraState.mockClear()
 
       await ctx.load3d.loadModel('b.glb')
@@ -1114,7 +1205,7 @@ describe('Load3d', () => {
       return { cameraStub, sceneCaptureMock }
     }
 
-    it('throws when no model is loaded', async () => {
+    it('rejects thumbnail capture when no model is loaded', async () => {
       Object.assign(ctx.load3d, {
         modelManager: { ...ctx.modelManager, currentModel: null }
       })
@@ -1164,7 +1255,7 @@ describe('Load3d', () => {
       })
     }
 
-    it('throws when no model is loaded', async () => {
+    it('rejects export when no model is loaded', async () => {
       setupForExport({ currentModel: null })
 
       await expect(ctx.load3d.exportModel('fbx')).rejects.toThrow(
@@ -1312,7 +1403,7 @@ describe('Load3d', () => {
       )
     })
 
-    it('throws on unsupported format', async () => {
+    it('rejects an unsupported format', async () => {
       const model = new THREE.Object3D()
       setupForExport({ currentModel: model })
       vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -1344,7 +1435,7 @@ describe('Load3d', () => {
       expect(cloneSkinnedMock).not.toHaveBeenCalled()
     })
 
-    it('refuses a direct export when the requested format differs from the source', async () => {
+    it('rejects direct export when the requested format differs from the source', async () => {
       exportDirectMock.mockReset()
       detectFormatFromURLMock.mockReturnValue('spz')
       vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -1467,8 +1558,25 @@ describe('Load3d', () => {
 
       expect(source(12, 34)).toBe(ndc)
       expect(clientPointToNdc).toHaveBeenCalledWith(12, 34)
+    })
+
+    it('runs the replaced configuration cleanup immediately and the current one once on remove()', () => {
+      const { container, deps } = makeConstructorDeps()
+      const load3d = new Load3d(container, deps)
+      const first = vi.fn()
+      const second = vi.fn()
+
+      load3d.setConfigurationCleanup(first)
+      expect(first).not.toHaveBeenCalled()
+
+      load3d.setConfigurationCleanup(second)
+      expect(first).toHaveBeenCalledOnce()
+      expect(second).not.toHaveBeenCalled()
 
       load3d.remove()
+      load3d.remove()
+      expect(first).toHaveBeenCalledOnce()
+      expect(second).toHaveBeenCalledOnce()
     })
   })
 })

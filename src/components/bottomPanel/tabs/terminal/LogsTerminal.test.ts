@@ -1,10 +1,11 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import LogsTerminal from '@/components/bottomPanel/tabs/terminal/LogsTerminal.vue'
+import { useExecutionStore } from '@/stores/executionStore'
 
 const apiMock = vi.hoisted(
   () =>
@@ -15,7 +16,7 @@ const apiMock = vi.hoisted(
     })()
 )
 
-vi.mock('@/scripts/api', () => ({ api: apiMock }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
 
 const terminalMock = vi.hoisted(() => ({
   open: vi.fn(),
@@ -30,28 +31,31 @@ const terminalMock = vi.hoisted(() => ({
   clearSelection: vi.fn()
 }))
 
-vi.mock('@/composables/bottomPanelTabs/useTerminal', () => ({
+vi.mock<unknown>(import('@/composables/bottomPanelTabs/useTerminal'), () => ({
   useTerminal: vi.fn(() => ({
     terminal: terminalMock,
     useAutoSize: vi.fn(() => ({ resize: vi.fn() }))
   }))
 }))
 
-vi.mock('@/components/bottomPanel/tabs/terminal/BaseTerminal.vue', async () => {
-  const { defineComponent, ref } = await import('vue')
-  const { useTerminal } =
-    await import('@/composables/bottomPanelTabs/useTerminal')
-  return {
-    default: defineComponent({
-      emits: ['created'],
-      setup(_, { emit }) {
-        const root = ref<HTMLElement | undefined>(undefined)
-        emit('created', useTerminal(root), root)
-        return () => null
-      }
-    })
+vi.mock(
+  import('@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'),
+  async () => {
+    const { defineComponent, ref } = await import('vue')
+    const { useTerminal } =
+      await import('@/composables/bottomPanelTabs/useTerminal')
+    return {
+      default: defineComponent({
+        emits: ['created'],
+        setup(_, { emit }) {
+          const root = ref<HTMLElement | undefined>(undefined)
+          emit('created', useTerminal(root), root)
+          return () => null
+        }
+      })
+    }
   }
-})
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -71,14 +75,7 @@ const i18n = createI18n({
 const renderLogsTerminal = () =>
   render(LogsTerminal, {
     global: {
-      plugins: [
-        createTestingPinia({
-          createSpy: vi.fn,
-          stubActions: false,
-          initialState: { execution: { clientId: 'test-client' } }
-        }),
-        i18n
-      ]
+      plugins: [getActivePinia()!, i18n]
     }
   })
 
@@ -98,6 +95,7 @@ describe('LogsTerminal', () => {
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     apiMock.clientId = 'test-client'
+    useExecutionStore().clientId = 'test-client'
   })
 
   it('loads logs and subscribes to streaming on mount', async () => {

@@ -10,6 +10,7 @@ import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import { isFloatingTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 
 export type EndpointPatch = Partial<
   Pick<
@@ -106,6 +107,25 @@ export const useLinkStore = defineStore('link', () => {
     return revision.value
   }
 
+  /**
+   * Invalidates {@link LinkMap}'s revision-keyed cache without registering,
+   * replacing, or removing any topology.
+   *
+   * A topology can be registered here (bumping `revision` itself) before it
+   * has a live LiteGraph facade: `materializeLinkAdapter` adopts a facade
+   * lazily, on a later reconcile pass, and that adoption does not itself
+   * change any store state. If something reads `graph.links` in the gap
+   * between those two steps — e.g. a CRDT `connect` mutation's own commit,
+   * checking whether the slot it just displaced still names the old link —
+   * `LinkMap` caches "no facade yet" against the CURRENT revision, and
+   * nothing tells it to recompute once the facade actually lands, because
+   * adoption alone never touches `revision`. Call this right after adoption
+   * so the next `graph.links` read is guaranteed to see it.
+   */
+  function notifyAdapterAdopted(): void {
+    revision.value++
+  }
+
   function rootBucket(rootGraphId: RootGraphId): RootTopologyBucket {
     const existing = roots.get(rootGraphId)
     if (existing) return existing
@@ -174,16 +194,14 @@ export const useLinkStore = defineStore('link', () => {
   }
 
   /**
-   * Registers a link under its current endpoints. The first registration for
-   * a link id or target slot wins — a duplicate stays detached instead of
-   * clobbering the incumbent — and re-registering the already-registered
-   * topology is a no-op.
-   * @returns The store-held reactive state when `topology` holds the
-   * registration afterwards, otherwise `undefined`.
+   * @returns The registered topology. Re-registering the same raw topology
+   * under the same owner returns the incumbent; `undefined` means a distinct
+   * topology occupies its ID or non-floating target slot.
    */
   function registerLink(
     scope: GraphScope,
-    topology: LinkTopology
+    topology: LinkTopology,
+    context?: RemoteMutationContext
   ): LinkTopology | undefined {
     const incumbent = roots.get(scope.rootGraphId)?.byId.get(topology.id)
     if (
@@ -191,42 +209,80 @@ export const useLinkStore = defineStore('link', () => {
       incumbent?.graphId === scope.owningGraphId
     )
       return incumbent
-    return replaceLink(scope, undefined, topology)
+    return replaceLink(scope, undefined, topology, undefined, context)
+  }
+
+  function canPlaceReplacement(
+    scope: GraphScope,
+    bucket: RootTopologyBucket | undefined,
+    replacement: LinkTopology,
+    replaced: LinkTopology | undefined
+  ): boolean {
+    const incumbent = bucket?.byId.get(replacement.id)
+    if (incumbent && (!replaced || toRaw(incumbent) !== toRaw(replaced))) {
+      console.error(
+        `Link ${replacement.id} belongs to graph ${incumbent.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
+      )
+      return false
+    }
+    if (replaced && (!bucket || !ownsPlacement(scope, bucket, replaced))) {
+      return false
+    }
+    return true
+  }
+
+  function targetSlotIsAvailable(
+    bucket: RootTopologyBucket | undefined,
+    scope: GraphScope,
+    replacement: LinkTopology,
+    expected: LinkTopology | undefined
+  ): boolean {
+    if (!hasUniqueTarget(replacement)) return true
+    const key = targetKey(
+      scope.owningGraphId,
+      replacement.targetNodeId,
+      replacement.targetSlot
+    )
+    const existing = bucket?.targetIndex.get(key)
+    if (toRaw(existing) !== toRaw(expected)) {
+      console.error(`Link target slot ${key} is already occupied`)
+      return false
+    }
+    return true
+  }
+
+  function displaceForReplacement(
+    targetBucket: RootTopologyBucket,
+    expected: LinkTopology | undefined,
+    replaced: LinkTopology | undefined
+  ): void {
+    if (expected) displace(targetBucket, expected)
+    if (replaced && toRaw(replaced) !== toRaw(expected)) {
+      displace(targetBucket, replaced)
+    }
   }
 
   /** Atomically replaces an expected target occupant with a new link. */
   function replaceLink(
     scope: GraphScope,
     expected: LinkTopology | undefined,
-    replacement: LinkTopology
+    replacement: LinkTopology,
+    replaced?: LinkTopology,
+    _context?: RemoteMutationContext
   ): LinkTopology | undefined {
     const bucket = roots.get(scope.rootGraphId)
     if (expected && (!bucket || !ownsPlacement(scope, bucket, expected))) {
       return undefined
     }
-
-    const incumbent = bucket?.byId.get(replacement.id)
-    if (incumbent) {
-      console.error(
-        `Link ${replacement.id} belongs to graph ${incumbent.graphId}; graph ${scope.owningGraphId} cannot overwrite it.`
-      )
+    if (!canPlaceReplacement(scope, bucket, replacement, replaced)) {
       return undefined
     }
-    if (hasUniqueTarget(replacement)) {
-      const key = targetKey(
-        scope.owningGraphId,
-        replacement.targetNodeId,
-        replacement.targetSlot
-      )
-      const existing = bucket?.targetIndex.get(key)
-      if (toRaw(existing) !== toRaw(expected)) {
-        console.error(`Link target slot ${key} is already occupied`)
-        return undefined
-      }
+    if (!targetSlotIsAvailable(bucket, scope, replacement, expected)) {
+      return undefined
     }
 
     const targetBucket = bucket ?? rootBucket(scope.rootGraphId)
-    if (expected) displace(targetBucket, expected)
+    displaceForReplacement(targetBucket, expected, replaced)
     const owned = Object.assign(replacement, { graphId: scope.owningGraphId })
     const placed = placeValidated(targetBucket, owned)
     revision.value++
@@ -252,7 +308,11 @@ export const useLinkStore = defineStore('link', () => {
     unindexOrigin(bucket, topology)
   }
 
-  function deleteLink(scope: GraphScope, topology: LinkTopology): boolean {
+  function deleteLink(
+    scope: GraphScope,
+    topology: LinkTopology,
+    _context?: RemoteMutationContext
+  ): boolean {
     const bucket = roots.get(scope.rootGraphId)
     if (!bucket || !ownsPlacement(scope, bucket, topology)) return false
     displace(bucket, topology)
@@ -330,7 +390,8 @@ export const useLinkStore = defineStore('link', () => {
   function updateEndpoints(
     scope: GraphScope,
     updates: readonly EndpointUpdate[],
-    removals: readonly LinkTopology[] = []
+    removals: readonly LinkTopology[] = [],
+    _context?: RemoteMutationContext
   ): EndpointUpdateResult<LinkTopology[]> {
     const error = validateEndpointUpdates(scope, updates, removals)
     if (error) return { ok: false, error }
@@ -352,9 +413,10 @@ export const useLinkStore = defineStore('link', () => {
   function updateEndpoint(
     scope: GraphScope,
     topology: LinkTopology,
-    patch: EndpointPatch
+    patch: EndpointPatch,
+    context?: RemoteMutationContext
   ): EndpointUpdateResult<LinkTopology> {
-    const result = updateEndpoints(scope, [{ topology, patch }])
+    const result = updateEndpoints(scope, [{ topology, patch }], [], context)
     return result.ok ? { ok: true, value: result.value[0] } : result
   }
 
@@ -427,7 +489,10 @@ export const useLinkStore = defineStore('link', () => {
     if (roots.delete(graphId)) revision.value++
   }
 
-  function clearOwner(scope: GraphScope): void {
+  function clearOwner(
+    scope: GraphScope,
+    _context?: RemoteMutationContext
+  ): void {
     const bucket = roots.get(scope.rootGraphId)
     const ids = bucket?.idsByOwner.get(scope.owningGraphId)
     if (!bucket || !ids) return
@@ -453,6 +518,7 @@ export const useLinkStore = defineStore('link', () => {
     getTopology,
     graphTopologies,
     getRevision,
+    notifyAdapterAdopted,
     clearOwner,
     clearGraph
   }
