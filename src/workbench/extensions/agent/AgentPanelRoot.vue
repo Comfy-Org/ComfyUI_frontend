@@ -63,7 +63,9 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import {
   adoptSharedOnboardingFlag,
-  scopedOnboardingKey
+  hasSeenCoach,
+  scopedOnboardingKey,
+  trackCoachDeferral
 } from './composables/agent/useOnboarding'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
@@ -273,6 +275,20 @@ watch(
   { immediate: true }
 )
 const { activeTour } = storeToRefs(useOnboardingTourStore())
+const coachDeferredBy = computed(() =>
+  canvasStore.linearMode
+    ? 'app_mode'
+    : activeTour.value !== null
+      ? 'tour_active'
+      : null
+)
+watch(
+  [consentAccepted, onboardingKey, coachDeferredBy],
+  ([accepted, key, reason]) => {
+    if (accepted && key && !hasSeenCoach(key)) trackCoachDeferral(key, reason)
+  },
+  { immediate: true }
+)
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -1372,12 +1388,7 @@ function onPanelDrop(event: DragEvent): void {
       </template>
     </AgentPanel>
     <OnboardingCoach
-      v-if="
-        consentAccepted &&
-        onboardingKey &&
-        !canvasStore.linearMode &&
-        activeTour === null
-      "
+      v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
       :steps="coachSteps"
       :storage-key="onboardingKey"
     />
