@@ -9,6 +9,10 @@ import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -19,22 +23,13 @@ beforeEach(() => {
   stubFirebaseAuthHarness()
 })
 
-const mockGetBillingCapabilities = vi.hoisted(() => vi.fn())
+const mockGetBillingCapabilities = vi.mocked(
+  workspaceApi.getBillingCapabilities
+)
 const mockReportError = vi.hoisted(() => vi.fn())
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  WorkspaceApiError: class WorkspaceApiError extends Error {
-    constructor(
-      message: string,
-      public readonly status?: number
-    ) {
-      super(message)
-      this.name = 'WorkspaceApiError'
-    }
-  },
-  workspaceApi: { getBillingCapabilities: mockGetBillingCapabilities }
-}))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
@@ -166,6 +161,9 @@ function capabilityReadsThroughInterceptor() {
 }
 
 beforeEach(() => {
+  mockGetBillingCapabilities.mockRejectedValue(
+    new Error('Unconfigured billing capabilities request')
+  )
   Object.assign(useTeamWorkspaceStore(), {
     activeWorkspaceId: 'workspace-1',
     activeWorkspace: { id: 'workspace-1', role: 'owner' }
@@ -309,8 +307,6 @@ describe('useBillingCapabilities', () => {
   })
 
   it('fails closed when the endpoint denies the current actor', async () => {
-    const { WorkspaceApiError } =
-      await import('@/platform/workspace/api/workspaceApi')
     mockGetBillingCapabilities.mockRejectedValueOnce(
       new WorkspaceApiError('Forbidden', 403)
     )
@@ -327,11 +323,15 @@ describe('useBillingCapabilities', () => {
   it('does not fail open when capability loading is aborted', async () => {
     const controller = new AbortController()
     mockGetBillingCapabilities.mockImplementationOnce(
-      (signal: AbortSignal) =>
+      (signal?: AbortSignal) =>
         new Promise<BillingCapabilitiesResponse>((_, reject) => {
-          signal.addEventListener('abort', () => reject(new Error('aborted')), {
-            once: true
-          })
+          signal?.addEventListener(
+            'abort',
+            () => reject(new Error('aborted')),
+            {
+              once: true
+            }
+          )
         })
     )
 
@@ -715,8 +715,6 @@ describe('useBillingCapabilities', () => {
   })
 
   it('replaces the snapshot when a background refresh is denied', async () => {
-    const { WorkspaceApiError } =
-      await import('@/platform/workspace/api/workspaceApi')
     mockGetBillingCapabilities
       .mockResolvedValueOnce(
         capabilitiesResponse(true, 'workspace-1', true, {
@@ -982,8 +980,6 @@ describe('useBillingCapabilities', () => {
   })
 
   it('does not retry a denial', async () => {
-    const { WorkspaceApiError } =
-      await import('@/platform/workspace/api/workspaceApi')
     mockGetBillingCapabilities.mockRejectedValue(
       new WorkspaceApiError('Forbidden', 403)
     )
