@@ -63,7 +63,7 @@ function renderComponent() {
     global: {
       plugins: [i18n],
       directives: { tooltip: {} },
-      stubs: { DropdownMenu: DropdownMenuStub, Button: true }
+      stubs: { DropdownMenu: DropdownMenuStub }
     }
   })
 }

@@ -8,7 +8,7 @@ const detection = vi.hoisted(() => ({
   outcome: Promise.resolve(false),
   probes: 0
 }))
-vi.mock(import('@comfyorg/shared-frontend-utils/networkUtil'), () => ({
+vi.mock(import('./regionProbe'), () => ({
   isInChina: () => {
     detection.probes += 1
     return detection.outcome

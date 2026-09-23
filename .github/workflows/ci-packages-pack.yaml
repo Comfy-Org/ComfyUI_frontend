@@ -5,6 +5,7 @@ on:
     branches-ignore: [wip/*, draft/*, temp/*]
     paths:
       - 'packages/account-core/**'
+      - 'packages/account-ui/**'
       - 'packages/billing-contract/**'
       - 'packages/ingest-types/**'
 
@@ -21,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [account-core, billing-contract, ingest-types]
+        package: [account-core, account-ui, billing-contract, ingest-types]
     steps:
       - uses: actions/checkout@v7
 

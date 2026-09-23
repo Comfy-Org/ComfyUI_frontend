@@ -2,19 +2,19 @@
   <div :class="rootClass">
     {{ copy.requirements }}:
     <ul :class="listClass">
-      <li :class="cn(!checks.length && unmetClass)">
+      <li :class="checks.length ? undefined : unmetClass">
         {{ copy.length }}
       </li>
-      <li :class="cn(!checks.uppercase && unmetClass)">
+      <li :class="checks.uppercase ? undefined : unmetClass">
         {{ copy.uppercase }}
       </li>
-      <li :class="cn(!checks.lowercase && unmetClass)">
+      <li :class="checks.lowercase ? undefined : unmetClass">
         {{ copy.lowercase }}
       </li>
-      <li :class="cn(!checks.number && unmetClass)">
+      <li :class="checks.number ? undefined : unmetClass">
         {{ copy.number }}
       </li>
-      <li :class="cn(!checks.special && unmetClass)">
+      <li :class="checks.special ? undefined : unmetClass">
         {{ copy.special }}
       </li>
     </ul>
@@ -29,8 +29,6 @@
  * focused) stays with the host.
  */
 import { computed } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type { PasswordRule } from '@comfyorg/account-core/signInSchemas'
 import { passwordRuleChecks } from '@comfyorg/account-core/signInSchemas'

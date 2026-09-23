@@ -68,22 +68,23 @@
     "startingToday": "Starting today",
     "creditsRefill": "Credits refill every month",
     "totalDueToday": "Total due today",
-    "promotionCode": "Promotion code",
-    "apply": "Apply",
     "paymentMethod": "Payment method",
     "stripeSecurity": "Your payment details are handled securely by Stripe.",
-    "card": "Card",
-    "cardNumber": "Card number",
-    "cardDetails": "MM / YY CVC",
-    "country": "Country",
-    "postalCode": "Postal code",
-    "alipay": "Alipay",
     "payAndSubscribe": "Pay and subscribe",
     "terms": "By subscribing, you agree to recurring charges until cancellation.",
-    "sdkPending": "Payment actions will be connected through Billing SDK.",
     "successTitle": "You're all set",
     "successBody": "Your plan was updated. A receipt was sent to your email.",
-    "creditsPerMonth": "credits per month"
+    "perYear": "USD per year",
+    "methodChoice": "Choose how you would like to pay.",
+    "billingAddress": "Billing address",
+    "alipayRenewalNote": "Alipay renews this plan automatically each period until you cancel.",
+    "unavailable": "The payment form isn't available right now. Please try again later.",
+    "genericError": "Something went wrong. Please try again.",
+    "noPlanTitle": "Choose a plan first",
+    "noPlanBody": "This checkout link doesn't name a plan. Pick one and come back.",
+    "choosePlan": "See plans",
+    "returnToProduct": "Return to {product}",
+    "reactivationConfirm": "Your subscription was cancelled. I confirm the {amount} charge to reactivate it."
   },
   "hosted": {
     "loading": "Loading…",
@@ -94,7 +95,8 @@
       "subscription": "Your subscription",
       "payment-methods": "Payment methods",
       "invoices": "Invoices",
-      "result": "Billing result"
+      "result": "Billing result",
+      "checkout": "Checkout"
     },
     "product": {
       "unknown": "Comfy",
@@ -114,11 +116,6 @@
       "INVALID_CORRELATION_ID": "That link carries a reference we can't read.",
       "INVALID_WORKSPACE_ID": "That link names a workspace we can't read."
     },
-    "comingSoon": {
-      "unknown": "This billing page isn't available yet.",
-      "invoices": "Invoices are not available here yet — they arrive once the billing service publishes them.",
-      "result": "Billing results are not shown here yet."
-    },
     "failure": {
       "unknown": "Something went wrong. Please try again.",
       "NOT_AUTHENTICATED": "Your session expired. Sign in again to continue.",
@@ -129,7 +126,10 @@
       "REQUEST_FAILED": "We couldn't reach the billing service. Please try again.",
       "MALFORMED_RESPONSE": "The billing service sent something we couldn't read.",
       "INVALID_REQUEST": "That plan change isn't a request we can make.",
-      "NO_ACTIVE_SUBSCRIPTION": "There is no active subscription to change."
+      "NO_ACTIVE_SUBSCRIPTION": "There is no active subscription to change.",
+      "REACTIVATION_CONFIRMATION_REQUIRED": "Confirm the reactivation charge before continuing.",
+      "CONFLICTING_PAYMENT_METHOD": "That request named two payment methods; choose one.",
+      "MISSING_PAYMENT_METHOD_URL": "The billing service asked for a payment step but didn't say where."
     },
     "tier": {
       "unknown": "Plan",
@@ -164,7 +164,14 @@
       "currentPlanIs": "Current plan: {plan}",
       "noPlan": "You are not on a paid plan yet.",
       "choose": "Choose",
-      "choosePlan": "Choose {plan}"
+      "choosePlan": "Choose {plan}",
+      "cancel": "Cancel subscription",
+      "cancelConfirm": "Cancel your subscription? You can resubscribe at any time.",
+      "cancelConfirmAction": "Confirm cancellation",
+      "keepPlan": "Keep my plan",
+      "cancelled": "Your subscription is cancelled.",
+      "resubscribe": "Resubscribe",
+      "resubscribed": "Your subscription is active again."
     },
     "quote": {
       "title": "Your plan change",
@@ -175,7 +182,8 @@
       "effectiveAt": "Takes effect",
       "transition": "Change",
       "amountDue": "Total due today",
-      "renewalAt": "Renews"
+      "renewalAt": "Renews",
+      "continue": "Continue to checkout"
     },
     "quoteReason": {
       "unknown": "This plan change isn't available right now."
@@ -196,6 +204,24 @@
     "paymentMethodType": {
       "unknown": "Saved payment method",
       "card": "Card"
+    },
+    "invoices": {
+      "body": "Invoices and receipts are kept by our payment provider. Open the billing portal to view and download them.",
+      "open": "Open invoices"
+    },
+    "result": {
+      "recovering": "Checking on your payment…",
+      "none": "There is no payment in progress for this workspace."
+    },
+    "landing": {
+      "body": "Open billing from your Comfy product to manage your plan, payment methods and invoices."
+    },
+    "outcome": {
+      "unknown": "That didn't complete. Please try again.",
+      "failed": "That change didn't go through. Please try again.",
+      "timed_out": "We stopped waiting for the billing service. Check back in a moment.",
+      "reconciliation_needed": "That change needs a look from support before it completes.",
+      "superseded": "Your workspace changed while we were working. Please try again."
     }
   }
 }

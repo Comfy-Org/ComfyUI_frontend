@@ -1,5 +1,9 @@
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 import type {
+  GetEmbeddingsResponse as EmbeddingsResponse,
+  GetExtensionsResponse as ExtensionsResponse
+} from '@comfyorg/ingest-types'
+import type {
   DeviceStats,
   NodeError,
   PromptFailureResponse,
@@ -9,10 +13,6 @@ import type {
   UserData,
   UserDataFullInfo
 } from '@/platform/remote/comfyui/types'
-import type {
-  GetEmbeddingsResponse as EmbeddingsResponse,
-  GetExtensionsResponse as ExtensionsResponse
-} from '@comfyorg/ingest-types'
 import type {
   LogEntry,
   LogsRawResponse,

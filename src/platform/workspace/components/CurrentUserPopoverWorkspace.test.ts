@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getActivePinia } from 'pinia'
@@ -9,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json'
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
@@ -28,11 +30,8 @@ const state = vi.hoisted(() => {
     canAccessSubscriptionFeatures: true,
     isCancelled: false,
     planSlug: initialPlanSlug(),
-    canTopUp: false,
-    canSubscribeSelfServe: false,
     canManageSubscription: false,
     canManageSubscriptionLifecycle: false,
-    canReactivate: false,
     canReactivatePlan: false,
     canOpenPricingSurface: false,
     shouldUseWorkspaceBilling: true,
@@ -43,14 +42,7 @@ const state = vi.hoisted(() => {
   }
 })
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    userDisplayName: ref('Liz'),
-    userEmail: ref('liz@example.com'),
-    userPhotoUrl: ref(null),
-    handleSignOut: vi.fn()
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -82,16 +74,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canTopUp: computed(() => state.canTopUp),
-      canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
-      canReactivate: computed(() => state.canReactivate)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
@@ -186,9 +169,7 @@ function renderComponent(
       stubs: {
         WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
         SubscribeButton: SubscribeButtonStub,
-        UserAvatar: true,
         WorkspaceProfilePic: true,
-        Skeleton: true,
         Divider: true
       }
     }
@@ -231,17 +212,20 @@ function stubHostedTab(): Window & { readonly writes: readonly string[] } {
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    useCurrentUser().userDisplayName = computed(() => 'Liz')
+    useCurrentUser().userEmail = computed(() => 'liz@example.com')
+    useCurrentUser().userPhotoUrl = computed(() => null)
     state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
     state.isCancelled = false
     state.planSlug = 'pro-monthly'
-    state.canTopUp = false
-    state.canSubscribeSelfServe = false
+    useBillingCapabilities().canTopUp = computed(() => false)
+
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
     state.canOpenPricingSurface = false
-    state.canReactivate = false
+
     state.shouldUseWorkspaceBilling = true
     state.hostedBillingDestination = 'stripe'
     state.billingWebUrl = new URL('http://localhost:5174')
@@ -418,7 +402,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers subscription when top-up is denied but self-serve is allowed', async () => {
     const user = userEvent.setup()
-    state.canSubscribeSelfServe = true
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
     renderComponent('team')
 
     await user.click(screen.getByTestId('upgrade-to-add-credits-button'))
@@ -448,7 +432,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.billingStatus = 'payment_failed'
     state.canAccessSubscriptionFeatures = false
     state.canManageSubscription = true
-    state.canSubscribeSelfServe = true
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
     state.planSlug = null
 
     renderComponent('team')
@@ -490,7 +474,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     const user = userEvent.setup()
     state.isCloud = false
     state.canAccessSubscriptionFeatures = false
-    state.canTopUp = true
+    useBillingCapabilities().canTopUp = computed(() => true)
 
     renderComponent('personal')
 
@@ -504,8 +488,8 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {
     state.canAccessSubscriptionFeatures = false
-    state.canTopUp = true
-    state.canSubscribeSelfServe = true
+    useBillingCapabilities().canTopUp = computed(() => true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
     state.canManageSubscription = true
 
     renderComponent('personal')
@@ -521,7 +505,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers add-credits instead of the upgrade upsell on the Local free tier', () => {
     state.isCloud = false
-    state.canTopUp = true
+    useBillingCapabilities().canTopUp = computed(() => true)
 
     renderComponent('personal')
 
@@ -533,8 +517,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('shows one subscription CTA on the Cloud free tier', () => {
     state.canAccessSubscriptionFeatures = false
-    state.canTopUp = false
-    state.canSubscribeSelfServe = true
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
     renderComponent('personal')
 
@@ -551,7 +534,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.isCloud = false
     state.isCancelled = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = true
+    useBillingCapabilities().canReactivate = computed(() => true)
 
     renderComponent('team')
 
@@ -639,8 +622,10 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.canManageSubscription = canManageSubscription
       state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
       state.canReactivatePlan = canReactivate
-      state.canSubscribeSelfServe = canSubscribeSelfServe
-      state.canTopUp = canTopUp
+      useBillingCapabilities().canSubscribeSelfServe = computed(
+        () => canSubscribeSelfServe
+      )
+      useBillingCapabilities().canTopUp = computed(() => canTopUp)
 
       renderComponent('team')
 
@@ -656,7 +641,7 @@ describe('CurrentUserPopoverWorkspace', () => {
   it('keeps billing controls and resubscribe available to a promoted owner', async () => {
     const user = userEvent.setup()
     state.isCancelled = true
-    state.canTopUp = true
+    useBillingCapabilities().canTopUp = computed(() => true)
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
     state.canReactivatePlan = true
@@ -691,7 +676,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.isCancelled = true
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = false
     state.canReactivatePlan = false
     renderComponent('team')
 
@@ -706,7 +690,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     // The legacy rail resolves can_reactivate false but still permits
     // reactivation, so the button must follow canReactivatePlan. Rail
     // selection itself is covered in useWorkspaceUI.test.ts.
-    state.canReactivate = false
     state.canReactivatePlan = true
 
     renderComponent('personal')

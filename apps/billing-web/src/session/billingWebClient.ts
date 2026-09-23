@@ -9,8 +9,11 @@
  * holds; a target-less mint would resolve the personal workspace and read as
  * the account silently switching itself.
  *
- * `embeddedCheckoutAvailable` is false: this app has no payment-provider
- * script yet, so every operation routes hosted.
+ * `embeddedCheckoutAvailable` follows the Stripe key: with one configured the
+ * checkout form collects a card and drives a challenge in-page. Without one
+ * the form reports itself unavailable and no payment can be started here —
+ * the hosted continuation the lifecycle drives resumes a payment, it does not
+ * open one.
  */
 import type {
   BillingOperationPointerStorage,
@@ -18,6 +21,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import {
   createBillingCommands,
+  createBillingEventsReader,
   createBillingOperationLifecycle,
   createBillingStatusReader,
   createCapabilitiesReader,
@@ -30,7 +34,7 @@ import {
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 
-import { CLOUD_BASE_URL } from '@/config/env'
+import { CLOUD_BASE_URL, STRIPE_PUBLISHABLE_KEY } from '@/config/env'
 
 /** Tab-local, like the credential cache: a pointer must not outlive the tab. */
 const pointerStorage: BillingOperationPointerStorage = {
@@ -59,12 +63,13 @@ export function createBillingWebClient(session: BillingSession): BillingClient {
   const status = createBillingStatusReader(readerOptions)
   const plans = createPlansReader(readerOptions)
   const paymentMethods = createPaymentMethodsReader(readerOptions)
+  const events = createBillingEventsReader(readerOptions)
   const lifecycle = createBillingOperationLifecycle({
     transport,
     scopeSource,
     statusReader: status,
     pointerStorage,
-    embeddedCheckoutAvailable: () => false
+    embeddedCheckoutAvailable: () => STRIPE_PUBLISHABLE_KEY !== undefined
   })
 
   return {
@@ -74,6 +79,7 @@ export function createBillingWebClient(session: BillingSession): BillingClient {
     status,
     plans,
     paymentMethods,
+    events,
     topup: createTopupCommand({ transport, lifecycle, capabilities, credits }),
     commands: createBillingCommands({
       transport,

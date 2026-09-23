@@ -47,6 +47,40 @@ test.describe('Models catalog', () => {
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
 
+  test('opens the model from the banner beside the pagination bars', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto('/models/')
+    const strip = page.getByTestId('featured-pagination')
+    const card = page.getByTestId('featured-slide')
+    const href = await page
+      .getByTestId('featured-slide-link')
+      .getAttribute('href')
+    const [bars, area] = [await strip.boundingBox(), await card.boundingBox()]
+    if (!href || !bars || !area)
+      throw new Error('Featured banner is not laid out')
+
+    // The strip spans the card so the bars can share the room, which puts a
+    // wide empty stretch of it over the link.
+    await page.mouse.click(area.x + area.width - 80, bars.y + bars.height / 2)
+
+    await expect(page).toHaveURL(new URL(href, page.url()).href)
+  })
+
+  test('keeps every pagination bar inside the banner on a phone', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/models/')
+    const strip = page.getByTestId('featured-pagination')
+    const card = page.getByTestId('featured-slide')
+    const [bars, card_] = [await strip.boundingBox(), await card.boundingBox()]
+    if (!bars || !card_) throw new Error('Featured banner is not laid out')
+    expect(bars.x + bars.width).toBeLessThanOrEqual(card_.x + card_.width)
+    expect(bars.x).toBeGreaterThanOrEqual(card_.x)
+  })
+
   test('switches between the curated recommendation and alphabetical order', async ({
     page
   }) => {
@@ -114,8 +148,8 @@ test.describe('Models catalog', () => {
       '/models/vertexai--gemini-nano-banana-2--edit-images/',
       '/models/vertexai--gemini-3-pro-image--edit-images/',
       '/models/byteplus--seedream-5-pro--edit-images/',
-      '/models/openai--gpt-image-2--edit-images/',
-      '/models/openai--gpt-image-2.5-sunburst--edit-images/'
+      '/models/byteplus--seedream-5-pro-layer-separation--edit-images/',
+      '/models/byteplus--seedream-4-5--edit-images/'
     ])
 
     await sort.click()
@@ -473,10 +507,30 @@ test.describe('Model playground', () => {
     await page.goto(MODEL_PATH)
     const advanced = page.getByTestId('playground-advanced')
     await expect(advanced).toBeVisible()
-    await expect(page.getByTestId('field-safety_tolerance')).not.toBeVisible()
+    await expect(page.getByTestId('field-prompt_upsampling')).not.toBeVisible()
     await advanced.locator('summary').click()
-    await expect(page.getByTestId('field-safety_tolerance')).toBeVisible()
+    await expect(page.getByTestId('field-prompt_upsampling')).toBeVisible()
     await expect(page.getByTestId('field-seed')).toBeVisible()
+  })
+
+  test('asks nothing about the provider moderation checks and sends nothing', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    await page.getByTestId('playground-advanced').locator('summary').click()
+
+    await expect(page.getByTestId('field-safety_tolerance')).toHaveCount(0)
+    await expect(
+      page.getByRole('combobox', { name: 'Safety tolerance', exact: true })
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole('slider', { name: 'Safety tolerance', exact: true })
+    ).toHaveCount(0)
+
+    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    await expect(page.getByTestId('snippet')).not.toContainText(
+      'safety_tolerance'
+    )
   })
 
   test('restores sign-in and keeps Run and uploads enabled after Models menu navigation', async ({
@@ -671,6 +725,48 @@ test.describe('Model playground', () => {
     const list = page.getByTestId('examples-tab').locator('ul')
     await expect
       .poll(() => list.evaluate((el) => el.scrollWidth > el.clientWidth))
+      .toBe(true)
+  })
+
+  // 320px is the narrowest phone the site supports, and it is where a fixed
+  // card width ran the next sample off the screen: a strip that scrolls with
+  // nothing showing past its edge reads as a single card.
+  test('the next sample shows past the edge at 320px @mobile', async ({
+    page
+  }) => {
+    const width = 320
+    await page.setViewportSize({ width, height: 720 })
+    await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(3)
+
+    await expect
+      .poll(async () => {
+        const box = await cards.nth(1).boundingBox()
+        if (!box) return false
+        // Far enough in to be seen, and still running off the edge: a card
+        // that fitted whole would say the strip ends there.
+        return box.x < width - 24 && box.x + box.width > width
+      })
+      .toBe(true)
+  })
+
+  test('a lone sample takes the phone row @mobile', async ({ page }) => {
+    await page.goto('/models/bfl--flux-2-pro--generate-images/')
+    const cards = page.getByTestId('example-card')
+    await expect(cards).toHaveCount(1)
+
+    // The strip runs edge to edge behind a gutter of 24px on each side.
+    const list = page.getByTestId('examples-tab').locator('ul')
+    await expect
+      .poll(async () => {
+        const [listBox, cardBox] = await Promise.all([
+          list.boundingBox(),
+          cards.first().boundingBox()
+        ])
+        if (!listBox || !cardBox) return false
+        return Math.abs(cardBox.width - (listBox.width - 48)) < 2
+      })
       .toBe(true)
   })
 })

@@ -286,17 +286,12 @@ export function prepareWorkshopRequestCallback(
   switch (request.callback) {
     case 'flat':
       return { ...values }
-    case 'gpt-image': {
-      // The Router takes GPT Image edits as `medias` (role image) next to the
-      // generation parameters; a generate page simply sends no media.
-      const images = (files.images ?? []).map(dataUrl)
-      return {
-        ...values,
-        ...(images.length
-          ? { medias: images.map((value) => ({ role: 'image', value })) }
-          : {})
-      }
-    }
+    case 'gpt-image':
+      if ((files.images ?? []).length)
+        throw new WorkshopRouterError('validation', null, {
+          images: 'rejected'
+        })
+      return { ...values }
     case 'ideogram': {
       const { prompt, ...rest } = values
       if (typeof prompt !== 'string' || !prompt.trim())

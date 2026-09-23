@@ -1,7 +1,7 @@
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { HubWorkflowDetail, AssetInfo } from '@comfyorg/ingest-types'
+import type { AssetInfo, HubWorkflowDetail } from '@comfyorg/ingest-types'
 
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 

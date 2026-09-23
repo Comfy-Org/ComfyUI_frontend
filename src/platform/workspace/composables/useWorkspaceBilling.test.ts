@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { billingOperation } from './billingOperationTestUtils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -57,13 +58,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   WorkspaceApiError: mockWorkspaceApiError
 }))
 
-const mockCapabilitiesRefresh = vi.hoisted(() => vi.fn(async () => undefined))
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: mockCapabilitiesRefresh })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useBillingPlans'),
@@ -1057,12 +1052,14 @@ describe('useWorkspaceBilling', () => {
 
       mockWorkspaceApi.getBillingStatus.mockClear()
       mockWorkspaceApi.getBillingBalance.mockClear()
-      mockCapabilitiesRefresh.mockClear()
+      vi.mocked(useBillingCapabilities().refresh).mockClear()
 
       document.dispatchEvent(new Event('visibilitychange'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
       expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
-      expect(mockCapabilitiesRefresh).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledTimes(
+        1
+      )
 
       // One-shot: switching tabs later must not keep refetching.
       document.dispatchEvent(new Event('visibilitychange'))
@@ -1083,12 +1080,14 @@ describe('useWorkspaceBilling', () => {
 
       mockWorkspaceApi.getBillingStatus.mockClear()
       mockWorkspaceApi.getBillingBalance.mockClear()
-      mockCapabilitiesRefresh.mockClear()
+      vi.mocked(useBillingCapabilities().refresh).mockClear()
 
       window.dispatchEvent(new Event('focus'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
       expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
-      expect(mockCapabilitiesRefresh).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledTimes(
+        1
+      )
 
       document.dispatchEvent(new Event('visibilitychange'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
@@ -1132,12 +1131,14 @@ describe('useWorkspaceBilling', () => {
 
       mockWorkspaceApi.getBillingStatus.mockClear()
       mockWorkspaceApi.getBillingBalance.mockClear()
-      mockCapabilitiesRefresh.mockClear()
+      vi.mocked(useBillingCapabilities().refresh).mockClear()
 
       window.dispatchEvent(new Event('focus'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
       expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
-      expect(mockCapabilitiesRefresh).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledTimes(
+        1
+      )
     })
 
     it('removes pending return listeners when its scope is disposed', async () => {
@@ -1155,12 +1156,12 @@ describe('useWorkspaceBilling', () => {
       scope = undefined
 
       mockWorkspaceApi.getBillingStatus.mockClear()
-      mockCapabilitiesRefresh.mockClear()
+      vi.mocked(useBillingCapabilities().refresh).mockClear()
       window.dispatchEvent(new Event('focus'))
       document.dispatchEvent(new Event('visibilitychange'))
 
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(mockCapabilitiesRefresh).not.toHaveBeenCalled()
+      expect(vi.mocked(useBillingCapabilities().refresh)).not.toHaveBeenCalled()
     })
 
     it('does not watch for a return when the portal window is blocked', async () => {
@@ -1176,12 +1177,12 @@ describe('useWorkspaceBilling', () => {
       await billing.manageSubscription()
 
       mockWorkspaceApi.getBillingStatus.mockClear()
-      mockCapabilitiesRefresh.mockClear()
+      vi.mocked(useBillingCapabilities().refresh).mockClear()
       window.dispatchEvent(new Event('focus'))
       document.dispatchEvent(new Event('visibilitychange'))
 
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(mockCapabilitiesRefresh).not.toHaveBeenCalled()
+      expect(vi.mocked(useBillingCapabilities().refresh)).not.toHaveBeenCalled()
     })
 
     it('does not watch for a return when no portal was opened', async () => {
@@ -1192,11 +1193,11 @@ describe('useWorkspaceBilling', () => {
       await billing.manageSubscription()
 
       mockWorkspaceApi.getBillingStatus.mockClear()
-      mockCapabilitiesRefresh.mockClear()
+      vi.mocked(useBillingCapabilities().refresh).mockClear()
 
       document.dispatchEvent(new Event('visibilitychange'))
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(mockCapabilitiesRefresh).not.toHaveBeenCalled()
+      expect(vi.mocked(useBillingCapabilities().refresh)).not.toHaveBeenCalled()
     })
   })
 

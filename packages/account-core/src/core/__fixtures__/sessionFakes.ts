@@ -92,7 +92,11 @@ export function manualIdentity() {
   })
   return {
     port,
-    fire: (user: AccountUser | null) => deliver?.(user),
+    fire: (user: AccountUser | null) => {
+      if (!deliver)
+        throw new Error('fire() before a client subscribed the port')
+      deliver(user)
+    },
     unsubscribe
   }
 }

@@ -61,14 +61,7 @@ function renderComponent(
   return render(SubscriptionFooterLinks, {
     props,
     global: {
-      plugins: [i18n],
-      stubs: {
-        Button: {
-          props: ['loading'],
-          emits: ['click'],
-          template: '<button @click="$emit(\'click\')"><slot /></button>'
-        }
-      }
+      plugins: [i18n]
     }
   })
 }

@@ -15,7 +15,7 @@
             <PackTryUpdateButton :node-pack="nodePack" size="md" />
             <PackUninstallButton :node-packs="[nodePack]" size="md" />
           </template>
-          <template v-else-if="isUpdateAvailable">
+          <template v-else-if="isAllInstalled && !isNightlyPack">
             <PackUpdateButton :node-packs="[nodePack]" size="md" />
             <PackUninstallButton :node-packs="[nodePack]" size="md" />
           </template>
@@ -61,6 +61,7 @@
         </ModelInfoField>
         <ModelInfoField :label="t('g.status')">
           <PackStatusMessage
+            :has-import-failed="importFailed"
             :status-type="
               nodePack.status as components['schemas']['NodeVersionStatus']
             "
@@ -170,7 +171,7 @@ whenever(isInstalled, () => {
   isInstalling.value = false
 })
 
-const { canTryNightlyUpdate, isUpdateAvailable } = usePackUpdateStatus(
+const { canTryNightlyUpdate, isNightlyPack } = usePackUpdateStatus(
   () => nodePack
 )
 

@@ -54,7 +54,9 @@ describe('AttachmentChip', () => {
 
   it('shows the spinner while uploading', () => {
     renderChip({ name: 'cat.png', uploading: true })
-    expect(screen.getByLabelText('Uploading')).toBeInTheDocument()
+    expect(
+      screen.getByRole('status', { name: 'Uploading' })
+    ).toBeInTheDocument()
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 })

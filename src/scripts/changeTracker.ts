@@ -25,6 +25,10 @@ function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
 
+function withoutExecutionOrder(nodes: ComfyWorkflowJSON['nodes']) {
+  return nodes.map((node) => _.omit(node, ['order']))
+}
+
 function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
@@ -261,7 +265,7 @@ export class ChangeTracker {
   _restoringState: boolean = false
 
   ds?: { scale: number; offset: [number, number] }
-  nodeOutputs?: Record<string, ExecutedWsMessage['output']>
+  nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
 
   private subgraphState?: {
     navigation: string[]
@@ -398,7 +402,7 @@ export class ChangeTracker {
     const isUndoRedoing = this._restoringState
     const isInsideChangeTransaction = this.changeCount > 0
     if (
-      !app.graph ||
+      !app.isGraphReady ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
       ChangeTracker.isLoadingGraph
@@ -411,10 +415,6 @@ export class ChangeTracker {
     }
 
     const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
-    if (!this.activeState) {
-      this.activeState = currentState
-      return
-    }
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
       const previousState = this.activeState
       this.undoQueue.push(previousState)
@@ -642,7 +642,7 @@ export class ChangeTracker {
       const nodeOutputs = changeTracker.nodeOutputs
       const output = nodeOutputs[detail.node]
       if (detail.merge && output) {
-        for (const k in detail.output ?? {}) {
+        for (const k in detail.output) {
           const v = output[k]
           if (v instanceof Array) {
             output[k] = v.concat(detail.output[k])
@@ -669,7 +669,7 @@ export class ChangeTracker {
       const htmlElement = activeEl as HTMLElement
       if (`on${evt}` in htmlElement) {
         const listener = () => {
-          useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState?.()
+          useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
           htmlElement.removeEventListener(evt, listener)
         }
         htmlElement.addEventListener(evt, listener)
@@ -682,41 +682,41 @@ export class ChangeTracker {
   static graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
     if (a === b) return true
 
-    if (typeof a == 'object' && a && typeof b == 'object' && b) {
-      // Compare nodes ignoring order
-      if (
-        !_.isEqualWith(a.nodes, b.nodes, (arrA, arrB) => {
+    // Compare nodes ignoring array position and execution order
+    if (
+      !_.isEqualWith(
+        withoutExecutionOrder(a.nodes),
+        withoutExecutionOrder(b.nodes),
+        (arrA, arrB) => {
           if (Array.isArray(arrA) && Array.isArray(arrB)) {
             return _.isEqual(new Set(arrA), new Set(arrB))
           }
-        })
-      ) {
-        return false
-      }
-
-      // Compare extra properties ignoring ds
-      if (
-        !_.isEqual(_.omit(a.extra ?? {}, ['ds']), _.omit(b.extra ?? {}, ['ds']))
-      )
-        return false
-
-      // Compare other properties normally
-      for (const key of [
-        'links',
-        'floatingLinks',
-        'reroutes',
-        'groups',
-        'definitions',
-        'subgraphs'
-      ]) {
-        if (!_.isEqual(a[key], b[key])) {
-          return false
         }
-      }
-
-      return true
+      )
+    ) {
+      return false
     }
 
-    return false
+    // Compare extra properties ignoring ds
+    if (
+      !_.isEqual(_.omit(a.extra ?? {}, ['ds']), _.omit(b.extra ?? {}, ['ds']))
+    )
+      return false
+
+    // Compare other properties normally
+    for (const key of [
+      'links',
+      'floatingLinks',
+      'reroutes',
+      'groups',
+      'definitions',
+      'subgraphs'
+    ]) {
+      if (!_.isEqual(a[key], b[key])) {
+        return false
+      }
+    }
+
+    return true
   }
 }

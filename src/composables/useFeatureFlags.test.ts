@@ -231,6 +231,10 @@ describe('useFeatureFlags', () => {
   })
 
   describe('billingSdkTopupEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
     it.for([
       ['missing', undefined, false],
       ['malformed', 'true', false],
@@ -249,6 +253,44 @@ describe('useFeatureFlags', () => {
       vi.mocked(api.getServerFeature).mockImplementation(() => {
         throw new Error('feature service unavailable')
       })
+
+      expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(false)
+    })
+
+    // `/features` is the channel the cloud staged rollout actually publishes
+    // on, and boot awaits it; the WebSocket handshake lands after the billing
+    // gate has already chosen a rail.
+    it.for([
+      { source: 'topup', config: { billing_sdk_topup_enabled: true } },
+      {
+        source: 'subscription',
+        config: { billing_sdk_subscription_enabled: true }
+      }
+    ])('reads the $source flag off /features', ({ config }) => {
+      vi.mocked(api.getServerFeature).mockReturnValue(undefined)
+      remoteConfig.value = config
+
+      const { flags } = useFeatureFlags()
+
+      expect(
+        'billing_sdk_topup_enabled' in config
+          ? flags.billingSdkTopupEnabled
+          : flags.billingSdkSubscriptionEnabled
+      ).toBe(true)
+    })
+
+    it('falls back to the handshake while /features omits the key', () => {
+      remoteConfig.value = {}
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+
+      expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(true)
+    })
+
+    it('refuses a malformed /features value without asking the handshake', () => {
+      remoteConfig.value = {
+        billing_sdk_topup_enabled: 'true'
+      } as unknown as typeof remoteConfig.value
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
 
       expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(false)
     })

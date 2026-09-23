@@ -1,5 +1,21 @@
 import type { NodeError } from '@/platform/remote/comfyui/types'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
+
+export function runtimeError(
+  nodeId: ExecutionErrorWsMessage['node_id']
+): ExecutionErrorWsMessage {
+  return {
+    prompt_id: 'prompt',
+    timestamp: 0,
+    node_id: nodeId,
+    node_type: 'KSampler',
+    executed: [],
+    exception_type: 'RuntimeError',
+    exception_message: 'Execution failed',
+    traceback: []
+  }
+}
 
 export function validationError(
   type: string,

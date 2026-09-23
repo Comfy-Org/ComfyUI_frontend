@@ -24,8 +24,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     nodeB.addInput('ckpt_name', 'STRING')
     graph.add(nodeB)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     const settingStore = useSettingStore()
     settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
@@ -141,8 +140,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     const store = useExecutionErrorStore()
 
@@ -219,8 +217,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     const settingStore = useSettingStore()
     settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
@@ -242,5 +239,31 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     expect(interiorNode.has_errors).toBe(true)
     expect(subgraphNode.has_errors).toBe(true)
+  })
+
+  it('skips reconciliation without touching app.rootGraph before the root graph exists', async () => {
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(undefined)
+    const rootGraphAccess = vi.spyOn(app, 'rootGraph', 'get')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const store = useExecutionErrorStore()
+
+    store.recordNodeErrors({
+      '7': {
+        errors: [
+          {
+            type: 'value_bigger_than_max',
+            message: 'Too big',
+            details: '',
+            extra_info: { input_name: 'steps' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'KSampler'
+      }
+    })
+    await nextTick()
+
+    expect(rootGraphAccess).not.toHaveBeenCalled()
+    expect(consoleError).not.toHaveBeenCalled()
   })
 })
