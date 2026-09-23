@@ -189,29 +189,60 @@ function getMinSize(node: LGraphNode) {
  * hasn't (re)created yet, e.g. a DynamicCombo option's revealed input, or an
  * autogrow group member beyond the fresh definition's default count - are
  * left exactly where they were serialised, so their `target_slot` stays
- * correct across the reload (#18388).
+ * correct across the reload (#18388): a dynamic widget's own value-restore
+ * logic (DynamicCombo/autogrow tearing its option group down and rebuilding
+ * it) runs synchronously inside `super.configure()`, before this function's
+ * caller returns, and resolves that group's *current* links positionally,
+ * so a dynamic-only input's transient array index here must land exactly
+ * where its link was recorded, not merely somewhere plausible.
+ *
+ * Fresh-only inputs (nothing serialised has recorded them yet, e.g. a
+ * promoted subgraph widget the original save predates) are ordered by the
+ * fresh definition the same as known inputs, *unless* any dynamic-only
+ * inputs are present: interleaving a fresh-only input into that case would
+ * shift a dynamic-only input's transient index away from the one its link
+ * was recorded against, silently dropping the link when the group tears
+ * down. With no dynamic-only inputs to protect, fresh-only ones take their
+ * fresh-order position too, instead of being appended after everything,
+ * which keeps merging idempotent across repeated save/reload round-trips.
+ *
+ * Fresh inputs are matched to their serialised counterpart strictly by
+ * name, but never through a name-keyed lookup that would collapse several
+ * fresh inputs sharing one name into a single entry: a subgraph node's
+ * exposed sockets can come from separately-promoted widgets that happen to
+ * share a source widget name, and each occurrence must keep its own
+ * identity, order and widget binding.
  */
-function mergeConfiguredInputs<T extends { name: string }>(
+export function mergeConfiguredInputs<T extends { name: string }>(
   freshInputs: readonly INodeInputSlot[],
   serializedInputs: readonly T[],
   reservedKeys: string[]
 ): (T | INodeInputSlot)[] {
-  const freshByName = new Map(freshInputs.map((input) => [input.name, input]))
   const freshOrderIndex = new Map(
-    freshInputs.map((input, index) => [input.name, index])
+    freshInputs.map((input, index) => [input, index])
   )
+  // Fresh inputs queued for matching, grouped by name so a serialised input
+  // pairs with one distinct, not-yet-matched fresh counterpart even when
+  // several fresh inputs share the same name.
+  const freshQueuesByName = new Map<string, INodeInputSlot[]>()
+  for (const input of freshInputs) {
+    const queue = freshQueuesByName.get(input.name)
+    if (queue) queue.push(input)
+    else freshQueuesByName.set(input.name, [input])
+  }
 
-  // Inputs known to both, merged with their own fresh counterpart (matched
-  // by their own name, never by position), and inputs the fresh
+  // Inputs known to both, each carrying the fresh counterpart it was
+  // actually matched to (for ordering below), and inputs the fresh
   // construction hasn't (re)created yet, each remembering how many known
   // inputs preceded them in the serialised order so they can be
   // re-interleaved at the same relative position below.
-  const knownItems: (T | INodeInputSlot)[] = []
+  const knownItems: { item: T | INodeInputSlot; freshInput: INodeInputSlot }[] =
+    []
   const dynamicOnlyItems: { precedingKnownCount: number; value: T }[] = []
 
   let knownCount = 0
   for (const inputData of serializedInputs) {
-    const freshInput = freshByName.get(inputData.name)
+    const freshInput = freshQueuesByName.get(inputData.name)?.shift()
     if (!freshInput) {
       dynamicOnlyItems.push({
         precedingKnownCount: knownCount,
@@ -220,10 +251,13 @@ function mergeConfiguredInputs<T extends { name: string }>(
       continue
     }
     knownItems.push({
-      ...inputData,
-      // Whether the input has associated widget follows the original node
-      // definition.
-      ...pick(freshInput, reservedKeys.concat('widget'))
+      item: {
+        ...inputData,
+        // Whether the input has associated widget follows the original node
+        // definition.
+        ...pick(freshInput, reservedKeys.concat('widget'))
+      },
+      freshInput
     })
     knownCount++
   }
@@ -231,9 +265,14 @@ function mergeConfiguredInputs<T extends { name: string }>(
   // Inputs known to both are reordered to the fresh definition's relative
   // order (#3348), independent of the order they were serialised in.
   knownItems.sort(
-    (a, b) => freshOrderIndex.get(a.name)! - freshOrderIndex.get(b.name)!
+    (a, b) =>
+      freshOrderIndex.get(a.freshInput)! - freshOrderIndex.get(b.freshInput)!
   )
 
+  // Dynamic-only (serialised-only) inputs re-interleaved among the sorted
+  // known inputs, at the position they held relative to the known inputs
+  // in the original serialised order - never relative to fresh-only inputs,
+  // which are handled entirely separately below.
   const merged: (T | INodeInputSlot)[] = []
   let dynamicCursor = 0
   for (let i = 0; i <= knownItems.length; i++) {
@@ -244,14 +283,22 @@ function mergeConfiguredInputs<T extends { name: string }>(
       merged.push(dynamicOnlyItems[dynamicCursor].value)
       dynamicCursor++
     }
-    if (i < knownItems.length) merged.push(knownItems[i])
+    if (i < knownItems.length) merged.push(knownItems[i].item)
   }
 
-  const consumedNames = new Set(knownItems.map((input) => input.name))
-  const newInputs = freshInputs.filter(
-    (input) => !consumedNames.has(input.name)
-  )
-  return [...merged, ...newInputs]
+  const freshOnlyInputs = [...freshQueuesByName.values()].flat()
+  if (dynamicOnlyItems.length === 0) {
+    const combined = [
+      ...knownItems,
+      ...freshOnlyInputs.map((input) => ({ item: input, freshInput: input }))
+    ].sort(
+      (a, b) =>
+        freshOrderIndex.get(a.freshInput)! - freshOrderIndex.get(b.freshInput)!
+    )
+    return combined.map(({ item }) => item)
+  }
+
+  return [...merged, ...freshOnlyInputs]
 }
 
 /**
