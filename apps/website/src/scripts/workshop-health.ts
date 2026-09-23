@@ -18,20 +18,27 @@ function isAccountRefusal(failure: FailedRun): boolean {
 
 function isActionableInputIssue(failure: FailedRun): boolean {
   if (
-    failure.request_id ||
-    failure.http_status !== undefined ||
-    failure.router_error_type ||
-    !failure.field_error_names?.length ||
-    !failure.field_error_codes?.length
+    [failure.request_id, failure.http_status, failure.router_error_type].some(
+      (value) => value !== undefined
+    )
   )
     return false
+  const names = failure.field_error_names
+  const codes = failure.field_error_codes
+  if (!names?.length || !codes?.length) return false
   if (failure.reason === 'validation') return true
   return (
     failure.reason === 'client' &&
-    failure.field_error_codes.every((code) =>
-      ['fileUnreadable', 'videoUnreadable'].includes(code)
-    )
+    codes.every((code) => ['fileUnreadable', 'videoUnreadable'].includes(code))
   )
+}
+
+function isExcludedFailure(failure: FailedRun): boolean {
+  return [
+    isAccountRefusal(failure),
+    isActionableInputIssue(failure),
+    ['noCredits', 'policy', 'concurrency'].includes(failure.reason)
+  ].includes(true)
 }
 
 function health(event: WorkshopAnalyticsEvent): ServiceHealth {
@@ -42,13 +49,7 @@ function health(event: WorkshopAnalyticsEvent): ServiceHealth {
   if (event.name !== 'run_finished') return 'excluded'
   if (event.properties.status === 'succeeded') return 'pending'
   if (event.properties.status === 'cancelled') return 'excluded'
-  if (isAccountRefusal(event.properties)) return 'excluded'
-  if (isActionableInputIssue(event.properties)) return 'excluded'
-  return ['noCredits', 'policy', 'concurrency'].includes(
-    event.properties.reason
-  )
-    ? 'excluded'
-    : 'failure'
+  return isExcludedFailure(event.properties) ? 'excluded' : 'failure'
 }
 
 function failureType(event: WorkshopAnalyticsEvent): string | undefined {
