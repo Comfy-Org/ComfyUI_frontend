@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends string">
 import { ChevronDown, ListFilter } from '@lucide/vue'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
@@ -14,8 +14,8 @@ import { t } from '../../i18n/translations'
 import type { FacetSheetGroup } from './FacetSheet.vue'
 import FacetSheet from './FacetSheet.vue'
 
-export interface FacetMenuOption {
-  readonly value: UseCase
+export interface FacetMenuOption<TValue extends string = UseCase> {
+  readonly value: TValue
   readonly label: string
   readonly count: number
 }
@@ -23,15 +23,17 @@ export interface FacetMenuOption {
 const {
   useCaseOptions,
   resultCount,
+  showLabel,
   locale = 'en'
 } = defineProps<{
-  useCaseOptions: readonly FacetMenuOption[]
+  useCaseOptions: readonly FacetMenuOption<T>[]
   /** What the catalogue holds under the current choices, for the way out. */
   resultCount: number
+  showLabel?: string
   locale?: Locale
 }>()
 
-const useCases = defineModel<UseCase[]>('useCases', { required: true })
+const useCases = defineModel<T[]>('useCases', { required: true })
 
 const open = ref(false)
 // A dropdown anchored to a crowded toolbar leaves a phone no room, so there
@@ -90,7 +92,7 @@ const sheetLabels = computed(() => ({
   noMatches: t('workshop.filter.noMatches', locale),
   applied: t('workshop.filter.applied', locale),
   clearAll: t('workshop.filter.clearAll', locale),
-  show: t('workshop.search.show', locale),
+  show: showLabel ?? t('workshop.search.show', locale),
   close: t('workshop.search.close', locale),
   resize: t('workshop.filter.resize', locale)
 }))

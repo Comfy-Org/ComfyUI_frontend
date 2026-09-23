@@ -1,0 +1,16 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import WorkflowDetail from '../../components/workshop/WorkflowDetail.vue'
+import { workflows } from '../../config/workflow-catalogue'
+import { workflowGraphSchema } from '../../config/workflow-execution'
+
+export function getStaticPaths() {
+  return workflows.map((workflow) => ({ params: { workflow: workflow.slug }, props: { workflow } }))
+}
+const { workflow } = Astro.props
+const graphs = import.meta.glob('../../data/workflows/*.json', { eager: true, import: 'default' })
+const graph = workflowGraphSchema.parse(graphs[`../../data/workflows/${workflow.template}.json`])
+---
+<BaseLayout title={`${workflow.title} - Comfy Workflows`} description={workflow.description} noindex>
+  <WorkflowDetail workflow={workflow} graph={graph} client:load />
+</BaseLayout>

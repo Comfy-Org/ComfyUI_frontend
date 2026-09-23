@@ -7,6 +7,7 @@ import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopHero from './WorkshopHero.vue'
+import WorkshopBrowseTabs from './WorkshopBrowseTabs.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 import { captureWorkshopEvent, useWorkshopEnabled } from '../../scripts/posthog'
 
@@ -35,6 +36,7 @@ watch(
 </script>
 
 <template>
+  <WorkshopBrowseTabs active="models" />
   <WorkshopHero v-if="!inSection" subtitle-key="workshop.hero.subtitle" :locale>
     <template #aside>
       <button

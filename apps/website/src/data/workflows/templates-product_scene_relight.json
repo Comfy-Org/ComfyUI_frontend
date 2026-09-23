@@ -1,0 +1,114 @@
+{
+  "1": {
+    "inputs": {
+      "image": "comfy_shampoo.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Product Image"
+    }
+  },
+  "2": {
+    "inputs": {
+      "image": "flower_sea.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Background Image"
+    }
+  },
+  "12": {
+    "inputs": {
+      "value": "Task: Realistic Product Compositing with Material Preservation Goal: Insert the product from Input 2 into Input 1, ensuring placement is logical and lighting interacts accurately with the product's specific material properties.\n\nInput Image(s):\n\nInput 1 (Scene)\nInput 2 (Product): {product_description}\n\nManual Material Breakdown (Critical): To ensure correct light interaction, treat the product as having the following physical properties:\n\nPrimary Material: [e.g., Matte Plastic / Brushed Aluminum / Clear Glass]\n\nReflectivity: [e.g., Low (dull reflections) / High (mirror-like)]\n\nTexture: [e.g., Smooth / Grainy / Porous]\n\nReaction to Light: [e.g., \"Should absorb light with soft highlights, no sharp glares\"]\n\nSecondary Material (if any): [e.g., Gold Foil Label / Glossy Cap]\n\nReaction to Light: [e.g., \"Should catch sharp, bright specular highlights from the environment\"]\n\nProcess:\nScene Analysis: Identify the logical ground plane/surface in Input 1.\n\nPlacement: Scale Input 2 uniformly (maintain aspect ratio) and place it on the surface.\n\nMaterial-Based Relighting:\n\nDo not simply overlay the scene colors onto the product.\nInstead, map the environment light from Input 1 onto the contours of Input 2 based on the material definitions above.\n\nExample: If the material is Matte, only the edge lighting and general ambient tone should change; do not add sharp reflections.\n\nExample: If the material is Glossy, reflect the scene's details on the surface.\n\nShadows: Generate contact shadows that match the hardness/softness of shadows in the rest of the scene.\n\nTechnical Requirements:\nAlbedo Preservation: The intrinsic color of the product (e.g., \"Brand Red\") must not be washed out by the scene's lighting color.\n\nTexture Fidelity: Do not smooth out surface details (grain, bumps) during the blending process.\n\nScaling: No non-uniform stretching.\n\nOutput: A composite where the lighting confirms the materiality of the product (e.g., makes the plastic look like plastic, not metal)."
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Prompt Template"
+    }
+  },
+  "13": {
+    "inputs": {
+      "regex_pattern": "{product_description}",
+      "case_insensitive": true,
+      "multiline": false,
+      "dotall": false,
+      "count": 0,
+      "string": ["12", 0],
+      "replace": ["14", 0]
+    },
+    "class_type": "RegexReplace",
+    "_meta": {
+      "title": "Replace Text (Regex)"
+    }
+  },
+  "14": {
+    "inputs": {
+      "value": "A dispenser bottle filled with viscuous clear liquid, with a metallic top, \"C\" logo and a clear glass body"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Describe the Product"
+    }
+  },
+  "22": {
+    "inputs": {
+      "model": "seedream-4-5-251128",
+      "size_preset": "2048x2048 (1:1)",
+      "width": 2048,
+      "height": 2048,
+      "sequential_image_generation": "disabled",
+      "max_images": 1,
+      "seed": 406946789,
+      "watermark": false,
+      "fail_on_partial": true,
+      "prompt": ["13", 0],
+      "image": ["15:15", 0]
+    },
+    "class_type": "ByteDanceSeedreamNode",
+    "_meta": {
+      "title": "ByteDance Seedream 4.5 & 5.0"
+    }
+  },
+  "23": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": ["22", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "15:15": {
+    "inputs": {
+      "images.image0": ["2", 0],
+      "images.image1": ["15:6", 0]
+    },
+    "class_type": "BatchImagesNode",
+    "_meta": {
+      "title": "Batch Images"
+    }
+  },
+  "15:5": {
+    "inputs": {
+      "image": ["2", 0]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "15:6": {
+    "inputs": {
+      "padding_color": "white",
+      "interpolation": "area",
+      "image": ["1", 0],
+      "target_width": ["15:5", 0],
+      "target_height": ["15:5", 1]
+    },
+    "class_type": "ResizeAndPadImage",
+    "_meta": {
+      "title": "Resize And Pad Image"
+    }
+  }
+}

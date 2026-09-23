@@ -118,6 +118,8 @@ describe('Workshop release output', () => {
     const enabled = modelsBuildRoutes(true)
     expect(enabled.map((route) => route.pattern)).toEqual([
       '/models',
+      '/models/workflows',
+      '/models/workflows/[workflow]',
       '/models/[slug]',
       '/models/showcase',
       '/checkout-opening',

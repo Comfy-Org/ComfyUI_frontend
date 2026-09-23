@@ -1,0 +1,204 @@
+{
+  "74": {
+    "inputs": {
+      "image": "coastal_smiling_woman.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "60": {
+    "inputs": {
+      "filename_prefix": "Qwen-image-layers",
+      "images": ["83:8", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "82": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "largest_size": 640,
+      "image": ["74", 0]
+    },
+    "class_type": "ImageScaleToMaxDimension",
+    "_meta": {
+      "title": "Scale Image to Max Dimension"
+    }
+  },
+  "116": {
+    "inputs": {
+      "value": "A cinematic medium shot of a beautiful young woman with fair skin and a joyful, radiant smile, looking back over her shoulder. She has voluminous, curly auburn hair styled in a loose, windblown updo. She is standing on a rugged, rocky coastline overlooking a sun-drenched ocean. She wears a vintage, long-sleeved, high-collared dress in an off-white, crinkled fabric with delicate smocking on the bodice and a simple brown sash at her waist. In the background, the ocean sparkles brightly under the sun, and a majestic tall ship with full sails is visible in the distance. The scene is illuminated by the warm, golden light of the late afternoon, creating a soft, romantic, and nostalgic atmosphere with a shallow depth of field that keeps the woman in sharp focus."
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Prompt"
+    }
+  },
+  "83:38": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "83:39": {
+    "inputs": {
+      "vae_name": "qwen_image_layered_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "83:7": {
+    "inputs": {
+      "text": "",
+      "clip": ["83:38", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "83:70": {
+    "inputs": {
+      "conditioning": ["83:7", 0],
+      "latent": ["83:71", 0]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "Set Reference Latent"
+    }
+  },
+  "83:69": {
+    "inputs": {
+      "conditioning": ["83:6", 0],
+      "latent": ["83:71", 0]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "Set Reference Latent"
+    }
+  },
+  "83:66": {
+    "inputs": {
+      "shift": 1,
+      "sampling": "flow",
+      "model": ["83:37", 0]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "ModelSamplingAuraFlow"
+    }
+  },
+  "83:140": {
+    "inputs": {
+      "dim": "t",
+      "index": 1,
+      "amount": 16384,
+      "samples": ["83:3", 0]
+    },
+    "class_type": "LatentCut",
+    "_meta": {
+      "title": "LatentCut"
+    }
+  },
+  "83:76": {
+    "inputs": {
+      "dim": "t",
+      "slice_size": 1,
+      "samples": ["83:140", 0]
+    },
+    "class_type": "LatentCutToBatch",
+    "_meta": {
+      "title": "LatentCutToBatch"
+    }
+  },
+  "83:71": {
+    "inputs": {
+      "pixels": ["82", 0],
+      "vae": ["83:39", 0]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "83:8": {
+    "inputs": {
+      "samples": ["83:76", 0],
+      "vae": ["83:39", 0]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "83:6": {
+    "inputs": {
+      "text": ["116", 0],
+      "clip": ["83:38", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "83:3": {
+    "inputs": {
+      "seed": 331728509923362,
+      "steps": 20,
+      "cfg": 2.5,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": ["83:66", 0],
+      "positive": ["83:69", 0],
+      "negative": ["83:70", 0],
+      "latent_image": ["83:118", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "83:78": {
+    "inputs": {
+      "image": ["82", 0]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "83:118": {
+    "inputs": {
+      "layers": 2,
+      "batch_size": 1,
+      "width": ["83:78", 0],
+      "height": ["83:78", 1]
+    },
+    "class_type": "EmptyQwenImageLayeredLatentImage",
+    "_meta": {
+      "title": "Empty Qwen Image Layered Latent"
+    }
+  },
+  "83:37": {
+    "inputs": {
+      "unet_name": "qwen_image_layered_bf16.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  }
+}

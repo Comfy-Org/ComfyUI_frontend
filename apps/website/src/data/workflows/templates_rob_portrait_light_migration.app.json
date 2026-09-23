@@ -1,0 +1,255 @@
+{
+  "5": {
+    "inputs": {
+      "filename_prefix": "ComfyUI-light_migration",
+      "images": ["469:118", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "6": {
+    "inputs": {
+      "image": "input_2-relight.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Lighting Image"
+    }
+  },
+  "7": {
+    "inputs": {
+      "image": "input_1-relight.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Subject Image"
+    }
+  },
+  "469:110": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": ["469:115", 0]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFGNorm"
+    }
+  },
+  "469:111": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "469:112": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "469:113": {
+    "inputs": {
+      "unet_name": "qwen_image_edit_2509_fp8_e4m3fn.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "469:114": {
+    "inputs": {
+      "prompt": "",
+      "clip": ["469:112", 0],
+      "vae": ["469:111", 0],
+      "image1": ["469:120", 0],
+      "image2": ["6", 0]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "TextEncodeQwenImageEditPlus"
+    }
+  },
+  "469:115": {
+    "inputs": {
+      "shift": 3,
+      "sampling": "flow",
+      "model": ["469:440", 0]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "ModelSamplingAuraFlow"
+    }
+  },
+  "469:116": {
+    "inputs": {
+      "prompt": "参考色调，移除图1原有的光照并参考图2的光照和色调对图1重新照明",
+      "clip": ["469:112", 0],
+      "vae": ["469:111", 0],
+      "image1": ["469:120", 0],
+      "image2": ["6", 0]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "TextEncodeQwenImageEditPlus"
+    }
+  },
+  "469:117": {
+    "inputs": {
+      "pixels": ["469:120", 0],
+      "vae": ["469:111", 0]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "469:118": {
+    "inputs": {
+      "samples": ["469:121", 0],
+      "vae": ["469:111", 0]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "469:119": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Edit-2509-Lightning-4steps-V1.0-bf16.safetensors",
+      "strength_model": 1,
+      "model": ["469:470", 0]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "469:120": {
+    "inputs": {
+      "image": ["7", 0]
+    },
+    "class_type": "FluxKontextImageScale",
+    "_meta": {
+      "title": "FluxKontextImageScale"
+    }
+  },
+  "469:121": {
+    "inputs": {
+      "seed": 67733640390271,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": ["469:110", 0],
+      "steps": ["469:441", 0],
+      "cfg": ["469:442", 0],
+      "positive": ["469:116", 0],
+      "negative": ["469:114", 0],
+      "latent_image": ["469:117", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "469:436": {
+    "inputs": {
+      "value": 4
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Stpes"
+    }
+  },
+  "469:437": {
+    "inputs": {
+      "value": 1
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "CFG"
+    }
+  },
+  "469:438": {
+    "inputs": {
+      "value": 20
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Steps"
+    }
+  },
+  "469:439": {
+    "inputs": {
+      "value": 4
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "CFG"
+    }
+  },
+  "469:440": {
+    "inputs": {
+      "switch": ["469:443", 0],
+      "on_false": ["469:470", 0],
+      "on_true": ["469:119", 0]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Switch (Model)"
+    }
+  },
+  "469:441": {
+    "inputs": {
+      "switch": ["469:443", 0],
+      "on_false": ["469:438", 0],
+      "on_true": ["469:436", 0]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Switch (Steps)"
+    }
+  },
+  "469:442": {
+    "inputs": {
+      "switch": ["469:443", 0],
+      "on_false": ["469:439", 0],
+      "on_true": ["469:437", 0]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Switch (CFG)"
+    }
+  },
+  "469:443": {
+    "inputs": {
+      "value": false
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "Enable Lightning LoRA"
+    }
+  },
+  "469:470": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Edit-2509-Light-Migration.safetensors",
+      "strength_model": 1,
+      "model": ["469:113", 0]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  }
+}
