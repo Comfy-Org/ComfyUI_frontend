@@ -1,3 +1,5 @@
+import type { RouterServingProviderId } from '../../config/router-providers'
+import { ROUTER_PROVIDER_COVERAGE } from '../../config/router-providers'
 import type { CodeTab } from './CodeTabs.vue'
 
 // Cycling segments are index-synced: the model id, prompt, and output
@@ -72,14 +74,12 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
 // cycles, illustrating that switching providers only changes one argument.
 const ROUTER_MODEL = 'openai/gpt-image-2'
 const ROUTER_PROMPT = 'aerial view of a neon coral reef at dusk'
-export const ROUTER_PROVIDERS = [
+export type RouterProvider = 'comfy' | RouterServingProviderId
+export const ROUTER_PROVIDERS: readonly RouterProvider[] = [
   'comfy',
-  'fal',
-  'runware',
-  'wavespeed',
-  'higgsfield'
-] as const
-export type RouterProvider = (typeof ROUTER_PROVIDERS)[number]
+  ...(ROUTER_PROVIDER_COVERAGE.find((row) => row.modelId === ROUTER_MODEL)
+    ?.providers ?? [])
+]
 
 export const routerCodeTabs: Record<string, CodeTab> = {
   python: {
@@ -99,7 +99,7 @@ export const routerCodeTabs: Record<string, CodeTab> = {
     name: 'TypeScript',
     lang: 'typescript',
     segments: [
-      "import { Comfy } from 'comfy-sdk'\n\nconst client = new Comfy({ apiKey: 'comfyui-...' })\n\nconst result = await client.models.run('" +
+      "import { Comfy } from '@comfyorg/sdk'\n\nconst client = new Comfy({ apiKey: 'comfyui-...' })\n\nconst result = await client.models.run('" +
         ROUTER_MODEL +
         "', {\n  arguments: { prompt: '" +
         ROUTER_PROMPT +
@@ -119,7 +119,7 @@ export const routerCodeTabs: Record<string, CodeTab> = {
         ROUTER_MODEL +
         '?model_provider=',
       { values: [...ROUTER_PROVIDERS], highlight: true },
-      '" \\\n  -H "X-API-Key: $COMFY_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"prompt": "' +
+      '" \\\n  -H "X-API-Key: $COMFY_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -H "Idempotency-Key: $(uuidgen)" \\\n  -d \'{"prompt": "' +
         ROUTER_PROMPT +
         '"}\''
     ]

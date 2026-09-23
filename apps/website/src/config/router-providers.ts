@@ -17,7 +17,8 @@ export const ROUTER_SERVING_PROVIDERS = [
   { id: 'wavespeed', name: 'WaveSpeed' }
 ] as const
 
-type RouterServingProviderId = (typeof ROUTER_SERVING_PROVIDERS)[number]['id']
+export type RouterServingProviderId =
+  (typeof ROUTER_SERVING_PROVIDERS)[number]['id']
 
 export interface RouterProviderCoverageRow {
   /** The model's name on the page. */
@@ -46,7 +47,7 @@ export const ROUTER_PROVIDER_COVERAGE: readonly RouterProviderCoverageRow[] = [
     name: 'GPT Image 2',
     modelId: 'openai/gpt-image-2',
     docsUrl: `${DOCS_MODELS_URL}/openai/gpt-image-2/code`,
-    providers: ['fal', 'runware']
+    providers: ['fal', 'runware', 'wavespeed']
   },
   {
     name: 'Kling 3.0 Turbo',
@@ -64,7 +65,7 @@ export const ROUTER_PROVIDER_COVERAGE: readonly RouterProviderCoverageRow[] = [
     name: 'Nano Banana 2',
     modelId: 'vertexai/gemini-3.1-flash-image',
     docsUrl: `${DOCS_MODELS_URL}/google/nano-banana-2/code`,
-    providers: ['fal', 'runware']
+    providers: ['fal', 'runware', 'wavespeed']
   },
   {
     name: 'Nano Banana Pro',
@@ -77,14 +78,14 @@ export const ROUTER_PROVIDER_COVERAGE: readonly RouterProviderCoverageRow[] = [
     docsName: 'Dreamina Seedance 2.0 260128',
     modelId: 'byteplus/dreamina-seedance-2-0-260128',
     docsUrl: `${DOCS_MODELS_URL}/byteplus/dreamina-seedance-2-0-260128/code`,
-    providers: ['fal']
+    providers: ['fal', 'higgsfield', 'runware', 'wavespeed']
   },
   {
     name: 'Seedance 2.5',
     docsName: 'Dreamina Seedance 2.5 260628',
     modelId: 'byteplus/dreamina-seedance-2-5-260628',
     docsUrl: `${DOCS_MODELS_URL}/byteplus/dreamina-seedance-2-5-260628/code`,
-    providers: ['fal']
+    providers: ['fal', 'higgsfield', 'runware', 'wavespeed']
   },
   {
     name: 'Wan 3.0 Video',

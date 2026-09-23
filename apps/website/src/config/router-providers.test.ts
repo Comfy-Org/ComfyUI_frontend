@@ -28,12 +28,14 @@ const skipReason = process.env.CI
   : 'checks the published API spec; runs in CI only (set CI=1 to run it here)'
 
 async function fetchDocs(url: string): Promise<string | null> {
+  let response: Response
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(15_000) })
-    return response.ok ? await response.text() : null
+    response = await fetch(url, { signal: AbortSignal.timeout(15_000) })
   } catch {
     return null
   }
+  if (!response.ok) throw new Error(`${url} responded ${response.status}`)
+  return response.text()
 }
 
 interface DocsCoverageRow {

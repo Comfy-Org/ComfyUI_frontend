@@ -12,14 +12,14 @@ describe('RouterCodeSection', () => {
     expect(providers).toBeTruthy()
     expect(screen.getByText('comfy')).toBeTruthy()
 
-    await userEvent.click(screen.getByRole('radio', { name: 'WaveSpeed' }))
+    await userEvent.click(screen.getByRole('radio', { name: 'fal' }))
 
-    expect(screen.getByText('wavespeed')).toBeTruthy()
+    expect(screen.getByText('fal')).toBeTruthy()
     expect(screen.queryByText('comfy')).toBeNull()
 
-    await userEvent.click(screen.getByRole('radio', { name: 'Higgsfield' }))
+    await userEvent.click(screen.getByRole('radio', { name: 'Runware' }))
 
-    expect(screen.getByText('higgsfield')).toBeTruthy()
-    expect(screen.queryByText('wavespeed')).toBeNull()
+    expect(screen.getByText('runware')).toBeTruthy()
+    expect(screen.queryByText('fal')).toBeNull()
   })
 })

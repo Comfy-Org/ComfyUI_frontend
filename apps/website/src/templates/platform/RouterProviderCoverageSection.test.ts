@@ -9,7 +9,9 @@ import {
 import RouterProviderCoverageSection from './RouterProviderCoverageSection.vue'
 
 const remaining =
-  ROUTER_CATALOG_MODEL_COUNT - ROUTER_PROVIDER_COVERAGE.length - 1
+  ROUTER_CATALOG_MODEL_COUNT -
+  ROUTER_PROVIDER_COVERAGE.length -
+  ROUTER_COMFY_ONLY_PREVIEW.length
 
 function servedBy(name: string): boolean[] {
   return within(screen.getByRole('row', { name: new RegExp(name) }))
@@ -74,7 +76,7 @@ describe('RouterProviderCoverageSection', () => {
 
     expect(servedBy('Nano Banana Pro')).toEqual([true, true, false, true, true])
     expect(servedBy('Kling V3')).toEqual([true, false, true, false, false])
-    expect(servedBy('Seedance 2.0')).toEqual([true, true, false, false, false])
+    expect(servedBy('Seedance 2.0')).toEqual([true, true, true, true, true])
     expect(servedBy('MiniMax H3')).toEqual([true, false, false, false, false])
   })
 

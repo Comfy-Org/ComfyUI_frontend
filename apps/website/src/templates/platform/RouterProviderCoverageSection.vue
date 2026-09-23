@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { Check } from '@lucide/vue'
 
 import type { CompareRow } from '../../components/blocks/CompareTable01.vue'
@@ -20,14 +21,19 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const served = routerT('platform.router.coverage.served', locale)
 const notServed = routerT('platform.router.coverage.notServed', locale)
 
-const logos: Record<string, { src: string; class: string }> = {
+type Column = 'Comfy' | (typeof ROUTER_SERVING_PROVIDERS)[number]['name']
+
+const logos: Record<Column, { src: string; class: string }> = {
   Comfy: { src: '/icons/router-providers/comfy.svg', class: 'h-5' },
   fal: { src: '/icons/router-providers/fal.svg', class: 'h-4.5' },
   Higgsfield: { src: '/icons/router-providers/higgsfield.svg', class: 'h-5' },
   Runware: { src: '/icons/router-providers/runware.svg', class: 'h-4' },
   WaveSpeed: { src: '/icons/router-providers/wavespeed.svg', class: 'h-3.5' }
 }
-const columns = [
+const logoByColumn = new Map<string, { src: string; class: string }>(
+  Object.entries(logos)
+)
+const columns: Column[] = [
   'Comfy',
   ...ROUTER_SERVING_PROVIDERS.map((provider) => provider.name)
 ]
@@ -77,7 +83,11 @@ const moreModels = routerT(
   locale
 ).replace(
   '{count}',
-  String(ROUTER_CATALOG_MODEL_COUNT - ROUTER_PROVIDER_COVERAGE.length - 1)
+  String(
+    ROUTER_CATALOG_MODEL_COUNT -
+      ROUTER_PROVIDER_COVERAGE.length -
+      ROUTER_COMFY_ONLY_PREVIEW.length
+  )
 )
 const browseAll = routerT('platform.router.coverage.browseAll', locale).replace(
   '{count}',
@@ -100,12 +110,14 @@ const browseAll = routerT('platform.router.coverage.browseAll', locale).replace(
     <template #column="{ column }">
       <div class="flex justify-center">
         <img
-          :src="logos[column].src"
+          :src="logoByColumn.get(column)?.src"
           :alt="column"
-          :class="[
-            'w-auto max-w-none brightness-0 invert',
-            logos[column].class
-          ]"
+          :class="
+            cn(
+              'w-auto max-w-none brightness-0 invert',
+              logoByColumn.get(column)?.class
+            )
+          "
         />
       </div>
     </template>
@@ -135,7 +147,7 @@ const browseAll = routerT('platform.router.coverage.browseAll', locale).replace(
     </template>
     <template #footer>
       <div
-        class="absolute inset-x-2 bottom-2 flex h-50 flex-col items-center justify-end gap-3 rounded-b-4xl bg-linear-to-b from-transparent to-primary-comfy-ink to-70% px-6 pb-8 text-center"
+        class="pointer-events-none absolute inset-x-2 bottom-2 flex h-50 flex-col items-center justify-end gap-3 rounded-b-4xl bg-linear-to-b from-transparent to-primary-comfy-ink to-70% px-6 pb-8 text-center"
       >
         <p class="text-lg text-primary-warm-white lg:text-xl">
           <span class="text-primary-comfy-yellow">{{ moreModels }}</span>
@@ -145,7 +157,7 @@ const browseAll = routerT('platform.router.coverage.browseAll', locale).replace(
           as="a"
           :href="getRoutes(locale).modelsShowcase"
           variant="outline"
-          class="h-12 rounded-full text-sm"
+          class="pointer-events-auto h-12 rounded-full text-sm"
         >
           {{ browseAll }}
         </Button>
