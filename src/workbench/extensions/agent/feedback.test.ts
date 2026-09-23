@@ -19,16 +19,15 @@ vi.mock(import('@/platform/support/feedbackDialog'), () => ({
   openFeedbackDialog: vi.fn()
 }))
 
-const trackUiButtonClicked = vi.fn()
 vi.mock(import('@/platform/telemetry'))
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 describe('openFeedbackDialog (agent)', () => {
   beforeEach(() => {
-    const telemetry = useTelemetry()
-    assert.exists(telemetry)
-    Object.assign(telemetry, { trackUiButtonClicked })
     vi.stubGlobal('__COMFYUI_FRONTEND_VERSION__', '1.55.4')
     vi.spyOn(window.navigator, 'platform', 'get').mockReturnValue('MacIntel')
   })
@@ -105,7 +104,7 @@ describe('openFeedbackDialog (agent)', () => {
 
     openFeedbackDialog('agent-panel')
 
-    expect(trackUiButtonClicked).toHaveBeenCalledWith({
+    expect(telemetry.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'feedback_button_clicked',
       element_group: 'agent-panel'
     })

@@ -28,12 +28,7 @@ const env = vi.hoisted(() => {
       | 'error',
     partnerNodeGovernanceProviders: [] as { id: string }[]
   }
-  const fakeRef = <K extends keyof typeof state>(key: K) => ({
-    get value() {
-      return state[key]
-    }
-  })
-  return { state, fakeRef }
+  return { state }
 })
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
@@ -54,6 +49,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+let workspaceUI: ReturnType<typeof useWorkspaceUI>
 
 interface MockSettingParams {
   id: string
@@ -126,6 +122,7 @@ describe('useSettingUI', () => {
   }
 
   beforeEach(() => {
+    workspaceUI = vi.mocked(useWorkspaceUI())
     Object.assign(env.state, {
       isCloud: false,
       isDesktop: false,
@@ -133,9 +130,7 @@ describe('useSettingUI', () => {
       partnerNodeGovernanceStatus: 'inactive',
       partnerNodeGovernanceProviders: []
     })
-    Object.assign(useWorkspaceUI(), {
-      workspaceRole: env.fakeRef('workspaceRole')
-    })
+    workspaceUI.workspaceRole = computed(() => env.state.workspaceRole)
 
     Object.assign(useSettingStore(), { settingsById: mockSettings })
   })

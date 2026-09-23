@@ -33,16 +33,6 @@ vi.hoisted(() => {
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
-const { commandExecuteMock } = vi.hoisted(() => ({
-  commandExecuteMock: vi.fn<ReturnType<typeof useCommandStore>['execute']>(
-    async () => undefined
-  )
-}))
-
-const { toastErrorHandlerMock } = vi.hoisted(() => ({
-  toastErrorHandlerMock: vi.fn()
-}))
-
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isNightly: false,
@@ -66,14 +56,13 @@ vi.mock(import('@/utils/markdownRendererUtil'), () => ({
 }))
 
 vi.mock(import('@/composables/useErrorHandling'))
+let errorHandling: ReturnType<typeof useErrorHandling>
 
 // Mock release store
 
 beforeEach(() => {
-  Object.assign(useErrorHandling(), {
-    toastErrorHandler: toastErrorHandlerMock
-  })
-  vi.mocked(useCommandStore().execute).mockImplementation(commandExecuteMock)
+  errorHandling = vi.mocked(useErrorHandling())
+  vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
 })
 
 describe('ReleaseNotificationToast', () => {
@@ -199,7 +188,7 @@ describe('ReleaseNotificationToast', () => {
       } as ReleaseNote
     })
 
-    commandExecuteMock.mockResolvedValueOnce(undefined)
+    vi.mocked(useCommandStore().execute).mockResolvedValueOnce(undefined)
 
     const mockWindowOpen = vi.fn()
     Object.defineProperty(window, 'open', {
@@ -212,11 +201,11 @@ describe('ReleaseNotificationToast', () => {
 
     await user.click(screen.getByRole('button', { name: /update/i }))
 
-    expect(commandExecuteMock).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy-Desktop.CheckForUpdates'
     )
     expect(mockWindowOpen).not.toHaveBeenCalled()
-    expect(toastErrorHandlerMock).not.toHaveBeenCalled()
+    expect(errorHandling.toastErrorHandler).not.toHaveBeenCalled()
   })
 
   it('shows an error toast if the desktop updater flow fails on desktop', async () => {
@@ -229,7 +218,7 @@ describe('ReleaseNotificationToast', () => {
     })
 
     const error = new Error('Command Comfy-Desktop.CheckForUpdates not found')
-    commandExecuteMock.mockRejectedValueOnce(error)
+    vi.mocked(useCommandStore().execute).mockRejectedValueOnce(error)
 
     const mockWindowOpen = vi.fn()
     Object.defineProperty(window, 'open', {
@@ -242,7 +231,7 @@ describe('ReleaseNotificationToast', () => {
 
     await user.click(screen.getByRole('button', { name: /update/i }))
 
-    expect(toastErrorHandlerMock).toHaveBeenCalledWith(error)
+    expect(errorHandling.toastErrorHandler).toHaveBeenCalledWith(error)
     expect(mockWindowOpen).not.toHaveBeenCalled()
   })
 

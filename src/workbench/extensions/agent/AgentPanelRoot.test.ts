@@ -147,48 +147,8 @@ let workflowStore: ReturnType<typeof useWorkflowStore>
 let canvasStore: ReturnType<typeof useCanvasStore>
 let executionErrors: Mocked<ReturnType<typeof useExecutionErrorStore>>
 
-const workflowService = vi.hoisted(() => ({
-  saveWorkflow: vi.fn(async (tab: { isModified: boolean }) => {
-    tab.isModified = false
-    return true
-  }),
-  saveWorkflowAs: vi.fn(
-    async (tab: ComfyWorkflow, options?: { filename?: string }) => {
-      if (options?.filename) {
-        await workflowStore.renameWorkflow(
-          tab,
-          `${tab.directory}/${options.filename}.json`
-        )
-      }
-      Object.assign(tab, { isTemporary: false })
-      tab.isModified = false
-      return true
-    }
-  ),
-  closeWorkflow: vi.fn(async (tab: ComfyWorkflow) => {
-    if (workflowStore.activeWorkflow?.path === tab.path) {
-      const replacement = workflowStore.openWorkflows.find(
-        (candidate) => candidate.path !== tab.path
-      )
-      workflowStore.activeWorkflow = replacement
-        ? await replacement.load()
-        : null
-    }
-    await workflowStore.closeWorkflow(tab)
-    return true
-  }),
-  openWorkflow: vi.fn(async (tab: { path: string }) => {
-    const known = workflowStore.getWorkflowByPath(tab.path)
-    if (known) {
-      workflowStore.openWorkflowsInBackground({ right: [tab.path] })
-      workflowStore.activeWorkflow = await known.load()
-    }
-    return true
-  })
-}))
-
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
-Object.assign(useWorkflowService(), workflowService)
+const workflowService = vi.mocked(useWorkflowService())
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: (item: unknown) =>
@@ -201,20 +161,10 @@ const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
 vi.mock(import('@vueuse/core'), { spy: true })
 
-const telemetry = vi.hoisted(() => ({
-  trackAgentMessageFeedback: vi.fn(),
-  trackAgentWorkflowApplied: vi.fn(),
-  trackAgentMessageSent: vi.fn(),
-  trackAgentNodeTagged: vi.fn(),
-  trackAgentAttachButtonClicked: vi.fn(),
-  trackAgentCloseButtonClicked: vi.fn(),
-  trackAgentPanelOpened: vi.fn(),
-  trackAgentPanelClosed: vi.fn()
-}))
 vi.mock(import('@/platform/telemetry'))
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
-Object.assign(telemetryProvider, telemetry)
+const telemetry = vi.mocked(telemetryProvider)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
@@ -322,6 +272,41 @@ beforeEach(() => {
   )
   workflowStore = useWorkflowStore()
   canvasStore = useCanvasStore()
+  workflowService.saveWorkflow.mockImplementation(async (tab) => {
+    tab.isModified = false
+    return true
+  })
+  workflowService.saveWorkflowAs.mockImplementation(async (tab, options) => {
+    if (options?.filename) {
+      await workflowStore.renameWorkflow(
+        tab,
+        `${tab.directory}/${options.filename}.json`
+      )
+    }
+    Object.assign(tab, { isTemporary: false })
+    tab.isModified = false
+    return true
+  })
+  workflowService.closeWorkflow.mockImplementation(async (tab) => {
+    if (workflowStore.activeWorkflow?.path === tab.path) {
+      const replacement = workflowStore.openWorkflows.find(
+        (candidate) => candidate.path !== tab.path
+      )
+      workflowStore.activeWorkflow = replacement
+        ? await replacement.load()
+        : null
+    }
+    await workflowStore.closeWorkflow(tab)
+    return true
+  })
+  workflowService.openWorkflow.mockImplementation(async (tab) => {
+    const known = workflowStore.getWorkflowByPath(tab.path)
+    if (known) {
+      workflowStore.openWorkflowsInBackground({ right: [tab.path] })
+      workflowStore.activeWorkflow = await known.load()
+    }
+    return true
+  })
   executionErrors = vi.mocked(useExecutionErrorStore())
   executionErrors.showErrorOverlay.mockImplementation(() => {})
   vi.useRealTimers()
