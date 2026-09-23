@@ -72,6 +72,16 @@ export interface AgentEventTransport {
    * `done`. A no-op when nothing is pending.
    */
   notifyCanvasCaughtUp: () => void
+  /** Whether any tool-call part is currently held pending canvas catch-up. */
+  hasPendingCanvasSync: () => boolean
+  /**
+   * Tears the transport down for a reason other than natural completion
+   * (abort, drop, reset, hydrate). Flushes any tool-call parts held pending
+   * canvas catch-up to `done` and cancels their `STALE_AFTER_MS` timers, so
+   * none can fire later against a `message` object the store has since
+   * discarded or replaced with authoritative content under the same id.
+   */
+  dispose: () => void
 }
 
 export function createAgentEventTransport(
@@ -90,7 +100,16 @@ export function createAgentEventTransport(
    * to never deferring, so a caller with no canvas to catch up on (or that
    * never wires this up) keeps the immediate-done behavior.
    */
-  shouldAwaitCanvasSync: () => boolean = () => false
+  shouldAwaitCanvasSync: () => boolean = () => false,
+  /**
+   * PM-1575: the bound workflow's CRDT `outcomes.applied` counter (or an
+   * equivalent monotonic count of frames actually applied to the doc), read
+   * fresh whenever this transport needs it -- see `canvasSyncBaseline` below
+   * for why. Defaults to a constant so a caller with no counter to offer
+   * (e.g. a caller that also leaves `shouldAwaitCanvasSync` at its default)
+   * never spuriously looks "caught up".
+   */
+  getCanvasSyncOutcomeCount: () => number = () => 0
 ): AgentEventTransport {
   let openText: TextPart | null = null
   let openThinking: ThinkingPart | null = null
@@ -102,19 +121,45 @@ export function createAgentEventTransport(
   // 'streaming' pending canvas catch-up. Each has its own bounded timer so a
   // part that never gets a `notifyCanvasCaughtUp` call still settles.
   const pendingCanvasSync = new Map<ToolPart, ReturnType<typeof setTimeout>>()
+  // PM-1575: the outcome count as of each tool part's first frame (its
+  // `running` frame, or its terminal frame when no `running` frame preceded
+  // it) -- i.e. before that tool could plausibly have produced a matching
+  // doc_update. `resolveToolCallState` compares this against the CURRENT
+  // count when the terminal frame lands: on a healthy doc host the matching
+  // update often applies *while the tool runs*, so `notifyCanvasCaughtUp`
+  // fires (a no-op, since nothing is pending yet) before there is anything
+  // to defer. Without this, that catch-up signal is lost and the part waits
+  // out the full STALE_AFTER_MS fallback instead of settling immediately.
+  const canvasSyncBaseline = new Map<ToolPart, number>()
 
-  function settlePendingCanvasSync(part: ToolPart): void {
+  function clearPendingCanvasSyncTimer(part: ToolPart): void {
     const timer = pendingCanvasSync.get(part)
     if (timer !== undefined) clearTimeout(timer)
     pendingCanvasSync.delete(part)
+  }
+
+  function settlePendingCanvasSync(part: ToolPart): void {
+    clearPendingCanvasSyncTimer(part)
     part.state = 'done'
   }
 
-  function notifyCanvasCaughtUp(): void {
+  function flushPendingCanvasSync(): void {
     if (pendingCanvasSync.size === 0) return
     for (const part of [...pendingCanvasSync.keys()])
       settlePendingCanvasSync(part)
     emit(snapshotMessage(message))
+  }
+
+  function notifyCanvasCaughtUp(): void {
+    flushPendingCanvasSync()
+  }
+
+  function hasPendingCanvasSync(): boolean {
+    return pendingCanvasSync.size > 0
+  }
+
+  function dispose(): void {
+    flushPendingCanvasSync()
   }
 
   /**
@@ -145,18 +190,31 @@ export function createAgentEventTransport(
   ): void {
     part.ok = status === 'success'
     part.durationMs = durationMs
+    // A duplicate or redelivered terminal frame (e.g. a websocket retry) must
+    // not leave a stale timer racing the one this call is about to arm --
+    // clearing unconditionally, before either branch below, is what keeps
+    // that impossible regardless of which branch runs.
+    clearPendingCanvasSyncTimer(part)
+    const baseline = canvasSyncBaseline.get(part)
+    canvasSyncBaseline.delete(part)
     if (
       status === 'success' &&
       CANVAS_MUTATING_TOOLS.has(part.name) &&
       shouldAwaitCanvasSync()
     ) {
-      pendingCanvasSync.set(
-        part,
-        setTimeout(() => {
-          settlePendingCanvasSync(part)
-          emit(snapshotMessage(message))
-        }, STALE_AFTER_MS)
-      )
+      if (baseline !== undefined && getCanvasSyncOutcomeCount() > baseline) {
+        // The matching doc_update already applied while the tool was still
+        // running -- see `canvasSyncBaseline` above. Nothing left to wait on.
+        part.state = 'done'
+      } else {
+        pendingCanvasSync.set(
+          part,
+          setTimeout(() => {
+            settlePendingCanvasSync(part)
+            emit(snapshotMessage(message))
+          }, STALE_AFTER_MS)
+        )
+      }
     } else {
       part.state = 'done'
     }
@@ -179,6 +237,7 @@ export function createAgentEventTransport(
       }
       tools.set(data.tool_call_id, part)
       message.parts.push(part)
+      canvasSyncBaseline.set(part, getCanvasSyncOutcomeCount())
     }
     part.name = data.tool_name
     if (data.status !== 'running') {
@@ -344,5 +403,5 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
-  return { ingest, settle, notifyCanvasCaughtUp }
+  return { ingest, settle, notifyCanvasCaughtUp, hasPendingCanvasSync, dispose }
 }
