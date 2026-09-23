@@ -79,8 +79,14 @@ test.describe(
 
           // Visual proof of the fix: the two assets now land in a single grid
           // instead of separate fullwidth blocks stacked in one column.
+          // Elapsed-time text ("Worked for 1.8 seconds", the per-step "1.3s")
+          // is wall-clock and drifts under SLOW_MO, so it is masked out.
+          const stepDurations = agentConversation.panel.getByText(
+            /^(\d+(\.\d+)?s|\d+m \d+s)$/
+          )
           await expect(agentConversation.panel).toHaveScreenshot(
-            'asset-grid-fragmentation.png'
+            'asset-grid-fragmentation.png',
+            { mask: [agentConversation.summaries, stepDurations] }
           )
 
           // Both assets should land inside the SAME grid container.
