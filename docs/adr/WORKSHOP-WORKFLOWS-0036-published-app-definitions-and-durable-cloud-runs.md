@@ -6,6 +6,13 @@ Date: 2026-09-22
 
 Proposed
 
+The publication/export portion is superseded by the accepted
+[WORKSHOP-CATALOG-0037](WORKSHOP-CATALOG-0037-shared-pages-and-authored-execution-catalogs.md).
+The user requires an offline-authored workflow JSONL catalog and reuse of the
+existing Models INPUTS, shared pages and provider-independent validation. The
+remaining Cloud admission/recovery/media proposal below is retained. Historical
+exporter statements are not requirements for FE-2736.
+
 ## Context
 
 FE-2736 makes author-selected APP controls executable in Models / Workshop,

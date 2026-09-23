@@ -1,5 +1,20 @@
 # Cloud workflow test strategy
 
+The 2026-09-23 scope correction in
+[WORKSHOP-CATALOG-0037](../adr/WORKSHOP-CATALOG-0037-shared-pages-and-authored-execution-catalogs.md)
+governs this corpus. Existing Models INPUTS, common pages and provider-independent
+validation consume offline-authored execution records. Exporter/APP discovery
+tests from earlier work are historical evidence, not FE-2736 acceptance gates.
+
+Initial prepared-data check, 2026-09-23: the three records in
+`apps/website/src/content/workshop-workflows.jsonl` passed 30 acceptance/rejection
+cases through the existing Models `validateWorkshopInput` function. These cover
+valid values, missing/unknown fields, wrong scalar types, HTTP and inline media.
+Their graphs match the pinned #18325 API artifacts; explicit input targets,
+prompt defaults and selected output nodes were checked separately. These are
+offline content checks, not evidence of page wiring, durable execution or a
+Cloud staging run.
+
 Status: proposed runtime corpus for FE-2736. Initial public wire-contract tests
 and portable examples are implemented in Cloud commit `4d1c96f1ed`, under
 `services/comfy-api/workshop/`. They cover scalar preservation, request/result
@@ -38,7 +53,8 @@ SQLite tests and PostgreSQL migration/Ent comparison pass after the correction.
 These cover parts of M01/M03–M05/M10/M11 below; real signed PUT/CORS, Cloud asset
 staging, deployed auth and result delivery remain unproved.
 
-Cloud commit `96961fe8b8` adds the publication compiler and local review command.
+Historical, superseded publication work: Cloud commit `96961fe8b8` adds the
+export-artifact compiler and local review command.
 Frontend commit `ebf6cdf7f2` supplies a second portable export fixture: two nested
 instances with promoted fan-out and ordered previews. Backend tests consume the
 same bytes and assert literal target values and output order. Rejection cases
@@ -83,18 +99,18 @@ or public network traffic in the regular browser suite.
 
 ## Reuse points and additions
 
-| Layer             | Existing corpus                                                                                                                                                   | Proposed additions                                                                                                                  |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Editor            | `src/stores/appModeStore.test.ts`, `src/utils/executionUtil.test.ts`, `executionUtil.stability.test.ts`, `ExecutableNodeDTO.test.ts`, subgraph promotion fixtures | Publication/export behavior beside the new utility; extend existing exporter regressions where semantics are shared                 |
-| Authoring browser | `browser_tests/` APP builder, input persistence, save/run persistence, widget values, pruning and media preview suites                                            | One real author-save-export-to-published-form composition case using `comfyPage`                                                    |
-| Shared render     | Website `router-render.test.ts`, `workshop-url-upload.test.ts`, parameter/snippet tests                                                                           | Workflow defaults/materialization conformance, URL upload and strict output parsing; protect Router behavior at the shared boundary |
-| Website state/UI  | Draft, delivery, session, account and PostHog tests; `apps/website/e2e/workshop*.spec.ts`                                                                         | Pure controller transition tests, narrow component tests, and a few wiring E2Es using `blockExternalMedia`                          |
-| comfy-api         | `integration-tests/comfy-api/`, storage grant/signer tests, Router transport/worker tests                                                                         | Workshop HTTP/repository/recovery suites using the existing real-Postgres setup and managed-worker test patterns                    |
-| Ingest/Cloud      | Job cancellation, prompt policy, auth/capability and inference input/output tests                                                                                 | Receipt/admission races, M2M isolation, scoped asset staging, selected output manifest and policy parity                            |
-| Staging           | Existing Cloud workflow/billing harnesses                                                                                                                         | Explicitly opt-in, bounded-cost workflow acceptance with evidence artifacts                                                         |
+| Layer            | Existing corpus                                                                           | Proposed additions                                                                                                                  |
+| ---------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Catalog          | Models content, identity, input schema and browse tests                                   | Master/execution intersection, explicit workflow mappings and malformed-record diagnostics                                          |
+| Shared form      | Existing Models INPUTS, schema validation and field component tests                       | Identical validation for declared inputs across MODEL, CLOUD and SERVERLESS; no provider-specific form paths                        |
+| Shared render    | Website `router-render.test.ts`, `workshop-url-upload.test.ts`, parameter/snippet tests   | Workflow defaults/materialization conformance, URL upload and strict output parsing; protect Router behavior at the shared boundary |
+| Website state/UI | Draft, delivery, session, account and PostHog tests; `apps/website/e2e/workshop*.spec.ts` | Pure controller transition tests, narrow component tests, and a few wiring E2Es using `blockExternalMedia`                          |
+| comfy-api        | `integration-tests/comfy-api/`, storage grant/signer tests, Router transport/worker tests | Workshop HTTP/repository/recovery suites using the existing real-Postgres setup and managed-worker test patterns                    |
+| Ingest/Cloud     | Job cancellation, prompt policy, auth/capability and inference input/output tests         | Receipt/admission races, M2M isolation, scoped asset staging, selected output manifest and policy parity                            |
+| Staging          | Existing Cloud workflow/billing harnesses                                                 | Explicitly opt-in, bounded-cost workflow acceptance with evidence artifacts                                                         |
 
 Keep one versioned fixture manifest shared by publication and backend contract
-tests. Record fixture purpose, authoring/export versions, public/private digests,
+tests. Record fixture purpose, catalog/definition versions, graph references,
 literal bindings/defaults/output order, and expected validation errors. Consumer
 tests must import the published fixtures rather than manufacture incompatible
 lookalikes. Do not copy credentials, signed URLs, private user graphs or large
@@ -102,20 +118,22 @@ generated media into the repository.
 
 ## Publication and parameter corpus
 
-| ID  | Fixture / behavior                                                                                                                         | Observable proof                                                                                               |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| P01 | Text, number/integer, enum, boolean, image/video/audio control, zero-input APP                                                             | Published form types/order/defaults match authored controls; resulting graph inputs match literal expectations |
-| P02 | Nested promotion, two instances of one subgraph, one promoted input feeding multiple nodes                                                 | All intended targets change once; sibling instance and unrelated targets stay fixed                            |
-| P03 | Reordered widgets, renamed display labels, escaped names, legacy unique selections                                                         | Identity remains correct without relying on position/label                                                     |
-| P04 | Ambiguous legacy selection, missing widget/node, pruned selection, linked/muted/bypassed target, nonserializing/custom unsupported control | Publication fails or explicitly produces browse-only availability; never a reduced runnable form               |
-| P05 | Virtual-node expansion and async serializer; editor edit during export                                                                     | UI revision, graph and bindings agree, or export fails; no mixed-revision bundle                               |
-| P06 | Multiple selected output nodes, nested producer, several files in one role, mixed modalities                                               | Exact selected order and all expected files; unselected outputs absent                                         |
-| P07 | Defaults/example, standard override, workflow override, explicit snapshot                                                                  | Browser/CLI/snippet and server normalized values agree; snapshot-plus-overrides is rejected                    |
-| P08 | Missing versus null, false/zero/empty, finite/integer/unsafe numeric boundaries, invalid enum and unknown keys                             | Correct values accepted; invalid values rejected before job admission                                          |
-| P09 | Resolution/steps/duration/batch limits and interacting constraints; unexposed field injection                                              | Both sides of each boundary; no mutation of fixed graph inputs                                                 |
-| P10 | Same key with random seed intent, fresh key with random intent                                                                             | Retry retains seed/job; fresh logical run can resolve a new seed                                               |
-| P11 | Stale public version, altered digest, changed runtime/node schema, unavailable model asset                                                 | Retained compatible version runs or a stable definition error is returned; no silent migration                 |
-| P12 | PR #18325 relighting prompt omission, camera custom-control substitution, candidate without APP metadata                                   | Published form follows the reviewed APP revision; prototype field curation cannot silently override it         |
+| ID  | Fixture / behavior                                                                                                  | Observable proof                                                                                                            |
+| --- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| P01 | Existing Models INPUTS for text, number/integer, enum, boolean and media; zero-input page                           | Master widgets and declared native types/defaults agree; prepared requests match literal fixtures                           |
+| P02 | Explicit mappings to multiple inputs and flattened nested node IDs                                                  | Exactly the declared targets change; unrelated inputs stay fixed; no subgraph discovery                                     |
+| P03 | Changed labels/order with stable page input and target IDs                                                          | Mapping and validation remain correct without display-name or position matching                                             |
+| P04 | Unknown page input, missing native target, incompatible declared type or unsupported widget                         | Catalog checks reject invalid records; runtime never infers a replacement mapping or control                                |
+| P05 | JSONL authored independently of editor APP metadata, serializers or exporter versions                               | Catalog and requests work using only prepared data; editor metadata is not consulted                                        |
+| P06 | Declared multiple output nodes/keys, file order and mixed modalities                                                | Exactly the catalog's selected outputs are delivered through shared output components                                       |
+| P07 | Defaults/example, standard override, workflow override, explicit snapshot                                           | Browser/CLI/snippet and server normalized values agree; snapshot-plus-overrides is rejected                                 |
+| P08 | Missing versus null, false/zero/empty, finite/integer/unsafe numeric boundaries, invalid enum and unknown keys      | Correct values accepted; invalid values rejected before job admission                                                       |
+| P09 | Resolution/steps/duration/batch limits and interacting constraints; unexposed field injection                       | Both sides of each boundary; no mutation of fixed graph inputs                                                              |
+| P10 | Same key with random seed intent, fresh key with random intent                                                      | Retry retains seed/job; fresh logical run can resolve a new seed                                                            |
+| P11 | Stale public version, altered digest, changed runtime/node schema, unavailable model asset                          | Retained compatible version runs or a stable definition error is returned; no silent migration                              |
+| P12 | Master-only entry, execution-only entry, missing/wrong target type, duplicate IDs and valid Router/workflow matches | Only matching master entries appear in discovery, detail routes and page data; catalog entries create no pages              |
+| P13 | The same declared input constraints with MODEL, CLOUD and SERVERLESS targets                                        | Shared validation returns the same acceptance and field errors independently of provider; no render call for invalid inputs |
+| P14 | PR #18325 layout and ordinary numeric/media controls for curated workflows                                          | One page/form implementation consumes master INPUTS; workflow JSONL contains native mappings without another widget list    |
 
 ## Admission, ownership and recovery corpus
 
@@ -219,8 +237,9 @@ digests, runtime manifest, approved caller/workspace references and enabled
 flags. Do not store credentials, prompts containing personal data, signed URLs
 or binary payloads in the record.
 
-1. Publish an approved pilot definition from its authoring revision. Verify
-   browser/CLI first-render defaults and at least one nested/promoted binding.
+1. Prepare an approved pilot JSONL record offline and match it to its master
+   page. Verify browser/CLI defaults and at least one explicit nested or multiple
+   target mapping; the page reuses the existing Models controls and validator.
 2. Upload through the real grant/direct-PUT flow. Execute in the caller's
    workspace, play/download selected outputs, then renew an expired link.
 3. Drop the admission response and restart a recovery worker. Verify the same
