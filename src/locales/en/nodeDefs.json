@@ -9138,6 +9138,7 @@
   },
   "JsonExtractString": {
     "display_name": "Extract Text from JSON",
+    "description": "Extract a key's value from the first valid JSON object in the text, including Markdown code blocks.",
     "inputs": {
       "json_string": {
         "name": "json_string"

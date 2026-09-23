@@ -6,7 +6,6 @@ import { z } from 'zod'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import type {
@@ -47,6 +46,7 @@ import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
+import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
@@ -305,45 +305,14 @@ export class AgentConversationHarness {
     await expect(picker).toHaveText('Unsaved Workflow')
   }
 
+  /**
+   * Delegates to the shared persistence mock (`savedWorkflowPersistence.ts`)
+   * instead of independently re-capturing/re-serving saves: this harness and
+   * `MultiAutogrowRealignHarness` had drifted into two mutable
+   * implementations of the same save/reopen round trip.
+   */
   async persistSavedWorkflow(): Promise<void> {
-    let saved: { info: UserDataFullInfo; content: string } | undefined
-    await this.page.route('**/api/userdata**', (route) => {
-      const request = route.request()
-      const path = decodeURIComponent(
-        new URL(request.url()).pathname.split('/userdata/')[1] ?? ''
-      )
-      if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-        return route.fallback()
-      saved = {
-        info: {
-          path,
-          modified: Date.now(),
-          size: request.postDataBuffer()?.length ?? 0
-        },
-        content: request.postData() ?? '{}'
-      }
-      return route.fallback()
-    })
-    await this.page.route('**/api/userdata**', (route) => {
-      const request = route.request()
-      if (request.method() !== 'GET' || !saved) return route.fallback()
-      const url = new URL(request.url())
-      const path = decodeURIComponent(url.pathname.split('/userdata/')[1] ?? '')
-      if (path === saved.info.path)
-        return route.fulfill({
-          contentType: 'application/json',
-          body: saved.content
-        })
-      if (url.searchParams.get('dir') !== 'workflows') return route.fallback()
-      return route.fulfill(
-        jsonRoute([
-          {
-            ...saved.info,
-            path: saved.info.path.slice('workflows/'.length)
-          }
-        ])
-      )
-    })
+    await mockSavedWorkflowPersistence(this.page, this.conversation.workflow.id)
   }
 
   async sendPrompt(turn = 0): Promise<void> {
