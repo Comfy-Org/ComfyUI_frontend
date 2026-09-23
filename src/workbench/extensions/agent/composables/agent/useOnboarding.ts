@@ -45,8 +45,9 @@ export function adoptSharedOnboardingFlag(scopedKey: string): void {
 const reportedMissingTargets = new Set<string>()
 /** Once per target per session: every panel mount would otherwise repeat it. */
 export function reportMissingCoachTarget(target: string, step: number): void {
-  if (reportedMissingTargets.has(target)) return
-  reportedMissingTargets.add(target)
+  const key = `${target}:${step}`
+  if (reportedMissingTargets.has(key)) return
+  reportedMissingTargets.add(key)
   useTelemetry()?.trackAgentOnboardingNotShown({
     reason: 'target_missing',
     step

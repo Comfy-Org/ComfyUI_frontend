@@ -82,7 +82,8 @@ const missingTarget = computed(() =>
 )
 const { start: startMissingTargetTimer, stop: stopMissingTargetTimer } =
   useTimeoutFn(
-    (selector: string) => reportMissingCoachTarget(selector, index.value + 1),
+    (selector: string, step: number) =>
+      reportMissingCoachTarget(selector, step),
     TARGET_MISSING_AFTER_MS,
     { immediate: false }
   )
@@ -90,7 +91,7 @@ watch(
   missingTarget,
   (selector) => {
     stopMissingTargetTimer()
-    if (selector) startMissingTargetTimer(selector)
+    if (selector) startMissingTargetTimer(selector, index.value + 1)
   },
   { immediate: true }
 )
