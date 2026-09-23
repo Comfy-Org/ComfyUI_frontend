@@ -241,6 +241,36 @@ function getExecutionGraphState(value: unknown): unknown {
  */
 const restoreChains = new WeakMap<ChangeTracker, Promise<void>>()
 
+/**
+ * Settle the history after a restore whose load did not complete, by reading
+ * the canvas rather than inferring how far `loadGraphData` reached. It can give
+ * up before touching the graph, throw partway through `LGraph.configure` (which
+ * clears first, so the canvas is left wrecked), or fail only after `configure`
+ * succeeded — and `false` versus a rejection does not distinguish those.
+ *
+ * Whatever happened, `activeState` has to name the graph the canvas actually
+ * holds. Naming any other leaves the next `captureCanvasState` reading the gap
+ * as an edit, which empties the redo queue — the ING-198 symptom.
+ */
+function settleFailedRestore(
+  tracker: ChangeTracker,
+  prevState: ComfyWorkflowJSON,
+  previousState: ComfyWorkflowJSON,
+  source: ComfyWorkflowJSON[],
+  target: ComfyWorkflowJSON[]
+) {
+  const canvasState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+  if (ChangeTracker.graphEqual(canvasState, prevState)) {
+    tracker.activeState = prevState
+    tracker.updateModified(previousState)
+    return
+  }
+  // Unreached, so the step did not happen — and returning it to `source`
+  // leaves the pre-restore workflow one keystroke away from a wrecked canvas.
+  target.pop()
+  source.push(prevState)
+}
+
 const reportedInactiveCalls = new Set<string>()
 
 function reportInactiveTrackerCall(method: string, workflowPath: string) {
@@ -501,21 +531,14 @@ export class ChangeTracker {
               silentAssetErrors: true
             }
           )
-          // `false` means the load gave up before or during `configure`, so
-          // the canvas kept the graph it had. Both queues forget the step:
-          // naming a graph the canvas never reached would leave the next
-          // `captureCanvasState` reading the gap as an edit, emptying redo.
           if (loaded === false) {
-            target.pop()
-            source.push(prevState)
+            settleFailedRestore(this, prevState, previousState, source, target)
             return
           }
           this.activeState = prevState
           this.updateModified(previousState)
         } catch (error) {
-          // What still throws runs after `configure` succeeded, so the canvas
-          // is on `prevState`. Record that, for the same reason, then rethrow.
-          this.activeState = prevState
+          settleFailedRestore(this, prevState, previousState, source, target)
           throw error
         } finally {
           this._restoringState = false
