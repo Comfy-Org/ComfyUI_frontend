@@ -232,12 +232,12 @@ describe('Workshop health', () => {
       }
     },
     {
-      name: 'unreadable selected video',
+      name: 'unreadable selected file',
       failure: {
         reason: 'client',
-        failure_stage: 'input_preparation',
-        field_error_names: ['video_url'],
-        field_error_codes: ['videoUnreadable']
+        failure_stage: 'file_read',
+        field_error_names: ['image'],
+        field_error_codes: ['fileUnreadable']
       }
     }
   ] satisfies Array<{ name: string; failure: FailureDetails }>)(
@@ -290,6 +290,15 @@ describe('Workshop health', () => {
         router_error_type: 'invalid_input',
         field_error_names: ['video_url'],
         field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'unreadable remote example video',
+      failure: {
+        reason: 'client',
+        failure_stage: 'input_preparation',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoUnreadable']
       }
     },
     {

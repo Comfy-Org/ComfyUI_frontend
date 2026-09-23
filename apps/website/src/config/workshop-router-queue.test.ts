@@ -4,6 +4,7 @@ import { workshopContract } from './workshop-contract-catalog'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { WorkshopRouterError } from './workshop-router-errors'
 import { runWorkshopRouter } from './workshop-router-queue'
+import { workshopFailureAnalytics } from '../scripts/workshop-analytics'
 
 const MODEL = 'bfl/flux-2-pro'
 const REQUEST_ID = '6f1a1a6e-6a53-4a5f-9d3a-2b3b0a1f9c21'
@@ -329,6 +330,23 @@ describe('queued Router delivery', () => {
       requestId: REQUEST_ID,
       response: { status: 502, errorType: 'provider_error' },
       requestSettlement: 'terminal'
+    })
+  })
+
+  it('retains a queued response parser exception for analytics', async () => {
+    const malformed = () =>
+      new Response('{', { headers: { 'Content-Type': 'application/json' } })
+    stubFetch(admitted(), malformed(), malformed(), malformed())
+
+    const failure: unknown = await settle(runWorkshopRouter(options())).catch(
+      (error: unknown) => error
+    )
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(workshopFailureAnalytics(failure)).toMatchObject({
+      reason: 'response',
+      request_id: REQUEST_ID,
+      exception_name: 'SyntaxError'
     })
   })
 

@@ -5,10 +5,8 @@ import type {
   FieldErrors,
   FieldSchema
 } from '../config/workshop-playground'
-import type {
-  WorkshopFailureStage,
-  WorkshopRouterError
-} from '../config/workshop-router-errors'
+import type { WorkshopFailureStage } from '../config/workshop-router-errors'
+import { WorkshopRouterError } from '../config/workshop-router-errors'
 import type { WorkshopExceptionAnalytics } from './workshop-exception'
 import { workshopExceptionAnalytics } from './workshop-exception'
 
@@ -164,6 +162,16 @@ export function workshopFieldErrorCodes(errors: FieldErrors): FieldErrorCode[] {
   return [...new Set(Object.values(errors))]
 }
 
+function diagnosticCause(cause: unknown): unknown {
+  let current = cause
+  for (let depth = 0; depth < 8; depth += 1) {
+    if (!(current instanceof WorkshopRouterError) || !('cause' in current))
+      return current
+    current = current.cause
+  }
+  return current
+}
+
 export function workshopFailureAnalytics(
   failure: WorkshopRouterError,
   schema: readonly FieldSchema[] = []
@@ -182,7 +190,9 @@ export function workshopFailureAnalytics(
       ? {}
       : { router_error_type: routerErrorType }),
     ...(failure.stage ? { failure_stage: failure.stage } : {}),
-    ...('cause' in failure ? workshopExceptionAnalytics(failure.cause) : {}),
+    ...('cause' in failure
+      ? workshopExceptionAnalytics(diagnosticCause(failure.cause))
+      : {}),
     ...(fieldErrorCodes.length ? { field_error_codes: fieldErrorCodes } : {}),
     ...(fieldErrorNames.length ? { field_error_names: fieldErrorNames } : {})
   }
