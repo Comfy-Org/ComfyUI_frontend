@@ -12,6 +12,8 @@ describe('indexing policy', () => {
     '/zh-CN/payment/failed/',
     '/individual-submission',
     '/zh-CN/booking-confirmation/',
+    '/platform/serverless-animation',
+    '/zh-CN/platform/serverless-animation/',
     '/case-studies',
     '/zh-CN/videos/',
     '/demos'
@@ -23,6 +25,7 @@ describe('indexing policy', () => {
   it.for([
     '/privacy',
     '/pricing',
+    '/platform',
     '/p/supported-models/grok-imagine',
     '/demos/image-to-video'
   ])('keeps %s indexable', (pathname) => {

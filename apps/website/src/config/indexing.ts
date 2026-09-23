@@ -13,6 +13,7 @@ const NOINDEX_PATHNAMES = new Set([
   ...LOCALE_PREFIXES.flatMap((prefix) =>
     PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`)
   ),
+  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/platform/serverless-animation`),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/individual-submission`),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/booking-confirmation`),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/privacy-policy`),
