@@ -3660,6 +3660,8 @@
       "otherPlaceholder": "Tell us more",
       "submitFailed": "Could not submit the survey",
       "submitFailedDetail": "Your answers were not saved. Please try again.",
+      "navigationFailed": "Survey saved, but onboarding could not continue",
+      "navigationFailedDetail": "Please try again.",
       "errors": {
         "chooseAnOption": "Please choose an option.",
         "selectAtLeastOne": "Please select at least one option.",

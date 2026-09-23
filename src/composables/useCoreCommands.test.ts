@@ -317,8 +317,13 @@ describe('useCoreCommands', () => {
   })
 
   describe('Replay Onboarding command', () => {
-    const findCommand = () =>
-      useCoreCommands().find((cmd) => cmd.id === 'Comfy.Onboarding.Replay')!
+    function findCommand() {
+      const command = useCoreCommands().find(
+        (cmd) => cmd.id === 'Comfy.Onboarding.Replay'
+      )
+      if (!command) throw new Error('Missing Comfy.Onboarding.Replay command')
+      return command
+    }
 
     beforeEach(() => {
       vi.stubGlobal('location', { assign: vi.fn(), reload: vi.fn() })
@@ -394,6 +399,20 @@ describe('useCoreCommands', () => {
       await Promise.all([first, second])
 
       expect(useDialogService().confirm).toHaveBeenCalledOnce()
+      expect(location.reload).toHaveBeenCalledOnce()
+    })
+
+    it('allows another execution after an earlier one is declined', async () => {
+      vi.mocked(useDialogService().confirm)
+        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true)
+      const command = findCommand()
+
+      await command.function()
+      await command.function()
+
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(2)
+      expect(resetOnboardingState).toHaveBeenCalledOnce()
       expect(location.reload).toHaveBeenCalledOnce()
     })
   })

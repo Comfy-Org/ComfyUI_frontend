@@ -2253,11 +2253,11 @@ describe('useAuthStore', () => {
     })
 
     it('clears an onboarding replay on a direct account switch', () => {
-      requestOnboardingReplay()
+      requestOnboardingReplay(mockUser.uid)
 
       authStateCallback(accountB)
 
-      expect(isSurveyReplayRequested()).toBe(false)
+      expect(isSurveyReplayRequested(mockUser.uid)).toBe(false)
     })
 
     it('discards a remote config response from the previous account', async () => {

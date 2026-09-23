@@ -1,4 +1,5 @@
 import { addBreadcrumb } from '@sentry/vue'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 
 import {
   consumeSurveyReplayRequest,
@@ -74,8 +75,10 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
   }
 }
 
-export async function getSurveyCompletedStatus(): Promise<boolean> {
-  if (isSurveyReplayRequested()) return false
+export async function getSurveyCompletedStatus(
+  ownerId: string | undefined
+): Promise<boolean> {
+  if (isSurveyReplayRequested(ownerId)) return false
 
   return (await readStoredSurvey()) !== 'absent'
 }
@@ -92,10 +95,11 @@ function classifyStoredSurvey(data: unknown): StoredSurvey {
   return Object.keys(value).length === 0 ? 'absent' : 'present'
 }
 
-async function readStoredSurvey(): Promise<StoredSurvey> {
+async function readStoredSurvey(signal?: AbortSignal): Promise<StoredSurvey> {
   try {
     const response = await api.fetchApi(`/settings/${ONBOARDING_SURVEY_KEY}`, {
       method: 'GET',
+      signal,
       headers: {
         'Content-Type': 'application/json'
       }
@@ -137,25 +141,31 @@ export type SurveySubmissionResult =
   | { status: 'failed'; cause: unknown }
 
 export async function submitSurvey(
-  survey: Record<string, unknown>
+  survey: Record<string, unknown>,
+  ownerId: string
 ): Promise<SurveySubmissionResult> {
-  const replaying = isSurveyReplayRequested()
-  if (replaying) {
-    const stored = await readStoredSurvey()
-    if (stored === 'unknown') {
-      return {
-        status: 'failed',
-        cause:
-          'Could not read the stored survey answers, so the replayed submission was not written'
-      }
-    }
-    if (stored === 'present') {
-      consumeSurveyReplayRequest()
-      return { status: 'preserved' }
-    }
-  }
+  const identityChanged = new AbortController()
+  const stopWatchingIdentity = firebaseIdentity.onUserChanged((user) => {
+    if (user?.uid !== ownerId) identityChanged.abort()
+  })
 
   try {
+    const replaying = isSurveyReplayRequested(ownerId)
+    if (replaying) {
+      const stored = await readStoredSurvey(identityChanged.signal)
+      if (stored === 'unknown' || identityChanged.signal.aborted) {
+        return {
+          status: 'failed',
+          cause:
+            'Could not read the stored survey answers, so the replayed submission was not written'
+        }
+      }
+      if (stored === 'present') {
+        consumeSurveyReplayRequest(ownerId)
+        return { status: 'preserved' }
+      }
+    }
+
     addBreadcrumb({
       category: 'auth',
       message: 'Submitting survey',
@@ -167,12 +177,16 @@ export async function submitSurvey(
 
     const response = await api.fetchApi('/settings', {
       method: 'POST',
+      signal: identityChanged.signal,
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ [ONBOARDING_SURVEY_KEY]: survey })
     })
 
+    if (identityChanged.signal.aborted) {
+      return { status: 'failed', cause: identityChanged.signal.reason }
+    }
     if (!response.ok) {
       const error = new Error(`Failed to submit survey: ${response.statusText}`)
       captureApiError(
@@ -191,7 +205,7 @@ export async function submitSurvey(
       return { status: 'failed', cause: error }
     }
 
-    if (replaying) consumeSurveyReplayRequest()
+    if (replaying) consumeSurveyReplayRequest(ownerId)
 
     addBreadcrumb({
       category: 'auth',
@@ -209,5 +223,7 @@ export async function submitSurvey(
       'submit_survey'
     )
     return { status: 'failed', cause: error }
+  } finally {
+    stopWatchingIdentity()
   }
 }

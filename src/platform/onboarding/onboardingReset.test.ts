@@ -4,13 +4,16 @@ import {
   isFirstRunReplayRequested,
   isSurveyReplayRequested
 } from '@/platform/onboarding/onboardingReplay'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
 
 import { resetOnboardingState } from './onboardingReset'
 import { TOUR_SEEN_SETTING } from './onboardingTours'
 
 const mocks = vi.hoisted<{ isCloud: boolean }>(() => ({ isCloud: true }))
+const OWNER_ID = 'account-a'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -18,6 +21,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
 
 const storeSetting = vi.mocked(api.storeSetting)
 
@@ -27,6 +31,9 @@ function response(status: number): Response {
 
 beforeEach(() => {
   mocks.isCloud = true
+  vi.mocked(firebaseIdentity.onUserChanged).mockReturnValue(() => undefined)
+  vi.mocked(firebaseIdentity.onTokenChanged).mockReturnValue(() => undefined)
+  Object.assign(useAuthStore(), { userId: OWNER_ID })
   storeSetting.mockResolvedValue(response(200))
 })
 
@@ -54,8 +61,8 @@ describe('resetOnboardingState', () => {
   it('requests the replay that both gates read', async () => {
     await resetOnboardingState()
 
-    expect(isSurveyReplayRequested()).toBe(true)
-    expect(isFirstRunReplayRequested()).toBe(true)
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(true)
+    expect(isFirstRunReplayRequested(OWNER_ID)).toBe(true)
   })
 
   it('reports a non-ok settings response as failed', async () => {
@@ -74,8 +81,8 @@ describe('resetOnboardingState', () => {
       status: 'failed'
     })
 
-    expect(isSurveyReplayRequested()).toBe(false)
-    expect(isFirstRunReplayRequested()).toBe(false)
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+    expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
   })
 
   it('clears the coachmark tours off cloud, where they are the whole of onboarding', async () => {
@@ -83,7 +90,9 @@ describe('resetOnboardingState', () => {
 
     await resetOnboardingState()
 
-    expect(api.storeSetting).toHaveBeenCalledWith(TOUR_SEEN_SETTING, [])
+    expect(storeSetting.mock.calls).toEqual([[TOUR_SEEN_SETTING, []]])
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+    expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
   })
 
   it('requests no replay when the write never reaches the server', async () => {
@@ -96,8 +105,8 @@ describe('resetOnboardingState', () => {
       cause: expect.objectContaining({ message: 'Fetch timeout' })
     })
 
-    expect(isSurveyReplayRequested()).toBe(false)
-    expect(isFirstRunReplayRequested()).toBe(false)
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+    expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
   })
 
   it('fails when the replay cannot be recorded', async () => {

@@ -1,4 +1,5 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import * as VueUse from '@vueuse/core'
@@ -6,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   isFirstRunReplayRequested,
   requestOnboardingReplay
@@ -43,6 +45,8 @@ const sharedComposable = vi.hoisted(() => {
   return { create, reset: () => reset() }
 })
 
+const OWNER_ID = 'account-a'
+
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mocks.isCloud
@@ -68,6 +72,7 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
@@ -94,6 +99,9 @@ describe('useFirstRunEntry', () => {
     mocks.isDesktopWidth = true
     mocks.subscriptionEnabled = true
     mocks.isNewUser = true
+    vi.mocked(firebaseIdentity.onUserChanged).mockReturnValue(() => undefined)
+    vi.mocked(firebaseIdentity.onTokenChanged).mockReturnValue(() => undefined)
+    Object.assign(useAuthStore(), { userId: OWNER_ID })
     vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = true
     useSettingStore().settingValues = {}
     vi.mocked(useSettingStore().set).mockImplementation(async (key, value) => {
@@ -484,7 +492,7 @@ describe('useFirstRunEntry', () => {
     })
 
     it('onboards over restored work, because this user asked for onboarding', async () => {
-      requestOnboardingReplay()
+      requestOnboardingReplay(OWNER_ID)
       const entry = useFirstRunEntry()
 
       await entry.handleStartupOutcome('restored')
@@ -493,7 +501,7 @@ describe('useFirstRunEntry', () => {
     })
 
     it('onboards a returning user whose tutorial is already complete', async () => {
-      requestOnboardingReplay()
+      requestOnboardingReplay(OWNER_ID)
       const entry = useFirstRunEntry()
 
       await entry.handleStartupOutcome('fresh')
@@ -502,23 +510,23 @@ describe('useFirstRunEntry', () => {
     })
 
     it('is spent by the boot that shows the screen', async () => {
-      requestOnboardingReplay()
+      requestOnboardingReplay(OWNER_ID)
       const entry = useFirstRunEntry()
 
       await entry.handleStartupOutcome('restored')
 
-      expect(isFirstRunReplayRequested()).toBe(false)
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
     })
 
     it('stands until a boot can show the screen, so eligibility this boot lacked is not lost', async () => {
-      requestOnboardingReplay()
+      requestOnboardingReplay(OWNER_ID)
       mocks.subscriptionEnabled = false
       const entry = useFirstRunEntry()
 
       await entry.handleStartupOutcome('fresh')
 
       expect(entry.gettingStartedVisible.value).toBe(false)
-      expect(isFirstRunReplayRequested()).toBe(true)
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(true)
     })
 
     const cannotServe = [
@@ -536,7 +544,7 @@ describe('useFirstRunEntry', () => {
     it.for(cannotServe)(
       'never covers restored work with the template browser when %s',
       async ([, disqualify]) => {
-        requestOnboardingReplay()
+        requestOnboardingReplay(OWNER_ID)
         disqualify()
         const entry = useFirstRunEntry()
 
@@ -544,12 +552,12 @@ describe('useFirstRunEntry', () => {
 
         expect(entry.gettingStartedVisible.value).toBe(false)
         expect(useCommandStore().execute).not.toHaveBeenCalled()
-        expect(isFirstRunReplayRequested()).toBe(true)
+        expect(isFirstRunReplayRequested(OWNER_ID)).toBe(true)
       }
     )
 
     it('is spent by a link that delivers the tour instead of the screen', async () => {
-      requestOnboardingReplay()
+      requestOnboardingReplay(OWNER_ID)
       const entry = useFirstRunEntry()
 
       await entry.handleStartupOutcome('url-intent')
@@ -557,20 +565,20 @@ describe('useFirstRunEntry', () => {
 
       expect(mocks.beginTour).toHaveBeenCalled()
       expect(
-        isFirstRunReplayRequested(),
+        isFirstRunReplayRequested(OWNER_ID),
         'the replay was served as a tour, so a later reload must not re-offer it'
       ).toBe(false)
     })
 
     it('stands when the link refused to start a tour, which served nothing', async () => {
-      requestOnboardingReplay()
+      requestOnboardingReplay(OWNER_ID)
       mocks.beginTour.mockResolvedValue(false)
       const entry = useFirstRunEntry()
 
       await entry.handleStartupOutcome('url-intent')
       await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
 
-      expect(isFirstRunReplayRequested()).toBe(true)
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(true)
     })
 
     it('leaves the invariant intact for everyone who did not ask', async () => {
@@ -579,6 +587,17 @@ describe('useFirstRunEntry', () => {
       await entry.handleStartupOutcome('restored')
 
       expect(entry.gettingStartedVisible.value).toBe(false)
+    })
+
+    it('hides an active replay when the account changes', async () => {
+      requestOnboardingReplay(OWNER_ID)
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('restored')
+
+      Object.assign(useAuthStore(), { userId: 'account-b' })
+
+      expect(entry.gettingStartedVisible.value).toBe(false)
+      expect(entry.firstRunTookScreen.value).toBe(false)
     })
   })
 

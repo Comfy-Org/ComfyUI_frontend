@@ -11,6 +11,7 @@ import {
 
 const mocks = vi.hoisted<{ isCloud: boolean }>(() => ({ isCloud: true }))
 const reportError = vi.hoisted(() => vi.fn())
+const OWNER_ID = 'account-a'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -28,35 +29,35 @@ describe('onboardingReplay', () => {
 
   describe('replay requests', () => {
     it('are absent until made', () => {
-      expect(isSurveyReplayRequested()).toBe(false)
-      expect(isFirstRunReplayRequested()).toBe(false)
+      expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
     })
 
     it('are both readable once made', () => {
-      expect(requestOnboardingReplay()).toBe(true)
+      expect(requestOnboardingReplay(OWNER_ID)).toBe(true)
 
-      expect(isSurveyReplayRequested()).toBe(true)
-      expect(isFirstRunReplayRequested()).toBe(true)
+      expect(isSurveyReplayRequested(OWNER_ID)).toBe(true)
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(true)
     })
 
     it('are spent independently, so the gate served first cannot swallow the second', () => {
-      requestOnboardingReplay()
+      requestOnboardingReplay(OWNER_ID)
 
-      consumeSurveyReplayRequest()
+      consumeSurveyReplayRequest(OWNER_ID)
 
-      expect(isSurveyReplayRequested()).toBe(false)
-      expect(isFirstRunReplayRequested()).toBe(true)
+      expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(true)
 
-      consumeFirstRunReplayRequest()
+      consumeFirstRunReplayRequest(OWNER_ID)
 
-      expect(isFirstRunReplayRequested()).toBe(false)
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
     })
 
     it('live in session storage, so they cannot outlive the tab', () => {
-      requestOnboardingReplay()
+      requestOnboardingReplay(OWNER_ID)
 
       expect(sessionStorage.getItem('Comfy.OnboardingReplay')).toBe(
-        JSON.stringify({ survey: true, firstRun: true })
+        JSON.stringify({ ownerId: OWNER_ID, survey: true, firstRun: true })
       )
       expect(localStorage.getItem('Comfy.OnboardingReplay')).toBeNull()
     })
@@ -66,7 +67,7 @@ describe('onboardingReplay', () => {
         throw new Error('QuotaExceededError')
       })
 
-      expect(requestOnboardingReplay()).toBe(false)
+      expect(requestOnboardingReplay(OWNER_ID)).toBe(false)
       expect(reportError).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'QuotaExceededError' }),
         { errorType: 'error_writing_onboarding_replay_request' }
@@ -76,7 +77,7 @@ describe('onboardingReplay', () => {
     it('arms both gates with one atomic write', () => {
       const setItem = vi.spyOn(sessionStorage, 'setItem')
 
-      expect(requestOnboardingReplay()).toBe(true)
+      expect(requestOnboardingReplay(OWNER_ID)).toBe(true)
 
       expect(setItem).toHaveBeenCalledOnce()
     })
@@ -84,41 +85,69 @@ describe('onboardingReplay', () => {
     it('arm nothing off cloud, where neither gate exists to serve them', () => {
       mocks.isCloud = false
 
-      expect(requestOnboardingReplay()).toBe(true)
+      expect(requestOnboardingReplay(OWNER_ID)).toBe(true)
 
-      expect(isSurveyReplayRequested()).toBe(false)
-      expect(isFirstRunReplayRequested()).toBe(false)
+      expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
     })
 
     it('records both gates as spent without relying on removal', () => {
-      requestOnboardingReplay()
+      requestOnboardingReplay(OWNER_ID)
       vi.spyOn(sessionStorage, 'removeItem').mockImplementation(() => {
         throw new Error('SecurityError')
       })
 
-      consumeSurveyReplayRequest()
-      consumeFirstRunReplayRequest()
+      consumeSurveyReplayRequest(OWNER_ID)
+      consumeFirstRunReplayRequest(OWNER_ID)
 
-      expect(isSurveyReplayRequested()).toBe(false)
-      expect(isFirstRunReplayRequested()).toBe(false)
+      expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
     })
 
     it('restores only the survey gate after navigation fails', () => {
-      requestOnboardingReplay()
-      consumeSurveyReplayRequest()
-      consumeFirstRunReplayRequest()
+      requestOnboardingReplay(OWNER_ID)
+      consumeSurveyReplayRequest(OWNER_ID)
+      consumeFirstRunReplayRequest(OWNER_ID)
 
-      restoreSurveyReplayRequest()
+      restoreSurveyReplayRequest(OWNER_ID)
 
-      expect(isSurveyReplayRequested()).toBe(true)
-      expect(isFirstRunReplayRequested()).toBe(false)
+      expect(isSurveyReplayRequested(OWNER_ID)).toBe(true)
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
     })
 
     it('discards malformed replay records', () => {
       sessionStorage.setItem('Comfy.OnboardingReplay', '{}')
 
-      expect(isSurveyReplayRequested()).toBe(false)
+      expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
       expect(sessionStorage.getItem('Comfy.OnboardingReplay')).toBeNull()
+    })
+
+    it('discards replay requests owned by another account', () => {
+      requestOnboardingReplay(OWNER_ID)
+
+      expect(isSurveyReplayRequested('account-b')).toBe(false)
+      expect(sessionStorage.getItem('Comfy.OnboardingReplay')).toBeNull()
+    })
+
+    it('fails safely when replay storage cannot be read', () => {
+      vi.spyOn(sessionStorage, 'getItem').mockImplementation(() => {
+        throw new Error('SecurityError')
+      })
+
+      expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'SecurityError' }),
+        { errorType: 'error_reading_onboarding_replay_request' }
+      )
+    })
+
+    it('fails safely when replay JSON is invalid', () => {
+      sessionStorage.setItem('Comfy.OnboardingReplay', '{')
+
+      expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+      expect(reportError).toHaveBeenCalledWith(expect.any(SyntaxError), {
+        errorType: 'error_reading_onboarding_replay_request'
+      })
     })
   })
 })

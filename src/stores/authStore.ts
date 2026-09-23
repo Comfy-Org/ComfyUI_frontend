@@ -120,7 +120,7 @@ export const useAuthStore = defineStore('auth', () => {
       useWorkspaceAuthStore().clearWorkspaceContext()
     }
     if (identityChanged) {
-      clearOnboardingReplay()
+      clearOnboardingReplay(previousUserId)
       useTeamWorkspaceStore().resetForIdentityChange()
       invalidateRemoteConfig()
     }

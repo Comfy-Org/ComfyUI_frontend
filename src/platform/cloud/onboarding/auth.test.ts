@@ -1,22 +1,33 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, test, vi } from 'vitest'
+import type { User } from 'firebase/auth'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import {
   consumeSurveyReplayRequest,
   isSurveyReplayRequested,
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { api } from '@/scripts/api'
 
-import { getSurveyCompletedStatus, submitSurvey } from './auth'
+import {
+  getSurveyCompletedStatus as getSurveyCompletedStatusFor,
+  submitSurvey as submitSurveyFor
+} from './auth'
+
+type IdentityListener = (user: User | null) => void
+
+const identityListeners = vi.hoisted(() => new Set<IdentityListener>())
 
 vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
+vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
 
 const fetchApi = vi.mocked(api.fetchApi)
+const OWNER_ID = 'account-a'
 
 vi.mock(import('@sentry/vue'), () => ({
   addBreadcrumb: vi.fn(),
@@ -25,6 +36,20 @@ vi.mock(import('@sentry/vue'), () => ({
   // swallows it, and the report silently never happens.
   isEnabled: vi.fn(() => false)
 }))
+
+beforeEach(() => {
+  identityListeners.clear()
+  vi.mocked(firebaseIdentity.onUserChanged).mockImplementation((listener) => {
+    identityListeners.add(listener)
+    return () => {
+      identityListeners.delete(listener)
+    }
+  })
+})
+
+const getSurveyCompletedStatus = () => getSurveyCompletedStatusFor(OWNER_ID)
+const submitSurvey = (survey: Record<string, unknown>) =>
+  submitSurveyFor(survey, OWNER_ID)
 
 function mockResponse({
   ok,
@@ -116,17 +141,17 @@ describe('getSurveyCompletedStatus', () => {
 
 describe('onboarding replay', () => {
   test('a requested replay re-opens the gate without reading the stored answers', async () => {
-    requestOnboardingReplay()
+    requestOnboardingReplay(OWNER_ID)
 
     await expect(getSurveyCompletedStatus()).resolves.toBe(false)
     expect(fetchApi).not.toHaveBeenCalled()
   })
 
   test('a completed account is gated again as soon as the replay is spent', async () => {
-    requestOnboardingReplay()
+    requestOnboardingReplay(OWNER_ID)
     await expect(getSurveyCompletedStatus()).resolves.toBe(false)
 
-    consumeSurveyReplayRequest()
+    consumeSurveyReplayRequest(OWNER_ID)
     fetchApi.mockResolvedValueOnce(
       mockResponse({ ok: true, status: 200, body: { value: { q1: 'a' } } })
     )
@@ -142,7 +167,7 @@ describe('onboarding replay', () => {
         body: { value: { q1: 'original' } }
       })
     )
-    requestOnboardingReplay()
+    requestOnboardingReplay(OWNER_ID)
 
     await expect(submitSurvey({ q1: 'replayed' })).resolves.toEqual({
       status: 'preserved'
@@ -154,14 +179,14 @@ describe('onboarding replay', () => {
       ),
       'a replay may only read the survey key, never write it'
     ).toBe(true)
-    expect(isSurveyReplayRequested()).toBe(false)
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
   })
 
   test.for([401, 403, 500] as const)(
     'keeps the replay and writes nothing when the stored answers read %s',
     async (status) => {
       fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status }))
-      requestOnboardingReplay()
+      requestOnboardingReplay(OWNER_ID)
 
       await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
         status: 'failed',
@@ -169,7 +194,7 @@ describe('onboarding replay', () => {
       })
 
       expect(
-        isSurveyReplayRequested(),
+        isSurveyReplayRequested(OWNER_ID),
         'an unserved replay must survive so the survey can be retried'
       ).toBe(true)
       expect(
@@ -183,13 +208,13 @@ describe('onboarding replay', () => {
 
   test('keeps the replay and writes nothing when the stored answers cannot be read', async () => {
     fetchApi.mockRejectedValueOnce(new TypeError('Network request failed'))
-    requestOnboardingReplay()
+    requestOnboardingReplay(OWNER_ID)
 
     await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
       status: 'failed'
     })
 
-    expect(isSurveyReplayRequested()).toBe(true)
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(true)
     expect(fetchApi).toHaveBeenCalledOnce()
   })
 
@@ -199,13 +224,13 @@ describe('onboarding replay', () => {
       fetchApi.mockResolvedValueOnce(
         mockResponse({ ok: true, status: 200, body })
       )
-      requestOnboardingReplay()
+      requestOnboardingReplay(OWNER_ID)
 
       await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
         status: 'failed'
       })
 
-      expect(isSurveyReplayRequested()).toBe(true)
+      expect(isSurveyReplayRequested(OWNER_ID)).toBe(true)
       expect(fetchApi).toHaveBeenCalledOnce()
     }
   )
@@ -216,32 +241,32 @@ describe('onboarding replay', () => {
       new SyntaxError('Invalid JSON')
     )
     fetchApi.mockResolvedValueOnce(response)
-    requestOnboardingReplay()
+    requestOnboardingReplay(OWNER_ID)
 
     await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
       status: 'failed'
     })
 
-    expect(isSurveyReplayRequested()).toBe(true)
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(true)
     expect(fetchApi).toHaveBeenCalledOnce()
   })
 
   test('keeps the replay when the first-time write it fell through to fails', async () => {
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }))
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 500 }))
-    requestOnboardingReplay()
+    requestOnboardingReplay(OWNER_ID)
 
     await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
       status: 'failed'
     })
 
-    expect(isSurveyReplayRequested()).toBe(true)
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(true)
   })
 
   test('a replay with nothing stored keeps the pass, which is the account real first one', async () => {
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }))
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: true, status: 200 }))
-    requestOnboardingReplay()
+    requestOnboardingReplay(OWNER_ID)
 
     await expect(submitSurvey({ q1: 'a' })).resolves.toEqual({
       status: 'stored'
@@ -253,7 +278,28 @@ describe('onboarding replay', () => {
         body: JSON.stringify({ onboarding_survey: { q1: 'a' } })
       })
     )
-    expect(isSurveyReplayRequested()).toBe(false)
+    expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
+  })
+
+  test('writes nothing when the account changes during the stored-answer check', async () => {
+    let resolveRead: ((response: Response) => void) | undefined
+    fetchApi.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveRead = resolve
+        })
+    )
+    requestOnboardingReplay(OWNER_ID)
+
+    const submission = submitSurvey({ q1: 'account-a-answer' })
+    await vi.waitFor(() => expect(fetchApi).toHaveBeenCalledOnce())
+    for (const listener of identityListeners) {
+      listener(fromPartial<User>({ uid: 'account-b' }))
+    }
+    resolveRead?.(mockResponse({ ok: false, status: 404 }))
+
+    await expect(submission).resolves.toMatchObject({ status: 'failed' })
+    expect(fetchApi).toHaveBeenCalledOnce()
   })
 
   test('submitting without a replay stores the answers as usual', async () => {

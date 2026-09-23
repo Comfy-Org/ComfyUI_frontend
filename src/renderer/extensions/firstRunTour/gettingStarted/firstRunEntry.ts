@@ -4,7 +4,7 @@ import {
   until,
   useBreakpoints
 } from '@vueuse/core'
-import { readonly, ref } from 'vue'
+import { readonly, ref, watch } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -13,11 +13,13 @@ import {
   consumeFirstRunReplayRequest,
   isFirstRunReplayRequested
 } from '@/platform/onboarding/onboardingReplay'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useNewUserService } from '@/services/useNewUserService'
+import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
@@ -25,6 +27,7 @@ import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 const STARTUP_DECISION_TIMEOUT_MS = 60_000
 
 export const useFirstRunEntry = createSharedComposable(() => {
+  const authStore = useAuthStore()
   const settingStore = useSettingStore()
   const gettingStartedVisible = ref(false)
   const startupDecided = ref(false)
@@ -32,13 +35,26 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
+  watch(
+    () => authStore.userId,
+    (userId, previousUserId) => {
+      if (previousUserId === undefined || userId === previousUserId) return
+      gettingStartedVisible.value = false
+      firstRunTookScreen.value = false
+      const tourStore = useOnboardingTourStore()
+      if (tourStore.activeTour === 'firstRun') tourStore.postpone()
+    },
+    { flush: 'sync' }
+  )
+
   type FirstRunDecision = 'getting-started' | 'defer' | 'complete'
 
   function decideFirstRun(): FirstRunDecision {
     if (!isCloud) return 'complete'
 
     const isNewUser =
-      isFirstRunReplayRequested() || useNewUserService().isNewUser()
+      isFirstRunReplayRequested(authStore.userId) ||
+      useNewUserService().isNewUser()
     if (isNewUser === false) return 'complete'
 
     if (!useFeatureFlags().flags.onboardingTourEnabled) return 'defer'
@@ -65,7 +81,8 @@ export const useFirstRunEntry = createSharedComposable(() => {
     const decision = decideFirstRun()
 
     const isReplay =
-      isFirstRunReplayRequested() && decision === 'getting-started'
+      isFirstRunReplayRequested(authStore.userId) &&
+      decision === 'getting-started'
     if (!isReplay) {
       if (outcome === 'restored') return
       if (settingStore.get('Comfy.TutorialCompleted')) return
@@ -78,7 +95,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
 
     if (decision === 'getting-started') {
       gettingStartedVisible.value = true
-      consumeFirstRunReplayRequest()
+      consumeFirstRunReplayRequest(authStore.userId)
       firstRunTookScreen.value = true
       return
     }
@@ -97,12 +114,18 @@ export const useFirstRunEntry = createSharedComposable(() => {
       const shareLoaded =
         sharedStatus === 'loaded' || sharedStatus === 'loaded-without-assets'
       if (templateId === undefined && !shareLoaded) return
+      const ownerId = authStore.userId
       const started = await useFirstRunTourController().beginTour(
         shareLoaded ? undefined : templateId
       )
+      if (authStore.userId !== ownerId) {
+        const tourStore = useOnboardingTourStore()
+        if (tourStore.activeTour === 'firstRun') tourStore.postpone()
+        return
+      }
       if (!started) return
       firstRunTookScreen.value = true
-      consumeFirstRunReplayRequest()
+      consumeFirstRunReplayRequest(ownerId)
       await markTutorialCompleted()
     } finally {
       startupDecided.value = true

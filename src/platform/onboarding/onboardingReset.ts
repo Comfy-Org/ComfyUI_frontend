@@ -1,6 +1,6 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
 
 import {
   clearOnboardingReplay,
@@ -13,7 +13,8 @@ export type OnboardingResetResult =
   | { status: 'failed'; cause: unknown }
 
 export async function resetOnboardingState(): Promise<OnboardingResetResult> {
-  if (!requestOnboardingReplay()) {
+  const ownerId = useAuthStore().userId
+  if (!requestOnboardingReplay(ownerId)) {
     return {
       status: 'failed',
       cause:
@@ -25,24 +26,18 @@ export async function resetOnboardingState(): Promise<OnboardingResetResult> {
   try {
     response = await api.storeSetting(TOUR_SEEN_SETTING, [])
   } catch (cause) {
-    clearOnboardingReplay()
+    clearOnboardingReplay(ownerId)
     return { status: 'failed', cause }
   }
 
   if (!response.ok) {
-    clearOnboardingReplay()
+    clearOnboardingReplay(ownerId)
     return {
       status: 'failed',
       cause: `Failed to clear seen onboarding tours: ${response.statusText}`
     }
   }
 
-  try {
-    await useSettingStore().applySettingLocally(TOUR_SEEN_SETTING, [])
-  } catch (error) {
-    reportError(error, {
-      errorType: 'error_applying_onboarding_reset_locally'
-    })
-  }
+  useSettingStore().settingValues[TOUR_SEEN_SETTING] = []
   return { status: 'ready' }
 }

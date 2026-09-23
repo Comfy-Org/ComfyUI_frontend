@@ -32,6 +32,7 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import DynamicSurveyForm from './survey/DynamicSurveyForm.vue'
 import { defaultOnboardingSurvey } from './survey/defaultSurveySchema'
@@ -53,12 +54,15 @@ onMounted(async () => {
     return
   }
   try {
-    const surveyCompleted = await getSurveyCompletedStatus()
+    const surveyCompleted = await getSurveyCompletedStatus(
+      useAuthStore().userId
+    )
     if (surveyCompleted) {
       await router.replace({ name: 'cloud-user-check' })
       return
     }
-    if (!isSurveyReplayRequested()) useTelemetry()?.trackSurvey('opened')
+    if (!isSurveyReplayRequested(useAuthStore().userId))
+      useTelemetry()?.trackSurvey('opened')
   } catch (error) {
     console.error('Failed to check survey status:', error)
   }
@@ -70,8 +74,13 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
     return
   }
   isSubmitting.value = true
-  const replaying = isSurveyReplayRequested()
-  const result = await submitSurvey(payload)
+  const replayOwner = useAuthStore().userId
+  const replaying = isSurveyReplayRequested(replayOwner)
+  if (replayOwner === undefined) {
+    isSubmitting.value = false
+    return
+  }
+  const result = await submitSurvey(payload, replayOwner)
   if (result.status === 'failed') {
     reportError(result.cause, {
       errorType: 'error_submitting_onboarding_survey'
@@ -93,12 +102,13 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
     const failure = await router.push({ name: 'cloud-user-check' })
     if (isNavigationFailure(failure)) throw failure
   } catch (error) {
-    if (replaying) restoreSurveyReplayRequest()
+    if (replaying && useAuthStore().userId === replayOwner)
+      restoreSurveyReplayRequest(replayOwner)
     reportError(error, { errorType: 'error_navigating_from_onboarding_survey' })
     useToastStore().add({
       severity: 'error',
-      summary: t('cloudOnboarding.survey.submitFailed'),
-      detail: t('cloudOnboarding.survey.submitFailedDetail'),
+      summary: t('cloudOnboarding.survey.navigationFailed'),
+      detail: t('cloudOnboarding.survey.navigationFailedDetail'),
       life: 5000
     })
   } finally {

@@ -8,8 +8,10 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import CloudSurveyView from './CloudSurveyView.vue'
 
@@ -31,6 +33,8 @@ vi.mock(import('@/platform/onboarding/onboardingReplay'), () => ({
   isSurveyReplayRequested: mocks.isSurveyReplayRequested,
   restoreSurveyReplayRequest: mocks.restoreSurveyReplayRequest
 }))
+
+vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -88,6 +92,9 @@ async function renderView() {
 
 describe('CloudSurveyView', () => {
   beforeEach(() => {
+    vi.mocked(firebaseIdentity.onUserChanged).mockReturnValue(() => undefined)
+    vi.mocked(firebaseIdentity.onTokenChanged).mockReturnValue(() => undefined)
+    Object.assign(useAuthStore(), { userId: 'account-a' })
     mocks.getSurveyCompletedStatus.mockResolvedValue(false)
     mocks.isSurveyReplayRequested.mockReturnValue(false)
     mocks.submitSurvey.mockResolvedValue({ status: 'stored' })
@@ -164,6 +171,12 @@ describe('CloudSurveyView', () => {
     expect(mocks.reportError).toHaveBeenCalledWith(error, {
       errorType: 'error_navigating_from_onboarding_survey'
     })
+    expect(useToastStore().add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        summary: 'Survey saved, but onboarding could not continue',
+        detail: 'Please try again.'
+      })
+    )
     expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
   })
 
