@@ -194,6 +194,27 @@ describe('agentApiSchema contract subtleties', () => {
   })
 
   it.for([
+    [{ workflow_id: 'workflow-1' }],
+    [{ op_ids: ['op-1'] }],
+    [{ workflow_id: 'workflow-1', op_ids: [] }],
+    [{ workflow_id: 'workflow-1', op_ids: ['op-1', 'op-1'] }]
+  ])('rejects invalid tool-call correlation %j', ([correlation]) => {
+    expect(
+      zAgentWsEvent.safeParse({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: 'call-1',
+          tool_name: 'apply_ops',
+          status: 'success',
+          message_id: 'm1',
+          thread_id: 't1',
+          ...correlation
+        }
+      }).success
+    ).toBe(false)
+  })
+
+  it.for([
     ['no_funds', 'PAYMENT_REQUIRED'],
     ['manual_block', 'PAYMENT_REQUIRED'],
     ['funds_unavailable', 'SERVICE_UNAVAILABLE']

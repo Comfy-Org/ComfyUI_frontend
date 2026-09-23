@@ -66,7 +66,8 @@ function thinking(delta: string): AgentChatEvent {
 function toolCall(
   tool_name: string,
   status: 'running' | 'success' | 'error',
-  tool_call_id = `call-${tool_name}`
+  tool_call_id = `call-${tool_name}`,
+  correlation?: { workflow_id: string; op_ids: string[] }
 ): AgentChatEvent {
   return {
     type: 'agent_tool_call',
@@ -75,9 +76,17 @@ function toolCall(
       tool_name,
       status,
       message_id: 'm',
-      thread_id: 't'
+      thread_id: 't',
+      ...correlation
     }
   }
+}
+
+function notifyCanvasCaughtUp(
+  transport: ReturnType<typeof createAgentEventTransport>,
+  update: { workflowId: string; opIds: string[] }
+): void {
+  Reflect.apply(transport.notifyCanvasCaughtUp, transport, [update])
 }
 
 function delta(text: string): AgentChatEvent {
@@ -627,6 +636,36 @@ describe('agentEventTransport settle lifecycle', () => {
 })
 
 describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
+  it('settles a correlated tool call only after the matching workflow applies every expected operation', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(
+      toolCall('future_mutating_tool', 'success', 'call-1', {
+        workflow_id: 'workflow-1',
+        op_ids: ['op-1', 'op-2']
+      })
+    )
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    notifyCanvasCaughtUp(transport, {
+      workflowId: 'workflow-2',
+      opIds: ['op-1', 'op-2']
+    })
+    notifyCanvasCaughtUp(transport, {
+      workflowId: 'workflow-1',
+      opIds: ['op-1']
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    notifyCanvasCaughtUp(transport, {
+      workflowId: 'workflow-1',
+      opIds: ['op-2', 'op-1']
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done' })
+  })
+
   it('holds a successful tool call at streaming until the canvas catches up', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
