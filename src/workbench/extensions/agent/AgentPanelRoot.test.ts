@@ -3506,8 +3506,8 @@ describe('AgentPanelRoot workflow binding', () => {
   // `doc_subscribed` frame, so the follower never connects; with the wrong
   // gate, a mutating tool call's own successful frame was held at
   // 'streaming' forever, since nothing was ever going to call
-  // `notifyCanvasCaughtUp()` to release it. The composing "Working..."
-  // status (every part settled, turn still streaming) never appeared.
+  // `notifyCanvasCaughtUp()` to release it. Once settled, the tool's own row
+  // flips from its spinner to "Ran N tool call(s)".
   it('settles a mutating tool call immediately when no CRDT doc subscription is connected', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
@@ -3524,7 +3524,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
 
     expect(
-      await screen.findByText(i18n.global.t('agent.working'))
+      await screen.findByRole('button', { name: /^Ran/ })
     ).toBeInTheDocument()
   })
 
