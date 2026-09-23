@@ -28,10 +28,10 @@ const meta: Meta<typeof AnnouncementBanner> = {
   args: {
     data: {
       id: 'announcement',
-      title: 'Now turn your agent into a creative technologist.',
+      title: 'One API for frontier media models.',
       link: {
-        href: '/mcp',
-        title: 'Start Comfy MCP',
+        href: '/platform/router',
+        title: 'Start Comfy Router',
         buttonVariant: 'underlineLink'
       }
     },
