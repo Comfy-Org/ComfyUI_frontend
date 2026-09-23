@@ -28,17 +28,28 @@ export function createStripeChallengePort(
  * risk a build-time fallback it never gets a chance to update. No key at
  * call time reports the challenge unavailable rather than silently doing
  * nothing.
+ *
+ * Cached by key rather than built once: the first challenge can still run
+ * before the server key arrives, and a provider pinned to the fallback key
+ * would then outlive it. The key comparison and cache write happen with no
+ * `await` between them, so a later call for a new key always wins the cache
+ * over an earlier call's still-pending `loadStripe`.
  */
 export function createDeferredStripeChallengePort(
   getPublishableKey: () => string | undefined
 ): EmbeddedChallengePort {
-  let resolved: EmbeddedChallengePort | undefined
+  let cached: { key: string; port: EmbeddedChallengePort } | undefined
   return {
     handleNextAction: async (clientSecret) => {
       const publishableKey = getPublishableKey()
       if (!publishableKey) return { error: 'provider_unavailable' }
-      resolved ??= createStripeChallengePort(publishableKey)
-      return resolved.handleNextAction(clientSecret)
+      if (cached?.key !== publishableKey) {
+        cached = {
+          key: publishableKey,
+          port: createStripeChallengePort(publishableKey)
+        }
+      }
+      return cached.port.handleNextAction(clientSecret)
     }
   }
 }

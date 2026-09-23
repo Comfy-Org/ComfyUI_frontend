@@ -41,4 +41,45 @@ describe('createDeferredStripeChallengePort', () => {
     expect(result).toEqual({ paymentIntent: { status: 'succeeded' } })
     expect(h.loadStripe).toHaveBeenCalledWith('pk_server')
   })
+
+  it('rebuilds the provider when the server key arrives after a challenge already ran on the fallback key', async () => {
+    const fallbackHandleNextAction = vi.fn(async () => ({
+      paymentIntent: { status: 'succeeded' }
+    }))
+    const serverHandleNextAction = vi.fn(async () => ({
+      paymentIntent: { status: 'succeeded' }
+    }))
+    h.loadStripe.mockImplementation((key: string) =>
+      Promise.resolve({
+        handleNextAction:
+          key === 'pk_fallback'
+            ? fallbackHandleNextAction
+            : serverHandleNextAction
+      })
+    )
+    const state: { key: string } = { key: 'pk_fallback' }
+    const port = createDeferredStripeChallengePort(() => state.key)
+
+    await port.handleNextAction('secret')
+
+    state.key = 'pk_server'
+    await port.handleNextAction('secret')
+
+    expect(h.loadStripe).toHaveBeenCalledWith('pk_server')
+    expect(serverHandleNextAction).toHaveBeenCalledTimes(1)
+    expect(fallbackHandleNextAction).toHaveBeenCalledTimes(1)
+  })
+
+  it('builds the provider once when the key does not change between challenges', async () => {
+    const handleNextAction = vi.fn(async () => ({
+      paymentIntent: { status: 'succeeded' }
+    }))
+    h.loadStripe.mockResolvedValue({ handleNextAction })
+    const port = createDeferredStripeChallengePort(() => 'pk_stable')
+
+    await port.handleNextAction('secret')
+    await port.handleNextAction('secret')
+
+    expect(h.loadStripe).toHaveBeenCalledTimes(1)
+  })
 })
