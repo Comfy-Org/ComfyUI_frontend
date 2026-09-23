@@ -53,11 +53,6 @@ export type OpenTabsSnapshot = Pick<
   'open_tabs' | 'current_tab'
 >
 
-// TEMPORARY: current_tab_unbound isn't in the generated ingest-types yet (cloud#10068 unmerged); delete this augmentation and use AgentPostMessageRequest directly once push-ingest-types-to-frontend lands it.
-type AgentPostMessageRequestWithUnboundFlag = AgentPostMessageRequest & {
-  current_tab_unbound?: boolean
-}
-
 /**
  * The client's live canvas, sent so the agent works on what the user sees.
  *
@@ -67,9 +62,9 @@ type AgentPostMessageRequestWithUnboundFlag = AgentPostMessageRequest & {
  * nothing on the request side for a version to reconcile against. The turn
  * endpoint's schema has no such field.
  */
-export interface DraftSnapshot {
-  content: Record<string, unknown>
-}
+export type DraftSnapshot = Required<
+  NonNullable<AgentPostMessageRequest['draft']>
+>
 
 export interface PostMessageInput {
   content: string
@@ -359,7 +354,7 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body: AgentPostMessageRequestWithUnboundFlag = {
+    const body: AgentPostMessageRequest = {
       content: req.content
     }
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
