@@ -10,6 +10,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -22,6 +23,7 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import ErrorGroupList from './ErrorGroupList.vue'
 
@@ -33,6 +35,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     serialize: vi.fn(() => ({})),
     getNodeById: vi.fn()
   }
+  Object.assign(rootGraph, { rootGraph })
   return {
     app: {
       rootGraph,
@@ -136,12 +139,7 @@ function renderList(pinia: Pinia) {
   })
   render(ErrorGroupList, {
     global: {
-      plugins: [PrimeVue, testI18n, pinia, router],
-      stubs: {
-        AsyncSearchInput: {
-          template: '<input />'
-        }
-      }
+      plugins: [PrimeVue, testI18n, pinia, router]
     }
   })
   return { user }
@@ -211,20 +209,19 @@ describe('ErrorGroupList selection emphasis', () => {
     const pinia = getActivePinia()!
     seedTwoErrorGroups(pinia)
     renderList(pinia)
-    const canvasStore = useCanvasStore(pinia)
 
     const samplerSection = getSectionByTitle('Missing connection')
     const loaderSection = getSectionByTitle('Validation failed')
     expect(isSectionExpanded(samplerSection)).toBe(true)
     expect(isSectionExpanded(loaderSection)).toBe(true)
 
-    canvasStore.selectedItems = [SAMPLER_NODE]
+    setCanvasSelection([SAMPLER_NODE])
     await waitFor(() => {
       expect(isSectionExpanded(loaderSection)).toBe(false)
     })
     expect(isSectionExpanded(samplerSection)).toBe(true)
 
-    canvasStore.selectedItems = []
+    setCanvasSelection([])
     await waitFor(() => {
       expect(isSectionExpanded(loaderSection)).toBe(true)
     })
@@ -234,8 +231,7 @@ describe('ErrorGroupList selection emphasis', () => {
   it('expands only matched groups for a selection that predates mount', async () => {
     const pinia = getActivePinia()!
     seedTwoErrorGroups(pinia)
-    const canvasStore = useCanvasStore(pinia)
-    canvasStore.selectedItems = [SAMPLER_NODE]
+    setCanvasSelection([SAMPLER_NODE])
 
     renderList(pinia)
 
@@ -253,16 +249,15 @@ describe('ErrorGroupList selection emphasis', () => {
     const pinia = getActivePinia()!
     seedTwoErrorGroups(pinia)
     const { user } = renderList(pinia)
-    const canvasStore = useCanvasStore(pinia)
 
     const loaderSection = getSectionByTitle('Validation failed')
     const [loaderHeader] = within(loaderSection).getAllByRole('button')
     await user.click(loaderHeader)
     expect(isSectionExpanded(loaderSection)).toBe(false)
 
-    canvasStore.selectedItems = [
+    setCanvasSelection([
       createNodeFixture('99', 'Unrelated', ROOT_GRAPH, [0, 0, 0, 0])
-    ]
+    ])
     await waitFor(() => {
       // No emphasis: the strip falls back to the workflow summary
       expect(screen.getByTestId('selection-context-strip')).toHaveTextContent(
@@ -279,22 +274,21 @@ describe('ErrorGroupList selection emphasis', () => {
     const pinia = getActivePinia()!
     seedTwoErrorGroups(pinia)
     renderList(pinia)
-    const canvasStore = useCanvasStore(pinia)
 
     const strip = screen.getByTestId('selection-context-strip')
     expect(strip).toHaveTextContent('2 nodes — 2 errors')
 
-    canvasStore.selectedItems = [SAMPLER_NODE]
+    setCanvasSelection([SAMPLER_NODE])
     await waitFor(() => {
       expect(strip).toHaveTextContent('SamplerNode — 1 issue')
     })
 
-    canvasStore.selectedItems = [SAMPLER_NODE, LOADER_NODE]
+    setCanvasSelection([SAMPLER_NODE, LOADER_NODE])
     await waitFor(() => {
       expect(strip).toHaveTextContent('2 nodes selected — 2 issues')
     })
 
-    canvasStore.selectedItems = []
+    setCanvasSelection([])
     await waitFor(() => {
       expect(strip).toHaveTextContent('2 nodes — 2 errors')
     })
@@ -313,9 +307,8 @@ describe('ErrorGroupList selection emphasis', () => {
       }
     ])
     renderList(pinia)
-    const canvasStore = useCanvasStore(pinia)
 
-    canvasStore.selectedItems = [SAMPLER_NODE]
+    setCanvasSelection([SAMPLER_NODE])
 
     const strip = screen.getByTestId('selection-context-strip')
     await waitFor(() => {
@@ -394,3 +387,38 @@ describe('ErrorGroupList selection emphasis', () => {
     })
   })
 })
+
+it.for([
+  { name: 'missing without a failed run', nodeErrors: null, badgeCount: 0 },
+  {
+    name: 'missing and blocked the last run',
+    nodeErrors: {
+      '1': nodeError([validationError('value_not_in_list', 'ckpt_name')])
+    },
+    badgeCount: 1
+  }
+])(
+  'blocked-run badge count is $badgeCount when $name',
+  ({ nodeErrors, badgeCount }) => {
+    const pinia = getActivePinia()!
+    useMissingModelStore(pinia).setMissingModels([
+      {
+        nodeId: '1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: false
+      }
+    ])
+    useExecutionErrorStore(pinia).recordNodeErrors(nodeErrors)
+
+    renderList(pinia)
+
+    expect(screen.getByTestId('error-group-missing-model')).toBeInTheDocument()
+    expect(screen.queryAllByTestId('blocked-last-run-indicator')).toHaveLength(
+      badgeCount
+    )
+  }
+)

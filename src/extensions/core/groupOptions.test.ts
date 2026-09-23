@@ -13,6 +13,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -20,8 +21,8 @@ const { registerExtension } = vi.hoisted(() => ({
   registerExtension: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { registerExtension }
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({ registerExtension })
 }))
 
 import '@/extensions/core/groupOptions'
@@ -156,7 +157,7 @@ describe('Comfy.GroupOptions canvas menu', () => {
     ['Set Group Nodes to Always', LGraphEventMode.ALWAYS],
     ['Set Group Nodes to Never', LGraphEventMode.NEVER],
     ['Bypass Group Nodes', LGraphEventMode.BYPASS]
-  ])('applies %s to every node in the group', ([label, expected]) => {
+  ])('applies %s to every node in the group', async ([label, expected]) => {
     const nodes = [
       makeNode(LGraphEventMode.ON_TRIGGER),
       makeNode(LGraphEventMode.ON_TRIGGER)
@@ -165,7 +166,7 @@ describe('Comfy.GroupOptions canvas menu', () => {
     const item = items.find((entry) => entry?.content === label)
     const menuElement: ContextMenuDivElement = document.createElement('div')
 
-    item?.callback?.call(menuElement)
+    await item?.callback?.call(menuElement)
 
     expect(nodes.map((node) => node.mode)).toEqual([expected, expected])
     expect(graphChange).toHaveBeenCalledTimes(nodes.length)

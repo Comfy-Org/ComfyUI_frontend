@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
+import {
+  WORKSHOP_CLOUD_BASE_URL,
+  WORKSHOP_CREDITS_URL
+} from '../../config/workshop-env'
 import { TopUpCheckoutError, createTopUpCheckout } from './buy-credits'
 
 const options = {
   token: 'fresh-token',
   amountCents: 5_000,
-  returnUrl: 'https://comfy.org/models/foo?workshopTopUpReturn=attempt-1',
   idempotencyKey: 'attempt-1'
 }
 
@@ -42,7 +44,10 @@ describe('createTopUpCheckout', () => {
     expect(init.signal).toBeInstanceOf(AbortSignal)
     expect(JSON.parse(String(init.body))).toEqual({
       amount_cents: 5_000,
-      return_url: options.returnUrl,
+      return_url: new URL(
+        '/checkout-return?workshopTopUpReturn=attempt-1',
+        window.location.origin
+      ).toString(),
       idempotency_key: 'attempt-1'
     })
   })
@@ -64,6 +69,48 @@ describe('createTopUpCheckout', () => {
     await expect(createTopUpCheckout(options)).resolves.toEqual({
       url: 'https://checkout.comfy.org/c/pay_1',
       sessionId: 'cs_2'
+    })
+  })
+
+  it('uses the Cloud credits page as the server-side return URL', async () => {
+    const fetchCheckout = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          checkout_url: 'https://checkout.stripe.com/c/pay_1'
+        }),
+        { status: 200 }
+      )
+    )
+    vi.stubGlobal('fetch', fetchCheckout)
+    vi.stubGlobal('window', undefined)
+
+    await createTopUpCheckout(options)
+
+    const [, init] = fetchCheckout.mock.calls[0] as [URL, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      return_url: WORKSHOP_CREDITS_URL
+    })
+  })
+
+  it('returns a Chinese checkout through the localized return page', async () => {
+    const fetchCheckout = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          checkout_url: 'https://checkout.stripe.com/c/pay_1'
+        }),
+        { status: 200 }
+      )
+    )
+    vi.stubGlobal('fetch', fetchCheckout)
+
+    await createTopUpCheckout({ ...options, locale: 'zh-CN' })
+
+    const [, init] = fetchCheckout.mock.calls[0] as [URL, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      return_url: new URL(
+        '/zh-CN/checkout-return?workshopTopUpReturn=attempt-1',
+        window.location.origin
+      ).toString()
     })
   })
 
@@ -91,15 +138,63 @@ describe('createTopUpCheckout', () => {
     })
   })
 
+  it('retries a 404 return-host rejection through the Cloud credits page', async () => {
+    const fetchCheckout = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('', { status: 404 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            checkout_url: 'https://checkout.stripe.com/c/pay_2'
+          }),
+          { status: 200 }
+        )
+      )
+    vi.stubGlobal('fetch', fetchCheckout)
+
+    await expect(createTopUpCheckout(options)).resolves.toEqual({
+      url: 'https://checkout.stripe.com/c/pay_2'
+    })
+    expect(
+      fetchCheckout.mock.calls.map(([, init]) => JSON.parse(String(init?.body)))
+    ).toEqual([
+      {
+        amount_cents: 5_000,
+        return_url: new URL(
+          '/checkout-return?workshopTopUpReturn=attempt-1',
+          window.location.origin
+        ).toString(),
+        idempotency_key: 'attempt-1'
+      },
+      {
+        amount_cents: 5_000,
+        return_url: WORKSHOP_CREDITS_URL,
+        idempotency_key: 'attempt-1'
+      }
+    ])
+  })
+
+  it.for([400, 500])('does not retry a %s checkout failure', async (status) => {
+    const fetchCheckout = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('', { status }))
+    vi.stubGlobal('fetch', fetchCheckout)
+
+    await expect(createTopUpCheckout(options)).rejects.toMatchObject({ status })
+    expect(fetchCheckout).toHaveBeenCalledOnce()
+  })
+
   it('preserves the API error code for rollout decisions', async () => {
     vi.stubGlobal(
       'fetch',
       vi
         .fn()
-        .mockResolvedValue(
-          new Response(
-            JSON.stringify({ code: 'NOT_FOUND', message: 'Not found' }),
-            { status: 404 }
+        .mockImplementation(() =>
+          Promise.resolve(
+            new Response(
+              JSON.stringify({ code: 'NOT_FOUND', message: 'Not found' }),
+              { status: 404 }
+            )
           )
         )
     )
@@ -112,10 +207,37 @@ describe('createTopUpCheckout', () => {
     })
   })
 
+  it('surfaces a 401 without reminting or retrying', async () => {
+    const fetchCheckout = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ code: 'NOT_AUTHENTICATED', message: 'Expired' }),
+          { status: 401 }
+        )
+      )
+    vi.stubGlobal('fetch', fetchCheckout)
+
+    const result = createTopUpCheckout(options)
+    await expect(result).rejects.toBeInstanceOf(TopUpCheckoutError)
+    await expect(result).rejects.toMatchObject({
+      status: 401,
+      code: 'NOT_AUTHENTICATED'
+    })
+    await expect(result).rejects.not.toHaveProperty(
+      'authenticationRetrySkipped'
+    )
+    expect(fetchCheckout).toHaveBeenCalledTimes(1)
+  })
+
   it('does not infer a rollout code from an empty 404', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(new Response('', { status: 404 }))
+      vi
+        .fn()
+        .mockImplementation(() =>
+          Promise.resolve(new Response('', { status: 404 }))
+        )
     )
 
     await expect(createTopUpCheckout(options)).rejects.toMatchObject({

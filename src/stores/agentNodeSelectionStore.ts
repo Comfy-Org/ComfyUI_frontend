@@ -7,7 +7,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { frameBounds } from '@/utils/frameBoundsUtil'
+import { createPositionBounds } from '@/utils/positionBounds'
 
 const ACTION_BARS_TRANSITION_MS = 300
 const BANNER_TRANSITION_MS = 150
@@ -111,8 +111,9 @@ export const useAgentNodeSelectionStore = defineStore(
       const canvas = canvasStore.canvas
       if (!canvas) return
       const selected = [...canvas.selectedItems]
-      const bounds = frameBounds(
-        selected.length ? selected : (canvas.graph?.nodes ?? [])
+      const bounds = createPositionBounds(
+        selected.length ? selected : (canvas.graph?.nodes ?? []),
+        40
       )
       if (!bounds) return
       canvas.animateToBounds(bounds, {
@@ -130,7 +131,6 @@ export const useAgentNodeSelectionStore = defineStore(
       const canvas = canvasStore.canvas
       if (!canvas?.selectedItems.size) return
       canvas.deselectAll()
-      canvasStore.updateSelectedItems()
     }
 
     function saveNodeIds(

@@ -1,38 +1,35 @@
-// @vitest-environment happy-dom
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createSSRApp, h, nextTick } from 'vue'
+import { readonly, ref, createSSRApp, h, nextTick } from 'vue'
+import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
+import { workshopModels } from '../../config/workshop-browse-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
-import ModelsPage from './ModelsPage.vue'
 import { prepareModelPage } from '../../routes/models/model-page'
-import { workshopModels } from '../../config/workshop-browse-content'
+import {
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled,
+  useWorkshopAuthFlag
+} from '../../scripts/posthog'
+import ModelsPage from './ModelsPage.vue'
 
-const { enabled, settled } = await vi.hoisted(async () => {
-  const { ref } = await import('vue')
-  return { enabled: ref(false), settled: ref(true) }
-})
+vi.mock(import('../../scripts/posthog'))
 
-vi.mock(import('../../scripts/posthog'), async () => {
-  const { ref } = await import('vue')
-  return {
-    useWorkshopEnabled: () => enabled,
-    useWorkshopEnabledSettled: () => settled,
-    useWorkshopAuthFlag: () => ref(false),
-    captureWorkshopEvent: vi.fn(),
-    identifyWorkshopUser: vi.fn()
-  }
+let enabled: Ref<boolean>
+let settled: Ref<boolean>
+
+beforeEach(() => {
+  enabled = ref(false)
+  vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
+  settled = ref(true)
+  vi.mocked(useWorkshopEnabledSettled).mockReturnValue(readonly(settled))
+  vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(ref(false)))
 })
 
 const modelSlug = 'bfl--flux-2-max--generate-images'
 const modelPage = await prepareModelPage(modelSlug)
-
-beforeEach(() => {
-  enabled.value = false
-  settled.value = true
-})
 
 describe('Models page entry', () => {
   it.for([undefined, modelSlug])(
@@ -50,7 +47,8 @@ describe('Models page entry', () => {
             )
         })
       )
-      expect(html).toContain('Public Models')
+      expect(html).toContain('workshop-loading')
+      expect(html).not.toContain('Public Models')
       expect(html).not.toContain('workshop-search')
       expect(html).not.toContain('model-hero')
       expect(html).not.toContain('model-detail')
@@ -79,6 +77,11 @@ describe('Models page entry', () => {
       expect(screen.getByTestId('related-models').textContent).toContain(
         'Browse all'
       )
+      expect(
+        within(screen.getByTestId('model-hero')).getByRole('link', {
+          name: 'Generate images'
+        })
+      ).toHaveAttribute('href', '/models?useCase=generate-images')
     }
     enabled.value = false
     await nextTick()

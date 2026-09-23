@@ -11,18 +11,21 @@ const { accent } = defineProps<{
   <div
     :class="
       cn(
-        'pointer-events-auto relative flex max-w-full flex-wrap items-center gap-x-12 gap-y-3 rounded-lg border border-l-4 border-interface-stroke bg-interface-panel-surface p-4 shadow-interface',
+        'pointer-events-auto relative flex items-center gap-12 rounded-lg border border-l-4 border-interface-stroke bg-interface-panel-surface p-4 shadow-interface',
         accent
       )
     "
   >
-    <div class="flex min-w-0 flex-1 items-center gap-2">
+    <div class="flex min-w-0 items-center gap-2">
       <slot name="icon" />
       <div class="flex min-w-0 flex-col">
-        <span class="text-sm font-medium text-base-foreground">
+        <span class="text-sm font-medium wrap-break-word text-base-foreground">
           <slot name="title" />
         </span>
-        <span v-if="$slots.description" class="text-sm text-muted-foreground">
+        <span
+          v-if="$slots.description"
+          class="text-sm wrap-break-word text-muted-foreground"
+        >
           <slot name="description" />
         </span>
       </div>

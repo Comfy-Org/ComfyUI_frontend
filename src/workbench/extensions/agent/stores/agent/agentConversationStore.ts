@@ -10,17 +10,12 @@ import { createAgentEventTransport } from '../../services/agent/agentEventTransp
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
+import type { UserAttachment } from '../../services/agent/agentTranscript'
 import type { WorkflowReference } from '../../types/workflowReference'
-import { useAgentGeneratedNodesStore } from '../agentGeneratedNodesStore'
 
-export type ConversationStatus = 'idle' | 'thinking' | 'streaming'
+export type { UserAttachment }
 
-export interface UserAttachment {
-  name: string
-  previewUrl?: string
-  /** Uploaded input filename; resolves the sent file for grid previews. */
-  ref?: string
-}
+type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
 interface UserEntry {
   id: TurnId
@@ -44,7 +39,6 @@ interface BackgroundTurn {
 export const useAgentConversationStore = defineStore(
   'agentConversation',
   () => {
-    const graphActivity = useAgentGeneratedNodesStore()
     const messages = ref<AssistantMessage[]>([])
     const activeTurnId = ref<TurnId | null>(null)
     const threadId = ref<string | null>(null)
@@ -102,24 +96,28 @@ export const useAgentConversationStore = defineStore(
     function recordFailedSend(
       turnId: TurnId,
       text: string,
-      noticeText: string
+      noticeText: string,
+      retryAfterSeconds?: number
     ): void {
       recordSettledReply(turnId, text, [
-        { type: 'notice', level: 'error', text: noticeText }
+        { type: 'notice', level: 'error', text: noticeText, retryAfterSeconds }
       ])
     }
 
-    function recordPaywall(turnId: TurnId, text: string): void {
-      recordSettledReply(turnId, text, [{ type: 'paywall' }])
+    function recordPaywall(
+      turnId: TurnId,
+      text: string,
+      message?: string
+    ): void {
+      recordSettledReply(turnId, text, [{ type: 'paywall', message }])
     }
 
     function startTurn(turnId: TurnId): void {
       if (transport) abortActiveTurn()
-      graphActivity.beginTurn(turnId, threadId.value)
       const message = createAssistantMessage(turnId)
       liveMessage = message
-      activeIndex.value = messages.value.push(message) - 1
       activeTurnId.value = turnId
+      activeIndex.value = messages.value.push(message) - 1
       transport = createAgentEventTransport(message, replaceActive)
     }
 
@@ -127,7 +125,6 @@ export const useAgentConversationStore = defineStore(
       if (transport && event.data.message_id === activeTurnId.value) {
         if (event.type === 'agent_message_done') {
           transport.settle()
-          graphActivity.finishTurn(activeTurnId.value)
           clearActive()
           return
         }
@@ -151,7 +148,6 @@ export const useAgentConversationStore = defineStore(
       if (!entry || entry.messageId !== event.data.message_id) return
       if (event.type === 'agent_message_done') {
         entry.transport.settle()
-        graphActivity.finishTurn(entry.messageId)
         entry.settled = true
         return
       }
@@ -161,7 +157,6 @@ export const useAgentConversationStore = defineStore(
     function abortActiveTurn(): void {
       if (!transport) return
       transport.settle()
-      if (activeTurnId.value) graphActivity.finishTurn(activeTurnId.value)
       clearActive()
     }
 
@@ -191,19 +186,7 @@ export const useAgentConversationStore = defineStore(
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
       const kept = messages.value.filter((m) => m.id !== entry.message.id)
-      const last = kept.at(-1)
-      let poppedHydratedCopy = false
-      if (
-        kept.length === messages.value.length &&
-        last &&
-        !hydratedAssistantTurnIds.has(last.id) &&
-        entry.userText !== undefined &&
-        userTexts.value.get(last.id) === entry.userText
-      ) {
-        kept.pop()
-        userTexts.value.delete(last.id)
-        poppedHydratedCopy = true
-      }
+      const poppedHydratedCopy = removeHydratedCopy(entry, kept)
       if (
         entry.settled &&
         !poppedHydratedCopy &&
@@ -218,28 +201,40 @@ export const useAgentConversationStore = defineStore(
       const index = kept.push(entry.message) - 1
       messages.value = kept
       if (entry.settled) return
-      activeIndex.value = index
       activeTurnId.value = entry.messageId
-      graphActivity.beginTurn(entry.messageId, threadId.value)
+      activeIndex.value = index
       transport = entry.transport
       liveMessage = entry.message
+    }
+
+    function removeHydratedCopy(
+      entry: BackgroundTurn,
+      kept: AssistantMessage[]
+    ): boolean {
+      if (kept.length !== messages.value.length) return false
+      const last = kept.at(-1)
+      if (!last || hydratedAssistantTurnIds.has(last.id)) return false
+      if (
+        entry.userText === undefined ||
+        userTexts.value.get(last.id) !== entry.userText
+      )
+        return false
+      kept.pop()
+      userTexts.value.delete(last.id)
+      return true
     }
 
     function settleBackgroundTurn(turnId: string): void {
       for (const [key, entry] of backgroundTurns) {
         if (entry.messageId !== turnId) continue
         entry.transport.settle()
-        graphActivity.finishTurn(entry.messageId)
         backgroundTurns.delete(key)
         return
       }
     }
 
     function dropBackgroundTurns(): void {
-      for (const entry of backgroundTurns.values()) {
-        entry.transport.settle()
-        graphActivity.finishTurn(entry.messageId)
-      }
+      for (const entry of backgroundTurns.values()) entry.transport.settle()
       backgroundTurns.clear()
     }
 
@@ -260,7 +255,6 @@ export const useAgentConversationStore = defineStore(
     }
 
     function reset(): void {
-      if (activeTurnId.value) graphActivity.finishTurn(activeTurnId.value)
       messages.value = []
       userTexts.value = new Map()
       userTags.value = new Map()
@@ -274,13 +268,8 @@ export const useAgentConversationStore = defineStore(
     }
 
     function hydrate(history: AgentMessages): void {
-      const transcript = normalizeAgentTranscript(history)
-      if (
-        activeTurnId.value &&
-        activeTurnId.value !== transcript.pending?.messageId
-      )
-        graphActivity.finishTurn(activeTurnId.value)
       clearActive()
+      const transcript = normalizeAgentTranscript(history)
       messages.value = transcript.messages
       userTexts.value = transcript.userTexts
       userTags.value = new Map()
@@ -289,11 +278,11 @@ export const useAgentConversationStore = defineStore(
       hydratedMessageIds = transcript.rowIds
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
+      userAttachments.value = transcript.userAttachments
       if (transcript.pending) {
         liveMessage = transcript.pending.message
-        activeIndex.value = messages.value.indexOf(transcript.pending.message)
         activeTurnId.value = transcript.pending.messageId
-        graphActivity.beginTurn(transcript.pending.messageId, threadId.value)
+        activeIndex.value = messages.value.indexOf(transcript.pending.message)
         transport = createAgentEventTransport(
           transcript.pending.message,
           replaceActive

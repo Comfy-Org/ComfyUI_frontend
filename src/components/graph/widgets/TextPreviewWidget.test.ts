@@ -1,6 +1,3 @@
-// @vitest-environment jsdom
-// dompurify is inert under happy-dom — see the tripwire note in
-// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -25,11 +22,6 @@ vi.mock(
   }
 )
 
-const SkeletonStub = defineComponent({
-  name: 'Skeleton',
-  template: '<div data-testid="skeleton" />'
-})
-
 function renderPreview(
   text: string,
   { nodeId = toNodeId('node-1') }: { nodeId?: NodeId } = {}
@@ -42,8 +34,12 @@ function renderPreview(
   })
   return render(Harness, {
     global: {
-      plugins: [PrimeVue],
-      stubs: { Skeleton: SkeletonStub }
+      plugins: [
+        [
+          PrimeVue,
+          { pt: { skeleton: { root: { 'data-testid': 'skeleton' } } } }
+        ]
+      ]
     }
   })
 }

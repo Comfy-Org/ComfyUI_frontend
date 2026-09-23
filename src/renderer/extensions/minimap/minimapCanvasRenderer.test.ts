@@ -1,13 +1,14 @@
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, test, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
+import {
+  MINIMAP_DECORATION_POP_MS,
+  renderMinimapToCanvas
+} from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
 import { useLinkStore } from '@/stores/linkStore'
-import { useMinimapLayerStore } from '@/stores/minimapLayerStore'
 import { adjustColor } from '@/utils/colorUtil'
 import {
   createMockLGraph,
@@ -87,7 +88,9 @@ describe('minimapCanvasRenderer', () => {
       completedActivePalette: {
         id: 'test',
         name: 'Test Palette',
-        colors: {},
+        colors: {
+          litegraph_base: { NODE_SELECTED_TITLE_COLOR: '#fff' }
+        },
         light_theme: false
       }
     })
@@ -301,7 +304,9 @@ describe('minimapCanvasRenderer', () => {
       completedActivePalette: {
         id: 'test',
         name: 'Test Palette',
-        colors: {},
+        colors: {
+          litegraph_base: { NODE_SELECTED_TITLE_COLOR: '#000' }
+        },
         light_theme: true
       }
     })
@@ -349,20 +354,7 @@ describe('minimapCanvasRenderer', () => {
     expect(mockContext.fillRect).toHaveBeenCalled()
   })
 
-  it('paints ordinary fills, extension layers, then node status', () => {
-    const paints: string[] = []
-    vi.mocked(mockContext.fillRect).mockImplementation(() =>
-      paints.push('fill')
-    )
-    vi.mocked(mockContext.strokeRect).mockImplementation(() =>
-      paints.push('status')
-    )
-    const unregister = useMinimapLayerStore().register({
-      revision: ref(0),
-      isAnimating: () => false,
-      draw: () => paints.push('layer')
-    })
-
+  it('renders a scoped semantic decoration after the base node fill', () => {
     renderMinimapToCanvas(mockCanvas, mockGraph, {
       bounds: { minX: 0, minY: 0, width: 500, height: 400 },
       scale: 0.5,
@@ -374,10 +366,58 @@ describe('minimapCanvasRenderer', () => {
         renderError: true
       },
       width: 250,
-      height: 200
+      height: 200,
+      decorations: [
+        {
+          target: { ...GRAPH_SCOPE, nodeId: toNodeId('1') },
+          enter: 'pop',
+          enteredAt: 1_000
+        }
+      ],
+      now: 2_000
     })
-    unregister()
 
-    expect(paints).toEqual(['fill', 'fill', 'layer', 'status'])
+    expect(mockContext.fillRect).toHaveBeenCalledTimes(3)
+    expect(mockContext.fillRect).toHaveBeenLastCalledWith(50, 50, 75, 40)
+    expect(mockContext.strokeRect).toHaveBeenCalledAfter(
+      vi.mocked(mockContext.fillRect)
+    )
   })
+
+  test.for([0, MINIMAP_DECORATION_POP_MS / 2, MINIMAP_DECORATION_POP_MS])(
+    'keeps tiny pop markers centered and legible at %dms',
+    (elapsed) => {
+      renderMinimapToCanvas(mockCanvas, mockGraph, {
+        bounds: { minX: 0, minY: 0, width: 50_000, height: 40_000 },
+        scale: 0.005,
+        settings: {
+          nodeColors: false,
+          showLinks: false,
+          showGroups: false,
+          renderBypass: false,
+          renderError: true
+        },
+        width: 250,
+        height: 200,
+        decorations: [
+          {
+            target: { ...GRAPH_SCOPE, nodeId: toNodeId('1') },
+            enter: 'pop',
+            enteredAt: 1_000
+          }
+        ],
+        now: 1_000 + elapsed
+      })
+
+      const marker = vi
+        .mocked(mockContext.strokeRect)
+        .mock.calls.find(([, , width, height]) => width === 2 && height === 2)
+      expect(marker).toBeDefined()
+      const [x, y, width, height] = marker!
+      expect(width).toBe(2)
+      expect(height).toBe(2)
+      expect(x + width / 2).toBeCloseTo(0.875)
+      expect(y + height / 2).toBeCloseTo(0.7)
+    }
+  )
 })

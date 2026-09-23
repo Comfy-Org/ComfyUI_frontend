@@ -1,3 +1,88 @@
+@keyframes agent-collapsible-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--reka-collapsible-content-height);
+  }
+}
+
+@keyframes agent-collapsible-up {
+  from {
+    height: var(--reka-collapsible-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+@keyframes agent-shimmer {
+  from {
+    background-position: 150% center;
+  }
+  to {
+    background-position: -50% center;
+  }
+}
+
+@keyframes agent-row-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.agent-work-summary:where([data-state='open']) {
+  animation: agent-collapsible-down 200ms ease-out;
+}
+
+.agent-work-summary:where([data-state='closed']) {
+  animation: agent-collapsible-up 200ms ease-out;
+}
+
+.agent-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--color-muted-foreground) 35%,
+    var(--color-base-foreground) 50%,
+    var(--color-muted-foreground) 65%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: agent-shimmer 1.8s linear infinite;
+}
+
+.disable-animations
+  :where(#agent-panel-root, .agent-scope)
+  .agent-shimmer-text {
+  animation: none;
+  color: var(--color-muted-foreground);
+  -webkit-text-fill-color: currentcolor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-work-summary {
+    animation-duration: 0.001ms;
+  }
+
+  .agent-shimmer-text {
+    animation: none;
+    color: var(--color-muted-foreground);
+    -webkit-text-fill-color: currentcolor;
+  }
+
+  .agent-row-enter {
+    animation: none;
+  }
+}
+
+.agent-row-enter {
+  animation: agent-row-enter 150ms ease-out;
+}
+
 /* Tailwind Preflight is disabled host-wide (PrimeVue + litegraph coexistence), so raw form
    elements in the panel inherit UA chrome: a <button> gets the buttonface fill + 2px outset
    border, a <textarea>/<input> gets its own border, font and padding. Re-apply Preflight's
@@ -11,7 +96,7 @@
   :where(#agent-panel-root, .agent-scope),
   :where(#agent-panel-root, .agent-scope) :where(*) {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-agent-border-strong) transparent;
+    scrollbar-color: var(--color-border-default) transparent;
   }
 
   :where(#agent-panel-root, .agent-scope)

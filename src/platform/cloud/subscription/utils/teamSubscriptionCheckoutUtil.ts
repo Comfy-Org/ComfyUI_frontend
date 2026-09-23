@@ -4,7 +4,11 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import type { SubscribeOptions } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { subscribeInputFrom } from '@/platform/workspace/billing/subscribeInput'
+import type { SettledSubscribeResponse } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscriptionRail'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 import { paymentReturnUrl } from './paymentReturnUrl'
@@ -57,13 +61,32 @@ export async function performTeamSubscriptionCheckout(
   }
 }
 
+/**
+ * The subscribe on whichever rail is on. The SDK settles the operation before
+ * it returns, so `subscribed` here means the same thing the legacy `pending`
+ * statuses mean once their poller finishes. `unavailable` is the backend gate
+ * still closed on these routes — the legacy call runs, as everywhere else.
+ */
+async function issueTeamSubscribe(
+  planSlug: string,
+  options: SubscribeOptions
+): Promise<SettledSubscribeResponse> {
+  const rail = useSubscriptionRail()
+  if (rail) {
+    const outcome = await rail.subscribe(subscribeInputFrom(planSlug, options))
+    if (outcome.status === 'error') throw outcome.error
+    if (outcome.status === 'ok') return outcome.value
+  }
+  return workspaceApi.subscribe(planSlug, options)
+}
+
 async function initiateTeamSubscriptionCheckout(
   teamCreditStopId: string,
   billingCycle: BillingCycle,
   options: PerformTeamSubscriptionCheckoutOptions
 ): Promise<void> {
   const planSlug = getTeamPlanSlug(billingCycle)
-  const response = await workspaceApi.subscribe(planSlug, {
+  const response = await issueTeamSubscribe(planSlug, {
     returnUrl: paymentReturnUrl(),
     cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
     teamCreditStopId

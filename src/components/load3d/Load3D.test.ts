@@ -125,12 +125,6 @@ function renderLoad3D(options: RenderOptions = {}) {
           ViewerControls: {
             name: 'ViewerControls',
             template: '<div data-testid="viewer-controls" />'
-          },
-          Button: {
-            name: 'Button',
-            props: ['ariaLabel'],
-            template:
-              '<button type="button" :aria-label="ariaLabel"><slot /></button>'
           }
         },
         directives: {

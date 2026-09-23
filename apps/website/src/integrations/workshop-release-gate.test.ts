@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import type { AstroIntegrationLogger, HookParameters } from 'astro'
 import { mergeConfig, validateConfig } from 'astro/config'
 import { existsSync } from 'node:fs'
@@ -118,6 +120,10 @@ describe('Workshop release output', () => {
       '/models',
       '/models/[slug]',
       '/models/showcase',
+      '/checkout-opening',
+      '/zh-CN/checkout-opening',
+      '/checkout-return',
+      '/zh-CN/checkout-return',
       '/models/[slug]/page.json',
       '/models/catalogue.json'
     ])

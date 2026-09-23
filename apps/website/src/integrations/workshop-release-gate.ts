@@ -29,6 +29,22 @@ export function modelsBuildRoutes(enabled: boolean) {
           { pattern: '/models/[slug]', entrypoint: entry('[slug].astro') },
           { pattern: '/models/showcase', entrypoint: entry('showcase.astro') },
           {
+            pattern: '/checkout-opening',
+            entrypoint: entry('checkout-opening.astro')
+          },
+          {
+            pattern: '/zh-CN/checkout-opening',
+            entrypoint: entry('checkout-opening.astro')
+          },
+          {
+            pattern: '/checkout-return',
+            entrypoint: entry('checkout-return.astro')
+          },
+          {
+            pattern: '/zh-CN/checkout-return',
+            entrypoint: entry('checkout-return.astro')
+          },
+          {
             pattern: '/models/[slug]/page.json',
             entrypoint: entry('page.json.ts')
           },
@@ -58,6 +74,11 @@ export function workshopReleaseGate(): AstroIntegration {
                 context: 'client',
                 access: 'public',
                 default: process.env.VERCEL_ENV ?? ''
+              }),
+              WORKSHOP_RELEASE: envField.string({
+                context: 'client',
+                access: 'public',
+                default: process.env.VERCEL_GIT_COMMIT_SHA ?? 'local'
               })
             }
           },

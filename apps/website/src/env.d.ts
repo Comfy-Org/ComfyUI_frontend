@@ -1,4 +1,4 @@
-/// <reference path="../.astro/types.d.ts" />
+import 'astro/client'
 
 // Opting into Vite's strict mode drops the `[key: string]: any` fallback on
 // ImportMetaEnv, so an undeclared `import.meta.env.X` is a compile error

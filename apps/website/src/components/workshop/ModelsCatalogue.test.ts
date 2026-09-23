@@ -1,23 +1,19 @@
-// @vitest-environment happy-dom
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
-import { captureWorkshopEvent } from '../../scripts/posthog'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readonly, ref, nextTick } from 'vue'
+import type { Ref } from 'vue'
+
+import { useWorkshopEnabled, captureWorkshopEvent } from '../../scripts/posthog'
 import ModelsCatalogue from './ModelsCatalogue.vue'
 
-const enabled = ref(false)
-vi.mock(import('../../scripts/posthog'), () => ({
-  useWorkshopEnabled: () => enabled,
-  captureWorkshopEvent: vi.fn()
-}))
+vi.mock(import('../../scripts/posthog'))
+
+let enabled: Ref<boolean>
 
 beforeEach(() => {
-  enabled.value = false
-})
-
-afterEach(() => {
-  localStorage.clear()
-  history.replaceState(null, '', '/')
+  enabled = ref(false)
+  vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
 })
 
 describe('ModelsCatalogue', () => {
@@ -47,4 +43,16 @@ describe('ModelsCatalogue', () => {
       expect(screen.getByTestId('workshop-sections')).toBeTruthy()
     }
   )
+
+  it('gives the hero away to the section the reader opened', async () => {
+    const user = userEvent.setup()
+    render(ModelsCatalogue, { props: { models: [] } })
+    expect(screen.getByTestId('workshop-hero')).toBeTruthy()
+
+    // Inside a section the page is about that section, and the heading over it
+    // belongs to the whole catalogue.
+    await user.click(screen.getByTestId('browse-all'))
+
+    expect(screen.queryByTestId('workshop-hero')).toBeNull()
+  })
 })

@@ -14,7 +14,6 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import WorkflowTab from './WorkflowTab.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 const mockCloseWorkflow = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 
 vi.mock(import('@/composables/usePragmaticDragAndDrop'), () => ({
@@ -130,10 +129,7 @@ function renderTab({
     global: {
       plugins: [i18n],
       stubs: {
-        WorkflowActionsList: true,
-        Button: {
-          template: '<button v-bind="$attrs"><slot /></button>'
-        }
+        WorkflowActionsList: true
       }
     },
     props: {

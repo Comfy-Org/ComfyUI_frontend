@@ -1,19 +1,20 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { readonly, ref, nextTick } from 'vue'
+import type { Ref } from 'vue'
 
-import { getRoutes } from '../../config/routes'
 import { modelReleaseLinks } from '../../config/model-release-links'
+import { getRoutes } from '../../config/routes'
+import { useWorkshopEnabled } from '../../scripts/posthog'
 import ModelReleaseSection from './ModelReleaseSection.vue'
 
-const enabled = ref(true)
-vi.mock(import('../../scripts/posthog'), () => ({
-  useWorkshopEnabled: () => enabled
-}))
+vi.mock(import('../../scripts/posthog'))
+
+let enabled: Ref<boolean>
 
 beforeEach(() => {
-  enabled.value = true
+  enabled = ref(true)
+  vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
 })
 
 const enabledLinks = await modelReleaseLinks(true)
