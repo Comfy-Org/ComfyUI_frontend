@@ -12,6 +12,7 @@ import { computed } from 'vue'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { st, t } from '@/i18n'
 import enLocale from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -56,14 +57,7 @@ const accessErrorCodes = [
   'auth/unauthorized-continue-uri'
 ]
 
-vi.mock<unknown>(import('@/i18n'), () => ({
-  t: (key: string, values?: Record<string, string>) =>
-    values ? `${key}:${Object.values(values).join(':')}` : key,
-  st: (key: string, fallback: string) => {
-    const code = key.replace('auth.errors.', '')
-    return code in authErrorMessages ? key : fallback
-  }
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -114,6 +108,16 @@ function makeWorkflow(path: string): ModifiedWorkflow {
 }
 
 beforeEach(() => {
+  vi.mocked(t).mockImplementation((key: unknown, values?: unknown) =>
+    typeof values === 'object' && values !== null
+      ? `${String(key)}:${Object.values(values).join(':')}`
+      : String(key)
+  )
+  vi.mocked(st).mockImplementation((key: unknown, fallback: unknown) => {
+    const translationKey = String(key)
+    const code = translationKey.replace('auth.errors.', '')
+    return code in authErrorMessages ? translationKey : String(fallback)
+  })
   const billingContext = useBillingContext()
   vi.mocked(useBillingContext).mockReturnValue(billingContext)
   billingContext.canAccessSubscriptionFeatures = computed(
