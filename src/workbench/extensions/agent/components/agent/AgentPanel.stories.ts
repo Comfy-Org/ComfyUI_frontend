@@ -1,5 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { expect, userEvent, within } from 'storybook/test'
+import { ref } from 'vue'
 
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogContent from '@/components/ui/dialog/DialogContent.vue'
+import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
+import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 import '../../agentPanel.css'
@@ -51,6 +59,61 @@ export const WithHistory: Story = {
       yesterday: [],
       earlier: []
     }
+  }
+}
+
+export const InDialog: Story = {
+  args: WithHistory.args,
+  render: (args) => ({
+    components: {
+      AgentPanel,
+      Dialog,
+      DialogContent,
+      DialogOverlay,
+      DialogPortal,
+      DialogTitle
+    },
+    directives: { rekaZIndex: vRekaZIndex },
+    setup() {
+      const open = ref(true)
+      return { args, open }
+    },
+    template: `
+      <Dialog v-model:open="open">
+        <DialogPortal>
+          <DialogOverlay v-reka-z-index />
+          <DialogContent v-reka-z-index class="h-180 overflow-hidden p-0">
+            <DialogTitle class="sr-only">Agent</DialogTitle>
+            <AgentPanel v-bind="args" />
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>
+    `
+  })
+}
+
+export const LongWorkflowList: Story = {
+  args: {
+    availableWorkflows: Array.from({ length: 30 }, (_, index) => ({
+      id: `workflow-${index + 1}`,
+      name: `Workflow ${String(index + 1).padStart(2, '0')}`
+    }))
+  },
+  play: async () => {
+    const body = within(document.body)
+    await userEvent.click(body.getByRole('button', { name: 'Add to prompt' }))
+    await userEvent.click(body.getByRole('menuitem', { name: 'Workflows' }))
+    const lastWorkflow = await body.findByRole('menuitem', {
+      name: 'Workflow 30'
+    })
+
+    lastWorkflow.scrollIntoView({ block: 'nearest' })
+
+    const lastWorkflowRect = lastWorkflow.getBoundingClientRect()
+    await expect(lastWorkflowRect.top).toBeGreaterThanOrEqual(10)
+    await expect(lastWorkflowRect.bottom).toBeLessThanOrEqual(
+      window.innerHeight - 10
+    )
   }
 }
 

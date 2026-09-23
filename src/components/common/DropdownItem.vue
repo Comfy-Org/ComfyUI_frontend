@@ -24,6 +24,7 @@ defineProps<{
   itemClass: string
   contentClass: string
   contentStyle?: StyleValue
+  collisionPadding: number
   item: MenuItem
 }>()
 </script>
@@ -46,6 +47,7 @@ defineProps<{
         :style="contentStyle"
         :side-offset="2"
         :align-offset="-5"
+        :collision-padding
       >
         <DropdownItem
           v-for="(subitem, index) in item.items"
@@ -54,6 +56,7 @@ defineProps<{
           :item-class
           :content-class
           :content-style
+          :collision-padding
         />
       </DropdownMenuSubContent>
     </DropdownMenuPortal>

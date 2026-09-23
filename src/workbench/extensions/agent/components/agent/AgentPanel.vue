@@ -1,15 +1,9 @@
 <script setup lang="ts">
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from 'reka-ui'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
@@ -39,6 +33,10 @@ import EmptyState from './EmptyState.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
 import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
+
+type DropdownEntries = NonNullable<
+  ComponentProps<typeof DropdownMenu>['entries']
+>
 
 const {
   entries,
@@ -203,6 +201,20 @@ function onDeleteChat(): void {
   if (sessionId !== null) emit('deleteHistory', sessionId)
 }
 
+const chatMenuEntries = computed<DropdownEntries>(() => [
+  {
+    label: t('g.rename'),
+    icon: 'icon-[lucide--pencil]',
+    command: startRename
+  },
+  { separator: true },
+  {
+    label: t('g.delete'),
+    icon: 'icon-[lucide--trash-2]',
+    command: onDeleteChat
+  }
+])
+
 function addAttachment(attachment: ComposerAttachment): void {
   composerRef.value?.addAttachment(attachment)
 }
@@ -297,8 +309,14 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               sessionTitle || t('agent.newChatTitle')
             }}</span>
           </Button>
-          <DropdownMenuRoot v-if="sessionId">
-            <DropdownMenuTrigger as-child>
+          <DropdownMenu
+            v-if="sessionId"
+            :entries="chatMenuEntries"
+            side="bottom"
+            align="start"
+            :side-offset="4"
+          >
+            <template #button>
               <Button
                 v-tooltip.bottom="buildTooltipConfig(t('agent.chatOptions'))"
                 variant="muted-textonly"
@@ -308,34 +326,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               >
                 <span class="icon-[lucide--chevron-down] size-3" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuContent
-                side="bottom"
-                align="start"
-                :side-offset="4"
-                class="agent-scope z-1100 flex h-16 w-32 flex-col gap-1 rounded-xl bg-secondary-background p-1 shadow-lg"
-              >
-                <DropdownMenuItem
-                  class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                  @select="startRename"
-                >
-                  <span class="icon-[lucide--pencil] size-4 shrink-0" />
-                  <span class="truncate">{{ t('g.rename') }}</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator
-                  class="relative h-0 w-full shrink-0 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-component-node-border"
-                />
-                <DropdownMenuItem
-                  class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover data-highlighted:text-destructive-background"
-                  @select="onDeleteChat"
-                >
-                  <span class="icon-[lucide--trash-2] size-4 shrink-0" />
-                  <span class="truncate">{{ t('g.delete') }}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenuPortal>
-          </DropdownMenuRoot>
+            </template>
+          </DropdownMenu>
         </div>
       </div>
 
