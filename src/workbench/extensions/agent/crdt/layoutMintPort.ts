@@ -120,6 +120,26 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
   let intentionalClear: IntentionalClear | null = null
   const reportInteriorChangeOnce = createOncePerTickReporter()
   const reportInactiveChangeOnce = createOncePerTickReporter()
+  // Ids this port has itself minted an add_node for, and that the local
+  // document has not since lost, one bucket per root graph keyed by the
+  // operation's own graphId. A redo/replay re-delivers the same createNode
+  // shape a genuine new node would for an id this port already relayed
+  // (litegraph's own undo/redo stack, or a create op replaying across two
+  // tabs bound to the same root graph); without this, the port would mint a
+  // second add_node for a node the doc already has. isForActivatedDocument
+  // already guarantees `operation.graphId` names the activated document by
+  // the time a create/delete reaches its bucket lookup, so - unlike a bare
+  // accessor read - the key is never the ambiguous "activation unresolved"
+  // case main's version had to special-case.
+  const mintedNodeIdsByRoot = new Map<string, Set<string>>()
+
+  function mintedNodeIdsForRoot(graphId: string): Set<string> {
+    const existing = mintedNodeIdsByRoot.get(graphId)
+    if (existing) return existing
+    const created = new Set<string>()
+    mintedNodeIdsByRoot.set(graphId, created)
+    return created
+  }
 
   /** Local human provenance: neither a remote apply nor another actor. */
   function isLocalHumanChange(change: LayoutChangeView): boolean {
@@ -234,7 +254,10 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         if (!isForActivatedDocument(operation, 'create')) return
         if (reportUnrepresentableInteriorChange(operation, 'create')) return
         if (operation.nodeId === undefined || !operation.layout) return
-        const node = deps.source.serializeNode(String(operation.nodeId))
+        const nodeIdKey = String(operation.nodeId)
+        const mintedNodeIds = mintedNodeIdsForRoot(operation.graphId)
+        if (mintedNodeIds.has(nodeIdKey)) return
+        const node = deps.source.serializeNode(nodeIdKey)
         if (!node) {
           // A dropped human mint is a local-graph-vs-doc divergence; it must
           // be observable, never silent (the surfacing-honesty principle).
@@ -253,13 +276,26 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
             node
           }
         ])
+        mintedNodeIds.add(nodeIdKey)
         return
       }
       case 'deleteNode': {
+        // The document lost this id the moment a same-graph, root-owned
+        // deleteNode change fired, regardless of whether this port also
+        // gates the delete_node op for echo-suppression, targeting, or
+        // teardown - those are independent questions. A subgraph-interior
+        // delete carries the root's graphId with a different ownerGraphId,
+        // so it must not forget an entry from the root's bucket for what is
+        // really a different node's namespace.
+        if (operation.nodeId === undefined) return
+        if (operation.ownerGraphId === operation.graphId) {
+          mintedNodeIdsByRoot
+            .get(operation.graphId)
+            ?.delete(String(operation.nodeId))
+        }
         if (!gate(change, inTeardown)) return
         if (!isForActivatedDocument(operation, 'delete')) return
         if (reportUnrepresentableInteriorChange(operation, 'delete')) return
-        if (operation.nodeId === undefined) return
         deps.enqueue([
           {
             op: 'delete_node',
@@ -283,6 +319,12 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         if (!isForActivatedDocument(operation, 'clear', expected)) return
         intentionalClear = null
         const captured = pending?.nodeIds ?? null
+        // Only an intentional (human-confirmed) clear may forget this
+        // graph's dedupe bucket: an incidental clearGraph outside that
+        // bracket - a tab switch reconfiguring the shared canvas graph in
+        // place - mints no doc-level clear and must leave the bucket alone
+        // for nodes still in the doc, or a later replay re-mints them.
+        if (captured !== null) mintedNodeIdsByRoot.delete(operation.graphId)
         if (!gate(change, inTeardown || captured === null)) return
         deps.enqueue([{ op: 'clear', removed_nodes: captured ?? [] }])
         return

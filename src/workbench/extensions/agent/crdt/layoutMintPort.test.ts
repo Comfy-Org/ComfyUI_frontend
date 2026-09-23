@@ -306,6 +306,63 @@ describe('attachLayoutMintPort', () => {
     expect(minted).toHaveLength(1)
   })
 
+  it('skips a redo that recreates an already-minted node instead of re-minting add_node', () => {
+    // litegraph's own undo/redo stack re-delivers the same createNode shape a
+    // genuine new node would, for a node this port already relayed. Without
+    // a delete_node in between, the second createNode is a replay, not a new
+    // node, and must not mint again.
+    deliver(createNodeChange('1'))
+    minted.length = 0
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toEqual([])
+  })
+
+  it('mints add_node again for the same id after a delete_node clears the dedupe entry', () => {
+    deliver(createNodeChange('1'))
+    deliver(deleteChange('1'))
+    minted.length = 0
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toHaveLength(1)
+  })
+
+  it('forgets the dedupe bucket on an intentional clear, so a later create re-mints', () => {
+    deliver(createNodeChange('1'))
+
+    port.runIntentionalClear(() => {
+      graphNodes.clear()
+      deliver(clearChange())
+    })
+    graphNodes.set('1', {
+      id: 1,
+      type: 'TestNode',
+      pos: [128, 96],
+      widgets_values: [7]
+    })
+    minted.length = 0
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toHaveLength(1)
+  })
+
+  it('does not let an incidental clearGraph forget the dedupe bucket (regression)', () => {
+    // A tab switch reconfiguring the shared canvas graph in place fires a
+    // bare clearGraph outside runIntentionalClear. It must not forget the
+    // dedupe entries for nodes the doc still holds, or a later replay
+    // re-mints them.
+    deliver(createNodeChange('1'))
+    deliver(clearChange())
+    minted.length = 0
+
+    deliver(createNodeChange('1'))
+
+    expect(minted).toEqual([])
+  })
+
   it('mints delete_node carrying the severed link ids from the capture', () => {
     severed.set('1', [17, 18])
     deliver(deleteChange('1'))
@@ -509,6 +566,28 @@ describe('attachLayoutMintPort', () => {
       activeRootGraphId = null
 
       deliver(rootScoped('createNode', ACTIVATED))
+
+      expect(minted).toEqual([])
+    })
+
+    it('does not re-mint a root graph replay after switching away and back to it (regression)', () => {
+      // The bug #18109 fixed: a create op replaying across two tabs bound to
+      // the same root graph must not mint a second add_node. Switching the
+      // activated document away to another graph and back must leave
+      // ACTIVATED's dedupe entry untouched, while OTHER's own create for the
+      // same colliding node id mints from its own, separate bucket.
+      activeRootGraphId = ACTIVATED
+      deliver(rootScoped('createNode', ACTIVATED, '1'))
+      expect(minted).toHaveLength(1)
+
+      activeRootGraphId = OTHER
+      minted.length = 0
+      deliver(rootScoped('createNode', OTHER, '1'))
+      expect(minted).toHaveLength(1)
+
+      activeRootGraphId = ACTIVATED
+      minted.length = 0
+      deliver(rootScoped('createNode', ACTIVATED, '1'))
 
       expect(minted).toEqual([])
     })
