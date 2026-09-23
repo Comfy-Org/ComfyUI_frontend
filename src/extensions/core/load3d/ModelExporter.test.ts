@@ -1,7 +1,8 @@
 import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { ModelExporter } from './ModelExporter'
@@ -24,11 +25,13 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: downloadBlobMock
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: fromAny((key: string, vars?: unknown) =>
-    vars ? `${key}:${JSON.stringify(vars)}` : key
+vi.mock(import('@/i18n'))
+
+beforeEach(() => {
+  vi.mocked(t).mockImplementation((key: unknown, vars?: unknown) =>
+    vars ? `${String(key)}:${JSON.stringify(vars)}` : String(key)
   )
-}))
+})
 
 vi.mock(import('three/examples/jsm/exporters/GLTFExporter'), () => ({
   GLTFExporter: fromAny(
