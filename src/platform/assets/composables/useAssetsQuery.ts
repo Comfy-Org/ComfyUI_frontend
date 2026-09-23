@@ -15,6 +15,7 @@ interface QueryOptions {
 }
 
 const BASE_PARAMS = {
+  include_public: false,
   limit: 100,
   sort: 'created_at',
   tags_none: ['missing']
@@ -68,8 +69,9 @@ function assetsQueryInternal(
         if (seenHeadCursors.has(headCursor)) break
         seenHeadCursors.add(headCursor)
 
-        const limit = headCursor ? BASE_PARAMS.limit : 10
-        const query = { after: headCursor, limit }
+        const query = headCursor
+          ? { after: headCursor }
+          : { after: headCursor, limit: 10 }
         const assetResponse = await doQuery(query, signal)
         if (!assetResponse) return
 
