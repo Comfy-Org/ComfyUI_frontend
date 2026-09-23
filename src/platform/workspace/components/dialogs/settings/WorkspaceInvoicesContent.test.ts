@@ -210,6 +210,42 @@ describe('WorkspaceInvoicesContent', () => {
     expect(unhandled).not.toHaveBeenCalled()
   })
 
+  it('does not launch a second portal while the first is in flight', async () => {
+    let releasePortal = () => {}
+    state.manageSubscription.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        releasePortal = resolve
+      })
+    )
+
+    renderPanel()
+    await userEvent.click(historyButton())
+    await userEvent.click(historyButton())
+
+    expect(state.manageSubscription).toHaveBeenCalledOnce()
+
+    releasePortal()
+    await new Promise<void>((resolve) => setImmediate(resolve))
+    await userEvent.click(historyButton())
+
+    expect(state.manageSubscription).toHaveBeenCalledTimes(2)
+  })
+
+  // The disabled attribute only lands on the next tick, so a real double click
+  // can dispatch both events before it applies; only the in-flight check in
+  // `openHistory` closes that window.
+  it('ignores a double click dispatched before the button disables', async () => {
+    state.manageSubscription.mockReturnValueOnce(new Promise<void>(() => {}))
+
+    renderPanel()
+    const button = historyButton()
+    button.click()
+    button.click()
+    await new Promise<void>((resolve) => setImmediate(resolve))
+
+    expect(state.manageSubscription).toHaveBeenCalledOnce()
+  })
+
   it('toasts when the billing portal fails to open', async () => {
     state.manageSubscription.mockRejectedValueOnce(new Error('portal down'))
 

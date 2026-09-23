@@ -55,6 +55,7 @@
         variant="secondary"
         size="lg"
         class="@2xl:ml-auto"
+        :loading="isOpeningHistory"
         @click="openHistory"
       >
         {{ $t('workspacePanel.invoices.fullHistory') }}
@@ -65,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -93,11 +94,21 @@ const upcomingAmount = computed(() => {
   return invoice ? formatUsdCents(locale.value, invoice.amountCents) : null
 })
 
-// `manageSubscription` rethrows once the portal request fails, and this panel
-// only renders its own error state before billing has loaded, so the failure
-// would otherwise be silent.
+const isOpeningHistory = ref(false)
+
+// `manageSubscription` carries no in-flight guard, so a second click would
+// start another portal request and open another window. It also rethrows once
+// the request fails, and this panel only renders its own error state before
+// billing has loaded, so the failure would otherwise be silent.
 function openHistory() {
-  void manageSubscription().catch(toastErrorHandler)
+  if (isOpeningHistory.value) return
+
+  isOpeningHistory.value = true
+  void manageSubscription()
+    .catch(toastErrorHandler)
+    .finally(() => {
+      isOpeningHistory.value = false
+    })
 }
 
 // `initialize` rethrows so callers can react; the failure is already mirrored
