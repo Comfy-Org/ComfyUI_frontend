@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # Skip in CI: the canonical knip check runs in ci-lint-format on every
 # PR, and bot workflows (e.g. i18n-update-core) populate ComfyUI/ via
@@ -8,6 +9,9 @@ if [ -n "${CI-}" ]; then
   exit 0
 fi
 
+# Full ESLint config, including the Tailwind rules pre-commit skips,
+# over the files the pushed commits touch.
+pnpm exec tsx scripts/lint-pushed.ts 1>&2
+
 # Run Knip with cache via package script
 pnpm knip 1>&2
-
