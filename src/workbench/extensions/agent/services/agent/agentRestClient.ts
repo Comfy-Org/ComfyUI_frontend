@@ -53,11 +53,16 @@ export type OpenTabsSnapshot = Pick<
   'open_tabs' | 'current_tab'
 >
 
-/** An omitted `version` makes this content authoritative for the backend CAS. */
-export interface DraftSnapshot {
-  content: Record<string, unknown>
-  version?: number
-}
+/**
+ * The client's live canvas, sent so the agent works on what the user sees.
+ *
+ * Content-only: the client never sends a version, and an omitted `version`
+ * makes this content authoritative for the backend CAS.
+ */
+export type DraftSnapshot = Pick<
+  Required<NonNullable<AgentPostMessageRequest['draft']>>,
+  'content'
+>
 
 export interface PostMessageInput {
   content: string
@@ -347,7 +352,9 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body: Record<string, unknown> = { content: req.content }
+    const body: AgentPostMessageRequest = {
+      content: req.content
+    }
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
     if (req.tabs !== undefined) {
       body.open_tabs = req.tabs.open_tabs
@@ -358,7 +365,7 @@ export function createAgentRestClient() {
       body.workflow_references = req.workflowReferences
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
-    if (req.draft !== undefined) body.draft = req.draft
+    if (req.draft !== undefined) body.draft = { content: req.draft.content }
     if (req.currentTabUnbound !== undefined)
       body.current_tab_unbound = req.currentTabUnbound
     return request(
