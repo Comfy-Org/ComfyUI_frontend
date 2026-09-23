@@ -958,3 +958,25 @@ function findPartialExecutionPathToGraph(
   }
   return undefined
 }
+
+export function resolveInputSourceNode(
+  node: LGraphNode,
+  slot: number
+): LGraphNode | undefined {
+  let upstream = node.getInputNode(slot)
+  let link = node.getInputLink(slot)
+  const visited = new Set<LGraphNode>()
+
+  while (upstream?.isSubgraphNode()) {
+    if (!link || visited.has(upstream)) return undefined
+    visited.add(upstream)
+
+    const resolved = upstream.resolveSubgraphOutputLink(link.origin_slot)
+    if (!resolved) return undefined
+
+    upstream = resolved.outputNode ?? null
+    link = resolved.link
+  }
+
+  return upstream ?? undefined
+}

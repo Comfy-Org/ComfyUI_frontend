@@ -2,6 +2,7 @@
 import { X } from '@lucide/vue'
 import { computed } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
 import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import type { FileValue } from '../../config/workshop-playground'
@@ -12,10 +13,13 @@ import VideoSourcePreview from './VideoSourcePreview.vue'
 
 const {
   file,
+  attention = false,
   disabled = false,
   locale = 'en'
 } = defineProps<{
   file: FileValue
+  /** This upload is the one a warning is about. Not an error: nothing blocks. */
+  attention?: boolean
   disabled?: boolean
   locale?: Locale
 }>()
@@ -30,7 +34,13 @@ const fileType = computed(
 
 <template>
   <li
-    class="flex min-w-0 items-center gap-3 rounded-xl bg-transparency-white-t4 p-2"
+    :class="
+      cn(
+        'flex min-w-0 items-center gap-3 rounded-xl bg-transparency-white-t4 p-2',
+        attention && 'ring-1 ring-primary-comfy-orange'
+      )
+    "
+    :data-attention="attention ? '' : undefined"
   >
     <ImageSourcePreview
       v-if="file.type.startsWith('image/')"

@@ -63,16 +63,34 @@ describe('resolveAgentPaywallPresentation', () => {
     }
   )
 
-  it('keeps members without billing permissions actionless', () => {
+  // One cloud table for the member capability dimension, so a regression here
+  // names the member policy only.
+  it.for([
+    {
+      name: 'keeps a member without billing permissions actionless',
+      canTopUp: false,
+      expected: { kind: 'member' }
+    },
+    {
+      name: 'respects a member top-up capability',
+      canTopUp: true,
+      expected: { kind: 'subscribed', showUpgrade: false }
+    }
+  ])('$name', ({ canTopUp, expected }) => {
     expect(
       resolveAgentPaywallPresentation({
         distribution: 'cloud',
         role: 'member',
-        tier: 'STANDARD',
-        canTopUp: false,
+        tier: 'TEAM',
+        canTopUp,
         canSubscribeSelfServe: false
       })
-    ).toEqual({ kind: 'member' })
+    ).toEqual(expected)
+  })
+
+  // The local override is its own policy: it short-circuits before role and
+  // capability are read, so it must not be asserted through a member case.
+  it('overrides every cloud policy on the local distribution', () => {
     expect(
       resolveAgentPaywallPresentation({
         distribution: 'local',
@@ -82,26 +100,14 @@ describe('resolveAgentPaywallPresentation', () => {
         canSubscribeSelfServe: false
       })
     ).toEqual({ kind: 'local' })
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'local',
+        role: 'member',
+        tier: 'TEAM',
+        canTopUp: true,
+        canSubscribeSelfServe: false
+      })
+    ).toEqual({ kind: 'local' })
   })
-
-  it.for([
-    {
-      distribution: 'cloud' as const,
-      expected: { kind: 'subscribed', showUpgrade: false }
-    },
-    { distribution: 'local' as const, expected: { kind: 'local' } }
-  ])(
-    'respects a member top-up capability on $distribution',
-    ({ distribution, expected }) => {
-      expect(
-        resolveAgentPaywallPresentation({
-          distribution,
-          role: 'member',
-          tier: 'TEAM',
-          canTopUp: true,
-          canSubscribeSelfServe: false
-        })
-      ).toEqual(expected)
-    }
-  )
 })

@@ -1,12 +1,24 @@
+import { isPlainObject } from 'es-toolkit'
+import { isEqual } from 'es-toolkit/compat'
+
+import { isAutogrowGroupMember } from '@/core/graph/widgets/dynamicWidgets'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlot
+} from '@/lib/litegraph/src/interfaces'
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { zAutogrowOptions } from '@/schemas/nodeDefSchema'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
@@ -46,6 +58,10 @@ export interface SemanticLinkPayload {
   /** Final semantic slot records after the shared applier handled this link. */
   originOutputs?: readonly ISerialisableNodeOutput[]
   targetInputs?: readonly ISerialisableNodeInput[]
+}
+
+function isSlotRecord(value: unknown): value is { name?: unknown } {
+  return value !== null && typeof value === 'object'
 }
 
 interface SemanticNodeLayout {
@@ -116,7 +132,40 @@ interface SemanticLiveWidgetMutationPort {
   rebind?(scope: GraphScope, nodeId: NodeId, name: string): void
 }
 
-interface GraphMutationBatch {
+/**
+ * The live node's answer for whether `name` is a member of one of its
+ * autogrow groups. `unavailable` means the node itself couldn't be asked
+ * (unmounted, background workflow) and carries no opinion either way; only
+ * `member`/`notMember` are the node's own real provenance from its
+ * `comfyDynamic.autogrow` registration. Callers must never treat
+ * `unavailable` as an authoritative "no"; `resolveAutogrowGroup` (in
+ * `createGraphMutations`) falls back first to its own remembered answer from
+ * an earlier `member`/`notMember` for the same node and name, then to
+ * `nodeDefAutogrowGroupOf`'s read of the node TYPE's own static definition,
+ * and only to `nameShapeAutogrowGroupOf`'s inference when neither has ever
+ * resolved that name definitively.
+ */
+export type LiveAutogrowGroupAnswer =
+  | { readonly kind: 'unavailable' }
+  | { readonly kind: 'member'; readonly group: string }
+  | { readonly kind: 'notMember' }
+
+/**
+ * Renderer-owned live node query port. Answers whether an input name is a
+ * member of one of the live node's own autogrow groups -- real provenance
+ * from the node's `comfyDynamic.autogrow` registration, rather than
+ * `nameShapeAutogrowGroupOf`'s inference from the name's shape. See
+ * {@link LiveAutogrowGroupAnswer} for what each result means.
+ */
+export interface SemanticLiveNodeQueryPort {
+  autogrowGroupOf(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string
+  ): LiveAutogrowGroupAnswer
+}
+
+export interface GraphMutationBatch {
   addNode(payload: SemanticNodePayload): void
   /**
    * For a node of the same type, resyncs fields and slots and patches widget
@@ -159,7 +208,6 @@ export interface GraphMutations {
     removedLinkIds: readonly number[],
     context: RemoteMutationContext
   ): boolean
-  clearSemanticGraph(context: RemoteMutationContext): boolean
 }
 
 export interface GraphMutationsDeps {
@@ -167,6 +215,7 @@ export interface GraphMutationsDeps {
   layout: SemanticLayoutMutationPort
   placement: SemanticPlacementPort
   liveWidgets?: SemanticLiveWidgetMutationPort
+  liveNodes?: SemanticLiveNodeQueryPort
 }
 
 type QueuedMutation =
@@ -201,7 +250,12 @@ type PreparedMutation =
       node: PreparedNode
       queued: 'addNode' | 'reconcileNodeFields'
     }
-  | { kind: 'reconcileNode'; node: PreparedNode }
+  | {
+      kind: 'reconcileNode'
+      node: PreparedNode
+      documentInputs: unknown
+      preserveLinkedAutogrow: boolean
+    }
   | { kind: 'replaceNode'; node: PreparedNode }
   | {
       kind: 'reconcileNodeFields'
@@ -237,6 +291,32 @@ function cloneRecord(value: unknown): Record<string, unknown> {
   return isRecord(value) ? structuredClone(value) : {}
 }
 
+const SERIALISABLE_SLOT_FIELDS = [
+  'name',
+  'localized_name',
+  'label',
+  'type',
+  'dir',
+  'removable',
+  'shape',
+  'color_off',
+  'color_on',
+  'locked',
+  'nameLocked',
+  'pos'
+] as const satisfies readonly (keyof INodeSlot)[]
+
+function serialisableSlotFields(
+  raw: Record<string, unknown>,
+  additional: readonly string[]
+): Record<string, unknown> {
+  return Object.fromEntries(
+    [...SERIALISABLE_SLOT_FIELDS, ...additional].flatMap((field) =>
+      Object.hasOwn(raw, field) ? [[field, structuredClone(raw[field])]] : []
+    )
+  )
+}
+
 /**
  * `ghost` marks a node still following the cursor during search-box placement.
  * The placement click clears it locally and mints no op, so a document that
@@ -255,9 +335,9 @@ function cloneNodeFlags(value: unknown): Record<string, unknown> {
  * node has no slot there yet.
  */
 function applySlotLink(
-  slot: Record<string, unknown>,
+  slot: INodeInputSlot,
   index: number,
-  existing?: NodeState['inputs']
+  existing?: readonly (NodeState['inputs'][number] | undefined)[]
 ): void {
   if (typeof slot.link === 'number') {
     slot.link = toLinkId(slot.link)
@@ -273,7 +353,7 @@ function applySlotLink(
  * metadata instead of losing it to the thin payload.
  */
 function preserveSlotDisplayMetadata(
-  slot: Record<string, unknown>,
+  slot: INodeInputSlot,
   priorSlot?: NodeState['inputs'][number]
 ): void {
   if (!priorSlot || priorSlot.name !== slot.name) return
@@ -285,39 +365,322 @@ function preserveSlotDisplayMetadata(
 function prepareInputSlot(
   raw: Record<string, unknown>,
   index: number,
-  existing?: NodeState['inputs']
-): NodeState['inputs'][number] {
-  const slot = structuredClone(raw)
+  existing?: readonly (NodeState['inputs'][number] | undefined)[]
+): INodeInputSlot | undefined {
+  if (
+    typeof raw.name !== 'string' ||
+    (typeof raw.type !== 'string' && typeof raw.type !== 'number')
+  ) {
+    return undefined
+  }
+  const slot: INodeInputSlot = {
+    name: raw.name,
+    type: raw.type,
+    boundingRect: [0, 0, 0, 0]
+  }
+  Object.assign(slot, serialisableSlotFields(raw, ['widget']))
+  if (raw.link === null || typeof raw.link === 'number') {
+    slot.link = raw.link === null ? null : toLinkId(raw.link)
+  }
   applySlotLink(slot, index, existing)
   preserveSlotDisplayMetadata(slot, existing?.[index])
-  return {
-    ...slot,
-    boundingRect: [0, 0, 0, 0]
-  } as unknown as NodeState['inputs'][number]
+  return slot
 }
 
 function prepareInputSlots(
   value: unknown,
-  existing?: NodeState['inputs']
+  existing?: readonly (NodeState['inputs'][number] | undefined)[]
 ): NodeState['inputs'] {
   if (!Array.isArray(value)) return []
-  return value
-    .filter(isRecord)
-    .map((raw, index) => prepareInputSlot(raw, index, existing))
+  return value.flatMap((raw, index) => {
+    if (!isRecord(raw)) return []
+    const slot = prepareInputSlot(raw, index, existing)
+    return slot ? [slot] : []
+  })
 }
 
 function prepareOutputSlots(value: unknown): NodeState['outputs'] {
   if (!Array.isArray(value)) return []
-  return value.filter(isRecord).map((raw) => {
-    const slot = structuredClone(raw)
-    if (Array.isArray(slot.links)) {
-      slot.links = slot.links.map((id) => toLinkId(Number(id)))
+  return value.flatMap((raw) => {
+    if (
+      !isRecord(raw) ||
+      typeof raw.name !== 'string' ||
+      (typeof raw.type !== 'string' && typeof raw.type !== 'number')
+    ) {
+      return []
     }
-    return {
-      ...slot,
+    const slot: INodeOutputSlot = {
+      name: raw.name,
+      type: raw.type,
       boundingRect: [0, 0, 0, 0]
-    } as unknown as NodeState['outputs'][number]
+    }
+    Object.assign(slot, serialisableSlotFields(raw, ['slot_index', 'widget']))
+    if (raw.links === null) slot.links = null
+    else if (Array.isArray(raw.links)) {
+      slot.links = raw.links.map((id) => toLinkId(Number(id)))
+    }
+    return [slot]
   })
+}
+
+/**
+ * A live node's input set can diverge from the document two ways: it grew
+ * (autogrow appended a member, not yet named by the document) or it changed
+ * for some other reason (a rename, a definition change, or autogrow itself
+ * removing a member on disconnect/shrink). `mergeInputSlotsByName` only
+ * merges by name on the growth path: every document input still exists
+ * live, and any live-only leftover is either a widget-promoted input slot
+ * (the wire format carries its value in `widgets_values`, never as a named
+ * input, so no document snapshot can ever list or drop one) or an
+ * autogrow-shaped spare that is either unlinked, or linked and the caller
+ * opted into `preserveLinkedAutogrow`. `hasNonGrowthInputSetChange` (below)
+ * detects the other path -- the document naming something live doesn't
+ * have, or live keeping a leftover that is neither of those two exceptions
+ * -- in which case the document is authoritative and the merge falls back
+ * to positional preparation, letting stale live slots go.
+ */
+function hasNonGrowthInputSetChange(
+  live: NodeState['inputs'],
+  documentInputs: Record<string, unknown>[],
+  autogrowGroupOf: (name: unknown) => string | undefined,
+  preserveLinkedAutogrow: boolean
+): boolean {
+  const liveCounts = new Map<unknown, number>()
+  for (const input of live) {
+    liveCounts.set(input.name, (liveCounts.get(input.name) ?? 0) + 1)
+  }
+  const documentCounts = new Map<unknown, number>()
+  for (const slot of documentInputs) {
+    documentCounts.set(slot.name, (documentCounts.get(slot.name) ?? 0) + 1)
+  }
+  // litegraph does not enforce unique names, so "the document has a name
+  // live doesn't" also covers asking for more copies of a shared name than
+  // live has.
+  const documentExceedsLive = [...documentCounts].some(
+    ([name, count]) => count > (liveCounts.get(name) ?? 0)
+  )
+  // Consumes one document occurrence per live occurrence of the same name,
+  // in live order, so a repeated name is matched pairwise rather than by a
+  // presence check. Any live occurrence left unmatched is tolerated only
+  // when it is a widget-promoted input slot, or both unlinked and
+  // autogrow-shaped (see the contract above).
+  const remainingByName = new Map(documentCounts)
+  const liveOnlyIsUnaccountedFor = live.some((input) => {
+    const remaining = remainingByName.get(input.name) ?? 0
+    if (remaining > 0) {
+      remainingByName.set(input.name, remaining - 1)
+      return false
+    }
+    if (input.widget !== undefined) return false
+    const autogrowGroup = autogrowGroupOf(input.name)
+    if (autogrowGroup === undefined) return true
+    return input.link !== null && !preserveLinkedAutogrow
+  })
+  return documentExceedsLive || liveOnlyIsUnaccountedFor
+}
+
+/**
+ * Whether the node TYPE's own static definition has an opinion on `name`'s
+ * autogrow membership -- and, when it does, what that opinion is. `known:
+ * false` means the type itself hasn't loaded into `useNodeDefStore()` yet,
+ * so this has no evidence either way and the name-shape heuristic is the
+ * only option left. `known: true` means the type's full, authoritative set
+ * of `COMFY_AUTOGROW_V3` groups is available, so `group: undefined` is a
+ * real "not a member of any of them" -- not "unknown" -- exactly like a
+ * live node's own `notMember` answer.
+ */
+type NodeDefAutogrowAnswer =
+  | { readonly known: false }
+  | { readonly known: true; readonly group: string | undefined }
+
+/**
+ * Reads the same `COMFY_AUTOGROW_V3` registration `SemanticLiveNodeQueryPort`
+ * would, off the node TYPE's own static definition rather than a live
+ * instance -- real provenance, just as authoritative as a live answer,
+ * since a live node's `comfyDynamic.autogrow` registration is itself built
+ * from exactly this data (`dynamicWidgets.ts`'s `applyAutogrow` parses the
+ * same input spec this function reads). It is available whenever the
+ * type's definition has loaded, independent of whether any live instance
+ * of the node exists to ask -- which is what lets `resolveAutogrowGroup`
+ * (in `createGraphMutations`) classify a node correctly even the very
+ * first time it ever reconciles that node while the live port answers
+ * `unavailable` and this follower has no remembered answer yet.
+ */
+function nodeDefAutogrowGroupOf(
+  nodeType: string,
+  name: string
+): NodeDefAutogrowAnswer {
+  const nodeDef = useNodeDefStore().getNodeDefByName(nodeType)
+  if (!nodeDef) return { known: false }
+  const dot = name.lastIndexOf('.')
+  if (dot < 0) return { known: true, group: undefined }
+  const groupName = name.slice(0, dot)
+  const key = name.slice(dot + 1)
+  const inputSpec: unknown = nodeDef.inputs[groupName]
+  const parsed = zAutogrowOptions.safeParse(inputSpec)
+  const template = parsed.success ? parsed.data.template : undefined
+  if (!template) return { known: true, group: undefined }
+  const isMember = isAutogrowGroupMember(key, template.names)
+  return { known: true, group: isMember ? groupName : undefined }
+}
+
+/**
+ * The group prefix of a live-only input shaped like an autogrow member's
+ * DEFAULT naming (`group.prefixN`, ending in the member's ordinal) --
+ * undefined for anything else.
+ *
+ * LAST RESORT: used only once the live node (`SemanticLiveNodeQueryPort`),
+ * this follower's own remembered `member`/`notMember` answer, and the node
+ * type's own static definition (`nodeDefAutogrowGroupOf`) all have no
+ * opinion -- e.g. the type hasn't loaded yet and this is the first time this
+ * follower has ever resolved the name. A `NodeState` input itself carries no
+ * autogrow marker, so absent every real answer this is inference from shape
+ * alone, and shape is not a reliable signal in either direction:
+ *
+ * - False positive: `group.member` alone is not enough, because
+ *   `dynamicWidgets.ts`'s `COMFY_DYNAMICCOMBO_V3` support (`updateWidgets`)
+ *   mints the exact same `${widget.name}.${key}` shape for an unrelated
+ *   reason, where `key` is an ordinary schema field name (e.g.
+ *   `mode.strength`), not an ordinal. Requiring a trailing digit rules that
+ *   out for the common case, but a coincidentally-numeric DynamicCombo key
+ *   (e.g. a name ending `...0.0.0.0`) still passes it and is wrongly kept.
+ * - False negative: an autogrow group defined with an explicit, non-numeric
+ *   `names` list (`dynamicWidgets.ts`'s `resolveAutogrowOrdinal` matches
+ *   those by name, not by trailing ordinal) produces member names that
+ *   don't end in a digit at all, and are wrongly dropped as if they were an
+ *   ordinary input the document removed.
+ *
+ * Both failure directions are real, and neither is fixable by refining the
+ * name-shape rule further -- the same suffix shape is genuinely ambiguous
+ * between "autogrow ordinal" and "unrelated dotted name" without the
+ * node's own group registration, live or from its type definition. This
+ * fallback stays strictly safer than over-retaining in the one case this
+ * layer can always tell apart (an ordinary, non-dotted extra input).
+ */
+function nameShapeAutogrowGroupOf(name: unknown): string | undefined {
+  if (typeof name !== 'string') return undefined
+  const dot = name.lastIndexOf('.')
+  if (dot < 0 || !isAutogrowGroupMember(name.slice(dot + 1), undefined))
+    return undefined
+  return name.slice(0, dot)
+}
+
+function mergeInputSlotsByName(
+  live: NodeState['inputs'],
+  supplied: unknown,
+  autogrowGroupOf: (name: unknown) => string | undefined,
+  preserveLinkedAutogrow = false
+): NodeState['inputs'] {
+  const documentInputs = Array.isArray(supplied)
+    ? supplied.filter(isRecord)
+    : []
+  const consumedLive = new Set<number>()
+  const liveByName = documentInputs.map((slot) => {
+    const index = live.findIndex(
+      (input, i) => !consumedLive.has(i) && input.name === slot.name
+    )
+    if (index < 0) return undefined
+    consumedLive.add(index)
+    return live[index]
+  })
+  if (
+    hasNonGrowthInputSetChange(
+      live,
+      documentInputs,
+      autogrowGroupOf,
+      preserveLinkedAutogrow
+    )
+  ) {
+    return prepareInputSlots(documentInputs, live)
+  }
+  const merged = [...live]
+  const used = new Set<number>()
+  for (const input of prepareInputSlots(documentInputs, liveByName)) {
+    const index = merged.findIndex(
+      (local, i) => !used.has(i) && local.name === input.name
+    )
+    if (index < 0) merged.push(input)
+    else {
+      used.add(index)
+      merged[index] = input
+    }
+  }
+  return merged
+}
+
+type ConnectTargetSlotResolution =
+  | { readonly error: string }
+  | {
+      readonly targetInputs: NodeState['inputs']
+      readonly targetSlot: number
+    }
+
+function occurrenceIndexOf<T>(
+  items: readonly T[],
+  index: number,
+  name: unknown,
+  nameOf: (item: T) => unknown
+): number {
+  return items.slice(0, index).filter((item) => nameOf(item) === name).length
+}
+
+function resolveOccurrenceIndex<T>(
+  items: readonly T[],
+  name: unknown,
+  occurrence: number,
+  nameOf: (item: T) => unknown
+): number {
+  let seen = 0
+  for (const [index, item] of items.entries()) {
+    if (nameOf(item) !== name) continue
+    if (seen === occurrence) return index
+    seen++
+  }
+  return -1
+}
+
+function resolveConnectTargetInputs(
+  liveInputs: NodeState['inputs'],
+  rawTargetInputs: readonly ISerialisableNodeInput[],
+  rawTargetSlot: number,
+  autogrowGroupOf: (name: unknown) => string | undefined
+): ConnectTargetSlotResolution {
+  if (liveInputs.some((input) => !isSlotRecord(input))) {
+    return { error: 'connect target inputs contain a malformed live slot' }
+  }
+  // Index the raw payload, not a filtered copy of it: dropping malformed
+  // entries first would shift every later index and resolve the wrong
+  // slot's name.
+  const rawTarget = rawTargetInputs[rawTargetSlot]
+  const name = isRecord(rawTarget) ? rawTarget.name : undefined
+  if (typeof name !== 'string') {
+    return { error: `connect target slot ${rawTargetSlot} does not exist` }
+  }
+  // The payload's own slot names are not guaranteed unique, so the target
+  // slot is resolved by occurrence -- the Nth slot named `name` up to
+  // `rawTargetSlot` in the raw payload maps to the Nth slot named `name` in
+  // the merged result -- rather than by first match.
+  const occurrence = occurrenceIndexOf(
+    rawTargetInputs,
+    rawTargetSlot,
+    name,
+    (candidate) => (isRecord(candidate) ? candidate.name : undefined)
+  )
+  const targetInputs = mergeInputSlotsByName(
+    liveInputs,
+    rawTargetInputs,
+    autogrowGroupOf
+  )
+  const resolvedSlot = resolveOccurrenceIndex(
+    targetInputs,
+    name,
+    occurrence,
+    (input) => input.name
+  )
+  if (resolvedSlot < 0) {
+    return { error: `connect target slot ${rawTargetSlot} does not exist` }
+  }
+  return { targetInputs, targetSlot: resolvedSlot }
 }
 
 function readPair(
@@ -463,12 +826,82 @@ export function isIncompatibleLinkType(link: {
   return !LiteGraph.isValidConnection(originType, targetType)
 }
 
+type ChangedNodeSlots = Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>>
+
+function keepsOriginSlot(
+  topology: LinkTopology,
+  replacement: LinkTopology | undefined
+): boolean {
+  return (
+    replacement?.id === topology.id &&
+    replacement.originNodeId === topology.originNodeId &&
+    replacement.originSlot === topology.originSlot
+  )
+}
+
+function keepsTargetSlot(
+  topology: LinkTopology,
+  replacement: LinkTopology | undefined
+): boolean {
+  return (
+    replacement?.id === topology.id &&
+    replacement.targetNodeId === topology.targetNodeId &&
+    replacement.targetSlot === topology.targetSlot
+  )
+}
+
+function detachOriginSlot(
+  nodesById: Map<string, NodeState>,
+  topology: LinkTopology,
+  replacement: LinkTopology | undefined,
+  slotsFor: (node: NodeState) => Pick<NodeState, 'inputs' | 'outputs'>
+): void {
+  const origin = nodesById.get(nodeKey(topology.originNodeId))
+  if (
+    keepsOriginSlot(topology, replacement) ||
+    !origin?.outputs[topology.originSlot]
+  ) {
+    return
+  }
+  const slots = slotsFor(origin)
+  slots.outputs = slots.outputs.map((output, index) =>
+    index === topology.originSlot && isPlainObject(output)
+      ? {
+          ...output,
+          links: output.links?.filter((id) => id !== topology.id) ?? null
+        }
+      : output
+  )
+}
+
+function detachTargetSlot(
+  nodesById: Map<string, NodeState>,
+  topology: LinkTopology,
+  replacement: LinkTopology | undefined,
+  slotsFor: (node: NodeState) => Pick<NodeState, 'inputs' | 'outputs'>
+): void {
+  const target = nodesById.get(nodeKey(topology.targetNodeId))
+  if (
+    keepsTargetSlot(topology, replacement) ||
+    target?.inputs[topology.targetSlot]?.link !== topology.id
+  ) {
+    return
+  }
+  const slots = slotsFor(target)
+  slots.inputs = slots.inputs.map((input, index) =>
+    index === topology.targetSlot && isPlainObject(input)
+      ? { ...input, link: null }
+      : input
+  )
+}
+
 function detachedLinkSlots(
   nodes: Iterable<NodeState>,
-  topology: LinkTopology
-): Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>> {
+  topology: LinkTopology,
+  replacement?: LinkTopology
+): ChangedNodeSlots {
   const nodesById = new Map([...nodes].map((node) => [nodeKey(node.id), node]))
-  const changed = new Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>>()
+  const changed: ChangedNodeSlots = new Map()
   const slotsFor = (node: NodeState) => {
     const prior = changed.get(node.id)
     if (prior) return prior
@@ -477,26 +910,8 @@ function detachedLinkSlots(
     return slots
   }
 
-  const origin = nodesById.get(nodeKey(topology.originNodeId))
-  if (origin?.outputs[topology.originSlot]) {
-    const slots = slotsFor(origin)
-    slots.outputs = slots.outputs.map((output, index) =>
-      index === topology.originSlot
-        ? {
-            ...output,
-            links: output.links?.filter((id) => id !== topology.id) ?? null
-          }
-        : output
-    )
-  }
-
-  const target = nodesById.get(nodeKey(topology.targetNodeId))
-  if (target?.inputs[topology.targetSlot]?.link === topology.id) {
-    const slots = slotsFor(target)
-    slots.inputs = slots.inputs.map((input, index) =>
-      index === topology.targetSlot ? { ...input, link: null } : input
-    )
-  }
+  detachOriginSlot(nodesById, topology, replacement, slotsFor)
+  detachTargetSlot(nodesById, topology, replacement, slotsFor)
 
   return changed
 }
@@ -528,6 +943,337 @@ function removeSimulatedLink(
 }
 
 /**
+ * A remembered live `member`/`notMember` answer, pinned to the exact node
+ * INCARNATION it was answered for: the node type, and the identity of that
+ * type's definition object at the time. Both are part of the entry because a
+ * node id can be reused for a different type (replace), and a type name can
+ * be re-registered against a different schema (hot reload) -- either way the
+ * old answer describes a node that no longer exists and must not win.
+ * `group: null` records a definitive "not a member"; no entry at all means
+ * never resolved.
+ */
+interface RememberedAutogrowGroup {
+  readonly nodeType: string
+  readonly nodeDef: ComfyNodeDefImpl | undefined
+  readonly group: string | null
+}
+
+/**
+ * Distinguishes "never resolved" (the caller should fall through to the node
+ * definition, then the name-shape heuristic) from a remembered, definitive
+ * `notMember` (`group: undefined`, but resolved -- the caller must trust that
+ * "no" and not let the heuristic override it).
+ */
+type RememberedAutogrowRead =
+  | { readonly remembered: true; readonly group: string | undefined }
+  | { readonly remembered: false }
+
+type StagedAutogrowWrite =
+  | {
+      readonly kind: 'remember'
+      readonly scope: GraphScope
+      readonly nodeId: NodeId
+      readonly name: string
+      readonly entry: RememberedAutogrowGroup
+    }
+  | {
+      readonly kind: 'forget'
+      readonly scope: GraphScope
+      readonly nodeId: NodeId
+    }
+
+/**
+ * The writes one batch wants to make to the follower's autogrow memory. They
+ * are staged rather than applied, because `prepare()` resolves (and therefore
+ * learns) autogrow answers before a later queued mutation can still reject the
+ * whole batch: a rejected batch must leave no trace, or a retry that finds the
+ * live port `unavailable` classifies slots off an answer the store never
+ * accepted.
+ *
+ * Each mutation's writes go into its own pending overlay (`remember`/`forget`
+ * build it lazily off `read`'s current view -- this mutation's own overlay if
+ * already touched, else the nearest earlier-indexed mutation's still-pending
+ * overlay, else the batch's confirmed shadow, else the persisted store)
+ * rather than straight onto the batch's shared shadow. A later mutation can
+ * therefore see an earlier one's answer as soon as it is staged during
+ * `prepare()`, before either has committed -- required for two mutations
+ * prepared back to back in one batch to agree on the same name's
+ * classification. `applyMutation` merges that overlay onto the shadow once
+ * that mutation's own graph effect has actually landed; `rollbackMutation`
+ * instead discards the overlay outright, so a mutation whose effect did not
+ * land (e.g. `connect`'s `replaceLink` refusing a stale or collided target)
+ * can never leak its staged answer to a later mutation in the same batch, no
+ * matter how the two interleave on the same node. Each write is also
+ * journaled the same way, so `applyMutation`
+ * can additionally replay it onto the persisted store; a batch whose commit
+ * throws partway through therefore keeps the memory writes for every
+ * mutation that committed before the throw, and drops the rest, instead of
+ * an all-or-nothing `apply()` that would discard already-committed
+ * mutations' writes too.
+ */
+interface AutogrowMemoryDraft {
+  read(
+    scope: GraphScope,
+    nodeId: NodeId,
+    nodeType: string,
+    name: string
+  ): RememberedAutogrowRead
+  remember(
+    scope: GraphScope,
+    nodeId: NodeId,
+    nodeType: string,
+    name: string,
+    group: string | undefined
+  ): void
+  forget(scope: GraphScope, nodeId: NodeId): void
+  beginMutation(mutationIndex: number): void
+  applyMutation(mutationIndex: number): void
+  rollbackMutation(mutationIndex: number): void
+}
+
+/**
+ * This follower's own memory of live `member`/`notMember` autogrow answers, so
+ * a later reconcile that finds the live node `unavailable` (unmounted,
+ * background workflow) can prefer prior real provenance over guessing from the
+ * name's shape again -- the same "carry it forward in the store we already
+ * control" approach `preserveSlotDisplayMetadata` takes for
+ * `localized_name`/`label`.
+ *
+ * One memory per `GraphMutations` instance, not per module, so distinct
+ * followers never see each other's answers. A single instance is nonetheless
+ * retained across graph scopes (production keeps one per cloud workflow while
+ * resolving the current local workflow state on every batch), so the graph
+ * scope is part of every key: the same node id, type and input name in another
+ * root is a different node. The store nests a nested `Map` per scope field and
+ * node id rather than joining them into one composite string key: those are
+ * all plain strings whose constructors do not reject or escape an embedded
+ * NUL, so a joined key can alias two different tuples, while a `Map` compares
+ * each field by value with no such collision.
+ */
+function createAutogrowMemory() {
+  const remembered = new Map<
+    string,
+    Map<string, Map<string, Map<string, RememberedAutogrowGroup>>>
+  >()
+
+  function currentNodeDef(nodeType: string): ComfyNodeDefImpl | undefined {
+    return useNodeDefStore().getNodeDefByName(nodeType)
+  }
+
+  // A current, definitive node definition always beats stale memory: an entry
+  // recorded against another type, or against a definition object that has
+  // since been replaced by a re-registration, reads back as "never resolved"
+  // so the caller consults the live definition instead.
+  function readEntry(
+    entry: RememberedAutogrowGroup | undefined,
+    nodeType: string
+  ): RememberedAutogrowRead {
+    return entry &&
+      entry.nodeType === nodeType &&
+      entry.nodeDef === currentNodeDef(nodeType)
+      ? { remembered: true, group: entry.group ?? undefined }
+      : { remembered: false }
+  }
+
+  function nodeEntries(
+    scope: GraphScope,
+    nodeId: NodeId
+  ): Map<string, RememberedAutogrowGroup> | undefined {
+    return remembered
+      .get(scope.rootGraphId)
+      ?.get(scope.owningGraphId)
+      ?.get(nodeKey(nodeId))
+  }
+
+  function ensureNodeEntries(
+    scope: GraphScope,
+    nodeId: NodeId
+  ): Map<string, RememberedAutogrowGroup> {
+    let forRoot = remembered.get(scope.rootGraphId)
+    if (!forRoot) {
+      forRoot = new Map()
+      remembered.set(scope.rootGraphId, forRoot)
+    }
+    let forOwning = forRoot.get(scope.owningGraphId)
+    if (!forOwning) {
+      forOwning = new Map()
+      forRoot.set(scope.owningGraphId, forOwning)
+    }
+    const key = nodeKey(nodeId)
+    let forNode = forOwning.get(key)
+    if (!forNode) {
+      forNode = new Map()
+      forOwning.set(key, forNode)
+    }
+    return forNode
+  }
+
+  function deleteNodeEntries(scope: GraphScope, nodeId: NodeId): void {
+    remembered
+      .get(scope.rootGraphId)
+      ?.get(scope.owningGraphId)
+      ?.delete(nodeKey(nodeId))
+  }
+
+  return {
+    draft(): AutogrowMemoryDraft {
+      const shadow = new Map<
+        string,
+        Map<string, RememberedAutogrowGroup> | null
+      >()
+      const pending = new Map<
+        number,
+        Map<string, Map<string, RememberedAutogrowGroup> | null>
+      >()
+      const journal = new Map<number, StagedAutogrowWrite[]>()
+      let currentMutationIndex = -1
+
+      function shadowKey(scope: GraphScope, nodeId: NodeId): string {
+        return JSON.stringify([
+          scope.rootGraphId,
+          scope.owningGraphId,
+          nodeKey(nodeId)
+        ])
+      }
+
+      function stageWrite(write: StagedAutogrowWrite): void {
+        let forMutation = journal.get(currentMutationIndex)
+        if (!forMutation) {
+          forMutation = []
+          journal.set(currentMutationIndex, forMutation)
+        }
+        forMutation.push(write)
+      }
+
+      // `key`'s value as the current mutation's own writes see it: its own
+      // pending overlay if already touched, else the most recent
+      // still-pending overlay of an earlier-indexed mutation in this batch
+      // (prepared before this one, but not yet committed or rolled back),
+      // else the confirmed shadow (from mutations that have already
+      // applied), else `undefined` to fall through to the persisted store.
+      // The earlier-mutation scan only ever looks backward -- a mutation
+      // never sees one prepared after it -- and a rolled-back mutation's
+      // overlay is removed from `pending` entirely, so it is skipped here
+      // exactly as if it had never written anything.
+      function currentView(
+        key: string
+      ): Map<string, RememberedAutogrowGroup> | null | undefined {
+        const ownPending = pending.get(currentMutationIndex)
+        if (ownPending?.has(key)) return ownPending.get(key) ?? null
+        for (let index = currentMutationIndex - 1; index >= 0; index--) {
+          const forMutation = pending.get(index)
+          if (forMutation?.has(key)) return forMutation.get(key) ?? null
+        }
+        if (shadow.has(key)) return shadow.get(key) ?? null
+        return undefined
+      }
+
+      function setPending(
+        key: string,
+        value: Map<string, RememberedAutogrowGroup> | null
+      ): void {
+        let forMutation = pending.get(currentMutationIndex)
+        if (!forMutation) {
+          forMutation = new Map()
+          pending.set(currentMutationIndex, forMutation)
+        }
+        forMutation.set(key, value)
+      }
+
+      function replayPending(write: StagedAutogrowWrite): void {
+        const key = shadowKey(write.scope, write.nodeId)
+        if (write.kind === 'forget') {
+          setPending(key, null)
+          return
+        }
+        const view = currentView(key)
+        const forNode = new Map(
+          view === undefined
+            ? nodeEntries(write.scope, write.nodeId)
+            : (view ?? undefined)
+        )
+        forNode.set(write.name, write.entry)
+        setPending(key, forNode)
+      }
+
+      return {
+        beginMutation(mutationIndex) {
+          currentMutationIndex = mutationIndex
+        },
+        read(scope, nodeId, nodeType, name) {
+          const key = shadowKey(scope, nodeId)
+          const view = currentView(key)
+          if (view !== undefined) return readEntry(view?.get(name), nodeType)
+          return readEntry(nodeEntries(scope, nodeId)?.get(name), nodeType)
+        },
+        remember(scope, nodeId, nodeType, name, group) {
+          const key = shadowKey(scope, nodeId)
+          const view = currentView(key)
+          const forNode = new Map(
+            view === undefined
+              ? nodeEntries(scope, nodeId)
+              : (view ?? undefined)
+          )
+          const entry: RememberedAutogrowGroup = {
+            nodeType,
+            nodeDef: currentNodeDef(nodeType),
+            group: group ?? null
+          }
+          forNode.set(name, entry)
+          setPending(key, forNode)
+          stageWrite({ kind: 'remember', scope, nodeId, name, entry })
+        },
+        forget(scope, nodeId) {
+          setPending(shadowKey(scope, nodeId), null)
+          stageWrite({ kind: 'forget', scope, nodeId })
+        },
+        applyMutation(mutationIndex) {
+          const writes = journal.get(mutationIndex)
+          if (writes) {
+            journal.delete(mutationIndex)
+            for (const write of writes) {
+              switch (write.kind) {
+                case 'remember':
+                  ensureNodeEntries(write.scope, write.nodeId).set(
+                    write.name,
+                    write.entry
+                  )
+                  break
+                case 'forget':
+                  deleteNodeEntries(write.scope, write.nodeId)
+                  break
+                default: {
+                  const unhandled: never = write
+                  return unhandled
+                }
+              }
+            }
+          }
+          const forMutation = pending.get(mutationIndex)
+          if (!forMutation) return
+          pending.delete(mutationIndex)
+          for (const [key, value] of forMutation) shadow.set(key, value)
+        },
+        rollbackMutation(mutationIndex) {
+          journal.delete(mutationIndex)
+          pending.delete(mutationIndex)
+          for (const index of [...pending.keys()]) {
+            if (index > mutationIndex) pending.delete(index)
+          }
+          for (const [index, writes] of [...journal].sort(
+            ([left], [right]) => left - right
+          )) {
+            if (index <= mutationIndex) continue
+            currentMutationIndex = index
+            for (const write of writes) replayPending(write)
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
  * Builds the graph-scoped composite used by the remote follower. Every batch
  * is validated against a simulated final store state before its first write;
  * the synchronous commit then uses explicit remote IDs and call-carried
@@ -539,12 +1285,62 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   const linkPresentationStore = useLinkPresentationStore()
   const widgetStore = useWidgetValueStore()
 
+  const autogrowMemory = createAutogrowMemory()
+
+  // Prefers the live node's own autogrow group registration (real
+  // provenance) over every fallback below, and stages that answer in
+  // `memory` for later calls that can no longer ask the live node.
+  //
+  // The fallbacks run only when the live port itself has no opinion, i.e.
+  // no port is wired at all, or the wired port answers `unavailable` (the
+  // live node couldn't be asked, not that it was asked and said no) -- see
+  // `SemanticLiveNodeQueryPort`/`LiveAutogrowGroupAnswer`. Memory comes
+  // first among them, since it is real provenance the node already gave,
+  // just not right now. Absent that -- including on this follower's very
+  // first reconcile of the node -- `nodeDefAutogrowGroupOf` reads the same
+  // registration off the node TYPE's own static definition, so it is
+  // equally real provenance and does not depend on the node being live at
+  // all. `nameShapeAutogrowGroupOf` is the true last resort, guessing from
+  // the name's shape, for a name neither of those has ever resolved.
+  function resolveAutogrowGroup(
+    memory: AutogrowMemoryDraft,
+    scope: GraphScope,
+    nodeId: NodeId,
+    nodeType: string,
+    name: unknown
+  ): string | undefined {
+    if (typeof name !== 'string') return undefined
+    const fallback = (): string | undefined => {
+      const recalled = memory.read(scope, nodeId, nodeType, name)
+      if (recalled.remembered) return recalled.group
+      const fromDef = nodeDefAutogrowGroupOf(nodeType, name)
+      return fromDef.known ? fromDef.group : nameShapeAutogrowGroupOf(name)
+    }
+    if (!deps.liveNodes) return fallback()
+    const answer = deps.liveNodes.autogrowGroupOf(scope, nodeId, name)
+    switch (answer.kind) {
+      case 'member':
+        memory.remember(scope, nodeId, nodeType, name, answer.group)
+        return answer.group
+      case 'notMember':
+        memory.remember(scope, nodeId, nodeType, name, undefined)
+        return undefined
+      case 'unavailable':
+        return fallback()
+      default: {
+        const unhandled: never = answer
+        return unhandled
+      }
+    }
+  }
+
   function fail(message: string): false {
     console.error(`[agent-crdt] graph mutation rejected: ${message}`)
     return false
   }
 
   function prepare(
+    memory: AutogrowMemoryDraft,
     scope: GraphScope,
     queued: readonly QueuedMutation[]
   ): PreparedMutation[] | string {
@@ -576,7 +1372,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     }
 
     const prepared: PreparedMutation[] = []
-    for (const mutation of queued) {
+    for (const [mutationIndex, mutation] of queued.entries()) {
+      memory.beginMutation(mutationIndex)
       switch (mutation.kind) {
         case 'addNode':
         case 'reconcileNode': {
@@ -600,17 +1397,56 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (mutation.kind === 'addNode' && nodes.has(key)) {
             return `node id ${key} is already registered`
           }
+          if (
+            mutation.kind === 'reconcileNode' &&
+            existing &&
+            existing.type === node.state.type
+          ) {
+            if (existing.inputs.some((input) => !isSlotRecord(input))) {
+              return 'reconcile target inputs contain a malformed live slot'
+            }
+            const preserveLinkedAutogrow = queued.some(
+              (queuedMutation) =>
+                queuedMutation.kind === 'connect' &&
+                queuedMutation.link.targetNodeId === node.state.id
+            )
+            node.state.inputs = mergeInputSlotsByName(
+              existing.inputs,
+              mutation.payload.inputs,
+              (name) =>
+                resolveAutogrowGroup(
+                  memory,
+                  scope,
+                  node.state.id,
+                  node.state.type,
+                  name
+                ),
+              preserveLinkedAutogrow
+            )
+            prepared.push({
+              kind: 'reconcileNode',
+              node,
+              documentInputs: mutation.payload.inputs,
+              preserveLinkedAutogrow
+            })
+            nodes.set(key, node.state)
+            break
+          }
           nodes.set(key, node.state)
           if (mutation.kind === 'addNode') {
             prepared.push({ kind: 'addNode', node, queued: 'addNode' })
           } else {
-            prepared.push({
-              kind:
-                existing && existing.type !== node.state.type
-                  ? 'replaceNode'
-                  : 'reconcileNode',
-              node
-            })
+            const replaced = existing && existing.type !== node.state.type
+            if (replaced) memory.forget(scope, node.state.id)
+            if (replaced) prepared.push({ kind: 'replaceNode', node })
+            else {
+              prepared.push({
+                kind: 'reconcileNode',
+                node,
+                documentInputs: mutation.payload.inputs,
+                preserveLinkedAutogrow: false
+              })
+            }
           }
           break
         }
@@ -631,6 +1467,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             if (validationError) return validationError
             nodes.set(key, node.state)
             if (existing) {
+              memory.forget(scope, node.state.id)
               prepared.push({ kind: 'replaceNode', node })
             } else {
               prepared.push({
@@ -699,13 +1536,32 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const originOutputs = mutation.link.originOutputs
             ? prepareOutputSlots(mutation.link.originOutputs)
             : origin.outputs
-          const targetInputs = mutation.link.targetInputs
-            ? prepareInputSlots(mutation.link.targetInputs, target.inputs)
-            : target.inputs
+          let targetInputs = target.inputs
+          if (mutation.link.targetInputs) {
+            const resolution = resolveConnectTargetInputs(
+              target.inputs,
+              mutation.link.targetInputs,
+              topology.targetSlot,
+              (candidateName) =>
+                resolveAutogrowGroup(
+                  memory,
+                  scope,
+                  topology.targetNodeId,
+                  target.type,
+                  candidateName
+                )
+            )
+            if ('error' in resolution) return resolution.error
+            targetInputs = resolution.targetInputs
+            topology.targetSlot = resolution.targetSlot
+          }
           if (topology.originSlot >= originOutputs.length) {
             return `connect origin slot ${topology.originSlot} does not exist`
           }
-          if (topology.targetSlot >= targetInputs.length) {
+          if (
+            topology.targetSlot < 0 ||
+            topology.targetSlot >= targetInputs.length
+          ) {
             return `connect target slot ${topology.targetSlot} does not exist`
           }
           const originType = originOutputs[topology.originSlot]?.type
@@ -772,6 +1628,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           for (const id of nodeIds) {
             nodes.delete(nodeKey(id))
             removeIncidentLinks(nodes, links, id)
+            memory.forget(scope, id)
           }
           const linkIds = [...links.keys()].filter(
             (id) => !retainedLinkIds.has(id)
@@ -822,6 +1679,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           nodes.delete(nodeKey(mutation.nodeId))
           removeIncidentLinks(nodes, links, mutation.nodeId)
+          memory.forget(scope, mutation.nodeId)
           for (const id of removedLinkIds) {
             removeSimulatedLink(nodes, links, id)
           }
@@ -834,6 +1692,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         }
         case 'clearSemanticGraph': {
           const nodeIds = [...nodes.values()].map(({ id }) => id)
+          for (const id of nodeIds) memory.forget(scope, id)
           nodes.clear()
           links.clear()
           prepared.push({ kind: mutation.kind, nodeIds })
@@ -892,13 +1751,18 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   function detachLinkSlots(
     scope: GraphScope,
     topology: LinkTopology,
-    context: RemoteMutationContext
+    context: RemoteMutationContext,
+    replacement?: LinkTopology
   ): void {
     const nodes = nodeStore.getGraphNodesFor(
       scope.rootGraphId,
       scope.owningGraphId
     )
-    for (const [nodeId, slots] of detachedLinkSlots(nodes, topology)) {
+    for (const [nodeId, slots] of detachedLinkSlots(
+      nodes,
+      topology,
+      replacement
+    )) {
       nodeStore.updateNodeSlots(scope, nodeId, slots, context)
     }
   }
@@ -914,7 +1778,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     }
   }
 
-  function deleteNode(
+  function deleteNodeState(
     scope: GraphScope,
     nodeId: NodeId,
     removedLinkIds: readonly LinkId[],
@@ -934,6 +1798,15 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     }
     widgetStore.clearNode(scope.rootGraphId, nodeId, context)
     if (node) nodeStore.deleteNode(scope, node, context)
+  }
+
+  function deleteNode(
+    scope: GraphScope,
+    nodeId: NodeId,
+    removedLinkIds: readonly LinkId[],
+    context: RemoteMutationContext
+  ): void {
+    deleteNodeState(scope, nodeId, removedLinkIds, context)
     deps.layout.deleteNodes(scope, [nodeId], context)
   }
 
@@ -1018,42 +1891,131 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   }
 
   /**
+   * A reconcile's doc snapshot predates a widget whose live value already
+   * changed locally (a human edit, or any write that reached the widget
+   * without going through this module's own commit) since it was last read
+   * from the doc. Overwriting it here would replay stale text over what the
+   * user is looking at (PM-1303/PM-1310 "hypothesis C"); an explicit
+   * single-widget `setWidget` op is unaffected, since it calls
+   * `setWidgetValue` directly rather than through this function.
+   *
+   * Protection lasts until the document actually reflects the local value,
+   * not for a single skipped reconcile: the follower has no invariant that
+   * only one stale full reconcile can happen before a genuinely newer value
+   * lands (an unbound local edit that never minted, followed by a rejected
+   * duplicate-add echo re-arming full reconciliation, can deliver the same
+   * stale snapshot a second time). So this only lets a reconcile through
+   * once its own candidate value already matches the widget's current one -
+   * the document has caught up, and that write clears the mark itself, since
+   * it carries a context. Anything else keeps skipping and keeps the mark.
+   *
+   * "Matches" has to be value equality, not reference equality:
+   * `parseWidgetValues` (via `cloneWidgetValue`) runs a fresh
+   * `structuredClone` over every object-typed candidate, so an
+   * object-valued widget's doc-parsed value is never the same object
+   * instance as the widget's stored value even once the document
+   * genuinely reflects it. `Object.is`/`===` would then never see the two
+   * as equal, so the guard could never conclude the document caught up and
+   * the dirty mark would never clear except via an explicit `setWidget`.
+   */
+  function skipStaleReconcile(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string,
+    value: WidgetValue
+  ): boolean {
+    const id = widgetId(scope.rootGraphId, nodeId, name)
+    if (!isWidgetId(id) || !widgetStore.isLocallyDirty(id)) return false
+    return !isEqual(widgetStore.getWidget(id)?.value, value)
+  }
+
+  /**
+   * The `named` half of `applyWidgetValues`: values keyed by widget name,
+   * applied in whatever order the doc map iterates.
+   */
+  function applyNamedWidgetValues(
+    scope: GraphScope,
+    nodeId: NodeId,
+    values: ReadonlyMap<string, WidgetValue>,
+    context: RemoteMutationContext,
+    guardLocalEdits: boolean
+  ): void {
+    for (const [name, value] of values) {
+      if (guardLocalEdits && skipStaleReconcile(scope, nodeId, name, value)) {
+        continue
+      }
+      setWidgetValue(scope, nodeId, name, value, context)
+    }
+  }
+
+  /**
+   * The `positional` half of `applyWidgetValues`: values bind to the live
+   * node's serialized widgets in order, the same order `LGraphNode.serialize`
+   * wrote them in.
+   */
+  function applyPositionalWidgetValues(
+    scope: GraphScope,
+    nodeId: NodeId,
+    values: readonly WidgetValue[],
+    context: RemoteMutationContext,
+    guardLocalEdits: boolean
+  ): void {
+    const serialized = widgetStore
+      .getNodeWidgets(scope.rootGraphId, nodeId)
+      .filter((widget) => widget.serialize !== false)
+      .slice(0, values.length)
+    for (const [index, widget] of serialized.entries()) {
+      if (
+        guardLocalEdits &&
+        skipStaleReconcile(scope, nodeId, widget.name, values[index])
+      ) {
+        continue
+      }
+      setWidgetValue(scope, nodeId, widget.name, values[index], context)
+    }
+  }
+
+  /**
    * A doc entry for a node that is already live is a value patch: the live
    * widgets keep their registered type, options, and state identity, and a
-   * value the payload omits keeps its current value. Positional values bind
-   * to the serialized widgets in order, the same order `LGraphNode.serialize`
-   * wrote them in.
+   * value the payload omits keeps its current value.
+   *
+   * `guardLocalEdits` skips a widget via {@link skipStaleReconcile}; it is only set
+   * for a plain node's `reconcileNode`. A subgraph host's `reconcileNodeFields`
+   * leaves it off: a host's promoted widgets are wired by `SubgraphNode`'s own
+   * projection (`promotedWidgetStoreProjection.ts`), which writes them
+   * directly (no `RemoteMutationContext`) as a routine, structural part of
+   * (re)attaching the host - not a human edit - so the same signal that
+   * catches a stale reconcile on a plain widget would misfire here.
    */
   function applyWidgetValues(
     scope: GraphScope,
     nodeId: NodeId,
     widgets: WidgetValuePayload,
-    context: RemoteMutationContext
+    context: RemoteMutationContext,
+    guardLocalEdits: boolean
   ): void {
     switch (widgets.kind) {
       case 'omitted':
         return
       case 'named':
-        for (const [name, value] of widgets.values) {
-          setWidgetValue(scope, nodeId, name, value, context)
-        }
+        applyNamedWidgetValues(
+          scope,
+          nodeId,
+          widgets.values,
+          context,
+          guardLocalEdits
+        )
         return
-      case 'positional': {
-        const serialized = widgetStore
-          .getNodeWidgets(scope.rootGraphId, nodeId)
-          .filter((widget) => widget.serialize !== false)
-          .slice(0, widgets.values.length)
-        for (const [index, widget] of serialized.entries()) {
-          setWidgetValue(
-            scope,
-            nodeId,
-            widget.name,
-            widgets.values[index],
-            context
-          )
-        }
+      case 'positional':
+        applyPositionalWidgetValues(
+          scope,
+          nodeId,
+          widgets.values,
+          context,
+          guardLocalEdits
+        )
         return
-      }
       default: {
         const unhandled: never = widgets
         return unhandled
@@ -1061,48 +2023,97 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     }
   }
 
+  /**
+   * `addNode`/`reconcileNode`/`replaceNode` share one upsert: a `replaceNode`
+   * onto an existing node deletes it first: a `reconcileNode` onto an
+   * existing node patches fields and widgets in place (through
+   * `applyWidgetValues`'s local-edit guard); anything else registers the
+   * node fresh, from placeholder widgets.
+   */
+  function commitUpsertNode(
+    scope: GraphScope,
+    mutation: Extract<
+      PreparedMutation,
+      { kind: 'addNode' | 'reconcileNode' | 'replaceNode' }
+    >,
+    context: RemoteMutationContext,
+    memory: AutogrowMemoryDraft,
+    revalidateInputs: boolean
+  ): void {
+    const existing = nodeStore.getNode(
+      scope.rootGraphId,
+      mutation.node.state.id
+    )
+    if (mutation.kind === 'reconcileNode' && existing) {
+      const state = revalidateInputs
+        ? {
+            ...mutation.node.state,
+            inputs: mergeInputSlotsByName(
+              existing.inputs,
+              mutation.documentInputs,
+              (name) =>
+                resolveAutogrowGroup(
+                  memory,
+                  scope,
+                  mutation.node.state.id,
+                  mutation.node.state.type,
+                  name
+                ),
+              mutation.preserveLinkedAutogrow
+            )
+          }
+        : mutation.node.state
+      nodeStore.updateNode(scope, state.id, state, context)
+      applyWidgetValues(
+        scope,
+        mutation.node.state.id,
+        mutation.node.widgets,
+        context,
+        true
+      )
+      return
+    }
+    // `layout.createNode` is a fallible renderer-owned effect; it must run
+    // before the incumbent (a type-changing `replaceNode`'s prior node, if
+    // any) is torn down or the new node becomes visible in the store, so a
+    // throw here leaves the incumbent's full state -- and this mutation's
+    // memory journal -- untouched instead of losing it mid-replacement or
+    // registering a node the layout never got.
+    deps.layout.createNode(
+      scope,
+      mutation.node.state.id,
+      mutation.node.layout,
+      context
+    )
+    if (mutation.kind === 'replaceNode' && existing) {
+      deleteNodeState(scope, existing.id, [], context)
+    }
+    nodeStore.registerNode(scope, mutation.node.state, context)
+    for (const widget of placeholderWidgets(mutation.node.widgets)) {
+      registerPlaceholder(scope, mutation.node.state.id, widget, context)
+    }
+  }
+
   function commit(
     scope: GraphScope,
     prepared: readonly PreparedMutation[],
-    context: RemoteMutationContext
+    context: RemoteMutationContext,
+    memory: AutogrowMemoryDraft
   ): void {
-    for (const mutation of prepared) {
+    let revalidatePreparedInputs = false
+    for (const [index, mutation] of prepared.entries()) {
+      memory.beginMutation(index)
+      let committed = true
       switch (mutation.kind) {
         case 'addNode':
         case 'reconcileNode':
         case 'replaceNode': {
-          let existing = nodeStore.getNode(
-            scope.rootGraphId,
-            mutation.node.state.id
-          )
-          if (mutation.kind === 'replaceNode' && existing) {
-            deleteNode(scope, existing.id, [], context)
-            existing = undefined
-          }
-          if (mutation.kind === 'reconcileNode' && existing) {
-            nodeStore.updateNode(
-              scope,
-              mutation.node.state.id,
-              mutation.node.state,
-              context
-            )
-            applyWidgetValues(
-              scope,
-              mutation.node.state.id,
-              mutation.node.widgets,
-              context
-            )
-            break
-          }
-          nodeStore.registerNode(scope, mutation.node.state, context)
-          for (const widget of placeholderWidgets(mutation.node.widgets)) {
-            registerPlaceholder(scope, mutation.node.state.id, widget, context)
-          }
-          deps.layout.createNode(
+          commitUpsertNode(
             scope,
-            mutation.node.state.id,
-            mutation.node.layout,
-            context
+            mutation,
+            context,
+            memory,
+            revalidatePreparedInputs
           )
           break
         }
@@ -1113,7 +2124,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             mutation.state,
             context
           )
-          applyWidgetValues(scope, mutation.state.id, mutation.widgets, context)
+          applyWidgetValues(
+            scope,
+            mutation.state.id,
+            mutation.widgets,
+            context,
+            false
+          )
           break
         }
         case 'setWidget': {
@@ -1127,34 +2144,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           break
         }
         case 'connect': {
-          const existing = linkStore.getTopology(
-            scope.rootGraphId,
-            mutation.topology.id
-          )
-          const presentation = existing
-            ? linkPresentationStore.getPresentation(scope, existing.id)
-            : undefined
-          if (existing) removeLink(scope, existing, context)
-          const occupant = linkStore.getInputSlotLink(
-            scope,
-            mutation.topology.targetNodeId,
-            mutation.topology.targetSlot
-          )
-          const replacement = linkStore.replaceLink(
-            scope,
-            occupant,
-            mutation.topology,
-            context
-          )
-          if (!replacement) break
-          if (occupant) {
-            detachLinkSlots(scope, occupant, context)
-            linkPresentationStore.take(scope, occupant.id)
-          }
-          if (presentation) {
-            linkPresentationStore.patch(scope, replacement.id, presentation)
-          }
-
           const endpointNodes = new Map(
             nodeStore
               .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
@@ -1166,25 +2155,83 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const target = endpointNodes.get(
             nodeKey(mutation.topology.targetNodeId)
           )
+          let targetInputs = mutation.targetInputs
+          if (target && targetInputs) {
+            const targetName = targetInputs[mutation.topology.targetSlot].name
+            const targetOccurrence = occurrenceIndexOf(
+              targetInputs,
+              mutation.topology.targetSlot,
+              targetName,
+              (input) => input.name
+            )
+            targetInputs = mergeInputSlotsByName(
+              target.inputs,
+              targetInputs,
+              (name) =>
+                resolveAutogrowGroup(
+                  memory,
+                  scope,
+                  target.id,
+                  target.type,
+                  name
+                ),
+              true
+            )
+            mutation.topology.targetSlot = resolveOccurrenceIndex(
+              targetInputs,
+              targetName,
+              targetOccurrence,
+              (input) => input.name
+            )
+          }
+          const existing = linkStore.getTopology(
+            scope.rootGraphId,
+            mutation.topology.id
+          )
+          const presentation = existing
+            ? linkPresentationStore.getPresentation(scope, existing.id)
+            : undefined
+          const occupant = linkStore.getInputSlotLink(
+            scope,
+            mutation.topology.targetNodeId,
+            mutation.topology.targetSlot
+          )
+          const replacement = linkStore.replaceLink(
+            scope,
+            occupant,
+            mutation.topology,
+            existing,
+            context
+          )
+          if (!replacement) {
+            committed = false
+            break
+          }
+          for (const displaced of new Set(
+            [existing, occupant].filter(
+              (topology): topology is LinkTopology => topology !== undefined
+            )
+          )) {
+            detachLinkSlots(scope, displaced, context, replacement)
+            linkPresentationStore.take(scope, displaced.id)
+          }
+          if (presentation) {
+            linkPresentationStore.patch(scope, replacement.id, presentation)
+          }
+
           if (origin && mutation.originOutputs) {
-            nodeStore.updateNodeSlots(
+            nodeStore.replaceNodeSlots(
               scope,
               origin.id,
-              {
-                inputs: origin.inputs,
-                outputs: mutation.originOutputs
-              },
+              { inputs: origin.inputs, outputs: mutation.originOutputs },
               context
             )
           }
-          if (target && mutation.targetInputs) {
-            nodeStore.updateNodeSlots(
+          if (target && targetInputs) {
+            nodeStore.replaceNodeSlots(
               scope,
               target.id,
-              {
-                inputs: mutation.targetInputs,
-                outputs: target.outputs
-              },
+              { inputs: targetInputs, outputs: target.outputs },
               context
             )
           }
@@ -1195,7 +2242,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             const topology = linkStore.getTopology(scope.rootGraphId, id)
             if (topology) removeLink(scope, topology, context)
           }
-          for (const id of mutation.nodeIds) deleteNode(scope, id, [], context)
+          for (const id of mutation.nodeIds) {
+            deleteNode(scope, id, [], context)
+          }
           break
         case 'removeLinks':
           for (const id of mutation.linkIds) {
@@ -1218,6 +2267,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         case 'deleteGroups':
           deps.layout.deleteGroups(scope, mutation.groupIds, context)
           break
+      }
+      if (committed) memory.applyMutation(index)
+      else {
+        memory.rollbackMutation(index)
+        revalidatePreparedInputs = true
       }
     }
   }
@@ -1266,10 +2320,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       const existingIds = nodeStore
         .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
         .map((node) => node.id)
-      const prepared = prepare(scope, queued)
+      const memory = autogrowMemory.draft()
+      const prepared = prepare(memory, scope, queued)
       if (typeof prepared === 'string') return fail(prepared)
       offsetInsertedBatch(scope, existingIds, prepared)
-      commit(scope, prepared, context)
+      commit(scope, prepared, context, memory)
       return true
     },
     addNode(payload, context) {
@@ -1286,11 +2341,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     deleteNode(nodeId, removedLinkIds, context) {
       return graphMutations.batch(context, (batch) =>
         batch.deleteNode(nodeId, removedLinkIds)
-      )
-    },
-    clearSemanticGraph(context) {
-      return graphMutations.batch(context, (batch) =>
-        batch.clearSemanticGraph()
       )
     }
   }

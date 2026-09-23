@@ -37,7 +37,7 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
@@ -600,7 +600,9 @@ describe('reconcileAgentAdapters', () => {
       seedAgentAddedNode(graph, 2)
       expect(reconcileAgentAdapters(graph)).toHaveLength(2)
 
-      remoteMutations(scope).clearSemanticGraph(REMOTE)
+      remoteMutations(scope).batch(REMOTE, (batch) => {
+        batch.clearSemanticGraph()
+      })
 
       expect(reconcileAgentAdapters(graph)).toEqual([])
       expect(graph._nodes).toHaveLength(0)
@@ -774,7 +776,8 @@ describe('reconcileAgentAdapters', () => {
         enqueue: (operations) => minted.push(...operations),
         layoutChanges: (listener) => layoutStore.onChange(listener),
         localActorPrefix: 'user-',
-        getGraph: () => graph
+        getGraph: () => graph,
+        boundRootGraphId: () => toRootGraphId(graph.id)
       })
     })
 
@@ -1528,5 +1531,170 @@ describe('reconcileAgentAdapters', () => {
         context: { graphId: graph.id, definitionId: 'legacy-subgraph' }
       })
     })
+  })
+})
+
+describe('node id write-drop guard', () => {
+  /** The one id both writes below claim. */
+  const COLLIDED_ID = 7
+
+  function addNodeAt(classType: string): GraphOperation {
+    return {
+      op: 'add_node',
+      node_id: COLLIDED_ID,
+      class_type: classType,
+      pos: [0, 0],
+      node: nodePayload(COLLIDED_ID, classType)
+    }
+  }
+
+  /**
+   * Two `add_node` writes claiming one id, resolved by the real applier: the
+   * higher stamp keeps the register and the loser comes back `lww-dropped`,
+   * which is reported to its own author as applied. The winner's document is
+   * then delivered as an ordinary catch-up frame.
+   */
+  function deliverCompetingAdds(
+    graph: LGraph,
+    winnerClass: string,
+    loserClass: string
+  ): void {
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(remoteMutations(graphScopeOf(graph)))
+    adapter.bind('workflow', follower)
+
+    const host = mint({ nodes: [], links: [] }, CATALOG)
+    const winner = agentOperation('agent-op', 2, addNodeAt(winnerClass))
+    const loser: Op = {
+      ...agentOperation('human-op', 1, addNodeAt(loserClass)),
+      actor: 'human:test',
+      stamp: [1, 'human:test']
+    }
+    expect(applyOps(host, [winner], CATALOG).outcomes).toEqual([
+      { op_id: 'agent-op', outcome: 'applied' }
+    ])
+    expect(applyOps(host, [loser], CATALOG).outcomes).toEqual([
+      { op_id: 'human-op', outcome: 'lww-dropped' }
+    ])
+
+    const update = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(update)
+    expect(
+      adapter.applyFrame({
+        workflowId: 'workflow',
+        seq: 1,
+        update,
+        actor: 'agent:test',
+        opIds: [winner.op_id, loser.op_id]
+      })
+    ).toBe(true)
+  }
+
+  /** The losing write's node, live on the canvas at the id it claimed. */
+  function addLiveNode(graph: LGraph, classType: string): LGraphNode {
+    const node = LiteGraph.createNode(classType)
+    if (!node) throw new Error('Test node types not registered')
+    node.id = toNodeId(COLLIDED_ID)
+    graph.add(node)
+    return node
+  }
+
+  it('reports the losing write when the document replaces a live node with another class', () => {
+    const graph = new LGraph()
+    const dropped = addLiveNode(graph, 'dummy')
+
+    deliverCompetingAdds(graph, 'widget-node', 'dummy')
+
+    expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(COLLIDED_ID)])
+    expect(graph.getNodeById(toNodeId(COLLIDED_ID))?.type).toBe('widget-node')
+    expect(graph._nodes).not.toContain(dropped)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+      errorType: 'agent_node_id_collision_write_dropped',
+      tags: expect.objectContaining({
+        feature_area: 'agent',
+        operation: 'sync',
+        outcome: 'degraded'
+      }),
+      context: {
+        graphId: graph.id,
+        nodeId: String(COLLIDED_ID),
+        liveClass: 'dummy',
+        docClass: 'widget-node'
+      }
+    })
+  })
+
+  // The same collision between two writes of the SAME class leaves the
+  // record reconciled in place (`nodeStore.updateNode` keeps the existing
+  // state object's identity), so the live node still reads as owned and
+  // never becomes an orphan this guard can see. That is a genuine gap in the
+  // guard's coverage, not a deliberate design choice: telling a same-class
+  // collision apart from an ordinary remote update of that same node would
+  // need op provenance this function does not have, not just a different
+  // check here.
+  it('stays silent when the record at a live id keeps its class', () => {
+    const graph = new LGraph()
+    const kept = addLiveNode(graph, 'dummy')
+
+    deliverCompetingAdds(graph, 'dummy', 'dummy')
+
+    expect(reconcileAgentAdapters(graph)).toEqual([])
+    expect(graph.getNodeById(toNodeId(COLLIDED_ID))).toBe(kept)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  /**
+   * Unlike `deliverCompetingAdds`, this drives the real follower path for
+   * both writes rather than placing the first node by hand: a legitimate
+   * `delete_node` + `add_node` pair reusing an id, delivered and reconciled
+   * as the separate frames they would arrive as, must not be mistaken for a
+   * dropped LWW write just because the id's class changed.
+   */
+  it('does not report a legitimate delete-then-add reusing an id with a different class', () => {
+    const graph = new LGraph()
+    const scope = graphScopeOf(graph)
+    const host = mint({ nodes: [], links: [] }, CATALOG)
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(remoteMutations(scope))
+    adapter.bind('workflow', follower)
+
+    let sequence = 0
+    let initialFrame = true
+    const deliver = (payload: GraphOperation) => {
+      const stateVector = Y.encodeStateVector(host)
+      const opId = `op-${++sequence}`
+      const result = applyOps(
+        host,
+        [agentOperation(opId, sequence, payload)],
+        CATALOG
+      )
+      expect(result.outcomes).toEqual([{ op_id: opId, outcome: 'applied' }])
+      const update = initialFrame
+        ? Y.encodeStateAsUpdate(host)
+        : Y.encodeStateAsUpdate(host, stateVector)
+      initialFrame = false
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'workflow',
+          seq: sequence,
+          update,
+          actor: 'agent:test',
+          opIds: [opId]
+        })
+      ).toBe(true)
+      reconcileAgentAdapters(graph)
+    }
+
+    deliver(addNodeAt('dummy'))
+    expect(graph.getNodeById(toNodeId(COLLIDED_ID))?.type).toBe('dummy')
+
+    deliver({ op: 'delete_node', node_id: COLLIDED_ID, removed_links: [] })
+    expect(graph.getNodeById(toNodeId(COLLIDED_ID))).toBeFalsy()
+
+    deliver(addNodeAt('widget-node'))
+
+    expect(graph.getNodeById(toNodeId(COLLIDED_ID))?.type).toBe('widget-node')
+    expect(reportError).not.toHaveBeenCalled()
   })
 })
