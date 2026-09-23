@@ -21,6 +21,12 @@ import {
 import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
+import {
+  tailwindScriptFiles,
+  tailwindScriptIgnores,
+  templateFiles
+} from './scripts/eslintScope.ts'
+
 const extraFileExtensions = ['.vue']
 
 // @ts-expect-error Type incompatibility in i18n plugin
@@ -39,14 +45,6 @@ const rulesCoveredByOxlint = oxlintConfigs
     ...config,
     ignores: [...(config.ignores ?? []), '**/*.astro', '**/*.astro/**']
   }))
-
-// oxlint owns plain TypeScript; ESLint keeps the file types it cannot parse
-// (Vue SFCs, Astro components and the script blocks Astro's processor emits).
-const templateFiles = ['**/*.vue', '**/*.astro', '**/*.astro/*.{js,ts}']
-
-// better-tailwindcss also reads class strings from cn()/cva() calls in .ts.
-const tailwindScriptFiles = ['{src,apps,packages}/**/*.ts']
-const tailwindScriptIgnores = ['**/*.test.ts', '**/*.d.ts']
 
 const commonGlobals = {
   ...globals.browser,

@@ -1,5 +1,7 @@
 import path from 'node:path'
 
+import { isEslintFile } from './scripts/eslintScope.ts'
+
 // lint-staged calls this config once per concurrent chunk in one process.
 // Claim each fixed-scope command once so only its first matching chunk runs it.
 const claimed = new Set<string>()
@@ -68,7 +70,7 @@ function lintCommands(
       'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix'
     ),
     ...commandsWithFiles(
-      [...codeFiles, ...astroFiles],
+      [...codeFiles, ...astroFiles].filter(isEslintFile),
       `pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored ${skipCanonicalClasses}`
     )
   ]

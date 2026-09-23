@@ -1,6 +1,8 @@
 import { execFileSync, spawnSync } from 'node:child_process'
 import path from 'node:path'
 
+import { isEslintFile } from './eslintScope'
+
 const oxlintEntry = path.resolve('node_modules/oxlint/bin/oxlint')
 const eslintEntry = path.resolve('node_modules/eslint/bin/eslint.js')
 
@@ -11,11 +13,15 @@ const files = execFileSync(
 )
   .split('\0')
   .filter((file) => /\.(?:js|ts|tsx|vue|mts)$/.test(file))
+const eslintFiles = files.filter(isEslintFile)
 
 if (files.length > 0) {
   const fix = process.argv.includes('--fix') ? ['--fix'] : []
   const oxlintStatus = run(oxlintEntry, ['--type-aware', ...fix, ...files])
-  const eslintStatus = run(eslintEntry, ['--cache', ...fix, ...files])
+  const eslintStatus =
+    eslintFiles.length > 0
+      ? run(eslintEntry, ['--cache', ...fix, ...eslintFiles])
+      : 0
   process.exit(Math.max(oxlintStatus, eslintStatus))
 }
 
