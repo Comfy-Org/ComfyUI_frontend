@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
+import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -65,6 +66,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   )
   const nodeScope = ref<string | null>(null)
   const promptEpoch = ref(0)
+  // Set by the affordance that supplied the text; read once at submission and
+  // reset there, so it describes the message being sent rather than the panel.
+  const promptOrigin = ref<AgentInputMethod>('typed')
   const insertionPoint = shallowRef<ComposerInsertionPoint>({
     textOffset: 0,
     referenceIndex: 0
@@ -126,7 +130,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateDraft({ text: next.text, references })
   }
 
+  function markSuggestedPrompt(): void {
+    promptOrigin.value = 'suggestion'
+  }
+
   function replacePrompt(next: PromptSnapshot): void {
+    promptOrigin.value = 'edited'
     resetPromptHistory()
     updateDraft({
       text: next.text,
@@ -334,6 +343,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function startSubmission(snapshot: SubmittedDraft): number {
     resetPromptHistory()
+    promptOrigin.value = 'typed'
     updateDraft({ text: '', references: [] })
     insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
     const id = ++nextSubmissionId
@@ -384,12 +394,14 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     nodes,
     nodeScope,
     promptEpoch,
+    promptOrigin,
     insertionPoint,
     submission,
     setText,
     setInsertionPoint,
     resetPromptHistory,
     applyEditorPrompt,
+    markSuggestedPrompt,
     replacePrompt,
     restorePrompt,
     replaceDraft,

@@ -1067,10 +1067,14 @@ const { submit: onSend } = useAgentDraftSubmission({
     replace: replaceSelectionTags,
     exit: exitNodeSelectionMode
   },
-  send: (text, attachments, nodes, references) => {
+  send: (text, attachments, nodes, references, meta) => {
     useTelemetry()?.trackAgentMessageSent({
       attachment_count: attachments.length,
-      node_tag_count: nodes.length
+      node_tag_count: nodes.length,
+      thread_id: threadId.value,
+      workflow_id: editableWorkflowId.value ?? null,
+      client_message_id: meta.clientMessageId,
+      input_method: meta.inputMethod
     })
     const selectionWorkflow = selectedTarget.value
     return sendMessage(text, attachments, nodes, references, () =>
