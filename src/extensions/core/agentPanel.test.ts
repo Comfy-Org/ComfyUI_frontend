@@ -102,13 +102,6 @@ const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
 async function loadEntryAndSetup(): Promise<void> {
-  const { useCurrentUser } = await import('@/composables/auth/useCurrentUser')
-  vi.mocked(useCurrentUser()).resolvedUserInfo = computed(
-    () => currentUser.value
-  )
-  vi.mocked(useCurrentUser()).isLoggedIn = computed(
-    () => currentUser.value !== null
-  )
   const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
   const ext = mocks.capturedExtensions.find(
@@ -125,8 +118,12 @@ async function loadEntryAndSetup(): Promise<void> {
 describe('AgentPanel extension flag gate', () => {
   afterEach(() => setupScope.stop())
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetModules()
+    const { useCurrentUser } = await import('@/composables/auth/useCurrentUser')
+    const currentUserService = vi.mocked(useCurrentUser())
+    currentUserService.resolvedUserInfo = computed(() => currentUser.value)
+    currentUserService.isLoggedIn = computed(() => currentUser.value !== null)
     setupScope = effectScope()
     currentUser.value = { id: 'account-a' }
     consentStore = useAgentConsentStore()
