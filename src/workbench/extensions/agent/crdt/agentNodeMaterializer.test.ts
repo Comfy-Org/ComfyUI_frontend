@@ -722,8 +722,37 @@ describe('reconcileAgentAdapters', () => {
 
       // The first failure is the one surfaced; the sweep did not stop at it.
       expect(() => reconcileAgentAdapters(graph)).toThrow(failure)
+      // `LGraph.removeNode` runs `onRemoved` before it splices the node out,
+      // so a throwing hook would otherwise leave that orphan live: the next
+      // save would serialise, and write back, nodes the document dropped.
+      expect(graph._nodes).toHaveLength(0)
+      expect(graph.getNodeById(toNodeId(1))).toBeFalsy()
+      expect(graph.getNodeById(toNodeId(2))).toBeFalsy()
       expect(graph.getNodeById(toNodeId(3))).toBeFalsy()
-      expect(graph.serialize().nodes.map((node) => node.id)).not.toContain(3)
+      expect(graph.serialize().nodes).toHaveLength(0)
+    })
+
+    it('hard-detaches an orphan whose removal keeps failing outside its onRemoved hook', () => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      seedAgentAddedNode(graph, 2)
+      expect(reconcileAgentAdapters(graph)).toHaveLength(2)
+      const failure = new Error('removal path, not the node hook, blew up')
+      const doomed = graph.getNodeById(toNodeId(1))!
+      const realRemove = graph.remove.bind(graph)
+      vi.spyOn(graph, 'remove').mockImplementation((node, options) => {
+        if (node === doomed) throw failure
+        realRemove(node, options)
+      })
+
+      remoteMutations(scope).clearSemanticGraph(REMOTE)
+
+      expect(() => reconcileAgentAdapters(graph)).toThrow(failure)
+      expect(graph._nodes).toHaveLength(0)
+      expect(graph.getNodeById(toNodeId(1))).toBeFalsy()
+      expect(graph.getNodeById(toNodeId(2))).toBeFalsy()
+      expect(doomed.graph).toBeNull()
+      expect(graph.serialize().nodes).toHaveLength(0)
     })
 
     it('detaches nodes dropped by an authoritative snapshot', () => {

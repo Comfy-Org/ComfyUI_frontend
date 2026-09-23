@@ -375,6 +375,86 @@ describe('createOpSender', () => {
     ])
   })
 
+  it('a resent batch acknowledged by one send reserves a credit so the other send cannot ack the successor anonymously', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(2)
+
+    ackInFlight()
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(3)
+
+    // The resend's own answer arrives late as an anonymous failure.
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled).toHaveLength(1)
+    expect(sender.pending()).toBe(1)
+
+    ackInFlight()
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+    expect(settled[1].ops.map((op) => op.op_id)).toEqual(
+      sent[2].ops.map((op) => op.op_id)
+    )
+  })
+
+  it('a resent batch acknowledged by one send whose other send answers identified drains the credit, leaving the successor its own anonymous result', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    const resentOpIds = sent[0].ops.map((op) => op.op_id)
+
+    ackInFlight()
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(3)
+
+    // The idempotent duplicate names the ops it skipped: it is the credit's answer.
+    resultListener?.({ ok: true, applied: [], skipped: resentOpIds })
+    expect(settled).toHaveLength(1)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+    expect(sender.pending()).toBe(0)
+  })
+
+  it('a resent batch acknowledged anonymously by one send reserves a credit for the other send too', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(3)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled).toHaveLength(1)
+
+    ackInFlight()
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+  })
+
+  it('a batch acknowledged after a single send reserves no credit: the next anonymous result is the successor’s own', () => {
+    sender.enqueue([addNode(1)])
+    ackInFlight()
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+  })
+
   it('a late anonymous failure from an unacknowledged batch never settles the next batch', () => {
     sender.enqueue([addNode(1)])
     vi.advanceTimersByTime(10_000)

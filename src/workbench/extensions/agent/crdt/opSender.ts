@@ -320,7 +320,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     addressed: InFlight | null
   ): void {
     if (addressed && identified.some((opId) => addressed.opIds.has(opId))) {
-      settle({ state: 'acknowledged', ops: addressed.ops, result })
+      acknowledge(addressed, result)
       return
     }
     // A retired batch's own answer consumes the credit reserved for it;
@@ -342,7 +342,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       drainStaleCredit()
       return
     }
-    settle({ state: 'acknowledged', ops: addressed.ops, result })
+    acknowledge(addressed, result)
+  }
+
+  /**
+   * One result answers one send. A batch sent more than once still has its
+   * other sends owed an answer: reserve their credits, else a late anonymous
+   * failure from one of them would settle the next batch.
+   */
+  function acknowledge(batch: InFlight, result: OpsResultView): void {
+    batch.sends--
+    retire(batch)
+    settle({ state: 'acknowledged', ops: batch.ops, result })
   }
 
   const unsubscribe = deps.onOpsResult((result) => {

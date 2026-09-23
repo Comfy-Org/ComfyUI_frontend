@@ -267,11 +267,15 @@ function reconcile(
 }
 
 /**
- * `LGraph.remove()` runs extension `onRemoved()` hooks uncaught. One that
- * throws must not leave the orphans behind it live: a later save would
- * serialise, and write back, nodes the document no longer holds. Every
- * orphan gets its removal attempted; the first failure surfaces afterwards
- * so the caller still counts the pass as failed.
+ * `LGraph.remove()` runs extension `onRemoved()` hooks uncaught, and it runs
+ * them *before* it splices the node out of `_nodes` / `_nodes_by_id`. A hook
+ * that throws must leave neither that orphan nor the ones behind it live: a
+ * later save would serialise, and write back, nodes the document no longer
+ * holds. Every orphan gets its removal attempted; one whose hook threw is
+ * retried with the hook suppressed so the rest of the removal path (store
+ * detachment, `node.graph = null`, container splice) still runs; if even that
+ * fails the node is hard-detached from the containers. The first failure
+ * surfaces afterwards so the caller still counts the pass as failed.
  */
 function sweepOrphans(
   graph: MaterializableGraph,
@@ -283,9 +287,31 @@ function sweepOrphans(
       graph.remove(orphan, { preserveCanonicalState: true })
     } catch (error) {
       firstFailure ??= { error }
+      forceDetachOrphan(graph, orphan)
     }
   }
   if (firstFailure) throw firstFailure.error
+}
+
+function forceDetachOrphan(
+  graph: MaterializableGraph,
+  orphan: LGraphNode
+): void {
+  if (!graph._nodes.includes(orphan)) return
+  try {
+    // Shadow the (prototype or instance) hook so the retry cannot throw from
+    // it again; the node is leaving the graph, so the hook has no further use.
+    orphan.onRemoved = undefined
+    graph.remove(orphan, { preserveCanonicalState: true })
+  } catch {
+    // Last resort: the node must not be reachable from the graph anymore.
+    const pos = graph._nodes.indexOf(orphan)
+    if (pos !== -1) graph._nodes.splice(pos, 1)
+    if (graph._nodes_by_id[orphan.id] === orphan) {
+      delete graph._nodes_by_id[orphan.id]
+    }
+    orphan.graph = null
+  }
 }
 
 function materialize(
