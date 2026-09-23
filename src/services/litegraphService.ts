@@ -197,26 +197,57 @@ function mergeConfiguredInputs<T extends { name: string }>(
   reservedKeys: string[]
 ): (T | INodeInputSlot)[] {
   const freshByName = new Map(freshInputs.map((input) => [input.name, input]))
-  const serializedByName = new Map(
-    serializedInputs.map((input) => [input.name, input])
+  const freshOrderIndex = new Map(
+    freshInputs.map((input, index) => [input.name, index])
   )
-  const freshCommonNames = freshInputs
-    .map((input) => input.name)
-    .filter((name) => serializedByName.has(name))
 
-  let cursor = 0
-  const merged = serializedInputs.map((inputData) => {
-    if (!freshByName.has(inputData.name)) return inputData
-    const name = freshCommonNames[cursor++]
-    return {
-      ...serializedByName.get(name)!,
+  // Inputs known to both, merged with their own fresh counterpart (matched
+  // by their own name, never by position), and inputs the fresh
+  // construction hasn't (re)created yet, each remembering how many known
+  // inputs preceded them in the serialised order so they can be
+  // re-interleaved at the same relative position below.
+  const knownItems: (T | INodeInputSlot)[] = []
+  const dynamicOnlyItems: { precedingKnownCount: number; value: T }[] = []
+
+  let knownCount = 0
+  for (const inputData of serializedInputs) {
+    const freshInput = freshByName.get(inputData.name)
+    if (!freshInput) {
+      dynamicOnlyItems.push({
+        precedingKnownCount: knownCount,
+        value: inputData
+      })
+      continue
+    }
+    knownItems.push({
+      ...inputData,
       // Whether the input has associated widget follows the original node
       // definition.
-      ...pick(freshByName.get(name), reservedKeys.concat('widget'))
-    }
-  })
+      ...pick(freshInput, reservedKeys.concat('widget'))
+    })
+    knownCount++
+  }
 
-  const consumedNames = new Set(freshCommonNames)
+  // Inputs known to both are reordered to the fresh definition's relative
+  // order (#3348), independent of the order they were serialised in.
+  knownItems.sort(
+    (a, b) => freshOrderIndex.get(a.name)! - freshOrderIndex.get(b.name)!
+  )
+
+  const merged: (T | INodeInputSlot)[] = []
+  let dynamicCursor = 0
+  for (let i = 0; i <= knownItems.length; i++) {
+    while (
+      dynamicCursor < dynamicOnlyItems.length &&
+      dynamicOnlyItems[dynamicCursor].precedingKnownCount === i
+    ) {
+      merged.push(dynamicOnlyItems[dynamicCursor].value)
+      dynamicCursor++
+    }
+    if (i < knownItems.length) merged.push(knownItems[i])
+  }
+
+  const consumedNames = new Set(knownItems.map((input) => input.name))
   const newInputs = freshInputs.filter(
     (input) => !consumedNames.has(input.name)
   )
