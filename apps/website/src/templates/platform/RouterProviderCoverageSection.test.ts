@@ -78,7 +78,7 @@ describe('RouterProviderCoverageSection', () => {
     expect(servedBy('MiniMax H3')).toEqual([true, false, false, false, false])
   })
 
-  it('sends the rest of the catalog to the docs', () => {
+  it('sends the rest of the catalog to the models page', () => {
     render(RouterProviderCoverageSection, { props: { locale: 'en' } })
 
     expect(screen.getByText(`+${remaining} more models`)).toBeInTheDocument()
@@ -86,10 +86,7 @@ describe('RouterProviderCoverageSection', () => {
       screen.getByRole('link', {
         name: `Browse all ${ROUTER_CATALOG_MODEL_COUNT} models`
       })
-    ).toHaveAttribute(
-      'href',
-      'https://docs.comfy.org/development/comfy-router/models'
-    )
+    ).toHaveAttribute('href', '/models')
   })
 
   it('translates the chrome and keeps model names as they are', () => {
@@ -105,5 +102,10 @@ describe('RouterProviderCoverageSection', () => {
       screen.getByRole('link', { name: 'Nano Banana Pro' })
     ).toBeInTheDocument()
     expect(screen.getByText(`另有 ${remaining} 个模型`)).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', {
+        name: new RegExp(String(ROUTER_CATALOG_MODEL_COUNT))
+      })
+    ).toHaveAttribute('href', '/models')
   })
 })

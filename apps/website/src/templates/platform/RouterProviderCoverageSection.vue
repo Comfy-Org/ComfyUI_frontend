@@ -5,7 +5,7 @@ import type { CompareRow } from '../../components/blocks/CompareTable01.vue'
 import CompareTable01 from '../../components/blocks/CompareTable01.vue'
 import InlineCodeText from '../../components/common/InlineCodeText.vue'
 import Button from '../../components/ui/button/Button.vue'
-import { externalLinks } from '../../config/routes'
+import { getRoutes } from '../../config/routes'
 import {
   ROUTER_CATALOG_MODEL_COUNT,
   ROUTER_COMFY_ONLY_PREVIEW,
@@ -136,9 +136,7 @@ const browseAll = routerT('platform.router.coverage.browseAll', locale).replace(
         </p>
         <Button
           as="a"
-          :href="externalLinks.docsComfyRouterModels"
-          target="_blank"
-          rel="noopener noreferrer"
+          :href="getRoutes(locale).modelsShowcase"
           variant="outline"
           class="h-12 rounded-full text-sm"
         >
