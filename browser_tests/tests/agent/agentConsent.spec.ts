@@ -1,3 +1,4 @@
+import type { DesktopLoginCodeRedeemResponse } from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -598,7 +599,12 @@ test.describe(
         name: enMessages.agent.consent.title
       })
       await page.route('**/api/auth/desktop-login-codes/redeem', (route) =>
-        route.fulfill({ status: 200, json: {} })
+        route.fulfill({
+          status: 200,
+          json: {
+            status: 'redeemed'
+          } satisfies DesktopLoginCodeRedeemResponse
+        })
       )
 
       const approve = approval.getByRole('button', {
