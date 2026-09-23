@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import {
   assert,
   beforeEach,
@@ -8,10 +9,11 @@ import {
   vi
 } from 'vitest'
 import { effectScope } from 'vue'
-import { useCopy } from './useCopy'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { fromPartial } from '@total-typescript/shoehorn'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+
+import { useCopy } from './useCopy'
 
 const copyMocks = {
   canvas: {

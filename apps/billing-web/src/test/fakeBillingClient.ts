@@ -1,14 +1,3 @@
-/**
- * A `BillingClient` whose readers and commands answer from canned core
- * results. The hosted surfaces only project what the composables expose, so a
- * scripted client is enough here; the composables themselves are covered
- * against a real core in `@comfyorg/account-ui`. Operations a command or a
- * recovery produces are published to lifecycle subscribers the way the real
- * lifecycle would, so a view's projection over them is exercised for real.
- */
-import type { Mock } from 'vitest'
-import { vi } from 'vitest'
-
 import type {
   BillingCapabilities,
   BillingDeclineReason,
@@ -27,6 +16,16 @@ import type {
   TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
+/**
+ * A `BillingClient` whose readers and commands answer from canned core
+ * results. The hosted surfaces only project what the composables expose, so a
+ * scripted client is enough here; the composables themselves are covered
+ * against a real core in `@comfyorg/account-ui`. Operations a command or a
+ * recovery produces are published to lifecycle subscribers the way the real
+ * lifecycle would, so a view's projection over them is exercised for real.
+ */
+import type { Mock } from 'vitest'
+import { vi } from 'vitest'
 
 /** Nothing on these surfaces touches the rest of the client. */
 function unusedByHostedSurfaces(member: string) {

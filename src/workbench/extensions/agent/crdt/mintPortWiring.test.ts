@@ -16,12 +16,12 @@ import { widgetId } from '@/types/widgetId'
 
 import type { GraphOperation } from './graphOperations'
 import type { LayoutChangeView } from './layoutMintPort'
-import { mintWireOps } from './opEnvelope'
 import {
   attachMintPortWiring,
   runMintPortsIntentionalClear
 } from './mintPortWiring'
 import type { MintPortWiring, MintableGraph } from './mintPortWiring'
+import { mintWireOps } from './opEnvelope'
 
 const ROOT_ID = 'root-uuid'
 

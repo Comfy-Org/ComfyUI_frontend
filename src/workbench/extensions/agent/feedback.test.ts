@@ -1,5 +1,5 @@
-import { computed } from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { openFeedbackDialog as openGeneralFeedbackDialog } from '@/platform/support/feedbackDialog'

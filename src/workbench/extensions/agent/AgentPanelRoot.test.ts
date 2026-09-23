@@ -1,62 +1,61 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import type {
   AgentThreadListResponse,
   AgentThreadSummary,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
-import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useClipboard } from '@vueuse/core'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
-import { useClipboard } from '@vueuse/core'
 
 vi.mock(import('firebase/auth'))
 
-import { i18n } from '@/i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { i18n } from '@/i18n'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
 
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type {
   LGraph,
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import { toRootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
-
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { app } from '@/scripts/app'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
-import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useAssetsStore } from '@/stores/assetsStore'
-import { getFilenameDetails } from '@/utils/formatUtil'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import { app } from '@/scripts/app'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { toRootGraphId } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import {
   createMockLoadedWorkflow,
   createMockChangeTracker,
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
+import { getFilenameDetails } from '@/utils/formatUtil'
 
 const getServerFeature = vi.hoisted(() =>
   vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
@@ -209,18 +208,18 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
   spy: true
 })
 
+import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
+import { attachMintPortWiring } from './crdt/mintPortWiring'
+import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
-import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
-import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { attachMintPortWiring } from './crdt/mintPortWiring'
-import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
 
 const mintPortWiringDeps = vi.hoisted(() => ({
   current: null as MintPortWiringDeps | null

@@ -1,27 +1,27 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
+import type {
+  StatusWsMessageStatus,
+  TaskOutput
+} from '@/platform/remote/comfyui/execution/types'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
   APITaskType,
   JobListItem,
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type {
-  StatusWsMessageStatus,
-  TaskOutput
-} from '@/platform/remote/comfyui/execution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import { filterPreviewableResults } from '@/utils/resultItem'
-import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { parseTaskOutput } from '@/stores/resultItemParsing'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { filterPreviewableResults } from '@/utils/resultItem'
 
 enum TaskItemDisplayStatus {
   Running = 'Running',

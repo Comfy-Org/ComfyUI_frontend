@@ -6,9 +6,9 @@
  * All distributions use the /jobs endpoint.
  */
 
+import type { JobId } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { JobId } from '@/platform/remote/comfyui/execution/types'
 
 import type {
   JobAssetsResult,

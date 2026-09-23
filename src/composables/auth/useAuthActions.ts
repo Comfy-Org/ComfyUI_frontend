@@ -1,16 +1,16 @@
-import { FirebaseError } from 'firebase/app'
-import { AuthErrorCodes } from 'firebase/auth'
-import { ref } from 'vue'
-
 import {
   authErrorMessage,
   classifyAuthError,
   severityForAuthError
 } from '@comfyorg/account-core/firebaseAuthError'
 import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
+import { FirebaseError } from 'firebase/app'
+import { AuthErrorCodes } from 'firebase/auth'
+import { ref } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
@@ -19,13 +19,12 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   clearAllWorkflowStorage,
   prepareWorkflowLogoutTransition
 } from '@/platform/workflow/persistence/base/storageIO'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'

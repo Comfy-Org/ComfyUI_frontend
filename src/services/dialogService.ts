@@ -13,6 +13,8 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
+import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
+import type { PromptError } from '@/platform/remote/comfyui/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
@@ -20,15 +22,13 @@ import InsufficientCreditsMemberDialog from '@/platform/workspace/components/Ins
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
-import { useDialogStore } from '@/stores/dialogStore'
-import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
-import type { PromptError } from '@/platform/remote/comfyui/types'
 import { PromptExecutionError } from '@/scripts/api'
-import { tryExtractValidationError } from '@/utils/executionErrorUtil'
+import { useDialogStore } from '@/stores/dialogStore'
 import type {
   DialogComponentProps,
   ShowDialogOptions
 } from '@/stores/dialogStore'
+import { tryExtractValidationError } from '@/utils/executionErrorUtil'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>

@@ -1,9 +1,9 @@
-import { onScopeDispose } from 'vue'
 import { useEventListener } from '@vueuse/core'
+import { onScopeDispose } from 'vue'
 
 import type { RunOutput } from '../config/workshop-run'
-import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
 import { captureWorkshopEvent } from '../scripts/posthog'
+import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
 
 export type WorkshopDeliveryStatus =
   | 'succeeded'

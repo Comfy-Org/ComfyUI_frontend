@@ -1,5 +1,4 @@
 import axios from 'axios'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'

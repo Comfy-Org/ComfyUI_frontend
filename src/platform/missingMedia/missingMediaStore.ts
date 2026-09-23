@@ -1,16 +1,16 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-// eslint-disable-next-line import-x/no-restricted-paths
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 /**
  * Missing media error state.

@@ -1,15 +1,14 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
+import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import {
   MULTI_OUTPUT_FIRST,
   MULTI_OUTPUT_JOB_ID,
   MULTI_OUTPUT_SECOND
 } from '@e2e/fixtures/data/assetFixtures'
-import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.use({ connectWebSocketToServer: false })
 

@@ -8,11 +8,11 @@ import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ShallowRef } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   getMinimapDecorations,
   minimapDecorationRevision
 } from '@/platform/canvas/minimapDecorationRegistry'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { graphScopeOf } from '@/types/graphScopeId'

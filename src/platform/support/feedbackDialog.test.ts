@@ -1,10 +1,9 @@
-import { computed } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useTelemetry } from '@/platform/telemetry'
-
 import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
+import { useTelemetry } from '@/platform/telemetry'
 
 import { FEEDBACK_TYPEFORM_ID } from './config'
 import { openFeedbackDialog } from './feedbackDialog'

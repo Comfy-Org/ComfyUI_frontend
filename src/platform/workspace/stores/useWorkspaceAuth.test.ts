@@ -1,31 +1,28 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useAuthStore } from '@/stores/authStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { User } from 'firebase/auth'
-
 import { storeToRefs } from 'pinia'
-import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
-import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useTelemetry } from '@/platform/telemetry'
-
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS,
   useWorkspaceAuthStore,
   WorkspaceAuthError
 } from '@/platform/workspace/stores/workspaceAuthStore'
-
-import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
 import {
   TOKEN_REFRESH_BUFFER_MS,
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
+import { useAuthStore } from '@/stores/authStore'
 import {
   replayIdentityPort,
   stubFirebaseAuthHarness

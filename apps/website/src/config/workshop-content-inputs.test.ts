@@ -1,15 +1,12 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import content from '../content/workshop-display.json'
-import { workshopContentInputs } from './workshop-content-inputs'
 import { authoredWorkshopModels } from './workshop-browse-content'
-import { workshopContract } from './workshop-contract-catalog'
+import { workshopContentInputs } from './workshop-content-inputs'
 import { formForContract } from './workshop-contract'
+import { workshopContract } from './workshop-contract-catalog'
+import { workshopExampleValues } from './workshop-example-values'
 import { isWorkshopModelDisabled } from './workshop-model-availability'
-import {
-  getAuthoredRouterWorkshopModelDetail,
-  getRouterWorkshopModelDetail
-} from './workshop-router-content'
 import {
   defaultValues,
   schemaForModel,
@@ -18,7 +15,10 @@ import {
 } from './workshop-playground'
 import type { FormValues } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
-import { workshopExampleValues } from './workshop-example-values'
+import {
+  getAuthoredRouterWorkshopModelDetail,
+  getRouterWorkshopModelDetail
+} from './workshop-router-content'
 import type { WorkshopUrlEncoder } from './workshop-url-input'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
 

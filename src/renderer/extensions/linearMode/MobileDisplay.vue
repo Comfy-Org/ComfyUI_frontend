@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useFullscreen, usePointerSwipe } from '@vueuse/core'
+import type { MenuItem } from 'primevue/menuitem'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -17,11 +19,9 @@ import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import MobileError from '@/renderer/extensions/linearMode/MobileError.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
-import { useQueueStore } from '@/stores/queueStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const tabs = [
   ['linearMode.mobileControls', 'icon-[lucide--play]', 'control'],

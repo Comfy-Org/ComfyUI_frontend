@@ -1,11 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  prepareModelRouterRender,
+  resolveModelRouterRender
+} from './router-render'
+import {
   authoredRouterContentBySlug,
   authoredWorkshopModels
 } from './workshop-browse-content'
+import { formForContract } from './workshop-contract'
+import { workshopContract } from './workshop-contract-catalog'
 import { deriveWorkshopFields } from './workshop-fields'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
+import {
+  fieldsForDefinition,
+  usesRequestBodyEditor
+} from './workshop-form-definition'
+import { validateWorkshopInput } from './workshop-json-schema'
+import { initialWorkshopPageState } from './workshop-page-state'
 import {
   defaultValues,
   groupPlaygroundFields,
@@ -13,19 +24,8 @@ import {
   validateForm
 } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
-import {
-  fieldsForDefinition,
-  usesRequestBodyEditor
-} from './workshop-form-definition'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import { resolveSchemaReference } from './workshop-router-openapi'
-import { formForContract } from './workshop-contract'
-import { workshopContract } from './workshop-contract-catalog'
-import { validateWorkshopInput } from './workshop-json-schema'
-import {
-  prepareModelRouterRender,
-  resolveModelRouterRender
-} from './router-render'
-import { initialWorkshopPageState } from './workshop-page-state'
 
 describe('Router catalog form projection', () => {
   it.for([

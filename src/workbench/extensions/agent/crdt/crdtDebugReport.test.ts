@@ -1,4 +1,5 @@
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { useExtensionStore } from '@/stores/extensionStore'
 
 import { toTurnId } from '../schemas/agentApiSchema'
@@ -37,9 +38,9 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
+import { collectCrdtDebugReport } from './crdtDebugReport'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
-import { collectCrdtDebugReport } from './crdtDebugReport'
 
 const ALL_SOURCES: ReportSources = {
   serverLogs: true,

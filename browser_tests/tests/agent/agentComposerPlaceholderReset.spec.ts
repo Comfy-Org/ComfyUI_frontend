@@ -1,9 +1,8 @@
+import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 async function waitForCanvasViewToSettle(page: Page): Promise<void> {
   await page.waitForFunction(

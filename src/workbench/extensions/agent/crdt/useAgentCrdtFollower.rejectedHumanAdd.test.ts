@@ -1,13 +1,12 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-
-import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
 import type { GraphMutations } from './graphMutations'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'

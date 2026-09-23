@@ -1,6 +1,6 @@
 import { mint } from '@comfyorg/comfy-multi-player'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import * as Y from 'yjs'
@@ -11,10 +11,10 @@ import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { encodeBase64 } from './docFrameClient'
 import type { GraphMutations } from './graphMutations'
 import { createGraphMutations } from './graphMutations'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 it('gates real document transport and removes reconnect listeners on revocation', async () => {

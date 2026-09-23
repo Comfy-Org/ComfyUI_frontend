@@ -1,3 +1,10 @@
+import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
+import { createBoundedOperation } from '@comfyorg/account-core/boundedOperation'
+import type { SessionSnapshot } from '@comfyorg/account-core/session'
+import { isPermanentSessionError } from '@comfyorg/account-core/session'
+import { createLifecycleScope } from '@comfyorg/account-ui/auth/lifecycleScope'
+import type { User } from 'firebase/auth'
+import { computed, shallowRef, watch } from 'vue'
 /**
  * Shared signed-in state for the website's Vue islands, projected from the
  * @comfyorg/account-core session client.
@@ -13,15 +20,6 @@
  * these warm-ups.
  */
 import { z } from 'zod'
-
-import type { User } from 'firebase/auth'
-import { computed, shallowRef, watch } from 'vue'
-
-import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
-import { createBoundedOperation } from '@comfyorg/account-core/boundedOperation'
-import type { SessionSnapshot } from '@comfyorg/account-core/session'
-import { isPermanentSessionError } from '@comfyorg/account-core/session'
-import { createLifecycleScope } from '@comfyorg/account-ui/auth/lifecycleScope'
 
 import { identifyWorkshopUser, useWorkshopAuthFlag } from '../scripts/posthog'
 import {

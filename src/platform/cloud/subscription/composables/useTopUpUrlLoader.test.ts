@@ -1,10 +1,10 @@
-import { computed, ref } from 'vue'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDialogService } from '@/services/dialogService'
 
 import { useTopUpUrlLoader } from './useTopUpUrlLoader'
 

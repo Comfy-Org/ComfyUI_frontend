@@ -1,16 +1,16 @@
-import { useAuthStore } from '@/stores/authStore'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useTelemetry } from '@/platform/telemetry'
-import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import { useTelemetry } from '@/platform/telemetry'
+import { useAuthStore } from '@/stores/authStore'
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))

@@ -1,9 +1,8 @@
-import { nextTick } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
-
-import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import AssetsListItem from './AssetsListItem.vue'
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
 import Tag from '@/components/chip/Tag.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'

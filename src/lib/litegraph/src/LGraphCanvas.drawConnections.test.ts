@@ -4,6 +4,11 @@ import {
   BADGE_GAP,
   queryLinkBadgeAtPoint
 } from '@/lib/litegraph/src/canvas/linkBadges'
+import {
+  clearRootLinkReveals,
+  isLinkRevealed,
+  setRevealedLinks
+} from '@/lib/litegraph/src/canvas/linkRevealState'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import {
   LGraph,
@@ -15,11 +20,6 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import {
-  clearRootLinkReveals,
-  isLinkRevealed,
-  setRevealedLinks
-} from '@/lib/litegraph/src/canvas/linkRevealState'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'

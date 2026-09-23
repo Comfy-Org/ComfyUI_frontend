@@ -15,8 +15,8 @@ import type {
   SignInState
 } from '@/auth/signInState'
 import { signInTransition } from '@/auth/signInState'
-import en from '@/locales/en/main.json' with { type: 'json' }
 import { billingWebIdentity } from '@/config/firebase'
+import en from '@/locales/en/main.json' with { type: 'json' }
 import {
   billingWebSessionClient,
   useBillingWebSession

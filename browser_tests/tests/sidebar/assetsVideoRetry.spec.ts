@@ -1,12 +1,11 @@
-import { expect, mergeTests } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   createRouteMockJob,
   jobsRouteFixture
 } from '@e2e/fixtures/jobsRouteFixture'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
+import { expect, mergeTests } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture)
 

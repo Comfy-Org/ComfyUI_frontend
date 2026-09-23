@@ -1,8 +1,7 @@
-import { nextTick } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -13,8 +12,8 @@ import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
-import AgentGraphActivityBar from './AgentGraphActivityBar.vue'
 import { useAgentGraphActivityStore } from '../stores/agent/agentGraphActivityStore'
+import AgentGraphActivityBar from './AgentGraphActivityBar.vue'
 
 const graph = fromPartial<LGraph>({ id: 'graph-1' })
 const node = fromPartial<LGraphNode>({})

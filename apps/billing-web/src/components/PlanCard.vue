@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import { useI18n } from 'vue-i18n'
 
 const { name, current, available } = defineProps<{
   name: string

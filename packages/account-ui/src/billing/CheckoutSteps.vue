@@ -77,6 +77,11 @@ const ACTION_COPY_KEY: Readonly<Record<PaymentAction, PaymentCopyKey>> = {
 </script>
 
 <script setup lang="ts">
+import type { PaymentProjection } from '@comfyorg/account-core/billing'
+import {
+  createPaymentCopy,
+  paymentCopyKeys
+} from '@comfyorg/account-core/billing'
 /**
  * The eight payment states as one unstyled section: header, body, the coded
  * reason, the safety line only the projection may unlock, and the actions
@@ -86,12 +91,6 @@ const ACTION_COPY_KEY: Readonly<Record<PaymentAction, PaymentCopyKey>> = {
  * through the slots, and every click stays with the host via the emits.
  */
 import { computed, useId } from 'vue'
-
-import type { PaymentProjection } from '@comfyorg/account-core/billing'
-import {
-  createPaymentCopy,
-  paymentCopyKeys
-} from '@comfyorg/account-core/billing'
 
 const {
   projection,

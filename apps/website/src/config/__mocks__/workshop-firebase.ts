@@ -1,9 +1,7 @@
-import { vi } from 'vitest'
-
-import type { User } from 'firebase/auth'
-
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { createTestIdentity } from '@comfyorg/account-core/testing'
+import type { User } from 'firebase/auth'
+import { vi } from 'vitest'
 
 import { testCredential } from '../__fixtures__/workshopSessionFakes'
 import type * as realModule from '../workshop-firebase'

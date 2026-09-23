@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SessionClient, SessionSnapshot } from '../session.js'
 import type { AccountCredential } from '../sessionContracts.js'
-import { sessionBillingScopeSource } from './billingScope.js'
 import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
   BillingTransport
 } from './billingContracts.js'
+import { sessionBillingScopeSource } from './billingScope.js'
 import type {
   BillingOperationLifecycleOptions,
   BillingOperationTelemetryEvent,

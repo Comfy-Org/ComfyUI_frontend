@@ -1,13 +1,12 @@
-import type { Locator } from '@playwright/test'
-
-import type { PromptResponse } from '@/platform/remote/comfyui/types'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import type { Locator } from '@playwright/test'
+
+import type { PromptResponse } from '@/platform/remote/comfyui/types'
 
 const BYPASS_CLASS = /before:bg-bypass\/60/
 

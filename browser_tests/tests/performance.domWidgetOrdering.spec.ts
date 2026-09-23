@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { recordMeasurement } from '@e2e/fixtures/utils/perfReporter'
+import { expect } from '@playwright/test'
 
 interface DomWidgetOrderPerfState {
   counter: { enabled: boolean; indexOfCalls: number }

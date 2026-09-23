@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import { Check, Copy } from '@lucide/vue'
 import { useClipboard } from '@vueuse/core'
-
-import { cn } from '@comfyorg/tailwind-utils'
+import type { HTMLAttributes } from 'vue'
 
 // Interactive: inert until its host island hydrates, so render it under a
 // `client:*` directive. Each instance keeps its own copied state, which is why

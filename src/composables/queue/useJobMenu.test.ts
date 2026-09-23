@@ -1,10 +1,4 @@
-import { useDialogService } from '@/services/dialogService'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useQueueStore } from '@/stores/queueStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -12,6 +6,12 @@ import type { Ref } from 'vue'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useDialogService } from '@/services/dialogService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useQueueStore } from '@/stores/queueStore'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false

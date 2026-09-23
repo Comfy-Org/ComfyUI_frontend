@@ -8,7 +8,6 @@ import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
-
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
 import type { SettingParams } from '@/platform/settings/types'
 

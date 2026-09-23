@@ -15,8 +15,8 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 import SubgraphEditor from './SubgraphEditor.vue'
 

@@ -1,8 +1,7 @@
+import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import { cleanup, render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-
-import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 
 import type { CheckoutJourneyTelemetryEvent } from '@/platform/telemetry/types'
 import {

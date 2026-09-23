@@ -1,10 +1,9 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { expect } from '@playwright/test'
 import type { Locator, TestInfo } from '@playwright/test'
 
 import { toNodeId } from '@/types/nodeId'
-
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const WORKFLOW = 'subgraphs/subgraph-promoted-int-text-with-primitives'
 const HOST_ID = '1'

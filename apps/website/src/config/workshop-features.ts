@@ -1,3 +1,4 @@
+import type { SessionClient } from '@comfyorg/account-core/session'
 /**
  * The one server flag the Workshop reads: `billing_sdk_topup_enabled` from
  * Cloud's /api/features, decided once per signed-in uid. Signed out, a failed
@@ -11,8 +12,6 @@
  * /features from being re-hammered once per dialog.
  */
 import { z } from 'zod'
-
-import type { SessionClient } from '@comfyorg/account-core/session'
 
 import { workshopSessionClient } from './workshop-account'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'

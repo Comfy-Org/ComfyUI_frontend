@@ -1,3 +1,8 @@
+import type {
+  PaymentPortalResult,
+  SubscribeInput,
+  SubscriptionCommandResult
+} from '@comfyorg/account-core/billing'
 /**
  * The headless subscription checkout over the shared billing commands. The
  * request shape is the generated one; eligibility, single-flight, and the
@@ -6,12 +11,6 @@
  */
 import { ref, shallowReadonly } from 'vue'
 import type { Ref } from 'vue'
-
-import type {
-  PaymentPortalResult,
-  SubscribeInput,
-  SubscriptionCommandResult
-} from '@comfyorg/account-core/billing'
 
 import type { BillingClient } from './billingClient'
 import { useBillingClient } from './billingClient'

@@ -1,17 +1,18 @@
-// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
-import type { Rule } from 'eslint'
+import path from 'node:path'
 
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
-import { configs as astroConfigs } from 'eslint-plugin-astro'
-import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
-import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
-import { importX } from 'eslint-plugin-import-x'
-import oxlint from 'eslint-plugin-oxlint'
-import testingLibrary from 'eslint-plugin-testing-library'
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import type { Rule } from 'eslint'
 // eslint-config-prettier disables ESLint rules that conflict with formatters (oxfmt)
 import eslintConfigPrettier from 'eslint-config-prettier'
+import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
+import { configs as astroConfigs } from 'eslint-plugin-astro'
+import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
+import { importX } from 'eslint-plugin-import-x'
+import oxlint from 'eslint-plugin-oxlint'
 import { configs as storybookConfigs } from 'eslint-plugin-storybook'
+import testingLibrary from 'eslint-plugin-testing-library'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
@@ -21,11 +22,10 @@ import {
   parser as tseslintParser
 } from 'typescript-eslint'
 import vueParser from 'vue-eslint-parser'
-import path from 'node:path'
 
-import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
-import { es2022CompatPlugin } from './tools/eslint-plugins/noEs2023ArrayCopyMethod'
 import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
+import { es2022CompatPlugin } from './tools/eslint-plugins/noEs2023ArrayCopyMethod'
+import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
 
 const extraFileExtensions = ['.vue']
 

@@ -1,16 +1,4 @@
-import type { Page, Request } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  zComfyApiWorkflow,
-  zComfyWorkflow
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toNodeId } from '@/types/nodeId'
-
 import load3dWorkflow from '@e2e/assets/3d/load3d_node.json' with { type: 'json' }
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
@@ -20,6 +8,16 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { Load3DHelper } from '@e2e/tests/load3d/Load3DHelper'
+import type { Page, Request } from '@playwright/test'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  zComfyApiWorkflow,
+  zComfyWorkflow
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
 
 const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 const SOCKET_SID = '5b0e2c9a-6f1d-4a83-9c27-3e4f5a6b7c8d'

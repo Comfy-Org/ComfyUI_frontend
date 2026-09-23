@@ -1,17 +1,17 @@
 import { markRaw } from 'vue'
 
 import { t } from '@/i18n'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ChangeTracker } from '@/scripts/changeTracker'
 import { UserFile } from '@/stores/userFileStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingNodeType } from '@/types/comfy'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
-import type { AppMode } from '@/utils/appMode'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { WidgetId } from '@/types/widgetId'
+import type { AppMode } from '@/utils/appMode'
 import { generateUUID } from '@/utils/formatUtil'
 
 export interface InputWidgetConfig {

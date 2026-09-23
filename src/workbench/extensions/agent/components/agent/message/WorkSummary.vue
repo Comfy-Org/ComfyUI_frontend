@@ -7,7 +7,6 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import type { ActivityPart } from '../../../services/agent/agentMessageParts'
-
 import ActivityTrace from './ActivityTrace.vue'
 
 const { parts } = defineProps<{ parts: readonly ActivityPart[] }>()

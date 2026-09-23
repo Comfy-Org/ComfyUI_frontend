@@ -8,8 +8,8 @@ import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
-import type { UUID } from '@/utils/uuid'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import type { UUID } from '@/utils/uuid'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
 // of manually mocking every dependency. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/10765

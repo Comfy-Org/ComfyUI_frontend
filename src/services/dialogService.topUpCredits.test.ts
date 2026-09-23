@@ -1,12 +1,12 @@
-import { computed, ref } from 'vue'
-import { useDialogStore } from '@/stores/dialogStore'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
  * subscription, or read-only contact-admin UI.
  */
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const state = vi.hoisted(() => ({
   type: 'workspace' as 'workspace' | 'legacy'

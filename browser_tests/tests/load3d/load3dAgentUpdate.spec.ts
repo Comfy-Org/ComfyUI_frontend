@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { load3dAgentTest as test } from '@e2e/fixtures/load3dAgentFixture'
+import { expect } from '@playwright/test'
 
 test.describe('Load3D agent updates', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })

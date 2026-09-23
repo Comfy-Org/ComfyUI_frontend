@@ -36,7 +36,6 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import Tag from 'primevue/tag'
 
 import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
 import Badge from '@/components/ui/badge/Badge.vue'

@@ -1,10 +1,10 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
+import { formForContract } from './workshop-contract'
 import { workshopContract } from './workshop-contract-catalog'
-import { prepareWorkshopRouterInput } from './workshop-request'
 import { defaultValues, schemaForModel } from './workshop-playground'
 import type { FileValue, FormValues } from './workshop-playground'
-import { formForContract } from './workshop-contract'
+import { prepareWorkshopRouterInput } from './workshop-request'
 import {
   WorkshopRouterError,
   workshopResponseDetails

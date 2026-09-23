@@ -1,7 +1,8 @@
-import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import LogoContextMenu from './LogoContextMenu.vue'

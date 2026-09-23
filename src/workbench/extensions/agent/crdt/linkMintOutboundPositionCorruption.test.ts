@@ -1,3 +1,5 @@
+import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 /**
  * Regression for the outbound (page -> host doc) leg of the agent CRDT link
  * write path. Found while fixing #18275 (inbound realignment) but explicitly
@@ -36,9 +38,6 @@
  * `pnpm test:unit` collects it as an expected failure instead of a red run.
  */
 import { describe, expect, it } from 'vitest'
-
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 
 import type { GraphOperation } from './graphOperations'
 import { attachLinkMintPort } from './linkMintPort'

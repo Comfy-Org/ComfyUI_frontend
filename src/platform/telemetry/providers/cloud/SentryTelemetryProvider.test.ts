@@ -1,9 +1,10 @@
-import { computed } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+
 import type { ExecutionContext, ShellLayoutMetadata } from '../../types'
 import { SentryTelemetryProvider } from './SentryTelemetryProvider'
 

@@ -1,8 +1,9 @@
-import { useDialogService } from '@/services/dialogService'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useDialogService } from '@/services/dialogService'
 
 import LocalRunButtonWrapper from './LocalRunButtonWrapper.vue'
 

@@ -1,10 +1,9 @@
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
-
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-
 import subgraphWorkflow from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 export const AGENT_SUBGRAPH_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 export const AGENT_SUBGRAPH_HOST_ID = 11

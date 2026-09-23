@@ -1,5 +1,4 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -11,8 +10,9 @@ beforeEach(() => {
   stubFirebaseAuthHarness()
 })
 
-import { syncHostUserIdWithFirebaseAuth } from './hostUserIdSync'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+
+import { syncHostUserIdWithFirebaseAuth } from './hostUserIdSync'
 
 const stopHandles: Array<() => void> = []
 

@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto'
 
-import { expect } from '@playwright/test'
 import {
   zCreateTopupCheckoutResponse,
   zExchangeTokenResponse
 } from '@comfyorg/ingest-types/zod'
+import { expect } from '@playwright/test'
 import { z } from 'zod'
 
 import { modelCases } from '../../acceptance/cases'

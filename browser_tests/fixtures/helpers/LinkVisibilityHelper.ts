@@ -1,9 +1,9 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Locator } from '@playwright/test'
 
 import { BADGE_GAP } from '@/lib/litegraph/src/canvas/linkBadges'
 import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
 export class LinkVisibilityHelper {
   public readonly promptInput: Locator

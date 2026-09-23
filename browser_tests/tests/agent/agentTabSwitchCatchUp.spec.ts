@@ -1,9 +1,9 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
+
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 // Five wired nodes, one renamed, whose recorded turn sets widget values on

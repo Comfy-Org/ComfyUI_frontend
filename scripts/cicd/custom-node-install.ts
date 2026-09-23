@@ -11,6 +11,7 @@ import {
 } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
+
 import { isMainModule } from '../isMainModule'
 
 export interface ShardPack {

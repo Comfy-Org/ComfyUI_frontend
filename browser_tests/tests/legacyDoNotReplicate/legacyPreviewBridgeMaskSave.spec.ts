@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 
 import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
-
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { maskEditorTest as test } from '@e2e/fixtures/helpers/MaskEditorHelper'
 

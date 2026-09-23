@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type { AccountCredential } from '@comfyorg/account-core/session'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { testFirebaseUser } from './__fixtures__/workshopSessionFakes'
 let { workshopSessionClient } = await import('./workshop-account')

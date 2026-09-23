@@ -5,12 +5,6 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
-import type {
-  GraphMutations,
-  SemanticLinkPayload,
-  SemanticNodePayload
-} from './graphMutations'
-import { isIncompatibleLinkType } from './graphMutations'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { parseLinkId } from '@/types/linkId'
@@ -26,6 +20,12 @@ import {
 import type { SubgraphDefinitionIndex } from './agentSubgraphHostSlots'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
+import type {
+  GraphMutations,
+  SemanticLinkPayload,
+  SemanticNodePayload
+} from './graphMutations'
+import { isIncompatibleLinkType } from './graphMutations'
 
 type NodeRootAction = 'add' | 'update' | 'delete'
 

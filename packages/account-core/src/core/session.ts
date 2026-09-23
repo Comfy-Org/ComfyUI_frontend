@@ -25,8 +25,8 @@ import {
   isCredentialFresh,
   selectFreshCredential
 } from './credentialCache.js'
-import type { AccountIdentity } from './identity.js'
 import { abortable, exchangeToken } from './exchange.js'
+import type { AccountIdentity } from './identity.js'
 import type { MintDispatch } from './mintCoordinator.js'
 import { createMintCoordinator } from './mintCoordinator.js'
 import type { RefreshHost } from './refreshScheduler.js'

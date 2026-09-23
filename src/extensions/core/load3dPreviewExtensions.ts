@@ -13,11 +13,11 @@ import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
   NodeExecutionOutput,
   NodeOutputWith
 } from '@/platform/remote/comfyui/execution/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'

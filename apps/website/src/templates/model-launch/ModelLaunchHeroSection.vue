@@ -4,15 +4,14 @@ import { ChevronRight } from '@lucide/vue'
 import { useMediaQuery, useMounted } from '@vueuse/core'
 import { computed } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import type { ModelLaunchHero } from './types'
-
 import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
 import VideoPlayer from '../../components/common/VideoPlayer.vue'
 import Badge from '../../components/ui/badge/Badge.vue'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import ModelLaunchHeroCtaButtons from './ModelLaunchHeroCtaButtons.vue'
 import ModelLaunchHeroLogoMask from './ModelLaunchHeroLogoMask.vue'
+import type { ModelLaunchHero } from './types'
 
 const {
   headingTag = 'h1',

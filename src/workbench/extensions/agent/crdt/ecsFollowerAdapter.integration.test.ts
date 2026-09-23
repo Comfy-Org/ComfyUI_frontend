@@ -8,9 +8,6 @@ import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { createGraphMutations } from './graphMutations'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
-import type { GraphMutations } from './graphMutations'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -20,9 +17,12 @@ import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import type { DocUpdate } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
+import { createGraphMutations } from './graphMutations'
+import type { GraphMutations } from './graphMutations'
 
 const catalog: WidgetCatalog = {
   types: {

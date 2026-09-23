@@ -1,35 +1,31 @@
 import { groupBy } from 'es-toolkit'
+
 import {
   buildPromotedWidgetExecutionSources,
   hasActivePromotedWidgetConsumer,
   resolveActivePromotedWidgetConsumers
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type {
-  MissingMediaCandidate,
-  MissingMediaViewModel,
-  MissingMediaGroup,
-  MediaType
-} from './types'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type {
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   collectAllNodes,
   getExecutionIdByNode,
   getNodeByExecutionId,
   isExecutionPathActive
 } from '@/utils/graphTraversalUtil'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isAbortError } from '@/utils/typeGuardUtil'
+
 import {
   getAnnotatedMediaPathTypeForDetection,
   getMediaPathDetectionNames,
@@ -40,6 +36,12 @@ import {
   resolveMissingMediaAssetSources
 } from './missingMediaAssetResolver'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
+import type {
+  MissingMediaCandidate,
+  MissingMediaViewModel,
+  MissingMediaGroup,
+  MediaType
+} from './types'
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'

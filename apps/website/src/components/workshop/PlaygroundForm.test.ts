@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { Ref } from 'vue'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
+import { frameRatioRule } from '../../config/workshop-model-restrictions'
 import type {
   FieldErrors,
   FieldSchema,
@@ -14,11 +15,10 @@ import {
   schemaForModel,
   validateForm
 } from '../../config/workshop-playground'
-import { frameRatioRule } from '../../config/workshop-model-restrictions'
+import { prepareWorkshopRouterInput } from '../../config/workshop-request'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import type { FakeImageDecoder } from '../../test/fakeImageDecoder'
 import { stubImageDecoder } from '../../test/fakeImageDecoder'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import { prepareWorkshopRouterInput } from '../../config/workshop-request'
 import PlaygroundForm from './PlaygroundForm.vue'
 
 describe('Advanced form values', () => {

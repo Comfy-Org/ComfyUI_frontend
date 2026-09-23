@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { AgentMessages } from '../../schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
-import { normalizeAgentTranscript } from './agentTranscript'
-
 import type { AgentChatEvent } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'
 import type {
@@ -13,6 +11,7 @@ import type {
   ToolPart
 } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
+import { normalizeAgentTranscript } from './agentTranscript'
 
 const fixtureText = import.meta.glob(
   '../../schemas/__fixtures__/agent/*.jsonl',

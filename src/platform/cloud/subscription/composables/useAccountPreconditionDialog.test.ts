@@ -1,6 +1,6 @@
-import { useDialogService } from '@/services/dialogService'
 import { describe, expect, it, vi } from 'vitest'
 
+import { useDialogService } from '@/services/dialogService'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import { useAccountPreconditionDialog } from './useAccountPreconditionDialog'

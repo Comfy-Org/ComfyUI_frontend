@@ -1,11 +1,10 @@
-import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
-
 import type {
   BillingHttpResponse,
   BillingResult
 } from '@comfyorg/account-core/billing'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, nextTick } from 'vue'
 
 import {
   BASELINE_MICROS,

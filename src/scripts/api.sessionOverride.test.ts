@@ -1,7 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { useCurrentUser } from 'vuefire'
 
 import { api } from '@/scripts/api'
 

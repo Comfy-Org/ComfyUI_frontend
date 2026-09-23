@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { prepareModelRouterRender, router_render } from './router-render'
 import { initialWorkshopPageState } from './workshop-page-state'
+import { prepareWorkshopRouterInput } from './workshop-request'
 import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
-import { prepareWorkshopRouterInput } from './workshop-request'
 
 function setup(slug = 'wan--reference-to-video-3.0--animate-images') {
   const model = getRouterWorkshopModelDetail(slug)

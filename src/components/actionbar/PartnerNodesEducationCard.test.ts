@@ -1,4 +1,3 @@
-import { useDialogService } from '@/services/dialogService'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
@@ -12,6 +11,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
+import { useDialogService } from '@/services/dialogService'
 
 import PartnerNodesEducationCard from './PartnerNodesEducationCard.vue'
 

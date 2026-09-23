@@ -1,3 +1,9 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -6,14 +12,7 @@ import {
   getActiveCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/workspace/utils/checkoutJourney'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useTelemetry } from '@/platform/telemetry'
-
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 const { mockHandleNextAction, mockLoadStripe } = vi.hoisted(() => ({

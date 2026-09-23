@@ -96,6 +96,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
@@ -105,7 +106,6 @@ import {
   buildInviteLink,
   copyTextSilently
 } from '@/platform/workspace/utils/inviteLinks'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const menuItemClass = 'w-full justify-start rounded-sm px-3 py-2'
 

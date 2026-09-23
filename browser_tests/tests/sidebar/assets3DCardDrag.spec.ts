@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
+import { expect } from '@playwright/test'
 
 // Regression test for the Sentry error CLOUD-FRONTEND-STAGING-4J4:
 // `NotSupportedError: Failed to execute 'add' on 'DataTransferItemList':

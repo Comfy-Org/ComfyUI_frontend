@@ -2,6 +2,7 @@ import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
 import { captureMessage } from '@sentry/vue'
 import { createPinia } from 'pinia'
+
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
@@ -13,27 +14,29 @@ import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxy
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
+import { isDesktop, isNightly } from '@/platform/distribution/types'
 import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { initSentry } from '@/platform/telemetry/initSentry'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+
+import '@/lib/litegraph/public/css/litegraph.css'
+import { flushErrorReports } from '@/platform/telemetry/reportError'
 import {
   markStoresPending,
   markStoresReady
 } from '@/platform/telemetry/storeReadiness'
-import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
-import { flushErrorReports } from '@/platform/telemetry/reportError'
-import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
-import '@/lib/litegraph/public/css/litegraph.css'
-import router from '@/router'
-import { isDesktop, isNightly } from '@/platform/distribution/types'
-import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import router from '@/router'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
+
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
 import './assets/css/style.css'
 import { i18n } from './i18n'

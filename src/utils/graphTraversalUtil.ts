@@ -1,3 +1,4 @@
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type {
   LGraph,
   LGraphNode,
@@ -16,7 +17,6 @@ import {
 } from '@/types/nodeIdentification'
 import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
-import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 

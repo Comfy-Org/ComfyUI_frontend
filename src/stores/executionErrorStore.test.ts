@@ -1,17 +1,16 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   createBoundaryLinkedSubgraph,
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -19,6 +18,7 @@ import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 beforeEach(() => {
   const settings = useSettingStore().settingValues
@@ -44,12 +44,13 @@ vi.mock<unknown>(
   })
 )
 
-import { useExecutionErrorStore } from './executionErrorStore'
+import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { toNodeId } from '@/types/nodeId'
-import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
+
+import { useExecutionErrorStore } from './executionErrorStore'
 
 function mockGraphReady(rootGraph: LGraph) {
   vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(rootGraph)

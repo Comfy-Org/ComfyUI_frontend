@@ -1,3 +1,4 @@
+import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
 /**
  * The whole sign-in flow in one owner: the reducer for the mint phases plus
  * the flag/identity/timeout/secure-context/region state that used to live as
@@ -9,15 +10,13 @@ import {
   severityForAuthError
 } from '@comfyorg/account-core/firebaseAuthError'
 import type { AuthErrorClassification } from '@comfyorg/account-core/firebaseAuthError'
+import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
+import type { RegionGateStatus } from '@comfyorg/account-ui/auth/regionGate'
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
+import { useGenerationGuard } from '@comfyorg/account-ui/auth/useGenerationGuard'
 import { until } from '@vueuse/core'
 import type { UserCredential } from 'firebase/auth'
 import { computed, onBeforeUnmount, onMounted, readonly, ref, watch } from 'vue'
-
-import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
-import { useGenerationGuard } from '@comfyorg/account-ui/auth/useGenerationGuard'
-import type { RegionGateStatus } from '@comfyorg/account-ui/auth/regionGate'
-import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
-import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
 import type {
   AuthSignInEvent,

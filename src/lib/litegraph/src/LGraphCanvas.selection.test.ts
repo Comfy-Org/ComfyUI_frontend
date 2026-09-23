@@ -1,7 +1,6 @@
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Positionable, Rect } from '@/lib/litegraph/src/interfaces'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import {
   LGraph,
   LGraphCanvas,
@@ -10,6 +9,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import {
   resolveSelectable,
   selectableKeyOf

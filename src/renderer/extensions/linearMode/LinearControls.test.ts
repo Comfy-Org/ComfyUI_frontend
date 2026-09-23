@@ -1,8 +1,8 @@
-import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import * as distributionModule from '@/platform/distribution/types'

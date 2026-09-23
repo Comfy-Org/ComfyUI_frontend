@@ -1,12 +1,11 @@
-import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { readonly, ref } from 'vue'
-
 import type {
   TurnstileApi,
   TurnstileRenderOptions
 } from '@comfyorg/account-core/turnstileScript'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readonly, ref } from 'vue'
 
 import { useWorkshopTurnstileMode } from '../../scripts/posthog'
 import AuthEmailForm from './AuthEmailForm.vue'

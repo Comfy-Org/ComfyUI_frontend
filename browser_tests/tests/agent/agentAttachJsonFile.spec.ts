@@ -1,13 +1,11 @@
-import { expect } from '@playwright/test'
-
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { AGENT_ATTACH_ACCEPT } from '@/workbench/extensions/agent/utils/attachableFiles'
-
-import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
-import { assetPath } from '@e2e/fixtures/utils/paths'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 test.describe(
   'Agent panel .json attachment',

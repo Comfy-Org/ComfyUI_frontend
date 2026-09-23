@@ -1,11 +1,11 @@
-import { toGroupId } from '@/types/groupId'
-import { graphScopeOf } from '@/types/graphScopeId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  isRootGraphDocBound,
+  registerDocBoundRootGraphProbe
+} from '@/lib/litegraph/src/docBoundGraphs'
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   LGraph,
   LGraphGroup,
@@ -16,6 +16,7 @@ import {
   Subgraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
@@ -23,32 +24,24 @@ import type {
   SerialisableLLink,
   SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
-import {
-  isRootGraphDocBound,
-  registerDocBoundRootGraphProbe
-} from '@/lib/litegraph/src/docBoundGraphs'
-import type { UUID } from '@/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { useEntityIdStore } from '@/stores/entityIdStore'
-import { useLinkStore } from '@/stores/linkStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { graphScopeOf } from '@/types/graphScopeId'
+import { toGroupId } from '@/types/groupId'
 import { toLinkId } from '@/types/linkId'
+import { UNASSIGNED_NODE_ID, compareNodeIds, toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toRerouteId } from '@/types/rerouteId'
-import { UNASSIGNED_NODE_ID, compareNodeIds, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
-import {
-  createNestedSubgraphs,
-  createTestSubgraph,
-  createTestSubgraphData,
-  createTestSubgraphNode
-} from './subgraph/__fixtures__/subgraphHelpers'
-import { subgraphTest } from './subgraph/__fixtures__/subgraphFixtures'
+import type { UUID } from '@/utils/uuid'
+import { createUuidv4, zeroUuid } from '@/utils/uuid'
 
 import {
   duplicateLinksRoot,
@@ -58,8 +51,15 @@ import {
 import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
 import { nestedSubgraphProxyWidgets } from './__fixtures__/nestedSubgraphProxyWidgets'
 import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
-import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
+import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
+import { subgraphTest } from './subgraph/__fixtures__/subgraphFixtures'
+import {
+  createNestedSubgraphs,
+  createTestSubgraph,
+  createTestSubgraphData,
+  createTestSubgraphNode
+} from './subgraph/__fixtures__/subgraphHelpers'
 
 const mockReportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({

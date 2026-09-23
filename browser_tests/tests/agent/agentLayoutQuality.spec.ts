@@ -1,11 +1,10 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import {
   nodesOutsideViewport,
   nodesWithoutGeometry,
   overlappingNodePairs
 } from '@e2e/fixtures/utils/nodeLayoutGeometry'
+import { expect } from '@playwright/test'
 
 const BATCHED_CASE = 'agent-rec-batched-ops'
 const SEQUENTIAL_CASE = 'agent-rec-three-sequential-adds'

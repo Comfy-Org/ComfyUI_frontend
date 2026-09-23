@@ -41,10 +41,9 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 
 import { shouldRenderExecutionItemList } from './executionItemList'
+import type { MissingResourceAbsorption } from './missingResourceAbsorption'
 import { someNodeTypeInSelection } from './selectionEmphasis'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
-
-import type { MissingResourceAbsorption } from './missingResourceAbsorption'
 import { useErrorClassification } from './useErrorClassification'
 
 const PROMPT_CARD_ID = '__prompt__'

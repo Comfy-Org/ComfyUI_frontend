@@ -6,17 +6,17 @@ import {
   parseSelectableKey,
   toSelectableKey
 } from '@/core/selection/selectionState'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import {
   LGraphGroup,
   LGraphNode,
   Reroute,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
+import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'

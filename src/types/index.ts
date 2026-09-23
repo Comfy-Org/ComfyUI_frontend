@@ -1,9 +1,14 @@
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
-
 import type {
   GetEmbeddingsResponse as EmbeddingsResponse,
   GetExtensionsResponse as ExtensionsResponse
 } from '@comfyorg/ingest-types'
+
+import type {
+  LogEntry,
+  LogsRawResponse,
+  TerminalSize
+} from '@/platform/remote/comfyui/execution/types'
 import type {
   DeviceStats,
   NodeError,
@@ -14,11 +19,6 @@ import type {
   UserData,
   UserDataFullInfo
 } from '@/platform/remote/comfyui/types'
-import type {
-  LogEntry,
-  LogsRawResponse,
-  TerminalSize
-} from '@/platform/remote/comfyui/execution/types'
 import type { Settings } from '@/platform/settings/types'
 import type { ComfyApp } from '@/scripts/app'
 

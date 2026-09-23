@@ -7,9 +7,9 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useNodeEventHandlers as createNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { toNodeId } from '@/types/nodeId'
-import type { UUID } from '@/utils/uuid'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import type { UUID } from '@/utils/uuid'
 
 const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 

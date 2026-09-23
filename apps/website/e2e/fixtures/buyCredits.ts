@@ -1,3 +1,4 @@
+import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 /**
  * The routes and steps a buy-credits checkout needs, shared by the specs that
  * exercise it. Every destination the dialog can reach is fulfilled locally,
@@ -5,8 +6,6 @@
  */
 import type { BrowserContext, Page, Route } from '@playwright/test'
 import { expect } from '@playwright/test'
-
-import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 
 import { MODELS_ACCOUNT_UID, MODELS_WORKSPACE_ID } from './modelsAccount'
 

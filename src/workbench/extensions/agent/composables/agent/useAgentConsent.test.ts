@@ -1,19 +1,21 @@
-import { useDialogService } from '@/services/dialogService'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+
+import { useDialogService } from '@/services/dialogService'
 vi.mock(import('firebase/auth'))
-import type { GlobalSetting } from '@comfyorg/ingest-types'
-import { useAuthStore } from '@/stores/authStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h, reactive, ref } from 'vue'
 import { setImmediate } from 'node:timers/promises'
 
+import type { GlobalSetting } from '@comfyorg/ingest-types'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, defineComponent, h, reactive, ref } from 'vue'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useDialogStore } from '@/stores/dialogStore'
 import { i18n } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import { useAgentConsent } from './useAgentConsent'
 

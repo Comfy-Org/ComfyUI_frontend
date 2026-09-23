@@ -2,12 +2,12 @@ import { isPlainObject } from 'es-toolkit'
 import { isEqual } from 'es-toolkit/compat'
 
 import { isAutogrowGroupMember } from '@/core/graph/widgets/dynamicWidgets'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   INodeSlot
 } from '@/lib/litegraph/src/interfaces'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
@@ -20,8 +20,8 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'

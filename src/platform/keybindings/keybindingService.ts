@@ -6,9 +6,9 @@ import { isModalOpen } from '@/utils/modalUtil'
 
 import { CORE_KEYBINDINGS } from './defaults'
 import { consultEscapeOverride } from './escapeOverride'
-import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingStore } from './keybindingStore'
+import { KeyComboImpl } from './keyCombo'
 
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()

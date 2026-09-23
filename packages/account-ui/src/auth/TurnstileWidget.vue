@@ -12,11 +12,10 @@
 </template>
 
 <script setup lang="ts">
-import { useTimeoutFn } from '@vueuse/core'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
-
 import type { TurnstileApi } from '@comfyorg/account-core/turnstileScript'
 import { loadTurnstile } from '@comfyorg/account-core/turnstileScript'
+import { useTimeoutFn } from '@vueuse/core'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 const {
   siteKey,

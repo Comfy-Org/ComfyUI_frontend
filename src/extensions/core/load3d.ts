@@ -12,6 +12,10 @@ import {
   useLoad3d
 } from '@/composables/useLoad3d'
 import type { Load3dCachedOutput } from '@/composables/useLoad3d'
+import {
+  LOAD3D_NONE_MODEL,
+  SUPPORTED_EXTENSIONS_ACCEPT
+} from '@/extensions/core/load3d/constants'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import type {
   CameraConfig,
@@ -21,25 +25,21 @@ import type {
 } from '@/extensions/core/load3d/interfaces'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
-import {
-  LOAD3D_NONE_MODEL,
-  SUPPORTED_EXTENSIONS_ACCEPT
-} from '@/extensions/core/load3d/constants'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INumericWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
   NodeExecutionOutput,
   NodeOutputWith
 } from '@/platform/remote/comfyui/execution/types'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'

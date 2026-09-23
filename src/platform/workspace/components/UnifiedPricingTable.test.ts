@@ -1,4 +1,3 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import type {
   ScheduledPlanChange,
   SubscriptionTier
@@ -17,6 +16,7 @@ import type {
   Plan
 } from '@/platform/workspace/api/workspaceApi'
 import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
 function apiPlan(
   tier: Plan['tier'],

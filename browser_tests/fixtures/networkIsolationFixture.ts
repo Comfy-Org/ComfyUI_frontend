@@ -1,8 +1,3 @@
-import type { APIRequestContext } from '@playwright/test'
-import { expect, test as base } from '@playwright/test'
-import { config as dotenvConfig } from 'dotenv'
-
-import { HERO_SLIDES } from '@/platform/cloud/onboarding/constants/heroSlides'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import { installLiveCloudBillingRouting } from '@e2e/fixtures/utils/liveCloudBillingContext'
 import {
@@ -12,6 +7,11 @@ import {
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import type { APIRequestContext } from '@playwright/test'
+import { expect, test as base } from '@playwright/test'
+import { config as dotenvConfig } from 'dotenv'
+
+import { HERO_SLIDES } from '@/platform/cloud/onboarding/constants/heroSlides'
 
 dotenvConfig()
 

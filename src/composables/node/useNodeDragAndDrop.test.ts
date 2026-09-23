@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+
 import { useNodeDragAndDrop } from './useNodeDragAndDrop'
 
 function createNode(overrides: Record<string, unknown> = {}): LGraphNode {

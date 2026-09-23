@@ -1,15 +1,15 @@
-import type { Locator, Page } from '@playwright/test'
-
-import type { NodeId } from '@/types/nodeId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import type { Locator, Page } from '@playwright/test'
+
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import type { NodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 
 async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
   const box = await locator.boundingBox()

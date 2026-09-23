@@ -1,10 +1,10 @@
-import { useDialogService } from '@/services/dialogService'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDialogService } from '@/services/dialogService'
+import { useCommandStore } from '@/stores/commandStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 const mockExecute = vi.fn<ReturnType<typeof useCommandStore>['execute']>(

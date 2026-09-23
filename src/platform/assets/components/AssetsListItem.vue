@@ -154,12 +154,12 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useId } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
-import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import VideoPlayOverlay from './VideoPlayOverlay.vue'
 

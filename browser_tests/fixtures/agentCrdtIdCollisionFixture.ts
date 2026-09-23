@@ -1,3 +1,27 @@
+import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type {
+  AgentRunMode,
+  AgentThreadListResponse,
+  AgentTurnAccepted,
+  JobsListResponse,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
+import type {
+  HostFrame,
+  WireApplyResult
+} from '@e2e/fixtures/agentConversationHostDoc'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import {
+  agentTest,
+  bootAgentApp,
+  mockWorkflowPersistence
+} from '@e2e/fixtures/agentPanelFixture'
+import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
+import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 /**
  * Repro harness for the silent last-write-wins drop: when two writes land on
  * the SAME node id, `comfy-multi-player`'s applier resolves the shared
@@ -29,37 +53,11 @@ import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { createI18n } from 'vue-i18n'
 
-import type {
-  AgentRunMode,
-  AgentThreadListResponse,
-  AgentTurnAccepted,
-  JobsListResponse,
-  WorkflowListResponse
-} from '@comfyorg/ingest-types'
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
-import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
-
-import {
-  agentTest,
-  bootAgentApp,
-  mockWorkflowPersistence
-} from '@e2e/fixtures/agentPanelFixture'
-import type {
-  HostFrame,
-  WireApplyResult
-} from '@e2e/fixtures/agentConversationHostDoc'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
-import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
-import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
-import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const WORKFLOW_ID = 'a2f6e9c4-9b7d-4a3d-9e12-idcollision01'
 /** The one node the doc starts with — duplicating it triggers the collision. */

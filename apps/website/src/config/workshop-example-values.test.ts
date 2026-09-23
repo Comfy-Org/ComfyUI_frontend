@@ -5,13 +5,13 @@ import {
   authoredRouterContentBySlug,
   authoredWorkshopModels
 } from './workshop-browse-content'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
+import { workshopExampleValues } from './workshop-example-values'
 import {
   defaultValues,
   schemaForModel,
   urlUploadField
 } from './workshop-playground'
-import { workshopExampleValues } from './workshop-example-values'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 
 const mediaSchema = z.array(z.object({ role: z.string(), value: z.string() }))
 const examples = authoredWorkshopModels.flatMap((model) => {

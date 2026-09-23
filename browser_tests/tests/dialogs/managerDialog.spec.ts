@@ -1,12 +1,7 @@
-import { mergeTests } from '@playwright/test'
-
-import type { AlgoliaNodePack } from '@/types/algoliaTypes'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
   components as RegistryComponents,
   operations as RegistryOperations
 } from '@comfyorg/registry-types'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
@@ -15,6 +10,10 @@ import {
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { mergeTests } from '@playwright/test'
+
+import type { AlgoliaNodePack } from '@/types/algoliaTypes'
+import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 

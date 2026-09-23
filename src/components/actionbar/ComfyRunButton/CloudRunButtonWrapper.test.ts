@@ -5,8 +5,8 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useDialogStore } from '@/stores/dialogStore'
 

@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { AGENT_VIDEO_ASSET } from '@e2e/fixtures/data/assetFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
 
 // Regression from the assets-backed Media Assets panel (#15381): history
 // records used to carry the original video URL, but an `/api/assets` video

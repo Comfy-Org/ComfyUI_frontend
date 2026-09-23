@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { X } from '@lucide/vue'
 import { computed } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
-import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import type { FileValue } from '../../config/workshop-playground'
 import type { Locale } from '../../i18n/translations'

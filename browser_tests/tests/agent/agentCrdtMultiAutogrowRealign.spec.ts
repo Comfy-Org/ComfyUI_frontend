@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import {
   CORRUPTED_PROMPT,
   SENTINEL_HEIGHT,
@@ -7,6 +5,7 @@ import {
   SENTINEL_WIDTH,
   multiAutogrowRealignTest as test
 } from '@e2e/fixtures/multiAutogrowRealignFixture'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Agent CRDT multi-autogrow link realignment',

@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url'
 
 import type { ResponseUsage } from 'openai/resources/responses/responses'
 
+import { isMainModule } from '../isMainModule'
 import type { OutputLocale, TranslationPipelineConfig } from './config'
 import { translationPipelineConfig } from './config'
 import type {
@@ -46,7 +47,6 @@ import {
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
-import { isMainModule } from '../isMainModule'
 
 interface SourceManifest {
   files: Record<string, string>

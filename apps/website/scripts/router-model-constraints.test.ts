@@ -1,8 +1,8 @@
 import { assert, describe, expect, it } from 'vitest'
 
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
 import { initialWorkshopPageState } from '../src/config/workshop-page-state'
 import { validateForm } from '../src/config/workshop-playground'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
 
 describe.for([
   'byteplus--seedance-2-mini-text-to-video--generate-videos',

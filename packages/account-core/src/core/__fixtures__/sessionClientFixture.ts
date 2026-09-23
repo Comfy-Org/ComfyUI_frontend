@@ -5,7 +5,6 @@
  */
 import type { AccountIdentity, SessionClientOptions } from '../session.js'
 import { createSessionClient } from '../session.js'
-
 import { EXCHANGE_URL, memoryStorage } from './sessionFakes.js'
 
 export function makeClient(

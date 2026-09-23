@@ -109,9 +109,9 @@ import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
 import InviteLinkList from '@/platform/workspace/components/dialogs/InviteLinkList.vue'
 import type { InviteLinkRow } from '@/platform/workspace/components/dialogs/InviteLinkList.vue'
+import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {

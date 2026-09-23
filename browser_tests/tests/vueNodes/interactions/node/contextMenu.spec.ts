@@ -2,8 +2,8 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { UserDataHelper } from '@e2e/fixtures/helpers/UserDataHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import {
   getNodeWrapper,
   openContextMenu,

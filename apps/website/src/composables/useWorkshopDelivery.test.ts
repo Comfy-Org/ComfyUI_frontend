@@ -1,9 +1,9 @@
-import { effectScope } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { effectScope } from 'vue'
 
-import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
 import type { RunOutput } from '../config/workshop-run'
 import { captureWorkshopEvent } from '../scripts/posthog'
+import type { WorkshopRunAnalytics } from '../scripts/workshop-analytics'
 import { useWorkshopDelivery } from './useWorkshopDelivery'
 
 vi.mock(import('../scripts/posthog'), () => ({ captureWorkshopEvent: vi.fn() }))

@@ -1,11 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type * as PostHogModule from 'posthog-js'
-
 import {
   AUTH_TELEMETRY_EVENT,
   SESSION_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
+import type * as PostHogModule from 'posthog-js'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => ({
   localDev: false,

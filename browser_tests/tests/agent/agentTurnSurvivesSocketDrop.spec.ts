@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import {
   POST_RECONNECT_EVENT,
   POST_RECONNECT_TEXT,
@@ -7,6 +5,7 @@ import {
   TURN_IN_PROGRESS_MESSAGE,
   agentTurnLockTest as test
 } from '@e2e/fixtures/agentTurnLockFixture'
+import { expect } from '@playwright/test'
 
 // PM-1199 / PM-1200. Reported after a long auto-mode run: the action stream
 // stopped updating, the "Working..." row was replaced by a "Worked for 3m"

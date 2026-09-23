@@ -1,23 +1,23 @@
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import creatorModels from '../data/workshop-creator-models.json'
+import type { WorkshopModelDetail } from './models-catalogue'
 import { authoredWorkshopModels } from './workshop-browse-content'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
+import { formForContract } from './workshop-contract'
+import { workshopContract } from './workshop-contract-catalog'
+import { prepareWorkshopCreatorRequest } from './workshop-creator-request'
+import { workshopExampleFile } from './workshop-example-file'
+import { validateWorkshopInput } from './workshop-json-schema'
 import {
   defaultValues,
   schemaForModel,
   validateForm
 } from './workshop-playground'
 import type { FileValue, FormValues } from './workshop-playground'
-import type { WorkshopModelDetail } from './models-catalogue'
 import { prepareWorkshopRouterInput } from './workshop-request'
-import { validateWorkshopInput } from './workshop-json-schema'
-import creatorModels from '../data/workshop-creator-models.json'
-import { workshopContract } from './workshop-contract-catalog'
-import { formForContract } from './workshop-contract'
-import { createWorkshopUrlUploader } from './workshop-url-upload'
-import { prepareWorkshopCreatorRequest } from './workshop-creator-request'
-import { workshopExampleFile } from './workshop-example-file'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import { WorkshopRouterError } from './workshop-router-errors'
+import { createWorkshopUrlUploader } from './workshop-url-upload'
 
 const imageUrl = 'https://example.invalid/source.png'
 const videoUrl = 'https://example.invalid/source.mp4'

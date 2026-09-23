@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import type {
+  BillingCapabilities,
+  SubscriptionCommandResult
+} from '@comfyorg/account-core/billing'
+import { useBillingClient, useCheckout } from '@comfyorg/account-ui/billing'
 /**
  * Cancel and resubscribe, offered only when the server's capabilities say so
  * and run through the shared commands. Cancel is not a checkout, so it goes
@@ -8,12 +13,6 @@
  */
 import { nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import type {
-  BillingCapabilities,
-  SubscriptionCommandResult
-} from '@comfyorg/account-core/billing'
-import { useBillingClient, useCheckout } from '@comfyorg/account-ui/billing'
 
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { STRIPE_PUBLISHABLE_KEY } from '@/config/env'

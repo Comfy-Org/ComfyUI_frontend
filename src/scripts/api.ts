@@ -9,29 +9,24 @@ import {
   zGetExtensionsResponse,
   zPostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
+import { addBreadcrumb } from '@sentry/vue'
 import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
-import { storeToRefs } from 'pinia'
-import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
+import { get } from 'es-toolkit/compat'
+import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
-import {
-  fetchWithUnifiedRemint,
-  shouldRemintCloudRequest
-} from '@/platform/auth/unified/remintRetry'
-import { getDevOverride } from '@/utils/devFeatureFlagOverride'
-import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type {
   ModelFile,
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
+import {
+  fetchWithUnifiedRemint,
+  shouldRemintCloudRequest
+} from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
-import { addBreadcrumb } from '@sentry/vue'
-import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
@@ -52,6 +47,17 @@ import type {
   StatusWsMessage,
   StatusWsMessageStatus
 } from '@/platform/remote/comfyui/execution/types'
+import {
+  fetchHistory,
+  fetchJobAssets,
+  fetchJobDetail,
+  fetchQueue
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type {
+  JobAssetsResult,
+  JobDetail,
+  JobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import type {
   PromptFailureResponse,
   PromptResponse,
@@ -60,6 +66,8 @@ import type {
   UserDataFullInfo
 } from '@/platform/remote/comfyui/types'
 import type { PreviewMethod, Settings } from '@/platform/settings/types'
+import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
   TemplateIncludeOnDistributionEnum,
   WorkflowTemplates
@@ -68,22 +76,14 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type {
-  JobAssetsResult,
-  JobDetail,
-  JobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import {
-  fetchHistory,
-  fetchJobAssets,
-  fetchJobDetail,
-  fetchQueue
-} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
+import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
 interface QueuePromptRequestBody {
   client_id: string

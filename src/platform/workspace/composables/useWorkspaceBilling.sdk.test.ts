@@ -1,7 +1,6 @@
+import type { BillingStatusData } from '@comfyorg/account-core/billing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
-
-import type { BillingStatusData } from '@comfyorg/account-core/billing'
 
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'

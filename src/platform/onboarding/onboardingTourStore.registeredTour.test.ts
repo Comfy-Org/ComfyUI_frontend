@@ -1,13 +1,13 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAppModeStore } from '@/stores/appModeStore'
 import { assert, beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   OnboardingTourStepStage,
   OnboardingTourStepMetadata
 } from '@/platform/telemetry/types'
+import { useAppModeStore } from '@/stores/appModeStore'
 
 import { clearCoachmarks } from './coachmarkRegistry'
 import { TOUR_SEEN_SETTING, registerTour } from './onboardingTours'

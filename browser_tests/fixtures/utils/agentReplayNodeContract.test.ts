@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest'
-
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
+import { describe, expect, it } from 'vitest'
 
 describe('assertAgentReplayNodeContract', () => {
   it('uses the recorded type as the explicit default title', () => {

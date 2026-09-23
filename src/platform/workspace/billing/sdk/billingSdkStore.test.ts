@@ -1,3 +1,4 @@
+import type { HostedBillingDestination } from '@comfyorg/account-core/billing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -7,8 +8,8 @@ import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useDialogStore } from '@/stores/dialogStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import { useBillingSdkStore } from './billingSdkStore'
 import {
@@ -20,8 +21,6 @@ import {
   settledOperation,
   settledTopup
 } from './billingSdkTestUtils'
-import type { HostedBillingDestination } from '@comfyorg/account-core/billing'
-
 import type { BillingSdk, BillingSdkOptions } from './createBillingSdk'
 
 const mockCreateBillingSdk = vi.hoisted(() =>

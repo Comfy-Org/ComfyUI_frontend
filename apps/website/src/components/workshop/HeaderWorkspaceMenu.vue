@@ -2,7 +2,6 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { ArrowLeftRight, Check } from '@lucide/vue'
 import { useEventListener } from '@vueuse/core'
-import { ref, useTemplateRef, watch } from 'vue'
 import {
   DropdownMenuItem,
   DropdownMenuPortal,
@@ -10,6 +9,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger
 } from 'reka-ui'
+import { ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'

@@ -1,5 +1,5 @@
-import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
@@ -7,8 +7,8 @@ import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { InjectKeyHandleEditLabelFunction } from '@/types/treeExplorerTypes'
 

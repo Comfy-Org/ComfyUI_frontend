@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { createAuthSchemas } from '@comfyorg/account-core/signInSchemas'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { createAuthSchemas } from '@comfyorg/account-core/signInSchemas'
 
 import { CLOUD_FORGOT_PASSWORD_URL } from '@/config/env'
 

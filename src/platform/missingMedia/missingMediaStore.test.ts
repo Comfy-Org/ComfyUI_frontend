@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
 

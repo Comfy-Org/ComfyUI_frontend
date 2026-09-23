@@ -1,5 +1,3 @@
-import type { Page } from '@playwright/test'
-
 import {
   FIRST_REFERENCE_INPUT,
   REFERENCE_NODE_ID,
@@ -7,6 +5,8 @@ import {
   SEED_SOURCE_NODE_ID,
   SOURCE_NODE_ID
 } from '@e2e/fixtures/data/minimaxAutogrowReload'
+import type { Page } from '@playwright/test'
+
 import type { LinkId } from '@/types/linkId'
 
 const NEXT_REFERENCE_INPUT = 'model.reference_images.image_2'

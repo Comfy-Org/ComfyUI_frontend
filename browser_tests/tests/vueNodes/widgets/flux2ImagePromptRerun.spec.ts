@@ -1,6 +1,3 @@
-import { mergeTests } from '@playwright/test'
-import type { Locator, WebSocketRoute } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -8,6 +5,8 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { mergeTests } from '@playwright/test'
+import type { Locator, WebSocketRoute } from '@playwright/test'
 
 /**
  * PM-1303 / PM-1310: Guard the Flux2ImageNode prompt and layout across

@@ -1,12 +1,4 @@
 import { t } from '../i18n/translations'
-import { fieldsForDefinition } from './workshop-form-definition'
-import { workshopExampleFiles } from './workshop-example-file'
-import { encodedWorkshopFileBytes, MAX_REQUEST_BYTES } from './workshop-limits'
-import type { WorkshopInputDefinition } from './workshop-input-definition'
-import {
-  parseWorkshopJsonInput,
-  validateWorkshopInput
-} from './workshop-json-schema'
 import type {
   GeneratedExample,
   GeneratedField,
@@ -14,6 +6,14 @@ import type {
   WorkshopExampleValues,
   WorkshopModelDetail
 } from './models-catalogue'
+import { workshopExampleFiles } from './workshop-example-file'
+import { fieldsForDefinition } from './workshop-form-definition'
+import type { WorkshopInputDefinition } from './workshop-input-definition'
+import {
+  parseWorkshopJsonInput,
+  validateWorkshopInput
+} from './workshop-json-schema'
+import { encodedWorkshopFileBytes, MAX_REQUEST_BYTES } from './workshop-limits'
 
 type FieldControl =
   | {

@@ -1,5 +1,4 @@
 import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
 export const desktopFixture = comfyPageFixture.extend({

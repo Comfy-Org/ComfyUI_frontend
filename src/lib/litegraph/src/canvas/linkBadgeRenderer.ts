@@ -1,10 +1,11 @@
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import type { LinkId } from '@/types/linkId'
+import { compareNodeIds } from '@/types/nodeId'
+
 import type { LGraph } from '../LGraph'
 import type { LLink } from '../LLink'
-import type { LinkId } from '@/types/linkId'
 import type { LinkBadgeLayout } from './linkBadges'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { compareNodeIds } from '@/types/nodeId'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { layoutHiddenLinkBadges, queryLinkBadgeAtPoint } from './linkBadges'
 import { getLinkEndpointPositions } from './linkGeometry'
 

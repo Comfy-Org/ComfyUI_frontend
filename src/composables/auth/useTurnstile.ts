@@ -1,12 +1,11 @@
-import { computed } from 'vue'
-
 import {
   isTurnstileEnabled,
   normalizeTurnstileMode
 } from '@comfyorg/account-core/turnstile'
+import { computed } from 'vue'
 
-import { getTurnstileSiteKey } from '@/config/turnstile'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { getTurnstileSiteKey } from '@/config/turnstile'
 import type { TurnstileMode } from '@/platform/remoteConfig/types'
 
 export { useTurnstileGate } from '@comfyorg/account-ui/auth/turnstileGate'

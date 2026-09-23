@@ -1,8 +1,8 @@
-import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
 
 /**
  * The `?assets=1` deep link opens the Assets sidebar panel on app load, so

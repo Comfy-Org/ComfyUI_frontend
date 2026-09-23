@@ -1,15 +1,14 @@
 import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { Op, WireOp } from '@comfyorg/comfy-multi-player'
+import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
+import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
 import { describe, expect, it } from 'vitest'
 
+import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import {
   mintOpId,
   mintWireOps
 } from '@/workbench/extensions/agent/crdt/opEnvelope'
-import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
-
-import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
-import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
 
 const MINT = { actor: 'human:test-user:tab-1', baseVersion: 7 }
 

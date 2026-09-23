@@ -1,3 +1,4 @@
+import type { AccountCredential } from '../sessionContracts.js'
 /**
  * The scope port: the one thing the billing core needs to know about the
  * identity it runs as — which user, which workspace, which role — and when
@@ -7,7 +8,6 @@
  * hands the core a session client it does not have.
  */
 import type { BillingSession } from './billingContracts.js'
-import type { AccountCredential } from '../sessionContracts.js'
 
 export interface BillingScope {
   readonly userId: string

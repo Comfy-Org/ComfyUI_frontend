@@ -4,14 +4,21 @@ import { reactive, unref, shallowRef } from 'vue'
 
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-
+import {
+  pasteAudioNode,
+  pasteAudioNodes,
+  pasteImageNode,
+  pasteImageNodes,
+  pasteVideoNode,
+  pasteVideoNodes
+} from '@/composables/usePaste'
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { setBackendNodeText, st, t } from '@/i18n'
-import { normalizeI18nKey } from '@/utils/formatUtil'
-import { ChangeTracker } from '@/scripts/changeTracker'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
+import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
   inputAsSerialisable,
   LGraph,
@@ -19,23 +26,46 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
+import { snapPoint } from '@/lib/litegraph/src/measure'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type {
   IBaseWidget,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
+import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import {
+  refreshMissingModelPipeline,
+  runMissingModelPipeline
+} from '@/platform/missingModel/missingModelPipeline'
+import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
+import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
+import type {
+  ExecutionErrorWsMessage,
+  NodeExecutionOutput,
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { reportError } from '@/platform/telemetry/reportError'
 import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
-import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
-import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
-import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
 import type {
   ExecutionContext,
   WorkflowExecutionContext,
@@ -43,11 +73,17 @@ import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
 } from '@/platform/telemetry/types'
+import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
+import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
+import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { reportError } from '@/platform/telemetry/reportError'
-import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
+import {
+  collectSubgraphDefinitions,
+  buildSubgraphExecutionPaths
+} from '@/platform/workflow/core/utils/workflowFlattening'
+import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -58,48 +94,28 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import {
-  collectSubgraphDefinitions,
-  buildSubgraphExecutionPaths
-} from '@/platform/workflow/core/utils/workflowFlattening'
-import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
-import type {
-  ExecutionErrorWsMessage,
-  NodeExecutionOutput,
-  ResultItem
-} from '@/platform/remote/comfyui/execution/types'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import { isComboInputSpecV1, isComboInputSpecV2 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
-import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
-import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { useAuthStore } from '@/stores/authStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
-import {
-  getAncestorExecutionIds,
-  tryNormalizeNodeExecutionId
-} from '@/types/nodeIdentification'
-import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
-
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -110,27 +126,24 @@ import type {
   ExtensionManager,
   ToastMessageOptions
 } from '@/types/extensionTypes'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import {
+  getAncestorExecutionIds,
+  tryNormalizeNodeExecutionId
+} from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { getWorkflowMode } from '@/utils/appMode'
+import {
+  extractFilesFromDragEvent,
+  hasAudioType,
+  hasImageType,
+  hasVideoType,
+  isMediaFile
+} from '@/utils/eventUtils'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
-import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
-import {
-  refreshMissingModelPipeline,
-  runMissingModelPipeline
-} from '@/platform/missingModel/missingModelPipeline'
-import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-
-import { getWorkflowMode } from '@/utils/appMode'
-import { anyItemOverlapsRect } from '@/utils/mathUtil'
-import { ensureNonZeroUuid } from '@/utils/uuid'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   collectAllNodes,
   forEachNode,
@@ -138,20 +151,23 @@ import {
   isAncestorPathActive,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import {
   executeWidgetsCallback,
   createNode,
   isImageNode,
   isVideoNode
 } from '@/utils/litegraphUtil'
-import {
-  createSharedObjectUrl,
-  releaseSharedObjectUrl
-} from '@/utils/objectUrlUtil'
+import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import {
   findLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
+import {
+  createSharedObjectUrl,
+  releaseSharedObjectUrl
+} from '@/utils/objectUrlUtil'
+import { ensureNonZeroUuid } from '@/utils/uuid'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { PromptExecutionError, api } from './api'
@@ -163,25 +179,6 @@ import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
 import type { ComfyWidgets, CustomComfyWidgetConstructor } from './widgets'
-import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
-import {
-  extractFilesFromDragEvent,
-  hasAudioType,
-  hasImageType,
-  hasVideoType,
-  isMediaFile
-} from '@/utils/eventUtils'
-import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import {
-  pasteAudioNode,
-  pasteAudioNodes,
-  pasteImageNode,
-  pasteImageNodes,
-  pasteVideoNode,
-  pasteVideoNodes
-} from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 

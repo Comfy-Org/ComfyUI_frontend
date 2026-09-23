@@ -12,6 +12,7 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
 import {
   AUTH_TELEMETRY_EVENT,
   SESSION_TELEMETRY_EVENT
@@ -21,7 +22,6 @@ import type {
   AuthFlowAction,
   AuthMethod
 } from '@comfyorg/account-core/telemetry'
-import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
 
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'

@@ -1,8 +1,7 @@
+import type { SessionSnapshot } from '@comfyorg/account-core/session'
+import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, readonly, ref, watch } from 'vue'
-import type { User } from 'firebase/auth'
-
-import type { SessionSnapshot } from '@comfyorg/account-core/session'
 
 let { identifyWorkshopUser, useWorkshopAuthFlag } =
   await import('../scripts/posthog')

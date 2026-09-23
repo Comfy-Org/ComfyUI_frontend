@@ -1,14 +1,13 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
-
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 
 const mockNodeLocatorIdToNodeExecutionId = vi.hoisted(() =>
   vi.fn((nodeLocatorId: string) => nodeLocatorId)
@@ -23,10 +22,11 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-import { useMissingModelStore } from './missingModelStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
+
+import { useMissingModelStore } from './missingModelStore'
 
 function makeModelCandidate(
   name: string,

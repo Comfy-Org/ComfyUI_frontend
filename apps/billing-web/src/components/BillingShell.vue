@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import {
+  disposeBillingClient,
+  provideBillingClient
+} from '@comfyorg/account-ui/billing'
 /**
  * Owns the billing client's lifetime. The composables never dispose what they
  * are handed, so the scope end — sign-out, an account or workspace switch —
@@ -8,11 +12,6 @@
  * plans and saved cards.
  */
 import { onUnmounted } from 'vue'
-
-import {
-  disposeBillingClient,
-  provideBillingClient
-} from '@comfyorg/account-ui/billing'
 
 import { createBillingWebClient } from '@/session/billingWebClient'
 import { billingWebSessionClient } from '@/session/billingWebSession'

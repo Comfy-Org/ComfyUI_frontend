@@ -1,8 +1,8 @@
-import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionRail } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { useAuthStore } from '@/stores/authStore'
 
 const { mockIsCloud, mockSubscribe } = vi.hoisted(() => ({
   mockIsCloud: { value: true },

@@ -1,11 +1,10 @@
+import type { BillingResult } from '@comfyorg/account-core/billing'
 import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { reportError } from '@/platform/telemetry/reportError'
 import type { SavedPaymentMethod } from '@/platform/workspace/api/workspaceApi'
-
-import type { BillingResult } from '@comfyorg/account-core/billing'
 
 import type { BillingReadRail } from './useBillingReadRail'
 import { useHasSavedPaymentMethod } from './useHasSavedPaymentMethod'

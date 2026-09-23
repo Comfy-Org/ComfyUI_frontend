@@ -1,6 +1,14 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import type {
+  AgentPaywallAction,
+  AgentPaywallPresentation
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 
 import type {
   ActivityPart,
@@ -8,17 +16,9 @@ import type {
   TextPart
 } from '../../../services/agent/agentMessageParts'
 import { htmlReplyAssets } from '../../../utils/replyAssets'
-import { cn } from '@comfyorg/tailwind-utils'
-import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-
+import type { AgentMessageGroup as Group } from './agentMessageGroup'
 import AgentMessageGroup from './AgentMessageGroup.vue'
 import MessageFeedback from './MessageFeedback.vue'
-import type { AgentMessageGroup as Group } from './agentMessageGroup'
-import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import type {
-  AgentPaywallAction,
-  AgentPaywallPresentation
-} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 
 const {
   message,

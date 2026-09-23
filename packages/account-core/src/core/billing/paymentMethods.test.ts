@@ -6,13 +6,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SessionSnapshot } from '../session.js'
-import { sessionBillingScopeSource } from './billingScope.js'
-import type {
-  BillingHttpResponse,
-  BillingResult,
-  BillingTransport
-} from './billingContracts.js'
-import { createPaymentMethodsReader } from './paymentMethods.js'
 import {
   authenticated,
   credential,
@@ -21,6 +14,13 @@ import {
   httpStatus
 } from './__fixtures__/billingTestFixtures.js'
 import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
+import type {
+  BillingHttpResponse,
+  BillingResult,
+  BillingTransport
+} from './billingContracts.js'
+import { sessionBillingScopeSource } from './billingScope.js'
+import { createPaymentMethodsReader } from './paymentMethods.js'
 
 function fakeSession(snapshot: SessionSnapshot = authenticated(credential())) {
   const fake: SessionFake = {

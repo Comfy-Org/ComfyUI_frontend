@@ -1,10 +1,9 @@
+import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-
-import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
-import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.use({ connectWebSocketToServer: false })
 

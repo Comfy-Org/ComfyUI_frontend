@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
+
 import type {
   AgentActiveTabData,
   AgentTurnAccepted,

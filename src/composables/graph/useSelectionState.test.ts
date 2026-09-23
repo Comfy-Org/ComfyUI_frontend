@@ -1,4 +1,3 @@
-import { toGroupId } from '@/types/groupId'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
@@ -7,13 +6,14 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { toGroupId } from '@/types/groupId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
-import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
-import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 import {
   createMockLGraphNode,
   createMockPositionable
 } from '@/utils/__tests__/litegraphTestUtils'
+import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
+import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(),

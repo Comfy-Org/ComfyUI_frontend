@@ -6,75 +6,54 @@ import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
+import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
-import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
-import {
-  getSlotLayoutAtPoint,
-  getSlotPosition
-} from '@/renderer/core/canvas/litegraph/slotCalculations'
-import {
-  clearRevealedLinks,
-  clearRootLinkReveals,
-  isLinkRevealed,
-  setRevealedLinks
-} from './canvas/linkRevealState'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   applyCanvasSelection,
   ownsSelectable,
   selectableKeyOf,
   setCanvasItemSelected
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import {
+  getSlotLayoutAtPoint,
+  getSlotPosition
+} from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
-import { toRerouteId } from '@/types/rerouteId'
-import { forEachNode } from '@/utils/graphTraversalUtil'
-
-import { CanvasPointer } from './CanvasPointer'
-import type { ContextMenu } from './ContextMenu'
-import { createCursorCache } from './cursorCache'
-import { DragAndScale } from './DragAndScale'
-import type { AnimationOptions } from './DragAndScale'
-import { mintNodeId, observeNodeId } from './idAllocation'
-import type { LGraph, SubgraphId } from './LGraph'
-import { LGraphGroup } from './LGraphGroup'
-import type { SlotTypeDefaultNodeOpts } from './LiteGraphGlobal'
-import { LGraphNode } from './LGraphNode'
-import type { NodeProperty } from './LGraphNode'
-import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
-import { LLink, slotFloatingLinks } from './LLink'
-import {
-  inputHasLink,
-  inputLinkId,
-  outputLinkIds,
-  outputLinks
-} from './node/slotLinks'
-import type { LinkId } from './LLink'
-import { Reroute } from './Reroute'
-import type { RerouteId } from './Reroute'
-import { LinkConnector } from './canvas/LinkConnector'
+import { toRerouteId } from '@/types/rerouteId'
+import { forEachNode } from '@/utils/graphTraversalUtil'
+import { createUuidv4 } from '@/utils/uuid'
+
+import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
   findRerouteAtPoint,
   queryRenderedLinkSegmentsAtPoint
 } from './canvas/hitTesting'
-import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
+import {
+  layoutGraphLinkBadges,
+  queryHiddenLinkBadgeAtPoint
+} from './canvas/linkBadgeRenderer'
 import {
   clearLinkBadgeHitAreas,
   drawHiddenLinkBadges,
   queryLinkBadgeAtPoint
 } from './canvas/linkBadges'
+import { LinkConnector } from './canvas/LinkConnector'
 import {
-  layoutGraphLinkBadges,
-  queryHiddenLinkBadgeAtPoint
-} from './canvas/linkBadgeRenderer'
+  clearRevealedLinks,
+  clearRootLinkReveals,
+  isLinkRevealed,
+  setRevealedLinks
+} from './canvas/linkRevealState'
 import {
   getLinkMenuOptions,
   hideLink,
@@ -82,12 +61,13 @@ import {
   showLink
 } from './canvas/linkVisibility'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
+import { CanvasPointer } from './CanvasPointer'
+import type { ContextMenu } from './ContextMenu'
+import { createCursorCache } from './cursorCache'
+import { DragAndScale } from './DragAndScale'
+import type { AnimationOptions } from './DragAndScale'
 import { strokeShape } from './draw'
-import { defineDeprecatedProperty } from './utils/feedback'
-import {
-  cachedMeasureText,
-  clearTextMeasureCache
-} from './utils/textMeasureCache'
+import { mintNodeId, observeNodeId } from './idAllocation'
 import type {
   CustomEventDispatcher,
   ICustomEventTarget
@@ -126,7 +106,15 @@ import type {
   Rect,
   Size
 } from './interfaces'
+import type { LGraph, SubgraphId } from './LGraph'
+import { LGraphGroup } from './LGraphGroup'
+import { LGraphNode } from './LGraphNode'
+import type { NodeProperty } from './LGraphNode'
+import { detachSerialisedLinks } from './linkDeduplication'
 import { LiteGraph } from './litegraph'
+import type { SlotTypeDefaultNodeOpts } from './LiteGraphGlobal'
+import { LLink, slotFloatingLinks } from './LLink'
+import type { LinkId } from './LLink'
 import {
   containsRect,
   createBounds,
@@ -138,9 +126,17 @@ import {
   snapPoint
 } from './measure'
 import { NodeInputSlot } from './node/NodeInputSlot'
+import {
+  inputHasLink,
+  inputLinkId,
+  outputLinkIds,
+  outputLinks
+} from './node/slotLinks'
+import { Reroute } from './Reroute'
+import type { RerouteId } from './Reroute'
 import type { Subgraph } from './subgraph/Subgraph'
-import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
+import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphNode } from './subgraph/SubgraphNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type {
@@ -165,8 +161,12 @@ import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getDraggedItems } from './utils/collections'
+import { defineDeprecatedProperty } from './utils/feedback'
 import { resolveConnectingLinkColor } from './utils/linkColors'
-import { createUuidv4 } from '@/utils/uuid'
+import {
+  cachedMeasureText,
+  clearTextMeasureCache
+} from './utils/textMeasureCache'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 

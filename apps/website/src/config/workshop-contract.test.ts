@@ -6,8 +6,8 @@ import {
   countPackedRecords
 } from '../../scripts/generate-workshop-router-contracts'
 import packedContracts from '../content/workshop-router-contracts.json'
-import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
 import rawBindings from '../data/workshop-router-bindings.json'
+import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
 import {
   authoredRouterContentBySlug,
   authoredWorkshopModels

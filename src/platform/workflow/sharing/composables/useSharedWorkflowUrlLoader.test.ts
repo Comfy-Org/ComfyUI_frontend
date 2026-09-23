@@ -5,11 +5,10 @@ import { computed, createApp, defineComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useTelemetry } from '@/platform/telemetry'
-import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
-
 import { i18n } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
 import { useSharedWorkflowUrlLoader as createSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
+import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import { useDialogStore } from '@/stores/dialogStore'
 

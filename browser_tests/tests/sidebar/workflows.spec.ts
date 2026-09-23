@@ -1,9 +1,9 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { expect } from '@playwright/test'
 import type { Route } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
-import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 test.describe('Workflows sidebar', () => {

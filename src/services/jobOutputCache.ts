@@ -8,13 +8,13 @@
 
 import QuickLRU from '@alloc/quick-lru'
 
+import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
   JobDetail,
   JobOutputAsset
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { parseTaskOutput } from '@/stores/resultItemParsing'

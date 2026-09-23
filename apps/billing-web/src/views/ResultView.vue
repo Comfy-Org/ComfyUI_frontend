@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import {
+  CheckoutSteps,
+  useBillingClient,
+  useCheckout
+} from '@comfyorg/account-ui/billing'
+import type { BillingOutcome } from '@comfyorg/billing-contract'
+import { billingIntentPath } from '@comfyorg/billing-contract'
 /**
  * Where a hosted payment step sends the customer back. Nothing about the
  * payment travels in the URL: the lifecycle recovers whatever this scope is
@@ -9,14 +16,6 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-
-import {
-  CheckoutSteps,
-  useBillingClient,
-  useCheckout
-} from '@comfyorg/account-ui/billing'
-import type { BillingOutcome } from '@comfyorg/billing-contract'
-import { billingIntentPath } from '@comfyorg/billing-contract'
 
 import HostedSurface from '@/components/HostedSurface.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'

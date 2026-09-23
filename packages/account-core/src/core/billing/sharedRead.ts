@@ -18,12 +18,12 @@ import type {
   BillingResult,
   BillingTransport
 } from './billingContracts.js'
-import type { BillingScopeContext } from './billingScope.js'
-import { sameBillingScope } from './billingScope.js'
 import {
   readBillingErrorCode,
   readBillingErrorMessage
 } from './billingErrorBody.js'
+import type { BillingScopeContext } from './billingScope.js'
+import { sameBillingScope } from './billingScope.js'
 import { codeForHttpStatus } from './httpStatus.js'
 
 /**

@@ -12,13 +12,13 @@ import { initialWorkshopPageState } from './workshop-page-state'
 import type { FieldSchema, FormValues } from './workshop-playground'
 import { validateForm } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
-import { runWorkshopRouter } from './workshop-router-queue'
+import { releaseRouterOutputs } from './workshop-response'
 import { WorkshopRouterError } from './workshop-router-errors'
+import { runWorkshopRouter } from './workshop-router-queue'
 import type { RunOutput } from './workshop-run'
+import type { WorkshopSvgRasterizer } from './workshop-svg-output'
 import type { WorkshopUrlEncoder } from './workshop-url-input'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
-import type { WorkshopSvgRasterizer } from './workshop-svg-output'
-import { releaseRouterOutputs } from './workshop-response'
 
 const upload = createWorkshopUrlUploader()
 

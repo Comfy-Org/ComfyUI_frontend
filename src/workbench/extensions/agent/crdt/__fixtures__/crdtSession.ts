@@ -1,10 +1,8 @@
-import { inertPlacementPort } from './inertPlacementPort'
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { expect, test as baseTest } from 'vitest'
 import * as Y from 'yjs'
 
-import { createGraphMutations } from '../graphMutations'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -12,8 +10,10 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { reconcileAgentAdapters } from '../agentNodeMaterializer'
 import { EcsFollowerAdapter } from '../ecsFollowerAdapter'
 import { FollowerDoc } from '../followerDoc'
+import { createGraphMutations } from '../graphMutations'
 import type { GraphOperation } from '../graphOperations'
 import { attachMintPortWiring } from '../mintPortWiring'
+import { inertPlacementPort } from './inertPlacementPort'
 
 interface SessionOptions {
   workflowId: string

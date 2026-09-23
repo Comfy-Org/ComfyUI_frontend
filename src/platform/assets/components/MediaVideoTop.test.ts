@@ -1,11 +1,9 @@
+import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import { fireEvent, render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import MediaVideoTop from './MediaVideoTop.vue'

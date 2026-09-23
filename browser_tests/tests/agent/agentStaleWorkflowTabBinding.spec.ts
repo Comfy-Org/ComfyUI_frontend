@@ -1,10 +1,17 @@
-import { expect } from '@playwright/test'
-import type { WebSocketRoute } from '@playwright/test'
-
 import type {
   AgentMessage,
   AgentThreadListResponse
 } from '@comfyorg/ingest-types'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import {
+  agentTest as test,
+  bootAgentApp
+} from '@e2e/fixtures/agentPanelFixture'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
+import type { WebSocketRoute } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
@@ -12,15 +19,6 @@ import type {
   AgentTurnAccepted,
   CloudWorkflowEntry
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import {
-  agentTest as test,
-  bootAgentApp
-} from '@e2e/fixtures/agentPanelFixture'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const LEGACY_BINDING_KEY = 'Comfy.Agent.WorkflowTabBindings'

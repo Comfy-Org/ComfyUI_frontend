@@ -1,22 +1,22 @@
+import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/composables/useWorkflowActionsMenu'
 import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { useSubgraphStore } from '@/stores/subgraphStore'
-import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useAppModeStore } from '@/stores/appModeStore'
-import { render } from '@testing-library/vue'
-import { defineComponent, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/composables/useWorkflowActionsMenu'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { toNodeId } from '@/types/nodeId'
+import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
 
 const i18n = createI18n({
   legacy: false,

@@ -5,9 +5,9 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyApi } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
-import type { WidgetState } from '@/types/widgetState'
-import { widgetId } from '@/types/widgetId'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 
 import { getLoaderDropIndicator } from './useLoaderDropIndicator'
 

@@ -1,11 +1,10 @@
 import { mint } from '@comfyorg/comfy-multi-player'
+import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import * as Y from 'yjs'
-
-import { render } from '@testing-library/vue'
 
 import { api } from '@/scripts/api'
 import { useNodeDataStore } from '@/stores/nodeDataStore'

@@ -3,6 +3,7 @@ import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+
 import { useFreeTierQuota } from './useFreeTierQuota'
 
 vi.mock(import('@vueuse/core'), () => ({

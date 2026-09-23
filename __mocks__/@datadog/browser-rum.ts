@@ -1,5 +1,5 @@
-import { onTestFinished, vi } from 'vitest'
 import type { DatadogRum as RealDatadogRum } from '@datadog/browser-rum'
+import { onTestFinished, vi } from 'vitest'
 
 type DatadogRum = Pick<
   RealDatadogRum,

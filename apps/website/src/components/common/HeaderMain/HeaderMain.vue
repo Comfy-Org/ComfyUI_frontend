@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useMounted } from '@vueuse/core'
 import {
   computed,
   defineAsyncComponent,
@@ -7,12 +8,13 @@ import {
   ref,
   watch
 } from 'vue'
-import { useMounted } from '@vueuse/core'
 
-import type { Locale } from '../../../i18n/translations.ts'
-import { t } from '../../../i18n/translations.ts'
+import Button from '@/components/ui/button/Button.vue'
+
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
+import type { Locale } from '../../../i18n/translations.ts'
+import { t } from '../../../i18n/translations.ts'
 import {
   useWorkshopAuthFlag,
   useWorkshopEnabled
@@ -21,7 +23,6 @@ import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import LogoContextMenu from './LogoContextMenu.vue'
-import Button from '@/components/ui/button/Button.vue'
 
 const {
   locale = 'en',

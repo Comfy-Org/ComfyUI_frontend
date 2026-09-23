@@ -9,11 +9,11 @@ import {
   ContextMenuTrigger
 } from 'reka-ui'
 
+import logoSvg from '../../../assets/brand/logo.svg?raw'
+import logomarkSvg from '../../../assets/brand/logomark.svg?raw'
 import { getRoutes } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
-import logoSvg from '../../../assets/brand/logo.svg?raw'
-import logomarkSvg from '../../../assets/brand/logomark.svg?raw'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
