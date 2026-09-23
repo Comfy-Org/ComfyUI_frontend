@@ -47,7 +47,6 @@ export const useAgentConversationStore = defineStore(
     const userTags = ref(new Map<TurnId, string[]>())
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
     const latestWorkflowId = ref<string>()
-
     let transport: AgentEventTransport | null = null
     let liveMessage: AssistantMessage | null = null
     const backgroundTurns = new Map<string, BackgroundTurn>()
@@ -106,6 +105,19 @@ export const useAgentConversationStore = defineStore(
 
     function recordPaywall(turnId: TurnId, text: string): void {
       recordSettledReply(turnId, text, [{ type: 'paywall' }])
+    }
+
+    function resolvePaywalls(): void {
+      messages.value = messages.value.map((message) => {
+        const parts = message.parts.filter((part) => part.type !== 'paywall')
+        return parts.length === message.parts.length
+          ? message
+          : { ...message, parts }
+      })
+    }
+
+    function setPaywallsResolved(resolved: boolean): void {
+      if (resolved) resolvePaywalls()
     }
 
     function startTurn(turnId: TurnId): void {
@@ -322,6 +334,7 @@ export const useAgentConversationStore = defineStore(
       setThreadId,
       recordFailedSend,
       recordPaywall,
+      setPaywallsResolved,
       startTurn,
       ingest,
       abortActiveTurn,

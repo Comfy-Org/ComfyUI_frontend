@@ -263,6 +263,7 @@ const paywallCapabilities = vi.hoisted(() => ({
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
 }))
+const paywallHasFunds = ref(false)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -327,6 +328,9 @@ beforeEach(() => {
   )
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
+      subscription: computed(() =>
+        fromPartial({ hasFunds: paywallHasFunds.value })
+      ),
       tier: computed(() => paywallBilling.tier)
     })
   )
@@ -376,6 +380,7 @@ beforeEach(() => {
   paywallCapabilities.canSubscribeSelfServe = true
   paywallCapabilities.isReady = true
   paywallBilling.tier = 'STANDARD'
+  paywallHasFunds.value = false
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -625,6 +630,25 @@ describe('AgentPanelRoot paywall actions', () => {
       ['subscription'],
       ['credits']
     ])
+  })
+
+  it('dismisses the paywall after billing confirms funds are available', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      'msg-paywall' as TurnId,
+      'continue'
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    paywallHasFunds.value = true
+
+    await vi.waitFor(() =>
+      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    )
   })
 
   it('hides purchase actions from a Team member without billing permissions', async () => {
