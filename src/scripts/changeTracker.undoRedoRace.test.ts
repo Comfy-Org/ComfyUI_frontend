@@ -268,13 +268,7 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
     ])
   })
 
-  // Unmarked on purpose: it drives the same arrange as the two expected
-  // failures below, so a broken fixture reddens here with a readable diff
-  // instead of being absorbed by `it.fails`. `heldCount` states the
-  // precondition those cases rest on — that both restores really are in
-  // flight together — so a fix that serialises or drops the second undo
-  // reddens here too, which is the signal to revisit this whole file.
-  it('holds both restores in flight and lands on the workflow from before the partner nodes', async () => {
+  it('starts no second restore until the first has settled', async () => {
     const loads = holdLoadsUntilReleased()
     const tracker = trackerEditing(withBothPartnerNodes(), [
       beforePartnerNodes(),
@@ -283,8 +277,9 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
 
     const firstUndo = tracker.undo()
     const secondUndo = tracker.undo()
+    await vi.waitUntil(() => loads.heldCount > 0)
 
-    expect(loads.heldCount).toBe(2)
+    expect(loads.heldCount).toBe(1)
 
     loads.settleRest()
     await firstUndo
@@ -293,7 +288,7 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
     expect(nodeTypesOf(tracker.activeState)).toEqual([CHECKPOINT_LOADER])
   })
 
-  it.fails('KNOWN BUG (ING-198, suspected sequence): an autosave during a re-entrant undo empties the redo queue, stranding the partner nodes', async () => {
+  it('redo restores the partner nodes when an autosave lands between two rapid undos', async () => {
     const loads = holdLoadsUntilReleased()
     const tracker = trackerEditing(withBothPartnerNodes(), [
       beforePartnerNodes(),
@@ -303,10 +298,9 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
     const firstUndo = tracker.undo()
     const secondUndo = tracker.undo()
 
-    // Awaiting the first restore is the readiness boundary: it has cleared
-    // both shared flags in its `finally` while the second is still loading.
     // `prepareForSave` is the entry point every autosave takes through
-    // `workflowService.saveWorkflow`.
+    // `workflowService.saveWorkflow`. It lands here, between the two
+    // restores, which is where it used to empty the redo queue.
     await loads.releaseOldest()
     await firstUndo
     tracker.prepareForSave()
@@ -324,7 +318,7 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
     ])
   })
 
-  it.fails('KNOWN BUG (ING-198, suspected sequence): a re-entrant undo records the same redo entry twice, so redo skips the intermediate workflow', async () => {
+  it('records each distinct state once, so redo steps back through the intermediate workflow', async () => {
     const loads = holdLoadsUntilReleased()
     const tracker = trackerEditing(withBothPartnerNodes(), [
       beforePartnerNodes(),
