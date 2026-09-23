@@ -4,6 +4,7 @@ import { workshopContract } from './workshop-contract-catalog'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { WorkshopRouterError } from './workshop-router-errors'
 import { runWorkshopRouter } from './workshop-router-queue'
+import { workshopFailureAnalytics } from '../scripts/workshop-analytics'
 
 const MODEL = 'bfl/flux-2-pro'
 const REQUEST_ID = '6f1a1a6e-6a53-4a5f-9d3a-2b3b0a1f9c21'
@@ -300,11 +301,78 @@ describe('queued Router delivery', () => {
 
   it('reports the stored failure of a finished run', async () => {
     stubFetch(admitted(), pending(), refusal(502, 'provider_error'))
-    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+    const failure: unknown = await settle(runWorkshopRouter(options())).catch(
+      (error: unknown) => error
+    )
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(failure).toMatchObject({
       reason: 'provider',
       requestId: REQUEST_ID,
       response: { status: 502 },
       requestSettlement: 'terminal'
+    })
+    expect(workshopFailureAnalytics(failure)).not.toHaveProperty(
+      'exception_name'
+    )
+  })
+
+  it('reports a stored provider moderation payload as a terminal policy refusal', async () => {
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          code: 'DataInspectionFailed',
+          message:
+            'Green net check failed for image (input): Input data may contain inappropriate content.'
+        },
+        {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        }
+      )
+    )
+
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'policy',
+      requestId: REQUEST_ID,
+      response: { status: 502, errorType: 'provider_error' },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it('settles a successful HTTP result with a BFL moderation status', async () => {
+    stubFetch(
+      admitted(),
+      Response.json({
+        id: 'bfl-task',
+        status: 'Content Moderated',
+        result: null
+      })
+    )
+
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'policy',
+      requestId: REQUEST_ID,
+      response: { status: 200, errorType: null },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it('retains a queued response parser exception for analytics', async () => {
+    const malformed = () =>
+      new Response('{', { headers: { 'Content-Type': 'application/json' } })
+    stubFetch(admitted(), malformed(), malformed(), malformed())
+
+    const failure: unknown = await settle(runWorkshopRouter(options())).catch(
+      (error: unknown) => error
+    )
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(workshopFailureAnalytics(failure)).toMatchObject({
+      reason: 'response',
+      request_id: REQUEST_ID,
+      exception_name: 'SyntaxError'
     })
   })
 

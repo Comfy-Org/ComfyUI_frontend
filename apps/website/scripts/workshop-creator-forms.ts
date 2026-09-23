@@ -579,7 +579,8 @@ export function creatorFormFor(
           rules.video_url = {
             ...rules.video_url,
             maxVideoDurationSeconds: 15.5,
-            help: 'Use a source video no longer than 15.5 seconds.'
+            videoWidthPixels: { minimum: 700, maximum: 4553 },
+            help: 'Use a source video no longer than 15.5 seconds and between 700 and 4553 pixels wide.'
           }
         add(
           'keep_original_sound',
