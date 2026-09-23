@@ -103,7 +103,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
-const workflowService = vi.mocked(useWorkflowService())
 
 function setActiveWorkflow(workflow: Partial<LoadedComfyWorkflow>) {
   useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>(workflow)
@@ -152,7 +151,6 @@ describe('ComfyHubPublishDialog', () => {
     })
     mockFetchProfile.mockResolvedValue(null)
     mockSubmitToComfyHub.mockResolvedValue(undefined)
-    workflowService.renameWorkflow.mockResolvedValue(undefined)
     if (mockFormDataHolder.value) mockFormDataHolder.value.name = ''
     mockGetCachedPrefill.mockReturnValue(null)
     mockGetPublishStatus.mockResolvedValue({
@@ -272,7 +270,9 @@ describe('ComfyHubPublishDialog', () => {
     expect(mockSubmitToComfyHub).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Published title' })
     )
-    expect(workflowService.renameWorkflow).not.toHaveBeenCalled()
+    expect(
+      vi.mocked(useWorkflowService()).renameWorkflow
+    ).not.toHaveBeenCalled()
   })
 
   it('does not close when publish submission fails', async () => {

@@ -11,12 +11,13 @@ import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 vi.mock(import('@/scripts/api'))
-const mockApiURL = vi.mocked(api.apiURL)
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
 beforeEach(() => {
-  mockApiURL.mockImplementation((path) => `http://localhost:8188/api${path}`)
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:8188/api${path}`
+  )
 })
 function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {

@@ -79,6 +79,8 @@ function setRouteQuery(query: Record<string, string | string[] | undefined>) {
 
 afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
+const mockShowLayoutDialog = vi.hoisted(() => vi.fn())
+
 const mockHideTemplateSelector = vi.hoisted(() => vi.fn())
 const mockDialogStack = vi.hoisted(
   () =>
@@ -88,8 +90,6 @@ const mockDialogStack = vi.hoisted(
       dialogComponentProps: Record<string, unknown>
     }>
 )
-
-const mockShowLayoutDialog = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({

@@ -10,7 +10,6 @@ import { api } from '@/scripts/api'
 vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
-const workflowService = vi.mocked(useWorkflowService())
 
 beforeEach(() => {
   useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'
@@ -35,7 +34,7 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
 
-    expect(workflowService.saveWorkflow).toHaveBeenCalledWith(
+    expect(vi.mocked(useWorkflowService()).saveWorkflow).toHaveBeenCalledWith(
       useWorkflowStore().activeWorkflow
     )
   })
@@ -57,9 +56,9 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
 
-    expect(workflowService.saveWorkflow).not.toHaveBeenCalledWith(
-      useWorkflowStore().activeWorkflow
-    )
+    expect(
+      vi.mocked(useWorkflowService()).saveWorkflow
+    ).not.toHaveBeenCalledWith(useWorkflowStore().activeWorkflow)
   })
 
   it('should not auto save workflow when autosave is off', async () => {
@@ -79,8 +78,7 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    expect(serviceInstance.saveWorkflow).not.toHaveBeenCalled()
+    expect(vi.mocked(useWorkflowService()).saveWorkflow).not.toHaveBeenCalled()
   })
 
   it('should respect the user specified auto save delay', async () => {
@@ -100,12 +98,11 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    expect(serviceInstance.saveWorkflow).not.toHaveBeenCalled()
+    expect(vi.mocked(useWorkflowService()).saveWorkflow).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(1000)
 
-    expect(serviceInstance.saveWorkflow).toHaveBeenCalled()
+    expect(vi.mocked(useWorkflowService()).saveWorkflow).toHaveBeenCalled()
   })
 
   it('should debounce save requests', async () => {
@@ -123,7 +120,6 @@ describe('useWorkflowAutoSave', () => {
       }
     })
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
     const graphChangedCallback = vi.mocked(api.addEventListener).mock
       .calls[0][1]
 
@@ -134,10 +130,12 @@ describe('useWorkflowAutoSave', () => {
     graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
 
     vi.advanceTimersByTime(1999)
-    expect(serviceInstance.saveWorkflow).not.toHaveBeenCalled()
+    expect(vi.mocked(useWorkflowService()).saveWorkflow).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(1)
-    expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(useWorkflowService()).saveWorkflow).toHaveBeenCalledTimes(
+      1
+    )
   })
 
   it('should handle save error gracefully', async () => {
@@ -160,9 +158,9 @@ describe('useWorkflowAutoSave', () => {
         }
       })
 
-      const serviceInstance =
-        vi.mocked(useWorkflowService).mock.results[0].value
-      serviceInstance.saveWorkflow.mockRejectedValue(new Error('Test Error'))
+      vi.mocked(useWorkflowService()).saveWorkflow.mockRejectedValue(
+        new Error('Test Error')
+      )
 
       vi.advanceTimersByTime(1000)
       await Promise.resolve()
@@ -191,13 +189,14 @@ describe('useWorkflowAutoSave', () => {
       }
     })
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    let resolveSave: () => void
-    const firstSavePromise = new Promise<void>((resolve) => {
+    let resolveSave: (saved: boolean) => void
+    const firstSavePromise = new Promise<boolean>((resolve) => {
       resolveSave = resolve
     })
 
-    serviceInstance.saveWorkflow.mockImplementationOnce(() => firstSavePromise)
+    vi.mocked(useWorkflowService()).saveWorkflow.mockImplementationOnce(
+      () => firstSavePromise
+    )
 
     vi.advanceTimersByTime(1000)
 
@@ -205,11 +204,13 @@ describe('useWorkflowAutoSave', () => {
       .calls[0][1]
     graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
 
-    resolveSave!()
+    resolveSave!(true)
     await Promise.resolve()
 
     vi.advanceTimersByTime(1000)
-    expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(useWorkflowService()).saveWorkflow).toHaveBeenCalledTimes(
+      2
+    )
   })
 
   it('should clean up event listeners on component unmount', async () => {
@@ -245,9 +246,10 @@ describe('useWorkflowAutoSave', () => {
 
     await vi.runAllTimersAsync()
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(1)
-    serviceInstance.saveWorkflow.mockClear()
+    expect(vi.mocked(useWorkflowService()).saveWorkflow).toHaveBeenCalledTimes(
+      1
+    )
+    vi.mocked(useWorkflowService()).saveWorkflow.mockClear()
 
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = -500
 
@@ -257,7 +259,9 @@ describe('useWorkflowAutoSave', () => {
 
     await vi.runAllTimersAsync()
 
-    expect(serviceInstance.saveWorkflow).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(useWorkflowService()).saveWorkflow).toHaveBeenCalledTimes(
+      1
+    )
   })
 
   it('should not autosave if workflow is not persisted', async () => {
@@ -277,9 +281,8 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
 
-    const serviceInstance = vi.mocked(useWorkflowService).mock.results[0].value
-    expect(serviceInstance.saveWorkflow).not.toHaveBeenCalledWith(
-      useWorkflowStore().activeWorkflow
-    )
+    expect(
+      vi.mocked(useWorkflowService()).saveWorkflow
+    ).not.toHaveBeenCalledWith(useWorkflowStore().activeWorkflow)
   })
 })

@@ -94,7 +94,6 @@ vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
 }))
 
 vi.mock(import('@/services/litegraphService'))
-const litegraphService = vi.mocked(useLitegraphService())
 
 vi.mock(import('@/utils/loaderNodeUtil'))
 const mockDetectNodeTypeFromFilename = vi.mocked(detectNodeTypeFromFilename)
@@ -217,10 +216,12 @@ function createLoadImageNode(): LGraphNode {
 }
 
 function getAddedImageWidgetValues() {
-  return litegraphService.addNodeOnGraph.mock.results.map(
-    ({ value }) =>
-      value.widgets?.find((widget: IWidget) => widget.name === 'image')?.value
-  )
+  return vi
+    .mocked(useLitegraphService())
+    .addNodeOnGraph.mock.results.map(
+      ({ value }) =>
+        value.widgets?.find((widget: IWidget) => widget.name === 'image')?.value
+    )
 }
 
 const apps: App<Element>[] = []
@@ -317,8 +318,10 @@ describe('useMediaAssetActions', () => {
     vi.mocked(api.getServerFeature).mockImplementation(
       (_path: string, defaultValue?: unknown) => defaultValue
     )
-    litegraphService.addNodeOnGraph.mockImplementation(createLoadImageNode)
-    litegraphService.getCanvasCenter.mockReturnValue([100, 100])
+    vi.mocked(useLitegraphService()).addNodeOnGraph.mockImplementation(
+      createLoadImageNode
+    )
+    vi.mocked(useLitegraphService()).getCanvasCenter.mockReturnValue([100, 100])
     mockDetectNodeTypeFromFilename.mockReturnValue({
       nodeType: 'LoadImage',
       widgetName: 'image'
@@ -414,10 +417,14 @@ describe('useMediaAssetActions', () => {
 
       await actions.addMultipleToWorkflow(assets)
 
-      expect(litegraphService.addNodeOnGraph).toHaveBeenCalledTimes(2)
+      expect(
+        vi.mocked(useLitegraphService()).addNodeOnGraph
+      ).toHaveBeenCalledTimes(2)
       expect(getAddedImageWidgetValues()).toEqual(['first.png', 'third.png'])
       expect(
-        litegraphService.addNodeOnGraph.mock.calls.map(([, options]) => options)
+        vi
+          .mocked(useLitegraphService())
+          .addNodeOnGraph.mock.calls.map(([, options]) => options)
       ).toEqual([{ pos: [100, 100] }, { pos: [150, 150] }])
       expect(useToast().add).toHaveBeenCalledWith({
         severity: 'warn',

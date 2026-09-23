@@ -36,7 +36,6 @@ vi.mock(import('@/utils/loaderNodeUtil'), () => ({
 }))
 
 vi.mock(import('../composables/useMediaAssetActions'))
-const mediaAssetActions = vi.mocked(useMediaAssetActions())
 
 const capturedMenu = vi.hoisted(() => ({ model: [] as MenuItem[] }))
 
@@ -217,7 +216,9 @@ describe('MediaAssetContextMenu', () => {
       item: downloadItem
     })
 
-    expect(mediaAssetActions.downloadAssets).toHaveBeenCalledWith([asset])
+    expect(
+      vi.mocked(useMediaAssetActions()).downloadAssets
+    ).toHaveBeenCalledWith([asset])
 
     unmount()
   })
