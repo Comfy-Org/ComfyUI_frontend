@@ -22,14 +22,9 @@ import {
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
+import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
-
-const telemetry = vi.hoisted(() => ({
-  enabled: true,
-  trackFeatureFlagEvaluation: vi.fn()
-}))
-const mockTrackFeatureFlagEvaluation = telemetry.trackFeatureFlagEvaluation
 
 // Mock the API module
 vi.mock(import('@/scripts/api'))
@@ -44,12 +39,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () =>
-    telemetry.enabled
-      ? { trackFeatureFlagEvaluation: telemetry.trackFeatureFlagEvaluation }
-      : null
-}))
+vi.mock(import('@/platform/telemetry'))
 
 describe('useFeatureFlags', () => {
   describe('flags object', () => {
@@ -841,7 +831,6 @@ describe('useFeatureFlags', () => {
 
   describe('feature flag telemetry', () => {
     afterEach(() => {
-      telemetry.enabled = true
       vi.mocked(distributionTypes).isCloud = false
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
@@ -861,28 +850,30 @@ describe('useFeatureFlags', () => {
 
       const stop = startFeatureFlagTelemetry()
       onTestFinished(stop)
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
         false
       )
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         false
       )
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.CHURNKEY_APP_ID,
         'app_test'
       )
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         'assets',
         true
       )
 
-      mockTrackFeatureFlagEvaluation.mockClear()
+      const currentTelemetry = useTelemetry()
+      if (!currentTelemetry) throw new Error('Expected telemetry mock')
+      vi.mocked(currentTelemetry.trackFeatureFlagEvaluation).mockClear()
       remoteConfig.value = { partner_node_governance_enabled: true }
       await nextTick()
 
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
         true
       )
@@ -895,17 +886,19 @@ describe('useFeatureFlags', () => {
       expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
       expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
 
-      expect(mockTrackFeatureFlagEvaluation).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).not.toHaveBeenCalled()
     })
 
     it('is a no-op without a telemetry dispatcher', () => {
-      telemetry.enabled = false
+      const trackFeatureFlagEvaluation =
+        useTelemetry()?.trackFeatureFlagEvaluation
+      vi.mocked(useTelemetry).mockReturnValue(null)
       vi.mocked(api.getServerFeature).mockReturnValue(false)
 
       const stop = startFeatureFlagTelemetry()
       onTestFinished(stop)
 
-      expect(mockTrackFeatureFlagEvaluation).not.toHaveBeenCalled()
+      expect(trackFeatureFlagEvaluation).not.toHaveBeenCalled()
     })
   })
 

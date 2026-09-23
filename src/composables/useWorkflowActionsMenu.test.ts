@@ -41,8 +41,6 @@ let mockAppModeStore: ReturnType<typeof useAppModeStore>
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
-const mockWorkflowService = useWorkflowService()
-
 vi.mock(import('@/composables/useFeatureFlags'))
 function useWorkflowActionsMenu(
   ...args: Parameters<typeof useWorkflowActionsMenuComposable>
@@ -253,7 +251,7 @@ describe('useWorkflowActionsMenu', () => {
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     await findItem(menuItems.value, 'breadcrumbsMenu.duplicate').command?.()
 
-    expect(mockWorkflowService.duplicateWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().duplicateWorkflow).toHaveBeenCalledWith(
       mockWorkflowStore.activeWorkflow
     )
   })
@@ -272,7 +270,7 @@ describe('useWorkflowActionsMenu', () => {
       'breadcrumbsMenu.deleteWorkflow'
     ).command?.()
 
-    expect(mockWorkflowService.deleteWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().deleteWorkflow).toHaveBeenCalledWith(
       mockWorkflowStore.activeWorkflow
     )
   })
@@ -368,7 +366,7 @@ describe('useWorkflowActionsMenu', () => {
     })
     await findItem(menuItems.value, 'g.rename').command?.()
 
-    expect(mockWorkflowService.openWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
       customWorkflow.value
     )
     expect(startRename).toHaveBeenCalled()

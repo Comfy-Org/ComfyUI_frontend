@@ -53,8 +53,6 @@ let settingStoreMock: ReturnType<typeof useSettingStore>
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
-const workflowServiceMock = vi.mocked(useWorkflowService(), true)
-
 let workflowStoreMock: ReturnType<typeof useWorkflowStore>
 
 const cancelJobMock = vi.fn()
@@ -178,7 +176,7 @@ describe('useJobMenu', () => {
       'Job 55.json',
       workflow
     )
-    expect(workflowServiceMock.openWorkflow).toHaveBeenCalledWith({
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith({
       filename: 'Job 55.json',
       content: JSON.stringify(workflow)
     })
@@ -191,7 +189,7 @@ describe('useJobMenu', () => {
     await openJobWorkflow()
 
     expect(workflowStoreMock.createTemporary).not.toHaveBeenCalled()
-    expect(workflowServiceMock.openWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
   it('surfaces an error dialog when workflow open fails', async () => {
@@ -199,7 +197,9 @@ describe('useJobMenu', () => {
     const workflow = { nodes: [{ type: 'rgthree.DisplayAny' }] }
     getJobWorkflowMock.mockResolvedValue(workflow)
     const loadError = new Error('configure() failed: malformed widget')
-    workflowServiceMock.openWorkflow.mockRejectedValueOnce(loadError)
+    vi.mocked(useWorkflowService().openWorkflow).mockRejectedValueOnce(
+      loadError
+    )
     setCurrentItem(createJobItem({ id: '77' }))
 
     await expect(openJobWorkflow()).resolves.toBeUndefined()

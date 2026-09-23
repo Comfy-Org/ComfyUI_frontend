@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
@@ -7,15 +7,8 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 vi.mock(import('@/scripts/app'))
 
-let canvasInteractionsMock: ReturnType<typeof useCanvasInteractions>
-
 describe('useNodeAnimatedImage', () => {
-  beforeEach(() => {
-    canvasInteractionsMock = useCanvasInteractions()
-  })
-
   function setup() {
-    vi.clearAllMocks()
     const node = createMockMediaNode({ imgs: [document.createElement('img')] })
     const { showAnimatedPreview, removeAnimatedPreview } =
       useNodeAnimatedImage()
@@ -33,19 +26,21 @@ describe('useNodeAnimatedImage', () => {
     element.dispatchEvent(new PointerEvent('pointerup'))
     element.dispatchEvent(new PointerEvent('pointerdown', { button: 0 }))
 
-    expect(canvasInteractionsMock.handleWheel).toHaveBeenCalledTimes(1)
-    expect(canvasInteractionsMock.handlePointerMove).toHaveBeenCalledTimes(1)
-    expect(canvasInteractionsMock.handlePointerUp).toHaveBeenCalledTimes(1)
-    expect(canvasInteractionsMock.handlePointerDown).toHaveBeenCalledTimes(1)
-    expect(canvasInteractionsMock.forwardEventToCanvas).not.toHaveBeenCalled()
+    expect(useCanvasInteractions().handleWheel).toHaveBeenCalledTimes(1)
+    expect(useCanvasInteractions().handlePointerMove).toHaveBeenCalledTimes(1)
+    expect(useCanvasInteractions().handlePointerUp).toHaveBeenCalledTimes(1)
+    expect(useCanvasInteractions().handlePointerDown).toHaveBeenCalledTimes(1)
+    expect(useCanvasInteractions().forwardEventToCanvas).not.toHaveBeenCalled()
   })
 
   it('routes right-click pointerdown through forwardEventToCanvas, not handlePointerDown', () => {
     const { element } = setup()
     element.dispatchEvent(new PointerEvent('pointerdown', { button: 2 }))
 
-    expect(canvasInteractionsMock.forwardEventToCanvas).toHaveBeenCalledTimes(1)
-    expect(canvasInteractionsMock.handlePointerDown).not.toHaveBeenCalled()
+    expect(useCanvasInteractions().forwardEventToCanvas).toHaveBeenCalledTimes(
+      1
+    )
+    expect(useCanvasInteractions().handlePointerDown).not.toHaveBeenCalled()
   })
 
   it('detaches every listener when the preview is removed', () => {
@@ -58,10 +53,10 @@ describe('useNodeAnimatedImage', () => {
     element.dispatchEvent(new PointerEvent('pointerdown', { button: 0 }))
     element.dispatchEvent(new PointerEvent('pointerdown', { button: 2 }))
 
-    expect(canvasInteractionsMock.handleWheel).not.toHaveBeenCalled()
-    expect(canvasInteractionsMock.handlePointerMove).not.toHaveBeenCalled()
-    expect(canvasInteractionsMock.handlePointerUp).not.toHaveBeenCalled()
-    expect(canvasInteractionsMock.handlePointerDown).not.toHaveBeenCalled()
-    expect(canvasInteractionsMock.forwardEventToCanvas).not.toHaveBeenCalled()
+    expect(useCanvasInteractions().handleWheel).not.toHaveBeenCalled()
+    expect(useCanvasInteractions().handlePointerMove).not.toHaveBeenCalled()
+    expect(useCanvasInteractions().handlePointerUp).not.toHaveBeenCalled()
+    expect(useCanvasInteractions().handlePointerDown).not.toHaveBeenCalled()
+    expect(useCanvasInteractions().forwardEventToCanvas).not.toHaveBeenCalled()
   })
 })

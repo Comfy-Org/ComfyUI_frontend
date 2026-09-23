@@ -1,6 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
@@ -8,13 +8,7 @@ import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 
 vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
-let nodeDragToCanvas: ReturnType<typeof useNodeDragToCanvas>
-
 describe('useNodePreviewAndDrag', () => {
-  beforeEach(() => {
-    nodeDragToCanvas = vi.mocked(useNodeDragToCanvas())
-  })
-
   const mockNodeDef = {
     name: 'TestNode',
     display_name: 'Test Node'
@@ -112,9 +106,12 @@ describe('useNodePreviewAndDrag', () => {
 
       expect(result.isDragging.value).toBe(true)
       expect(result.isHovered.value).toBe(false)
-      expect(nodeDragToCanvas.startDrag).toHaveBeenCalledWith(mockNodeDef, {
-        mode: 'native'
-      })
+      expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(
+        mockNodeDef,
+        {
+          mode: 'native'
+        }
+      )
       expect(mockDataTransfer.effectAllowed).toBe('copy')
       expect(mockDataTransfer.setData).toHaveBeenCalledWith(
         'application/x-comfy-node',
@@ -130,7 +127,7 @@ describe('useNodePreviewAndDrag', () => {
       result.handleDragStart(mockEvent)
 
       expect(result.isDragging.value).toBe(false)
-      expect(nodeDragToCanvas.startDrag).not.toHaveBeenCalled()
+      expect(useNodeDragToCanvas().startDrag).not.toHaveBeenCalled()
     })
   })
 
@@ -149,7 +146,10 @@ describe('useNodePreviewAndDrag', () => {
       result.handleDragEnd(mockEvent)
 
       expect(result.isDragging.value).toBe(false)
-      expect(nodeDragToCanvas.handleNativeDrop).toHaveBeenCalledWith(100, 200)
+      expect(useNodeDragToCanvas().handleNativeDrop).toHaveBeenCalledWith(
+        100,
+        200
+      )
     })
 
     it('should always call handleNativeDrop regardless of dropEffect', () => {
@@ -167,7 +167,10 @@ describe('useNodePreviewAndDrag', () => {
       result.handleDragEnd(mockEvent)
 
       expect(result.isDragging.value).toBe(false)
-      expect(nodeDragToCanvas.handleNativeDrop).toHaveBeenCalledWith(300, 400)
+      expect(useNodeDragToCanvas().handleNativeDrop).toHaveBeenCalledWith(
+        300,
+        400
+      )
     })
   })
 })

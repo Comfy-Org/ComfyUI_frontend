@@ -29,7 +29,6 @@ const { mockConvertEventToCanvasOffset, mockSelectItems, mockCanvas } =
   })
 
 vi.mock(import('@/services/litegraphService'))
-const litegraphService = vi.mocked(useLitegraphService(), true)
 
 vi.mock(import('@/i18n'))
 
@@ -167,7 +166,7 @@ describe('useNodeDragToCanvas', () => {
       })
       document.dispatchEvent(pointerEvent)
 
-      expect(litegraphService.addNodeOnGraph).toHaveBeenCalledWith(
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
         mockNodeDef,
         {
           pos: [150, 150]
@@ -193,7 +192,7 @@ describe('useNodeDragToCanvas', () => {
       })
       document.dispatchEvent(pointerEvent)
 
-      expect(litegraphService.addNodeOnGraph).not.toHaveBeenCalled()
+      expect(useLitegraphService().addNodeOnGraph).not.toHaveBeenCalled()
       expect(isDragging.value).toBe(false)
     })
 
@@ -228,7 +227,9 @@ describe('useNodeDragToCanvas', () => {
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
       const placedNode = new LGraphNode('Placed node')
-      litegraphService.addNodeOnGraph.mockReturnValue(placedNode)
+      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+        placedNode
+      )
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
@@ -254,7 +255,9 @@ describe('useNodeDragToCanvas', () => {
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
       const placedNode = new LGraphNode('Placed node')
       const widget = placedNode.addWidget('text', 'ckpt_name', '', () => {})
-      litegraphService.addNodeOnGraph.mockReturnValue(placedNode)
+      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+        placedNode
+      )
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef, {
@@ -281,7 +284,9 @@ describe('useNodeDragToCanvas', () => {
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
       const placedNode = new LGraphNode('Placed node')
-      litegraphService.addNodeOnGraph.mockReturnValue(placedNode)
+      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+        placedNode
+      )
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {})
@@ -319,7 +324,6 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      litegraphService.addNodeOnGraph.mockReturnValue(null)
       vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const { startDrag } = useNodeDragToCanvas()
@@ -349,7 +353,6 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      litegraphService.addNodeOnGraph.mockReturnValue(null)
       vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const { startDrag } = useNodeDragToCanvas()
@@ -385,7 +388,7 @@ describe('useNodeDragToCanvas', () => {
       })
       document.dispatchEvent(pointerEvent)
 
-      expect(litegraphService.addNodeOnGraph).not.toHaveBeenCalled()
+      expect(useLitegraphService().addNodeOnGraph).not.toHaveBeenCalled()
       expect(isDragging.value).toBe(true)
     })
   })
@@ -405,7 +408,7 @@ describe('useNodeDragToCanvas', () => {
       startDrag(mockNodeDef, { mode: 'native' })
       handleNativeDrop(250, 250)
 
-      expect(litegraphService.addNodeOnGraph).toHaveBeenCalledWith(
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
         mockNodeDef,
         {
           pos: [200, 200]
@@ -426,7 +429,7 @@ describe('useNodeDragToCanvas', () => {
       startDrag(mockNodeDef, { mode: 'native' })
       handleNativeDrop(600, 250)
 
-      expect(litegraphService.addNodeOnGraph).not.toHaveBeenCalled()
+      expect(useLitegraphService().addNodeOnGraph).not.toHaveBeenCalled()
       expect(isDragging.value).toBe(false)
     })
 
@@ -444,7 +447,7 @@ describe('useNodeDragToCanvas', () => {
       startDrag(mockNodeDef)
       handleNativeDrop(250, 250)
 
-      expect(litegraphService.addNodeOnGraph).not.toHaveBeenCalled()
+      expect(useLitegraphService().addNodeOnGraph).not.toHaveBeenCalled()
     })
 
     it('should reset drag state after drop', () => {

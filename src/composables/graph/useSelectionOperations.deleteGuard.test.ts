@@ -17,24 +17,22 @@ vi.mock(import('@/services/dialogService'))
 function stubCanvas(selectOnly: boolean) {
   app.canvas.selectOnly = selectOnly
   app.canvas.selectedItems = new Set([new LGraphNode('Selected')])
-  const deleteSelected = vi.mocked(app.canvas.deleteSelected)
-  return { deleteSelected }
 }
 
 describe('useSelectionOperations delete guard', () => {
   it('does not delete while the canvas is picking-only', () => {
-    const { deleteSelected } = stubCanvas(true)
+    stubCanvas(true)
 
     useSelectionOperations().deleteSelection()
 
-    expect(deleteSelected).not.toHaveBeenCalled()
+    expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
   })
 
   it('deletes normally when the canvas is editable', () => {
-    const { deleteSelected } = stubCanvas(false)
+    stubCanvas(false)
 
     useSelectionOperations().deleteSelection()
 
-    expect(deleteSelected).toHaveBeenCalledOnce()
+    expect(app.canvas.deleteSelected).toHaveBeenCalledOnce()
   })
 })

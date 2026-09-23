@@ -436,8 +436,7 @@ describe('usePainter', () => {
     it('uploads the current canvas when no cached modelValue is present, even if nothing has been painted yet', async () => {
       makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
-      const fetchApiMock = vi.mocked(api.fetchApi)
-      fetchApiMock.mockResolvedValueOnce({
+      vi.mocked(api.fetchApi).mockResolvedValueOnce({
         status: 200,
         json: async () => ({ name: 'uploaded.png' })
       } as Response)
@@ -453,13 +452,13 @@ describe('usePainter', () => {
       await nextTick()
 
       const result = await widgetOf('mask').serializeValue!(paintNode(), 0)
-      expect(fetchApiMock).toHaveBeenCalledWith(
+      expect(api.fetchApi).toHaveBeenCalledWith(
         '/upload/image',
         expect.objectContaining({ method: 'POST' })
       )
       expect(result).toBe('uploaded.png [input]')
 
-      const [, init] = fetchApiMock.mock.calls[0]
+      const [, init] = vi.mocked(api.fetchApi).mock.calls[0]
       const body = init?.body as FormData
       expect(body).toBeInstanceOf(FormData)
       expect(body.get('type')).toBe('input')

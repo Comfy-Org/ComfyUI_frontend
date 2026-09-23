@@ -23,7 +23,6 @@ beforeEach(() => {
 
 afterEach(() => {
   globalThis.AudioContext = originalAudioContext
-  vi.mocked(api.fetchApi).mockReset()
 })
 
 vi.mock(import('@/scripts/api'))

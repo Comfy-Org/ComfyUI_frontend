@@ -18,9 +18,6 @@ const state = vi.hoisted(() => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-const telemetry = useTelemetry()
-if (!telemetry) throw new Error('Expected telemetry mock')
-
 vi.mock<unknown>(
   import('@/platform/telemetry/utils/getExecutionContext'),
   () => ({
@@ -70,7 +67,7 @@ describe('useRunButtonTelemetry', () => {
   it('tracks the completed run button payload', () => {
     useRunButtonTelemetry().trackRunButton({ trigger_source: 'linear' })
 
-    expect(telemetry.trackRunButton).toHaveBeenCalledExactlyOnceWith(
+    expect(useTelemetry()?.trackRunButton).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         subscribe_to_run: false,
         trigger_source: 'linear',
@@ -89,7 +86,7 @@ describe('useRunButtonTelemetry', () => {
         useRunButtonTelemetry().trackRunButton({ trigger_source: 'linear' })
       ).not.toThrow()
 
-      expect(telemetry.trackRunButton).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackRunButton).not.toHaveBeenCalled()
       expect(consoleError).toHaveBeenCalledExactlyOnceWith(
         '[Telemetry] Run button tracking failed',
         error

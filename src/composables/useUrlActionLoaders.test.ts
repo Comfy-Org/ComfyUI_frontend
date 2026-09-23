@@ -93,7 +93,6 @@ vi.mock(
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
-const subscriptionDialog = vi.mocked(useSubscriptionDialog(), true)
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
@@ -190,7 +189,9 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadSettings).not.toHaveBeenCalled()
     expect(mocks.loadAssets).not.toHaveBeenCalled()
     expect(mocks.loadPaymentReturn).not.toHaveBeenCalled()
-    expect(subscriptionDialog.resumePendingPricingFlow).not.toHaveBeenCalled()
+    expect(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).not.toHaveBeenCalled()
   })
 
   it('runs all loaders on Cloud', async () => {
@@ -210,26 +211,33 @@ describe('useUrlActionLoaders', () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
 
-    expect(subscriptionDialog.resumePendingPricingFlow).toHaveBeenCalledOnce()
     expect(
-      subscriptionDialog.resumePendingPricingFlow.mock.invocationCallOrder[0]
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(useSubscriptionDialog().resumePendingPricingFlow).mock
+        .invocationCallOrder[0]
     ).toBeGreaterThan(mocks.loadPaymentReturn.mock.invocationCallOrder[0])
   })
 
   it('resolves without waiting for checkout recovery to settle', async () => {
-    subscriptionDialog.resumePendingPricingFlow.mockImplementationOnce(
-      () => new Promise<undefined>(() => {})
-    )
+    vi.mocked(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).mockImplementationOnce(() => new Promise<undefined>(() => {}))
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
 
-    expect(subscriptionDialog.resumePendingPricingFlow).toHaveBeenCalledOnce()
+    expect(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).toHaveBeenCalledOnce()
   })
 
   it('reports a checkout-recovery failure instead of rejecting unhandled', async () => {
     const failure = new Error('boom')
-    subscriptionDialog.resumePendingPricingFlow.mockRejectedValueOnce(failure)
+    vi.mocked(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).mockRejectedValueOnce(failure)
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
@@ -274,6 +282,8 @@ describe('useUrlActionLoaders', () => {
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
 
     expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
-    expect(subscriptionDialog.resumePendingPricingFlow).toHaveBeenCalledOnce()
+    expect(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).toHaveBeenCalledOnce()
   })
 })

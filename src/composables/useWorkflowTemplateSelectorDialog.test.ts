@@ -17,9 +17,6 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-const mockTelemetry = useTelemetry()
-if (!mockTelemetry) throw new Error('Expected telemetry mock')
-
 vi.mock<unknown>(
   import('@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'),
   () => ({
@@ -131,7 +128,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show('sidebar')
 
-      expect(mockTelemetry.trackTemplateLibraryOpened).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackTemplateLibraryOpened).toHaveBeenCalledWith({
         source: 'sidebar'
       })
     })

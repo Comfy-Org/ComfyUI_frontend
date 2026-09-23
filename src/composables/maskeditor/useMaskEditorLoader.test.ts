@@ -7,7 +7,6 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { useMaskEditorLoader } from './useMaskEditorLoader'
 
 let mockDataStore: ReturnType<typeof useMaskEditorDataStore>
@@ -79,8 +78,6 @@ describe('useMaskEditorLoader', () => {
     vi.mocked(api.apiURL).mockImplementation(
       (route) => `http://localhost:8188/api${route}`
     )
-    vi.mocked(app.getPreviewFormatParam).mockReturnValue('')
-    vi.mocked(app.getRandParam).mockReturnValue('')
     mockDataStore = useMaskEditorDataStore()
     requestedUrls.length = 0
     failUrlPattern = null

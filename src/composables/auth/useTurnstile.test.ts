@@ -16,7 +16,6 @@ vi.mock(import('@/config/turnstile'), () => ({
 }))
 
 const mockedDevOverride = vi.mocked(getDevOverride)
-const mockedGetServerFeature = vi.mocked(api.getServerFeature)
 const mockedSiteKey = vi.mocked(getTurnstileSiteKey)
 
 // The resolution rules themselves (normalizeTurnstileMode, isTurnstileEnabled,
@@ -26,7 +25,7 @@ describe('useTurnstile', () => {
   beforeEach(() => {
     remoteConfig.value = {}
     mockedDevOverride.mockReturnValue(undefined)
-    mockedGetServerFeature.mockReturnValue('off')
+    vi.mocked(api.getServerFeature).mockReturnValue('off')
     mockedSiteKey.mockReturnValue('site-key')
   })
 
@@ -34,7 +33,7 @@ describe('useTurnstile', () => {
     it('prefers the dev override over remote config and the server feature', () => {
       mockedDevOverride.mockReturnValue('enforce')
       remoteConfig.value = { signup_turnstile: 'shadow' }
-      mockedGetServerFeature.mockReturnValue('off')
+      vi.mocked(api.getServerFeature).mockReturnValue('off')
 
       expect(useTurnstile().mode.value).toBe('enforce')
     })
@@ -46,10 +45,10 @@ describe('useTurnstile', () => {
     })
 
     it('falls back to the server feature flag (default off) when nothing else is set', () => {
-      mockedGetServerFeature.mockReturnValue('enforce')
+      vi.mocked(api.getServerFeature).mockReturnValue('enforce')
 
       expect(useTurnstile().mode.value).toBe('enforce')
-      expect(mockedGetServerFeature).toHaveBeenCalledWith(
+      expect(api.getServerFeature).toHaveBeenCalledWith(
         'signup_turnstile',
         'off'
       )
