@@ -18,6 +18,8 @@ type MigrationClaim = {
 
 type MigrationCompletion = MigrationClaim & { nonce: string }
 
+type MigrationIndex = NonNullable<ReturnType<typeof readIndex>>
+
 const restorePointerKeys = [
   StorageKeys.lastActivePath,
   StorageKeys.lastOpenPaths
@@ -55,12 +57,7 @@ export function migrateWorkspaceToScope(
   const sourceArtifacts = snapshotSourceArtifacts(workspaceId)
   const destinationIndex = readIndex(scope)
 
-  if (destinationIndex) {
-    const canFinishCleanup =
-      existingClaim !== null && index.updatedAt <= existingClaim.sourceUpdatedAt
-    const hasNewerSource = index.updatedAt > destinationIndex.updatedAt
-    if (!canFinishCleanup && !hasNewerSource) return
-  }
+  if (!shouldStartMigration(index, destinationIndex, existingClaim)) return
 
   const claim: MigrationClaim = {
     scope,
@@ -70,11 +67,7 @@ export function migrateWorkspaceToScope(
   if (!writeStorage(localStorage, claimKey, JSON.stringify(claim))) return
   if (!ownsClaim(claimKey, claim)) return
 
-  if (
-    destinationIndex &&
-    existingClaim !== null &&
-    index.updatedAt <= existingClaim.sourceUpdatedAt
-  ) {
+  if (canFinishExistingMigration(index, destinationIndex, existingClaim)) {
     cleanupSourceIfCurrent(
       workspaceId,
       sourcePayloads,
@@ -101,50 +94,128 @@ export function migrateWorkspaceToScope(
     missingPointerKeys
   )
 
-  const artifactsCopied =
-    draftKeys.every((draftKey) =>
-      copyPayload(
-        draftKey,
-        workspaceId,
-        scope,
-        sourcePayloads.get(draftKey) ?? null
-      )
-    ) &&
-    missingPointerKeys.every((keyFor) =>
-      copyRestorePointer(keyFor, workspaceId, scope)
-    )
+  const artifactsCopied = copyMigrationArtifacts(
+    workspaceId,
+    scope,
+    draftKeys,
+    sourcePayloads,
+    missingPointerKeys
+  )
   const published =
     artifactsCopied && ownsClaim(claimKey, claim) && writeIndex(scope, index)
   const copied = published && ownsClaim(claimKey, claim)
 
   if (copied) {
-    const completionRecorded = writeStorage(
-      localStorage,
-      completionKey,
-      JSON.stringify(claim)
-    )
-    if (!completionRecorded) return
-    cleanupSourceIfCurrent(
+    completeMigration(
       workspaceId,
       sourcePayloads,
       sourceArtifacts,
       claimKey,
+      completionKey,
       claim
     )
   } else {
-    const currentClaim = readLocalPointer(claimKey, isValidClaim)
-    const completion = readLocalPointer(completionKey, isValidCompletion)
-    const sameScopePeer =
-      currentClaim?.scope === scope
-        ? currentClaim.nonce !== claim.nonce
-        : completion?.scope === scope &&
-          completion.sourceUpdatedAt === claim.sourceUpdatedAt &&
-          completion.nonce !== claim.nonce
-    if (!sameScopePeer) {
-      restoreStorageSnapshot(destinationSnapshot, migrationArtifacts)
-    }
-    releaseClaimIfOwned(claimKey, claim)
+    rollbackMigration(
+      scope,
+      claimKey,
+      completionKey,
+      claim,
+      destinationSnapshot,
+      migrationArtifacts
+    )
   }
+}
+
+function canFinishExistingMigration(
+  index: MigrationIndex,
+  destinationIndex: MigrationIndex | null,
+  existingClaim: MigrationClaim | null
+): boolean {
+  return (
+    destinationIndex !== null &&
+    existingClaim !== null &&
+    index.updatedAt <= existingClaim.sourceUpdatedAt
+  )
+}
+
+function shouldStartMigration(
+  index: MigrationIndex,
+  destinationIndex: MigrationIndex | null,
+  existingClaim: MigrationClaim | null
+): boolean {
+  if (destinationIndex === null) return true
+  return (
+    canFinishExistingMigration(index, destinationIndex, existingClaim) ||
+    index.updatedAt > destinationIndex.updatedAt
+  )
+}
+
+function copyMigrationArtifacts(
+  workspaceId: string,
+  scope: string,
+  draftKeys: string[],
+  sourcePayloads: Map<string, string | null>,
+  missingPointerKeys: ((scope: string) => string)[]
+): boolean {
+  const payloadsCopied = draftKeys.every((draftKey) =>
+    copyPayload(
+      draftKey,
+      workspaceId,
+      scope,
+      sourcePayloads.get(draftKey) ?? null
+    )
+  )
+  return (
+    payloadsCopied &&
+    missingPointerKeys.every((keyFor) =>
+      copyRestorePointer(keyFor, workspaceId, scope)
+    )
+  )
+}
+
+function completeMigration(
+  workspaceId: string,
+  sourcePayloads: Map<string, string | null>,
+  sourceArtifacts: Map<string, string | null>,
+  claimKey: string,
+  completionKey: string,
+  claim: MigrationClaim
+): void {
+  const completionRecorded = writeStorage(
+    localStorage,
+    completionKey,
+    JSON.stringify(claim)
+  )
+  if (!completionRecorded) return
+  cleanupSourceIfCurrent(
+    workspaceId,
+    sourcePayloads,
+    sourceArtifacts,
+    claimKey,
+    claim
+  )
+}
+
+function rollbackMigration(
+  scope: string,
+  claimKey: string,
+  completionKey: string,
+  claim: MigrationClaim,
+  destinationSnapshot: Map<string, string | null>,
+  migrationArtifacts: Map<string, string | null>
+): void {
+  const currentClaim = readLocalPointer(claimKey, isValidClaim)
+  const completion = readLocalPointer(completionKey, isValidCompletion)
+  const sameScopePeer =
+    currentClaim?.scope === scope
+      ? currentClaim.nonce !== claim.nonce
+      : completion?.scope === scope &&
+        completion.sourceUpdatedAt === claim.sourceUpdatedAt &&
+        completion.nonce !== claim.nonce
+  if (!sameScopePeer) {
+    restoreStorageSnapshot(destinationSnapshot, migrationArtifacts)
+  }
+  releaseClaimIfOwned(claimKey, claim)
 }
 
 function ownsClaim(claimKey: string, claim: MigrationClaim): boolean {
