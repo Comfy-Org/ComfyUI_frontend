@@ -336,6 +336,7 @@ describe('native Router requests', () => {
     expect(await requests[0].json()).toEqual({ prompt: 'Test', seed: 42 })
     expect(result.requestId).toBe('request-123')
     expect(result.outputs[0].url).toBe('https://assets.example/result.jpg')
+    expect(requests[0].signal.aborted).toBe(true)
   })
 
   it('preserves caller cancellation while a Router request is pending', async () => {
