@@ -280,21 +280,29 @@ export function attachLayoutMintPort(deps: LayoutMintPortDeps): LayoutMintPort {
         return
       }
       case 'deleteNode': {
-        // The document lost this id the moment a same-graph, root-owned
-        // deleteNode change fired, regardless of whether this port also
-        // gates the delete_node op for echo-suppression, targeting, or
-        // teardown - those are independent questions. A subgraph-interior
-        // delete carries the root's graphId with a different ownerGraphId,
-        // so it must not forget an entry from the root's bucket for what is
-        // really a different node's namespace.
+        // Forgetting the dedupe entry is only safe when the bound doc
+        // actually lost the node: either the change is gated out (an echo
+        // or teardown no-op, where the doc already reflects the delete or
+        // is being discarded), or it was minted to the wire. A root-owned
+        // delete that targets a graph other than the activated document is
+        // neither - the doc never loses the node - so forgetting it there
+        // would let a later create double-mint. A subgraph-interior delete
+        // carries the root's graphId with a different ownerGraphId, so it
+        // must not forget an entry from the root's bucket regardless.
         if (operation.nodeId === undefined) return
-        if (operation.ownerGraphId === operation.graphId) {
+        const gated = gate(change, inTeardown)
+        const forActivatedDocument =
+          !gated || isForActivatedDocument(operation, 'delete')
+        if (
+          operation.ownerGraphId === operation.graphId &&
+          forActivatedDocument
+        ) {
           mintedNodeIdsByRoot
             .get(operation.graphId)
             ?.delete(String(operation.nodeId))
         }
-        if (!gate(change, inTeardown)) return
-        if (!isForActivatedDocument(operation, 'delete')) return
+        if (!gated) return
+        if (!forActivatedDocument) return
         if (reportUnrepresentableInteriorChange(operation, 'delete')) return
         deps.enqueue([
           {

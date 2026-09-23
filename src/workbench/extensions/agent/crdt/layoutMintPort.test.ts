@@ -591,5 +591,50 @@ describe('attachLayoutMintPort', () => {
 
       expect(minted).toEqual([])
     })
+
+    it('does not re-mint a node whose delete was dropped for naming a non-activated graph (regression)', () => {
+      // The bug #18109's fix reintroduced: a root-owned delete that names a
+      // graph other than the activated one is dropped before minting, so the
+      // bound doc never actually loses the node - forgetting the dedupe
+      // entry anyway let a later create double-mint add_node for it.
+      activeRootGraphId = ACTIVATED
+      deliver(rootScoped('createNode', ACTIVATED, '1'))
+      expect(minted).toHaveLength(1)
+
+      activeRootGraphId = OTHER
+      minted.length = 0
+      deliver(rootScoped('deleteNode', ACTIVATED, '1'))
+      expect(minted).toEqual([])
+
+      activeRootGraphId = ACTIVATED
+      minted.length = 0
+      deliver(rootScoped('createNode', ACTIVATED, '1'))
+
+      expect(minted).toEqual([])
+    })
+
+    it('does not let an interior delete forget the root bucket', () => {
+      // Same root graphId, different ownerGraphId, colliding node id.
+      activeRootGraphId = ACTIVATED
+      deliver(rootScoped('createNode', ACTIVATED, '1'))
+      expect(minted).toHaveLength(1)
+      minted.length = 0
+
+      deliver({
+        operation: {
+          type: 'deleteNode',
+          actor: LOCAL_ACTOR,
+          graphId: ACTIVATED,
+          ownerGraphId: 'subgraph',
+          nodeId: '1',
+          layout: { position: { x: 1, y: 2 } }
+        }
+      })
+
+      minted.length = 0
+      deliver(rootScoped('createNode', ACTIVATED, '1'))
+
+      expect(minted).toEqual([])
+    })
   })
 })
