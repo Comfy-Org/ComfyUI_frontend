@@ -19,7 +19,6 @@ import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import ModelLibrarySidebarTab from './ModelLibrarySidebarTab.vue'
 
 beforeEach(() => {
-  vi.mocked(useNodeDragToCanvas().startDrag).mockImplementation(mockStartDrag)
   vi.mocked(useModelStore().loadModels).mockResolvedValue([])
   vi.mocked(useModelStore().loadModelFolders).mockResolvedValue(true)
   vi.mocked(useModelStore().getLoadedModelFolder).mockResolvedValue(null)
@@ -34,7 +33,6 @@ const {
   resetRoot,
   captureExpandedKeys,
   getExpandedKeys,
-  mockStartDrag,
   mockToggleNodeOnEvent
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode | null = null
@@ -51,7 +49,6 @@ const {
       capturedExpandedKeys = keys
     },
     getExpandedKeys: () => capturedExpandedKeys,
-    mockStartDrag: vi.fn(),
     mockToggleNodeOnEvent: vi.fn()
   }
 })
@@ -171,7 +168,7 @@ describe('ModelLibrarySidebarTab', () => {
     expect(
       vi.mocked(useModelToNodeStore().getNodeProvider)
     ).toHaveBeenCalledWith('checkpoints')
-    expect(mockStartDrag).toHaveBeenCalledWith(mockNodeDef, {
+    expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(mockNodeDef, {
       widgetValues: { ckpt_name: 'model.safetensors' },
       source: 'sidebar_drag'
     })

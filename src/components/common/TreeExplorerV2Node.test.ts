@@ -18,10 +18,6 @@ beforeEach(() => {
   useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
   vi.mocked(useSubgraphStore().isUserBlueprint).mockReturnValue(false)
   vi.mocked(useSubgraphStore().deleteBlueprint).mockResolvedValue(undefined)
-  vi.mocked(useNodeDragToCanvas().startDrag).mockImplementation(mockStartDrag)
-  vi.mocked(useNodeDragToCanvas().handleNativeDrop).mockImplementation(
-    mockHandleNativeDrop
-  )
 })
 
 const i18n = createI18n({
@@ -33,9 +29,6 @@ const i18n = createI18n({
 vi.mock<unknown>(import('@/components/node/NodePreviewCard.vue'), () => ({
   default: { template: '<div />' }
 }))
-
-const mockStartDrag = vi.fn()
-const mockHandleNativeDrop = vi.fn()
 
 vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
@@ -333,7 +326,9 @@ describe('TreeExplorerV2Node', () => {
       const nodeDiv = getTreeNode(container)
       await fireEvent.dragStart(nodeDiv)
 
-      expect(mockStartDrag).toHaveBeenCalledWith(mockData, { mode: 'native' })
+      expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(mockData, {
+        mode: 'native'
+      })
     })
 
     it('does not call startDrag for folder items on dragstart', async () => {
@@ -344,7 +339,7 @@ describe('TreeExplorerV2Node', () => {
       const folderDiv = getTreeNode(container)
       await fireEvent.dragStart(folderDiv)
 
-      expect(mockStartDrag).not.toHaveBeenCalled()
+      expect(useNodeDragToCanvas().startDrag).not.toHaveBeenCalled()
     })
 
     it('calls handleNativeDrop on dragend with drop coordinates', async () => {
@@ -364,7 +359,10 @@ describe('TreeExplorerV2Node', () => {
       nodeDiv.dispatchEvent(dragEndEvent)
       await nextTick()
 
-      expect(mockHandleNativeDrop).toHaveBeenCalledWith(100, 200)
+      expect(useNodeDragToCanvas().handleNativeDrop).toHaveBeenCalledWith(
+        100,
+        200
+      )
     })
 
     it('calls handleNativeDrop regardless of dropEffect', async () => {
@@ -376,7 +374,7 @@ describe('TreeExplorerV2Node', () => {
       const nodeDiv = getTreeNode(container)
 
       await fireEvent.dragStart(nodeDiv)
-      mockHandleNativeDrop.mockClear()
+      vi.mocked(useNodeDragToCanvas().handleNativeDrop).mockClear()
 
       const dragEndEvent = new DragEvent('dragend', { bubbles: true })
       Object.defineProperty(dragEndEvent, 'clientX', { value: 300 })
@@ -388,7 +386,10 @@ describe('TreeExplorerV2Node', () => {
       nodeDiv.dispatchEvent(dragEndEvent)
       await nextTick()
 
-      expect(mockHandleNativeDrop).toHaveBeenCalledWith(300, 400)
+      expect(useNodeDragToCanvas().handleNativeDrop).toHaveBeenCalledWith(
+        300,
+        400
+      )
     })
   })
 })

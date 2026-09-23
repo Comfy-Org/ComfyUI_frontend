@@ -15,13 +15,6 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import WorkflowTab from './WorkflowTab.vue'
 vi.mock(import('firebase/auth'))
-const mockCloseWorkflow = vi.hoisted(() => vi.fn().mockResolvedValue(true))
-
-beforeEach(() => {
-  vi.mocked(useWorkflowService().closeWorkflow).mockImplementation(
-    mockCloseWorkflow
-  )
-})
 
 vi.mock(import('@/composables/usePragmaticDragAndDrop'), () => ({
   usePragmaticDraggable: vi.fn(),
@@ -288,7 +281,7 @@ describe('WorkflowTab - close button', () => {
     const user = userEvent.setup()
     await user.click(screen.getByTestId('close-workflow-button'))
 
-    expect(mockCloseWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
       expect.objectContaining({ key: 'test-key' }),
       expect.anything()
     )
@@ -367,7 +360,7 @@ describe('WorkflowTab - Agent target', () => {
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
     await userEvent.setup().click(screen.getByTestId('close-workflow-button'))
-    expect(mockCloseWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
       workflowOption.workflow,
       expect.anything()
     )

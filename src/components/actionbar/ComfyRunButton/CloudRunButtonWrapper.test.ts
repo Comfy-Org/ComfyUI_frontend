@@ -1,11 +1,12 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 
 import { createI18n } from 'vue-i18n'
 
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -23,12 +24,7 @@ const mockIsInitialized = ref(true)
 const mockBillingStatus = ref<BillingStatus | null>('paid')
 const mockSubscriptionTier = ref<string | null>(null)
 const state = vi.hoisted(() => ({
-  canManageSubscription: true,
-  manageSubscription: vi.fn(),
-  fetchStatus: vi.fn(),
-  fetchBalance: vi.fn(),
-  toastErrorHandler: vi.fn(),
-  showLayoutDialog: vi.fn()
+  canManageSubscription: true
 }))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
@@ -80,34 +76,66 @@ function renderWrapper() {
   return render(CloudRunButtonWrapper)
 }
 
+function subscription(tier: string | null): SubscriptionInfo | null {
+  if (!tier) return null
+  const result: SubscriptionInfo = {
+    isActive: true,
+    tier: null,
+    duration: null,
+    planSlug: null,
+    scheduledChange: null,
+    renewalDate: null,
+    endDate: null,
+    isCancelled: false,
+    hasFunds: true
+  }
+  Object.defineProperty(result, 'tier', { value: tier })
+  return result
+}
+
+function getPaymentRecoveryDialog(index = 0) {
+  const call = vi
+    .mocked(useDialogService().showLayoutDialog)
+    .mock.calls.at(index)
+  assert(call)
+  const { props } = call[0]
+  assert('canManage' in props)
+  assert('status' in props)
+  assert('isUpdatingPayment' in props)
+  assert('onClose' in props)
+  assert('onUpdatePayment' in props)
+  const { canManage, status, isUpdatingPayment, onClose, onUpdatePayment } =
+    props
+  assert(typeof canManage === 'boolean')
+  assert(typeof status === 'string')
+  assert(typeof isUpdatingPayment === 'boolean')
+  assert(typeof onClose === 'function')
+  assert(typeof onUpdatePayment === 'function')
+  return { canManage, status, isUpdatingPayment, onClose, onUpdatePayment }
+}
+
 describe('CloudRunButtonWrapper', () => {
+  let errorHandling: ReturnType<typeof useErrorHandling>
+
   beforeEach(() => {
-    const billing = useBillingContext()
-    Object.assign(billing, {
-      canRunWorkflows: mockCanRunWorkflows,
-      showsSubscribeToRunPrompt: computed(
-        () => mockIsInitialized.value && !mockCanRunWorkflows.value
-      ),
-      billingStatus: mockBillingStatus,
-      isFreeTier: mockIsFreeTier,
-      subscription: computed(() =>
-        mockSubscriptionTier.value ? { tier: mockSubscriptionTier.value } : null
-      ),
-      manageSubscription: state.manageSubscription,
-      fetchStatus: state.fetchStatus,
-      fetchBalance: state.fetchBalance
-    })
+    const billing = vi.mocked(useBillingContext())
+    billing.canRunWorkflows = computed(() => mockCanRunWorkflows.value)
+    billing.showsSubscribeToRunPrompt = computed(
+      () => mockIsInitialized.value && !mockCanRunWorkflows.value
+    )
+    billing.billingStatus = computed(() => mockBillingStatus.value)
+    billing.isFreeTier = computed(() => mockIsFreeTier.value)
+    billing.subscription = computed(() =>
+      subscription(mockSubscriptionTier.value)
+    )
     vi.mocked(useBillingContext).mockReturnValue(billing)
-    useErrorHandling().toastErrorHandler = state.toastErrorHandler
-    const workspaceUI = useWorkspaceUI()
+    errorHandling = vi.mocked(useErrorHandling())
+    const workspaceUI = vi.mocked(useWorkspaceUI())
     const permissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
       ...permissions,
       canManageSubscription: state.canManageSubscription
     }))
-    vi.mocked(useDialogService().showLayoutDialog).mockImplementation(
-      state.showLayoutDialog
-    )
     mockCanRunWorkflows.value = true
     mockIsInitialized.value = true
     mockBillingStatus.value = 'paid'
@@ -223,17 +251,19 @@ describe('CloudRunButtonWrapper', () => {
   it('refreshes stale billing state on focus and restores Run', async () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'inactive'
-    state.fetchStatus.mockImplementationOnce(async () => {
-      mockBillingStatus.value = 'paid'
-      mockCanRunWorkflows.value = true
-    })
+    vi.mocked(useBillingContext().fetchStatus).mockImplementationOnce(
+      async () => {
+        mockBillingStatus.value = 'paid'
+        mockCanRunWorkflows.value = true
+      }
+    )
     renderWrapper()
 
     window.dispatchEvent(new Event('focus'))
 
     await waitFor(() => {
-      expect(state.fetchStatus).toHaveBeenCalledOnce()
-      expect(state.fetchBalance).toHaveBeenCalledOnce()
+      expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+      expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
       expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
     })
   })
@@ -245,17 +275,19 @@ describe('CloudRunButtonWrapper', () => {
     try {
       mockCanRunWorkflows.value = false
       mockBillingStatus.value = 'inactive'
-      state.fetchStatus.mockImplementationOnce(async () => {
-        mockBillingStatus.value = 'paid'
-        mockCanRunWorkflows.value = true
-      })
+      vi.mocked(useBillingContext().fetchStatus).mockImplementationOnce(
+        async () => {
+          mockBillingStatus.value = 'paid'
+          mockCanRunWorkflows.value = true
+        }
+      )
       renderWrapper()
 
       document.dispatchEvent(new Event('visibilitychange'))
 
       await waitFor(() => {
-        expect(state.fetchStatus).toHaveBeenCalledOnce()
-        expect(state.fetchBalance).toHaveBeenCalledOnce()
+        expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+        expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
         expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
       })
     } finally {
@@ -274,15 +306,15 @@ describe('CloudRunButtonWrapper', () => {
     try {
       mockCanRunWorkflows.value = false
       mockBillingStatus.value = 'inactive'
-      state.fetchStatus.mockReturnValueOnce(refresh)
-      state.fetchBalance.mockReturnValueOnce(refresh)
+      vi.mocked(useBillingContext().fetchStatus).mockReturnValueOnce(refresh)
+      vi.mocked(useBillingContext().fetchBalance).mockReturnValueOnce(refresh)
       renderWrapper()
 
       window.dispatchEvent(new Event('focus'))
       document.dispatchEvent(new Event('visibilitychange'))
 
-      expect(state.fetchStatus).toHaveBeenCalledOnce()
-      expect(state.fetchBalance).toHaveBeenCalledOnce()
+      expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+      expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
 
       resolveRefresh()
       await refresh
@@ -296,8 +328,8 @@ describe('CloudRunButtonWrapper', () => {
 
     window.dispatchEvent(new Event('focus'))
 
-    expect(state.fetchStatus).not.toHaveBeenCalled()
-    expect(state.fetchBalance).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
   })
 
   it('ignores visibility changes while the app remains hidden', () => {
@@ -311,8 +343,8 @@ describe('CloudRunButtonWrapper', () => {
 
       document.dispatchEvent(new Event('visibilitychange'))
 
-      expect(state.fetchStatus).not.toHaveBeenCalled()
-      expect(state.fetchBalance).not.toHaveBeenCalled()
+      expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+      expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
     } finally {
       visibilityState.mockRestore()
     }
@@ -321,19 +353,25 @@ describe('CloudRunButtonWrapper', () => {
   it('retries a failed stale billing refresh on the next focus', async () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'inactive'
-    state.fetchStatus.mockRejectedValueOnce(new Error('Status unavailable'))
-    state.fetchBalance.mockRejectedValueOnce(new Error('Balance unavailable'))
+    vi.mocked(useBillingContext().fetchStatus).mockRejectedValueOnce(
+      new Error('Status unavailable')
+    )
+    vi.mocked(useBillingContext().fetchBalance).mockRejectedValueOnce(
+      new Error('Balance unavailable')
+    )
     renderWrapper()
 
     window.dispatchEvent(new Event('focus'))
-    await waitFor(() => expect(state.fetchStatus).toHaveBeenCalledOnce())
+    await waitFor(() =>
+      expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    )
     await new Promise((resolve) => setTimeout(resolve))
 
     window.dispatchEvent(new Event('focus'))
 
     await waitFor(() => {
-      expect(state.fetchStatus).toHaveBeenCalledTimes(2)
-      expect(state.fetchBalance).toHaveBeenCalledTimes(2)
+      expect(useBillingContext().fetchStatus).toHaveBeenCalledTimes(2)
+      expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -369,15 +407,15 @@ describe('CloudRunButtonWrapper', () => {
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment to run' })
     )
-    const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
-    expect(dialogOptions.props.canManage).toBe(true)
-    expect(dialogOptions.props.status).toBe('paused')
+    const dialogProps = getPaymentRecoveryDialog()
+    expect(dialogProps.canManage).toBe(true)
+    expect(dialogProps.status).toBe('paused')
 
-    await dialogOptions.props.onUpdatePayment()
+    await dialogProps.onUpdatePayment()
     expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'subscription-paused'
     })
-    expect(state.manageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
   })
 
   it('does not refresh paused billing before the recovery portal is opened', () => {
@@ -387,55 +425,59 @@ describe('CloudRunButtonWrapper', () => {
 
     window.dispatchEvent(new Event('focus'))
 
-    expect(state.fetchStatus).not.toHaveBeenCalled()
-    expect(state.fetchBalance).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
   })
 
   it('keeps recovery open and surfaces portal failures', async () => {
     const error = new Error('Portal unavailable')
-    state.manageSubscription.mockRejectedValueOnce(error)
+    vi.mocked(useBillingContext().manageSubscription).mockRejectedValueOnce(
+      error
+    )
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'paused'
     renderWrapper()
 
     await userEvent.click(screen.getByTestId('queue-button'))
-    const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
-    await dialogOptions.props.onUpdatePayment()
+    const dialogProps = getPaymentRecoveryDialog()
+    await dialogProps.onUpdatePayment()
 
-    expect(state.toastErrorHandler).toHaveBeenCalledWith(error)
+    expect(errorHandling.toastErrorHandler).toHaveBeenCalledWith(error)
     expect(vi.mocked(useDialogStore().closeDialog)).not.toHaveBeenCalled()
   })
 
   it('refreshes billing once on focus after returning from the portal', async () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'paused'
-    state.fetchStatus.mockImplementationOnce(() => {
-      mockBillingStatus.value = 'paid'
-      mockCanRunWorkflows.value = true
-    })
+    vi.mocked(useBillingContext().fetchStatus).mockImplementationOnce(
+      async () => {
+        mockBillingStatus.value = 'paid'
+        mockCanRunWorkflows.value = true
+      }
+    )
     renderWrapper()
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment to run' })
     )
-    const dialog = state.showLayoutDialog.mock.calls[0][0]
-    await dialog.props.onUpdatePayment()
+    const dialogProps = getPaymentRecoveryDialog()
+    await dialogProps.onUpdatePayment()
 
     window.dispatchEvent(new Event('focus'))
     await waitFor(() => {
-      expect(state.fetchStatus).toHaveBeenCalledOnce()
-      expect(state.fetchBalance).toHaveBeenCalledOnce()
+      expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+      expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
       expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
     })
 
     window.dispatchEvent(new Event('focus'))
-    expect(state.fetchStatus).toHaveBeenCalledOnce()
-    expect(state.fetchBalance).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
   })
 
   it('reuses a pending portal request across rapid clicks and reopen', async () => {
     let resolvePortal!: () => void
-    state.manageSubscription.mockImplementationOnce(
+    vi.mocked(useBillingContext().manageSubscription).mockImplementationOnce(
       () =>
         new Promise<void>((resolve) => {
           resolvePortal = resolve
@@ -448,20 +490,20 @@ describe('CloudRunButtonWrapper', () => {
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment to run' })
     )
-    const firstDialog = state.showLayoutDialog.mock.calls[0][0]
-    const firstRequest = firstDialog.props.onUpdatePayment()
-    const repeatedRequest = firstDialog.props.onUpdatePayment()
-    expect(state.manageSubscription).toHaveBeenCalledOnce()
+    const firstDialogProps = getPaymentRecoveryDialog()
+    const firstRequest = firstDialogProps.onUpdatePayment()
+    const repeatedRequest = firstDialogProps.onUpdatePayment()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
-    firstDialog.props.onClose()
+    firstDialogProps.onClose()
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment to run' })
     )
-    const reopenedDialog = state.showLayoutDialog.mock.calls.at(-1)?.[0]
-    expect(reopenedDialog.props.isUpdatingPayment).toBe(true)
-    expect(reopenedDialog.props.onUpdatePayment()).toBe(firstRequest)
+    const reopenedDialogProps = getPaymentRecoveryDialog(-1)
+    expect(reopenedDialogProps.isUpdatingPayment).toBe(true)
+    expect(reopenedDialogProps.onUpdatePayment()).toBe(firstRequest)
     expect(repeatedRequest).toBe(firstRequest)
-    expect(state.manageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     resolvePortal()
     await firstRequest
@@ -473,7 +515,7 @@ describe('CloudRunButtonWrapper', () => {
 
   it('does not update a replacement dialog after unmount', async () => {
     let resolvePortal!: () => void
-    state.manageSubscription.mockImplementationOnce(
+    vi.mocked(useBillingContext().manageSubscription).mockImplementationOnce(
       () =>
         new Promise<void>((resolve) => {
           resolvePortal = resolve
@@ -486,8 +528,8 @@ describe('CloudRunButtonWrapper', () => {
     await userEvent.click(
       screen.getByRole('button', { name: 'Update payment to run' })
     )
-    const dialog = state.showLayoutDialog.mock.calls[0][0]
-    const portalRequest = dialog.props.onUpdatePayment()
+    const dialogProps = getPaymentRecoveryDialog()
+    const portalRequest = dialogProps.onUpdatePayment()
     unmount()
 
     resolvePortal()
@@ -509,14 +551,14 @@ describe('CloudRunButtonWrapper', () => {
     expect(screen.getByTestId('queue-button')).toHaveTextContent('Run')
     await userEvent.click(screen.getByTestId('queue-button'))
 
-    const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
-    expect(dialogOptions.props.canManage).toBe(false)
-    expect(dialogOptions.props.status).toBe('paused')
-    dialogOptions.props.onClose()
+    const dialogProps = getPaymentRecoveryDialog()
+    expect(dialogProps.canManage).toBe(false)
+    expect(dialogProps.status).toBe('paused')
+    dialogProps.onClose()
     expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'subscription-paused'
     })
-    expect(state.manageSubscription).not.toHaveBeenCalled()
+    expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
   })
 
   it('opens payment recovery for a payment-failed owner', async () => {
@@ -533,9 +575,9 @@ describe('CloudRunButtonWrapper', () => {
 
     await userEvent.click(screen.getByTestId('queue-button'))
 
-    const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
-    expect(dialogOptions.props.canManage).toBe(true)
-    expect(dialogOptions.props.status).toBe('payment_failed')
+    const dialogProps = getPaymentRecoveryDialog()
+    expect(dialogProps.canManage).toBe(true)
+    expect(dialogProps.status).toBe('payment_failed')
   })
 
   it('keeps Run locked with owner guidance for a payment-failed member', async () => {
@@ -551,9 +593,9 @@ describe('CloudRunButtonWrapper', () => {
 
     await userEvent.click(screen.getByTestId('queue-button'))
 
-    const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
-    expect(dialogOptions.props.canManage).toBe(false)
-    expect(dialogOptions.props.status).toBe('payment_failed')
+    const dialogProps = getPaymentRecoveryDialog()
+    expect(dialogProps.canManage).toBe(false)
+    expect(dialogProps.status).toBe('payment_failed')
   })
 
   it('does not fall back to Subscribe to Run for payment failure when recovery flag is disabled', () => {

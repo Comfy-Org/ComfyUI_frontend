@@ -17,7 +17,6 @@ const {
   captureRoot,
   getRoot,
   resetRoot,
-  mockAddNodeOnGraph,
   mockSearchNode,
   mockOrganizeNodes,
   mockToggleNodeOnEvent
@@ -31,7 +30,6 @@ const {
     resetRoot: () => {
       capturedRoot = null
     },
-    mockAddNodeOnGraph: vi.fn(),
     mockSearchNode: vi.fn(() => []),
     mockOrganizeNodes: vi.fn(
       (): TreeNode => ({
@@ -121,9 +119,6 @@ const mockNode = fromPartial<ComfyNodeDefImpl>({
 
 describe('NodeLibrarySidebarTab', () => {
   beforeEach(() => {
-    vi.mocked(useLitegraphService().addNodeOnGraph).mockImplementation(
-      mockAddNodeOnGraph
-    )
     resetRoot()
     useSettingStore().$patch({
       settingValues: { 'Comfy.NodeLibrary.Bookmarks.V2': [] }
@@ -157,7 +152,7 @@ describe('NodeLibrarySidebarTab', () => {
     expect(leaf?.leaf).toBe(true)
 
     await leaf?.handleClick?.(new MouseEvent('click'))
-    expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNode)
+    expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(mockNode)
   })
 
   it('adds and removes filters', async () => {

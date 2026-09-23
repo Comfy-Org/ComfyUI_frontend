@@ -13,16 +13,7 @@ import EssentialNodeCard from './EssentialNodeCard.vue'
 
 beforeEach(() => {
   useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
-  vi.mocked(useNodeDragToCanvas().startDrag).mockImplementation(mockStartDrag)
-  vi.mocked(useNodeDragToCanvas().handleNativeDrop).mockImplementation(
-    mockHandleNativeDrop
-  )
 })
-
-const { mockStartDrag, mockHandleNativeDrop } = vi.hoisted(() => ({
-  mockStartDrag: vi.fn(),
-  mockHandleNativeDrop: vi.fn()
-}))
 
 vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
@@ -131,7 +122,7 @@ describe('EssentialNodeCard', () => {
 
       await user.click(getCard(container))
 
-      expect(mockStartDrag).toHaveBeenCalledWith(
+      expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'LoadImage' })
       )
     })
@@ -141,7 +132,7 @@ describe('EssentialNodeCard', () => {
 
       await user.click(getCard(container))
 
-      expect(mockStartDrag).not.toHaveBeenCalled()
+      expect(useNodeDragToCanvas().startDrag).not.toHaveBeenCalled()
     })
   })
 
@@ -151,7 +142,7 @@ describe('EssentialNodeCard', () => {
 
       await fireEvent.dragStart(getCard(container))
 
-      expect(mockStartDrag).toHaveBeenCalledWith(
+      expect(useNodeDragToCanvas().startDrag).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'LoadImage' }),
         { mode: 'native' }
       )
@@ -162,7 +153,7 @@ describe('EssentialNodeCard', () => {
 
       await fireEvent.dragEnd(getCard(container))
 
-      expect(mockHandleNativeDrop).toHaveBeenCalled()
+      expect(useNodeDragToCanvas().handleNativeDrop).toHaveBeenCalled()
     })
 
     it('should not start drag when the tile does not resolve', async () => {
@@ -170,7 +161,7 @@ describe('EssentialNodeCard', () => {
 
       await fireEvent.dragStart(getCard(container))
 
-      expect(mockStartDrag).not.toHaveBeenCalled()
+      expect(useNodeDragToCanvas().startDrag).not.toHaveBeenCalled()
     })
   })
 

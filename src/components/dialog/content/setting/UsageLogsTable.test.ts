@@ -13,6 +13,7 @@ import { EventType } from '@/services/customerEventsService'
 
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
+import type { BillingEventsResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -40,9 +41,6 @@ vi.mock<unknown>(import('@/services/customerEventsService'), () => ({
   }
 }))
 
-const mockTelemetry = vi.hoisted(() => ({
-  trackApiCreditTopupSucceeded: vi.fn()
-}))
 vi.mock(import('@/platform/telemetry'))
 
 const mockPendingTopup = vi.hoisted(() => ({
@@ -55,9 +53,6 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
 const mockShouldUseWorkspaceBilling = ref(false)
 vi.mock(import('@/composables/billing/useBillingRouting'))
 
-const mockWorkspaceApi = vi.hoisted(() => ({
-  getBillingEvents: vi.fn()
-}))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 // The table only ever calls `readEvents`; the other five are here so the
@@ -106,9 +101,9 @@ async function flushMicrotasks() {
 }
 
 function makeEventsResponse(
-  events: Partial<AuditLog>[],
+  events: BillingEventsResponse['events'],
   overrides: Record<string, unknown> = {}
-) {
+): BillingEventsResponse {
   return {
     events,
     total: events.length,
@@ -146,17 +141,10 @@ describe('UsageLogsTable', () => {
     useBillingRouting().shouldUseWorkspaceBilling = computed(
       () => mockShouldUseWorkspaceBilling.value
     )
-    vi.mocked(workspaceApi.getBillingEvents).mockImplementation(
-      mockWorkspaceApi.getBillingEvents
-    )
-    const telemetry = useTelemetry()
-    if (telemetry) {
-      vi.mocked(telemetry.trackApiCreditTopupSucceeded).mockImplementation(
-        mockTelemetry.trackApiCreditTopupSucceeded
-      )
-    }
     mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
-    mockWorkspaceApi.getBillingEvents.mockResolvedValue(mockEventsResponse)
+    vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
+      mockEventsResponse
+    )
     mockBillingReadRail.readEvents.mockResolvedValue({
       status: 'ok',
       value: mockEventsResponse
@@ -243,7 +231,7 @@ describe('UsageLogsTable', () => {
 
       await renderLoaded()
 
-      expect(mockWorkspaceApi.getBillingEvents).toHaveBeenCalledTimes(1)
+      expect(workspaceApi.getBillingEvents).toHaveBeenCalledTimes(1)
     })
 
     it('shows a loading spinner while the initial load is in flight', () => {
@@ -404,7 +392,7 @@ describe('UsageLogsTable', () => {
 
       await renderLoaded()
 
-      expect(mockWorkspaceApi.getBillingEvents).toHaveBeenCalledWith({
+      expect(workspaceApi.getBillingEvents).toHaveBeenCalledWith({
         page: 1,
         limit: 7
       })
@@ -418,7 +406,7 @@ describe('UsageLogsTable', () => {
           resolveLegacy = resolve
         })
       )
-      mockWorkspaceApi.getBillingEvents.mockResolvedValue(
+      vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'workspace-1',
@@ -461,7 +449,7 @@ describe('UsageLogsTable', () => {
           resolveLegacy = resolve
         })
       )
-      mockWorkspaceApi.getBillingEvents.mockResolvedValue(
+      vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
         makeEventsResponse([
           {
             event_id: 'workspace-1',
@@ -493,7 +481,7 @@ describe('UsageLogsTable', () => {
         expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
           legacyResponse.events
         )
-        expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalled()
+        expect(useTelemetry()?.trackApiCreditTopupSucceeded).toHaveBeenCalled()
       })
     })
 
@@ -505,7 +493,9 @@ describe('UsageLogsTable', () => {
       expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
         mockEventsResponse.events
       )
-      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
+      expect(
+        useTelemetry()?.trackApiCreditTopupSucceeded
+      ).not.toHaveBeenCalled()
     })
   })
 
@@ -524,7 +514,7 @@ describe('UsageLogsTable', () => {
 
     const readers = {
       legacy: () => mockCustomerEventsService.getMyEvents,
-      workspaceApi: () => mockWorkspaceApi.getBillingEvents,
+      workspaceApi: () => workspaceApi.getBillingEvents,
       rail: () => mockBillingReadRail.readEvents
     }
 
@@ -667,7 +657,7 @@ describe('UsageLogsTable', () => {
       expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
         railResponse.events
       )
-      expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalled()
+      expect(useTelemetry()?.trackApiCreditTopupSucceeded).toHaveBeenCalled()
     })
   })
 

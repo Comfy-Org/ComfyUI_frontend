@@ -17,24 +17,19 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
-const mockShowSettingsDialog = vi.fn()
-
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 const originalWindowOpen = window.open
 beforeEach(() => {
-  vi.mocked(useSettingsDialog().show).mockImplementation(mockShowSettingsDialog)
-  const billing = useBillingContext()
-  Object.assign(billing, {
-    canAccessSubscriptionFeatures: computed(
-      () => mockCanAccessSubscriptionFeatures.value
-    ),
-    tier: computed(() => mockTier.value),
-    subscription: computed(() => mockSubscription.value),
-    balance: computed(() => mockBalance.value),
-    isLoading: mockIsLoading,
-    isTeamPlan: computed(() => mockIsTeamPlan.value)
-  })
+  const billing = vi.mocked(useBillingContext())
+  billing.canAccessSubscriptionFeatures = computed(
+    () => mockCanAccessSubscriptionFeatures.value
+  )
+  billing.tier = computed(() => mockTier.value)
+  billing.subscription = computed(() => mockSubscription.value)
+  billing.balance = computed(() => mockBalance.value)
+  billing.isLoading = mockIsLoading
+  billing.isTeamPlan = computed(() => mockIsTeamPlan.value)
   vi.mocked(useBillingContext).mockReturnValue(billing)
 
   window.open = vi.fn()
@@ -217,7 +212,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(screen.getByTestId('user-settings-menu-item'))
 
-    expect(mockShowSettingsDialog).toHaveBeenCalledWith('user')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('user')
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
@@ -265,7 +260,7 @@ describe('CurrentUserPopoverLegacy', () => {
 
     await user.click(menuItem)
 
-    expect(mockShowSettingsDialog).toHaveBeenCalledWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 

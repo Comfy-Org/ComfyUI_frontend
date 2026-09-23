@@ -16,9 +16,6 @@ import type {
 import NodeBookmarkTreeExplorer from './NodeBookmarkTreeExplorer.vue'
 
 beforeEach(() => {
-  vi.mocked(useLitegraphService().addNodeOnGraph).mockImplementation(
-    mockAddNodeOnGraph
-  )
   Object.assign(useNodeBookmarkStore(), { bookmarkedRoot: mockBookmarkedRoot })
   vi.mocked(useNodeBookmarkStore().addBookmark).mockResolvedValue(undefined)
   vi.mocked(useNodeBookmarkStore().toggleBookmark).mockResolvedValue(undefined)
@@ -27,26 +24,21 @@ beforeEach(() => {
   )
 })
 
-const {
-  mockAddNodeOnGraph,
-  mockToggleNodeOnEvent,
-  captureRoot,
-  getRoot,
-  resetRoot
-} = vi.hoisted(() => {
-  let capturedRoot: TreeExplorerNode | null = null
-  return {
-    mockAddNodeOnGraph: vi.fn(),
-    mockToggleNodeOnEvent: vi.fn(),
-    captureRoot: (root: TreeExplorerNode) => {
-      capturedRoot = root
-    },
-    getRoot: () => capturedRoot as TreeExplorerNode<ComfyNodeDefImpl>,
-    resetRoot: () => {
-      capturedRoot = null
+const { mockToggleNodeOnEvent, captureRoot, getRoot, resetRoot } = vi.hoisted(
+  () => {
+    let capturedRoot: TreeExplorerNode | null = null
+    return {
+      mockToggleNodeOnEvent: vi.fn(),
+      captureRoot: (root: TreeExplorerNode) => {
+        capturedRoot = root
+      },
+      getRoot: () => capturedRoot as TreeExplorerNode<ComfyNodeDefImpl>,
+      resetRoot: () => {
+        capturedRoot = null
+      }
     }
   }
-})
+)
 
 const mockFolderNodeDef = fromPartial<ComfyNodeDefImpl>({
   name: 'MyFolder',
@@ -215,7 +207,9 @@ describe('NodeBookmarkTreeExplorer', () => {
 
       await leafNode?.handleClick?.call(leafNode, mockEvent)
 
-      expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockLeafNodeDef)
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
+        mockLeafNodeDef
+      )
     })
 
     it('toggles node expansion when a folder node is clicked', async () => {

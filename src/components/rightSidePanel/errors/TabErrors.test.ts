@@ -34,9 +34,8 @@ vi.mock(import('@/services/comfyRegistryService'), () => ({
     })
 }))
 
-const { mockFocusNode, mockRefreshMissingModels } = vi.hoisted(() => ({
-  mockFocusNode: vi.fn(),
-  mockRefreshMissingModels: vi.fn()
+const { mockFocusNode } = vi.hoisted(() => ({
+  mockFocusNode: vi.fn()
 }))
 
 vi.mock(import('@/scripts/app'))
@@ -76,9 +75,6 @@ describe('TabErrors.vue', () => {
   let i18n: ReturnType<typeof createI18n>
 
   beforeEach(() => {
-    vi.mocked(app.refreshMissingModels).mockImplementation(
-      mockRefreshMissingModels
-    )
     i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -481,7 +477,7 @@ describe('TabErrors.vue', () => {
 
     await user.click(screen.getByTestId('missing-model-header-refresh'))
 
-    expect(mockRefreshMissingModels).toHaveBeenCalledWith({ silent: true })
+    expect(app.refreshMissingModels).toHaveBeenCalledWith({ silent: true })
   })
 
   it('counts missing models per file when several share one directory', () => {

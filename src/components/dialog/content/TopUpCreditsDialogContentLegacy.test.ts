@@ -14,10 +14,8 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import TopUpCreditsDialogContentLegacy from './TopUpCreditsDialogContentLegacy.vue'
 
-const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 
-const mockIsSubscriptionEnabled = vi.fn(() => true)
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
@@ -99,15 +97,14 @@ async function clickBuyCredits() {
 }
 
 describe('TopUpCreditsDialogContentLegacy', () => {
+  let subscription: ReturnType<typeof useSubscription>
+
   beforeEach(() => {
+    subscription = vi.mocked(useSubscription())
     useBillingRouting().shouldUseWorkspaceBilling = computed(
       () => mockShouldUseWorkspaceBilling.value
     )
-    vi.mocked(useSubscription().isSubscriptionEnabled).mockImplementation(
-      mockIsSubscriptionEnabled
-    )
-    vi.mocked(useSettingsDialog().show).mockImplementation(mockShowSettings)
-    mockIsSubscriptionEnabled.mockReturnValue(true)
+    vi.mocked(subscription.isSubscriptionEnabled).mockReturnValue(true)
     mockShouldUseWorkspaceBilling.value = false
   })
 
@@ -121,7 +118,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
 
     expect(useAuthActions().purchaseCreditsDirect).toHaveBeenCalledWith(50)
     expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalled()
-    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
     expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
 
@@ -135,7 +132,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
   })
 
   it('shows Plan & Credits when no billing rail is active', async () => {
-    mockIsSubscriptionEnabled.mockReturnValue(false)
+    vi.mocked(subscription.isSubscriptionEnabled).mockReturnValue(false)
     vi.mocked(useAuthActions().purchaseCreditsDirect).mockResolvedValue(
       undefined
     )
@@ -143,7 +140,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
   })
 
   it('shows the workspace settings panel when workspace billing is active', async () => {
@@ -155,7 +152,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
   })
 
   it('tracks the failure and surfaces a toast when the purchase rejects', async () => {
@@ -178,7 +175,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
         summary: 'Purchase Failed'
       })
     )
-    expect(mockShowSettings).not.toHaveBeenCalled()
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
   })
 
   it('categorizes an auth-store rejection with an HTTP status via the shared classifier', async () => {
