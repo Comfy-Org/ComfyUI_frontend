@@ -158,7 +158,7 @@ describe('LGraphCanvas selectOnly', () => {
     canvas.selectOnly = true
 
     expect(firstNode.isPointInCollapse(event.canvasX, event.canvasY)).toBe(true)
-    canvas['_processNodeClick'](event, false, firstNode)
+    canvas['_processPrimaryButton'](event, firstNode)
     canvas.pointer.onClick?.(event)
 
     expect(collapseSpy).not.toHaveBeenCalled()
@@ -217,7 +217,6 @@ describe('LGraphCanvas selectOnly', () => {
       fromPartial<CanvasPointerEvent>({ canvasX: 450, canvasY: 450 })
     )
 
-    expect(canvas.pointer.onDrag).toBeDefined()
     expect(resizeSpy).not.toHaveBeenCalled()
   })
 
@@ -238,21 +237,34 @@ describe('LGraphCanvas selectOnly', () => {
 
   it('selects nodes without starting a drag', () => {
     const { canvas, firstNode } = createHarness()
+    const event = fromPartial<CanvasPointerEvent>({
+      canvasX: 150,
+      canvasY: 140
+    })
     canvas.allow_dragnodes = true
     canvas.selectOnly = true
 
-    canvas['_startDraggingItems'](firstNode, canvas.pointer, true)
+    canvas['_processPrimaryButton'](event, firstNode)
+    canvas.pointer.onDragStart?.(canvas.pointer)
+    canvas.pointer.onClick?.(event)
 
     expect(canvas.selectedItems).toEqual(new Set([firstNode]))
+    expect(canvas.pointer.onDragStart).toBeUndefined()
     expect(canvas.isDragging).toBe(false)
   })
 
   it('does not start dragging groups', () => {
-    const { canvas } = createHarness()
+    const { canvas, graph } = createHarness()
     const group = new LGraphGroup('Group')
+    group._bounding.set([300, 300, 100, 100])
+    graph.add(group)
     canvas.selectOnly = true
 
-    canvas['_startDraggingItems'](group, canvas.pointer, true)
+    canvas['_processPrimaryButton'](
+      fromPartial<CanvasPointerEvent>({ canvasX: 350, canvasY: 310 }),
+      undefined
+    )
+    canvas.pointer.onDragStart?.(canvas.pointer)
 
     expect(group.selected).toBeFalsy()
     expect(canvas.isDragging).toBe(false)
@@ -328,9 +340,8 @@ describe('LGraphCanvas selectOnly', () => {
         .mockImplementation(() => {})
       canvas.selectOnly = selectOnly
 
-      canvas['_processNodeClick'](
+      canvas['_processPrimaryButton'](
         fromPartial<CanvasPointerEvent>({ canvasX: 150, canvasY: 140 }),
-        false,
         firstNode
       )
 

@@ -62,6 +62,7 @@ import {
 import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
+import type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
 import { LinkConnector } from './canvas/LinkConnector'
 import {
   findRerouteAtPoint,
@@ -453,9 +454,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
   }
 
-  /** @inheritdoc {@link LGraphCanvasState.selectOnly} */
+  /**
+   * @inheritdoc {@link LGraphCanvasState.selectOnly}
+   * Also `true` while the injected {@link options.interactionMode} is select-only.
+   */
   get selectOnly(): boolean {
-    return this.state.selectOnly
+    return (
+      this.state.selectOnly ||
+      this.options.interactionMode?.isSelectOnly() === true
+    )
   }
 
   set selectOnly(value: boolean) {
@@ -576,6 +583,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     viewport?: Rect
     skip_render?: boolean
     autoresize?: boolean
+    /** Application-owned interaction mode; see {@link CanvasInteractionModeReader}. */
+    interactionMode?: CanvasInteractionModeReader
   }
 
   background_image: string
@@ -2446,10 +2455,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
     }
 
+    if (this.selectOnly) {
+      this.#processSelectOnlyPrimaryButton(e, node)
+      return
+    }
+
     // clone node ALT dragging
     if (
       !LiteGraph.vueNodesMode &&
-      !this.selectOnly &&
       LiteGraph.alt_drag_do_clone_nodes &&
       e.altKey &&
       !e.ctrlKey &&
@@ -2479,116 +2492,112 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else {
       const badgeLink = queryHiddenLinkBadgeAtPoint(this, graph, x, y)
       if (badgeLink) {
-        if (!this.selectOnly) {
-          pointer.onDoubleClick = () =>
-            promptRenameLinkBadge(this, graphScopeOf(graph), badgeLink.id, e)
-        }
+        pointer.onDoubleClick = () =>
+          promptRenameLinkBadge(this, graphScopeOf(graph), badgeLink.id, e)
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return
       }
 
-      if (!this.selectOnly) {
-        // Subgraph IO nodes
-        if (subgraph) {
-          const { inputNode, outputNode } = subgraph
+      // Subgraph IO nodes
+      if (subgraph) {
+        const { inputNode, outputNode } = subgraph
 
-          if (processSubgraphIONode(this, inputNode)) return
-          if (processSubgraphIONode(this, outputNode)) return
+        if (processSubgraphIONode(this, inputNode)) return
+        if (processSubgraphIONode(this, outputNode)) return
 
-          function processSubgraphIONode(
-            canvas: LGraphCanvas,
-            ioNode: SubgraphInputNode | SubgraphOutputNode
-          ) {
-            if (!ioNode.containsPoint([x, y])) return false
+        function processSubgraphIONode(
+          canvas: LGraphCanvas,
+          ioNode: SubgraphInputNode | SubgraphOutputNode
+        ) {
+          if (!ioNode.containsPoint([x, y])) return false
 
-            ioNode.onPointerDown(e, pointer, linkConnector)
-            pointer.onClick ??= () => canvas.processSelect(ioNode, e)
-            pointer.onDragStart ??= () =>
-              canvas._startDraggingItems(ioNode, pointer, true)
-            pointer.onDragEnd ??= (eUp) => canvas._processDraggedItems(eUp)
-            return true
-          }
+          ioNode.onPointerDown(e, pointer, linkConnector)
+          pointer.onClick ??= () => canvas.processSelect(ioNode, e)
+          pointer.onDragStart ??= () =>
+            canvas._startDraggingItems(ioNode, pointer, true)
+          pointer.onDragEnd ??= (eUp) => canvas._processDraggedItems(eUp)
+          return true
+        }
+      }
+
+      // Reroutes
+      if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
+        // Try layout store first for hit detection
+        const rerouteLayout = layoutStore.queryRerouteAtPoint(
+          graph.rootGraph.id,
+          { x, y }
+        )
+        let foundReroute: Reroute | undefined
+
+        if (rerouteLayout) {
+          foundReroute = graph.getReroute(rerouteLayout.id)
         }
 
-        // Reroutes
-        if (this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
-          // Try layout store first for hit detection
-          const rerouteLayout = layoutStore.queryRerouteAtPoint(
-            graph.rootGraph.id,
-            { x, y }
-          )
-          let foundReroute: Reroute | undefined
+        // Fallback to checking visible reroutes directly
+        for (const reroute of this._visibleReroutes) {
+          const overReroute =
+            foundReroute === reroute || reroute.containsPoint([x, y])
+          if (!reroute.isSlotHovered && !overReroute) continue
 
-          if (rerouteLayout) {
-            foundReroute = graph.getReroute(rerouteLayout.id)
-          }
-
-          // Fallback to checking visible reroutes directly
-          for (const reroute of this._visibleReroutes) {
-            const overReroute =
-              foundReroute === reroute || reroute.containsPoint([x, y])
-            if (!reroute.isSlotHovered && !overReroute) continue
-
-            if (overReroute) {
-              pointer.onClick = () => this.processSelect(reroute, e)
-              if (!e.shiftKey) {
-                pointer.onDragStart = (pointer) =>
-                  this._startDraggingItems(reroute, pointer, true)
-                pointer.onDragEnd = (e) => this._processDraggedItems(e)
-              }
-            }
-
-            if (reroute.isOutputHovered || (overReroute && e.shiftKey)) {
-              linkConnector.dragFromReroute(graph, reroute)
-              this._linkConnectorDrop()
-            }
-
-            if (reroute.isInputHovered) {
-              linkConnector.dragFromRerouteToOutput(graph, reroute)
-              this._linkConnectorDrop()
-            }
-
-            reroute.hideSlots()
-            this.dirty_bgcanvas = true
-            return
-          }
-        }
-
-        const hitSegments = queryRenderedLinkSegmentsAtPoint(this, x, y)
-
-        for (const linkSegment of this.renderedPaths) {
-          const centre = linkSegment._pos
-          const isLinkHit = hitSegments.has(linkSegment)
-
-          // If we shift click on a link then start a link from that input
-          if ((e.shiftKey || e.altKey) && isLinkHit) {
-            if (e.shiftKey && !e.altKey) {
-              linkConnector.dragFromLinkSegment(graph, linkSegment)
-              this._linkConnectorDrop()
-
-              return
-            } else if (e.altKey && !e.shiftKey) {
-              const newReroute = graph.createReroute([x, y], linkSegment)
-              if (!newReroute) return
-
+          if (overReroute) {
+            pointer.onClick = () => this.processSelect(reroute, e)
+            if (!e.shiftKey) {
               pointer.onDragStart = (pointer) =>
-                this._startDraggingItems(newReroute, pointer)
+                this._startDraggingItems(reroute, pointer, true)
               pointer.onDragEnd = (e) => this._processDraggedItems(e)
-              return
             }
-          } else if (
-            this.linkMarkerShape !== LinkMarkerShape.None &&
-            isInRectangle(x, y, centre[0] - 4, centre[1] - 4, 8, 8)
-          ) {
-            pointer.onClick = () => this.showLinkMenu(linkSegment, e)
-            pointer.onDragStart = () => (this.dragging_canvas = true)
-            pointer.finally = () => (this.dragging_canvas = false)
+          }
 
-            // clear tooltip
-            this.over_link_center = undefined
+          if (reroute.isOutputHovered || (overReroute && e.shiftKey)) {
+            linkConnector.dragFromReroute(graph, reroute)
+            this._linkConnectorDrop()
+          }
+
+          if (reroute.isInputHovered) {
+            linkConnector.dragFromRerouteToOutput(graph, reroute)
+            this._linkConnectorDrop()
+          }
+
+          reroute.hideSlots()
+          this.dirty_bgcanvas = true
+          return
+        }
+      }
+
+      const hitSegments = queryRenderedLinkSegmentsAtPoint(this, x, y)
+
+      for (const linkSegment of this.renderedPaths) {
+        const centre = linkSegment._pos
+        const isLinkHit = hitSegments.has(linkSegment)
+
+        // If we shift click on a link then start a link from that input
+        if ((e.shiftKey || e.altKey) && isLinkHit) {
+          if (e.shiftKey && !e.altKey) {
+            linkConnector.dragFromLinkSegment(graph, linkSegment)
+            this._linkConnectorDrop()
+
+            return
+          } else if (e.altKey && !e.shiftKey) {
+            const newReroute = graph.createReroute([x, y], linkSegment)
+            if (!newReroute) return
+
+            pointer.onDragStart = (pointer) =>
+              this._startDraggingItems(newReroute, pointer)
+            pointer.onDragEnd = (e) => this._processDraggedItems(e)
             return
           }
+        } else if (
+          this.linkMarkerShape !== LinkMarkerShape.None &&
+          isInRectangle(x, y, centre[0] - 4, centre[1] - 4, 8, 8)
+        ) {
+          pointer.onClick = () => this.showLinkMenu(linkSegment, e)
+          pointer.onDragStart = () => (this.dragging_canvas = true)
+          pointer.finally = () => (this.dragging_canvas = false)
+
+          // clear tooltip
+          this.over_link_center = undefined
+          return
         }
       }
 
@@ -2604,7 +2613,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           pointer.onDragStart = () => (this.resizingGroup = group)
           pointer.onDrag = (eMove) => {
-            if (this.read_only || this.selectOnly) return
+            if (this.read_only) return
 
             // Resize only by the exact pointer movement
             const pos: Point = [
@@ -2632,26 +2641,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           ) {
             // In title bar
             pointer.onClick = () => this.processSelect(group, e)
-            if (!this.selectOnly) {
-              pointer.onDragStart = (pointer) => {
-                group.recomputeInsideNodes()
-                this._startDraggingItems(group, pointer, true)
-              }
-              pointer.onDragEnd = (e) => this._processDraggedItems(e)
+            pointer.onDragStart = (pointer) => {
+              group.recomputeInsideNodes()
+              this._startDraggingItems(group, pointer, true)
             }
+            pointer.onDragEnd = (e) => this._processDraggedItems(e)
           }
         }
 
-        if (!this.selectOnly) {
-          pointer.onDoubleClick = () => {
-            this.emitEvent({
-              subType: 'group-double-click',
-              originalEvent: e,
-              group
-            })
-          }
+        pointer.onDoubleClick = () => {
+          this.emitEvent({
+            subType: 'group-double-click',
+            originalEvent: e,
+            group
+          })
         }
-      } else if (!this.selectOnly) {
+      } else {
         pointer.onDoubleClick = () => {
           // Double click within group should not trigger the searchbox.
           if (this.allow_searchbox) {
@@ -2672,14 +2677,35 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !pointer.onDrag &&
       this.allow_dragcanvas
     ) {
-      // allow dragging canvas based on leftMouseClickBehavior or read-only mode
-      if (LiteGraph.leftMouseClickBehavior === 'panning') {
-        pointer.onClick = () => this.processSelect(null, e)
-        pointer.finally = () => (this.dragging_canvas = false)
-        this.dragging_canvas = true
-      } else {
-        this._setupNodeSelectionDrag(e, pointer)
-      }
+      this.#setupCanvasDrag(e, pointer)
+    }
+  }
+
+  /**
+   * Pointer primary button processing while the canvas is select-only.
+   * A node press can only select; anything else is an empty-canvas press.
+   */
+  #processSelectOnlyPrimaryButton(
+    e: CanvasPointerEvent,
+    node: LGraphNode | undefined
+  ): void {
+    const { pointer } = this
+
+    if (node && (this.allow_interaction || node.flags.allow_interaction)) {
+      pointer.onClick = () => this.processSelect(node, e)
+    } else if (this.allow_dragcanvas) {
+      this.#setupCanvasDrag(e, pointer)
+    }
+  }
+
+  #setupCanvasDrag(e: CanvasPointerEvent, pointer: CanvasPointer): void {
+    // allow dragging canvas based on leftMouseClickBehavior or read-only mode
+    if (LiteGraph.leftMouseClickBehavior === 'panning') {
+      pointer.onClick = () => this.processSelect(null, e)
+      pointer.finally = () => (this.dragging_canvas = false)
+      this.dragging_canvas = true
+    } else {
+      this._setupNodeSelectionDrag(e, pointer)
     }
   }
 
@@ -2745,11 +2771,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     pointer.onClick = () => this.processSelect(node, e)
 
     // Immediately bring to front
-    if (!node.flags.pinned && !this.selectOnly) {
+    if (!node.flags.pinned) {
       this.bringToFront(node)
     }
-
-    if (this.selectOnly) return
 
     // Collapse toggle
     const inCollapse = node.isPointInCollapse(x, y)
@@ -3610,8 +3634,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this.processSelect(item, pointer.eDown, sticky)
-    if (this.selectOnly) return
-
     this.isDragging = true
 
     // Seed the auto-pan modifier state from the pointer-down event so a drag
