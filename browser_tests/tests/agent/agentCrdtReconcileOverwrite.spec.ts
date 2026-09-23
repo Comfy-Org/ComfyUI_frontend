@@ -102,12 +102,20 @@ async function appliedFrameCount(page: Page): Promise<number> {
  * happened) and `appliedFrameCount()` (proof the browser actually applied and
  * reconciled the resulting catch-up frame) before switching, and polls both
  * before asserting anything about the canvas.
+ *
+ * `skipTitleCheckForNodeIds` forwards to `expectCanvasReplayed` for callers
+ * (the title-stomp repro below) that intentionally leave a node's live title
+ * diverged from the doc's own stale projected title — see that parameter's
+ * doc comment. It must stay independent of that contested value so a real
+ * fix flips this test from an expected failure to a genuine pass instead of
+ * hard-failing forever on a title this call site never actually cares about.
  */
 async function reconcileByReturningToTab(
   page: Page,
   topbar: Topbar,
   agentConversation: AgentConversationHarness,
-  throughTurn: number
+  throughTurn: number,
+  skipTitleCheckForNodeIds?: ReadonlySet<string>
 ): Promise<void> {
   const beforeSubscribes = agentConversation.subscribeCount()
   const beforeApplied = await appliedFrameCount(page)
@@ -123,7 +131,10 @@ async function reconcileByReturningToTab(
   await expect
     .poll(() => appliedFrameCount(page))
     .toBeGreaterThanOrEqual(beforeApplied + 1)
-  await agentConversation.expectCanvasReplayed(throughTurn)
+  await agentConversation.expectCanvasReplayed(
+    throughTurn,
+    skipTitleCheckForNodeIds
+  )
 }
 
 test.describe(
@@ -212,12 +223,15 @@ test.describe(
       // Known, intentionally unfixed repro: the workflow-tab reload wipes
       // this node's reconcile baseline before the title fix ever runs — see
       // the file-level comment and agentNodeMaterializer.test.ts's matching
-      // `it.fails` case for the mechanism. Declared before the reconcile
-      // step (which ends in `expectCanvasReplayed`, asserting the doc's own
-      // stale title) rather than only around the final assertion below, so a
-      // fix landing anywhere in this flow registers as the intended
-      // "expected failure now passes" signal instead of a hard failure at a
-      // misleading location.
+      // `it.fails` case for the mechanism. The reconcile step below still
+      // runs `expectCanvasReplayed`, but with this node's title check
+      // skipped (`skipTitleCheckForNodeIds`) — the doc's own projection never
+      // learns about the manual rename, so its title stays stale whether or
+      // not the real gap is fixed, and hard-asserting on that stale value
+      // there would fail the test for the wrong reason (a contested,
+      // unrelated value) even once the real gap closes, permanently masking
+      // whether it actually did. The only check this test's outcome should
+      // hinge on is the final assertion below.
       test.fail()
       test.setTimeout(90_000)
       const topbar = new Topbar(page)
@@ -246,11 +260,16 @@ test.describe(
       })
 
       await test.step('an unrelated agent-driven reconcile runs (returning to the tab)', async () => {
+        // The doc's own projection never learns about this manual rename, so
+        // its title stays stale regardless of whether the real "survives a
+        // tab reload" gap below is fixed — skip only this node's title check
+        // here rather than hard-coding the stale title as an expectation.
         await reconcileByReturningToTab(
           page,
           topbar,
           agentConversation,
-          lastTurn
+          lastTurn,
+          new Set([UNTOUCHED_NODE_ID])
         )
       })
 
