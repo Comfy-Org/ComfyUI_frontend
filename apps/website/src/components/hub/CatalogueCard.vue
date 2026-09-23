@@ -21,7 +21,7 @@ const previewSrc = usePreviewVideo(video, () =>
 
 <template>
   <div
-    class="group relative flex h-full flex-col gap-3 rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 hover:bg-hub-surface-hover"
+    class="group relative flex h-full min-w-0 flex-col gap-3 rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 hover:bg-hub-surface-hover"
     data-testid="catalogue-card"
     :data-kind="view.kind"
   >
@@ -89,7 +89,7 @@ const previewSrc = usePreviewVideo(video, () =>
 
     <div class="flex flex-col gap-2 px-3">
       <h3
-        class="line-clamp-2 min-h-8 text-xs font-medium text-content-bright lg:min-h-10 lg:text-sm"
+        class="truncate text-xs font-medium text-content-bright lg:text-sm"
         data-testid="catalogue-card-title"
       >
         {{ view.title }}
