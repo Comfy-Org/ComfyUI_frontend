@@ -117,8 +117,9 @@ function subscribeStateVectorOf(raw: Buffer | string): string | null {
 
 /**
  * Drives one "add a note to the canvas" turn through to the agent reporting
- * it done -- the tool call's own completion AND the turn's "Worked for Xs"
- * summary, matching the bug report's "every working affordance" -- while the
+ * it done -- the tool call's own completion AND the turn's "Ran N tool
+ * calls" summary (cloud/1.54's ToolCallGroup, not main's WorkSummary),
+ * matching the bug report's "every working affordance" -- while the
  * doc host has ALREADY recorded the `add_node` op authoritatively
  * (`host.apply` below) but its broadcast `doc_update` is deliberately held
  * back. Callers decide when (if ever) to release it via the returned
@@ -337,10 +338,10 @@ async function driveThroughToolCallDone(
   })
 
   // Setup checkpoint: every working affordance the report names has settled --
-  // the composer is free again and the turn's own "Worked for Xs" summary is
-  // up -- while the canvas (asserted by the caller) has nothing yet.
+  // the composer is free again and the turn's own tool-call summary is up --
+  // while the canvas (asserted by the caller) has nothing yet.
   await expect(panel.getByRole('button', { name: SEND_LABEL })).toBeVisible()
-  await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
+  await expect(panel.getByRole('button', { name: /^Ran/ })).toBeVisible()
 
   return {
     vueNodes,
@@ -369,7 +370,7 @@ test.describe(
       // the fix under test lives one level down, on the tool call's OWN
       // displayed state inside that summary: expand it to look.
       const panel = page.locator('#agent-panel-root')
-      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      const workSummary = panel.getByRole('button', { name: /^Ran/ })
       await workSummary.click()
       await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
 
@@ -431,7 +432,7 @@ test.describe(
       )
 
       const panel = page.locator('#agent-panel-root')
-      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      const workSummary = panel.getByRole('button', { name: /^Ran/ })
       await workSummary.click()
       await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
 
