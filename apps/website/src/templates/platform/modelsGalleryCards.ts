@@ -85,5 +85,16 @@ export const modelsGalleryCards: ModelsGalleryCard[] = [
         src: 'https://media.comfy.org/website/router/flux-3-t2v.webp'
       }
     ]
+  },
+  {
+    titleKey: 'cloud.aiModels.card.geminiOmniFlash',
+    badgeIcon: '/icons/ai-models/gemini.svg',
+    modelId: 'gemini/omni-1.1-flash',
+    media: [
+      {
+        src: 'https://media.comfy.org/website/gemini-omni/card-1.webm',
+        posterSrc: 'https://media.comfy.org/website/gemini-omni/card-1.webp'
+      }
+    ]
   }
 ]
