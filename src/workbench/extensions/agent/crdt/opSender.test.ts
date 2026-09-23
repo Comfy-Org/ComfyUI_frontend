@@ -591,6 +591,21 @@ describe('createOpSender', () => {
     expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
   })
 
+  it('a transport that keeps throwing is reported once per send cycle, not once per retry', () => {
+    transportThrows = true
+
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+
+    expect(sent).toHaveLength(0)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['undeliverable'])
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+
+    // A new batch is a new cycle: its own throw is worth its own report.
+    sender.enqueue([addNode(2)])
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(2)
+  })
+
   describe('suspension', () => {
     function parkSecondBatch(): string {
       sender.enqueue([addNode(1)])

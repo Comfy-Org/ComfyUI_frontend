@@ -138,6 +138,12 @@ interface InFlight {
   sends: number
   resent: boolean
   parked: boolean
+  /**
+   * A throwing transport is reported once per send cycle (the initial
+   * attempt plus its retries), not once per retry: five identical reports
+   * 500 ms apart say nothing the first one did not.
+   */
+  throwReported: boolean
   timer: ReturnType<typeof setTimeout> | null
 }
 
@@ -187,6 +193,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       settleUnbound(batch)
       return
     }
+    if (attempt === 0) batch.throwReported = false
     if (!trySend(batch)) {
       if (attempt < SEND_RETRY_LIMIT) {
         // Tracked in the same slot as the result timer (they never overlap:
@@ -209,7 +216,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     try {
       return deps.sendOps(batch.workflowId, deps.tab, batch.ops)
     } catch (error) {
-      reportError(error, { errorType: 'agent_human_ops_send_failed' })
+      if (!batch.throwReported) {
+        batch.throwReported = true
+        reportError(error, { errorType: 'agent_human_ops_send_failed' })
+      }
       return false
     }
   }
@@ -250,6 +260,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       sends: 0,
       resent: false,
       parked: false,
+      throwReported: false,
       timer: null
     }
     transmit(inFlight, 0)
