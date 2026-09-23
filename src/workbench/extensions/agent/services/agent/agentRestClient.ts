@@ -65,6 +65,14 @@ export interface PostMessageInput {
   workflowReferences?: AgentPostMessageRequest['workflow_references']
   tabs?: OpenTabsSnapshot
   draft?: DraftSnapshot
+  /**
+   * The turn's target tab has no cloud id yet (a fresh, unsaved tab) - see
+   * AgentPostMessageRequest['current_tab_unbound']. Tells the server this is
+   * a selected-but-unbound tab rather than no tab at all, so it mints a
+   * workflow for it instead of falling back to the thread's previous one and
+   * presenting the turn to the model as having no workflow selected.
+   */
+  currentTabUnbound?: boolean
 }
 
 interface IngestErrorBody {
@@ -145,6 +153,8 @@ export function createAgentRestClient() {
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
     if (req.draft !== undefined) body.draft = req.draft
+    if (req.currentTabUnbound !== undefined)
+      body.current_tab_unbound = req.currentTabUnbound
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,
       jsonInit('POST', body),

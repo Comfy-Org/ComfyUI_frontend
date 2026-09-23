@@ -10,8 +10,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
+import * as Y from 'yjs'
 
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { GraphMutations } from './graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
@@ -21,6 +23,8 @@ import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
+import type { BatchOutcome } from './opSender'
+import type { GraphOperation } from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -39,7 +43,10 @@ const bridgeState = vi.hoisted(() => {
       }
     }
   }
-  return { FakeBridge, current: null as InstanceType<typeof FakeBridge> | null }
+  return {
+    FakeBridge,
+    current: null as InstanceType<typeof FakeBridge> | null
+  }
 })
 
 const clientState = vi.hoisted(() => ({
@@ -197,31 +204,36 @@ function writeRawRecord(overrides: {
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  events: Parameters<typeof useAgentCrdtFollower>[5] = {}
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
+  enqueue: (operations: GraphOperation[]) => void
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
+  let enqueue!: (operations: GraphOperation[]) => void
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(
+      const { status, enqueueHumanOperations } = useAgentCrdtFollower(
         workflowId,
         graphMutations,
         () => null,
         isTargetActive,
-        getGraph
+        getGraph,
+        events
       )
       exposedStatus = () => status.value as AgentCrdtStatus
+      enqueue = enqueueHumanOperations
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus }
+  return { unmount, workflowId, isTargetActive, status: exposedStatus, enqueue }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -900,6 +912,36 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('reports a pending live arrival when graph readiness materializes it', async () => {
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const onMaterialized = vi.fn()
+      const { unmount } = mountFollower('wf-1', true, () => graph.value, {
+        onMaterialized
+      })
+      bridge().follower.doc = {
+        getMap: () => ({ toJSON: () => ({ '3': {} }) })
+      }
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        catchUp: false
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      graph.value = fakeGraph
+      await nextTick()
+
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: undefined,
+        nodeIds: [toNodeId(3)]
+      })
+      unmount()
+    })
+
     it('does not reconcile for a graph that appears while the target is inactive', async () => {
       const graph = shallowRef<MaterializableGraph | null>(null)
       const { unmount } = mountFollower('wf-1', false, () => graph.value)
@@ -990,6 +1032,133 @@ describe('useAgentCrdtFollower', () => {
       ])
       unmount()
     })
+
+    it('reports only live agent materializations, not reconnect catch-up', () => {
+      const onMaterialized = vi.fn()
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(1)])
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
+        onMaterialized
+      })
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        catchUp: true
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'human:user:tab',
+        catchUp: false
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 11,
+        actor: 'agent:thread:turn',
+        catchUp: false
+      })
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: 'agent:thread:turn',
+        nodeIds: [toNodeId(1)]
+      })
+      unmount()
+    })
+
+    it('retains a live add until a dependency makes the node visible', () => {
+      const onMaterialized = vi.fn()
+      const graph = fromPartial<MaterializableGraph>({
+        ...fakeGraph,
+        _nodes_by_id: { [toNodeId(3)]: {} }
+      })
+      const { unmount } = mountFollower('wf-1', true, () => graph, {
+        onMaterialized
+      })
+      let nodes: Record<string, unknown> = {}
+      bridge().follower.doc = {
+        getMap: () => ({ toJSON: () => nodes })
+      }
+      const source = new Y.Doc()
+      source.getMap('nodes').set('3', { type: 'KSampler' })
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 5,
+        actor: 'agent:thread:turn',
+        catchUp: false,
+        update: Y.encodeStateAsUpdate(source)
+      })
+      expect(onMaterialized).not.toHaveBeenCalled()
+
+      nodes = { '3': {} }
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 4,
+        actor: 'host:catch-up',
+        catchUp: true,
+        update: new Uint8Array()
+      })
+
+      expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
+        workflowId: 'wf-1',
+        actor: undefined,
+        nodeIds: [toNodeId(3)]
+      })
+      unmount()
+    })
+
+    it('does not attribute a human recreation after a pending node was deleted', () => {
+      const onMaterialized = vi.fn()
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const readyGraph = fromPartial<MaterializableGraph>({
+        ...fakeGraph,
+        _nodes_by_id: { [toNodeId(3)]: {} }
+      })
+      let nodes: Record<string, unknown> = {}
+      const { unmount } = mountFollower('wf-1', true, () => graph.value, {
+        onMaterialized
+      })
+      bridge().follower.doc = {
+        getMap: () => ({ toJSON: () => nodes })
+      }
+
+      const source = new Y.Doc()
+      source.getMap('nodes').set('3', { type: 'KSampler' })
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn',
+        catchUp: false,
+        update: Y.encodeStateAsUpdate(source)
+      })
+      // The add never enters the observable document set because projection is
+      // still waiting on a dependency; a later delete must still retire it.
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'human:user:tab',
+        catchUp: false
+      })
+
+      graph.value = readyGraph
+      nodes = { '3': {} }
+      materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 11,
+        actor: 'human:user:tab',
+        catchUp: false
+      })
+
+      expect(onMaterialized).not.toHaveBeenCalled()
+      unmount()
+    })
   })
 
   it('suspends a background target and catches up only after it becomes active', async () => {
@@ -1009,7 +1178,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('sends minted human operations through the doc client', () => {
+  it('sends minted human operations through the doc client', async () => {
     const workflowId = ref<string | null>('wf-1')
     let enqueue!: ReturnType<
       typeof useAgentCrdtFollower
@@ -1033,6 +1202,7 @@ describe('useAgentCrdtFollower', () => {
         removed_links: []
       }
     ])
+    await Promise.resolve()
 
     expect(clientState.sendOps).toHaveBeenCalledWith(
       'wf-1',
@@ -1062,6 +1232,7 @@ describe('useAgentCrdtFollower', () => {
     const { unmount } = render(host)
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
     expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
     // The real bridge clears its send reality on doc_subscribed{ok:false}
@@ -1074,7 +1245,7 @@ describe('useAgentCrdtFollower', () => {
     const settledStates = vi
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
-      .map(([, detail]) => (detail as { state: string }).state)
+      .map(([, detail]) => (detail as BatchOutcome).state)
     expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
@@ -1099,6 +1270,7 @@ describe('useAgentCrdtFollower', () => {
     const { unmount } = render(host)
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
     expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
     // Mirror the real bridge's onDocSubscribed: it clears send reality
@@ -1112,7 +1284,7 @@ describe('useAgentCrdtFollower', () => {
     const settledStates = vi
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
-      .map(([, detail]) => (detail as { state: string }).state)
+      .map(([, detail]) => (detail as BatchOutcome).state)
     expect(settledStates).toEqual(['unconfirmed'])
     unmount()
   })
@@ -1142,6 +1314,7 @@ describe('useAgentCrdtFollower', () => {
     })
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
     expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
     workflowId.value = 'wf-2'
@@ -1152,8 +1325,131 @@ describe('useAgentCrdtFollower', () => {
     const settledStates = vi
       .mocked(recordDevEvent)
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
-      .map(([, detail]) => (detail as { state: string }).state)
+      .map(([, detail]) => (detail as BatchOutcome).state)
     expect(settledStates).toEqual(['unconfirmed'])
+    unmount()
+  })
+
+  it('pins a same-tick human edit to the workflow active at admission', async () => {
+    const { enqueue, workflowId, unmount } = mountWithHumanOps()
+    bridge().subscribe.mockImplementation((next: string) => {
+      bridge().subscribedWorkflowId = next
+    })
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    expect(clientState.sendOps).toHaveBeenCalledWith(
+      'wf-1',
+      expect.any(String),
+      [expect.objectContaining({ op: 'delete_node', node_id: '1' })]
+    )
+    unmount()
+  })
+
+  function mountWithHumanOps(): {
+    enqueue: ReturnType<typeof useAgentCrdtFollower>['enqueueHumanOperations']
+    workflowId: Ref<string | null>
+    unmount: () => void
+  } {
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        const { enqueueHumanOperations } = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        )
+        enqueue = enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+    return { enqueue, workflowId, unmount }
+  }
+
+  async function settledHumanOpStates(): Promise<string[]> {
+    const { recordDevEvent } = await import('./devPanelLog')
+    return vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'human_ops_settled')
+      .map(([, detail]) => (detail as BatchOutcome).state)
+  }
+
+  it('sends eight same-tick human deletes as one doc_ops batch in node order', async () => {
+    const { enqueue, unmount } = mountWithHumanOps()
+
+    for (let id = 1; id <= 8; id++)
+      enqueue([{ op: 'delete_node', node_id: String(id), removed_links: [] }])
+    await Promise.resolve()
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+    expect(ops.map((op) => ('node_id' in op ? op.node_id : undefined))).toEqual(
+      ['1', '2', '3', '4', '5', '6', '7', '8']
+    )
+    unmount()
+  })
+
+  it('a doc_reset settles sent and queued human batches without another send', async () => {
+    vi.useFakeTimers()
+    const { enqueue, unmount } = mountWithHumanOps()
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    enqueue([{ op: 'delete_node', node_id: '2', removed_links: [] }])
+    await Promise.resolve()
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 9, actor: 'agent:x' })
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    expect(await settledHumanOpStates()).toEqual([
+      'unconfirmed',
+      'undeliverable'
+    ])
+    unmount()
+  })
+
+  it('a doc_reset cancels an admitted human edit before its deferred flush', async () => {
+    const { enqueue, unmount } = mountWithHumanOps()
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 9, actor: 'agent:x' })
+    await Promise.resolve()
+
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+    expect(await settledHumanOpStates()).toEqual(['undeliverable'])
+    unmount()
+  })
+
+  it('unbinding settles queued human batches and sends nothing more', async () => {
+    vi.useFakeTimers()
+    const { enqueue, workflowId, unmount } = mountWithHumanOps()
+    bridge().unsubscribe.mockImplementation(() => {
+      bridge().subscribedWorkflowId = null
+    })
+
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    enqueue([{ op: 'delete_node', node_id: '2', removed_links: [] }])
+    await Promise.resolve()
+    enqueue([{ op: 'delete_node', node_id: '3', removed_links: [] }])
+    await Promise.resolve()
+
+    workflowId.value = null
+    await nextTick()
+
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    expect(await settledHumanOpStates()).toEqual([
+      'unconfirmed',
+      'undeliverable',
+      'undeliverable'
+    ])
     unmount()
   })
 
@@ -1204,7 +1500,7 @@ describe('useAgentCrdtFollower', () => {
       return vi
         .mocked(recordDevEvent)
         .mock.calls.filter(([event]) => event === 'human_ops_settled')
-        .map(([, detail]) => (detail as { state: string }).state)
+        .map(([, detail]) => (detail as BatchOutcome).state)
     }
 
     function ackSent(index: number): void {
@@ -1227,6 +1523,7 @@ describe('useAgentCrdtFollower', () => {
     it('holds the queued batch when the bound workflow tab goes inactive instead of settling it undeliverable', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
@@ -1243,6 +1540,7 @@ describe('useAgentCrdtFollower', () => {
     it('sends the held batch to the same workflow when its tab becomes active again', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
       isTargetActive.value = false
       await nextTick()
@@ -1265,6 +1563,7 @@ describe('useAgentCrdtFollower', () => {
       const { unmount, workflowId, isTargetActive, enqueue } =
         mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
       isTargetActive.value = false
       await nextTick()
@@ -1282,6 +1581,7 @@ describe('useAgentCrdtFollower', () => {
       const { unmount, workflowId, isTargetActive, enqueue } =
         mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
 
       workflowId.value = 'wf-2'
@@ -1297,6 +1597,7 @@ describe('useAgentCrdtFollower', () => {
       const { unmount, workflowId, isTargetActive, enqueue } =
         mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
       isTargetActive.value = false
       await nextTick()
@@ -1312,6 +1613,7 @@ describe('useAgentCrdtFollower', () => {
     it('returning while the socket is down keeps the held batch and sends it once the subscribe is acknowledged', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
       isTargetActive.value = false
       await nextTick()
@@ -1345,6 +1647,7 @@ describe('useAgentCrdtFollower', () => {
       expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
       expect([...intent.pendingDeletes('wf-2')]).toEqual([])
 
+      await Promise.resolve()
       ackSent(0)
       expect(await settledStates()).toEqual(['acknowledged'])
       expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
@@ -1357,6 +1660,7 @@ describe('useAgentCrdtFollower', () => {
     it('a refused resubscribe on return still settles the held batch undeliverable', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
+      await Promise.resolve()
       enqueue([deleteNode('2')])
       isTargetActive.value = false
       await nextTick()

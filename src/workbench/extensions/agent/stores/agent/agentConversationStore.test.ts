@@ -91,6 +91,22 @@ describe('useAgentConversationStore', () => {
     setActivePinia(createPinia())
   })
 
+  it('publishes a turn identity before its live status', () => {
+    const store = useAgentConversationStore()
+    const observations: [typeof store.status, TurnId | null][] = []
+    watch(
+      () => [store.status, store.activeTurnId] as const,
+      ([status, turnId]) => observations.push([status, turnId]),
+      { flush: 'sync' }
+    )
+
+    store.startTurn(T1)
+
+    expect(observations.filter(([status]) => status !== 'idle')).toEqual([
+      ['streaming', T1]
+    ])
+  })
+
   it('(M1) fires a deep watch on messages when a MID-turn delta event lands', async () => {
     const store = useAgentConversationStore()
     const spy = vi.fn()
@@ -493,6 +509,55 @@ describe('useAgentConversationStore', () => {
     })
   })
 
+  it('hydrates persisted tool calls into the same parts array the live work-summary UI reads', () => {
+    const assistant = historyRow(2, 'assistant', 'turn-a', 'Done')
+    assistant.content = {
+      text: 'Done',
+      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([historyRow(1, 'user', 'turn-a', 'Find a node'), assistant])
+
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'tool',
+      callId: 'call-1',
+      name: 'search_nodes',
+      state: 'done',
+      ok: true
+    })
+  })
+
+  it('does not bleed a tool-call summary onto a different chat, and restores it when switching back', () => {
+    const store = useAgentConversationStore()
+    const threadAAssistant = historyRow(2, 'assistant', 'turn-a', 'Done A')
+    threadAAssistant.content = {
+      text: 'Done A',
+      tool_calls: [{ id: 'call-a', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const threadA = [
+      historyRow(1, 'user', 'turn-a', 'Find a node'),
+      threadAAssistant
+    ]
+    const threadB = [
+      historyRow(1, 'user', 'turn-b', 'Just chat'),
+      historyRow(2, 'assistant', 'turn-b', 'Done B')
+    ]
+    const hasToolPart = () =>
+      store.messages.some((message) =>
+        message.parts.some((part) => part.type === 'tool')
+      )
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
+
+    store.hydrate(threadB)
+    expect(hasToolPart()).toBe(false)
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
+  })
+
   it('keeps hydrated turn identity stable when persisted row ids change', () => {
     const store = useAgentConversationStore()
     const firstRows = [
@@ -549,5 +614,34 @@ describe('useAgentConversationStore', () => {
     expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
     expect(partTexts(store)).toEqual(['persisted reply'])
     expect(store.isStreaming).toBe(false)
+  })
+
+  it('resolves existing paywalls without resurrecting them after funds run out again', () => {
+    const store = useAgentConversationStore()
+    store.recordPaywall(T1, 'subscribe')
+
+    store.setPaywallsResolved(true)
+    store.setPaywallsResolved(false)
+
+    expect(store.messages[0].parts).toEqual([])
+    expect(store.entries[0]).toMatchObject({ role: 'user', text: 'subscribe' })
+
+    store.recordPaywall(T2, 'top up')
+    expect(store.messages[1].parts).toEqual([
+      { type: 'paywall', message: undefined }
+    ])
+  })
+
+  it('shows a later paywall after resolving an earlier one', () => {
+    const store = useAgentConversationStore()
+    store.recordPaywall(T1, 'subscribe')
+    store.setPaywallsResolved(true)
+
+    store.recordPaywall(T2, 'continue')
+
+    expect(store.messages[0].parts).toEqual([])
+    expect(store.messages[1].parts).toEqual([
+      { type: 'paywall', message: undefined }
+    ])
   })
 })

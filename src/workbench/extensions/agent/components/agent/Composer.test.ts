@@ -16,6 +16,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
+import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
@@ -304,18 +305,95 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
     expect(emitted().stop).toBeUndefined()
 
-    box.dispatchEvent(
-      new KeyboardEvent('keydown', {
-        key: 'Escape',
-        repeat: true,
-        bubbles: true,
-        cancelable: true
-      })
-    )
+    // An auto-repeated Escape is still contained by the registered override
+    // (which keybindHandler would otherwise let dispatch ExitSubgraph), but
+    // it doesn't itself trigger a stop.
+    const repeatedEscapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      repeat: true,
+      cancelable: true
+    })
+    expect(consultEscapeOverride(repeatedEscapeEvent)).toBe(true)
+    expect(repeatedEscapeEvent.defaultPrevented).toBe(true)
     expect(emitted().stop).toBeUndefined()
 
     await userEvent.type(box, '{Escape}')
     expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('stops the run on Escape after submitting by clicking Send with the mouse', async () => {
+    // A plain click moves focus onto the Send button (Chrome's behavior), so
+    // the event never reaches the editor-scoped keydown handler. This is
+    // exactly the case the registered Escape override exists for, so it's
+    // consulted directly rather than dispatched through the DOM - the same
+    // way `keybindHandler` consults it in the real app.
+    useAgentComposerStore().setText('run this')
+    const { rerender, emitted } = mount()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(emitted().send).toHaveLength(1)
+
+    await rerender({ streaming: true })
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(true)
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('stops the run on Escape after clicking Send without moving focus (Safari/Firefox)', async () => {
+    // Safari and Firefox don't move focus onto a plain-clicked <button> the
+    // way Chrome does, so simulate that by dispatching the click directly
+    // instead of going through userEvent.click(), which always focuses the
+    // element it clicks.
+    useAgentComposerStore().setText('run this')
+    const { rerender, emitted } = mount()
+
+    const sendButton = screen.getByRole('button', { name: 'Send' })
+    sendButton.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+    await nextTick()
+    expect(emitted().send).toHaveLength(1)
+    // eslint-disable-next-line testing-library/no-node-access
+    expect(document.activeElement).toBe(document.body)
+
+    await rerender({ streaming: true })
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(true)
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('does not stop the run on Escape once focus has left the composer entirely', async () => {
+    const onStop = vi.fn()
+    const Host = defineComponent({
+      setup: () => () =>
+        h('div', [
+          h(Composer, { hasWorkflowTarget: true, streaming: true, onStop }),
+          h('button', { type: 'button' }, 'Elsewhere on the page')
+        ])
+    })
+    render(Host, {
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: tooltipDirectiveStub }
+      }
+    })
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Elsewhere on the page' })
+    )
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(false)
+    expect(onStop).not.toHaveBeenCalled()
   })
 
   it('does not stop on Escape during IME composition', () => {

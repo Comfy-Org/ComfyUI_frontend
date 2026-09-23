@@ -390,3 +390,55 @@ test.describe('Automatic agent consent', { tag: ['@cloud', '@ui'] }, () => {
     })
   })
 })
+
+test.describe(
+  'Automatic agent consent in the first session',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    test.use({
+      agentConsentAccepted: false,
+      initialSettings: { 'Comfy.TutorialCompleted': false },
+      initialFeatureFlags: {
+        onboarding_tour_enabled: true,
+        subscription_required: true
+      }
+    })
+
+    test('stays silent for the session once Getting Started took the screen', async ({
+      comfyPage,
+      agentPanel,
+      agentConsentReads
+    }) => {
+      const page = comfyPage.page
+      const gettingStarted = page.getByRole('dialog', {
+        name: enMessages.gettingStarted.title
+      })
+      const consent = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+
+      await test.step('Getting Started owns the first screen', async () => {
+        await expect(gettingStarted).toBeVisible()
+      })
+
+      await test.step('The automatic offer runs and stays silent', async () => {
+        await expect
+          .poll(() => agentConsentReads.length, {
+            message:
+              'the automatic offer runs once the consent read and the boot decision are both in; the fixture already waited past the decision (the loading overlay clears after it), so the read is the last input and the silence below is a decision, not a race',
+            timeout: 15_000
+          })
+          .toBeGreaterThan(0)
+        await expect(consent).toHaveCount(0)
+        await expect(agentPanel.root).toHaveCount(0)
+        expect(
+          await page.evaluate(() =>
+            localStorage.getItem(
+              'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
+            )
+          )
+        ).toBeNull()
+      })
+    })
+  }
+)
