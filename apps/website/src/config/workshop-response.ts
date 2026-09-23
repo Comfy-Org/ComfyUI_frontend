@@ -52,29 +52,34 @@ interface OutputContext {
 type JsonOutput = Extract<WorkshopContract['output'], { format: 'json' }>
 type OutputSelector = JsonOutput['selectors'][number]
 
-const FAILURE_ENVELOPE_KEYS = new Set(['detail', 'error', 'failure'])
+const NON_OUTPUT_ENVELOPE_KEYS = new Set([
+  'detail',
+  'error',
+  'failure',
+  'input',
+  'inputs',
+  'request',
+  'requestbody'
+])
+
+function isNonOutputEnvelope(key: string): boolean {
+  return NON_OUTPUT_ENVELOPE_KEYS.has(
+    key.toLowerCase().replaceAll(/[^a-z]/g, '')
+  )
+}
 
 function hasTextOutput(
   value: unknown,
   key = '',
   depth = 0,
-  insideFailure = false
+  insideNonOutput = false
 ): boolean {
-  if (depth > 64) return false
+  if (depth > 64 || insideNonOutput) return false
   if (typeof value === 'string')
-    return (
-      !insideFailure &&
-      (key === 'text' || key === 'output_text') &&
-      value.trim().length > 0
-    )
+    return (key === 'text' || key === 'output_text') && value.trim().length > 0
   if (value === null || typeof value !== 'object') return false
   return Object.entries(value).some(([childKey, child]) =>
-    hasTextOutput(
-      child,
-      childKey,
-      depth + 1,
-      insideFailure || FAILURE_ENVELOPE_KEYS.has(childKey.toLowerCase())
-    )
+    hasTextOutput(child, childKey, depth + 1, isNonOutputEnvelope(childKey))
   )
 }
 
@@ -119,8 +124,13 @@ async function automaticOutputs(
     })
     seen.add(value)
   }
-  function visit(value: unknown, depth: number, mimeHint?: string) {
-    if (depth > 64 || outputs.length >= 256) return
+  function visit(
+    value: unknown,
+    depth: number,
+    mimeHint?: string,
+    insideNonOutput = false
+  ) {
+    if (depth > 64 || outputs.length >= 256 || insideNonOutput) return
     if (typeof value === 'string') {
       if (!seen.has(value)) collectString(value, mimeHint)
       return
@@ -134,7 +144,8 @@ async function automaticOutputs(
       visit(
         child,
         depth + 1,
-        key === 'data' && typeof hint === 'string' ? hint : undefined
+        key === 'data' && typeof hint === 'string' ? hint : undefined,
+        isNonOutputEnvelope(key)
       )
   }
   try {

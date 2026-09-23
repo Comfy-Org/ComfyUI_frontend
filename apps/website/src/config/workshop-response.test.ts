@@ -174,14 +174,30 @@ describe('native Router output handling', () => {
     }
   )
 
-  it('does not treat error-envelope text as generated output', async () => {
+  it.for([
+    {
+      name: 'error text',
+      response: { error: { code: 'content_filter', text: 'Request rejected' } }
+    },
+    {
+      name: 'an echoed request',
+      response: {
+        error: { code: 'content_filter' },
+        request: { text: 'Original prompt' }
+      }
+    },
+    {
+      name: 'a diagnostic media URL',
+      response: {
+        error: {
+          code: 'content_filter',
+          diagnostic: 'https://assets.example/rejected.png'
+        }
+      }
+    }
+  ])('does not treat $name as generated output', async ({ response }) => {
     await expect(
-      parseRouterResponse(
-        contract,
-        Response.json({
-          error: { code: 'content_filter', text: 'Request rejected' }
-        })
-      )
+      parseRouterResponse(contract, Response.json(response))
     ).rejects.toMatchObject({ reason: 'policy', stage: 'response' })
   })
 
