@@ -171,9 +171,7 @@ describe('useTopUpUrlLoader', () => {
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'topup'
     )
-    expect(
-      vi.mocked(useBillingCapabilities().initialize)
-    ).not.toHaveBeenCalled()
+    expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
   })
 
   it('strips but does not open for a non-string param', async () => {

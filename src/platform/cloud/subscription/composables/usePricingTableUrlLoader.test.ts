@@ -137,9 +137,7 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(
-      vi.mocked(useBillingCapabilities().initialize)
-    ).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
     expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 

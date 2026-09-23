@@ -93,7 +93,7 @@ describe('performTeamSubscriptionCheckout', () => {
 
     await performTeamSubscriptionCheckout('team_1400', 'monthly')
 
-    expect(vi.mocked(workspaceApi.subscribe)).toHaveBeenCalledWith(
+    expect(workspaceApi.subscribe).toHaveBeenCalledWith(
       'team_per_credit_monthly',
       {
         returnUrl: expect.any(String),
@@ -179,7 +179,7 @@ describe('performTeamSubscriptionCheckout', () => {
           cancel_url: 'https://app.test/payment/failed'
         })
       )
-      expect(vi.mocked(workspaceApi.subscribe)).not.toHaveBeenCalled()
+      expect(workspaceApi.subscribe).not.toHaveBeenCalled()
       expect(assignedHref).toBe('/')
       // The operation id the rail settled is the one the checkout reports.
       expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
@@ -197,7 +197,7 @@ describe('performTeamSubscriptionCheckout', () => {
 
       await performTeamSubscriptionCheckout('team_700', 'yearly')
 
-      expect(vi.mocked(workspaceApi.subscribe)).toHaveBeenCalledWith(
+      expect(workspaceApi.subscribe).toHaveBeenCalledWith(
         'team_per_credit_annual',
         {
           returnUrl: 'https://app.test/payment/success',
@@ -218,7 +218,7 @@ describe('performTeamSubscriptionCheckout', () => {
         performTeamSubscriptionCheckout('team_700', 'yearly')
       ).rejects.toThrow('card declined')
 
-      expect(vi.mocked(workspaceApi.subscribe)).not.toHaveBeenCalled()
+      expect(workspaceApi.subscribe).not.toHaveBeenCalled()
       expect(assignedHref).toBeUndefined()
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'failed', tier: 'team' })
@@ -231,7 +231,7 @@ describe('performTeamSubscriptionCheckout', () => {
 
     await performTeamSubscriptionCheckout('team_700', 'yearly')
 
-    expect(vi.mocked(workspaceApi.subscribe)).not.toHaveBeenCalled()
+    expect(workspaceApi.subscribe).not.toHaveBeenCalled()
     expect(assignedHref).toBeUndefined()
   })
 })
