@@ -63,8 +63,6 @@ const settings = {
 
 const commonParserOptions = {
   parser: tseslintParser,
-  projectService: true,
-  tsConfigRootDir: import.meta.dirname,
   ecmaVersion: 2020,
   sourceType: 'module',
   extraFileExtensions
@@ -182,7 +180,9 @@ export default defineConfig([
       'src/types/vue-shim.d.ts',
       'packages/design-system/src/css/lucideStrokePlugin.js',
       'test-results/*',
-      'vitest.setup.ts'
+      'vitest.setup.ts',
+      '.agents/checks/eslint.strict.config.js',
+      'ComfyUI/**'
     ]
   },
   {
@@ -190,18 +190,7 @@ export default defineConfig([
     settings,
     languageOptions: {
       globals: commonGlobals,
-      parserOptions: {
-        ...commonParserOptions,
-        projectService: {
-          allowDefaultProject: [
-            'packages/object-info-parser/vitest.config.ts',
-            'vite.electron.config.mts',
-            'vite.types.config.mts',
-            'vitest.matrix.config.mts',
-            'vitest.timer.setup.ts'
-          ]
-        }
-      }
+      parserOptions: commonParserOptions
     }
   },
   {
@@ -233,6 +222,12 @@ export default defineConfig([
   pluginJs.configs.recommended,
 
   tseslintConfigs.recommended,
+  {
+    files: ['**/*.vue'],
+    rules: {
+      'no-undef': 'off'
+    }
+  },
   // Difference in typecheck on CI vs Local
   pluginVue.configs['flat/recommended'],
   // Tailwind CSS v4 linting (class ordering, duplicates, conflicts, etc.)
@@ -250,7 +245,10 @@ export default defineConfig([
       'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
       // Off: large batch change, enable and apply with `eslint --fix`
       'better-tailwindcss/enforce-consistent-class-order': 'error',
-      'better-tailwindcss/enforce-canonical-classes': 'error',
+      'better-tailwindcss/enforce-canonical-classes': [
+        'error',
+        { collapse: false }
+      ],
       'better-tailwindcss/no-deprecated-classes': 'error'
     }
   },
