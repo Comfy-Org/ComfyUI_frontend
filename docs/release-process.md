@@ -42,6 +42,15 @@ record, and an outstanding cut PR holds the next cut. GitHub schedules can be
 delayed; noon is the trigger time, not a guaranteed merge or deployment time.
 The Slack bot must be able to post to `#frontend-code-reviews`.
 
+`cloud-release-version-bump.yaml` maintains both the newest cloud release line
+and the cloud line selected by `testcloudBranch` in the cloud repo's
+`frontend-version.json` (falling back to `releaseBranch` when absent). The
+existing `PR_GH_TOKEN` therefore needs read access to that cloud file. Invalid
+or unreadable configuration fails the run rather than dropping the QA branch.
+Explicit `branch` dispatches still target only that branch. Each active line
+keeps its own pending-PR and no-new-commits checks; fixes are not copied between
+branches. Testcloud rotation remains a sheriff-reviewed operation.
+
 **Patch on `core/X.Y`**: publishes a hotfix draft release. Must not be marked
 "latest" so `main` stays current.
 

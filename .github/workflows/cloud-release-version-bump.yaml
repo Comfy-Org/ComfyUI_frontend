@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Cloud branch to bump (blank = auto-detect latest cloud/x.y)'
+        description: 'Cloud branch to bump (blank = newest cloud/x.y plus the testcloud release line)'
         required: false
         default: ''
         type: string
@@ -60,6 +60,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
       - name: Fetch cloud branches
         run: git fetch --no-tags origin '+refs/heads/cloud/*:refs/remotes/origin/cloud/*'
 
@@ -81,12 +86,9 @@ jobs:
             fi
             BRANCHES="$INPUT_BRANCH"
           else
-            # Auto-detect the newest cloud/x.y line. Older cloud branches are
-            # EOL once a newer minor is cut, so only the latest is bumped.
-            BRANCHES=$(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/cloud/*' \
-              | sed -n 's#^origin/\(cloud/[0-9]\+\.[0-9]\+\)$#\1#p' \
-              | sort -t/ -k2 -V \
-              | tail -n1)
+            gh api repos/Comfy-Org/cloud/contents/frontend-version.json \
+              -H 'Accept: application/vnd.github.raw+json' > "$RUNNER_TEMP/cloud-frontend-version.json"
+            BRANCHES=$(node scripts/cicd/active-cloud-branches.ts "$RUNNER_TEMP/cloud-frontend-version.json")
           fi
           if [[ -z "$BRANCHES" ]]; then
             echo "::error::No active cloud/x.y branch found"
