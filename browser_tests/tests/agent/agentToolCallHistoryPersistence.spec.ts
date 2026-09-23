@@ -63,6 +63,7 @@ test(
     // (services/agent/server/agent_handler.go's getMessages sets
     // messageResponse.Content = m.Content directly). Stand in for that GET
     // response here.
+    const historyRequestThreadIds: string[] = []
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() !== 'GET') return route.fallback()
       const request = promptHistory.requests.at(0)
@@ -70,7 +71,7 @@ test(
       const threadId = new URL(route.request().url()).pathname
         .split('/')
         .at(-2)!
-      promptHistory.historyRequestThreadIds.push(threadId)
+      historyRequestThreadIds.push(threadId)
       const turnId = 'e2e-tool-call-turn'
       const messages: AgentMessage[] = [
         {
@@ -141,9 +142,9 @@ test(
       /^Search nodes\s*0\.4s$/,
       /^Add node\s*0\.2s$/
     ])
-    const restoredThreadId = promptHistory.historyRequestThreadIds.at(-1)
+    const restoredThreadId = historyRequestThreadIds.at(-1)
     expect(restoredThreadId).toBeTruthy()
-    const historyRequestCount = promptHistory.historyRequestThreadIds.length
+    const historyRequestCount = historyRequestThreadIds.length
 
     await reopenedPanel
       .getByRole('button', { name: enMessages.agent.newChat })
@@ -159,10 +160,10 @@ test(
       .getByRole('button', { name: 'Inline reference round trip', exact: true })
       .click()
     await expect
-      .poll(() => promptHistory.historyRequestThreadIds.length)
+      .poll(() => historyRequestThreadIds.length)
       .toBeGreaterThan(historyRequestCount)
     await expect
-      .poll(() => promptHistory.historyRequestThreadIds.at(-1))
+      .poll(() => historyRequestThreadIds.at(-1))
       .toBe(restoredThreadId)
     await expect(summary).toHaveAttribute('aria-expanded', 'false')
     await expect(reopenedPanel.getByTestId('user-message-bubble')).toHaveText(
