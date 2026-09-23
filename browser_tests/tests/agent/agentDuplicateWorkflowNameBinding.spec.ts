@@ -171,6 +171,11 @@ test(
     await expect(
       panel.getByText(enMessages.agent.selectWorkflowForAgent)
     ).toBeVisible()
+    await expect
+      .poll(() =>
+        page.evaluate((key) => localStorage.getItem(key), BINDING_KEY)
+      )
+      .toBe('{}')
     await expect(topbar.getActiveTab()).toContainText('Portrait')
 
     await testInfo.attach('duplicate-name-portrait-tab', {
