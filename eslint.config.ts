@@ -3,6 +3,7 @@ import type { Rule } from 'eslint'
 
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
+import { configs as astroConfigs } from 'eslint-plugin-astro'
 import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
@@ -23,6 +24,7 @@ import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
 import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
+import { es2022CompatPlugin } from './tools/eslint-plugins/noEs2023ArrayCopyMethod'
 import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
 
 const extraFileExtensions = ['.vue']
@@ -63,8 +65,6 @@ const settings = {
 
 const commonParserOptions = {
   parser: tseslintParser,
-  projectService: true,
-  tsConfigRootDir: import.meta.dirname,
   ecmaVersion: 2020,
   sourceType: 'module',
   extraFileExtensions
@@ -182,7 +182,14 @@ export default defineConfig([
       'src/types/vue-shim.d.ts',
       'packages/design-system/src/css/lucideStrokePlugin.js',
       'test-results/*',
-      'vitest.setup.ts'
+      'apps/website/dist/**',
+      'apps/website/.astro/**',
+      'apps/website/coverage/**',
+      'apps/website/playwright-report/**',
+      'apps/website/test-results/**',
+      'vitest.setup.ts',
+      '.agents/checks/eslint.strict.config.js',
+      'ComfyUI/**'
     ]
   },
   {
@@ -190,18 +197,7 @@ export default defineConfig([
     settings,
     languageOptions: {
       globals: commonGlobals,
-      parserOptions: {
-        ...commonParserOptions,
-        projectService: {
-          allowDefaultProject: [
-            'packages/object-info-parser/vitest.config.ts',
-            'vite.electron.config.mts',
-            'vite.types.config.mts',
-            'vitest.matrix.config.mts',
-            'vitest.timer.setup.ts'
-          ]
-        }
-      }
+      parserOptions: commonParserOptions
     }
   },
   {
@@ -233,8 +229,30 @@ export default defineConfig([
   pluginJs.configs.recommended,
 
   tseslintConfigs.recommended,
+  {
+    files: ['**/*.vue'],
+    rules: {
+      'no-undef': 'off'
+    }
+  },
   // Difference in typecheck on CI vs Local
   pluginVue.configs['flat/recommended'],
+  astroConfigs['flat/recommended'],
+  {
+    files: ['apps/website/**/*.astro'],
+    settings,
+    languageOptions: {
+      parserOptions: {
+        parser: tseslintParser
+      }
+    }
+  },
+  {
+    files: ['apps/website/**/*.astro/*.{js,ts}'],
+    rules: {
+      'no-empty': ['error', { allowEmptyCatch: true }]
+    }
+  },
   // Tailwind CSS v4 linting (class ordering, duplicates, conflicts, etc.)
   betterTailwindcss.configs.recommended,
   {
@@ -250,7 +268,10 @@ export default defineConfig([
       'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
       // Off: large batch change, enable and apply with `eslint --fix`
       'better-tailwindcss/enforce-consistent-class-order': 'error',
-      'better-tailwindcss/enforce-canonical-classes': 'error',
+      'better-tailwindcss/enforce-canonical-classes': [
+        'error',
+        { collapse: false }
+      ],
       'better-tailwindcss/no-deprecated-classes': 'error'
     }
   },
@@ -339,6 +360,16 @@ export default defineConfig([
           ]
         }
       ]
+    }
+  },
+  {
+    files: ['src/**/*.{js,mjs,cjs,ts,mts,cts,vue}'],
+    ignores: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    plugins: {
+      'es2022-compat': es2022CompatPlugin
+    },
+    rules: {
+      'es2022-compat/no-array-copy-method': 'error'
     }
   },
   {
@@ -544,9 +575,22 @@ export default defineConfig([
   },
 
   // Turn off ESLint rules that are already handled by oxlint
-  ...oxlint.buildFromOxlintConfigFile(
-    path.resolve(import.meta.dirname, '.oxlintrc.json')
-  ),
+  ...oxlint
+    .buildFromOxlintConfigFile(
+      path.resolve(import.meta.dirname, '.oxlintrc.json')
+    )
+    .map((config) =>
+      config.rules
+        ? {
+            ...config,
+            ignores: [
+              ...(config.ignores ?? []),
+              'apps/website/**/*.astro',
+              'apps/website/**/*.astro/**'
+            ]
+          }
+        : config
+    ),
   {
     rules: {
       'import-x/default': 'off',
@@ -642,6 +686,14 @@ export default defineConfig([
     }
   },
 
+  {
+    files: ['apps/website/**/*.{astro,ts,mts,vue}'],
+    settings: {
+      'better-tailwindcss': {
+        entryPoint: 'apps/website/src/styles/global.css'
+      }
+    }
+  },
   // The website app is a marketing site with no vue-i18n setup
   {
     files: ['apps/website/**/*.vue'],
@@ -652,7 +704,7 @@ export default defineConfig([
   // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
   // TypeScript resolver cannot see but are valid at build time.
   {
-    files: ['apps/website/**/*.{ts,mts,vue}'],
+    files: ['apps/website/**/*.{astro,ts,mts,vue}'],
     rules: {
       'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
     }
