@@ -141,6 +141,8 @@ export type RemoteConfig = {
   churnkey_app_id?: string
   sentry_dsn?: string
   turnstile_sitekey?: string
+  /** Absent when the backend has no key configured, not an empty string; always sanitize with the reader before trusting it. */
+  stripe_publishable_key?: string
   // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).
   // Always funnel it through normalizeTurnstileMode before trusting it as a
   // TurnstileMode — that resolver is the single narrowing boundary.
