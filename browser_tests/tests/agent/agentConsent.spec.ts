@@ -601,23 +601,32 @@ test.describe(
         route.fulfill({ status: 200, json: {} })
       )
 
+      const approve = approval.getByRole('button', {
+        name: enMessages.g.confirm
+      })
+
       await test.step('The approval owns the screen and the offer waits behind it', async () => {
         await expect(approval).toBeVisible()
         await expect
           .poll(() => agentConsentReads.length, {
-            message:
-              'the automatic offer runs once the consent read is in; the fixture already waited past the boot decision, so the absence below is the offer waiting, not a race',
+            message: 'the automatic offer runs once the consent read is in',
             timeout: 15_000
           })
           .toBeGreaterThan(0)
+        await approve.click({ trial: true })
         await expect(consent).toHaveCount(0)
         await expect(agentPanel.root).toHaveCount(0)
+        expect(
+          await page.evaluate(() =>
+            localStorage.getItem(
+              'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
+            )
+          )
+        ).toBeNull()
       })
 
       await test.step('Approving clears the screen and the offer follows', async () => {
-        await approval
-          .getByRole('button', { name: enMessages.g.confirm })
-          .click()
+        await approve.click()
         await expect(approval).toHaveCount(0)
         await expect(consent).toBeVisible()
       })

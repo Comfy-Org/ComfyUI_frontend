@@ -1,5 +1,6 @@
+import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { watch } from 'vue'
+import { computed, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
@@ -17,7 +18,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { isModalOpen } from '@/utils/modalUtil'
 import {
   notifyMintPortsAfterGraphConfigure,
   notifyMintPortsBeforeGraphLoad
@@ -166,10 +166,13 @@ export function registerAgentPanelExtension(): void {
         { immediate: true, flush: 'sync' }
       )
 
+      const screenIsClear = computed(
+        () =>
+          onboardingTourStore.activeTour === null &&
+          dialogStore.dialogStack.length === 0
+      )
       const screenIsHeld = (): boolean =>
-        firstRunTookScreen.value ||
-        onboardingTourStore.activeTour !== null ||
-        isModalOpen(dialogStore.dialogStack.length)
+        firstRunTookScreen.value || !screenIsClear.value
 
       let autoShowInFlight = false
       const offerConsentUnprompted = (): void => {
@@ -237,14 +240,7 @@ export function registerAgentPanelExtension(): void {
         loadConsentIfEligible,
         { immediate: true }
       )
-      watch(
-        () =>
-          onboardingTourStore.activeTour === null &&
-          dialogStore.dialogStack.length === 0,
-        (screenIsClear) => {
-          if (screenIsClear) loadConsentIfEligible()
-        }
-      )
+      whenever(screenIsClear, loadConsentIfEligible)
       return setupFlagGate(loadConsentIfEligible)
     }
   })

@@ -154,28 +154,11 @@ function closeDialog(key = DESKTOP_APPROVAL_KEY): void {
   useDialogStore().closeDialog({ key })
 }
 
-function openModalOutsideDialogStore(): void {
-  const modal = document.createElement('div')
-  modal.setAttribute('role', 'dialog')
-  modal.setAttribute('aria-modal', 'true')
-  document.body.appendChild(modal)
-}
-
 describe('AgentPanel extension flag gate', () => {
-  // The app's legacy ComfyDialogs mount hidden by the design-system stylesheet,
-  // which happy-dom does not load.
-  const legacyModalStyle = document.createElement('style')
-  legacyModalStyle.textContent = '.comfy-modal { display: none; }'
-
-  afterEach(() => {
-    setupScope.stop()
-    document.body.replaceChildren()
-    legacyModalStyle.remove()
-  })
+  afterEach(() => setupScope.stop())
 
   beforeEach(() => {
     vi.resetModules()
-    document.head.appendChild(legacyModalStyle)
     setupScope = effectScope()
     currentUser.value = { id: 'account-a' }
     consentStore = useAgentConsentStore()
@@ -353,10 +336,6 @@ describe('AgentPanel extension flag gate', () => {
     {
       surface: 'the desktop sign-in approval is open',
       arrange: () => openDialog()
-    },
-    {
-      surface: 'a modal outside the dialog store is open',
-      arrange: openModalOutsideDialogStore
     }
   ])(
     'withholds the automatic offer while $surface, leaving the auto-shown key untouched',
