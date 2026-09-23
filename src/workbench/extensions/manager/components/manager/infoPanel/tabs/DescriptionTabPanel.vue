@@ -12,8 +12,7 @@
     </ModelInfoField>
     <ModelInfoField v-if="nodePack.repository" :label="t('manager.repository')">
       <a
-        v-if="isSafeRepositoryUrl"
-        :href="nodePack.repository"
+        :href="safeRepositoryHref"
         target="_blank"
         rel="noopener noreferrer"
         class="hover:text-foreground inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors"
@@ -25,14 +24,10 @@
         <span class="break-all">{{ nodePack.repository }}</span>
         <i class="icon-[lucide--external-link] size-4 shrink-0" />
       </a>
-      <span v-else class="break-all text-muted-foreground">
-        {{ nodePack.repository }}
-      </span>
     </ModelInfoField>
     <ModelInfoField v-if="licenseInfo" :label="t('manager.license')">
       <a
-        v-if="licenseInfo.isUrl"
-        :href="licenseInfo.text"
+        :href="safeLicenseHref"
         target="_blank"
         rel="noopener noreferrer"
         class="hover:text-foreground inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors"
@@ -40,9 +35,6 @@
         <span class="break-all">{{ licenseInfo.text }}</span>
         <i class="icon-[lucide--external-link] size-4 shrink-0" />
       </a>
-      <span v-else class="break-all text-muted-foreground">
-        {{ licenseInfo.text }}
-      </span>
     </ModelInfoField>
     <ModelInfoField
       v-if="nodePack.latest_version?.dependencies?.length"
@@ -74,8 +66,15 @@ const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
 
-const isSafeRepositoryUrl = computed(
-  () => !!nodePack.repository && isSafeExternalUrl(nodePack.repository)
+/**
+ * Resolves to `nodePack.repository` only when it is a safe http(s) URL,
+ * otherwise `undefined` so the template never binds an unsafe (e.g.
+ * `javascript:`) value to a clickable `href`.
+ */
+const safeRepositoryHref = computed<string | undefined>(() =>
+  nodePack.repository && isSafeExternalUrl(nodePack.repository)
+    ? nodePack.repository
+    : undefined
 )
 
 const isGitHubLink = (url: string): boolean => url.includes('github.com')
@@ -170,4 +169,13 @@ const licenseInfo = computed(() => {
   if (!nodePack.license) return null
   return formatLicense(nodePack.license)
 })
+
+/**
+ * Resolves to the license URL only when `licenseInfo` marked it safe,
+ * otherwise `undefined`, so the template never binds an unsafe value to a
+ * clickable `href`.
+ */
+const safeLicenseHref = computed<string | undefined>(() =>
+  licenseInfo.value?.isUrl ? licenseInfo.value.text : undefined
+)
 </script>
