@@ -8,6 +8,10 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  inputHasLink,
+  outputHasLinks
+} from '@/lib/litegraph/src/node/slotLinks'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -49,6 +53,8 @@ export type MaterializableGraph = Pick<
   | 'add'
   | 'remove'
   | 'setDirtyCanvas'
+  | 'floatingLinks'
+  | 'removeFloatingLink'
 >
 
 /**
@@ -305,12 +311,53 @@ function forceDetachOrphan(
     graph.remove(orphan, { preserveCanonicalState: true })
   } catch {
     // Last resort: the node must not be reachable from the graph anymore.
+    // `removeNode` disconnects links only after `beforeChange()`, so a throw
+    // there leaves every link registered; take them down first so no
+    // topology keeps pointing at a node the containers no longer hold.
+    detachOrphanLinks(graph, orphan)
     const pos = graph._nodes.indexOf(orphan)
     if (pos !== -1) graph._nodes.splice(pos, 1)
     if (graph._nodes_by_id[orphan.id] === orphan) {
       delete graph._nodes_by_id[orphan.id]
     }
     orphan.graph = null
+  }
+}
+
+/**
+ * Mirror of the link teardown in `LGraph.removeNode`, for the orphan whose
+ * removal never reached it. Each slot is attempted on its own: one slot's
+ * failure must not leave the others (or the floating links) registered.
+ */
+function detachOrphanLinks(
+  graph: MaterializableGraph,
+  orphan: LGraphNode
+): void {
+  for (const [slot] of orphan.inputs.entries()) {
+    try {
+      if (inputHasLink(graph, orphan.id, slot)) {
+        orphan.disconnectInput(slot, true)
+      }
+    } catch {
+      // Already failing; the container splice below is what must not be lost.
+    }
+  }
+  for (const slot of orphan.outputs.keys()) {
+    try {
+      if (outputHasLinks(graph, orphan.id, slot)) {
+        orphan.disconnectOutput(slot)
+      }
+    } catch {
+      // Same: keep going so every remaining link gets its own attempt.
+    }
+  }
+  for (const link of [...graph.floatingLinks.values()]) {
+    if (link.origin_id !== orphan.id && link.target_id !== orphan.id) continue
+    try {
+      graph.removeFloatingLink(link)
+    } catch {
+      // Same.
+    }
   }
 }
 

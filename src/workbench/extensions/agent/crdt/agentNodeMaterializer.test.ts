@@ -755,6 +755,53 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.serialize().nodes).toHaveLength(0)
     })
 
+    it('clears a linked orphan’s links when the hard-detach fallback runs because beforeChange() throws', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.batch(REMOTE, (batch) => {
+        batch.addNode({
+          ...nodePayload(1, 'widget-node'),
+          outputs: [{ name: 'value', type: '*', links: [] }]
+        })
+        batch.addNode({
+          ...nodePayload(2),
+          inputs: [{ name: 'value', type: '*', link: null }]
+        })
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: '*'
+        })
+      })
+      expect(reconcileAgentAdapters(graph)).toHaveLength(2)
+      const orphan = graph.getNodeById(toNodeId(1))!
+      const survivor = graph.getNodeById(toNodeId(2))!
+      expect(graph.getLink(toLinkId(9))).toBeDefined()
+
+      // Drop the node record only, so the link topology still references the
+      // orphan, the way a non-canonical caller could leave it.
+      const record = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))!
+      expect(useNodeDataStore().deleteNode(scope, record, REMOTE)).toBe(true)
+      // `LGraph.removeNode` calls `beforeChange()` before it disconnects any
+      // link; a throw there aborts removal with every link still registered.
+      const failure = new Error('undo bookkeeping blew up in beforeChange')
+      vi.spyOn(graph, 'beforeChange').mockImplementation(() => {
+        throw failure
+      })
+
+      expect(() => reconcileAgentAdapters(graph)).toThrow(failure)
+
+      expect(graph._nodes).toEqual([survivor])
+      expect(orphan.graph).toBeNull()
+      expect(graph.getLink(toLinkId(9))).toBeUndefined()
+      expect(survivor.inputs[0]?.link).toBeNull()
+      expect(graph.serialize().links).toEqual([])
+    })
+
     it('detaches nodes dropped by an authoritative snapshot', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)
