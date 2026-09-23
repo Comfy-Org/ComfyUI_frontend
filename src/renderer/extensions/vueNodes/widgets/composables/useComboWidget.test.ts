@@ -1,12 +1,22 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import axios from 'axios'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
+import {
+  LGraph,
+  LGraphNode,
+  isComboWidget
+} from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import {
+  scanNodeModelCandidates,
+  verifyAssetSupportedCandidates
+} from '@/platform/missingModel/missingModelScan'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { addValueControlWidgets } from '@/scripts/widgets'
@@ -159,6 +169,40 @@ describe('useComboWidget', () => {
       })
     )
     expect(widget).toBe(mockWidget)
+  })
+
+  it('settles the first-load lifecycle before judging a restored remote value', async () => {
+    vi.spyOn(axios, 'get').mockResolvedValue({ data: ['other.safetensors'] })
+    const graph = new LGraph()
+    const node = createMockNode('RemoteFileNode')
+    Object.defineProperty(node, 'type', { value: 'RemoteFileNode' })
+    const widget = useComboWidget()(
+      node,
+      createMockInputSpec({
+        name: 'file_name',
+        remote: { route: '/remote-files/first-load' }
+      })
+    )
+    widget.value = 'restored.safetensors'
+    node.widgets = [widget]
+    graph.add(node)
+    const candidates = scanNodeModelCandidates(graph, node, () => false)
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(widget.value).toBe('other.safetensors')
+    expect(candidates[0].isMissing).toBeUndefined()
+  })
+
+  it('registers a loading inventory for remote combos', () => {
+    const node = createMockNode()
+    const widget = useComboWidget()(
+      node,
+      createMockInputSpec({ remote: { route: '/remote-files' } })
+    )
+
+    if (!isComboWidget(widget)) throw new Error('expected a combo widget')
+    expect(getComboWidgetInventory(widget)?.getStatus()).toBe('loading')
   })
 
   it('should create normal combo widget when the widget asset picker is disabled', () => {

@@ -10,10 +10,12 @@ export class Topbar {
   readonly newWorkflowButton: Locator
   readonly workflowTabs: Locator
   readonly integratedTabBarActions: Locator
+  readonly menuRootList: Locator
 
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
     this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
+    this.menuRootList = this.menuLocator.getByRole('menubar')
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
@@ -60,10 +62,14 @@ export class Topbar {
     return classes ? !classes.includes('invisible') : false
   }
 
+  getWorkflowTabLabel(tabName: string): Locator {
+    return this.page.locator(
+      `.workflow-tabs .workflow-label:has-text("${tabName}")`
+    )
+  }
+
   getWorkflowTab(tabName: string): Locator {
-    return this.page
-      .locator(`.workflow-tabs .workflow-label:has-text("${tabName}")`)
-      .locator('..')
+    return this.getWorkflowTabLabel(tabName).locator('..')
   }
 
   getTab(index: number): Locator {
@@ -125,7 +131,15 @@ export class Topbar {
     }
   }
 
+  async dismissWorkflowPopover() {
+    await this.page
+      .locator('.workflow-popover-fade')
+      .waitFor({ state: 'hidden', timeout: 5000 })
+      .catch(() => {})
+  }
+
   async openTopbarMenu() {
+    await this.dismissWorkflowPopover()
     // If menu is already open, close it first to reset state
     const isAlreadyOpen = await this.menuLocator.isVisible()
     if (isAlreadyOpen) {
@@ -148,10 +162,12 @@ export class Topbar {
    */
   async setVueNodesEnabled(enabled: boolean) {
     await this.openTopbarMenu()
-    const nodes2Switch = this.page.getByRole('switch', { name: 'Nodes 2.0' })
-    await nodes2Switch.waitFor({ state: 'visible' })
-    if ((await nodes2Switch.isChecked()) !== enabled) {
-      await nodes2Switch.click()
+    const nodes2Toggle = this.page.getByRole('menuitemcheckbox', {
+      name: 'Nodes 2.0'
+    })
+    await nodes2Toggle.waitFor({ state: 'visible' })
+    if ((await nodes2Toggle.isChecked()) !== enabled) {
+      await nodes2Toggle.click()
       await this.page.waitForFunction(
         (wantEnabled) =>
           window.app!.ui.settings.getSettingValue('Comfy.VueNodes.Enabled') ===
@@ -162,6 +178,33 @@ export class Topbar {
     }
     await this.closeTopbarMenu()
     await new VueNodeHelpers(this.page).waitForNodes()
+  }
+
+  async focusMenuItem(itemLabel: string): Promise<void> {
+    await this.menuRootList.focus()
+    const itemCount = await this.menuRootList.getByRole('menuitem').count()
+
+    for (let step = 0; step < itemCount; step++) {
+      await this.page.keyboard.press('ArrowDown')
+      if ((await this.getFocusedMenuItemLabel()) === itemLabel) return
+    }
+
+    throw new Error(
+      `Could not reach the "${itemLabel}" menu item with the keyboard`
+    )
+  }
+
+  private async getFocusedMenuItemLabel(): Promise<string | null> {
+    const focusedItemId = await this.menuRootList.getAttribute(
+      'aria-activedescendant'
+    )
+    if (!focusedItemId) return null
+
+    const label = this.menuLocator
+      .locator(`#${focusedItemId}`)
+      .locator('.p-menubar-item-label')
+    if ((await label.count()) === 0) return null
+    return (await label.innerText()).trim()
   }
 
   /**

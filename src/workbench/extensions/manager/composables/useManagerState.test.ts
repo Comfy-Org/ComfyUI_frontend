@@ -21,16 +21,6 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => {
-  const featureFlag = vi.fn()
-  return {
-    useFeatureFlags: vi.fn(() => ({
-      flags: { supportsManagerV4: false },
-      featureFlag
-    }))
-  }
-})
-
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   useSettingsDialog: vi.fn(() => ({
     show: vi.fn(),

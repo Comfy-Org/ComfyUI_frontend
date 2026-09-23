@@ -66,7 +66,7 @@ const duration = formatDuration(story.durationSeconds)
   <!-- Body: mirrors CustomerArticle.astro's content column and typography
        (Section.astro / Paragraph.astro), with the caption transcript
        standing in for article body copy. -->
-  <section class="max-w-9xl mx-auto px-4 pt-8 pb-24 lg:px-20 lg:pt-24 lg:pb-40">
+  <section class="mx-auto max-w-9xl px-4 pt-8 pb-24 lg:px-20 lg:pt-24 lg:pb-40">
     <div class="mx-auto max-w-3xl">
       <div
         v-if="transcript.length"

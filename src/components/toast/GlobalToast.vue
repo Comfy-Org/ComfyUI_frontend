@@ -28,7 +28,7 @@
 import Toast from 'primevue/toast'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { watch } from 'vue'
+import { toRaw, watch } from 'vue'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -82,6 +82,10 @@ watch(
       return
     }
 
+    deferredMessages = deferredMessages.filter(
+      (message) =>
+        !messagesToRemove.some((removed) => toRaw(removed) === toRaw(message))
+    )
     messagesToRemove.forEach((message) => {
       toast.remove(message)
     })

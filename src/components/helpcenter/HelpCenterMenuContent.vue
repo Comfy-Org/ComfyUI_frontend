@@ -603,7 +603,8 @@ const onReinstall = (): void => {
 }
 
 const onUpdateComfyUI = async (): Promise<void> => {
-  const { updateComfyUI, rebootComfyUI, error } = useComfyManagerService()
+  const { updateComfyUI, startQueue, rebootComfyUI, error } =
+    useComfyManagerService()
 
   toast.add({
     severity: 'info',
@@ -614,6 +615,7 @@ const onUpdateComfyUI = async (): Promise<void> => {
 
   try {
     const result = await updateComfyUI({ is_stable: true })
+    if (result !== null) await startQueue()
 
     if (result === null || error.value) {
       toast.add({

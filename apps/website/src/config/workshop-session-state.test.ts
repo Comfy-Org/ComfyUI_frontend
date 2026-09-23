@@ -1,67 +1,26 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
-import type { Ref } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { nextTick, readonly, ref } from 'vue'
 
+let { identifyWorkshopUser, useWorkshopAuthFlag } =
+  await import('../scripts/posthog')
+import { testFirebaseUser } from './__fixtures__/workshopSessionFakes'
+let { workshopIdentity, workshopSessionClient } =
+  await import('./workshop-account')
 import type { WorkshopSession } from './workshop-session-state'
 
-const h = vi.hoisted(() => {
-  const state = {
-    initialFlag: true,
-    flag: undefined as Ref<boolean> | undefined,
-    listeners: new Set<(snapshot: unknown) => void>(),
-    snapshot: {
-      phase: 'signed-out',
-      user: null,
-      session: undefined
-    } as unknown,
-    firebaseEvaluated: vi.fn(),
-    identifyWorkshopUser: vi.fn(),
-    attachIdentity: vi.fn(() => () => undefined),
-    ensureFresh: vi.fn(),
-    remint: vi.fn(),
-    clearStoredCredential: vi.fn(),
-    publish(next: unknown) {
-      state.snapshot = next
-      state.listeners.forEach((listener) => listener(next))
-    }
-  }
-  return state
-})
+type Snapshot = ReturnType<typeof workshopSessionClient.getSnapshot>
+const listeners = new Set<(snapshot: Snapshot) => void>()
+let snapshot: Snapshot
+let flag = ref(true)
+let initialFlag = true
 
-vi.mock<unknown>(import('../scripts/posthog'), () => {
-  return {
-    identifyWorkshopUser: h.identifyWorkshopUser,
-    useWorkshopAuthFlag: () => h.flag
-  }
-})
+function publish(next: Snapshot) {
+  snapshot = next
+  listeners.forEach((listener) => listener(next))
+}
 
-vi.mock<unknown>(import('./workshop-firebase'), async () => {
-  const { createTestIdentity } = await import('@comfyorg/account/testing')
-  h.firebaseEvaluated()
-  return {
-    workshopIdentity: createTestIdentity({
-      onUserChanged: () => () => undefined
-    }),
-    signOutWorkshop: vi.fn()
-  }
-})
-
-vi.mock<unknown>(import('./workshop-account'), () => ({
-  workshopSessionClient: {
-    subscribe: (listener: (snapshot: unknown) => void) => {
-      h.listeners.add(listener)
-      listener(h.snapshot)
-      return () => h.listeners.delete(listener)
-    },
-    attachIdentity: h.attachIdentity,
-    ensureFresh: h.ensureFresh,
-    remint: h.remint,
-    clearStoredCredential: h.clearStoredCredential,
-    getSnapshot: () => h.snapshot,
-    getToken: vi.fn()
-  },
-  subscribeAuthRefreshTelemetry: () => () => undefined
-}))
+vi.mock(import('../scripts/posthog'))
+vi.mock(import('./workshop-account'))
 
 const okSession: WorkshopSession = {
   token: 'jwt',
@@ -72,69 +31,89 @@ const okSession: WorkshopSession = {
   role: 'owner'
 }
 
-function authenticatedSnapshot() {
+const user = testFirebaseUser({ uid: 'user-1' })
+
+function authenticatedSnapshot(): Snapshot {
   return {
     phase: 'authenticated',
-    user: { uid: 'user-1' },
+    user,
     session: okSession
   }
 }
 
-async function importFresh() {
-  vi.resetModules()
-  h.flag = ref(h.initialFlag)
+async function bootSession() {
+  flag = ref(initialFlag)
+  vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(flag))
+  onTestFinished(async () => {
+    flag.value = false
+    await nextTick()
+  })
   const mod = await import('./workshop-session-state')
   const session = mod.useWorkshopSession()
-  if (h.initialFlag) {
-    await vi.waitFor(() => expect(h.attachIdentity).toHaveBeenCalledOnce())
+  if (initialFlag) {
+    await vi.waitFor(() =>
+      expect(workshopIdentity.activate).toHaveBeenCalledOnce()
+    )
   }
   return session
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  vi.resetModules()
+  ;({ identifyWorkshopUser, useWorkshopAuthFlag } =
+    await import('../scripts/posthog'))
+  ;({ workshopIdentity, workshopSessionClient } =
+    await import('./workshop-account'))
+
   window.localStorage.removeItem('workshop:workspace')
-  h.remint.mockReset()
-  h.initialFlag = true
-  h.listeners.clear()
-  h.snapshot = { phase: 'signed-out', user: null, session: undefined }
-  h.firebaseEvaluated.mockClear()
-  h.attachIdentity.mockClear()
-  h.ensureFresh.mockReset()
-  h.clearStoredCredential.mockClear()
+  initialFlag = true
+  listeners.clear()
+  snapshot = { phase: 'signed-out', user: null, session: undefined }
+  vi.mocked(workshopSessionClient.getSnapshot).mockImplementation(
+    () => snapshot
+  )
+  vi.mocked(workshopSessionClient.subscribe).mockImplementation((listener) => {
+    listeners.add(listener)
+    listener(snapshot)
+    return () => {
+      listeners.delete(listener)
+    }
+  })
 })
 
 describe('useWorkshopSession', () => {
-  it('does not import Firebase until the auth flag turns on', async () => {
-    h.initialFlag = false
-    await importFresh()
+  it('does not activate the identity until the auth flag turns on', async () => {
+    initialFlag = false
+    await bootSession()
 
-    expect(h.firebaseEvaluated).not.toHaveBeenCalled()
-    h.flag!.value = true
-    await vi.waitFor(() => expect(h.attachIdentity).toHaveBeenCalledOnce())
-    expect(h.firebaseEvaluated).toHaveBeenCalledOnce()
+    expect(vi.mocked(workshopIdentity.activate)).not.toHaveBeenCalled()
+    flag.value = true
+    await vi.waitFor(() =>
+      expect(vi.mocked(workshopIdentity.activate)).toHaveBeenCalledOnce()
+    )
   })
 
   it('publishes the session when a restored user mints successfully', async () => {
-    const s = await importFresh()
+    const s = await bootSession()
 
-    h.publish(authenticatedSnapshot())
+    publish(authenticatedSnapshot())
 
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
 
-    expect(h.identifyWorkshopUser).toHaveBeenLastCalledWith(
+    expect(identifyWorkshopUser).toHaveBeenLastCalledWith(
       expect.objectContaining({ uid: 'user-1' })
     )
     expect(s.signedIn.value).toBe(true)
   })
 
   it('drops the stale session when a refresh fails, so no stale token is served', async () => {
-    const s = await importFresh()
-    h.publish(authenticatedSnapshot())
+    const s = await bootSession()
+    publish(authenticatedSnapshot())
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
 
-    h.publish({
+    publish({
       phase: 'error',
-      user: { uid: 'user-1' },
+      user: testFirebaseUser({ uid: 'user-1' }),
       session: undefined,
       failure: { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
     })
@@ -148,12 +127,12 @@ describe('useWorkshopSession', () => {
   })
 
   it('mints directly from a popup user before the listener publishes it', async () => {
-    const s = await importFresh()
+    const s = await bootSession()
     const popupUser = { uid: 'user-1', getIdToken: async () => 'id-token' }
 
     await s.ensureFresh(popupUser)
 
-    expect(h.ensureFresh).toHaveBeenCalledWith(
+    expect(vi.mocked(workshopSessionClient.ensureFresh)).toHaveBeenCalledWith(
       popupUser,
       expect.objectContaining({ workspaceId: undefined })
     )
@@ -164,21 +143,26 @@ describe('useWorkshopSession', () => {
       'workshop:workspace',
       JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
     )
-    h.remint.mockResolvedValue({ status: 'ok' })
-    await importFresh()
+    vi.mocked(workshopSessionClient.remint).mockResolvedValue({
+      status: 'ok',
+      session: okSession
+    })
+    await bootSession()
 
-    h.publish({
+    publish({
       phase: 'authenticated',
-      user: { uid: 'user-1' },
-      session: okSession,
-      settled: true
+      user: testFirebaseUser({ uid: 'user-1' }),
+      session: okSession
     })
 
     await vi.waitFor(() =>
-      expect(h.remint).toHaveBeenCalledWith(undefined, {
-        workspaceId: 'team-9',
-        preserveCredentialOnTransientFailure: true
-      })
+      expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenCalledWith(
+        undefined,
+        {
+          workspaceId: 'team-9',
+          preserveCredentialOnTransientFailure: true
+        }
+      )
     )
   })
 
@@ -187,22 +171,25 @@ describe('useWorkshopSession', () => {
       'workshop:workspace',
       JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
     )
-    let releaseRemint!: (value: unknown) => void
-    h.remint.mockImplementation(
+    let releaseRemint!: (
+      value: Awaited<ReturnType<typeof workshopSessionClient.remint>>
+    ) => void
+    vi.mocked(workshopSessionClient.remint).mockImplementation(
       () => new Promise((resolve) => (releaseRemint = resolve))
     )
-    const s = await importFresh()
+    const s = await bootSession()
 
-    h.publish({
+    publish({
       phase: 'authenticated',
-      user: { uid: 'user-1' },
-      session: okSession,
-      settled: true
+      user: testFirebaseUser({ uid: 'user-1' }),
+      session: okSession
     })
 
-    await vi.waitFor(() => expect(h.remint).toHaveBeenCalledOnce())
+    await vi.waitFor(() =>
+      expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenCalledOnce()
+    )
     expect(s.session.value, 'the personal boot must not flash').toBeUndefined()
-    expect(h.identifyWorkshopUser).toHaveBeenLastCalledWith(
+    expect(identifyWorkshopUser).toHaveBeenLastCalledWith(
       expect.objectContaining({ uid: 'user-1' })
     )
 
@@ -210,11 +197,10 @@ describe('useWorkshopSession', () => {
       ...okSession,
       workspace: { id: 'team-9', name: 'Studio', type: 'team' as const }
     }
-    h.publish({
+    publish({
       phase: 'authenticated',
-      user: { uid: 'user-1' },
-      session: restored,
-      settled: true
+      user: testFirebaseUser({ uid: 'user-1' }),
+      session: restored
     })
     releaseRemint({ status: 'ok', session: restored })
 
@@ -226,31 +212,37 @@ describe('useWorkshopSession', () => {
       'workshop:workspace',
       JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
     )
-    h.remint
+    vi.mocked(workshopSessionClient.remint)
       .mockImplementationOnce(async () => {
-        h.publish({
+        publish({
           phase: 'error',
-          user: { uid: 'user-1' },
+          user: testFirebaseUser({ uid: 'user-1' }),
           session: undefined,
           failure: { status: 'error', code: 'ACCESS_DENIED' }
         })
         return { status: 'error', code: 'ACCESS_DENIED' }
       })
       .mockImplementationOnce(async () => {
-        h.publish(authenticatedSnapshot())
+        publish(authenticatedSnapshot())
         return { status: 'ok', session: okSession }
       })
-    const s = await importFresh()
+    const s = await bootSession()
 
-    h.publish(authenticatedSnapshot())
+    publish(authenticatedSnapshot())
 
-    await vi.waitFor(() => expect(h.remint).toHaveBeenCalledTimes(2))
-    expect(h.remint).toHaveBeenNthCalledWith(2, undefined, {
-      workspaceId: 'ws',
-      preserveCredentialOnTransientFailure: true
-    })
+    await vi.waitFor(() =>
+      expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenCalledTimes(2)
+    )
+    expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenNthCalledWith(
+      2,
+      undefined,
+      {
+        workspaceId: 'ws',
+        preserveCredentialOnTransientFailure: true
+      }
+    )
     expect(s.session.value).toEqual(okSession)
-    expect(h.snapshot).toEqual(authenticatedSnapshot())
+    expect(snapshot).toEqual(authenticatedSnapshot())
   })
 
   it('keeps a client-owned boot session after a transient restore failure', async () => {
@@ -258,13 +250,13 @@ describe('useWorkshopSession', () => {
       'workshop:workspace',
       JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
     )
-    h.remint.mockResolvedValue({
+    vi.mocked(workshopSessionClient.remint).mockResolvedValue({
       status: 'error',
       code: 'TOKEN_EXCHANGE_FAILED'
     })
-    const s = await importFresh()
+    const s = await bootSession()
 
-    h.publish(authenticatedSnapshot())
+    publish(authenticatedSnapshot())
 
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
     expect(window.localStorage.getItem('workshop:workspace')).toBe(
@@ -274,16 +266,15 @@ describe('useWorkshopSession', () => {
 
   it('remembers the workspace each authenticated snapshot names', async () => {
     window.localStorage.removeItem('workshop:workspace')
-    await importFresh()
+    await bootSession()
 
-    h.publish({
+    publish({
       phase: 'authenticated',
-      user: { uid: 'user-1' },
+      user: testFirebaseUser({ uid: 'user-1' }),
       session: {
         ...okSession,
         workspace: { id: 'team-3', name: 'Studio', type: 'team' }
-      },
-      settled: true
+      }
     })
 
     await vi.waitFor(() =>
@@ -291,28 +282,31 @@ describe('useWorkshopSession', () => {
         JSON.stringify({ uid: 'user-1', workspaceId: 'team-3' })
       )
     )
-    expect(h.remint).not.toHaveBeenCalled()
+    expect(vi.mocked(workshopSessionClient.remint)).not.toHaveBeenCalled()
   })
 
   it('keeps the first workspace the user intentionally switches to', async () => {
-    const s = await importFresh()
-    h.publish(authenticatedSnapshot())
+    const s = await bootSession()
+    publish(authenticatedSnapshot())
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
-    h.remint.mockResolvedValue({ status: 'ok' })
+    vi.mocked(workshopSessionClient.remint).mockResolvedValue({
+      status: 'ok',
+      session: okSession
+    })
 
     const team = {
       ...okSession,
       workspace: { id: 'team-3', name: 'Studio', type: 'team' as const }
     }
-    h.publish({
+    publish({
       phase: 'authenticated',
-      user: { uid: 'user-1' },
+      user: testFirebaseUser({ uid: 'user-1' }),
       session: team
     })
 
     await vi.waitFor(() => expect(s.session.value).toEqual(team))
     expect(
-      h.remint,
+      vi.mocked(workshopSessionClient.remint),
       'an intentional switch must not be mistaken for a boot-time restore'
     ).not.toHaveBeenCalled()
     expect(window.localStorage.getItem('workshop:workspace')).toBe(
@@ -326,14 +320,16 @@ describe('useWorkshopSession', () => {
       JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
     )
     let finishRestore!: (value: undefined) => void
-    h.remint.mockImplementation(
+    vi.mocked(workshopSessionClient.remint).mockImplementation(
       () => new Promise((resolve) => (finishRestore = resolve))
     )
-    const s = await importFresh()
-    h.publish(authenticatedSnapshot())
-    await vi.waitFor(() => expect(h.remint).toHaveBeenCalledOnce())
+    const s = await bootSession()
+    publish(authenticatedSnapshot())
+    await vi.waitFor(() =>
+      expect(vi.mocked(workshopSessionClient.remint)).toHaveBeenCalledOnce()
+    )
 
-    h.publish({ phase: 'signed-out', user: null, session: undefined })
+    publish({ phase: 'signed-out', user: null, session: undefined })
     finishRestore(undefined)
 
     await vi.waitFor(() => expect(s.session.value).toBeUndefined())
@@ -341,87 +337,140 @@ describe('useWorkshopSession', () => {
   })
 
   it('refreshes an errored session for its remembered workspace', async () => {
-    const s = await importFresh()
+    const s = await bootSession()
     const team = {
       ...okSession,
       workspace: { id: 'team-3', name: 'Studio', type: 'team' as const }
     }
-    h.publish({
+    publish({
       phase: 'authenticated',
-      user: { uid: 'user-1' },
+      user: testFirebaseUser({ uid: 'user-1' }),
       session: team
     })
     await vi.waitFor(() => expect(s.session.value).toEqual(team))
-    h.publish({
+    publish({
       phase: 'error',
-      user: { uid: 'user-1' },
+      user: testFirebaseUser({ uid: 'user-1' }),
       session: undefined,
       failure: { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
     })
 
     await s.ensureFresh()
 
-    expect(h.ensureFresh).toHaveBeenCalledWith(
+    expect(vi.mocked(workshopSessionClient.ensureFresh)).toHaveBeenCalledWith(
       undefined,
       expect.objectContaining({ workspaceId: 'team-3' })
     )
   })
 
   it('clears the session on sign-out', async () => {
-    const s = await importFresh()
-    h.publish(authenticatedSnapshot())
+    const s = await bootSession()
+    publish(authenticatedSnapshot())
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
 
-    h.publish({ phase: 'signed-out', user: null, session: undefined })
+    publish({ phase: 'signed-out', user: null, session: undefined })
 
     await vi.waitFor(() => expect(s.session.value).toBeUndefined())
     expect(s.signedIn.value).toBe(false)
-    expect(h.identifyWorkshopUser).toHaveBeenLastCalledWith(null)
+    expect(identifyWorkshopUser).toHaveBeenLastCalledWith(null)
   })
 
   it('clears the cache when the flag turns off', async () => {
-    await importFresh()
-    const callsBefore = h.clearStoredCredential.mock.calls.length
+    await bootSession()
+    const callsBefore = vi.mocked(workshopSessionClient.clearStoredCredential)
+      .mock.calls.length
+    const deactivationsBefore = vi.mocked(workshopIdentity.deactivate).mock
+      .calls.length
 
-    h.flag!.value = false
+    flag.value = false
 
     await vi.waitFor(() =>
       expect(
-        h.clearStoredCredential.mock.calls.length,
+        vi.mocked(workshopSessionClient.clearStoredCredential).mock.calls
+          .length,
         'flag-off must drop the cached credential'
       ).toBeGreaterThan(callsBefore)
     )
+    expect(
+      vi.mocked(workshopIdentity.deactivate).mock.calls.length,
+      'flag-off must release the identity'
+    ).toBeGreaterThan(deactivationsBefore)
   })
 
   it('allows remembered-workspace restoration after the flag settles off and turns on again', async () => {
-    const s = await importFresh()
-    h.publish(authenticatedSnapshot())
+    const s = await bootSession()
+    publish(authenticatedSnapshot())
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
-    h.flag!.value = false
-    await vi.waitFor(() => expect(h.clearStoredCredential).toHaveBeenCalled())
-    // The real identity detach resets the client snapshot; this test double does not.
-    h.snapshot = { phase: 'pending', user: null, session: undefined }
+    flag.value = false
+    await vi.waitFor(() =>
+      expect(
+        vi.mocked(workshopSessionClient.clearStoredCredential)
+      ).toHaveBeenCalled()
+    )
 
-    h.remint.mockResolvedValue({ status: 'ok', session: okSession })
-    h.flag!.value = true
-    await vi.waitFor(() => expect(h.attachIdentity).toHaveBeenCalledTimes(2))
-    h.publish({
+    vi.mocked(workshopSessionClient.remint).mockResolvedValue({
+      status: 'ok',
+      session: okSession
+    })
+    // Activation resolves after delivery, so the host subscribes to the re-minted boot session.
+    snapshot = {
       phase: 'authenticated',
-      user: { uid: 'user-1' },
+      user: testFirebaseUser({ uid: 'user-1' }),
       session: {
         ...okSession,
         workspace: { id: 'personal', name: 'Default', type: 'personal' }
       }
-    })
+    }
+    flag.value = true
+    await vi.waitFor(() =>
+      expect(vi.mocked(workshopIdentity.activate)).toHaveBeenCalledTimes(2)
+    )
 
     await vi.waitFor(() =>
       expect(
-        h.remint,
+        vi.mocked(workshopSessionClient.remint),
         'settling off ends one auth lifecycle; the next lifecycle must be allowed to restore the remembered workspace for the same uid'
       ).toHaveBeenCalledWith(undefined, {
         workspaceId: 'ws',
         preserveCredentialOnTransientFailure: true
       })
     )
+  })
+
+  it('does not resurrect a torn-down session when a restore resolves after the flag turns off', async () => {
+    window.localStorage.setItem(
+      'workshop:workspace',
+      JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
+    )
+    let signalRemintStarted!: () => void
+    const remintStarted = new Promise<void>((resolve) => {
+      signalRemintStarted = resolve
+    })
+    let releaseRemint!: (
+      value: Awaited<ReturnType<typeof workshopSessionClient.remint>>
+    ) => void
+    vi.mocked(workshopSessionClient.remint).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          signalRemintStarted()
+          releaseRemint = resolve
+        })
+    )
+    const s = await bootSession()
+
+    publish(authenticatedSnapshot())
+    await remintStarted
+
+    flag.value = false
+    await vi.waitFor(() => expect(s.settled.value).toBe(false))
+
+    releaseRemint({ status: 'error', code: 'TOKEN_EXCHANGE_FAILED' })
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(
+      s.session.value,
+      'a restore the flag flip abandoned must not publish for a lifecycle that no longer owns the outcome'
+    ).toBeUndefined()
   })
 })

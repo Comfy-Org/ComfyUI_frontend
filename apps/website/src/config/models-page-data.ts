@@ -60,7 +60,7 @@ const modelsPageDataSchema = z.object({
   relatedHeadingShort: z.string(),
   successor: modelSchema.optional(),
   priceEstimate: z.string().optional(),
-  modalityLabel: z.record(z.enum(MODALITIES), z.string()),
+  useCaseLabel: z.string().optional(),
   tags: z.array(tagSchema),
   shownTags: z.array(tagSchema),
   restTags: z.array(tagSchema),

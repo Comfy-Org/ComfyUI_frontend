@@ -1,5 +1,3 @@
-import '@testing-library/jest-dom/vitest'
-
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -50,10 +48,10 @@ function cardNames() {
 }
 
 async function search() {
-  const field = screen.getByRole('combobox', {
-    name: 'Search models, providers, and capabilities'
+  const field = screen.getByRole('searchbox', {
+    name: 'Search models, providers, and categories'
   })
-  await waitFor(() => expect(field).toBeEnabled())
+  await waitFor(() => expect(field).not.toHaveProperty('disabled', true))
   return field
 }
 
@@ -72,47 +70,39 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
-  it('suggests popular models and narrows by a provider chip', async () => {
-    const user = userEvent.setup()
+  it.for([
+    ['provider=Kling', 'Kling AI'],
+    ['capability=Upscale', 'Flux'],
+    ['modality=video', 'Kling AI']
+  ])('honors the legacy %s deep link', async ([search, expected]) => {
+    history.replaceState(null, '', `/models/?${search}`)
     render(WorkshopModelsGrid, { props: { models } })
-    expect(
-      screen.queryByRole('button', { name: 'Flux Black Forest Labs' })
-    ).toBeNull()
 
-    await user.click(await search())
-    expect(
-      screen.getAllByRole('button', {
-        name: /^(?:Kling AI Kling|Flux Black Forest Labs|Mystery Partner node)$/i
-      })
-    ).toHaveLength(3)
-
-    await user.click(screen.getByRole('button', { name: 'Kling 1' }))
-    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+    await waitFor(() =>
+      expect(cardNames()).toEqual([expect.stringContaining(expected)])
+    )
   })
 
-  it('fills the search from a suggested model', async () => {
+  it('does not show a duplicate search results panel', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(await search())
-    await user.click(
-      screen.getByRole('button', { name: 'Flux Black Forest Labs' })
-    )
-    expect(cardNames()).toEqual([expect.stringContaining('Flux')])
+    await user.type(await search(), 'flux')
+    expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
   })
 
   it('narrows the grid to one use case', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images 1' }))
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
     expect(
       screen.getByRole('heading', { level: 1, name: 'Edit images 1' })
     ).toBeTruthy()
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
 
     await user.click(screen.getByRole('button', { name: /Back to/ }))
-    await user.click(screen.getByRole('button', { name: 'Generate videos 1' }))
+    await user.click(screen.getByRole('button', { name: 'Generate videos' }))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
@@ -123,7 +113,7 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByRole('button', { name: 'Edit images 1' }))
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
     await nextTick()
     await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
 
@@ -136,13 +126,15 @@ describe('WorkshopModelsGrid', () => {
     scrollTo.mockRestore()
   })
 
-  it('filters by capability from the filter menu', async () => {
+  it('filters by use case from the filter menu', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
     await user.click(screen.getByRole('button', { name: 'Filter' }))
-    await user.click(await screen.findByRole('tab', { name: 'Capabilities' }))
-    await user.click(await screen.findByRole('button', { name: 'Upscale 1' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Edit images 1' })
+    )
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
 
     await user.click(
@@ -151,21 +143,37 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toHaveLength(3)
   })
 
-  it('narrows the provider menu with its search box', async () => {
+  it('replaces a browsed section with a use-case filter', async () => {
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Generate videos 1' })
+    )
+
+    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+  })
+
+  it('narrows the use-case menu with its search box', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
     await user.click(screen.getByRole('button', { name: 'Filter' }))
-    await user.click(await screen.findByRole('tab', { name: 'Models' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Filter' })
     await user.type(
-      await screen.findByRole('searchbox', { name: 'Search…' }),
-      'forest'
+      within(dialog).getByRole('searchbox', { name: 'Search…' }),
+      'video'
     )
-    expect(screen.queryByRole('button', { name: 'Kling 1' })).toBeNull()
+    expect(
+      within(dialog).queryByRole('button', { name: 'Edit images 1' })
+    ).toBeNull()
     await user.click(
-      screen.getByRole('button', { name: 'Black Forest Labs 1' })
+      within(dialog).getByRole('button', { name: 'Generate videos 1' })
     )
-    expect(cardNames()).toEqual([expect.stringContaining('Flux')])
+    expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
   it('sorts by recommendation by default and by name on request', async () => {
@@ -181,7 +189,7 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()[0]).toContain('Flux')
   })
 
-  it('orders the required featured models by the catalogue recommendation', () => {
+  it('keeps Flux 3 out of the featured models', () => {
     const featured = [
       {
         slug: 'byteplus--seedance-2-fast-text-to-video--generate-videos',
@@ -214,7 +222,7 @@ describe('WorkshopModelsGrid', () => {
       within(pagination)
         .getAllByRole('button')
         .map((button) => button.getAttribute('aria-label'))
-    ).toEqual(['Seedream 5 Pro', 'Seedance 2 Fast', 'FLUX.3 Video'])
+    ).toEqual(['Seedream 5 Pro', 'Seedance 2 Fast'])
   })
 
   it('does not manufacture a return shelf before a model is opened', () => {
@@ -264,8 +272,26 @@ describe('WorkshopModelsGrid', () => {
 
       await user.click(screen.getByRole('button', { name: /Back to/ }))
 
-      expect(field).toHaveValue('')
+      expect(field).toHaveProperty('value', '')
       expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+    })
+
+    it('leaves the heading above the toolbar holding the controls', async () => {
+      const user = userEvent.setup()
+      render(WorkshopModelsGrid, { props: { models } })
+      await user.click(screen.getByTestId('browse-all-end'))
+
+      const toolbar = screen.getByTestId('workshop-toolbar')
+      const heading = screen.getByRole('heading', { level: 1 })
+
+      expect(toolbar).not.toContainElement(heading)
+      expect(
+        heading.compareDocumentPosition(toolbar) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+      expect(within(toolbar).getByRole('searchbox')).toBeVisible()
+      expect(within(toolbar).getByTestId('workshop-filters')).toBeVisible()
+      expect(within(toolbar).getByTestId('workshop-sort')).toBeVisible()
     })
   })
 })

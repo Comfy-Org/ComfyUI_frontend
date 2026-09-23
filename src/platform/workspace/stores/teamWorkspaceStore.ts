@@ -39,6 +39,11 @@ export interface WorkspacePendingInvite {
   email: string
   inviteDate: Date
   expiryDate: Date
+  /**
+   * Invite token for building shareable invite links.
+   * Absent/empty for expired invites (the backend omits it).
+   */
+  token?: string
 }
 
 type SubscriptionPlan = string | null
@@ -73,7 +78,8 @@ function mapApiInviteToPendingInvite(
     id: invite.id,
     email: invite.email,
     inviteDate: new Date(invite.invited_at),
-    expiryDate: new Date(invite.expires_at)
+    expiryDate: new Date(invite.expires_at),
+    token: invite.token
   }
 }
 

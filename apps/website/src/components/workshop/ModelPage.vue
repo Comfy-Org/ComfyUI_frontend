@@ -2,7 +2,7 @@
 import { ArrowRight } from '@lucide/vue'
 import { computed } from 'vue'
 
-import { catalogSearch } from '../../config/models-catalogue'
+import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
 import type { ModelsPageData } from '../../config/models-page-data'
 import { t } from '../../i18n/translations'
@@ -19,6 +19,7 @@ import WorkshopModelCard from './WorkshopModelCard.vue'
 const { page } = defineProps<{ page: ModelsPageData }>()
 const routes = getRoutes()
 const enabled = useWorkshopEnabled()
+const modelUseCase = computed(() => useCaseFor(page.model))
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 const restTags = computed(() =>
@@ -30,7 +31,7 @@ const restTags = computed(() =>
 </script>
 
 <template>
-  <div class="max-w-10xl mx-auto px-6 py-10 lg:px-8 lg:py-14">
+  <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
     <div class="mb-8 sm:px-8 lg:px-10">
       <CatalogueBackLink />
     </div>
@@ -41,7 +42,7 @@ const restTags = computed(() =>
         <div class="flex max-w-2xl flex-col gap-4">
           <div class="flex flex-wrap items-center gap-3">
             <p
-              class="text-primary-comfy-yellow text-sm leading-none font-medium tracking-widest uppercase"
+              class="text-sm leading-none font-medium tracking-widest text-primary-comfy-yellow uppercase"
             >
               {{ page.model.provider ?? t('workshop.card.partnerNode') }}
             </p>
@@ -50,11 +51,11 @@ const restTags = computed(() =>
               :reason="page.model.incompleteReason"
             />
             <a
-              v-if="page.model.modality"
-              :href="`${routes.workshop}${catalogSearch({ modalities: [page.model.modality] })}`"
+              v-if="modelUseCase && page.useCaseLabel"
+              :href="`${routes.workshop}${catalogSearch({ useCase: modelUseCase })}`"
               :class="pillClass"
             >
-              {{ page.modalityLabel[page.model.modality] }}
+              {{ page.useCaseLabel }}
             </a>
           </div>
 
@@ -73,13 +74,13 @@ const restTags = computed(() =>
           <ModelPrice :estimate="page.priceEstimate" />
           <ul
             v-if="page.shownTags.length > 0"
-            class="flex scrollbar-hide items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
+            class="scrollbar-hide flex items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
             data-testid="model-tags"
           >
             <li v-for="tag in page.shownTags" :key="tag.search">
               <a
                 :href="`${routes.workshop}${tag.search}`"
-                class="hover:text-primary-comfy-yellow inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs/none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20"
+                class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs/none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
               >
                 {{ tag.label }}
               </a>
@@ -112,7 +113,7 @@ const restTags = computed(() =>
           </h2>
           <a
             :href="routes.workshop"
-            class="text-primary-comfy-yellow inline-flex items-center gap-2 text-sm font-bold tracking-wider uppercase hover:underline"
+            class="inline-flex items-center gap-2 text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase hover:underline"
           >
             <span class="sm:hidden">{{
               t('workshop.model.browseAllShort')

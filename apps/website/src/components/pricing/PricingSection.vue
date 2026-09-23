@@ -98,7 +98,7 @@ const planCards = computed(() =>
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-14">
+  <section class="mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-14">
     <div class="mx-auto mb-8 max-w-3xl text-center lg:mb-10">
       <component
         :is="headingLevel"
@@ -123,7 +123,7 @@ const planCards = computed(() =>
           value="monthly"
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
-          <span class="ppformula-text-center">{{
+          <span class="ppformula-text-center inline-block">{{
             t('pricing.period.monthly', locale)
           }}</span>
         </ToggleGroupItem>
@@ -131,7 +131,7 @@ const planCards = computed(() =>
           value="yearly"
           class="min-w-40 text-2xs sm:min-w-48 sm:text-xs"
         >
-          <span class="ppformula-text-center">{{
+          <span class="ppformula-text-center inline-block">{{
             t('pricing.period.yearly', locale)
           }}</span>
         </ToggleGroupItem>
@@ -143,7 +143,7 @@ const planCards = computed(() =>
     <div
       :class="
         cn(
-          'rounded-5xl bg-transparency-white-t4 grid gap-2 p-2 max-lg:mx-auto max-lg:max-w-lg',
+          'grid gap-2 rounded-5xl bg-transparency-white-t4 p-2 max-lg:mx-auto max-lg:max-w-lg',
           pricingPlans.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
         )
       "
@@ -165,7 +165,7 @@ const planCards = computed(() =>
         <div class="flex items-center gap-4">
           <PricingPlanLabel
             :label="t(plan.labelKey, locale)"
-            class="ppformula-text-center text-base uppercase"
+            class="ppformula-text-center inline-block text-base uppercase"
           />
           <Badge v-if="plan.isPopular" variant="callout" size="xs">
             {{ t('pricing.badge.popular', locale) }}</Badge
