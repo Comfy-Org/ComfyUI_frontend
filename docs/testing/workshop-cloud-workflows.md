@@ -2,7 +2,7 @@
 
 The 2026-09-23 scope correction in
 [WORKSHOP-CATALOG-0037](../adr/WORKSHOP-CATALOG-0037-shared-pages-and-authored-execution-catalogs.md)
-governs this corpus. Existing Models INPUTS, common pages and provider-independent
+governs this corpus. Existing Models INPUTS, shared panels and provider-independent
 validation consume offline-authored execution records. Exporter/APP discovery
 tests from earlier work are historical evidence, not FE-2736 acceptance gates.
 
@@ -14,6 +14,15 @@ Their graphs match the pinned #18325 API artifacts; explicit input targets,
 prompt defaults and selected output nodes were checked separately. These are
 offline content checks, not evidence of page wiring, durable execution or a
 Cloud staging run.
+
+The website now consumes those records through the master/execution catalog
+join. Tests cover explicit mappings and malformed records, master widget order,
+false/zero/empty defaults, unsupported controls, missing/wrong-type matches,
+zero-input forms, graph-free page payloads, and workflow flag reset on caller
+changes. Browser tests exercise gated discovery/direct routes, shared uploads
+and prompt controls, example switching, and existing Router pages. Desktop and
+mobile checks cover the #18325-based workflow composition. Cloud browser
+submission remains unavailable; these checks do not prove inference or recovery.
 
 Status: proposed runtime corpus for FE-2736. Initial public wire-contract tests
 and portable examples are implemented in Cloud commit `4d1c96f1ed`, under

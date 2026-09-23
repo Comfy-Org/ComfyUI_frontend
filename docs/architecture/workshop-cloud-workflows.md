@@ -163,10 +163,11 @@ ID, then apply publication gates. Unmatched master entries and execution records
 without master entries remain absent from listings, direct routes and page data.
 Do not infer identities from labels or create pages for every execution entry.
 
-One shared page implementation owns forms, schema-driven validation and output
-presentation. Reuse Models INPUTS and the existing validation functions for
+Shared components own forms, schema-driven validation and output presentation.
+Keep page composition separate where the workflow design needs different
+navigation, template details and examples. Reuse Models INPUTS and the existing validation functions for
 required values, types, ranges, choices and media constraints. Validation is
-provider-independent. Minor presentation/behavior variations use declared page
+provider-independent. Presentation/behavior variations use declared page
 and output types. Render adapters own request preparation, provider transport
 and normalized results/errors; the page does not contain separate provider form
 or validation paths. Browser and CLI use the same declared input contract.

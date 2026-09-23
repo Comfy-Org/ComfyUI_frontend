@@ -47,8 +47,11 @@ the existing publication/rollout gates after this match. Match stable typed IDs,
 not display names, list positions or guessed aliases. Use the same resolved set
 for discovery, direct routes and page data.
 
-Use the same page components, form controls and schema-driven validation for all
-three target types. Validation operates on declared types, required values,
+Share form controls, input/output panels and schema-driven validation across
+target types. Page layouts may differ where the design calls for different
+navigation, template details or examples. PR #18325's workflow layout does not
+need to inherit the Router page's surrounding composition. Avoid copying forms
+or validation to accommodate those differences. Validation operates on declared types, required values,
 choices, ranges and media limits; it does not branch on the rendering provider.
 Type-specific presentation and output-specific playback are small variations
 within shared components. The page calls a common render boundary and receives
@@ -79,9 +82,9 @@ metadata is corrected offline, never inferred or repaired while rendering a page
 - Automatic APP extraction and custom serializer support would couple the site
   to the editor and expand compatibility work. Future authoring tooling can
   produce the same JSONL, independently of the shipped page.
-- Separate model, Cloud and serverless page implementations would duplicate
-  forms, validation and run presentation. Shared pages with render adapters keep
-  those behaviors together.
+- Independent forms and validation for every provider would duplicate behavior.
+  Share these components and the render boundary; choose page composition from
+  the product design instead of requiring every page to have one template.
 - Workflow records containing their own widget lists would duplicate the
   existing master INPUTS authority and allow the forms to diverge.
 

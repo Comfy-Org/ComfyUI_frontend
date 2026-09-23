@@ -10515,6 +10515,39 @@ Enterprise`
   'workshop.hub.io.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.hub.io.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.hub.io.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.workflow.templateBy': {
+    en: 'Template by {author}',
+    'zh-CN': '模板作者：{author}'
+  },
+  'workshop.workflow.makeYours': { en: 'Make it yours', 'zh-CN': '开始创作' },
+  'workshop.workflow.exampleHint': {
+    en: 'An example from this template.',
+    'zh-CN': '此模板的示例。'
+  },
+  'workshop.workflow.inputHint': {
+    en: 'Upload your inputs and adjust the settings.',
+    'zh-CN': '上传素材并调整设置。'
+  },
+  'workshop.workflow.cloudBilling': {
+    en: 'Runs in your Cloud workspace. Your plan and compute credits apply.',
+    'zh-CN': '在你的 Cloud 工作区中运行，使用你的套餐和计算积分。'
+  },
+  'workshop.workflow.browserUnavailable': {
+    en: 'Running workflows from this page is not available yet.',
+    'zh-CN': '暂不支持从此页面运行工作流。'
+  },
+  'workshop.workflow.tryCloud': {
+    en: 'Try in Cloud',
+    'zh-CN': '在 Cloud 中体验'
+  },
+  'workshop.workflow.explore': {
+    en: 'Explore the possibilities',
+    'zh-CN': '探索更多可能'
+  },
+  'workshop.workflow.templateExample': {
+    en: 'Template example {n}',
+    'zh-CN': '模板示例 {n}'
+  },
   'workshop.workflow.by': { en: 'by {author}', 'zh-CN': '作者 {author}' },
   'workshop.workflow.nodeGraph': { en: 'Node Graph', 'zh-CN': '节点图' },
   'workshop.workflow.comfyApp': { en: 'Comfy App', 'zh-CN': 'Comfy 应用' },
