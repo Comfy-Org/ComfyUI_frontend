@@ -14,8 +14,9 @@ or agent and committed as JSONL. Existing Models INPUTS define the form; the
 workflow record supplies native input IDs/types and request/output mappings.
 Automatic APP extraction, exporter changes and serializer compatibility are out
 of scope. Earlier exporter commits (`34e948eebf`, `ebf6cdf7f2`) and the
-export-artifact compiler (`96961fe8b8`) are not release dependencies. Review the
-latter for reusable ordinary schema/input checks when replacing its contract.
+export-artifact compiler (`96961fe8b8`) are not release dependencies. Cloud commit
+`38617e73d2` removes that compiler and review command and consumes prepared JSONL
+through the existing Router validator and explicit input mappings.
 Cloud receipt and upload work remains applicable. Runtime integration, staging
 and rollout are incomplete. Removing the authoring PR leaves five planned PRs,
 including at most three Cloud PRs.

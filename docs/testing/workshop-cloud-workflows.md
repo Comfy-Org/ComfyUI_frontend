@@ -24,6 +24,19 @@ and prompt controls, example switching, and existing Router pages. Desktop and
 mobile checks cover the #18325-based workflow composition. Cloud browser
 submission remains unavailable; these checks do not prove inference or recovery.
 
+On the rebased website, all 8,275 unit tests pass (four skipped), alongside
+typecheck, lint, formatting, knip, production build and five focused browser
+scenarios. Desktop/mobile screenshots are attached to draft PR #18615. No
+workflow has been run or billed in Cloud through this page yet.
+
+Cloud commit `38617e73d2` replaces the superseded APP compiler and review command
+with prepared catalog consumption. The same three JSONL records produce their
+expected Cloud input targets and prompt defaults. Tests cover scalar overrides,
+ordered outputs, zero-input workflows, stale versions, independent graph copies,
+URL-only media, duplicate inputs and bounded expansion. Catalog, media, HTTP
+boundary and caller-client tests pass under the race detector; vet and focused
+static checks pass. Cloud asset staging and run API integration remain pending.
+
 Status: proposed runtime corpus for FE-2736. Initial public wire-contract tests
 and portable examples are implemented in Cloud commit `4d1c96f1ed`, under
 `services/comfy-api/workshop/`. They cover scalar preservation, request/result
