@@ -17,12 +17,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: { setDirty: vi.fn() } }
 }))
 
-vi.mock<unknown>(
-  import('@/composables/element/useAbsolutePosition'),
-  () => ({
-    useAbsolutePosition: () => ({ style: ref({}), updatePosition: vi.fn() })
-  })
-)
+vi.mock<unknown>(import('@/composables/element/useAbsolutePosition'), () => ({
+  useAbsolutePosition: () => ({ style: ref({}), updatePosition: vi.fn() })
+}))
 
 describe('TitleEditor', () => {
   let canvas: LGraphCanvas
