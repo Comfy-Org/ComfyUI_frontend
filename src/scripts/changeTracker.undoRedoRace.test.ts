@@ -97,6 +97,10 @@ function putOnCanvas(state: ComfyWorkflowJSON) {
  * In the re-entrant window `reset()` can therefore find it already cleared and
  * overwrite `activeState`/`initialState`: a second corruption channel this
  * double deliberately leaves out, so the cases below isolate the redo queue.
+ *
+ * This goes stale if `app.ts` stops assigning the flag directly. A refcount
+ * kept inside `loadGraphData` would fix the symptom without any case here
+ * noticing; refcounting the declaration in `changeTracker.ts` is caught.
  */
 function beginLoad(state: ComfyWorkflowJSON) {
   ChangeTracker.isLoadingGraph = true
@@ -136,9 +140,14 @@ function holdLoadsUntilReleased() {
     get heldCount() {
       return outstanding.length
     },
-    /** Waits, so a fix that defers a restore reaches its assertions. */
+    /** Waits, so a fix that defers a restore reaches its assertions. Its
+     * callers are `it.fails` cases, which absorb a timeout here: the
+     * unmarked case, not this wait, is the harness guard. */
     releaseOldest: async () => {
-      await vi.waitUntil(() => outstanding.length > 0)
+      await vi.waitUntil(() => outstanding.length > 0, {
+        timeout: 500,
+        interval: 1
+      })
       outstanding.shift()?.()
     },
     /** Release everything outstanding, and let any later load settle at once. */
@@ -277,7 +286,7 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
     expect(nodeTypesOf(tracker.activeState)).toEqual([CHECKPOINT_LOADER])
   })
 
-  it.fails('KNOWN BUG (ING-198): an autosave during a re-entrant undo empties the redo queue, stranding the partner nodes', async () => {
+  it.fails('KNOWN BUG (ING-198, suspected sequence): an autosave during a re-entrant undo empties the redo queue, stranding the partner nodes', async () => {
     const loads = holdLoadsUntilReleased()
     const tracker = trackerEditing(withBothPartnerNodes(), [
       beforePartnerNodes(),
@@ -308,7 +317,7 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
     ])
   })
 
-  it.fails('KNOWN BUG (ING-198): a re-entrant undo records the same redo entry twice, so redo skips the intermediate workflow', async () => {
+  it.fails('KNOWN BUG (ING-198, suspected sequence): a re-entrant undo records the same redo entry twice, so redo skips the intermediate workflow', async () => {
     const loads = holdLoadsUntilReleased()
     const tracker = trackerEditing(withBothPartnerNodes(), [
       beforePartnerNodes(),
