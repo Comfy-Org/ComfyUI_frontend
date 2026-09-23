@@ -920,12 +920,12 @@ describe('billingOperationStore', () => {
       const error = new Error('telemetry failed')
       const telemetry = useTelemetry()
       assert.exists(telemetry)
-      vi.mocked(telemetry.trackBillingEvent).mockImplementationOnce(() => {
-        throw error
-      })
 
       const store = useBillingOperationStore()
       const terminal = store.startOperation('op-1', 'subscription')
+      vi.mocked(telemetry.trackBillingEvent).mockImplementationOnce(() => {
+        throw error
+      })
 
       await vi.advanceTimersByTimeAsync(0)
 
