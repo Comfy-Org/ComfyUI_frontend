@@ -14,14 +14,11 @@ interface QueryOptions {
   onError?: (reason: string, error?: unknown) => void
 }
 
-/** Rows per fetch. Mirrors the API default; pinned so paging stays client-owned. */
-const ASSET_PAGE_SIZE = 20
-
-const BASE_PARAMS: ListAssetsData['query'] = {
-  limit: ASSET_PAGE_SIZE,
+const BASE_PARAMS = {
+  limit: 100,
   sort: 'created_at',
   tags_none: ['missing']
-}
+} satisfies ListAssetsData['query']
 
 function assetsQueryInternal(
   params: ListAssetsData['query'] = {},
@@ -71,7 +68,9 @@ function assetsQueryInternal(
         if (seenHeadCursors.has(headCursor)) break
         seenHeadCursors.add(headCursor)
 
-        const assetResponse = await doQuery({ after: headCursor }, signal)
+        const limit = headCursor ? BASE_PARAMS.limit : 10
+        const query = { after: headCursor, limit }
+        const assetResponse = await doQuery(query, signal)
         if (!assetResponse) return
 
         const { assets, has_more, next_cursor } = assetResponse
