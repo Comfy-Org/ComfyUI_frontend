@@ -1,6 +1,6 @@
 import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 
-import { STALE_AFTER_MS } from '../../crdt/agentCrdtDocLifecycle'
+import { STALE_AFTER_MS } from '../../crdt/useAgentCrdtFollower'
 import type {
   AssistantMessage,
   RunApprovalPart,
