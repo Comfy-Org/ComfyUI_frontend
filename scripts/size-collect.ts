@@ -1,4 +1,3 @@
-// @ts-check
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -6,25 +5,14 @@ import { brotliCompressSync, gzipSync } from 'node:zlib'
 import pico from 'picocolors'
 import prettyBytes from 'pretty-bytes'
 
-import { categorizeBundle } from './bundle-categories.js'
+import { categorizeBundle } from './bundle-categories'
+import type { BundleSize } from './bundle-size'
 
 const distDir = path.resolve('dist')
 const sizeDir = path.resolve('temp/size')
 
-/**
- * @typedef {Object} SizeResult
- * @property {string} file
- * @property {string} category
- * @property {number} size
- * @property {number} gzip
- * @property {number} brotli
- */
-
 void run()
 
-/**
- * Main function to collect bundle size data
- */
 async function run() {
   if (!existsSync(distDir)) {
     console.error(pico.red('Error: dist directory does not exist'))
@@ -34,9 +22,8 @@ async function run() {
 
   console.log(pico.blue('\nCollecting bundle size data...\n'))
 
-  // Collect main bundle files from dist/assets
   const assetsDir = path.join(distDir, 'assets')
-  const bundles = []
+  const bundles: BundleSize[] = []
 
   if (existsSync(assetsDir)) {
     const files = await readdir(assetsDir)
@@ -70,10 +57,8 @@ async function run() {
     }
   }
 
-  // Create temp/size directory
   await mkdir(sizeDir, { recursive: true })
 
-  // Write individual bundle files
   for (const bundle of bundles) {
     const fileName = bundle.file.replace(/[/\\]/g, '_').replace('.js', '.json')
     await writeFile(

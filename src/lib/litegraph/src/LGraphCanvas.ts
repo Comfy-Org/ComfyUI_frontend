@@ -1387,10 +1387,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       if (value && (typeof value === 'object' || Array.isArray(value))) {
         // submenu why?
-        const entries = []
-        for (const i in value) {
-          entries.push({ content: i, value: value[i] })
-        }
+        const entries = Object.entries(value).map(([content, value]) => ({
+          content,
+          value
+        }))
         new LiteGraph.ContextMenu(entries, {
           event: e,
           callback: inner_clicked,
@@ -2696,7 +2696,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   private _setupNodeSelectionDrag(
     e: CanvasPointerEvent,
     pointer: CanvasPointer,
-    node?: LGraphNode | undefined
+    node?: LGraphNode
   ): void {
     const dragRect: Rect = [0, 0, 0, 0]
 
@@ -4482,7 +4482,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     let changed = false
-    for (const item of [...this.selectedItems]) {
+    for (const item of Array.from(this.selectedItems)) {
       if (!desired.has(item)) {
         this.deselect(item)
         changed = true
@@ -7074,7 +7074,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     )
     const dirty = () => this._dirty()
 
-    const that = this
     const { graph } = this
     const { afterRerouteId } = opts
 
@@ -7163,13 +7162,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       title:
         (slotX.name != '' ? slotX.name + (fromSlotType ? ' | ' : '') : '') +
         (fromSlotType ? fromSlotType : ''),
-      callback: inner_clicked
+      callback: inner_clicked.bind(this)
     })
 
     return menu
 
     // callback
     function inner_clicked(
+      this: LGraphCanvas,
       v: string | undefined,
       options: IContextMenuOptions<string, INodeInputSlot | INodeOutputSlot>,
       e: MouseEvent
@@ -7258,7 +7258,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           } satisfies Partial<ICreateDefaultNodeOptions>
 
           const options = Object.assign(opts, customProps)
-          if (!that.createDefaultNodeForSlot(options)) break
+          if (!this.createDefaultNodeForSlot(options)) break
         }
       }
     }
@@ -7272,7 +7272,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     event: CanvasPointerEvent,
     multiline?: boolean
   ): HTMLDivElement {
-    const that = this
     title = title || ''
 
     const customProperties = {
@@ -7281,8 +7280,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       innerHTML: multiline
         ? "<span class='name'></span> <textarea autofocus class='value'></textarea><button class='rounded'>OK</button>"
         : "<span class='name'></span> <input autofocus type='text' class='value'/><button class='rounded'>OK</button>",
-      close() {
-        that.prompt_box = null
+      close: () => {
+        this.prompt_box = null
         if (dialog.parentNode) {
           dialog.remove()
         }
@@ -7367,9 +7366,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const button = dialog.querySelector('button')
     if (!button) throw new TypeError('button was null when opening prompt')
 
-    button.addEventListener('click', function () {
+    button.addEventListener('click', () => {
       callback(input.value)
-      that.setDirty(true)
+      this.setDirty(true)
       dialog.close()
     })
 
@@ -7430,16 +7429,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // console.log(options);
 
-    const that = this
     const graphcanvas = LGraphCanvas.active_canvas
     const { canvas } = graphcanvas
     const root_document = canvas.ownerDocument
 
     const div = document.createElement('div')
     const dialog = Object.assign(div, {
-      close(this: typeof div) {
-        that.search_box = undefined
-        this.blur()
+      close: () => {
+        this.search_box = undefined
+        div.blur()
         canvas.focus()
         root_document.body.style.overflow = ''
 
@@ -7651,12 +7649,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     requestAnimationFrame(function () {
       input.focus()
     })
-    if (options.show_all_on_open) refreshHelper()
-
-    function select(name: string) {
+    const select = (name: string) => {
       if (name) {
-        if (that.onSearchBoxSelection) {
-          that.onSearchBoxSelection(name, safeEvent, graphcanvas)
+        if (this.onSearchBoxSelection) {
+          this.onSearchBoxSelection(name, safeEvent, graphcanvas)
         } else {
           if (!graphcanvas.graph) throw new NullGraphError()
 
@@ -7782,15 +7778,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    function refreshHelper() {
+    const refreshHelper = () => {
       timeout = null
       let str = input.value
       first = null
       helper.innerHTML = ''
       if (!str && !options.show_all_if_empty) return
 
-      if (that.onSearchBox) {
-        const list = that.onSearchBox(helper, str, graphcanvas)
+      if (this.onSearchBox) {
+        const list = this.onSearchBox(helper, str, graphcanvas)
         if (list) {
           for (const item of list) {
             addResult(item)
@@ -7806,11 +7802,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // filter by type preprocess
         let sIn: HTMLSelectElement | null = null
         let sOut: HTMLSelectElement | null = null
-        if (options.do_type_filter && that.search_box) {
-          sIn = that.search_box.querySelector<HTMLSelectElement>(
+        if (options.do_type_filter && this.search_box) {
+          sIn = this.search_box.querySelector<HTMLSelectElement>(
             '.slot_in_type_filter'
           )
-          sOut = that.search_box.querySelector<HTMLSelectElement>(
+          sOut = this.search_box.querySelector<HTMLSelectElement>(
             '.slot_out_type_filter'
           )
         }
@@ -7954,6 +7950,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         helper.append(help)
       }
     }
+
+    if (options.show_all_on_open) refreshHelper()
 
     return dialog
   }

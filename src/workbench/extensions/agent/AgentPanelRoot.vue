@@ -132,7 +132,13 @@ const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
-const { tier: subscriptionTier } = useBillingContext()
+const { subscription, tier: subscriptionTier } = useBillingContext()
+const conversationStore = useAgentConversationStore()
+watch(
+  () => subscription.value?.hasFunds,
+  (hasFunds) => conversationStore.setPaywallsResolved(hasFunds === true),
+  { immediate: true }
+)
 const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
   useBillingCapabilities()
 const paywallPresentation = computed(() => {
@@ -668,9 +674,7 @@ const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
   isCrdtDebugEnabled()
 )
-const { activeTurnId: conversationTurnId } = storeToRefs(
-  useAgentConversationStore()
-)
+const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 
 // The resumed turn's own workflow outlives a panel remount (the session
 // binds it at ack; only newChat/loadThread reset it), while the active tab
