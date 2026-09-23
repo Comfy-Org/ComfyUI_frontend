@@ -4,7 +4,9 @@ import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { AuthStoreError } from '@/stores/authStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
@@ -19,39 +21,13 @@ const state = vi.hoisted(() => ({
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: {
-      get value() {
-        return state.shouldUseWorkspaceBilling
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: {
-        get value() {
-          return {
-            canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-          }
-        }
-      },
-      canReactivatePlan: {
-        get value() {
-          return state.canReactivatePlan
-        }
-      }
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -88,6 +64,15 @@ afterEach(() => {
 
 describe('useResubscribe', () => {
   beforeEach(() => {
+    Object.assign(useBillingRouting(), {
+      shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
+    })
+    Object.assign(useWorkspaceUI(), {
+      permissions: computed(() => ({
+        canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+      })),
+      canReactivatePlan: computed(() => state.canReactivatePlan)
+    })
     state.shouldUseWorkspaceBilling = true
     state.canManageSubscriptionLifecycle = true
     useBillingCapabilities().canReactivate = computed(() => true)

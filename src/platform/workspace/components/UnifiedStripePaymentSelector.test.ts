@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 
 import type { CheckoutJourneyTelemetryEvent } from '@/platform/telemetry/types'
+import { useTelemetry } from '@/platform/telemetry'
 import {
   clearCheckoutJourney,
   resolveCheckoutJourney
@@ -15,11 +16,7 @@ import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 const mockTrackCheckoutJourneyEvent = vi.hoisted(() =>
   vi.fn<(event: CheckoutJourneyTelemetryEvent) => void>()
 )
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 /**
  * The provider work is covered in the package, against the real Stripe mocks.
@@ -99,6 +96,11 @@ function renderSelector(props: Record<string, unknown> = {}) {
 
 describe('UnifiedStripePaymentSelector', () => {
   beforeEach(() => {
+    const telemetry = useTelemetry()
+    if (!telemetry) throw new Error('Telemetry mock unavailable')
+    Object.assign(telemetry, {
+      trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
+    })
     sessionStorage.clear()
     clearCheckoutJourney()
     mockTrackCheckoutJourneyEvent.mockClear()

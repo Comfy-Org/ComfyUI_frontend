@@ -4,6 +4,7 @@ import { effectScope } from 'vue'
 vi.mock(import('firebase/auth'), { spy: true })
 
 import type { BillingTelemetryEvent } from '@/platform/telemetry/types'
+import { useTelemetry } from '@/platform/telemetry'
 import type {
   BillingStatusResponse,
   PreviewSubscribeResponse
@@ -55,24 +56,16 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({ useSubscriptionDialog: () => ({ show: vi.fn() }) })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({ refresh: vi.fn(async () => undefined) })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 const trackBillingEvent = vi.hoisted(() =>
   vi.fn<(event: BillingTelemetryEvent) => void>()
 )
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackBillingEvent })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
 vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
@@ -154,6 +147,9 @@ function setupBilling() {
 
 beforeEach(() => {
   stubFirebaseAuthHarness()
+  const telemetry = useTelemetry()
+  if (!telemetry) throw new Error('Telemetry mock unavailable')
+  Object.assign(telemetry, { trackBillingEvent })
   trackBillingEvent.mockClear()
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)

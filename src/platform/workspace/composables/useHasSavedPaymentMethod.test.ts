@@ -4,32 +4,19 @@ import { nextTick } from 'vue'
 
 import type { reportError } from '@/platform/telemetry/reportError'
 import type { SavedPaymentMethod } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 import type { BillingResult } from '@comfyorg/account-core/billing'
 
 import type { BillingReadRail } from './useBillingReadRail'
 import { useHasSavedPaymentMethod } from './useHasSavedPaymentMethod'
 
-const mockListSavedPaymentMethods = vi.hoisted(() =>
-  vi.fn<() => Promise<SavedPaymentMethod[]>>()
+const mockListSavedPaymentMethods = vi.mocked(
+  workspaceApi.listSavedPaymentMethods
 )
 const mockReportError = vi.hoisted(() => vi.fn<typeof reportError>())
 
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: {
-    listSavedPaymentMethods: mockListSavedPaymentMethods
-  },
-  WorkspaceApiError: class WorkspaceApiError extends Error {
-    constructor(
-      message: string,
-      public readonly status?: number,
-      public readonly code?: string
-    ) {
-      super(message)
-      this.name = 'WorkspaceApiError'
-    }
-  }
-}))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError

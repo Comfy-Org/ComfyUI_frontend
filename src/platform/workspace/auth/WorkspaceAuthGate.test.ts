@@ -1,5 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -12,7 +10,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
   remoteConfigErrorStatus,
@@ -51,18 +49,11 @@ vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
-type BillingCapabilities = ReturnType<typeof useBillingCapabilities>
 const mockBillingCapabilitiesInitialize = vi.hoisted(() =>
-  vi.fn<BillingCapabilities['initialize']>()
+  vi.fn<ReturnType<typeof useBillingCapabilities>['initialize']>()
 )
 
-vi.mock(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: (): BillingCapabilities =>
-      fromPartial({ initialize: mockBillingCapabilitiesInitialize })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -101,6 +92,9 @@ describe('WorkspaceAuthGate', () => {
     })
     mockRefreshRemoteConfig.mockResolvedValue(undefined)
     mockBillingCapabilitiesInitialize.mockResolvedValue(undefined)
+    Object.assign(useBillingCapabilities(), {
+      initialize: mockBillingCapabilitiesInitialize
+    })
     vi.mocked(useTeamWorkspaceStore().initialize).mockImplementation(
       async () => {
         Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })

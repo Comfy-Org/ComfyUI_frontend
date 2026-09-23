@@ -8,7 +8,9 @@ import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
@@ -262,8 +264,6 @@ const mockToastAdd = vi.fn()
 const mockResendInvite =
   vi.fn<(inviteId: string) => Promise<WorkspacePendingInvite>>()
 
-const mockShowSubscriptionDialog = vi.fn()
-
 const {
   mockMaxSeats,
   mockOccupiedSeats,
@@ -382,16 +382,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: mockPermissions,
-      uiConfig: mockUiConfig,
-      workspaceRole: mockWorkspaceRole
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
@@ -399,40 +390,11 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ show: mockShowSubscriptionDialog })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
-    isInitialized: mockIsInitialized,
-    isTeamPlan: mockIsTeamPlan,
-    subscription: mockSubscription,
-    subscriptionStatus: mockSubscriptionStatus,
-    maxSeats: mockMaxSeats,
-    occupiedSeats: mockOccupiedSeats,
-    getMaxSeats: (tierKey: string) => {
-      const seats: Record<string, number> = {
-        free: 1,
-        standard: 1,
-        creator: 5,
-        pro: 20
-      }
-      return seats[tierKey] ?? 1
-    }
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ show: vi.fn() })
-  })
-)
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/services/dialogService'))
 
@@ -442,6 +404,31 @@ describe('useMembersPanel', () => {
   let pinia: Pinia
 
   beforeEach(() => {
+    Object.assign(useWorkspaceUI(), {
+      permissions: mockPermissions,
+      uiConfig: mockUiConfig,
+      workspaceRole: mockWorkspaceRole
+    })
+    const billingContext = useBillingContext()
+    Object.assign(billingContext, {
+      canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
+      isInitialized: mockIsInitialized,
+      isTeamPlan: mockIsTeamPlan,
+      subscription: mockSubscription,
+      subscriptionStatus: mockSubscriptionStatus,
+      maxSeats: mockMaxSeats,
+      occupiedSeats: mockOccupiedSeats
+    })
+    vi.mocked(billingContext.getMaxSeats).mockImplementation((tierKey) => {
+      const seats: Record<string, number> = {
+        free: 1,
+        standard: 1,
+        creator: 5,
+        pro: 20
+      }
+      return seats[tierKey] ?? 1
+    })
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
     useCurrentUser().userPhotoUrl = computed(() => null)
     useCurrentUser().userEmail = computed(() => 'owner@example.com')
     useCurrentUser().userDisplayName = computed(() => 'Owner User')

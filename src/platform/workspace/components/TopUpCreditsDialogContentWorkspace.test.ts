@@ -14,6 +14,7 @@ import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -61,12 +62,7 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(
-  import('@/platform/settings/composables/useSettingsDialog'),
-  () => ({
-    useSettingsDialog: () => ({ show: mockShowSettings })
-  })
-)
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -107,6 +103,7 @@ function topupResponse(
 
 function renderDialog() {
   mockBillingContext()
+  Object.assign(useSettingsDialog(), { show: mockShowSettings })
   return render(TopUpCreditsDialogContentWorkspace, {
     global: {
       plugins: [i18n],

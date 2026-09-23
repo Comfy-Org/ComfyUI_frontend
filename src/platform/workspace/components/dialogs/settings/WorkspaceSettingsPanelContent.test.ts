@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, onMounted, onUnmounted, ref } from 'vue'
 
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import WorkspaceSettingsPanelContent from './WorkspaceSettingsPanelContent.vue'
 
 const { mockBannerMounted, mockBannerUnmounted } = vi.hoisted(() => ({
@@ -10,12 +11,7 @@ const { mockBannerMounted, mockBannerUnmounted } = vi.hoisted(() => ({
   mockBannerUnmounted: vi.fn()
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({ workspaceRole: ref('owner') })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 const BillingStatusBanner = defineComponent({
   setup() {
@@ -34,6 +30,7 @@ const stubs = {
 }
 
 beforeEach(() => {
+  Object.assign(useWorkspaceUI(), { workspaceRole: ref('owner') })
   Object.assign(useTeamWorkspaceStore(), { workspaceName: 'Acme Team' })
   vi.mocked(useTeamWorkspaceStore().fetchMembers).mockResolvedValue([])
   vi.mocked(useTeamWorkspaceStore().fetchPendingInvites).mockResolvedValue([])

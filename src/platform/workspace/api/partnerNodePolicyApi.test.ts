@@ -6,14 +6,11 @@ import {
   PartnerNodePolicyApiError,
   updatePartnerNodePolicy
 } from '@/platform/workspace/api/partnerNodePolicyApi'
+import { api } from '@/scripts/api'
 
-const mockFetchApi = vi.fn()
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: (...args: unknown[]) => mockFetchApi(...args)
-  }
-}))
+const mockFetchApi = vi.mocked(api.fetchApi)
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(body), init)

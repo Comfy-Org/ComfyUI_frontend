@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
@@ -20,7 +24,6 @@ import {
   settledTopup
 } from './billingSdkTestUtils'
 import type { HostedBillingDestination } from '@comfyorg/account-core/billing'
-
 import type { BillingSdk, BillingSdkOptions } from './createBillingSdk'
 
 const mockCreateBillingSdk = vi.hoisted(() =>
@@ -33,45 +36,17 @@ vi.mock(import('./createBillingSdk'), () => ({
 const mockFetchStatus = vi.hoisted(() => vi.fn(async () => undefined))
 const mockFetchBalance = vi.hoisted(() => vi.fn(async () => undefined))
 const mockReconcileSubscription = vi.hoisted(() => vi.fn(async () => undefined))
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    fetchStatus: mockFetchStatus,
-    fetchBalance: mockFetchBalance,
-    reconcileSubscriptionSuccess: mockReconcileSubscription
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 const mockShowSettings = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(
-  import('@/platform/settings/composables/useSettingsDialog'),
-  () => ({
-    useSettingsDialog: () => ({ show: mockShowSettings })
-  })
-)
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 const mockTrackBillingEvent = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackBillingEvent: mockTrackBillingEvent })
-}))
+vi.mock(import('@/platform/telemetry'))
 
-const flagState = vi.hoisted(() => ({
-  embeddedCheckoutEnabled: false,
-  hostedBillingDestination: 'stripe' as HostedBillingDestination
-}))
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get embeddedCheckoutEnabled() {
-        return flagState.embeddedCheckoutEnabled
-      },
-      get hostedBillingDestination() {
-        return flagState.hostedBillingDestination
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
@@ -87,8 +62,19 @@ let options: BillingSdkOptions
 
 beforeEach(() => {
   stubAccountIdentityPort()
-  flagState.embeddedCheckoutEnabled = false
-  flagState.hostedBillingDestination = 'stripe'
+  vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
+  vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'stripe'
+  const billingContext = useBillingContext()
+  Object.assign(billingContext, {
+    fetchStatus: mockFetchStatus,
+    fetchBalance: mockFetchBalance,
+    reconcileSubscriptionSuccess: mockReconcileSubscription
+  })
+  vi.mocked(useBillingContext).mockReturnValue(billingContext)
+  Object.assign(useSettingsDialog(), { show: mockShowSettings })
+  const telemetry = useTelemetry()
+  if (!telemetry) throw new Error('Telemetry mock unavailable')
+  Object.assign(telemetry, { trackBillingEvent: mockTrackBillingEvent })
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockImplementation((sdkOptions) => {
     options = sdkOptions
@@ -121,7 +107,7 @@ describe('useBillingSdkStore', () => {
   it.for(['stripe', 'billing_web'] as const)(
     'serves the hosted page from the destination the flag names, %s',
     (destination: HostedBillingDestination) => {
-      flagState.hostedBillingDestination = destination
+      vi.mocked(useFeatureFlags().flags).hostedBillingDestination = destination
       useBillingSdkStore()
 
       expect(options.hostedDestination()).toBe(destination)
@@ -131,7 +117,7 @@ describe('useBillingSdkStore', () => {
   it('re-reads the destination flag rather than capturing it at composition', () => {
     useBillingSdkStore()
 
-    flagState.hostedBillingDestination = 'billing_web'
+    vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'billing_web'
 
     expect(options.hostedDestination()).toBe('billing_web')
   })
@@ -241,7 +227,7 @@ describe('useBillingSdkStore', () => {
   })
 
   it('retries the in-page challenge on request and reports whether it completed', async () => {
-    flagState.embeddedCheckoutEnabled = true
+    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
     const store = useBillingSdkStore()
     vi.mocked(harness.sdk.driveChallenge).mockResolvedValueOnce('failed')
 

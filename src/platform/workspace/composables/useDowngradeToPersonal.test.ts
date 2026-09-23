@@ -5,7 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { ListMembersParams } from '@/platform/workspace/api/workspaceApi'
@@ -62,26 +64,13 @@ const mockMembers = {
   }
 }
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({ permissions: mockPermissions })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    subscribe: mockSubscribe,
-    previewSubscribe: mockPreviewSubscribe,
-    subscription: mockSubscription,
-    isInitialized: mockIsInitialized,
-    fetchStatus: mockFetchStatus
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -133,6 +122,16 @@ describe('useDowngradeToPersonal', () => {
   let windowOpen: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
+    Object.assign(useWorkspaceUI(), { permissions: mockPermissions })
+    const billingContext = useBillingContext()
+    Object.assign(billingContext, {
+      subscribe: mockSubscribe,
+      previewSubscribe: mockPreviewSubscribe,
+      subscription: mockSubscription,
+      isInitialized: mockIsInitialized,
+      fetchStatus: mockFetchStatus
+    })
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
     const pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
     vi.mocked(workspaceStore.removeMember).mockImplementation(mockRemoveMember)

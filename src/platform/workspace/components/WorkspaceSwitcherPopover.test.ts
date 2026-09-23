@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceSwitcherPopover from './WorkspaceSwitcherPopover.vue'
@@ -17,9 +18,7 @@ const billingMocks = vi.hoisted(() => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({ subscription: billingMocks.subscription })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 const distributionMocks = vi.hoisted(() => ({ isCloud: true }))
 
@@ -123,6 +122,9 @@ describe('WorkspaceSwitcherPopover', () => {
 
   beforeEach(() => {
     billingMocks.subscription.value = null
+    const billingContext = useBillingContext()
+    Object.assign(billingContext, { subscription: billingMocks.subscription })
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
     distributionMocks.isCloud = true
   })
 

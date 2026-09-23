@@ -1,6 +1,7 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getActivePinia } from 'pinia'
 import { computed, ref, toRef } from 'vue'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -22,14 +23,11 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: mockShouldUseWorkspaceBilling
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -185,47 +183,14 @@ const mockIsDeleteDisabled = computed(
     !(mockSubscription.value?.isCancelled ?? false)
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: computed(() => ({
-        canManageSubscription: mockCanManageSubscription.value,
-        canManageSubscriptionLifecycle:
-          mockCanManageSubscriptionLifecycle.value,
-        canLeaveWorkspace: mockCanLeaveWorkspace.value
-      })),
-      canReactivatePlan: mockCanReactivatePlan,
-      canOpenPricingSurface: mockCanOpenPricingSurface,
-      uiConfig: computed(() => mockUiConfig.value),
-      isInPersonalWorkspace: toRef(
-        useTeamWorkspaceStore(),
-        'isInPersonalWorkspace'
-      ),
-      canAccessSubscriptionFeatures: computed(
-        () => mockIsActiveSubscription.value
-      ),
-      isSubscriptionCancelled: mockIsSubscriptionCancelled,
-      isTeamPlanCancelled: mockIsTeamPlanCancelled,
-      isDeleteDisabled: mockIsDeleteDisabled,
-      deleteDisabledTooltipKey: computed(() =>
-        mockIsDeleteDisabled.value
-          ? mockUiConfig.value.workspaceMenuDisabledTooltip
-          : null
-      )
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ showPricingTable: vi.fn() })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock<unknown>(
@@ -296,7 +261,35 @@ describe('SubscriptionPanelContentWorkspace', () => {
     })
     vi.mocked(billing.getMaxSeats).mockReturnValue(5)
     vi.mocked(useBillingContext).mockReturnValue(billing)
-
+    Object.assign(useBillingRouting(), {
+      shouldUseWorkspaceBilling: mockShouldUseWorkspaceBilling
+    })
+    Object.assign(useWorkspaceUI(), {
+      permissions: computed(() => ({
+        canManageSubscription: mockCanManageSubscription.value,
+        canManageSubscriptionLifecycle:
+          mockCanManageSubscriptionLifecycle.value,
+        canLeaveWorkspace: mockCanLeaveWorkspace.value
+      })),
+      canReactivatePlan: mockCanReactivatePlan,
+      canOpenPricingSurface: mockCanOpenPricingSurface,
+      uiConfig: computed(() => mockUiConfig.value),
+      isInPersonalWorkspace: toRef(
+        useTeamWorkspaceStore(),
+        'isInPersonalWorkspace'
+      ),
+      canAccessSubscriptionFeatures: computed(
+        () => mockIsActiveSubscription.value
+      ),
+      isSubscriptionCancelled: mockIsSubscriptionCancelled,
+      isTeamPlanCancelled: mockIsTeamPlanCancelled,
+      isDeleteDisabled: mockIsDeleteDisabled,
+      deleteDisabledTooltipKey: computed(() =>
+        mockIsDeleteDisabled.value
+          ? mockUiConfig.value.workspaceMenuDisabledTooltip
+          : null
+      )
+    })
     mockDistributionState.isCloud = true
     mockSubscriptionStatus.value = 'active'
     mockBillingStatus.value = 'paid'

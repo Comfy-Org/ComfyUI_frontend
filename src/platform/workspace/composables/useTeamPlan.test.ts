@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+
 const {
   mockIsActiveSubscription,
   mockIsInitialized,
@@ -23,16 +25,7 @@ const {
   }
 })
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: mockIsActiveSubscription,
-    isInitialized: mockIsInitialized,
-    isTeamPlan: mockIsTeamPlan,
-    maxSeats: mockMaxSeats,
-    subscription: mockSubscription,
-    subscriptionStatus: mockSubscriptionStatus
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 async function setup() {
   const { useTeamPlan } = await import('./useTeamPlan')
@@ -41,6 +34,16 @@ async function setup() {
 
 describe('useTeamPlan', () => {
   beforeEach(() => {
+    const billingContext = useBillingContext()
+    Object.assign(billingContext, {
+      canAccessSubscriptionFeatures: mockIsActiveSubscription,
+      isInitialized: mockIsInitialized,
+      isTeamPlan: mockIsTeamPlan,
+      maxSeats: mockMaxSeats,
+      subscription: mockSubscription,
+      subscriptionStatus: mockSubscriptionStatus
+    })
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
     mockIsActiveSubscription.value = true
     mockIsInitialized.value = true
     mockIsTeamPlan.value = true

@@ -10,6 +10,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
 import type { PartnerNodePolicy } from '@/platform/workspace/api/partnerNodePolicyApi'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import PartnerNodeAccessPanel from './PartnerNodeAccessPanel.vue'
@@ -32,12 +33,7 @@ vi.mock(import('@/platform/workspace/api/partnerNodePolicyApi'), () => ({
   getPartnerProviders: vi.fn(() => new Promise<never>(() => {}))
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({ workspaceRole: mockWorkspaceRole })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 const i18n = createI18n({
   legacy: false,
@@ -84,6 +80,7 @@ async function openBulkMenu(user: ReturnType<typeof userEvent.setup>) {
 }
 
 beforeEach(() => {
+  Object.assign(useWorkspaceUI(), { workspaceRole: mockWorkspaceRole })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
 })
 

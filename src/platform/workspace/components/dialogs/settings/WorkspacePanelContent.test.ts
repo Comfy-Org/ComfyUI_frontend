@@ -7,6 +7,7 @@ import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspacePanelContent from './WorkspacePanelContent.vue'
@@ -41,18 +42,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-    const { ref } = require('vue') as typeof import('vue')
-    return {
-      useWorkspaceUI: () => ({
-        workspaceRole: ref('owner')
-      })
-    }
-  }
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'),
@@ -124,6 +114,7 @@ function renderComponent() {
 }
 
 beforeEach(() => {
+  Object.assign(useWorkspaceUI(), { workspaceRole: computed(() => 'owner') })
   pinia = getActivePinia()!
   workspaceStore = useTeamWorkspaceStore(pinia)
   vi.mocked(workspaceStore.fetchMembers).mockResolvedValue([])

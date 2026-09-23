@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 import type {
   BillingStatusResponse,
@@ -67,13 +68,8 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({
-      show: mockShow
-    })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -176,6 +172,7 @@ const subscribeResponses = [
 ] satisfies SubscribeResponse[]
 
 beforeEach(() => {
+  Object.assign(useSubscriptionDialog(), { show: mockShow })
   vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(undefined)
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
     billingOperation()

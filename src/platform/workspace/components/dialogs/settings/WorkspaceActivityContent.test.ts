@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json'
 import type { ActivityEvent } from '@/platform/workspace/composables/useWorkspaceActivity'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import WorkspaceActivityContent from './WorkspaceActivityContent.vue'
 
@@ -18,14 +19,7 @@ const { mockWorkspaceRole } = vi.hoisted(() => {
   }
 })
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      workspaceRole: mockWorkspaceRole
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -64,6 +58,7 @@ const creditedRow: ActivityEvent = {
 
 describe('WorkspaceActivityContent', () => {
   beforeEach(() => {
+    Object.assign(useWorkspaceUI(), { workspaceRole: mockWorkspaceRole })
     useCurrentUser().resolvedUserInfo = computed(() => ({
       id: 'user-ada'
     }))
