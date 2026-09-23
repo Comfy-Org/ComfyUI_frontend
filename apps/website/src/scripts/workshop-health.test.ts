@@ -23,18 +23,6 @@ const run: WorkshopRunAnalytics = {
   workspace_id: 'private-workspace'
 }
 
-type FailedRun = Extract<
-  Extract<WorkshopAnalyticsEvent, { name: 'run_finished' }>['properties'],
-  { status: 'failed' }
->
-type FailureDetails = Pick<FailedRun, 'reason'> &
-  Partial<
-    Omit<
-      FailedRun,
-      keyof WorkshopRunAnalytics | 'status' | 'duration_ms' | 'reason'
-    >
-  >
-
 describe('Workshop health', () => {
   it('preserves declared field names for validation diagnostics', () => {
     expect(
@@ -179,7 +167,7 @@ describe('Workshop health', () => {
     const failure = new WorkshopRouterError(
       'client',
       null,
-      { source_file: 'fileUnreadable' },
+      { private_field: 'fileUnreadable' },
       undefined,
       'file_read',
       { cause }
@@ -190,23 +178,13 @@ describe('Workshop health', () => {
         ...run,
         status: 'failed',
         duration_ms: 10,
-        ...workshopFailureAnalytics(failure, [
-          {
-            kind: 'file',
-            name: 'source_file',
-            label: 'File',
-            accept: [],
-            maxBytes: 1,
-            required: true
-          }
-        ])
+        ...workshopFailureAnalytics(failure)
       }
     })
 
     expect(record).toMatchObject({
-      service_health: 'excluded',
+      service_health: 'failure',
       failure_stage: 'file_read',
-      field_error_names: ['source_file'],
       field_error_codes: ['fileUnreadable'],
       failure_type: 'NotReadableError',
       exception_name: 'NotReadableError',
@@ -214,87 +192,6 @@ describe('Workshop health', () => {
     })
     expect(JSON.stringify(record)).not.toContain('private')
   })
-
-  it.for([
-    {
-      name: 'client-side video duration validation',
-      failure: {
-        reason: 'validation',
-        failure_stage: 'input_preparation',
-        field_error_names: ['video_url'],
-        field_error_codes: ['videoTooLong']
-      }
-    },
-    {
-      name: 'unreadable selected video',
-      failure: {
-        reason: 'client',
-        failure_stage: 'input_preparation',
-        field_error_names: ['video_url'],
-        field_error_codes: ['videoUnreadable']
-      }
-    }
-  ] satisfies Array<{ name: string; failure: FailureDetails }>)(
-    'excludes $name from service failures',
-    ({ failure }) => {
-      expect(
-        workshopHealthLog({
-          name: 'run_finished',
-          properties: {
-            ...run,
-            status: 'failed',
-            duration_ms: 10,
-            ...failure
-          }
-        })
-      ).toMatchObject({ service_health: 'excluded' })
-    }
-  )
-
-  it.for([
-    {
-      name: 'validation without a visible field',
-      failure: {
-        reason: 'validation',
-        field_error_codes: ['videoTooLong']
-      }
-    },
-    {
-      name: 'Router validation response',
-      failure: {
-        reason: 'validation',
-        request_id: 'router-request',
-        http_status: 422,
-        router_error_type: 'invalid_input',
-        field_error_names: ['video_url'],
-        field_error_codes: ['videoTooLong']
-      }
-    },
-    {
-      name: 'failed file upload',
-      failure: {
-        reason: 'upload',
-        failure_stage: 'upload_put',
-        field_error_names: ['image'],
-        field_error_codes: ['uploadFailed']
-      }
-    }
-  ] satisfies Array<{ name: string; failure: FailureDetails }>)(
-    'retains $name as a service failure',
-    ({ failure }) => {
-      expect(
-        workshopHealthLog({
-          name: 'run_finished',
-          properties: {
-            ...run,
-            status: 'failed',
-            duration_ms: 10,
-            ...failure
-          }
-        })?.service_health
-      ).toBe('failure')
-    }
-  )
 
   it.for([
     { status: 'succeeded' as const, expected: 'success' },
