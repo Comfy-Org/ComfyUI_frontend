@@ -39,7 +39,7 @@ const DOCS_MODELS_URL = 'https://docs.comfy.org/development/comfy-router/models'
 export const ROUTER_PROVIDER_COVERAGE_VERIFIED_AT = '2026-09-23'
 
 /** How many models the Router catalog lists, all served by Comfy. */
-export const ROUTER_CATALOG_MODEL_COUNT = 207
+export const ROUTER_CATALOG_MODEL_COUNT = 209
 
 /** In the order the page shows them: alphabetical by `name`. */
 export const ROUTER_PROVIDER_COVERAGE: readonly RouterProviderCoverageRow[] = [
@@ -47,6 +47,18 @@ export const ROUTER_PROVIDER_COVERAGE: readonly RouterProviderCoverageRow[] = [
     name: 'GPT Image 2',
     modelId: 'openai/gpt-image-2',
     docsUrl: `${DOCS_MODELS_URL}/openai/gpt-image-2/code`,
+    providers: ['fal', 'runware', 'wavespeed']
+  },
+  {
+    name: 'GPT Image 2.5 Flare',
+    modelId: 'openai/gpt-image-2.5-flare',
+    docsUrl: `${DOCS_MODELS_URL}/openai/gpt-image-2-5-flare/code`,
+    providers: ['fal', 'runware', 'wavespeed']
+  },
+  {
+    name: 'GPT Image 2.5 Sunburst',
+    modelId: 'openai/gpt-image-2.5-sunburst',
+    docsUrl: `${DOCS_MODELS_URL}/openai/gpt-image-2-5-sunburst/code`,
     providers: ['fal', 'runware', 'wavespeed']
   },
   {
@@ -111,8 +123,8 @@ export const ROUTER_COMFY_ONLY_PREVIEW: readonly RouterComfyOnlyModel[] = [
     docsUrl: `${DOCS_MODELS_URL}/minimax/minimax-h3/code`
   },
   {
-    name: 'GPT Image 2.5 Flare',
-    docsUrl: `${DOCS_MODELS_URL}/openai/gpt-image-2-5-flare/code`
+    name: 'FLUX 2 Pro',
+    docsUrl: `${DOCS_MODELS_URL}/black-forest-labs/flux-2-pro/code`
   },
   {
     name: 'Grok Imagine Video 1.5',

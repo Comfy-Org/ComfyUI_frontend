@@ -53,7 +53,7 @@ describe('RouterProviderCoverageSection', () => {
     render(RouterProviderCoverageSection, { props: { locale: 'en' } })
 
     const rows = within(screen.getByRole('table')).getAllByRole('row')
-    expect(ROUTER_PROVIDER_COVERAGE).toHaveLength(8)
+    expect(ROUTER_PROVIDER_COVERAGE).toHaveLength(10)
     expect(rows).toHaveLength(
       1 + ROUTER_PROVIDER_COVERAGE.length + ROUTER_COMFY_ONLY_PREVIEW.length
     )
@@ -64,10 +64,8 @@ describe('RouterProviderCoverageSection', () => {
       'https://docs.comfy.org/development/comfy-router/models/google/nano-banana-pro/code'
     )
     expect(screen.getByRole('link', { name: 'MiniMax H3' })).toBeTruthy()
-    expect(
-      screen.queryByRole('link', { name: 'GPT Image 2.5 Flare' })
-    ).toBeNull()
-    expect(screen.queryByText('FLUX 2 Pro')).toBeNull()
+    expect(screen.getByText('FLUX 2 Pro')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'FLUX 2 Pro' })).toBeNull()
     expect(rows.at(-1)).toHaveClass('opacity-10')
   })
 
