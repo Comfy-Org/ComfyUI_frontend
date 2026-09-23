@@ -78,7 +78,7 @@ import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayou
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
+import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'

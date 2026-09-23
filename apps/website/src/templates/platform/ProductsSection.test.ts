@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -11,7 +10,7 @@ describe('ProductsSection', () => {
 
     const cardLinks = [
       ['platform.products.serverless.title', '/platform/comfy-api'],
-      ['platform.products.models.title', '/platform/models'],
+      ['platform.products.models.title', '/platform/router'],
       ['platform.products.builder.title', '/platform/builder']
     ] as const
     for (const [key, href] of cardLinks) {
@@ -21,10 +20,10 @@ describe('ProductsSection', () => {
     }
   })
 
-  it('marks Models API as coming soon and links to its detail page', () => {
+  it('links Comfy Router to its detail page without a coming-soon badge', () => {
     render(ProductsSection, { props: { locale: 'en' } })
 
-    expect(screen.getByText(t('nav.badgeComingSoon', 'en'))).toBeTruthy()
+    expect(screen.queryByText(t('nav.badgeComingSoon', 'en'))).toBeNull()
     expect(
       screen.getByText(t('platform.products.models.learnMore', 'en'))
     ).toBeTruthy()

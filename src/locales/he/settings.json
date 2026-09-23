@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "שמירה ושחזור של מיקום הקנבס ורמת הזום בתהליכי העבודה"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "הצג מודלים חסרים בלשונית הבעיות",
+    "tooltip": "כאשר אפשרות זו מושבתת, קובצי מודל שלא נמצאו אינם מופיעים בלשונית הבעיות והצמתים שלהם אינם מודגשים."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "שיטת תצוגה מקדימה חיה",
     "options": {
@@ -461,8 +465,13 @@
   "Comfy_Workflow_Persist": {
     "name": "שמירת מצב תהליך העבודה ושחזורו בעת (טעינה מחדש של) הדף"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "הצגת אזהרה על מודלים חסרים"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "הצג מדיה חסרה בלשונית הבעיות",
+    "tooltip": "כאשר אפשרות זו מושבתת, תמונות, סרטונים ושמע לקלט שלא נמצאו אינם מופיעים בלשונית הבעיות והצמתים שלהם אינם מודגשים."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "הצג צמתים חסרים בלשונית הבעיות",
+    "tooltip": "כאשר אפשרות זו מושבתת, חבילות צמתים חסרות אינן מופיעות בלשונית הבעיות והצמתים שלהן אינם מודגשים. עדיין לא ניתן להפעיל את תהליך העבודה עד להתקנתן."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "מיון מזהי הצמתים בעת שמירת תהליך העבודה"

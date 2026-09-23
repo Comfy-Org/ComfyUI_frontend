@@ -1,19 +1,24 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useClipboard } from '@vueuse/core'
+
+import { i18n } from '@/i18n'
 
 const { writeText } = vi.hoisted(() => ({
-  writeText: vi.fn<(value: string) => Promise<void>>(() => Promise.resolve())
+  writeText: vi.fn<ReturnType<typeof useClipboard>['copy']>(() =>
+    Promise.resolve()
+  )
 }))
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  useClipboard: () => ({ copy: writeText })
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
 
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
+import * as crdtDebugReport from './crdtDebugReport'
 import {
   clearDevEvents,
   devEvents,
@@ -54,12 +59,14 @@ const status: AgentCrdtStatus = {
 function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
   localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
   return render(CrdtDevPanel, {
-    props: { status: { ...status, ...overrides } }
+    props: { status: { ...status, ...overrides } },
+    global: { plugins: [i18n] }
   })
 }
 
 describe('CrdtDevPanel clipboard controls', () => {
   beforeEach(() => {
+    vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
     setCrdtDebugEnabled(true)
     clearDevEvents()
     localStorage.clear()
@@ -78,6 +85,40 @@ describe('CrdtDevPanel clipboard controls', () => {
     )
 
     expect(writeText).toHaveBeenCalledExactlyOnceWith('doc-123')
+  })
+
+  it('keeps a report available for manual copy after clipboard failure and retries', async () => {
+    const report = '# Diagnostic report\n\nCollected context'
+    const collectReport = vi
+      .spyOn(crdtDebugReport, 'collectCrdtDebugReport')
+      .mockResolvedValue(report)
+    vi.mocked(useClipboard).mockReturnValue(
+      fromPartial({ copy: vi.fn(() => Promise.resolve()) })
+    )
+    const user = userEvent.setup()
+    const writeReport = vi
+      .spyOn(navigator.clipboard, 'writeText')
+      .mockResolvedValue(undefined)
+      .mockRejectedValueOnce(
+        new DOMException('Clipboard denied', 'NotAllowedError')
+      )
+    renderPanel()
+
+    await user.click(screen.getByRole('button', { name: 'Copy full report' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Clipboard access failed. Select and copy the report below, or retry.'
+    )
+    const manualCopy = screen.getByRole('textbox', { name: 'Report to copy' })
+    expect(manualCopy).toHaveValue(report)
+    expect(manualCopy).toHaveAttribute('readonly')
+
+    await user.click(screen.getByRole('button', { name: 'Retry copy report' }))
+
+    expect(writeReport).toHaveBeenLastCalledWith(report)
+    expect(collectReport).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument()
   })
 
   it('copies each node id surfaced by doc_nodes_changed', async () => {
@@ -102,15 +143,15 @@ describe('CrdtDevPanel clipboard controls', () => {
 
   it('copies the full log detail while displaying a truncated excerpt', async () => {
     const user = userEvent.setup()
-    const detail = { value: 'x'.repeat(220), bytes: new Uint8Array(3) }
-    recordDevEvent('doc_update', detail)
+    // Long enough to truncate, and built from retained structural ids: a
+    // free-form string is summarized by length before it ever reaches the
+    // panel, so it can no longer produce an over-long excerpt.
+    const added = Array.from({ length: 30 }, (_, index) => `node-${index}`)
+    recordDevEvent('doc_update', { added, bytes: new Uint8Array(3) })
     renderPanel()
     await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
 
-    const full = JSON.stringify({
-      value: 'x'.repeat(220),
-      bytes: 'Uint8Array(3)'
-    })
+    const full = JSON.stringify({ added, bytes: 'Uint8Array(3)' })
     expect(screen.getByText(`${full.slice(0, 200)}…`)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Copy log detail' }))

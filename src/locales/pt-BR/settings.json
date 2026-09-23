@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Salvar e restaurar posição e nível de zoom do canvas nos fluxos de trabalho"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "Mostrar modelos ausentes na aba de problemas",
+    "tooltip": "Quando desativado, os arquivos de modelo não encontrados não são listados na aba de problemas e seus nós não são destacados."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "Método de visualização ao vivo",
     "options": {
@@ -461,8 +465,13 @@
   "Comfy_Workflow_Persist": {
     "name": "Persistir estado do fluxo de trabalho e restaurar ao recarregar a página"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Mostrar aviso de modelos ausentes"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Mostrar mídias ausentes na aba de problemas",
+    "tooltip": "Quando desativado, as imagens, os vídeos e os áudios de entrada não encontrados não são listados na aba de problemas e seus nós não são destacados."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "Mostrar nós ausentes na aba de problemas",
+    "tooltip": "Quando desativado, os pacotes de nós ausentes não são listados na aba de problemas e seus nós não são destacados. O fluxo de trabalho ainda não poderá ser executado até que sejam instalados."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Ordenar IDs dos nós ao salvar fluxo de trabalho"

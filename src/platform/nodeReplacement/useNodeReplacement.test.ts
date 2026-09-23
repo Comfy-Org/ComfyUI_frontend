@@ -1,5 +1,4 @@
 import { fromPartial, fromAny } from '@total-typescript/shoehorn'
-import type * as I18nModule from '@/i18n'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -24,16 +23,9 @@ import { widgetId } from '@/types/widgetId'
 import type { UUID } from '@/utils/uuid'
 import type { NodeReplacement } from './types'
 
-vi.mock(import('@/lib/litegraph/src/litegraph'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    LiteGraph: Object.assign({}, actual.LiteGraph, {
-      createNode: vi.fn(),
-      registered_node_types: {}
-    })
-  }
-})
+vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
+LiteGraph.createNode = vi.fn()
+LiteGraph.registered_node_types = {}
 
 vi.mock(import('@/core/graph/nodeShell/nodeShellState'), () => ({
   canTransferReplacementOwnership: vi.fn(() => true),
@@ -57,8 +49,7 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
 
 const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
 
-vi.mock<unknown>(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
+vi.mock<unknown>(import('@/i18n'), () => ({
   st: (_key: string, fallback: string) => fallback,
   t: (key: string, params?: Record<string, unknown>) =>
     params ? `${key}:${JSON.stringify(params)}` : key

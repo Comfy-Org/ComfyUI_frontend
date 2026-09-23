@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 /* eslint-disable testing-library/no-container, testing-library/no-node-access --
  * The scene is a decorative aria-hidden SVG with no accessible roles or text;
  * its structure and animation can only be asserted through the DOM. */
@@ -8,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { prefersReducedMotion } from '../../../composables/useReducedMotion'
 import EnterpriseHeroScene from './EnterpriseHeroScene.vue'
 
-vi.mock('../../../composables/useReducedMotion', () => ({
+vi.mock(import('../../../composables/useReducedMotion'), () => ({
   prefersReducedMotion: vi.fn(() => false)
 }))
 

@@ -1,4 +1,5 @@
 import { markRaw } from 'vue'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
@@ -22,20 +23,6 @@ const mockApp = vi.hoisted(() => ({
 // canvasStore transitively imports the app singleton; stub it so the real
 // ComfyApp module never loads during these unit tests.
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
-
-// Mock the litegraph module
-vi.mock<unknown>(
-  import('@/lib/litegraph/src/litegraph'),
-  async (importOriginal) => {
-    const actual = (await importOriginal()) as Record<string, unknown>
-    return {
-      ...actual,
-      Reroute: class Reroute {
-        constructor() {}
-      }
-    }
-  }
-)
 
 // Real LGraphNode instances so the production isLGraphNode (instanceof) guard runs
 // unmodified — the node accessors filter selectedItems with the real predicate.
@@ -82,20 +69,18 @@ class MockNode implements Positionable {
   }
 }
 
-class MockReroute extends Reroute implements Positionable {
-  // @ts-expect-error - Override for testing
-  override pos: [number, number]
-  size: [number, number]
-
-  constructor(
-    pos: [number, number] = [0, 0],
-    size: [number, number] = [20, 20]
-  ) {
-    // @ts-expect-error - Mock constructor
-    super()
-    this.pos = pos
-    this.size = size
-  }
+function makeReroute(
+  pos: [number, number] = [0, 0],
+  size: [number, number] = [20, 20]
+): Reroute & Positionable {
+  const reroute = fromAny<Reroute & Positionable, unknown>(
+    Object.create(Reroute.prototype)
+  )
+  Object.defineProperties(reroute, {
+    pos: { value: pos, writable: true },
+    size: { value: size, writable: true }
+  })
+  return reroute
 }
 
 describe('useSelectedLiteGraphItems', () => {
@@ -125,7 +110,7 @@ describe('useSelectedLiteGraphItems', () => {
   describe('isIgnoredItem', () => {
     it('should return true for Reroute instances', () => {
       const { isIgnoredItem } = useSelectedLiteGraphItems()
-      const reroute = new MockReroute()
+      const reroute = makeReroute()
       expect(isIgnoredItem(reroute)).toBe(true)
     })
 
@@ -141,7 +126,7 @@ describe('useSelectedLiteGraphItems', () => {
       const { filterSelectableItems } = useSelectedLiteGraphItems()
       const node1 = new MockNode([0, 0])
       const node2 = new MockNode([100, 100])
-      const reroute = new MockReroute([50, 50])
+      const reroute = makeReroute([50, 50])
 
       const items = new Set<Positionable>([node1, node2, reroute])
       const filtered = filterSelectableItems(items)
@@ -154,8 +139,8 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('should return empty set when all items are ignored', () => {
       const { filterSelectableItems } = useSelectedLiteGraphItems()
-      const reroute1 = new MockReroute([0, 0])
-      const reroute2 = new MockReroute([50, 50])
+      const reroute1 = makeReroute([0, 0])
+      const reroute2 = makeReroute([50, 50])
 
       const items = new Set<Positionable>([reroute1, reroute2])
       const filtered = filterSelectableItems(items)
@@ -177,7 +162,7 @@ describe('useSelectedLiteGraphItems', () => {
       const { getSelectableItems } = useSelectedLiteGraphItems()
       const node1 = new MockNode()
       const node2 = new MockNode()
-      const reroute = new MockReroute()
+      const reroute = makeReroute()
 
       mockCanvas.selectedItems.add(node1)
       mockCanvas.selectedItems.add(node2)
@@ -202,7 +187,7 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('hasSelectableItems should be false when only ignored items are selected', () => {
       const { hasSelectableItems } = useSelectedLiteGraphItems()
-      const reroute = new MockReroute()
+      const reroute = makeReroute()
 
       mockCanvas.selectedItems.add(reroute)
       expect(hasSelectableItems()).toBe(false)
@@ -225,8 +210,8 @@ describe('useSelectedLiteGraphItems', () => {
     it('hasMultipleSelectableItems should not count ignored items', () => {
       const { hasMultipleSelectableItems } = useSelectedLiteGraphItems()
       const node = new MockNode()
-      const reroute1 = new MockReroute()
-      const reroute2 = new MockReroute()
+      const reroute1 = makeReroute()
+      const reroute2 = makeReroute()
 
       mockCanvas.selectedItems.add(node)
       mockCanvas.selectedItems.add(reroute1)
@@ -242,7 +227,7 @@ describe('useSelectedLiteGraphItems', () => {
       const { getSelectedNodes } = useSelectedLiteGraphItems()
       const node1 = makeNode(LGraphEventMode.ALWAYS, 1)
       const node2 = makeNode(LGraphEventMode.NEVER, 2)
-      const reroute = new MockReroute()
+      const reroute = makeReroute()
 
       // The non-node (reroute) must be filtered out by isLGraphNode.
       mockCanvas.selectedItems = new Set([node1, reroute, node2])

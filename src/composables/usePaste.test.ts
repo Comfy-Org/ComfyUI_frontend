@@ -1,6 +1,14 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 import type {
@@ -97,10 +105,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock(import('@/utils/litegraphUtil'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  createNode: vi.fn()
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
 vi.mock(
   import('@/workbench/eventHelpers'),
@@ -112,6 +117,7 @@ vi.mock(
 
 describe('pasteImageNode', () => {
   beforeEach(() => {
+    vi.mocked(createNode).mockImplementation(vi.fn())
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
@@ -541,6 +547,35 @@ describe('usePaste', () => {
     })
   })
 
+  it.for([
+    { clipboard: 'node JSON', collaborator: 'pasteFromClipboard' },
+    { clipboard: 'an image', collaborator: 'createNode' }
+  ] as const)(
+    'pasting $clipboard while the canvas is select-only never reaches $collaborator',
+    ({ clipboard, collaborator }) => {
+      mockCanvas.selectOnly = true
+      onTestFinished(() => {
+        mockCanvas.selectOnly = false
+      })
+      const collaborators = {
+        pasteFromClipboard: mockCanvas.pasteFromClipboard,
+        createNode
+      }
+      usePaste()
+      const dataTransfer =
+        clipboard === 'an image'
+          ? createDataTransfer([createImageFile()])
+          : new DataTransfer()
+      if (clipboard === 'node JSON') dataTransfer.setData('text/plain', '{}')
+
+      document.dispatchEvent(
+        new ClipboardEvent('paste', { clipboardData: dataTransfer })
+      )
+
+      expect(collaborators[collaborator]).not.toHaveBeenCalled()
+    }
+  )
+
   it('should ignore paste when shift is down', () => {
     Object.assign(mockWorkspaceStore, { shiftDown: true })
 
@@ -647,15 +682,13 @@ describe('cloneDataTransfer', () => {
     expect(cloned.getData('text/html')).toBe('<p>test html</p>')
   })
 
-  it('should clone files', () => {
+  it('should preserve file identities', () => {
     const file1 = createImageFile('test1.png')
     const file2 = createImageFile('test2.jpg', 'image/jpeg')
     const original = createDataTransfer([file1, file2])
 
     const cloned = cloneDataTransfer(original)
 
-    // Files are added from both .files and .items, causing duplicates
-    expect(cloned.files.length).toBeGreaterThanOrEqual(2)
     expect(Array.from(cloned.files)).toContain(file1)
     expect(Array.from(cloned.files)).toContain(file2)
   })
@@ -688,8 +721,6 @@ describe('cloneDataTransfer', () => {
     const cloned = cloneDataTransfer(original)
 
     expect(cloned.getData('text/plain')).toBe('test')
-    // Files are added from both .files and .items
-    expect(cloned.files.length).toBeGreaterThanOrEqual(1)
     expect(Array.from(cloned.files)).toContain(file)
   })
 })

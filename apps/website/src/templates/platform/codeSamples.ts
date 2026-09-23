@@ -8,6 +8,11 @@ const PROMPTS = [
   'a holographic sticker of a koi fish'
 ]
 const OUTPUTS = ['reef.mp4', 'koi.png']
+const CURL_MODELS = ['byteplus/seedance-1-5-pro-251215', 'openai/gpt-image-2']
+const CURL_INPUTS = [
+  '{"content":[{"type":"text","text":"aerial dolly shot over a neon reef"}],"resolution":"480p","duration":5,"generate_audio":false}',
+  '{"prompt":"a holographic sticker of a koi fish"}'
+]
 
 export const modelsApiCodeTabs: Record<string, CodeTab> = {
   python: {
@@ -34,16 +39,16 @@ export const modelsApiCodeTabs: Record<string, CodeTab> = {
       "')"
     ]
   },
-  // Models API run route — POST /v1/models/{provider}/{model}: native JSON in, native JSON out
+  // Models API run route — POST /v2/models/{provider}/{model}: native JSON in, native JSON out
   // (services/comfy-api/docs/router-quickstart.mdx in Comfy-Org/cloud).
   curl: {
     name: 'cURL',
     segments: [
-      'curl -X POST https://api.comfy.org/v1/models/',
-      { values: MODELS, highlight: true },
-      ' \\\n  -H "X-API-Key: $COMFY_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"prompt": "',
-      { values: PROMPTS },
-      '"}\''
+      'curl -X POST https://api.comfy.org/v2/models/',
+      { values: CURL_MODELS, highlight: true },
+      ' \\\n  -H "X-API-Key: $COMFY_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'',
+      { values: CURL_INPUTS },
+      "'"
     ]
   },
   cli: {

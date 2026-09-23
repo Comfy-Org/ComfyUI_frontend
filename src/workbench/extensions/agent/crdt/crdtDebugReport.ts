@@ -23,6 +23,11 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/stores/extensionStore'
 
+import type {
+  AssistantMessage,
+  ToolPart
+} from '../services/agent/agentMessageParts'
+
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
 import { devEventReplacer } from './devPanelLog'
@@ -33,6 +38,8 @@ const MAX_LOG_CHARS = 40_000
 const MAX_WORKFLOW_CHARS = 200_000
 /** The event log and the stamp ledger both grow without bound with session length. */
 const MAX_SECTION_CHARS = 60_000
+const MAX_REPORT_CHARS = 256_000
+const MAX_TOOL_CALLS = 50
 const MAX_REDACTION_DEPTH = 12
 const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
 const SOURCE_TIMEOUT_MS = 5_000
@@ -76,20 +83,6 @@ function redactSecrets(value: unknown, depth = 0): unknown {
   )
 }
 
-/**
- * The sources a tester must opt into.
- *
- * The panel this replaced shipped everything unconditionally. The dialog
- * DELETED in #5259 did not: it listed Workflow, Logs, Settings AND SystemStats
- * as unchecked opt-ins under "what can we include", and restoring the
- * collection without restoring that choice would be a privacy regression
- * dressed as a feature.
- *
- * SystemStats is deliberately NOT gated here: it is the "copy system stats"
- * capability this report exists to provide, and the only privacy-bearing part
- * of it — `argv` — is redacted by {@link redactArgv} instead. Versions, OS and
- * RAM carry nothing a tester would withhold.
- */
 export interface ReportSources {
   serverLogs: boolean
   settings: boolean
@@ -97,16 +90,16 @@ export interface ReportSources {
 }
 
 export const DEFAULT_REPORT_SOURCES: ReportSources = {
-  serverLogs: false,
-  settings: false,
-  workflow: false
+  serverLogs: true,
+  settings: true,
+  workflow: true
 }
 
 /**
  * The IDs a backend engineer needs to find this session in Datadog/logs,
  * without reading the rest of the report. None of these are secrets — they
  * are the join keys support and backend already search by — so this block
- * is included unconditionally, unlike the opt-in {@link ReportSources}.
+ * is included unconditionally, unlike the optional {@link ReportSources}.
  *
  * Collected by the caller (the panel component) rather than read directly in
  * this module, because every value here lives behind a Pinia store or a
@@ -191,6 +184,8 @@ export interface CrdtDebugReportInput {
   mergeTrace?: readonly MergeTraceEntry[]
   /** Serialized active workflow, when the caller can supply one. */
   workflow?: unknown
+  workflowError?: string
+  agentMessages?: readonly AssistantMessage[]
 }
 
 async function attempt<T>(label: string, load: () => Promise<T>) {
@@ -253,7 +248,31 @@ function redactEventPayloads(value: unknown): unknown {
 
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text
-  return `…(${text.length - max} earlier characters trimmed)…\n${text.slice(-max)}`
+  const start = text.length - max
+  const safeStart =
+    text.charCodeAt(start) >= 0xdc00 && text.charCodeAt(start) <= 0xdfff
+      ? start + 1
+      : start
+  return `…(${safeStart} earlier characters trimmed)…\n${text.slice(safeStart)}`
+}
+
+function truncateReport(text: string): string {
+  if (text.length <= MAX_REPORT_CHARS) return text
+
+  const marker = `\n\n[report truncated to ${MAX_REPORT_CHARS} characters]\n\n`
+  const available = MAX_REPORT_CHARS - marker.length
+  const headLength = Math.floor(available * 0.75)
+  const tailStart = text.length - (available - headLength)
+  const safeHeadLength =
+    text.charCodeAt(headLength - 1) >= 0xd800 &&
+    text.charCodeAt(headLength - 1) <= 0xdbff
+      ? headLength - 1
+      : headLength
+  const safeTailStart =
+    text.charCodeAt(tailStart) >= 0xdc00 && text.charCodeAt(tailStart) <= 0xdfff
+      ? tailStart + 1
+      : tailStart
+  return `${text.slice(0, safeHeadLength)}${marker}${text.slice(safeTailStart)}`
 }
 
 type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
@@ -270,9 +289,19 @@ type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
  */
 const PRIVATE_VALUE_PATTERN =
   /(^|=)(\/|~|[A-Za-z]:[\\/]|\\\\|\.{1,2}[\\/])|:\/\//
+const BEARER_VALUE_PATTERN = /^(\s*bearer\s+)\S+\s*$/i
+const SECRET_VALUE_PATTERN =
+  /((?:["']?)(?:token|secret|password|passwd|credential|api[-_]?key|apikey|authorization|auth|bearer|session|cookie|private)(?:["']?)\s*[:=]\s*)(?:bearer\s+)?(?:(['"])(?:\\[\s\S]|(?!\2)[\s\S])*\2|[^\s,;]+)/gi
 
 function redactPrivateValue(value: string): string {
-  return PRIVATE_VALUE_PATTERN.test(value) ? REDACTED : value
+  if (PRIVATE_VALUE_PATTERN.test(value)) return REDACTED
+  return value
+    .replace(BEARER_VALUE_PATTERN, `$1${REDACTED}`)
+    .replace(
+      SECRET_VALUE_PATTERN,
+      (_match, prefix: string, quote: string | undefined) =>
+        `${prefix}${quote ?? ''}${REDACTED}${quote ?? ''}`
+    )
 }
 
 function redactArgv(argv: readonly string[]): string {
@@ -380,6 +409,7 @@ function identifiersSection(identifiers: ReportIdentifiers): string {
 
 function crdtSection(crdt: CrdtDebugSnapshot): string {
   return [
+    `- **Schema version:** ${crdt.meta.schema_version ?? 'unknown'}`,
     `- **Enabled:** ${crdt.status.enabled}`,
     `- **Connected:** ${crdt.status.connected}`,
     `- **Doc id:** ${crdt.status.workflowId ?? 'none'}`,
@@ -387,7 +417,7 @@ function crdtSection(crdt: CrdtDebugSnapshot): string {
     `- **Last frame:** ${crdt.status.lastFrameType ?? 'none'}`,
     `- **Tab id:** ${crdt.tabId ?? 'unknown'}`,
     `- **Last seq:** ${crdt.lastSeq ?? 'none'}`,
-    `- **Schema error:** ${crdt.lastBridgeSchemaError ?? 'none'}`,
+    `- **Schema error:** ${crdt.schemaError ?? 'none'}`,
     `- **Doc nodes (${crdt.nodeIds.length}):** ${crdt.nodeIds.join(', ') || 'none'}`,
     `- **Doc links (${crdt.linkIds.length}):** ${crdt.linkIds.join(', ') || 'none'}`,
     `- **Applied op ids:** ${crdt.appliedOpIds.length}`
@@ -401,6 +431,130 @@ function mergeSection(entries: readonly MergeTraceEntry[]): string {
         `${entry.index + 1}. \`${entry.kind}\` by ${entry.actor} on ${entry.registerLabel} → **${entry.verdict.kind}**\n   ${entry.explanation}`
     )
     .join('\n')
+}
+
+function serializeWorkflow(
+  input: CrdtDebugReportInput
+): { status: string; section?: string } | undefined {
+  const sources = input.sources ?? DEFAULT_REPORT_SOURCES
+  if (!sources.workflow) return { status: 'turned off' }
+  if (input.workflowError !== undefined) {
+    return {
+      status: 'failed (see source section)',
+      section: fence(
+        'text',
+        truncate(String(redactSecrets(input.workflowError)), MAX_SECTION_CHARS)
+      )
+    }
+  }
+  if (input.workflow === undefined) return { status: 'unavailable' }
+
+  let serialized: string
+  try {
+    serialized = JSON.stringify(input.workflow, devEventReplacer(), 2)
+  } catch (error) {
+    return {
+      status: 'failed (see source section)',
+      section: fence(
+        'text',
+        truncate(String(redactSecrets(String(error))), MAX_SECTION_CHARS)
+      )
+    }
+  }
+
+  if (serialized.length > MAX_WORKFLOW_CHARS) {
+    return {
+      status: `omitted (over ${MAX_WORKFLOW_CHARS} characters)`,
+      section: fence(
+        'json',
+        `<workflow omitted: ${serialized.length} characters — attach the .json file instead>`
+      )
+    }
+  }
+  return { status: 'collected', section: fence('json', serialized) }
+}
+
+type RetainedToolCall = Pick<
+  ToolPart,
+  'callId' | 'name' | 'state' | 'ok' | 'durationMs'
+> & {
+  turnId: AssistantMessage['id']
+}
+
+function fitToolCalls(calls: readonly RetainedToolCall[], context: string) {
+  let start = 0
+  let body = json(redactSecrets(calls))
+  let section = [context, fence('json', body)].join('\n\n')
+  while (section.length > MAX_SECTION_CHARS) {
+    start++
+    body = json(redactSecrets(calls.slice(start)))
+    section = [context, fence('json', body)].join('\n\n')
+  }
+  return { section, retained: calls.length - start }
+}
+
+function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
+  const calls: RetainedToolCall[] = []
+  let total = 0
+  for (const message of [...messages].reverse()) {
+    for (const part of [...message.parts].reverse()) {
+      if (part.type !== 'tool') continue
+      total++
+      if (calls.length === MAX_TOOL_CALLS) continue
+      calls.push({
+        turnId: message.id,
+        callId: part.callId,
+        name: part.name,
+        state: part.state,
+        ok: part.ok,
+        durationMs: part.durationMs
+      })
+    }
+  }
+  return { calls: calls.reverse(), total }
+}
+
+function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
+  const context =
+    'Current conversation metadata retained in this tab only. Restored history may omit tool calls. Durations are backend-reported; missing ok or durationMs means no outcome or timing was observed. State is the retained UI state, not proof a request is still running. No arguments, responses, prompts or reasoning are included.'
+  if (messages === undefined) {
+    return { section: context, status: 'unavailable' }
+  }
+
+  const { calls, total } = collectAgentToolCalls(messages)
+  const fitted = fitToolCalls(calls, context)
+  return {
+    section: fitted.section,
+    status:
+      total === 0
+        ? 'no retained calls'
+        : `${total > fitted.retained ? 'truncated' : 'collected'} (${fitted.retained}/${total} retained calls)`
+  }
+}
+
+function formatSource<T>(
+  result: Awaited<ReturnType<typeof attempt<T>>> | null,
+  warning: string,
+  renderValue: (value: T) => string
+): { section: string; status: string } {
+  if (result === null) {
+    return {
+      section: '_Not included. Turned off by the tester._',
+      status: 'turned off'
+    }
+  }
+  if (!result.ok) {
+    return {
+      section: [warning, `_${result.label} unavailable: ${result.error}_`].join(
+        '\n\n'
+      ),
+      status: 'failed (see source section)'
+    }
+  }
+  return {
+    section: [warning, renderValue(result.value)].join('\n\n'),
+    status: 'collected'
+  }
 }
 
 /**
@@ -423,18 +577,50 @@ export async function collectCrdtDebugReport(
   })()
 
   const sources = input.sources ?? DEFAULT_REPORT_SOURCES
+  const agentTools = agentToolSection(input.agentMessages)
   const [stats, logs, settings] = await Promise.all([
     attempt('System stats', () => api.getSystemStats()),
     sources.serverLogs ? attempt('Server logs', () => api.getLogs()) : null,
     sources.settings ? attempt('Settings', () => api.getSettings()) : null
   ])
+  const systemReport = formatSource(
+    stats,
+    `${SHARING_WARNING} System details can identify your hardware, software versions and launch configuration.`,
+    systemSection
+  )
+  const logsReport = formatSource(
+    logs,
+    `${SHARING_WARNING} Backend logs can echo prompts, file paths and tokens.`,
+    (value) => fence('text', truncate(value, MAX_LOG_CHARS))
+  )
+  const settingsReport = formatSource(
+    settings,
+    `${SHARING_WARNING} Values under keys that look like credentials are replaced with \`${REDACTED}\`, at every depth — but a custom node may name a secret anything.`,
+    (value) =>
+      fence('json', truncate(json(redactSecrets(value)), MAX_SECTION_CHARS))
+  )
+  const workflow = serializeWorkflow(input)
+  const collectionStatus = (
+    [
+      ['System stats', systemReport],
+      ['Server logs', logsReport],
+      ['Settings', settingsReport],
+      ['Agent tool calls', agentTools]
+    ] as const
+  ).map(([label, result]) => `- ${label}: ${result.status}`)
 
   const sections: string[] = [
     '# ComfyUI Agent — CRDT debug report',
     `Generated ${new Date().toISOString()}`,
+    `Report format version: 1 · Document schema version: ${input.crdt.meta.schema_version ?? 'unknown'} · Redaction marker: ${REDACTED}`,
     '## Identifiers',
     'Paste this block into a bug report or search Datadog/logs by any of these fields.',
-    identifiersSection(input.identifiers ?? EMPTY_REPORT_IDENTIFIERS)
+    identifiersSection(input.identifiers ?? EMPTY_REPORT_IDENTIFIERS),
+    '## Collection status',
+    [
+      ...collectionStatus,
+      `- Workflow: ${workflow?.status ?? 'unavailable'}`
+    ].join('\n')
   ]
 
   if (input.testerNote?.trim()) {
@@ -446,6 +632,8 @@ export async function collectCrdtDebugReport(
   }
 
   sections.push('## CRDT state', crdtSection(input.crdt))
+
+  sections.push('## Agent tool calls', agentTools.section)
 
   if (input.mergeTrace?.length) {
     sections.push('## Merge trace', mergeSection(input.mergeTrace))
@@ -464,17 +652,11 @@ export async function collectCrdtDebugReport(
     ].join('\n')
   )
 
-  sections.push(
-    '## System',
-    `${SHARING_WARNING} System details can identify your hardware, software versions and launch configuration.`,
-    stats.ok
-      ? systemSection(stats.value)
-      : `_${stats.label} unavailable: ${stats.error}_`
-  )
+  sections.push('## System', systemReport.section)
 
   sections.push(
     '## CRDT event log',
-    `${SHARING_WARNING} Operation payload values are redacted; op ids and workflow ids appear verbatim.`,
+    `${SHARING_WARNING} Operation payload values appear as \`${REDACTED}\`; op ids and workflow ids appear verbatim.`,
     fence(
       'json',
       truncate(json(redactEventPayloads(input.events)), MAX_SECTION_CHARS)
@@ -487,46 +669,17 @@ export async function collectCrdtDebugReport(
     fence('json', truncate(json(input.crdt.stamps), MAX_SECTION_CHARS))
   )
 
-  if (sources.workflow && input.workflow !== undefined) {
-    const serialized = json(input.workflow)
+  if (workflow?.section !== undefined) {
     sections.push(
       '## Workflow',
       `${SHARING_WARNING} Prompts and API keys embedded in nodes appear verbatim.`,
-      fence(
-        'json',
-        serialized.length > MAX_WORKFLOW_CHARS
-          ? `<workflow omitted: ${serialized.length} characters — attach the .json file instead>`
-          : serialized
-      )
+      workflow.section
     )
   }
 
-  sections.push(
-    '## Settings',
-    settings === null
-      ? `_Not included. The tester did not opt in to sharing settings._`
-      : [
-          `${SHARING_WARNING} Values under keys that look like credentials are replaced with \`${REDACTED}\`, at every depth — but a custom node may name a secret anything.`,
-          settings.ok
-            ? fence(
-                'json',
-                truncate(json(redactSecrets(settings.value)), MAX_SECTION_CHARS)
-              )
-            : `_${settings.label} unavailable: ${settings.error}_`
-        ].join('\n\n')
-  )
+  sections.push('## Settings', settingsReport.section)
 
-  sections.push(
-    '## Server logs',
-    logs === null
-      ? `_Not included. The tester did not opt in to sharing server logs._`
-      : [
-          `${SHARING_WARNING} Backend logs can echo prompts, file paths and tokens.`,
-          logs.ok
-            ? fence('text', truncate(logs.value, MAX_LOG_CHARS))
-            : `_${logs.label} unavailable: ${logs.error}_`
-        ].join('\n\n')
-  )
+  sections.push('## Server logs', logsReport.section)
 
-  return sections.join('\n\n')
+  return truncateReport(sections.join('\n\n'))
 }

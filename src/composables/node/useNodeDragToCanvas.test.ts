@@ -31,8 +31,6 @@ const {
   }
 })
 
-let mockToastAdd: ReturnType<typeof useToastStore>['add']
-
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: vi.fn(() => ({
     addNodeOnGraph: mockAddNodeOnGraph
@@ -49,7 +47,6 @@ describe('useNodeDragToCanvas', () => {
 
   beforeEach(() => {
     useCanvasStore().canvas = fromPartial<LGraphCanvas>(mockCanvas)
-    mockToastAdd = useToastStore().add
   })
 
   afterEach(() => {
@@ -305,7 +302,7 @@ describe('useNodeDragToCanvas', () => {
       )
 
       expect(mockSelectItems).toHaveBeenCalledWith([placedNode])
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'warn',
           detail: 'assetBrowser.failedToSetModelValue'
@@ -338,7 +335,7 @@ describe('useNodeDragToCanvas', () => {
         })
       )
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',
           detail: 'assetBrowser.failedToCreateNode'

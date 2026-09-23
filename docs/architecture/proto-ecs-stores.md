@@ -87,6 +87,10 @@ Each `WidgetEntity` groups three plain-data components:
 | `serialize` | `boolean?`       | Whether to include in workflow JSON        |
 | `options`   | `IWidgetOptions` | Configuration                              |
 
+Widget options declare per-surface visibility through `surfaces`. The
+`canvasOnly` and `hideInPanel` options remain legacy compatibility facades over
+the `WidgetVisibilityComponent`.
+
 ### Two-Phase Delegation
 
 **Phase 1 — Construction:** Widget creates a local `_state` object with initial values.
