@@ -29,7 +29,7 @@ function entry(overrides: Partial<BrowseEntry> = {}): BrowseEntry {
       maker: { label: 'BFL', logo: undefined },
       mark: { label: 'BFL', logo: undefined },
       badges: [],
-      needsCustomNodes: false,
+      reach: undefined,
       ...overrides.card
     }
   }

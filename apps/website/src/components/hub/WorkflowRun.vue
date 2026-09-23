@@ -21,6 +21,7 @@ const {
   graphUrl: string
   cloudUrl: string
   runsHere: boolean
+  description: string | undefined
   tutorialUrl: string | undefined
   samples: readonly string[]
   models: readonly { name: string; model: WorkshopModel | undefined }[]

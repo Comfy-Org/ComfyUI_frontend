@@ -58,23 +58,21 @@ const workflowEntry = (
   ...overrides
 })
 
-const noNodes = new Set<string>()
-
 describe('cardViewFor', () => {
   it('opens a model at its group page rather than at one of its operations', () => {
-    const view = cardViewFor(modelEntry(), noNodes)
+    const view = cardViewFor(modelEntry())
 
     expect(view).toMatchObject({
       kind: 'model',
       href: '/hub/model/bfl--flux/',
       title: 'Flux',
-      needsCustomNodes: false
+      reach: undefined
     })
     expect(view.maker.label).toBe('BFL')
   })
 
   it('opens a workflow at the workflow page, never at the model behind it', () => {
-    const view = cardViewFor(workflowEntry(), noNodes)
+    const view = cardViewFor(workflowEntry())
 
     expect(view).toMatchObject({
       kind: 'workflow',
@@ -84,37 +82,27 @@ describe('cardViewFor', () => {
     expect(view.hoverMedia).toBe('second.png')
   })
 
-  it('marks a workflow that needs custom nodes installed', () => {
-    expect(
-      cardViewFor(workflowEntry(), new Set(['poster'])).needsCustomNodes
-    ).toBe(true)
-  })
-
   it('carries an app through to the card as the workflow it is', () => {
     expect(
-      cardViewFor(
-        workflowEntry({ template: template({ isApp: true }) }),
-        noNodes
-      ).kind
+      cardViewFor(workflowEntry({ template: template({ isApp: true }) })).kind
     ).toBe('workflow')
   })
 
   // Once the title names the job, who answers for it is what tells one card
   // from the next, so it rides over the artwork rather than in the title.
   it('marks a workflow with the model it runs on', () => {
-    expect(
-      cardViewFor(workflowEntry({ runsOn: model() }), noNodes).mark.label
-    ).toBe('Flux')
+    expect(cardViewFor(workflowEntry({ runsOn: model() })).mark.label).toBe(
+      'Flux'
+    )
   })
 
   it('marks a model with its provider', () => {
-    expect(cardViewFor(modelEntry(), noNodes).mark.label).toBe('BFL')
+    expect(cardViewFor(modelEntry()).mark.label).toBe('BFL')
   })
 
   it('shows no media for a workflow with no thumbnail', () => {
     const view = cardViewFor(
-      workflowEntry({ template: template({ thumbnails: [] }) }),
-      noNodes
+      workflowEntry({ template: template({ thumbnails: [] }) })
     )
 
     expect(view.media).toBeUndefined()

@@ -2,14 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import {
-  customNodeNames,
-  customNodeNamesFrom,
   facetedTemplates,
   priceBySlug,
   pricedOperations,
   relatedCardViews
 } from './page-data'
-import type { HubTemplate, HubTemplateDetails } from './types'
+import type { HubTemplate } from './types'
 
 function model(overrides: Partial<WorkshopModel> = {}): WorkshopModel {
   return {
@@ -42,33 +40,9 @@ function template(overrides: Partial<HubTemplate> = {}): HubTemplate {
   }
 }
 
-const details = (value: object) => value as HubTemplateDetails
-
-describe('customNodeNames', () => {
-  it('names only the workflows whose registry entry asks for an install', () => {
-    expect(
-      customNodeNames(
-        details({
-          poster: { requiresCustomNodes: ['comfyui-impact-pack'] },
-          plain: { requiresCustomNodes: [] },
-          bare: {}
-        })
-      )
-    ).toEqual(new Set(['poster']))
-  })
-})
-
 describe('relatedCardViews', () => {
-  // The strip on a detail page draws the same cards as the grid, so a
-  // requirement the grid warns about cannot go quiet here.
-  it('carries the custom-node mark onto a related card', () => {
-    const [view] = relatedCardViews([template()], [], new Set(['poster']))
-
-    expect(view.needsCustomNodes).toBe(true)
-  })
-
   it('reads an app as the workflow it is', () => {
-    const [view] = relatedCardViews([template({ isApp: true })], [], new Set())
+    const [view] = relatedCardViews([template({ isApp: true })], [])
 
     expect(view.kind).toBe('workflow')
     expect(view.href).toBe('/hub/workflow/poster/')
@@ -88,15 +62,6 @@ describe('facetedTemplates', () => {
 
   it('refuses a registry that does not match the schema', () => {
     expect(() => facetedTemplates([{ name: 'broken' }], [])).toThrow()
-  })
-})
-
-describe('customNodeNamesFrom', () => {
-  it('validates the details before reading them', () => {
-    expect(
-      customNodeNamesFrom({ poster: { requiresCustomNodes: ['pack'] } })
-    ).toEqual(new Set(['poster']))
-    expect(() => customNodeNamesFrom({ poster: { size: 'big' } })).toThrow()
   })
 })
 

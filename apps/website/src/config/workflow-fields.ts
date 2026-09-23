@@ -25,6 +25,9 @@ const TEMPLATE_REVISION = '90c71fb78b3726392d010ff62a8e79e92d7296ad'
 export const templateAsset = (folder: string, file: string) =>
   `https://raw.githubusercontent.com/Comfy-Org/workflow_templates/${TEMPLATE_REVISION}/${folder}/${file}`
 
+/** What Cloud takes in one request, which is more than a model call takes. */
+export const WORKFLOW_MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+
 const FIELDS: Record<string, readonly WorkflowField[]> = {
   video_ltx2_3_i2v: [
     { node: '269', input: 'image', label: 'Starting image', kind: 'image' },

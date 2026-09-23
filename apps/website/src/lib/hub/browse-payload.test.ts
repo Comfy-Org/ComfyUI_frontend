@@ -39,9 +39,8 @@ function template(overrides: Partial<FacetedTemplate> = {}): FacetedTemplate {
 
 const build = (
   templates: readonly FacetedTemplate[],
-  models: readonly WorkshopModel[],
-  customNodes: readonly string[] = []
-) => browseEntries(templates, models, new Set(customNodes))
+  models: readonly WorkshopModel[]
+) => browseEntries(templates, models)
 
 const titles = (entries: readonly BrowseEntry[]) =>
   entries.map((entry) => entry.title)
@@ -66,14 +65,27 @@ describe('browseEntries', () => {
     })
   })
 
-  it('carries the custom nodes mark onto the card', () => {
+  // A workflow the shared Cloud endpoint cannot run is the one thing a card
+  // has to say, and it is read off the packs the graph names rather than
+  // handed in, so a card cannot disagree with the page behind it.
+  it('marks a workflow the shared endpoint cannot run', () => {
     const [entry] = build(
-      [template({ name: 'needy', title: 'Needs nodes', tags: ['Image'] })],
-      [],
-      ['needy']
+      [
+        template({
+          name: 'template_ltx2_3_obscura_remova_lora_remove_object_from_video',
+          title: 'Remove an object'
+        })
+      ],
+      []
     )
 
-    expect(entry.card.needsCustomNodes).toBe(true)
+    expect(entry.card.reach).toBe('endpoint')
+  })
+
+  it('leaves an ordinary Cloud workflow unmarked beyond where it runs', () => {
+    const [entry] = build([template()], [])
+
+    expect(entry.card.reach).toBe('cloud')
   })
 })
 

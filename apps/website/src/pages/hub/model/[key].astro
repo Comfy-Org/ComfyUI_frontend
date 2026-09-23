@@ -8,13 +8,8 @@ import { useCaseLabelKey } from '../../../lib/workshop/use-case-label'
 import { workshopModels } from '../../../config/workshop-browse-content'
 import { estimateWorkshopNodePrice } from '../../../config/workshop-node-pricing'
 import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
-import hubTemplateDetails from '../../../data/hubTemplateDetails.json'
 import { getModelGroupPage, listModelGroups } from '../../../lib/hub/model-page'
-import {
-  customNodeNamesFrom,
-  pricedOperations,
-  relatedCardViews
-} from '../../../lib/hub/page-data'
+import { pricedOperations, relatedCardViews } from '../../../lib/hub/page-data'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 
@@ -48,13 +43,8 @@ const runnable = operationRows.flatMap((row) => {
     : []
 })
 
-const needsCustomNodes = customNodeNamesFrom(hubTemplateDetails)
 const madeWith = [...operationsFromWorkflows, ...uses]
-const madeWithViews = relatedCardViews(
-  madeWith.slice(0, 8),
-  workshopModels,
-  needsCustomNodes
-)
+const madeWithViews = relatedCardViews(madeWith.slice(0, 8), workshopModels)
 
 const price = runnable.find((operation) => operation.price)?.price
 

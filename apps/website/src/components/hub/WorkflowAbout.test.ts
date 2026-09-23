@@ -7,6 +7,7 @@ const props = {
   graphUrl: 'https://example.test/graph.json',
   cloudUrl: 'https://cloud.test/?template=x',
   runsHere: true,
+  description: 'Turns a photo into a poster.',
   tutorialUrl: undefined,
   samples: [],
   models: [{ name: 'Nano Banana 2', model: undefined }],

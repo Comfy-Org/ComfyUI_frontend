@@ -11,6 +11,7 @@ const {
   graphUrl,
   cloudUrl,
   runsHere,
+  description,
   tutorialUrl,
   models,
   samples,
@@ -24,6 +25,8 @@ const {
   graphUrl: string
   cloudUrl: string
   runsHere: boolean
+  /** What the workflow does, in the template author's own words. */
+  description: string | undefined
   tutorialUrl: string | undefined
   /** The template's own pictures, hung in the nodes that hold them. */
   samples: readonly string[]
@@ -47,10 +50,10 @@ const sectionTitle =
       <section data-testid="workflow-graph-section">
         <div class="mb-4">
           <h2 :class="sectionTitle">
-            {{ t('workshop.v2.workflow.graph', locale) }}
+            {{ t('workshop.v2.workflow.about', locale) }}
           </h2>
-          <p class="mt-2 text-sm text-content-muted">
-            {{ t('workshop.v2.workflow.graphNote', locale) }}
+          <p class="mt-2 text-sm/relaxed text-content-muted">
+            {{ description ?? t('workshop.v2.workflow.graphNote', locale) }}
           </p>
         </div>
         <WorkflowGraph :source="graphUrl" :samples :locale />

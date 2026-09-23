@@ -21,14 +21,13 @@ function modelEntry(
     tags: model.capabilities,
     standing: model.recommendedRank ?? Number.POSITIVE_INFINITY,
     date: undefined,
-    card: cardViewFor(entry, new Set(), models)
+    card: cardViewFor(entry, models)
   }
 }
 
 function workflowEntry(
   entry: Extract<CatalogueEntry, { kind: 'workflow' }>,
-  models: readonly WorkshopModel[],
-  needsCustomNodes: ReadonlySet<string>
+  models: readonly WorkshopModel[]
 ): BrowseEntry {
   const { template } = entry
   return {
@@ -44,18 +43,17 @@ function workflowEntry(
     tags: template.tags,
     standing: template.usage,
     date: template.date,
-    card: cardViewFor(entry, needsCustomNodes, models)
+    card: cardViewFor(entry, models)
   }
 }
 
 export function browseEntries(
   templates: readonly FacetedTemplate[],
-  models: readonly WorkshopModel[],
-  needsCustomNodes: ReadonlySet<string>
+  models: readonly WorkshopModel[]
 ): BrowseEntry[] {
   return buildCatalogue(templates, models).map((entry) =>
     entry.kind === 'model'
       ? modelEntry(entry, models)
-      : workflowEntry(entry, models, needsCustomNodes)
+      : workflowEntry(entry, models)
   )
 }

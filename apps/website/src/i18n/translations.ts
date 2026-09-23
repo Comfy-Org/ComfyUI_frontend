@@ -10652,9 +10652,9 @@ Enterprise`
     'zh-CN': '运行于 {model}'
   },
   'workshop.v2.kind.workflow': { en: 'Workflow', 'zh-CN': '工作流' },
-  'workshop.v2.card.customNodes': {
-    en: 'Custom nodes',
-    'zh-CN': '自定义节点'
+  'workshop.v2.card.ownEndpoint': {
+    en: 'Own endpoint',
+    'zh-CN': '需自建端点'
   },
   'workshop.v2.sort.label': { en: 'Sort', 'zh-CN': '排序' },
   'workshop.v2.sort.popular': { en: 'Most popular', 'zh-CN': '推荐' },
@@ -10725,6 +10725,10 @@ Enterprise`
     'zh-CN': '开放权重'
   },
   'workshop.v2.workflow.graph': { en: 'The graph', 'zh-CN': '节点图' },
+  'workshop.v2.workflow.about': {
+    en: 'About this workflow',
+    'zh-CN': '关于此工作流'
+  },
   'workshop.v2.workflow.graphNote': {
     en: 'See what it does before you open it in ComfyUI or download it.',
     'zh-CN': '在用 ComfyUI 打开或下载之前，先看看它做什么。'

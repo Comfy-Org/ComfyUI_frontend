@@ -5,8 +5,8 @@ import { cardViewFor } from './catalogue-card'
 import type { FacetedTemplate } from './facet-fields'
 import { withFacetFields } from './facet-fields'
 import { partnerModelFor } from './template-use-case'
-import type { HubTemplate, HubTemplateDetails } from './types'
-import { hubTemplateDetailsSchema, hubTemplatesSchema } from './types'
+import type { HubTemplate } from './types'
+import { hubTemplatesSchema } from './types'
 import { taskLabelFor } from '../workshop/task-label'
 
 /** What one operation costs to run, as the Router prices it. */
@@ -29,31 +29,10 @@ export function facetedTemplates(
     .map((template) => withFacetFields(template, models))
 }
 
-/** Workflows whose registry entry names at least one custom node. */
-export function customNodeNamesFrom(raw: unknown): ReadonlySet<string> {
-  return customNodeNames(hubTemplateDetailsSchema.parse(raw))
-}
-
-/** Workflows whose registry entry names at least one custom node. */
-export function customNodeNames(
-  details: HubTemplateDetails
-): ReadonlySet<string> {
-  return new Set(
-    Object.entries(details)
-      .filter(([, detail]) => (detail.requiresCustomNodes?.length ?? 0) > 0)
-      .map(([name]) => name)
-  )
-}
-
-/**
- * A detail page's related strip draws the same cards as the grid, so it reads
- * the same requirements: a card that hides its custom nodes here would promise
- * an install the grid warned about.
- */
+/** A detail page's related strip draws the same cards as the grid. */
 export function relatedCardViews(
   templates: readonly HubTemplate[],
-  models: readonly WorkshopModel[],
-  needsCustomNodes: ReadonlySet<string>
+  models: readonly WorkshopModel[]
 ): readonly CardView[] {
   return templates.map((template) =>
     cardViewFor(
@@ -63,7 +42,6 @@ export function relatedCardViews(
         template: withFacetFields(template, models),
         runsOn: partnerModelFor(template, models)
       },
-      needsCustomNodes,
       models
     )
   )

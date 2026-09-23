@@ -6,6 +6,8 @@ import { hubWorkflowPath, modelGroupPath } from './catalogue-entries'
 import { displayModelName } from './model-identity'
 import { getLogoPath } from './model-logos'
 import { usefulTags } from './tag-aliases'
+import type { WorkflowReach } from './workflow-reach'
+import { workflowReach } from './workflow-reach'
 import { workflowDisplayTitle } from './workflow-title'
 
 interface CardMedia {
@@ -33,7 +35,12 @@ export interface CardView {
   readonly mark: { readonly label: string; readonly logo: string | undefined }
   /** What it can do, in the words the catalogue filters by. */
   readonly badges: readonly string[]
-  readonly needsCustomNodes: boolean
+  /**
+   * How far a workflow can be taken as it stands. The shared Cloud endpoint is
+   * the ordinary case and says nothing; the other two are what change what a
+   * reader or a developer can do next, so only they are marked.
+   */
+  readonly reach: WorkflowReach | undefined
 }
 
 /** A model is known by its maker's mark, wherever the model is named. */
@@ -60,13 +67,12 @@ function modelCard(
     maker: { label: provider, logo },
     mark: { label: provider, logo },
     badges: [taskLabelFor(model, locale), ...model.capabilities],
-    needsCustomNodes: false
+    reach: undefined
   }
 }
 
 function workflowCard(
   entry: Extract<CatalogueEntry, { kind: 'workflow' }>,
-  needsCustomNodes: ReadonlySet<string>,
   models: readonly WorkshopModel[]
 ): CardView {
   const { template, runsOn } = entry
@@ -82,23 +88,26 @@ function workflowCard(
     hoverMedia: template.thumbnails[1],
     maker: { label: template.username || 'ComfyUI', logo: undefined },
     // The registry names a row for its operation, so `Seedream 5.0 Lite
-    // Text-to-Image` is the model plus a verb the card has already said.
+    // Text-to-Image` is the model plus a verb the card has already said. Most
+    // of the launch list runs on models this catalogue does not carry, so the
+    // graph's own word for what it calls stands when nothing else does.
     mark: {
-      label: runsOn ? displayModelName(runsOn, [...models, runsOn]) : '',
+      label: runsOn
+        ? displayModelName(runsOn, [...models, runsOn])
+        : (template.models[0] ?? ''),
       logo: runsOn ? markFor(runsOn) : undefined
     },
     badges: usefulTags(template.tags),
-    needsCustomNodes: needsCustomNodes.has(template.name)
+    reach: workflowReach(template.name, false)
   }
 }
 
 export function cardViewFor(
   entry: CatalogueEntry,
-  needsCustomNodes: ReadonlySet<string>,
   models: readonly WorkshopModel[] = [],
   locale: Locale = 'en'
 ): CardView {
   return entry.kind === 'model'
     ? modelCard(entry, locale)
-    : workflowCard(entry, needsCustomNodes, models)
+    : workflowCard(entry, models)
 }

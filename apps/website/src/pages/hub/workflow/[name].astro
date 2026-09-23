@@ -16,12 +16,7 @@ import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-co
 import { workflowFields } from '../../../config/workflow-fields'
 import { workflowGraphSchema } from '../../../config/workflow-execution'
 
-import hubTemplateDetails from '../../../data/hubTemplateDetails.json'
-import {
-  customNodeNamesFrom,
-  pricedOperations,
-  relatedCardViews
-} from '../../../lib/hub/page-data'
+import { pricedOperations, relatedCardViews } from '../../../lib/hub/page-data'
 import { tagDisplayName, usefulTags } from '../../../lib/hub/tag-aliases'
 import {
   getHubWorkflowPage,
@@ -97,11 +92,7 @@ const cloudUrl = `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(temp
 // A page that runs a model has to say what a run costs, on either page.
 const price = operations.find((operation) => operation.price)?.price
 
-const relatedViews = relatedCardViews(
-  related.slice(0, 4),
-  workshopModels,
-  customNodeNamesFrom(hubTemplateDetails)
-)
+const relatedViews = relatedCardViews(related.slice(0, 4), workshopModels)
 
 const tags = usefulTags(template.tags).map((tag) => ({
   label: tagDisplayName(tag),
@@ -139,7 +130,6 @@ const sectionTitle =
       useCase={useCase ? t(useCaseLabelKey[useCase]) : undefined}
       useCaseHref={useCase ? `/hub/${catalogSearch({ useCase })}` : undefined}
       title={title}
-      summary={details.description}
       price={price}
       tags={tags}
       client:load
@@ -152,6 +142,7 @@ const sectionTitle =
           graphUrl={page.downloadUrl}
           cloudUrl={cloudUrl}
           runsHere={operations.length > 0}
+          description={details.description}
           tutorialUrl={details.tutorialUrl}
           samples={template.thumbnails}
           models={runsOn}
@@ -191,6 +182,7 @@ const sectionTitle =
           graphUrl={page.downloadUrl}
           cloudUrl={cloudUrl}
           runsHere={false}
+          description={details.description}
           tutorialUrl={details.tutorialUrl}
           samples={template.thumbnails}
           models={runsOn}

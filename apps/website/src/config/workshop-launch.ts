@@ -11,6 +11,11 @@ interface LaunchWorkflow {
   /** The registry template this outcome is served by. */
   readonly template: string
   readonly outcome: string
+  /**
+   * Whether the spec says this one needs a server of its own rather than the
+   * shared Cloud endpoint, whatever its nodes suggest.
+   */
+  readonly ownEndpoint?: true
 }
 
 export interface LaunchCategory {
@@ -41,7 +46,8 @@ export const LAUNCH_CATEGORIES: readonly LaunchCategory[] = [
       {
         template:
           'template_ltx2_3_obscura_remova_lora_remove_object_from_video',
-        outcome: 'Remove an object from a video'
+        outcome: 'Remove an object from a video',
+        ownEndpoint: true
       },
       {
         template: 'template_ltx2_3_lora_video_outpainting',
@@ -177,6 +183,11 @@ export function launchesHere(templateName: string): boolean {
 /** The name the spec gives the job, which is what a card says. */
 export function launchOutcome(templateName: string): string | undefined {
   return BY_TEMPLATE.get(templateName)?.outcome
+}
+
+/** Whether the spec says this one is deployed rather than shared. */
+export function needsOwnEndpoint(templateName: string): boolean {
+  return BY_TEMPLATE.get(templateName)?.ownEndpoint === true
 }
 
 /** The shelf the spec files it under, which is how the workflows half is read. */

@@ -1,10 +1,9 @@
 ---
 import CatalogueBrowse from '../../components/hub/CatalogueBrowse.vue'
 import { workshopModels } from '../../config/workshop-browse-content'
-import hubTemplateDetails from '../../data/hubTemplateDetails.json'
 import hubTemplates from '../../data/hubTemplates.json'
 import { browseEntries } from '../../lib/hub/browse-payload'
-import { customNodeNamesFrom, facetedTemplates } from '../../lib/hub/page-data'
+import { facetedTemplates } from '../../lib/hub/page-data'
 import { launchesHere } from '../../config/workshop-launch'
 import { t } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
@@ -22,8 +21,7 @@ const entries = browseEntries(
   facetedTemplates(hubTemplates, workshopModels).filter((template) =>
     launchesHere(template.name)
   ),
-  workshopModels,
-  customNodeNamesFrom(hubTemplateDetails)
+  workshopModels
 )
 ---
 

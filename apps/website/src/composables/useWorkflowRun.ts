@@ -2,6 +2,7 @@ import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import type { WorkflowField } from '../config/workflow-fields'
 import { templateAsset } from '../config/workflow-fields'
+import type { FileValue } from '../config/workshop-playground'
 import type { WorkflowGraph, WorkflowJob } from '../config/workflow-execution'
 import {
   WorkflowHttpError,
@@ -26,6 +27,28 @@ type RunState =
  * bindings rather than a catalogue entry, so the page that owns the workflow
  * keeps owning its name, its shelf and everything else about it.
  */
+const carriesAFile = (field: WorkflowField) =>
+  ['image', 'video', 'audio'].includes(field.kind)
+
+/**
+ * What went wrong, and whether pressing Run again is safe. It is safe only
+ * when the work never left this page: once a job may exist, starting a second
+ * one spends a second run to find out.
+ */
+function failed(error: unknown, jobId: string | undefined, sent: boolean) {
+  const stillHere =
+    !sent || (error instanceof WorkflowHttpError && error.retrySafe)
+  return {
+    phase: 'error',
+    message:
+      error instanceof Error
+        ? error.message
+        : 'Could not reach Cloud. Check your Cloud job history before submitting again.',
+    jobId,
+    retrySafe: !jobId && stillHere
+  } as const
+}
+
 export function useWorkflowRun(
   fields: readonly WorkflowField[],
   graph: WorkflowGraph
@@ -43,8 +66,26 @@ export function useWorkflowRun(
       ])
     )
   )
-  const files = new Map<string, File>()
-  const previews = ref<Record<string, string>>({})
+  // Every file field starts holding the example the template ships with, so
+  // the form is complete the moment it opens and Run means something.
+  const files = ref<Record<string, FileValue | undefined>>(
+    Object.fromEntries(
+      fields.filter(carriesAFile).map((field) => {
+        const name = String(graph[field.node].inputs[field.input])
+        const url = templateAsset('input', name)
+        return [
+          `${field.node}.${field.input}`,
+          {
+            name,
+            size: 0,
+            type: `${field.kind}/*`,
+            previewUrl: url,
+            sourceUrl: url
+          }
+        ]
+      })
+    )
+  )
   const outputs = ref<{ url: string; name: string; mime: string }[]>([])
   const busy = computed(() =>
     ['uploading', 'submitting', 'tracking', 'reconnecting'].includes(
@@ -68,19 +109,6 @@ export function useWorkflowRun(
   function releaseOutputs() {
     outputs.value.forEach((output) => URL.revokeObjectURL(output.url))
     outputs.value = []
-  }
-  function selectFile(key: string, file: File) {
-    if (previews.value[key]) URL.revokeObjectURL(previews.value[key])
-    files.set(key, file)
-    previews.value[key] = URL.createObjectURL(file)
-  }
-  function inputPreview(key: string) {
-    return (
-      previews.value[key] ??
-      (values.value[key]
-        ? templateAsset('input', String(values.value[key]))
-        : undefined)
-    )
   }
   async function poll(id: string, signal: AbortSignal) {
     while (!signal.aborted) {
@@ -120,6 +148,44 @@ export function useWorkflowRun(
       })
     }
   }
+  /** An answer that has to travel as a file, uploaded and named. */
+  async function uploadAnswer(key: string, signal: AbortSignal) {
+    const answer = files.value[key]
+    let file = answer?.file
+    if (!file && answer?.sourceUrl) {
+      const response = await fetch(answer.sourceUrl, { signal })
+      if (!response.ok)
+        throw new Error(
+          'The example input could not load. Upload your own file and try again.'
+        )
+      const blob = await response.blob()
+      file = new File([blob], answer.name, { type: blob.type })
+    }
+    if (!file) throw new Error('Choose a file before running.')
+    if (file.size > 100 * 1024 * 1024)
+      throw new Error('Choose an input smaller than 100 MB.')
+    return client.upload(file, signal)
+  }
+
+  /** One answer, in the form the graph takes it. */
+  async function bindingFor(field: WorkflowField, signal: AbortSignal) {
+    const key = `${field.node}.${field.input}`
+    const value = carriesAFile(field)
+      ? await uploadAnswer(key, signal)
+      : field.kind === 'number'
+        ? Number(values.value[key])
+        : values.value[key]
+    return { node: field.node, input: field.input, value }
+  }
+
+  /** What the reader has not answered yet, named the way they were asked. */
+  function unanswered() {
+    return fields.find(
+      (field) =>
+        carriesAFile(field) && !files.value[`${field.node}.${field.input}`]
+    )
+  }
+
   async function run() {
     if (
       busy.value ||
@@ -133,63 +199,20 @@ export function useWorkflowRun(
     owner = identity.value
     releaseOutputs()
     let jobId: string | undefined
+    let sent = false
     state.value = { phase: 'uploading' }
     try {
-      for (const field of fields) {
-        const key = `${field.node}.${field.input}`
-        if (
-          ['image', 'video', 'audio'].includes(field.kind) &&
-          !files.has(key) &&
-          !values.value[key]
-        )
-          throw new Error(`Upload ${field.label.toLowerCase()} before running.`)
-      }
+      const missing = unanswered()
+      if (missing)
+        throw new Error(`Upload ${missing.label.toLowerCase()} before running.`)
       const bindings = []
-      for (const field of fields) {
-        const key = `${field.node}.${field.input}`
-        let value: unknown =
-          field.kind === 'number'
-            ? Number(values.value[key])
-            : values.value[key]
-        if (['image', 'video', 'audio'].includes(field.kind)) {
-          let file = files.get(key)
-          if (!file) {
-            const response = await fetch(
-              templateAsset('input', String(values.value[key])),
-              { signal }
-            )
-            if (!response.ok)
-              throw new Error(
-                'The example input could not load. Upload your own file and try again.'
-              )
-            const blob = await response.blob()
-            file = new File([blob], String(values.value[key]), {
-              type: blob.type
-            })
-          }
-          if (file.size > 100 * 1024 * 1024)
-            throw new Error('Choose an input smaller than 100 MB.')
-          value = await client.upload(file, signal)
-        }
-        bindings.push({ node: field.node, input: field.input, value })
-      }
+      for (const field of fields) bindings.push(await bindingFor(field, signal))
       state.value = { phase: 'submitting' }
+      sent = true
       jobId = await client.submit(bindWorkflowInputs(graph, bindings), signal)
       await poll(jobId, signal)
     } catch (error) {
-      if (!signal.aborted)
-        state.value = {
-          phase: 'error',
-          message:
-            error instanceof Error
-              ? error.message
-              : 'Could not reach Cloud. Check your Cloud job history before submitting again.',
-          jobId,
-          retrySafe:
-            !jobId &&
-            (state.value.phase !== 'submitting' ||
-              (error instanceof WorkflowHttpError && error.retrySafe))
-        }
+      if (!signal.aborted) state.value = failed(error, jobId, sent)
     }
   }
   async function resume() {
@@ -241,7 +264,6 @@ export function useWorkflowRun(
   onScopeDispose(() => {
     controller?.abort()
     releaseOutputs()
-    Object.values(previews.value).forEach((url) => URL.revokeObjectURL(url))
   })
   return {
     state,
@@ -250,8 +272,7 @@ export function useWorkflowRun(
     busy,
     session,
     settled,
-    selectFile,
-    inputPreview,
+    files,
     run,
     resume,
     cancel
