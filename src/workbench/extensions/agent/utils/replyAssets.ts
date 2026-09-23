@@ -61,19 +61,38 @@ export function resolveAgentAssetUrl(
   }
 }
 
+/** Resolve every candidate of a `srcset`, keeping each one's descriptor. */
+function resolveSrcset(value: string): string {
+  return value
+    .split(/\s*,\s*/)
+    .map((candidate) => {
+      const [href, ...descriptor] = candidate.split(/\s+/)
+      if (!href) return candidate
+      return [resolveAgentAssetUrl(href), ...descriptor].join(' ')
+    })
+    .join(', ')
+}
+
 /**
  * Apply {@link resolveAgentAssetUrl} to the media references of already
  * rendered and sanitized markdown, so the `<img>` the reader sees carries the
  * reachable URL rather than only the lightbox that opens on clicking it.
+ *
+ * Markdown image syntax only ever yields a `src`, but raw HTML in a reply
+ * survives both sanitizing passes, so `srcset` — which the browser may pick
+ * over `src` — is resolved too.
  */
 export function rewriteAgentAssetHtml(html: string): string {
   const doc = new DOMParser().parseFromString(html, 'text/html')
   let rewritten = false
-  for (const element of doc.querySelectorAll('[src], [href], [poster]')) {
-    for (const name of ['src', 'href', 'poster']) {
+  for (const element of doc.querySelectorAll(
+    '[src], [href], [poster], [srcset]'
+  )) {
+    for (const name of ['src', 'href', 'poster', 'srcset']) {
       const value = element.getAttribute(name)
       if (value === null) continue
-      const resolved = resolveAgentAssetUrl(value)
+      const resolved =
+        name === 'srcset' ? resolveSrcset(value) : resolveAgentAssetUrl(value)
       if (resolved === value) continue
       element.setAttribute(name, resolved)
       rewritten = true

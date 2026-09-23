@@ -112,6 +112,36 @@ describe('rewriteAgentAssetHtml', () => {
     ).toContain(`href="${window.location.origin}/view?`)
   })
 
+  it('resolves every srcset candidate and keeps its descriptor', () => {
+    const html =
+      `<img srcset="${LOOPBACK_VIEW} 1x, http://127.0.0.1:8188/view?filename=a%402x.png 2x"` +
+      ' alt="a duck">'
+    const out = rewriteAgentAssetHtml(html)
+    expect(out).toContain(
+      `${window.location.origin}/view?filename=ComfyUI_00005_.png&amp;subfolder=&amp;type=output 1x`
+    )
+    expect(out).toContain(
+      `${window.location.origin}/view?filename=a%402x.png 2x`
+    )
+    expect(out).not.toContain('127.0.0.1')
+  })
+
+  it('resolves a picture source srcset', () => {
+    const out = rewriteAgentAssetHtml(
+      `<picture><source srcset="http://localhost:8188/api/view?filename=a.webp"><img src="${LOOPBACK_VIEW}"></picture>`
+    )
+    expect(out).toContain(
+      `srcset="${window.location.origin}/api/view?filename=a.webp"`
+    )
+    expect(out).not.toContain('localhost:8188')
+  })
+
+  it('leaves a srcset of remote candidates alone', () => {
+    const html =
+      '<img srcset="https://cdn.example.com/a.png 1x, https://cdn.example.com/a@2x.png 2x">'
+    expect(rewriteAgentAssetHtml(html)).toBe(html)
+  })
+
   it('returns html with nothing to rewrite unchanged', () => {
     const untouched =
       '<p>plain <b>text</b> and <img src="/api/view?filename=a.png"></p>'
