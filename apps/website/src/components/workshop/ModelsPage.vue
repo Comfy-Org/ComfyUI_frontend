@@ -51,6 +51,10 @@ function createContent() {
   return defineAsyncComponent({
     loader: async () => {
       if (slug) {
+        const preload = slug.startsWith('workflows/')
+          ? import('./WorkflowPage.vue')
+          : import('./ModelPage.vue')
+        void preload.catch(() => undefined)
         const { fetchModelsPage } =
           await import('../../config/models-page-data')
         const { model, ...page } = await fetchModelsPage(slug)
