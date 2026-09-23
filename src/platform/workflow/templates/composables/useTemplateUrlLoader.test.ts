@@ -5,6 +5,7 @@ import { createApp, defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useTemplateUrlLoader as createTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
+import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 
 /**
  * Unit tests for useTemplateUrlLoader composable
@@ -41,7 +42,9 @@ vi.mock(
 
 // Mock template workflows composable
 const mockLoadTemplates = vi.fn(async () => true)
-const mockLoadWorkflowTemplate = vi.fn(async () => true)
+const mockLoadWorkflowTemplate = vi.fn<
+  ReturnType<typeof useTemplateWorkflows>['loadWorkflowTemplate']
+>(async () => 'loaded')
 
 vi.mock<unknown>(
   import('@/platform/workflow/templates/composables/useTemplateWorkflows'),
@@ -144,19 +147,18 @@ describe('useTemplateUrlLoader', () => {
     )
   })
 
-  it('shows error toast when template loading fails', async () => {
-    mockQueryParams = { template: 'invalid-template' }
-    mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
+  it.for(['not-started', 'graph-failed'] as const)(
+    'does not add a toast when the template loader returns %s',
+    async (result) => {
+      mockQueryParams = { template: 'invalid-template' }
+      mockLoadWorkflowTemplate.mockResolvedValueOnce(result)
 
-    const { loadTemplateFromUrl } = useTemplateUrlLoader()
-    await loadTemplateFromUrl()
+      const { loadTemplateFromUrl } = useTemplateUrlLoader()
+      await loadTemplateFromUrl()
 
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Template "invalid-template" not found'
-    })
-  })
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    }
+  )
 
   it('handles array query params correctly', () => {
     // Vue Router can return string[] for duplicate params
@@ -247,7 +249,7 @@ describe('useTemplateUrlLoader', () => {
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'Error',
-      detail: i18n.global.t('g.errorLoadingTemplate')
+      detail: i18n.global.t('templateWorkflows.error.loading')
     })
   })
 
@@ -269,7 +271,7 @@ describe('useTemplateUrlLoader', () => {
 
   it('removes template params from URL even on error', async () => {
     mockQueryParams = { template: 'invalid', source: 'custom', other: 'param' }
-    mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
+    mockLoadWorkflowTemplate.mockResolvedValueOnce('not-started')
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
@@ -306,7 +308,7 @@ describe('useTemplateUrlLoader', () => {
 
   it('does not set linear mode when template loading fails', async () => {
     mockQueryParams = { template: 'invalid-template', mode: 'linear' }
-    mockLoadWorkflowTemplate.mockResolvedValueOnce(false)
+    mockLoadWorkflowTemplate.mockResolvedValueOnce('graph-failed')
 
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()

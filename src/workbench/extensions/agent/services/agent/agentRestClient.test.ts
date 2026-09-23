@@ -336,6 +336,32 @@ describe('success response parsing', () => {
     expect(result.thread_id).toBe('t1')
     expect((result as Record<string, unknown>).workflow_id).toBe('w1')
   })
+
+  it.for([
+    {
+      name: 'an incomplete thread row',
+      response: {
+        threads: [{ id: 'th-1', title: 'Thread' }],
+        pagination: { has_more: false, limit: 20, offset: 0, total: 1 }
+      },
+      path: ['threads', 0, 'created_at']
+    },
+    {
+      name: 'incomplete pagination',
+      response: {
+        threads: [],
+        pagination: { has_more: false }
+      },
+      path: ['pagination', 'limit']
+    }
+  ])('rejects $name from the agent service', async ({ response, path }) => {
+    respond(jsonResponse(200, response))
+
+    await expect(makeClient().listThreads()).rejects.toMatchObject({
+      name: 'ZodError',
+      issues: expect.arrayContaining([expect.objectContaining({ path })])
+    })
+  })
 })
 
 describe('error mapping', () => {

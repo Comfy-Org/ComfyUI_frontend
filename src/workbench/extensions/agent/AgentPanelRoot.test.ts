@@ -24,7 +24,11 @@ setupInlinePromptEditorDom()
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -103,7 +107,12 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 const appMock = vi.hoisted(() => {
   const graph = {
     nodes: [] as unknown[],
+    _nodes: [] as LGraph['_nodes'],
+    _nodes_by_id: {} as LGraph['_nodes_by_id'],
     arrange: vi.fn(),
+    add: vi.fn(),
+    remove: vi.fn(),
+    setDirtyCanvas: vi.fn(),
     serialize: () => ({ version: 0.4, nodes: graph.nodes }),
     getNodeById: (id: string | number) =>
       graph.nodes.find(
@@ -114,6 +123,7 @@ const appMock = vi.hoisted(() => {
           String(node.id) === String(id)
       ) ?? null
   }
+  Object.assign(graph, { rootGraph: graph })
   return {
     loadGraphData: vi.fn(),
     graph,
@@ -218,10 +228,20 @@ const mintPortWiringDeps = vi.hoisted(() => ({
   current: null as MintPortWiringDeps | null
 }))
 vi.mock(import('./crdt/mintPortWiring'), { spy: true })
-vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
+
+// The mock replaces the real `attachMintPortWiring` body entirely. It only
+// captures `deps` for assertions below — it must NOT reproduce any of that
+// body's own behaviour (e.g. the doc-bound probe registration), or a test
+// against the reimplementation could stay green while the real one breaks.
+// The doc-bound probe's registration/disposal is covered directly against
+// the real `attachMintPortWiring` in `mintPortWiring.test.ts`.
+function stubAttachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   mintPortWiringDeps.current = deps
-  return fromPartial<MintPortWiring>({ detach: vi.fn() })
-})
+  return fromPartial<MintPortWiring>({
+    detach: vi.fn()
+  })
+}
+vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
@@ -334,15 +354,13 @@ beforeEach(() => {
   setCanvasSelection([])
   canvasStore.currentGraph = null
   appMock.graph.nodes = []
+  appMock.isGraphReady = false
   appMock.graph.arrange.mockClear()
   Object.assign(appMock.rootGraph, { subgraphs: new Map(), id: undefined })
   appMock.isGraphReady = false
   appMock.canvas = undefined
   mintPortWiringDeps.current = null
-  vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
-    mintPortWiringDeps.current = deps
-    return fromPartial<MintPortWiring>({ detach: vi.fn() })
-  })
+  vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
   vi.mocked(useWorkflowService()).saveWorkflow.mockClear()
   vi.mocked(useWorkflowService()).saveWorkflowAs.mockClear()
   vi.mocked(useWorkflowService()).openWorkflow.mockClear()
@@ -1607,16 +1625,15 @@ describe('AgentPanelRoot attach flow', () => {
 
       dispatchDrag(target, 'dragenter', dragData)
       await nextTick()
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Drag and drop assets here'
-      )
+      const dropTarget = screen.getByRole('status')
+      expect(dropTarget).toHaveTextContent('Drag and drop assets here')
 
       expect(dispatchDrag(target, 'dragover', dragData)).toBe(true)
 
       const claimed = dispatchDrag(target, 'drop', dragData)
       expect(claimed).toBe(true)
       await nextTick()
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(dropTarget).not.toBeInTheDocument()
 
       expect(
         within(await screen.findByTestId('composer-asset-section')).getByText(
@@ -2851,6 +2868,9 @@ describe('AgentPanelRoot workflow binding', () => {
         if (url.includes('/messages')) return json(200, [])
         if (url.includes('/agent/threads')) {
           return json(200, agentThreadList(threads))
+        }
+        if (url.includes('/assets')) {
+          return json(200, { assets: [], total: 0, has_more: false })
         }
         if (url.includes('/workflows')) {
           const workflows =
@@ -4132,6 +4152,32 @@ describe('AgentPanelRoot workflow binding', () => {
 
       draft: { content: { id: 'wf-42' } }
     })
+  })
+
+  it('keeps an explicitly detached workflow after a remount', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    const panel = renderWithSelectedTarget()
+
+    await sendFromComposer('attached turn')
+    expect(bodies[0]).toHaveProperty('workflow_id', 'wf-42')
+    ws.emit('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+    await screen.findByRole('button', { name: 'Send' })
+    useAgentPanelStore().setWorkflowTarget(null)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'still detached')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
+    ).toHaveFocus()
+    expect(bodies).toHaveLength(1)
   })
 
   it('re-attaches by picking a row so the next send carries the workflow again', async () => {
@@ -7220,6 +7266,36 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('wires getGraph() to the live root graph, following a graph swap', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('hello')
+
+    appMock.isGraphReady = true
+    Object.assign(appMock.rootGraph, { id: 'graph-a' })
+    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-a')
+
+    // A workflow switch rebuilds the canvas against a new root graph without
+    // touching agentPanelStore.enabled or isBoundWorkflowActive, so the mint
+    // port wiring's own doc-bound predicate (covered directly against the
+    // real `attachMintPortWiring` in `mintPortWiring.test.ts`) has to read
+    // this live graph at mint time to follow the swap.
+    Object.assign(appMock.rootGraph, { id: 'graph-b' })
+
+    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-b')
+  })
+
+  it('wires getGraph() to null before the graph is ready', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('hello')
+
+    Object.assign(appMock.rootGraph, { id: 'graph-a' })
+    appMock.isGraphReady = false
+
+    expect(mintPortWiringDeps.current?.getGraph()).toBeNull()
   })
 
   it("reports the bound workflow's own stored root graph id once bound", async () => {
