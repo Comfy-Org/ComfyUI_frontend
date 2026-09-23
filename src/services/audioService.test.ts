@@ -304,7 +304,7 @@ describe('useAudioService', () => {
 
   describe('edge cases', () => {
     it('should handle very large blobs', async () => {
-      const largeData = new Array(1000000).fill('a').join('')
+      const largeData = 'a'.repeat(1000000)
       const largeBlob = new Blob([largeData], { type: 'audio/wav' })
 
       const result = await service.convertBlobToFileAndSubmit(largeBlob)

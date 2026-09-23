@@ -4,10 +4,12 @@ import type {
 } from '@comfyorg/comfyui-desktop-bridge-types'
 import type {
   AddCreditsClickMetadata,
+  AgentConsentNotOfferedMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
+  AgentOnboardingNotShownMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
@@ -336,6 +338,16 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.capture(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
+  trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
+  }
+
+  trackAgentOnboardingNotShown(
+    metadata: AgentOnboardingNotShownMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN, metadata)
   }
 
   trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
