@@ -20,7 +20,10 @@ import type {
 } from './billingContracts.js'
 import type { BillingScopeContext } from './billingScope.js'
 import { sameBillingScope } from './billingScope.js'
-import { readBillingErrorCode } from './billingErrorBody.js'
+import {
+  readBillingErrorCode,
+  readBillingErrorMessage
+} from './billingErrorBody.js'
 import { codeForHttpStatus } from './httpStatus.js'
 
 /**
@@ -64,11 +67,13 @@ export async function readValidatedBillingResponse<T>(
   const { httpStatus, body } = response.value
   if (httpStatus < 200 || httpStatus >= 300) {
     const serverCode = readBillingErrorCode(body)
+    const serverMessage = readBillingErrorMessage(body)
     return {
       status: 'error',
       code: codeForHttpStatus(response.value),
       httpStatus,
-      ...(serverCode === undefined ? {} : { serverCode })
+      ...(serverCode === undefined ? {} : { serverCode }),
+      ...(serverMessage === undefined ? {} : { serverMessage })
     }
   }
 

@@ -51,6 +51,15 @@ The dummy interface keeps `navigator.onLine` true so the email SDK submits
 instead of queueing offline. Astro preview and Playwright both run inside the
 namespace.
 
+## Video duration fixture
+
+`assets/validation-16s.mp4` is a generated 16-second, 16×16 black video for
+testing source-duration validation. It can be regenerated with:
+
+```sh
+ffmpeg -f lavfi -i color=c=black:s=16x16:r=1 -t 16 -c:v libx264 -pix_fmt yuv420p -movflags +faststart e2e/assets/validation-16s.mp4
+```
+
 ## Font fixture
 
 `assets/inter-latin.woff2` is the unmodified Inter Latin font from the website's
