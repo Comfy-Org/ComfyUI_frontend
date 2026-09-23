@@ -577,6 +577,46 @@ describe('SubgraphNode Synchronization', () => {
     )
   })
 
+  it('keeps the renamed label over a labeled interior widget across reload', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'seed', type: 'INT' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'INT')
+    input.widget = { name: 'value' }
+    interiorNode.addOutput('out', 'INT')
+    const widget = interiorNode.addWidget('number', 'value', 0, () => {})
+    widget.label = 'Interior Label'
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+
+    subgraph.inputs[0].label = 'My Seed'
+    subgraph.events.dispatch('renaming-input', {
+      input: subgraph.inputs[0],
+      index: 0,
+      oldName: 'seed',
+      newName: 'My Seed'
+    })
+
+    const instance = JSON.parse(
+      JSON.stringify(subgraphNode.serialize())
+    ) as ExportedSubgraphInstance
+    subgraphNode.configure(instance)
+    subgraphNode.arrange()
+
+    const reloadedInput = subgraphNode.inputs[0]
+    expect(reloadedInput.widgetId).toBeDefined()
+    if (!reloadedInput.widgetId) throw new Error('Missing widgetId')
+    expect(reloadedInput.label).toBe('My Seed')
+    expect(useWidgetValueStore().getWidget(reloadedInput.widgetId)?.label).toBe(
+      'My Seed'
+    )
+    expect(subgraphNode.widgets[0]?.label).toBe('My Seed')
+  })
+
   it('preserves a renamed label across a real definition reload', () => {
     const interiorNodeType = 'test/interior-label-reload'
     const subgraph = createTestSubgraph({

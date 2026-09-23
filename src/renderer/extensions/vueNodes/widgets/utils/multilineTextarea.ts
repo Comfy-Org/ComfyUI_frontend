@@ -247,6 +247,18 @@ export function createPromotedDomWidget(
       getHeight: () => sourceWidget.computedHeight ?? ''
     }
   })
+  // The interior widget's own listeners write direct element edits to
+  // sourceWidget, bypassing the host value setter; mirror them into the host
+  // store from the post-callback interior value.
+  const inputListenerController = new AbortController()
+  sourceWidget.element.addEventListener(
+    'input',
+    () => widgetStore.setValue(widgetId, sourceWidget.value),
+    { signal: inputListenerController.signal }
+  )
+  widget.onRemove = useChainCallback(widget.onRemove, () => {
+    inputListenerController.abort()
+  })
   useDomWidgetStore().registerWidget(widget)
 
   return widget

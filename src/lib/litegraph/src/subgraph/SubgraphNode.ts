@@ -1103,6 +1103,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override serializeFromStoreState(state: NodeState): ISerialisedNode {
     const serialized = super.serializeFromStoreState(state)
+    if (serialized.inputs) {
+      serialized.inputs = serialized.inputs.map((existing, i) => {
+        const rec = this.inputs[i] as PromotedHostInput | undefined
+        return rec?._labelCustomized
+          ? { ...existing, _labelCustomized: true }
+          : existing
+      })
+    }
     const serializedProperties = { ...(serialized.properties ?? {}) }
     const rootGraphId = this.rootGraph.id
     const hostLocator = tryGetPreviewExposureHostLocator(this)

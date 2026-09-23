@@ -208,6 +208,40 @@ describe('createPromotedDomWidget', () => {
     expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe('next')
   })
 
+  it('syncs direct edits on the reused element to the host widget store', () => {
+    const element = document.createElement('div')
+    const source = fromAny<IBaseWidget, unknown>({
+      name: 'preview',
+      type: 'kj_preview',
+      element,
+      options: {},
+      value: 'live'
+    })
+    useWidgetValueStore().registerWidget(WIDGET_ID, {
+      type: 'kj_preview',
+      value: 'live',
+      options: {}
+    })
+
+    const widget = promote(source) as unknown as DOMWidget<HTMLElement, string>
+
+    source.value = 'direct edit'
+    element.dispatchEvent(new Event('input'))
+
+    expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe(
+      'direct edit'
+    )
+
+    widget.onRemove?.()
+    source.value = 'after removal'
+    element.dispatchEvent(new Event('input'))
+
+    expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe(
+      'direct edit'
+    )
+    expect(useDomWidgetStore().widgetStates.has(widget.id)).toBe(false)
+  })
+
   it('delegates textarea sources to the multiline host widget', () => {
     const element = document.createElement('textarea')
     const source = fromAny<IBaseWidget, unknown>({
