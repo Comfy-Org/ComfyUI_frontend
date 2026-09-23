@@ -1,6 +1,6 @@
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed } from 'vue'
 
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -17,7 +17,8 @@ describe('WorkspaceMembersPanelContent', () => {
   let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
   beforeEach(() => {
-    Object.assign(useWorkspaceUI(), { workspaceRole: ref('owner') })
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    workspaceUI.workspaceRole = computed(() => 'owner')
     workspaceStore = useTeamWorkspaceStore()
     vi.mocked(workspaceStore.fetchMembers).mockResolvedValue([])
     vi.mocked(workspaceStore.fetchPendingInvites).mockResolvedValue([])

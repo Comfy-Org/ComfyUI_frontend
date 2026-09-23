@@ -5,7 +5,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -80,7 +80,8 @@ async function openBulkMenu(user: ReturnType<typeof userEvent.setup>) {
 }
 
 beforeEach(() => {
-  Object.assign(useWorkspaceUI(), { workspaceRole: mockWorkspaceRole })
+  const workspaceUI = vi.mocked(useWorkspaceUI())
+  workspaceUI.workspaceRole = computed(() => mockWorkspaceRole.value)
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
 })
 

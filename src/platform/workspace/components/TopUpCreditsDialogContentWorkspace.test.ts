@@ -34,7 +34,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
@@ -63,6 +62,7 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
+const settingsDialog = vi.mocked(useSettingsDialog())
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -103,7 +103,6 @@ function topupResponse(
 
 function renderDialog() {
   mockBillingContext()
-  Object.assign(useSettingsDialog(), { show: mockShowSettings })
   return render(TopUpCreditsDialogContentWorkspace, {
     global: {
       plugins: [i18n],
@@ -794,7 +793,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     expect(mockBillingContext().fetchBalance).toHaveBeenCalledOnce()
     expect(mockBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(settingsDialog.show).toHaveBeenCalledWith('workspace')
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'succeeded',
@@ -853,7 +852,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
-    expect(mockShowSettings).toHaveBeenCalledWith('credits')
+    expect(settingsDialog.show).toHaveBeenCalledWith('credits')
   })
 
   it('keeps completed top-up telemetry successful when refresh fails', async () => {
@@ -879,7 +878,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       billing_op_id: 'op-1',
       duration_ms: expect.any(Number)
     })
-    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(settingsDialog.show).toHaveBeenCalledWith('workspace')
   })
 
   it('does not refresh balance or status for a pending top-up', async () => {

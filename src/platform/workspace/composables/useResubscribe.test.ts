@@ -64,15 +64,17 @@ afterEach(() => {
 
 describe('useResubscribe', () => {
   beforeEach(() => {
-    Object.assign(useBillingRouting(), {
-      shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
-    })
-    Object.assign(useWorkspaceUI(), {
-      permissions: computed(() => ({
-        canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-      })),
-      canReactivatePlan: computed(() => state.canReactivatePlan)
-    })
+    const billingRouting = vi.mocked(useBillingRouting())
+    billingRouting.shouldUseWorkspaceBilling = computed(
+      () => state.shouldUseWorkspaceBilling
+    )
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+    }))
+    workspaceUI.canReactivatePlan = computed(() => state.canReactivatePlan)
     state.shouldUseWorkspaceBilling = true
     state.canManageSubscriptionLifecycle = true
     useBillingCapabilities().canReactivate = computed(() => true)

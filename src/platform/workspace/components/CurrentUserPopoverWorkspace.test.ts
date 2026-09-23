@@ -13,11 +13,13 @@ import { createI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
@@ -30,9 +32,13 @@ const state = vi.hoisted(() => {
     return new URL('http://localhost:5174')
   }
 
+  function initialBillingStatus(): BillingStatus {
+    return 'paid'
+  }
+
   return {
     isCloud: true,
-    billingStatus: 'paid',
+    billingStatus: initialBillingStatus(),
     canAccessSubscriptionFeatures: true,
     isCancelled: false,
     planSlug: initialPlanSlug(),
@@ -41,11 +47,11 @@ const state = vi.hoisted(() => {
     canReactivatePlan: false,
     canOpenPricingSurface: false,
     shouldUseWorkspaceBilling: true,
-    billingWebUrl: initialBillingWebUrl(),
-    showPricingTable: vi.fn(),
-    showSettingsDialog: vi.fn()
+    billingWebUrl: initialBillingWebUrl()
   }
 })
+
+const nonActiveBillingStatuses: BillingStatus[] = ['payment_failed', 'paused']
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -60,8 +66,10 @@ vi.mock(import('@/composables/billing/useBillingRouting'))
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
+const subscriptionDialog = vi.mocked(useSubscriptionDialog())
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
+const settingsDialog = vi.mocked(useSettingsDialog())
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -189,34 +197,47 @@ describe('CurrentUserPopoverWorkspace', () => {
     vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'stripe'
     state.billingWebUrl = new URL('http://localhost:5174')
     const billingContext = useBillingContext()
-    Object.assign(billingContext, {
-      billingStatus: computed(() => state.billingStatus),
-      canAccessSubscriptionFeatures: computed(
-        () => state.canAccessSubscriptionFeatures
-      ),
-      subscription: computed(() => ({
-        isCancelled: state.isCancelled,
-        planSlug: state.planSlug
-      })),
-      balance: ref({ amountMicros: 100 }),
-      isLoading: ref(false)
-    })
+    billingContext.billingStatus = computed(() => state.billingStatus)
+    billingContext.canAccessSubscriptionFeatures = computed(
+      () => state.canAccessSubscriptionFeatures
+    )
+    billingContext.subscription = computed(
+      () =>
+        ({
+          isActive: true,
+          tier: null,
+          duration: null,
+          isCancelled: state.isCancelled,
+          planSlug: state.planSlug,
+          scheduledChange: null,
+          renewalDate: null,
+          endDate: null,
+          hasFunds: true
+        }) satisfies SubscriptionInfo
+    )
+    billingContext.balance = computed(
+      () => ({ amountMicros: 100, currency: 'USD' }) satisfies BalanceInfo
+    )
+    billingContext.isLoading = ref(false)
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
-    Object.assign(useWorkspaceUI(), {
-      permissions: computed(() => ({
-        canManageSubscription: state.canManageSubscription,
-        canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-      })),
-      canReactivatePlan: computed(() => state.canReactivatePlan),
-      canOpenPricingSurface: computed(() => state.canOpenPricingSurface)
-    })
-    Object.assign(useBillingRouting(), {
-      shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
-    })
-    Object.assign(useSubscriptionDialog(), {
-      showPricingTable: state.showPricingTable
-    })
-    Object.assign(useSettingsDialog(), { show: state.showSettingsDialog })
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    workspaceUI.permissions = computed(() => ({
+      canViewOtherMembers: false,
+      canViewPendingInvites: false,
+      canLeaveWorkspace: false,
+      canAccessWorkspaceMenu: false,
+      canManageSubscription: state.canManageSubscription,
+      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle,
+      canDowngradeToPersonal: false
+    }))
+    workspaceUI.canReactivatePlan = computed(() => state.canReactivatePlan)
+    workspaceUI.canOpenPricingSurface = computed(
+      () => state.canOpenPricingSurface
+    )
+    const billingRouting = vi.mocked(useBillingRouting())
+    billingRouting.shouldUseWorkspaceBilling = computed(
+      () => state.shouldUseWorkspaceBilling
+    )
   })
 
   it('toggles the workspace switcher panel from the selector row', async () => {
@@ -331,7 +352,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
-    expect(state.showPricingTable).toHaveBeenCalledWith({
+    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
       reason: 'avatar_menu_plans'
     })
     expect(open).not.toHaveBeenCalled()
@@ -354,7 +375,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(tab.location.href).toBe(
       'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace'
     )
-    expect(state.showPricingTable).not.toHaveBeenCalled()
+    expect(subscriptionDialog.showPricingTable).not.toHaveBeenCalled()
   })
 
   it('falls back to the in-app pricing table when the hosted tab is blocked', async () => {
@@ -367,7 +388,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
     expect(open).toHaveBeenCalledOnce()
-    expect(state.showPricingTable).toHaveBeenCalledWith({
+    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
       reason: 'avatar_menu_plans'
     })
   })
@@ -383,7 +404,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
     expect(open).not.toHaveBeenCalled()
-    expect(state.showPricingTable).toHaveBeenCalledWith({
+    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
       reason: 'avatar_menu_plans'
     })
   })
@@ -395,12 +416,12 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     await user.click(screen.getByTestId('upgrade-to-add-credits-button'))
 
-    expect(state.showPricingTable).toHaveBeenCalledWith({
+    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
       reason: 'upgrade_to_add_credits'
     })
   })
 
-  it.for(['payment_failed', 'paused'])(
+  it.for(nonActiveBillingStatuses)(
     'keeps Manage plan available for an existing %s subscription',
     (billingStatus) => {
       state.billingStatus = billingStatus
@@ -643,7 +664,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
-    expect(state.showPricingTable).toHaveBeenCalledOnce()
+    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledOnce()
   })
 
   it('hides Plans & pricing on a sales-managed plan but keeps Manage plan', () => {
@@ -701,7 +722,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       menuItem.focus()
       await user.keyboard('{Enter}')
 
-      expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
+      expect(settingsDialog.show).toHaveBeenCalledWith('workspace')
       expect(emitted('close')).toHaveLength(1)
     })
   }
@@ -725,8 +746,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       })
     )
 
-    expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
-    expect(state.showPricingTable).not.toHaveBeenCalled()
+    expect(settingsDialog.show).toHaveBeenCalledWith('workspace')
+    expect(subscriptionDialog.showPricingTable).not.toHaveBeenCalled()
     expect(emitted('close')).toHaveLength(1)
   })
 

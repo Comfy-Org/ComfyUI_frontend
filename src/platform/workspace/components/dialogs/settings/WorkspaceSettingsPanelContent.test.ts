@@ -1,7 +1,7 @@
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, onMounted, onUnmounted, ref } from 'vue'
+import { computed, defineComponent, h, onMounted, onUnmounted } from 'vue'
 
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import WorkspaceSettingsPanelContent from './WorkspaceSettingsPanelContent.vue'
@@ -30,7 +30,8 @@ const stubs = {
 }
 
 beforeEach(() => {
-  Object.assign(useWorkspaceUI(), { workspaceRole: ref('owner') })
+  const workspaceUI = vi.mocked(useWorkspaceUI())
+  workspaceUI.workspaceRole = computed(() => 'owner')
   Object.assign(useTeamWorkspaceStore(), { workspaceName: 'Acme Team' })
   vi.mocked(useTeamWorkspaceStore().fetchMembers).mockResolvedValue([])
   vi.mocked(useTeamWorkspaceStore().fetchPendingInvites).mockResolvedValue([])

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/composables/billing/types'
+import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspaceApi'
 
 const {
   mockIsActiveSubscription,
@@ -18,10 +21,10 @@ const {
     mockIsInitialized: ref(true),
     mockIsTeamPlan: ref(true),
     mockMaxSeats: ref<number | null>(30),
-    mockSubscription: ref<{ isCancelled?: boolean } | null>({
+    mockSubscription: ref<Pick<SubscriptionInfo, 'isCancelled'> | null>({
       isCancelled: false
     }),
-    mockSubscriptionStatus: ref<string | null>('active')
+    mockSubscriptionStatus: ref<BillingSubscriptionStatus | null>('active')
   }
 })
 
@@ -35,14 +38,30 @@ async function setup() {
 describe('useTeamPlan', () => {
   beforeEach(() => {
     const billingContext = useBillingContext()
-    Object.assign(billingContext, {
-      canAccessSubscriptionFeatures: mockIsActiveSubscription,
-      isInitialized: mockIsInitialized,
-      isTeamPlan: mockIsTeamPlan,
-      maxSeats: mockMaxSeats,
-      subscription: mockSubscription,
-      subscriptionStatus: mockSubscriptionStatus
-    })
+    billingContext.canAccessSubscriptionFeatures = computed(
+      () => mockIsActiveSubscription.value
+    )
+    billingContext.isInitialized = mockIsInitialized
+    billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
+    billingContext.maxSeats = computed(() => mockMaxSeats.value)
+    billingContext.subscription = computed(() =>
+      mockSubscription.value
+        ? {
+            isActive: true,
+            tier: null,
+            duration: null,
+            planSlug: null,
+            scheduledChange: null,
+            renewalDate: null,
+            endDate: null,
+            hasFunds: true,
+            ...mockSubscription.value
+          }
+        : null
+    )
+    billingContext.subscriptionStatus = computed(
+      () => mockSubscriptionStatus.value
+    )
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
     mockIsActiveSubscription.value = true
     mockIsInitialized.value = true

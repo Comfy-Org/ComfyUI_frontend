@@ -60,13 +60,20 @@ function renderComponent() {
 
 describe('WorkspaceMenuButton', () => {
   beforeEach(() => {
-    Object.assign(useWorkspaceUI(), {
-      permissions: computed(() => ({
-        canLeaveWorkspace: mockCanLeaveWorkspace.value,
-        canManageSubscription: mockCanManageSubscription.value
-      })),
-      uiConfig: mockUiConfig
-    })
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      canLeaveWorkspace: mockCanLeaveWorkspace.value,
+      canManageSubscription: mockCanManageSubscription.value
+    }))
+    const defaultUiConfig = workspaceUI.uiConfig.value
+    workspaceUI.uiConfig = computed(() => ({
+      ...defaultUiConfig,
+      ...mockUiConfig.value,
+      workspaceMenuAction:
+        mockUiConfig.value.workspaceMenuAction === 'delete' ? 'delete' : null
+    }))
     mockUiConfig.value = ownerConfig
     mockCanLeaveWorkspace.value = false
     mockCanManageSubscription.value = true

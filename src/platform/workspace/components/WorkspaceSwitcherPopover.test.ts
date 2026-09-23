@@ -1,9 +1,11 @@
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceSwitcherPopover from './WorkspaceSwitcherPopover.vue'
@@ -14,7 +16,7 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
 
 const billingMocks = vi.hoisted(() => ({
   subscription: {
-    value: null as { tier: string; duration: string } | null
+    value: null as Pick<SubscriptionInfo, 'tier' | 'duration'> | null
   }
 }))
 
@@ -123,7 +125,20 @@ describe('WorkspaceSwitcherPopover', () => {
   beforeEach(() => {
     billingMocks.subscription.value = null
     const billingContext = useBillingContext()
-    Object.assign(billingContext, { subscription: billingMocks.subscription })
+    billingContext.subscription = computed(() =>
+      billingMocks.subscription.value
+        ? {
+            isActive: true,
+            planSlug: null,
+            scheduledChange: null,
+            renewalDate: null,
+            endDate: null,
+            isCancelled: false,
+            hasFunds: true,
+            ...billingMocks.subscription.value
+          }
+        : null
+    )
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
     distributionMocks.isCloud = true
   })

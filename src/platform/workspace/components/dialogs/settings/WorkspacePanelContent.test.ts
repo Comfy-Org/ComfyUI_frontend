@@ -114,7 +114,8 @@ function renderComponent() {
 }
 
 beforeEach(() => {
-  Object.assign(useWorkspaceUI(), { workspaceRole: computed(() => 'owner') })
+  const workspaceUI = vi.mocked(useWorkspaceUI())
+  workspaceUI.workspaceRole = computed(() => 'owner')
   pinia = getActivePinia()!
   workspaceStore = useTeamWorkspaceStore(pinia)
   vi.mocked(workspaceStore.fetchMembers).mockResolvedValue([])

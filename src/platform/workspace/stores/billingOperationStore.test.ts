@@ -45,9 +45,8 @@ vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 vi.mock(import('@/i18n'))
 
-const mockSettingsDialogShow = vi.fn()
-
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
+const settingsDialog = vi.mocked(useSettingsDialog())
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -56,7 +55,6 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from './billingOperationStore'
 
 beforeEach(() => {
-  Object.assign(useSettingsDialog(), { show: mockSettingsDialogShow })
   vi.mocked(useToastStore().add).mockImplementation(() => {})
   vi.mocked(useToastStore().remove).mockImplementation(() => {})
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
@@ -491,7 +489,7 @@ describe('billingOperationStore', () => {
       expect(useDialogStore().closeDialog).not.toHaveBeenCalledWith({
         key: 'subscription-required'
       })
-      expect(mockSettingsDialogShow).not.toHaveBeenCalled()
+      expect(settingsDialog.show).not.toHaveBeenCalled()
     })
 
     it('closes the top-up dialog and opens settings on topup success', async () => {
@@ -509,7 +507,7 @@ describe('billingOperationStore', () => {
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'top-up-credits'
       })
-      expect(mockSettingsDialogShow).toHaveBeenCalledWith('workspace')
+      expect(settingsDialog.show).toHaveBeenCalledWith('workspace')
     })
 
     it('opens Credits settings after a polled local topup succeeds', async () => {
@@ -525,7 +523,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockSettingsDialogShow).toHaveBeenCalledWith('credits')
+      expect(settingsDialog.show).toHaveBeenCalledWith('credits')
     })
 
     it('fires purchase telemetry on subscription success', async () => {
@@ -2794,7 +2792,7 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
       await terminal
 
-      expect(mockSettingsDialogShow).not.toHaveBeenCalled()
+      expect(settingsDialog.show).not.toHaveBeenCalled()
       expect(useToastStore().add).not.toHaveBeenCalled()
     })
 

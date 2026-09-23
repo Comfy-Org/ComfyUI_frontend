@@ -99,15 +99,21 @@ describe('useWorkspaceUI', () => {
     ])
 
     const billingContext = useBillingContext()
-    Object.assign(billingContext, {
-      canAccessSubscriptionFeatures: computed(
-        () => mockIsActiveSubscription.value
-      ),
-      isTeamPlan: computed(() => mockIsTeamPlan.value),
-      subscription: computed(() => ({
-        isCancelled: mockIsCancelled.value
-      }))
-    })
+    billingContext.canAccessSubscriptionFeatures = computed(
+      () => mockIsActiveSubscription.value
+    )
+    billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
+    billingContext.subscription = computed(() => ({
+      isActive: true,
+      tier: null,
+      duration: null,
+      planSlug: null,
+      scheduledChange: null,
+      renewalDate: null,
+      endDate: null,
+      hasFunds: true,
+      isCancelled: mockIsCancelled.value
+    }))
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
     useBillingRouting().shouldUseWorkspaceBilling = computed(
       () => mockShouldUseWorkspaceBilling.value

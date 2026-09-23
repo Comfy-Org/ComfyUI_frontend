@@ -55,7 +55,7 @@ let harness: ReturnType<typeof fakeBillingSdk>
 beforeEach(() => {
   stubAccountIdentityPort()
   const billingContext = useBillingContext()
-  Object.assign(billingContext, { topup: mockContextTopup })
+  billingContext.topup = mockContextTopup
   vi.mocked(useBillingContext).mockReturnValue(billingContext)
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)

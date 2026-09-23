@@ -22,9 +22,20 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 
 beforeEach(() => {
   const billingContext = useBillingContext()
-  Object.assign(billingContext, {
-    subscription: computed(() => mockSubscription.value)
-  })
+  billingContext.subscription = computed(() =>
+    mockSubscription.value
+      ? {
+          isActive: true,
+          tier: null,
+          duration: null,
+          planSlug: null,
+          scheduledChange: null,
+          renewalDate: null,
+          hasFunds: true,
+          ...mockSubscription.value
+        }
+      : null
+  )
   vi.mocked(useBillingContext).mockReturnValue(billingContext)
 })
 

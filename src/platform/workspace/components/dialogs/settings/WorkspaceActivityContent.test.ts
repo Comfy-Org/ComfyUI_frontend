@@ -58,7 +58,8 @@ const creditedRow: ActivityEvent = {
 
 describe('WorkspaceActivityContent', () => {
   beforeEach(() => {
-    Object.assign(useWorkspaceUI(), { workspaceRole: mockWorkspaceRole })
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    workspaceUI.workspaceRole = computed(() => mockWorkspaceRole.value)
     useCurrentUser().resolvedUserInfo = computed(() => ({
       id: 'user-ada'
     }))

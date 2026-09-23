@@ -9,7 +9,9 @@ import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
   WorkspacePendingInvite,
@@ -308,12 +310,12 @@ const {
     mockCanAccessSubscriptionFeatures: ref(true),
     mockIsInitialized: ref(true),
     mockIsTeamPlan: ref(true),
-    mockSubscriptionStatus: ref<string | null>('active'),
+    mockSubscriptionStatus: ref<BillingSubscriptionStatus | null>('active'),
     mockWorkspaceRole: ref<'owner' | 'member'>('owner'),
-    mockSubscription: ref<{ tier: string; isCancelled?: boolean } | null>({
-      tier: 'PRO',
-      isCancelled: false
-    })
+    mockSubscription: ref<Pick<
+      SubscriptionInfo,
+      'tier' | 'isCancelled'
+    > | null>({ tier: 'PRO', isCancelled: false })
   }
 })
 
@@ -404,21 +406,45 @@ describe('useMembersPanel', () => {
   let pinia: Pinia
 
   beforeEach(() => {
-    Object.assign(useWorkspaceUI(), {
-      permissions: mockPermissions,
-      uiConfig: mockUiConfig,
-      workspaceRole: mockWorkspaceRole
-    })
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      ...mockPermissions.value
+    }))
+    const defaultUiConfig = workspaceUI.uiConfig.value
+    workspaceUI.uiConfig = computed(() => ({
+      ...defaultUiConfig,
+      ...mockUiConfig.value,
+      workspaceMenuAction:
+        mockUiConfig.value.workspaceMenuAction === 'delete' ? 'delete' : null
+    }))
+    workspaceUI.workspaceRole = computed(() => mockWorkspaceRole.value)
     const billingContext = useBillingContext()
-    Object.assign(billingContext, {
-      canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
-      isInitialized: mockIsInitialized,
-      isTeamPlan: mockIsTeamPlan,
-      subscription: mockSubscription,
-      subscriptionStatus: mockSubscriptionStatus,
-      maxSeats: mockMaxSeats,
-      occupiedSeats: mockOccupiedSeats
-    })
+    billingContext.canAccessSubscriptionFeatures = computed(
+      () => mockCanAccessSubscriptionFeatures.value
+    )
+    billingContext.isInitialized = mockIsInitialized
+    billingContext.isTeamPlan = computed(() => mockIsTeamPlan.value)
+    billingContext.subscription = computed(() =>
+      mockSubscription.value
+        ? {
+            isActive: true,
+            duration: null,
+            planSlug: null,
+            scheduledChange: null,
+            renewalDate: null,
+            endDate: null,
+            hasFunds: true,
+            ...mockSubscription.value
+          }
+        : null
+    )
+    billingContext.subscriptionStatus = computed(
+      () => mockSubscriptionStatus.value
+    )
+    billingContext.maxSeats = computed(() => mockMaxSeats.value)
+    billingContext.occupiedSeats = computed(() => mockOccupiedSeats.value)
     vi.mocked(billingContext.getMaxSeats).mockImplementation((tierKey) => {
       const seats: Record<string, number> = {
         free: 1,

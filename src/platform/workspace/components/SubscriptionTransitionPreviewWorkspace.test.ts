@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type {
@@ -18,10 +18,18 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 
 beforeEach(() => {
   const billingContext = useBillingContext()
-  Object.assign(billingContext, {
-    subscription: ref({ isCancelled: false, endDate: null }),
-    isInitialized: ref(true)
-  })
+  billingContext.subscription = computed(() => ({
+    isActive: true,
+    tier: null,
+    duration: null,
+    planSlug: null,
+    scheduledChange: null,
+    renewalDate: null,
+    endDate: null,
+    isCancelled: false,
+    hasFunds: true
+  }))
+  billingContext.isInitialized = ref(true)
   vi.mocked(useBillingContext).mockReturnValue(billingContext)
 })
 

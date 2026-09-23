@@ -123,15 +123,32 @@ describe('useDowngradeToPersonal', () => {
   let windowOpen: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    Object.assign(useWorkspaceUI(), { permissions: mockPermissions })
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      ...mockPermissions.value
+    }))
     const billingContext = useBillingContext()
-    Object.assign(billingContext, {
-      subscribe: mockSubscribe,
-      previewSubscribe: mockPreviewSubscribe,
-      subscription: mockSubscription,
-      isInitialized: mockIsInitialized,
-      fetchStatus: mockFetchStatus
-    })
+    billingContext.subscribe = mockSubscribe
+    billingContext.previewSubscribe = mockPreviewSubscribe
+    billingContext.subscription = computed(() =>
+      mockSubscription.value
+        ? {
+            isActive: true,
+            tier: null,
+            duration: null,
+            planSlug: null,
+            scheduledChange: null,
+            renewalDate: null,
+            endDate: null,
+            hasFunds: true,
+            ...mockSubscription.value
+          }
+        : null
+    )
+    billingContext.isInitialized = mockIsInitialized
+    billingContext.fetchStatus = mockFetchStatus
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
     const pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)

@@ -243,53 +243,67 @@ function renderComponent({ stubFooter = true } = {}) {
 describe('SubscriptionPanelContentWorkspace', () => {
   beforeEach(() => {
     const billing = useBillingContext()
-    Object.assign(billing, {
-      type: computed(() => mockBillingType.value),
-      canAccessSubscriptionFeatures: computed(
-        () => mockIsActiveSubscription.value
-      ),
-      isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
-      billingStatus: computed(() => mockBillingStatus.value),
-      subscriptionStatus: computed(() => mockSubscriptionStatus.value),
-      isTeamPlan: mockIsTeamPlan,
-      subscription: mockSubscription,
-      plans: computed(() => mockPlans.value),
-      teamCreditStops: computed(() => mockTeamCreditStops.value),
-      currentTeamCreditStop: computed(() => mockCurrentTeamCreditStop.value),
-      isLoading: mockIsLoading,
-      error: mockError
-    })
+    billing.type = computed(() => mockBillingType.value)
+    billing.canAccessSubscriptionFeatures = computed(
+      () => mockIsActiveSubscription.value
+    )
+    billing.isFreeTier = computed(() => mockSubscriptionTier.value === 'FREE')
+    billing.billingStatus = computed(() => mockBillingStatus.value)
+    billing.subscriptionStatus = computed(() => mockSubscriptionStatus.value)
+    billing.isTeamPlan = mockIsTeamPlan
+    billing.subscription = mockSubscription
+    billing.plans = computed(() => mockPlans.value)
+    billing.teamCreditStops = computed(() => mockTeamCreditStops.value)
+    billing.currentTeamCreditStop = computed(
+      () => mockCurrentTeamCreditStop.value
+    )
+    billing.isLoading = mockIsLoading
+    billing.error = mockError
     vi.mocked(billing.getMaxSeats).mockReturnValue(5)
     vi.mocked(useBillingContext).mockReturnValue(billing)
-    Object.assign(useBillingRouting(), {
-      shouldUseWorkspaceBilling: mockShouldUseWorkspaceBilling
-    })
-    Object.assign(useWorkspaceUI(), {
-      permissions: computed(() => ({
-        canManageSubscription: mockCanManageSubscription.value,
-        canManageSubscriptionLifecycle:
-          mockCanManageSubscriptionLifecycle.value,
-        canLeaveWorkspace: mockCanLeaveWorkspace.value
-      })),
-      canReactivatePlan: mockCanReactivatePlan,
-      canOpenPricingSurface: mockCanOpenPricingSurface,
-      uiConfig: computed(() => mockUiConfig.value),
-      isInPersonalWorkspace: toRef(
-        useTeamWorkspaceStore(),
-        'isInPersonalWorkspace'
-      ),
-      canAccessSubscriptionFeatures: computed(
-        () => mockIsActiveSubscription.value
-      ),
-      isSubscriptionCancelled: mockIsSubscriptionCancelled,
-      isTeamPlanCancelled: mockIsTeamPlanCancelled,
-      isDeleteDisabled: mockIsDeleteDisabled,
-      deleteDisabledTooltipKey: computed(() =>
-        mockIsDeleteDisabled.value
-          ? mockUiConfig.value.workspaceMenuDisabledTooltip
-          : null
-      )
-    })
+    const billingRouting = vi.mocked(useBillingRouting())
+    billingRouting.shouldUseWorkspaceBilling = computed(
+      () => mockShouldUseWorkspaceBilling.value
+    )
+    const workspaceUI = vi.mocked(useWorkspaceUI())
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      canManageSubscription: mockCanManageSubscription.value,
+      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value,
+      canLeaveWorkspace: mockCanLeaveWorkspace.value
+    }))
+    workspaceUI.canReactivatePlan = computed(() => mockCanReactivatePlan.value)
+    workspaceUI.canOpenPricingSurface = computed(
+      () => mockCanOpenPricingSurface.value
+    )
+    const defaultUiConfig = workspaceUI.uiConfig.value
+    workspaceUI.uiConfig = computed(() => ({
+      ...defaultUiConfig,
+      ...mockUiConfig.value
+    }))
+    const isInPersonalWorkspace = toRef(
+      useTeamWorkspaceStore(),
+      'isInPersonalWorkspace'
+    )
+    workspaceUI.isInPersonalWorkspace = computed(
+      () => isInPersonalWorkspace.value
+    )
+    workspaceUI.canAccessSubscriptionFeatures = computed(
+      () => mockIsActiveSubscription.value
+    )
+    workspaceUI.isSubscriptionCancelled = computed(
+      () => mockIsSubscriptionCancelled.value
+    )
+    workspaceUI.isTeamPlanCancelled = computed(
+      () => mockIsTeamPlanCancelled.value
+    )
+    workspaceUI.isDeleteDisabled = computed(() => mockIsDeleteDisabled.value)
+    workspaceUI.deleteDisabledTooltipKey = computed(() =>
+      mockIsDeleteDisabled.value
+        ? mockUiConfig.value.workspaceMenuDisabledTooltip
+        : null
+    )
     mockDistributionState.isCloud = true
     mockSubscriptionStatus.value = 'active'
     mockBillingStatus.value = 'paid'

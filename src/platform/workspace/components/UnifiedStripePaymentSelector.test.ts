@@ -4,7 +4,6 @@ import { createI18n } from 'vue-i18n'
 
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 
-import type { CheckoutJourneyTelemetryEvent } from '@/platform/telemetry/types'
 import { useTelemetry } from '@/platform/telemetry'
 import {
   clearCheckoutJourney,
@@ -13,10 +12,10 @@ import {
 
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 
-const mockTrackCheckoutJourneyEvent = vi.hoisted(() =>
-  vi.fn<(event: CheckoutJourneyTelemetryEvent) => void>()
-)
 vi.mock(import('@/platform/telemetry'))
+const telemetry = useTelemetry()
+if (!telemetry) throw new Error('Telemetry mock unavailable')
+const mockedTelemetry = vi.mocked(telemetry)
 
 /**
  * The provider work is covered in the package, against the real Stripe mocks.
@@ -96,14 +95,8 @@ function renderSelector(props: Record<string, unknown> = {}) {
 
 describe('UnifiedStripePaymentSelector', () => {
   beforeEach(() => {
-    const telemetry = useTelemetry()
-    if (!telemetry) throw new Error('Telemetry mock unavailable')
-    Object.assign(telemetry, {
-      trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
-    })
     sessionStorage.clear()
     clearCheckoutJourney()
-    mockTrackCheckoutJourneyEvent.mockClear()
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
   })
 
@@ -147,7 +140,7 @@ describe('UnifiedStripePaymentSelector', () => {
 
     reportPhase({ phase: 'payment_element_ready', element: 'payment' })
 
-    expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
+    expect(mockedTelemetry.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         checkout_journey_id:
           seeded.status === 'active' ? seeded.record.journey_id : '',
@@ -163,6 +156,6 @@ describe('UnifiedStripePaymentSelector', () => {
 
     reportPhase({ phase: 'payment_submit_attempted' })
 
-    expect(mockTrackCheckoutJourneyEvent).not.toHaveBeenCalled()
+    expect(mockedTelemetry.trackCheckoutJourneyEvent).not.toHaveBeenCalled()
   })
 })

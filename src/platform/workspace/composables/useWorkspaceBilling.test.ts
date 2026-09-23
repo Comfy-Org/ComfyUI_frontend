@@ -33,8 +33,6 @@ const mockBillingPlans = vi.hoisted(() => ({
   fetchPlans: vi.fn()
 }))
 
-const mockShow = vi.hoisted(() => vi.fn())
-
 const mockReportError = vi.hoisted(() => vi.fn())
 
 // Hoisted so the vi.mock factory below can reference it: a plain top-level
@@ -71,6 +69,7 @@ vi.mock<unknown>(
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
+const subscriptionDialog = vi.mocked(useSubscriptionDialog())
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
@@ -172,7 +171,6 @@ const subscribeResponses = [
 ] satisfies SubscribeResponse[]
 
 beforeEach(() => {
-  Object.assign(useSubscriptionDialog(), { show: mockShow })
   vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(undefined)
   vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
     billingOperation()
@@ -1843,7 +1841,7 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.requireActiveSubscription()
 
-      expect(mockShow).toHaveBeenCalledTimes(1)
+      expect(subscriptionDialog.show).toHaveBeenCalledTimes(1)
     })
 
     it('does nothing when subscription is active', async () => {
@@ -1852,7 +1850,7 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.requireActiveSubscription()
 
-      expect(mockShow).not.toHaveBeenCalled()
+      expect(subscriptionDialog.show).not.toHaveBeenCalled()
     })
   })
 
@@ -1861,7 +1859,7 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       billing.showSubscriptionDialog()
 
-      expect(mockShow).toHaveBeenCalledTimes(1)
+      expect(subscriptionDialog.show).toHaveBeenCalledTimes(1)
     })
   })
 
