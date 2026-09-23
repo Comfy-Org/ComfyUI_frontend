@@ -23,7 +23,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import type {
   MaterializableGraph,
-  SubgraphDefinitionReadState
+  subgraphDefinitionReadState as subgraphDefinitionReadStateFn
 } from './agentNodeMaterializer'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
@@ -72,13 +72,8 @@ const adapterState = vi.hoisted(() => ({
 
 const materializerState = vi.hoisted(() => ({
   reconcileAgentAdapters: vi.fn(() => [] as NodeId[]),
-  subgraphDefinitionReadState: vi.fn<
-    (
-      rootGraph: MaterializableGraph['rootGraph'],
-      id: string
-    ) => SubgraphDefinitionReadState
-  >((rootGraph: MaterializableGraph['rootGraph'], id: string) =>
-    rootGraph.subgraphs.has(id) ? ('registered' as const) : ('missing' as const)
+  subgraphDefinitionReadState: vi.fn<typeof subgraphDefinitionReadStateFn>(
+    (rootGraph, id) => (rootGraph.subgraphs.has(id) ? 'registered' : 'missing')
   )
 }))
 
@@ -161,9 +156,6 @@ vi.mock(import('./agentNodeMaterializer'), () => ({
 }))
 
 vi.mock(import('./agentSubgraphDefinitions'), () => ({
-  allSubgraphDefinitions: (definitions: readonly ExportedSubgraph[]) => [
-    ...definitions
-  ],
   readSubgraphDefinitionIds: definitionsState.readSubgraphDefinitionIds,
   readSubgraphDefinitions: definitionsState.readSubgraphDefinitions
 }))

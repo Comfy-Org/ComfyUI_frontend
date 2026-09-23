@@ -1557,6 +1557,13 @@ describe('reconcileAgentAdapters', () => {
         links: [],
         definitions: { subgraphs: [failed, missing] }
       })
+      const storedFailed = follower.doc
+        .getMap<unknown>('definitions')
+        .get(failed.id)
+      assert.instanceOf(storedFailed, Y.Map)
+      const failedBody = new Y.Text('expensive body')
+      storedFailed.set('name', failedBody)
+      const failedBodyRead = vi.spyOn(failedBody, 'toJSON')
       const projection = new AgentCrdtProjection(
         remoteMutations(graphScopeOf(graph)),
         () => graph,
@@ -1564,6 +1571,7 @@ describe('reconcileAgentAdapters', () => {
       )
 
       expect(projection.reconcileLiveGraph('workflow')).toEqual([toNodeId(2)])
+      expect(failedBodyRead).not.toHaveBeenCalled()
       expect(created).toHaveBeenCalledTimes(creationsAfterFailure + 1)
       expect(reportError).toHaveBeenCalledOnce()
       expect(graph.getNodeById(toNodeId(1))).toBeNull()
