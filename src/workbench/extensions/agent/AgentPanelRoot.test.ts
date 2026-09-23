@@ -1631,16 +1631,15 @@ describe('AgentPanelRoot attach flow', () => {
 
       dispatchDrag(target, 'dragenter', dragData)
       await nextTick()
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Drag and drop assets here'
-      )
+      const dropTarget = screen.getByRole('status')
+      expect(dropTarget).toHaveTextContent('Drag and drop assets here')
 
       expect(dispatchDrag(target, 'dragover', dragData)).toBe(true)
 
       const claimed = dispatchDrag(target, 'drop', dragData)
       expect(claimed).toBe(true)
       await nextTick()
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(dropTarget).not.toBeInTheDocument()
 
       expect(
         within(await screen.findByTestId('composer-asset-section')).getByText(
@@ -2875,6 +2874,9 @@ describe('AgentPanelRoot workflow binding', () => {
         if (url.includes('/messages')) return json(200, [])
         if (url.includes('/agent/threads')) {
           return json(200, agentThreadList(threads))
+        }
+        if (url.includes('/assets')) {
+          return json(200, { assets: [], total: 0, has_more: false })
         }
         if (url.includes('/workflows')) {
           const workflows =
@@ -4135,6 +4137,32 @@ describe('AgentPanelRoot workflow binding', () => {
 
       draft: { content: { id: 'wf-42' } }
     })
+  })
+
+  it('keeps an explicitly detached workflow after a remount', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    const panel = renderWithSelectedTarget()
+
+    await sendFromComposer('attached turn')
+    expect(bodies[0]).toHaveProperty('workflow_id', 'wf-42')
+    ws.emit('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+    await screen.findByRole('button', { name: 'Send' })
+    useAgentPanelStore().setWorkflowTarget(null)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'still detached')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
+    ).toHaveFocus()
+    expect(bodies).toHaveLength(1)
   })
 
   it('re-attaches by picking a row so the next send carries the workflow again', async () => {
