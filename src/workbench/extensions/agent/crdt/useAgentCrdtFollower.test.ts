@@ -274,10 +274,10 @@ describe('useAgentCrdtFollower', () => {
     bridgeState.current = null
     clientState.transport = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
-    materializerState.subgraphDefinitionReadState
-      .mockImplementation((rootGraph, id) =>
+    materializerState.subgraphDefinitionReadState.mockImplementation(
+      (rootGraph, id) =>
         rootGraph.subgraphs.has(id) ? 'registered' : 'missing'
-      )
+    )
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
   })
