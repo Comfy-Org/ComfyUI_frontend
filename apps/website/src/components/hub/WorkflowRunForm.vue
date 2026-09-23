@@ -8,11 +8,9 @@ import type { WorkflowField } from '../../config/workflow-fields'
 import { leaveForSignIn } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { runSaying, runSteps, stepReached } from '../../lib/hub/run-progress'
 import Button from '../ui/button/Button.vue'
 import WorkflowRunField from './WorkflowRunField.vue'
-import WorkflowRunOutput from './WorkflowRunOutput.vue'
-import WorkflowRunSteps from './WorkflowRunSteps.vue'
+import WorkflowRunResult from './WorkflowRunResult.vue'
 
 // The workflow, run where it actually runs. Cloud takes the whole graph in the
 // request, so the page fills in the answers the bindings name and sends it;
@@ -54,19 +52,9 @@ const signInHref = useSignInHref(locale)
 
 const address = (field: WorkflowField) => `${field.node}.${field.input}`
 
-const steps = computed(() => runSteps(coldStart))
+const signedOut = computed(() => settled.value && !session.value)
 
-const reached = computed(() =>
-  stepReached(
-    state.value.phase,
-    state.value.phase === 'tracking' && state.value.job.status === 'pending',
-    steps.value.length
-  )
-)
-
-const saying = computed(() =>
-  runSaying(state.value.phase, steps.value[Math.max(reached.value, 0)])
-)
+const running = computed(() => state.value.phase === 'tracking')
 </script>
 
 <template>
@@ -103,7 +91,7 @@ const saying = computed(() =>
         class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
       >
         <Button
-          v-if="settled && !session"
+          v-if="signedOut"
           as="a"
           :href="signInHref"
           size="lg"
@@ -126,7 +114,7 @@ const saying = computed(() =>
         </Button>
 
         <Button
-          v-if="state.phase === 'tracking'"
+          v-if="running"
           variant="outline"
           size="sm"
           class="w-full"
@@ -138,62 +126,13 @@ const saying = computed(() =>
       </div>
     </div>
 
-    <div
-      class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-7"
-      data-testid="workflow-run-output"
-    >
-      <header
-        class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
-      >
-        {{ t('workshop.output.title', locale) }}
-      </header>
-
-      <div class="flex min-h-80 flex-col gap-4 p-5">
-        <WorkflowRunSteps v-if="reached >= 0" :steps :reached :locale />
-
-        <p v-if="saying" class="text-sm text-content-muted">
-          {{ t(saying, locale) }}
-        </p>
-
-        <!-- An error says which of the two things happened, because only one
-          of them is safe to simply try again. -->
-        <div
-          v-if="state.phase === 'error'"
-          class="border-danger/40 flex flex-col gap-3 rounded-xl border p-4"
-          data-testid="workflow-run-error"
-        >
-          <p class="text-sm text-content">{{ state.message }}</p>
-          <Button
-            v-if="state.jobId"
-            variant="outline"
-            size="sm"
-            data-testid="workflow-run-resume"
-            @click="resume"
-          >
-            {{ t('workshop.v2.run.resume', locale) }}
-          </Button>
-        </div>
-
-        <div v-if="outputs.length" class="flex flex-col gap-3">
-          <WorkflowRunOutput
-            v-for="output in outputs"
-            :key="output.url"
-            v-bind="output"
-          />
-        </div>
-
-        <!-- Nothing has been made yet, so the panel shows what this workflow
-          makes rather than an empty box. -->
-        <img
-          v-else-if="sample && state.phase === 'idle'"
-          :src="sample"
-          :alt="t('workshop.output.title', locale)"
-          loading="lazy"
-          decoding="async"
-          class="aspect-video w-full rounded-xl bg-hub-surface object-cover"
-          data-testid="workflow-run-sample"
-        />
-      </div>
-    </div>
+    <WorkflowRunResult
+      :state
+      :outputs
+      :sample
+      :cold-start="coldStart"
+      :locale
+      @resume="resume"
+    />
   </section>
 </template>
