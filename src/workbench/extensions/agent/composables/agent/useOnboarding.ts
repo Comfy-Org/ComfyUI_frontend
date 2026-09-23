@@ -67,15 +67,22 @@ export function hasSeenCoach(scopedKey: string): boolean {
   }
 }
 
+const shownScopes = new Set<string>()
 const reportedDeferrals = new Set<string>()
-export function reportCoachDeferred(
-  reason: Exclude<AgentOnboardingNotShownReason, 'target_missing'>,
-  scope: string
+/** A coach paused mid-way by App Mode or a tour was already shown, so it stays quiet. */
+export function trackCoachDeferral(
+  scope: string,
+  reason: Exclude<AgentOnboardingNotShownReason, 'target_missing'> | null
 ): void {
+  if (reason === null) {
+    shownScopes.add(scope)
+    return
+  }
   const key = `${scope}:${reason}`
-  if (reportedDeferrals.has(key)) return
+  const telemetry = useTelemetry()
+  if (!telemetry || shownScopes.has(scope) || reportedDeferrals.has(key)) return
   reportedDeferrals.add(key)
-  useTelemetry()?.trackAgentOnboardingNotShown({ reason })
+  telemetry.trackAgentOnboardingNotShown({ reason })
 }
 
 export function useOnboarding(

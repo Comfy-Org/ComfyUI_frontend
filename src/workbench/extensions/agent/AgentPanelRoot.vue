@@ -66,8 +66,8 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
-  reportCoachDeferred,
-  scopedOnboardingKey
+  scopedOnboardingKey,
+  trackCoachDeferral
 } from './composables/agent/useOnboarding'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
@@ -292,8 +292,7 @@ const coachDeferredBy = computed(() =>
 watch(
   [consentAccepted, onboardingKey, coachDeferredBy],
   ([accepted, key, reason]) => {
-    if (accepted && key && reason && !hasSeenCoach(key))
-      reportCoachDeferred(reason, key)
+    if (accepted && key && !hasSeenCoach(key)) trackCoachDeferral(key, reason)
   },
   { immediate: true }
 )

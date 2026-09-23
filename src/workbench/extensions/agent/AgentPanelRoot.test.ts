@@ -579,6 +579,25 @@ describe('AgentPanelRoot onboarding', () => {
     ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
   })
 
+  it('stays quiet when App Mode pauses a coach that was already on screen', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-interrupted'
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+
+    canvasStore.linearMode = true
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).not.toBeInTheDocument()
+    )
+
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+  })
+
   it('reports the deferral once the workspace resolves after mount', async () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
     canvasStore.linearMode = true

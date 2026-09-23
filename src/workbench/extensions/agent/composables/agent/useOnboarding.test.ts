@@ -1,12 +1,17 @@
 import { nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import type { CoachStep } from './useOnboarding'
 import {
   adoptSharedOnboardingFlag,
   scopedOnboardingKey,
+  trackCoachDeferral,
   useOnboarding
 } from './useOnboarding'
+
+vi.mock(import('@/platform/telemetry'))
 
 const KEY = 'test.onboarded'
 const STEPS: CoachStep[] = Array.from({ length: 4 }, (_, index) => ({
@@ -116,5 +121,15 @@ describe('useOnboarding', () => {
     tour.next()
     expect(tour.active.value).toBe(false)
     expect(localStorage.getItem(KEY)).toBe('false')
+  })
+
+  it('reports a deferral once telemetry is up when the first attempt found none', () => {
+    vi.mocked(useTelemetry).mockReturnValueOnce(null)
+    trackCoachDeferral('scope-late-telemetry', 'app_mode')
+    trackCoachDeferral('scope-late-telemetry', 'app_mode')
+
+    expect(
+      useTelemetry()!.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
   })
 })
