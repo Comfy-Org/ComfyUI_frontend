@@ -1,11 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
 vi.mock(import('@/scripts/app'))
-
-let graph: LGraph
 
 type BeforeRegisterNodeDef = NonNullable<
   ComfyExtension['beforeRegisterNodeDef']
@@ -17,7 +15,7 @@ interface FilenamePrefixWidget {
   serializeValue?: () => string
 }
 
-async function loadExtension(): Promise<ComfyExtension> {
+async function loadExtension(graph: LGraph): Promise<ComfyExtension> {
   vi.resetModules()
   const { app } = await import('@/scripts/app')
   vi.mocked(app).graph = graph
@@ -30,7 +28,13 @@ async function createNodeWithFilenamePrefix(
   nodeName: string,
   prefix: string
 ): Promise<FilenamePrefixWidget> {
-  const ext = await loadExtension()
+  const graph = new LGraph()
+  const sampler = new LGraphNode('Sampler')
+  sampler.properties['Node name for S&R'] = 'Sampler'
+  sampler.addWidget('number', 'seed', 12345, () => undefined, {})
+  graph.add(sampler)
+
+  const ext = await loadExtension(graph)
 
   const nodeType = {
     prototype: {}
@@ -55,14 +59,6 @@ async function createNodeWithFilenamePrefix(
 }
 
 describe('Comfy.SaveImageExtraOutput', () => {
-  beforeEach(() => {
-    graph = new LGraph()
-    const sampler = new LGraphNode('Sampler')
-    sampler.properties['Node name for S&R'] = 'Sampler'
-    sampler.addWidget('number', 'seed', 12345, () => undefined, {})
-    graph.add(sampler)
-  })
-
   it.for([
     'SaveImage',
     'SaveImageAdvanced',
