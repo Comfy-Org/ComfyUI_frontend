@@ -43,6 +43,7 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 interface BootAgentAppOptions {
   /** Extra `/api/settings` entries layered over the panel defaults. */
   settings?: Record<string, unknown>
+  vueNodes?: boolean
   /** Server definitions, optionally augmented with deterministic test entries. */
   objectInfo?: 'server' | Record<string, ComfyNodeDef>
   /** Preserve existing tests by default; onboarding specs opt into the tour. */
@@ -62,6 +63,7 @@ async function mockAgentBoot(
   {
     agentFlag,
     settings,
+    vueNodes,
     objectInfo,
     assets
   }: { agentFlag: boolean } & BootAgentAppOptions
@@ -71,7 +73,10 @@ async function mockAgentBoot(
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
-      ...settings
+      ...settings,
+      ...((vueNodes || cloudAppFixture.info().tags.includes('@vue-nodes')) && {
+        'Comfy.VueNodes.Enabled': true
+      })
     },
     objectInfo
   })

@@ -2560,7 +2560,10 @@ export class LGraph
           )
         : undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID && !hostInput) {
-        console.error('Missing host input when unpacking subgraph')
+        reportError(new Error('Missing host input when unpacking subgraph'), {
+          errorType: 'subgraph_unpack_missing_host_input',
+          context: { linkId: link.id, subgraphNodeId: subgraphNode.id }
+        })
         continue
       }
       const outerLink =
