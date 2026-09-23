@@ -3340,7 +3340,8 @@
       "contactUs": "Contact us",
       "noInvites": "No pending invites",
       "noMembers": "No members",
-      "searchPlaceholder": "Search..."
+      "searchPlaceholder": "Search...",
+      "expiredOn": "Expired {date}"
     },
     "partnerNodes": {
       "title": "Partner models",
