@@ -3,7 +3,7 @@ import { X } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/hub'
 import type { TypeFilter } from '../../lib/hub/browse-entry'
 
 const {

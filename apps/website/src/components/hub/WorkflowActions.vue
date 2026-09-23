@@ -5,8 +5,9 @@ import type { Component } from 'vue'
 import { computed } from 'vue'
 
 import Button from '../ui/button/Button.vue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
+import type { HubKey } from '../../i18n/hub'
+import { t } from '../../i18n/hub'
 import type { WorkflowReach } from '../../lib/hub/workflow-reach'
 
 type RouteKey = 'cloud' | 'copy' | 'download' | 'tutorial'
@@ -42,8 +43,8 @@ interface Route {
   readonly id: string
   readonly href: string
   readonly icon: Component
-  readonly label: TranslationKey
-  readonly note: TranslationKey
+  readonly label: HubKey
+  readonly note: HubKey
   readonly download?: boolean
   readonly external?: boolean
 }

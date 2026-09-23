@@ -2,8 +2,9 @@
 import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
+import type { HubKey } from '../../i18n/hub'
+import { t } from '../../i18n/hub'
 import type { BrowseEntry } from '../../lib/hub/browse-entry'
 import { sortBrowseEntries } from '../../lib/hub/browse-entry'
 import type { CatalogueShelf } from '../../lib/hub/shelves'
@@ -58,7 +59,7 @@ const cardClass = 'peek-card shrink-0 snap-start'
 // rows above it.
 const total = computed(() => entries.length)
 
-const kindLabelKey: Record<string, TranslationKey> = {
+const kindLabelKey: Record<string, HubKey> = {
   model: 'workshop.v2.kind.models',
   workflow: 'workshop.v2.kind.workflows'
 }

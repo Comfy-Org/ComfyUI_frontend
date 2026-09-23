@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import type { RunState } from '../../composables/useWorkflowRun'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/hub'
 import { runSaying, runSteps, stepReached } from '../../lib/hub/run-progress'
 import Button from '../ui/button/Button.vue'
 import WorkflowRunOutput from './WorkflowRunOutput.vue'
@@ -56,7 +56,7 @@ const showSample = computed(() => sample && state.phase === 'idle')
 <template>
   <div
     class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-7"
-    data-testid="workflow-run-output"
+    data-testid="workflow-run-result"
   >
     <header
       class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"

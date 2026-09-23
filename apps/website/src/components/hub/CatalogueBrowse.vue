@@ -2,8 +2,9 @@
 import { ChevronLeft } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
+import type { HubKey } from '../../i18n/hub'
+import { t } from '../../i18n/hub'
 import type {
   BrowseEntry,
   CatalogueOrder,
@@ -243,7 +244,7 @@ onMounted(() => {
 // than changing what is in it.
 const BANNER_SLIDES = 6
 
-const kindLabelKey: Record<string, TranslationKey> = {
+const kindLabelKey: Record<string, HubKey> = {
   model: 'workshop.v2.kind.models',
   workflow: 'workshop.v2.kind.workflows'
 }
@@ -295,10 +296,9 @@ const heading = computed(() => {
   <section class="pb-32" data-testid="catalogue-browse">
     <WorkshopHero
       v-if="!inSection"
-      eyebrow-key="workshop.v2.eyebrow"
-      heading-key="workshop.v2.heading"
-      subtitle-key="workshop.v2.subtitle"
-      :locale
+      :eyebrow="t('workshop.v2.eyebrow', locale)"
+      :heading="t('workshop.v2.heading', locale)"
+      :subtitle="t('workshop.v2.subtitle', locale)"
     />
 
     <!-- Where you are and the way out of it, before the controls that act on

@@ -1,13 +1,13 @@
 import { USE_CASES } from '../../config/models-catalogue'
 import { LAUNCH_CATEGORY_NAMES } from '../../config/launch-categories'
-import type { TranslationKey } from '../../i18n/translations'
+import type { HubKey } from '../../i18n/hub'
 import { useCaseLabelKey } from '../workshop/use-case-label'
 import type { TypeFilter } from './browse-entry'
 
 /** One row of the catalogue at rest, named for the reader. */
 export interface CatalogueShelf {
   readonly key: string
-  readonly labelKey: TranslationKey
+  readonly labelKey: HubKey
 }
 
 const MODEL_SHELVES: readonly CatalogueShelf[] = USE_CASES.map((useCase) => ({

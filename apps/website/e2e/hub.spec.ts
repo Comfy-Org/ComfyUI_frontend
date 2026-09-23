@@ -200,7 +200,7 @@ test.describe('V2 catalogue', () => {
 
     await expect(page.getByTestId('workflow-on-cloud')).toBeVisible()
     await expect(page.getByTestId('workflow-run-input')).toBeVisible()
-    await expect(page.getByTestId('workflow-run-output')).toBeVisible()
+    await expect(page.getByTestId('workflow-run-result')).toBeVisible()
     // The model page's own shell is for the workflows that borrow it.
     await expect(page.getByTestId('workflow-run')).toHaveCount(0)
   })

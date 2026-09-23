@@ -4,7 +4,7 @@ import { useElementSize } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/hub'
 
 const { placeholder, locale = 'en' } = defineProps<{
   /** Named per half, because the two are searched apart. */

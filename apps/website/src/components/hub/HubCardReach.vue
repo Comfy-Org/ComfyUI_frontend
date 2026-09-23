@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/hub'
 import type { WorkflowReach } from '../../lib/hub/workflow-reach'
 
 // What a workflow needs before anyone can call it. The shared Cloud endpoint

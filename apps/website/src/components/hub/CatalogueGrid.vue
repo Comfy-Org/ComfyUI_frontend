@@ -3,7 +3,7 @@ import { useIntersectionObserver } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/hub'
 import type { BrowseEntry } from '../../lib/hub/browse-entry'
 import type { Shelf } from '../../lib/workshop/shelf-memory'
 import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'

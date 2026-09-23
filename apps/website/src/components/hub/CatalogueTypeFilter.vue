@@ -3,15 +3,16 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
+import type { HubKey } from '../../i18n/hub'
+import { t } from '../../i18n/hub'
 import type { TypeFilter } from '../../lib/hub/browse-entry'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const type = defineModel<TypeFilter>({ required: true })
 
-const TABS: readonly { value: TypeFilter; label: TranslationKey }[] = [
+const TABS: readonly { value: TypeFilter; label: HubKey }[] = [
   { value: 'model', label: 'workshop.v2.kind.models' },
   { value: 'workflow', label: 'workshop.v2.kind.workflows' }
 ]

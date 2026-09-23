@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
+import type { HubKey } from '../../i18n/hub'
+import { t } from '../../i18n/hub'
 
 // The wait, as the steps it actually has, with the one it has got to lit.
 const {
@@ -8,7 +9,7 @@ const {
   reached,
   locale = 'en'
 } = defineProps<{
-  steps: readonly TranslationKey[]
+  steps: readonly HubKey[]
   reached: number
   locale?: Locale
 }>()

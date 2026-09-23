@@ -3,8 +3,9 @@ import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
+import type { HubKey } from '../../i18n/hub'
+import { t } from '../../i18n/hub'
 import type { HubPortSummary } from '../../lib/hub/workflow-detail'
 import IconModel from './IconModel.vue'
 import type { WorkflowReach } from '../../lib/hub/workflow-reach'
@@ -38,8 +39,8 @@ const output = computed(() => produces[0])
 // One fact per line, each one saying which fact it is. An icon in front of a
 // date or a name names nothing the word beside it does not, and five of them
 // in a column read as decoration standing in for structure.
-const facts = computed<{ label: TranslationKey; value: string }[]>(() => {
-  const rows: { label: TranslationKey; value: string }[] = [
+const facts = computed<{ label: HubKey; value: string }[]>(() => {
+  const rows: { label: HubKey; value: string }[] = [
     {
       label: 'workshop.v2.workflow.factWhere',
       value: t(

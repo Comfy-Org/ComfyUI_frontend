@@ -1,7 +1,8 @@
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
+import type { HubKey } from '../../i18n/hub'
+import { t } from '../../i18n/hub'
 
-const MEDIA = new Map<string, TranslationKey>([
+const MEDIA = new Map<string, HubKey>([
   ['image', 'workshop.hub.io.image'],
   ['video', 'workshop.hub.io.video'],
   ['audio', 'workshop.hub.io.audio'],

@@ -5,7 +5,7 @@ import type { GraphPicture } from '../../lib/hub/workflow-graph'
 import { linkPath, readGraphPicture } from '../../lib/hub/workflow-graph'
 import WorkflowGraphNode from './WorkflowGraphNode.vue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/hub'
 
 const {
   source,

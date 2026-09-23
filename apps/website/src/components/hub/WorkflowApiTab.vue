@@ -17,7 +17,7 @@ import {
   workflowInputs
 } from '../../config/workflow-snippets'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/hub'
 import type { CodeLang } from '../../lib/highlight'
 import Button from '../ui/button/Button.vue'
 import HighlightedCode from '../workshop/HighlightedCode.vue'

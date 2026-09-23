@@ -12,13 +12,14 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
+import type { HubKey } from '../../i18n/hub'
+import { t } from '../../i18n/hub'
 import type { CatalogueOrder, TypeFilter } from '../../lib/hub/browse-entry'
 
 export interface OrderOption {
   readonly value: CatalogueOrder
-  readonly label: TranslationKey
+  readonly label: HubKey
   readonly only?: TypeFilter
 }
 

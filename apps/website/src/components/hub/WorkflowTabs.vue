@@ -4,8 +4,9 @@ import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useTablist } from '../../composables/useTablist'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
+import type { HubKey } from '../../i18n/hub'
+import { t } from '../../i18n/hub'
 
 // A workflow that runs on Cloud has no catalogue model behind it, so it never
 // reached the model page's tabs and its details ended up stacked under the
@@ -26,7 +27,7 @@ type Section = 'playground' | 'details' | 'api'
 const sections = computed<readonly Section[]>(() =>
   runs ? ['playground', 'details', 'api'] : ['details', 'api']
 )
-const sectionLabel: Record<Section, TranslationKey> = {
+const sectionLabel: Record<Section, HubKey> = {
   playground: 'workshop.v2.workflow.tabRun',
   details: 'workshop.v2.workflow.tabAbout',
   api: 'workshop.model.tabs.api'

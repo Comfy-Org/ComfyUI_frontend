@@ -12,7 +12,7 @@ import {
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/hub'
 
 const { models, locale = 'en' } = defineProps<{
   /** Every model the workflows on this tab name, most used first. */

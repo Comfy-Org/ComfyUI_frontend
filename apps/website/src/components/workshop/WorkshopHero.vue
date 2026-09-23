@@ -3,20 +3,14 @@ import { useSlots } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
 import SplitReveal from './SplitReveal.vue'
 
-const {
-  eyebrowKey = 'workshop.hero.eyebrow',
-  headingKey = 'workshop.hero.heading',
-  subtitleKey,
-  locale = 'en'
-} = defineProps<{
-  eyebrowKey?: TranslationKey
-  headingKey?: TranslationKey
-  subtitleKey?: TranslationKey
-  locale?: Locale
+// The copy arrives resolved, so the hero belongs to whichever section renders
+// it rather than to one translation table.
+const { eyebrow, heading, subtitle } = defineProps<{
+  eyebrow: string
+  heading: string
+  subtitle?: string
 }>()
 
 const slots = useSlots()
@@ -37,20 +31,16 @@ const slots = useSlots()
     <p
       class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase max-sm:mb-2"
     >
-      <SplitReveal :text="t(eyebrowKey, locale)" />
+      <SplitReveal :text="eyebrow" />
     </p>
     <h1 class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl">
-      <SplitReveal :text="t(headingKey, locale)" :delay="90" />
+      <SplitReveal :text="heading" :delay="90" />
     </h1>
     <div
       class="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 sm:short:mt-3"
     >
-      <p v-if="subtitleKey" class="text-lg text-primary-comfy-canvas/70">
-        <SplitReveal
-          :text="t(subtitleKey, locale)"
-          :delay="260"
-          :stagger="50"
-        />
+      <p v-if="subtitle" class="text-lg text-primary-comfy-canvas/70">
+        <SplitReveal :text="subtitle" :delay="260" :stagger="50" />
       </p>
       <slot name="aside" />
     </div>

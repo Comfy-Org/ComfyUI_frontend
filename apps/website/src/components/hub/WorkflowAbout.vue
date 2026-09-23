@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import { t } from '../../i18n/hub'
 import type { HubPortSummary } from '../../lib/hub/workflow-detail'
 import type { WorkflowReach } from '../../lib/hub/workflow-reach'
 import WorkflowActions from './WorkflowActions.vue'

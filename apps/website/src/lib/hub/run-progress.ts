@@ -1,4 +1,4 @@
-import type { TranslationKey } from '../../i18n/translations'
+import type { HubKey } from '../../i18n/hub'
 
 /** Where a run has got to, as the reader is told it. */
 export type RunPhase =
@@ -10,12 +10,12 @@ export type RunPhase =
   | 'finished'
   | 'error'
 
-const QUEUED: readonly TranslationKey[] = [
+const QUEUED: readonly HubKey[] = [
   'workshop.v2.run.queued',
   'workshop.v2.run.generating'
 ]
 
-const COLD: readonly TranslationKey[] = [
+const COLD: readonly HubKey[] = [
   'workshop.v2.run.waking',
   'workshop.v2.run.loading',
   'workshop.v2.run.generating'
@@ -27,7 +27,7 @@ const COLD: readonly TranslationKey[] = [
  * wakes it and loads its models first, which is the long part, and a reader
  * who is told that reads a slow first run as the shape of the thing.
  */
-export function runSteps(coldStart: boolean): readonly TranslationKey[] {
+export function runSteps(coldStart: boolean): readonly HubKey[] {
   return coldStart ? COLD : QUEUED
 }
 
@@ -43,7 +43,7 @@ export function stepReached(
   return -1
 }
 
-const SAYING: Partial<Record<RunPhase, TranslationKey>> = {
+const SAYING: Partial<Record<RunPhase, HubKey>> = {
   uploading: 'workshop.v2.run.uploading',
   submitting: 'workshop.v2.run.sending',
   reconnecting: 'workshop.v2.run.reconnecting'
@@ -56,7 +56,7 @@ const SAYING: Partial<Record<RunPhase, TranslationKey>> = {
  */
 export function runSaying(
   phase: RunPhase,
-  step: TranslationKey | undefined
-): TranslationKey | undefined {
+  step: HubKey | undefined
+): HubKey | undefined {
   return phase === 'tracking' ? step : SAYING[phase]
 }
