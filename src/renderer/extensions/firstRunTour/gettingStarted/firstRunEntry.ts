@@ -125,19 +125,10 @@ export const useFirstRunEntry = createSharedComposable(() => {
   /** True once this boot's first-run stages have run, false if the grace period passes first. */
   function whenStartupDecided(): Promise<boolean> {
     if (startupDecided.value) return Promise.resolve(true)
-    startupDecision ??= until(startupDecided)
-      .toBe(true, {
-        timeout: STARTUP_DECISION_TIMEOUT_MS,
-        throwOnTimeout: false
-      })
-      .then((decided) => {
-        if (!decided)
-          reportError(new Error('First-run stages never reported a decision'), {
-            errorType: 'failure_settling_first_run_decision',
-            level: 'warning'
-          })
-        return decided
-      })
+    startupDecision ??= until(startupDecided).toBe(true, {
+      timeout: STARTUP_DECISION_TIMEOUT_MS,
+      throwOnTimeout: false
+    })
     return startupDecision
   }
 
@@ -148,7 +139,7 @@ export const useFirstRunEntry = createSharedComposable(() => {
     } catch (error) {
       reportError(error, {
         errorType: 'failure_writing_tutorial_completed_setting',
-        level: 'error'
+        level: 'warning'
       })
     }
   }

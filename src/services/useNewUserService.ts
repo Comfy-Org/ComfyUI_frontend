@@ -16,10 +16,11 @@ function hasV2DraftHistory(raw: string | null): boolean {
         ? Object.keys(parsed.entries).length
         : 0
     return orderLength > 0 || entriesCount > 0
-  } catch (error) {
-    reportError(error, {
+  } catch {
+    reportError(new Error('Workflow draft index is not valid JSON'), {
       errorType: 'error_parsing_workflow_draft_index',
-      level: 'warning'
+      level: 'warning',
+      context: { length: raw.length }
     })
     return false
   }

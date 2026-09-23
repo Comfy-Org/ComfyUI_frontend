@@ -282,36 +282,6 @@ describe('useFirstRunEntry', () => {
         vi.useRealTimers()
       }
     })
-
-    it('reports a boot that never decided once, however many surfaces waited', async () => {
-      vi.useFakeTimers()
-      try {
-        const entry = useFirstRunEntry()
-        vi.mocked(reportError).mockClear()
-        void entry.whenStartupDecided()
-        void entry.whenStartupDecided()
-
-        await vi.advanceTimersByTimeAsync(60_000)
-
-        expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
-          errorType: 'failure_settling_first_run_decision',
-          level: 'warning'
-        })
-      } finally {
-        vi.useRealTimers()
-      }
-    })
-
-    it('reports nothing when the boot decides inside the grace period', async () => {
-      const entry = useFirstRunEntry()
-      vi.mocked(reportError).mockClear()
-      const decision = entry.whenStartupDecided()
-
-      await entry.handleStartupOutcome('fresh')
-
-      await expect(decision).resolves.toBe(true)
-      expect(reportError).not.toHaveBeenCalled()
-    })
   })
 
   describe('what a fresh user sees', () => {
@@ -690,14 +660,15 @@ describe('useFirstRunEntry', () => {
 
   it('reports a tutorial flag write that fails instead of only logging it', async () => {
     const entry = useFirstRunEntry()
-    vi.mocked(useSettingStore().set).mockRejectedValue(new Error('503'))
-    vi.mocked(reportError).mockClear()
+    vi.mocked(useSettingStore().set).mockRejectedValue(
+      new TypeError('Failed to fetch')
+    )
 
     await entry.dismissGettingStarted()
 
     expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
       errorType: 'failure_writing_tutorial_completed_setting',
-      level: 'error'
+      level: 'warning'
     })
   })
 })

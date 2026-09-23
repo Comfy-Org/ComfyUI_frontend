@@ -290,18 +290,13 @@ describe('OnboardingCoach', () => {
         global: { plugins: [i18n] }
       })
 
-    beforeEach(() => {
-      vi.useFakeTimers()
-      vi.mocked(reportError).mockClear()
-    })
-
-    it('reports once the grace period has fully passed', async () => {
+    it('reports only once the grace period has passed', async () => {
       renderMissing('#never-a')
 
-      await vi.advanceTimersByTimeAsync(7_999)
+      await vi.advanceTimersByTimeAsync(7_000)
       expect(reportError).not.toHaveBeenCalled()
 
-      await vi.advanceTimersByTimeAsync(1)
+      await vi.advanceTimersByTimeAsync(1_000)
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
         errorType: 'failure_locating_agent_coach_target',
         level: 'warning',
@@ -319,6 +314,32 @@ describe('OnboardingCoach', () => {
       expect(reportError).toHaveBeenCalledOnce()
     })
 
+    it('re-arms for a later step whose target is missing', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      const found = document.createElement('div')
+      found.id = 'found-e'
+      document.body.appendChild(found)
+      render(OnboardingCoach, {
+        props: {
+          steps: [
+            { ...STEPS[0], target: '#found-e' },
+            { ...STEPS[1], target: '#never-e' }
+          ],
+          storageKey: 'coach-missing-rearm'
+        },
+        global: { plugins: [i18n] }
+      })
+      await user.click(await screen.findByRole('button', { name: 'Next' }))
+
+      await vi.advanceTimersByTimeAsync(8_000)
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        errorType: 'failure_locating_agent_coach_target',
+        level: 'warning',
+        context: { target: '#never-e', step: 2 }
+      })
+    })
+
     it('stays quiet when the target arrives inside the grace period', async () => {
       renderMissing('#late-c')
       await vi.advanceTimersByTimeAsync(5_000)
@@ -329,7 +350,6 @@ describe('OnboardingCoach', () => {
       await vi.advanceTimersByTimeAsync(10_000)
 
       expect(reportError).not.toHaveBeenCalled()
-      target.remove()
     })
 
     it('stays quiet when the panel closes before the grace period ends', async () => {

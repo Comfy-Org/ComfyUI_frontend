@@ -169,9 +169,10 @@ describe('useNewUserService', () => {
       await service.initializeIfNewUser()
 
       expect(service.isNewUser()).toBe(true)
-      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
         errorType: 'error_parsing_workflow_draft_index',
-        level: 'warning'
+        level: 'warning',
+        context: { length: 'not json'.length }
       })
     })
 

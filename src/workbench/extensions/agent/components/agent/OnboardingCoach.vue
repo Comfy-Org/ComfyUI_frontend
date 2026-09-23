@@ -5,6 +5,7 @@ import type { Middleware } from '@floating-ui/vue'
 import {
   useElementBounding,
   useEventListener,
+  useTimeoutFn,
   useWindowSize
 } from '@vueuse/core'
 import { FocusScope } from 'reka-ui'
@@ -76,23 +77,26 @@ targetObserver.observe(document.body, {
   childList: true,
   subtree: true
 })
-let targetMissingTimer: ReturnType<typeof setTimeout> | undefined
+const missingTarget = computed(() =>
+  active.value && !target.value ? step.value.target : null
+)
+const { start: startMissingTargetTimer, stop: stopMissingTargetTimer } =
+  useTimeoutFn(
+    (selector: string) => reportMissingCoachTarget(selector, index.value + 1),
+    TARGET_MISSING_AFTER_MS,
+    { immediate: false }
+  )
 watch(
-  [active, target],
-  ([isActive, found]) => {
-    clearTimeout(targetMissingTimer)
-    if (!isActive || found) return
-    targetMissingTimer = setTimeout(
-      () => reportMissingCoachTarget(step.value.target, index.value + 1),
-      TARGET_MISSING_AFTER_MS
-    )
+  missingTarget,
+  (selector) => {
+    stopMissingTargetTimer()
+    if (selector) startMissingTargetTimer(selector)
   },
   { immediate: true }
 )
 onBeforeUnmount(() => {
   targetObserver.disconnect()
   clearTimeout(targetRetryTimer)
-  clearTimeout(targetMissingTimer)
 })
 
 watch(
