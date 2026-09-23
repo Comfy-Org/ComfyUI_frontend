@@ -22,8 +22,6 @@ const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
-let camera = reactive({ x: 0, y: 0, z: 1 })
-
 const MockFormDropdownMenu = {
   name: 'FormDropdownMenu',
   props: [
@@ -133,18 +131,10 @@ async function openDropdown(user: ReturnType<typeof userEvent.setup>) {
 }
 
 beforeEach(() => {
-  camera = reactive({ x: 0, y: 0, z: 1 })
-  vi.mocked(useTransformState()).camera = camera
   vi.mocked(useToastStore().addAlert).mockImplementation(() => undefined)
 })
 
 describe('FormDropdown', () => {
-  beforeEach(() => {
-    camera.x = 0
-    camera.y = 0
-    camera.z = 1
-  })
-
   describe('filteredItems updates when items prop changes', () => {
     it('updates displayed items when items prop changes', async () => {
       const { rerender, user } = mountDropdown([
@@ -436,6 +426,8 @@ describe('FormDropdown', () => {
   })
 
   it('closes when the canvas viewport moves', async () => {
+    const camera = reactive({ x: 0, y: 0, z: 1 })
+    vi.mocked(useTransformState()).camera = camera
     const onUpdateIsOpen = vi.fn()
     const { user } = mountDropdown([createItem('1', 'alpha')], {
       onUpdateIsOpen
