@@ -11,7 +11,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 
 import type { OutboxEntry, OutboxStore } from './humanOpOutbox'
 import { createHumanOpOutbox, createMemoryOutboxStore } from './humanOpOutbox'
-import type { BatchOutcome } from './opSender'
+import type { BatchOutcome, OpsResultView } from './opSender'
 
 const KEY = 'outbox:test'
 
@@ -32,7 +32,7 @@ const opIds = (ops: readonly Op[]): string[] => ops.map((o) => o.op_id)
 
 const acknowledged = (
   ops: Op[],
-  result: Partial<BatchOutcome & { state: 'acknowledged' }>['result']
+  result: Partial<OpsResultView>
 ): BatchOutcome => ({
   state: 'acknowledged',
   ops,
