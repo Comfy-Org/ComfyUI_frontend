@@ -5133,7 +5133,7 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     })
     localStorage.setItem(
-      'Comfy.Agent.WorkflowTabBindings.v2',
+      StorageKeys.agentWorkflowTabBindings('personal'),
       JSON.stringify({
         'wf-from-before-reload': {
           tabPath: tab.path,
