@@ -10,7 +10,6 @@ import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
-const mockGetNodeByExecutionId = vi.mocked(getNodeByExecutionId)
 
 vi.mock(import('@/i18n'))
 
@@ -40,7 +39,7 @@ describe('FE-230 regression — workflow-load missing-media flagging must not wi
 
   it('does not clear node.imgs when verification flags a Load Image as missing on workflow load (e.g. mask-editor saved value)', async () => {
     const node = makeNodeWithPreview(42)
-    mockGetNodeByExecutionId.mockReturnValue(node)
+    vi.mocked(getNodeByExecutionId).mockReturnValue(node)
 
     useExecutionErrorStore()
     const missingMediaStore = useMissingMediaStore()

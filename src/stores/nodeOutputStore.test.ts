@@ -13,12 +13,10 @@ import {
 import { toNodeId } from '@/types/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
-const mockResolveNode = vi.fn()
-
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isAnimatedOutput: vi.fn(),
   isVideoNode: vi.fn(),
-  resolveNode: (...args: unknown[]) => mockResolveNode(...args)
+  resolveNode: vi.fn()
 }))
 
 vi.mock(import('@/scripts/app'))
@@ -949,7 +947,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const mockNode = createMockNode({ id: 1 })
     const mockImg = document.createElement('img')
 
-    mockResolveNode.mockReturnValue(mockNode)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(mockNode)
 
     store.syncLegacyNodeImgs(toNodeId(1), mockImg, 0)
 
@@ -963,7 +961,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const mockNode = createMockNode({ id: 1 })
     const mockImg = document.createElement('img')
 
-    mockResolveNode.mockReturnValue(mockNode)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(mockNode)
 
     store.syncLegacyNodeImgs(toNodeId(1), mockImg, 0)
 
@@ -977,7 +975,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const mockNode = createMockNode({ id: 42 })
     const mockImg = document.createElement('img')
 
-    mockResolveNode.mockReturnValue(mockNode)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(mockNode)
 
     store.syncLegacyNodeImgs(toNodeId(42), mockImg, 3)
 
@@ -991,11 +989,11 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const mockNode = createMockNode({ id: 123 })
     const mockImg = document.createElement('img')
 
-    mockResolveNode.mockReturnValue(mockNode)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(mockNode)
 
     store.syncLegacyNodeImgs(toNodeId('123'), mockImg, 0)
 
-    expect(mockResolveNode).toHaveBeenCalledWith('123')
+    expect(litegraphUtil.resolveNode).toHaveBeenCalledWith('123')
     expect(mockNode.imgs).toEqual([mockImg])
   })
 
@@ -1004,7 +1002,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const store = useNodeOutputStore()
     const mockImg = document.createElement('img')
 
-    mockResolveNode.mockReturnValue(undefined)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(undefined)
 
     expect(() =>
       store.syncLegacyNodeImgs(toNodeId(999), mockImg, 0)
@@ -1017,7 +1015,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const mockNode = createMockNode({ id: 1 })
     const mockImg = document.createElement('img')
 
-    mockResolveNode.mockReturnValue(mockNode)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(mockNode)
 
     store.syncLegacyNodeImgs(toNodeId(1), mockImg)
 
@@ -1030,7 +1028,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const mockNode = createMockNode({ id: 5 })
     const mockImg = document.createElement('img')
 
-    mockResolveNode.mockReturnValue(mockNode)
+    vi.mocked(litegraphUtil.resolveNode).mockReturnValue(mockNode)
 
     store.syncLegacyNodeImgs(toNodeId(5), mockImg, 0)
 

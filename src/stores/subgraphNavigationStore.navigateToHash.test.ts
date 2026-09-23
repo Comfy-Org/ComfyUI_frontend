@@ -7,6 +7,7 @@ import { nextTick, ref } from 'vue'
 import type * as VueRouter from 'vue-router'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -73,10 +74,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-const reportErrorMock = vi.hoisted(() => vi.fn())
-
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: reportErrorMock
+  reportError: vi.fn()
 }))
 
 vi.mock(import('@/services/litegraphService'))
@@ -333,7 +332,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('workflow load failed')
       )
-      expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         errorType: 'workflow_navigation_failure',
         level: 'warning',
         context: { stage: 'recovery' }

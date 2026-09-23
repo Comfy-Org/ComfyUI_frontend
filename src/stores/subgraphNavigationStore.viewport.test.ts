@@ -12,8 +12,6 @@ import {
   VIEWPORT_CACHE_MAX_SIZE
 } from '@/stores/subgraphNavigationStore'
 
-const mockSetDirty = vi.hoisted(() => vi.fn())
-
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
     subgraph: undefined as unknown,
@@ -27,7 +25,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
       computeVisibleArea: vi.fn()
     },
     viewport: [0, 0, 1000, 1000],
-    setDirty: mockSetDirty,
+    setDirty: vi.fn(),
     get empty() {
       return true
     }
@@ -60,8 +58,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: vi.fn() }))
 
 vi.mock(import('@/services/litegraphService'))
-
-const litegraphService = vi.mocked(useLitegraphService())
 
 const mockCanvas = app.canvas
 
@@ -153,21 +149,21 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       expect(mockCanvas.ds.scale).toBe(2.5)
       expect(mockCanvas.ds.offset).toEqual([150, 250])
-      expect(mockSetDirty).toHaveBeenCalledWith(true, true)
+      expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
     it('does not mutate canvas synchronously on cache miss', () => {
       const store = useSubgraphNavigationStore()
       mockCanvas.ds.scale = 1
       mockCanvas.ds.offset = [0, 0]
-      mockSetDirty.mockClear()
+      vi.mocked(mockCanvas.setDirty).mockClear()
 
       store.restoreViewport('non-existent')
 
       // Should not change canvas synchronously
       expect(mockCanvas.ds.scale).toBe(1)
       expect(mockCanvas.ds.offset).toEqual([0, 0])
-      expect(mockSetDirty).not.toHaveBeenCalled()
+      expect(mockCanvas.setDirty).not.toHaveBeenCalled()
       // But should have scheduled a rAF
       expect(rafCallbacks).toHaveLength(1)
     })
@@ -182,12 +178,12 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       store.restoreViewport('root')
 
-      expect(litegraphService.fitView).not.toHaveBeenCalled()
+      expect(vi.mocked(useLitegraphService()).fitView).not.toHaveBeenCalled()
       expect(rafCallbacks).toHaveLength(1)
 
       rafCallbacks[0](performance.now())
 
-      expect(litegraphService.fitView).toHaveBeenCalledOnce()
+      expect(vi.mocked(useLitegraphService()).fitView).toHaveBeenCalledOnce()
 
       mockGraph.nodes = []
       mockGraph._nodes = []
@@ -206,7 +202,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(rafCallbacks).toHaveLength(1)
       rafCallbacks[0](performance.now())
 
-      expect(litegraphService.fitView).not.toHaveBeenCalled()
+      expect(vi.mocked(useLitegraphService()).fitView).not.toHaveBeenCalled()
     })
 
     it('fits the first visit on the next frame', () => {
@@ -221,7 +217,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(rafCallbacks).toHaveLength(1)
 
       rafCallbacks[0](performance.now())
-      expect(litegraphService.fitView).toHaveBeenCalledOnce()
+      expect(vi.mocked(useLitegraphService()).fitView).toHaveBeenCalledOnce()
       expect(rafCallbacks).toHaveLength(1)
 
       mockGraph.nodes = []
@@ -240,7 +236,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       rafCallbacks[0](performance.now())
 
-      expect(litegraphService.fitView).not.toHaveBeenCalled()
+      expect(vi.mocked(useLitegraphService()).fitView).not.toHaveBeenCalled()
     })
   })
 
@@ -367,13 +363,13 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       mockCanvas.ds.scale = 99
       mockCanvas.ds.offset = [999, 999]
-      mockSetDirty.mockClear()
+      vi.mocked(mockCanvas.setDirty).mockClear()
 
       navigationStore.restoreViewport('sub-0')
 
       expect(mockCanvas.ds.scale).toBe(99)
       expect(mockCanvas.ds.offset).toEqual([999, 999])
-      expect(mockSetDirty).not.toHaveBeenCalled()
+      expect(mockCanvas.setDirty).not.toHaveBeenCalled()
     })
   })
 })
