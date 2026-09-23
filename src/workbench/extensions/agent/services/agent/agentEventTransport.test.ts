@@ -207,6 +207,41 @@ describe('agentEventTransport fixture replay', () => {
   })
 })
 
+describe('agentEventTransport reply draft replay', () => {
+  // Recorded on a preview environment (Comfy-Org/cloud#10351): one narration
+  // round, then the resumed wait_for_job and the reply streaming as drafts.
+  const events = chatEventsFor(
+    'ws-turn-reply-drafts.jsonl',
+    '3d3cdb02-8d48-4fdc-8ab1-d8c18b07772e'
+  )
+  const drafts = events.filter(
+    (e): e is Extract<AgentChatEvent, { type: 'agent_message_draft' }> =>
+      e.type === 'agent_message_draft'
+  )
+  const finals = events.filter(
+    (e): e is Extract<AgentChatEvent, { type: 'agent_message_delta' }> =>
+      e.type === 'agent_message_delta'
+  )
+
+  it('shows the reply as it streams, with the narration draft already gone', () => {
+    const lastDraft = drafts.at(-1)
+    if (!lastDraft) throw new Error('the recording holds no drafts')
+    const message = drive(events.slice(0, events.indexOf(lastDraft) + 1))
+
+    expect(textParts(message).map((p) => p.text)).toEqual([lastDraft.data.text])
+  })
+
+  it('settles on the final answer alone', () => {
+    const message = drive(events)
+
+    expect(finals).toHaveLength(1)
+    expect(textParts(message).map((p) => p.text)).toEqual([
+      finals[0].data.delta
+    ])
+    expect(message.streaming).toBe(false)
+  })
+})
+
 describe('agentEventTransport thinking chip', () => {
   it('thinking before any text opens a retained activity part', () => {
     const message = drive([thinking('planning')])
