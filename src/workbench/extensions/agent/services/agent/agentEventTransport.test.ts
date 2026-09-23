@@ -88,10 +88,10 @@ function delta(text: string): AgentChatEvent {
 }
 
 function draft(text: string): AgentChatEvent {
-  return {
+  return zAgentWsEvent.parse({
     type: 'agent_message_draft',
     data: { text, message_id: 'm', thread_id: 't' }
-  }
+  })
 }
 
 function activeTab(
@@ -228,7 +228,10 @@ describe('agentEventTransport reply draft replay', () => {
     if (!lastDraft) throw new Error('the recording holds no drafts')
     const message = drive(events.slice(0, events.indexOf(lastDraft) + 1))
 
+    expect(drafts.length).toBeGreaterThan(1)
     expect(textParts(message).map((p) => p.text)).toEqual([lastDraft.data.text])
+    // What streamed is the start of the answer the turn delivered.
+    expect(finals[0].data.delta.startsWith(lastDraft.data.text)).toBe(true)
   })
 
   it('settles on the final answer alone', () => {
@@ -716,6 +719,20 @@ describe('agentEventTransport reply drafts', () => {
 
     expect(textParts(message)).toEqual([])
     expect(toolParts(message).map((p) => p.name)).toEqual(['run'])
+  })
+
+  it('drops the draft when the round stops for run approval', () => {
+    const message = drive([
+      draft('Validates clean and ready to run.'),
+      thinking('Validates clean and ready to run. Generating now.'),
+      runApproval()
+    ])
+
+    expect(textParts(message)).toEqual([])
+    expect(parts(message).map((p) => p.type)).toEqual([
+      'thinking',
+      'runApproval'
+    ])
   })
 
   it('withdraws the draft on an empty one, as a retried round sends', () => {

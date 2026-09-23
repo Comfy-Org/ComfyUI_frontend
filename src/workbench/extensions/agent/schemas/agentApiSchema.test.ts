@@ -232,6 +232,27 @@ describe('agentApiSchema contract subtleties', () => {
     )
   })
 
+  it('parses an agent_message_draft frame, including the empty draft that withdraws one', () => {
+    for (const text of ['Here is your video', '']) {
+      const parsed = parseAgentWsEvent({
+        type: 'agent_message_draft',
+        data: { thread_id: 'th-1', message_id: 'message-1', text }
+      })
+      expect(parsed.success).toBe(true)
+    }
+  })
+
+  it('rejects an agent_message_draft frame without a string text', () => {
+    for (const data of [
+      { thread_id: 'th-1', message_id: 'message-1' },
+      { thread_id: 'th-1', message_id: 'message-1', text: 42 }
+    ]) {
+      expect(
+        parseAgentWsEvent({ type: 'agent_message_draft', data }).success
+      ).toBe(false)
+    }
+  })
+
   it('parses the additive run-approval ask and resolution contract', () => {
     const pending = zAgentWsEvent.parse({
       type: 'agent_ask',
