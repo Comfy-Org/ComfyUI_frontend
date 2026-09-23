@@ -17,6 +17,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [AUTH-CREDENTIALS-0011](AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md)                          | Cloud Credential Lifecycle Invariants                             | Proposed | 2026-07-09 |
 | [BILLING-CHECKOUT-0031](BILLING-CHECKOUT-0031-checkout-journey-instrumentation-contract.md)                      | Checkout Journey Instrumentation Contract                         | Proposed | 2026-09-09 |
 | [CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md)      | In-App Agent CRDT Follower and Distribution-Resolved Boundaries   | Proposed | 2026-08-21 |
+| [CRDT-INPUTS-0030](CRDT-INPUTS-0030-preserve-named-input-targets.md)                                             | Project Document Inputs onto Reordered Live Nodes by Name         | Proposed | 2026-09-09 |
 | [CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)                                 | CRDT Layout Intent and Local Measurement                          | Proposed | 2025-08-27 |
 | [CRDT-MINT-0018](CRDT-MINT-0018-merge-identity-for-node-transfers.md)                                            | Merge Identity for Node Transfers                                 | Proposed | 2026-08-25 |
 | [CRDT-PLACEMENT-0035](CRDT-PLACEMENT-0035-agent-inserted-nodes-land-near-existing-content.md)                    | Agent-Inserted Nodes Land Near Existing Content                   | Proposed | 2026-09-19 |
