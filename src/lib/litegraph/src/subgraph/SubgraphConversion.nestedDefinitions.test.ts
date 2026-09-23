@@ -14,6 +14,7 @@ import type {
   Subgraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
 
@@ -189,5 +190,33 @@ describe('Convert to Subgraph with a nested subgraph host in the selection', () 
         reportedErrors: 0
       }
     })
+  })
+})
+
+describe('Convert to Subgraph failing after the originals are removed', () => {
+  it('releases only the definitions no live node still references', () => {
+    const rootGraph = createTestRootGraph()
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
+    const { subgraph: orphaned, node: orphanedHost } =
+      buildSubgraphWithTwoLinkedInteriorNodes(rootGraph)
+    const { subgraph: shared, node: sharedHost } =
+      buildSubgraphWithTwoLinkedInteriorNodes(rootGraph)
+    const survivingSharedHost = LiteGraph.createNode(shared.id)
+    assert(survivingSharedHost)
+    rootGraph.add(survivingSharedHost)
+    vi.spyOn(rootGraph, 'createSubgraph').mockImplementationOnce(() => {
+      throw new Error('boom')
+    })
+
+    expect(() =>
+      rootGraph.convertToSubgraph(
+        new Set<Positionable>([orphanedHost, sharedHost])
+      )
+    ).toThrow('boom')
+
+    expect({
+      orphaned: rootGraph.subgraphs.has(orphaned.id),
+      shared: rootGraph.subgraphs.has(shared.id)
+    }).toEqual({ orphaned: false, shared: true })
   })
 })
