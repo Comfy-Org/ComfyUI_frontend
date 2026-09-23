@@ -439,6 +439,14 @@ describe('WorkflowTabs agent entry button', () => {
     expect(
       screen.getAllByRole('button', { name: enMessages.agent.askComfyAgent })
     ).toHaveLength(1)
+
+    api.serverFeatureFlagsSettled.value = false
+    await nextTick()
+
+    expect(actions).not.toHaveAttribute('data-agent-flags-settled')
+    expect(
+      screen.getAllByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toHaveLength(1)
   })
 })
 
