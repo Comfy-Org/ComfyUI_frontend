@@ -12,10 +12,12 @@ import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionCont
 
 import type {
   AddCreditsClickMetadata,
+  AgentConsentNotOfferedMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
+  AgentOnboardingNotShownMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
@@ -715,6 +717,16 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
+  trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
+  }
+
+  trackAgentOnboardingNotShown(
+    metadata: AgentOnboardingNotShownMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN, metadata)
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
