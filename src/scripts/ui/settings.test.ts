@@ -39,7 +39,7 @@ describe('saving a setting that fails to persist', () => {
       }
     }
   ])('shows an alert toast when saving via $caller', async ({ save }) => {
-    vi.spyOn(useSettingStore(), 'set').mockRejectedValue(new Error('offline'))
+    vi.mocked(useSettingStore().set).mockRejectedValue(new Error('offline'))
     const dialog = new ComfySettingsDialog(fromPartial<ComfyApp>({}))
     const accessor = dialog.addSetting({
       id: 'Comfy.EditAttention.Delta',
