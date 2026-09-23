@@ -12,6 +12,7 @@
     </ModelInfoField>
     <ModelInfoField v-if="nodePack.repository" :label="t('manager.repository')">
       <a
+        v-if="isSafeRepositoryUrl"
         :href="nodePack.repository"
         target="_blank"
         rel="noopener noreferrer"
@@ -24,6 +25,9 @@
         <span class="break-all">{{ nodePack.repository }}</span>
         <i class="icon-[lucide--external-link] size-4 shrink-0" />
       </a>
+      <span v-else class="break-all text-muted-foreground">
+        {{ nodePack.repository }}
+      </span>
     </ModelInfoField>
     <ModelInfoField v-if="licenseInfo" :label="t('manager.license')">
       <a
@@ -61,7 +65,7 @@ import { useI18n } from 'vue-i18n'
 
 import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
 import type { components } from '@/types/comfyRegistryTypes'
-import { isValidUrl } from '@/utils/formatUtil'
+import { isSafeExternalUrl } from '@/utils/urlSafety'
 import MarkdownText from '@/workbench/extensions/manager/components/manager/infoPanel/MarkdownText.vue'
 
 const { t } = useI18n()
@@ -69,6 +73,10 @@ const { t } = useI18n()
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
+
+const isSafeRepositoryUrl = computed(
+  () => !!nodePack.repository && isSafeExternalUrl(nodePack.repository)
+)
 
 const isGitHubLink = (url: string): boolean => url.includes('github.com')
 
@@ -110,7 +118,7 @@ const parseLicenseObject = (
     const url = createLicenseUrl(licenseFile, nodePack.repository)
     return {
       text: url,
-      isUrl: !!url && isValidUrl(url)
+      isUrl: !!url && isSafeExternalUrl(url)
     }
   } else if (licenseObj.text) {
     return {
@@ -148,7 +156,7 @@ const formatLicense = (
       const url = createLicenseUrl(license, nodePack.repository)
       return {
         text: url,
-        isUrl: !!url && isValidUrl(url)
+        isUrl: !!url && isSafeExternalUrl(url)
       }
     }
     return {

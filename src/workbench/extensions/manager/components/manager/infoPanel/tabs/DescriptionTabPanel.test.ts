@@ -161,4 +161,40 @@ describe('DescriptionTabPanel', () => {
       expect(screen.getByText('No description available')).toBeInTheDocument()
     })
   })
+
+  describe('unsafe URLs from the registry', () => {
+    it('does not bind a javascript: repository URL as a clickable href', () => {
+      renderComponent({
+        nodePack: createNodePack({
+          repository: 'javascript:alert(1)'
+        })
+      })
+
+      expect(screen.queryByRole('link')).toBeNull()
+      expect(screen.getByText('javascript:alert(1)')).toBeInTheDocument()
+    })
+
+    it('does not bind a javascript: license URL as a clickable href', () => {
+      renderComponent({
+        nodePack: createNodePack({
+          license: JSON.stringify({ text: 'javascript:alert(1)' })
+        })
+      })
+
+      // A license `text` field is always rendered as plain text (never a
+      // link), so this only proves the plain-text fallback still renders.
+      expect(screen.getByText('javascript:alert(1)')).toBeInTheDocument()
+    })
+
+    it('does not bind a javascript: license URL built from a LICENSE file', () => {
+      renderComponent({
+        nodePack: createNodePack({
+          license: 'LICENSE',
+          repository: 'javascript:alert(1)'
+        })
+      })
+
+      expect(screen.queryByRole('link')).toBeNull()
+    })
+  })
 })
