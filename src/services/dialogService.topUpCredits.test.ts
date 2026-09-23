@@ -10,10 +10,6 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
-const state = vi.hoisted(() => ({
-  type: 'workspace' as 'workspace' | 'legacy'
-}))
-
 vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/telemetry'))
@@ -37,9 +33,8 @@ import { useDialogService } from '@/services/dialogService'
 
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
-    state.type = 'workspace'
     const billing = useBillingContext()
-    billing.type = computed(() => state.type)
+    billing.type = computed(() => 'workspace')
     vi.mocked(useBillingContext).mockReturnValue(billing)
 
     mockIsCloud.value = true
@@ -80,7 +75,7 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('uses the server capability on legacy billing', async () => {
-    state.type = 'legacy'
+    useBillingContext().type = computed(() => 'legacy')
 
     await useDialogService().showTopUpCreditsDialog()
 
@@ -89,7 +84,7 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('does not show workspace-admin copy for denied legacy billing', async () => {
-    state.type = 'legacy'
+    useBillingContext().type = computed(() => 'legacy')
     useBillingCapabilities().canTopUp = computed(() => false)
 
     await useDialogService().showTopUpCreditsDialog()
@@ -149,7 +144,7 @@ describe('showTopUpCreditsDialog', () => {
   describe('non-cloud distribution', () => {
     beforeEach(() => {
       mockIsCloud.value = false
-      state.type = 'legacy'
+      useBillingContext().type = computed(() => 'legacy')
     })
 
     it('opens the purchase dialog when the capability endpoint defaults open', async () => {
