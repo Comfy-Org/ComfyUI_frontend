@@ -166,4 +166,24 @@ describe('CloudSurveyView', () => {
     })
     expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
   })
+
+  it('restores a consumed replay when navigation is aborted', async () => {
+    mocks.isSurveyReplayRequested.mockReturnValue(true)
+    mocks.submitSurvey.mockResolvedValue({ status: 'preserved' })
+    const { router } = await renderView()
+    router.beforeEach(() => false)
+    await waitFor(() =>
+      expect(mocks.getSurveyCompletedStatus).toHaveBeenCalledOnce()
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Submit survey' }))
+
+    expect(router.currentRoute.value.name).toBe('survey')
+    expect(mocks.restoreSurveyReplayRequest).toHaveBeenCalledOnce()
+    expect(mocks.reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ type: expect.any(Number) }),
+      { errorType: 'error_navigating_from_onboarding_survey' }
+    )
+    expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
+  })
 })

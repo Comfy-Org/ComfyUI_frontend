@@ -10,6 +10,7 @@ import {
   isFirstRunReplayRequested,
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 
@@ -67,6 +68,9 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
 }))
@@ -76,9 +80,6 @@ const { useFirstRunEntry } = await import('./firstRunEntry')
 type FirstRunEntry = ReturnType<typeof useFirstRunEntry>
 
 beforeEach(() => {
-  // Several replay tests deliberately leave a request armed, and it outlives a
-  // test the way it outlives a reload.
-  sessionStorage.clear()
   vi.mocked(VueUse.useBreakpoints).mockReturnValue(
     fromAny<ReturnType<typeof VueUse.useBreakpoints>, unknown>({
       greaterOrEqual: () => computed(() => mocks.isDesktopWidth)
@@ -99,8 +100,6 @@ describe('useFirstRunEntry', () => {
       Object.assign(useSettingStore().settingValues, { [key]: value })
     })
     sharedComposable.reset()
-    // beginTour reports whether a tour actually started; default to the
-    // ordinary case so only tests about a refused start have to say so.
     mocks.beginTour.mockResolvedValue(true)
   })
 
@@ -480,8 +479,6 @@ describe('useFirstRunEntry', () => {
 
   describe('a requested replay', () => {
     beforeEach(() => {
-      // The account this feature exists for: onboarding already spent, and
-      // local work the new-user checks read and must not have cleared.
       mocks.isNewUser = false
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
     })
@@ -524,13 +521,6 @@ describe('useFirstRunEntry', () => {
       expect(isFirstRunReplayRequested()).toBe(true)
     })
 
-    /**
-     * A replay may override the restored-work guard only to show the Getting
-     * Started screen. On a boot that cannot show it, overriding the guard
-     * anyway would fall through to the template browser and cover the very
-     * work the guard protects — and, being session-scoped, do it again on
-     * every reload for the life of the tab.
-     */
     const cannotServe = [
       ['not on cloud', () => void (mocks.isCloud = false)],
       ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
@@ -773,5 +763,19 @@ describe('useFirstRunEntry', () => {
       'Comfy.TutorialCompleted',
       true
     )
+  })
+
+  it('reports a tutorial flag write that fails instead of only logging it', async () => {
+    const entry = useFirstRunEntry()
+    vi.mocked(useSettingStore().set).mockRejectedValue(
+      new TypeError('Failed to fetch')
+    )
+
+    await entry.dismissGettingStarted()
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      errorType: 'failure_writing_tutorial_completed_setting',
+      level: 'warning'
+    })
   })
 })

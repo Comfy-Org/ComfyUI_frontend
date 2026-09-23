@@ -1,26 +1,22 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import {
   consumeSurveyReplayRequest,
   isSurveyReplayRequested,
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
+import { api } from '@/scripts/api'
 
 import { getSurveyCompletedStatus, submitSurvey } from './auth'
 
-const fetchApi = vi.fn()
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: (...args: unknown[]) => fetchApi(...args)
-  }
-}))
-
-// The replay flags are cloud-only; the survey this file covers is too.
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
+
+const fetchApi = vi.mocked(api.fetchApi)
 
 vi.mock(import('@sentry/vue'), () => ({
   addBreadcrumb: vi.fn(),
@@ -49,21 +45,21 @@ function mockResponse({
 
 describe('getSurveyCompletedStatus', () => {
   test('200 with non-empty value → true', async () => {
-    fetchApi.mockResolvedValueOnce(
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
       mockResponse({ ok: true, status: 200, body: { value: { q1: 'a' } } })
     )
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
 
   test('200 with empty value → false (the only "not completed" signal)', async () => {
-    fetchApi.mockResolvedValueOnce(
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
       mockResponse({ ok: true, status: 200, body: { value: {} } })
     )
     await expect(getSurveyCompletedStatus()).resolves.toBe(false)
   })
 
   test('200 with null value → false', async () => {
-    fetchApi.mockResolvedValueOnce(
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
       mockResponse({ ok: true, status: 200, body: { value: null } })
     )
     await expect(getSurveyCompletedStatus()).resolves.toBe(false)
@@ -77,12 +73,16 @@ describe('getSurveyCompletedStatus', () => {
   })
 
   test('404 → false (key never stored = genuinely not completed)', async () => {
-    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      mockResponse({ ok: false, status: 404 })
+    )
     await expect(getSurveyCompletedStatus()).resolves.toBe(false)
   })
 
   test('500 → true (do not bounce on transient backend error)', async () => {
-    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 500 }))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      mockResponse({ ok: false, status: 500 })
+    )
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
 
@@ -93,26 +93,28 @@ describe('getSurveyCompletedStatus', () => {
   // itself. Locking with tests so the policy can't drift back to a "throw on
   // auth error" branch.
   test('401 → true (auth layer handles re-auth on next call)', async () => {
-    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 401 }))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      mockResponse({ ok: false, status: 401 })
+    )
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
 
   test('403 → true (auth layer handles re-auth on next call)', async () => {
-    fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 403 }))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      mockResponse({ ok: false, status: 403 })
+    )
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
 
   test('network rejection → true (do not bounce on network error)', async () => {
-    fetchApi.mockRejectedValueOnce(new TypeError('Network request failed'))
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(
+      new TypeError('Network request failed')
+    )
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
 })
 
 describe('onboarding replay', () => {
-  beforeEach(() => {
-    sessionStorage.clear()
-  })
-
   test('a requested replay re-opens the gate without reading the stored answers', async () => {
     requestOnboardingReplay()
 

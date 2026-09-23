@@ -8,6 +8,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -19,8 +20,11 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useCommandStore } from '@/stores/commandStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
+
+vi.mock(import('@/core/graph/subgraph/promotionUtils'), { spy: true })
 
 const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
   vi.fn(<T>(clear: () => T): T => clear())
@@ -53,8 +57,14 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     copyToClipboard: vi.fn(),
     pasteFromClipboard: vi.fn(),
     selectItems: vi.fn(),
+    select: vi.fn(),
     deleteSelected: vi.fn(),
     selectOnly: false,
+    state: { selectionChanged: false },
+    graph: {
+      add: vi.fn(),
+      convertToSubgraph: vi.fn(() => ({ node: {} }))
+    },
     canvas: {
       dispatchEvent: vi.fn(),
       addEventListener: vi.fn(),
@@ -136,7 +146,14 @@ vi.mock(import('@/composables/node/startModelNodeDragFromAsset'), () => ({
 }))
 
 const mockChangeTracker = vi.hoisted(() => ({
-  captureCanvasState: vi.fn()
+  captureCanvasState: vi.fn(),
+  undo: vi.fn(),
+  redo: vi.fn()
+}))
+
+const mockUnpackSubgraph = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(import('@/composables/graph/useSubgraphOperations'), () => ({
+  useSubgraphOperations: () => ({ unpackSubgraph: mockUnpackSubgraph })
 }))
 
 let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
@@ -302,11 +319,9 @@ describe('useCoreCommands', () => {
   describe('Replay Onboarding command', () => {
     const findCommand = () =>
       useCoreCommands().find((cmd) => cmd.id === 'Comfy.Onboarding.Replay')!
-    const assign = vi.fn()
-    const reload = vi.fn()
 
     beforeEach(() => {
-      vi.stubGlobal('location', { assign, reload })
+      vi.stubGlobal('location', { assign: vi.fn(), reload: vi.fn() })
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
       vi.mocked(resetOnboardingState).mockResolvedValue({ status: 'ready' })
       useSettingStore().settingValues['Comfy.DevMode'] = true
@@ -327,7 +342,7 @@ describe('useCoreCommands', () => {
       await findCommand().function()
 
       expect(resetOnboardingState).not.toHaveBeenCalled()
-      expect(reload).not.toHaveBeenCalled()
+      expect(location.reload).not.toHaveBeenCalled()
     })
 
     it('reports reset failures without navigating', async () => {
@@ -341,8 +356,8 @@ describe('useCoreCommands', () => {
       expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
-      expect(assign).not.toHaveBeenCalled()
-      expect(reload).not.toHaveBeenCalled()
+      expect(location.assign).not.toHaveBeenCalled()
+      expect(location.reload).not.toHaveBeenCalled()
     })
 
     it('navigates to the cloud root after resetting', async () => {
@@ -350,15 +365,15 @@ describe('useCoreCommands', () => {
 
       await findCommand().function()
 
-      expect(assign).toHaveBeenCalledWith('/')
-      expect(reload).not.toHaveBeenCalled()
+      expect(location.assign).toHaveBeenCalledWith('/')
+      expect(location.reload).not.toHaveBeenCalled()
     })
 
     it('reloads the current page off cloud', async () => {
       await findCommand().function()
 
-      expect(reload).toHaveBeenCalledOnce()
-      expect(assign).not.toHaveBeenCalled()
+      expect(location.reload).toHaveBeenCalledOnce()
+      expect(location.assign).not.toHaveBeenCalled()
     })
 
     it('deduplicates concurrent executions', async () => {
@@ -379,7 +394,7 @@ describe('useCoreCommands', () => {
       await Promise.all([first, second])
 
       expect(useDialogService().confirm).toHaveBeenCalledOnce()
-      expect(reload).toHaveBeenCalledOnce()
+      expect(location.reload).toHaveBeenCalledOnce()
     })
   })
 
@@ -437,9 +452,10 @@ describe('useCoreCommands', () => {
       app.canvas.selectedItems = new Set([
         selectedItem
       ]) as typeof app.canvas.selectedItems
-      app.canvas.selectOnly = true
+      useCommandStore().setInteractionMode({ isSelectOnly: () => true })
+      useCommandStore().registerCommands(useCoreCommands())
 
-      await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+      await useCommandStore().execute('Comfy.Canvas.DeleteSelectedItems')
 
       expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
       expect(app.canvas.setDirty).not.toHaveBeenCalled()

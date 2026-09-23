@@ -44,6 +44,11 @@ const state = vi.hoisted(() => {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
+// Stable across calls: the hosted-billing opener reads fetchStatus/fetchBalance
+// on one call and a test asserts on them via another, so a fresh vi.fn() pair
+// per call would make the two invisible to each other.
+const mockBillingContextFetchStatus = vi.hoisted(() => vi.fn())
+const mockBillingContextFetchBalance = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     billingStatus: computed(() => state.billingStatus),
@@ -56,7 +61,8 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
     })),
     balance: ref({ amountMicros: 100 }),
     isLoading: ref(false),
-    fetchBalance: vi.fn()
+    fetchStatus: mockBillingContextFetchStatus,
+    fetchBalance: mockBillingContextFetchBalance
   })
 }))
 
@@ -174,40 +180,6 @@ function renderComponent(
       }
     }
   })
-}
-
-/**
- * A blank tab the handler can disown and navigate. happy-dom's own child
- * window exposes `opener` read-only and fetches whatever `location` is set to.
- * The two writes are recorded in order: `opener` is no longer writable once
- * the tab has left this origin, so disowning after navigating throws in a
- * browser while both orders would satisfy plain properties.
- */
-function stubHostedTab(): Window & { readonly writes: readonly string[] } {
-  const writes: string[] = []
-  let opener: Window | null = window
-  let href = 'about:blank'
-  const tab = Object.create(window) as Window & { writes: string[] }
-  Object.defineProperty(tab, 'opener', {
-    get: () => opener,
-    set: (value: Window | null) => {
-      writes.push('disown')
-      opener = value
-    }
-  })
-  Object.defineProperty(tab, 'location', {
-    get: () => ({
-      get href() {
-        return href
-      },
-      set href(value: string) {
-        writes.push('navigate')
-        href = value
-      }
-    })
-  })
-  Object.defineProperty(tab, 'writes', { get: () => writes })
-  return tab
 }
 
 describe('CurrentUserPopoverWorkspace', () => {
@@ -335,70 +307,30 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps Plans & pricing in-app when hosted billing is disabled', async () => {
-    const user = userEvent.setup()
-    const open = vi.spyOn(window, 'open').mockReturnValue(null)
-    state.canOpenPricingSurface = true
-    renderComponent('team')
+  /**
+   * Plan selection stays in the app regardless of `hosted_billing_destination`:
+   * billing-web's `/v1/pricing` has no personal/team tabs, cycle toggle, or
+   * credit slider, so the avatar menu always opens the in-app table. Only a
+   * Subscribe click inside that table (`useSubscriptionCheckout`) hands off
+   * to billing-web, covered in its own suite.
+   */
+  it.for(['stripe', 'billing_web'] as const)(
+    'always opens the in-app pricing table, never a tab, when the destination is %s',
+    async (destination) => {
+      const user = userEvent.setup()
+      const open = vi.spyOn(window, 'open')
+      state.canOpenPricingSurface = true
+      state.hostedBillingDestination = destination
+      renderComponent('team')
 
-    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+      await user.click(screen.getByTestId('plans-pricing-menu-item'))
 
-    expect(state.showPricingTable).toHaveBeenCalledWith({
-      reason: 'avatar_menu_plans'
-    })
-    expect(open).not.toHaveBeenCalled()
-  })
-
-  it('opens hosted billing alone when its feature flag is enabled', async () => {
-    const user = userEvent.setup()
-    const tab = stubHostedTab()
-    const open = vi.spyOn(window, 'open').mockReturnValue(tab)
-    state.canOpenPricingSurface = true
-    state.hostedBillingDestination = 'billing_web'
-    renderComponent('team')
-
-    await user.click(screen.getByTestId('plans-pricing-menu-item'))
-
-    expect(open).toHaveBeenCalledOnce()
-    expect(open).toHaveBeenCalledWith('', '_blank')
-    expect(tab.writes).toEqual(['disown', 'navigate'])
-    expect(tab.opener).toBeNull()
-    expect(tab.location.href).toBe(
-      'http://localhost:5174/v1/pricing?product=comfyui&return_to=comfyui_workspace'
-    )
-    expect(state.showPricingTable).not.toHaveBeenCalled()
-  })
-
-  it('falls back to the in-app pricing table when the hosted tab is blocked', async () => {
-    const user = userEvent.setup()
-    const open = vi.spyOn(window, 'open').mockReturnValue(null)
-    state.canOpenPricingSurface = true
-    state.hostedBillingDestination = 'billing_web'
-    renderComponent('team')
-
-    await user.click(screen.getByTestId('plans-pricing-menu-item'))
-
-    expect(open).toHaveBeenCalledOnce()
-    expect(state.showPricingTable).toHaveBeenCalledWith({
-      reason: 'avatar_menu_plans'
-    })
-  })
-
-  it('keeps Plans & pricing in-app when the hosted URL is unavailable', async () => {
-    const user = userEvent.setup()
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    state.canOpenPricingSurface = true
-    state.hostedBillingDestination = 'billing_web'
-    state.billingWebUrl = null
-    renderComponent('team')
-
-    await user.click(screen.getByTestId('plans-pricing-menu-item'))
-
-    expect(open).not.toHaveBeenCalled()
-    expect(state.showPricingTable).toHaveBeenCalledWith({
-      reason: 'avatar_menu_plans'
-    })
-  })
+      expect(state.showPricingTable).toHaveBeenCalledWith({
+        reason: 'avatar_menu_plans'
+      })
+      expect(open).not.toHaveBeenCalled()
+    }
+  )
 
   it('offers subscription when top-up is denied but self-serve is allowed', async () => {
     const user = userEvent.setup()

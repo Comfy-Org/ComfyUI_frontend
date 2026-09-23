@@ -17,15 +17,17 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return mocks.isCloud
   }
 }))
+vi.mock(import('@/scripts/api'))
+
+const storeSetting = vi.mocked(api.storeSetting)
 
 function response(status: number): Response {
   return new Response(null, { status })
 }
 
 beforeEach(() => {
-  sessionStorage.clear()
   mocks.isCloud = true
-  vi.spyOn(api, 'storeSetting').mockResolvedValue(response(200))
+  storeSetting.mockResolvedValue(response(200))
 })
 
 describe('resetOnboardingState', () => {
@@ -57,7 +59,7 @@ describe('resetOnboardingState', () => {
   })
 
   it('reports a non-ok settings response as failed', async () => {
-    vi.spyOn(api, 'storeSetting').mockResolvedValue(response(401))
+    storeSetting.mockResolvedValue(response(401))
 
     await expect(resetOnboardingState()).resolves.toEqual({
       status: 'failed',
@@ -66,7 +68,7 @@ describe('resetOnboardingState', () => {
   })
 
   it('requests no replay when the write is rejected, so a failed reset stays inert', async () => {
-    vi.spyOn(api, 'storeSetting').mockResolvedValue(response(500))
+    storeSetting.mockResolvedValue(response(500))
 
     await expect(resetOnboardingState()).resolves.toMatchObject({
       status: 'failed'
@@ -85,7 +87,7 @@ describe('resetOnboardingState', () => {
   })
 
   it('requests no replay when the write never reaches the server', async () => {
-    vi.spyOn(api, 'storeSetting').mockRejectedValue(
+    storeSetting.mockRejectedValue(
       new DOMException('Fetch timeout', 'TimeoutError')
     )
 

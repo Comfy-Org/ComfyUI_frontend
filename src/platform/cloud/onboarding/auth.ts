@@ -33,9 +33,6 @@ function captureApiError(
   })
 }
 
-/**
- * Helper function to check if error is already handled HTTP error
- */
 function isHttpError(error: unknown, errorMessagePrefix: string): boolean {
   return error instanceof Error && error.message.startsWith(errorMessagePrefix)
 }
@@ -70,7 +67,6 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
 
     return response.json()
   } catch (error) {
-    // Only capture network errors (not HTTP errors we already captured)
     if (!isHttpError(error, 'Failed to get user:')) {
       captureApiError(toError(error), '/user', 'network_error')
     }
@@ -79,21 +75,11 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
 }
 
 export async function getSurveyCompletedStatus(): Promise<boolean> {
-  // A replay re-opens the gate here rather than by clearing the stored answers,
-  // which `/api/settings` could only overwrite, never restore.
   if (isSurveyReplayRequested()) return false
 
-  // A transient failure reads as completed rather than bouncing a working user
-  // to /cloud/survey.
   return (await readStoredSurvey()) !== 'absent'
 }
 
-/**
- * `unknown` is kept distinct from `absent` because the two callers need
- * opposite fallbacks: the gate may treat "don't know" as completed and let a
- * working user through, but a decision about whether to overwrite the answers
- * may not, since guessing wrong either destroys them or discards the pass.
- */
 type StoredSurvey = 'present' | 'absent' | 'unknown'
 
 function classifyStoredSurvey(data: unknown): StoredSurvey {
@@ -114,9 +100,6 @@ async function readStoredSurvey(): Promise<StoredSurvey> {
         'Content-Type': 'application/json'
       }
     })
-    // 404 = the survey key was never stored = genuinely not completed. Only
-    // reachable after a successful authenticated read (a stale token returns
-    // 401, never 404), so it can't be a transient-auth false signal.
     if (response.status === 404) {
       return 'absent'
     }
@@ -156,15 +139,6 @@ export type SurveySubmissionResult =
 export async function submitSurvey(
   survey: Record<string, unknown>
 ): Promise<SurveySubmissionResult> {
-  // A replay exercises the flow rather than re-profiling the user, so it keeps
-  // the answers already on the account: submitting is the only way out of the
-  // survey, and this POST would replace them wholesale. With nothing stored to
-  // preserve there is nothing to decline, so the pass is the account's real
-  // first one and is written normally.
-  //
-  // Read before spending the request, and refuse to guess: writing over
-  // answers that might be there would destroy them, and skipping a write that
-  // was needed would discard the pass silently.
   const replaying = isSurveyReplayRequested()
   if (replaying) {
     const stored = await readStoredSurvey()
@@ -217,11 +191,8 @@ export async function submitSurvey(
       return { status: 'failed', cause: error }
     }
 
-    // Spent only now: a replay that failed to write has not been served, and
-    // must still be able to reach the survey on a retry.
     if (replaying) consumeSurveyReplayRequest()
 
-    // Log successful survey submission
     addBreadcrumb({
       category: 'auth',
       message: 'Survey submitted successfully',

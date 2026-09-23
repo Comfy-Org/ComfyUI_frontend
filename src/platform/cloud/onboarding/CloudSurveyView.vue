@@ -17,7 +17,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { isNavigationFailure, useRouter } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
@@ -58,8 +58,6 @@ onMounted(async () => {
       await router.replace({ name: 'cloud-user-check' })
       return
     }
-    // A replay would otherwise report a fresh onboarding pass on an account
-    // that already converted, inflating the funnel on every test run.
     if (!isSurveyReplayRequested()) useTelemetry()?.trackSurvey('opened')
   } catch (error) {
     console.error('Failed to check survey status:', error)
@@ -75,7 +73,6 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
   const replaying = isSurveyReplayRequested()
   const result = await submitSurvey(payload)
   if (result.status === 'failed') {
-    // Stay on the form: navigating on would strand answers that never landed.
     reportError(result.cause, {
       errorType: 'error_submitting_onboarding_survey'
     })
@@ -93,7 +90,8 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
   }
 
   try {
-    await router.push({ name: 'cloud-user-check' })
+    const failure = await router.push({ name: 'cloud-user-check' })
+    if (isNavigationFailure(failure)) throw failure
   } catch (error) {
     if (replaying) restoreSurveyReplayRequest()
     reportError(error, { errorType: 'error_navigating_from_onboarding_survey' })

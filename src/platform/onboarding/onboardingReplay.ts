@@ -87,14 +87,7 @@ export function consumeFirstRunReplayRequest(): void {
   consumeReplayRequest('firstRun')
 }
 
-/**
- * Asks eligible cloud onboarding gates to serve an account again. The gates
- * spend their parts of one session-scoped request independently.
- */
 export function requestOnboardingReplay(): boolean {
-  // Both gates these arm are cloud-only. Off cloud the coachmark tours are the
-  // whole of onboarding, so clearing their seen-list is the entire replay and
-  // an armed request would only sit unserved for the life of the tab.
   if (!isCloud) return true
   return writeReplayRequest({
     survey: true,
