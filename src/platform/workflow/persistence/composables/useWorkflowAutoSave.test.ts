@@ -10,7 +10,7 @@ import { api } from '@/scripts/api'
 vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
-const workflowService = useWorkflowService()
+const workflowService = vi.mocked(useWorkflowService())
 
 beforeEach(() => {
   useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'

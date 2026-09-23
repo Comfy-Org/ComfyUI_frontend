@@ -14,7 +14,7 @@ import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 
 vi.mock(import('../composables/useMediaAssetActions'))
-const { downloadAssets } = useMediaAssetActions()
+const mediaAssetActions = vi.mocked(useMediaAssetActions())
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -216,7 +216,7 @@ describe('MediaAssetCard', () => {
       screen.getByRole('button', { name: 'mediaAsset.actions.download' })
     )
 
-    expect(downloadAssets).toHaveBeenCalledWith([asset])
+    expect(mediaAssetActions.downloadAssets).toHaveBeenCalledWith([asset])
     expect(emitted().select).toBeUndefined()
     expect(emitted()['toggle-selection']).toBeUndefined()
 

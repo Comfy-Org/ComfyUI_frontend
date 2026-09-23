@@ -9,9 +9,7 @@ import ComfyHubPublishWizardContent from './ComfyHubPublishWizardContent.vue'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
 const mockCheckProfile = vi.hoisted(() => vi.fn())
-let mockToastErrorHandler: ReturnType<
-  typeof useErrorHandling
->['toastErrorHandler']
+let errorHandling: ReturnType<typeof useErrorHandling>
 const mockHasProfile = ref<boolean | null>(true)
 const mockIsFetchingProfile = ref(false)
 const mockProfile = ref<{ username: string; name?: string } | null>({
@@ -68,7 +66,7 @@ describe('ComfyHubPublishWizardContent', () => {
   const onGateClose = vi.fn()
 
   beforeEach(() => {
-    mockToastErrorHandler = useErrorHandling().toastErrorHandler
+    errorHandling = vi.mocked(useErrorHandling())
     vi.mocked(useFeatureFlags().flags).comfyHubProfileGateEnabled = true
     onPublish.mockResolvedValue(undefined)
     mockCheckProfile.mockResolvedValue(true)
@@ -195,7 +193,7 @@ describe('ComfyHubPublishWizardContent', () => {
       await userEvent.click(screen.getByTestId('publish-btn'))
       await flushPromises()
 
-      expect(mockToastErrorHandler).toHaveBeenCalledWith(error)
+      expect(errorHandling.toastErrorHandler).toHaveBeenCalledWith(error)
       expect(onPublish).not.toHaveBeenCalled()
       expect(onRequireProfile).not.toHaveBeenCalled()
     })
@@ -239,7 +237,7 @@ describe('ComfyHubPublishWizardContent', () => {
       await flushPromises()
 
       expect(onPublish).toHaveBeenCalledOnce()
-      expect(mockToastErrorHandler).toHaveBeenCalledWith(publishError)
+      expect(errorHandling.toastErrorHandler).toHaveBeenCalledWith(publishError)
       expect(onGateClose).not.toHaveBeenCalled()
     })
 

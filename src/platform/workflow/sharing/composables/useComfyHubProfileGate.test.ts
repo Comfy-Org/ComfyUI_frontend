@@ -9,9 +9,7 @@ const mockGetMyProfile = vi.hoisted(() => vi.fn())
 const mockRequestAssetUploadUrl = vi.hoisted(() => vi.fn())
 const mockUploadFileToPresignedUrl = vi.hoisted(() => vi.fn())
 const mockCreateProfile = vi.hoisted(() => vi.fn())
-let mockToastErrorHandler: ReturnType<
-  typeof useErrorHandling
->['toastErrorHandler']
+let errorHandling: ReturnType<typeof useErrorHandling>
 
 vi.mock<unknown>(
   import('@/platform/workflow/sharing/services/comfyHubService'),
@@ -54,7 +52,7 @@ describe('useComfyHubProfileGate', () => {
   let gate: ReturnType<typeof useComfyHubProfileGate>
 
   beforeEach(() => {
-    mockToastErrorHandler = useErrorHandling().toastErrorHandler
+    errorHandling = vi.mocked(useErrorHandling())
     useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-a' }))
     setCurrentWorkspace('workspace-1')
     mockGetMyProfile.mockResolvedValue(mockProfile)
@@ -105,7 +103,7 @@ describe('useComfyHubProfileGate', () => {
 
       expect(gate.hasProfile.value).toBe(false)
       expect(gate.profile.value).toBe(null)
-      expect(mockToastErrorHandler).toHaveBeenCalledOnce()
+      expect(errorHandling.toastErrorHandler).toHaveBeenCalledOnce()
     })
 
     it('sets isFetchingProfile during fetch', async () => {

@@ -94,7 +94,7 @@ vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
 }))
 
 vi.mock(import('@/services/litegraphService'))
-const litegraphServiceMock = vi.mocked(useLitegraphService())
+const litegraphService = vi.mocked(useLitegraphService())
 
 vi.mock(import('@/utils/loaderNodeUtil'))
 const mockDetectNodeTypeFromFilename = vi.mocked(detectNodeTypeFromFilename)
@@ -217,7 +217,7 @@ function createLoadImageNode(): LGraphNode {
 }
 
 function getAddedImageWidgetValues() {
-  return litegraphServiceMock.addNodeOnGraph.mock.results.map(
+  return litegraphService.addNodeOnGraph.mock.results.map(
     ({ value }) =>
       value.widgets?.find((widget: IWidget) => widget.name === 'image')?.value
   )
@@ -317,8 +317,8 @@ describe('useMediaAssetActions', () => {
     vi.mocked(api.getServerFeature).mockImplementation(
       (_path: string, defaultValue?: unknown) => defaultValue
     )
-    litegraphServiceMock.addNodeOnGraph.mockImplementation(createLoadImageNode)
-    litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 100])
+    litegraphService.addNodeOnGraph.mockImplementation(createLoadImageNode)
+    litegraphService.getCanvasCenter.mockReturnValue([100, 100])
     mockDetectNodeTypeFromFilename.mockReturnValue({
       nodeType: 'LoadImage',
       widgetName: 'image'
@@ -414,12 +414,10 @@ describe('useMediaAssetActions', () => {
 
       await actions.addMultipleToWorkflow(assets)
 
-      expect(litegraphServiceMock.addNodeOnGraph).toHaveBeenCalledTimes(2)
+      expect(litegraphService.addNodeOnGraph).toHaveBeenCalledTimes(2)
       expect(getAddedImageWidgetValues()).toEqual(['first.png', 'third.png'])
       expect(
-        litegraphServiceMock.addNodeOnGraph.mock.calls.map(
-          ([, options]) => options
-        )
+        litegraphService.addNodeOnGraph.mock.calls.map(([, options]) => options)
       ).toEqual([{ pos: [100, 100] }, { pos: [150, 150] }])
       expect(useToast().add).toHaveBeenCalledWith({
         severity: 'warn',

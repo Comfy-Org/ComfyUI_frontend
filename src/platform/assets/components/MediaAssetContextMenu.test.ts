@@ -36,7 +36,7 @@ vi.mock(import('@/utils/loaderNodeUtil'), () => ({
 }))
 
 vi.mock(import('../composables/useMediaAssetActions'))
-const mediaAssetActions = useMediaAssetActions()
+const mediaAssetActions = vi.mocked(useMediaAssetActions())
 
 const capturedMenu = vi.hoisted(() => ({ model: [] as MenuItem[] }))
 
