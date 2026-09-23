@@ -397,6 +397,7 @@ describe('storageIO', () => {
       localStorage.setItem('Comfy.Agent.DeletedThreads:ws-1', '[]')
       localStorage.setItem('Comfy.Agent.ThreadId', 'legacy-thread')
       localStorage.setItem('Comfy.Agent.WorkflowTabBindings', '{}')
+      localStorage.setItem('Comfy.Agent.WorkflowTabBindings.v2', '{}')
       localStorage.setItem('Comfy.Agent.ChatTitles', '{}')
       localStorage.setItem('Comfy.Agent.DeletedThreads', '[]')
       localStorage.setItem('unrelated', 'keep')

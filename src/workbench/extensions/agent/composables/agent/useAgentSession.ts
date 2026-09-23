@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
+import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
   getWorkspaceId,
   StorageKeys
@@ -94,7 +95,6 @@ export interface AgentSessionDeps {
   }
 }
 
-const LEGACY_THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
 let sessionGeneration = 0
@@ -127,7 +127,7 @@ function disownsWorkflow(error: unknown): boolean {
 export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, workflow } = deps
   const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
-  localStorage.removeItem(LEGACY_THREAD_STORAGE_KEY)
+  clearLegacyAgentStorage()
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
@@ -241,6 +241,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
+      loadGeneration++
       conversationStore.abortActiveTurn()
       conversationStore.dropBackgroundTurns()
     })

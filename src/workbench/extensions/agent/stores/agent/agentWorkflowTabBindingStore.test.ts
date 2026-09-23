@@ -8,6 +8,8 @@ import { blankGraph } from '@/scripts/defaultGraph'
 
 import { useAgentWorkflowTabBindingStore } from './agentWorkflowTabBindingStore'
 
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+
 const LEGACY_KEY = 'Comfy.Agent.WorkflowTabBindings'
 const UNSCOPED_STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
 const STORAGE_KEY = StorageKeys.agentWorkflowTabBindings('personal')
@@ -34,6 +36,7 @@ function storedBindings(): unknown {
 describe('agentWorkflowTabBindingStore', () => {
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
   })
 
   it.for(['before', 'after'])(
@@ -368,15 +371,36 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(localStorage.getItem(UNSCOPED_STORAGE_KEY)).toBeNull()
   })
 
-  it('does not restore bindings from another workspace', () => {
+  it('restores bindings only from the active team workspace', () => {
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'team', id: 'workspace-b' })
+    )
     localStorage.setItem(
       StorageKeys.agentWorkflowTabBindings('workspace-a'),
-      JSON.stringify({ 'wf-a': 'workflows/a.json' })
+      JSON.stringify({
+        'wf-a': {
+          tabPath: 'workflows/a.json',
+          graphId: null,
+          confirmedAt: Date.now()
+        }
+      })
+    )
+    localStorage.setItem(
+      StorageKeys.agentWorkflowTabBindings('workspace-b'),
+      JSON.stringify({
+        'wf-b': {
+          tabPath: 'workflows/b.json',
+          graphId: null,
+          confirmedAt: Date.now()
+        }
+      })
     )
 
     const store = useAgentWorkflowTabBindingStore()
 
     expect(store.tabPathFor('wf-a')).toBeUndefined()
+    expect(store.tabPathFor('wf-b')).toBe('workflows/b.json')
     expect(
       localStorage.getItem(StorageKeys.agentWorkflowTabBindings('workspace-a'))
     ).not.toBeNull()

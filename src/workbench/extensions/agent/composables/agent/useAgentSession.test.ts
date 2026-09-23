@@ -38,6 +38,7 @@ import { useAgentSession } from './useAgentSession'
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
@@ -213,7 +214,21 @@ function admissionError(
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
     vi.mocked(reportError).mockClear()
+  })
+
+  it('initializes when legacy storage cleanup fails', () => {
+    vi.spyOn(localStorage, 'removeItem').mockImplementationOnce(() => {
+      throw new DOMException('Storage unavailable', 'SecurityError')
+    })
+
+    expect(() =>
+      useAgentSession({
+        rest: fakeRest(),
+        events: fakeEvents().source
+      })
+    ).not.toThrow()
   })
 
   it('(a) posts to new, adopts ids, records the user turn, and renders a settled reply', async () => {
@@ -320,6 +335,29 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await Promise.resolve()
     expect(conversation.activeTurnId).toBeNull()
+  })
+
+  it('does not persist a send that resolves after the session stops', async () => {
+    let resolvePost: (value: AgentTurnAccepted) => void = () => {}
+    const postMessage = vi.fn(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    const send = session.sendMessage('late reply')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+    session.stop()
+    resolvePost({ thread_id: 'th-late', message_id: 'msg-late' })
+
+    await expect(send).resolves.toBe(false)
+    expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBeNull()
   })
 
   it('(b5) a stop followed by a successor start in the same microtask window skips the abort', async () => {
@@ -2595,8 +2633,13 @@ describe('thread resume (B17)', () => {
     expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
   })
 
-  it('does not restore a thread persisted for another workspace', () => {
+  it('restores only the active team workspace thread', async () => {
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'team', id: 'workspace-b' })
+    )
     localStorage.setItem(StorageKeys.agentThread('workspace-a'), 'th-a')
+    localStorage.setItem(StorageKeys.agentThread('workspace-b'), 'th-b')
     const getMessages = vi.fn(async (): Promise<AgentMessages> => HISTORY)
     const session = useAgentSession({
       rest: fakeRest({ getMessages }),
@@ -2605,8 +2648,8 @@ describe('thread resume (B17)', () => {
 
     session.start()
 
-    expect(getMessages).not.toHaveBeenCalled()
-    expect(session.threadId.value).toBeNull()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledWith('th-b'))
+    expect(session.threadId.value).toBe('th-b')
     expect(localStorage.getItem(StorageKeys.agentThread('workspace-a'))).toBe(
       'th-a'
     )

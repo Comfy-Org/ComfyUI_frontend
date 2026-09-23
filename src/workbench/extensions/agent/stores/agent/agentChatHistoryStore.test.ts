@@ -8,6 +8,8 @@ import {
   useAgentChatHistoryStore
 } from './agentChatHistoryStore'
 
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+
 const NOW = new Date(2026, 2, 15, 12, 0, 0).getTime()
 const DAY = 86_400_000
 
@@ -61,6 +63,7 @@ describe('groupSessionsByRecency', () => {
 describe('useAgentChatHistoryStore', () => {
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
   })
 
   it('overlays a rename onto the grouped list and titleFor', () => {
@@ -124,12 +127,16 @@ describe('useAgentChatHistoryStore', () => {
   })
 
   it('restores titles and tombstones only from the current scope', () => {
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'team', id: 'workspace-b' })
+    )
     localStorage.setItem(
-      StorageKeys.agentChatTitles('personal'),
+      StorageKeys.agentChatTitles('workspace-b'),
       JSON.stringify({ a: 'Scoped title' })
     )
     localStorage.setItem(
-      StorageKeys.agentDeletedThreads('personal'),
+      StorageKeys.agentDeletedThreads('workspace-b'),
       JSON.stringify(['deleted'])
     )
     localStorage.setItem(
@@ -155,6 +162,10 @@ describe('useAgentChatHistoryStore', () => {
   })
 
   it('does not apply titles or tombstones from another workspace', () => {
+    sessionStorage.setItem(
+      'Comfy.Workspace.Current',
+      JSON.stringify({ type: 'team', id: 'workspace-b' })
+    )
     localStorage.setItem(
       StorageKeys.agentChatTitles('workspace-a'),
       JSON.stringify({ a: 'Workspace A title' })

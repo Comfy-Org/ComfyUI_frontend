@@ -2,6 +2,7 @@ import { useLocalStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
   getWorkspaceId,
   StorageKeys
@@ -55,8 +56,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   const now = useTimestamp({ interval: 60_000 })
   const workspaceId = getWorkspaceId()
 
-  localStorage.removeItem('Comfy.Agent.ChatTitles')
-  localStorage.removeItem('Comfy.Agent.DeletedThreads')
+  clearLegacyAgentStorage()
 
   // The server owns thread titles but has no rename or delete endpoint yet
   // (BE-3130), so renames live in a local overlay applied over the server
