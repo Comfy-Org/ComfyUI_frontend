@@ -17,11 +17,6 @@ export interface LGraphBadgeOptions {
   yOffset?: number
 }
 
-export enum BadgePosition {
-  TopLeft = 'top-left',
-  TopRight = 'top-right'
-}
-
 export class LGraphBadge {
   text: string
   fgColor: string
