@@ -1,5 +1,11 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -26,6 +32,100 @@ const succeeded = (out: RunOutput, nsfw = false): RunState => ({
 })
 
 describe('PlaygroundOutput', () => {
+  it.for([
+    { event: 'playing', status: 'succeeded' },
+    { event: 'pause', status: 'cancelled' }
+  ])(
+    'observes audio playback $event without loadeddata',
+    async ({ event, status }) => {
+      const media: RunOutput = {
+        kind: 'audio',
+        url: 'https://assets.example/audio',
+        fileName: 'audio.wav'
+      }
+      const view = render(PlaygroundOutput, {
+        props: { modelName: 'Demo', state: succeeded(media), now: 2000 }
+      })
+      const element = screen.getByLabelText('Output', { selector: 'audio' })
+      await fireEvent(element, new Event('loadstart'))
+      await fireEvent(element, new Event('loadedmetadata'))
+      expect(view.emitted().playbackStarted).toBeUndefined()
+      await fireEvent.play(element)
+      expect(view.emitted().playbackStarted).toEqual([[media.url]])
+      await fireEvent(element, new Event(event))
+      expect(view.emitted().delivery).toEqual([[media.url, status]])
+    }
+  )
+
+  it.for(['video', 'audio'] as const)(
+    'reports decoded %s data instead of metadata alone',
+    async (kind) => {
+      const media = {
+        kind,
+        url: 'https://assets.example/result',
+        fileName: 'result'
+      }
+      const view = render(PlaygroundOutput, {
+        props: { modelName: 'Demo', state: succeeded(media), now: 2000 }
+      })
+      const element = screen.getByLabelText('Output', { selector: kind })
+      await fireEvent(element, new Event('loadedmetadata'))
+      expect(view.emitted().delivery).toBeUndefined()
+      await fireEvent(element, new Event('loadeddata'))
+      expect(view.emitted().delivery).toEqual([[media.url, 'succeeded']])
+    }
+  )
+
+  it.for([
+    {
+      name: 'an earlier run',
+      latest: output('latest'),
+      leave: 'earlier-run-0'
+    },
+    {
+      name: 'another file of the run',
+      latest: output('latest'),
+      leave: 'Raw response'
+    },
+    {
+      name: 'another item of the batch',
+      latest: {
+        ...output('latest'),
+        urls: [output('latest').url, output('second').url]
+      },
+      leave: 'output-thumb-1'
+    }
+  ])(
+    'reports the primary output abandoned when the visitor opens $name',
+    async ({ latest, leave }) => {
+      const user = userEvent.setup()
+      const view = render(PlaygroundOutput, {
+        props: {
+          modelName: 'Demo',
+          state: succeeded(latest),
+          earlier: [{ output: output('first'), attachments: [] }],
+          attachments: [
+            {
+              kind: 'text',
+              url: 'https://example.com/response.json',
+              fileName: 'response.json'
+            }
+          ],
+          now: 2_000
+        }
+      })
+      expect(view.emitted().delivery).toBeUndefined()
+
+      await user.click(
+        screen.queryByTestId(leave) ??
+          screen.getByRole('button', { name: leave })
+      )
+      expect(view.emitted().delivery).toEqual([
+        [output('latest').url, 'cancelled']
+      ])
+    }
+  )
+
   it('contains focus in the expanded image and restores it on Escape', async () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {

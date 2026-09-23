@@ -109,19 +109,32 @@ export async function prepareModelRouterRender(
 ): Promise<PreparedRouterRender> {
   const signal = options.signal ?? new AbortController().signal
   signal.throwIfAborted()
-  const resolved = resolveModelRouterRender(model, parameters, options)
-  const body = await prepareWorkshopRouterInput(
-    resolved.contract,
-    resolved.values,
-    signal,
-    undefined,
-    options.uploadFile ??
-      (async (file, uploadSignal) => {
-        const token = await credential(options)
-        return upload(file, token, token, uploadSignal)
-      })
-  )
-  return { ...resolved, body }
+  try {
+    const resolved = resolveModelRouterRender(model, parameters, options)
+    const body = await prepareWorkshopRouterInput(
+      resolved.contract,
+      resolved.values,
+      signal,
+      undefined,
+      options.uploadFile ??
+        (async (file, uploadSignal) => {
+          const token = await credential(options)
+          return upload(file, token, token, uploadSignal)
+        })
+    )
+    return { ...resolved, body }
+  } catch (cause) {
+    signal.throwIfAborted()
+    if (cause instanceof WorkshopRouterError) throw cause
+    throw new WorkshopRouterError(
+      'client',
+      null,
+      {},
+      undefined,
+      'input_preparation',
+      { cause }
+    )
+  }
 }
 
 export async function router_render(

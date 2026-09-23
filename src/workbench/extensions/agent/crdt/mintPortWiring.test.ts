@@ -2,6 +2,7 @@ import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
@@ -100,7 +101,8 @@ describe('attachMintPortWiring', () => {
         return () => layoutListeners.delete(listener)
       },
       localActorPrefix: 'user-',
-      getGraph: () => graph
+      getGraph: () => graph,
+      boundRootGraphId: () => toRootGraphId(ROOT_ID)
     })
   })
 
@@ -414,5 +416,29 @@ describe('attachMintPortWiring', () => {
     widgetStore.setValue(id, 42)
 
     expect(minted).toEqual([])
+  })
+
+  describe('doc-bound root graph probe', () => {
+    it('registers the probe on attach and answers only while enabled and doc-bound', () => {
+      expect(isRootGraphDocBound(ROOT_ID)).toBe(true)
+
+      enabled = false
+      expect(isRootGraphDocBound(ROOT_ID)).toBe(false)
+      enabled = true
+
+      bound = false
+      expect(isRootGraphDocBound(ROOT_ID)).toBe(false)
+      bound = true
+
+      expect(isRootGraphDocBound(ROOT_ID)).toBe(true)
+    })
+
+    it('unregisters the probe on detach', () => {
+      expect(isRootGraphDocBound(ROOT_ID)).toBe(true)
+
+      wiring.detach()
+
+      expect(isRootGraphDocBound(ROOT_ID)).toBe(false)
+    })
   })
 })

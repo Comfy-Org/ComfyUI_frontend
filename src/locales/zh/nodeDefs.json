@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "从文本中第一个有效的 JSON 对象提取键的值，包括 Markdown 代码块。",
     "display_name": "从JSON提取字符串",
     "inputs": {
       "json_string": {
@@ -13234,6 +13235,10 @@
       "ultra_mode": {
         "name": "超精细模式",
         "tooltip": "运行额外的细化步骤，以获得保真度更高、表面细节更精细的几何体。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "超高精度处理的分辨率：2k 以 2048³ 运行，4k 以 4096³ 运行，以获得最精细的表面细节。4k 需要 meshy-7.1 或更高版本。仅在启用 ultra_mode 时使用。"
       }
     },
     "outputs": {
@@ -13300,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "以 2048³ 运行额外的精修处理，以获得保真度更高的几何结构和更精细的表面细节。"
       }
     },
     "outputs": {
@@ -13441,6 +13450,10 @@
       "ultra_mode": {
         "name": "超精细模式",
         "tooltip": "运行额外的细化步骤，以获得保真度更高、表面细节更精细的几何体。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "超高精度处理的分辨率：2k 以 2048³ 运行，4k 以 4096³ 运行，以获得最精细的表面细节。4k 需要 meshy-7.1 或更高版本。仅在启用 ultra_mode 时使用。"
       }
     },
     "outputs": {

@@ -23,6 +23,7 @@
     "removeVideo": "Remove video",
     "removeTag": "Remove tag",
     "remove": "Remove",
+    "removeFilter": "Remove {label} filter",
     "chart": "Chart",
     "chartLowercase": "chart",
     "file": "file",
@@ -466,6 +467,8 @@
     "noNodesFound": "No nodes found",
     "noNodesFoundDescription": "The pack's nodes either could not be parsed, or the pack is a frontend extension only and doesn't have any nodes.",
     "installationQueue": "Installation Queue",
+    "queueWaitingToContinue": "Tasks are pending. Retry to continue.",
+    "retryQueueStart": "Retry",
     "changingVersion": "Changing version from {from} to {to}",
     "dependencies": "Dependencies",
     "inWorkflow": "In Workflow",
@@ -490,12 +493,23 @@
     "extensionsSuccessfullyInstalled": "Extension(s) successfully installed and are ready to use!",
     "installingDependencies": "Installing dependencies...",
     "loadingVersions": "Loading versions...",
+    "versionLoadFailed": "Versions could not be loaded. Close this picker and try again.",
+    "noActiveVersions": "This pack has no Active releases.",
+    "noActiveVersionsFlagged": "This pack has no Active releases. Select a Flagged release to request installation, subject to Manager security settings.",
     "selectVersion": "Select Version",
     "downloads": "Downloads",
     "repository": "Repository",
     "uninstall": "Uninstall",
     "uninstalling": "Uninstalling {id}",
     "update": "Update",
+    "updateOptions": "Update options",
+    "latestActive": "Latest Active",
+    "latestInstallable": "Latest Installable",
+    "updateLatestActiveTooltip": "Switch to the latest Active version (default).",
+    "updateLatestInstallableTooltip": "Switch to the latest installable version, including Flagged and Pending releases. Manager security settings still apply.",
+    "noUpdateVersion": "No release is available for the selected update option.",
+    "updateVersionInstalled": "Version {version} is already installed.",
+    "updateFailed": "Could not change the package version. Please try again.",
     "tryUpdate": "Try Update",
     "tryUpdateTooltip": "Pull latest changes from repository. Nightly versions may have updates that cannot be detected automatically.",
     "uninstallSelected": "Uninstall Selected",
@@ -507,6 +521,7 @@
     "license": "License",
     "nightlyVersion": "Nightly",
     "latestVersion": "Latest",
+    "latestStableVersion": "Latest stable",
     "createdBy": "Created By",
     "totalNodes": "Total Nodes",
     "discoverCommunityContent": "Discover community-made Node Packs, Extensions, and more...",
@@ -1212,6 +1227,7 @@
       "default": "Default"
     },
     "error": {
+      "loading": "Couldn't open the template. Please try again.",
       "templateNotFound": "Template \"{templateName}\" not found"
     }
   },
@@ -2184,9 +2200,11 @@
     "errorNotSupported": "Clipboard API not supported in your browser"
   },
   "imageCompare": {
-    "noImages": "No images to compare",
+    "afterAlt": "After image",
     "batchLabelA": "A:",
-    "batchLabelB": "B:"
+    "batchLabelB": "B:",
+    "beforeAlt": "Before image",
+    "noImages": "No images to compare"
   },
   "batch": {
     "index": "{current} / {total}"
@@ -5290,8 +5308,6 @@
     "runModeAutoDescription": "Comfy will run workflows without asking for permission",
     "runModeLimit": "Auto-run with limits",
     "runModeLimitDescription": "Comfy will only confirm when a workflow run exceeds your credit limit",
-    "credits": "credits",
-    "saveChanges": "Save changes",
     "runModeSaveFailed": "Could not save run permissions. Please try again.",
     "send": "Send",
     "stop": "Stop",
