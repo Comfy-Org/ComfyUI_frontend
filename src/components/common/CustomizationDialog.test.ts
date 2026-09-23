@@ -32,12 +32,7 @@ vi.mock<unknown>(import('@/components/ui/dialog/DialogOverlay.vue'), () => ({
 vi.mock<unknown>(import('@/components/ui/dialog/DialogContent.vue'), () => ({
   default: { name: 'DialogContent', template: '<div><slot /></div>' }
 }))
-vi.mock<unknown>(import('@/components/ui/dialog/DialogHeader.vue'), () => ({
-  default: { name: 'DialogHeader', template: '<div><slot /></div>' }
-}))
-vi.mock<unknown>(import('@/components/ui/dialog/DialogFooter.vue'), () => ({
-  default: { name: 'DialogFooter', template: '<div><slot /></div>' }
-}))
+
 vi.mock<unknown>(import('@/components/ui/dialog/DialogTitle.vue'), () => ({
   default: { name: 'DialogTitle', template: '<div><slot /></div>' }
 }))
