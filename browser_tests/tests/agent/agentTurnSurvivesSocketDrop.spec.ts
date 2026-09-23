@@ -68,19 +68,15 @@ test.describe(
       turnLock
     }) => {
       await expect(turnLock.stopButton).toBeVisible()
-      await expect(turnLock.workSummary).toHaveCount(0)
 
       await turnLock.dropSocket()
 
       // `abortActiveTurn()` calls `transport.settle()`, which flips
-      // `message.streaming` to false. AgentMessage.vue swaps ActivityTrace for
-      // WorkSummary on exactly that flag, so the live rows collapse into the
-      // "Worked for ..." button the user saw, the Working... row disappears and
-      // Stop reverts to Send — while the server still owns the turn.
+      // `message.streaming` to false. Stop reverts to Send while the server
+      // still owns the turn.
       test.fail()
       await expect(turnLock.stopButton).toBeVisible()
-      await expect(turnLock.workSummary).toHaveCount(0)
-      await expect(turnLock.workingRow).toBeVisible()
+      await expect(turnLock.activityRow).toBeVisible()
     })
 
     test('does not reject the next message after the socket reconnects', async ({
@@ -119,18 +115,13 @@ test.describe(
       expect(turnLock.rejectedPosts()).toBe(0)
     })
 
-    // Keeps the `workSummary` locator honest. Every other use of it above is a
-    // toHaveCount(0), which a locator that matched nothing would satisfy for
-    // free; this shows it does resolve once a turn ends.
-    test('summarises a turn that ends normally', async ({
+    test('returns the composer to idle when a turn ends normally', async ({
       turnLock,
       getWebSocket
     }) => {
-      await expect(turnLock.workSummary).toHaveCount(0)
-
       turnLock.push(await getWebSocket(), TURN_DONE_EVENT)
 
-      await expect(turnLock.workSummary).toBeVisible()
+      await expect(turnLock.activityRow).toBeVisible()
       await expect(turnLock.sendButton).toBeVisible()
     })
 
@@ -147,7 +138,7 @@ test.describe(
       await turnLock.decodeAudioLikeAPreview()
 
       await expect(turnLock.stopButton).toBeVisible()
-      await expect(turnLock.workSummary).toHaveCount(0)
+      await expect(turnLock.activityRow).toBeVisible()
 
       turnLock.push(ws, POST_RECONNECT_EVENT)
       await expect(turnLock.panel.getByText(POST_RECONNECT_TEXT)).toBeVisible()
