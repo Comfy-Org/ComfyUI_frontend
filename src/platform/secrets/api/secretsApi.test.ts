@@ -1,14 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
+
 import { listSecretProviders } from './secretsApi'
 
-const mockFetchApi = vi.fn()
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: (...args: unknown[]) => mockFetchApi(...args)
-  }
-}))
+const mockFetchApi = vi.mocked(api.fetchApi)
 
 function jsonResponse(body: unknown, init: Partial<Response> = {}): Response {
   return {

@@ -7,7 +7,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
@@ -22,6 +22,7 @@ import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePr
 setupInlinePromptEditorDom()
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type {
   LGraph,
@@ -34,6 +35,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useTelemetry } from '@/platform/telemetry'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
@@ -155,52 +157,8 @@ let workflowStore: ReturnType<typeof useWorkflowStore>
 let canvasStore: ReturnType<typeof useCanvasStore>
 let executionErrors: Mocked<ReturnType<typeof useExecutionErrorStore>>
 
-const workflowService = vi.hoisted(() => ({
-  saveWorkflow: vi.fn(async (tab: { isModified: boolean }) => {
-    tab.isModified = false
-    return true
-  }),
-  saveWorkflowAs: vi.fn(
-    async (tab: ComfyWorkflow, options?: { filename?: string }) => {
-      if (options?.filename) {
-        await workflowStore.renameWorkflow(
-          tab,
-          `${tab.directory}/${options.filename}.json`
-        )
-      }
-      Object.assign(tab, { isTemporary: false })
-      tab.isModified = false
-      return true
-    }
-  ),
-  closeWorkflow: vi.fn(async (tab: ComfyWorkflow) => {
-    if (workflowStore.activeWorkflow?.path === tab.path) {
-      const replacement = workflowStore.openWorkflows.find(
-        (candidate) => candidate.path !== tab.path
-      )
-      workflowStore.activeWorkflow = replacement
-        ? await replacement.load()
-        : null
-    }
-    await workflowStore.closeWorkflow(tab)
-    return true
-  }),
-  openWorkflow: vi.fn(async (tab: { path: string }) => {
-    const known = workflowStore.getWorkflowByPath(tab.path)
-    if (known) {
-      workflowStore.openWorkflowsInBackground({ right: [tab.path] })
-      workflowStore.activeWorkflow = await known.load()
-    }
-    return true
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => workflowService
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
+const workflowService = vi.mocked(useWorkflowService())
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: (item: unknown) =>
@@ -213,19 +171,10 @@ const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
 vi.mock(import('@vueuse/core'), { spy: true })
 
-const telemetry = vi.hoisted(() => ({
-  trackAgentMessageFeedback: vi.fn(),
-  trackAgentWorkflowApplied: vi.fn(),
-  trackAgentMessageSent: vi.fn(),
-  trackAgentNodeTagged: vi.fn(),
-  trackAgentAttachButtonClicked: vi.fn(),
-  trackAgentCloseButtonClicked: vi.fn(),
-  trackAgentPanelOpened: vi.fn(),
-  trackAgentPanelClosed: vi.fn()
-}))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => telemetry
-}))
+vi.mock(import('@/platform/telemetry'))
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
@@ -343,6 +292,41 @@ beforeEach(() => {
   )
   workflowStore = useWorkflowStore()
   canvasStore = useCanvasStore()
+  workflowService.saveWorkflow.mockImplementation(async (tab) => {
+    tab.isModified = false
+    return true
+  })
+  workflowService.saveWorkflowAs.mockImplementation(async (tab, options) => {
+    if (options?.filename) {
+      await workflowStore.renameWorkflow(
+        tab,
+        `${tab.directory}/${options.filename}.json`
+      )
+    }
+    Object.assign(tab, { isTemporary: false })
+    tab.isModified = false
+    return true
+  })
+  workflowService.closeWorkflow.mockImplementation(async (tab) => {
+    if (workflowStore.activeWorkflow?.path === tab.path) {
+      const replacement = workflowStore.openWorkflows.find(
+        (candidate) => candidate.path !== tab.path
+      )
+      workflowStore.activeWorkflow = replacement
+        ? await replacement.load()
+        : null
+    }
+    await workflowStore.closeWorkflow(tab)
+    return true
+  })
+  workflowService.openWorkflow.mockImplementation(async (tab) => {
+    const known = workflowStore.getWorkflowByPath(tab.path)
+    if (known) {
+      workflowStore.openWorkflowsInBackground({ right: [tab.path] })
+      workflowStore.activeWorkflow = await known.load()
+    }
+    return true
+  })
   executionErrors = vi.mocked(useExecutionErrorStore())
   executionErrors.showErrorOverlay.mockImplementation(() => {})
   vi.useRealTimers()
@@ -1631,16 +1615,15 @@ describe('AgentPanelRoot attach flow', () => {
 
       dispatchDrag(target, 'dragenter', dragData)
       await nextTick()
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Drag and drop assets here'
-      )
+      const dropTarget = screen.getByRole('status')
+      expect(dropTarget).toHaveTextContent('Drag and drop assets here')
 
       expect(dispatchDrag(target, 'dragover', dragData)).toBe(true)
 
       const claimed = dispatchDrag(target, 'drop', dragData)
       expect(claimed).toBe(true)
       await nextTick()
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(dropTarget).not.toBeInTheDocument()
 
       expect(
         within(await screen.findByTestId('composer-asset-section')).getByText(
@@ -2875,6 +2858,9 @@ describe('AgentPanelRoot workflow binding', () => {
         if (url.includes('/messages')) return json(200, [])
         if (url.includes('/agent/threads')) {
           return json(200, agentThreadList(threads))
+        }
+        if (url.includes('/assets')) {
+          return json(200, { assets: [], total: 0, has_more: false })
         }
         if (url.includes('/workflows')) {
           const workflows =
@@ -4135,6 +4121,32 @@ describe('AgentPanelRoot workflow binding', () => {
 
       draft: { content: { id: 'wf-42' } }
     })
+  })
+
+  it('keeps an explicitly detached workflow after a remount', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    const panel = renderWithSelectedTarget()
+
+    await sendFromComposer('attached turn')
+    expect(bodies[0]).toHaveProperty('workflow_id', 'wf-42')
+    ws.emit('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+    await screen.findByRole('button', { name: 'Send' })
+    useAgentPanelStore().setWorkflowTarget(null)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'still detached')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
+    ).toHaveFocus()
+    expect(bodies).toHaveLength(1)
   })
 
   it('re-attaches by picking a row so the next send carries the workflow again', async () => {
