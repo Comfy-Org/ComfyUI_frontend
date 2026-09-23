@@ -48,6 +48,8 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { reportError } from '@/platform/telemetry/reportError'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { registerTour } from '@/platform/onboarding/onboardingTours'
 import {
   saveSelection,
   savedSelectionKeys,
@@ -533,6 +535,99 @@ describe('AgentPanelRoot onboarding', () => {
       await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
     ).toBeInTheDocument()
     expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
+  })
+
+  it('reports a coach held back by another tour', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-tour'
+    })
+    const firstRunHolds = ref(true)
+    registerTour(
+      'firstRun',
+      () =>
+        Promise.resolve([
+          { kind: 'spotlight', name: 'run', placement: 'center' }
+        ]),
+      firstRunHolds
+    )
+    const tourStore = useOnboardingTourStore()
+    tourStore.replayTour('firstRun')
+    await vi.waitFor(() => expect(tourStore.activeTour).toBe('firstRun'))
+    try {
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(
+        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).not.toBeInTheDocument()
+      expect(
+        telemetry.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'tour_active' })
+    } finally {
+      firstRunHolds.value = false
+    }
+  })
+
+  it('stays quiet when App Mode pauses a coach that was already on screen', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-interrupted'
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+
+    canvasStore.linearMode = true
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).not.toBeInTheDocument()
+    )
+
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+  })
+
+  it('reports the deferral once the workspace resolves after mount', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-late'
+    })
+
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
+    )
+  })
+
+  it('reports a deferral once however often the panel remounts', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-remount'
+    })
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } }).unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(
+      telemetry.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
+  })
+
+  it('says nothing about App Mode to a user who already finished the tour', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-seen'
+    })
+    localStorage.setItem(
+      'Comfy.AgentPanel.onboarded.account-a.workspace-seen',
+      'true'
+    )
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
   })
 
   it('walks through the four cards and leaves the composer usable after Done', async () => {
