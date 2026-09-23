@@ -440,7 +440,14 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     const bucket = roots.get(graphScope.rootGraphId)
     const ids = bucket?.idsByOwner.get(graphScope.owningGraphId)
     if (!bucket || !ids) return
-    for (const id of ids) bucket.byId.delete(id)
+    // `byId` is root-flat while `ids` is the owner's document membership.
+    // A document-first key can name an id whose registered state belongs to a
+    // different owner (e.g. a host still occupying the id its interior reuses),
+    // so only drop states this owner actually holds.
+    for (const id of ids) {
+      if (bucket.byId.get(id)?.graphId === graphScope.owningGraphId)
+        bucket.byId.delete(id)
+    }
     semanticDocs.transactLocal(
       graphScope.rootGraphId,
       localOrigin(context),

@@ -356,6 +356,34 @@ describe('nodeDataStore membership projected from the semantic document', () => 
     expect(store.getGraphNodesFor(rootA, sub)).toEqual([])
   })
 
+  it('clearOwner leaves a foreign-owner state alone when a document key reuses its id', () => {
+    const store = useNodeDataStore()
+    const host = store.registerNode(graphScope(rootA, rootA), node(1))
+    expect(host?.id).toBe('1')
+
+    // Document-first interior membership that reuses the host's id under the
+    // subgraph owner (the merged follower doc can carry this before the
+    // interior state registers).
+    const doc = semanticDocs.ensure(root)
+    doc.transact(
+      () => {
+        ownerNodesMap(doc, root, toOwningGraphId(sub), true).set(
+          '1',
+          new Y.Map([['type', 'remote/Node']])
+        )
+      },
+      { source: 'agent-remote', actor: 'agent', opId: 'op-clear-1' }
+    )
+    expect(docKeys(sub)).toEqual(['1'])
+
+    store.clearOwner(graphScope(rootA, sub))
+
+    expect(docKeys(sub)).toEqual([])
+    expect(store.getGraphNodesFor(rootA, sub)).toEqual([])
+    expect(store.getGraphNodesFor(rootA, rootA).map((n) => n.id)).toEqual(['1'])
+    expect(docKeys(rootA)).toEqual(['1'])
+  })
+
   it('keeps a document-first key invisible until matching state registers', () => {
     const store = useNodeDataStore()
     const ids = computed(() =>

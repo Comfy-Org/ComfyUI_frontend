@@ -12,7 +12,9 @@ import type {
 } from './graphMutations'
 import { isIncompatibleLinkType } from './graphMutations'
 import { reportError } from '@/platform/telemetry/reportError'
+import { semanticDocs } from '@/stores/semanticDoc'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
@@ -459,6 +461,30 @@ export class EcsFollowerAdapter {
     return session
   }
 
+  /**
+   * Lands the host lineage in the per-root semantic document the stores
+   * project (CRDT-STORES-0036). The diff is taken from the follower doc, not
+   * the raw frame, so a frame the adapter dropped while the workflow was
+   * unbound cannot leave the semantic document waiting on missing structs.
+   * One-way: the semantic document never emits an update back (KA-6).
+   */
+  private mergeIntoSemanticDoc(session: TargetSession, update: DocUpdate) {
+    const root =
+      session.mutations.rootGraphId === undefined
+        ? toRootGraphId(session.workflowId)
+        : session.mutations.rootGraphId()
+    if (root === null) return
+    const target = semanticDocs.ensure(root)
+    const diff = Y.encodeStateAsUpdate(
+      session.follower.doc,
+      Y.encodeStateVector(target)
+    )
+    semanticDocs.applyRemote(root, diff, {
+      source: 'agent-remote',
+      actor: update.actor ?? 'agent-replay'
+    })
+  }
+
   private applyQueuedFrame(session: TargetSession, update: DocUpdate): boolean {
     const nodeActions = new Map(session.nodeActions)
     const changedWidgets = new Map(
@@ -472,6 +498,7 @@ export class EcsFollowerAdapter {
     this.discardSessionPending(session)
 
     const doc = session.follower.doc
+    this.mergeIntoSemanticDoc(session, update)
     // Most frames touch no links or hosts; index the definitions only when a
     // reader first needs them.
     let definitionIndex: SubgraphDefinitionIndex | undefined

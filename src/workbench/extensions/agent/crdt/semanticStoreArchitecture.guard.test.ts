@@ -4,10 +4,12 @@
  * The ADR's end state is that the three semantic stores are Yjs-backed and a
  * remote update merges into them directly, without being re-derived through
  * `GraphMutations.batch`, and the delivered content is readable from the
- * per-root semantic document. Those assertions are marked `it.fails` until the
- * slices that deliver them land; the slice that flips them must drop the
- * marker in the same change. The remaining assertions hold today and protect
- * the boundaries the migration must not move.
+ * per-root semantic document. The content assertion holds since the follower
+ * merges host frames into the semantic document; the batch-free assertion is
+ * marked `it.fails` until the read side of every store comes from the
+ * document, and the slice that flips it must drop the marker in the same
+ * change. The remaining assertions hold today and protect the boundaries the
+ * migration must not move.
  */
 import { mint } from '@comfyorg/comfy-multi-player'
 import { readFileSync } from 'node:fs'
@@ -120,15 +122,17 @@ describe('CRDT-STORES-0036 semantic store architecture guard', () => {
     )
   })
 
+  // The follower still materialises NodeState, slot indexes and widget values
+  // through `batch`; membership alone is projected from the document.
   it.fails('KNOWN GAP: a remote update merges without a GraphMutations.batch round trip', () => {
     const mutations = recordingMutations()
     deliverSeed(mutations)
     expect(mutations.batch).not.toHaveBeenCalled()
   })
 
-  // Result assertion: skipping `batch` is not enough, the delivered content
-  // must actually land in the per-root semantic document the stores project.
-  it.fails('KNOWN GAP: a delivered update lands in the semantic document projection', () => {
+  // Result assertion: the delivered content lands in the per-root semantic
+  // document the stores project, independently of what `batch` derives.
+  it('a delivered update lands in the semantic document projection', () => {
     const { committed } = deliverSeed(recordingMutations())
     expect(committed).toBe(true)
     const graph = semanticDocs.readGraph(WORKFLOW_ROOT)
