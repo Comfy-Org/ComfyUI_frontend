@@ -11,7 +11,6 @@ import WorkflowGraph from './WorkflowGraph.vue'
 const {
   graphUrl,
   cloudUrl,
-  description,
   reach,
   tutorialUrl,
   models,
@@ -26,7 +25,6 @@ const {
   graphUrl: string
   cloudUrl: string
   /** What the workflow does, in the template author's own words. */
-  description: string | undefined
   reach: WorkflowReach | undefined
   tutorialUrl: string | undefined
   /** The template's own pictures, hung in the nodes that hold them. */
@@ -54,7 +52,7 @@ const sectionTitle =
             {{ t('workshop.v2.workflow.about', locale) }}
           </h2>
           <p class="mt-2 text-sm/relaxed text-content-muted">
-            {{ description ?? t('workshop.v2.workflow.graphNote', locale) }}
+            {{ t('workshop.v2.workflow.graphNote', locale) }}
           </p>
         </div>
         <WorkflowGraph :source="graphUrl" :samples :locale />

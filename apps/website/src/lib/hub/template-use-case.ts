@@ -138,6 +138,15 @@ function fromTags(
   return undefined
 }
 
+/**
+ * Whether a tag says only what the page's own use case already says. The
+ * header shows the use case as a pill, so repeating it in the tag row beside
+ * it gives the reader the same fact twice in different words.
+ */
+export function namesUseCase(tag: string, useCase: UseCase | undefined) {
+  return useCase !== undefined && TASK_TAGS[tag] === useCase
+}
+
 export function useCaseForTemplate(
   template: HubTemplate,
   models: readonly WorkshopModel[]

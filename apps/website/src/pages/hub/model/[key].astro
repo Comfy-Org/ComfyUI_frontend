@@ -1,5 +1,5 @@
 ---
-import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
+import HubCardSection from '../../../components/hub/HubCardSection.astro'
 import CatalogueBackLink from '../../../components/workshop/CatalogueBackLink.vue'
 import HubPageHeader from '../../../components/hub/HubPageHeader.vue'
 import ModelRun from '../../../components/hub/ModelRun.vue'
@@ -55,9 +55,6 @@ const useCase = lead ? useCaseFor(lead) : undefined
 const tags = [...new Set(operations.flatMap((model) => model.capabilities))]
   .slice(0, 8)
   .map((tag) => ({ label: tag, href: `/hub/?q=${encodeURIComponent(tag)}` }))
-
-const sectionTitle =
-  'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
 ---
 
 <BaseLayout
@@ -97,22 +94,15 @@ const sectionTitle =
       </section>
     )}
 
-    {madeWith.length > 0 && <section data-testid="model-workflows">
-      <h2 class={sectionTitle}>{t('workshop.v2.model.workflows')}</h2>
-      <p class="mt-2 max-w-xl text-sm text-content-muted">
-        {t('workshop.v2.model.workflowsNote')}
-      </p>
-      <ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {madeWithViews.map((view) => <li>
-          <CatalogueCard view={view} />
-        </li>)}
-      </ul>
-      {madeWith.length > 8 && <a
-        href={`/hub/?model=${encodeURIComponent(name)}`}
-        class="mt-6 inline-flex text-sm text-primary-comfy-yellow underline underline-offset-4"
-      >
-        {t('workshop.v2.loadMore')}
-      </a>}
-    </section>}
+    {madeWith.length > 0 && (
+      <HubCardSection
+        heading={t('workshop.v2.model.workflows')}
+        note={t('workshop.v2.model.workflowsNote')}
+        views={madeWithViews}
+        actionLabel={t('workshop.v2.browseAllWorkflows')}
+        actionHref={`/hub/?model=${encodeURIComponent(name)}`}
+        testid="model-workflows"
+      />
+    )}
   </main>
 </BaseLayout>

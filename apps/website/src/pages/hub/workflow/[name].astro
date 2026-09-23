@@ -1,5 +1,5 @@
 ---
-import CatalogueCard from '../../../components/hub/CatalogueCard.vue'
+import HubCardSection from '../../../components/hub/HubCardSection.astro'
 import CatalogueBackLink from '../../../components/workshop/CatalogueBackLink.vue'
 import HubPageHeader from '../../../components/hub/HubPageHeader.vue'
 import WorkflowAbout from '../../../components/hub/WorkflowAbout.vue'
@@ -8,7 +8,10 @@ import WorkflowRunForm from '../../../components/hub/WorkflowRunForm.vue'
 import WorkflowApiTab from '../../../components/hub/WorkflowApiTab.vue'
 import WorkflowTabs from '../../../components/hub/WorkflowTabs.vue'
 import { catalogSearch, useCaseFor } from '../../../config/models-catalogue'
-import { useCaseForTemplate } from '../../../lib/hub/template-use-case'
+import {
+  namesUseCase,
+  useCaseForTemplate
+} from '../../../lib/hub/template-use-case'
 import { displayModelName } from '../../../lib/hub/model-identity'
 import { useCaseLabelKey } from '../../../lib/workshop/use-case-label'
 import { workshopModels } from '../../../config/workshop-browse-content'
@@ -109,13 +112,12 @@ const price = operations.find((operation) => operation.price)?.price
 
 const relatedViews = relatedCardViews(related.slice(0, 4), workshopModels)
 
-const tags = usefulTags(template.tags).map((tag) => ({
-  label: tagDisplayName(tag),
-  href: `/hub/?q=${encodeURIComponent(tagDisplayName(tag))}`
-}))
-
-const sectionTitle =
-  'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
+const tags = usefulTags(template.tags)
+  .filter((tag) => !namesUseCase(tag, useCase))
+  .map((tag) => ({
+    label: tagDisplayName(tag),
+    href: `/hub/?q=${encodeURIComponent(tagDisplayName(tag))}`
+  }))
 ---
 
 <BaseLayout
@@ -145,6 +147,7 @@ const sectionTitle =
       useCase={useCase ? t(useCaseLabelKey[useCase]) : undefined}
       useCaseHref={useCase ? `/hub/${catalogSearch({ useCase })}` : undefined}
       title={title}
+      summary={details.description}
       price={price}
       tags={tags}
       client:load
@@ -156,7 +159,6 @@ const sectionTitle =
           model={runnable}
           graphUrl={page.downloadUrl}
           cloudUrl={cloudUrl}
-          description={details.description}
           reach={reach}
           tutorialUrl={details.tutorialUrl}
           samples={template.thumbnails}
@@ -194,7 +196,6 @@ const sectionTitle =
             <WorkflowAbout
               graphUrl={page.downloadUrl}
               cloudUrl={cloudUrl}
-              description={details.description}
               reach={reach}
               tutorialUrl={details.tutorialUrl}
               samples={template.thumbnails}
@@ -211,13 +212,14 @@ const sectionTitle =
       </div>
     )}
 
-    {relatedViews.length > 0 && <section data-testid="workflow-related">
-      <h2 class={sectionTitle}>{t('workshop.v2.workflow.related')}</h2>
-      <ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {relatedViews.map((view) => <li>
-          <CatalogueCard view={view} />
-        </li>)}
-      </ul>
-    </section>}
+    {relatedViews.length > 0 && (
+      <HubCardSection
+        heading={t('workshop.v2.workflow.related')}
+        views={relatedViews}
+        actionLabel={t('workshop.v2.browseAllWorkflows')}
+        actionHref="/hub/"
+        testid="workflow-related"
+      />
+    )}
   </main>
 </BaseLayout>

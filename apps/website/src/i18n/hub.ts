@@ -276,6 +276,10 @@ const hub = {
     en: 'Open the model page',
     'zh-CN': '打开模型页面'
   },
+  'workshop.v2.browseAllWorkflows': {
+    en: 'Browse all workflows',
+    'zh-CN': '浏览全部工作流'
+  },
   'workshop.v2.model.workflows': {
     en: 'Made with this model',
     'zh-CN': '用此模型做的'
