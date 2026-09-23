@@ -107,9 +107,7 @@ describe('EcsFollowerAdapter semantic document merge', () => {
 
   it('lands in the root the mutations name, not the workflow id', () => {
     const root = toRootGraphId('root-graph-42')
-    const adapter = new EcsFollowerAdapter(
-      recordingMutations(() => root)
-    )
+    const adapter = new EcsFollowerAdapter(recordingMutations(() => root))
     const host = mintHost()
     const follower = new FollowerDoc()
     adapter.bind('wf', follower)
