@@ -70,7 +70,8 @@ const adapterState = vi.hoisted(() => ({
 }))
 
 const materializerState = vi.hoisted(() => ({
-  reconcileAgentAdapters: vi.fn(() => [] as NodeId[])
+  reconcileAgentAdapters: vi.fn(() => [] as NodeId[]),
+  needsSubgraphDefinitionBody: vi.fn(() => true)
 }))
 
 // The reader is module-mocked too: these tests only check that the composable
@@ -147,7 +148,9 @@ vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
 }))
 
 vi.mock(import('./agentNodeMaterializer'), () => ({
-  reconcileAgentAdapters: materializerState.reconcileAgentAdapters
+  reconcileAgentAdapters: materializerState.reconcileAgentAdapters,
+  needsSubgraphDefinitionBody:
+    materializerState.needsSubgraphDefinitionBody
 }))
 
 vi.mock(import('./agentSubgraphDefinitions'), () => ({
@@ -264,6 +267,9 @@ describe('useAgentCrdtFollower', () => {
     bridgeState.current = null
     clientState.transport = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
+    materializerState.needsSubgraphDefinitionBody
+      .mockReset()
+      .mockReturnValue(true)
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
   })
@@ -985,6 +991,24 @@ describe('useAgentCrdtFollower', () => {
       expect(definitionsState.readSubgraphDefinitions).not.toHaveBeenCalled()
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         registeredGraph,
+        []
+      )
+      unmount()
+    })
+
+    it('does not deep-copy a definition body after registration already failed', () => {
+      materializerState.needsSubgraphDefinitionBody.mockReturnValue(false)
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(materializerState.needsSubgraphDefinitionBody).toHaveBeenCalledWith(
+        fakeGraph.rootGraph,
+        fakeDefinitions[0].id
+      )
+      expect(definitionsState.readSubgraphDefinitions).not.toHaveBeenCalled()
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph,
         []
       )
       unmount()

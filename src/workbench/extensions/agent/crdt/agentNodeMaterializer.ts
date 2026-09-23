@@ -86,6 +86,24 @@ export function reconcileAgentAdapters(
 const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
 
 /**
+ * Whether an id-only projection should pay to read a definition body.
+ *
+ * A failed definition remains absent from `rootGraph.subgraphs`, but retrying
+ * its unchanged body on every unrelated frame only repeats the deep copy and
+ * a failure whose telemetry is already deduplicated. Explicit callers that
+ * supply a fresh body to `reconcileAgentAdapters` still retry registration.
+ */
+export function needsSubgraphDefinitionBody(
+  rootGraph: LGraph,
+  definitionId: string
+): boolean {
+  return (
+    !rootGraph.subgraphs.has(definitionId) &&
+    !reportedDefinitionFailures.get(rootGraph)?.has(definitionId)
+  )
+}
+
+/**
  * Register explicitly created subgraph definitions the root graph does not
  * know yet.
  *

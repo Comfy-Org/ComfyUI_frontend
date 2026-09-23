@@ -43,7 +43,10 @@ import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
-import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import {
+  needsSubgraphDefinitionBody,
+  reconcileAgentAdapters
+} from './agentNodeMaterializer'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
@@ -1412,6 +1415,7 @@ describe('reconcileAgentAdapters', () => {
       const definitions = readSubgraphDefinitions(follower.doc)
 
       expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+      expect(needsSubgraphDefinitionBody(graph, definition.id)).toBe(false)
       expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
       // Same definition, same failure: one report, not one per frame.
       expect(reportError).toHaveBeenCalledOnce()
@@ -1515,6 +1519,7 @@ describe('reconcileAgentAdapters', () => {
       // createSubgraphs would silently mint a UUID for it, leaving the root
       // node's `type` pointing at an id the doc never registered.
       expect(graph.subgraphs.size).toBe(0)
+      expect(needsSubgraphDefinitionBody(graph, definition.id)).toBe(false)
       expect(created).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
         errorType: 'agent_subgraph_definitions_failed',

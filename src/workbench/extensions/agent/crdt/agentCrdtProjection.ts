@@ -4,7 +4,10 @@ import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { NodeId } from '@/types/nodeId'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
-import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import {
+  needsSubgraphDefinitionBody,
+  reconcileAgentAdapters
+} from './agentNodeMaterializer'
 import {
   readSubgraphDefinitionIds,
   readSubgraphDefinitions
@@ -68,10 +71,10 @@ export class AgentCrdtProjection {
     if (!graph) return []
     const followerDoc = this.getFollowerDoc()
     const definitionIds = readSubgraphDefinitionIds(followerDoc)
-    const hasMissingDefinition = definitionIds.some(
-      (id) => !graph.rootGraph.subgraphs.has(id)
+    const needsDefinitionBody = definitionIds.some((id) =>
+      needsSubgraphDefinitionBody(graph.rootGraph, id)
     )
-    const definitions = hasMissingDefinition
+    const definitions = needsDefinitionBody
       ? readSubgraphDefinitions(followerDoc)
       : []
     const nodeIds = reconcileAgentAdapters(graph, definitions)
