@@ -5,6 +5,7 @@ import type { Middleware } from '@floating-ui/vue'
 import {
   useElementBounding,
   useEventListener,
+  useTimeoutFn,
   useWindowSize
 } from '@vueuse/core'
 import { FocusScope } from 'reka-ui'
@@ -15,7 +16,13 @@ import Button from '@/components/ui/button/Button.vue'
 import { clampSpotlight } from '@/platform/onboarding/coachmarkLayout'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
-import { useOnboarding } from '../../composables/agent/useOnboarding'
+import {
+  reportMissingCoachTarget,
+  useOnboarding
+} from '../../composables/agent/useOnboarding'
+
+/** Long enough for any panel layout to settle; a target still absent is a regression. */
+const TARGET_MISSING_AFTER_MS = 8000
 
 const { steps, storageKey } = defineProps<{
   steps: CoachStep[]
@@ -27,12 +34,13 @@ const { active, index, step, isLast, next, finish } = useOnboarding(
   storageKey
 )
 
-// Let surfaces like the What's New popup defer while these coach marks run.
-// The store drops the source with this component's scope on unmount.
-useOnboardingOverlayStore().registerSource(() => active.value)
 const titleId = useId()
 const bodyId = useId()
 const target = ref<HTMLElement | null>(null)
+const visible = computed(() => active.value && target.value !== null)
+// Let surfaces like the What's New popup defer while a coach card is on
+// screen. The store drops the source with this component's scope on unmount.
+useOnboardingOverlayStore().registerSource(() => visible.value)
 const toolbar = ref<HTMLElement | null>(null)
 const card = ref<HTMLElement | null>(null)
 const bounds = useElementBounding(target)
@@ -69,6 +77,24 @@ targetObserver.observe(document.body, {
   childList: true,
   subtree: true
 })
+const missingTarget = computed(() =>
+  active.value && !target.value ? step.value.target : null
+)
+const { start: startMissingTargetTimer, stop: stopMissingTargetTimer } =
+  useTimeoutFn(
+    (selector: string, step: number) =>
+      reportMissingCoachTarget(selector, step),
+    TARGET_MISSING_AFTER_MS,
+    { immediate: false }
+  )
+watch(
+  missingTarget,
+  (selector) => {
+    stopMissingTargetTimer()
+    if (selector) startMissingTargetTimer(selector, index.value + 1)
+  },
+  { immediate: true }
+)
 onBeforeUnmount(() => {
   targetObserver.disconnect()
   clearTimeout(targetRetryTimer)
@@ -149,11 +175,7 @@ useEventListener(
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="active && target"
-      v-reka-z-index
-      class="agent-scope fixed inset-0"
-    >
+    <div v-if="visible" v-reka-z-index class="agent-scope fixed inset-0">
       <div class="absolute inset-0" />
       <div
         aria-hidden="true"
