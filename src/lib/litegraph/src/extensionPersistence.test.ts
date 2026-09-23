@@ -96,3 +96,154 @@ describe('LGraphNode.configure onConfigure hook isolation', () => {
     expect(reserialized).not.toHaveProperty('mutated')
   })
 })
+
+describe('LGraphNode extension field serialization', () => {
+  it('does not throw when an extension value is a Proxy over plain JSON', () => {
+    const node = new LGraphNode('TestNode')
+    const extensionValue = new Proxy({ tags: ['a', 'b'], count: 2 }, {})
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'thirdPartyData', extensionValue)
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toEqual({
+      thirdPartyData: { tags: ['a', 'b'], count: 2 }
+    })
+  })
+
+  it('preserves plain data from a proxy containing a function', () => {
+    const node = new LGraphNode('TestNode')
+    const extensionValue = new Proxy(
+      {
+        label: 'survives',
+        callback: () => 'not serializable'
+      },
+      {}
+    )
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'thirdPartyData', extensionValue)
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toEqual({
+      thirdPartyData: { label: 'survives' }
+    })
+  })
+
+  it('deep-clones proxied extension data', () => {
+    const node = new LGraphNode('TestNode')
+    const target = { settings: { enabled: true } }
+    const extensionValue = new Proxy(target, {})
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'thirdPartyData', extensionValue)
+    }
+
+    const serialized = node.serialize()
+    target.settings.enabled = false
+
+    expect(serialized.extensions).toEqual({
+      thirdPartyData: { settings: { enabled: true } }
+    })
+  })
+})
+
+describe('LGraphNode legacy extension field fallbacks', () => {
+  it('keeps sibling extension fields when one getter throws', () => {
+    const node = new LGraphNode('TestNode')
+    node.onSerialize = (data) => {
+      Object.defineProperty(data, 'brokenExt', {
+        enumerable: true,
+        get(): never {
+          throw new Error('accessor failed')
+        }
+      })
+      Reflect.set(data, 'healthyExt', { note: 'kept' })
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toEqual({ healthyExt: { note: 'kept' } })
+  })
+})
+
+describe('LGraphNode extension payload fallbacks', () => {
+  it('serializes a Proxy in the namespaced extension payload', () => {
+    const node = new LGraphNode('TestNode')
+    const extensionValue = new Proxy({ source: 'namespaced' }, {})
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'extensions', { thirdPartyData: extensionValue })
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toEqual({
+      thirdPartyData: { source: 'namespaced' }
+    })
+  })
+
+  it('omits an extension value when both clone strategies fail', () => {
+    const node = new LGraphNode('TestNode')
+    const extensionValue = new Proxy(
+      { label: 'not serializable' },
+      {
+        get(target, property, receiver) {
+          if (property === 'toJSON') throw new Error('Cannot serialize')
+          return Reflect.get(target, property, receiver)
+        }
+      }
+    )
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'thirdPartyData', extensionValue)
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toBeUndefined()
+  })
+
+  it('keeps sibling namespaced entries when one entry cannot be cloned', () => {
+    const node = new LGraphNode('TestNode')
+    const brokenValue = new Proxy(
+      { label: 'not serializable' },
+      {
+        get(target, property, receiver) {
+          if (property === 'toJSON') throw new Error('Cannot serialize')
+          return Reflect.get(target, property, receiver)
+        }
+      }
+    )
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'extensions', {
+        brokenExt: brokenValue,
+        healthyExt: { note: 'kept' }
+      })
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toEqual({ healthyExt: { note: 'kept' } })
+  })
+
+  it('omits only the entries whose accessors throw while serializing', () => {
+    const node = new LGraphNode('TestNode')
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'extensions', {
+        get brokenGetter(): never {
+          throw new Error('accessor failed')
+        },
+        nestedBroken: {
+          get inner(): never {
+            throw new Error('nested accessor failed')
+          }
+        },
+        healthyExt: { note: 'kept' }
+      })
+    }
+
+    const serialized = node.serialize()
+
+    expect(serialized.extensions).toEqual({ healthyExt: { note: 'kept' } })
+  })
+})
