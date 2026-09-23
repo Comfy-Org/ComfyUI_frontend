@@ -1533,15 +1533,20 @@ describe('reconcileAgentAdapters', () => {
       )
     })
 
-    it('keeps nodes pending when a failed definition body is skipped', () => {
+    it('keeps failed nodes pending while registering a missing sibling definition', () => {
       configureShouldThrow = true
-      const definition = createTestSubgraphData({
-        nodes: [nodePayload(7, 'throws-on-configure')] as never
+      const failed = createTestSubgraphData({
+        nodes: [nodePayload(7, 'throws-on-configure')]
       })
+      const missing = createTestSubgraphData({ nodes: [nodePayload(8)] })
+      expect(reconcileAgentAdapters(graph, [failed])).toEqual([])
+      expect(subgraphDefinitionReadState(graph, failed.id)).toBe('failed')
+      const creationsAfterFailure = created.mock.calls.length
+
       const { follower } = seedDocument(graph, {
-        nodes: [nodePayload(1, definition.id)],
+        nodes: [nodePayload(1, failed.id), nodePayload(2, missing.id)],
         links: [],
-        definitions: { subgraphs: [definition] }
+        definitions: { subgraphs: [failed, missing] }
       })
       const projection = new AgentCrdtProjection(
         remoteMutations(graphScopeOf(graph)),
@@ -1549,10 +1554,11 @@ describe('reconcileAgentAdapters', () => {
         () => follower.doc
       )
 
-      expect(projection.reconcileLiveGraph('workflow')).toEqual([])
-      expect(subgraphDefinitionReadState(graph, definition.id)).toBe('failed')
-      expect(projection.reconcileLiveGraph('workflow')).toEqual([])
+      expect(projection.reconcileLiveGraph('workflow')).toEqual([toNodeId(2)])
+      expect(created).toHaveBeenCalledTimes(creationsAfterFailure + 1)
+      expect(reportError).toHaveBeenCalledOnce()
       expect(graph.getNodeById(toNodeId(1))).toBeNull()
+      expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(SubgraphNode)
 
       configureShouldThrow = false
       expect(

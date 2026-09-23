@@ -9,6 +9,7 @@ import {
   subgraphDefinitionReadState
 } from './agentNodeMaterializer'
 import {
+  allSubgraphDefinitions,
   readSubgraphDefinitionIds,
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
@@ -78,14 +79,16 @@ export class AgentCrdtProjection {
     const needsDefinitionBody = definitionStates.some(
       ({ state }) => state === 'missing'
     )
-    const definitions = needsDefinitionBody
-      ? readSubgraphDefinitions(followerDoc)
-      : []
     const failedDefinitionIds = new Set(
       definitionStates
         .filter(({ state }) => state === 'failed')
         .map(({ id }) => id)
     )
+    const definitions = needsDefinitionBody
+      ? allSubgraphDefinitions(readSubgraphDefinitions(followerDoc))
+          .filter(({ id }) => !failedDefinitionIds.has(id))
+          .map((definition) => ({ ...definition, definitions: undefined }))
+      : []
     const nodeIds = failedDefinitionIds.size
       ? reconcileAgentAdapters(graph, definitions, failedDefinitionIds)
       : reconcileAgentAdapters(graph, definitions)
