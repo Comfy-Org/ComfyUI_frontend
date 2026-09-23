@@ -63,6 +63,8 @@ const POLICY_CODE_FIELDS = new Set([
   'statuscode'
 ])
 
+const MAX_POLICY_NODES = 2048
+
 function normalizedKey(key: string): string {
   return key.toLowerCase().replaceAll(/[^a-z]/g, '')
 }
@@ -104,7 +106,7 @@ export function workshopContentPolicyPayload(payload: unknown): boolean {
   const pending: { readonly key: string; readonly value: unknown }[] = [
     { key: '', value: payload }
   ]
-  for (let index = 0; index < pending.length && index < 2048; index += 1) {
+  for (let index = 0; index < pending.length; index += 1) {
     const current = pending[index]
     if (typeof current.value === 'string') {
       if (stringSignalsPolicy(current.value, current.key)) return true
@@ -112,14 +114,16 @@ export function workshopContentPolicyPayload(payload: unknown): boolean {
     }
     if (current.value === null || typeof current.value !== 'object') continue
     if (Array.isArray(current.value)) {
-      pending.push(
-        ...current.value.map((value) => ({ key: current.key, value }))
-      )
+      for (const value of current.value) {
+        if (pending.length >= MAX_POLICY_NODES) break
+        pending.push({ key: current.key, value })
+      }
       continue
     }
-    pending.push(
-      ...Object.entries(current.value).map(([key, value]) => ({ key, value }))
-    )
+    for (const [key, value] of Object.entries(current.value)) {
+      if (pending.length >= MAX_POLICY_NODES) break
+      pending.push({ key, value })
+    }
   }
   return false
 }

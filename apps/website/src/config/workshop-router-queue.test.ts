@@ -301,12 +301,20 @@ describe('queued Router delivery', () => {
 
   it('reports the stored failure of a finished run', async () => {
     stubFetch(admitted(), pending(), refusal(502, 'provider_error'))
-    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+    const failure: unknown = await settle(runWorkshopRouter(options())).catch(
+      (error: unknown) => error
+    )
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(failure).toMatchObject({
       reason: 'provider',
       requestId: REQUEST_ID,
       response: { status: 502 },
       requestSettlement: 'terminal'
     })
+    expect(workshopFailureAnalytics(failure)).not.toHaveProperty(
+      'exception_name'
+    )
   })
 
   it('reports a stored provider moderation payload as a terminal policy refusal', async () => {

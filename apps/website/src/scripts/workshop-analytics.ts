@@ -162,14 +162,14 @@ export function workshopFieldErrorCodes(errors: FieldErrors): FieldErrorCode[] {
   return [...new Set(Object.values(errors))]
 }
 
-function diagnosticCause(cause: unknown): unknown {
+function diagnosticCause(cause: unknown): unknown | undefined {
   let current = cause
   for (let depth = 0; depth < 8; depth += 1) {
-    if (!(current instanceof WorkshopRouterError) || !('cause' in current))
-      return current
+    if (!(current instanceof WorkshopRouterError)) return current
+    if (!('cause' in current)) return undefined
     current = current.cause
   }
-  return current
+  return current instanceof WorkshopRouterError ? undefined : current
 }
 
 export function workshopFailureAnalytics(
@@ -182,6 +182,7 @@ export function workshopFailureAnalytics(
   const fieldErrorNames = schema
     .filter((field) => Object.hasOwn(failure.fieldErrors, field.name))
     .map((field) => field.name)
+  const cause = 'cause' in failure ? diagnosticCause(failure.cause) : undefined
   return {
     reason: failure.reason,
     request_id: failure.requestId ?? undefined,
@@ -190,9 +191,7 @@ export function workshopFailureAnalytics(
       ? {}
       : { router_error_type: routerErrorType }),
     ...(failure.stage ? { failure_stage: failure.stage } : {}),
-    ...('cause' in failure
-      ? workshopExceptionAnalytics(diagnosticCause(failure.cause))
-      : {}),
+    ...(cause === undefined ? {} : workshopExceptionAnalytics(cause)),
     ...(fieldErrorCodes.length ? { field_error_codes: fieldErrorCodes } : {}),
     ...(fieldErrorNames.length ? { field_error_names: fieldErrorNames } : {})
   }

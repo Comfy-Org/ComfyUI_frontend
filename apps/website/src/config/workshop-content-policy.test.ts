@@ -73,4 +73,10 @@ describe('Workshop content-policy attribution', () => {
     ).toBe(true)
     expect(workshopContentPolicyBody('')).toBe(false)
   })
+
+  it('bounds traversal of wide provider payloads', () => {
+    const payload = Array.from({ length: 200_000 }, () => null)
+
+    expect(workshopContentPolicyPayload(payload)).toBe(false)
+  })
 })

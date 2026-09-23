@@ -402,7 +402,12 @@ async function selectedResponse(
   contentType: string,
   context: OutputContext
 ): Promise<RunOutput[]> {
-  const data = jsonResponse(bytes, contentType, output.schema)
+  const data = jsonResponse(bytes, contentType)
+  if (!validateWorkshopInput(data, output.schema)) {
+    if (workshopContentPolicyPayload(data))
+      throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
+    throw new Error('Invalid Router response')
+  }
   assertTerminalSuccess(data, output.success)
   const nsfw = output.nsfwPath
     ? valuesAtPointer(data, output.nsfwPath).some((value) => value === true)

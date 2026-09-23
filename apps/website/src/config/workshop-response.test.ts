@@ -226,6 +226,43 @@ describe('native Router output handling', () => {
     ).rejects.toMatchObject({ reason: 'policy', stage: 'response' })
   })
 
+  it('classifies policy before rejecting a response that violates its output schema', async () => {
+    const selected = {
+      ...contract,
+      output: {
+        format: 'json' as const,
+        schema: {
+          type: 'object' as const,
+          required: ['result'],
+          properties: {
+            result: {
+              type: 'object' as const,
+              required: ['sample'],
+              properties: { sample: { type: 'string' as const } }
+            }
+          }
+        },
+        selectors: [
+          {
+            path: '/result/sample',
+            kind: 'image' as const,
+            encoding: 'url' as const
+          }
+        ]
+      }
+    }
+
+    await expect(
+      parseRouterResponse(
+        selected,
+        Response.json({
+          status: 'failed',
+          error: { code: 'content_filter' }
+        })
+      )
+    ).rejects.toMatchObject({ reason: 'policy', stage: 'response' })
+  })
+
   it('keeps declared text outputs visible beside media', async () => {
     const selected = workshopContractSchema.parse({
       ...contract,
