@@ -4,6 +4,7 @@ import CatalogueBackLink from '../../../components/workshop/CatalogueBackLink.vu
 import HubPageHeader from '../../../components/hub/HubPageHeader.vue'
 import WorkflowAbout from '../../../components/hub/WorkflowAbout.vue'
 import WorkflowRun from '../../../components/hub/WorkflowRun.vue'
+import WorkflowRunForm from '../../../components/hub/WorkflowRunForm.vue'
 import { catalogSearch, useCaseFor } from '../../../config/models-catalogue'
 import { useCaseForTemplate } from '../../../lib/hub/template-use-case'
 import { displayModelName } from '../../../lib/hub/model-identity'
@@ -12,6 +13,9 @@ import { workshopModels } from '../../../config/workshop-browse-content'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../../config/workshop-env'
 import { estimateWorkshopNodePrice } from '../../../config/workshop-node-pricing'
 import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
+import { workflowFields } from '../../../config/workflow-fields'
+import { workflowGraphSchema } from '../../../config/workflow-execution'
+
 import hubTemplateDetails from '../../../data/hubTemplateDetails.json'
 import {
   customNodeNamesFrom,
@@ -39,6 +43,24 @@ const page = name ? getHubWorkflowPage(name) : undefined
 if (!page) return Astro.redirect('/hub/')
 
 const { template, details, runsOn, related } = page
+
+// The graph the run sends. It is resolved here so the page ships only its own,
+// and the island receives the workflow rather than the whole set.
+const graphs = import.meta.glob<unknown>('../../../data/workflows/*.json', {
+  eager: true,
+  import: 'default'
+})
+const runnableGraph = graphs[`../../../data/workflows/${template.name}.json`]
+const fields = workflowFields(template.name)
+const runForm =
+  fields && runnableGraph
+    ? { fields, graph: workflowGraphSchema.parse(runnableGraph) }
+    : undefined
+// One of the thirty has no server of its own yet, and its first run has to
+// wake one. That wait is told differently, so the page says which it is.
+const coldStart =
+  template.name ===
+  'template_ltx2_3_obscura_remova_lora_remove_object_from_video'
 
 const author = template.username || 'ComfyUI'
 // A workflow this page can serve is one call to a model we carry, and there
@@ -143,16 +165,28 @@ const sectionTitle =
       </section>
     ) : (
       <div class="mb-16 flex flex-col gap-10" data-testid="workflow-on-cloud">
-        {template.thumbnails[0] && (
-          <img
-            src={template.thumbnails[0]}
-            alt={title}
-            loading="lazy"
-            decoding="async"
-            class="aspect-video w-full rounded-2xl bg-hub-surface object-cover"
-            data-testid="workflow-media"
-          />
-        )}
+        {runForm && <div class="grid gap-10 lg:grid-cols-12">
+          <div class="lg:col-span-5">
+            <WorkflowRunForm
+              fields={runForm.fields}
+              graph={runForm.graph}
+              coldStart={coldStart}
+              client:load
+            />
+          </div>
+          <div class="lg:col-span-7">
+            {template.thumbnails[0] && (
+              <img
+                src={template.thumbnails[0]}
+                alt={title}
+                loading="lazy"
+                decoding="async"
+                class="aspect-video w-full rounded-2xl bg-hub-surface object-cover"
+                data-testid="workflow-media"
+              />
+            )}
+          </div>
+        </div>}
         <WorkflowAbout
           graphUrl={page.downloadUrl}
           cloudUrl={cloudUrl}

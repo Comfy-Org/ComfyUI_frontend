@@ -1,0 +1,33 @@
+{
+  "3": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": ["11", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "2": {
+    "inputs": {
+      "image": "sunlit_girl_portrait.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "11": {
+    "inputs": {
+      "model": "generative_portrait",
+      "upscale_factor": 1,
+      "auto_downscale": true,
+      "image": ["2", 0]
+    },
+    "class_type": "HitPawGeneralImageEnhance",
+    "_meta": {
+      "title": "HitPaw General Image Enhance"
+    }
+  }
+}

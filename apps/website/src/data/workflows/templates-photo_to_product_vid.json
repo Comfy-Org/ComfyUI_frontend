@@ -1,0 +1,190 @@
+{
+  "10": {
+    "inputs": {
+      "model": "seedream-4-5-251128",
+      "prompt": "Professional studio product photography of a pristine white Adidas Samba sneaker from image 1, positioned at a dynamic three-quarter angle. The lighting is dramatic and cool-toned, featuring a hard spotlight that creates a glowing halo effect on the ground while casting soft shadows. The background is a seamless, clean gradient transitioning from a light silver-gray top to a deep anthracite black floor. Minimal composition with generous negative space, shot with shallow depth of field (f/2.8) to emphasize product details while softly blurring the background. ",
+      "size_preset": "1664x2496 (2:3)",
+      "width": 2048,
+      "height": 2048,
+      "sequential_image_generation": "disabled",
+      "max_images": 1,
+      "seed": 555,
+      "watermark": false,
+      "fail_on_partial": true,
+      "image": ["1", 0]
+    },
+    "class_type": "ByteDanceSeedreamNode",
+    "_meta": {
+      "title": "ByteDance Seedream 4.5 & 5.0"
+    }
+  },
+  "9": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": ["10", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "19": {
+    "inputs": {
+      "filename_prefix": "video/ComfyUI-2",
+      "format": "auto",
+      "video": ["20", 0],
+      "format.codec": "auto"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "Save Video"
+    }
+  },
+  "18": {
+    "inputs": {
+      "prompt_text": "Product video \u2014 camera slowly zooms toward the sneaker, revealing texture details, light reflecting on the leather surface, cinematic shallow depth of field\n",
+      "seed": 222,
+      "prompt_optimizer": true,
+      "duration": 6,
+      "resolution": "1080P",
+      "first_frame_image": ["10", 0]
+    },
+    "class_type": "MinimaxHailuoVideoNode",
+    "_meta": {
+      "title": "Detailed Texture Vid - MiniMax Hailuo Video"
+    }
+  },
+  "20": {
+    "inputs": {
+      "prompt_text": "Product video \u2014 camera pans across the sneaker from heel to toe, dramatic cinematic light sweeps across, dust motes floating in the air",
+      "seed": 333,
+      "prompt_optimizer": true,
+      "duration": 6,
+      "resolution": "1080P",
+      "first_frame_image": ["10", 0]
+    },
+    "class_type": "MinimaxHailuoVideoNode",
+    "_meta": {
+      "title": "Cinematic Pan Vid - MiniMax Hailuo Video"
+    }
+  },
+  "5": {
+    "inputs": {
+      "prompt_text": "Product video \u2014 360\u00b0 rotating hero showcase of a white leather sneaker, cinematic soft spotlight, minimal studio background, seamless loop.",
+      "seed": 111,
+      "prompt_optimizer": true,
+      "duration": 6,
+      "resolution": "1080P",
+      "first_frame_image": ["10", 0]
+    },
+    "class_type": "MinimaxHailuoVideoNode",
+    "_meta": {
+      "title": "360 Rotation Vid - MiniMax Hailuo Video"
+    }
+  },
+  "1": {
+    "inputs": {
+      "image": "product_shoe.jpeg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Product Image"
+    }
+  },
+  "27:23": {
+    "inputs": {
+      "video": ["18", 0]
+    },
+    "class_type": "GetVideoComponents",
+    "_meta": {
+      "title": "Get Video Components"
+    }
+  },
+  "27:26": {
+    "inputs": {
+      "video": ["20", 0]
+    },
+    "class_type": "GetVideoComponents",
+    "_meta": {
+      "title": "Get Video Components"
+    }
+  },
+  "27:24": {
+    "inputs": {
+      "image1": ["27:22", 0],
+      "image2": ["27:23", 0]
+    },
+    "class_type": "ImageBatch",
+    "_meta": {
+      "title": "Batch Images (DEPRECATED)"
+    }
+  },
+  "27:25": {
+    "inputs": {
+      "image1": ["27:24", 0],
+      "image2": ["27:26", 0]
+    },
+    "class_type": "ImageBatch",
+    "_meta": {
+      "title": "Batch Images (DEPRECATED)"
+    }
+  },
+  "27:22": {
+    "inputs": {
+      "video": ["5", 0]
+    },
+    "class_type": "GetVideoComponents",
+    "_meta": {
+      "title": "Get Video Components"
+    }
+  },
+  "27:27": {
+    "inputs": {
+      "bit_depth": "auto",
+      "color_space": "sRGB",
+      "codec": "none",
+      "images": ["27:25", 0],
+      "fps": ["27:22", 2]
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "Create Video"
+    }
+  },
+  "17": {
+    "inputs": {
+      "filename_prefix": "video/ComfyUI-2",
+      "format": "auto",
+      "video": ["18", 0],
+      "format.codec": "auto"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "Save Video"
+    }
+  },
+  "16": {
+    "inputs": {
+      "filename_prefix": "video/ComfyUI-1",
+      "format": "auto",
+      "video": ["5", 0],
+      "format.codec": "auto"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "Save Video"
+    }
+  },
+  "30": {
+    "inputs": {
+      "filename_prefix": "video/ComfyUI",
+      "format": "auto",
+      "video": ["27:27", 0],
+      "format.codec": "auto"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "Save Video"
+    }
+  }
+}

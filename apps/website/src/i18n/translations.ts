@@ -10770,6 +10770,34 @@ Enterprise`
     en: 'Run this workflow, or look at how it is built',
     'zh-CN': '运行此工作流，或查看它的构成'
   },
+  'workshop.v2.run.run': { en: 'Run workflow', 'zh-CN': '运行工作流' },
+  'workshop.v2.run.cancel': { en: 'Cancel this run', 'zh-CN': '取消本次运行' },
+  'workshop.v2.run.resume': {
+    en: 'Pick the run back up',
+    'zh-CN': '继续跟踪这次运行'
+  },
+  'workshop.v2.run.uploading': {
+    en: 'Sending your files',
+    'zh-CN': '正在上传你的文件'
+  },
+  'workshop.v2.run.sending': {
+    en: 'Handing the workflow over',
+    'zh-CN': '正在提交工作流'
+  },
+  'workshop.v2.run.reconnecting': {
+    en: 'Finding your run again',
+    'zh-CN': '正在重新连接你的运行'
+  },
+  'workshop.v2.run.queued': { en: 'Waiting its turn', 'zh-CN': '排队中' },
+  'workshop.v2.run.waking': {
+    en: 'Waking the server. The first run takes longer.',
+    'zh-CN': '正在唤醒服务器，首次运行会慢一些。'
+  },
+  'workshop.v2.run.loading': {
+    en: 'Loading the models it needs',
+    'zh-CN': '正在加载所需模型'
+  },
+  'workshop.v2.run.generating': { en: 'Generating', 'zh-CN': '生成中' },
   'workshop.launch.videos': {
     en: 'Create & edit videos',
     'zh-CN': '创建与编辑视频'
