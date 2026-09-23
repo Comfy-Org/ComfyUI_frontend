@@ -452,8 +452,17 @@ class AgentTwoSessionCrdtHarness {
       )
       return
     }
-    this.send(host.subscribed())
-    this.send(host.catchUp(stateVectorB64))
+    try {
+      this.send(host.subscribed())
+      this.send(host.catchUp(stateVectorB64))
+    } catch (error) {
+      // Surface a bad state vector or a closed socket in the waiter's error
+      // instead of letting it escape the socket callback half-way through.
+      this.droppedSubscribes.push(
+        `doc_subscribe for ${workflowId} failed to answer: ${String(error)}`
+      )
+      return
+    }
     this.subscribes.set(workflowId, this.subscribeCount(workflowId) + 1)
     for (const waiter of [...(this.subscribeWaiters.get(workflowId) ?? [])])
       waiter()
