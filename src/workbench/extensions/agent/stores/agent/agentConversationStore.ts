@@ -36,6 +36,26 @@ interface BackgroundTurn {
   settled: boolean
 }
 
+export interface LiveTurn {
+  threadId: string
+  messageId: TurnId
+}
+
+function finishWithPersistedText(
+  message: AssistantMessage,
+  persistedText: string | undefined
+): void {
+  const kept = message.parts.filter((part) => part.type !== 'runApproval')
+  if (persistedText === undefined || persistedText === '') {
+    message.parts = kept
+    return
+  }
+  message.parts = [
+    ...kept.filter((part) => part.type !== 'text'),
+    { type: 'text', text: persistedText, state: 'done' }
+  ]
+}
+
 export const useAgentConversationStore = defineStore(
   'agentConversation',
   () => {
@@ -50,7 +70,7 @@ export const useAgentConversationStore = defineStore(
     let transport: AgentEventTransport | null = null
     let liveMessage: AssistantMessage | null = null
     const backgroundTurns = new Map<string, BackgroundTurn>()
-    let hydratedMessageIds = new Set<string>()
+    let hydratedTurnIds = new Map<string, TurnId>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
     const activeIndex = ref(-1)
 
@@ -197,14 +217,19 @@ export const useAgentConversationStore = defineStore(
       // turn by the server's turn_id; row.id bridges the two. Matching turns by
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
-      const kept = messages.value.filter((m) => m.id !== entry.message.id)
-      const poppedHydratedCopy = removeHydratedCopy(entry, kept)
-      if (
-        entry.settled &&
-        !poppedHydratedCopy &&
-        hydratedMessageIds.has(entry.messageId)
+      const persisted = messages.value.find(
+        (message) => message.id === hydratedTurnIds.get(entry.messageId)
       )
+      if (persisted && !persisted.streaming) {
+        entry.transport.settle()
         return
+      }
+      const kept = messages.value.filter(
+        (message) =>
+          message.id !== entry.message.id && message.id !== persisted?.id
+      )
+      removeHydratedCopy(entry, kept)
+      if (persisted) entry.message.id = persisted.id
       if (
         entry.userText !== undefined &&
         !userTexts.value.has(entry.message.id)
@@ -250,6 +275,37 @@ export const useAgentConversationStore = defineStore(
       backgroundTurns.clear()
     }
 
+    function liveTurns(): LiveTurn[] {
+      const background = Array.from(backgroundTurns)
+        .filter(([, entry]) => !entry.settled)
+        .map(([key, entry]) => ({ threadId: key, messageId: entry.messageId }))
+      if (!transport || threadId.value === null || activeTurnId.value === null)
+        return background
+      return [
+        { threadId: threadId.value, messageId: activeTurnId.value },
+        ...background
+      ]
+    }
+
+    function settleTurn(
+      turn: LiveTurn,
+      persistedText: string | undefined
+    ): void {
+      const isActive =
+        turn.threadId === threadId.value &&
+        turn.messageId === activeTurnId.value
+      if (isActive && transport && liveMessage) {
+        finishWithPersistedText(liveMessage, persistedText)
+        abortActiveTurn()
+        return
+      }
+      const entry = backgroundTurns.get(turn.threadId)
+      if (!entry || entry.messageId !== turn.messageId || entry.settled) return
+      finishWithPersistedText(entry.message, persistedText)
+      entry.transport.settle()
+      entry.settled = true
+    }
+
     function clearActive(): void {
       transport = null
       liveMessage = null
@@ -274,7 +330,7 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId.value = undefined
       dropAttachmentPreviews()
       threadId.value = null
-      hydratedMessageIds = new Set()
+      hydratedTurnIds = new Map()
       hydratedAssistantTurnIds = new Set()
       clearActive()
     }
@@ -287,11 +343,22 @@ export const useAgentConversationStore = defineStore(
       userTags.value = new Map()
       userWorkflowReferences.value = transcript.userWorkflowReferences
       latestWorkflowId.value = transcript.latestWorkflowId
-      hydratedMessageIds = transcript.rowIds
+      hydratedTurnIds = new Map(
+        history
+          .filter((row) => row.role === 'assistant')
+          .map((row) => [row.id, row.turn_id as TurnId])
+      )
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
       userAttachments.value = transcript.userAttachments
-      if (transcript.pending) {
+      const background =
+        threadId.value === null
+          ? undefined
+          : backgroundTurns.get(threadId.value)
+      if (
+        transcript.pending &&
+        background?.messageId !== transcript.pending.messageId
+      ) {
         liveMessage = transcript.pending.message
         activeTurnId.value = transcript.pending.messageId
         activeIndex.value = messages.value.indexOf(transcript.pending.message)
@@ -351,6 +418,8 @@ export const useAgentConversationStore = defineStore(
       resumeBackgroundTurn,
       settleBackgroundTurn,
       dropBackgroundTurns,
+      liveTurns,
+      settleTurn,
       reset,
       hydrate
     }

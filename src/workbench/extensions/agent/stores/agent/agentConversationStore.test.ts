@@ -611,6 +611,124 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
+  it.for(['before hydration', 'after hydration'] as const)(
+    'keeps socket completion authoritative when it arrives %s while returning to a thread',
+    (completion) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.recordUser(T1, 'go')
+      store.ingest(delta('t1', 'socket reply'))
+      store.stashActiveTurn()
+      const complete = () => store.ingest(done('t1'))
+      const hydrate = () =>
+        store.hydrate([
+          historyRow(1, 'user', 'server-turn', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'server-turn', '', 't1'),
+            status: 'streaming'
+          }
+        ])
+      const actions = {
+        'before hydration': () => {
+          complete()
+          hydrate()
+        },
+        'after hydration': () => {
+          hydrate()
+          complete()
+        }
+      }
+
+      actions[completion]()
+      store.resumeBackgroundTurn()
+
+      expect(store.isStreaming).toBe(false)
+      expect(store.activeTurnId).toBeNull()
+      expect(store.liveTurns()).toEqual([])
+      expect(partTexts(store)).toEqual(['socket reply'])
+      expect(store.messages.map((message) => message.id)).toEqual([
+        'server-turn'
+      ])
+    }
+  )
+
+  it('resumes one live transport with the persisted turn identity and attachments', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'before'))
+    store.stashActiveTurn()
+    const user = historyRow(1, 'user', 'server-turn', 'go')
+    user.content = { text: 'go', attachments: ['input.png'] }
+
+    store.hydrate([
+      user,
+      {
+        ...historyRow(2, 'assistant', 'server-turn', '', 't1'),
+        status: 'streaming'
+      }
+    ])
+    store.ingest(delta('t1', ' during'))
+    store.resumeBackgroundTurn()
+    store.ingest(delta('t1', ' after'))
+
+    expect(store.liveTurns()).toEqual([{ threadId: 'th', messageId: T1 }])
+    expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
+    expect(partTexts(store)).toEqual(['before during after'])
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: 'input.png', ref: 'input.png' }]
+    })
+    store.ingest(done('t1'))
+    expect(store.isStreaming).toBe(false)
+    expect(store.liveTurns()).toEqual([])
+  })
+
+  it.for([
+    {
+      name: 'the displayed turn',
+      settled: { threadId: 'th-front', messageId: T1 },
+      stillLive: [{ threadId: 'th-back', messageId: T2 }]
+    },
+    {
+      name: 'a stashed background turn',
+      settled: { threadId: 'th-back', messageId: T2 },
+      stillLive: [{ threadId: 'th-front', messageId: T1 }]
+    }
+  ])(
+    'settling $name twice leaves one terminal message and the other turn live',
+    ({ settled, stillLive }) => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-back')
+      store.startTurn(T2)
+      store.recordUser(T2, 'background prompt')
+      store.ingest(delta('t2', 'background partial'))
+      store.stashActiveTurn()
+      store.setThreadId('th-front')
+      store.hydrate([])
+      store.startTurn(T1)
+      store.recordUser(T1, 'front prompt')
+      store.ingest(delta('t1', 'front partial'))
+
+      store.settleTurn(settled, 'persisted final')
+      store.settleTurn(settled, 'persisted final')
+
+      expect(store.liveTurns()).toEqual(stillLive)
+      store.setThreadId(settled.threadId)
+      store.resumeBackgroundTurn()
+      const message = store.messages.find((m) => m.id === settled.messageId)
+      expect(message?.streaming).toBe(false)
+      expect(message?.parts).toEqual([
+        { type: 'text', text: 'persisted final', state: 'done' }
+      ])
+      expect(
+        store.messages.filter((m) => m.id === settled.messageId)
+      ).toHaveLength(1)
+    }
+  )
+
   it('resolves existing paywalls without resurrecting them after funds run out again', () => {
     const store = useAgentConversationStore()
     store.recordPaywall(T1, 'subscribe')

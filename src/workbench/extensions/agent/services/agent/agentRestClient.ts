@@ -375,10 +375,13 @@ export function createAgentRestClient() {
     )
   }
 
-  async function getMessages(threadId: string): Promise<AgentMessages> {
+  async function getMessages(
+    threadId: string,
+    options: { signal?: AbortSignal } = {}
+  ): Promise<AgentMessages> {
     return request(
       `/agent/threads/${encodeURIComponent(threadId)}/messages`,
-      { method: 'GET' },
+      { method: 'GET', signal: options.signal },
       zAgentMessages
     )
   }
