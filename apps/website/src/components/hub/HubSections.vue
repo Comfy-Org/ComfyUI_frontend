@@ -4,7 +4,7 @@ import { computed } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import type { HubKey } from '../../i18n/hub'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import type { BrowseEntry } from '../../lib/hub/browse-entry'
 import { sortBrowseEntries } from '../../lib/hub/browse-entry'
 import type { CatalogueShelf } from '../../lib/hub/shelves'
@@ -66,11 +66,11 @@ const kindLabelKey: Record<string, HubKey> = {
 
 // Both tabs are shelves, so the way past them says which half it opens.
 const browseAllLabel = computed(() =>
-  t('workshop.v2.browseAll', locale)
+  tHub('workshop.v2.browseAll', locale)
     .replace('{n}', `${total.value}`)
     .replace(
       '{kind}',
-      t(kindLabelKey[entries[0]?.kind ?? 'model'], locale).toLowerCase()
+      tHub(kindLabelKey[entries[0]?.kind ?? 'model'], locale).toLowerCase()
     )
 )
 </script>
@@ -92,7 +92,7 @@ const browseAllLabel = computed(() =>
               :data-testid="`shelf-${shelf.key}-open`"
               @click="emit('open', shelf.key)"
             >
-              {{ t(shelf.labelKey, locale) }}
+              {{ tHub(shelf.labelKey, locale) }}
             </button>
           </h2>
         </template>
@@ -107,7 +107,7 @@ const browseAllLabel = computed(() =>
           >
             <span class="tabular-nums">
               {{
-                t('workshop.sections.seeAll', locale).replace(
+                tHub('workshop.sections.seeAll', locale).replace(
                   '{n}',
                   `${shelf.total}`
                 )

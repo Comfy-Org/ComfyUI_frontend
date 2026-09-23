@@ -5,7 +5,7 @@ import type { GraphPicture } from '../../lib/hub/workflow-graph'
 import { linkPath, readGraphPicture } from '../../lib/hub/workflow-graph'
 import WorkflowGraphNode from './WorkflowGraphNode.vue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 
 const {
   source,
@@ -91,7 +91,7 @@ const control =
       :viewBox="picture.viewBox"
       class="size-full"
       role="img"
-      :aria-label="t('workshop.v2.workflow.graphAlt', locale)"
+      :aria-label="tHub('workshop.v2.workflow.graphAlt', locale)"
       preserveAspectRatio="xMidYMid meet"
     >
       <g :transform="transform">
@@ -139,15 +139,15 @@ const control =
     >
       {{
         failed
-          ? t('workshop.v2.workflow.graphFailed', locale)
-          : t('workshop.v2.workflow.graphLoading', locale)
+          ? tHub('workshop.v2.workflow.graphFailed', locale)
+          : tHub('workshop.v2.workflow.graphLoading', locale)
       }}
     </p>
 
     <span
       class="pointer-events-none absolute top-3 left-3 rounded-full bg-black/50 px-2 py-0.5 text-3xs/4 font-bold tracking-wider text-content-secondary uppercase backdrop-blur-md"
     >
-      {{ t('workshop.v2.workflow.graphHint', locale) }}
+      {{ tHub('workshop.v2.workflow.graphHint', locale) }}
     </span>
 
     <div
@@ -157,7 +157,7 @@ const control =
       <button type="button" :class="control" @click="zoomBy(1 / 1.2)">
         <span aria-hidden="true">&minus;</span>
         <span class="sr-only">{{
-          t('workshop.v2.workflow.zoomOut', locale)
+          tHub('workshop.v2.workflow.zoomOut', locale)
         }}</span>
       </button>
       <span class="px-1 font-mono text-2xs text-content-secondary tabular-nums">
@@ -166,7 +166,7 @@ const control =
       <button type="button" :class="control" @click="zoomBy(1.2)">
         <span aria-hidden="true">+</span>
         <span class="sr-only">{{
-          t('workshop.v2.workflow.zoomIn', locale)
+          tHub('workshop.v2.workflow.zoomIn', locale)
         }}</span>
       </button>
       <button
@@ -174,7 +174,7 @@ const control =
         class="cursor-pointer rounded-lg px-2 text-2xs text-content-secondary transition-colors hover:text-content-bright"
         @click="reset"
       >
-        {{ t('workshop.v2.workflow.zoomReset', locale) }}
+        {{ tHub('workshop.v2.workflow.zoomReset', locale) }}
       </button>
     </div>
   </div>

@@ -6,7 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useTablist } from '../../composables/useTablist'
 import type { Locale } from '../../i18n/translations'
 import type { HubKey } from '../../i18n/hub'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 
 // A workflow that runs on Cloud has no catalogue model behind it, so it never
 // reached the model page's tabs and its details ended up stacked under the
@@ -44,7 +44,7 @@ const { onKeydown } = useTablist(() => sections.value, activeSection)
     >
       <div
         role="tablist"
-        :aria-label="t('workshop.v2.workflow.tabs', locale)"
+        :aria-label="tHub('workshop.v2.workflow.tabs', locale)"
         class="scrollbar-hide flex min-w-0 gap-8 overflow-x-auto max-sm:gap-5"
         @keydown="onKeydown"
       >
@@ -68,7 +68,7 @@ const { onKeydown } = useTablist(() => sections.value, activeSection)
           "
           @click="activeSection = section"
         >
-          {{ t(sectionLabel[section], locale) }}
+          {{ tHub(sectionLabel[section], locale) }}
         </button>
       </div>
     </div>

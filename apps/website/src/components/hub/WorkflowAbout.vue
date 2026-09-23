@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import type { HubPortSummary } from '../../lib/hub/workflow-detail'
 import type { WorkflowReach } from '../../lib/hub/workflow-reach'
 import WorkflowActions from './WorkflowActions.vue'
@@ -47,12 +47,12 @@ const sectionTitle =
   <div class="grid gap-10 lg:grid-cols-12" data-testid="workflow-about">
     <div class="flex flex-col gap-12 lg:col-span-8">
       <section data-testid="workflow-graph-section">
-        <div class="mb-4">
+        <div class="mb-8">
           <h2 :class="sectionTitle">
-            {{ t('workshop.v2.workflow.about', locale) }}
+            {{ tHub('workshop.v2.workflow.about', locale) }}
           </h2>
           <p class="mt-2 text-sm/relaxed text-content-muted">
-            {{ t('workshop.v2.workflow.graphNote', locale) }}
+            {{ tHub('workshop.v2.workflow.graphNote', locale) }}
           </p>
         </div>
         <WorkflowGraph :source="graphUrl" :samples :locale />

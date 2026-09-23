@@ -4,7 +4,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import type { HubKey } from '../../i18n/hub'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import type {
   BrowseEntry,
   CatalogueOrder,
@@ -213,7 +213,7 @@ const inSection = computed(() => shelf.value !== 'all' || wholeList.value)
 // The two halves are searched apart, so the field says which one it is in,
 // in the words each already had on its own page.
 const searchPlaceholder = computed(() =>
-  t(
+  tHub(
     type.value === 'workflow'
       ? 'workshop.hub.search'
       : 'workshop.search.placeholder',
@@ -257,7 +257,7 @@ const featured = computed(() =>
           matched.value.filter((entry) => entry.card.media !== undefined),
           'popular'
         ).slice(0, BANNER_SLIDES),
-        (entry) => t(kindLabelKey[entry.kind], locale)
+        (entry) => tHub(kindLabelKey[entry.kind], locale)
       )
 )
 
@@ -284,10 +284,10 @@ function openOutcome(asked: WorkshopOutcome) {
 const heading = computed(() => {
   const standing = shelves.value.find((row) => row.key === shelf.value)
   return standing
-    ? t(standing.labelKey, locale)
-    : t('workshop.v2.allOf', locale).replace(
+    ? tHub(standing.labelKey, locale)
+    : tHub('workshop.v2.allOf', locale).replace(
         '{kind}',
-        t(kindLabelKey[type.value], locale).toLowerCase()
+        tHub(kindLabelKey[type.value], locale).toLowerCase()
       )
 })
 </script>
@@ -296,9 +296,9 @@ const heading = computed(() => {
   <section class="pb-32" data-testid="catalogue-browse">
     <WorkshopHero
       v-if="!inSection"
-      :eyebrow="t('workshop.v2.eyebrow', locale)"
-      :heading="t('workshop.v2.heading', locale)"
-      :subtitle="t('workshop.v2.subtitle', locale)"
+      :eyebrow="tHub('workshop.v2.eyebrow', locale)"
+      :heading="tHub('workshop.v2.heading', locale)"
+      :subtitle="tHub('workshop.v2.subtitle', locale)"
     />
 
     <!-- Where you are and the way out of it, before the controls that act on
@@ -315,7 +315,7 @@ const heading = computed(() => {
         @click="backToShelves"
       >
         <ChevronLeft class="size-4" aria-hidden="true" />
-        {{ t('workshop.v2.back', locale) }}
+        {{ tHub('workshop.v2.back', locale) }}
       </button>
       <h2
         class="mt-3 text-3xl font-bold text-primary-warm-white sm:text-4xl"
@@ -383,7 +383,7 @@ const heading = computed(() => {
       <CatalogueToolbar
         v-model:uses-model="usesModel"
         :narrowed-by="narrowedBy"
-        :outcome-label="outcome ? t(outcome.labelKey, locale) : undefined"
+        :outcome-label="outcome ? tHub(outcome.labelKey, locale) : undefined"
         :locale
         @clear="clearNarrowing"
         @clear-outcome="outcome = undefined"

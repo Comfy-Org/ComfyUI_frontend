@@ -3,7 +3,7 @@ import { X } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import type { TypeFilter } from '../../lib/hub/browse-entry'
 
 const {
@@ -31,9 +31,9 @@ const chipClass =
   'inline-flex h-8 items-center gap-2 rounded-full bg-transparency-white-t8 px-3 text-xs text-content'
 
 const narrowedLabel = () =>
-  t('workshop.v2.sort.narrowed', locale).replace(
+  tHub('workshop.v2.sort.narrowed', locale).replace(
     '{type}',
-    t(
+    tHub(
       narrowedBy === 'model'
         ? 'workshop.v2.kind.models'
         : 'workshop.v2.kind.workflows',
@@ -53,7 +53,7 @@ const narrowedLabel = () =>
         <button
           type="button"
           class="cursor-pointer text-content-muted hover:text-content-bright"
-          :aria-label="t('workshop.v2.clear', locale)"
+          :aria-label="tHub('workshop.v2.clear', locale)"
           data-testid="catalogue-chip-outcome"
           @click="emit('clearOutcome')"
         >
@@ -61,11 +61,13 @@ const narrowedLabel = () =>
         </button>
       </span>
       <span v-if="usesModel" :class="chipClass">
-        {{ t('workshop.v2.card.runsOn', locale).replace('{model}', usesModel) }}
+        {{
+          tHub('workshop.v2.card.runsOn', locale).replace('{model}', usesModel)
+        }}
         <button
           type="button"
           class="cursor-pointer text-content-muted hover:text-content-bright"
-          :aria-label="t('workshop.v2.clear', locale)"
+          :aria-label="tHub('workshop.v2.clear', locale)"
           @click="usesModel = ''"
         >
           <X class="size-3" />
@@ -79,7 +81,7 @@ const narrowedLabel = () =>
         class="cursor-pointer text-xs text-content-muted underline underline-offset-4 hover:text-content-bright"
         @click="emit('clear')"
       >
-        {{ t('workshop.v2.clear', locale) }}
+        {{ tHub('workshop.v2.clear', locale) }}
       </button>
     </div>
   </div>

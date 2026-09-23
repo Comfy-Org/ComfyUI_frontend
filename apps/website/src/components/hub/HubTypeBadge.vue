@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 import type { HubKey } from '../../i18n/hub'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import IconModel from './IconModel.vue'
 import IconWorkflow from './IconWorkflow.vue'
 
@@ -39,7 +39,7 @@ const labels: Record<Kind, HubKey> = {
       <span
         class="flex min-w-0 items-center ps-1.5 leading-none whitespace-nowrap"
       >
-        {{ t(labels[kind], locale) }}
+        {{ tHub(labels[kind], locale) }}
       </span>
     </span>
   </span>

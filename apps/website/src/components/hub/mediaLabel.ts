@@ -1,6 +1,6 @@
 import type { Locale } from '../../i18n/translations'
 import type { HubKey } from '../../i18n/hub'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 
 const MEDIA = new Map<string, HubKey>([
   ['image', 'workshop.hub.io.image'],
@@ -12,5 +12,5 @@ const MEDIA = new Map<string, HubKey>([
 /** The medium in the reader's words, or the raw type for anything unmapped. */
 export function mediaLabel(media: string, locale: Locale = 'en'): string {
   const known = MEDIA.get(media)
-  return known ? t(known, locale) : media
+  return known ? tHub(known, locale) : media
 }

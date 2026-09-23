@@ -12,7 +12,7 @@ import {
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 
 const { models, locale = 'en' } = defineProps<{
   /** Every model the workflows on this tab name, most used first. */
@@ -33,12 +33,12 @@ const menuItem =
   <DropdownMenuRoot>
     <DropdownMenuTrigger
       :class="cn(control, 'group')"
-      :aria-label="t('workshop.v2.model.filter', locale)"
+      :aria-label="tHub('workshop.v2.model.filter', locale)"
       data-testid="catalogue-model-filter"
     >
       <Cpu class="size-4 shrink-0" aria-hidden="true" />
       <span class="truncate max-sm:hidden">
-        {{ chosen || t('workshop.v2.model.allModels', locale) }}
+        {{ chosen || tHub('workshop.v2.model.allModels', locale) }}
       </span>
       <ChevronDown
         class="size-4 shrink-0 transition-transform duration-300 ease-out group-data-[state=open]:rotate-180 max-sm:hidden"
@@ -62,7 +62,7 @@ const menuItem =
             "
             data-testid="catalogue-model-all"
           >
-            {{ t('workshop.v2.model.allModels', locale) }}
+            {{ tHub('workshop.v2.model.allModels', locale) }}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem
             v-for="name in models"

@@ -7,7 +7,7 @@ import type { WorkflowGraph } from '../../config/workflow-execution'
 import type { WorkflowField } from '../../config/workflow-fields'
 import { leaveForSignIn } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import Button from '../ui/button/Button.vue'
 import WorkflowRunField from './WorkflowRunField.vue'
 import WorkflowRunResult from './WorkflowRunResult.vue'
@@ -69,7 +69,7 @@ const running = computed(() => state.value.phase === 'tracking')
       <header
         class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
       >
-        {{ t('workshop.input.title', locale) }}
+        {{ tHub('workshop.input.title', locale) }}
       </header>
 
       <div class="flex flex-col gap-8 p-5" data-testid="workflow-run-inputs">
@@ -88,7 +88,7 @@ const running = computed(() => state.value.phase === 'tracking')
       <!-- Run follows the form down, so a long list of inputs never pushes it
         past the bottom of a laptop screen. -->
       <div
-        class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
+        class="mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 p-3"
       >
         <Button
           v-if="signedOut"
@@ -99,7 +99,7 @@ const running = computed(() => state.value.phase === 'tracking')
           data-testid="workflow-run-signin"
           @click="leaveForSignIn($event, signInHref)"
         >
-          {{ t('workshop.run.signIn', locale) }}
+          {{ tHub('workshop.run.signIn', locale) }}
         </Button>
 
         <Button
@@ -110,7 +110,7 @@ const running = computed(() => state.value.phase === 'tracking')
           data-testid="workflow-run-button"
           @click="run"
         >
-          {{ t('workshop.v2.run.run', locale) }}
+          {{ tHub('workshop.v2.run.run', locale) }}
         </Button>
 
         <Button
@@ -121,7 +121,7 @@ const running = computed(() => state.value.phase === 'tracking')
           data-testid="workflow-run-cancel"
           @click="cancel"
         >
-          {{ t('workshop.v2.run.cancel', locale) }}
+          {{ tHub('workshop.v2.run.cancel', locale) }}
         </Button>
       </div>
     </div>

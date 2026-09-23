@@ -3,7 +3,7 @@ import { useIntersectionObserver } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import type { BrowseEntry } from '../../lib/hub/browse-entry'
 import type { Shelf } from '../../lib/workshop/shelf-memory'
 import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
@@ -38,7 +38,7 @@ useIntersectionObserver(
 )
 
 const showingText = computed(() =>
-  t('workshop.v2.showing', locale)
+  tHub('workshop.v2.showing', locale)
     .replace('{shown}', String(visible.length))
     .replace('{total}', String(total))
 )
@@ -63,8 +63,8 @@ const showingText = computed(() =>
     class="py-20 text-center text-content-muted"
     data-testid="catalogue-empty"
   >
-    <p class="text-lg">{{ t('workshop.v2.empty', locale) }}</p>
-    <p class="mt-2 text-sm">{{ t('workshop.v2.emptyHint', locale) }}</p>
+    <p class="text-lg">{{ tHub('workshop.v2.empty', locale) }}</p>
+    <p class="mt-2 text-sm">{{ tHub('workshop.v2.emptyHint', locale) }}</p>
   </div>
 
   <div

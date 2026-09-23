@@ -4,7 +4,7 @@ import { useElementSize } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 
 const { placeholder, locale = 'en' } = defineProps<{
   /** Named per half, because the two are searched apart. */
@@ -24,7 +24,7 @@ const { width } = useElementSize(field)
 const shown = computed(() =>
   width.value === 0 || width.value >= FITS_THE_WORDING
     ? placeholder
-    : t('workshop.v2.searchShort', locale)
+    : tHub('workshop.v2.searchShort', locale)
 )
 </script>
 
@@ -48,7 +48,7 @@ const shown = computed(() =>
       v-if="query"
       type="button"
       class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer rounded-lg text-primary-warm-gray transition-colors outline-none hover:text-primary-warm-white focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-      :aria-label="t('workshop.search.clear', locale)"
+      :aria-label="tHub('workshop.search.clear', locale)"
       data-testid="catalogue-search-clear"
       @click="query = ''"
     >

@@ -56,9 +56,9 @@ async function choose(index: number) {
             :aria-pressed="index === chosen"
             :class="
               cn(
-                'inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl px-4 text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
+                'inline-flex h-8 cursor-pointer items-center gap-2 rounded-xl px-3 text-xs font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50',
                 index === chosen
-                  ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
+                  ? 'bg-transparency-white-t20 text-content-bright'
                   : 'text-content-secondary hover:text-content-bright'
               )
             "

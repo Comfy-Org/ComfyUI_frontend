@@ -14,7 +14,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
 import type { HubKey } from '../../i18n/hub'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import type { CatalogueOrder, TypeFilter } from '../../lib/hub/browse-entry'
 
 export interface OrderOption {
@@ -47,11 +47,11 @@ const menuItem =
   <DropdownMenuRoot>
     <DropdownMenuTrigger
       :class="cn(control, 'group')"
-      :aria-label="t('workshop.v2.sort.label', locale)"
+      :aria-label="tHub('workshop.v2.sort.label', locale)"
       data-testid="catalogue-sort"
     >
       <ArrowUpDown class="size-4 shrink-0" aria-hidden="true" />
-      <span class="max-sm:hidden">{{ t(orderLabel, locale) }}</span>
+      <span class="max-sm:hidden">{{ tHub(orderLabel, locale) }}</span>
       <ChevronDown
         class="size-4 transition-transform duration-300 ease-out group-data-[state=open]:rotate-180 max-sm:hidden"
         aria-hidden="true"
@@ -77,7 +77,7 @@ const menuItem =
               )
             "
           >
-            {{ t(option.label, locale) }}
+            {{ tHub(option.label, locale) }}
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>

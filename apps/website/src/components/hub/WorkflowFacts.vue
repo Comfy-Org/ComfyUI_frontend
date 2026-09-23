@@ -5,7 +5,7 @@ import { computed } from 'vue'
 import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import type { HubKey } from '../../i18n/hub'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import type { HubPortSummary } from '../../lib/hub/workflow-detail'
 import IconModel from './IconModel.vue'
 import type { WorkflowReach } from '../../lib/hub/workflow-reach'
@@ -43,7 +43,7 @@ const facts = computed<{ label: HubKey; value: string }[]>(() => {
   const rows: { label: HubKey; value: string }[] = [
     {
       label: 'workshop.v2.workflow.factWhere',
-      value: t(
+      value: tHub(
         reach === 'endpoint'
           ? 'workshop.v2.workflow.runsOwn'
           : 'workshop.v2.workflow.runsCloud',
@@ -54,7 +54,7 @@ const facts = computed<{ label: HubKey; value: string }[]>(() => {
   if (output.value)
     rows.push({
       label: 'workshop.v2.workflow.factOutput',
-      value: `${mediaLabel(output.value.media, locale)}, ${t(
+      value: `${mediaLabel(output.value.media, locale)}, ${tHub(
         'workshop.v2.workflow.perRun',
         locale
       ).replace('{count}', String(output.value.count))}`
@@ -67,7 +67,7 @@ const facts = computed<{ label: HubKey; value: string }[]>(() => {
   if (openWeights)
     rows.push({
       label: 'workshop.v2.workflow.factWeights',
-      value: t('workshop.v2.workflow.openWeights', locale)
+      value: tHub('workshop.v2.workflow.openWeights', locale)
     })
   rows.push({ label: 'workshop.v2.workflow.factAuthor', value: author })
 
@@ -97,7 +97,7 @@ const bandHeading =
       data-testid="workflow-runs-on"
     >
       <h2 :class="bandHeading">
-        {{ t('workshop.v2.workflow.runsOn', locale) }}
+        {{ tHub('workshop.v2.workflow.runsOn', locale) }}
       </h2>
       <ul class="mt-2 flex flex-col gap-1">
         <li v-for="ref in models" :key="ref.name">
@@ -139,7 +139,7 @@ const bandHeading =
           :key="fact.label"
           class="grid grid-cols-[7rem_1fr] gap-4"
         >
-          <dt class="text-primary-warm-gray">{{ t(fact.label, locale) }}</dt>
+          <dt class="text-primary-warm-gray">{{ tHub(fact.label, locale) }}</dt>
           <dd class="min-w-0 text-primary-comfy-canvas tabular-nums">
             {{ fact.value }}
           </dd>

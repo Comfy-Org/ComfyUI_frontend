@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { hubKeys, t } from './hub'
+import { hubKeys, tHub } from './hub'
 import { translationKeys } from './translations'
 
 describe('the Hub table', () => {
@@ -13,16 +13,16 @@ describe('the Hub table', () => {
   })
 
   it('reads a key of its own', () => {
-    expect(t('workshop.v2.meta.title', 'en')).toBe('Hub - Comfy')
+    expect(tHub('workshop.v2.meta.title', 'en')).toBe('Hub - Comfy')
   })
 
   // The Hub's components say plenty the rest of the site also says, and those
   // words stay in the one table everybody shares.
   it('falls through to the shared table for everything else', () => {
-    expect(t('workshop.hero.eyebrow', 'en')).toBe('Models')
+    expect(tHub('workshop.hero.eyebrow', 'en')).toBe('Models')
   })
 
   it('falls back to English when a locale has no copy of its own', () => {
-    expect(t('workshop.v2.meta.title', 'ja')).toBe('Hub - Comfy')
+    expect(tHub('workshop.v2.meta.title', 'ja')).toBe('Hub - Comfy')
   })
 })

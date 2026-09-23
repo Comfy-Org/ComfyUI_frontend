@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import type { RunState } from '../../composables/useWorkflowRun'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import { runSaying, runSteps, stepReached } from '../../lib/hub/run-progress'
 import Button from '../ui/button/Button.vue'
 import WorkflowRunOutput from './WorkflowRunOutput.vue'
@@ -61,14 +61,14 @@ const showSample = computed(() => sample && state.phase === 'idle')
     <header
       class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >
-      {{ t('workshop.output.title', locale) }}
+      {{ tHub('workshop.output.title', locale) }}
     </header>
 
     <div class="flex min-h-80 flex-col gap-4 p-5">
       <WorkflowRunSteps v-if="reached >= 0" :steps :reached :locale />
 
       <p v-if="saying" class="text-sm text-content-muted">
-        {{ t(saying, locale) }}
+        {{ tHub(saying, locale) }}
       </p>
 
       <!-- An error says which of the two things happened, because only one
@@ -86,7 +86,7 @@ const showSample = computed(() => sample && state.phase === 'idle')
           data-testid="workflow-run-resume"
           @click="$emit('resume')"
         >
-          {{ t('workshop.v2.run.resume', locale) }}
+          {{ tHub('workshop.v2.run.resume', locale) }}
         </Button>
       </div>
 
@@ -103,7 +103,7 @@ const showSample = computed(() => sample && state.phase === 'idle')
       <img
         v-else-if="showSample"
         :src="sample"
-        :alt="t('workshop.output.title', locale)"
+        :alt="tHub('workshop.output.title', locale)"
         loading="lazy"
         decoding="async"
         class="aspect-video w-full rounded-xl bg-hub-surface object-cover"

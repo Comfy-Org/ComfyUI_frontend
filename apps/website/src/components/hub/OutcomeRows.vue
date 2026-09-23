@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import type { WorkshopOutcome } from '../../config/workshop-outcomes'
 import { WORKSHOP_OUTCOMES } from '../../config/workshop-outcomes'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import type { BrowseEntry } from '../../lib/hub/browse-entry'
 import { sortBrowseEntries } from '../../lib/hub/browse-entry'
 import CardRow from '../workshop/CardRow.vue'
@@ -64,7 +64,7 @@ const cardClass = 'peek-card shrink-0 snap-start'
             :id="`outcome-${row.outcome.key}`"
             class="text-xl font-medium text-primary-warm-white"
           >
-            {{ t(row.outcome.labelKey, locale) }}
+            {{ tHub(row.outcome.labelKey, locale) }}
           </h2>
         </template>
 
@@ -78,7 +78,7 @@ const cardClass = 'peek-card shrink-0 snap-start'
           >
             <span class="tabular-nums">
               {{
-                t('workshop.outcome.seeAll', locale).replace(
+                tHub('workshop.outcome.seeAll', locale).replace(
                   '{n}',
                   `${row.total}`
                 )

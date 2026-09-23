@@ -10,7 +10,7 @@ import { estimateWorkshopNodePrice } from '../../../config/workshop-node-pricing
 import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
 import { getModelGroupPage, listModelGroups } from '../../../lib/hub/model-page'
 import { pricedOperations, relatedCardViews } from '../../../lib/hub/page-data'
-import { t } from '../../../i18n/hub'
+import { tHub } from '../../../i18n/hub'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 
 export function getStaticPaths() {
@@ -72,8 +72,8 @@ const tags = [...new Set(operations.flatMap((model) => model.capabilities))]
     />
 
     <HubPageHeader
-      eyebrow={provider ?? t('workshop.card.partnerNode')}
-      useCase={useCase ? t(useCaseLabelKey[useCase]) : undefined}
+      eyebrow={provider ?? tHub('workshop.card.partnerNode')}
+      useCase={useCase ? tHub(useCaseLabelKey[useCase]) : undefined}
       useCaseHref={useCase ? `/hub/${catalogSearch({ useCase })}` : undefined}
       title={displayName}
       summary={lead?.summary}
@@ -89,17 +89,17 @@ const tags = [...new Set(operations.flatMap((model) => model.capabilities))]
     ) : (
       <section class="mb-16" data-testid="model-unrunnable">
         <p class="text-sm text-content-muted">
-          {t('workshop.v2.model.noRun')}
+          {tHub('workshop.v2.model.noRun')}
         </p>
       </section>
     )}
 
     {madeWith.length > 0 && (
       <HubCardSection
-        heading={t('workshop.v2.model.workflows')}
-        note={t('workshop.v2.model.workflowsNote')}
+        heading={tHub('workshop.v2.model.workflows')}
+        note={tHub('workshop.v2.model.workflowsNote')}
         views={madeWithViews}
-        actionLabel={t('workshop.v2.browseAllWorkflows')}
+        actionLabel={tHub('workshop.v2.browseAllWorkflows')}
         actionHref={`/hub/?model=${encodeURIComponent(name)}`}
         testid="model-workflows"
       />

@@ -772,8 +772,10 @@ function useInCode() {
     </div>
 
     <!-- A page that stands for several operations of one model hands that
-      choice back here, under the view it applies to rather than above it. -->
-    <slot name="operations" />
+      choice back here, under the view it applies to rather than above it. On
+      the playground the choice belongs to the form it rewrites, so it travels
+      inside the Input panel instead. -->
+    <slot v-if="activeSection !== 'playground'" name="operations" />
 
     <section
       v-if="activeSection === 'playground'"
@@ -806,6 +808,14 @@ function useInCode() {
             {{ t('workshop.form.nativeJson', locale) }}
           </button>
         </header>
+
+        <div
+          v-if="$slots.operations"
+          class="border-b border-transparency-white-t8 px-5 py-4"
+          data-testid="playground-operations"
+        >
+          <slot name="operations" />
+        </div>
 
         <!-- Loading an example rewrites every field at once, so the form
           settles in instead of snapping. -->
@@ -840,7 +850,7 @@ function useInCode() {
         <!-- Run follows the form down the page, so a long list of inputs never
           pushes it past the bottom of a laptop screen. -->
         <div
-          class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
+          class="mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 p-3"
         >
           <Button
             v-if="gate === 'signedOut'"
@@ -860,7 +870,7 @@ function useInCode() {
                the wrong wallet visible before it happens. -->
           <template v-else-if="gate === 'noCredits'">
             <p
-              class="mb-2 text-sm font-bold text-content-secondary"
+              class="mb-2 text-center text-sm font-bold text-content-secondary"
               data-testid="gate-note"
             >
               {{
@@ -881,7 +891,10 @@ function useInCode() {
             </Button>
           </template>
           <template v-else-if="gate === 'memberNoCredits'">
-            <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
+            <div
+              class="mb-2 flex flex-col gap-1 text-center"
+              data-testid="gate-note"
+            >
               <p class="text-sm font-bold text-content-secondary">
                 {{ t('workshop.error.creditsTitle', locale) }}
               </p>

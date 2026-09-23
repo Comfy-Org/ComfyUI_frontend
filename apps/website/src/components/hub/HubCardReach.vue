@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import type { WorkflowReach } from '../../lib/hub/workflow-reach'
 
 // What a workflow needs before anyone can call it. The shared Cloud endpoint
@@ -18,6 +18,6 @@ const { reach, locale = 'en' } = defineProps<{
     class="pointer-events-none absolute top-4 right-4 z-20 inline-flex h-7 items-center rounded-lg bg-black/45 px-2 text-2xs/4 font-semibold tracking-wide text-primary-comfy-orange backdrop-blur-md"
     data-testid="hub-card-reach"
   >
-    {{ t('workshop.v2.card.customNodes', locale) }}
+    {{ tHub('workshop.v2.card.customNodes', locale) }}
   </span>
 </template>

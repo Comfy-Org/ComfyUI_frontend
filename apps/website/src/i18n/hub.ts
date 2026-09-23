@@ -294,7 +294,7 @@ export type HubKey = keyof typeof hub | TranslationKey
 
 const own = (key: HubKey): key is keyof typeof hub => key in hub
 
-export function t(key: HubKey, locale: Locale = 'en'): string {
+export function tHub(key: HubKey, locale: Locale = 'en'): string {
   return own(key) ? localize(hub[key], locale) : shared(key, locale)
 }
 

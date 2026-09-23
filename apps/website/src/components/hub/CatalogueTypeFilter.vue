@@ -5,7 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
 import type { HubKey } from '../../i18n/hub'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import type { TypeFilter } from '../../lib/hub/browse-entry'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -26,7 +26,7 @@ const onSecond = computed(() => type.value === TABS[1].value)
   <div
     class="relative grid grid-cols-2 rounded-2xl bg-transparency-white-t8 p-1"
     role="group"
-    :aria-label="t('workshop.v2.kind.label', locale)"
+    :aria-label="tHub('workshop.v2.kind.label', locale)"
     data-testid="catalogue-type-facet"
   >
     <div class="pointer-events-none absolute inset-1 grid grid-cols-2">
@@ -57,7 +57,7 @@ const onSecond = computed(() => type.value === TABS[1].value)
       :data-testid="`catalogue-type-${option.value}`"
       @click="type = option.value"
     >
-      {{ t(option.label, locale) }}
+      {{ tHub(option.label, locale) }}
     </button>
   </div>
 </template>

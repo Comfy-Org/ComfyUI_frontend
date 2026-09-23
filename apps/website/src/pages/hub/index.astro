@@ -5,7 +5,7 @@ import hubTemplates from '../../data/hubTemplates.json'
 import { browseEntries } from '../../lib/hub/browse-payload'
 import { facetedTemplates } from '../../lib/hub/page-data'
 import { launchesHere } from '../../config/workshop-launch'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 
 // A V2 proposal, not a shipped route: the live catalogue is untouched while
@@ -27,8 +27,8 @@ const entries = browseEntries(
 
 <BaseLayout
   inHub
-  title={t('workshop.v2.meta.title')}
-  description={t('workshop.v2.meta.description')}
+  title={tHub('workshop.v2.meta.title')}
+  description={tHub('workshop.v2.meta.description')}
   noindex
 >
   <main class="mx-auto max-w-10xl px-6 py-16 lg:px-8 lg:py-24">

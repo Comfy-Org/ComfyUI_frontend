@@ -7,7 +7,7 @@ import { computed } from 'vue'
 import Button from '../ui/button/Button.vue'
 import type { Locale } from '../../i18n/translations'
 import type { HubKey } from '../../i18n/hub'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import type { WorkflowReach } from '../../lib/hub/workflow-reach'
 
 type RouteKey = 'cloud' | 'copy' | 'download' | 'tutorial'
@@ -128,9 +128,9 @@ const routes = computed(() =>
         :target="route.external ? '_blank' : undefined"
         :rel="route.external ? 'noopener' : undefined"
         :data-testid="route.id"
-        :title="t(route.note, locale)"
+        :title="tHub(route.note, locale)"
       >
-        {{ t(route.label, locale) }}
+        {{ tHub(route.label, locale) }}
       </Button>
     </li>
   </ul>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 import type { HubKey } from '../../i18n/hub'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 
 // The wait, as the steps it actually has, with the one it has got to lit.
 const {
@@ -29,7 +29,7 @@ const done = (index: number) => index <= reached
         class="size-2 shrink-0 rounded-full"
         :class="done(index) ? 'bg-primary-comfy-yellow' : 'bg-hub-muted'"
       />
-      {{ t(step, locale) }}
+      {{ tHub(step, locale) }}
     </li>
   </ol>
 </template>

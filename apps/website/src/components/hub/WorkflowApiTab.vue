@@ -17,7 +17,7 @@ import {
   workflowInputs
 } from '../../config/workflow-snippets'
 import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 import type { CodeLang } from '../../lib/highlight'
 import Button from '../ui/button/Button.vue'
 import HighlightedCode from '../workshop/HighlightedCode.vue'
@@ -87,15 +87,15 @@ function downloadGraph() {
   <section
     class="flex min-w-0 flex-col gap-6"
     data-testid="workflow-api"
-    :aria-label="t('workshop.v2.api.title', locale)"
+    :aria-label="tHub('workshop.v2.api.title', locale)"
   >
     <div class="flex flex-col gap-2">
       <h2 class="text-2xl font-bold text-primary-comfy-canvas">
-        {{ t('workshop.v2.api.title', locale) }}
+        {{ tHub('workshop.v2.api.title', locale) }}
       </h2>
       <p class="max-w-3xl text-sm/relaxed text-primary-warm-gray">
         {{
-          t(
+          tHub(
             ownDeployment
               ? 'workshop.v2.api.leadOwn'
               : 'workshop.v2.api.leadCloud',
@@ -121,7 +121,7 @@ function downloadGraph() {
       </div>
       <p class="text-sm/relaxed text-primary-warm-gray">
         {{
-          t(
+          tHub(
             ownDeployment
               ? 'workshop.v2.api.noteOwn'
               : 'workshop.v2.api.noteCloud',
@@ -136,13 +136,13 @@ function downloadGraph() {
         rel="noopener noreferrer"
         class="inline-flex min-h-11 items-center text-sm text-primary-comfy-yellow"
       >
-        {{ t('workshop.v2.api.deployDocs', locale) }} ↗
+        {{ tHub('workshop.v2.api.deployDocs', locale) }} ↗
       </a>
     </div>
 
     <div class="flex flex-col gap-3 text-sm/relaxed text-primary-warm-gray">
       <p>
-        {{ t('workshop.v2.api.setup', locale).replace('{file}', file) }}
+        {{ tHub('workshop.v2.api.setup', locale).replace('{file}', file) }}
       </p>
       <code
         class="block overflow-x-auto rounded-xl bg-transparency-white-t8 px-4 py-3 text-primary-warm-white"
@@ -150,7 +150,7 @@ function downloadGraph() {
         {{ INSTALL[language] }}
       </code>
       <p v-if="inputs.length">
-        {{ t('workshop.v2.api.localFiles', locale) }}:
+        {{ tHub('workshop.v2.api.localFiles', locale) }}:
         <span
           v-for="(input, index) in inputs"
           :key="`${input.node}.${input.input}`"
@@ -169,7 +169,7 @@ function downloadGraph() {
       >
         <div
           role="tablist"
-          :aria-label="t('workshop.v2.api.language', locale)"
+          :aria-label="tHub('workshop.v2.api.language', locale)"
           class="flex gap-1"
           @keydown="onKeydown"
         >
@@ -197,8 +197,8 @@ function downloadGraph() {
         </div>
         <CopyTextButton
           :value="snippet"
-          :label="t('workshop.v2.api.copy', locale)"
-          :copied-label="t('workshop.v2.api.copied', locale)"
+          :label="tHub('workshop.v2.api.copy', locale)"
+          :copied-label="tHub('workshop.v2.api.copied', locale)"
         />
       </div>
       <pre
@@ -215,12 +215,12 @@ function downloadGraph() {
       v-if="language === 'curl'"
       class="text-sm/relaxed text-primary-warm-gray"
     >
-      {{ t('workshop.v2.api.curlNote', locale) }}
+      {{ tHub('workshop.v2.api.curlNote', locale) }}
     </p>
 
     <div class="flex flex-wrap gap-3">
       <Button @click="downloadGraph">
-        {{ t('workshop.v2.api.downloadGraph', locale) }}
+        {{ tHub('workshop.v2.api.downloadGraph', locale) }}
       </Button>
       <Button
         as="a"
@@ -229,7 +229,7 @@ function downloadGraph() {
         rel="noopener noreferrer"
         variant="outline"
       >
-        {{ t('workshop.v2.api.apiKey', locale) }}
+        {{ tHub('workshop.v2.api.apiKey', locale) }}
       </Button>
       <Button
         as="a"
@@ -238,7 +238,7 @@ function downloadGraph() {
         rel="noopener noreferrer"
         variant="outline"
       >
-        {{ t('workshop.v2.api.docs', locale) }}
+        {{ tHub('workshop.v2.api.docs', locale) }}
       </Button>
     </div>
   </section>

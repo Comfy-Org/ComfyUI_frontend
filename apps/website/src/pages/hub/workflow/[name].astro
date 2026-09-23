@@ -30,7 +30,7 @@ import {
 } from '../../../lib/hub/workflow-detail'
 import { workflowDisplayTitle } from '../../../lib/hub/workflow-title'
 import { workflowReach } from '../../../lib/hub/workflow-reach'
-import { t } from '../../../i18n/hub'
+import { tHub } from '../../../i18n/hub'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 
 export function getStaticPaths() {
@@ -144,7 +144,7 @@ const tags = usefulTags(template.tags)
           ? `/hub/model/${page.destination.key}/`
           : runsOnModel?.href
       }
-      useCase={useCase ? t(useCaseLabelKey[useCase]) : undefined}
+      useCase={useCase ? tHub(useCaseLabelKey[useCase]) : undefined}
       useCaseHref={useCase ? `/hub/${catalogSearch({ useCase })}` : undefined}
       title={title}
       summary={details.description}
@@ -214,9 +214,9 @@ const tags = usefulTags(template.tags)
 
     {relatedViews.length > 0 && (
       <HubCardSection
-        heading={t('workshop.v2.workflow.related')}
+        heading={tHub('workshop.v2.workflow.related')}
         views={relatedViews}
-        actionLabel={t('workshop.v2.browseAllWorkflows')}
+        actionLabel={tHub('workshop.v2.browseAllWorkflows')}
         actionHref="/hub/"
         testid="workflow-related"
       />
