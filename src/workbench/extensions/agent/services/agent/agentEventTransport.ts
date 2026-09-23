@@ -168,8 +168,7 @@ export function createAgentEventTransport(
 
   function flushPendingCanvasSync(): void {
     if (pendingCanvasSync.size === 0) return
-    for (const part of [...pendingCanvasSync.keys()])
-      settlePendingCanvasSync(part)
+    for (const part of pendingCanvasSync.keys()) settlePendingCanvasSync(part)
     claimCanvasSyncOutcome()
     emit(snapshotMessage(message))
   }
