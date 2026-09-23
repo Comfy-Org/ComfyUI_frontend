@@ -2,9 +2,11 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { getRouterModelHref } from '../../config/workshop-router-content'
 import { t } from '../../i18n/translations'
 import ModelsApiGallery from './ModelsApiGallery.vue'
 import type { ModelsGalleryCard } from './modelsGalleryCards'
+import { modelsGalleryCards } from './modelsGalleryCards'
 
 describe('ModelsApiGallery', () => {
   beforeEach(() => {
@@ -55,6 +57,13 @@ describe('ModelsApiGallery', () => {
         name: new RegExp(t('cloud.aiModels.card.geminiOmniFlash', 'en'))
       })
     ).toHaveAttribute('href', '/models/gemini--omni-1.1-flash--animate-images/')
+  })
+
+  it('bakes in the href the Router catalogue resolves for each card, so the two never drift', () => {
+    for (const card of modelsGalleryCards) {
+      if (!card.modelId) continue
+      expect(card.href).toBe(getRouterModelHref(card.modelId, card.useCase))
+    }
   })
 
   it('renders a card without a model id as a plain, non-linked div', () => {

@@ -7,7 +7,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { GalleryMedia, ModelsGalleryCard } from './modelsGalleryCards'
-import { modelGalleryHref, modelsGalleryCards } from './modelsGalleryCards'
+import { modelsGalleryCards } from './modelsGalleryCards'
 
 const { locale = 'en', cards = modelsGalleryCards } = defineProps<{
   locale?: Locale
@@ -24,9 +24,6 @@ const activeMedia = (card: ModelsGalleryCard): GalleryMedia =>
   card.media[rotationIndex.value % card.media.length]
 
 const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
-
-const hrefFor = (card: ModelsGalleryCard): string | undefined =>
-  card.modelId ? modelGalleryHref(card.modelId, card.useCase) : undefined
 </script>
 
 <template>
@@ -39,7 +36,7 @@ const hrefFor = (card: ModelsGalleryCard): string | undefined =>
         :is="card.modelId ? 'a' : 'div'"
         v-for="card in cards"
         :key="card.titleKey"
-        :href="hrefFor(card)"
+        :href="card.href"
         :class="
           cn(
             'relative block aspect-square overflow-hidden rounded-3xl bg-black/40',
