@@ -11,7 +11,6 @@ import type { Ref } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
-import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -38,16 +37,6 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => ({
 }))
 
 vi.mock(import('@/i18n'))
-
-const mapTaskOutputToAssetItemMock = vi.fn()
-vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
-  mapTaskOutputToAssetItem: (
-    taskItem: TaskItemImpl,
-    output: AugmentedResultItem
-  ) => mapTaskOutputToAssetItemMock(taskItem, output)
-}))
-
-vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 let settingStoreMock: ReturnType<typeof useSettingStore>
 
@@ -87,7 +76,6 @@ vi.mock(import('@/services/jobOutputCache'), () => ({
 
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
 
 type MockTaskRef = Record<string, unknown>
 
@@ -144,11 +132,6 @@ describe('useJobMenu', () => {
     vi.mocked(queueStoreMock.update).mockResolvedValue(undefined)
     vi.mocked(queueStoreMock.delete).mockResolvedValue(undefined)
     cancelJobMock.mockResolvedValue(undefined)
-    vi.mocked(useMediaAssetActions().deleteAssets).mockResolvedValue(false)
-    mapTaskOutputToAssetItemMock.mockImplementation((task, output) => ({
-      task,
-      output
-    }))
     nodeDefStoreMock.nodeDefsByName = {
       LoadImage: fromPartial<ComfyNodeDefImpl>({ name: 'LoadImage' }),
       LoadVideo: fromPartial<ComfyNodeDefImpl>({ name: 'LoadVideo' }),
@@ -665,7 +648,6 @@ describe('useJobMenu', () => {
   })
 
   it('does not refresh queue when delete cancelled', async () => {
-    vi.mocked(useMediaAssetActions().deleteAssets).mockResolvedValue(false)
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({
