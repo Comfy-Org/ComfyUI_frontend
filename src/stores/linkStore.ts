@@ -496,7 +496,7 @@ export const useLinkStore = defineStore('link', () => {
     const bucket = roots.get(scope.rootGraphId)
     const ids = bucket?.idsByOwner.get(scope.owningGraphId)
     if (!bucket || !ids) return
-    for (const id of [...ids]) {
+    for (const id of Array.from(ids)) {
       const topology = bucket.byId.get(id)
       if (topology) displace(bucket, topology)
     }

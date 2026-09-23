@@ -119,7 +119,7 @@ class MockVideoElement {
   }
 
   emit(type: string) {
-    for (const listener of [...this.getListeners(type)]) {
+    for (const listener of Array.from(this.getListeners(type))) {
       listener(new Event(type))
     }
   }

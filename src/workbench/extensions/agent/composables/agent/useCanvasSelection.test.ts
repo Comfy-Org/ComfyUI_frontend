@@ -5,7 +5,7 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
 import type { SelectedNode } from './useCanvasSelection'
-import { useCanvasSelection } from './useCanvasSelection'
+import { selectedNodeKey, useCanvasSelection } from './useCanvasSelection'
 
 const nodeA: SelectedNode = { id: '1', title: 'Load Checkpoint' }
 const nodeB: SelectedNode = { id: '2', title: 'KSampler' }
@@ -118,6 +118,28 @@ describe('useCanvasSelection', () => {
 
     isTracking.value = true
     expect(staged.value).toEqual([nodeA])
+  })
+
+  it('retains staged nodes outside the projected selection scope', () => {
+    const offScopeNode = {
+      ...nodeB,
+      locatorId: createNodeLocatorId(null, toNodeId(2))
+    }
+    const selection = ref<SelectedNode[]>([])
+    const isTracking = ref(false)
+    const { staged, add } = useCanvasSelection({
+      selection,
+      isLive: ref(true),
+      isTracking,
+      retainStagedNode: (node) =>
+        selectedNodeKey(node) === selectedNodeKey(offScopeNode)
+    })
+    add(offScopeNode)
+
+    isTracking.value = true
+    selection.value = [nodeA]
+
+    expect(staged.value).toEqual([offScopeNode, nodeA])
   })
 
   it('replaces staged references during an explicit restore', () => {

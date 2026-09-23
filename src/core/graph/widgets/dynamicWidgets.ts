@@ -561,7 +561,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     : undefined
   if (!autogrowGroup) return
 
-  const { min = 1, inputSpecs } = autogrowGroup
+  const { min, inputSpecs } = autogrowGroup
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 

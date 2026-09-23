@@ -315,7 +315,7 @@ export function renderDocument(
     cleanup()
   }
   if (deps.placedCache) {
-    for (const key of [...deps.placedCache.keys()]) {
+    for (const key of Array.from(deps.placedCache.keys())) {
       if (!used.has(key)) deps.placedCache.delete(key)
     }
   }

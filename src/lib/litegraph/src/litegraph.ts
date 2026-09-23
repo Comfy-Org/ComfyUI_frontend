@@ -79,6 +79,7 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
 
 // End backwards compat
 
+export type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
 export { LinkConnector } from './canvas/LinkConnector'
 export { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 export { CanvasPointer } from './CanvasPointer'

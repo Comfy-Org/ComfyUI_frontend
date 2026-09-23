@@ -438,7 +438,8 @@ export class EcsFollowerAdapter {
   }
 
   destroy(): void {
-    for (const workflowId of [...this.targets.keys()]) this.unbind(workflowId)
+    for (const workflowId of Array.from(this.targets.keys()))
+      this.unbind(workflowId)
   }
 
   private createSession(

@@ -319,7 +319,7 @@ export function createBillingOperationLifecycle(
   }
 
   function publish(record: OperationRecord) {
-    for (const listener of [...listeners]) listener(record.state)
+    for (const listener of Array.from(listeners)) listener(record.state)
   }
 
   function stopTimer(record: OperationRecord) {

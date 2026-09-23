@@ -15,7 +15,6 @@ export type ReadOnlyRectangle = Omit<
   | 'resizeBottomLeft'
   | 'resizeTopRight'
   | 'resizeBottomRight'
-  | 'resizeBottomRight'
   | 'updateTo'
 >
 

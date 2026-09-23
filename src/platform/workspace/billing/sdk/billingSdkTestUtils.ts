@@ -161,7 +161,7 @@ export function fakeBillingSdk() {
         ...snapshot.filter((current) => current.id !== state.id),
         state
       ]
-      for (const listener of [...listeners]) listener(state)
+      for (const listener of Array.from(listeners)) listener(state)
     }
   }
 }

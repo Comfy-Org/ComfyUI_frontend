@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-type RightSidePanelSection = 'advanced-inputs' | string
+type RightSidePanelSection = 'advanced-inputs'
 
 export type RightSidePanelTab =
   | 'parameters'

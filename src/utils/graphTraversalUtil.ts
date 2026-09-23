@@ -881,7 +881,7 @@ export function collectFromNodes<T = LGraphNode, C = void>(
   const {
     collector = (node: LGraphNode) => node as T,
     contextBuilder = () => undefined as C,
-    initialContext = undefined,
+    initialContext,
     expandSubgraphs = true
   } = options || {}
   const results: T[] = []

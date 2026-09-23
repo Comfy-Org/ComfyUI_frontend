@@ -84,6 +84,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -142,6 +143,7 @@ import {
   executeWidgetsCallback,
   createNode,
   isImageNode,
+  isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
 import {
@@ -745,6 +747,7 @@ export class ComfyApp {
 
         const n = this.dragOverNode
         this.dragOverNode = null
+        if (isSelectOnly(canvas)) return
         // Node handles file drop, we dont use the built in onDropFile handler as its buggy
         // If you drag multiple files it will call it multiple times with the same file
         if (await n?.onDragDrop?.(event)) return
@@ -951,15 +954,17 @@ export class ComfyApp {
 
   /** Flag that the graph is configuring to prevent nodes from running checks while its still loading */
   private addConfigureHandler() {
-    const app = this
     const configure = LGraph.prototype.configure
-    LGraph.prototype.configure = function (...args) {
-      app.configuringGraphLevel++
+    const trackConfiguring = <T>(run: () => T): T => {
+      this.configuringGraphLevel++
       try {
-        return configure.apply(this, args)
+        return run()
       } finally {
-        app.configuringGraphLevel--
+        this.configuringGraphLevel--
       }
+    }
+    LGraph.prototype.configure = function (...args) {
+      return trackConfiguring(() => configure.apply(this, args))
     }
   }
 
@@ -1022,7 +1027,9 @@ export class ComfyApp {
 
     this.rootGraphInternal = graph
     installNodeAddedTelemetry(graph)
-    this.canvas = new LGraphCanvas(canvasEl, graph)
+    const interactionMode = createCanvasInteractionMode()
+    this.canvas = new LGraphCanvas(canvasEl, graph, { interactionMode })
+    useCommandStore().setInteractionMode(interactionMode)
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
 

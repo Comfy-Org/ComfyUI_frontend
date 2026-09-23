@@ -153,7 +153,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function cancelAllUploads(): void {
-    for (const id of [...pending]) cancelUpload(id)
+    for (const id of Array.from(pending)) cancelUpload(id)
   }
 
   async function addDeferredFile(
