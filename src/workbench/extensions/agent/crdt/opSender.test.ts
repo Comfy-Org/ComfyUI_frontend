@@ -596,6 +596,22 @@ describe('createOpSender', () => {
     expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
   })
 
+  it('a batch acknowledged after a resend still reserves a credit for the send left unanswered', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(3)
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+    expect(sender.pending()).toBe(1)
+  })
+
   it('reports a throw that only starts on a retry, after the transport first refused', () => {
     transportUp = false
 
