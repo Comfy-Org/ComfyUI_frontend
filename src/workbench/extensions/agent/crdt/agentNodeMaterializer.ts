@@ -343,54 +343,88 @@ function detachOrphanLinks(
   graph: MaterializableGraph,
   orphan: LGraphNode
 ): void {
-  // The node-level disconnect helpers fire `onConnectionsChange` per link and
-  // stop at the first throw (or bail on a missing far end), which can leave
-  // later links registered. Whatever is still there afterwards is taken
-  // down link by link, without callbacks. The node's own graph is the link
-  // network those helpers resolve against; it is still set at this point.
+  // The node's own graph is the link network the node-level disconnect
+  // helpers resolve against; it is still set at this point.
   const network = orphan.graph
-  const forceRemaining = (
-    links: readonly LLink[],
-    keepReroutes: 'input' | 'output'
-  ): boolean => {
-    if (!network) return false
-    let forced = false
-    for (const link of links) {
-      try {
-        link.disconnect(network, keepReroutes)
-        forced = true
-      } catch {
-        // Same: keep going so every remaining link gets its own attempt.
-      }
-    }
-    return forced
-  }
   let forced = false
-  for (const [slot] of orphan.inputs.entries()) {
-    try {
-      if (inputHasLink(graph, orphan.id, slot)) {
-        orphan.disconnectInput(slot, true)
-      }
-    } catch {
-      // Already failing; the container splice below is what must not be lost.
-    }
-    const remaining = network && inputLink(network, orphan.id, slot)
-    if (remaining) forced = forceRemaining([remaining], 'output') || forced
+  for (const slot of orphan.inputs.keys()) {
+    forced = detachOrphanInput(graph, orphan, slot, network) || forced
   }
   for (const slot of orphan.outputs.keys()) {
+    forced = detachOrphanOutput(graph, orphan, slot, network) || forced
+  }
+  if (forced && network) network.incrementVersion()
+  removeOrphanFloatingLinks(graph, orphan)
+}
+
+/** Polite disconnect first; whatever it leaves registered is forced off. */
+function detachOrphanInput(
+  graph: MaterializableGraph,
+  orphan: LGraphNode,
+  slot: number,
+  network: LGraph | null
+): boolean {
+  try {
+    if (inputHasLink(graph, orphan.id, slot)) {
+      orphan.disconnectInput(slot, true)
+    }
+  } catch {
+    // Already failing; the container splice below is what must not be lost.
+  }
+  if (!network) return false
+  const remaining = inputLink(network, orphan.id, slot)
+  return remaining ? forceDisconnect(network, [remaining], 'output') : false
+}
+
+/** Polite disconnect first; whatever it leaves registered is forced off. */
+function detachOrphanOutput(
+  graph: MaterializableGraph,
+  orphan: LGraphNode,
+  slot: number,
+  network: LGraph | null
+): boolean {
+  try {
+    if (outputHasLinks(graph, orphan.id, slot)) {
+      orphan.disconnectOutput(slot)
+    }
+  } catch {
+    // Same: keep going so every remaining link gets its own attempt.
+  }
+  if (!network) return false
+  return forceDisconnect(
+    network,
+    outputLinks(network, orphan.id, slot),
+    'input'
+  )
+}
+
+/**
+ * The node-level disconnect helpers fire `onConnectionsChange` per link and
+ * stop at the first throw (or bail on a missing far end), which can leave
+ * later links registered. Take those down link by link, without callbacks.
+ * Returns whether anything was removed.
+ */
+function forceDisconnect(
+  network: LGraph,
+  links: readonly LLink[],
+  keepReroutes: 'input' | 'output'
+): boolean {
+  let forced = false
+  for (const link of links) {
     try {
-      if (outputHasLinks(graph, orphan.id, slot)) {
-        orphan.disconnectOutput(slot)
-      }
+      link.disconnect(network, keepReroutes)
+      forced = true
     } catch {
       // Same: keep going so every remaining link gets its own attempt.
     }
-    if (network) {
-      forced =
-        forceRemaining(outputLinks(network, orphan.id, slot), 'input') || forced
-    }
   }
-  if (forced && network) network.incrementVersion()
+  return forced
+}
+
+function removeOrphanFloatingLinks(
+  graph: MaterializableGraph,
+  orphan: LGraphNode
+): void {
   for (const link of [...graph.floatingLinks.values()]) {
     if (link.origin_id !== orphan.id && link.target_id !== orphan.id) continue
     try {
