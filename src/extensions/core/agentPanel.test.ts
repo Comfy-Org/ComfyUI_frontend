@@ -523,6 +523,35 @@ describe('AgentPanel extension flag gate', () => {
     expect(nodeSelectionStore.finishWorkflowLoad).not.toHaveBeenCalled()
   })
 
+  it('disarms the restore guard on an empty restore instead of leaving it armed', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+    const rootGraph = {}
+    const selectItems = vi.fn()
+    agentStore.enabled = true
+    agentStore.consentAccepted = true
+    nodeSelectionStore.isLoadingWorkflow = true
+    nodeSelectionStore.nodeIds.mockReturnValue([])
+    workflowStore.activeWorkflow = createMockLoadedWorkflow({
+      path: 'workflows/brand-new-unsaved.json'
+    })
+
+    await extension!.afterLoadGraph!({
+      rootGraph,
+      canvas: { selectItems }
+    } as never)
+
+    // The guard is disarmed directly, rather than armed with an empty
+    // selection, so a later unrelated selection change (e.g. manually adding
+    // a node) can't be misattributed as "the restored selection".
+    expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+    expect(nodeSelectionStore.restoreNodeIds).not.toHaveBeenCalled()
+    expect(selectItems).not.toHaveBeenCalled()
+  })
+
   it('closes the mint suppression bracket after graph configuration', async () => {
     const { registerAgentPanelExtension } = await import('./agentPanel')
     registerAgentPanelExtension()

@@ -425,5 +425,67 @@ test.describe(
         ).toBeLessThan(REASONABLE_PLACEMENT_MARGIN_PX)
       }
     })
+
+    test('reports agent-added nodes without moving the camera and frames them on request', async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+      const harness = new TemplatePlacementHarness(page)
+      await harness.boot()
+      await harness.sendPrompt('Add the Image Edit template to this canvas')
+
+      const cameraBefore = await page.evaluate(() => {
+        const { ds } = window.app!.canvas
+        return { scale: ds.scale, offset: [...ds.offset] }
+      })
+
+      await harness.insertTemplate()
+      await harness.waitForTurnComplete()
+
+      expect(
+        await page.evaluate(() => {
+          const { ds } = window.app!.canvas
+          return { scale: ds.scale, offset: [...ds.offset] }
+        })
+      ).toEqual(cameraBefore)
+
+      const minimap = page.getByTestId('minimap-container')
+      await expect(minimap).toBeVisible()
+      await expect(minimap).toHaveAttribute(
+        'aria-label',
+        'Minimap. Highlighted nodes: 3'
+      )
+
+      const report = page.getByTestId('agent-graph-added-toast')
+      await expect(report).toContainText('The agent added 3 nodes to the graph')
+      await report.getByRole('button', { name: /View nodes/i }).click()
+
+      await expect
+        .poll(() =>
+          page.evaluate((ids) => {
+            const canvas = window.app!.canvas
+            const panel = document
+              .querySelector('#agent-panel-root')
+              ?.getBoundingClientRect()
+            const right = panel?.left ?? window.innerWidth
+            return ids.every((id) => {
+              const node = window.app!.graph.nodes.find(
+                (candidate) => String(candidate.id) === id
+              )
+              if (!node) return false
+              const [x, y] = canvas.ds.convertOffsetToCanvas(node.pos)
+              const width = node.size[0] * canvas.ds.scale
+              const height = node.size[1] * canvas.ds.scale
+              return (
+                x >= 0 &&
+                y >= 0 &&
+                x + width <= right &&
+                y + height <= window.innerHeight
+              )
+            })
+          }, TEMPLATE_NODE_IDS.map(String))
+        )
+        .toBe(true)
+    })
   }
 )

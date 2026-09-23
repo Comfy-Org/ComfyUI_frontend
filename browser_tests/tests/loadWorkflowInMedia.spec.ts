@@ -1,9 +1,16 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  routeObjectInfoFromSetupApi,
+  setComboInputOptions
+} from '@e2e/fixtures/utils/objectInfo'
 
-test.beforeEach(async ({ comfyPage }) => {
+test.beforeEach(async ({ comfyPage, page }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await routeObjectInfoFromSetupApi(page, (objectInfo) => {
+    setComboInputOptions(objectInfo, 'LoadImage', 'image', ['example.png'])
+  })
 })
 
 test.describe(

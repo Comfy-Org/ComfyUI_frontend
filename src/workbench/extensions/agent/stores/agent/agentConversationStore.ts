@@ -46,7 +46,6 @@ export const useAgentConversationStore = defineStore(
     const userTags = ref(new Map<TurnId, string[]>())
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
     const latestWorkflowId = ref<string>()
-
     let transport: AgentEventTransport | null = null
     let liveMessage: AssistantMessage | null = null
     const backgroundTurns = new Map<string, BackgroundTurn>()
@@ -107,12 +106,25 @@ export const useAgentConversationStore = defineStore(
       recordSettledReply(turnId, text, [{ type: 'paywall' }])
     }
 
+    function resolvePaywalls(): void {
+      messages.value = messages.value.map((message) => {
+        const parts = message.parts.filter((part) => part.type !== 'paywall')
+        return parts.length === message.parts.length
+          ? message
+          : { ...message, parts }
+      })
+    }
+
+    function setPaywallsResolved(resolved: boolean): void {
+      if (resolved) resolvePaywalls()
+    }
+
     function startTurn(turnId: TurnId): void {
       if (transport) abortActiveTurn()
       const message = createAssistantMessage(turnId)
       liveMessage = message
-      activeIndex.value = messages.value.push(message) - 1
       activeTurnId.value = turnId
+      activeIndex.value = messages.value.push(message) - 1
       transport = createAgentEventTransport(message, replaceActive)
     }
 
@@ -181,19 +193,7 @@ export const useAgentConversationStore = defineStore(
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
       const kept = messages.value.filter((m) => m.id !== entry.message.id)
-      const last = kept.at(-1)
-      let poppedHydratedCopy = false
-      if (
-        kept.length === messages.value.length &&
-        last &&
-        !hydratedAssistantTurnIds.has(last.id) &&
-        entry.userText !== undefined &&
-        userTexts.value.get(last.id) === entry.userText
-      ) {
-        kept.pop()
-        userTexts.value.delete(last.id)
-        poppedHydratedCopy = true
-      }
+      const poppedHydratedCopy = removeHydratedCopy(entry, kept)
       if (
         entry.settled &&
         !poppedHydratedCopy &&
@@ -208,10 +208,27 @@ export const useAgentConversationStore = defineStore(
       const index = kept.push(entry.message) - 1
       messages.value = kept
       if (entry.settled) return
-      activeIndex.value = index
       activeTurnId.value = entry.messageId
+      activeIndex.value = index
       transport = entry.transport
       liveMessage = entry.message
+    }
+
+    function removeHydratedCopy(
+      entry: BackgroundTurn,
+      kept: AssistantMessage[]
+    ): boolean {
+      if (kept.length !== messages.value.length) return false
+      const last = kept.at(-1)
+      if (!last || hydratedAssistantTurnIds.has(last.id)) return false
+      if (
+        entry.userText === undefined ||
+        userTexts.value.get(last.id) !== entry.userText
+      )
+        return false
+      kept.pop()
+      userTexts.value.delete(last.id)
+      return true
     }
 
     function settleBackgroundTurn(turnId: string): void {
@@ -271,8 +288,8 @@ export const useAgentConversationStore = defineStore(
       userAttachments.value = transcript.userAttachments
       if (transcript.pending) {
         liveMessage = transcript.pending.message
-        activeIndex.value = messages.value.indexOf(transcript.pending.message)
         activeTurnId.value = transcript.pending.messageId
+        activeIndex.value = messages.value.indexOf(transcript.pending.message)
         transport = createAgentEventTransport(
           transcript.pending.message,
           replaceActive
@@ -321,6 +338,7 @@ export const useAgentConversationStore = defineStore(
       setThreadId,
       recordFailedSend,
       recordPaywall,
+      setPaywallsResolved,
       startTurn,
       ingest,
       abortActiveTurn,
