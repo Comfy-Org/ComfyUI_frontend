@@ -13,7 +13,15 @@ const { label = 'new' } = defineProps<{
 </script>
 
 <template>
-  <Badge :size="size" variant="accent">
+  <Badge
+    :size="size"
+    variant="accent"
+    :class="
+      label === 'beta'
+        ? 'text-primary-warm-white before:bg-primary-comfy-plum'
+        : undefined
+    "
+  >
     {{ t(label === 'beta' ? 'nav.badgeBeta' : 'nav.badgeNew', locale) }}
   </Badge>
 </template>
