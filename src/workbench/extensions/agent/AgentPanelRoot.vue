@@ -60,7 +60,9 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import {
   adoptSharedOnboardingFlag,
-  scopedOnboardingKey
+  hasSeenCoach,
+  scopedOnboardingKey,
+  trackCoachDeferral
 } from './composables/agent/useOnboarding'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
@@ -224,6 +226,20 @@ watch(
   { immediate: true }
 )
 const { activeTour } = storeToRefs(useOnboardingTourStore())
+const coachDeferredBy = computed(() =>
+  canvasStore.linearMode
+    ? 'app_mode'
+    : activeTour.value !== null
+      ? 'tour_active'
+      : null
+)
+watch(
+  [consentAccepted, onboardingKey, coachDeferredBy],
+  ([accepted, key, reason]) => {
+    if (accepted && key && !hasSeenCoach(key)) trackCoachDeferral(key, reason)
+  },
+  { immediate: true }
+)
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -834,10 +850,20 @@ const history = useAgentChatHistoryStore()
 const { copy } = useClipboard({ legacy: true })
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
+  const message = entries.value.find(
+    (entry) => entry.role === 'assistant' && entry.id === turnId
+  )
+  const workflowId =
+    message?.role === 'assistant'
+      ? (message.parts
+          .flatMap((part) => (part.type === 'tabLink' ? [part.workflowId] : []))
+          .at(-1) ?? null)
+      : null
+
   useTelemetry()?.trackAgentMessageFeedback({
     message_id: turnId,
     vote,
-    workflow_id: boundWorkflowId.value
+    workflow_id: workflowId
   })
 }
 
@@ -1295,12 +1321,7 @@ function onPanelDrop(event: DragEvent): void {
       </template>
     </AgentPanel>
     <OnboardingCoach
-      v-if="
-        consentAccepted &&
-        onboardingKey &&
-        !canvasStore.linearMode &&
-        activeTour === null
-      "
+      v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
       :steps="coachSteps"
       :storage-key="onboardingKey"
     />

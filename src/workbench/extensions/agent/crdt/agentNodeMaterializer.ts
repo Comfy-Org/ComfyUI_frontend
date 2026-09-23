@@ -6,7 +6,11 @@ import {
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -362,9 +366,22 @@ function materialize(
 
   try {
     const savedInputs = serialised.inputs?.map((input) => ({ ...input }))
-    withNamedValuesRestore(() =>
+    const configureNode = () =>
       node.configure(withNamedWidgetValues(serialised, widgets))
-    )
+    // A SubgraphNode instance restores its promoted-input values through
+    // `_applyPromotedWidgetValues`, not the named-values path — and that
+    // method is the only place `proxyWidgetErrorQuarantine` overrides a
+    // stale value. `SubgraphNode.configure()` skips it precisely when
+    // `widgets_values_named` is set AND `namedValuesRestore` is on, so
+    // forcing the flag here would silently resurrect a quarantined value on
+    // every agent-materialized subgraph instance. Ordinary nodes have no
+    // such guard, so they still need the flag to restore their own
+    // `widgets_values` (PM-1580).
+    if (node instanceof SubgraphNode) {
+      configureNode()
+    } else {
+      withNamedValuesRestore(configureNode)
+    }
     replayUpdatedWidgetCallbacks(node, serialised, widgets)
     // After configure and any widget-driven restructuring, re-point the saved
     // links at their named inputs (CRDT-INPUTS-0030).

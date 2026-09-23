@@ -13,6 +13,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
+const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
 
 type WorkflowTargetSelection =
   | { status: 'uninitialized' }
@@ -24,6 +25,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const consentAccepted = ref(false)
   // writeDefaults false: no storage key planted for flag-off users.
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
+    writeDefaults: false
+  })
+  /** Whether the panel has ever been shown to this user, on any visit. */
+  const hasEverOpened = useLocalStorage(DISCOVERED_STORAGE_KEY, false, {
     writeDefaults: false
   })
   const gateSettled = ref(false)
@@ -74,6 +79,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       openedAt = null
       return
     }
+    hasEverOpened.value = true
     if (openedAt !== null) return
     openedAt = Date.now()
     useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
@@ -125,6 +131,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     consentAccepted,
     isOpen,
     isVisible,
+    hasEverOpened,
     gateSettled,
     width,
     isMaximized,
