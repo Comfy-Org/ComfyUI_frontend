@@ -24,7 +24,7 @@ const awarenessFrame = (expiresAt: unknown) => ({
 
 const sequencedFrame = (
   type: 'doc_subscribed' | 'doc_reset',
-  seq?: unknown
+  seq: unknown
 ) => ({
   type,
   data: {
@@ -33,6 +33,11 @@ const sequencedFrame = (
     ...(seq !== undefined && { seq }),
     ...(type === 'doc_subscribed' && { ok: true })
   }
+})
+
+const unsequencedSubscribedFrame = () => ({
+  type: 'doc_subscribed',
+  data: { v: 1, workflow_id: 'wf-1', ok: true }
 })
 
 const docOpsResultFrame = (seq?: unknown) => ({
@@ -90,10 +95,12 @@ describe('doc frame numeric domains', () => {
   )
 
   it('accepts doc_subscribed without seq', () => {
-    expect(parseServerDocFrame(sequencedFrame('doc_subscribed'))).toEqual({
+    const frame = parseServerDocFrame(unsequencedSubscribedFrame())
+    expect(frame).toEqual({
       type: 'doc_subscribed',
       data: { workflowId: 'wf-1', ok: true }
     })
+    expect(frame?.data).not.toHaveProperty('seq')
   })
 
   it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
