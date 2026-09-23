@@ -910,7 +910,7 @@ describe('billingOperationStore', () => {
       })
     })
 
-    it('keeps billing refresh and success toast when telemetry throws', async () => {
+    it('keeps success effects running if telemetry dispatch throws', async () => {
       const billing = mockBillingContext()
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
@@ -931,6 +931,7 @@ describe('billingOperationStore', () => {
 
       await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
       expect(billing.reconcileSubscriptionSuccess).toHaveBeenCalledOnce()
+      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledOnce()
       expect(useToastStore().add).toHaveBeenCalledWith({
         severity: 'success',
         summary: 'billingOperation.subscriptionSuccess',
