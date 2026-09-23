@@ -891,9 +891,10 @@ describe('billingOperationStore', () => {
         status: 'succeeded',
         started_at: new Date().toISOString()
       })
+      const error = new Error('reconcile failed')
       vi.mocked(billing.reconcileSubscriptionSuccess).mockImplementationOnce(
         () => {
-          throw new Error('reconcile failed')
+          throw error
         }
       )
 
@@ -903,6 +904,42 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        errorType: 'failure_handling_billing_operation_success',
+        context: { billing_op_id: 'op-1' }
+      })
+    })
+
+    it('keeps billing refresh and success toast when telemetry throws', async () => {
+      const billing = mockBillingContext()
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      const error = new Error('telemetry failed')
+      vi.mocked(useTelemetry()?.trackBillingEvent).mockImplementationOnce(
+        () => {
+          throw error
+        }
+      )
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+      expect(billing.reconcileSubscriptionSuccess).toHaveBeenCalledOnce()
+      expect(useToastStore().add).toHaveBeenCalledWith({
+        severity: 'success',
+        summary: 'billingOperation.subscriptionSuccess',
+        life: 5000
+      })
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        errorType: 'failure_tracking_billing_operation_success_telemetry',
+        context: { billing_op_id: 'op-1' }
+      })
     })
   })
 
