@@ -218,15 +218,9 @@ Playwright tests verify the whole app. See [browser_tests/README.md](browser_tes
 
 ### Temporarily Disabled Tests
 
-Delete retired tests instead of skipping them. If a pull request must
-temporarily add a `skip` or `fixme` modifier to a test or suite, its description
-must put explicit restoration intent and a tracking issue or follow-up pull
-request on the same line, for example:
-
-```text
-Re-enabled by #12345
-Test restoration tracked in https://linear.app/comfyorg/issue/FE-1234
-```
+Do not commit disabled tests or suites. Delete retired tests, and fix temporarily
+failing tests before merging. The lint rules reject Vitest `skip`, `skipIf`,
+`runIf`, and `todo` declarations and Playwright `skip` declarations.
 
 ### Running All Tests
 

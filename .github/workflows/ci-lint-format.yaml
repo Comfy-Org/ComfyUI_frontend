@@ -7,7 +7,6 @@ name: 'CI: Lint Format'
 on:
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
-    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,14 +33,6 @@ jobs:
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
-
-      - name: Check newly disabled tests name a follow-up
-        env:
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: |
-          pnpm exec tsx scripts/cicd/check-disabled-test-tracking.ts \
-            "${{ github.event.pull_request.base.sha }}" \
-            "${{ github.event.pull_request.head.sha }}"
 
       - name: Run ESLint with auto-fix
         run: pnpm lint:fix

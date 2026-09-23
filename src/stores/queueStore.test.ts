@@ -221,6 +221,7 @@ describe('TaskItemImpl', () => {
     expect(resultItemSupportsPreview(output)).toBe(true)
   })
 
+  // oxlint-disable-next-line vitest/no-disabled-tests -- restoration tracked in #11078
   it.skip('should parse text outputs', () => {
     const job: JobListItem = {
       ...createHistoryJob(0, 'text-job'),
