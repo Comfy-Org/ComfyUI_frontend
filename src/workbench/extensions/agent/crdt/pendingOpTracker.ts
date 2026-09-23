@@ -112,6 +112,16 @@ export interface PendingOpTracker {
    * holding the link yet proves nothing about it.
    */
   pendingConnectLinkIds(): ReadonlySet<string>
+  /**
+   * Every node id with a `delete_node` this tracker still holds, in ANY
+   * state — including `applied` (KEEP-ALIVE #9: the host accepted it, but
+   * the ledger keeps the entry until its own `doc_update` effect, the node's
+   * disappearance, proves it landed). This is the single source for
+   * `LocalIntent.pendingDeletes`: a full doc reconcile must not resurrect a
+   * node whose delete the host has accepted, or the human queued, just
+   * because the doc has not caught up yet.
+   */
+  pendingDeleteNodeIds(): ReadonlySet<string>
 }
 
 /** States in which the host can have already reflected an op back to this follower. */
@@ -140,6 +150,8 @@ export function createPendingOpTracker(
   // connect link id → its pending op ids; the `connect` sibling of
   // `addNodeIndex`, backing `pendingConnectLinkIds`.
   const connectLinkIndex = new Map<string, Set<string>>()
+  // delete_node node id → its pending op ids; backs `pendingDeleteNodeIds`.
+  const deleteNodeIndex = new Map<string, Set<string>>()
   // Rejected op ids already reported this session, so a retried settle of
   // the same ledger entry (e.g. a duplicate `revert`) reports it only once.
   const reportedHumanOpFailures = new Set<string>()
@@ -180,6 +192,8 @@ export function createPendingOpTracker(
       indexRemove(addNodeIndex, String(entry.shadow.node_id), entry.opId)
     } else if (entry.shadow.op === 'connect') {
       indexRemove(connectLinkIndex, String(entry.shadow.link_id), entry.opId)
+    } else if (entry.shadow.op === 'delete_node') {
+      indexRemove(deleteNodeIndex, String(entry.shadow.node_id), entry.opId)
     }
   }
 
@@ -310,6 +324,8 @@ export function createPendingOpTracker(
           indexAdd(addNodeIndex, String(op.node_id), op.op_id)
         if (op.op === 'connect')
           indexAdd(connectLinkIndex, String(op.link_id), op.op_id)
+        if (op.op === 'delete_node')
+          indexAdd(deleteNodeIndex, String(op.node_id), op.op_id)
       }
     },
     onBatchTransmitted(ops) {
@@ -394,6 +410,7 @@ export function createPendingOpTracker(
       awaitingSkipped.clear()
       addNodeIndex.clear()
       connectLinkIndex.clear()
+      deleteNodeIndex.clear()
       if (dropped.length > 0)
         emit({ type: 'reset', opIds: dropped.map((entry) => entry.opId) })
     },
@@ -419,6 +436,9 @@ export function createPendingOpTracker(
     },
     pendingConnectLinkIds() {
       return new Set(connectLinkIndex.keys())
+    },
+    pendingDeleteNodeIds() {
+      return new Set(deleteNodeIndex.keys())
     }
   }
 }

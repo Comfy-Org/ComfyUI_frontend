@@ -889,6 +889,39 @@ describe('createPendingOpTracker', () => {
       expect(tracker.pendingConnectLinkIds()).toEqual(new Set(['1']))
       expect(tracker.entries().map((entry) => entry.opId)).toEqual(['op-a'])
     })
+
+    it('pendingDeleteNodeIds is the single source: it holds a delete_node through queued, in-flight, and acknowledged-applied, and drops it once its effect clears', () => {
+      const del = deleteNode('op-d', 9)
+      tracker.onBatchMinted([del])
+      expect(tracker.pendingDeleteNodeIds()).toEqual(new Set(['9']))
+
+      tracker.onBatchTransmitted([del])
+      expect(tracker.pendingDeleteNodeIds()).toEqual(new Set(['9']))
+
+      // Acknowledged and applied: KEEP-ALIVE #9 keeps the entry — and this
+      // node id — until the doc's own effect frame proves it landed.
+      tracker.onBatchSettled(
+        acknowledged([del], { ok: true, applied: ['op-d'], skipped: [] })
+      )
+      expect(tracker.pendingDeleteNodeIds()).toEqual(new Set(['9']))
+
+      tracker.onDocEffect(['op-d'])
+      expect(tracker.pendingDeleteNodeIds()).toEqual(new Set())
+    })
+
+    it('retains an older pending delete_node for the same node id when a second one settles first', () => {
+      const deleteA = deleteNode('op-a', 9)
+      const deleteB = deleteNode('op-b', 9)
+      tracker.onBatchMinted([deleteA])
+      tracker.onBatchTransmitted([deleteA])
+      tracker.onBatchMinted([deleteB])
+      tracker.onBatchTransmitted([deleteB])
+
+      tracker.onBatchSettled({ state: 'undeliverable', ops: [deleteB] })
+
+      expect(tracker.pendingDeleteNodeIds()).toEqual(new Set(['9']))
+      expect(tracker.entries().map((entry) => entry.opId)).toEqual(['op-a'])
+    })
   })
 
   it('settles a queued batch member that never transmitted, instead of leaking it as pending forever', () => {
