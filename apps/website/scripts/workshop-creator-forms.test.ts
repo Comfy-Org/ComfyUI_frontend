@@ -152,4 +152,17 @@ describe('sibling page modes', () => {
       expect(image.required).toContain('image_url')
     }
   )
+
+  it.for(['xai/grok-imagine-video', 'xai/grok-imagine-video-1.5'])(
+    'limits Grok reference-to-video resolution to 720p for %s',
+    (id) => {
+      const reference = object.parse(
+        formFor(id, { mode: 'reference' }).parameters
+      )
+      expect(object.parse(reference.properties).resolution).toMatchObject({
+        enum: ['480p', '720p'],
+        default: '720p'
+      })
+    }
+  )
 })

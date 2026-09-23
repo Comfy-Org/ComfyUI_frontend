@@ -509,6 +509,11 @@ export function creatorFormFor(
             maximum: 10,
             enum: Array.from({ length: 10 }, (_, index) => index + 1)
           }
+        properties.resolution = {
+          ...object.parse(properties.resolution),
+          enum: ['480p', '720p'],
+          default: '720p'
+        }
         url('reference_image_url', 'Reference image', true)
         for (let index = 2; index <= 4; index++)
           url(`reference_image_url_${index}`, `Reference image ${index}`)

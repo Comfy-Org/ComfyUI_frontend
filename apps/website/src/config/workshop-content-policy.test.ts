@@ -12,6 +12,13 @@ describe('Workshop content-policy attribution', () => {
       payload: { error: { code: 'moderation_blocked' } }
     },
     {
+      name: 'xAI Imagine moderation code',
+      payload: {
+        code: 'imagine:content-moderated',
+        error: 'Generated video rejected by content moderation.'
+      }
+    },
+    {
       name: 'nested provider body',
       payload: {
         detail: '{"code":"DataInspectionFailed","message":"provider refused"}'

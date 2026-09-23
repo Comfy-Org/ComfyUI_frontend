@@ -131,6 +131,32 @@ describe('production input validation regressions', () => {
   )
 
   it.for([
+    'xai--grok-imagine-video-reference--animate-images',
+    'xai--grok-imagine-video-1.5-reference--animate-images'
+  ])(
+    'blocks 1080p Grok reference video before uploading for %s',
+    async (slug) => {
+      const { schema, values, contract } = form(slug, { resolution: '1080p' })
+      const errors = validateForm(schema, values)
+      expect(errors).toMatchObject({ resolution: 'badOption' })
+      const upload = vi.fn()
+      await expect(
+        prepareWorkshopRouterInput(
+          contract,
+          values,
+          new AbortController().signal,
+          undefined,
+          upload
+        )
+      ).rejects.toMatchObject({
+        reason: 'validation',
+        fieldErrors: { resolution: 'badOption' }
+      })
+      expect(upload).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
     { layer_decomposition: true, size: '1024x1024', invalid: true },
     { layer_decomposition: true, size: 'auto', invalid: false },
     { layer_decomposition: true, size: '1.5K', invalid: false },
