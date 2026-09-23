@@ -185,12 +185,6 @@
       }
     },
     {
-      "files": ["src/scripts/app.test.ts", "src/scripts/app.ts"],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["browser_tests/fixtures/data/**/*.ts"],
       "rules": {
         "comfy/no-playwright-imports-in-fixture-data": "error"
@@ -233,20 +227,6 @@
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
-      }
-    },
-    {
-      "files": [
-        "src/scripts/api.ts",
-        "src/scripts/changeTracker.test.ts",
-        "src/scripts/changeTracker.ts",
-        "src/scripts/ui.ts",
-        "src/scripts/ui/components/button.ts",
-        "src/scripts/ui/draggableList.ts",
-        "src/scripts/ui/utils.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
       }
     },
     {
