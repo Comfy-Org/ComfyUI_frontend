@@ -1,6 +1,7 @@
 import { mergeTests } from '@playwright/test'
 
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import {
   comfyExpect as expect,
@@ -11,8 +12,11 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const wstest = mergeTests(test, webSocketFixture)
 
-interface QueuePromptRequestBody {
-  prompt: ComfyApiWorkflow
+function getQueuedPrompt(body: unknown): ComfyApiWorkflow {
+  if (typeof body !== 'object' || body === null || !('prompt' in body)) {
+    throw new Error('Expected /api/prompt body to contain a prompt object')
+  }
+  return zComfyApiWorkflow.parse(body.prompt)
 }
 
 wstest.describe(
@@ -46,8 +50,7 @@ wstest.describe(
         let promptKeys: string[] = []
         await execution.run({
           onPromptRequest: (body) => {
-            const request = body as QueuePromptRequestBody
-            promptKeys = Object.keys(request.prompt)
+            promptKeys = Object.keys(getQueuedPrompt(body))
           }
         })
 
