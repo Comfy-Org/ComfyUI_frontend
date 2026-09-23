@@ -1020,6 +1020,21 @@ describe('graphTraversalUtil', () => {
         expect(execId).toBe('777')
       })
 
+      it('regression: keeps a root-level node id whole when it carries a colon that is not a subgraph-scope prefix (PM-1580)', () => {
+        // comfy-multi-player's insert_workflow remaps every inserted node's
+        // id to a derived string with colons unrelated to subgraph scoping
+        // (insert:<opId>:root:node:<originalId>). Neither branch below has a
+        // live node to resolve, so this exercises the same
+        // `createLeafNodeExecutionId` fallback both take.
+        const graph = createMockGraph([])
+        const rawId = 'insert:abc123:root:node:5'
+        const execId = executionIdFromState(graph, {
+          id: toNodeId(rawId),
+          graphId: ROOT_GRAPH_ID
+        })
+        expect(execId).toBe(rawId)
+      })
+
       it('should return full execution ID for node inside a subgraph', () => {
         const targetNode = createMockNode('999')
         const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
