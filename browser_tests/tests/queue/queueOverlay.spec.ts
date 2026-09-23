@@ -8,7 +8,17 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-const test = mergeTests(comfyPageFixture, jobsRouteFixture)
+const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{
+  mockInitialJobs: void
+}>({
+  mockInitialJobs: [
+    async ({ jobsRoutes }, use) => {
+      await jobsRoutes.mockJobsScenario({ history: MOCK_JOBS, queue: [] })
+      await use()
+    },
+    { auto: true }
+  ]
+})
 const mockJobTimestamp = Date.UTC(2026, 0, 1, 12)
 
 const MOCK_JOBS: RawJobListItem[] = [
@@ -47,12 +57,11 @@ const MOCK_JOBS: RawJobListItem[] = [
 ]
 
 test.describe('Queue overlay', () => {
-  test.beforeEach(async ({ comfyPage, jobsRoutes }) => {
-    await jobsRoutes.mockJobsScenario({ history: MOCK_JOBS, queue: [] })
-    await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
-    await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', false)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
+  test.use({
+    initialSettings: {
+      'Comfy.Minimap.Visible': false,
+      'Comfy.Queue.QPOV2': false
+    }
   })
 
   test('Toggle button opens expanded queue overlay', async ({ comfyPage }) => {

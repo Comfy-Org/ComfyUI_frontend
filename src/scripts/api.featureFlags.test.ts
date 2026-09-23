@@ -14,6 +14,7 @@ interface MockWebSocket {
 
 describe('API Feature Flags', () => {
   let mockWebSocket: MockWebSocket
+  let webSocketConstructor: Mock
   const wsEventHandlers: { [key: string]: (event: unknown) => void } = {}
 
   beforeEach(() => {
@@ -31,9 +32,10 @@ describe('API Feature Flags', () => {
     }
 
     // Mock WebSocket constructor
-    vi.stubGlobal('WebSocket', function (this: WebSocket) {
+    webSocketConstructor = vi.fn(function (this: WebSocket) {
       Object.assign(this, mockWebSocket)
     })
+    vi.stubGlobal('WebSocket', webSocketConstructor)
 
     // Reset API state
     api.socket = null
@@ -122,6 +124,20 @@ describe('API Feature Flags', () => {
       expect(api.serverFeatureFlagsSettled.value).toBe(true)
     })
 
+    it('settles feature flags immediately when the server delivers an empty map', () => {
+      api.init()
+
+      wsEventHandlers['message']({
+        data: JSON.stringify({
+          type: 'feature_flags',
+          data: {}
+        })
+      })
+
+      expect(api.serverFeatureFlags.value).toEqual({})
+      expect(api.serverFeatureFlagsSettled.value).toBe(true)
+    })
+
     it('should handle server without feature flags support', async () => {
       // Initialize API connection
       const initPromise = api.init()
@@ -170,18 +186,20 @@ describe('API Feature Flags', () => {
       expect(api.serverFeatureFlagsSettled.value).toBe(true)
     })
 
-    it('settles feature flags when a socket that never delivered them keeps reconnecting', async () => {
+    it('resets feature flag settlement for each replacement socket', async () => {
       api.init()
 
       for (let attempt = 0; attempt < 3; attempt++) {
         wsEventHandlers['open'](new Event('open'))
         await vi.advanceTimersByTimeAsync(1_000)
         wsEventHandlers['close'](new Event('close'))
+        expect(api.serverFeatureFlagsSettled.value).toBe(true)
         await vi.advanceTimersByTimeAsync(300)
+        expect(api.serverFeatureFlagsSettled.value).toBe(false)
       }
 
       expect(api.serverFeatureFlags.value).toEqual({})
-      expect(api.serverFeatureFlagsSettled.value).toBe(true)
+      expect(webSocketConstructor).toHaveBeenCalledTimes(4)
     })
   })
 

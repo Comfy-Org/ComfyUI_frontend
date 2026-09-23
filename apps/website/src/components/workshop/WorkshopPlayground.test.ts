@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import type { UserEvent } from '@testing-library/user-event'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
@@ -112,7 +111,7 @@ describe('WorkshopPlayground', () => {
     const { unmount } = render(WorkshopPlayground, { props: { model } })
     await user.type(screen.getByRole('textbox', { name: /Prompt/ }), 'Red fox')
 
-    runBeforeSignInLeave()
+    await runBeforeSignInLeave()
 
     expect(
       popWorkshopForm(model.slug, model.fields),
@@ -120,7 +119,7 @@ describe('WorkshopPlayground', () => {
     ).toMatchObject({ prompt: 'Red fox' })
 
     unmount()
-    runBeforeSignInLeave()
+    await runBeforeSignInLeave()
     expect(
       popWorkshopForm(model.slug, model.fields),
       'an unmounted island must not keep writing stale values'
@@ -136,7 +135,7 @@ describe('WorkshopPlayground', () => {
     // The later registration fires last; a stale one would clobber the live value.
     second.unmount()
 
-    runBeforeSignInLeave()
+    await runBeforeSignInLeave()
 
     expect(
       popWorkshopForm(model.slug, model.fields),
@@ -320,5 +319,16 @@ describe('WorkshopPlayground', () => {
 
     await vi.advanceTimersByTimeAsync(900)
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeTruthy()
+  })
+
+  it('sends the get-key link as a models onboarding arrival for this model', () => {
+    render(WorkshopPlayground, { props: { model } })
+    expect(
+      screen
+        .getByRole('link', { name: 'Get your API key' })
+        .getAttribute('href')
+    ).toBe(
+      'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-3'
+    )
   })
 })

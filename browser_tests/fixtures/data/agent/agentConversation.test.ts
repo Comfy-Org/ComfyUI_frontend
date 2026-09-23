@@ -53,6 +53,38 @@ describe('zAgentConversation', () => {
     ).toThrow('recorded turns carry the message id')
   })
 
+  it('refuses a cancel placed at or after the done entry', () => {
+    expect(() =>
+      zAgentConversation.parse({
+        ...recorded,
+        turns: [{ ...recorded.turns[0], cancel_after: 0 }]
+      })
+    ).toThrow('cancel_after must precede the final agent_message_done entry')
+  })
+
+  it('refuses a turn that carries content after its done event', () => {
+    expect(() =>
+      zAgentConversation.parse({
+        ...recorded,
+        turns: [
+          {
+            ...recorded.turns[0],
+            response: [
+              {
+                kind: 'event',
+                event: { type: 'agent_message_done', data: {} }
+              },
+              {
+                kind: 'event',
+                event: { type: 'agent_thinking', data: { delta: 'x' } }
+              }
+            ]
+          }
+        ]
+      })
+    ).toThrow('exactly one agent_message_done event, as its last entry')
+  })
+
   it('refuses a recorded label without backend provenance', () => {
     const { capture: _capture, ...source } = recorded.source
     expect(() => zAgentConversation.parse({ ...recorded, source })).toThrow(
@@ -123,21 +155,22 @@ describe('committed recordings', () => {
   const load = (file: string): unknown =>
     JSON.parse(readFileSync(join(dir, file), 'utf8'))
 
-  it('every recording parses against the production event union', () => {
+  it('has committed recordings', () => {
     expect(files.length).toBeGreaterThan(0)
-    for (const file of files) {
-      const raw = load(file)
-      const conversation = zAgentConversation.parse(raw)
-      expect(() => assertOpsApply(conversation), file).not.toThrow()
-      expect({ file, workflow: conversation.workflow }).toEqual({
-        file,
-        workflow: (raw as { workflow: unknown }).workflow
-      })
-      const frames = conversation.turns
-        .flatMap((turn) => turn.response)
-        .filter((entry) => entry.kind === 'event')
-      expect({ file, frames: frames.length }).not.toEqual({ file, frames: 0 })
-    }
+  })
+
+  it.for(files)('%s parses against the production event union', (file) => {
+    const raw = load(file)
+    const conversation = zAgentConversation.parse(raw)
+    expect(() => assertOpsApply(conversation)).not.toThrow()
+    expect({ file, workflow: conversation.workflow }).toEqual({
+      file,
+      workflow: (raw as { workflow: unknown }).workflow
+    })
+    const frames = conversation.turns
+      .flatMap((turn) => turn.response)
+      .filter((entry) => entry.kind === 'event')
+    expect({ file, frames: frames.length }).not.toEqual({ file, frames: 0 })
   })
 
   it('every recording has explicit visible expectations for each turn', () => {

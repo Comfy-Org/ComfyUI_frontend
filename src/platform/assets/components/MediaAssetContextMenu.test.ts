@@ -100,10 +100,6 @@ const asset: AssetItem = fromPartial({
   user_metadata: {}
 })
 
-const buttonStub = {
-  template: '<div class="button-stub"><slot /></div>'
-}
-
 interface MediaAssetContextMenuExposed {
   show: (event: MouseEvent) => void
 }
@@ -129,8 +125,7 @@ function mountComponent(targetAsset: AssetItem = asset) {
       global: {
         plugins: [i18n],
         stubs: {
-          ContextMenu: contextMenuStub,
-          Button: buttonStub
+          ContextMenu: contextMenuStub
         }
       }
     }

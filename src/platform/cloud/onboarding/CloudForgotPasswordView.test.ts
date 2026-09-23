@@ -5,17 +5,12 @@ import { createI18n } from 'vue-i18n'
 import type { Router } from 'vue-router'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
 import CloudForgotPasswordView from '@/platform/cloud/onboarding/CloudForgotPasswordView.vue'
 
-const mockSendPasswordReset = vi.fn()
+vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({
-    sendPasswordReset: mockSendPasswordReset
-  })
-}))
-
-async function renderView(): Promise<{ router: Router }> {
+async function renderView(): Promise<{ router: Router; unmount: () => void }> {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -33,7 +28,7 @@ async function renderView(): Promise<{ router: Router }> {
   })
   await router.push('/cloud/forgot-password')
   await router.isReady()
-  render(CloudForgotPasswordView, {
+  const { unmount } = render(CloudForgotPasswordView, {
     global: {
       plugins: [
         router,
@@ -52,12 +47,12 @@ async function renderView(): Promise<{ router: Router }> {
       }
     }
   })
-  return { router }
+  return { router, unmount }
 }
 
 describe('CloudForgotPasswordView', () => {
   it('sends the reset for the entered email and confirms it', async () => {
-    mockSendPasswordReset.mockResolvedValue(undefined)
+    vi.mocked(useAuthActions().sendPasswordReset).mockResolvedValue(true)
     const user = userEvent.setup()
     await renderView()
 
@@ -71,14 +66,16 @@ describe('CloudForgotPasswordView', () => {
       })
     )
 
-    expect(mockSendPasswordReset).toHaveBeenCalledWith('a@b.example')
+    expect(useAuthActions().sendPasswordReset).toHaveBeenCalledWith(
+      'a@b.example'
+    )
     expect(
       screen.getByText('cloudForgotPassword_passwordResetSent')
     ).toBeInTheDocument()
   })
 
   it('shows the error copy and keeps the form usable when the reset fails', async () => {
-    mockSendPasswordReset.mockRejectedValue(new Error('auth/user-not-found'))
+    vi.mocked(useAuthActions().sendPasswordReset).mockResolvedValue(undefined)
     const user = userEvent.setup()
     await renderView()
 
@@ -108,7 +105,7 @@ describe('CloudForgotPasswordView', () => {
 
   it('returns to login a few seconds after a successful reset', async () => {
     vi.useFakeTimers()
-    mockSendPasswordReset.mockResolvedValue(undefined)
+    vi.mocked(useAuthActions().sendPasswordReset).mockResolvedValue(true)
     const user = userEvent.setup({
       advanceTimers: (ms) => vi.advanceTimersByTime(ms)
     })
@@ -126,6 +123,32 @@ describe('CloudForgotPasswordView', () => {
     await vi.advanceTimersByTimeAsync(3000)
 
     expect(router.currentRoute.value.name).toBe('cloud-login')
+  })
+
+  it('does not navigate after unmounting within the redirect delay', async () => {
+    vi.useFakeTimers()
+    vi.mocked(useAuthActions().sendPasswordReset).mockResolvedValue(true)
+    const user = userEvent.setup({
+      advanceTimers: (ms) => vi.advanceTimersByTime(ms)
+    })
+    const { router, unmount } = await renderView()
+
+    await user.type(
+      screen.getByLabelText('cloudForgotPassword_emailLabel'),
+      'a@b.example'
+    )
+    await user.click(
+      screen.getByRole('button', {
+        name: 'cloudForgotPassword_sendResetLink'
+      })
+    )
+    unmount()
+    await vi.advanceTimersByTimeAsync(3000)
+
+    expect(
+      router.currentRoute.value.name,
+      'an unmounted view must not fire its delayed redirect'
+    ).not.toBe('cloud-login')
   })
 
   it('navigates back to login on request', async () => {

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
@@ -26,6 +26,7 @@ const mockGetNodeById = vi.fn()
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     getPreviewFormatParam: vi.fn(() => '&format=test_webp'),
+    getRandParam: vi.fn(() => ''),
     rootGraph: {
       getNodeById: (...args: unknown[]) => mockGetNodeById(...args)
     },
@@ -131,6 +132,31 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
         createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)])
       )
     ).toEqual(['blob:second'])
+  })
+
+  it('projects execution output into canonical state and view URLs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    const executionId = createNodeExecutionId([node.id])
+    const output = createMockOutputs([
+      {
+        filename: 'execution-result.png',
+        subfolder: 'daily outputs',
+        type: 'output'
+      }
+    ])
+
+    store.setNodeOutputsByExecutionId(executionId, output)
+
+    expect(store.nodeOutputs[String(node.id)]).toEqual(output)
+    expect(app.nodeOutputs[String(node.id)]).toEqual(output)
+
+    const [url] = store.getNodeImageUrlsByExecutionId(executionId, node) ?? []
+    const previewUrl = new URL(url, window.location.origin)
+    expect(previewUrl.pathname).toBe('/api/view')
+    expect(previewUrl.searchParams.get('filename')).toBe('execution-result.png')
+    expect(previewUrl.searchParams.get('subfolder')).toBe('daily outputs')
+    expect(previewUrl.searchParams.get('type')).toBe('output')
   })
 
   it('owns preview arrays after setting them', () => {
@@ -877,6 +903,29 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(store.nodeOutputs['5']?.images).toHaveLength(1)
     expect(store.nodeOutputs['5']?.images?.[0]?.filename).toBe('test.png')
     expect(store.nodeOutputs['5']?.images?.[0]?.type).toBe('input')
+  })
+
+  it('previews an annotated widget value from its own directory', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5, comfyClass: 'LoadImage' })
+
+    store.setNodeOutputs(node, 'nested/preview.png [temp]', {
+      isAnimated: true
+    })
+
+    expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
+      filename: 'preview.png [temp]',
+      subfolder: 'nested',
+      type: 'input'
+    })
+    const previewUrl = new URL(
+      store.getNodeImageUrls(node)?.[0] ?? '',
+      window.location.origin
+    )
+    expect(store.nodeOutputs['5']?.animated).toEqual([true])
+    expect(previewUrl.searchParams.get('filename')).toBe('preview.png')
+    expect(previewUrl.searchParams.get('subfolder')).toBe('nested')
+    expect(previewUrl.searchParams.get('type')).toBe('temp')
   })
 
   it('leaves node images unchanged for preview change detection', () => {

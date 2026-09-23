@@ -13,14 +13,14 @@ export type WorkshopCloudEnv = (typeof WORKSHOP_CLOUD_ENVS)[number]
 export function isWorkshopCloudEnv(
   value: string | undefined
 ): value is WorkshopCloudEnv {
-  return (WORKSHOP_CLOUD_ENVS as readonly string[]).includes(value ?? '')
+  return WORKSHOP_CLOUD_ENVS.some((env) => env === value)
 }
 
 /**
  * Unset means staging, so local development needs no configuration and
- * lands on a family that cannot touch production. Deployed builds never rely
- * on this default: `assertWorkshopCloudEnvForBuild` makes them name a family
- * and rejects anything misspelt before the build starts.
+ * lands on a family that cannot touch production. Deployed builds that include
+ * Workshop never rely on this default: `assertWorkshopCloudEnvForBuild` makes
+ * them name a family and rejects anything misspelt before the build starts.
  */
 export function resolveWorkshopCloudEnv(
   value: string | undefined

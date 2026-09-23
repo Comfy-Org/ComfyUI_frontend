@@ -44,7 +44,13 @@ const baseRoutes = {
   wanAnimate2: '/wan-animate-2',
   cloudNodes: '/cloud-nodes',
   wan3: '/wan-3.0',
-  brand: '/brand'
+  chatgptImage25: '/chatgpt-image-2.5',
+  qwenImage21: '/qwen-image-2.1',
+  brand: '/brand',
+  // The catalogue answers to /models now. The keys keep their old names while
+  // the pull requests stacked on this branch are still open against them.
+  workshop: '/models',
+  workshopSignIn: '/login/'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
@@ -73,6 +79,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
+// workshop, workshopSignIn: prototype pages, English only for now.
+//
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
 // built from a single English-language caption track — a "translated" watch
 // page would either duplicate the English video under a Chinese path or lie
@@ -86,6 +94,8 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'managedBuilds',
   'models',
   'minimaxLicenseProfessionalRequest',
+  'workshop',
+  'workshopSignIn',
   'customerVideoBlackMath',
   'customerVideoSilversideAi'
 ])
@@ -129,7 +139,7 @@ export function isLocaleInvariantPath(pathname: string): boolean {
 
 export function localizeHref(href: string, locale: Locale = 'en'): string {
   if (locale === 'en' || !href.startsWith('/')) return href
-  if (LOCALE_INVARIANT_PATHS.has(href)) return href
+  if (isLocaleInvariantPath(href.split(/[?#]/, 1)[0])) return href
   if (locale === 'ja') return href === '/' ? '/ja/' : href
   return `/${locale}${href}`
 }
@@ -149,10 +159,12 @@ export const externalLinks = {
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',
+  cloudLogin: 'https://cloud.comfy.org/cloud/login',
   cloudCta: (content: string) =>
     `https://cloud.comfy.org/?utm_source=comfy_org&utm_medium=website&utm_campaign=free_tier&utm_content=${content}`,
   cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
+  eventHostApplicationForm: 'https://form.typeform.com/to/Fr2FrB6c',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
   comfyCliRepo: 'https://github.com/Comfy-Org/comfy-cli',
@@ -174,6 +186,8 @@ export const externalLinks = {
   docsUpdateComfyUI: 'https://docs.comfy.org/installation/update_comfyui',
   docsComfyRouter:
     'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart',
+  docsComfyRouterModels:
+    'https://docs.comfy.org/development/comfy-router/models',
   docsPlatform: 'https://docs.comfy.org/development/overview',
   docsPlatformExamples: 'https://docs.comfy.org/platform/examples',
   docsSdk: 'https://docs.comfy.org/development/api-development/sdks',
@@ -202,3 +216,18 @@ export const externalLinks = {
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const
+
+/**
+ * The platform creates a key on arrival and shows this product's onboarding.
+ * `model` is the website's model page id (`/models/<slug>`), not the Router id.
+ */
+type ApiKeysOnboarding =
+  | { onboarding: 'router' | 'comfy_api' }
+  | { onboarding: 'models'; model?: string }
+
+export function apiKeysLink(from: ApiKeysOnboarding): string {
+  const url = new URL(externalLinks.apiKeys)
+  url.searchParams.set('onboarding', from.onboarding)
+  if ('model' in from && from.model) url.searchParams.set('model', from.model)
+  return url.href
+}

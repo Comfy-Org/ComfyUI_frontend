@@ -1,8 +1,5 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { getActivePinia } from 'pinia'
-// @vitest-environment jsdom
-// dompurify is inert under happy-dom — see the tripwire note in
-// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -10,7 +7,10 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+import type {
+  NodeOutputWith,
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -24,16 +24,6 @@ import WidgetTextPreview from './WidgetTextPreview.vue'
 const GRAPH_ID = 'graph-1'
 const NODE_ID = toNodeId('7')
 const LOCATOR = createNodeLocatorId(null, NODE_ID)
-
-// jsdom does not implement ResizeObserver (happy-dom does); stub it before
-// component modules construct their module-level observer at import time.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
-})
 
 const { downloadFileMock, copyMock } = vi.hoisted(() => ({
   downloadFileMock: vi.fn(),

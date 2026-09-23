@@ -16,6 +16,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyApp } from '@/scripts/app'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -31,14 +32,14 @@ const extensions = await vi.hoisted(async () => {
 /** `app.configuringGraph` is a getter on the real app, so route it via a ref. */
 const appState = vi.hoisted(() => ({ configuringGraph: false }))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
     canvas: { graph_mouse: [0, 0], graph: null },
     get configuringGraph() {
       return appState.configuringGraph
     },
     registerExtension: extensions.registerExtension
-  }
+  })
 }))
 
 import { app } from '@/scripts/app'
@@ -145,7 +146,7 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(333)
   })
 
-  it.each([
+  it.for([
     { label: 'null', value: null },
     { label: 'undefined', value: undefined }
   ])('restores an explicit $label value', ({ value }) => {
@@ -264,10 +265,10 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].type).toBe('custom_widget')
   })
 
-  it('restores its serialized value through the reroute lifecycle', () => {
-    widgetInputsExtension.registerCustomNodes?.(app)
+  it('restores its serialized value through the reroute lifecycle', async () => {
+    await widgetInputsExtension.registerCustomNodes?.(app)
     localStorage.setItem('Comfy.RerouteNode.DefaultVisibility', 'true')
-    rerouteNodeExtension.registerCustomNodes?.(app)
+    await rerouteNodeExtension.registerCustomNodes?.(app)
     const frameCallbacks: FrameRequestCallback[] = []
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       frameCallbacks.push(callback)
@@ -495,8 +496,8 @@ describe('convertToInput', () => {
 })
 
 describe('setWidgetConfig', () => {
-  beforeEach(() => {
-    widgetInputsExtension.registerCustomNodes?.(app)
+  beforeEach(async () => {
+    await widgetInputsExtension.registerCustomNodes?.(app)
   })
 
   /** A primitive feeding a widget-backed input, as reroute/paste leave it. */
@@ -583,7 +584,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
       node.onGraphConfigured?.()
 
       expect(original).toHaveBeenCalled()
-      expect(node.inputs[0].widget![GET_CONFIG]!()).toEqual([
+      expect(node.inputs[0].widget[GET_CONFIG]!()).toEqual([
         'INT',
         { min: 0, max: 8 }
       ])
@@ -613,10 +614,7 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
       node.onConfigure?.(fromPartial({}))
 
-      expect(node.inputs[0].widget![GET_CONFIG]!()).toEqual([
-        'INT',
-        { max: 50 }
-      ])
+      expect(node.inputs[0].widget[GET_CONFIG]!()).toEqual(['INT', { max: 50 }])
     })
 
     it('defers to onGraphConfigured while a whole graph is loading', async () => {
@@ -628,13 +626,13 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
 
       node.onConfigure?.(fromPartial({}))
 
-      expect(node.inputs[0].widget![GET_CONFIG]).toBeUndefined()
+      expect(node.inputs[0].widget[GET_CONFIG]).toBeUndefined()
     })
   })
 
   describe('onInputDblClick', () => {
-    beforeEach(() => {
-      widgetInputsExtension.registerCustomNodes?.(app)
+    beforeEach(async () => {
+      await widgetInputsExtension.registerCustomNodes?.(app)
     })
 
     async function targetIn(graph: LGraph) {

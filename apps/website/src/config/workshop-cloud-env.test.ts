@@ -12,8 +12,8 @@ describe('resolveWorkshopCloudEnv', () => {
     { name: 'prod is prod', value: 'prod', expected: 'prod' },
     { name: 'staging is staging', value: 'staging', expected: 'staging' },
     { name: 'test is test', value: 'test', expected: 'test' },
-    // The build-time check rejects a misspelling before a build; at runtime
-    // the safe answer is the family that cannot reach production.
+    // Workshop builds reject a misspelling before building; at runtime the
+    // safe answer is the family that cannot reach production.
     {
       name: 'anything else stays on staging',
       value: 'production',

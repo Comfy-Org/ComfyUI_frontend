@@ -5,15 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
 
-const mockTrackShareFlow = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackShareFlow: mockTrackShareFlow
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
 
@@ -29,19 +26,9 @@ vi.mock(import('@formkit/auto-animate/vue'), () => ({
   vAutoAnimate: {}
 }))
 
-const mockFlags = vi.hoisted(() => ({
-  comfyHubUploadEnabled: false,
-  comfyHubProfileGateEnabled: true
-}))
-
 const mockShowPublishDialog = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: mockFlags
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock<unknown>(
   import('@/platform/workflow/sharing/composables/useComfyHubPublishDialog'),
   () => ({
@@ -145,6 +132,7 @@ describe('ShareWorkflowDialogContent', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).comfyHubProfileGateEnabled = true
     Object.assign(useWorkflowStore(), {
       activeWorkflow: {
         path: 'workflows/test.json',
@@ -161,7 +149,6 @@ describe('ShareWorkflowDialogContent', () => {
       shareUrl: null,
       publishedAt: null
     })
-    mockFlags.comfyHubUploadEnabled = false
     mockShareServiceData.items = [
       {
         id: 'test.png',
@@ -205,10 +192,6 @@ describe('ShareWorkflowDialogContent', () => {
             template:
               '<section data-testid="publish-intro"><button data-testid="publish-intro-cta" @click="$props.onCreateProfile()">Start publishing</button></section>',
             props: ['onCreateProfile']
-          },
-          Input: {
-            template: '<input v-bind="$attrs" />',
-            methods: { focus() {}, select() {} }
           }
         }
       }
@@ -236,7 +219,7 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('renders share-link and publish tabs when comfy hub upload is enabled', async () => {
-    mockFlags.comfyHubUploadEnabled = true
+    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = true
     const { container } = renderComponent()
     await flushPromises()
 
@@ -256,7 +239,7 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('shows publish intro panel in the share dialog', async () => {
-    mockFlags.comfyHubUploadEnabled = true
+    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = true
     renderComponent()
     await flushPromises()
 
@@ -269,7 +252,7 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('shows start publishing CTA in the publish intro panel', async () => {
-    mockFlags.comfyHubUploadEnabled = true
+    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = true
     renderComponent()
     await flushPromises()
 
@@ -284,7 +267,7 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('opens publish dialog from intro cta and closes share dialog', async () => {
-    mockFlags.comfyHubUploadEnabled = true
+    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = true
     renderComponent()
     await flushPromises()
 
@@ -379,7 +362,7 @@ describe('ShareWorkflowDialogContent', () => {
       'workflows/test.json',
       initialShareableAssets
     )
-    expect(mockTrackShareFlow).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackShareFlow).toHaveBeenCalledWith({
       step: 'link_created',
       source: 'graph_mode',
       view_mode: 'graph',
@@ -401,7 +384,7 @@ describe('ShareWorkflowDialogContent', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /Copy link/i }))
 
-    expect(mockTrackShareFlow).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackShareFlow).toHaveBeenCalledWith({
       step: 'link_copied',
       source: 'graph_mode',
       view_mode: 'graph',
@@ -550,7 +533,6 @@ describe('ShareWorkflowDialogContent', () => {
     })
 
     it('does not switch to publishToHub mode when flag is disabled', async () => {
-      mockFlags.comfyHubUploadEnabled = false
       const { container } = renderComponent()
       await flushPromises()
 

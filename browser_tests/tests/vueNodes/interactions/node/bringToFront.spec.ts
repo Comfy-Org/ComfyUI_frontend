@@ -9,8 +9,9 @@ test.describe(
   'Vue Node Bring to Front',
   { tag: ['@screenshot', '@vue-nodes'] },
   () => {
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
       await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
       await fitToViewInstant(comfyPage)
     })
