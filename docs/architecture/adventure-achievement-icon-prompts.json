@@ -1,26 +1,26 @@
 {
   "meta": {
-    "style": "Pixel art badge/medal icon, 128x128, dark background, achievement unlock style",
+    "style": "Vintage architectural blueprint emblem, cyan-white linework on midnight-blue drafting paper, 128x128 achievement badge",
     "usage": "Each key matches an ending ID. Shown in achievements panel when that ending has been reached.",
-    "model": "Z-Image Turbo (no LoRA)",
+    "model": "V2 blueprint theme: Krea 2 Turbo (community int8 build) on Comfy Cloud, generated at 1024x1024 (icons) / 1344x576 (rooms), icons downscaled to 128",
     "resolution": "128x128"
   },
   "achievements": {
     "great": {
       "title": "The ECS Enlightenment",
-      "prompt": "Pixel art achievement badge of a radiant crystal temple with clean geometric architecture, bright green and gold triumphant glow, laurel wreath border, dark background"
+      "prompt": "Vintage architectural blueprint emblem of a radiant crystal temple with clean geometric architecture, bright green and gold triumphant glow, laurel wreath border, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "good": {
       "title": "The Clean Architecture",
-      "prompt": "Pixel art achievement badge of a solid fortress with neat organized blocks, blue and silver steady glow, star emblem, dark background"
+      "prompt": "Vintage architectural blueprint emblem of a solid fortress with neat organized blocks, blue and silver steady glow, star emblem, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "mediocre": {
       "title": "The Eternal Refactor",
-      "prompt": "Pixel art achievement badge of an hourglass with sand still flowing endlessly, amber and grey weary glow, circular border, dark background"
+      "prompt": "Vintage architectural blueprint emblem of an hourglass with sand still flowing endlessly, amber and grey weary glow, circular border, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "disaster": {
       "title": "The Spaghetti Singularity",
-      "prompt": "Pixel art achievement badge of a tangled mass of spaghetti code wires collapsing into a black hole, red and purple chaotic glow, cracked border, dark background"
+      "prompt": "Vintage architectural blueprint emblem of a tangled mass of spaghetti code wires collapsing into a black hole, red and purple chaotic glow, cracked border, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     }
   }
 }

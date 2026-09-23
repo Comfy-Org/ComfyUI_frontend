@@ -1,90 +1,120 @@
 {
   "meta": {
-    "style": "Pixel art icon on transparent black background, 128x128, clean edges, glowing accent color, game inventory item style",
+    "style": "Vintage architectural blueprint schematic, cyan-white linework on midnight-blue drafting paper, 128x128 game inventory item",
     "usage": "Each key is an artifact ID used in adventure.html. Generate one icon per artifact.",
-    "model": "Z-Image Turbo (no LoRA)",
+    "model": "V2 blueprint theme: Krea 2 Turbo (community int8 build) on Comfy Cloud, generated at 1024x1024 (icons) / 1344x576 (rooms), icons downscaled to 128",
     "resolution": "128x128"
   },
   "artifacts": {
     "graphview": {
       "name": "GraphView.vue",
       "type": "Component",
-      "prompt": "Pixel art icon of a glowing canvas frame with connected nodes and wires inside, blue accent glow, dark background, game inventory item"
+      "prompt": "Vintage architectural blueprint schematic of a glowing canvas frame with connected nodes and wires inside, blue accent glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "widgetvaluestore": {
       "name": "widgetValueStore.ts",
       "type": "Proto-ECS Store",
-      "prompt": "Pixel art icon of a vault door with a glowing slider widget embossed on it, purple and gold accents, dark background, game inventory item"
+      "prompt": "Vintage architectural blueprint schematic of a vault door with a glowing slider widget embossed on it, purple and gold accents, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "layoutstore": {
       "name": "layoutStore.ts",
       "type": "Proto-ECS Store",
-      "prompt": "Pixel art icon of a grid blueprint with glowing position markers, purple accent lines, dark background, game inventory item"
+      "prompt": "Vintage architectural blueprint schematic of a grid blueprint with glowing position markers, purple accent lines, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "litegraphservice": {
       "name": "litegraphService.ts",
       "type": "Service",
-      "prompt": "Pixel art icon of a gear with a graph node symbol in the center, copper and blue metallic glow, dark background, game inventory item"
+      "prompt": "Vintage architectural blueprint schematic of a gear with a graph node symbol in the center, copper and blue metallic glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "lgraphcanvas": {
       "name": "LGraphCanvas.ts",
       "type": "God Object",
-      "prompt": "Pixel art icon of a massive cracked monolith radiating red warning light, labeled 9100, ominous dark background, game inventory item"
+      "prompt": "Vintage architectural blueprint schematic of a massive cracked monolith radiating red warning light, labeled 9100, ominous, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "lgraphnode": {
       "name": "LGraphNode.ts",
       "type": "God Object",
-      "prompt": "Pixel art icon of an oversized cube with tangled wires bursting from every face, red and amber glow, dark background, game inventory item"
+      "prompt": "Vintage architectural blueprint schematic of an oversized cube with tangled wires bursting from every face, red and amber glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "world-registry": {
-      "name": "World Registry",
-      "type": "ECS Core",
-      "prompt": "Pixel art icon of a glowing crystalline orb containing tiny entity symbols, bright blue and white aura, dark background, game inventory item"
+      "name": "The Unbuilt World",
+      "type": "Historical Blueprint",
+      "prompt": "Vintage architectural blueprint schematic of a glowing crystalline orb containing tiny entity symbols, bright blue and white aura, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "branded-ids": {
-      "name": "Branded Entity IDs",
+      "name": "Branded IDs (WidgetId, LinkId)",
       "type": "Type Safety",
-      "prompt": "Pixel art icon of a set of ID cards with distinct colored borders and brand stamps, green checkmark glow, dark background, game inventory item"
+      "prompt": "Vintage architectural blueprint schematic of a set of ID cards with distinct colored borders and brand stamps, green checkmark glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "quadtree": {
       "name": "QuadTree Spatial Index",
       "type": "Data Structure",
-      "prompt": "Pixel art icon of a square recursively divided into four quadrants with glowing dots at intersections, teal accent, dark background, game inventory item"
+      "prompt": "Vintage architectural blueprint schematic of a square recursively divided into four quadrants with glowing dots at intersections, teal accent, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "yjs-crdt": {
       "name": "Y.js CRDT Layout",
       "type": "Collaboration",
-      "prompt": "Pixel art icon of two overlapping document layers merging with sync arrows, purple and green glow, dark background, game inventory item"
+      "prompt": "Vintage architectural blueprint schematic of two overlapping document layers merging with sync arrows, purple and green glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "usecorecommands": {
       "name": "useCoreCommands.ts",
       "type": "Composable",
-      "prompt": "Pixel art icon of a hook tool with keyboard key symbols orbiting it, yellow and blue glow, dark background, game inventory item"
-    },
-    "subgraph-structure": {
-      "name": "SubgraphStructure",
-      "type": "ECS Component",
-      "prompt": "Pixel art icon of nested rectangular frames inside each other like Russian dolls with glowing typed connections at each boundary, purple and teal accent, dark background, game inventory item"
+      "prompt": "Vintage architectural blueprint schematic of a hook tool with keyboard key symbols orbiting it, yellow and blue glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "typed-contracts": {
       "name": "Typed Interface Contracts",
       "type": "Architecture",
-      "prompt": "Pixel art icon of a sealed scroll with a glowing typed signature stamp and interface brackets, gold and blue accent, dark background, game inventory item"
-    },
-    "command-executor": {
-      "name": "CommandExecutor",
-      "type": "ECS Core",
-      "prompt": "Pixel art icon of a glowing anvil with a gear and execute arrow symbol, blue-purple forge glow, dark background, game inventory item"
+      "prompt": "Vintage architectural blueprint schematic of a sealed scroll with a glowing typed signature stamp and interface brackets, gold and blue accent, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "command-interface": {
       "name": "Command Interface",
       "type": "Design Pattern",
-      "prompt": "Pixel art icon of a sealed scroll with a type discriminator tag and execute method seal, blue glow, dark background, game inventory item"
+      "prompt": "Vintage architectural blueprint schematic of a sealed scroll with a type discriminator tag and execute method seal, blue glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "extension-migration": {
       "name": "Extension Migration Guide",
       "type": "Design Pattern",
-      "prompt": "Pixel art icon of a scroll with legacy code on left transforming via arrow to ECS code on right, green transition glow, dark background, game inventory item"
+      "prompt": "Vintage architectural blueprint schematic of a scroll with legacy code on left transforming via arrow to ECS code on right, green transition glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "linkstore": {
+      "name": "linkStore.ts",
+      "type": "Store Authority",
+      "prompt": "Vintage architectural blueprint schematic of a round vault door with a glowing chain link embossed on it and a small index card drawer beside it, blue accent glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "nodedatastore": {
+      "name": "nodeDataStore.ts",
+      "type": "Store Authority",
+      "prompt": "Vintage architectural blueprint schematic of a round vault door with a glowing workflow node shape embossed on it, teal accent glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "changetracker": {
+      "name": "ChangeTracker (Snapshot Undo)",
+      "type": "Undo/Redo",
+      "prompt": "Vintage architectural blueprint schematic of a neat stack of glowing photograph snapshots with a curved undo arrow circling back over them, purple accent glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "linked-inputs": {
+      "name": "Linked Subgraph Inputs",
+      "type": "ADR 0009",
+      "prompt": "Vintage architectural blueprint schematic of a typed input socket connected by a glowing wire to a small slider widget control, green and gold accents, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "graphscope": {
+      "name": "GraphScope (root + owner)",
+      "type": "Identity",
+      "prompt": "Vintage architectural blueprint schematic of a large unrolled map containing a smaller inset map, both marked by one shared glowing coordinate pin, teal and gold accents, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "ownership-attachment": {
+      "name": "Ownership Attachment",
+      "type": "Identity",
+      "prompt": "Vintage architectural blueprint schematic of a blank name tag tethered by a short glowing chain to a floating cube entity, purple accent glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "telemetry-bell": {
+      "name": "Deprecation Telemetry",
+      "type": "Compatibility",
+      "prompt": "Vintage architectural blueprint schematic of a small brass warning bell with a single glowing sound wave ring, amber accent glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
+    },
+    "serialization-goldens": {
+      "name": "Serialization Goldens",
+      "type": "Testing",
+      "prompt": "Vintage architectural blueprint schematic of a golden wax seal stamped on a scroll of code, the seal glowing softly, gold accent, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     }
   }
 }
