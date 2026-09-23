@@ -139,7 +139,7 @@ const providerMask = (provider: keyof typeof PROVIDER_ICON) => ({
         {{ announcement }}
       </p>
       <div
-        class="relative min-h-0 w-full flex-1 overflow-clip rounded-[2.5rem] bg-primary-comfy-canvas/4"
+        class="relative min-h-0 w-full flex-1 overflow-clip rounded-5xl bg-primary-comfy-canvas/4"
       >
         <div
           ref="trackEl"

@@ -25,11 +25,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({
-    purchaseCredits: vi.fn()
-  })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 describe('useLegacyBilling', () => {
   describe('resubscribe', () => {

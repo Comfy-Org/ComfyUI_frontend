@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick, ref, shallowRef } from 'vue'
+import { computed, effectScope, nextTick, ref, shallowRef, watch } from 'vue'
 import type { EffectScope } from 'vue'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -39,7 +39,12 @@ function setup() {
     const nodeWorkflow = shallowRef(target.value)
     const editableWorkflowId = ref<string | undefined>('wf-target')
     const canSubmit = ref(true)
+    watch(target, (workflow) => composer.setNodeScope(workflow?.path ?? null), {
+      immediate: true,
+      flush: 'sync'
+    })
     const selection = useCanvasSelection({
+      staged: computed({ get: () => composer.nodes, set: composer.setNodes }),
       selection: [],
       isLive: true,
       isTracking: false

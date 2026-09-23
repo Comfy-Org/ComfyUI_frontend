@@ -9,13 +9,13 @@ import {
   absoluteUrl,
   faqPageNode,
   organizationId,
-  pageContext,
+  pageContext
 } from '../../utils/jsonLd'
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 
 const faqs = contactFaqs(locale)
@@ -23,8 +23,8 @@ const faqPage = faqPageNode(
   url,
   faqs.map((faq) => ({
     question: faq.question,
-    answer: faqAnswerPlainText(faq.answer),
-  })),
+    answer: faqAnswerPlainText(faq.answer)
+  }))
 )
 ---
 
@@ -36,9 +36,9 @@ const faqPage = faqPageNode(
   breadcrumbs={[
     {
       name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN'),
+      url: absoluteUrl(Astro.site, '/zh-CN')
     },
-    { name: t('breadcrumb.contact', locale) },
+    { name: t('breadcrumb.contact', locale) }
   ]}
   extraJsonLd={[faqPage]}
 >

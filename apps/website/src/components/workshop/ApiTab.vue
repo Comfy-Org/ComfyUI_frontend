@@ -5,10 +5,18 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import { externalLinks } from '../../config/routes'
-import type { FormValues } from '../../config/workshop-playground'
+import { apiKeysLink, externalLinks } from '../../config/routes'
+import type { FileValue, FormValues } from '../../config/workshop-playground'
+import { schemaForModel } from '../../config/workshop-playground'
+import { formForContract } from '../../config/workshop-contract'
+import { workshopExampleFile } from '../../config/workshop-example-file'
+import { shouldRehostWorkshopUrl } from '../../config/workshop-url-input'
 import type { SnippetFile, SnippetLanguage } from '../../config/models-snippets'
-import { SNIPPET_LANGUAGES, buildSnippet } from '../../config/models-snippets'
+import {
+  SNIPPET_LANGUAGES,
+  buildSnippet,
+  hasOmittedCurlFiles
+} from '../../config/models-snippets'
 import type { WorkshopContract } from '../../config/workshop-contract'
 import { prepareWorkshopRouterInput } from '../../config/workshop-request'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
@@ -16,15 +24,19 @@ import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale } from '../../i18n/translations'
 import { useTablist } from '../../composables/useTablist'
 import { t } from '../../i18n/translations'
+import type { CodeLang } from '../../lib/highlight'
+import HighlightedCode from './HighlightedCode.vue'
 
 const {
   contract,
   values,
-  locale = 'en'
+  locale = 'en',
+  modelSlug
 } = defineProps<{
   contract?: WorkshopContract
   values: FormValues
   locale?: Locale
+  modelSlug?: string
 }>()
 
 const language = ref<SnippetLanguage>('python')
@@ -35,8 +47,6 @@ const { onKeydown: onLanguageKeydown } = useTablist(
 const request = ref<{
   body: Readonly<Record<string, unknown>>
   files: readonly SnippetFile[]
-  key: string
-  curlKey: string
 }>()
 const fileReferences = new WeakMap<
   File,
@@ -60,7 +70,38 @@ function referenceFor(file: File, encoding: 'base64' | 'url'): SnippetFile {
   return reference
 }
 const unavailable = ref(false)
-let previous: { fingerprint: string; key: string; curlKey: string } | undefined
+
+function previewValues(
+  values: FormValues,
+  sources: WeakMap<File, Pick<FileValue, 'sourceUrl'>>
+): FormValues {
+  function preview(value: FileValue): FileValue {
+    if (value.file || !value.sourceUrl) return value
+    const file = new File([], value.name, { type: value.type })
+    sources.set(file, { sourceUrl: value.sourceUrl })
+    return { ...value, file }
+  }
+  const fields = contract?.rehostUrlInputs
+    ? schemaForModel({ fields: [], form: formForContract(contract) })
+    : []
+  return Object.fromEntries(
+    Object.entries(values).map(([name, value]) => {
+      const field = fields.find((field) => field.name === name)
+      if (field && shouldRehostWorkshopUrl(field, value)) {
+        const example = workshopExampleFile(value)
+        if (example) return [name, preview(example)]
+      }
+      return [
+        name,
+        Array.isArray(value)
+          ? value.map(preview)
+          : value && typeof value === 'object'
+            ? preview(value)
+            : value
+      ]
+    })
+  )
+}
 watch(
   [() => contract, () => values],
   async (_, __, onCleanup) => {
@@ -70,39 +111,37 @@ watch(
     unavailable.value = false
     try {
       const files: SnippetFile[] = []
+      const sources = new WeakMap<File, Pick<FileValue, 'sourceUrl'>>()
+      function addReference(file: File, encoding: 'base64' | 'url') {
+        const reference = referenceFor(file, encoding)
+        if (!files.some((entry) => entry.token === reference.token))
+          files.push({
+            ...reference,
+            ...sources.get(file),
+            rehost: contract?.rehostUrlInputs,
+            urlAlternative:
+              contract?.creator?.request.kind === 'callback' &&
+              ['seedream', 'seedance', 'runway-image'].includes(
+                contract.creator.request.callback
+              )
+          })
+        return reference.token
+      }
       const body = await prepareWorkshopRouterInput(
         contract,
-        values,
+        previewValues(values, sources),
         controller.signal,
         (file, signal) => {
           signal.throwIfAborted()
-          const reference = referenceFor(file, 'base64')
-          if (!files.includes(reference)) files.push(reference)
-          return Promise.resolve(reference.token)
+          return Promise.resolve(addReference(file, 'base64'))
         },
         (file, signal) => {
           signal.throwIfAborted()
-          const reference = referenceFor(file, 'url')
-          if (!files.includes(reference)) files.push(reference)
-          return Promise.resolve(reference.token)
+          return Promise.resolve(addReference(file, 'url'))
         }
       )
       controller.signal.throwIfAborted()
-      const fingerprint = JSON.stringify([contract?.id, body])
-      if (previous?.fingerprint !== fingerprint) {
-        const key = workshopIdempotencyKey()
-        previous = {
-          fingerprint,
-          key,
-          curlKey: files.length ? workshopIdempotencyKey() : key
-        }
-      }
-      request.value = {
-        body,
-        files,
-        key: previous.key,
-        curlKey: previous.curlKey
-      }
+      request.value = { body, files }
     } catch (error) {
       if (controller.signal.aborted) return
       unavailable.value =
@@ -113,21 +152,39 @@ watch(
 )
 const snippet = computed(() =>
   request.value && contract
-    ? buildSnippet(
-        language.value,
-        contract.id,
-        request.value.body,
-        language.value === 'curl' ? request.value.curlKey : request.value.key,
-        request.value.files
-      )
+    ? buildSnippet(language.value, contract.id, request.value.body, {
+        files: request.value.files,
+        output:
+          contract.output.format === 'json' ||
+          (contract.output.format === 'auto' &&
+            contract.output.contentTypes.includes('application/json') &&
+            contract.output.contentTypes.every(
+              (type) => type.includes('json') || type === 'text/event-stream'
+            ))
+            ? 'json'
+            : 'binary'
+      })
     : ''
 )
+
+const showFileNotice = computed(() => {
+  if (!request.value) return false
+  const { body, files } = request.value
+  return language.value === 'curl'
+    ? hasOmittedCurlFiles(body, files)
+    : files.some((file) => !file.sourceUrl)
+})
 
 const languageLabel: Record<SnippetLanguage, string> = {
   python: 'Python',
   typescript: 'TypeScript',
   curl: 'cURL'
 }
+const highlightLanguage = {
+  python: 'python',
+  typescript: 'typescript',
+  curl: 'shell'
+} satisfies Record<SnippetLanguage, CodeLang>
 </script>
 
 <template>
@@ -143,7 +200,7 @@ const languageLabel: Record<SnippetLanguage, string> = {
 
     <div
       v-if="snippet"
-      class="bg-transparency-white-t4 overflow-hidden rounded-2xl border border-transparency-white-t20"
+      class="overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4"
     >
       <div
         class="flex items-center justify-between border-b border-transparency-white-t8 px-3 py-2"
@@ -184,7 +241,7 @@ const languageLabel: Record<SnippetLanguage, string> = {
         />
       </div>
       <p
-        v-if="request?.files.length"
+        v-if="showFileNotice"
         role="note"
         class="px-6 pt-4 text-sm text-primary-warm-gray"
       >
@@ -204,7 +261,10 @@ const languageLabel: Record<SnippetLanguage, string> = {
         tabindex="0"
         class="overflow-x-auto bg-primary-comfy-ink p-6 font-mono text-sm/relaxed text-primary-warm-white"
         data-testid="snippet"
-      ><code>{{ snippet }}</code></pre>
+      ><HighlightedCode
+          :code="snippet"
+          :language="highlightLanguage[language]"
+        /></pre>
     </div>
 
     <p v-if="!snippet" role="status" class="text-sm text-primary-warm-gray">
@@ -221,7 +281,7 @@ const languageLabel: Record<SnippetLanguage, string> = {
     <div class="flex flex-wrap gap-3">
       <Button
         as="a"
-        :href="externalLinks.apiKeys"
+        :href="apiKeysLink({ onboarding: 'models', model: modelSlug })"
         target="_blank"
         rel="noopener noreferrer"
         data-testid="api-get-key"

@@ -1,4 +1,4 @@
-import Ajv from 'ajv'
+import { Ajv } from 'ajv'
 import type { ValidateFunction } from 'ajv'
 import addFormats from 'ajv-formats'
 import { isHttpImageSource } from './workshop-image-source'

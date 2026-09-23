@@ -10,7 +10,7 @@ import { useConflictDetection } from '@/workbench/extensions/manager/composables
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
-import type * as ConflictUtils from '@/workbench/extensions/manager/utils/conflictUtils'
+import { consolidateConflictsByPackage } from '@/workbench/extensions/manager/utils/conflictUtils'
 import {
   checkAcceleratorCompatibility,
   checkOSCompatibility
@@ -49,18 +49,11 @@ vi.mock(
   })
 )
 
-vi.mock(
-  import('@/workbench/extensions/manager/utils/conflictUtils'),
-
-  async () => {
-    const actual = await vi.importActual<typeof ConflictUtils>(
-      '@/workbench/extensions/manager/utils/conflictUtils'
-    )
-    return {
-      ...actual,
-      consolidateConflictsByPackage: vi.fn((results) => results)
-    }
-  }
+vi.mock(import('@/workbench/extensions/manager/utils/conflictUtils'), {
+  spy: true
+})
+vi.mocked(consolidateConflictsByPackage).mockImplementation(
+  (results) => results
 )
 
 vi.mock(

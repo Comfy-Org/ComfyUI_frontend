@@ -31,7 +31,7 @@ import type {
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage
-} from '@/schemas/apiSchema'
+} from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -104,7 +104,7 @@ function buildExecutionNodeLookup(
     Object.entries(promptOutput).map(([executionId, node]) => [
       executionId,
       {
-        title: node._meta.title,
+        title: node._meta?.title ?? node.class_type,
         type: node.class_type
       }
     ])
@@ -901,6 +901,27 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
+   * Removes any leftover `progress_text` preview widget from every node that
+   * ran in this job, so a node's completed status line doesn't stick around
+   * and starve other widgets of the node's height on the next run.
+   */
+  function clearTextPreviewsForJob(jobId: JobId) {
+    if (!(jobId in queuedJobs.value)) return
+    const job = queuedJobs.value[jobId]
+    if (!job.workflow || job.workflow !== workflowStore.activeWorkflow) return
+
+    const { removeTextPreview } = useNodeProgressText()
+    for (const nodeId of Object.keys(job.nodes)) {
+      const currentId = workflowStore.executionIdToCurrentId(nodeId)
+      if (!currentId) continue
+      const parsedCurrentId = parseNodeId(currentId)
+      if (!parsedCurrentId) continue
+      const node = canvasStore.canvas?.graph?.getNodeById(parsedCurrentId)
+      if (node) removeTextPreview(node)
+    }
+  }
+
+  /**
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(jobIdParam?: JobId | null) {
@@ -916,6 +937,7 @@ export const useExecutionStore = defineStore('execution', () => {
       nodeProgressStatesByJob.value = map
       useJobPreviewStore().clearPreview(jobId)
       jobIdToWorkflow.delete(jobId)
+      clearTextPreviewsForJob(jobId)
     }
     if (jobId) delete queuedJobs.value[jobId]
     activeJobId.value = null

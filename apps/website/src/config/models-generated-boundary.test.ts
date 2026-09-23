@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { decodeGeneratedModels } from './models-catalogue'
+import { decodeGeneratedModels } from './workshop-generated-models'
 
 const field = {
   kind: 'text',

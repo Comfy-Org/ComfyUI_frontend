@@ -1,6 +1,6 @@
-import type * as I18nModule from '@/i18n'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { useDialogService as realUseDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -14,27 +14,16 @@ import type { RouteRecordRaw } from 'vue-router'
  *
  */
 
-const mockConfirm = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    confirm: mockConfirm
-  })
-}))
+vi.mock(import('@/services/dialogService'))
+
+let useDialogService: typeof realUseDialogService
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
 
 const mockUserGetIdToken = vi.hoisted(() => vi.fn())
 const mockStoreGetIdToken = vi.hoisted(() => vi.fn())
 
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(),
-  onIdTokenChanged: vi.fn()
-}))
-
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
@@ -117,11 +106,13 @@ beforeEach(() => {
 })
 
 describe('installDesktopLoginRedemption', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetModules()
+    useDialogService = (await import('@/services/dialogService'))
+      .useDialogService
     vi.stubGlobal('fetch', mockFetch)
     vi.spyOn(console, 'warn').mockImplementation(() => {})
-    mockConfirm.mockResolvedValue(true)
+    vi.mocked(useDialogService().confirm).mockResolvedValue(true)
     mockUserGetIdToken.mockResolvedValue('firebase-id-token')
     mockAuthStore = useAuthStore()
     mockAuthStore.currentUser = fromPartial({
@@ -136,7 +127,7 @@ describe('installDesktopLoginRedemption', () => {
 
     await trigger()
 
-    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(mockFetch).not.toHaveBeenCalled()
     expect(mockToastAdd).not.toHaveBeenCalled()
   })
@@ -148,8 +139,8 @@ describe('installDesktopLoginRedemption', () => {
 
     await trigger()
 
-    expect(mockConfirm).toHaveBeenCalledTimes(1)
-    expect(mockConfirm).toHaveBeenCalledWith({
+    expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
+    expect(useDialogService().confirm).toHaveBeenCalledWith({
       key: 'global-desktop-login-confirm',
       title: 'desktopLogin.confirmSummary',
       message: 'desktopLogin.confirmMessage'
@@ -172,7 +163,7 @@ describe('installDesktopLoginRedemption', () => {
     const { trigger, seedStash } = await setup()
     seedStash(VALID_CODE)
     let approve!: (value: boolean) => void
-    mockConfirm.mockReturnValue(
+    vi.mocked(useDialogService().confirm).mockReturnValue(
       new Promise<boolean>((resolve) => {
         approve = resolve
       })
@@ -180,7 +171,9 @@ describe('installDesktopLoginRedemption', () => {
     mockFetch.mockResolvedValue(okResponse())
 
     await trigger()
-    await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() =>
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
+    )
     expect(mockFetch).not.toHaveBeenCalled()
 
     approve(true)
@@ -221,16 +214,19 @@ describe('installDesktopLoginRedemption', () => {
     await flushRedemption()
 
     expect(router.currentRoute.value.name).toBe('cloud-user-check')
-    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(mockFetch).not.toHaveBeenCalled()
     expect(stashedCode()).toBe(VALID_CODE)
 
     // user-check hard-reloads `/`; only the sessionStorage stash survives.
     vi.resetModules()
+    useDialogService = (await import('@/services/dialogService'))
+      .useDialogService
+    vi.mocked(useDialogService().confirm).mockResolvedValue(true)
     const reloaded = await setup()
     await reloaded.trigger()
 
-    expect(mockConfirm).toHaveBeenCalledTimes(1)
+    expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(mockFetch).toHaveBeenCalledWith(
       REDEEM_URL,
@@ -253,7 +249,7 @@ describe('installDesktopLoginRedemption', () => {
 
     await router.push('/cloud/login')
     await flushRedemption()
-    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
 
     // Signing in on the login page fires the auth watcher mid-handoff.
     mockAuthStore.currentUser = fromPartial({
@@ -262,7 +258,7 @@ describe('installDesktopLoginRedemption', () => {
     })
     await flushRedemption()
 
-    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(mockFetch).not.toHaveBeenCalled()
     expect(stashedCode()).toBe(VALID_CODE)
   })
@@ -275,7 +271,7 @@ describe('installDesktopLoginRedemption', () => {
     async ([_label, confirmResult]) => {
       const { trigger, seedStash, stashedCode } = await setup()
       seedStash(VALID_CODE)
-      mockConfirm.mockResolvedValue(confirmResult)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(confirmResult)
 
       await trigger()
 
@@ -287,7 +283,7 @@ describe('installDesktopLoginRedemption', () => {
       seedStash(VALID_CODE)
       await trigger()
 
-      expect(mockConfirm).toHaveBeenCalledTimes(1)
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
       expect(mockFetch).not.toHaveBeenCalled()
       expect(stashedCode()).toBeUndefined()
     }
@@ -303,7 +299,7 @@ describe('installDesktopLoginRedemption', () => {
 
     await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS)
 
-    expect(mockConfirm).toHaveBeenCalledTimes(1)
+    expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
     expect(mockFetch).toHaveBeenCalledTimes(2)
   })
 
@@ -336,7 +332,7 @@ describe('installDesktopLoginRedemption', () => {
     seedStash(VALID_CODE)
     await trigger()
 
-    expect(mockConfirm).toHaveBeenCalledTimes(1)
+    expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(stashedCode()).toBeUndefined()
   })
@@ -455,7 +451,7 @@ describe('installDesktopLoginRedemption', () => {
 
     await trigger()
 
-    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(mockFetch).not.toHaveBeenCalled()
     expect(stashedCode()).toBeUndefined()
   })
@@ -464,7 +460,9 @@ describe('installDesktopLoginRedemption', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { trigger, seedStash } = await setup()
     seedStash(VALID_CODE)
-    mockConfirm.mockRejectedValue(new Error('dialog exploded'))
+    vi.mocked(useDialogService().confirm).mockRejectedValue(
+      new Error('dialog exploded')
+    )
 
     await expect(trigger()).resolves.toBeUndefined()
 
@@ -484,7 +482,7 @@ describe('installDesktopLoginRedemption', () => {
     // The first completed navigation installs the watcher; without a session
     // nothing redeems and the stash is kept.
     await trigger()
-    expect(mockConfirm).not.toHaveBeenCalled()
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(mockFetch).not.toHaveBeenCalled()
     expect(stashedCode()).toBe(VALID_CODE)
 
@@ -505,7 +503,10 @@ describe('installDesktopLoginRedemption', () => {
 
   it.for([
     ['succeeded', () => mockFetch.mockResolvedValueOnce(okResponse())],
-    ['was declined', () => mockConfirm.mockResolvedValueOnce(false)]
+    [
+      'was declined',
+      () => vi.mocked(useDialogService().confirm).mockResolvedValueOnce(false)
+    ]
   ] as const)(
     'gives a second code its own dialog and request after the first code %s',
     async ([_label, arrangeFirstOutcome]) => {
@@ -514,13 +515,13 @@ describe('installDesktopLoginRedemption', () => {
       arrangeFirstOutcome()
 
       await trigger()
-      expect(mockConfirm).toHaveBeenCalledTimes(1)
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
 
       seedStash(SECOND_CODE)
       mockFetch.mockResolvedValue(okResponse())
       await trigger()
 
-      expect(mockConfirm).toHaveBeenCalledTimes(2)
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(2)
       expect(mockFetch).toHaveBeenLastCalledWith(
         REDEEM_URL,
         expect.objectContaining({ body: JSON.stringify({ code: SECOND_CODE }) })
@@ -558,7 +559,7 @@ describe('installDesktopLoginRedemption', () => {
 
     // user-1 approves; the redeem fails transiently, keeping the code stashed.
     await trigger()
-    expect(mockConfirm).toHaveBeenCalledTimes(1)
+    expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(stashedCode()).toBe(VALID_CODE)
 
@@ -569,7 +570,9 @@ describe('installDesktopLoginRedemption', () => {
       getIdToken: vi.fn().mockResolvedValue('second-user-token')
     })
 
-    await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() =>
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(2)
+    )
     await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2))
     expect(mockFetch).toHaveBeenLastCalledWith(
       REDEEM_URL,
@@ -586,7 +589,7 @@ describe('installDesktopLoginRedemption', () => {
     const { seedStash, stashedCode, trigger } = await setup()
     seedStash(VALID_CODE)
     let approve!: (value: boolean) => void
-    mockConfirm.mockReturnValueOnce(
+    vi.mocked(useDialogService().confirm).mockReturnValueOnce(
       new Promise<boolean>((resolve) => {
         approve = resolve
       })
@@ -594,7 +597,9 @@ describe('installDesktopLoginRedemption', () => {
     mockFetch.mockResolvedValue(okResponse())
 
     await trigger()
-    await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() =>
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
+    )
 
     // The session swaps to user-2 while user-1's dialog is open: the stale
     // approval must not redeem, and the raced auth trigger is replayed to
@@ -608,7 +613,9 @@ describe('installDesktopLoginRedemption', () => {
     approve(true)
     await flushRedemption()
 
-    await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() =>
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(2)
+    )
     await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
     expect(mockFetch).toHaveBeenCalledWith(
       REDEEM_URL,
@@ -646,7 +653,7 @@ describe('installDesktopLoginRedemption', () => {
       resolveFirstFetch(firstResponse())
 
       await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2))
-      expect(mockConfirm).toHaveBeenCalledTimes(2)
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(2)
       expect(mockFetch).toHaveBeenLastCalledWith(
         REDEEM_URL,
         expect.objectContaining({ body: JSON.stringify({ code: SECOND_CODE }) })
@@ -659,7 +666,7 @@ describe('installDesktopLoginRedemption', () => {
     const { router, seedStash } = await setup()
     seedStash(VALID_CODE)
     let approve!: (value: boolean) => void
-    mockConfirm.mockReturnValue(
+    vi.mocked(useDialogService().confirm).mockReturnValue(
       new Promise<boolean>((resolve) => {
         approve = resolve
       })
@@ -668,12 +675,15 @@ describe('installDesktopLoginRedemption', () => {
 
     await router.push('/burst-1')
     await router.push('/burst-2')
-    await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() =>
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
+    )
 
     approve(true)
     await flushRedemption()
 
-    expect(mockConfirm).toHaveBeenCalledTimes(1)
+    expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 })
+vi.mock(import('firebase/auth'))

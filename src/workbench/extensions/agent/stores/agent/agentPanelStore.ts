@@ -3,13 +3,17 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
-import type { AgentPanelCloseSource } from '@/platform/telemetry/types'
+import type {
+  AgentPanelCloseSource,
+  AgentPanelOpenedMetadata
+} from '@/platform/telemetry/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
+const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
 
 type WorkflowTargetSelection =
   | { status: 'uninitialized' }
@@ -18,8 +22,13 @@ type WorkflowTargetSelection =
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
+  const consentAccepted = ref(false)
   // writeDefaults false: no storage key planted for flag-off users.
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
+    writeDefaults: false
+  })
+  /** Whether the panel has ever been shown to this user, on any visit. */
+  const hasEverOpened = useLocalStorage(DISCOVERED_STORAGE_KEY, false, {
     writeDefaults: false
   })
   const gateSettled = ref(false)
@@ -61,22 +70,30 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   let openedAt: number | null = null
 
-  watch(
-    () => enabled.value && isOpen.value,
-    (docked) => {
-      if (!docked || openedAt !== null) return
-      openedAt = Date.now()
-      useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
-    }
+  const isVisible = computed(
+    () => enabled.value && isOpen.value && consentAccepted.value
   )
+
+  watch(isVisible, (visible) => {
+    if (!visible) {
+      openedAt = null
+      return
+    }
+    hasEverOpened.value = true
+    if (openedAt !== null) return
+    openedAt = Date.now()
+    useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
+  })
 
   const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
 
-  function open(): void {
+  function open(
+    source: AgentPanelOpenedMetadata['source'] = 'topbar_button'
+  ): void {
     if (isOpen.value) return
     isOpen.value = true
     openedAt = Date.now()
-    useTelemetry()?.trackAgentPanelOpened({ source: 'topbar_button' })
+    useTelemetry()?.trackAgentPanelOpened({ source })
   }
 
   function close(source: AgentPanelCloseSource): void {
@@ -88,6 +105,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
       source,
       open_duration_ms: openDurationMs
     })
+  }
+
+  function suppressRestoredOpen(): void {
+    if (!isOpen.value || isVisible.value) return
+    isOpen.value = false
+    openedAt = null
   }
 
   function toggle(): void {
@@ -105,11 +128,15 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   return {
     enabled,
+    consentAccepted,
     isOpen,
+    isVisible,
+    hasEverOpened,
     gateSettled,
     width,
     isMaximized,
     dismissedSelectionSignature,
+    open,
     workflowTargetSelection,
     selectedWorkflow,
     canRestoreWorkflow,
@@ -117,6 +144,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     setWorkflowTarget,
     toggle,
     close,
+    suppressRestoredOpen,
     setWidth,
     toggleMaximize
   }

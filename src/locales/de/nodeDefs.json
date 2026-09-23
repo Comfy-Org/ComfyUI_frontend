@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "description": "Fügen Sie mit Bria ein in Klartext beschriebenes Objekt in ein Bild ein. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zum Eingabebild ausgerichtet.",
+    "display_name": "Bria Objekt hinzufügen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "image": {
+        "name": "Bild"
+      },
+      "instruction": {
+        "name": "Anweisung",
+        "tooltip": "Was und wo hinzugefügt werden soll, z. B. „Stellen Sie eine rote Vase mit Blumen auf den Tisch“."
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Bria verwendet hier keinen Seed und interpretiert die Bearbeitung bei jedem Aufruf neu, daher können wiederholte Ausführungen abweichen. Der Wert wird nie gesendet: Er ändert nur den Cache-Schlüssel dieses Nodes, sodass ein ansonsten identischer Graph die Bearbeitung erneut ausführt, statt das zwischengespeicherte Ergebnis zurückzugeben."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine anschließende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "Entfernen Sie mit Bria ein in Klartext benanntes Objekt aus einem Bild. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zum Eingabebild ausgerichtet.",
+    "display_name": "Bria Per Text löschen",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "Name des zu entfernenden Objekts, z. B. „die Lampe“. Es können mehrere Objekte gleichzeitig benannt werden, z. B. „das Telefon und die Bleistifte“. Wenn etwas benannt wird, das nicht im Bild ist, wird dennoch ein neu gerendertes Bild zurückgegeben und berechnet."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine anschließende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "Entfernen Sie mit Bria den Vordergrund eines Bildes und generieren Sie an seiner Stelle einen Hintergrund. Alles, was Bria als Vordergrund erkennt, wird entfernt, nicht nur Personen. Die unveränderten Pixel bleiben erhalten, aber die Ausgabe wird in einer Standardgröße von etwa 1 Megapixel neu gerendert.",
+    "display_name": "Bria Vordergrund entfernen",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Entfernt mit Bria Objekte oder Bereiche, die durch eine mask markiert sind, aus einem Bild.",
     "display_name": "Bria-Radierer",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "Ändern Sie mit Bria die Lichtstimmung und -richtung eines Bildes. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zum Eingabebild ausgerichtet.",
+    "display_name": "Bria Beleuchtung ändern",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "light_direction": {
+        "name": "light_direction",
+        "tooltip": "Woher das Licht kommt. Hartlichtstimmungen wie Mittag, Spot auf das Motiv und hartes Studiolicht reagieren am stärksten darauf."
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "Anzuwendende Lichtstimmung."
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine anschließende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "Entfernen Sie den Hintergrund eines Bildes mit Bria RMBG 2.0.",
     "display_name": "Bria Bildhintergrund entfernen",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "Ersetzen Sie mit Bria den Hintergrund eines Bildes, beschrieben durch einen Prompt oder gesteuert durch Referenzbilder. Die Pixel des Motivs bleiben erhalten; der Hintergrund wird darum herum generiert.",
+    "display_name": "Bria Bildhintergrund ersetzen",
+    "inputs": {
+      "background": {
+        "name": "Hintergrund",
+        "tooltip": "Beschreiben Sie den neuen Hintergrund mit einem Prompt oder steuern Sie ihn mit Referenzbildern."
+      },
+      "background_mode": {
+        "name": "Modus"
+      },
+      "background_prompt": {
+        "name": "Prompt"
+      },
+      "background_refine_prompt": {
+        "name": "refine_prompt"
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "original_quality": {
+        "name": "original_quality",
+        "tooltip": "Gibt die exakte Pixelgröße der Eingabe zurück, anstatt das Ergebnis auf etwa 1 Megapixel zu skalieren. Eine große Eingabe liefert dann ein großes Bild."
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Derselbe Seed liefert in der Regel denselben Hintergrund; die automatische Prompt-Verfeinerung kann ihn jedoch weiterhin variieren."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "refined_prompt",
+        "tooltip": "Der Prompt, den Bria generiert hat; beim Pfad mit Referenzbild leer."
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "Ersetzen Sie mit Bria ein Objekt in einem Bild durch ein anderes, das in Klartext beschrieben wird. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zur Eingabe ausgerichtet.",
+    "display_name": "Bria Objekt ersetzen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "image": {
+        "name": "Bild"
+      },
+      "instruction": {
+        "name": "Anweisung",
+        "tooltip": "Was durch was ersetzt werden soll, z. B. „Ersetzen Sie den roten Apfel durch eine grüne Birne“."
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Bria verwendet hier keinen Seed und interpretiert die Bearbeitung bei jedem Aufruf neu, daher können wiederholte Ausführungen unterschiedlich ausfallen. Der Wert wird nie gesendet: Er ändert nur den Cache-Schlüssel dieses Nodes, damit ein ansonsten identischer Graph die Bearbeitung erneut ausführt, statt das zwischengespeicherte Ergebnis zurückzugeben."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine nachfolgende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "Versetzen Sie mit Bria ein Bild in eine andere Jahreszeit. Die gesamte Szene wird neu gerendert, daher kann sich die Umgebung über die Jahreszeit hinaus verändern. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zur Eingabe ausgerichtet.",
+    "display_name": "Bria Jahreszeit ändern",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "season": {
+        "name": "Jahreszeit",
+        "tooltip": "Anzuwendende Jahreszeit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine nachfolgende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "Reparieren Sie mit Bria ein altes oder beschädigtes Foto: Körnung, Kratzer und Unschärfe werden entfernt, und altersbedingte Farbstiche werden neutralisiert. Passepartouts und Studioumrandungen können abgeschnitten werden, und Gesichter werden neu gezeichnet. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zur Eingabe ausgerichtet. Verwenden Sie stattdessen Bria Increase Resolution zum Vergrößern.",
+    "display_name": "Bria Foto restaurieren",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine anschließende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "Entfernt mit Bria den Hintergrund aus einem Video und gibt die freigestellten Frames plus eine Alphamaske zurück. Verbinden Sie beide mit einem Compositing-Node oder führen Sie sie Save WEBM zu, um ein transparentes Video zu schreiben.",
     "display_name": "Bria Videohintergrund entfernen (transparent)",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "Maske",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "Löschen Sie mit Bria aus einem Video alles, was von einer Maske pro Frame abgedeckt wird, und füllen Sie die Lücke. Die Maske muss dort weiß sein, wo etwas entfernt werden soll, und andernorts schwarz. Bria akzeptiert Clips von maximal 5,1 Sekunden bei 20 bis 30 Frames pro Sekunde mit geraden Pixelabmessungen; Audio wird standardmäßig beibehalten. Der zurückgegebene Clip kann einige Frames kürzer als die Eingabe sein.",
+    "display_name": "Bria Video Eraser",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "Eine Maske pro Frame des Videos, weiß an den Stellen, an denen sich das zu löschende Objekt befindet. Geben Sie entweder eine Maske oder ein Maskenvideo an, nicht beides."
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "Ein bereits kodiertes Maskenvideo mit denselben Abmessungen und derselben Frame-Anzahl wie das Video. Geben Sie entweder eine Maske oder ein Maskenvideo an, nicht beides."
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "Audiospur der Eingabe beibehalten."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Clip, aus dem gelöscht werden soll."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -4741,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "Leeres Cosmos Latent-Video",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -4802,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "Leeres Hunyuan Bild-Latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -4821,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "Leeres HunyuanVideo 1.0 Latent",
+    "display_name": "Leeres Hunyuan Video 1.0 Latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -4843,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Leeres HunyuanVideo 1.5 Latent",
+    "display_name": "Leeres Hunyuan Video 1.5 Latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -4882,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo",
+    "display_name": "Leeres LTXV Latent-Video",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -4921,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "Leeres Hunyuan 3D v2 Latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5062,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "Leere Trellis2 Latent-Struktur",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5088,6 +5349,33 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "Schleife beenden",
+    "inputs": {
+      "accumulate": {
+        "name": "akkumulieren",
+        "tooltip": "Gibt bei aktiviertem Akkumulieren den Ausgabewert jeder Iteration zurück; andernfalls nur den der letzten Iteration."
+      },
+      "next_iteration_value": {
+        "name": "Wert der nächsten Iteration",
+        "tooltip": "Wert, der von „Schleife beenden“ für die nächste Iteration zurück an „Schleife starten“ gesendet wird."
+      },
+      "output_value": {
+        "name": "Ausgabewert",
+        "tooltip": "Von „Schleife beenden“ zurückgegebener Wert. Gibt abhängig von Akkumulieren die letzte Iteration oder alle Iterationen zurück."
+      },
+      "terminations": {
+        "name": "Abschlüsse",
+        "tooltip": "Verbinden Sie Ausgaben, die bei jeder Iteration ausgeführt werden müssen. Ihre Werte werden nicht zurückgegeben."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Ausgaben",
+        "tooltip": "Der Ausgabewert der letzten Iteration oder die über Iterationen akkumulierten Werte, wenn Akkumulieren aktiviert ist."
       }
     }
   },
@@ -5955,6 +6243,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "Bearbeitet einen clip anhand einer schriftlichen Anweisung: Objekte entfernen, hinzufügen oder ersetzen, die Umgebung ändern, das Material neu gestalten, Bildschirmtext ändern oder den gesprochenen Dialog ersetzen. Länge, Bildausschnitt, Kamerabewegung und Audio stammen aus dem Quell-clip.",
+    "display_name": "Flux Video Edit",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Skaliert Quellen mit einer Fläche von mehr als 1280x704 Pixeln vor dem Upload automatisch herunter. Das Seitenverhältnis bleibt erhalten; kleinere Videos bleiben unverändert."
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Was in einfacher Sprache geändert werden soll, bis zu 4096 Zeichen. Alles, was Sie nicht erwähnen, soll unverändert bleiben. Ersatzdialoge müssen in die Dauer der ursprünglichen Sprache passen, und ein stummer clip bleibt stumm."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderationstoleranz, 0 ist am strengsten."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed zur Bestimmung, ob der Node erneut ausgeführt werden soll; FLUX wählt seinen eigenen Seed, daher sind die tatsächlichen Ergebnisse unabhängig von diesem Wert nicht deterministisch."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Quell-clip mit 0,7 bis 15 Sekunden und mindestens 160x160 Pixeln. Die Ausgabe wird mit 24 fps gerendert und auf etwa 0,9 Megapixel pro Frame begrenzt, daher wird eine größere Quelle kleiner zurückgegeben."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "Skaliert ein Video mit FLUX-Super-Resolution um das 1,5- bis 3-Fache hoch und bewahrt dabei entweder die Quelle präzise oder verbessert ihre Details kreativ.",
     "display_name": "Flux Video Upscale",
@@ -6530,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Generieren Sie Textantworten mit den Gemini-Modellen von Google. Geben Sie einen Text-Prompt und optional ein oder mehrere Bilder, Audioclips, Videos oder Dateien als multimodalen Kontext an.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Das Gemini-Modell, das zum Generieren der Antwort verwendet wird."
+      },
+      "model_max_output_tokens": {
+        "name": "maximale Ausgabetokens"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_system_prompt": {
+        "name": "System-Prompt"
+      },
+      "model_thinking_level": {
+        "name": "Denkstufe"
+      },
+      "model_video_processing": {
+        "name": "Videoverarbeitung"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "Generieren Sie mit dem Gemini-Omni-Flash-Modell von Google ein Video mit Audio aus einem Text-Prompt. Optional können Sie Referenzbilder und/oder -videos bereitstellen, um das Ergebnis zu steuern oder zu bearbeiten. Beschreiben Sie die gewünschte Länge (3–10 s) und das Seitenverhältnis (16:9 oder 9:16) direkt im Prompt.",
     "display_name": "Google Gemini Omni (Video)",
@@ -6717,6 +7075,22 @@
       },
       "2": {
         "name": "batch_size",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "Element aus Liste abrufen",
+    "inputs": {
+      "index": {
+        "name": "Index"
+      },
+      "list": {
+        "name": "Liste"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7698,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent-Upscale mit Modell",
+    "display_name": "Hunyuan Video 1.5 Latent-Upscale mit Modell",
     "inputs": {
       "crop": {
         "name": "Zuschnitt"
@@ -8763,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Extrahiert den Wert eines Schlüssels aus dem ersten gültigen JSON-Objekt im Text, einschließlich Markdown-Codeblöcken.",
     "display_name": "Text aus JSON extrahieren",
     "inputs": {
       "json_string": {
@@ -10140,7 +10515,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Leeres latentes Audio",
+    "display_name": "Leeres LTXV Latent-Audio",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -11328,6 +11703,73 @@
       "1": {
         "name": "Texte",
         "tooltip": "Liste der Textbeschreibungen."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "Schleifeniteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "Wert der aktuellen Iteration"
+      },
+      "is_first": {
+        "name": "erste Iteration"
+      },
+      "is_last": {
+        "name": "letzte Iteration"
+      },
+      "iteration_index": {
+        "name": "Iterationsindex"
+      },
+      "list_item": {
+        "name": "Listenelement"
+      },
+      "reuse_cache": {
+        "name": "Cache wiederverwenden"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "Schleifenfortschritt",
+    "inputs": {
+      "position": {
+        "name": "Position"
+      },
+      "start_id": {
+        "name": "Start-ID"
+      },
+      "total": {
+        "name": "Gesamt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "Schleifenergebnis",
+    "inputs": {
+      "close_id": {
+        "name": "Abschluss-ID"
       }
     }
   },
@@ -12793,6 +13235,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Führt einen zusätzlichen Verfeinerungsdurchlauf für eine detailgetreuere Geometrie mit feineren Oberflächendetails aus."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Auflösung des Ultra-Durchlaufs: 2k führt ihn mit 2048³ aus, 4k mit 4096³ für feinste Oberflächendetails. 4k erfordert meshy-7.1 oder neuer. Wird nur verwendet, wenn ultra_mode aktiviert ist."
       }
     },
     "outputs": {
@@ -12859,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Führen Sie einen zusätzlichen Verfeinerungsdurchlauf mit 2048³ für detailgetreuere Geometrie mit feineren Oberflächendetails aus."
       }
     },
     "outputs": {
@@ -13000,6 +13450,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Führt einen zusätzlichen Verfeinerungsdurchlauf für eine detailgetreuere Geometrie mit feineren Oberflächendetails aus."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Auflösung des Ultra-Durchlaufs: 2k führt ihn mit 2048³ aus, 4k mit 4096³ für feinste Oberflächendetails. 4k erfordert meshy-7.1 oder neuer. Wird nur verwendet, wenn ultra_mode aktiviert ist."
       }
     },
     "outputs": {
@@ -13758,6 +14212,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Nur MoGe-3: spärliche volumetrische Verfeinerungsdurchgänge über die vorhergesagte Tiefe. Mehr Durchgänge schärfen feine Details und Kanten bei ungefähr linearen Kosten. 0 deaktiviert die Verfeinerung. Wird von MoGe-1 / MoGe-2 ignoriert."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = am schnellsten, 9 = die meisten Details."
@@ -13788,6 +14246,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Nur MoGe-3: spärliche volumetrische Verfeinerungsdurchgänge über die vorhergesagte Tiefe. Mehr Durchgänge schärfen feine Details und Kanten bei ungefähr linearen Kosten. 0 deaktiviert die Verfeinerung. Wird von MoGe-1 / MoGe-2 ignoriert."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -16981,7 +17443,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Pixal3D-Konditionierung",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -17763,6 +18225,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "Animiert ein Bild mithilfe von Pruna-Videomodellen zu einem Video, mit optionalem letztem Frame, generiertem Sound oder einer Audiospur.",
+    "display_name": "Pruna P-Video-2 Bild zu Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_draft": {
+        "name": "Entwurf"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "Generiert ein Video aus einem Text-Prompt mit Pruna-Videomodellen, optional mit generiertem Ton oder einer Audiospur zur Steuerung.",
+    "display_name": "Pruna P-Video-2 Text zu Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_draft": {
+        "name": "Entwurf"
+      },
+      "model_duration": {
+        "name": "Dauer"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "Rezepte:\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "CLIP laden (vierfach)",
@@ -17863,6 +18412,28 @@
       "seed": {
         "name": "Seed",
         "tooltip": "Seed, um festzulegen, ob der Node erneut ausgeführt werden soll; die tatsächlichen Ergebnisse sind unabhängig vom Seed nicht deterministisch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "Ermöglicht das Festlegen von Gerät und Quantisierung für den KV-Cache; standardmäßig verwendet das Modell die Option auto. Quantisierung kann Bearbeitungs-Workflows bei Speichermangel beschleunigen.",
+    "display_name": "Qwen Image 2.1 Cache",
+    "inputs": {
+      "device": {
+        "name": "Gerät",
+        "tooltip": "auto verwendet verfügbaren VRAM, dann RAM. cpu (RAM) wird im Hintergrund der Berechnung vorab geladen und kostet kaum Geschwindigkeit. off berechnet das Präfix bei jedem Schritt neu, was langsamer ist, aber die einzige Möglichkeit, den Cache auszuschließen."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Speicherpräzision. default ist verlustfrei. int8 halbiert den Cache bei ungefähr bf16-Genauigkeit, int4 viertelt ihn, verdoppelt aber ungefähr den Fehler pro Schritt."
+      },
+      "model": {
+        "name": "Modell"
       }
     },
     "outputs": {
@@ -22223,7 +22794,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "Leeres Stable Cascade Latent-Bild",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -22266,7 +22837,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "Stable Cascade Stage C VAE-Kodierung",
     "inputs": {
       "compression": {
         "name": "Komprimierung"
@@ -22403,6 +22974,52 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "Loop starten",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "Unveränderte Iterationsergebnisse aus vorherigen Ausführungen wiederverwenden. Deaktivieren Sie diese Option, um jede Iteration erneut auszuführen."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "Wert, der in der ersten Iteration als current_iteration_value bereitgestellt wird."
+      },
+      "mode": {
+        "name": "Modus",
+        "tooltip": "Der Iterationsmodus des Loops."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "Verbinden Sie iteration_index aus einem äußeren Start Loop, um diesen Loop zu verschachteln."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "Index der aktuellen Loop-Iteration."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "Bei der ersten Iteration des Loops wahr."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "Bei der letzten Iteration der Schleife wahr."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "Aktuelles Element aus der Liste bei Verwendung des List-Modus. In den Modi Simple und For: None."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "Durch die Schleife übergebener Wert für die aktuelle Iteration: initial_iteration_value bei der ersten Iteration, anschließend next_iteration_value von End Loop bei jeder weiteren Iteration."
       }
     }
   },
@@ -23182,8 +23799,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "Text kodieren Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Referenzbilder, die vom Text-Encoder gesehen und als VAE-Latents in die Sequenz eingefügt werden."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "Prompt"
+      },
+      "resolution": {
+        "name": "Auflösung",
+        "tooltip": "Referenzbilder werden unter Beibehaltung des Seitenverhältnisses auf etwa Auflösung x Auflösung Pixel in Vielfachen von 32 skaliert. 0 behält jede Referenz in ihrer eigenen Größe bei, gerundet auf ein Vielfaches von 32."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Positiv",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Negativ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Leeres latent in der Größe des ersten Referenzbilds, passend zum Sampling, da jede andere Größe die Bearbeitung verschiebt."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "Text kodieren Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23205,7 +23861,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "Text kodieren Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23281,6 +23937,10 @@
       "max_length": {
         "name": "Maximale Länge"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Spekulatives Decoding mit dem Multi-Token-Prediction-Head des Checkpoints. Ohne MTP-Gewichte keine Wirkung. auto passt die Entwurfstiefe an; 2-5 legt sie fest. Die gesampelte Ausgabe bleibt korrekt verteilt, unterscheidet sich bei gleichem Seed jedoch von der Ausgabe ohne MTP."
+      },
       "prompt": {
         "name": "Prompt"
       },
@@ -23342,6 +24002,10 @@
       },
       "max_length": {
         "name": "Maximale Länge"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Spekulatives Decoding mit dem Multi-Token-Prediction-Head des Checkpoints. Ohne MTP-Gewichte ohne Wirkung. auto passt die Entwurfstiefe an; 2–5 legt sie fest. Die gesampelte Ausgabe bleibt korrekt verteilt, unterscheidet sich jedoch bei gleichem Seed von der Ausgabe ohne MTP."
       },
       "prompt": {
         "name": "Prompt"
@@ -23858,7 +24522,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Trellis2-Konditionierung",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -23880,7 +24544,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Trellis2-Formphase",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -23908,7 +24572,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Trellis2-Texturphase",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24601,6 +25265,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "Erzeugt aus einem Bild ein Low-Poly-3D-Modell mit sauberer Topologie als Dreiecks-Mesh (GLB) oder als quad-dominantes Mesh (FBX).",
+    "display_name": "Tripo P2: Bild zu Modell",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Tripo-P-Serie-Modell."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "Ausrichtung"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "Textur"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Modellaufgaben-ID",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Leer, wenn quad aktiviert ist."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Wird nur befüllt, wenn quad aktiviert ist."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "Erzeugt aus einer Vorderansicht sowie ein bis drei Ansichten von links, hinten und rechts ein Low-Poly-3D-Modell mit sauberer Topologie als Dreiecks-Mesh (GLB) oder als quad-dominantes Mesh (FBX).",
+    "display_name": "Tripo P2: Mehransicht zu Modell",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Tripo-P-Serie-Modell."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "Ausrichtung"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "Textur"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Modell task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Leer, wenn quad aktiviert ist."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Nur ausgefüllt, wenn quad aktiviert ist."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "Generiert aus einem Text-Prompt ein Low-Poly-3D-Modell mit sauberer Topologie als Dreiecks-Mesh (GLB) oder Quad-dominiertes Mesh (FBX).",
+    "display_name": "Tripo P2: Text zu Modell",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Tripo-Modell der P-Serie."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "Textur"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Modell task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Leer, wenn quad aktiviert ist."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Nur ausgefüllt, wenn quad aktiviert ist."
       }
     }
   },
@@ -25402,7 +26252,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Hunyuan 3D VAE-Dekodierung",
     "inputs": {
       "num_chunks": {
         "name": "num_chunks"
@@ -25710,7 +26560,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Trellis2 VAE-Formdekodierung",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -25731,7 +26581,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Trellis2 VAE-Strukturdekodierung",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -25751,7 +26601,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Trellis2 VAE-Texturdekodierung",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -28669,11 +29519,27 @@
         "name": "Modus",
         "tooltip": "full: generiert Melodie und Akkorde; melody: generiert nur die Melodie, empfohlen für Coverversionen."
       },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "Anzahl der zuletzt verwendeten ABC-Tokens, die zur Bestrafung von Wiederholungen verwendet werden."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
       "seed": {
         "name": "Seed"
       },
       "style": {
         "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -28691,6 +29557,10 @@
         "name": "abc",
         "tooltip": "Verbinden Sie den ABC-Generator oder geben Sie eine bearbeitete Partitur an. Lassen Sie das Feld leer, um automatisch den Modus „off“ zu verwenden."
       },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "Autoregressive Guidance für Stil und Liedtext. 1.0 deaktiviert CFG und entspricht dem ABC-Workflow. Verwenden Sie 1.01, um der Guidance des ursprünglichen Deaktivierungsmodus zu entsprechen."
+      },
       "clip": {
         "name": "clip"
       },
@@ -28702,7 +29572,7 @@
       },
       "max_duration": {
         "name": "max_duration",
-        "tooltip": "Maximale Dauer; die Generierung kann früher enden. Diese Version verwendet ein Budget von 360 Sekunden."
+        "tooltip": "Maximale Dauer in Sekunden. Wird bei langen Prompts automatisch reduziert; die Generierung kann früher enden."
       },
       "mode": {
         "name": "Modus",

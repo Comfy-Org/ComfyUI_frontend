@@ -1,5 +1,8 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDialogService } from '@/services/dialogService'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getActivePinia } from 'pinia'
-import { toRef, computed, ref } from 'vue'
+import { computed, ref, toRef } from 'vue'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
@@ -88,13 +91,11 @@ const mockIsActiveSubscription = ref(true)
 
 const mockCanManageSubscription = ref(true)
 const mockCanManageSubscriptionLifecycle = ref(true)
-const mockCanCancel = ref(true)
-const mockCanReactivate = ref(true)
+
 const mockCanReactivatePlan = ref(true)
 const mockCanOpenPricingSurface = ref(true)
 const mockShouldUseWorkspaceBilling = ref(true)
-const mockCanChangeSeats = ref(true)
-const mockCanSubscribeSelfServe = ref(true)
+
 const mockCanLeaveWorkspace = ref(true)
 const mockTeamCreditStops = ref<TeamCreditStops | null>(teamCreditStops)
 const mockCurrentTeamCreditStop = ref<TeamCreditStopSummary | null>({
@@ -102,14 +103,6 @@ const mockCurrentTeamCreditStop = ref<TeamCreditStopSummary | null>({
   credits_monthly: 147700,
   stop_usd: 700
 })
-
-const mockManageSubscription = vi.fn()
-const mockShowSubscriptionDialog = vi.fn()
-const mockResubscribe = vi.fn()
-const mockShowLeaveWorkspaceDialog = vi.fn()
-const mockShowCancelSubscriptionFlow = vi.fn()
-const mockShowEditWorkspaceDialog = vi.fn()
-const mockShowDeleteWorkspaceDialog = vi.fn()
 
 type MenuUiConfig = {
   showEditWorkspaceMenuItem: boolean
@@ -174,33 +167,10 @@ const mockIsTeamPlan = computed(
   () => mockHasSubscription.value && mockHasTeamPlan.value
 )
 
-const mockInitialize = vi.fn()
 const mockIsLoading = ref(false)
 const mockError = ref<string | null>(null)
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    type: mockBillingType,
-    canAccessSubscriptionFeatures: computed(
-      () => mockIsActiveSubscription.value
-    ),
-    isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
-    billingStatus: mockBillingStatus,
-    subscriptionStatus: mockSubscriptionStatus,
-    isTeamPlan: mockIsTeamPlan,
-    subscription: mockSubscription,
-    plans: mockPlans,
-    teamCreditStops: mockTeamCreditStops,
-    currentTeamCreditStop: mockCurrentTeamCreditStop,
-    isLoading: mockIsLoading,
-    error: mockError,
-    showSubscriptionDialog: mockShowSubscriptionDialog,
-    manageSubscription: mockManageSubscription,
-    resubscribe: mockResubscribe,
-    initialize: mockInitialize,
-    getMaxSeats: () => 5
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 const mockIsTeamPlanCancelled = computed(
   () => mockHasTeamPlan.value && (mockSubscription.value?.isCancelled ?? false)
@@ -247,26 +217,9 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canCancel: mockCanCancel,
-      canReactivate: mockCanReactivate,
-      canChangeSeats: mockCanChangeSeats,
-      canSubscribeSelfServe: mockCanSubscribeSelfServe
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showCancelSubscriptionFlow: mockShowCancelSubscriptionFlow,
-    showLeaveWorkspaceDialog: mockShowLeaveWorkspaceDialog,
-    showEditWorkspaceDialog: mockShowEditWorkspaceDialog,
-    showDeleteWorkspaceDialog: mockShowDeleteWorkspaceDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
@@ -294,22 +247,10 @@ const CreditsTileStub = {
     '<div data-testid="credits-tile" :data-zero-state="String(zeroState)" :data-inactive-plan="String(inactivePlan)" />'
 }
 
-const ButtonStub = {
-  template:
-    '<button v-bind="$attrs" :disabled="loading" @click="$emit(\'click\', $event)"><slot /></button>',
-  props: ['variant', 'size', 'loading'],
-  emits: ['click']
-}
-
 const SubscriptionFooterLinksStub = {
   props: ['showInvoiceHistory'],
   template:
     '<div data-testid="subscription-footer-links" :data-show-invoice-history="String(showInvoiceHistory)" />'
-}
-
-const StatusBadgeStub = {
-  props: ['label', 'severity'],
-  template: '<span :data-severity="severity">{{ label }}</span>'
 }
 
 const DropdownMenuStub = {
@@ -325,11 +266,9 @@ function renderComponent({ stubFooter = true } = {}) {
       directives: { tooltip: {} },
       stubs: {
         CreditsTile: CreditsTileStub,
-        Button: ButtonStub,
         ...(stubFooter
           ? { SubscriptionFooterLinks: SubscriptionFooterLinksStub }
           : {}),
-        StatusBadge: StatusBadgeStub,
         DropdownMenu: DropdownMenuStub
       }
     }
@@ -338,6 +277,26 @@ function renderComponent({ stubFooter = true } = {}) {
 
 describe('SubscriptionPanelContentWorkspace', () => {
   beforeEach(() => {
+    const billing = useBillingContext()
+    Object.assign(billing, {
+      type: computed(() => mockBillingType.value),
+      canAccessSubscriptionFeatures: computed(
+        () => mockIsActiveSubscription.value
+      ),
+      isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
+      billingStatus: computed(() => mockBillingStatus.value),
+      subscriptionStatus: computed(() => mockSubscriptionStatus.value),
+      isTeamPlan: mockIsTeamPlan,
+      subscription: mockSubscription,
+      plans: computed(() => mockPlans.value),
+      teamCreditStops: computed(() => mockTeamCreditStops.value),
+      currentTeamCreditStop: computed(() => mockCurrentTeamCreditStop.value),
+      isLoading: mockIsLoading,
+      error: mockError
+    })
+    vi.mocked(billing.getMaxSeats).mockReturnValue(5)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
+
     mockDistributionState.isCloud = true
     mockSubscriptionStatus.value = 'active'
     mockBillingStatus.value = 'paid'
@@ -351,12 +310,12 @@ describe('SubscriptionPanelContentWorkspace', () => {
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: true })
     mockCanManageSubscription.value = true
     mockCanManageSubscriptionLifecycle.value = true
-    mockCanCancel.value = true
-    mockCanReactivate.value = true
+    useBillingCapabilities().canCancel = computed(() => true)
+    useBillingCapabilities().canReactivate = computed(() => true)
+    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
     mockCanReactivatePlan.value = true
     mockShouldUseWorkspaceBilling.value = true
-    mockCanChangeSeats.value = true
-    mockCanSubscribeSelfServe.value = true
     mockCanOpenPricingSurface.value = true
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = ownerUiConfig
@@ -402,8 +361,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('hides verification from users without billing permission', () => {
     Object.assign(useBillingOperationStore(), { isSettingUp: true })
     mockCanManageSubscription.value = false
-    mockCanChangeSeats.value = false
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     Object.assign(useBillingOperationStore(), {
       subscriptionActionOperation: {
         actionUrl: 'https://verify.example/sensitive-token'
@@ -442,11 +401,11 @@ describe('SubscriptionPanelContentWorkspace', () => {
     // Mirrors billing-api hideLifecycleCapabilities: lifecycle actions and the
     // self-serve catalog close, credit top-up stays open.
     function useSalesManagedCapabilities() {
-      mockCanCancel.value = false
-      mockCanReactivate.value = false
+      useBillingCapabilities().canCancel = computed(() => false)
+      useBillingCapabilities().canReactivate = computed(() => false)
+      useBillingCapabilities().canChangeSeats = computed(() => false)
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
       mockCanReactivatePlan.value = false
-      mockCanChangeSeats.value = false
-      mockCanSubscribeSelfServe.value = false
       mockCanOpenPricingSurface.value = false
     }
 
@@ -517,10 +476,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
       expect(screen.getByTestId('plan-status-badge')).toHaveTextContent(
         'Inactive'
       )
-      expect(screen.getByTestId('plan-status-badge')).toHaveAttribute(
-        'data-severity',
-        'secondary'
-      )
       expect(
         screen.queryByTestId('subscription-state-card')
       ).not.toBeInTheDocument()
@@ -531,7 +486,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       mockIsActiveSubscription.value = false
       mockSubscriptionStatus.value = 'ended'
       mockBillingStatus.value = 'inactive'
-      mockCanSubscribeSelfServe.value = false
+      useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
       renderComponent()
 
       expect(screen.getByTestId('plan-status-badge')).toHaveTextContent(
@@ -675,15 +630,15 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
-    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Change plan' }))
-    expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
   })
 
   it('hides Change plan when the server denies seat changes to a client-side owner', () => {
     mockCanManageSubscription.value = true
-    mockCanChangeSeats.value = false
+    useBillingCapabilities().canChangeSeats = computed(() => false)
     renderComponent()
 
     expect(
@@ -703,19 +658,19 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.queryByRole('button', { name: 'Billing & invoices' })
     ).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Manage billing' }))
-    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
     await user.click(screen.getByRole('button', { name: 'Invoice history' }))
-    expect(mockManageSubscription).toHaveBeenCalledTimes(2)
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(2)
   })
 
   it('keeps a Personal workspace Team-plan member view read-only', () => {
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
-    mockCanCancel.value = false
-    mockCanReactivate.value = false
-    mockCanChangeSeats.value = false
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canCancel = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = memberUiConfig
     renderComponent()
@@ -766,7 +721,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
-    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
     expect(
       screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
@@ -848,8 +803,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
     await user.click(
       screen.getByRole('button', { name: 'Resume subscription' })
     )
-    expect(mockResubscribe).toHaveBeenCalledOnce()
-    expect(mockShowSubscriptionDialog).not.toHaveBeenCalled()
+    expect(useBillingContext().resubscribe).toHaveBeenCalledOnce()
+    expect(useBillingContext().showSubscriptionDialog).not.toHaveBeenCalled()
   })
 
   it('drops the state card for an inactive ended subscription without a date', () => {
@@ -880,9 +835,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('heading', { name: 'Inactive team subscription' })
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
-    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
     await user.click(screen.getByRole('button', { name: 'Invoice history' }))
-    expect(mockManageSubscription).toHaveBeenCalledTimes(2)
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(2)
   })
 
   it('renders an ended Team plan for its owner and routes reactivation to checkout', async () => {
@@ -936,17 +891,17 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     )
 
-    expect(mockShowSubscriptionDialog).toHaveBeenCalledWith({
+    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledWith({
       reason: 'settings_billing_panel'
     })
-    expect(mockResubscribe).not.toHaveBeenCalled()
+    expect(useBillingContext().resubscribe).not.toHaveBeenCalled()
   })
 
   it('keeps ended Team credits inactive when self-serve capabilities are unavailable', () => {
     mockSubscriptionStatus.value = 'canceled'
     mockIsActiveSubscription.value = false
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     renderComponent()
 
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
@@ -1034,7 +989,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     )
 
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
-    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
   })
 
   it('lets a never-subscribed team workspace top up on Local instead of upselling', () => {
@@ -1078,7 +1033,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(screen.queryByText('Free')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Try again' }))
-    expect(mockInitialize).toHaveBeenCalledOnce()
+    expect(useBillingContext().initialize).toHaveBeenCalledOnce()
   })
 
   it('hides Subscribe Now when the server denies self-serve to a client-side owner', () => {
@@ -1086,7 +1041,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
     mockHasSubscription.value = false
     mockCanManageSubscription.value = true
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     renderComponent()
 
     expect(
@@ -1100,10 +1055,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockHasSubscription.value = false
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
-    mockCanCancel.value = false
-    mockCanReactivate.value = false
-    mockCanChangeSeats.value = false
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canCancel = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     renderComponent()
 
     expect(
@@ -1142,10 +1097,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
     )
 
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
-    expect(mockManageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
     await user.click(screen.getByRole('button', { name: 'Subscribe' }))
-    expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -1198,7 +1153,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     await user.click(
       screen.getByRole('button', { name: 'Edit workspace details' })
     )
-    expect(mockShowEditWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showEditWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
   it('offers a subscribed personal workspace Edit and Cancel without Delete', () => {
@@ -1285,10 +1240,10 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('offers members only Leave Workspace in the menu', () => {
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
-    mockCanCancel.value = false
-    mockCanReactivate.value = false
-    mockCanChangeSeats.value = false
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canCancel = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
@@ -1310,15 +1265,15 @@ describe('SubscriptionPanelContentWorkspace', () => {
     const user = userEvent.setup()
     mockCanManageSubscription.value = false
     mockCanManageSubscriptionLifecycle.value = false
-    mockCanCancel.value = false
-    mockCanReactivate.value = false
-    mockCanChangeSeats.value = false
-    mockCanSubscribeSelfServe.value = false
+    useBillingCapabilities().canCancel = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockUiConfig.value = memberUiConfig
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
-    expect(mockShowLeaveWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showLeaveWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
   it('offers an additional workspace owner Edit, Cancel, Leave, and locked Delete', async () => {
@@ -1336,7 +1291,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Cancel plan' }))
-    expect(mockShowCancelSubscriptionFlow).toHaveBeenCalledWith(END_DATE_ISO)
+    expect(useDialogService().showCancelSubscriptionFlow).toHaveBeenCalledWith(
+      END_DATE_ISO
+    )
   })
 
   it('enables Delete for any additional workspace owner once the plan is cancelled', () => {

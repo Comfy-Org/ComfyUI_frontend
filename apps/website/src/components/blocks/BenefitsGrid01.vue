@@ -27,7 +27,7 @@ const {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <h2
       class="mb-12 text-center text-4xl font-light tracking-tight text-primary-comfy-canvas lg:mb-16 lg:text-6xl"
     >
@@ -55,7 +55,7 @@ const {
         >
           <span
             v-if="numbered"
-            class="text-primary-comfy-yellow font-mono text-sm font-bold tracking-wide"
+            class="font-mono text-sm font-bold tracking-wide text-primary-comfy-yellow"
           >
             {{ String(index + 1).padStart(2, '0') }}
           </span>

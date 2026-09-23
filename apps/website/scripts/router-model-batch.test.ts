@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { setTimeout } from 'node:timers/promises'
 import { describe, expect, it, vi } from 'vitest'
 

@@ -1,4 +1,3 @@
-import type * as I18nModule from '@/i18n'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { describe, expect, it, vi } from 'vitest'
@@ -9,8 +8,7 @@ import type AssetBrowserModal from '@/platform/assets/components/AssetBrowserMod
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useDialogStore } from '@/stores/dialogStore'
 
-vi.mock<unknown>(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string, params?: Record<string, string>) => {
     if (params) {
       return `${key}:${JSON.stringify(params)}`
