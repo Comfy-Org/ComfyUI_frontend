@@ -178,6 +178,21 @@ function dispatchOpsResult(detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent('doc_ops_result', { detail }))
 }
 
+/**
+ * The FakeBridge's `resubscribe` is a bare vi.fn, so a test that wants the
+ * post-reconnect subscribe ack must play the host's part itself: mark the
+ * workflow subscribed again and forward the `doc_subscribed` ok frame the
+ * bridge would have re-emitted.
+ */
+function ackResubscribe(workflowId: string): void {
+  bridge().subscribedWorkflowId = workflowId
+  bridge().dispatchEvent(
+    new CustomEvent('doc_subscribed', {
+      detail: { workflowId, ok: true, seq: 0 }
+    })
+  )
+}
+
 describe('R-73 cross-workflow pending operation characterization', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
@@ -409,5 +424,105 @@ describe('abortIfUnbound settles delivered ops as undeliverable', () => {
     // the server confirms applying, must never have been reported
     // 'undeliverable'. It was today.
     expect(settlement?.[1].state).not.toBe('undeliverable')
+  })
+})
+
+// mutref-3 s3: the sender's transport retry budget (5 retries at 500 ms) is
+// a delivery budget, not a retention budget. A human op that exhausts it
+// while the socket is down settles `undeliverable` in the sender, but the
+// follower's outbox keeps it parked and hands it back to the sender, under
+// the SAME op_id, on the first `doc_subscribed` ok after `reconnected`. The
+// server's applier dedupes by op_id (KA-6), so a replay can never apply twice.
+describe('parked human ops survive the transport retry budget', () => {
+  beforeEach(() => {
+    useAgentPanelStore().enabled = true
+    bridgeState.current = null
+    bridgeState.transport.up = true
+    clientState.transportUp = true
+    clientState.attempts = []
+    clientState.sent = []
+    clientState.sendOps.mockClear()
+    devLogState.recordDevEvent.mockClear()
+    vi.useFakeTimers()
+  })
+
+  function settlements(): unknown[] {
+    return devLogState.recordDevEvent.mock.calls
+      .filter(([event]) => event === 'human_ops_settled')
+      .map(([, outcome]) => outcome)
+  }
+
+  it('retains an op beyond the retry budget and resends the original op_id after reconnected', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('parked-during-outage')])
+    // Six attempts (first send + five retries) all refused by the transport.
+    vi.advanceTimersByTime(5 * 500)
+    expect(clientState.attempts).toHaveLength(6)
+    expect(clientState.sent).toHaveLength(0)
+    const operationId = clientState.attempts[0].ops[0].op_id
+    expect(settlements()).toEqual([
+      expect.objectContaining({
+        state: 'undeliverable',
+        ops: [expect.objectContaining({ op_id: operationId })]
+      })
+    ])
+
+    // Socket comes back. `reconnected` alone only re-drives the subscribe;
+    // nothing may go out until the host acks the doc is bound again.
+    clientState.transportUp = true
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    expect(clientState.sent).toHaveLength(0)
+
+    ackResubscribe('wf-a')
+    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent[0]).toMatchObject({ workflowId: 'wf-a' })
+    expect(clientState.sent[0].ops).toHaveLength(1)
+    expect(clientState.sent[0].ops[0]).toMatchObject({
+      op_id: operationId,
+      op: 'delete_node',
+      node_id: 'parked-during-outage'
+    })
+    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
+      'human_ops_replayed',
+      { workflowId: 'wf-a', count: 1 }
+    )
+
+    // Once the host applies the replay the outbox forgets it: a later
+    // reconnect must not send it a third time.
+    dispatchOpsResult({
+      workflowId: 'wf-a',
+      ok: true,
+      applied: [operationId],
+      skipped: []
+    })
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    ackResubscribe('wf-a')
+    expect(clientState.sent).toHaveLength(1)
+  })
+
+  it('drops parked ops when the doc lineage breaks instead of replaying them into the successor', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+    await enqueue([deleteNode('parked-then-reset')])
+    vi.advanceTimersByTime(5 * 500)
+    expect(settlements()).toHaveLength(1)
+
+    bridge().dispatchEvent(
+      new CustomEvent('doc_reset', {
+        detail: { workflowId: 'wf-a', actor: 'agent', seq: 7 }
+      })
+    )
+
+    clientState.transportUp = true
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    ackResubscribe('wf-a')
+    expect(clientState.sent).toHaveLength(0)
+    expect(devLogState.recordDevEvent).not.toHaveBeenCalledWith(
+      'human_ops_replayed',
+      expect.anything()
+    )
   })
 })
