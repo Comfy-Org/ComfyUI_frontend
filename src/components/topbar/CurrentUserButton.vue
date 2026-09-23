@@ -26,6 +26,7 @@
         <WorkspaceProfilePic
           v-else-if="showWorkspaceIcon"
           :workspace-name="workspaceName"
+          :subscription-tier="activeWorkspace?.subscriptionTier"
           :class="compact && 'size-full'"
         />
         <UserAvatar
@@ -49,7 +50,7 @@
       @show="onPopoverShow"
     >
       <CurrentUserPopoverWorkspace
-        v-if="isCloud"
+        v-if="showWorkspacePopover"
         ref="workspacePopoverContent"
         :account-actions-only="initState !== 'ready'"
         @close="closePopover"
@@ -94,14 +95,18 @@ const photoURL = computed<string | undefined>(
 const {
   workspaceName: teamWorkspaceName,
   initState,
-  isInPersonalWorkspace
+  isInPersonalWorkspace,
+  activeWorkspace
 } = storeToRefs(useTeamWorkspaceStore())
 
 const showWorkspaceSkeleton = computed(
   () => isCloud && initState.value === 'loading'
 )
 const showWorkspaceIcon = computed(
-  () => isCloud && initState.value === 'ready' && !isInPersonalWorkspace.value
+  () => initState.value === 'ready' && !isInPersonalWorkspace.value
+)
+const showWorkspacePopover = computed(
+  () => isCloud || initState.value === 'ready'
 )
 
 const workspaceName = computed(() => {

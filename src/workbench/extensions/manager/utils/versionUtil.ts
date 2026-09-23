@@ -35,7 +35,7 @@ export function checkVersionCompatibility(
   }
 
   // If no version requirement specified, assume compatible (no conflict)
-  if (isNil(supportedVersion) || isEmpty(supportedVersion?.trim())) {
+  if (isNil(supportedVersion) || isEmpty(supportedVersion.trim())) {
     return null
   }
 

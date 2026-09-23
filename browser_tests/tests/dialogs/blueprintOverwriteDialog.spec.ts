@@ -4,14 +4,13 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe(
   'Blueprint overwrite dialog',
-  { tag: ['@ui', '@subgraph'] },
+  { tag: ['@ui', '@subgraph', '@vue-nodes'] },
   () => {
     test('warns before overwriting, and honors "do not ask again"', async ({
       comfyPage
     }) => {
       const blueprintName = `test-blueprint-overwrite-${Date.now()}`
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.settings.setSetting(
         'Comfy.Workflow.WarnBlueprintOverwrite',
         true

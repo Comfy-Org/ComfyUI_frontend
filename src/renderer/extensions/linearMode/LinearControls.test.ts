@@ -1,38 +1,35 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { nextTick } from 'vue'
+import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import * as distributionModule from '@/platform/distribution/types'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { toNodeId } from '@/types/nodeId'
 
-const billingMock = vi.hoisted(() => ({
-  canRunWorkflows: true
-}))
-
 const overlayMock = vi.hoisted(() => ({
   overlayMessage: 'KSampler is missing a required input: model',
   overlayTitle: 'Required input missing'
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    canRunWorkflows: billingMock.canRunWorkflows
-  })
-}))
+const distributionMock = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock('@/components/error/useErrorOverlayState', () => ({
+vi.mock(import('@/composables/billing/useBillingContext'))
+
+vi.mock(import('@/platform/distribution/types'), { spy: true })
+
+vi.mock<unknown>(import('@/components/error/useErrorOverlayState'), () => ({
   useErrorOverlayState: () => ({
     overlayMessage: overlayMock.overlayMessage,
     overlayTitle: overlayMock.overlayTitle
@@ -105,20 +102,21 @@ function renderControls({
   hasError = false,
   missingResource,
   canRunWorkflows = true,
+  showsSubscribeToRunPrompt = false,
   mobile = false
 }: {
   hasError?: boolean
   missingResource?: MissingResource
   canRunWorkflows?: boolean
+  showsSubscribeToRunPrompt?: boolean
   mobile?: boolean
 } = {}) {
-  billingMock.canRunWorkflows = canRunWorkflows
+  const billing = useBillingContext()
+  billing.canRunWorkflows = computed(() => canRunWorkflows)
+  billing.showsSubscribeToRunPrompt = computed(() => showsSubscribeToRunPrompt)
+  vi.mocked(useBillingContext).mockReturnValue(billing)
 
-  const pinia = createTestingPinia({
-    createSpy: vi.fn,
-    stubActions: false
-  })
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   useAppModeStore().selectedOutputs = [toNodeId(1)]
   if (hasError) {
@@ -142,11 +140,11 @@ function renderControls({
         AppModeWidgetList: true,
         Loader: true,
         PartnerNodesList: true,
-        Popover: {
-          template: '<div><slot name="button" /><slot /></div>'
-        },
         ScrubableNumberInput: true,
-        SubscribeToRunButton: true
+        FreeTierQuota: true,
+        SubscribeToRunButton: {
+          template: '<button data-testid="subscribe-to-run-button" />'
+        }
       }
     }
   })
@@ -168,10 +166,45 @@ function clearMissingResource(resource: MissingResource) {
 
 describe('LinearControls', () => {
   beforeEach(() => {
-    billingMock.canRunWorkflows = true
+    distributionMock.isCloud = true
+    vi.spyOn(distributionModule, 'isCloud', 'get').mockImplementation(
+      () => distributionMock.isCloud
+    )
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
   })
+
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
+  ])(
+    'replaces the run button with the subscribe prompt in $label controls on Cloud',
+    ({ mobile }) => {
+      renderControls({ showsSubscribeToRunPrompt: true, mobile })
+
+      expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Run' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
+  ])(
+    'keeps the run button instead of the subscribe prompt in $label controls off Cloud',
+    ({ mobile }) => {
+      distributionMock.isCloud = false
+
+      renderControls({ showsSubscribeToRunPrompt: true, mobile })
+
+      expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('subscribe-to-run-button')
+      ).not.toBeInTheDocument()
+    }
+  )
 
   it.for([
     { label: 'desktop', mobile: false },

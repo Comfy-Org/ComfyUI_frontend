@@ -4,13 +4,16 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { CloudNotification } from '@e2e/fixtures/components/CloudNotification'
 
 test.describe('Cloud notification dialog', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  })
+  test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
   test('Should display cloud notification and navigate to comfy.org on Explore', async ({
     comfyPage
   }) => {
+    await comfyPage.page
+      .context()
+      .route('https://comfy.org/cloud/**', (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
+      )
     const dialog = new CloudNotification(comfyPage.page)
     await dialog.open()
 

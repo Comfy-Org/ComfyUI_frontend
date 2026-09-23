@@ -50,17 +50,17 @@ jobs:
       - name: Generate Manager API types
         run: |
           echo "Generating TypeScript types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}..."
-          pnpm dlx openapi-typescript ./ComfyUI-Manager/openapi.yaml --output ./src/types/generatedManagerTypes.ts
+          pnpm dlx openapi-typescript ./ComfyUI-Manager/openapi.yaml --output ./src/workbench/extensions/manager/types/generatedManagerTypes.ts
 
       - name: Validate generated types
         run: |
-          if [ ! -f ./src/types/generatedManagerTypes.ts ]; then
+          if [ ! -f ./src/workbench/extensions/manager/types/generatedManagerTypes.ts ]; then
             echo "Error: Types file was not generated."
             exit 1
           fi
 
           # Check if file is not empty
-          if [ ! -s ./src/types/generatedManagerTypes.ts ]; then
+          if [ ! -s ./src/workbench/extensions/manager/types/generatedManagerTypes.ts ]; then
             echo "Error: Generated types file is empty."
             exit 1
           fi
@@ -68,12 +68,12 @@ jobs:
       - name: Lint generated types
         run: |
           echo "Linting generated ComfyUI-Manager API types..."
-          pnpm lint:fix:no-cache -- ./src/types/generatedManagerTypes.ts
+          pnpm lint:fix:no-cache -- ./src/workbench/extensions/manager/types/generatedManagerTypes.ts
 
       - name: Check for changes
         id: check-changes
         run: |
-          if [[ -z $(git status --porcelain ./src/types/generatedManagerTypes.ts) ]]; then
+          if [[ -z $(git status --porcelain ./src/workbench/extensions/manager/types/generatedManagerTypes.ts) ]]; then
             echo "No changes to ComfyUI-Manager API types detected."
             echo "changed=false" >> $GITHUB_OUTPUT
             exit 0
@@ -103,4 +103,4 @@ jobs:
           labels: Manager
           delete-branch: true
           add-paths: |
-            src/types/generatedManagerTypes.ts
+            src/workbench/extensions/manager/types/generatedManagerTypes.ts

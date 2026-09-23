@@ -106,6 +106,16 @@ jobs:
       ref: ${{ github.event.pull_request.merge_commit_sha }}
     secrets: inherit
 
+  # GITHUB_TOKEN releases emit no events, so the reconciler's own trigger never fires.
+  enforce_latest:
+    name: Enforce Latest Release
+    needs: draft_release
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-enforce-latest.yaml
+    secrets:
+      PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+
   comment_release_summary:
     name: Comment Release Summary
     needs:
@@ -125,6 +135,7 @@ jobs:
           fetch-depth: 2
 
       - name: Post release summary comment
+        continue-on-error: true
         uses: ./.github/actions/comment-release-links
         with:
           issue-number: ${{ github.event.pull_request.number }}

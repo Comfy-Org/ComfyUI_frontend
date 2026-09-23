@@ -12,6 +12,10 @@ files:
 ignore_actions:
   - name: actions/cache
     ref: v5
+  - name: actions/cache/restore
+    ref: v5
+  - name: actions/cache/save
+    ref: v5
   - name: actions/checkout
     ref: v7
   - name: actions/setup-node

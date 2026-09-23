@@ -7,6 +7,7 @@ import { imageRefViewQuery } from '@/renderer/extensions/compositor/composables/
 import { getCompositorWidgetValue } from '@/renderer/extensions/compositor/composables/compositorWidgets'
 import {
   getCompositorBBoxes,
+  getCompositorCanvas,
   getCompositorInputsFingerprint,
   getCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
@@ -31,13 +32,19 @@ export async function loadCompositorSession(
   )
   const failed = await session.loadImages(urls, names)
 
+  const canvas = getCompositorCanvas(node)
   const initialState = resolveInitialLayerState(
     parseLayerState(getCompositorWidgetValue(node)),
     getCompositorInputsFingerprint(node),
-    getCompositorBBoxes(node)
+    getCompositorBBoxes(node),
+    canvas
   )
   if (initialState) {
     applyLayerState(initialState, session.imageLayers.value, session)
+    session.editor.history.clear()
+    session.fitView()
+  } else if (canvas) {
+    session.setCanvasSize(canvas.w, canvas.h)
     session.editor.history.clear()
     session.fitView()
   }

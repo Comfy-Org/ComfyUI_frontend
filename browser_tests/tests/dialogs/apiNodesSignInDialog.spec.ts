@@ -4,9 +4,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { ApiSignin } from '@e2e/fixtures/components/ApiSignin'
 
 test.describe('API Nodes sign-in dialog', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  })
+  test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
   test('lists the requested API nodes and resolves false on cancel', async ({
     comfyPage
@@ -22,8 +20,8 @@ test.describe('API Nodes sign-in dialog', { tag: '@ui' }, () => {
       dialog.root.getByText('StableDiffusion3Generate')
     ).toBeVisible()
 
-    await dialog.cancel.click()
-    await expect(dialog.root).toBeHidden()
+    await comfyPage.page.keyboard.press('Escape')
+    await dialog.waitForHidden()
     expect(await dialogResult).toBe(false)
   })
 })

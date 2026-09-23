@@ -4,9 +4,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { UpdatePassword } from '@e2e/fixtures/components/UpdatePassword'
 
 test.describe('Update password dialog', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  })
+  test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
   test('Should only allow submission when inputs are valid', async ({
     comfyPage

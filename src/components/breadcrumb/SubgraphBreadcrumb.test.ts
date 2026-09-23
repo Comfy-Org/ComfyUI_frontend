@@ -1,28 +1,13 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import { createRouter, createMemoryHistory } from 'vue-router'
+
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import SubgraphBreadcrumb from './SubgraphBreadcrumb.vue'
 
-const canvasState = vi.hoisted(() => ({ linearMode: false }))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ activeWorkflow: { filename: 'workflow.json' } })
-}))
-
-vi.mock('@/stores/subgraphNavigationStore', () => ({
-  useSubgraphNavigationStore: () => ({ navigationStack: [] })
-}))
-
-vi.mock('@/stores/subgraphStore', () => ({
-  useSubgraphStore: () => ({ isSubgraphBlueprint: () => false })
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ linearMode: canvasState.linearMode })
-}))
-
-vi.mock('@/composables/element/useOverflowObserver', () => ({
+vi.mock<unknown>(import('@/composables/element/useOverflowObserver'), () => ({
   useOverflowObserver: () => ({
     dispose: vi.fn(),
     checkOverflow: vi.fn(),
@@ -41,7 +26,10 @@ const i18n = createI18n({
 function renderBreadcrumb() {
   return render(SubgraphBreadcrumb, {
     global: {
-      plugins: [i18n],
+      plugins: [
+        i18n,
+        createRouter({ history: createMemoryHistory(), routes: [] })
+      ],
       directives: { tooltip: {} },
       stubs: {
         WorkflowActionsDropdown: { template: '<div data-testid="wad" />' },
@@ -55,7 +43,7 @@ function renderBreadcrumb() {
 
 describe('SubgraphBreadcrumb', () => {
   beforeEach(() => {
-    canvasState.linearMode = false
+    useCanvasStore().linearMode = false
   })
 
   it('renders the workflow actions dropdown when not in linear mode', () => {
@@ -64,7 +52,7 @@ describe('SubgraphBreadcrumb', () => {
   })
 
   it('hides the workflow actions dropdown in linear mode', () => {
-    canvasState.linearMode = true
+    useCanvasStore().linearMode = true
     renderBreadcrumb()
     expect(screen.queryByTestId('wad')).not.toBeInTheDocument()
   })
