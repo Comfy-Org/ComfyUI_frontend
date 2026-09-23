@@ -27,7 +27,6 @@ export function modelGalleryHref(modelId: string): string {
 }
 
 const SEEDANCE_BASE = 'https://media.comfy.org/website/seedance-2.5'
-const MINIMAX_BASE = 'https://media.comfy.org/website/minimax'
 const AI_MODELS_BASE = 'https://media.comfy.org/website/cloud/ai-models'
 
 export const modelsGalleryCards: ModelsGalleryCard[] = [
@@ -47,23 +46,6 @@ export const modelsGalleryCards: ModelsGalleryCard[] = [
       {
         src: `${SEEDANCE_BASE}/shark.webm`,
         posterSrc: `${SEEDANCE_BASE}/shark-poster.webp`
-      }
-    ]
-  },
-  {
-    titleKey: 'cloud.aiModels.card.minimaxH3',
-    badgeIcon: '/icons/ai-models/minimax.svg',
-    media: [
-      {
-        src: 'https://media.comfy.org/website/minimax-h3/hero-dragon-960.webm'
-      },
-      {
-        src: `${MINIMAX_BASE}/ice-rider.webm`,
-        posterSrc: `${MINIMAX_BASE}/ice-rider-poster.webp`
-      },
-      {
-        src: `${MINIMAX_BASE}/superhero.webm`,
-        posterSrc: `${MINIMAX_BASE}/superhero-poster.webp`
       }
     ]
   },

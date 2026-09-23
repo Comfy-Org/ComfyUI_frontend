@@ -15,7 +15,6 @@ describe('ModelsApiGallery', () => {
 
     for (const titleKey of [
       'cloud.aiModels.card.seedance25',
-      'cloud.aiModels.card.minimaxH3',
       'cloud.aiModels.card.nanoBananaPro',
       'cloud.aiModels.card.chatgptImages25',
       'cloud.aiModels.card.klingAi30',
@@ -42,15 +41,5 @@ describe('ModelsApiGallery', () => {
         name: new RegExp(t('cloud.aiModels.card.seedance25', 'en'))
       })
     ).toHaveAttribute('href', '/models/byteplus--dreamina-seedance-2-5-260628/')
-  })
-
-  it('leaves a card with no Models page as a non-link', () => {
-    render(ModelsApiGallery, { props: { locale: 'en' } })
-
-    expect(
-      screen.queryByRole('link', {
-        name: t('cloud.aiModels.card.minimaxH3', 'en')
-      })
-    ).toBeNull()
   })
 })
