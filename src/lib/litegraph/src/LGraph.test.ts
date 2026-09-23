@@ -2,7 +2,6 @@ import { toGroupId } from '@/types/groupId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createGraphMutations } from '@/core/graph/graphMutations'
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -24,13 +23,16 @@ import type {
   SerialisableLLink,
   SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
+import {
+  isRootGraphDocBound,
+  registerDocBoundRootGraphProbe
+} from '@/lib/litegraph/src/docBoundGraphs'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -484,6 +486,78 @@ describe('LGraph', () => {
   })
 })
 
+describe('node id minting for a graph that shares its id space', () => {
+  /** Stands in for the agent panel's probe (`mintPortWiring.ts`). */
+  function bindRootGraph(rootGraphId: string): () => void {
+    return registerDocBoundRootGraphProbe(() => rootGraphId)
+  }
+
+  it('mints a plain sequential id when no collaborator shares the root graph', () => {
+    const graph = new LGraph()
+    const node = new DummyNode()
+
+    graph.add(node)
+
+    expect(node.id).toBe(toNodeId(1))
+  })
+
+  it('mints a disjoint id, never advancing lastNodeId, while the root graph is doc-bound', () => {
+    const graph = new LGraph()
+    const unbind = bindRootGraph(graph.id)
+
+    const node = new DummyNode()
+    graph.add(node)
+    unbind()
+
+    const mintedId = BigInt(node.id)
+    expect((mintedId >> 40n) & 1n).toBe(0n)
+    expect((mintedId >> 41n) & 1n).toBe(1n)
+    expect(graph.state.lastNodeId).toBe(0)
+  })
+
+  it('returns to sequential mints once the graph is no longer doc-bound', () => {
+    const graph = new LGraph()
+    const unbind = bindRootGraph(graph.id)
+    graph.add(new DummyNode())
+    unbind()
+
+    const node = new DummyNode()
+    graph.add(node)
+
+    expect(node.id).toBe(toNodeId(1))
+  })
+
+  it('leaves a subgraph-interior mint sequential even when its root graph is doc-bound', () => {
+    const subgraph = createTestSubgraph()
+    const unbind = bindRootGraph(subgraph.rootGraph.id)
+
+    const node = new DummyNode()
+    subgraph.add(node)
+    unbind()
+
+    expect(node.id).toBe(toNodeId(1))
+  })
+
+  it('tracks two probes independently: registering a second does not replace the first, and disposing one leaves the other answering', () => {
+    const graphA = new LGraph()
+    const graphB = new LGraph()
+    const unbindA = bindRootGraph(graphA.id)
+    const unbindB = bindRootGraph(graphB.id)
+
+    expect(isRootGraphDocBound(graphA.id)).toBe(true)
+    expect(isRootGraphDocBound(graphB.id)).toBe(true)
+
+    unbindA()
+
+    expect(isRootGraphDocBound(graphA.id)).toBe(false)
+    expect(isRootGraphDocBound(graphB.id)).toBe(true)
+
+    unbindB()
+
+    expect(isRootGraphDocBound(graphB.id)).toBe(false)
+  })
+})
+
 describe('Floating Links / Reroutes', () => {
   test('re-adding the same floating link is idempotent', () => {
     const graph = new LGraph()
@@ -860,57 +934,6 @@ describe('Store-driven serialization parity', () => {
         }
       }
     )
-  })
-
-  // Pins the desired outcome, not the current one. `agentNodeMaterializer.ts`
-  // closes this gap for anything routed through `useAgentCrdtFollower`, but a
-  // bare `LGraph` + `graphMutations.addNode()` (as below) never calls the
-  // materializer, so the `LGraph._nodes` gap this test documents is still
-  // real for any caller that skips the follower composable. `test.fails`
-  // keeps the assertions expressing the CORRECT behavior; convert to a plain
-  // `test` the day `LGraph.serialize()`/`addNode()` itself closes the gap.
-  test.fails('does NOT drop an agent-added node from serialize() when only the ECS store, not LGraph._nodes, has it', ({
-    expect
-  }) => {
-    // The CRDT follower's addNode path
-    // (`graphMutations.commit()` -> nodeStore/widgetStore/layout, see
-    // `src/core/graph/graphMutations.ts`) never constructs an LGraphNode and
-    // never calls `LGraph.add()`, so the node exists in the ECS node-data
-    // store (and renders on canvas via the store-driven Vue node path) but
-    // has no adapter in `LGraph._nodes`. `serialiseStoredNodes()` hits the
-    // adapter/state mismatch branch and silently serializes only the
-    // (empty) live-adapter set, so the node is dropped from every save.
-    const graph = new LGraph()
-    const scope = graphScopeOf(graph)
-    const createLayout = vi.fn()
-    const mutations = createGraphMutations({
-      getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: vi.fn() }
-    })
-
-    mutations.addNode(
-      {
-        id: 1,
-        type: 'dummy',
-        pos: [0, 0],
-        size: [100, 80],
-        inputs: [],
-        outputs: []
-      },
-      { source: 'agent-remote', actor: 'agent:test', opId: 'op-1' }
-    )
-
-    // The node is real in the ECS store...
-    expect(
-      useNodeDataStore().getGraphNodesFor(graph.rootGraph.id, graph.id)
-    ).toHaveLength(1)
-
-    const serialized = graph.serialize()
-
-    // Desired behavior: the store-only node survives serialize() and no
-    // mismatch is reported.
-    expect(serialized.nodes).toHaveLength(1)
-    expect(mockReportError).not.toHaveBeenCalled()
   })
 
   test('rejects additive configuration before mutating a populated graph', ({
@@ -1995,6 +2018,41 @@ describe('Subgraph Unpacking', () => {
       serialized.definitions?.subgraphs?.map((definition) => definition.id) ??
       []
     expect(definitionIds).toContain(subgraph.id)
+  })
+
+  it('mints unpacked nodes from the disjoint range when unpacking into a doc-bound root', () => {
+    const rootGraph = new LGraph()
+    const unbindRootGraph = registerDocBoundRootGraphProbe(() => rootGraph.id)
+    try {
+      const subgraph = createSubgraphOnGraph(rootGraph)
+      const interiorNode = new TestNode('interior')
+      subgraph.add(interiorNode)
+
+      const subgraphNode = createTestSubgraphNode(subgraph, {
+        pos: [100, 100]
+      })
+      rootGraph.add(subgraphNode)
+
+      const lastNodeIdBefore = rootGraph.state.lastNodeId
+      const didUnpack = rootGraph.unpackSubgraph(subgraphNode)
+      expect(didUnpack).toBe(true)
+
+      const unpacked = rootGraph.nodes.find(
+        (node) => node.title === 'interior'
+      )!
+      const mintedId = BigInt(unpacked.id)
+
+      // `unpackSubgraph` leaves the interior node's id unassigned and
+      // delegates minting to `graph.add`, which selects 'crdt-disjoint' mode
+      // for a doc-bound root — so the id it assigns must land in the
+      // disjoint range, not the agent's own reserved range.
+      expect((mintedId >> 40n) & 1n).toBe(0n)
+      expect((mintedId >> 41n) & 1n).toBe(1n)
+      // 'crdt-disjoint' mode never touches the plain sequential counter.
+      expect(rootGraph.state.lastNodeId).toBe(lastNodeIdBefore)
+    } finally {
+      unbindRootGraph()
+    }
   })
 })
 

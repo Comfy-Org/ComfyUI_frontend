@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 
 from comfy_api.v0_0_2 import IO
+from nodes import LoadImage
 
 
 class LongComboDropdown:
@@ -375,6 +376,55 @@ class NodeWithHiddenAriaDialog:
         return ()
 
 
+class WASPause:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {}}
+
+    RETURN_TYPES = ()
+    FUNCTION = "pause"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "Reproduces WAS Pause's live button disabled getter"
+
+    def pause(self):
+        return ()
+
+
+class RefModLoader:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "show_info": ("BOOLEAN", {"default": True}),
+            **{f"mod_{i}": (["(none)", "voice.refmod"],) for i in range(1, 9)},
+            **{f"strength_{i}": ("FLOAT", {"default": 1.0}) for i in range(1, 9)},
+        }}
+
+    RETURN_TYPES = ()
+    FUNCTION = "load"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "Reproduces MiniMax RefMod's schema-order serialization wrappers"
+
+    def load(self, **kwargs):
+        return ()
+
+
+class PreviewBridge:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "source_image": LoadImage.INPUT_TYPES()["required"]["image"],
+            "image": ("STRING", {"default": "$preview-before-mask"}),
+        }}
+
+    RETURN_TYPES = ()
+    FUNCTION = "preview"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "Reproduces Impact Preview Bridge's asynchronous image registration setter"
+
+    def preview(self, source_image, image):
+        return ()
+
+
 class NodeWithPriceBadge(IO.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -515,6 +565,9 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithPreAttachLegacyWidgets": NodeWithPreAttachLegacyWidgets,
     "DevToolsNodeWithComparerWidget": NodeWithComparerWidget,
     "DevToolsNodeWithHiddenAriaDialog": NodeWithHiddenAriaDialog,
+    "DevToolsWASPause": WASPause,
+    "DevToolsRefModLoader": RefModLoader,
+    "DevToolsPreviewBridge": PreviewBridge,
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
@@ -541,6 +594,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithPreAttachLegacyWidgets": "Node With Pre-Attach Legacy Widgets",
     "DevToolsNodeWithComparerWidget": "Node With Comparer Widget",
     "DevToolsNodeWithHiddenAriaDialog": "Node With Hidden ARIA Dialog",
+    "DevToolsWASPause": "WAS Pause Compatibility",
+    "DevToolsRefModLoader": "RefMod Loader Compatibility",
+    "DevToolsPreviewBridge": "Preview Bridge Compatibility",
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",

@@ -91,7 +91,7 @@
   },
   "src/extensions/core/load3d/RecordingManager.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/extensions/core/load3d/cameraFromMatrices.ts": {

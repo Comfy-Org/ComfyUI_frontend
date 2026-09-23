@@ -177,6 +177,33 @@ export function creatorFormFor(
           10,
           model.options.mode === 'edit'
         )
+      if (
+        id === 'byteplus/seedream-5-0-pro-260628' &&
+        model.options.mode !== 'generate'
+      )
+        rules.images = {
+          help: 'Use exactly one image when Separate layers is enabled.',
+          formConstraint: {
+            schema: {
+              if: {
+                properties: { layer_decomposition: { const: true } },
+                required: ['layer_decomposition']
+              },
+              then: {
+                required: ['images'],
+                properties: {
+                  images: {
+                    anyOf: [
+                      { type: 'object' },
+                      { type: 'array', minItems: 1, maxItems: 1 }
+                    ]
+                  }
+                }
+              }
+            },
+            error: 'incompatible'
+          }
+        }
       request = { kind: 'callback', callback: 'seedream', options: {} }
       break
     case 'gemini-image':
@@ -376,6 +403,32 @@ export function creatorFormFor(
             'image/jpeg',
             'image/png'
           ])
+        rules.first_frame = {
+          help: 'A first frame is required when a last frame is provided.',
+          formConstraint: {
+            schema: {
+              if: { required: ['last_frame'] },
+              then: { required: ['first_frame'] }
+            },
+            error: 'required'
+          }
+        }
+        if (model.options.mode !== 'image')
+          rules.reference_images = {
+            help: 'Use reference images without first or last frames.',
+            formConstraint: {
+              schema: {
+                not: {
+                  required: ['reference_images'],
+                  anyOf: [
+                    { required: ['first_frame'] },
+                    { required: ['last_frame'] }
+                  ]
+                }
+              },
+              error: 'incompatible'
+            }
+          }
       }
       settings(
         'parameters',
@@ -450,6 +503,12 @@ export function creatorFormFor(
     case 'grok-video':
       addRoot()
       if (model.options.mode === 'reference') {
+        if (id === 'xai/grok-imagine-video')
+          properties.duration = {
+            ...object.parse(properties.duration),
+            maximum: 10,
+            enum: Array.from({ length: 10 }, (_, index) => index + 1)
+          }
         url('reference_image_url', 'Reference image', true)
         for (let index = 2; index <= 4; index++)
           url(`reference_image_url_${index}`, `Reference image ${index}`)
@@ -516,6 +575,12 @@ export function creatorFormFor(
           )
       if (mode === 'edit' || mode === 'reference-video') {
         url('video_url', 'Source video', true, 'video')
+        if (id === 'kling/kling-v3-omni')
+          rules.video_url = {
+            ...rules.video_url,
+            maxVideoDurationSeconds: 15.5,
+            help: 'Use a source video no longer than 15.5 seconds.'
+          }
         add(
           'keep_original_sound',
           { type: 'boolean', default: true },
@@ -536,17 +601,8 @@ export function creatorFormFor(
       request = { kind: 'callback', callback: 'flat', options: {} }
       break
     case 'gpt-image':
-      // Same root parameters as the flat form; the edit page adds the source
-      // image(s) the Router accepts as `medias`, the generate page hides them.
       addRoot()
       required.add('prompt')
-      if (model.options.mode !== 'generate')
-        file(
-          'images',
-          model.options.mode === 'edit' ? 'Source images' : 'Reference images',
-          10,
-          model.options.mode === 'edit'
-        )
       request = { kind: 'callback', callback: 'gpt-image', options: {} }
       break
     case 'ideogram':

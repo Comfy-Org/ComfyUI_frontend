@@ -19,6 +19,14 @@ export const workshopInputDefinitionSchema = z.object({
   unit: z.enum(['seconds', 'pixels', 'fps']).optional(),
   optionLabels: z.record(z.string(), z.string().min(1)).optional(),
   imageSource: z.literal('url').optional(),
+  maxUploadBytes: z.number().int().positive().optional(),
+  maxVideoDurationSeconds: z.number().positive().optional(),
+  formConstraint: z
+    .object({
+      schema: z.record(z.string(), z.json()),
+      error: z.enum(['required', 'incompatible'])
+    })
+    .optional(),
   urlUpload: z
     .enum(['image', 'video', 'audio', 'image-or-video', 'file'])
     .optional()

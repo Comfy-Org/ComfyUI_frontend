@@ -125,7 +125,7 @@ describe('useLoad3dViewer', () => {
       forceRender: vi.fn(),
       remove: vi.fn(),
       setTargetSize: vi.fn(),
-      loadModel: vi.fn().mockResolvedValue(undefined),
+      loadModel: vi.fn().mockResolvedValue(true),
       captureThumbnail: vi.fn().mockResolvedValue('data:image/png;base64,x'),
       setCameraState: vi.fn(),
       addEventListener: vi.fn(),
@@ -626,6 +626,22 @@ describe('useLoad3dViewer', () => {
   })
 
   describe('handleModelDrop', () => {
+    it('does not publish dropped-model state when the load was superseded', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        '3d/superseded.glb'
+      )
+      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce(false)
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      vi.mocked(mockLoad3d.getCurrentModelCapabilities!).mockClear()
+
+      await viewer.handleModelDrop(new File([''], 'superseded.glb'))
+
+      expect(mockNode.widgets).toEqual([])
+      expect(mockLoad3d.getCurrentModelCapabilities).not.toHaveBeenCalled()
+    })
+
     it('refreshes the capability refs after the dropped model loads, so the sidebar reflects the new model', async () => {
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
         '3d/dropped.splat'
@@ -851,6 +867,39 @@ describe('useLoad3dViewer', () => {
       const newViewer = useLoad3dViewer()
       await newViewer.initializeStandaloneViewer(containerRef, modelUrl)
       expect(newViewer.backgroundColor.value).toBe('#0000ff')
+    })
+
+    it('completes viewer setup when a concurrent call supersedes the first load', async () => {
+      let settleFirstLoad!: (accepted: boolean) => void
+      vi.mocked(mockLoad3d.loadModel!)
+        .mockImplementationOnce(
+          () =>
+            new Promise<boolean>((resolve) => {
+              settleFirstLoad = resolve
+            })
+        )
+        .mockResolvedValueOnce(true)
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+
+      const first = viewer.initializeStandaloneViewer(containerRef, 'a.glb')
+      const replacement = viewer.initializeStandaloneViewer(
+        containerRef,
+        'b.glb'
+      )
+      settleFirstLoad(false)
+      await Promise.all([first, replacement])
+
+      expect(createLoad3d).toHaveBeenCalledTimes(1)
+      expect(viewer.isPreview.value).toBe(true)
+      expect(mockLoad3d.addEventListener).toHaveBeenCalledWith(
+        'animationListChange',
+        expect.any(Function)
+      )
+      expect(mockLoad3d.addEventListener).toHaveBeenCalledWith(
+        'animationProgressChange',
+        expect.any(Function)
+      )
     })
   })
 

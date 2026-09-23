@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
@@ -19,8 +20,6 @@ const hoisted = vi.hoisted(() => {
   const mockPeopleSetOnce = vi.fn()
   const mockRegister = vi.fn()
   const mockReset = vi.fn()
-  const mockOnUserResolved = vi.fn()
-  const mockOnUserLogout = vi.fn()
   const executionContext = {
     is_template: true,
     workflow_name: 'image_qwen_image_edit_2509',
@@ -49,8 +48,6 @@ const hoisted = vi.hoisted(() => {
     mockPeopleSetOnce,
     mockRegister,
     mockReset,
-    mockOnUserResolved,
-    mockOnUserLogout,
     executionContext,
     refs,
     mockPosthog: {
@@ -66,12 +63,7 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    onUserResolved: hoisted.mockOnUserResolved,
-    onUserLogout: hoisted.mockOnUserLogout
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'), async () => {
   hoisted.refs.remoteConfig = ref<RemoteConfig>({})
@@ -188,14 +180,15 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockOnUserResolved).toHaveBeenCalledOnce()
+      expect(useCurrentUser().onUserResolved).toHaveBeenCalledOnce()
     })
 
     it('identifies user without setting first_auth_at when onUserResolved fires', async () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const callback = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       callback({ id: 'user-123' })
 
       expect(hoisted.mockIdentify).toHaveBeenCalledWith('user-123')
@@ -211,7 +204,8 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const onResolved = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const onResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       onResolved({ id: 'user-123' })
 
       // Unresolved tier (null) does not set the property
@@ -232,7 +226,8 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const onResolved = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const onResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       onResolved({ id: 'user-1' })
       onResolved({ id: 'user-1' })
       onResolved({ id: 'user-2' })
@@ -349,7 +344,8 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const callback = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       callback({ id: 'user-456' })
 
       const setCall = hoisted.mockPeopleSet.mock.calls.find(
@@ -372,7 +368,8 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      const callback = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
       callback({ id: 'user-789' })
 
       const desktopSetCall = hoisted.mockPeopleSet.mock.calls.find(
@@ -1191,14 +1188,14 @@ describe('PostHogTelemetryProvider', () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      expect(hoisted.mockOnUserLogout).toHaveBeenCalledOnce()
+      expect(useCurrentUser().onUserLogout).toHaveBeenCalledOnce()
     })
 
     it('calls posthog.reset(true) when the watcher fires', async () => {
       createProvider()
       await vi.dynamicImportSettled()
 
-      const callback = hoisted.mockOnUserLogout.mock.calls[0][0]
+      const callback = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
       callback()
 
       expect(hoisted.mockReset).toHaveBeenCalledWith(true)
@@ -1207,7 +1204,7 @@ describe('PostHogTelemetryProvider', () => {
     it('does not register the watcher before init resolves', () => {
       createProvider()
 
-      expect(hoisted.mockOnUserLogout).not.toHaveBeenCalled()
+      expect(useCurrentUser().onUserLogout).not.toHaveBeenCalled()
       expect(hoisted.mockReset).not.toHaveBeenCalled()
     })
   })

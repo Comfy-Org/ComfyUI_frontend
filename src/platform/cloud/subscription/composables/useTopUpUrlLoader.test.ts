@@ -1,3 +1,5 @@
+import { computed, ref } from 'vue'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -33,29 +35,13 @@ vi.mock<unknown>(import('vue-router'), () => ({
 
 vi.mock(import('@/services/dialogService'))
 
-const mockCanTopUp = vi.hoisted(() => ({ value: true }))
-const mockCanSubscribeSelfServe = vi.hoisted(() => ({ value: false }))
-const mockInitialize = vi.hoisted(() => vi.fn(async (): Promise<void> => {}))
-
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canTopUp: mockCanTopUp,
-      canSubscribeSelfServe: mockCanSubscribeSelfServe,
-      initialize: mockInitialize
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/telemetry'))
 
 describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
     mockRouteQuery.value = {}
-    mockCanTopUp.value = true
-    mockCanSubscribeSelfServe.value = false
-    mockInitialize.mockResolvedValue(undefined)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
@@ -93,10 +79,12 @@ describe('useTopUpUrlLoader', () => {
   })
 
   it('retains the deep link until capability loading settles', async () => {
+    const canTopUp = ref(false)
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
+
     let resolveCapabilities!: () => void
     mockRouteQuery.value = { topup: '1' }
-    mockCanTopUp.value = false
-    mockInitialize.mockImplementationOnce(
+    vi.mocked(useBillingCapabilities().initialize).mockImplementationOnce(
       () =>
         new Promise<void>((resolve) => {
           resolveCapabilities = resolve
@@ -110,7 +98,7 @@ describe('useTopUpUrlLoader', () => {
     expect(mockRouterReplace).not.toHaveBeenCalled()
     expect(preservedQueryMocks.clearPreservedQuery).not.toHaveBeenCalled()
 
-    mockCanTopUp.value = true
+    canTopUp.value = true
     resolveCapabilities()
     await loading
 
@@ -120,7 +108,7 @@ describe('useTopUpUrlLoader', () => {
 
   it('is a silent no-op when the server denies top-up', async () => {
     mockRouteQuery.value = { topup: '1' }
-    mockCanTopUp.value = false
+    useBillingCapabilities().canTopUp = computed(() => false)
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -133,8 +121,8 @@ describe('useTopUpUrlLoader', () => {
 
   it('opens the subscription path without top-up telemetry', async () => {
     mockRouteQuery.value = { topup: '1' }
-    mockCanTopUp.value = false
-    mockCanSubscribeSelfServe.value = true
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -147,7 +135,7 @@ describe('useTopUpUrlLoader', () => {
 
   it('denies, strips, and clears together when the user is not eligible', async () => {
     mockRouteQuery.value = { topup: '1', other: 'param' }
-    mockCanTopUp.value = false
+    useBillingCapabilities().canTopUp = computed(() => false)
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -187,7 +175,9 @@ describe('useTopUpUrlLoader', () => {
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'topup'
     )
-    expect(mockInitialize).not.toHaveBeenCalled()
+    expect(
+      vi.mocked(useBillingCapabilities().initialize)
+    ).not.toHaveBeenCalled()
   })
 
   it('strips but does not open for a non-string param', async () => {

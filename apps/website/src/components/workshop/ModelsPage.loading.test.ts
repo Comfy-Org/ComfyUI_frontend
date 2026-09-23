@@ -1,35 +1,33 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { readonly, ref, nextTick } from 'vue'
+import type { Ref } from 'vue'
 
+import { workshopModels } from '../../config/workshop-browse-content'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
 import { prepareModelPage } from '../../routes/models/model-page'
-import { workshopModels } from '../../config/workshop-browse-content'
+import {
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled,
+  useWorkshopAuthFlag
+} from '../../scripts/posthog'
 import ModelsPage from './ModelsPage.vue'
 
 const modelSlug = 'bfl--flux-2-max--generate-images'
 const modelPage = await prepareModelPage(modelSlug)
 
-const { enabled, settled } = await vi.hoisted(async () => {
-  const { ref } = await import('vue')
-  return { enabled: ref(false), settled: ref(true) }
-})
+vi.mock(import('../../scripts/posthog'))
 
-vi.mock(import('../../scripts/posthog'), async () => {
-  const { ref } = await import('vue')
-  return {
-    useWorkshopEnabled: () => enabled,
-    useWorkshopEnabledSettled: () => settled,
-    useWorkshopAuthFlag: () => ref(false),
-    captureWorkshopEvent: vi.fn(),
-    identifyWorkshopUser: vi.fn()
-  }
-})
+let enabled: Ref<boolean>
+let settled: Ref<boolean>
 
 beforeEach(() => {
-  enabled.value = false
-  settled.value = true
+  enabled = ref(false)
+  vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
+  settled = ref(true)
+  vi.mocked(useWorkshopEnabledSettled).mockReturnValue(readonly(settled))
+  vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(ref(false)))
 })
 
 it.for([

@@ -7,11 +7,12 @@ import {
   schemaForModel,
   validateForm
 } from './workshop-playground'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { prepareWorkshopRequestCallback } from './workshop-request-callbacks'
 import { validateWorkshopInput } from './workshop-json-schema'
 import { workshopExampleValues } from './workshop-example-values'
+import { WorkshopRouterError } from './workshop-router-errors'
 
 function contractFor(id: string) {
   const contract = workshopContract(id)
@@ -27,8 +28,8 @@ function image(name = 'source.png') {
 }
 
 describe('reviewed model request regressions', () => {
-  it('sends GPT Image source images as Router media entries', () => {
-    expect(
+  it('rejects unsupported GPT Image edit media', () => {
+    const prepare = () =>
       prepareWorkshopRequestCallback(
         { kind: 'callback', callback: 'gpt-image', options: {} },
         {
@@ -38,10 +39,13 @@ describe('reviewed model request regressions', () => {
           }
         }
       )
-    ).toEqual({
-      prompt: 'Restyle this image',
-      medias: [{ role: 'image', value: 'data:image/png;base64,AAH/Ig==' }]
-    })
+    expect(prepare).toThrow(WorkshopRouterError)
+    expect(prepare).toThrow(
+      expect.objectContaining({
+        reason: 'validation',
+        fieldErrors: { images: 'rejected' }
+      })
+    )
   })
 
   it('preserves reference image order beyond the originally hardcoded three inputs', () => {

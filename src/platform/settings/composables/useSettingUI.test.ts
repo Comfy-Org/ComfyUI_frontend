@@ -4,11 +4,13 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import { useSettingUI as useSettingUIComposable } from './useSettingUI'
 
@@ -16,7 +18,6 @@ const env = vi.hoisted(() => {
   const state = {
     isCloud: false,
     isDesktop: false,
-    isLoggedIn: false,
     workspaceRole: 'owner' as 'owner' | 'member',
     partnerNodeGovernanceStatus: 'inactive' as
       | 'inactive'
@@ -27,17 +28,10 @@ const env = vi.hoisted(() => {
       | 'error',
     partnerNodeGovernanceProviders: [] as { id: string }[]
   }
-  const fakeRef = <K extends keyof typeof state>(key: K) => ({
-    get value() {
-      return state[key]
-    }
-  })
-  return { state, fakeRef }
+  return { state }
 })
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({ isLoggedIn: env.fakeRef('isLoggedIn') })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -54,14 +48,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      workspaceRole: env.fakeRef('workspaceRole')
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 interface MockSettingParams {
   id: string
@@ -137,11 +124,13 @@ describe('useSettingUI', () => {
     Object.assign(env.state, {
       isCloud: false,
       isDesktop: false,
-      isLoggedIn: false,
       workspaceRole: 'owner',
       partnerNodeGovernanceStatus: 'inactive',
       partnerNodeGovernanceProviders: []
     })
+    vi.mocked(useWorkspaceUI()).workspaceRole = computed(
+      () => env.state.workspaceRole
+    )
 
     Object.assign(useSettingStore(), { settingsById: mockSettings })
   })
@@ -209,7 +198,7 @@ describe('useSettingUI', () => {
 
   describe('workspace panels', () => {
     beforeEach(() => {
-      env.state.isLoggedIn = true
+      useCurrentUser().isLoggedIn = computed(() => true)
       vi.mocked(useFeatureFlags().flags).userSecretsEnabled = true
     })
 
@@ -294,10 +283,8 @@ describe('useSettingUI', () => {
       groups.flatMap((group) => group.items.map((item) => item.id))
 
     beforeEach(() => {
-      Object.assign(env.state, {
-        isCloud: true,
-        isLoggedIn: true
-      })
+      useCurrentUser().isLoggedIn = computed(() => true)
+      env.state.isCloud = true
       vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = true
     })
 

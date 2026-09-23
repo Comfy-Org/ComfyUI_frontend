@@ -15,6 +15,7 @@ import {
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApi } from '@/scripts/api'
@@ -33,7 +34,9 @@ vi.mock(import('@/scripts/app'), () => ({
     nodeOutputs: {},
     nodePreviewImages: {},
     graph: {},
+    isGraphReady: true,
     rootGraph: {
+      subgraphs: new Map(),
       serialize: vi.fn(() => ({
         nodes: [],
         links: [],
@@ -47,7 +50,8 @@ vi.mock(import('@/scripts/app'), () => ({
     },
     loadGraphData: vi.fn(() => Promise.resolve()),
     canvas: {
-      ds: { scale: 1, offset: [0, 0] }
+      ds: { scale: 1, offset: [0, 0] },
+      setGraph: vi.fn()
     },
     ui: {
       autoQueueEnabled: false,
@@ -214,15 +218,16 @@ describe('ChangeTracker', () => {
     vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
       () => {}
     )
+    app.rootGraph.subgraphs.clear()
   })
 
   describe('captureCanvasState', () => {
     describe('guards', () => {
-      it('is a no-op when app.graph is falsy', () => {
+      it('is a no-op when the graph is not ready', () => {
         const tracker = createTracker()
         const original = tracker.activeState
 
-        const spy = vi.spyOn(app, 'graph', 'get').mockReturnValue(null as never)
+        const spy = vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
         tracker.captureCanvasState()
         spy.mockRestore()
 
@@ -484,6 +489,23 @@ describe('ChangeTracker', () => {
         expect(tracker.undoQueue).toHaveLength(0)
       })
 
+      it('does not push when only the recomputed node execution order differs', () => {
+        const initial = createState(2)
+        const tracker = createTracker(initial)
+        const reordered = structuredClone(initial)
+        reordered.nodes[0].order = 1
+        reordered.nodes[1].order = 0
+        mockCanvasState(reordered)
+
+        tracker.captureCanvasState()
+
+        expect(tracker.undoQueue).toHaveLength(0)
+        expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+          'graphChanged',
+          expect.anything()
+        )
+      })
+
       it.for([
         {
           name: 'node position',
@@ -706,7 +728,6 @@ describe('ChangeTracker', () => {
           node.id = String(node.id)
         }
         const initialLink = initial.links[0]
-        if (!initialLink) throw new Error('link missing')
         initialLink[1] = String(initialLink[1])
         initialLink[3] = String(initialLink[3])
         changed.nodes[0].pos = [40, 50]
@@ -906,7 +927,6 @@ describe('ChangeTracker', () => {
         const tracker = createTracker(initial)
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.pos = [40, 50]
         interior.size = [200, 100]
         mockCanvasState(changed)
@@ -925,7 +945,6 @@ describe('ChangeTracker', () => {
         const tracker = createTracker(initial)
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.widgets_values = [2]
         mockCanvasState(changed)
 
@@ -961,12 +980,10 @@ describe('ChangeTracker', () => {
           throw new Error('nested subgraph definitions missing')
         }
         const [leaf] = rootDefinitions.splice(leafIndex, 1)
-        if (!leaf) throw new Error('nested leaf definition missing')
         parent.definitions = { subgraphs: [leaf] }
         const initialLeaf = findSubgraphDefinition(initial, leafId)
         if (!initialLeaf) throw new Error('nested leaf definition missing')
         const initialLeafNode = initialLeaf.nodes[0]
-        if (!initialLeafNode) throw new Error('nested leaf node missing')
         initialLeafNode.widgets_values = [1]
         const tracker = createTracker(initial)
 
@@ -974,7 +991,6 @@ describe('ChangeTracker', () => {
         const changedLeaf = findSubgraphDefinition(changed, leafId)
         if (!changedLeaf) throw new Error('nested leaf definition missing')
         const changedLeafNode = changedLeaf.nodes[0]
-        if (!changedLeafNode) throw new Error('nested leaf node missing')
         changedLeafNode.widgets_values = [2]
         mockCanvasState(changed)
 
@@ -989,7 +1005,6 @@ describe('ChangeTracker', () => {
         const initial = await createSubgraphState()
         const changed = structuredClone(initial)
         const interior = getSubgraphDefinition(changed).nodes[0]
-        if (!interior) throw new Error('interior node missing')
         interior.widgets_values = [2]
         omitOptionalSubgraphCollections(initial)
         omitOptionalSubgraphCollections(changed)
@@ -1207,6 +1222,68 @@ describe('ChangeTracker', () => {
         false,
         'ChangeTracker.deactivate() called on inactive tracker'
       )
+    })
+  })
+
+  describe('restore', () => {
+    function deactivateWithNavigation(navigation: string[]) {
+      const tracker = createTracker(createState(1))
+      vi.mocked(useSubgraphNavigationStore().exportState).mockReturnValue(
+        navigation
+      )
+      tracker.deactivate()
+      return tracker
+    }
+
+    it('reopens the deepest subgraph the undone state still contains', () => {
+      const survivor = fromPartial<Subgraph>({ id: 'outer' })
+      app.rootGraph.subgraphs.set('outer', survivor)
+      const tracker = deactivateWithNavigation(['outer', 'inner', 'innermost'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
+
+      tracker.restore()
+
+      expect(restoredNavigation).toEqual(['outer'])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(survivor)
+    })
+
+    it('reopens the deepest of multiple surviving ancestors', () => {
+      const outer = fromPartial<Subgraph>({ id: 'outer' })
+      const inner = fromPartial<Subgraph>({ id: 'inner' })
+      app.rootGraph.subgraphs.set('outer', outer)
+      app.rootGraph.subgraphs.set('inner', inner)
+      const tracker = deactivateWithNavigation(['outer', 'inner', 'innermost'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
+
+      tracker.restore()
+
+      expect(restoredNavigation).toEqual(['outer', 'inner'])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(inner)
+    })
+
+    it('returns to the root graph when the undone state removed every ancestor', () => {
+      const tracker = deactivateWithNavigation(['outer', 'inner'])
+      let restoredNavigation: string[] | undefined
+      vi.mocked(useSubgraphNavigationStore().restoreState).mockImplementation(
+        (navigation) => {
+          restoredNavigation = [...navigation]
+        }
+      )
+
+      tracker.restore()
+
+      expect(restoredNavigation).toEqual([])
+      expect(app.canvas.setGraph).toHaveBeenCalledWith(app.rootGraph)
     })
   })
 

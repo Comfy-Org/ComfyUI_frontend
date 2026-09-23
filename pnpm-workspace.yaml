@@ -55,6 +55,7 @@ catalog:
   '@tiptap/pm': 3.31.0
   '@tiptap/starter-kit': 3.31.0
   '@total-typescript/shoehorn': ^0.1.2
+  '@typescript-eslint/utils': ^8.69.0
   '@types/fs-extra': ^11.0.4
   '@types/jsdom': ^21.1.7
   '@types/leaflet': ^1.9.20
@@ -99,7 +100,7 @@ catalog:
   glob: ^13.0.6
   globals: ^17.7.0
   gsap: ^3.14.2
-  happy-dom: 20.9.0
+  happy-dom: 20.14.5
   husky: ^9.1.7
   jsdom: ^29.1.1
   jsonata: ^2.1.0
@@ -161,18 +162,19 @@ catalog:
   vue-i18n: ^11.4.8
   vue-router: ^5.2.0
   vue-tsc: ^3.3.11
-  vuefire: ^3.2.1
   wwobjloader2: ^6.2.1
   yaml: ^2.8.3
   yjs: ^13.6.27
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
+  '@datadog/browser-logs': 6.33.0
+  '@comfyorg/comfy-multi-player': https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/b475423a0f8b019bbac261ce218dfc016e9aa634
 
 cleanupUnusedCatalogs: true
 
 allowBuilds:
-  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/58e2333ce3bb6375fd2efbc1e9d7df17327f37e0': true
+  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/b475423a0f8b019bbac261ce218dfc016e9aa634': true
   '@firebase/util': false
   '@sentry/cli': true
   '@tailwindcss/oxide': true
@@ -209,4 +211,4 @@ overrides:
 # Transitional - drop once 0.2.0 is older than the release-age gate.
 minimumReleaseAgeExclude:
   - '@comfyorg/comfyui-desktop-bridge-types@0.2.0'
-  - '@comfyorg/comfy-multi-player@0.2.0 || 0.2.1'
+  - '@comfyorg/comfy-multi-player@0.2.0 || 0.2.1 || 0.3.0 || 0.3.2 || 0.3.3'

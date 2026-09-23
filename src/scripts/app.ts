@@ -44,6 +44,8 @@ import type {
   WorkflowQueueIntent
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { reportError } from '@/platform/telemetry/reportError'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -121,6 +123,8 @@ import {
 } from '@/platform/missingModel/missingModelPipeline'
 import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
@@ -224,7 +228,7 @@ function syncPromotedComboHostOptions(rootGraph: LGraph): void {
       const state = widgetValueStore.getWidget(input.widgetId)
       if (!state) continue
 
-      state.options = { ...(sourceWidget.options ?? {}) }
+      state.options = { ...sourceWidget.options }
     }
   })
 }
@@ -237,7 +241,7 @@ type Clipspace = {
   selectedIndex: number
   img_paste_mode: string
   paintedIndex: number
-  combinedIndex: number
+  combinedIndex?: number
 }
 
 /**
@@ -314,7 +318,7 @@ export class ComfyApp {
   static clipspace: Clipspace | null = null
   static clipspace_invalidate_handler: (() => void) | null = null
   static open_maskeditor: (() => void) | null = null
-  static maskeditor_is_opended: (() => void) | null = null
+  static maskeditor_is_opended: (() => boolean) | null = null
   static clipspace_return_node: LGraphNode | null = null
 
   vueAppReady: boolean
@@ -359,7 +363,22 @@ export class ComfyApp {
     return !!this.rootGraphInternal
   }
 
-  canvas!: LGraphCanvas
+  private canvasInternal: LGraphCanvas | undefined
+
+  /** The canvas, once {@link setup} has created it. Accessing it earlier is a bug. */
+  get canvas(): LGraphCanvas {
+    return this.canvasInternal!
+  }
+
+  set canvas(value: LGraphCanvas) {
+    this.canvasInternal = value
+  }
+
+  /** Same as {@link canvas}, but `undefined` before {@link setup} creates it. */
+  get canvasOrUndefined(): LGraphCanvas | undefined {
+    return this.canvasInternal
+  }
+
   dragOverNode: Pick<LGraphNode, 'onDragDrop' | 'id'> | null = null
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
   get canvasEl() {
@@ -618,21 +637,19 @@ export class ComfyApp {
           useNodeOutputStore().setNodeOutputImages(node, images)
         }
 
-        if (ComfyApp.clipspace.imgs) {
-          // deep-copy to cut link with clipspace
-          if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
-            const img = new Image()
-            img.src =
-              ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
-            node.imgs = [img]
-            node.imageIndex = 0
-          } else {
-            const imgs = []
-            for (let i = 0; i < ComfyApp.clipspace.imgs.length; i++) {
-              imgs[i] = new Image()
-              imgs[i].src = ComfyApp.clipspace.imgs[i].src
-              node.imgs = imgs
-            }
+        // deep-copy to cut link with clipspace
+        if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
+          const img = new Image()
+          img.src =
+            ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
+          node.imgs = [img]
+          node.imageIndex = 0
+        } else {
+          const imgs = []
+          for (let i = 0; i < ComfyApp.clipspace.imgs.length; i++) {
+            imgs[i] = new Image()
+            imgs[i].src = ComfyApp.clipspace.imgs[i].src
+            node.imgs = imgs
           }
         }
       }
@@ -649,11 +666,7 @@ export class ComfyApp {
       }
 
       // Store only combined image inside the node if it exists
-      if (
-        ComfyApp.clipspace.imgs?.[ComfyApp.clipspace.combinedIndex] &&
-        node.imgs &&
-        combinedImgSrc
-      ) {
+      if (node.imgs && combinedImgSrc) {
         const combinedImg = new Image()
         combinedImg.src = combinedImgSrc
         node.imgs = [combinedImg]
@@ -679,7 +692,7 @@ export class ComfyApp {
             }
           }
         }
-        if (ComfyApp.clipspace.widgets && node.widgets) {
+        if (ComfyApp.clipspace.widgets) {
           ComfyApp.clipspace.widgets.forEach(({ type, name, value }) => {
             const prop = node.widgets?.find(
               (obj) => obj.type === type && obj.name === name
@@ -725,9 +738,10 @@ export class ComfyApp {
         // graph_mouse is only updated on mousemove, so when files are dragged
         // in from another window the canvas-space cursor is stale. Sync it
         // from the drop event so nodes created below land at the cursor.
-        this.canvas.adjustMouseEvent(event)
-        this.canvas.graph_mouse[0] = event.canvasX
-        this.canvas.graph_mouse[1] = event.canvasY
+        const canvas: LGraphCanvas = this.canvas
+        canvas.adjustMouseEvent(event)
+        canvas.graph_mouse[0] = event.canvasX
+        canvas.graph_mouse[1] = event.canvasY
 
         const n = this.dragOverNode
         this.dragOverNode = null
@@ -736,7 +750,15 @@ export class ComfyApp {
         if (await n?.onDragDrop?.(event)) return
 
         const files = await extractFilesFromDragEvent(event)
-        if (files.length === 0) return
+        if (files.length === 0) {
+          if (event.dataTransfer?.types.includes(MIME_ASSET_INFO)) {
+            reportError(new Error('Dropped asset card yielded no file'), {
+              errorType: 'asset_drop_load_failure'
+            })
+            useToastStore().addAlert(t('toastMessages.assetDropFailed'))
+          }
+          return
+        }
 
         const workspace = useWorkspaceStore()
         try {
@@ -795,11 +817,9 @@ export class ComfyApp {
       this.canvasElRef,
       'dragover',
       (event: DragEvent) => {
-        this.canvas.adjustMouseEvent(event)
-        const node = this.canvas.graph?.getNodeOnPos(
-          event.canvasX,
-          event.canvasY
-        )
+        const canvas: LGraphCanvas = this.canvas
+        canvas.adjustMouseEvent(event)
+        const node = canvas.graph?.getNodeOnPos(event.canvasX, event.canvasY)
 
         if (!node?.onDragOver?.(event)) {
           this.dragOverNode = null
@@ -891,8 +911,8 @@ export class ComfyApp {
 
     api.addEventListener('execution_error', ({ detail }) => {
       const precondition = resolveAccountPrecondition({
-        exceptionType: detail.exception_type ?? '',
-        exceptionMessage: detail.exception_message ?? ''
+        exceptionType: detail.exception_type,
+        exceptionMessage: detail.exception_message
       })
       if (precondition) {
         useAccountPreconditionDialog().open(precondition, {
@@ -1095,7 +1115,7 @@ export class ComfyApp {
     canvas.width = Math.round(width * scale)
     canvas.height = Math.round(height * scale)
     canvas.getContext('2d')?.scale(scale, scale)
-    this.canvas?.draw(true, true)
+    this.canvas.draw(true, true)
   }
 
   private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDefV1>) {
@@ -1210,14 +1230,14 @@ export class ComfyApp {
   loadTemplateData(templateData: {
     templates?: { name?: string; data?: string }[]
   }): void {
-    if (!templateData?.templates) {
+    if (!templateData.templates) {
       return
     }
 
     const old = localStorage.getItem('litegrapheditor_clipboard')
 
     for (const template of templateData.templates) {
-      if (!template?.data) {
+      if (!template.data) {
         continue
       }
 
@@ -1262,6 +1282,23 @@ export class ComfyApp {
     }
   }
 
+  /**
+   * Shared failure reporting for a graph load that cannot proceed: shows the
+   * load-error dialog, logs it, and notifies `onGraphLoadError` so any
+   * suppression or loading-state a `beforeLoadGraph` listener opened for this
+   * same load (e.g. the agent panel's local-dirty-tracking suppression) is
+   * reliably closed out, exactly as if `rootGraph.configure` itself had
+   * thrown. Callers still decide what to return/rethrow.
+   */
+  private async reportGraphLoadFailure(error: unknown): Promise<void> {
+    useDialogService().showErrorDialog(error, {
+      title: t('errorDialog.loadWorkflowTitle'),
+      reportType: 'loadWorkflowError'
+    })
+    console.error(error)
+    await useExtensionService().invokeExtensionsAsync('onGraphLoadError', error)
+  }
+
   async loadGraphData(
     graphData?: ComfyWorkflowJSON,
     clean: boolean = true,
@@ -1289,142 +1326,164 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph(clean)
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
 
-    if (skipAssetScans) {
-      // Only reset candidates; preserve UI state (fileSizes, etc.)
-      // so cached results restored by showPendingWarnings still display sizes.
-      // Abort any in-flight verification from the outgoing workflow so a late
-      // result cannot repopulate the store after we've switched workflows.
-      useMissingModelStore().createVerificationAbortController().abort()
-      useMissingMediaStore().createVerificationAbortController().abort()
-      useMissingModelStore().setMissingModels([])
-      useMissingMediaStore().setMissingMedia([])
-    } else {
-      useMissingModelStore().clearMissingModels()
-      useMissingMediaStore().clearMissingMedia()
-    }
-
-    if (clean) {
-      // Reset canvas context before configuring a new graph so subgraph UI
-      // state from the previous workflow cannot leak into the newly loaded
-      // one, and so `clean()` can clear the root graph even when the user is
-      // currently inside a subgraph.
-      this.canvas.setGraph(this.rootGraph)
-
-      this.clean()
-    }
-
     let reset_invalid_values = false
-    // Use explicit validation instead of falsy check to avoid replacing
-    // valid but falsy values (empty objects, 0, false, etc.)
-    if (
-      !graphData ||
-      typeof graphData !== 'object' ||
-      Array.isArray(graphData)
-    ) {
-      graphData = defaultGraph
-      reset_invalid_values = true
-    }
-
-    graphData = clone(graphData)
-
-    if (useSettingStore().get('Comfy.Validation.Workflows')) {
-      const { graphData: validatedGraphData } =
-        await useWorkflowValidation().validateWorkflow(graphData)
-
-      // If the validation failed, use the original graph data.
-      // Ideally we should not block users from loading the workflow.
-      graphData = validatedGraphData ?? graphData
-    }
-    // Only show the reroute migration warning if the workflow does not have native
-    // reroutes. Merging reroute network has great complexity, and it is not supported
-    // for now.
-    // See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/3317
-    if (
-      checkForRerouteMigration &&
-      graphData.version === 0.4 &&
-      findLegacyRerouteNodes(graphData).length &&
-      noNativeReroutes(graphData)
-    ) {
-      useToastStore().add({
-        group: 'reroute-migration',
-        severity: 'warn'
-      })
-    }
-    useSubgraphService().loadSubgraphs(graphData)
-
     const missingNodeTypes: MissingNodeType[] = []
-    await useExtensionService().invokeExtensionsAsync(
-      'beforeConfigureGraph',
-      graphData,
-      missingNodeTypes
-    )
+    try {
+      useExecutionErrorStore().setActiveGraph(null)
 
-    const nodeReplacementStore = useNodeReplacementStore()
-    await nodeReplacementStore.load()
-
-    // Collect missing node types from all nodes (root + subgraphs)
-    const collectMissingNodes = (
-      nodes: readonly FlattenableWorkflowNode[],
-      pathPrefix: string = '',
-      displayName: string = ''
-    ) => {
-      if (!Array.isArray(nodes)) {
-        console.warn(
-          'Workflow nodes data is missing or invalid, skipping node processing',
-          { nodes, pathPrefix }
-        )
-        return
+      if (skipAssetScans) {
+        // Only reset candidates; preserve UI state (fileSizes, etc.)
+        // so cached results restored by showPendingWarnings still display sizes.
+        // Abort any in-flight verification from the outgoing workflow so a late
+        // result cannot repopulate the store after we've switched workflows.
+        useMissingModelStore().createVerificationAbortController().abort()
+        useMissingMediaStore().createVerificationAbortController().abort()
+        useMissingModelStore().setMissingModels([])
+        useMissingMediaStore().setMissingMedia([])
+      } else {
+        useMissingModelStore().clearMissingModels()
+        useMissingMediaStore().clearMissingMedia()
       }
-      for (const n of nodes) {
-        if (!(n.type in LiteGraph.registered_node_types)) {
-          // Always sanitize so configure() can handle unregistered types,
-          // but only report as missing if the node is active.
-          const isMuted =
-            n.mode === LGraphEventMode.NEVER ||
-            n.mode === LGraphEventMode.BYPASS
-          if (!isMuted) {
-            const replacement = nodeReplacementStore.getReplacementFor(n.type)
-            const cnrId = getCnrIdFromProperties(
-              n.properties as Record<string, unknown> | undefined
-            )
-            const executionId = pathPrefix
-              ? `${pathPrefix}:${n.id}`
-              : String(n.id)
 
-            missingNodeTypes.push({
-              type: n.type,
-              nodeId: executionId,
-              cnrId,
-              ...(displayName && {
-                hint: t('g.inSubgraph', { name: displayName })
-              }),
-              isReplaceable: replacement !== null,
-              replacement: replacement ?? undefined
-            })
+      if (clean) {
+        // Reset canvas context before configuring a new graph so subgraph UI
+        // state from the previous workflow cannot leak into the newly loaded
+        // one, and so `clean()` can clear the root graph even when the user is
+        // currently inside a subgraph.
+        this.canvas.setGraph(this.rootGraph)
+
+        this.clean()
+      }
+
+      // Use explicit validation instead of falsy check to avoid replacing
+      // valid but falsy values (empty objects, 0, false, etc.)
+      if (
+        !graphData ||
+        typeof graphData !== 'object' ||
+        Array.isArray(graphData)
+      ) {
+        graphData = defaultGraph
+        reset_invalid_values = true
+      }
+
+      graphData = clone(graphData)
+
+      if (useSettingStore().get('Comfy.Validation.Workflows')) {
+        const { graphData: validatedGraphData } =
+          await useWorkflowValidation().validateWorkflow(graphData)
+
+        // If the validation failed, use the original graph data.
+        // Ideally we should not block users from loading the workflow.
+        graphData = validatedGraphData ?? graphData
+      }
+      // Only show the reroute migration warning if the workflow does not have native
+      // reroutes. Merging reroute network has great complexity, and it is not supported
+      // for now.
+      // See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/3317
+      if (
+        checkForRerouteMigration &&
+        graphData.version === 0.4 &&
+        findLegacyRerouteNodes(graphData).length &&
+        noNativeReroutes(graphData)
+      ) {
+        useToastStore().add({
+          group: 'reroute-migration',
+          severity: 'warn'
+        })
+      }
+
+      useSubgraphService().loadSubgraphs(graphData)
+
+      await useExtensionService().invokeExtensionsAsync(
+        'beforeConfigureGraph',
+        graphData,
+        missingNodeTypes
+      )
+
+      const nodeReplacementStore = useNodeReplacementStore()
+      await nodeReplacementStore.load()
+
+      // Collect missing node types from all nodes (root + subgraphs)
+      const collectMissingNodes = (
+        nodes: readonly FlattenableWorkflowNode[],
+        pathPrefix: string = '',
+        displayName: string = ''
+      ) => {
+        if (!Array.isArray(nodes)) {
+          console.warn(
+            'Workflow nodes data is missing or invalid, skipping node processing',
+            { nodes, pathPrefix }
+          )
+          return
+        }
+        for (const n of nodes) {
+          if (!(n.type in LiteGraph.registered_node_types)) {
+            // Always sanitize so configure() can handle unregistered types,
+            // but only report as missing if the node is active.
+            const isMuted =
+              n.mode === LGraphEventMode.NEVER ||
+              n.mode === LGraphEventMode.BYPASS
+            if (!isMuted) {
+              const replacement = nodeReplacementStore.getReplacementFor(n.type)
+              const cnrId = getCnrIdFromProperties(
+                n.properties as Record<string, unknown> | undefined
+              )
+              const executionId = pathPrefix
+                ? `${pathPrefix}:${n.id}`
+                : String(n.id)
+
+              missingNodeTypes.push({
+                type: n.type,
+                nodeId: executionId,
+                cnrId,
+                ...(displayName && {
+                  hint: t('g.inSubgraph', { name: displayName })
+                }),
+                isReplaceable: replacement !== null,
+                replacement: replacement ?? undefined
+              })
+            }
+
+            n.type = sanitizeNodeName(n.type)
           }
-
-          n.type = sanitizeNodeName(n.type)
         }
       }
-    }
 
-    collectMissingNodes(graphData.nodes)
-    const subgraphDefs = collectSubgraphDefinitions(
-      graphData.definitions?.subgraphs ?? []
-    )
-    const subgraphContainerIdMap = buildSubgraphExecutionPaths(
-      graphData.nodes,
-      subgraphDefs
-    )
-    for (const subgraph of subgraphDefs) {
-      const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
-      for (const pathPrefix of paths) {
-        collectMissingNodes(
-          subgraph.nodes,
-          pathPrefix,
-          subgraph.name || subgraph.id
-        )
+      collectMissingNodes(graphData.nodes)
+      const subgraphDefs = collectSubgraphDefinitions(
+        graphData.definitions?.subgraphs ?? []
+      )
+      const subgraphContainerIdMap = buildSubgraphExecutionPaths(
+        graphData.nodes,
+        subgraphDefs
+      )
+      for (const subgraph of subgraphDefs) {
+        const paths = subgraphContainerIdMap.get(subgraph.id) ?? []
+        for (const pathPrefix of paths) {
+          collectMissingNodes(
+            subgraph.nodes,
+            pathPrefix,
+            subgraph.name || subgraph.id
+          )
+        }
       }
+    } catch (error) {
+      // This try wraps everything between `beforeLoadGraph` and
+      // `rootGraph.configure`: asset-scan resets, `clean()`, workflow
+      // cloning, `validateWorkflow`, reroute-migration inspection, a
+      // malformed subgraph definition, a `beforeConfigureGraph` extension
+      // hook throwing, or a node-replacement load failure. Any of those
+      // happens before `rootGraph.configure` and so reaches neither the
+      // `afterConfigureGraph` success path nor the `onGraphLoadError` catch
+      // below. Left unhandled, that would both reject silently and leak any
+      // suppression/loading-state a `beforeLoadGraph` listener opened for
+      // this load, since nothing ever notifies it the load ended.
+      await this.reportGraphLoadFailure(error)
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
+      return false
     }
 
     const canvasVisible = !!(this.canvasEl.width && this.canvasEl.height)
@@ -1460,6 +1519,8 @@ export class ComfyApp {
 
     ChangeTracker.isLoadingGraph = true
     let activatedWorkflow: LoadedComfyWorkflow | undefined
+    let reconcileResourceErrors: (() => void) | undefined
+    let resourceScanLoadCompleted = false
     try {
       try {
         // @ts-expect-error Discrepancies between zod and litegraph - in progress
@@ -1483,15 +1544,7 @@ export class ComfyApp {
 
         if (canvasVisible) fitView()
       } catch (error) {
-        useDialogService().showErrorDialog(error, {
-          title: t('errorDialog.loadWorkflowTitle'),
-          reportType: 'loadWorkflowError'
-        })
-        console.error(error)
-        await useExtensionService().invokeExtensionsAsync(
-          'onGraphLoadError',
-          error
-        )
+        await this.reportGraphLoadFailure(error)
         // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
@@ -1601,17 +1654,37 @@ export class ComfyApp {
       )
 
       if (!skipAssetScans) {
+        const errorStore = useExecutionErrorStore()
+        const resourceScanKey = errorStore.captureRunErrorKey()
+        let models: MissingModelCandidate[] | undefined
+        let media: MissingMediaCandidate[] | undefined
+        const reconcile = () => {
+          if (!resourceScanLoadCompleted || (!models && !media)) return
+          errorStore.retireResolvedMissingResourceErrors(
+            { models, media },
+            resourceScanKey
+          )
+        }
+        reconcileResourceErrors = reconcile
         await runMissingModelPipeline({
           graph: this.rootGraph,
           graphData,
           missingModelStore: useMissingModelStore(),
           missingNodeTypes: activeMissingNodeTypes,
-          silent: silentAssetErrors
+          silent: silentAssetErrors,
+          onVerified: (candidates) => {
+            models = candidates
+            reconcile()
+          }
         })
 
         await runMissingMediaPipeline({
           rootGraph: this.rootGraph,
-          silent: silentAssetErrors
+          silent: silentAssetErrors,
+          onVerified: (candidates) => {
+            media = candidates
+            reconcile()
+          }
         })
       }
 
@@ -1620,6 +1693,7 @@ export class ComfyApp {
           silent: silentAssetErrors
         })
       }
+      resourceScanLoadCompleted = true
 
       requestAnimationFrame(() => {
         this.canvas.setDirty(true, true)
@@ -1632,6 +1706,9 @@ export class ComfyApp {
         workflowNavigationId
       )
       ChangeTracker.isLoadingGraph = false
+      // The retirement watcher skips transitions made during the load.
+      useExecutionErrorStore().retireResolvedMissingNodePromptError()
+      reconcileResourceErrors?.()
     }
   }
 
@@ -1906,15 +1983,14 @@ export class ComfyApp {
             const hasPromptNodeErrors =
               error instanceof PromptExecutionError &&
               Object.keys(error.response.node_errors ?? {}).length > 0
-            const preconditionResponseError =
-              error instanceof PromptExecutionError &&
-              typeof error.response.error === 'object'
-                ? error.response.error
-                : undefined
-            const promptPrecondition = preconditionResponseError
+            const promptError =
+              error instanceof PromptExecutionError
+                ? normalizePromptError(error.response.error)
+                : null
+            const promptPrecondition = promptError
               ? resolveAccountPrecondition({
-                  exceptionType: preconditionResponseError.type,
-                  exceptionMessage: preconditionResponseError.message
+                  exceptionType: promptError.type,
+                  exceptionMessage: promptError.message
                 })
               : undefined
             // Account preconditions (sign-in, subscription, credits) open their
@@ -1926,8 +2002,7 @@ export class ComfyApp {
             }
             if (
               error instanceof PromptExecutionError &&
-              typeof error.response.error === 'object' &&
-              error.response.error?.type === 'missing_node_type'
+              promptError?.type === 'missing_node_type'
             ) {
               // Re-scan the full graph instead of using the server's single-node response.
               rescanAndSurfaceMissingNodes(this.rootGraph)
@@ -1940,10 +2015,7 @@ export class ComfyApp {
               // Show a clear message instead of a generic error or sign-in prompt.
               // The response may be middleware JSON {"message": "..."} or the
               // standard {"error": {"message": "..."}} shape, so check both.
-              const raw =
-                error.response && typeof error.response === 'object'
-                  ? (error.response as Record<string, unknown>)
-                  : {}
+              const raw: Record<string, unknown> = error.response
               const rawError =
                 raw.error && typeof raw.error === 'object'
                   ? (raw.error as Record<string, unknown>)
@@ -1983,14 +2055,14 @@ export class ComfyApp {
               // Store prompt-level error separately only when no node-specific errors exist,
               // because node errors already carry the full context. Prompt-level errors
               // (e.g. prompt_no_outputs, no_prompt) lack node IDs and need their own path.
-              if (!nodeErrors || Object.keys(nodeErrors).length === 0) {
-                const promptError = normalizePromptError(error.response.error)
-                if (promptError) {
-                  executionErrorStore.recordPromptError(
-                    promptError,
-                    queuedRunErrorKey
-                  )
-                }
+              if (
+                (!nodeErrors || Object.keys(nodeErrors).length === 0) &&
+                promptError
+              ) {
+                executionErrorStore.recordPromptError(
+                  promptError,
+                  queuedRunErrorKey
+                )
               }
 
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
@@ -2096,10 +2168,10 @@ export class ComfyApp {
     // when both are present (e.g., in ComfyUI-generated PNGs)
     if (workflow) {
       try {
-        const workflowObj =
+        const workflowObj: unknown =
           typeof workflow === 'string'
-            ? parseJsonWithNonFinite<ComfyWorkflowJSON>(workflow)
-            : (workflow as ComfyWorkflowJSON)
+            ? parseJsonWithNonFinite(workflow)
+            : workflow
 
         // Only load workflow if parsing succeeded AND validation passed
         if (
@@ -2107,7 +2179,8 @@ export class ComfyApp {
           typeof workflowObj === 'object' &&
           !Array.isArray(workflowObj)
         ) {
-          await this.loadGraphData(workflowObj, true, true, fileName, {
+          const graphData = workflowObj as ComfyWorkflowJSON
+          await this.loadGraphData(graphData, true, true, fileName, {
             openSource,
             deferWarnings: options?.deferWarnings
           })
@@ -2370,7 +2443,7 @@ export class ComfyApp {
         const widgetValues: TWidgetValue[] = []
         const widgetValuesNamed: Record<string, TWidgetValue> =
           Object.create(null)
-        for (const [input, value] of Object.entries(data.inputs ?? {})) {
+        for (const [input, value] of Object.entries(data.inputs)) {
           if (value instanceof Array) {
             node.addInput(input, '*')
           } else {
@@ -2421,7 +2494,7 @@ export class ComfyApp {
       if (!node) return
       const targetNode = node
 
-      for (const input in data.inputs ?? {}) {
+      for (const input in data.inputs) {
         const value = data.inputs[input]
         if (value instanceof Array) {
           function connectInput() {
@@ -2429,10 +2502,11 @@ export class ComfyApp {
             const fromNode = app.rootGraph.getNodeById(
               importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
             )
-            if (!fromNode?.outputs?.[fromSlot]) return false
+            if (!fromNode?.outputs[fromSlot]) return false
 
-            let toSlot =
-              targetNode.inputs?.findIndex((inp) => inp.name === input) ?? -1
+            let toSlot = targetNode.inputs.findIndex(
+              (inp) => inp.name === input
+            )
             if (toSlot === -1) {
               try {
                 const widget = targetNode.widgets?.find((w) => w.name === input)
@@ -2443,9 +2517,9 @@ export class ComfyApp {
                 ).convertWidgetToInput
                 if (widget && convertFn?.(widget)) {
                   // Re-find the target slot by name after conversion
-                  toSlot =
-                    targetNode.inputs?.findIndex((inp) => inp.name === input) ??
-                    -1
+                  toSlot = targetNode.inputs.findIndex(
+                    (inp) => inp.name === input
+                  )
                 }
               } catch (_error) {
                 // Ignore conversion errors
@@ -2545,7 +2619,7 @@ export class ComfyApp {
     // Refresh combo widgets in all nodes including those in subgraphs
     const nodeOutputStore = useNodeOutputStore()
     forEachNode(this.rootGraph, (node) => {
-      const def = defs[node.type]
+      const def = defs[node.type] as ComfyNodeDefV1 | undefined
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
 
@@ -2651,12 +2725,12 @@ export class ComfyApp {
 
     // Subgraph does not properly implement `clear` and the parent class's
     // (`LGraph`) `clear` breaks the subgraph structure.
-    if (this.rootGraph && !this.canvas.subgraph) {
+    if (!this.canvas.subgraph) {
       this.rootGraph.clear()
       ensureNonZeroUuid(this.rootGraph)
     }
 
-    executionErrorStore.setActiveGraph(this.rootGraph?.id ?? null)
+    executionErrorStore.setActiveGraph(this.rootGraph.id)
   }
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {

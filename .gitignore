@@ -118,6 +118,8 @@ matrix-proof/
 
 # Raw recorder sidecars (frames, rows, identifiers); only the sanitized conversation JSON is tracked
 browser_tests/fixtures/data/agent/conversations/recordings/
+apps/website/acceptance-results/
+apps/website/acceptance-report/
 
 # Python bytecode (tools/devtools is shipped verbatim into custom_nodes)
 __pycache__/

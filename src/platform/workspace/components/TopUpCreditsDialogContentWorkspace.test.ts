@@ -1,9 +1,3 @@
-import {
-  onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
-} from 'firebase/auth'
-
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -16,7 +10,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -27,9 +21,11 @@ import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import type { BillingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const mockReportError = vi.hoisted(() => vi.fn())
 
@@ -40,9 +36,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
 
-const mockCanTopUp = vi.hoisted(() => ({
-  ref: undefined as { value: boolean } | undefined
-}))
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
@@ -66,16 +59,7 @@ vi.mock<unknown>(
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  async () => {
-    const { ref } = await import('vue')
-    mockCanTopUp.ref = ref(true)
-    return {
-      useBillingCapabilities: () => ({ canTopUp: mockCanTopUp.ref })
-    }
-  }
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/settings/composables/useSettingsDialog'),
@@ -137,11 +121,6 @@ function renderDialog() {
   })
 }
 
-function setCanTopUp(canTopUp: boolean) {
-  if (!mockCanTopUp.ref) throw new Error('Capability mock not initialized')
-  mockCanTopUp.ref.value = canTopUp
-}
-
 function setIsAddingCredits(isAddingCredits: boolean) {
   Object.assign(useBillingOperationStore(), { isAddingCredits })
 }
@@ -169,9 +148,7 @@ async function clickAddCredits() {
 }
 
 beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
-  vi.mocked(onAuthStateChanged).mockReturnValue(vi.fn())
-  vi.mocked(onIdTokenChanged).mockReturnValue(vi.fn())
+  stubFirebaseAuthHarness()
 })
 
 beforeEach(() => {
@@ -205,7 +182,6 @@ beforeEach(() => {
 describe('TopUpCreditsDialogContentWorkspace', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
-    setCanTopUp(true)
     setIsAddingCredits(false)
     setTopupActionOperation(undefined)
 
@@ -573,7 +549,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('hides topup verification after permission is revoked', () => {
-    setCanTopUp(false)
+    useBillingCapabilities().canTopUp = computed(() => false)
     setTopupActionOperation({
       opId: 'op-action',
       status: 'pending',
@@ -588,7 +564,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('enters verification once permission resolves after an operation already exists', async () => {
-    setCanTopUp(false)
+    const canTopUp = ref(false)
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
+
     setTopupActionOperation({
       opId: 'op-action',
       status: 'pending',
@@ -598,7 +576,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     renderDialog()
     expect(screen.getByText('Select amount')).toBeInTheDocument()
 
-    setCanTopUp(true)
+    canTopUp.value = true
     await nextTick()
 
     expect(screen.getByText('Verify your payment')).toBeInTheDocument()
@@ -981,9 +959,12 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('does not top up after the server capability is revoked', async () => {
+    const canTopUp = ref(true)
+    useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
+
     renderDialog()
     await clickAddCredits()
-    setCanTopUp(false)
+    canTopUp.value = false
     await nextTick()
 
     expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeDisabled()

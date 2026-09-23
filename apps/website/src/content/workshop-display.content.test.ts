@@ -2,11 +2,11 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { getRouterWorkshopModelDetail } from '../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../config/workshop-router-content'
 import { workshopContract } from '../config/workshop-contract-catalog'
 import { schemaForModel } from '../config/workshop-playground'
 import {
-  workshopModels,
+  authoredWorkshopModels,
   routerAliasById,
   routerContentById
 } from '../config/workshop-browse-content'
@@ -121,7 +121,7 @@ describe('the display overlay against the catalog', () => {
   })
 
   it('keeps every effective Advanced field attached to a real generated input', () => {
-    const stale = workshopModels.flatMap((model) => {
+    const stale = authoredWorkshopModels.flatMap((model) => {
       const detail = getRouterWorkshopModelDetail(model.slug)
       if (!detail) throw new Error('Missing model detail')
       const names = new Set(schemaForModel(detail).map((field) => field.name))

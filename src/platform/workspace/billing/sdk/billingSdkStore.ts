@@ -7,7 +7,10 @@
  */
 import type {
   BillingOperationState,
+  BillingEventsReadOptions,
   BillingOperationTelemetryEvent,
+  BillingResult,
+  CapabilitiesReadOptions,
   EmbeddedChallengePort,
   PendingBillingOperation,
   PreviewSubscribeInput,
@@ -18,7 +21,7 @@ import {
   validateActionUrl
 } from '@comfyorg/account-core/billing'
 import { loadStripe } from '@stripe/stripe-js/pure'
-import { useEventListener } from '@vueuse/core'
+import { until, useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
@@ -30,18 +33,30 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
+  BillingBalanceResponse,
+  BillingCapabilitiesResponse,
+  BillingEventsResponse,
+  BillingPlansResponse,
+  BillingStatusResponse,
   CreateTopupResponse,
   PreviewSubscribeResponse,
+  SavedPaymentMethod,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 import { needsCustomerAttention } from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
+import { projectBillingCapabilities } from './billingCapabilitiesView'
+import { projectBillingPlans } from './billingPlansView'
 import { toBillingTelemetryEvent } from './billingSdkTelemetry'
+import { projectBillingStatus } from './billingStatusView'
 import { createBillingSdk } from './createBillingSdk'
+import type { BillingOperationRecordView } from './operationRecordView'
+import { projectOperationRecord } from './operationRecordView'
 import type { SubscriptionRailOutcome } from './subscriptionOperationView'
 import {
   projectPaymentPortalResult,
@@ -72,6 +87,7 @@ async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
 
 export const useBillingSdkStore = defineStore('billingSdk', () => {
   const workspaceAuthStore = useWorkspaceAuthStore()
+  const workspaceStore = useTeamWorkspaceStore()
   const toastStore = useToastStore()
   const { flags } = useFeatureFlags()
 
@@ -139,6 +155,42 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
         state.kind === 'subscription' ? (hostedActionUrl(state) ?? []) : []
       )[0] ?? null
   )
+
+  // The four below mirror `billingOperationStore`'s own predicates, including
+  // where it does and does not scope to the active workspace: the lifecycle
+  // keeps operations from a scope it has left, and a consumer switching rails
+  // must not find a different answer on the other side.
+  const operationRecords = computed(() =>
+    operations.value.flatMap((state) => projectOperationRecord(state) ?? [])
+  )
+
+  const hasPendingOperations = computed(() =>
+    operationRecords.value.some((record) => record.status === 'pending')
+  )
+
+  const isSettingUp = computed(() =>
+    operationRecords.value.some(
+      (record) =>
+        record.kind === 'subscription' &&
+        record.status === 'pending' &&
+        record.authenticationState !== 'requires_action' &&
+        record.authenticationState !== 'failed_retryable' &&
+        record.workspaceId === workspaceStore.activeWorkspaceId
+    )
+  )
+
+  const subscriptionActionOperation = computed(() =>
+    operationRecords.value.find(
+      (record) =>
+        record.kind === 'subscription' &&
+        record.workspaceId === workspaceStore.activeWorkspaceId &&
+        needsCustomerAttention(record)
+    )
+  )
+
+  function getOperation(opId: string): BillingOperationRecordView | undefined {
+    return operationRecords.value.find((record) => record.opId === opId)
+  }
 
   // A top-up the dialog issued is reported by the dialog, exactly as before;
   // the lifecycle's events stand in for the poller's only on an operation
@@ -208,6 +260,9 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   function onSubscriptionChanged(state: BillingOperationState) {
     if (state.phase !== 'pending') {
       offeredActions.delete(state.id)
+      if (resumedOperations.delete(state.id)) {
+        void settleResumedSubscription(state)
+      }
       return
     }
     void driveRequiredChallenge(state)
@@ -264,6 +319,36 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       toastStore.add({
         severity: 'error',
         summary: t('billingOperation.topupFailed'),
+        detail: declineDetail(state.declineReason),
+        life: 7000
+      })
+    }
+  }
+
+  // A subscribe this tab reattached to after a reload has no checkout left to
+  // report it, so it settles the way the poller settled it. Only a subscribe
+  // is ever reattached: the status names a pending subscription or top-up.
+  async function settleResumedSubscription(state: BillingOperationState) {
+    if (state.phase === 'succeeded') {
+      await refreshAfterSubscriptionChange()
+      toastStore.add({
+        severity: 'success',
+        summary: t('billingOperation.subscriptionSuccess'),
+        life: 5000
+      })
+      return
+    }
+    if (state.phase === 'timed_out') {
+      toastStore.add({
+        severity: 'error',
+        summary: t('billingOperation.subscriptionTimeout')
+      })
+      return
+    }
+    if (state.phase === 'failed') {
+      toastStore.add({
+        severity: 'error',
+        summary: t('billingOperation.subscriptionFailed'),
         detail: declineDetail(state.declineReason),
         life: 7000
       })
@@ -372,6 +457,88 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     void sdk.lifecycle.recover()
   }
 
+  /**
+   * Adopt the operation the server reports pending and resolve once it settles,
+   * for the caller that has something to decide on the outcome.
+   * `lifecycle.recover()` resolves at adoption, not at settlement, and it
+   * adopts whatever the server names — so an id other than the one asked for
+   * means the pointer this caller held is stale.
+   */
+  async function recoverPendingOperation(
+    opId: string
+  ): Promise<BillingOperationRecordView | undefined> {
+    const adopted = await sdk.lifecycle.recover()
+    if (adopted.status === 'error' || adopted.value?.id !== opId) {
+      return undefined
+    }
+    const record = computed(() => getOperation(opId))
+    return until(record).toMatch(
+      (view) => view === undefined || view.status !== 'pending'
+    )
+  }
+
+  // The readers the commands above already refresh after a success, exposed
+  // so the panels read the state the rail settled rather than a second read
+  // through the workspace client.
+  async function readStatus(): Promise<BillingResult<BillingStatusResponse>> {
+    const result = await sdk.status.read()
+    if (result.status === 'error') return result
+    const status = projectBillingStatus(result.value.status)
+    return status === undefined
+      ? { status: 'error', code: 'MALFORMED_RESPONSE' }
+      : { status: 'ok', value: status }
+  }
+
+  async function readBalance(): Promise<BillingResult<BillingBalanceResponse>> {
+    const result = await sdk.credits.read()
+    return result.status === 'ok'
+      ? { status: 'ok', value: result.value.balance }
+      : result
+  }
+
+  async function readPlans(): Promise<BillingResult<BillingPlansResponse>> {
+    const result = await sdk.plans.read()
+    if (result.status === 'error') return result
+    const plans = projectBillingPlans(result.value.data)
+    return plans === undefined
+      ? { status: 'error', code: 'MALFORMED_RESPONSE' }
+      : { status: 'ok', value: plans }
+  }
+
+  async function readCapabilities(
+    options: CapabilitiesReadOptions
+  ): Promise<BillingResult<BillingCapabilitiesResponse>> {
+    const result = await sdk.capabilities.read(options)
+    return result.status === 'ok'
+      ? { status: 'ok', value: projectBillingCapabilities(result.value) }
+      : result
+  }
+
+  async function readPaymentMethods(): Promise<
+    BillingResult<SavedPaymentMethod[]>
+  > {
+    const result = await sdk.paymentMethods.read()
+    return result.status === 'ok'
+      ? { status: 'ok', value: [...result.value.methods] }
+      : result
+  }
+
+  // The one read with nothing to project: the events response carries no
+  // int64, so the decoded page already holds the numbers the host's type
+  // says it does. Only the scope and read instant the snapshot adds are
+  // dropped here.
+  async function readEvents(
+    options?: BillingEventsReadOptions
+  ): Promise<BillingResult<BillingEventsResponse>> {
+    const result = await sdk.events.read(options)
+    if (result.status === 'error') return result
+    const { events, page, limit, total, totalPages } = result.value
+    return {
+      status: 'ok',
+      value: { events: [...events], page, limit, total, totalPages }
+    }
+  }
+
   async function retryPaymentAuthentication(
     operationId: string
   ): Promise<boolean> {
@@ -388,6 +555,11 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     isAddingCredits,
     topupActionOperation,
     subscriptionActionUrl,
+    hasPendingOperations,
+    isSettingUp,
+    subscriptionActionOperation,
+    getOperation,
+    recoverPendingOperation,
     createTopup,
     subscribe,
     previewSubscribe,
@@ -395,6 +567,12 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     resubscribe,
     openPaymentPortal,
     recover,
+    readStatus,
+    readBalance,
+    readPlans,
+    readCapabilities,
+    readPaymentMethods,
+    readEvents,
     retryPaymentAuthentication,
     dismissOperation
   }

@@ -221,6 +221,7 @@ export function createMockCanvasRenderingContext2D(
     getTransform: vi.fn(
       () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) as DOMMatrix
     ),
+    createPattern: vi.fn(() => null),
     font: '',
     fillStyle: '',
     strokeStyle: '',
@@ -407,6 +408,7 @@ export function createMockCanvas2DContext(
     stroke: vi.fn(),
     arc: vi.fn(),
     fill: vi.fn(),
+    createPattern: vi.fn(() => null),
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,

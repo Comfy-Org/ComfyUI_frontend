@@ -13,8 +13,9 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-import { downloadReplyAsset } from '../../../utils/downloadReplyAsset'
+import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 
 const { markdown, assets = [] } = defineProps<{
@@ -25,6 +26,7 @@ const emit = defineEmits<{ feedback: [vote: 'up' | 'down' | null] }>()
 
 const { t } = useI18n()
 const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
+const { downloadFiles } = useAssetDownload()
 
 const vote = ref<'up' | 'down' | null>(null)
 
@@ -47,13 +49,9 @@ async function downloadAssets(): Promise<void> {
   if (downloading.value) return
   downloading.value = true
   try {
-    for (const asset of assets) {
-      try {
-        await downloadReplyAsset(asset)
-      } catch {
-        continue
-      }
-    }
+    await downloadFiles(
+      await Promise.all(assets.map(resolveReplyAssetDownload))
+    )
   } finally {
     downloading.value = false
   }
