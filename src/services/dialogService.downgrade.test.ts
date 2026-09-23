@@ -42,11 +42,9 @@ vi.mock(import('@/platform/telemetry'))
 
 beforeEach(() => {
   const billing = useBillingContext()
-  Object.assign(billing, {
-    canAccessSubscriptionFeatures: computed(() => true),
-    isFreeTier: computed(() => false),
-    type: computed(() => 'legacy')
-  })
+  billing.canAccessSubscriptionFeatures = computed(() => true)
+  billing.isFreeTier = computed(() => false)
+  billing.type = computed(() => 'legacy')
   vi.mocked(useBillingContext).mockReturnValue(billing)
 })
 

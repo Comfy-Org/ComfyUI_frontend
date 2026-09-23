@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 
@@ -31,10 +31,6 @@ function createHost(overrides: Partial<SetStatusHost> = {}): SetStatusHost {
 }
 
 describe('ComfyUI.setStatus', () => {
-  beforeEach(() => {
-    vi.mocked(app.queuePrompt).mockClear()
-  })
-
   it('renders the queue size when exec_info is present', () => {
     const host = createHost()
     host.setStatus({ exec_info: { queue_remaining: 3 } })

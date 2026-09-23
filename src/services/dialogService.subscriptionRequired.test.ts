@@ -36,8 +36,6 @@ vi.mock(
 
 import { useDialogService } from '@/services/dialogService'
 
-const subscriptionDialog = vi.mocked(useSubscriptionDialog())
-
 describe('showSubscriptionRequiredDialog', () => {
   const originalConfig = window.__CONFIG__
 
@@ -57,7 +55,7 @@ describe('showSubscriptionRequiredDialog', () => {
 
     await useDialogService().showSubscriptionRequiredDialog()
 
-    expect(subscriptionDialog.show).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
     expect(refreshRemoteConfig).not.toHaveBeenCalled()
   })
 
@@ -70,7 +68,7 @@ describe('showSubscriptionRequiredDialog', () => {
     })
 
     expect(refreshRemoteConfig).not.toHaveBeenCalled()
-    expect(subscriptionDialog.show).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
       reason: 'subscribe_now_button'
     })
   })
@@ -88,7 +86,7 @@ describe('showSubscriptionRequiredDialog', () => {
     await useDialogService().showSubscriptionRequiredDialog()
 
     expect(refreshRemoteConfig).toHaveBeenCalledOnce()
-    expect(subscriptionDialog.show).toHaveBeenCalledWith(undefined)
+    expect(useSubscriptionDialog().show).toHaveBeenCalledWith(undefined)
     expect(reportError).not.toHaveBeenCalled()
   })
 
@@ -98,7 +96,7 @@ describe('showSubscriptionRequiredDialog', () => {
 
     await useDialogService().showSubscriptionRequiredDialog()
 
-    expect(subscriptionDialog.show).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledOnce()
     const [, options] = reportError.mock.calls[0]
     expect(options).toMatchObject({
