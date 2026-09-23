@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const fetchApi = vi.hoisted(() =>
-  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+import { api } from '@/scripts/api'
+
+vi.mock(import('@/scripts/api'))
+const fetchApi = vi.mocked(api.fetchApi)
 
 import { useAgentRunModeStore } from './agentRunModeStore'
 

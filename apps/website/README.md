@@ -4,14 +4,15 @@ Marketing/brand website built with Astro + Vue.
 
 ## Linting
 
-From the repository root, run `pnpm lint:website` to check website Astro,
-JavaScript, TypeScript, and Vue files, or `pnpm lint:website:fix` to apply
-automatic fixes. Astro uses the recommended Astro ESLint rules and the shared
-Tailwind rules with the website's theme.
+From the repository root, `pnpm lint` checks website Astro, JavaScript,
+TypeScript, and Vue files along with the rest of the repository, and
+`pnpm lint:fix` applies automatic fixes. To lint only this folder, run
+`pnpm exec eslint apps/website`. Astro uses the recommended Astro ESLint rules
+and the shared Tailwind rules with the website's theme.
 
-Root `pnpm lint` includes this command, so the shared lint CI checks it on
-pull requests and in the merge queue. Pre-commit checks staged Astro files
-with ESLint and runs the website typecheck. `astro check` remains part of
+The shared lint CI runs `pnpm lint` on pull requests and in the merge queue.
+Pre-commit checks staged Astro files with ESLint and runs the website
+typecheck. `astro check` remains part of
 `pnpm typecheck:website` for compiler and type diagnostics.
 
 ## Model-page generation tests
