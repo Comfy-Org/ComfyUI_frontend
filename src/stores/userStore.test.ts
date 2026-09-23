@@ -160,4 +160,53 @@ describe('userStore', () => {
       'body { color: red; }'
     )
   })
+
+  it(
+    'clears the previous stylesheet when the selected user CSS is unavailable',
+    async () => {
+      getUserConfig.mockResolvedValue({
+        users: { 'alice-id': 'Alice', 'bob-id': 'Bob' }
+      })
+      const store = useUserStore()
+      await store.initialize()
+      const previousStyle = document.createElement('style')
+      previousStyle.id = 'user-stylesheet'
+      previousStyle.textContent = 'body { color: red; }'
+      document.head.prepend(previousStyle)
+
+      await store.login({ userId: 'bob-id', username: 'Bob' })
+
+      expect(document.querySelector('#user-stylesheet')).toBeNull()
+    }
+  )
+
+  it('ignores stylesheet responses for a previously selected user', async () => {
+    getUserConfig.mockResolvedValue({
+      users: { 'alice-id': 'Alice', 'bob-id': 'Bob' }
+    })
+    const responses = new Map<string, (response: Response) => void>()
+    fetchApi.mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          responses.set(api.user, resolve)
+        })
+    )
+    const store = useUserStore()
+    await store.initialize()
+
+    const aliceLogin = store.login({ userId: 'alice-id', username: 'Alice' })
+    const bobLogin = store.login({ userId: 'bob-id', username: 'Bob' })
+    const resolveBob = responses.get('bob-id')
+    expect(resolveBob).toBeDefined()
+    resolveBob!(new Response('body { color: blue; }', { status: 200 }))
+    await bobLogin
+    const resolveAlice = responses.get('alice-id')
+    expect(resolveAlice).toBeDefined()
+    resolveAlice!(new Response('body { color: red; }', { status: 200 }))
+    await aliceLogin
+
+    expect(document.querySelector('#user-stylesheet')?.textContent).toBe(
+      'body { color: blue; }'
+    )
+  })
 })

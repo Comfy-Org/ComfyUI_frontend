@@ -41,6 +41,7 @@ export const useUserStore = defineStore('user', () => {
   const initialized = computed(() => userConfig.value !== null)
 
   let initializePromise: Promise<void> | null = null
+  let stylesheetRequestGeneration = 0
 
   async function loadUserStylesheet() {
     if (isCloud) return
@@ -54,15 +55,23 @@ export const useUserStore = defineStore('user', () => {
       return
     }
 
+    const requestGeneration = ++stylesheetRequestGeneration
+    document.querySelector(`#${USER_STYLESHEET_ID}`)?.remove()
+
     try {
       const response = await api.fetchApi(USER_STYLESHEET_ROUTE)
-      if (!response.ok) return
+      if (!response.ok || requestGeneration !== stylesheetRequestGeneration) {
+        return
+      }
+
+      const stylesheet = await response.text()
+      if (requestGeneration !== stylesheetRequestGeneration) return
 
       const style =
         document.querySelector<HTMLStyleElement>(`#${USER_STYLESHEET_ID}`) ??
         document.createElement('style')
       style.id = USER_STYLESHEET_ID
-      style.textContent = await response.text()
+      style.textContent = stylesheet
       if (!style.isConnected) document.head.prepend(style)
     } catch {
       return
