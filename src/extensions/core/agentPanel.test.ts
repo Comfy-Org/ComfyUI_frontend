@@ -590,6 +590,53 @@ describe('AgentPanel extension flag gate', () => {
       })
     })
 
+    it('reports tour_active once when the tour blocks both the check and the mount', async () => {
+      mocks.flagEnabled = true
+      activeTour.value = 'appMode'
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+        async (_onAccept, hooks) => {
+          activeTour.value = 'appMode'
+          await flush()
+          hooks?.canShow?.()
+        }
+      )
+
+      await loadEntryAndSetup()
+      mocks.flagListener?.()
+      await flush()
+      activeTour.value = null
+      await vi.waitFor(() =>
+        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      )
+      await flush()
+
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'tour_active'
+      })
+    })
+
+    it('reports a reason again for a second workspace', async () => {
+      mocks.flagEnabled = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      localStorage.setItem(AUTO_SHOWN_KEY, 'true')
+      localStorage.setItem(
+        'Comfy.AgentConsent.AutoShown.account-a.workspace-b',
+        'true'
+      )
+
+      await loadEntryAndSetup()
+      await flush()
+      Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await flush()
+
+      expect(await notOffered()).toHaveBeenCalledTimes(2)
+      expect(await notOffered()).toHaveBeenLastCalledWith({
+        reason: 'already_offered'
+      })
+    })
+
     it('stays quiet when the offer goes ahead', async () => {
       mocks.flagEnabled = true
       Object.assign(consentStore, { accepted: false, isChecking: false })

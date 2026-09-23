@@ -13,13 +13,13 @@ import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionCont
 
 import type {
   AddCreditsClickMetadata,
+  AgentConsentNotOfferedMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
-  AgentPanelClosedMetadata,
-  AgentConsentNotOfferedMetadata,
   AgentOnboardingNotShownMetadata,
+  AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,

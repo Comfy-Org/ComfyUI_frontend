@@ -79,11 +79,8 @@ targetObserver.observe(document.body, {
   subtree: true
 })
 let targetMissingTimer: ReturnType<typeof setTimeout> | undefined
-let reportedTargetMissing = false
 function reportTargetMissing(): void {
-  if (reportedTargetMissing) return
-  reportedTargetMissing = true
-  reportOnboardingNotShown('target_missing', storageKey)
+  if (!reportOnboardingNotShown('target_missing', storageKey)) return
   reportError(new Error('agent coach target never mounted'), {
     errorType: 'agent_onboarding_target_missing',
     context: { step: index.value + 1, target: step.value?.target }

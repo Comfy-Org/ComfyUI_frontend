@@ -4,6 +4,7 @@ import { watch } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { createOnceGate } from '@/platform/telemetry/onceGate'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentConsentNotOfferedReason } from '@/platform/telemetry/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -167,11 +168,12 @@ export function registerAgentPanelExtension(): void {
         { immediate: true, flush: 'sync' }
       )
 
-      const withheldReasons = new Set<AgentConsentNotOfferedReason>()
-      /** True the first time a reason is recorded this session. */
+      // Keyed like the one-shot offer itself, so each workspace reports its own.
+      const withheldGate = createOnceGate()
+      /** True when this call was the one that reported the reason. */
       const withholdOffer = (reason: AgentConsentNotOfferedReason): boolean => {
-        if (withheldReasons.has(reason)) return false
-        withheldReasons.add(reason)
+        const scope = `${resolvedUserInfo.value?.id ?? ''}.${workspaceStore.activeWorkspaceId ?? ''}`
+        if (!withheldGate.first(`${scope}:${reason}`)) return false
         useTelemetry()?.trackAgentConsentNotOffered({ reason })
         return true
       }
@@ -242,7 +244,8 @@ export function registerAgentPanelExtension(): void {
               offerConsentUnprompted()
               return
             }
-            if (!withholdOffer('boot_undecided')) return
+            const firstTime = withholdOffer('boot_undecided')
+            if (!firstTime) return
             reportError(
               new Error('first-run startup decision never reported'),
               {

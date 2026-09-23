@@ -8,6 +8,7 @@ import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverl
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
+import { resetOnboardingNotShownReports } from '../../composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'
 
@@ -66,6 +67,9 @@ function mount(steps = STEPS) {
 
 beforeEach(() => {
   localStorage.clear()
+  resetOnboardingNotShownReports()
+  vi.mocked(useTelemetry()!.trackAgentOnboardingNotShown).mockClear()
+  vi.mocked(reportError).mockClear()
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
     function (this: HTMLElement) {
       return (
@@ -256,21 +260,21 @@ describe('OnboardingCoach', () => {
   })
 
   it('reports an already-seen tour once per key however often it remounts', async () => {
-    const storageKey = 'coach-seen-test'
-    localStorage.setItem(storageKey, 'true')
     const notShown = vi.mocked(useTelemetry()!.trackAgentOnboardingNotShown)
-    notShown.mockClear()
+    const mountSeen = (storageKey: string) => {
+      localStorage.setItem(storageKey, 'true')
+      return render(OnboardingCoach, {
+        props: { steps: STEPS, storageKey },
+        global: { plugins: [i18n] }
+      })
+    }
 
-    render(OnboardingCoach, {
-      props: { steps: STEPS, storageKey },
-      global: { plugins: [i18n] }
-    }).unmount()
-    render(OnboardingCoach, {
-      props: { steps: STEPS, storageKey },
-      global: { plugins: [i18n] }
-    })
-
+    mountSeen('coach-seen-a').unmount()
+    mountSeen('coach-seen-a')
     expect(notShown).toHaveBeenCalledExactlyOnceWith({ reason: 'already_seen' })
+
+    mountSeen('coach-seen-b')
+    expect(notShown).toHaveBeenCalledTimes(2)
   })
 
   it('reports a target that never mounts once the grace period passes, once', async () => {
