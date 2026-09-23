@@ -113,7 +113,7 @@ export async function mapWithConcurrency<T, R>(
   concurrency: number,
   task: (item: T) => Promise<R>
 ): Promise<R[]> {
-  const results: R[] = new Array(items.length)
+  const results: R[] = []
   let next = 0
   let firstFailure: { reason: unknown } | undefined
   const workers = Array.from(
