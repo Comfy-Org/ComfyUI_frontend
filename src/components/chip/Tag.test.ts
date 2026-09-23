@@ -16,6 +16,7 @@ function renderTag(
     label: string
     shape?: 'square' | 'rounded'
     removable?: boolean
+    interactive?: boolean
     onRemove?: (...args: unknown[]) => void
   },
   options?: { slots?: Record<string, string> }
@@ -41,6 +42,14 @@ describe('Tag', () => {
   it('shows remove button when removable', () => {
     renderTag({ label: 'Test', removable: true })
     expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument()
+  })
+
+  it('gives interactive tags button semantics and keyboard focus', () => {
+    renderTag({ label: 'Open workflow', interactive: true })
+
+    expect(
+      screen.getByRole('button', { name: 'Open workflow' })
+    ).toHaveAttribute('tabindex', '0')
   })
 
   it('emits remove event when remove button is clicked', async () => {

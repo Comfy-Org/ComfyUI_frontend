@@ -14,7 +14,10 @@ const forwardedProps = useForwardProps(restProps)
 </script>
 
 <template>
-  <TagsInputItem v-bind="forwardedProps" :class="cn(tagVariants(), className)">
+  <TagsInputItem
+    v-bind="forwardedProps"
+    :class="cn(tagVariants({ removable: true }), className)"
+  >
     <slot />
   </TagsInputItem>
 </template>

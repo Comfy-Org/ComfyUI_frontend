@@ -25,7 +25,7 @@ const {
     variant="textonly"
     size="icon-sm"
     :aria-label="label"
-    :class="cn(tagRemoveButtonVariants(), className)"
+    :class="cn(tagRemoveButtonVariants(), 'opacity-60', className)"
   >
     <slot>
       <i class="icon-[lucide--x] size-4" aria-hidden="true" />

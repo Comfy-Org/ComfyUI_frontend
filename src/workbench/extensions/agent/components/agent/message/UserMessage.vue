@@ -195,11 +195,9 @@ const splitAttachments = computed(() => {
       <template v-for="(part, index) in promptParts" :key="index">
         <Tag
           v-if="part.type === 'workflow'"
-          role="button"
           interactive
           :label="part.reference.name"
           class="max-w-64 align-middle"
-          tabindex="0"
           :aria-label="
             part.reference.unavailable
               ? t('agent.unavailableWorkflowReference', {

@@ -55,11 +55,6 @@ export const Removable: Story = {
 }
 
 export const Interactive: Story = {
-  render: (args) => ({
-    components: { Tag },
-    setup: () => ({ args }),
-    template: '<Tag v-bind="args" role="button" tabindex="0" />'
-  }),
   args: {
     label: 'A workflow reference with a long descriptive name',
     interactive: true,

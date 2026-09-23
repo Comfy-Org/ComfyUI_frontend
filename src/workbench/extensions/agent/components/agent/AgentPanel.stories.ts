@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { TurnId } from '../../schemas/agentApiSchema'
+import { toTurnId } from '../../schemas/agentApiSchema'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
 import '../../agentPanel.css'
 
@@ -64,7 +64,7 @@ export const ChipStates: Story = {
     ],
     entries: [
       {
-        id: 'chip-states' as TurnId,
+        id: toTurnId('chip-states'),
         role: 'user',
         text: 'Compare  with .',
         tags: ['A referenced node with a long descriptive title'],

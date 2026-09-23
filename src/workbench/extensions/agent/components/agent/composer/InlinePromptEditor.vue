@@ -303,7 +303,10 @@ onMounted(() => {
         if (typeof id !== 'string' || typeof name !== 'string') return { dom }
         dom.contentEditable = 'false'
         dom.dataset.testid = 'workflow-reference-chip'
-        dom.className = cn(tagVariants({ interactive: true }), 'align-middle')
+        dom.className = cn(
+          tagVariants({ interactive: true, removable: true }),
+          'group/workflow align-middle'
+        )
         const open = document.createElement('button')
         open.type = 'button'
         open.tabIndex = 0
@@ -334,6 +337,8 @@ onMounted(() => {
         open.onclick = () => {
           if (!unavailable) emit('openReferenceWorkflow', id, name)
         }
+        const removeAnchor = document.createElement('span')
+        removeAnchor.className = 'relative inline-block h-4 w-0 align-middle'
         const remove = document.createElement('button')
         remove.type = 'button'
         remove.setAttribute(
@@ -342,17 +347,23 @@ onMounted(() => {
         )
         remove.className = cn(
           buttonVariants({ variant: 'textonly', size: 'icon-sm' }),
-          tagRemoveButtonVariants()
+          tagRemoveButtonVariants(),
+          'pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 text-base-foreground opacity-0 transition-opacity group-focus-within/workflow:pointer-events-auto group-focus-within/workflow:opacity-100 group-hover/workflow:pointer-events-auto group-hover/workflow:opacity-100 touch:pointer-events-auto touch:opacity-100'
         )
+        const badge = document.createElement('span')
+        badge.className =
+          'flex size-3 items-center justify-center rounded-full bg-base-background ring-1 ring-border-default hover:bg-secondary-background-hover'
         const cross = document.createElement('span')
-        cross.className = 'icon-[lucide--x] size-4'
-        remove.append(cross)
+        cross.className = 'icon-[lucide--x] size-2'
+        badge.append(cross)
+        remove.append(badge)
         remove.onclick = () => {
           const position = getPos()
           if (position === undefined) return
           editor.dispatch(deleteReference(editor.state, position, node))
         }
-        dom.append(open, remove)
+        removeAnchor.append(remove)
+        dom.append(open, removeAnchor)
         return { dom, stopEvent: () => true, ignoreMutation: () => true }
       }
     }

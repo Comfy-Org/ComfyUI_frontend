@@ -32,7 +32,7 @@ export const tagVariants = cva({
 })
 
 export const tagRemoveButtonVariants = cva({
-  base: 'w-4 overflow-hidden opacity-60 transition-[opacity,width] duration-150 hover:bg-transparent hover:opacity-100 data-disabled:pointer-events-none data-disabled:w-0 data-disabled:opacity-0'
+  base: 'w-4 overflow-hidden transition-[opacity,width] duration-150 hover:bg-transparent hover:opacity-100 data-disabled:pointer-events-none data-disabled:w-0 data-disabled:opacity-0'
 })
 
 export type TagVariants = VariantProps<typeof tagVariants>

@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { PrimitiveProps } from 'reka-ui'
-import { Primitive } from 'reka-ui'
-import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -17,7 +14,6 @@ const {
   removable = false,
   removeLabel,
   removeTooltip,
-  as = 'span',
   interactive = false,
   class: className
 } = defineProps<{
@@ -27,7 +23,6 @@ const {
   removable?: boolean
   removeLabel?: string
   removeTooltip?: string
-  as?: PrimitiveProps['as']
   interactive?: boolean
   class?: HTMLAttributes['class']
 }>()
@@ -36,13 +31,9 @@ const emit = defineEmits<{
   remove: [event: Event]
 }>()
 
-const tagClass = computed(() =>
-  cn(tagVariants({ shape, state, removable, interactive }), className)
-)
-
 function handleKeydown(event: KeyboardEvent): void {
   if (event.target !== event.currentTarget) return
-  if (!interactive || as === 'button') return
+  if (!interactive) return
   if (event.key === 'Enter' || event.key === ' ') event.preventDefault()
   if (event.key === 'Enter' && event.currentTarget instanceof HTMLElement)
     event.currentTarget.click()
@@ -50,16 +41,19 @@ function handleKeydown(event: KeyboardEvent): void {
 
 function handleKeyup(event: KeyboardEvent): void {
   if (event.target !== event.currentTarget) return
-  if (!interactive || as === 'button' || event.key !== ' ') return
+  if (!interactive || event.key !== ' ') return
   event.preventDefault()
   if (event.currentTarget instanceof HTMLElement) event.currentTarget.click()
 }
 </script>
 
 <template>
-  <Primitive
-    :as
-    :class="tagClass"
+  <span
+    :role="interactive ? 'button' : undefined"
+    :tabindex="interactive ? 0 : undefined"
+    :class="
+      cn(tagVariants({ shape, state, removable, interactive }), className)
+    "
     @keydown="handleKeydown"
     @keyup="handleKeyup"
   >
@@ -72,5 +66,5 @@ function handleKeyup(event: KeyboardEvent): void {
       :tooltip="removeTooltip"
       @click.stop="emit('remove', $event)"
     />
-  </Primitive>
+  </span>
 </template>
