@@ -110,7 +110,7 @@ describe('idAllocation', () => {
       },
       {
         id: toNodeId((BigInt(Number.MAX_SAFE_INTEGER) + 2n).toString()),
-        name: 'an unsafe integer one past Number.MAX_SAFE_INTEGER, even though its rounded value falls in the violating range'
+        name: 'an unsafe integer two past Number.MAX_SAFE_INTEGER (9007199254740993), chosen because Number() rounds it down to 9007199254740992 and it still falls in the violating range'
       }
     ])('is false for $name', ({ id }) => {
       expect(isReservedBitRangeNodeId(id)).toBe(false)

@@ -56,7 +56,7 @@ import {
  */
 test.describe(
   'Agent/frontend node id collision: silent last-write-wins drop',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test(
       'wipes a duplicated node and replaces it with a phantom node when ' +

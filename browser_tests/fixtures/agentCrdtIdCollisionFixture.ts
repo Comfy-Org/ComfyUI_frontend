@@ -215,7 +215,6 @@ export class IdCollisionHarness {
     await this.hostSocket.install()
     await bootAgentApp(this.page, true, {
       settings: {
-        'Comfy.VueNodes.Enabled': true,
         'Comfy.Graph.CanvasInfo': false
       },
       objectInfo: 'server'
