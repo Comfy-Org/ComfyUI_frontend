@@ -18,6 +18,8 @@ export class AgentPanel {
   public readonly attachmentChips: Locator
   public readonly composer: Locator
   public readonly sendButton: Locator
+  public readonly resizeHandle: Locator
+  public readonly suggestedPrompts: Locator[]
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -47,6 +49,10 @@ export class AgentPanel {
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send
     })
+    this.resizeHandle = page.getByTestId('agent-panel-resize-handle')
+    this.suggestedPrompts = enMessages.agent.suggestedPrompts.map((name) =>
+      this.root.getByRole('button', { name, exact: true, includeHidden: true })
+    )
   }
 
   /**
@@ -75,6 +81,27 @@ export class AgentPanel {
   async open(): Promise<void> {
     await this.openButton.click()
     await expect(this.root).toBeVisible()
+  }
+
+  async resizeTo(width: number): Promise<void> {
+    const [panelBox, handleBox] = await Promise.all([
+      this.root.boundingBox(),
+      this.resizeHandle.boundingBox()
+    ])
+    if (!panelBox || !handleBox) {
+      throw new Error('Agent panel and resize handle must be visible')
+    }
+
+    const handleCenterX = handleBox.x + handleBox.width / 2
+    const handleY = handleBox.y + 20
+    await this.page.mouse.move(handleCenterX, handleY)
+    await this.page.mouse.down()
+    await this.page.mouse.move(
+      handleCenterX - (width - panelBox.width),
+      handleY
+    )
+    await this.page.mouse.up()
+    await expect(this.root).toHaveCSS('width', `${width}px`)
   }
 
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
