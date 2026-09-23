@@ -27,23 +27,23 @@ describe('WorkflowAbout', () => {
     )
   })
 
-  // Comfy Cloud opens the graph, so it belongs to the graph; the file is
-  // something to keep, so it sits with the facts about what is being kept.
-  it('puts the way into the Cloud on the graph and the file with the facts', async () => {
+  // Both ways out stand together under the facts they act on, and Cloud
+  // leads because it is the one that opens the workflow somewhere it runs.
+  it('stands both ways out under the facts, Cloud first', async () => {
     render(WorkflowAbout, { props })
 
-    const onGraph = within(
-      screen.getByTestId('workflow-graph-section')
-    ).getByTestId('workflow-actions')
+    const actions = screen.getByTestId('workflow-actions')
 
-    expect(within(onGraph).getByTestId('workflow-open-cloud')).toBeTruthy()
-    expect(within(onGraph).queryByTestId('workflow-download')).toBeNull()
+    expect(
+      within(actions)
+        .getAllByRole('link')
+        .map((link) => link.dataset.testid)
+    ).toEqual(['workflow-open-cloud', 'workflow-download'])
 
-    const rail = screen
-      .getAllByTestId('workflow-actions')
-      .find((row) => row !== onGraph)!
-
-    expect(within(rail).getByTestId('workflow-download')).toBeTruthy()
-    expect(within(rail).queryByTestId('workflow-open-cloud')).toBeNull()
+    expect(
+      within(screen.getByTestId('workflow-graph-section')).queryByTestId(
+        'workflow-actions'
+      )
+    ).toBeNull()
   })
 })

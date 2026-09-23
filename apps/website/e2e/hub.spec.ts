@@ -171,17 +171,14 @@ test.describe('V2 catalogue', () => {
     await page.goto('/hub/workflow/utility_nanobanana_pro_product_upscale/')
     await page.getByTestId('tab-details').click()
 
-    // Cloud rides on the graph's own heading, because it is the graph it
-    // opens; the file sits with the facts about what is being kept.
+    // Both stand together under the facts they act on.
     const actions = page.getByTestId('workflow-actions')
-    await expect(
-      actions.first().getByTestId('workflow-open-cloud')
-    ).toHaveAttribute(
+    await expect(actions.getByTestId('workflow-open-cloud')).toHaveAttribute(
       'href',
       /cloud\.comfy\.org\/\?template=utility_nanobanana_pro_product_upscale/
     )
     await expect(
-      actions.last().getByRole('link', { name: /Download the JSON/ })
+      actions.getByRole('link', { name: /Download the JSON/ })
     ).toHaveAttribute('href', /workflow_templates/)
   })
 
@@ -206,10 +203,7 @@ test.describe('V2 catalogue', () => {
     await expect(page.getByTestId('workflow-on-cloud')).toBeVisible()
     await expect(page.getByTestId('workflow-run')).toHaveCount(0)
     await expect(
-      page
-        .getByTestId('workflow-actions')
-        .first()
-        .getByTestId('workflow-open-cloud')
+      page.getByTestId('workflow-actions').getByTestId('workflow-open-cloud')
     ).toBeVisible()
   })
 

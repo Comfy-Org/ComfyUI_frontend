@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowUpRight, BookOpen, Cloud, Download } from '@lucide/vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import type { Component } from 'vue'
 import { computed } from 'vue'
 
@@ -14,6 +15,7 @@ const {
   downloadUrl,
   tutorialUrl,
   only,
+  stacked = false,
   locale = 'en'
 } = defineProps<{
   /** Comfy Cloud, opened on this template. */
@@ -22,6 +24,8 @@ const {
   tutorialUrl: string | undefined
   /** Which ways out this row offers. All of them when left unsaid. */
   only?: readonly RouteKey[]
+  /** One under the other, each the full width of the column it stands in. */
+  stacked?: boolean
   locale?: Locale
 }>()
 
@@ -36,9 +40,9 @@ interface Route {
   readonly external?: boolean
 }
 
-// The ways to leave with this workflow, on the graph's own header because the
-// graph is what they carry off. What each one gives you is on hover; spelled
-// out, two rows of prose crowded the graph they belong to.
+// The ways to leave with this workflow. Comfy Cloud is the one that opens it
+// somewhere it runs, so it leads and the rest follow it. What each one gives
+// you is on hover; spelled out, the prose crowded the facts they stand under.
 // None of them is the page's action: that is Run, and it is on the other tab.
 // The endpoint is not among them: the API tab sits in the same row of tabs, so
 // a row that only opened it would be a second door onto the same room.
@@ -82,11 +86,20 @@ const routes = computed(() =>
 </script>
 
 <template>
-  <ul class="flex flex-wrap items-center gap-2" data-testid="workflow-actions">
+  <ul
+    :class="
+      cn(
+        'flex gap-2',
+        stacked ? 'flex-col items-stretch' : 'flex-wrap items-center'
+      )
+    "
+    data-testid="workflow-actions"
+  >
     <li v-for="route in routes" :key="route.id">
       <Button
-        variant="outline"
-        size="sm"
+        :variant="route.key === 'cloud' ? 'default' : 'outline'"
+        :size="stacked ? 'lg' : 'sm'"
+        :class="stacked && 'w-full'"
         :href="route.href"
         :prepend-icon="route.icon"
         :append-icon="ArrowUpRight"
