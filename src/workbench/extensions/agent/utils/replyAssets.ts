@@ -4,6 +4,8 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
+import { isAgentStandalone } from '../agentDistribution'
+
 type ReplyAssetKind = Extract<MediaType, 'image' | 'video' | 'audio' | '3D'>
 
 export interface ReplyAsset {
@@ -14,6 +16,73 @@ export interface ReplyAsset {
 }
 
 const ASSET_KINDS = new Set<MediaType>(['image', 'video', 'audio', '3D'])
+
+/**
+ * Hosts that can only ever mean "the computer this URL was written on".
+ * `URL.hostname` keeps the brackets around an IPv6 literal, hence `[::1]`.
+ */
+const LOOPBACK_HOST = /^(?:localhost|0\.0\.0\.0|\[::1\]|127(?:\.\d{1,3}){3})$/i
+
+/** ComfyUI's media routes, with and without the `/api` prefix. */
+const COMFY_MEDIA_PATH = /^\/(?:api\/)?view(?:video|audio)?$/
+
+/**
+ * Point an agent-authored media URL at the panel instead of at the agent's own
+ * machine.
+ *
+ * The local agent writes previews into chat as absolute URLs of the ComfyUI it
+ * drives — `http://127.0.0.1:8188/view?filename=...`. That renders only on the
+ * box running ComfyUI: opened over a LAN address, a tailnet address or a
+ * reverse proxy, the loopback host is the VIEWER's own computer and every
+ * image is broken. The panel is already served by a host that answers the same
+ * `/view` routes, so keep the path and query and swap in its origin.
+ *
+ * Only loopback hosts on ComfyUI's media routes are touched: a genuinely
+ * remote ComfyUI, a relative URL (already the panel's own origin) and any
+ * non-media link are returned unchanged. Cloud builds never take this path —
+ * the cloud agent has no loopback ComfyUI to link to.
+ */
+export function resolveAgentAssetUrl(
+  href: string,
+  origin = window.location.origin
+): string {
+  if (!isAgentStandalone()) return href
+  let url: URL
+  try {
+    url = new URL(href)
+  } catch {
+    return href
+  }
+  if (!LOOPBACK_HOST.test(url.hostname)) return href
+  if (!COMFY_MEDIA_PATH.test(url.pathname)) return href
+  try {
+    return new URL(`${url.pathname}${url.search}${url.hash}`, origin).href
+  } catch {
+    return href
+  }
+}
+
+/**
+ * Apply {@link resolveAgentAssetUrl} to the media references of already
+ * rendered and sanitized markdown, so the `<img>` the reader sees carries the
+ * reachable URL rather than only the lightbox that opens on clicking it.
+ */
+export function rewriteAgentAssetHtml(html: string): string {
+  if (!isAgentStandalone()) return html
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  let rewritten = false
+  for (const element of doc.querySelectorAll('[src], [href], [poster]')) {
+    for (const name of ['src', 'href', 'poster']) {
+      const value = element.getAttribute(name)
+      if (value === null) continue
+      const resolved = resolveAgentAssetUrl(value)
+      if (resolved === value) continue
+      element.setAttribute(name, resolved)
+      rewritten = true
+    }
+  }
+  return rewritten ? doc.body.innerHTML : html
+}
 
 export function classifyAssetUrl(
   href: string,
@@ -34,7 +103,11 @@ export function classifyAssetUrl(
   if (!filename) return null
   const kind = getMediaTypeFromFilename(filename)
   if (!ASSET_KINDS.has(kind)) return null
-  return { url: href, filename, kind: kind as ReplyAssetKind }
+  return {
+    url: resolveAgentAssetUrl(href, baseUrl),
+    filename,
+    kind: kind as ReplyAssetKind
+  }
 }
 
 type InlineToken = { type: string; href?: string; text?: string }
