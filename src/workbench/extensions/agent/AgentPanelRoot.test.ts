@@ -3754,8 +3754,9 @@ describe('AgentPanelRoot workflow binding', () => {
   // `doc_subscribed` frame, so the follower never connects; with the wrong
   // gate, a mutating tool call's own successful frame was held at
   // 'streaming' forever, since nothing was ever going to call
-  // `notifyCanvasCaughtUp()` to release it. The composing "Working..."
-  // status (every part settled, turn still streaming) never appeared.
+  // `notifyCanvasCaughtUp()` to release it. Asserted on the store's own part
+  // state rather than the "Working..." composing status text upstream uses,
+  // since that composing affordance doesn't exist on this branch yet.
   it('settles a mutating tool call immediately when no CRDT doc subscription is connected', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
@@ -3771,9 +3772,12 @@ describe('AgentPanelRoot workflow binding', () => {
       message_id: 'm-1'
     })
 
-    expect(
-      await screen.findByText(i18n.global.t('agent.working'))
-    ).toBeInTheDocument()
+    await vi.waitFor(() => {
+      expect(useAgentConversationStore().messages[0].parts[0]).toMatchObject({
+        type: 'tool',
+        state: 'done'
+      })
+    })
   })
 
   it('moves the spinner to the tab the agent creates mid-turn', async () => {
