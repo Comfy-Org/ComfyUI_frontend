@@ -180,6 +180,13 @@ of the website build, browser, page rendering or run admission. No APP extractio
 widget serializer, exporter provenance or generalized workflow compiler is a
 dependency of this feature. Future tooling may produce the same catalog format.
 
+The checked-in files are the publication store for phase 1. Moving them into
+catalog database tables and adding Router/workflow publishing APIs are future
+work, including any automated input compilation. Those are not prerequisites
+for serving these records. Durable run/receipt/media storage remains part of
+the separate execution lifecycle. Published forms use only the existing
+supported Models controls; no custom-input or widget-plugin system is planned.
+
 Use Router's request-schema conventions for actual input IDs, scalar/media
 types, defaults, required fields and constraints. Include the workflow/version,
 prepared graph or immutable graph reference, fixed native request fields,

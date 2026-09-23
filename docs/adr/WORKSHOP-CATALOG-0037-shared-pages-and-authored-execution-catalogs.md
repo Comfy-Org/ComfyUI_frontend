@@ -23,6 +23,13 @@ workflow JSONL file for Cloud and serverless/API execution declarations, with
 one complete record per workflow. Preserve existing Models identities and file
 formats; do not introduce replacement master or Router catalogs.
 
+These files are the publication store for this phase. Catalog database tables,
+Router/workflow publishing APIs and automatic workflow input compilation are
+future work. A later migration can preserve the declared content and IDs; this
+feature does not need a storage abstraction built in anticipation of it. Durable
+run, receipt and media records serve execution/recovery and remain separate from
+catalog publishing.
+
 - The master pages source owns names, copy, examples, INPUTS widgets and their
   presentation. A page declares its MODEL, CLOUD or SERVERLESS target and stable
   target ID. Existing Router page identity mappings remain valid.
@@ -47,6 +54,12 @@ Type-specific presentation and output-specific playback are small variations
 within shared components. The page calls a common render boundary and receives
 common status, field errors and output objects. Provider request preparation,
 transport, authentication and result normalization stay behind that boundary.
+
+Published workflows use the existing supported INPUTS control set. Custom input
+widgets, widget code supplied by publishers and an input plugin system are not
+planned. Do not treat those as future capabilities that the current design must
+accommodate. Optional future input compilation produces declarations for the
+supported controls.
 
 The catalog author inspects each selected workflow and prepares its record by
 hand or with an intermittently invoked offline tool. The committed JSONL is the
@@ -83,9 +96,10 @@ provider differences, and preparation tooling can evolve independently.
 ### Negative
 
 Publishers must keep page input IDs and workflow mappings consistent and verify
-each prepared workflow. Arbitrary editor workflows and custom widgets are not
-automatically supported. Real Cloud/serverless execution must still be tested;
-schema validation alone does not prove runtime availability or billing.
+each prepared workflow. Published forms are limited to the supported controls;
+custom inputs are outside the planned product. Real Cloud/serverless execution
+must still be tested; schema validation alone does not prove runtime
+availability or billing.
 
 ## Notes
 
