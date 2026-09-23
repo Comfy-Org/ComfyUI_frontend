@@ -14,6 +14,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { i18n } from '@/i18n'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
@@ -30,10 +31,8 @@ const tooltipDirectiveStub = {
   }
 }
 
-const fetchApi = vi.hoisted(() =>
-  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+vi.mock(import('@/scripts/api'))
+const fetchApi = vi.mocked(api.fetchApi)
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {

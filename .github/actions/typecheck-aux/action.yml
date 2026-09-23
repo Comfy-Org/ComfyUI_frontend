@@ -1,0 +1,20 @@
+name: 'Typecheck auxiliary projects'
+description: >
+  Typechecks the browser tests, scripts and tools TypeScript projects. Shared
+  by ci-lint-format.yaml (PR) and ci-lint-format-queue.yaml (merge queue).
+  The caller is responsible for checkout and frontend setup.
+
+runs:
+  using: composite
+  steps:
+    - name: Typecheck browser tests
+      shell: bash
+      run: pnpm typecheck:browser
+
+    - name: Typecheck scripts
+      shell: bash
+      run: pnpm typecheck:scripts
+
+    - name: Typecheck tools
+      shell: bash
+      run: pnpm typecheck:tools
