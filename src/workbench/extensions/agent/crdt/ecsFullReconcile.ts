@@ -49,10 +49,9 @@ export type UpsertNode = (
 ) => void
 
 /**
- * Explicit dependencies for {@link applyFullReconcile}, replacing the
- * `TargetSession`/adapter closure state the reconcile used to read directly:
- * every doc, index and callback it needs crosses this one small boundary
- * instead of being pulled ambiently from `EcsFollowerAdapter`.
+ * Explicit dependencies for {@link applyFullReconcile}: every doc, index and
+ * callback it needs crosses this one small boundary instead of being pulled
+ * ambiently from `EcsFollowerAdapter`'s own closure state.
  */
 export interface FullReconcileContext {
   readonly workflowId: string
@@ -113,9 +112,9 @@ export function applyFullReconcile(ctx: FullReconcileContext): void {
   // (ADR-CRDT-RECONCILE-0035 (c), narrowed): `nodePayloads` here is read live
   // off the doc's own map on every reconcile, so `getNodeType` being defined
   // is true for every ordinarily-synced node, not only a colliding
-  // local-only one — telling those apart needs (b)'s known-id set, which is
-  // not landed yet (PR B). See `reportNodeCollisionIfAny`'s incremental use
-  // in `applyAddedNode` for the check this path cannot yet run.
+  // local-only one — telling those apart needs a lineage-scoped known-doc-id
+  // set this reconcile does not have. See `reportNodeCollisionIfAny`'s
+  // incremental use in `applyAddedNode` for the check this path cannot run.
   for (const payload of nodePayloads) upsertNode(payload, 'reconcile')
   for (const link of linkPayloads) batch.connect(link)
 }
