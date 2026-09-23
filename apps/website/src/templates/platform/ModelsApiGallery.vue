@@ -2,10 +2,12 @@
 import { useIntervalFn } from '@vueuse/core'
 import { ref } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { GalleryMedia, ModelsGalleryCard } from './modelsGalleryCards'
-import { modelsGalleryCards } from './modelsGalleryCards'
+import { modelGalleryHref, modelsGalleryCards } from './modelsGalleryCards'
 
 const { locale = 'en', cards = modelsGalleryCards } = defineProps<{
   locale?: Locale
@@ -30,10 +32,17 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
     :aria-label="t('platform.modelsGallery.ariaLabel', locale)"
   >
     <div class="grid grid-cols-2 gap-2 lg:grid-cols-3">
-      <div
+      <component
+        :is="card.modelId ? 'a' : 'div'"
         v-for="card in cards"
         :key="card.titleKey"
-        class="relative aspect-square overflow-hidden rounded-3xl bg-black/40"
+        :href="card.modelId ? modelGalleryHref(card.modelId) : undefined"
+        :class="
+          cn(
+            'relative block aspect-square overflow-hidden rounded-3xl bg-black/40',
+            card.modelId && 'cursor-pointer'
+          )
+        "
       >
         <Transition
           enter-active-class="transition-opacity duration-700"
@@ -95,7 +104,7 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
         >
           {{ t(card.titleKey, locale) }}
         </p>
-      </div>
+      </component>
     </div>
   </section>
 </template>

@@ -33,4 +33,24 @@ describe('ModelsApiGallery', () => {
     await nextTick()
     expect(seedanceClip()).not.toBe(firstClip)
   })
+
+  it('links a card with a model id to its Models page', () => {
+    render(ModelsApiGallery, { props: { locale: 'en' } })
+
+    expect(
+      screen.getByRole('link', {
+        name: new RegExp(t('cloud.aiModels.card.seedance25', 'en'))
+      })
+    ).toHaveAttribute('href', '/models/byteplus--dreamina-seedance-2-5-260628/')
+  })
+
+  it('leaves a card with no Models page as a non-link', () => {
+    render(ModelsApiGallery, { props: { locale: 'en' } })
+
+    expect(
+      screen.queryByRole('link', {
+        name: t('cloud.aiModels.card.minimaxH3', 'en')
+      })
+    ).toBeNull()
+  })
 })
