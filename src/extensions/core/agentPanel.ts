@@ -2,8 +2,10 @@ import { storeToRefs } from 'pinia'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
@@ -107,6 +109,8 @@ export function registerAgentPanelExtension(): void {
       const workspaceStore = useTeamWorkspaceStore()
       const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
       const { withConsent } = useAgentConsent()
+      const { firstRunTookScreen, whenStartupDecided } = useFirstRunEntry()
+      const onboardingTourStore = useOnboardingTourStore()
       registerWorkflowTabActivityTracker(enabled)
 
       watch(
@@ -117,11 +121,16 @@ export function registerAgentPanelExtension(): void {
         { immediate: true, flush: 'sync' }
       )
 
+      const onboardingHoldsScreen = (): boolean =>
+        firstRunTookScreen.value || onboardingTourStore.activeTour !== null
+
       let autoShowInFlight = false
       const offerConsentUnprompted = (): void => {
         if (autoShowInFlight) return
         if (!agentPanelStore.enabled || !isLoggedIn.value) return
         if (consentStore.isChecking || consentStore.accepted) return
+        // Must precede prepareAutoShow, which burns the one-shot key.
+        if (onboardingHoldsScreen()) return
 
         const userId = resolvedUserInfo.value?.id
         const workspaceId = workspaceStore.activeWorkspaceId
@@ -137,8 +146,11 @@ export function registerAgentPanelExtension(): void {
             if (!agentPanelStore.enabled) return
             agentPanelStore.open('automatic_consent')
           },
-          () => {
-            writeAutoShown(key, true)
+          {
+            onShown: () => {
+              writeAutoShown(key, true)
+            },
+            canShow: () => !onboardingHoldsScreen()
           }
         ).finally(() => {
           autoShowInFlight = false
@@ -146,12 +158,26 @@ export function registerAgentPanelExtension(): void {
         })
       }
 
+      const offerWhenStartupDecided = (): void => {
+        // A boot that never reports forfeits this session's automatic offer
+        // rather than landing it on a late first-run screen.
+        whenStartupDecided()
+          .then((decided) => {
+            if (decided) offerConsentUnprompted()
+          })
+          .catch((error: unknown) => {
+            reportError(error, {
+              errorType: 'agent_consent_auto_offer_failure'
+            })
+          })
+      }
+
       const loadConsentIfEligible = (): void => {
         if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
         void consentStore
           .load()
           .then((isAccepted) => {
-            if (!isAccepted) offerConsentUnprompted()
+            if (!isAccepted) offerWhenStartupDecided()
           })
           .catch((error: unknown) => {
             reportError(error, {
@@ -163,6 +189,12 @@ export function registerAgentPanelExtension(): void {
         [() => resolvedUserInfo.value?.id, () => consentStore.identity],
         loadConsentIfEligible,
         { immediate: true }
+      )
+      watch(
+        () => onboardingTourStore.activeTour,
+        (tour) => {
+          if (tour === null) loadConsentIfEligible()
+        }
       )
       return setupFlagGate(loadConsentIfEligible)
     }

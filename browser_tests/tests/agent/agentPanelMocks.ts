@@ -146,15 +146,21 @@ async function mockAgentBoot(
   page: Page,
   {
     agentConsentAccepted,
+    agentConsentReads,
     agentConsentSave,
     agentConsentWrites,
     agentFlagEnabled,
     agentPanelInitiallyOpen,
     agentOnboardingCompleted,
     crdtDebugEnabled,
+    initialFeatureFlags,
+    initialSettings,
     objectInfo,
     postedMessages
-  }: Omit<AgentFixtures, 'agentPanel'>
+  }: Omit<AgentFixtures, 'agentPanel'> & {
+    initialFeatureFlags: Record<string, unknown>
+    initialSettings: Record<string, unknown>
+  }
 ): Promise<void> {
   let consentAccepted = agentConsentAccepted
 
@@ -195,10 +201,11 @@ async function mockAgentBoot(
   )
 
   await mockCloudBoot(page, {
-    features: agentFeatures(agentFlagEnabled),
+    features: { ...agentFeatures(agentFlagEnabled), ...initialFeatureFlags },
     settings: {
       'Comfy.TutorialCompleted': true,
-      'Comfy.RightSidePanel.ShowErrorsTab': false
+      'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...initialSettings
     },
     objectInfo
   })
@@ -274,8 +281,9 @@ async function mockAgentBoot(
   }
   await page.route(
     `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
-    (route) =>
-      route.fulfill(
+    (route) => {
+      agentConsentReads.push(consentAccepted)
+      return route.fulfill(
         consentAccepted
           ? jsonRoute(storedConsent)
           : {
@@ -286,6 +294,7 @@ async function mockAgentBoot(
               status: 404
             }
       )
+    }
   )
   await page.route('**/api/global-settings', async (route) => {
     const request = route.request()
@@ -365,6 +374,7 @@ export async function selectAgentWorkflow(page: Page): Promise<void> {
 
 type AgentFixtures = {
   agentConsentAccepted: boolean
+  agentConsentReads: boolean[]
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWrites: boolean[]
   agentFlagEnabled: boolean
@@ -379,6 +389,9 @@ type AgentFixtures = {
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentConsentAccepted: [true, { option: true }],
+  agentConsentReads: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use([])
+  },
   agentConsentSave: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use({ status: 200 })
   },
@@ -396,12 +409,15 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   page: async (
     {
       agentConsentAccepted,
+      agentConsentReads,
       agentConsentSave,
       agentConsentWrites,
       agentFlagEnabled,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       crdtDebugEnabled,
+      initialFeatureFlags,
+      initialSettings,
       objectInfo,
       page,
       postedMessages
@@ -410,12 +426,15 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   ) => {
     await mockAgentBoot(page, {
       agentConsentAccepted,
+      agentConsentReads,
       agentConsentSave,
       agentConsentWrites,
       agentFlagEnabled,
       agentPanelInitiallyOpen,
       agentOnboardingCompleted,
       crdtDebugEnabled,
+      initialFeatureFlags,
+      initialSettings,
       objectInfo,
       postedMessages
     })
