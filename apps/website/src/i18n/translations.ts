@@ -10072,6 +10072,18 @@ Enterprise`
     en: 'This file can no longer be read. Select it again.',
     'zh-CN': '无法再读取此文件。请重新选择。'
   },
+  'workshop.form.incompatible': {
+    en: 'This input is incompatible with the other settings.',
+    'zh-CN': '此输入与其他设置不兼容。'
+  },
+  'workshop.form.videoTooLong': {
+    en: 'Use a video that is {seconds} seconds or shorter.',
+    'zh-CN': '请使用时长不超过 {seconds} 秒的视频。'
+  },
+  'workshop.form.videoUnreadable': {
+    en: 'Could not read the video duration. Select a playable video or use an accessible video link.',
+    'zh-CN': '无法读取视频时长。请选择可播放的视频或使用可访问的视频链接。'
+  },
   'workshop.form.draftRestoreFailed': {
     en: 'We could not restore all of your saved inputs. Check the form and pick your files again.',
     'zh-CN': '部分已保存的输入无法恢复。请检查输入并重新选择文件。'

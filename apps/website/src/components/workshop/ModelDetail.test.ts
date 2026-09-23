@@ -1474,7 +1474,8 @@ describe('ModelDetail', () => {
       name: 'run_validation_failed',
       properties: expect.objectContaining({
         model_slug: runnable.slug,
-        field_error_codes: ['required']
+        field_error_codes: ['required'],
+        field_error_names: ['prompt']
       })
     })
     expect(
