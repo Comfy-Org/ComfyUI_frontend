@@ -1530,16 +1530,15 @@ describe('AgentPanelRoot attach flow', () => {
 
       dispatchDrag(target, 'dragenter', dragData)
       await nextTick()
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Drag and drop assets here'
-      )
+      const dropTarget = screen.getByRole('status')
+      expect(dropTarget).toHaveTextContent('Drag and drop assets here')
 
       expect(dispatchDrag(target, 'dragover', dragData)).toBe(true)
 
       const claimed = dispatchDrag(target, 'drop', dragData)
       expect(claimed).toBe(true)
       await nextTick()
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(dropTarget).not.toBeInTheDocument()
 
       expect(
         within(await screen.findByTestId('composer-asset-section')).getByText(

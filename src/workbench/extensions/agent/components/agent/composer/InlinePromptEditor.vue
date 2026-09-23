@@ -10,6 +10,13 @@ import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import DOMPurify from 'dompurify'
 import { useI18n } from 'vue-i18n'
 
+import { buttonVariants } from '@/components/ui/button/button.variants'
+import {
+  tagRemoveButtonVariants,
+  tagVariants
+} from '@/components/chip/tag.variants'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { ComposerPrompt } from '../../../types/composerPrompt'
 import {
   composerReferenceKey,
@@ -108,12 +115,12 @@ function passiveReferenceView(node: Node, iconClass: string) {
   if (!reference) return { dom }
   dom.contentEditable = 'false'
   dom.dataset.testid = `${reference.kind}-reference-chip`
-  dom.className =
-    'inline rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset [&.ProseMirror-selectednode]:outline-1'
+  dom.className = cn(tagVariants(), 'align-middle')
   const icon = document.createElement('span')
-  icon.className = `${iconClass} mr-1 inline-block size-3 align-middle`
+  icon.className = `${iconClass} size-3 shrink-0`
   icon.setAttribute('aria-hidden', 'true')
   const label = document.createElement('span')
+  label.className = 'min-w-0 max-w-56 truncate'
   label.textContent = composerReferenceName(reference)
   dom.append(icon, label)
   return { dom, ignoreMutation: () => true }
@@ -133,7 +140,7 @@ onMounted(() => {
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
       class:
-        'text-base-foreground min-h-7 w-full cursor-text font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
+        'text-base-foreground min-h-7 w-full cursor-text font-inter text-[14px]/7 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
     }),
     decorations(state) {
       if (state.selection.empty) return null
@@ -296,10 +303,12 @@ onMounted(() => {
         if (typeof id !== 'string' || typeof name !== 'string') return { dom }
         dom.contentEditable = 'false'
         dom.dataset.testid = 'workflow-reference-chip'
-        dom.className =
-          'group/workflow inline selection:bg-transparent selection:text-inherit'
-        const open = document.createElement('span')
-        open.setAttribute('role', 'button')
+        dom.className = cn(
+          tagVariants({ interactive: true, removable: true }),
+          'group/workflow align-middle'
+        )
+        const open = document.createElement('button')
+        open.type = 'button'
         open.tabIndex = 0
         const unavailable = node.attrs.unavailable === true
         open.setAttribute(
@@ -318,24 +327,15 @@ onMounted(() => {
           open.title = reason
         }
         open.className =
-          'inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset group-data-selected/workflow:bg-primary-background/60 group-data-selected/workflow:text-base-foreground group-data-selected/workflow:ring-primary-background hover:bg-primary-background/40 group-data-selected/workflow:hover:bg-primary-background/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50'
+          'flex min-w-0 cursor-pointer items-center border-none bg-transparent p-0 text-inherit outline-none aria-disabled:cursor-not-allowed'
         const icon = document.createElement('span')
-        icon.className =
-          'icon-[comfy--workflow] mr-1 inline-block size-3 align-middle'
+        icon.className = 'icon-[comfy--workflow] mr-1 size-3 shrink-0'
         const title = document.createElement('span')
+        title.className = 'min-w-0 max-w-56 truncate'
         title.textContent = name
         open.append(icon, title)
         open.onclick = () => {
           if (!unavailable) emit('openReferenceWorkflow', id, name)
-        }
-        open.onkeydown = (event) => {
-          if (event.key === 'Enter' || event.key === ' ') event.preventDefault()
-          if (event.key === 'Enter') open.click()
-        }
-        open.onkeyup = (event) => {
-          if (event.key !== ' ') return
-          event.preventDefault()
-          open.click()
         }
         const removeAnchor = document.createElement('span')
         removeAnchor.className = 'relative inline-block h-4 w-0 align-middle'
@@ -345,11 +345,14 @@ onMounted(() => {
           'aria-label',
           t('agent.removeWorkflowReference', { name })
         )
-        remove.className =
-          'text-base-foreground pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 opacity-0 transition-opacity group-focus-within/workflow:pointer-events-auto group-focus-within/workflow:opacity-100 group-hover/workflow:pointer-events-auto group-hover/workflow:opacity-100 focus-visible:outline-2 focus-visible:outline-primary-background touch:pointer-events-auto touch:opacity-100'
+        remove.className = cn(
+          buttonVariants({ variant: 'textonly', size: 'icon-sm' }),
+          tagRemoveButtonVariants(),
+          'pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 text-base-foreground opacity-0 transition-opacity group-focus-within/workflow:pointer-events-auto group-focus-within/workflow:opacity-100 group-hover/workflow:pointer-events-auto group-hover/workflow:opacity-100 touch:pointer-events-auto touch:opacity-100'
+        )
         const badge = document.createElement('span')
         badge.className =
-          'bg-base-background hover:bg-secondary-background-hover flex size-3 items-center justify-center rounded-full ring-1 ring-border-default'
+          'flex size-3 items-center justify-center rounded-full bg-base-background ring-1 ring-border-default hover:bg-secondary-background-hover'
         const cross = document.createElement('span')
         cross.className = 'icon-[lucide--x] size-2'
         badge.append(cross)
