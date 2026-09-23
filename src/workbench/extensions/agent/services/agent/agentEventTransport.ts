@@ -102,12 +102,16 @@ export function createAgentEventTransport(
    */
   shouldAwaitCanvasSync: () => boolean = () => false,
   /**
-   * PM-1575: the bound workflow's CRDT `outcomes.applied` counter (or an
-   * equivalent monotonic count of frames actually applied to the doc), read
-   * fresh whenever this transport needs it -- see `canvasSyncBaseline` below
-   * for why. Defaults to a constant so a caller with no counter to offer
-   * (e.g. a caller that also leaves `shouldAwaitCanvasSync` at its default)
-   * never spuriously looks "caught up".
+   * PM-1575: the bound workflow's CRDT `outcomes.appliedLive` counter (or an
+   * equivalent monotonic count of LIVE frames actually applied to the doc --
+   * deliberately excluding a subscribe's own catch-up frame, which is
+   * unrelated to any tool call and would otherwise look like "the matching
+   * update already arrived" to whichever tool call happens to be first after
+   * a (re)subscribe), read fresh whenever this transport needs it -- see
+   * `canvasSyncBaseline` below for why. Defaults to a constant so a caller
+   * with no counter to offer (e.g. a caller that also leaves
+   * `shouldAwaitCanvasSync` at its default) never spuriously looks "caught
+   * up".
    */
   getCanvasSyncOutcomeCount: () => number = () => 0
 ): AgentEventTransport {

@@ -669,12 +669,21 @@ const { activeTurnId: conversationTurnId } = storeToRefs(agentConversationStore)
 // actual "the follower is subscribed and could receive a doc_update" signal
 // (flipped true only by a real `doc_subscribed { ok: true }` frame); a
 // disabled panel never starts the follower, so this implies `enabled` too.
+// Read `outcomes.appliedLive`, never `outcomes.applied`: `applied` also
+// counts a subscribe's own one-time catch-up frame, which lands whenever the
+// follower (re)subscribes to the bound workflow and has nothing to do with
+// any tool call in flight. Gating on raw `applied` made the FIRST
+// canvas-mutating tool call after any (re)subscribe -- effectively every
+// tool call, since a `running` frame is never sent in practice, see
+// agentEventTransport.ts's file header -- read that unrelated catch-up as
+// its own matching update and settle to 'done' immediately, defeating the
+// wait this gate exists for.
 agentConversationStore.setCanvasSyncGate(
   () => crdtStatus.value.connected,
-  () => crdtStatus.value.outcomes.applied
+  () => crdtStatus.value.outcomes.appliedLive
 )
 watch(
-  () => crdtStatus.value.outcomes.applied,
+  () => crdtStatus.value.outcomes.appliedLive,
   (applied, previouslyApplied) => {
     // `useAgentCrdtFollower`'s status falls back to a disabled status with
     // `applied: 0` when the follower is torn down, and a restarted follower
