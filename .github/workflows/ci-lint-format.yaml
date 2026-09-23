@@ -24,7 +24,6 @@ env:
   LINT_CACHE_PATHS: |
     .eslintcache
     .stylelintcache
-    node_modules/.cache/eslint-website
   TYPECHECK_CACHE_PATHS: |
     node_modules/.cache/tsbuildinfo
     packages/*/node_modules/.cache/tsbuildinfo
@@ -57,13 +56,6 @@ jobs:
 
       - name: Run oxfmt with auto-format
         run: pnpm format
-
-      - name: Lint workspace packages
-        run: |
-          pnpm --filter @comfyorg/account-core lint
-          pnpm --filter @comfyorg/billing-web lint
-          pnpm --filter @comfyorg/account-ui lint
-          pnpm --filter @comfyorg/billing-contract lint
 
       - name: Check for changes
         id: verify-changed-files

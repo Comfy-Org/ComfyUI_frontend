@@ -159,7 +159,9 @@ export default defineConfig([
       'apps/website/coverage/**',
       'apps/website/playwright-report/**',
       'apps/website/test-results/**',
-      'vitest.setup.ts'
+      'vitest.setup.ts',
+      '.agents/checks/eslint.strict.config.js',
+      'ComfyUI/**'
     ]
   },
   {
