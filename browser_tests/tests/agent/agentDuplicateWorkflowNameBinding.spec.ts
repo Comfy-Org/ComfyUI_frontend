@@ -17,8 +17,7 @@ import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
-const BINDING_KEY = 'Comfy.Agent.WorkflowTabBindings'
-const PERSISTED_BINDING_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
+const BINDING_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
 const THREAD_KEY = 'Comfy.Agent.ThreadId'
 const PORTRAIT_PATH = 'workflows/Portrait.json'
 const TARGET_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
@@ -33,7 +32,16 @@ test(
     test.setTimeout(90_000)
     await page.addInitScript(
       ([bindingKey, threadKey, targetId, path, threadId]) => {
-        localStorage.setItem(bindingKey, JSON.stringify({ [targetId]: path }))
+        localStorage.setItem(
+          bindingKey,
+          JSON.stringify({
+            [targetId]: {
+              tabPath: path,
+              graphId: null,
+              confirmedAt: Date.now()
+            }
+          })
+        )
         localStorage.setItem(threadKey, threadId)
       },
       [BINDING_KEY, THREAD_KEY, TARGET_ID, PORTRAIT_PATH, THREAD_ID] as const
@@ -155,25 +163,16 @@ test(
       await store.openWorkflow(portrait)
     }, PORTRAIT_PATH)
     expect(
-      await page.evaluate((key) => localStorage.getItem(key), BINDING_KEY)
-    ).toBe(JSON.stringify({ [TARGET_ID]: PORTRAIT_PATH }))
-    await expect
-      .poll(() =>
-        page.evaluate(
-          ([key, workflowId]) => {
-            const stored: unknown = JSON.parse(
-              localStorage.getItem(key) ?? 'null'
-            )
-            return (
-              typeof stored === 'object' &&
-              stored !== null &&
-              Object.hasOwn(stored, workflowId)
-            )
-          },
-          [PERSISTED_BINDING_KEY, TARGET_ID] as const
-        )
+      await page.evaluate(
+        ([key, workflowId]) => {
+          const stored = JSON.parse(
+            localStorage.getItem(key) ?? '{}'
+          ) as Record<string, { tabPath?: unknown }>
+          return stored[workflowId]?.tabPath
+        },
+        [BINDING_KEY, TARGET_ID] as const
       )
-      .toBe(true)
+    ).toBe(PORTRAIT_PATH)
 
     await page
       .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
@@ -202,7 +201,7 @@ test(
               Object.hasOwn(stored, workflowId)
             )
           },
-          [PERSISTED_BINDING_KEY, TARGET_ID] as const
+          [BINDING_KEY, TARGET_ID] as const
         )
       )
       .toBe(false)
