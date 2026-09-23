@@ -45,7 +45,7 @@
       >
         <template v-for="(item, index) in items" :key="item.key">
           <li
-            class="p-breadcrumb-item hover:text-foreground pointer-events-auto"
+            class="p-breadcrumb-item pointer-events-auto hover:text-base-foreground"
           >
             <SubgraphBreadcrumbItem
               :item
