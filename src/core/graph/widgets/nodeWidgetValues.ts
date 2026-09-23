@@ -22,8 +22,11 @@ export function setNodeWidgetValue(
   value: WidgetValue
 ): boolean {
   const id = nodeWidgetId(node, name)
-  if (id && useWidgetValueStore().setValue(id, value)) return true
   const widget = node.widgets?.find((w) => w.name === name)
+  if (id && useWidgetValueStore().setValue(id, value)) {
+    if (widget) widget.value = value
+    return true
+  }
   if (!widget) return false
   widget.value = value
   return true

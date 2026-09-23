@@ -409,7 +409,9 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     return nodes.map((node) => node.serialize())
   }
   return serialisers.map(({ adapter, state }) =>
-    adapter.serializeFromStoreState(state)
+    adapter.serialize === LGraphNode.prototype.serialize
+      ? adapter.serializeFromStoreState(state)
+      : adapter.serialize()
   )
 }
 

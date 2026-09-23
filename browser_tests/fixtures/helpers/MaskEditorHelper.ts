@@ -16,11 +16,9 @@ class MaskEditorHelper {
     return this.comfyPage.page
   }
 
-  async loadImageOnNode() {
-    await this.comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-
+  async loadImageOnNode(nodeType = 'LoadImage') {
     const loadImageNode = (
-      await this.comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+      await this.comfyPage.nodeOps.getNodeRefsByType(nodeType)
     )[0]
     const { x, y } = await loadImageNode.getPosition()
 
@@ -39,8 +37,8 @@ class MaskEditorHelper {
     }
   }
 
-  async openDialog(): Promise<Locator> {
-    const { imagePreview } = await this.loadImageOnNode()
+  async openDialog(nodeType?: string): Promise<Locator> {
+    const { imagePreview } = await this.loadImageOnNode(nodeType)
 
     await imagePreview.getByRole('region').hover()
     await this.page.getByLabel('Edit or mask image').click()
@@ -54,6 +52,7 @@ class MaskEditorHelper {
     const canvasContainer = dialog.locator('#maskEditorCanvasContainer')
     await expect(canvasContainer).toBeVisible()
     await expect(canvasContainer.locator('canvas')).toHaveCount(4)
+    await expect(dialog.getByTestId('pointer-zone')).toBeVisible()
 
     return dialog
   }
@@ -65,6 +64,7 @@ class MaskEditorHelper {
 
     const dialog = this.page.locator('.mask-editor-dialog')
     await expect(dialog).toBeVisible()
+    await expect(dialog.getByTestId('pointer-zone')).toBeVisible()
 
     return dialog
   }

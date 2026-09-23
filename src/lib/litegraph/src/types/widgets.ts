@@ -476,6 +476,7 @@ export interface IBaseWidget<
 
   name: string
   options: TOptions
+  syncLiveDisabled?(): void
 
   label?: string
   /** Widget type (see {@link TWidgetType}) */
