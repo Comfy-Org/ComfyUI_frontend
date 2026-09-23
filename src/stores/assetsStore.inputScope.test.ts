@@ -47,17 +47,24 @@ function assetRequests() {
   })
 }
 
+/** Only the two input queries; the output query is not under test here. */
+function inputRequests() {
+  return assetRequests().filter(({ tags }) => tags === 'input')
+}
+
 /**
- * Mirrors the ingest contract: the public-inclusive query sees the shared
- * account's template inputs, the owner-only query sees nothing this user owns.
- * The two pages share no asset id, so `overlapping()` cannot bridge them.
+ * Mirrors the ingest contract: public assets are withheld only when the
+ * caller asks, so an absent `include_public` still serves them. The owner-only
+ * page shares no asset id with the public one, so `overlapping()` cannot
+ * bridge the two lists.
  */
 function servePagesByScope() {
-  fetchApiMock.mockImplementation(async (url: string) =>
-    url.includes('include_public=true')
-      ? page(['public-template-input'])
-      : page([])
-  )
+  fetchApiMock.mockImplementation(async (url: string) => {
+    const includePublic =
+      new URL(url, 'http://localhost').searchParams.get('include_public') !==
+      'false'
+    return includePublic ? page(['public-template-input']) : page([])
+  })
 }
 
 beforeEach(() => {
@@ -96,7 +103,7 @@ describe('assetsStore input asset scope', () => {
   it('refetches the Imported list on mutation even when it shares nothing with the public-inclusive list', async () => {
     servePagesByScope()
     const store = useAssetsStore()
-    await vi.waitFor(() => expect(assetRequests()).toHaveLength(3))
+    await vi.waitFor(() => expect(inputRequests()).toHaveLength(2))
     fetchApiMock.mockClear()
 
     await store.invalidateInputAssets()
@@ -110,7 +117,7 @@ describe('assetsStore input asset scope', () => {
   it('pulls new uploads into the Imported list on the same terms', async () => {
     servePagesByScope()
     const store = useAssetsStore()
-    await vi.waitFor(() => expect(assetRequests()).toHaveLength(3))
+    await vi.waitFor(() => expect(inputRequests()).toHaveLength(2))
     fetchApiMock.mockClear()
 
     await store.loadNewInputAssets()
