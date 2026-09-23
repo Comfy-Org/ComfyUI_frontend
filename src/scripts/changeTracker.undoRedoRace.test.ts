@@ -126,11 +126,9 @@ function settleLoadsImmediately() {
 
 /**
  * Loads whose promise settles only when the test releases it. Releasing is
- * count-independent on purpose: a fix that serialises the restores, or drops
- * the re-entrant one, issues fewer loads, and a harness that indexed them
- * would throw instead of letting the expected-failure cases reach their
- * assertions — which `it.fails` would then absorb, reporting a fixed bug as
- * still broken.
+ * count-independent on purpose: how many loads are outstanding depends on
+ * whether restores overlap, so indexing them would make the harness throw
+ * rather than let the assertions speak.
  */
 function holdLoadsUntilReleased() {
   const outstanding: (() => void)[] = []
@@ -147,9 +145,7 @@ function holdLoadsUntilReleased() {
     get heldCount() {
       return outstanding.length
     },
-    /** Waits, so a fix that defers a restore reaches its assertions. Its
-     * callers are `it.fails` cases, which absorb a timeout here: the
-     * unmarked case, not this wait, is the harness guard. */
+    /** Waits, so a deferred restore is still released rather than deadlocked. */
     releaseOldest: async () => {
       await vi.waitUntil(() => outstanding.length > 0, {
         timeout: 500,
@@ -219,13 +215,13 @@ function trackerEditing(
  * two partner nodes the user watched disappear.
  *
  * Pre-flight: `updateState`, `_restoringState`, `captureCanvasState`'s guards
- * and `loadGraphData`'s `isLoadingGraph` lifecycle are all unchanged between
- * `v1.53.7` (the release line on Comfy Cloud prod) and `main`, so this is not
- * fixed in 1.53 and is not a regression introduced after it.
+ * and `loadGraphData`'s `isLoadingGraph` lifecycle were all unchanged between
+ * `v1.53.7` (the release line on Comfy Cloud prod) and `main`, so this was
+ * broken in 1.53 too, not a regression introduced after it.
  *
- * The two `it.fails` cases pin different defects and can flip independently:
- * the first covers the emptied redo queue the report describes, the second the
- * duplicate redo entry that loses the intermediate workflow.
+ * The last two cases pin defects that can regress independently: the emptied
+ * redo queue the report describes, and the duplicate redo entry that loses the
+ * intermediate workflow.
  */
 describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
   const beforePartnerNodes = () => workflowOf([checkpointLoader])
@@ -327,6 +323,7 @@ describe('ChangeTracker undo/redo under a re-entrant undo (ING-198)', () => {
 
     const firstUndo = tracker.undo()
     const secondUndo = tracker.undo()
+    await vi.waitUntil(() => loads.heldCount > 0)
     loads.settleRest()
     await firstUndo
     await secondUndo

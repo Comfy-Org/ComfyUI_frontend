@@ -235,9 +235,9 @@ function getExecutionGraphState(value: unknown): unknown {
 
 /**
  * Tail of each tracker's restore queue, see {@link ChangeTracker.updateState}.
- * Held outside the class deliberately: `ChangeTracker` is duck-typed by around
- * twenty call sites, so a new instance member — private most of all, since
- * that makes the class nominally typed — fails every one of them.
+ * Held outside the class because a `private` member would make `ChangeTracker`
+ * nominally typed, breaking the `Partial<ChangeTracker>` mocks that many call
+ * sites build.
  */
 const restoreChains = new WeakMap<ChangeTracker, Promise<void>>()
 
@@ -502,6 +502,9 @@ export class ChangeTracker {
         }
       }
     )
+    // The tail absorbs rejections so one failed restore does not leave a
+    // rejected promise nothing ever chains past, wedging undo for the session.
+    // The caller still sees the failure through the un-caught `restore`.
     restoreChains.set(
       this,
       restore.catch(() => {})
