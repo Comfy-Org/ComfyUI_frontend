@@ -295,7 +295,7 @@ export function useWorkflowShareService() {
       throw new Error(`Failed to import assets: ${response.status}`)
     }
 
-    await useAssetsStore().inputAssets.invalidate()
+    await useAssetsStore().invalidateInputAssets()
   }
 
   return {

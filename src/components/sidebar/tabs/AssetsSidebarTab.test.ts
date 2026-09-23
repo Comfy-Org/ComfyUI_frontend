@@ -130,6 +130,7 @@ const assetsGridStub = {
         aria-label="Enter output folder"
         @click="$emit('output-count-click', assets[0])"
       />
+      <span v-for="asset in assets" :key="asset.id">{{ asset.name }}</span>
     </div>
   `
 }
@@ -166,6 +167,34 @@ it('keeps pagination mounted when more assets can be loaded', () => {
   renderTab()
 
   expect(screen.getByTestId('assets-grid')).toBeVisible()
+})
+
+it('lists only the user-scoped imports under the Imported tab', async () => {
+  const store = useAssetsStore()
+  const pagedList = (id: string, name: string) => ({
+    items: [
+      {
+        id,
+        name,
+        tags: ['input'],
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z'
+      }
+    ],
+    hasMore: false,
+    isLoading: false,
+    loadMore: vi.fn(async () => {}),
+    loadNew: vi.fn(async () => {}),
+    invalidate: vi.fn(async () => {})
+  })
+  store.inputAssets = pagedList('public-1', 'drinking_unicorn.mp4')
+  store.importedAssets = pagedList('mine-1', 'my-upload.png')
+
+  renderTab()
+  await userEvent.click(screen.getByRole('tab', { name: 'Imported' }))
+
+  expect(screen.getByText('my-upload.png')).toBeVisible()
+  expect(screen.queryByText('drinking_unicorn.mp4')).not.toBeInTheDocument()
 })
 
 describe('AssetsSidebarTab folder navigation', () => {

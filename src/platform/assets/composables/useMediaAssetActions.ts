@@ -697,7 +697,7 @@ export function useMediaAssetActions() {
         if (!EXCLUDED_TAGS.has(tag) && assetsStore.hasCategory(tag))
           invalidatedModelTags.add(tag)
       }
-      void assetsStore.inputAssets.invalidate([operation.id])
+      void assetsStore.invalidateInputAssets([operation.id])
     }
     let deletedJobCount = 0
     async function deleteJob(operation: JobDeletion) {
@@ -780,7 +780,7 @@ export function useMediaAssetActions() {
         await assetsStore.outputAssets.invalidate()
       }
       if (hasInputAssets) {
-        await assetsStore.inputAssets.invalidate()
+        await assetsStore.invalidateInputAssets()
       }
     }
 

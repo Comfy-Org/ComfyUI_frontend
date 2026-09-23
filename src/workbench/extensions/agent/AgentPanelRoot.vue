@@ -1202,7 +1202,7 @@ const attachment = useAttachment({
   // trailing pass.
   onUploaded: () => {
     inputAssetRefresh = inputAssetRefresh
-      .then(() => assetsStore.inputAssets.loadNew())
+      .then(() => assetsStore.loadNewInputAssets())
       .catch(() => undefined)
   },
   maxBytes: () =>

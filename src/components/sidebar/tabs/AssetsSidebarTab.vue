@@ -340,7 +340,7 @@ const {
 
 const currentAssets = computed(() =>
   activeTab.value === 'input'
-    ? assetsStore.inputAssets
+    ? assetsStore.importedAssets
     : assetsStore.outputAssets
 )
 const loading = computed(() => toValue(currentAssets.value.isLoading))

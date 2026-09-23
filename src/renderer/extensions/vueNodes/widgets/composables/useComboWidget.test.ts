@@ -696,6 +696,37 @@ describe('useComboWidget', () => {
       expect(result).toBe('Beautiful Sunset.png')
     })
 
+    it('should offer public template inputs as cloud input options', () => {
+      const scenario = cloudInputScenarios[0]
+      // The owner-scoped list never carries public template assets, so both
+      // the option lookup and the paging walk must read the public-inclusive
+      // one. `hasMore` stays true so a walk over the wrong list is visible.
+      const importedLoadMore = vi.fn(async () => {
+        useAssetsStore().importedAssets.hasMore = false
+      })
+      useAssetsStore().importedAssets = {
+        items: [],
+        hasMore: true,
+        isLoading: false,
+        loadMore: importedLoadMore,
+        loadNew: vi.fn(async () => {}),
+        invalidate: vi.fn(async () => {})
+      }
+
+      const { mockNode } = setupCloudInputMappingWidget(scenario, {}, [
+        createMockAssetItem({
+          id: 'public-template-input',
+          name: 'drinking_unicorn.png',
+          hash: 'public-template-hash.png'
+        })
+      ])
+
+      expect(getInputWidgetValues(mockNode)).toEqual([
+        'public-template-hash.png'
+      ])
+      expect(importedLoadMore).not.toHaveBeenCalled()
+    })
+
     it('should add control widgets for cloud input mappings when requested', () => {
       const scenario = cloudInputScenarios[0]
 

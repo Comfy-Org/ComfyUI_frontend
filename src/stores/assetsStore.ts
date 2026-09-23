@@ -281,7 +281,14 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   }
 
+  /**
+   * Every input asset the user can reference, including the shared public
+   * account's workflow-template inputs. Node widgets resolve values against
+   * this list, so a template's input must stay in it.
+   */
   const inputAssets = ref<PagedList<AssetItem>>(undefined!)
+  /** Input assets this user owns. Never includes public/template assets. */
+  const importedAssets = ref<PagedList<AssetItem>>(undefined!)
   const outputAssets = ref<PagedList<AssetItem>>(undefined!)
   let assetsScope: EffectScope | undefined
   watch(
@@ -293,7 +300,14 @@ export const useAssetsStore = defineStore('assets', () => {
       if (isAssets) {
         assetsScope = effectScope()
         assetsScope.run(() => {
-          inputAssets.value = useAssetsQuery({ tags_any: ['input'] })
+          inputAssets.value = useAssetsQuery({
+            tags_any: ['input'],
+            include_public: true
+          })
+          importedAssets.value = useAssetsQuery({
+            tags_any: ['input'],
+            include_public: false
+          })
           const flatAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
           outputAssets.value = new WrappedList(
             flatAssets,
@@ -302,11 +316,28 @@ export const useAssetsStore = defineStore('assets', () => {
         })
       } else {
         inputAssets.value = historyInputs
+        importedAssets.value = historyInputs
         outputAssets.value = useHistoryAssets()
       }
     },
     { immediate: true }
   )
+
+  function inputAssetLists(): PagedList<AssetItem>[] {
+    const lists = [inputAssets.value]
+    if (importedAssets.value !== inputAssets.value) {
+      lists.push(importedAssets.value)
+    }
+    return lists
+  }
+
+  async function invalidateInputAssets(stale?: string[]) {
+    await Promise.all(inputAssetLists().map((list) => list.invalidate(stale)))
+  }
+
+  async function loadNewInputAssets() {
+    await Promise.all(inputAssetLists().map((list) => list.loadNew()))
+  }
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -913,8 +944,11 @@ export const useAssetsStore = defineStore('assets', () => {
   return {
     // States
     inputAssets,
+    importedAssets,
     outputAssets,
     invalidateAll,
+    invalidateInputAssets,
+    loadNewInputAssets,
 
     // Deletion tracking
     deletingAssetIds,

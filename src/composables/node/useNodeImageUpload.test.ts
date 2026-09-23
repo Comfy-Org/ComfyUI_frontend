@@ -11,7 +11,7 @@ import type { Mock } from 'vitest'
 
 const mockFetchApi = vi.hoisted(() => vi.fn<typeof api.fetchApi>())
 let mockInvalidateInputs: Mock<
-  ReturnType<typeof useAssetsStore>['inputAssets']['invalidate']
+  ReturnType<typeof useAssetsStore>['invalidateInputAssets']
 >
 
 let capturedDragOnDrop: (files: File[]) => Promise<string[]>
@@ -78,7 +78,7 @@ describe('useNodeImageUpload', () => {
 
   beforeEach(() => {
     mockInvalidateInputs = vi
-      .spyOn(useAssetsStore().inputAssets, 'invalidate')
+      .spyOn(useAssetsStore(), 'invalidateInputAssets')
       .mockResolvedValue(undefined)
     node = createMockNode()
     onUploadComplete = vi.fn()
