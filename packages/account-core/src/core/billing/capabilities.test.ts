@@ -33,7 +33,7 @@ function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
     /** Moves the host to a new snapshot and notifies subscribers. */
     moveTo(next: SessionSnapshot) {
       snapshot = next
-      for (const listener of [...listeners]) listener(snapshot)
+      for (const listener of Array.from(listeners)) listener(snapshot)
     }
   }
 }

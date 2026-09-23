@@ -404,26 +404,6 @@ export default defineConfig([
       }
     }
   },
-  {
-    files: ['scripts/**/*.js'],
-    languageOptions: {
-      globals: {
-        ...globals.node
-      }
-    },
-    rules: {
-      '@typescript-eslint/no-floating-promises': 'off',
-      'no-console': 'off'
-    }
-  },
-  {
-    files: ['tools/devtools/web/**/*.js'],
-    languageOptions: {
-      globals: {
-        ...globals.browser
-      }
-    }
-  },
 
   {
     name: 'comfy/no-new-error-throw',
