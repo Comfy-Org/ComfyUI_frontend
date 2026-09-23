@@ -50,7 +50,10 @@ import {
   createPendingRevertNodeRegistry,
   createRevertNotifier
 } from './pendingOpRevert'
-import { ALREADY_CURRENT_RETRY_INTERVAL_MS,createPendingCorrelation } from './pendingCorrelation'
+import {
+  ALREADY_CURRENT_RETRY_INTERVAL_MS,
+  createPendingCorrelation
+} from './pendingCorrelation'
 import { createPendingOpTracker } from './pendingOpTracker'
 
 export {
