@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { NodeId, Op, OpBase } from '@comfyorg/comfy-multi-player'
 
@@ -69,10 +69,6 @@ function registry(
 }
 
 describe('applyPendingOpRevert', () => {
-  beforeEach(() => {
-    vi.mocked(reportError).mockClear()
-  })
-
   it('removes only the reverted add_node targets', () => {
     const removeNode = vi.fn<(id: unknown) => PendingRevertRemoval>(
       () => 'removed'

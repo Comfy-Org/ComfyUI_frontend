@@ -240,11 +240,6 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
   beforeEach(() => {
     useAgentPanelStore().enabled = true
     transportState.current = null
-    for (const value of Object.values(adapterState)) {
-      if (typeof value === 'function' && 'mockClear' in value) value.mockClear()
-    }
-    adapterState.applyFrame.mockReturnValue(true)
-    adapterState.reconcileFromDoc.mockReturnValue(true)
     adapterState.intent = null
   })
 
