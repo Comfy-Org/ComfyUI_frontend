@@ -559,13 +559,15 @@ describe('AgentPanel extension flag gate', () => {
       startupDecision = Promise.resolve(false)
 
       await loadEntryAndSetup()
-      mocks.flagListener?.()
       await flush()
-
       expect(await reported()).toHaveBeenCalledExactlyOnceWith(
         expect.any(Error),
         { errorType: 'first_run_decision_timeout' }
       )
+
+      mocks.flagListener?.()
+      await flush()
+      expect(await reported()).toHaveBeenCalledOnce()
     })
 
     it('reports a tour that opened while the offer was in flight', async () => {
