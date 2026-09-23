@@ -1,88 +1,112 @@
 import { isCloud } from '@/platform/distribution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 
-/**
- * The gates are served at different moments — the survey during routing, the
- * Getting Started screen once the canvas boots — so each is spent by whoever
- * serves it. One shared flag would let the first consumer swallow the replay
- * before the second ran.
- */
-const SURVEY_KEY = 'Comfy.OnboardingReplay.Survey'
-const FIRST_RUN_KEY = 'Comfy.OnboardingReplay.FirstRun'
+const REPLAY_KEY = 'Comfy.OnboardingReplay'
 
-function requestReplay(key: string): boolean {
+interface ReplayRequest {
+  survey: boolean
+  firstRun: boolean
+}
+
+function reportStorageError(
+  error: unknown,
+  operation: 'writing' | 'reading' | 'clearing'
+) {
+  reportError(error, {
+    errorType: `error_${operation}_onboarding_replay_request`
+  })
+}
+
+function isReplayRequest(value: unknown): value is ReplayRequest {
+  if (typeof value !== 'object' || value === null) return false
+  return (
+    'survey' in value &&
+    typeof value.survey === 'boolean' &&
+    'firstRun' in value &&
+    typeof value.firstRun === 'boolean'
+  )
+}
+
+function writeReplayRequest(request: ReplayRequest): boolean {
   try {
-    sessionStorage.setItem(key, 'true')
+    sessionStorage.setItem(REPLAY_KEY, JSON.stringify(request))
     return true
-  } catch {
-    console.warn(`[onboarding] Failed to record the replay request ${key}`)
+  } catch (error) {
+    reportStorageError(error, 'writing')
     return false
   }
 }
 
-function isReplayRequested(key: string): boolean {
+function readReplayRequest(): ReplayRequest | undefined {
   try {
-    return sessionStorage.getItem(key) === 'true'
-  } catch {
-    return false
-  }
-}
-
-/**
- * Falls back to overwriting the marker, because leaving a served request
- * standing re-serves the gate forever: the survey would bounce a user back to
- * a form they already submitted.
- */
-function consumeReplayRequest(key: string): void {
-  try {
-    sessionStorage.removeItem(key)
-  } catch {
-    try {
-      sessionStorage.setItem(key, 'false')
-    } catch {
-      console.warn(`[onboarding] Failed to clear the replay request ${key}`)
+    const stored = sessionStorage.getItem(REPLAY_KEY)
+    if (stored === null) return
+    const request: unknown = JSON.parse(stored)
+    if (!isReplayRequest(request)) {
+      sessionStorage.removeItem(REPLAY_KEY)
+      return
     }
+    return request
+  } catch (error) {
+    reportStorageError(error, 'reading')
+  }
+}
+
+function consumeReplayRequest(gate: 'survey' | 'firstRun'): void {
+  const request = readReplayRequest()
+  if (!request) return
+  const next = { ...request, [gate]: false }
+  try {
+    sessionStorage.setItem(REPLAY_KEY, JSON.stringify(next))
+  } catch (error) {
+    reportStorageError(error, 'clearing')
   }
 }
 
 export function isSurveyReplayRequested(): boolean {
-  return isReplayRequested(SURVEY_KEY)
+  return readReplayRequest()?.survey === true
 }
 
 export function consumeSurveyReplayRequest(): void {
-  consumeReplayRequest(SURVEY_KEY)
+  consumeReplayRequest('survey')
+}
+
+export function restoreSurveyReplayRequest(): void {
+  const current = readReplayRequest()
+  writeReplayRequest({
+    survey: true,
+    firstRun: current?.firstRun ?? false
+  })
 }
 
 export function isFirstRunReplayRequested(): boolean {
-  return isReplayRequested(FIRST_RUN_KEY)
+  return readReplayRequest()?.firstRun === true
 }
 
 export function consumeFirstRunReplayRequest(): void {
-  consumeReplayRequest(FIRST_RUN_KEY)
+  consumeReplayRequest('firstRun')
 }
 
 /**
- * Asks the next boot to serve onboarding to an account that has already been
- * through it. Session-scoped so a request cannot outlive the tab that made it,
- * and each gate spends its own request, so one click replays onboarding once.
- *
- * Returns false when session storage rejected a write, having cleared whatever
- * did land so a half-armed replay cannot serve one gate and not the other.
+ * Asks eligible cloud onboarding gates to serve an account again. The gates
+ * spend their parts of one session-scoped request independently.
  */
 export function requestOnboardingReplay(): boolean {
   // Both gates these arm are cloud-only. Off cloud the coachmark tours are the
   // whole of onboarding, so clearing their seen-list is the entire replay and
   // an armed request would only sit unserved for the life of the tab.
   if (!isCloud) return true
-
-  if (!requestReplay(SURVEY_KEY)) return false
-  if (!requestReplay(FIRST_RUN_KEY)) {
-    consumeReplayRequest(SURVEY_KEY)
-    return false
-  }
-  return true
+  return writeReplayRequest({
+    survey: true,
+    firstRun: true
+  })
 }
 
 export function clearOnboardingReplay(): void {
-  consumeReplayRequest(SURVEY_KEY)
-  consumeReplayRequest(FIRST_RUN_KEY)
+  try {
+    sessionStorage.removeItem(REPLAY_KEY)
+  } catch (error) {
+    reportStorageError(error, 'clearing')
+    writeReplayRequest({ survey: false, firstRun: false })
+  }
 }

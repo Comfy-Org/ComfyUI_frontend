@@ -5,16 +5,20 @@ import {
   consumeSurveyReplayRequest,
   isFirstRunReplayRequested,
   isSurveyReplayRequested,
-  requestOnboardingReplay
+  requestOnboardingReplay,
+  restoreSurveyReplayRequest
 } from './onboardingReplay'
 
 const mocks = vi.hoisted<{ isCloud: boolean }>(() => ({ isCloud: true }))
+const reportError = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mocks.isCloud
   }
 }))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 describe('onboardingReplay', () => {
   beforeEach(() => {
@@ -51,10 +55,10 @@ describe('onboardingReplay', () => {
     it('live in session storage, so they cannot outlive the tab', () => {
       requestOnboardingReplay()
 
-      expect(sessionStorage.getItem('Comfy.OnboardingReplay.Survey')).toBe(
-        'true'
+      expect(sessionStorage.getItem('Comfy.OnboardingReplay')).toBe(
+        JSON.stringify({ survey: true, firstRun: true })
       )
-      expect(localStorage.getItem('Comfy.OnboardingReplay.Survey')).toBeNull()
+      expect(localStorage.getItem('Comfy.OnboardingReplay')).toBeNull()
     })
 
     it('report failure when session storage rejects the write', () => {
@@ -63,23 +67,18 @@ describe('onboardingReplay', () => {
       })
 
       expect(requestOnboardingReplay()).toBe(false)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'QuotaExceededError' }),
+        { errorType: 'error_writing_onboarding_replay_request' }
+      )
     })
 
-    it('arm neither gate when only the first write lands', () => {
-      // Captured before the spy replaces it, so the surviving write is the real
-      // one rather than a re-entry that would consume the throwing case.
-      const write = Storage.prototype.setItem.bind(sessionStorage)
-      vi.spyOn(sessionStorage, 'setItem').mockImplementation((key, value) => {
-        if (key === 'Comfy.OnboardingReplay.FirstRun') {
-          throw new Error('QuotaExceededError')
-        }
-        write(key, value)
-      })
+    it('arms both gates with one atomic write', () => {
+      const setItem = vi.spyOn(sessionStorage, 'setItem')
 
-      expect(requestOnboardingReplay()).toBe(false)
+      expect(requestOnboardingReplay()).toBe(true)
 
-      expect(isSurveyReplayRequested()).toBe(false)
-      expect(isFirstRunReplayRequested()).toBe(false)
+      expect(setItem).toHaveBeenCalledOnce()
     })
 
     it('arm nothing off cloud, where neither gate exists to serve them', () => {
@@ -91,15 +90,35 @@ describe('onboardingReplay', () => {
       expect(isFirstRunReplayRequested()).toBe(false)
     })
 
-    it('are still spent when removal fails, so a served gate cannot re-serve forever', () => {
+    it('records both gates as spent without relying on removal', () => {
       requestOnboardingReplay()
       vi.spyOn(sessionStorage, 'removeItem').mockImplementation(() => {
         throw new Error('SecurityError')
       })
 
       consumeSurveyReplayRequest()
+      consumeFirstRunReplayRequest()
 
       expect(isSurveyReplayRequested()).toBe(false)
+      expect(isFirstRunReplayRequested()).toBe(false)
+    })
+
+    it('restores only the survey gate after navigation fails', () => {
+      requestOnboardingReplay()
+      consumeSurveyReplayRequest()
+      consumeFirstRunReplayRequest()
+
+      restoreSurveyReplayRequest()
+
+      expect(isSurveyReplayRequested()).toBe(true)
+      expect(isFirstRunReplayRequested()).toBe(false)
+    })
+
+    it('discards malformed replay records', () => {
+      sessionStorage.setItem('Comfy.OnboardingReplay', '{}')
+
+      expect(isSurveyReplayRequested()).toBe(false)
+      expect(sessionStorage.getItem('Comfy.OnboardingReplay')).toBeNull()
     })
   })
 })

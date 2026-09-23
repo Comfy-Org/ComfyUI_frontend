@@ -285,7 +285,7 @@ const moreItems = computed<MenuItem[]>(() => {
     {
       key: 'replay-onboarding',
       type: 'item',
-      label: t('helpCenter.replayOnboarding'),
+      label: t('commands.Comfy_Onboarding_Replay.label'),
       visible: isDevMode.value,
       action: () => {
         void commandStore.execute('Comfy.Onboarding.Replay')

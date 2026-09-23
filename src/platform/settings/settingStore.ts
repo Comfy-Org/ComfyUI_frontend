@@ -433,6 +433,7 @@ export const useSettingStore = defineStore('setting', () => {
     addSetting,
     set,
     setMany,
+    applySettingLocally,
     get,
     exists,
     getDefaultValue

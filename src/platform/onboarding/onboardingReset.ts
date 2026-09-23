@@ -1,4 +1,5 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 import {
@@ -6,13 +7,6 @@ import {
   requestOnboardingReplay
 } from './onboardingReplay'
 import { TOUR_SEEN_SETTING } from './onboardingTours'
-
-class OnboardingReplayError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'OnboardingReplayError'
-  }
-}
 
 /**
  * Re-opens the gates that hide onboarding from an account that has already
@@ -28,14 +22,20 @@ class OnboardingReplayError extends Error {
  * Every gate is read during startup, so the caller has to reload for any of
  * this to take effect.
  */
-export async function resetOnboardingState(): Promise<void> {
+export type OnboardingResetResult =
+  | { status: 'ready' }
+  | { status: 'failed'; cause: unknown }
+
+export async function resetOnboardingState(): Promise<OnboardingResetResult> {
   // Armed first because it is the reversible half: the server write cannot be
   // taken back, so failing after it would clear the seen-list while reporting
   // that nothing happened.
   if (!requestOnboardingReplay()) {
-    throw new OnboardingReplayError(
-      'Session storage is unavailable, so the onboarding replay cannot be requested'
-    )
+    return {
+      status: 'failed',
+      cause:
+        'Session storage is unavailable, so the onboarding replay cannot be requested'
+    }
   }
 
   // `settingStore.set` resolves even when the server rejects the write, since
@@ -45,25 +45,27 @@ export async function resetOnboardingState(): Promise<void> {
   let response: Response
   try {
     response = await api.storeSetting(TOUR_SEEN_SETTING, [])
-  } catch (error) {
+  } catch (cause) {
     // A timeout or a dead connection rejects rather than returning a status,
     // and would otherwise leave the replay armed after reporting failure.
     clearOnboardingReplay()
-    throw error
+    return { status: 'failed', cause }
   }
 
   if (!response.ok) {
     clearOnboardingReplay()
-    throw new OnboardingReplayError(
-      `Failed to clear seen onboarding tours: ${response.statusText}`
-    )
+    return {
+      status: 'failed',
+      cause: `Failed to clear seen onboarding tours: ${response.statusText}`
+    }
   }
 
-  // The write above leaves the store's copy stale, and `markTourSeen` is a
-  // read-modify-write off it: a reset the user then declines to reload away
-  // from would be undone by the next coachmark dismissal. Repeating the write
-  // through the store is what refreshes that copy in its own write ordering;
-  // the redundant request is idempotent, and the server is already correct if
-  // it fails.
-  await useSettingStore().set(TOUR_SEEN_SETTING, [])
+  try {
+    await useSettingStore().applySettingLocally(TOUR_SEEN_SETTING, [])
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_applying_onboarding_reset_locally'
+    })
+  }
+  return { status: 'ready' }
 }

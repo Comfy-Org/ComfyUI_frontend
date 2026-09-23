@@ -69,11 +69,11 @@ describe('getSurveyCompletedStatus', () => {
     await expect(getSurveyCompletedStatus()).resolves.toBe(false)
   })
 
-  test('200 with missing value key → false', async () => {
+  test('200 with missing value key → true (malformed response fails safe)', async () => {
     fetchApi.mockResolvedValueOnce(
       mockResponse({ ok: true, status: 200, body: {} })
     )
-    await expect(getSurveyCompletedStatus()).resolves.toBe(false)
+    await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
 
   test('404 → false (key never stored = genuinely not completed)', async () => {
@@ -132,18 +132,7 @@ describe('onboarding replay', () => {
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
 
-  test('submitting spends the replay, so the survey does not immediately re-open', async () => {
-    requestOnboardingReplay()
-    fetchApi.mockResolvedValueOnce(
-      mockResponse({ ok: true, status: 200, body: { value: { q1: 'stored' } } })
-    )
-
-    await submitSurvey({ q1: 'a' })
-
-    expect(isSurveyReplayRequested()).toBe(false)
-  })
-
-  test('submitting a replay stores nothing, leaving the stored answers as they were', async () => {
+  test('preserves stored answers and spends their replay', async () => {
     fetchApi.mockResolvedValueOnce(
       mockResponse({
         ok: true,
@@ -153,7 +142,9 @@ describe('onboarding replay', () => {
     )
     requestOnboardingReplay()
 
-    await expect(submitSurvey({ q1: 'replayed' })).resolves.toBe(false)
+    await expect(submitSurvey({ q1: 'replayed' })).resolves.toEqual({
+      status: 'preserved'
+    })
 
     expect(
       fetchApi.mock.calls.every(
@@ -161,33 +152,7 @@ describe('onboarding replay', () => {
       ),
       'a replay may only read the survey key, never write it'
     ).toBe(true)
-  })
-
-  test('the stored answers survive a replayed pass end to end', async () => {
-    // A stateful fake, so a write during the replay would be visible in the
-    // read that follows it rather than masked by a queued mock.
-    let stored: Record<string, unknown> | undefined = {
-      q1: 'original',
-      q2: 'kept'
-    }
-    fetchApi.mockImplementation(
-      async (_path: string, init?: { method?: string; body?: string }) => {
-        if ((init?.method ?? 'GET') === 'GET') {
-          return stored === undefined
-            ? mockResponse({ ok: false, status: 404 })
-            : mockResponse({ ok: true, status: 200, body: { value: stored } })
-        }
-        stored = JSON.parse(init?.body ?? '{}').onboarding_survey
-        return mockResponse({ ok: true, status: 200 })
-      }
-    )
-    requestOnboardingReplay()
-
-    await expect(getSurveyCompletedStatus()).resolves.toBe(false)
-    await submitSurvey({ q1: 'replayed', q2: 'replaced' })
-    await expect(getSurveyCompletedStatus()).resolves.toBe(true)
-
-    expect(stored).toEqual({ q1: 'original', q2: 'kept' })
+    expect(isSurveyReplayRequested()).toBe(false)
   })
 
   test.for([401, 403, 500] as const)(
@@ -196,9 +161,10 @@ describe('onboarding replay', () => {
       fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status }))
       requestOnboardingReplay()
 
-      await expect(submitSurvey({ q1: 'a' })).rejects.toThrow(
-        'Could not read the stored survey answers'
-      )
+      await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+        status: 'failed',
+        cause: expect.stringContaining('Could not read the stored survey')
+      })
 
       expect(
         isSurveyReplayRequested(),
@@ -217,11 +183,45 @@ describe('onboarding replay', () => {
     fetchApi.mockRejectedValueOnce(new TypeError('Network request failed'))
     requestOnboardingReplay()
 
-    await expect(submitSurvey({ q1: 'a' })).rejects.toThrow(
-      'Could not read the stored survey answers'
-    )
+    await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+      status: 'failed'
+    })
 
     expect(isSurveyReplayRequested()).toBe(true)
+    expect(fetchApi).toHaveBeenCalledOnce()
+  })
+
+  test.for([{}, 1, [], { value: [] }, { value: 'invalid' }])(
+    'keeps the replay and writes nothing for malformed settings data %#',
+    async (body) => {
+      fetchApi.mockResolvedValueOnce(
+        mockResponse({ ok: true, status: 200, body })
+      )
+      requestOnboardingReplay()
+
+      await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+        status: 'failed'
+      })
+
+      expect(isSurveyReplayRequested()).toBe(true)
+      expect(fetchApi).toHaveBeenCalledOnce()
+    }
+  )
+
+  test('keeps the replay when settings JSON cannot be parsed', async () => {
+    const response = mockResponse({ ok: true, status: 200 })
+    vi.spyOn(response, 'json').mockRejectedValue(
+      new SyntaxError('Invalid JSON')
+    )
+    fetchApi.mockResolvedValueOnce(response)
+    requestOnboardingReplay()
+
+    await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+      status: 'failed'
+    })
+
+    expect(isSurveyReplayRequested()).toBe(true)
+    expect(fetchApi).toHaveBeenCalledOnce()
   })
 
   test('keeps the replay when the first-time write it fell through to fails', async () => {
@@ -229,7 +229,9 @@ describe('onboarding replay', () => {
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 500 }))
     requestOnboardingReplay()
 
-    await expect(submitSurvey({ q1: 'a' })).rejects.toThrow()
+    await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+      status: 'failed'
+    })
 
     expect(isSurveyReplayRequested()).toBe(true)
   })
@@ -239,7 +241,9 @@ describe('onboarding replay', () => {
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: true, status: 200 }))
     requestOnboardingReplay()
 
-    await expect(submitSurvey({ q1: 'a' })).resolves.toBe(true)
+    await expect(submitSurvey({ q1: 'a' })).resolves.toEqual({
+      status: 'stored'
+    })
 
     expect(fetchApi).toHaveBeenCalledWith(
       '/settings',
@@ -247,12 +251,15 @@ describe('onboarding replay', () => {
         body: JSON.stringify({ onboarding_survey: { q1: 'a' } })
       })
     )
+    expect(isSurveyReplayRequested()).toBe(false)
   })
 
   test('submitting without a replay stores the answers as usual', async () => {
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: true, status: 200 }))
 
-    await expect(submitSurvey({ q1: 'a' })).resolves.toBe(true)
+    await expect(submitSurvey({ q1: 'a' })).resolves.toEqual({
+      status: 'stored'
+    })
 
     expect(fetchApi).toHaveBeenCalledWith(
       '/settings',
@@ -262,9 +269,11 @@ describe('onboarding replay', () => {
     )
   })
 
-  test('a failed first-time submission throws, so the caller can surface it', async () => {
+  test('a failed first-time submission reports failure to the caller', async () => {
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 500 }))
 
-    await expect(submitSurvey({ q1: 'a' })).rejects.toThrow()
+    await expect(submitSurvey({ q1: 'a' })).resolves.toMatchObject({
+      status: 'failed'
+    })
   })
 })

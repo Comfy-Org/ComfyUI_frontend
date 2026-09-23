@@ -77,6 +77,8 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const moveSelectedNodesVersionAdded = '1.22.2'
+let onboardingReplayInProgress: Promise<void> | undefined
+
 export function useCoreCommands(): ComfyCommand[] {
   const {
     canAccessSubscriptionFeatures,
@@ -903,35 +905,40 @@ export function useCoreCommands(): ComfyCommand[] {
         // also reachable from the keybinding panel, which lists every
         // registered command regardless.
         if (!settingStore.get('Comfy.DevMode')) return
-
-        const confirmed = await useDialogService().confirm({
-          title: t('onboardingReplay.confirmTitle'),
-          message: t('onboardingReplay.confirmMessage'),
-          type: 'default'
-        })
-        if (!confirmed) return
-
-        try {
-          await resetOnboardingState()
-        } catch (error) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('onboardingReplay.failedSummary'),
-            detail: t('onboardingReplay.failedDetail'),
-            life: 5000
+        const replay = (onboardingReplayInProgress ??= (async () => {
+          const confirmed = await dialogService.confirm({
+            title: t('onboardingReplay.confirmTitle'),
+            message: t('onboardingReplay.confirmMessage'),
+            type: 'default'
           })
-          reportError(error, { errorType: 'error_resetting_onboarding_state' })
-          return
-        }
+          if (!confirmed) return
 
-        // Every gate is read during startup, so the reset needs a fresh boot.
-        // On cloud the survey's route guard only runs at the app root, so land
-        // there; off cloud there is no survey and no guarantee the app is
-        // served from the origin root, so reload where we already are.
-        if (isCloud) {
-          globalThis.location.assign(import.meta.env.BASE_URL || '/')
-        } else {
-          globalThis.location.reload()
+          const result = await resetOnboardingState()
+          if (result.status === 'failed') {
+            toastStore.add({
+              severity: 'error',
+              summary: t('onboardingReplay.failedSummary'),
+              detail: t('onboardingReplay.failedDetail'),
+              life: 5000
+            })
+            reportError(result.cause, {
+              errorType: 'error_resetting_onboarding_state'
+            })
+            return
+          }
+
+          if (isCloud) {
+            globalThis.location.assign(import.meta.env.BASE_URL || '/')
+          } else {
+            globalThis.location.reload()
+          }
+        })())
+        try {
+          await replay
+        } finally {
+          if (onboardingReplayInProgress === replay) {
+            onboardingReplayInProgress = undefined
+          }
         }
       }
     },

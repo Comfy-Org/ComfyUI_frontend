@@ -24,7 +24,10 @@ import {
   getSurveyCompletedStatus,
   submitSurvey
 } from '@/platform/cloud/onboarding/auth'
-import { isSurveyReplayRequested } from '@/platform/onboarding/onboardingReplay'
+import {
+  isSurveyReplayRequested,
+  restoreSurveyReplayRequest
+} from '@/platform/onboarding/onboardingReplay'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -69,13 +72,31 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
     return
   }
   isSubmitting.value = true
+  const replaying = isSurveyReplayRequested()
+  const result = await submitSurvey(payload)
+  if (result.status === 'failed') {
+    // Stay on the form: navigating on would strand answers that never landed.
+    reportError(result.cause, {
+      errorType: 'error_submitting_onboarding_survey'
+    })
+    useToastStore().add({
+      severity: 'error',
+      summary: t('cloudOnboarding.survey.submitFailed'),
+      detail: t('cloudOnboarding.survey.submitFailedDetail'),
+      life: 5000
+    })
+    isSubmitting.value = false
+    return
+  }
+  if (result.status === 'stored') {
+    useTelemetry()?.trackSurvey('submitted', payload)
+  }
+
   try {
-    const stored = await submitSurvey(payload)
-    if (stored) useTelemetry()?.trackSurvey('submitted', payload)
     await router.push({ name: 'cloud-user-check' })
   } catch (error) {
-    // Stay on the form: navigating on would strand answers that never landed.
-    reportError(error, { errorType: 'error_submitting_onboarding_survey' })
+    if (replaying) restoreSurveyReplayRequest()
+    reportError(error, { errorType: 'error_navigating_from_onboarding_survey' })
     useToastStore().add({
       severity: 'error',
       summary: t('cloudOnboarding.survey.submitFailed'),

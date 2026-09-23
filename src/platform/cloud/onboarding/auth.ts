@@ -1,5 +1,4 @@
 import { addBreadcrumb } from '@sentry/vue'
-import { isEmpty } from 'es-toolkit/compat'
 
 import {
   consumeSurveyReplayRequest,
@@ -14,13 +13,6 @@ interface UserCloudStatus {
 }
 
 const ONBOARDING_SURVEY_KEY = 'onboarding_survey'
-
-class SurveyStateUnknownError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'SurveyStateUnknownError'
-  }
-}
 
 function captureApiError(
   error: Error,
@@ -104,6 +96,16 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
  */
 type StoredSurvey = 'present' | 'absent' | 'unknown'
 
+function classifyStoredSurvey(data: unknown): StoredSurvey {
+  if (typeof data !== 'object' || data === null || !('value' in data)) {
+    return 'unknown'
+  }
+  const value = data.value
+  if (value === null) return 'absent'
+  if (typeof value !== 'object' || Array.isArray(value)) return 'unknown'
+  return Object.keys(value).length === 0 ? 'absent' : 'present'
+}
+
 async function readStoredSurvey(): Promise<StoredSurvey> {
   try {
     const response = await api.fetchApi(`/settings/${ONBOARDING_SURVEY_KEY}`, {
@@ -130,8 +132,8 @@ async function readStoredSurvey(): Promise<StoredSurvey> {
       })
       return 'unknown'
     }
-    const data = await response.json()
-    return isEmpty(data.value) ? 'absent' : 'present'
+    const data: unknown = await response.json()
+    return classifyStoredSurvey(data)
   } catch (error) {
     reportError(error, {
       errorType: 'network_error',
@@ -146,10 +148,14 @@ async function readStoredSurvey(): Promise<StoredSurvey> {
   }
 }
 
-/** Whether the answers were stored, which a replayed pass declines to do. */
+export type SurveySubmissionResult =
+  | { status: 'stored' }
+  | { status: 'preserved' }
+  | { status: 'failed'; cause: unknown }
+
 export async function submitSurvey(
   survey: Record<string, unknown>
-): Promise<boolean> {
+): Promise<SurveySubmissionResult> {
   // A replay exercises the flow rather than re-profiling the user, so it keeps
   // the answers already on the account: submitting is the only way out of the
   // survey, and this POST would replace them wholesale. With nothing stored to
@@ -163,13 +169,15 @@ export async function submitSurvey(
   if (replaying) {
     const stored = await readStoredSurvey()
     if (stored === 'unknown') {
-      throw new SurveyStateUnknownError(
-        'Could not read the stored survey answers, so the replayed submission was not written'
-      )
+      return {
+        status: 'failed',
+        cause:
+          'Could not read the stored survey answers, so the replayed submission was not written'
+      }
     }
     if (stored === 'present') {
       consumeSurveyReplayRequest()
-      return false
+      return { status: 'preserved' }
     }
   }
 
@@ -206,7 +214,7 @@ export async function submitSurvey(
           }
         }
       )
-      throw error
+      return { status: 'failed', cause: error }
     }
 
     // Spent only now: a replay that failed to write has not been served, and
@@ -220,18 +228,15 @@ export async function submitSurvey(
       level: 'info'
     })
 
-    return true
+    return { status: 'stored' }
   } catch (error) {
-    // Only capture network errors (not HTTP errors we already captured)
-    if (!isHttpError(error, 'Failed to submit survey:')) {
-      captureApiError(
-        toError(error),
-        '/settings',
-        'network_error',
-        undefined,
-        'submit_survey'
-      )
-    }
-    throw error
+    captureApiError(
+      toError(error),
+      '/settings',
+      'network_error',
+      undefined,
+      'submit_survey'
+    )
+    return { status: 'failed', cause: error }
   }
 }

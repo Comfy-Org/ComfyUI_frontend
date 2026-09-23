@@ -15,6 +15,7 @@ import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
+import { clearOnboardingReplay } from '@/platform/onboarding/onboardingReplay'
 import {
   clearPreservedQuery,
   getPreservedQueryParam
@@ -119,6 +120,7 @@ export const useAuthStore = defineStore('auth', () => {
       useWorkspaceAuthStore().clearWorkspaceContext()
     }
     if (identityChanged) {
+      clearOnboardingReplay()
       useTeamWorkspaceStore().resetForIdentityChange()
       invalidateRemoteConfig()
     }

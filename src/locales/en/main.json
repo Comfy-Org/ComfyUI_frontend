@@ -1109,7 +1109,6 @@
     "desktopUserGuide": "Desktop User Guide",
     "openDevTools": "Open Dev Tools",
     "reinstall": "Re-Install",
-    "replayOnboarding": "Replay Onboarding",
     "updateComfyUI": "Update ComfyUI",
     "updateComfyUIStarted": "Update Started",
     "updateComfyUIStartedDetail": "ComfyUI update has been queued. Please wait...",
@@ -5210,7 +5209,7 @@
   },
   "onboardingReplay": {
     "confirmTitle": "Replay onboarding?",
-    "confirmMessage": "This reloads ComfyUI and takes you back through onboarding from the start. Your workflows are not affected.",
+    "confirmMessage": "This reloads ComfyUI and resets the onboarding steps available in this environment. Your workflows are not affected.",
     "failedSummary": "Could not replay onboarding",
     "failedDetail": "Your onboarding state could not be reset. Please try again."
   },

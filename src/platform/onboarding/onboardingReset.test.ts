@@ -29,17 +29,15 @@ beforeEach(() => {
 })
 
 describe('resetOnboardingState', () => {
-  it('re-opens the coachmark tours', async () => {
+  it('re-opens coachmarks with one server write and updates the local value', async () => {
+    const settingStore = useSettingStore()
+    settingStore.settingValues[TOUR_SEEN_SETTING] = ['appMode']
+
     await resetOnboardingState()
 
+    expect(api.storeSetting).toHaveBeenCalledOnce()
     expect(api.storeSetting).toHaveBeenCalledWith(TOUR_SEEN_SETTING, [])
-  })
-
-  it('writes no other key, so no further onboarding state can be left half-applied', async () => {
-    await resetOnboardingState()
-
-    const keys = vi.mocked(api.storeSetting).mock.calls.map(([key]) => key)
-    expect(new Set(keys)).toEqual(new Set([TOUR_SEEN_SETTING]))
+    expect(settingStore.settingValues[TOUR_SEEN_SETTING]).toEqual([])
   })
 
   it('never writes the survey key, whose stored answers a write would destroy', async () => {
@@ -58,18 +56,21 @@ describe('resetOnboardingState', () => {
     expect(isFirstRunReplayRequested()).toBe(true)
   })
 
-  it('throws on a rejected write, which the settings API resolves rather than rejecting', async () => {
+  it('reports a non-ok settings response as failed', async () => {
     vi.spyOn(api, 'storeSetting').mockResolvedValue(response(401))
 
-    await expect(resetOnboardingState()).rejects.toThrow(
-      'Failed to clear seen onboarding tours'
-    )
+    await expect(resetOnboardingState()).resolves.toEqual({
+      status: 'failed',
+      cause: expect.stringContaining('Failed to clear seen onboarding tours')
+    })
   })
 
   it('requests no replay when the write is rejected, so a failed reset stays inert', async () => {
     vi.spyOn(api, 'storeSetting').mockResolvedValue(response(500))
 
-    await expect(resetOnboardingState()).rejects.toThrow()
+    await expect(resetOnboardingState()).resolves.toMatchObject({
+      status: 'failed'
+    })
 
     expect(isSurveyReplayRequested()).toBe(false)
     expect(isFirstRunReplayRequested()).toBe(false)
@@ -88,28 +89,23 @@ describe('resetOnboardingState', () => {
       new DOMException('Fetch timeout', 'TimeoutError')
     )
 
-    await expect(resetOnboardingState()).rejects.toThrow('Fetch timeout')
+    await expect(resetOnboardingState()).resolves.toMatchObject({
+      status: 'failed',
+      cause: expect.objectContaining({ message: 'Fetch timeout' })
+    })
 
     expect(isSurveyReplayRequested()).toBe(false)
     expect(isFirstRunReplayRequested()).toBe(false)
   })
 
-  it("refreshes the store's copy, which a declined reload would otherwise revert", async () => {
-    const settingStore = useSettingStore()
-    settingStore.settingValues[TOUR_SEEN_SETTING] = ['appMode']
-
-    await resetOnboardingState()
-
-    expect(settingStore.settingValues[TOUR_SEEN_SETTING]).toEqual([])
-  })
-
-  it('throws when the replay cannot be recorded, rather than reporting success', async () => {
+  it('fails when the replay cannot be recorded', async () => {
     vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError')
     })
 
-    await expect(resetOnboardingState()).rejects.toThrow(
-      'Session storage is unavailable'
-    )
+    await expect(resetOnboardingState()).resolves.toEqual({
+      status: 'failed',
+      cause: expect.stringContaining('Session storage is unavailable')
+    })
   })
 })

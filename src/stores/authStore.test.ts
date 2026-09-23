@@ -17,6 +17,10 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import {
+  isSurveyReplayRequested,
+  requestOnboardingReplay
+} from '@/platform/onboarding/onboardingReplay'
+import {
   cachedLegacyBillingMigrationEnabled,
   remoteConfig,
   remoteConfigState
@@ -2246,6 +2250,14 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
 
       expect(mockResetSocket).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears an onboarding replay on a direct account switch', () => {
+      requestOnboardingReplay()
+
+      authStateCallback(accountB)
+
+      expect(isSurveyReplayRequested()).toBe(false)
     })
 
     it('discards a remote config response from the previous account', async () => {
