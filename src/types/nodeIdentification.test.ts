@@ -12,6 +12,7 @@ import {
   getParentExecutionIds,
   isNodeExecutionId,
   isNodeLocatorId,
+  parseLeafNodeLocatorId,
   parseNodeExecutionId,
   parseNodeLocatorId,
   tryNormalizeNodeExecutionId
@@ -155,16 +156,47 @@ describe('nodeIdentification', () => {
         expect(createLeafNodeLocatorId(null, rawId)).toBe(rawId)
       })
 
-      it('still rejects a colon-bearing id when it really is subgraph-nested', () => {
-        // There is no subgraph UUID to disambiguate a colon-bearing id from
-        // in the root-level case, but a node that IS scoped to a subgraph
-        // still goes through the strict, delimiter-aware path.
+      it('keeps a colon-bearing id whole when it really is subgraph-nested (insert_workflow subgraph-interior remap)', () => {
+        // comfy-multi-player's insert_workflow remaps a subgraph
+        // DEFINITION's interior nodes to the same colon-bearing shape as a
+        // root-level node -- there is equally no other id to disambiguate
+        // it from, so this is PM-1580's sibling case one nesting level down.
         const rawId = 'insert:abc123:root:node:5'
-        expect(createLeafNodeLocatorId(validUuid, rawId)).toBeNull()
+        const result = createLeafNodeLocatorId(validUuid, rawId)
+        expect(result).toBe(`${validUuid}:${rawId}`)
+        expect(parseLeafNodeLocatorId(result!)).toEqual({
+          subgraphUuid: validUuid,
+          localNodeId: rawId
+        })
       })
 
       it('returns null for an empty id', () => {
         expect(createLeafNodeLocatorId(null, '')).toBeNull()
+      })
+    })
+
+    describe('parseLeafNodeLocatorId', () => {
+      it('parses exactly like parseNodeLocatorId for ordinary ids', () => {
+        expect(parseLeafNodeLocatorId(String(validNodeLocatorId))).toEqual({
+          subgraphUuid: validUuid,
+          localNodeId: '123'
+        })
+        expect(parseLeafNodeLocatorId('123')).toEqual({
+          subgraphUuid: null,
+          localNodeId: '123'
+        })
+      })
+
+      it('keeps a colon-bearing root-level id whole (PM-1580)', () => {
+        const rawId = 'insert:abc123:root:node:5'
+        expect(parseLeafNodeLocatorId(rawId)).toEqual({
+          subgraphUuid: null,
+          localNodeId: rawId
+        })
+      })
+
+      it('returns null for an empty id', () => {
+        expect(parseLeafNodeLocatorId('')).toBeNull()
       })
     })
   })

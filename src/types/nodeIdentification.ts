@@ -115,18 +115,20 @@ export function createNodeLocatorId(
 }
 
 /**
- * Create a `NodeLocatorId` from components, tolerating a colon inside a
- * root-graph local id.
+ * Create a `NodeLocatorId` from components, tolerating a colon inside the
+ * local id, whether or not it is scoped to a subgraph.
  *
  * `createNodeLocatorId` rejects a colon in `localNodeId` because colon is
  * the delimiter between the subgraph UUID and the local id. That is the
- * right contract for a node that really lives in a subgraph, but it is too
- * strict for a root-graph node (no `subgraphUuid`) whose raw id itself
- * contains colons for reasons that have nothing to do with locator-id
- * encoding (comfy-multi-player's `insert_workflow` remapped ids, e.g.
- * `insert:<opId>:root:node:<originalId>`, PM-1580). There is no subgraph
- * UUID to disambiguate such an id from, so nothing is lost by keeping it
- * whole rather than rejecting it outright.
+ * right contract for an ordinary id, but it is too strict for a raw id that
+ * itself contains colons for reasons that have nothing to do with
+ * locator-id encoding: comfy-multi-player's `insert_workflow` remaps EVERY
+ * node it inserts to such an id (e.g. `insert:<opId>:root:node:<originalId>`
+ * at the root, PM-1580, or the same shape one level down for a node owned
+ * by an inserted subgraph DEFINITION). There is no other id to disambiguate
+ * a leaf id from, so nothing is lost by keeping it whole rather than
+ * rejecting it outright -- see {@link parseLeafNodeLocatorId} for the
+ * matching decode.
  */
 export function createLeafNodeLocatorId(
   subgraphUuid: string | null,
@@ -134,11 +136,44 @@ export function createLeafNodeLocatorId(
 ): NodeLocatorId | null {
   const strictNodeId = requireNodeIdSegment(localNodeId)
   if (strictNodeId) return createNodeLocatorId(subgraphUuid, strictNodeId)
-  if (subgraphUuid) return null
 
   const bareNodeId = parseNodeId(localNodeId)
-  return bareNodeId ? (String(bareNodeId) as NodeLocatorId) : null
+  if (!bareNodeId) return null
+  if (!subgraphUuid) return String(bareNodeId) as NodeLocatorId
+  if (!UUID_PATTERN.test(subgraphUuid)) return null
+  return `${subgraphUuid}:${bareNodeId}` as NodeLocatorId
 }
+
+/**
+ * Parse a `NodeLocatorId` produced by {@link createLeafNodeLocatorId},
+ * tolerating a colon-bearing local id at any nesting depth.
+ *
+ * A pure widening of {@link parseNodeLocatorId}: anything the strict parser
+ * already accepts parses identically here. It only takes over when the
+ * strict, delimiter-aware split fails, by splitting on the FIRST colon
+ * alone -- when that prefix is UUID-shaped, everything after it is the
+ * local id, however many colons it itself carries; otherwise the whole
+ * string is a root-owned local id.
+ */
+export function parseLeafNodeLocatorId(
+  id: string
+): { subgraphUuid: string | null; localNodeId: NodeId } | null {
+  const strict = parseNodeLocatorId(id)
+  if (strict) return strict
+
+  const separatorIndex = id.indexOf(':')
+  if (separatorIndex === -1) return null
+
+  const subgraphUuid = id.slice(0, separatorIndex)
+  if (!UUID_PATTERN.test(subgraphUuid)) {
+    const localNodeId = parseNodeId(id)
+    return localNodeId ? { subgraphUuid: null, localNodeId } : null
+  }
+
+  const localNodeId = parseNodeId(id.slice(separatorIndex + 1))
+  return localNodeId ? { subgraphUuid, localNodeId } : null
+}
+
 /**
  * Parse a NodeExecutionId into its component node IDs
  * @param id The NodeExecutionId to parse
