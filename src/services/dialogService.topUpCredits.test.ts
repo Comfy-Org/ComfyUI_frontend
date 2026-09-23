@@ -47,9 +47,7 @@ describe('showTopUpCreditsDialog', () => {
 
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
-    expect(
-      vi.mocked(useBillingCapabilities().initialize)
-    ).not.toHaveBeenCalled()
+    expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
   })
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
@@ -69,7 +67,7 @@ describe('showTopUpCreditsDialog', () => {
     const props = args.props
     assert(props && 'onClose' in props && typeof props.onClose === 'function')
     props.onClose()
-    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'insufficient-credits-member'
     })
   })
@@ -89,7 +87,7 @@ describe('showTopUpCreditsDialog', () => {
 
     await useDialogService().showTopUpCreditsDialog()
 
-    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
     expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
   })
 
@@ -109,9 +107,7 @@ describe('showTopUpCreditsDialog', () => {
       isInsufficientCredits: true
     })
 
-    expect(
-      vi.mocked(useBillingCapabilities().initialize)
-    ).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
   })
@@ -122,10 +118,8 @@ describe('showTopUpCreditsDialog', () => {
 
     await useDialogService().showTopUpCreditsDialog()
 
-    expect(
-      vi.mocked(useBillingCapabilities().initialize)
-    ).toHaveBeenCalledOnce()
-    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
+    expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
     expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
   })
 
@@ -138,7 +132,7 @@ describe('showTopUpCreditsDialog', () => {
     expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
       reason: 'top_up_blocked'
     })
-    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
   describe('non-cloud distribution', () => {
