@@ -124,7 +124,21 @@ function subscribeStateVectorOf(raw: Buffer | string): string | null {
  * back. Callers decide when (if ever) to release it via the returned
  * `sendDelayedDocUpdate`.
  */
-async function driveThroughToolCallDone(page: Page): Promise<{
+async function driveThroughToolCallDone(
+  page: Page,
+  /**
+   * The healthy-doc-host ordering is the tool call's own terminal frame
+   * landing before the matching `doc_update` broadcast -- that is what every
+   * scenario above exercises. 'docUpdateBeforeToolCall' instead releases the
+   * (already-applied, see `host.apply` below) `doc_update` BEFORE the
+   * `agent_tool_call success` frame, to exercise the inverted ordering a
+   * lost-wakeup regression in `notifyCanvasCaughtUp`'s edge-triggering would
+   * strand at `STALE_AFTER_MS` even though the canvas had already caught up.
+   */
+  order:
+    | 'toolCallBeforeDocUpdate'
+    | 'docUpdateBeforeToolCall' = 'toolCallBeforeDocUpdate'
+): Promise<{
   vueNodes: VueNodeHelpers
   sendDelayedDocUpdate: () => void
 }> {
@@ -260,6 +274,39 @@ async function driveThroughToolCallDone(page: Page): Promise<{
     }
   })
 
+  // The doc host records the op on its authoritative document as soon as the
+  // tool actually executes -- this is not a race the agent lost, the op is
+  // real -- independent of when its broadcast reaches this client relative
+  // to the tool call's own terminal frame, which `order` controls below.
+  const update = host.apply([
+    {
+      op: 'add_node',
+      pos: [0, 0],
+      node: {
+        id: ADDED_NODE_ID,
+        pos: [0, 0],
+        mode: 0,
+        size: [200, 100],
+        type: 'MarkdownNote',
+        flags: {},
+        order: 0,
+        inputs: [],
+        outputs: [],
+        properties: {},
+        widgets_values: [NODE_TEXT]
+      },
+      node_id: ADDED_NODE_ID,
+      class_type: 'MarkdownNote'
+    }
+  ])
+  expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
+
+  // The inverted ordering: the doc_update broadcast reaches this client
+  // while the tool is still (from the chat frames' perspective) running --
+  // the healthy-doc-host case most reviewers flagged as the lost-wakeup risk
+  // for notifyCanvasCaughtUp()'s edge triggering.
+  if (order === 'docUpdateBeforeToolCall') send(update)
+
   // The tool-call-completion affordance: `agentEventTransport.ts`'s `ingest()`
   // flips this tool part `done` the instant this frame is read, purely from
   // `status`, with nothing checked on the CRDT doc side (see file header).
@@ -293,36 +340,13 @@ async function driveThroughToolCallDone(page: Page): Promise<{
   await expect(panel.getByRole('button', { name: SEND_LABEL })).toBeVisible()
   await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
-  // The doc host has ALREADY recorded the op on its authoritative document --
-  // this is not a race the agent lost, the op is real -- but its broadcast is
-  // held back by the caller, standing in for stagingcloud's observed
-  // doc-broadcast lag.
-  const update = host.apply([
-    {
-      op: 'add_node',
-      pos: [0, 0],
-      node: {
-        id: ADDED_NODE_ID,
-        pos: [0, 0],
-        mode: 0,
-        size: [200, 100],
-        type: 'MarkdownNote',
-        flags: {},
-        order: 0,
-        inputs: [],
-        outputs: [],
-        properties: {},
-        widgets_values: [NODE_TEXT]
-      },
-      node_id: ADDED_NODE_ID,
-      class_type: 'MarkdownNote'
-    }
-  ])
-  expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
-
   return {
     vueNodes,
-    sendDelayedDocUpdate: () => send(update)
+    // A no-op once `order` already sent it above -- resending the same
+    // update twice is not part of what either ordering means to exercise.
+    sendDelayedDocUpdate: () => {
+      if (order !== 'docUpdateBeforeToolCall') send(update)
+    }
   }
 }
 
@@ -387,6 +411,35 @@ test.describe(
         0
       )
       sendDelayedDocUpdate()
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
+    })
+
+    // Regression for the lost-wakeup case flagged during review: on a
+    // healthy doc host the broadcast can just as well reach this client
+    // BEFORE the tool call's own terminal frame -- notifyCanvasCaughtUp()
+    // firing while nothing is pending yet must not be a no-op that strands
+    // the row at its full STALE_AFTER_MS fallback once the tool call's
+    // success frame arrives after the canvas already caught up.
+    test('settles immediately when the doc_update lands before the tool call reports done', async ({
+      page
+    }) => {
+      const { vueNodes } = await driveThroughToolCallDone(
+        page,
+        'docUpdateBeforeToolCall'
+      )
+
+      const panel = page.locator('#agent-panel-root')
+      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      await workSummary.click()
+      await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
+
+      const addNodeRow = panel
+        .getByRole('listitem')
+        .filter({ hasText: 'Add node' })
+      await expect(addNodeRow).toBeVisible()
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toHaveCount(
+        0
+      )
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
     })
   }
