@@ -5,6 +5,7 @@ import { nextTick } from 'vue'
 import type * as VueRouter from 'vue-router'
 
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -13,22 +14,16 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 
 type MockSubgraph = Pick<Subgraph, 'id' | 'rootGraph' | '_nodes' | 'nodes'>
 
-const {
-  routeHash,
-  routerPush,
-  routerReplace,
-  routerHistory,
-  mockOpenWorkflow
-} = await vi.hoisted(async () => {
-  const { ref } = await import('vue')
-  return {
-    routeHash: ref(''),
-    routerPush: vi.fn(),
-    routerReplace: vi.fn(),
-    routerHistory: { state: {} },
-    mockOpenWorkflow: vi.fn()
-  }
-})
+const { routeHash, routerPush, routerReplace, routerHistory } =
+  await vi.hoisted(async () => {
+    const { ref } = await import('vue')
+    return {
+      routeHash: ref(''),
+      routerPush: vi.fn(),
+      routerReplace: vi.fn(),
+      routerHistory: { state: {} }
+    }
+  })
 
 function createMockSubgraph(id: string, rootGraph = app.rootGraph): Subgraph {
   const mockSubgraph = {
@@ -100,12 +95,9 @@ vi.mock<unknown>(import('vue-router'), () => ({
     options: { history: routerHistory }
   })
 }))
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({ openWorkflow: mockOpenWorkflow })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
+
+const mockOpenWorkflow = vi.mocked(useWorkflowService().openWorkflow)
 
 describe('useSubgraphNavigationStore', () => {
   beforeEach(() => {

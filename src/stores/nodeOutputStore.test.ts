@@ -21,19 +21,7 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   resolveNode: (...args: unknown[]) => mockResolveNode(...args)
 }))
 
-const mockGetNodeById = vi.fn()
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    getPreviewFormatParam: vi.fn(() => '&format=test_webp'),
-    getRandParam: vi.fn(() => ''),
-    rootGraph: {
-      getNodeById: (...args: unknown[]) => mockGetNodeById(...args)
-    },
-    nodeOutputs: {} as Record<string, unknown>,
-    nodePreviewImages: {} as Record<string, string[]>
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 const createMockNode = (
   overrides: Record<string, unknown> = {}
@@ -481,6 +469,7 @@ describe('nodeOutputStore input preview preservation', () => {
 
 describe('nodeOutputStore getPreviewParam', () => {
   beforeEach(() => {
+    vi.mocked(app.getPreviewFormatParam).mockReturnValue('&format=test_webp')
     vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
     vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
   })
@@ -1041,9 +1030,6 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     const mockNode = createMockNode({ id: 5 })
     const mockImg = document.createElement('img')
 
-    // Node NOT in root graph (returns null)
-    mockGetNodeById.mockReturnValue(null)
-    // But found by resolveNode (in a subgraph)
     mockResolveNode.mockReturnValue(mockNode)
 
     store.syncLegacyNodeImgs(toNodeId(5), mockImg, 0)

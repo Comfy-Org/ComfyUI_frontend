@@ -3,6 +3,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
@@ -11,10 +12,7 @@ import {
   VIEWPORT_CACHE_MAX_SIZE
 } from '@/stores/subgraphNavigationStore'
 
-const { mockSetDirty, mockFitView } = vi.hoisted(() => ({
-  mockSetDirty: vi.fn(),
-  mockFitView: vi.fn()
-}))
+const mockSetDirty = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const mockCanvas = {
@@ -61,9 +59,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: vi.fn() }))
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ fitView: mockFitView })
-}))
+vi.mock(import('@/services/litegraphService'))
+
+const mockFitView = vi.mocked(useLitegraphService().fitView)
 
 const mockCanvas = app.canvas
 
