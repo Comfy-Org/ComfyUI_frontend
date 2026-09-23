@@ -122,19 +122,20 @@ function bindingFor(overlay: (typeof display)[number]) {
   }
 }
 
-const contentSources = display.flatMap((overlay) => {
-  if (overlay.type !== undefined && overlay.type !== 'MODEL') return []
-  const input = workshopContentInputs.get(overlay.id)
-  if (input?.unavailableReason) return []
-  const binding = bindingFor(overlay)
-  if (!binding) return []
-  const entry = catalogById.get(overlay.modelId)
-  const record = routerIndex.find((record) => record.id === binding.routerId)
-  if (!entry || !record)
-    throw new Error(`Invalid Router content join: ${overlay.id}`)
-  if (record.incompleteReason || record.unavailableReason) return []
-  return [{ binding, entry, overlay, record }]
-})
+const contentSources = display
+  .filter((overlay) => overlay.type === undefined || overlay.type === 'MODEL')
+  .flatMap((overlay) => {
+    const input = workshopContentInputs.get(overlay.id)
+    if (input?.unavailableReason) return []
+    const binding = bindingFor(overlay)
+    if (!binding) return []
+    const entry = catalogById.get(overlay.modelId)
+    const record = routerIndex.find((record) => record.id === binding.routerId)
+    if (!entry || !record)
+      throw new Error(`Invalid Router content join: ${overlay.id}`)
+    if (record.incompleteReason || record.unavailableReason) return []
+    return [{ binding, entry, overlay, record }]
+  })
 const publishedContentSources = contentSources.filter(
   ({ overlay }) => !isWorkshopModelDisabled(overlay.slug)
 )

@@ -71,9 +71,9 @@ const workflowSchema = z
 
 export type WorkshopWorkflowEntry = z.infer<typeof workflowSchema>
 
-function validateReferences(entry: WorkshopWorkflowEntry): void {
+function validateInputSchema(entry: WorkshopWorkflowEntry): void {
   const { properties, required } = entry.inputSchema
-  const { workflow, inputBindings } = entry.cloud
+  const { inputBindings } = entry.cloud
   validatorFor(entry.inputSchema)
 
   if (new Set(required).size !== required.length)
@@ -91,37 +91,50 @@ function validateReferences(entry: WorkshopWorkflowEntry): void {
     )
       throw new Error(`Input default does not match its schema: ${input}`)
   }
+}
 
-  const boundTargets = new Set<string>()
-  for (const [input, binding] of Object.entries(inputBindings)) {
-    if (!Object.hasOwn(properties, input))
-      throw new Error(`Binding input is not declared: ${input}`)
-    const schema = properties[input]
-    if (binding.encoding === 'cloud-asset' && schema.type !== 'string')
-      throw new Error(`Media input must be a URL string: ${input}`)
-    for (const target of binding.targets) {
-      const node = workflow[target.nodeId]
-      if (
-        !Object.hasOwn(workflow, target.nodeId) ||
-        !Object.hasOwn(node.inputs, target.inputName)
-      )
-        throw new Error(`Binding target does not exist: ${input}`)
-      const key = JSON.stringify([target.nodeId, target.inputName])
-      if (boundTargets.has(key))
-        throw new Error(`Binding target is used more than once: ${input}`)
-      boundTargets.add(key)
-      if (
-        !validateWorkshopInput(node.inputs[target.inputName], {
-          type: schema.type
-        })
-      )
-        throw new Error(`Binding target has an incompatible type: ${input}`)
-    }
+function validateBinding(
+  entry: WorkshopWorkflowEntry,
+  input: string,
+  binding: WorkshopWorkflowEntry['cloud']['inputBindings'][string],
+  boundTargets: Set<string>
+): void {
+  const { properties } = entry.inputSchema
+  const { workflow } = entry.cloud
+  if (!Object.hasOwn(properties, input))
+    throw new Error(`Binding input is not declared: ${input}`)
+  const schema = properties[input]
+  if (binding.encoding === 'cloud-asset' && schema.type !== 'string')
+    throw new Error(`Media input must be a URL string: ${input}`)
+  for (const target of binding.targets) {
+    const node = workflow[target.nodeId]
+    if (
+      !Object.hasOwn(workflow, target.nodeId) ||
+      !Object.hasOwn(node.inputs, target.inputName)
+    )
+      throw new Error(`Binding target does not exist: ${input}`)
+    const key = JSON.stringify([target.nodeId, target.inputName])
+    if (boundTargets.has(key))
+      throw new Error(`Binding target is used more than once: ${input}`)
+    boundTargets.add(key)
+    if (
+      !validateWorkshopInput(node.inputs[target.inputName], {
+        type: schema.type
+      })
+    )
+      throw new Error(`Binding target has an incompatible type: ${input}`)
   }
+}
+
+function validateReferences(entry: WorkshopWorkflowEntry): void {
+  validateInputSchema(entry)
+  const boundTargets = new Set<string>()
+  for (const [input, binding] of Object.entries(entry.cloud.inputBindings))
+    validateBinding(entry, input, binding, boundTargets)
 
   const outputIds = new Set<string>()
   for (const output of entry.outputs) {
-    if (!Object.hasOwn(workflow, output.nodeId))
+    if (!Object.hasOwn(entry.cloud.workflow, output.nodeId))
       throw new Error(`Output node does not exist: ${output.id}`)
     if (outputIds.has(output.id))
       throw new Error(`Output ID is used more than once: ${output.id}`)

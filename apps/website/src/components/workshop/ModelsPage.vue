@@ -2,10 +2,7 @@
 import { defineAsyncComponent, h, shallowRef } from 'vue'
 import type { FunctionalComponent } from 'vue'
 
-import {
-  fetchModelsCatalogue,
-  fetchModelsPage
-} from '../../config/models-page-data'
+import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
 import { t } from '../../i18n/translations'
 import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
 
@@ -54,6 +51,8 @@ function createContent() {
   return defineAsyncComponent({
     loader: async () => {
       if (slug) {
+        const { fetchModelsPage } =
+          await import('../../config/models-page-data')
         const { model, ...page } = await fetchModelsPage(slug)
         if (model.routerId === undefined) {
           const { default: WorkflowPage } = await import('./WorkflowPage.vue')
