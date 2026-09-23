@@ -669,10 +669,21 @@ const { activeTurnId: conversationTurnId } = storeToRefs(agentConversationStore)
 // actual "the follower is subscribed and could receive a doc_update" signal
 // (flipped true only by a real `doc_subscribed { ok: true }` frame); a
 // disabled panel never starts the follower, so this implies `enabled` too.
-agentConversationStore.setCanvasSyncGate(() => crdtStatus.value.connected)
+agentConversationStore.setCanvasSyncGate(
+  () => crdtStatus.value.connected,
+  () => crdtStatus.value.outcomes.applied
+)
 watch(
   () => crdtStatus.value.outcomes.applied,
-  () => agentConversationStore.notifyCanvasCaughtUp()
+  (applied, previouslyApplied) => {
+    // `useAgentCrdtFollower`'s status falls back to a disabled status with
+    // `applied: 0` when the follower is torn down, and a restarted follower
+    // counts from 0 again -- so toggling the panel mid-turn can drive this
+    // DOWN, not just up. A decrease is not a catch-up: nothing was applied,
+    // so it must not release parts that are still genuinely waiting.
+    if (applied > previouslyApplied)
+      agentConversationStore.notifyCanvasCaughtUp()
+  }
 )
 
 // The resumed turn's own workflow outlives a panel remount (the session
@@ -870,6 +881,15 @@ onBeforeUnmount(() => {
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
   agentMinimapLayer.dispose()
+  // PM-1575: the store singleton outlives this component. Without resetting
+  // the gate here, a remount's own setCanvasSyncGate() call is the only
+  // thing standing between the old (now torn-down) follower's gate and a
+  // turn resumed in the meantime reading it -- reset to the always-safe
+  // default instead of leaving whatever this instance last set.
+  agentConversationStore.setCanvasSyncGate(
+    () => false,
+    () => 0
+  )
 })
 
 const history = useAgentChatHistoryStore()
