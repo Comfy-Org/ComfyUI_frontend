@@ -50,7 +50,7 @@ export class DraggableList extends EventTarget {
   // @ts-expect-error fixme ts strict error
   scrollYMax
   itemsGap = 0
-  items = []
+  items: HTMLElement[] = []
   itemSelector
   handleClass = 'drag-handle'
   off = []
@@ -77,12 +77,11 @@ export class DraggableList extends EventTarget {
   }
 
   getAllItems() {
-    if (!this.items?.length) {
+    if (!this.items.length) {
       this.items = Array.from(
         this.listContainer.querySelectorAll(this.itemSelector)
       )
       this.items.forEach((element) => {
-        // @ts-expect-error fixme ts strict error
         element.classList.add('is-idle')
       })
     }
@@ -91,7 +90,6 @@ export class DraggableList extends EventTarget {
 
   getIdleItems() {
     return this.getAllItems().filter((item) =>
-      // @ts-expect-error fixme ts strict error
       item.classList.contains('is-idle')
     )
   }
@@ -143,7 +141,6 @@ export class DraggableList extends EventTarget {
       new CustomEvent('dragstart', {
         detail: {
           element: this.draggableItem,
-          // @ts-expect-error fixme ts strict error
           position: this.getAllItems().indexOf(this.draggableItem)
         }
       })
@@ -159,9 +156,7 @@ export class DraggableList extends EventTarget {
     const item1 = this.getIdleItems()[0]
     const item2 = this.getIdleItems()[1]
 
-    // @ts-expect-error fixme ts strict error
     const item1Rect = item1.getBoundingClientRect()
-    // @ts-expect-error fixme ts strict error
     const item2Rect = item2.getBoundingClientRect()
 
     this.itemsGap = Math.abs(item1Rect.bottom - item2Rect.top)
@@ -169,9 +164,7 @@ export class DraggableList extends EventTarget {
 
   initItemsState() {
     this.getIdleItems().forEach((item, i) => {
-      // @ts-expect-error fixme ts strict error
       if (this.getAllItems().indexOf(this.draggableItem) > i) {
-        // @ts-expect-error fixme ts strict error
         item.dataset.isAbove = ''
       }
     })
@@ -216,23 +209,18 @@ export class DraggableList extends EventTarget {
 
     // Update state
     this.getIdleItems().forEach((item) => {
-      // @ts-expect-error fixme ts strict error
       const itemRect = item.getBoundingClientRect()
       const itemY = itemRect.top + itemRect.height / 2
       if (this.isItemAbove(item)) {
         if (draggableItemY <= itemY) {
-          // @ts-expect-error fixme ts strict error
           item.dataset.isToggled = ''
         } else {
-          // @ts-expect-error fixme ts strict error
           delete item.dataset.isToggled
         }
       } else {
         if (draggableItemY >= itemY) {
-          // @ts-expect-error fixme ts strict error
           item.dataset.isToggled = ''
         } else {
-          // @ts-expect-error fixme ts strict error
           delete item.dataset.isToggled
         }
       }
@@ -242,10 +230,8 @@ export class DraggableList extends EventTarget {
     this.getIdleItems().forEach((item) => {
       if (this.isItemToggled(item)) {
         const direction = this.isItemAbove(item) ? 1 : -1
-        // @ts-expect-error fixme ts strict error
         item.style.transform = `translateY(${direction * (draggableItemRect.height + this.itemsGap)}px)`
       } else {
-        // @ts-expect-error fixme ts strict error
         item.style.transform = ''
       }
     })
@@ -286,7 +272,6 @@ export class DraggableList extends EventTarget {
       this.listContainer.appendChild(item)
     })
 
-    // @ts-expect-error fixme ts strict error
     this.items = reorderedItems
 
     this.dispatchEvent(

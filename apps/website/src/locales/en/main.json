@@ -243,6 +243,9 @@
       "tooLarge": "File is over {limit}",
       "uploadFailed": "Upload failed. Try again, or paste a public link instead.",
       "fileUnreadable": "This file can no longer be read. Select it again.",
+      "incompatible": "This input is incompatible with the other settings.",
+      "videoTooLong": "Use a video that is {seconds} seconds or shorter.",
+      "videoUnreadable": "Could not read the video duration. Select a playable video or use an accessible video link.",
       "draftRestoreFailed": "We could not restore all of your saved inputs. Check the form and pick your files again.",
       "requestTooLarge": "Your files and prompt exceed the 10 MiB request limit after encoding. Encoding makes files about one-third larger. Use smaller files or a shorter prompt.",
       "badType": "File type not supported",
@@ -2205,6 +2208,10 @@
     "ctaDesktopCore": "DESKTOP",
     "ctaCloudCore": "TRY FREE",
     "home": "Comfy home",
+    "copyLogoSvg": "Copy logo as SVG",
+    "copyLogomarkSvg": "Copy logomark as SVG",
+    "brandAssets": "Brand assets",
+    "copied": "Copied",
     "menu": "Menu",
     "toggleMenu": "Toggle menu",
     "close": "Close",
@@ -4385,7 +4392,8 @@
     },
     "modelsHero": {
       "heading": "1000+ media AI models in one API.",
-      "subtitle": "Use state-of-the-art models for image, video, 3D, and audio. Ready for production."
+      "subtitle": "Use state-of-the-art models for image, video, 3D, and audio. Ready for production.",
+      "getApiKey": "Get your API key"
     },
     "builderHero": {
       "heading": "Package ComfyUI Builds for your team",

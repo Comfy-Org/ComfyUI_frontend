@@ -72,7 +72,7 @@ export const agentReplayNodeDefs: Record<string, ComfyNodeDef> = {
   LoadImage: node(
     'LoadImage',
     'Load Image',
-    { image: combo([]), upload: ['IMAGEUPLOAD', {}] },
+    { image: [[], { image_upload: true }], upload: ['IMAGEUPLOAD', {}] },
     ['IMAGE', 'MASK']
   ),
   PreviewImage: {

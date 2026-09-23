@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
+
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 
-const fetchApi = vi.hoisted(() =>
-  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+vi.mock(import('@/scripts/api'))
+const fetchApi = vi.mocked(api.fetchApi)
 
 import { AgentApiError, createAgentRestClient } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
@@ -35,6 +35,26 @@ function contentType(init: RequestInit): string | undefined {
 }
 
 const makeClient = createAgentRestClient
+
+async function retryAfterSeconds(
+  header: string | null
+): Promise<number | undefined> {
+  respond(
+    jsonResponse(
+      503,
+      { error: 'unavailable' },
+      header === null ? undefined : { 'Retry-After': header }
+    )
+  )
+
+  try {
+    await makeClient().postMessage('thread-1', { content: 'hi' })
+    throw new Error('Expected postMessage to reject')
+  } catch (error) {
+    if (!(error instanceof AgentApiError)) throw error
+    return error.retryAfterSeconds
+  }
+}
 
 const turnAccepted = {
   message_id: 'm1',
@@ -291,12 +311,14 @@ describe('uploadImage multipart', () => {
     respond(jsonResponse(200, { name: 'x.png', subfolder: '', type: 'input' }))
     const appendSpy = vi.spyOn(FormData.prototype, 'append')
     const blob = new Blob(['bytes'], { type: 'image/png' })
-    await makeClient().uploadImage(blob, 'x.png')
+    const controller = new AbortController()
+    await makeClient().uploadImage(blob, 'x.png', controller.signal)
 
     const { route, init } = lastCall()
     expect(route).toBe('/upload/image')
     expect(init.method).toBe('POST')
     expect(init.body).toBeInstanceOf(FormData)
+    expect(init.signal).toBe(controller.signal)
     expect(appendSpy).toHaveBeenCalledWith('image', blob, 'x.png')
     expect(contentType(init)).toBeUndefined()
     appendSpy.mockRestore()
@@ -312,6 +334,32 @@ describe('success response parsing', () => {
     expect(result.message_id).toBe('m1')
     expect(result.thread_id).toBe('t1')
     expect((result as Record<string, unknown>).workflow_id).toBe('w1')
+  })
+
+  it.for([
+    {
+      name: 'an incomplete thread row',
+      response: {
+        threads: [{ id: 'th-1', title: 'Thread' }],
+        pagination: { has_more: false, limit: 20, offset: 0, total: 1 }
+      },
+      path: ['threads', 0, 'created_at']
+    },
+    {
+      name: 'incomplete pagination',
+      response: {
+        threads: [],
+        pagination: { has_more: false }
+      },
+      path: ['pagination', 'limit']
+    }
+  ])('rejects $name from the agent service', async ({ response, path }) => {
+    respond(jsonResponse(200, response))
+
+    await expect(makeClient().listThreads()).rejects.toMatchObject({
+      name: 'ZodError',
+      issues: expect.arrayContaining([expect.objectContaining({ path })])
+    })
   })
 })
 
@@ -366,67 +414,6 @@ describe('error mapping', () => {
     expect(Reflect.get(apiError, 'retryAfterSeconds')).toBe(5)
   })
 
-  it.for([
-    { label: 'absent', headers: undefined },
-    {
-      label: 'nonnumeric',
-      headers: { 'Retry-After': 'not-a-date' }
-    },
-    {
-      label: 'negative delay',
-      headers: { 'Retry-After': '-1' }
-    },
-    {
-      label: 'fractional delay',
-      headers: { 'Retry-After': '1.5' }
-    },
-    {
-      label: 'unsafe integer',
-      headers: { 'Retry-After': '9007199254740993' }
-    },
-    {
-      label: 'overflowing number',
-      headers: { 'Retry-After': '9'.repeat(400) }
-    }
-  ])(
-    'leaves retryAfterSeconds undefined for an $label Retry-After header',
-    async ({ headers }) => {
-      const body = {
-        error: {
-          message: 'Billing status is temporarily unavailable; please retry.',
-          type: 'SERVICE_UNAVAILABLE',
-          reason: 'funds_unavailable'
-        }
-      }
-      respond(jsonResponse(503, body, headers))
-
-      const error = await makeClient()
-        .postMessage('t1', { content: 'try it' })
-        .catch((caught: unknown) => caught)
-
-      expect(error).toBeInstanceOf(AgentApiError)
-      expect(error).toMatchObject({
-        message: body.error.message,
-        body,
-        retryAfterSeconds: undefined
-      })
-    }
-  )
-
-  it.for([
-    { header: 'Wed, 21 Oct 2026 07:28:00 GMT', delay: 30 },
-    { header: 'Wed, 21 Oct 2026 07:27:00 GMT', delay: 0 }
-  ])('parses Retry-After date $header', async ({ header, delay }) => {
-    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
-    respond(
-      jsonResponse(503, { error: 'unavailable' }, { 'Retry-After': header })
-    )
-    const error = await makeClient()
-      .postMessage('t1', { content: 'try it' })
-      .catch((caught: unknown) => caught)
-    expect(error).toMatchObject({ status: 503, retryAfterSeconds: delay })
-  })
-
   it('falls back to statusText and undefined body for a non-JSON error response', async () => {
     respond(
       new Response('gateway boom', { status: 502, statusText: 'Bad Gateway' })
@@ -436,10 +423,10 @@ describe('error mapping', () => {
       .getMessages('t1')
       .catch((e: unknown) => e)
 
-    const apiError = error as AgentApiError
-    expect(apiError.message).toBe('Bad Gateway')
-    expect(apiError.status).toBe(502)
-    expect(apiError.body).toBeUndefined()
+    if (!(error instanceof AgentApiError)) throw error
+    expect(error.message).toBe('Bad Gateway')
+    expect(error.status).toBe(502)
+    expect(error.body).toBeUndefined()
   })
 
   it('throws zod when a success body violates the response schema (anti-drift)', async () => {
@@ -451,5 +438,168 @@ describe('error mapping', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error).not.toBeInstanceOf(AgentApiError)
+  })
+})
+
+describe('Retry-After contract', () => {
+  it.for([
+    { label: 'absent header', header: null, expected: undefined },
+    { label: 'integer delta-seconds', header: '5', expected: 5 },
+    { label: 'zero delta-seconds', header: '0', expected: 0 },
+    { label: 'malformed HTTP-date', header: 'not-a-date', expected: undefined },
+    {
+      label: 'HTTP-date shaped but unparseable',
+      header: 'Wed, 99 Foo 2026 07:28:00 GMT',
+      expected: undefined
+    },
+    { label: 'empty header', header: '', expected: undefined },
+    { label: 'fractional delta-seconds', header: '1.5', expected: undefined },
+    { label: 'negative delta-seconds', header: '-1', expected: undefined },
+    {
+      label: 'unsafe-integer delta-seconds',
+      header: '9007199254740993',
+      expected: undefined
+    },
+    {
+      label: 'overflowing delta-seconds',
+      header: '9'.repeat(400),
+      expected: undefined
+    }
+  ])('returns $expected for a $label', async ({ header, expected }) => {
+    expect(await retryAfterSeconds(header)).toBe(expected)
+  })
+
+  it.for([
+    { header: 'Wed, 21 Oct 2026 07:28:00 GMT', expected: 30 },
+    { header: 'Wed, 21 Oct 2026 07:27:00 GMT', expected: 0 }
+  ])('reads the HTTP-date $header as a delay', async ({ header, expected }) => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+    expect(await retryAfterSeconds(header)).toBe(expected)
+  })
+
+  it.for([
+    { label: 'RFC 850', header: 'Wednesday, 21-Oct-26 07:28:00 GMT' },
+    { label: 'asctime', header: 'Wed Oct 21 07:28:00 2026' }
+  ])('accepts the obsolete $label form of HTTP-date', async ({ header }) => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+    expect(await retryAfterSeconds(header)).toBe(30)
+  })
+
+  it('reads a space-padded asctime day as UTC, not as local time', async () => {
+    vi.setSystemTime(new Date('1994-11-06T08:49:07Z'))
+
+    expect(await retryAfterSeconds('Sun Nov  6 08:49:37 1994')).toBe(30)
+  })
+
+  it.for([
+    { label: 'zoneless ISO-8601 timestamp', header: '2099-12-31T00:00:00' },
+    { label: 'ISO-8601 timestamp in UTC', header: '2099-12-31T00:00:00Z' },
+    { label: 'ISO-8601 calendar date', header: '2099-12-31' },
+    { label: 'US-style date', header: 'December 31, 2099' },
+    {
+      label: 'IMF-fixdate missing its zone',
+      header: 'Wed, 21 Oct 2026 07:28:00'
+    },
+    {
+      label: 'IMF-fixdate with an out-of-range day',
+      header: 'Wed, 32 Oct 2026 07:28:00 GMT'
+    }
+  ])(
+    'returns undefined for a $label, which is not an HTTP-date',
+    async ({ header }) => {
+      vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+      expect(await retryAfterSeconds(header)).toBeUndefined()
+    }
+  )
+
+  it.for([
+    {
+      label: 'February 29 outside a leap year',
+      header: 'Wed, 29 Feb 2023 07:28:00 GMT'
+    },
+    {
+      label: 'a day past the end of the month',
+      header: 'Wed, 31 Nov 2026 07:28:00 GMT'
+    },
+    { label: 'an hour past midnight', header: 'Wed, 21 Oct 2026 24:00:00 GMT' },
+    {
+      label: 'a minute past the hour',
+      header: 'Wed, 21 Oct 2026 07:60:00 GMT'
+    },
+    {
+      label: 'an out-of-range RFC 850 day',
+      header: 'Wednesday, 29-Feb-23 07:28:00 GMT'
+    },
+    {
+      label: 'an out-of-range asctime day',
+      header: 'Sun Nov 31 07:28:00 2026'
+    },
+    {
+      label: 'an IMF-fixdate year before 1900',
+      header: 'Mon, 06 Nov 1899 08:49:37 GMT'
+    },
+    {
+      label: 'an asctime year before 1900',
+      header: 'Mon Nov  6 08:49:37 1899'
+    }
+  ])('returns undefined for $label', async ({ header }) => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+    expect(await retryAfterSeconds(header)).toBeUndefined()
+  })
+
+  it('accepts February 29 in a leap year', async () => {
+    vi.setSystemTime(new Date('2024-02-29T07:27:30Z'))
+
+    expect(await retryAfterSeconds('Thu, 29 Feb 2024 07:28:00 GMT')).toBe(30)
+  })
+
+  it('represents a midnight leap second as the instant after :59', async () => {
+    vi.setSystemTime(new Date('2026-10-21T23:59:30Z'))
+
+    expect(await retryAfterSeconds('Wed, 21 Oct 2026 23:59:60 GMT')).toBe(30)
+  })
+
+  it('ignores a day-name that disagrees with the date', async () => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+    expect(await retryAfterSeconds('Mon, 21 Oct 2026 07:28:00 GMT')).toBe(30)
+  })
+
+  it('resolves an RFC 850 two-digit year against the rolling 50-year window', async () => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+    const expected = Math.ceil(
+      (Date.UTC(2060, 9, 21, 7, 28, 0) - Date.now()) / 1000
+    )
+    expect(await retryAfterSeconds('Thursday, 21-Oct-60 07:28:00 GMT')).toBe(
+      expected
+    )
+  })
+
+  it('reads an RFC 850 year more than 50 years ahead as the past year it names', async () => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+
+    expect(await retryAfterSeconds('Tuesday, 21-Oct-80 07:28:00 GMT')).toBe(0)
+  })
+
+  it('applies the RFC 850 50-year rule to the full timestamp', async () => {
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
+
+    expect(await retryAfterSeconds('Thursday, 31-Dec-76 00:00:00 GMT')).toBe(0)
+  })
+
+  it('rolls an RFC 850 year into the next century when it is within 50 years', async () => {
+    vi.setSystemTime(new Date('2076-01-01T00:00:00Z'))
+
+    const expected = Math.ceil(
+      (Date.UTC(2100, 11, 31, 0, 0, 0) - Date.now()) / 1000
+    )
+    expect(await retryAfterSeconds('Friday, 31-Dec-00 00:00:00 GMT')).toBe(
+      expected
+    )
   })
 })

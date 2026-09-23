@@ -2,10 +2,21 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { IDBFactory } from 'fake-indexeddb'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 
-import type { AccountCredential } from '@comfyorg/account-core/session'
+import type {
+  AccountCredential,
+  SessionResult
+} from '@comfyorg/account-core/session'
 
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
@@ -32,6 +43,7 @@ import {
 } from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'
+import { workshopHealthLog } from '../../scripts/workshop-health'
 
 vi.mock(import('../../config/workshop-session-state'))
 vi.mock(import('../../scripts/posthog'))
@@ -335,6 +347,40 @@ describe('ModelDetail', () => {
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
+  it.for(['load', 'error'] as const)(
+    'correlates an HTTP success with the primary image %s outcome',
+    async (event) => {
+      auth.session.value = credential
+      vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
+      mountDetail({ model: runnable })
+      const visitor = user()
+      await visitor.type(
+        screen.getByRole('textbox', { name: 'Prompt' }),
+        'A landscape'
+      )
+      await visitor.click(await screen.findByRole('button', { name: 'Run' }))
+      const image = await screen.findByRole('img', { name: 'Output' })
+      expect(captureWorkshopEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'delivery_finished' })
+      )
+      await fireEvent(image, new Event(event))
+      const started = vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.map(([event]) => event)
+        .find((event) => event.name === 'run_started')
+      assert.exists(started)
+      expect(started.properties.attempt_id).toEqual(expect.any(String))
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'delivery_finished',
+        properties: expect.objectContaining({
+          attempt_id: started.properties.attempt_id,
+          request_id: routerResult.requestId,
+          status: event === 'load' ? 'succeeded' : 'failed'
+        })
+      })
+    }
+  )
+
   it('tracks the render funnel and actions without sending inputs or output contents', async () => {
     auth.session.value = credential
     vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
@@ -345,6 +391,7 @@ describe('ModelDetail', () => {
       'Private prompt'
     )
     await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    await fireEvent.load(await screen.findByRole('img', { name: 'Output' }))
     const download = await screen.findByTestId('output-download')
     download.addEventListener('click', (event) => event.preventDefault(), {
       once: true
@@ -359,6 +406,7 @@ describe('ModelDetail', () => {
       'model_viewed',
       'run_started',
       'run_finished',
+      'delivery_finished',
       'output_download_clicked',
       'api_viewed'
     ])
@@ -388,6 +436,16 @@ describe('ModelDetail', () => {
         output_count: 1
       }
     })
+    expect(events.find((event) => event.name === 'delivery_finished')).toEqual({
+      name: 'delivery_finished',
+      properties: {
+        ...started?.properties,
+        status: 'succeeded',
+        duration_ms: expect.any(Number),
+        request_id: routerResult.requestId,
+        output_kind: 'image'
+      }
+    })
     expect(
       events.find((event) => event.name === 'output_download_clicked')
     ).toEqual({
@@ -397,6 +455,98 @@ describe('ModelDetail', () => {
     expect(JSON.stringify(events)).not.toContain('Private prompt')
     expect(JSON.stringify(events)).not.toContain(credential.token)
     expect(JSON.stringify(events)).not.toContain(routerResult.outputs[0].url)
+  })
+
+  it.for([
+    {
+      name: 'leaving the Playground',
+      result: routerResult,
+      abandon: () => user().click(screen.getByRole('tab', { name: 'API' }))
+    },
+    {
+      name: 'replacing the result with an example',
+      result: routerResult,
+      abandon: () => user().click(screen.getByTestId('example-card'))
+    },
+    {
+      name: 'viewing another file of the same run',
+      result: {
+        ...routerResult,
+        outputs: [
+          ...routerResult.outputs,
+          {
+            kind: 'text' as const,
+            url: 'blob:transcript',
+            fileName: 'transcript.txt',
+            text: 'A transcript'
+          }
+        ]
+      },
+      abandon: () =>
+        user().click(screen.getByRole('button', { name: 'Raw response' }))
+    }
+  ])('excludes delivery after $name', async ({ result, abandon }) => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockResolvedValue(result)
+    mountDetail({
+      model: {
+        ...runnable,
+        defaults: { prompt: 'A landscape' },
+        examples: [{ ...model.examples[0], sampleOnly: true }]
+      }
+    })
+    await user().click(await screen.findByRole('button', { name: 'Run' }))
+    await screen.findByRole('img', { name: 'Output' })
+
+    await abandon()
+    await vi.advanceTimersByTimeAsync(120_000)
+
+    const deliveries = vi
+      .mocked(captureWorkshopEvent)
+      .mock.calls.map(([event]) => event)
+      .filter((event) => event.name === 'delivery_finished')
+    expect(deliveries).toEqual([
+      {
+        name: 'delivery_finished',
+        properties: expect.objectContaining({
+          request_id: routerResult.requestId,
+          status: 'cancelled'
+        })
+      }
+    ])
+  })
+
+  it('excludes delivery when a response arrives after leaving the Playground', async () => {
+    auth.session.value = credential
+    const response = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(response.promise)
+    mountDetail({ model: { ...runnable, defaults: { prompt: 'A landscape' } } })
+    await user().click(await screen.findByRole('button', { name: 'Run' }))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+    await user().click(screen.getByRole('tab', { name: 'API' }))
+
+    response.resolve(routerResult)
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({ status: 'succeeded' })
+      })
+    )
+    await vi.advanceTimersByTimeAsync(120_000)
+
+    const deliveries = vi
+      .mocked(captureWorkshopEvent)
+      .mock.calls.map(([event]) => event)
+      .filter((event) => event.name === 'delivery_finished')
+    expect(deliveries).toEqual([
+      {
+        name: 'delivery_finished',
+        properties: expect.objectContaining({
+          request_id: routerResult.requestId,
+          status: 'cancelled'
+        })
+      }
+    ])
   })
 
   it('reports a failed attempt with a bounded reason and no error payload', async () => {
@@ -1324,7 +1474,8 @@ describe('ModelDetail', () => {
       name: 'run_validation_failed',
       properties: expect.objectContaining({
         model_slug: runnable.slug,
-        field_error_codes: ['required']
+        field_error_codes: ['required'],
+        field_error_names: ['prompt']
       })
     })
     expect(
@@ -1572,25 +1723,56 @@ describe('ModelDetail', () => {
     )
   })
 
-  it('refuses a refreshed credential for a different workspace', async () => {
-    auth.session.value = credential
-    vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue({
-      status: 'ok',
-      session: {
-        ...credential,
-        workspace: { ...credential.workspace, id: 'workspace-other' }
+  it.for([
+    { name: 'superseded refresh', result: undefined },
+    {
+      name: 'failed token exchange',
+      result: { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+    },
+    {
+      name: 'different user',
+      result: { status: 'ok', session: { ...credential, uid: 'user-other' } }
+    },
+    {
+      name: 'different workspace',
+      result: {
+        status: 'ok',
+        session: {
+          ...credential,
+          workspace: { ...credential.workspace, id: 'workspace-other' }
+        }
       }
-    })
-    mountDetail({ model: runnable })
-    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
-    await user().click(screen.getByTestId('run-button'))
-    await vi.waitFor(() =>
-      expect(
-        screen.getByTestId('playground-output').getAttribute('data-state')
-      ).toBe('failed')
-    )
-    expect(runWorkshopRouter).not.toHaveBeenCalled()
-  })
+    }
+  ] satisfies { name: string; result: SessionResult | undefined }[])(
+    'excludes a $name from model outages without sending a generation',
+    async ({ result }) => {
+      auth.session.value = credential
+      vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue(result)
+      mountDetail({ model: runnable })
+      await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+      await user().click(screen.getByTestId('run-button'))
+      await vi.waitFor(() =>
+        expect(
+          screen.getByTestId('playground-output').getAttribute('data-state')
+        ).toBe('failed')
+      )
+      expect(runWorkshopRouter).not.toHaveBeenCalled()
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'failed',
+          reason: 'unavailable',
+          failure_stage: 'credential'
+        })
+      })
+      const event = vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.map(([event]) => event)
+        .find((event) => event.name === 'run_finished')
+      assert(event)
+      expect(workshopHealthLog(event)?.service_health).toBe('excluded')
+    }
+  )
 
   it('keeps execution disabled when the run opt-in is absent', () => {
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
@@ -2152,4 +2334,14 @@ describe('ModelDetail', () => {
       expect(runWorkshopRouter).not.toHaveBeenCalled()
     }
   )
+
+  it("sends the API tab's get-key link as a models onboarding arrival for this model", async () => {
+    auth.session.value = credential
+    mountDetail({ model: runnable })
+    await nextTick()
+    await user().click(screen.getByTestId('tab-api'))
+    expect(screen.getByTestId('api-get-key').getAttribute('href')).toBe(
+      'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-2-pro'
+    )
+  })
 })

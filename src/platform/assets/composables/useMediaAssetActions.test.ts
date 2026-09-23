@@ -21,6 +21,7 @@ import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
+import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
@@ -99,11 +100,8 @@ vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => litegraphServiceMock
 }))
 
-vi.mock(import('@/utils/loaderNodeUtil'), () => ({
-  detectNodeTypeFromFilename: vi.fn(
-    () => ({ nodeType: 'LoadImage', widgetName: 'image' }) as const
-  )
-}))
+vi.mock(import('@/utils/loaderNodeUtil'))
+const mockDetectNodeTypeFromFilename = vi.mocked(detectNodeTypeFromFilename)
 
 vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isResultItemType: vi.fn(() => true)
@@ -150,6 +148,7 @@ const mockTrackExport = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     deleteItem: vi.fn(),
+    fetchApi: vi.fn(() => Promise.resolve(new Response())),
     apiURL: vi.fn((path: string) => `http://localhost:8188/api${path}`),
     internalURL: vi.fn((path: string) => `http://localhost:8188${path}`),
     addEventListener: vi.fn(),
@@ -324,6 +323,10 @@ describe('useMediaAssetActions', () => {
     )
     litegraphServiceMock.addNodeOnGraph.mockImplementation(createLoadImageNode)
     litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 100])
+    mockDetectNodeTypeFromFilename.mockReturnValue({
+      nodeType: 'LoadImage',
+      widgetName: 'image'
+    })
     mockGetOutputAssetMetadata.mockReturnValue(null)
     mockGetAssetType.mockReturnValue('input')
     mockResolveOutputAssetItems.mockResolvedValue([])
@@ -398,6 +401,40 @@ describe('useMediaAssetActions', () => {
 
         expect(getAddedImageWidgetValues()).toEqual(['fallback-name.jpeg'])
       })
+    })
+
+    it('adds supported assets and reports an exact partial result', async () => {
+      mockDetectNodeTypeFromFilename.mockImplementation((filename: string) =>
+        filename.endsWith('.txt')
+          ? { nodeType: null, widgetName: null }
+          : { nodeType: 'LoadImage', widgetName: 'image' }
+      )
+      const { actions, unmount } = mountMediaActions()
+      const assets = [
+        createMockAsset({ id: '1', name: 'first.png' }),
+        createMockAsset({ id: '2', name: 'unsupported.txt' }),
+        createMockAsset({ id: '3', name: 'third.png' })
+      ]
+
+      await actions.addMultipleToWorkflow(assets)
+
+      expect(litegraphServiceMock.addNodeOnGraph).toHaveBeenCalledTimes(2)
+      expect(getAddedImageWidgetValues()).toEqual(['first.png', 'third.png'])
+      expect(
+        litegraphServiceMock.addNodeOnGraph.mock.calls.map(
+          ([, options]) => options
+        )
+      ).toEqual([{ pos: [100, 100] }, { pos: [150, 150] }])
+      expect(useToast().add).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: i18n.global.t('g.warning'),
+        detail: i18n.global.t('mediaAsset.selection.partialAddNodesSuccess', {
+          succeeded: 2,
+          failed: 1
+        }),
+        life: 3000
+      })
+      unmount()
     })
   })
 
@@ -611,6 +648,34 @@ describe('useMediaAssetActions', () => {
       )
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
+    })
+
+    it('fetches a cloud download through the workspace-authenticated client', async () => {
+      mockIsCloud.value = true
+      mockGetOutputAssetMetadata.mockReturnValue({
+        jobId: 'job1',
+        outputCount: 1
+      })
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([
+        createMockAsset({
+          id: 'team-owned',
+          name: 'team-owned.glb',
+          tags: ['output'],
+          user_metadata: { jobId: 'job1', outputCount: 1 }
+        })
+      ])
+
+      const contentUrl = 'http://localhost:8188/api/assets/team-owned/content'
+      expect(mockDownloadFileAsBlob).toHaveBeenCalledWith(
+        contentUrl,
+        expect.objectContaining({ fetch: expect.any(Function) })
+      )
+
+      const { fetch: authedFetch } = mockDownloadFileAsBlob.mock.calls[0][1]
+      await authedFetch(contentUrl)
+      expect(api.fetchApi).toHaveBeenCalledWith(contentUrl)
     })
 
     it('preserves successful OSS downloads when another file fails', async () => {

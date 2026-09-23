@@ -57,6 +57,9 @@ const errorKey: Record<FieldErrorCode, TranslationKey> = {
   badOption: 'workshop.form.badOption',
   uploadFailed: 'workshop.form.uploadFailed',
   fileUnreadable: 'workshop.form.fileUnreadable',
+  incompatible: 'workshop.form.incompatible',
+  videoTooLong: 'workshop.form.videoTooLong',
+  videoUnreadable: 'workshop.form.videoUnreadable',
   rejected: 'workshop.form.rejected'
 }
 
@@ -71,19 +74,24 @@ watch(
   }
 )
 const fieldError = computed(() =>
-  edited.value
+  edited.value ||
+  (field.presentation?.formConstraint &&
+    errors[field.name] === field.presentation.formConstraint.error)
     ? validateForm([field], values.value)[field.name]
     : errors[field.name]
 )
 const errorMessage = computed(() =>
   fieldError.value
-    ? t(errorKey[fieldError.value], locale, {
-        limit: formatWorkshopUploadLimit(
-          (field.kind === 'file' ? field : urlUploadField(field))?.maxBytes ??
-            MAX_UPLOAD_BYTES,
-          locale
-        )
-      })
+    ? fieldError.value === 'incompatible' && field.hint
+      ? field.hint
+      : t(errorKey[fieldError.value], locale, {
+          limit: formatWorkshopUploadLimit(
+            (field.kind === 'file' ? field : urlUploadField(field))?.maxBytes ??
+              MAX_UPLOAD_BYTES,
+            locale
+          ),
+          seconds: field.presentation?.maxVideoDurationSeconds ?? ''
+        })
     : ''
 )
 const invalid = () => fieldError.value !== undefined

@@ -341,3 +341,90 @@ describe('AgentCrdtDocLifecycle ack timeout', () => {
     expect(resubscribe).toHaveBeenCalledTimes(3)
   })
 })
+
+describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  it('a confirm between refusals restarts the backoff from the base delay', () => {
+    const { lifecycle, resubscribe } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(500)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
+    lifecycle.onSubscribeConfirmed()
+    lifecycle.onSubscribeRefused()
+
+    vi.advanceTimersByTime(499)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(2)
+    expect(devEvents().at(-1)).toEqual({
+      kind: 'subscribe_retry',
+      detail: { attempt: 1, workflowId: WORKFLOW_ID }
+    })
+  })
+
+  it('six consecutive refusals stop retrying with no further subscribe, event, or report', () => {
+    const { lifecycle, resubscribe, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+    // Advance to each backoff boundary in two steps so both sides are
+    // checked: the retry fires exactly at the boundary, and the 15 s ack
+    // timeout it arms is cleared by the next refusal before it can add an
+    // ack-path resubscribe.
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(499)
+    expect(resubscribe).toHaveBeenCalledTimes(0)
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(999)
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(2)
+
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(1_999)
+    expect(resubscribe).toHaveBeenCalledTimes(2)
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(3)
+
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(3_999)
+    expect(resubscribe).toHaveBeenCalledTimes(3)
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(4)
+
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(7_999)
+    expect(resubscribe).toHaveBeenCalledTimes(4)
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(5)
+
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(15_999)
+    expect(resubscribe).toHaveBeenCalledTimes(5)
+    vi.advanceTimersByTime(1)
+    expect(resubscribe).toHaveBeenCalledTimes(6)
+
+    lifecycle.onSubscribeRefused()
+    vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(resubscribe).toHaveBeenCalledTimes(6)
+    expect(lifecycle.shouldDeferSubscribe()).toBe(false)
+    expect(onGaveUp).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(devEvents().map(({ kind }) => kind)).toEqual([
+      'subscribe_retry',
+      'subscribe_retry',
+      'subscribe_retry',
+      'subscribe_retry',
+      'subscribe_retry',
+      'subscribe_retry'
+    ])
+  })
+})

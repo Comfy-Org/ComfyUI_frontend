@@ -554,6 +554,29 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
   })
 })
 
+describe('copyToClipboard', () => {
+  it('stamps every copy with a new clipboard id, even for an equal payload', () => {
+    const rootGraph = createTestRootGraph()
+    const node = createTestNode(rootGraph, [], ['number'])
+    const canvas = createCanvas(rootGraph)
+    onTestFinished(() => {
+      localStorage.removeItem('litegrapheditor_clipboard')
+      localStorage.removeItem('litegrapheditor_clipboard_id')
+    })
+
+    const first = canvas.copyToClipboard([node])
+    const firstId = localStorage.getItem('litegrapheditor_clipboard_id')
+    const second = canvas.copyToClipboard([node])
+
+    expect(second).toBe(first)
+    expect(localStorage.getItem('litegrapheditor_clipboard')).toBe(second)
+    expect(firstId).toMatch(/^[0-9a-f-]{36}$/)
+    expect(localStorage.getItem('litegrapheditor_clipboard_id')).not.toBe(
+      firstId
+    )
+  })
+})
+
 describe('clipboard reroute id integrity', () => {
   const carrierType = 'test/reroute-carrier'
 

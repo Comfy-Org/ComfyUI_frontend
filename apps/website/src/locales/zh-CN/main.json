@@ -2924,6 +2924,10 @@
     "creditsLabel": "积分",
     "ctaCloudCore": "免费试用",
     "ctaDesktopCore": "桌面版",
+    "copyLogoSvg": "复制 SVG 标志",
+    "copyLogomarkSvg": "复制 SVG 标志符号",
+    "brandAssets": "品牌素材",
+    "copied": "已复制",
     "customerStories": "客户故事",
     "developerPlatform": "开发者平台",
     "discord": "Discord",
@@ -3214,7 +3218,8 @@
     },
     "modelsHero": {
       "heading": "1000+ 媒体 AI 模型，尽在一个 API。",
-      "subtitle": "使用最先进的图像、视频、3D 和音频模型。生产环境就绪。"
+      "subtitle": "使用最先进的图像、视频、3D 和音频模型。生产环境就绪。",
+      "getApiKey": "获取 API 密钥"
     },
     "pricing": {
       "billedPerSecond": "按 GPU 秒计费",
@@ -4394,13 +4399,16 @@
       "badType": "不支持的文件类型",
       "draftRestoreFailed": "部分已保存的输入无法恢复。请检查输入并重新选择文件。",
       "fileUnreadable": "无法再读取此文件。请重新选择。",
+      "incompatible": "此输入与其他设置不兼容。",
       "nativeJson": "原生 JSON",
       "outOfRange": "数值超出允许范围",
       "rejected": "此值不符合模型的要求",
       "requestTooLarge": "文件和提示词编码后超过 10 MiB 请求限制。编码会使文件增大约三分之一。请使用更小的文件或缩短提示词。",
       "required": "此字段为必填项",
       "tooLarge": "文件超过 {limit}",
-      "uploadFailed": "上传失败。请重试或粘贴可访问的网址。"
+      "uploadFailed": "上传失败。请重试或粘贴可访问的网址。",
+      "videoTooLong": "请使用时长不超过 {seconds} 秒的视频。",
+      "videoUnreadable": "无法读取视频时长。请选择可播放的视频或使用可访问的视频链接。"
     },
     "hero": {
       "eyebrow": "模型",
