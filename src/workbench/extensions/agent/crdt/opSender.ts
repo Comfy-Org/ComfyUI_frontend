@@ -60,6 +60,14 @@ export interface OpSenderDeps {
    * the retry budget or no doc was bound.
    */
   onBatchSettled(outcome: BatchOutcome): void
+  /**
+   * Outbox seam (mutref-3 m7-s2): every batch minted against a bound
+   * workflow, with its final op ids, before delivery starts. A batch minted
+   * while no doc is bound is not reported — it settles `undeliverable` at
+   * once and there is no workflow to replay it toward. `readmit()` does not
+   * report either: its ops were reported when first minted.
+   */
+  onBatchMinted?(workflowId: string, ops: Op[]): void
 }
 
 export type BatchOutcome =
@@ -76,6 +84,17 @@ export interface OpSender {
    * share the group until `flush()` seals it.
    */
   admit(operations: GraphOperation[]): void
+  /**
+   * Replay seam (mutref-3 m7-s2): admit ops that were ALREADY minted — same
+   * `op_id`, `actor`, `base_version` and stamp — into the open admission
+   * group for `workflowId`, without minting again. The host's `op_id` gate
+   * (KA-6) turns a member it already applied into a `no-op`, so a replay can
+   * never apply twice. Ops are only ever readmitted toward the workflow they
+   * were minted against (FC-5): if that workflow is not the bound one right
+   * now, the batch settles `undeliverable` at once instead of being
+   * re-addressed. Like `admit()`, delivery starts on `flush()`.
+   */
+  readmit(workflowId: string, ops: readonly Op[]): void
   /** Seal the open admission group into wire batches and start delivery. */
   flush(): void
   /** In-flight + queued batch count (observability; 0 = drained). */
@@ -238,9 +257,24 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       deps.onBatchSettled({ state: 'undeliverable', ops: minted })
       return
     }
+    deps.onBatchMinted?.(workflowId, minted)
+    place(workflowId, minted)
+  }
+
+  function readmit(workflowId: string, ops: readonly Op[]): void {
+    if (detached || ops.length === 0) return
+    if (deps.workflowId() !== workflowId) {
+      deps.onBatchSettled({ state: 'undeliverable', ops: [...ops] })
+      return
+    }
+    place(workflowId, [...ops])
+  }
+
+  /** Append minted ops to the open group for `workflowId`, sealing any other. */
+  function place(workflowId: string, ops: Op[]): void {
     if (open?.workflowId !== workflowId) seal()
-    if (open) open.ops.push(...minted)
-    else open = { workflowId, ops: minted }
+    if (open) open.ops.push(...ops)
+    else open = { workflowId, ops }
   }
 
   function seal(): void {
@@ -295,6 +329,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       flush()
     },
     admit,
+    readmit,
     flush,
     pending() {
       return queue.length + (inFlight ? 1 : 0) + (open ? 1 : 0)
