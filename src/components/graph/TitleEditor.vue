@@ -9,6 +9,7 @@
       :model-value="editedTitle"
       :input-attrs="{ 'data-testid': 'node-title-input' }"
       @edit="onEdit"
+      @cancel="closeEditor"
     />
   </div>
 </template>
@@ -61,6 +62,15 @@ const onEdit = (newValue: string) => {
 
     app.canvas.setDirty(true, true)
   }
+  closeEditor()
+}
+
+/**
+ * Hides the editor and restores canvas drag/zoom. Runs for both commit and
+ * cancel (Escape); without it a cancelled edit leaves `allow_dragcanvas`
+ * false and the canvas can no longer be panned or wheel-zoomed.
+ */
+function closeEditor() {
   showInput.value = false
   titleEditorStore.titleEditorTarget = null
   canvasStore.canvas!.allow_dragcanvas = previousCanvasDraggable.value
