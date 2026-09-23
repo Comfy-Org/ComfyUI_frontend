@@ -14,6 +14,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { i18n } from '@/i18n'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
@@ -30,10 +31,8 @@ const tooltipDirectiveStub = {
   }
 }
 
-const fetchApi = vi.hoisted(() =>
-  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+vi.mock(import('@/scripts/api'))
+const fetchApi = vi.mocked(api.fetchApi)
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -862,13 +861,12 @@ describe('Composer', () => {
     })
 
     it('opens the Nodes submenu and lists matching nodes alphabetically', async () => {
-      mount({
-        getMentionNodes: () => [
-          { id: '3', title: 'VAE Decode' },
-          { id: '1', title: 'Alpha' },
-          { id: '2', title: 'KSampler' }
-        ]
-      })
+      const mentionNodes = [
+        { id: '3', title: 'VAE Decode' },
+        { id: '1', title: 'Alpha' },
+        { id: '2', title: 'KSampler' }
+      ]
+      mount({ getMentionNodes: () => mentionNodes })
 
       const menu = await openReferenceSection('Nodes')
 
@@ -877,6 +875,11 @@ describe('Composer', () => {
           .getAllByRole('menuitem')
           .map((item) => item.textContent.trim())
       ).toEqual(['Back', 'Alpha', 'KSampler', 'VAE Decode'])
+      expect(mentionNodes.map(({ title }) => title)).toEqual([
+        'VAE Decode',
+        'Alpha',
+        'KSampler'
+      ])
     })
 
     // Re-picking a staged node is a no-op, so it drops out of the list.

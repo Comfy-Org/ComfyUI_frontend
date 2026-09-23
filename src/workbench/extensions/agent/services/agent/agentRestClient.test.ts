@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
+
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 
-const fetchApi = vi.hoisted(() =>
-  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+vi.mock(import('@/scripts/api'))
+const fetchApi = vi.mocked(api.fetchApi)
 
 import { AgentApiError, createAgentRestClient } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
@@ -311,12 +311,14 @@ describe('uploadImage multipart', () => {
     respond(jsonResponse(200, { name: 'x.png', subfolder: '', type: 'input' }))
     const appendSpy = vi.spyOn(FormData.prototype, 'append')
     const blob = new Blob(['bytes'], { type: 'image/png' })
-    await makeClient().uploadImage(blob, 'x.png')
+    const controller = new AbortController()
+    await makeClient().uploadImage(blob, 'x.png', controller.signal)
 
     const { route, init } = lastCall()
     expect(route).toBe('/upload/image')
     expect(init.method).toBe('POST')
     expect(init.body).toBeInstanceOf(FormData)
+    expect(init.signal).toBe(controller.signal)
     expect(appendSpy).toHaveBeenCalledWith('image', blob, 'x.png')
     expect(contentType(init)).toBeUndefined()
     appendSpy.mockRestore()
@@ -332,6 +334,32 @@ describe('success response parsing', () => {
     expect(result.message_id).toBe('m1')
     expect(result.thread_id).toBe('t1')
     expect((result as Record<string, unknown>).workflow_id).toBe('w1')
+  })
+
+  it.for([
+    {
+      name: 'an incomplete thread row',
+      response: {
+        threads: [{ id: 'th-1', title: 'Thread' }],
+        pagination: { has_more: false, limit: 20, offset: 0, total: 1 }
+      },
+      path: ['threads', 0, 'created_at']
+    },
+    {
+      name: 'incomplete pagination',
+      response: {
+        threads: [],
+        pagination: { has_more: false }
+      },
+      path: ['pagination', 'limit']
+    }
+  ])('rejects $name from the agent service', async ({ response, path }) => {
+    respond(jsonResponse(200, response))
+
+    await expect(makeClient().listThreads()).rejects.toMatchObject({
+      name: 'ZodError',
+      issues: expect.arrayContaining([expect.objectContaining({ path })])
+    })
   })
 })
 

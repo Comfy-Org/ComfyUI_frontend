@@ -20,4 +20,14 @@ describe('ModelsApiHero', () => {
     expect(screen.queryByText(t('nav.badgeComingSoon', 'en'))).toBeNull()
     expect(screen.queryByText(t('nav.badgeBeta', 'en'))).toBeNull()
   })
+
+  it('sends the get-key link as a Router onboarding arrival', () => {
+    render(ModelsApiHero, { props: { locale: 'en' } })
+
+    expect(
+      screen
+        .getByRole('link', { name: t('platform.modelsHero.getApiKey', 'en') })
+        .getAttribute('href')
+    ).toBe('https://platform.comfy.org/profile/api-keys?onboarding=router')
+  })
 })
