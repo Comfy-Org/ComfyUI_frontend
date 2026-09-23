@@ -23,6 +23,18 @@ const run: WorkshopRunAnalytics = {
   workspace_id: 'private-workspace'
 }
 
+type FailedRun = Extract<
+  Extract<WorkshopAnalyticsEvent, { name: 'run_finished' }>['properties'],
+  { status: 'failed' }
+>
+type FailureDetails = Pick<FailedRun, 'reason'> &
+  Partial<
+    Omit<
+      FailedRun,
+      keyof WorkshopRunAnalytics | 'status' | 'duration_ms' | 'reason'
+    >
+  >
+
 describe('Workshop health', () => {
   it('preserves declared field names for validation diagnostics', () => {
     expect(
@@ -192,6 +204,87 @@ describe('Workshop health', () => {
     })
     expect(JSON.stringify(record)).not.toContain('private')
   })
+
+  it.for([
+    {
+      name: 'client-side video duration validation',
+      failure: {
+        reason: 'validation',
+        failure_stage: 'input_preparation',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'unreadable selected video',
+      failure: {
+        reason: 'client',
+        failure_stage: 'input_preparation',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoUnreadable']
+      }
+    }
+  ] satisfies Array<{ name: string; failure: FailureDetails }>)(
+    'excludes $name from service failures',
+    ({ failure }) => {
+      expect(
+        workshopHealthLog({
+          name: 'run_finished',
+          properties: {
+            ...run,
+            status: 'failed',
+            duration_ms: 10,
+            ...failure
+          }
+        })?.service_health
+      ).toBe('excluded')
+    }
+  )
+
+  it.for([
+    {
+      name: 'validation without a visible field',
+      failure: {
+        reason: 'validation',
+        field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'Router validation response',
+      failure: {
+        reason: 'validation',
+        request_id: 'router-request',
+        http_status: 422,
+        router_error_type: 'invalid_input',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'failed file upload',
+      failure: {
+        reason: 'upload',
+        failure_stage: 'upload_put',
+        field_error_names: ['image'],
+        field_error_codes: ['uploadFailed']
+      }
+    }
+  ] satisfies Array<{ name: string; failure: FailureDetails }>)(
+    'retains $name as a service failure',
+    ({ failure }) => {
+      expect(
+        workshopHealthLog({
+          name: 'run_finished',
+          properties: {
+            ...run,
+            status: 'failed',
+            duration_ms: 10,
+            ...failure
+          }
+        })?.service_health
+      ).toBe('failure')
+    }
+  )
 
   it.for([
     { status: 'succeeded' as const, expected: 'success' },
