@@ -13,7 +13,7 @@ const mockRunDeleteJob = vi.fn()
 const mockCanCancelJob = ref(false)
 const mockCanDeleteJob = ref(false)
 
-vi.mock('@/composables/queue/useJobActions', () => ({
+vi.mock<unknown>(import('@/composables/queue/useJobActions'), () => ({
   useJobActions: () => ({
     cancelAction: {
       icon: 'icon-[lucide--x]',
@@ -32,7 +32,7 @@ vi.mock('@/composables/queue/useJobActions', () => ({
   })
 }))
 
-vi.mock('@/composables/useProgressBarBackground', () => ({
+vi.mock<unknown>(import('@/composables/useProgressBarBackground'), () => ({
   useProgressBarBackground: () => ({
     progressBarPrimaryClass: 'bg-blue-500',
     hasProgressPercent: (val: number | undefined) => typeof val === 'number',

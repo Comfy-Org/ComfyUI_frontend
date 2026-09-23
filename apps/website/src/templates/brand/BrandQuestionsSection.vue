@@ -11,13 +11,13 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="max-w-9xl mx-auto px-6 pt-10 pb-24 lg:px-20 lg:pt-12 lg:pb-32"
+    class="mx-auto max-w-9xl px-6 pt-10 pb-24 lg:px-20 lg:pt-12 lg:pb-32"
   >
     <SectionHeader align="start" max-width="xl">
       {{ t('brand.questions.heading', locale) }}
     </SectionHeader>
 
-    <p class="text-primary-warm-gray mt-6 max-w-2xl text-sm leading-[1.6]">
+    <p class="mt-6 max-w-2xl text-sm leading-[1.6] text-primary-warm-gray">
       {{ t('brand.questions.body', locale) }}
       <Button
         as="a"

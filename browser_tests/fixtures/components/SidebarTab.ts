@@ -25,9 +25,6 @@ export class SidebarTab {
     await this.tabButton.click()
   }
   async close() {
-    if (!this.tabButton.isVisible()) {
-      return
-    }
     await this.tabButton.click()
   }
 }
@@ -54,10 +51,6 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 
   override async close() {
-    if (!this.tabButton.isVisible()) {
-      return
-    }
-
     await this.tabButton.click()
     await this.nodeLibraryTree.waitFor({ state: 'hidden' })
   }
@@ -198,7 +191,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
     await this.page.waitForFunction(
       () =>
         !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          ?.isBusy,
+          .isBusy,
       undefined,
       { timeout: 3000 }
     )
@@ -331,6 +324,9 @@ export class AssetsSidebarTab extends SidebarTab {
   // --- List view items ---
   public readonly listViewItems: Locator
 
+  // --- Output stacks (a job's extra outputs) ---
+  public readonly stackToggles: Locator
+
   // --- Selection footer ---
   public readonly selectionFooter: Locator
   public readonly selectionCountButton: Locator
@@ -343,6 +339,8 @@ export class AssetsSidebarTab extends SidebarTab {
 
   // --- Panel chrome ---
   public readonly panelHeader: Locator
+  /** The sidebar panel. Not the scroller — VirtualGrid's root owns overflow. */
+  public readonly contentPanel: Locator
 
   // --- Loading ---
   public readonly skeletonLoaders: Locator
@@ -382,6 +380,7 @@ export class AssetsSidebarTab extends SidebarTab {
     this.sortZToA = page.getByText('Name (Z → A)')
     this.sortLongestFirst = page.getByText('Generation time (longest first)')
     this.sortFastestFirst = page.getByText('Generation time (fastest first)')
+    this.contentPanel = page.locator('.sidebar-content-container')
     this.assetCards = page.locator(
       '.sidebar-content-container [data-asset-id][data-selected]'
     )
@@ -391,6 +390,9 @@ export class AssetsSidebarTab extends SidebarTab {
     this.listViewItems = page.locator(
       '.sidebar-content-container [role="button"][tabindex="0"]'
     )
+    this.stackToggles = page
+      .locator('.sidebar-content-container')
+      .getByRole('button', { name: 'See more outputs' })
     this.selectionFooter = page.getByTestId('assets-selection-bar')
     this.selectionCountButton = page.getByText(/\d+ selected/)
     this.deselectAllButton = page.getByTestId('assets-deselect-selected')
@@ -473,6 +475,27 @@ export class AssetsSidebarTab extends SidebarTab {
     await expect(this.generatedTab).toHaveAttribute('aria-selected', 'true')
   }
 
+  /**
+   * Expand a job's output stack and wait for its extra outputs to render.
+   *
+   * The panel groups a job's outputs into one card and hides the rest behind
+   * this control, so a nested output is unreachable until it is expanded.
+   * Resolves the children through the same path the UI uses, so a spec must
+   * also route the job's assets endpoint.
+   */
+  async expandOutputStack(index = 0) {
+    const before = await this.listViewItems.count()
+    await this.stackToggles.nth(index).click()
+    await expect
+      .poll(async () => this.listViewItems.count())
+      .toBeGreaterThan(before)
+  }
+
+  /** A list row by its rendered filename, which is how a user identifies it. */
+  listRowByName(name: string): Locator {
+    return this.listViewItems.filter({ hasText: name })
+  }
+
   async openSettingsMenu() {
     await this.dismissToasts()
     await this.settingsButton.click()
@@ -482,6 +505,18 @@ export class AssetsSidebarTab extends SidebarTab {
         .or(this.gridLargeOption)
         .first()
     ).toBeVisible()
+  }
+
+  /**
+   * Dismiss the view-settings popover. Choosing a view mode leaves it open, and
+   * it overlays the asset rows, so anything that clicks a row must close it
+   * first or the click lands on the popover.
+   */
+  async closeSettingsMenu() {
+    if (!(await this.gridLargeOption.isVisible())) return
+    // Escape does not dismiss this popover; toggling its trigger does.
+    await this.settingsButton.click()
+    await expect(this.gridLargeOption).toBeHidden()
   }
 
   async openFilterMenu() {

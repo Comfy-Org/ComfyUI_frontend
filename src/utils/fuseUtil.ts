@@ -142,7 +142,7 @@ export class FuseSearch<T> {
     } else if (typeof entry === 'object' && entry !== null) {
       values = this.keys
         .map((x) => entry[x as keyof T])
-        .filter((x) => typeof x === 'string') as string[]
+        .filter((x) => typeof x === 'string')
     }
     const scores = values.map((x) => this.calcAuxSingle(query, x, score))
     let result = scores.sort(this.compareAux)[0]

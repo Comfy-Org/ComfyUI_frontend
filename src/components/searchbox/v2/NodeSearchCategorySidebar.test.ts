@@ -1,11 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import NodeSearchCategorySidebar from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
 import {
   createMockNodeDef,
-  setupTestPinia,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -18,10 +17,6 @@ type SidebarProps = Partial<{
 }>
 
 describe('NodeSearchCategorySidebar', () => {
-  beforeEach(() => {
-    setupTestPinia()
-  })
-
   function createRender(props: SidebarProps = {}) {
     const user = userEvent.setup()
     const onUpdateSelectedCategory = vi.fn<(value: string) => void>()
@@ -58,7 +53,7 @@ describe('NodeSearchCategorySidebar', () => {
       ...screen.queryAllByRole('treeitem')
     ]
     const btn = candidates.find((b) =>
-      exact ? b.textContent?.trim() === text : b.textContent?.includes(text)
+      exact ? b.textContent.trim() === text : b.textContent.includes(text)
     )
     expect(btn, `Expected to find a button with text "${text}"`).toBeDefined()
     await user.click(btn!)

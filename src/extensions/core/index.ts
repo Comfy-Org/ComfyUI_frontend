@@ -36,10 +36,18 @@ import './webcamCapture'
 import './widgetInputs'
 
 // Cloud-only extensions - tree-shaken in OSS builds
-if (isCloud) {
+// The literal __DISTRIBUTION__ comparison (not the isCloud const) is what
+// dead-code-eliminates this block and its posthog-js import from OSS builds.
+if (__DISTRIBUTION__ === 'cloud') {
   await import('./cloudRemoteConfig')
+  const { registerAgentPanelExtension } = await import('./agentPanel')
+  registerAgentPanelExtension()
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
+} else if (import.meta.env.VITE_AGENT_STANDALONE === 'true') {
+  // The local agent harness mounts the panel in any distribution.
+  const { registerAgentPanelExtension } = await import('./agentPanel')
+  registerAgentPanelExtension()
 }
 
 // Feedback button for cloud and nightly builds

@@ -12,7 +12,7 @@ const mockState = vi.hoisted(() => ({
   credentialOptions: [] as SecretCredentialOption[]
 }))
 
-vi.mock('../composables/useSecretForm', () => ({
+vi.mock<unknown>(import('../composables/useSecretForm'), () => ({
   useSecretForm: () => ({
     form: { provider: '', name: '', secretValue: '' },
     errors: {},
@@ -29,57 +29,19 @@ vi.mock('../composables/useSecretForm', () => ({
   })
 }))
 
-vi.mock('primevue/inputtext', () => ({
-  default: { name: 'InputText', template: '<input />' }
-}))
-vi.mock('primevue/password', () => ({
-  default: { name: 'Password', template: '<input type="password" />' }
-}))
+vi.mock<unknown>(
+  import('primevue/inputtext'), // eslint-disable-line primevue-removal/no-imports
 
-vi.mock('@/components/ui/button/Button.vue', () => ({
-  default: { name: 'Button', template: '<button><slot /></button>' }
-}))
-
-vi.mock('@/components/ui/select/Select.vue', () => ({
-  default: { name: 'Select', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/select/SelectContent.vue', () => ({
-  default: { name: 'SelectContent', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/select/SelectItem.vue', () => ({
-  default: { name: 'SelectItem', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/select/SelectTrigger.vue', () => ({
-  default: { name: 'SelectTrigger', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/select/SelectValue.vue', () => ({
-  default: { name: 'SelectValue', template: '<span />' }
-}))
-
-vi.mock('@/components/ui/dialog/Dialog.vue', () => ({
-  default: { name: 'Dialog', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/dialog/DialogPortal.vue', () => ({
-  default: { name: 'DialogPortal', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/dialog/DialogOverlay.vue', () => ({
-  default: { name: 'DialogOverlay', template: '<div />' }
-}))
-vi.mock('@/components/ui/dialog/DialogContent.vue', () => ({
-  default: {
-    name: 'DialogContent',
-    template: '<div data-testid="dialog-content"><slot /></div>'
-  }
-}))
-vi.mock('@/components/ui/dialog/DialogHeader.vue', () => ({
-  default: { name: 'DialogHeader', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/dialog/DialogTitle.vue', () => ({
-  default: { name: 'DialogTitle', template: '<div><slot /></div>' }
-}))
-vi.mock('@/components/ui/dialog/DialogClose.vue', () => ({
-  default: { name: 'DialogClose', template: '<button />' }
-}))
+  () => ({
+    default: { name: 'InputText', template: '<input />' }
+  })
+)
+vi.mock<unknown>(
+  import('primevue/password'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    default: { name: 'Password', template: '<input type="password" />' }
+  })
+)
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
@@ -89,19 +51,20 @@ describe('SecretFormDialog', () => {
     mockState.credentialOptions = []
   })
 
-  it('does not render the JSON upload control for a text provider', () => {
+  it('does not render the JSON upload control for a text provider', async () => {
     render(SecretFormDialog, {
       global: { plugins: [i18n] },
       props: { visible: true }
     })
 
+    await screen.findByRole('dialog')
     expect(screen.queryByText('secrets.uploadJsonFile')).toBeNull()
     expect(
       screen.queryByPlaceholderText('secrets.jsonFilePlaceholder')
     ).toBeNull()
   })
 
-  it('renders a file upload and textarea for a json_file provider', () => {
+  it('renders a file upload and textarea for a json_file provider', async () => {
     mockState.inputType = 'json_file'
 
     render(SecretFormDialog, {
@@ -109,7 +72,7 @@ describe('SecretFormDialog', () => {
       props: { visible: true }
     })
 
-    expect(screen.getByText('secrets.uploadJsonFile')).toBeTruthy()
+    expect(await screen.findByText('secrets.uploadJsonFile')).toBeTruthy()
     expect(
       screen.getByPlaceholderText('secrets.jsonFilePlaceholder')
     ).toBeTruthy()
@@ -127,7 +90,7 @@ describe('SecretFormDialog', () => {
       props: { visible: true }
     })
 
-    const uploadButton = screen.getByRole('button', {
+    const uploadButton = await screen.findByRole('button', {
       name: 'secrets.uploadJsonFile'
     })
     expect(uploadButton.tabIndex).not.toBe(-1)
@@ -138,7 +101,7 @@ describe('SecretFormDialog', () => {
     expect(fileClickSpy).toHaveBeenCalledOnce()
   })
 
-  it('renders server-provided credential choices only for create forms with multiple options', () => {
+  it('renders server-provided credential choices only for create forms with multiple options', async () => {
     mockState.credentialOptions = [
       { credential_type: 'api_key', input_type: 'text', label: 'API key' },
       {
@@ -153,9 +116,17 @@ describe('SecretFormDialog', () => {
       props: { visible: true }
     })
 
-    expect(screen.getByText('secrets.credentialType')).toBeTruthy()
-    expect(screen.getByText('API key')).toBeTruthy()
-    expect(screen.getByText('Service account')).toBeTruthy()
+    expect(await screen.findByText('secrets.credentialType')).toBeTruthy()
+    const user = userEvent.setup()
+    const credentialSelect = screen.getByRole('combobox', {
+      name: 'secrets.credentialType'
+    })
+    await user.click(credentialSelect)
+    await user.keyboard('{Home}{Enter}')
+    expect(credentialSelect).toHaveTextContent('API key')
+    await user.click(credentialSelect)
+    await user.keyboard('{End}{Enter}')
+    expect(credentialSelect).toHaveTextContent('Service account')
 
     unmount()
     render(SecretFormDialog, {
@@ -163,6 +134,7 @@ describe('SecretFormDialog', () => {
       props: { visible: true, mode: 'edit' }
     })
 
+    await screen.findByRole('dialog')
     expect(screen.queryByText('secrets.credentialType')).toBeNull()
   })
 })

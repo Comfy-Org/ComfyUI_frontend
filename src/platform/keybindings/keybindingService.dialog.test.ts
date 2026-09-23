@@ -1,4 +1,5 @@
-import { markRaw, reactive } from 'vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { markRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
@@ -21,33 +22,21 @@ function createTestDialogInstance(
   }
 }
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => [])
-  }))
-}))
-
-vi.mock('@/stores/dialogStore', () => {
-  const dialogStack = reactive<DialogInstance[]>([])
-  return {
-    useDialogStore: () => ({ dialogStack })
-  }
-})
-
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: null
   }
 }))
 
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(() => [])
+})
+
 describe('keybindingService - dialog gate', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
-  let mockCommandExecute: ReturnType<typeof useCommandStore>['execute']
 
   beforeEach(() => {
-    const commandStore = useCommandStore()
-    mockCommandExecute = vi.fn()
-    commandStore.execute = mockCommandExecute
+    vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
 
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
@@ -58,14 +47,15 @@ describe('keybindingService - dialog gate', () => {
 
   function createKeyboardEvent(
     key: string,
-    target: HTMLElement = document.body
+    target: HTMLElement = document.body,
+    modifiers: { ctrlKey?: boolean; metaKey?: boolean } = {}
   ): KeyboardEvent {
     const event = new KeyboardEvent('keydown', {
       key,
       bubbles: true,
-      cancelable: true
+      cancelable: true,
+      ...modifiers
     })
-    event.preventDefault = vi.fn()
     event.composedPath = vi.fn(() => [target])
     return event
   }
@@ -74,7 +64,7 @@ describe('keybindingService - dialog gate', () => {
     const event = createKeyboardEvent('w')
     await keybindingService.keybindHandler(event)
 
-    expect(mockCommandExecute).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Workspace.ToggleSidebarTab.workflows'
     )
   })
@@ -86,7 +76,7 @@ describe('keybindingService - dialog gate', () => {
     const event = createKeyboardEvent('w')
     await keybindingService.keybindHandler(event)
 
-    expect(mockCommandExecute).not.toHaveBeenCalled()
+    expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
   it('does NOT execute a global keybinding from inside an open dialog', async () => {
@@ -103,8 +93,8 @@ describe('keybindingService - dialog gate', () => {
       const event = createKeyboardEvent('w', inner)
       await keybindingService.keybindHandler(event)
 
-      expect(mockCommandExecute).not.toHaveBeenCalled()
-      expect(event.preventDefault).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
     } finally {
       document.body.removeChild(dialog)
     }
@@ -120,12 +110,75 @@ describe('keybindingService - dialog gate', () => {
       const event = createKeyboardEvent('w')
       await keybindingService.keybindHandler(event)
 
-      expect(mockCommandExecute).not.toHaveBeenCalled()
-      expect(event.preventDefault).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
     } finally {
       document.body.removeChild(dialog)
     }
   })
+
+  it('executes Ctrl+S while an ARIA modal is hidden', async () => {
+    const dialog = document.createElement('div')
+    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('aria-modal', 'true')
+    dialog.hidden = true
+    document.body.appendChild(dialog)
+
+    try {
+      const event = createKeyboardEvent('s', document.body, { ctrlKey: true })
+      await keybindingService.keybindHandler(event)
+
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
+        'Comfy.SaveWorkflow'
+      )
+      expect(event.defaultPrevented).toBe(true)
+    } finally {
+      document.body.removeChild(dialog)
+    }
+  })
+
+  it.for([
+    {
+      hiddenBy: 'aria-hidden attribute',
+      hide: (element: HTMLElement) =>
+        element.setAttribute('aria-hidden', 'true')
+    },
+    {
+      hiddenBy: 'hidden attribute',
+      hide: (element: HTMLElement) => element.setAttribute('hidden', '')
+    },
+    {
+      hiddenBy: 'CSS',
+      hide: (element: HTMLElement) => (element.style.display = 'none')
+    },
+    {
+      hiddenBy: 'CSS visibility',
+      hide: (element: HTMLElement) => (element.style.visibility = 'hidden')
+    }
+  ])(
+    'executes Ctrl+S while an ARIA modal is inside an ancestor hidden by $hiddenBy',
+    async ({ hide }) => {
+      const wrapper = document.createElement('div')
+      hide(wrapper)
+      const dialog = document.createElement('div')
+      dialog.setAttribute('role', 'dialog')
+      dialog.setAttribute('aria-modal', 'true')
+      wrapper.appendChild(dialog)
+      document.body.appendChild(wrapper)
+
+      try {
+        const event = createKeyboardEvent('s', document.body, { ctrlKey: true })
+        await keybindingService.keybindHandler(event)
+
+        expect(useCommandStore().execute).toHaveBeenCalledWith(
+          'Comfy.SaveWorkflow'
+        )
+        expect(event.defaultPrevented).toBe(true)
+      } finally {
+        document.body.removeChild(wrapper)
+      }
+    }
+  )
 
   it('does NOT execute a global keybinding while a reka dialog is open', async () => {
     const dialog = document.createElement('div')
@@ -137,12 +190,29 @@ describe('keybindingService - dialog gate', () => {
       const event = createKeyboardEvent('w')
       await keybindingService.keybindHandler(event)
 
-      expect(mockCommandExecute).not.toHaveBeenCalled()
-      expect(event.preventDefault).not.toHaveBeenCalled()
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
     } finally {
       document.body.removeChild(dialog)
     }
   })
+
+  it.for([
+    { label: 'Ctrl+S', modifiers: { ctrlKey: true } },
+    { label: 'Meta+S', modifiers: { metaKey: true } }
+  ])(
+    'still suppresses the browser default for $label while a dialog is open',
+    async ({ modifiers }) => {
+      const dialogStore = useDialogStore()
+      dialogStore.dialogStack.push(createTestDialogInstance('templates-dialog'))
+
+      const event = createKeyboardEvent('s', document.body, modifiers)
+      await keybindingService.keybindHandler(event)
+
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(true)
+    }
+  )
 
   it('executes a global keybinding while a reka popover is open', async () => {
     const popper = document.createElement('div')
@@ -157,7 +227,7 @@ describe('keybindingService - dialog gate', () => {
       const event = createKeyboardEvent('w')
       await keybindingService.keybindHandler(event)
 
-      expect(mockCommandExecute).toHaveBeenCalledWith(
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
         'Workspace.ToggleSidebarTab.workflows'
       )
     } finally {

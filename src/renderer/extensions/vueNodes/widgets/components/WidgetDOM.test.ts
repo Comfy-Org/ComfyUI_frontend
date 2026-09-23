@@ -1,29 +1,19 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const canvasMocks = vi.hoisted(() => ({
-  canvas: {
-    graph: {
-      getNodeById: vi.fn(() => null as unknown)
-    }
-  },
-  linearMode: false
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => canvasMocks
-}))
-
 const resolveMock = vi.hoisted(() => vi.fn())
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget',
+  import('@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'),
   () => ({
     resolveWidgetFromHostNode: resolveMock
   })
 )
 
 const isDOMWidgetMock = vi.hoisted(() => vi.fn(() => true))
-vi.mock('@/scripts/domWidget', () => ({
+vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   isDOMWidget: isDOMWidgetMock
 }))
 
@@ -32,6 +22,13 @@ import { toNodeId } from '@/types/nodeId'
 import WidgetDOM from './WidgetDOM.vue'
 import { createMockWidget } from './widgetTestUtils'
 
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({
+    canvas: document.createElement('canvas'),
+    graph: { getNodeById: vi.fn(() => null) }
+  })
+})
+
 describe('WidgetDOM', () => {
   beforeEach(() => {
     isDOMWidgetMock.mockReturnValue(true)
@@ -39,7 +36,9 @@ describe('WidgetDOM', () => {
 
   function mountWithWidget(domElement: HTMLElement | null) {
     if (domElement) {
-      canvasMocks.canvas.graph.getNodeById.mockReturnValue({ mock: true })
+      vi.mocked(
+        useCanvasStore().getCanvas().graph!.getNodeById
+      ).mockReturnValue(new LGraphNode('test'))
       resolveMock.mockReturnValue({
         node: { mock: true },
         widget: { element: domElement, name: 'dom' }
@@ -47,7 +46,7 @@ describe('WidgetDOM', () => {
     }
     return render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'
@@ -69,12 +68,14 @@ describe('WidgetDOM', () => {
   })
 
   it('renders an empty container when no host node is found', () => {
-    canvasMocks.canvas.graph.getNodeById.mockReturnValue(null)
+    vi.mocked(useCanvasStore().getCanvas().graph!.getNodeById).mockReturnValue(
+      null
+    )
     resolveMock.mockReturnValue(undefined)
 
     const { container } = render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'
@@ -94,7 +95,9 @@ describe('WidgetDOM', () => {
     const hosted = document.createElement('div')
     hosted.setAttribute('data-testid', 'hosted-dom')
 
-    canvasMocks.canvas.graph.getNodeById.mockReturnValue({ mock: true })
+    vi.mocked(useCanvasStore().getCanvas().graph!.getNodeById).mockReturnValue(
+      new LGraphNode('test')
+    )
     resolveMock.mockReturnValue({
       node: { mock: true },
       widget: { element: hosted, name: 'dom' }
@@ -103,7 +106,7 @@ describe('WidgetDOM', () => {
 
     const { container } = render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'

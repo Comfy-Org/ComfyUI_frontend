@@ -17,12 +17,12 @@
       variant="secondary"
       :aria-label="$t('g.addNodeFilterCondition')"
       class="filter-button z-10"
-      @click="nodeSearchFilterVisible = true"
+      @click="filterVisible = true"
     >
       <i class="pi pi-filter" />
     </Button>
     <Dialog
-      v-model:visible="nodeSearchFilterVisible"
+      v-model:visible="filterVisible"
       class="min-w-96"
       dismissable-mask
       modal
@@ -113,7 +113,7 @@ const { filters, searchLimit = 64 } = defineProps<{
 }>()
 
 const autoCompletePlus = ref()
-const nodeSearchFilterVisible = ref(false)
+const filterVisible = defineModel<boolean>('filterVisible', { required: true })
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
 const suggestions = ref<ComfyNodeDefImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
@@ -185,7 +185,7 @@ onMounted(() => {
 const onAddFilter = (
   filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
 ) => {
-  nodeSearchFilterVisible.value = false
+  filterVisible.value = false
   emit('addFilter', filterAndValue)
 }
 const onRemoveFilter = async (

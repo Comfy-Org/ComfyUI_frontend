@@ -1,3 +1,4 @@
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -15,7 +16,7 @@ const apiMock = vi.hoisted(() => ({
   storeSettings: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: apiMock
 }))
 
@@ -31,7 +32,7 @@ const appMock = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: appMock
 }))
 
@@ -50,8 +51,7 @@ function createSelectedCanvas() {
   })
   const node = new LGraphNode('Selected Node')
   graph.add(node)
-  canvas.selectedItems.add(node)
-  node.selected = true
+  canvas.select(node)
 
   return { canvas, node }
 }
@@ -63,7 +63,7 @@ describe('useViewErrorsInGraph', () => {
     apiMock.storeSettings.mockResolvedValue(undefined)
   })
 
-  it('opens graph errors and clears app-mode error UI state', () => {
+  it('opens graph errors and clears app-mode error UI state', async () => {
     const canvasStore = useCanvasStore()
     const executionErrorStore = useExecutionErrorStore()
     const rightSidePanelStore = useRightSidePanelStore()
@@ -73,7 +73,8 @@ describe('useViewErrorsInGraph', () => {
       activeMode: 'app'
     } as typeof workflowStore.activeWorkflow
     canvasStore.canvas = canvas
-    canvasStore.selectedItems = [node]
+    await nextTick()
+    expect(canvasStore.selectedItems).toEqual([node])
     executionErrorStore.showErrorOverlay()
 
     useViewErrorsInGraph().viewErrorsInGraph()

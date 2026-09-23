@@ -3,15 +3,15 @@ import { cva } from 'class-variance-authority'
 
 export const iconButtonVariants = cva(
   [
-    'focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center justify-center rounded-2xl transition-all duration-200 outline-none focus-visible:ring-3 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0'
+    'inline-flex shrink-0 cursor-pointer items-center justify-center rounded-2xl transition-all duration-200 outline-none focus-visible:border-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0'
   ],
   {
     variants: {
       variant: {
         ghost:
-          'hover:text-primary-comfy-yellow bg-transparent text-primary-warm-white',
+          'bg-transparent text-primary-warm-white hover:text-primary-comfy-yellow',
         outline:
-          'text-primary-comfy-yellow hover:bg-primary-comfy-yellow border-primary-comfy-yellow border-2 bg-primary-comfy-ink hover:text-primary-comfy-ink',
+          'border-2 border-primary-comfy-yellow bg-primary-comfy-ink text-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink',
         solid: 'bg-primary-comfy-yellow text-primary-comfy-ink hover:opacity-90'
       },
       size: {

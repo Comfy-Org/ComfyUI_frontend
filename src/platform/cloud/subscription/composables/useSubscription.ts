@@ -20,6 +20,8 @@ import type {
 } from '@/platform/telemetry/types'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { readOnRail } from '@/platform/workspace/composables/readOnRail'
+import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
@@ -57,7 +59,7 @@ function useSubscriptionInternal() {
 
   const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
-  const { getAuthHeader, fetchWithCustomerRecovery } = authStore
+  const { getFirebaseAuthHeader, fetchWithCustomerRecovery } = authStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -153,10 +155,9 @@ function useSubscriptionInternal() {
       return
     }
 
-    const nextDelay =
-      PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS[
-        pendingCheckoutRecoveryAttempt
-      ]
+    const nextDelay = getPendingCheckoutRetryDelay(
+      pendingCheckoutRecoveryAttempt
+    )
 
     if (nextDelay === undefined) {
       return
@@ -211,7 +212,7 @@ function useSubscriptionInternal() {
   }
 
   const buildAuthHeaders = async (): Promise<Record<string, string>> => {
-    const authHeader = await getAuthHeader()
+    const authHeader = await getFirebaseAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -381,15 +382,19 @@ function useSubscriptionInternal() {
     return fetchPromise
   }
 
-  async function performFetchSubscriptionStatus(
-    ownerId: string | null,
-    workspaceId: string | null
-  ): Promise<BillingStatusResponse | null> {
-    if (!isCloud) return null
-
-    let statusData: BillingStatusResponse
+  /**
+   * The status read on whichever rail is on, in the failure shape the legacy
+   * client threw in. The rail is taken before the read and held for it: a flag
+   * flip mid-read must not start on one client and publish through the other.
+   */
+  async function readSubscriptionStatus(): Promise<
+    BillingStatusResponse | undefined
+  > {
+    const rail = useBillingReadRail()
     try {
-      statusData = await workspaceApi.getBillingStatus()
+      return rail
+        ? await readOnRail(rail.readStatus)
+        : await workspaceApi.getBillingStatus()
     } catch (error) {
       throw new AuthStoreError(
         t('toastMessages.failedToFetchSubscription', {
@@ -397,6 +402,17 @@ function useSubscriptionInternal() {
         })
       )
     }
+  }
+
+  async function performFetchSubscriptionStatus(
+    ownerId: string | null,
+    workspaceId: string | null
+  ): Promise<BillingStatusResponse | null> {
+    if (!isCloud) return null
+
+    const statusData = await readSubscriptionStatus()
+    // A superseded read publishes nothing: the scope moved on under it.
+    if (statusData === undefined) return null
     if (
       (authStore.userId ?? null) !== ownerId ||
       workspaceStore.activeWorkspaceId !== workspaceId
@@ -533,6 +549,10 @@ function useSubscriptionInternal() {
     handleLearnMore,
     handleInvoiceHistory
   }
+}
+
+function getPendingCheckoutRetryDelay(attempt: number): number | undefined {
+  return PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS[attempt]
 }
 
 export const useSubscription = createSharedComposable(useSubscriptionInternal)

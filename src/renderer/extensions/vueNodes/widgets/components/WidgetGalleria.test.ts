@@ -360,14 +360,11 @@ describe('WidgetGalleria Image Display', () => {
     })
 
     it('handles malformed image objects', () => {
-      const malformedImages = [
-        {}, // Empty object
-        { randomProp: 'value' }, // Object without expected image properties
-        null, // Null value
-        undefined // Undefined value
-      ]
-      const widget = createGalleriaWidget(malformedImages as string[])
-      renderComponent(widget, malformedImages as string[])
+      const malformedImages: GalleryValue = JSON.parse(
+        '[{}, {"randomProp":"value"}, null, null]'
+      )
+      const widget = createGalleriaWidget(malformedImages)
+      renderComponent(widget, malformedImages)
 
       // Null/undefined should be filtered out, leaving only the objects
       const expectedValue = [{}, { randomProp: 'value' }]
@@ -386,17 +383,15 @@ describe('WidgetGalleria Image Display', () => {
 
     it('handles mixed string and object arrays gracefully', () => {
       // This is technically invalid input, but the component should handle it
-      const mixedArray = [
-        'https://example.com/string.jpg',
-        { itemImageSrc: 'https://example.com/object.jpg' },
-        'https://example.com/another-string.jpg'
-      ]
-      const widget = createGalleriaWidget(mixedArray as string[])
+      const mixedArray: GalleryValue = JSON.parse(
+        '["https://example.com/string.jpg",' +
+          '{"itemImageSrc":"https://example.com/object.jpg"},' +
+          '"https://example.com/another-string.jpg"]'
+      )
+      const widget = createGalleriaWidget(mixedArray)
 
       // The component expects consistent typing, but let's test it handles mixed input
-      expect(() =>
-        renderComponent(widget, mixedArray as string[])
-      ).not.toThrow()
+      expect(() => renderComponent(widget, mixedArray)).not.toThrow()
     })
 
     it('handles invalid URL strings', () => {

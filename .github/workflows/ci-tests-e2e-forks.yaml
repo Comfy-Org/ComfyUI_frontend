@@ -51,6 +51,25 @@ jobs:
           fi
           echo "PR author: $PR_AUTHOR"
 
+      - name: Download new-test video comment
+        if: github.event.action == 'completed'
+        uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name: playwright-video-comment
+          path: video-comment
+          if_no_artifact_found: warn
+
+      - name: Upsert new-test video comment
+        if: github.event.action == 'completed' && hashFiles('video-comment/playwright-video-comment.md') != '' && steps.pr.outputs.skip != 'true'
+        uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ steps.pr.outputs.number }}
+          section-name: new-test-videos
+          section-content-file: video-comment/playwright-video-comment.md
+          comment-marker: '<!-- playwright-video-new-tests -->'
+          token: ${{ github.token }}
+
       - name: Handle Test Start — upsert playwright starting section
         if: steps.route.outputs.handle == 'true' && github.event.action == 'requested'
         uses: ./.github/actions/upsert-comment-section

@@ -11,23 +11,18 @@ import type { useWorkspaceStore } from '@/stores/workspaceStore'
  * Provides typed access to graph internals without requiring `any`.
  */
 export interface TestGraphAccess {
-  _nodes_by_id: Record<string, LGraphNode>
-}
-
-/**
- * Client-side growth triggers the DevTools `Node Runtime Reflow` node exposes on
- * its instance (see `tools/devtools/web/runtimeReflow.js`). Used by the runtime
- * reflow E2E spec to emulate the two custom-node growth idioms.
- */
-export interface RuntimeReflowNode {
-  growByWidget: () => void
-  growByPreview: () => void
+  _nodes_by_id: Partial<Record<string, LGraphNode>>
 }
 
 interface AppReadiness {
   featureFlagsReceived: boolean
   apiInitialized: boolean
   appInitialized: boolean
+}
+
+export interface TabSwitchLens {
+  afterConfigure: string[][]
+  removed: string[]
 }
 
 interface CapturedMessages {
@@ -47,6 +42,7 @@ declare global {
     TestCommand?: boolean
     changeCount?: number
     widgetValue?: unknown
+    __commandExecutionCounts?: Record<string, number>
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
@@ -57,6 +53,14 @@ declare global {
      * @see browser_tests/fixtures/ws.ts
      */
     __ws__?: Record<string, WebSocket>
+
+    /**
+     * Node ids observed at two moments of a workflow tab return: right after
+     * the canvas was rebuilt from the tab's snapshot, and every node removed
+     * from the live graph since the observer was installed.
+     * @see browser_tests/tests/agent/agentHumanAddTabSwitch.spec.ts
+     */
+    __tabSwitchLens?: TabSwitchLens
   }
 
   const app: ComfyApp | undefined
